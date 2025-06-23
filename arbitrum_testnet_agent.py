@@ -117,7 +117,7 @@ class ArbitrumTestnetAgent:
         # Later we'll replace this with actual DeFi interactions
         if config['exploration_rate'] > 0.1:
             # In exploration mode - more conservative (simulate research)
-            simulated_gain = 0.001 * (status['gas_price_gwei'] / 1000000000)  # Tiny gain based on gas
+            simulated_gain = 0.001 * (float(status['gas_price_gwei']) / 1000000000)  # Tiny gain based on gas
             performance = 0.7 + (simulated_gain * 100)  # Convert to performance score
         else:
             # In exploitation mode - use proven strategies
