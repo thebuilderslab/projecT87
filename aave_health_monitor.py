@@ -202,23 +202,21 @@ class AaveHealthMonitor:
             total_debt_eth = current_data['total_debt_eth']
             
             # Convert all values to float to avoid Decimal/float mixing
-            # Handle both Decimal and numeric types
-            if hasattr(current_hf, '__float__'):
-                current_hf = float(current_hf)
-            elif isinstance(current_hf, str):
-                current_hf = float(current_hf)
-            else:
-                current_hf = float(current_hf) if current_hf else 0.0
+            # Handle Decimal, int, float, and string types safely
+            try:
+                current_hf = float(current_hf) if current_hf is not None else 0.0
+            except (TypeError, ValueError):
+                current_hf = 0.0
                 
-            if hasattr(total_collateral_eth, '__float__'):
-                total_collateral_eth = float(total_collateral_eth)
-            else:
-                total_collateral_eth = float(total_collateral_eth) if total_collateral_eth else 0.0
+            try:
+                total_collateral_eth = float(total_collateral_eth) if total_collateral_eth is not None else 0.0
+            except (TypeError, ValueError):
+                total_collateral_eth = 0.0
                 
-            if hasattr(total_debt_eth, '__float__'):
-                total_debt_eth = float(total_debt_eth)
-            else:
-                total_debt_eth = float(total_debt_eth) if total_debt_eth else 0.0
+            try:
+                total_debt_eth = float(total_debt_eth) if total_debt_eth is not None else 0.0
+            except (TypeError, ValueError):
+                total_debt_eth = 0.0
                 
             target_health_factor = float(target_health_factor)
             
@@ -226,8 +224,8 @@ class AaveHealthMonitor:
             # Target: (collateral * liquidation_threshold) / (total_debt + new_usdc_debt) = target_hf
             
             # Assume average liquidation threshold of 82.5% for WBTC/WETH/DAI mix
-            liquidation_threshold = 0.825
-            eth_price_usd = 2000.0  # Simplified assumption
+            liquidation_threshold = float(0.825)
+            eth_price_usd = float(2000.0)  # Simplified assumption
             
             # Calculate how much USDC we can borrow to reach target health factor
             collateral_value_usd = total_collateral_eth * eth_price_usd
