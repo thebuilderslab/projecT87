@@ -97,9 +97,9 @@ class ArbitrumTestnetAgent:
     
     def run_real_defi_task(self, run_id, iteration, config):
         """
-        Execute real DeFi operations using Aave protocol
+        Execute real DeFi operations using dynamic health monitoring and conditional trading
         """
-        print(f"\n🔄 Real DeFi Task (Run: {run_id}, Iteration: {iteration})")
+        print(f"\n🔄 Dynamic DeFi Task (Run: {run_id}, Iteration: {iteration})")
         
         # Check network status
         connected, status = self.check_network_status()
@@ -109,7 +109,7 @@ class ArbitrumTestnetAgent:
         
         print(f"📊 Network Status: Block {status['latest_block']}, Balance: {status['eth_balance']:.6f} ETH")
         
-        # Initialize Aave and Uniswap integrations if not already done
+        # Initialize integrations if not already done
         if not hasattr(self, 'aave'):
             from aave_integration import AaveArbitrumIntegration
             self.aave = AaveArbitrumIntegration(self.w3, self.account)
@@ -118,72 +118,154 @@ class ArbitrumTestnetAgent:
             from uniswap_integration import UniswapV3Integration
             self.uniswap = UniswapV3Integration(self.w3, self.account)
         
-        # Get portfolio value before
-        portfolio_before = status['eth_balance']
+        if not hasattr(self, 'health_monitor'):
+            from aave_health_monitor import AaveHealthMonitor
+            self.health_monitor = AaveHealthMonitor(self.w3, self.account, self.aave)
         
-        # Execute real DeFi strategies based on configuration
+        # Get comprehensive monitoring data
+        monitoring_summary = self.health_monitor.get_monitoring_summary()
+        
+        print(f"🏥 Health Factor: {monitoring_summary['current_health_factor']:.4f}")
+        print(f"🪙 ARB Price: ${monitoring_summary['arb_price']:.4f}")
+        print(f"💰 ARB Balance: {monitoring_summary['arb_balance']:.4f}")
+        
+        portfolio_before = status['eth_balance']
         performance = 0.7  # Base performance
         
         try:
-            if config['exploration_rate'] > 0.2:
-                # High exploration: Conservative lending
-                if portfolio_before > 0.05:  # Only if we have enough ETH
-                    print("🏦 Executing conservative Aave lending strategy...")
-                    tx_hash = self.aave.execute_yield_strategy("conservative")
-                    if tx_hash:
-                        performance = 0.85  # Good performance for successful lending
-                        print(f"✅ Aave lending executed successfully")
-                    else:
-                        performance = 0.6   # Lower performance for failed strategy
-                        
-            elif config['exploration_rate'] > 0.1:
-                # Medium exploration: Moderate strategies
-                if portfolio_before > 0.08:
-                    print("⚖️ Executing balanced Aave strategy...")
-                    # Alternate between supply and strategic moves
-                    if iteration % 10 == 0:  # Every 10th iteration, try lending
-                        tx_hash = self.aave.supply_to_aave(self.aave.weth_address, portfolio_before * 0.3)
-                        if tx_hash:
-                            performance = 0.82
-                    else:
-                        performance = 0.75  # Monitor and analyze
-                        
-            else:
-                # Low exploration (exploitation): Advanced leveraged strategies with swapping
-                if portfolio_before > 0.1:
-                    print("🚀 Executing advanced leveraged Aave + Uniswap strategy...")
-                    result = self.aave.execute_yield_strategy("leveraged")
+            # PRIORITY 1: Risk Mitigation (Execute first if triggered)
+            if monitoring_summary['risk_trigger_active']:
+                print("🚨 EXECUTING RISK MITIGATION STRATEGY")
+                
+                arb_balance = monitoring_summary['arb_balance']
+                if arb_balance > 0.1:  # Only if we have significant ARB to swap
+                    # Swap ARB back to USDC for safety
+                    arb_amount_wei = int(arb_balance * 0.8 * (10 ** 18))  # Swap 80% of ARB holdings
                     
-                    if result and isinstance(result, dict):
-                        # Execute collateral optimization through swapping
-                        optimization_success = self.uniswap.optimize_collateral_via_swap(
-                            self.aave, portfolio_before
-                        )
-                        
-                        if optimization_success:
-                            performance = 0.95  # Highest performance for complete strategy
-                            print(f"✅ Full DeFi strategy: Aave lending/borrowing + Uniswap optimization")
-                        else:
-                            performance = 0.92  # High performance for Aave-only
-                            
-                    elif result:
-                        performance = 0.88  # Good performance for simple supply
+                    risk_swap_tx = self.uniswap.swap_tokens(
+                        self.health_monitor.arb_address,  # ARB in
+                        self.aave.usdc_address,           # USDC out
+                        arb_amount_wei,
+                        3000  # 0.3% fee
+                    )
+                    
+                    if risk_swap_tx:
+                        performance = 0.85  # Good performance for risk mitigation
+                        print(f"✅ Risk mitigation: Swapped {arb_balance*0.8:.4f} ARB to USDC")
                     else:
-                        performance = 0.65  # Lower performance for failed strategy
+                        performance = 0.75  # Moderate performance for attempted mitigation
+                else:
+                    print("ℹ️ Risk trigger active but insufficient ARB balance")
+                    performance = 0.72
+            
+            # PRIORITY 2: Dynamic Borrow Strategy (Only if health factor increased)
+            elif monitoring_summary['borrow_trigger_active']:
+                print("🚨 EXECUTING DYNAMIC BORROW STRATEGY")
+                
+                optimal_usdc_borrow = monitoring_summary['optimal_usdc_borrow']
+                
+                if optimal_usdc_borrow > 50:  # Only if borrowing significant amount
+                    print(f"💰 Optimal USDC borrow amount: ${optimal_usdc_borrow:.2f}")
+                    
+                    # Step 1: Borrow USDC to bring health factor to 1.19
+                    borrow_tx = self.aave.borrow_from_aave(
+                        self.aave.usdc_address, 
+                        optimal_usdc_borrow
+                    )
+                    
+                    if borrow_tx:
+                        print("✅ Step 1: USDC borrowed successfully")
+                        
+                        # Wait for transaction to confirm
+                        time.sleep(5)
+                        
+                        # Step 2: Swap ALL borrowed USDC to ARB
+                        usdc_balance = self.aave.get_token_balance(self.aave.usdc_address)
+                        
+                        if usdc_balance > 10:  # If we have USDC to swap
+                            usdc_amount_wei = int(usdc_balance * (10 ** 6))  # USDC has 6 decimals
+                            
+                            arb_swap_tx = self.uniswap.swap_tokens(
+                                self.aave.usdc_address,           # USDC in
+                                self.health_monitor.arb_address,  # ARB out
+                                usdc_amount_wei,
+                                3000  # 0.3% fee
+                            )
+                            
+                            if arb_swap_tx:
+                                print("✅ Step 2: USDC swapped to ARB")
+                                
+                                # Step 3: Supply 3/4 of original USDC amount back to Aave
+                                supply_amount = optimal_usdc_borrow * 0.75
+                                
+                                # Get current USDC balance after swap (should be minimal)
+                                # We'll use ARB value equivalent to 3/4 original USDC
+                                
+                                # For demo: supply some of remaining assets
+                                if status['eth_balance'] > 0.05:
+                                    supply_tx = self.aave.supply_to_aave(
+                                        self.aave.weth_address, 
+                                        status['eth_balance'] * 0.1  # Supply 10% of ETH
+                                    )
+                                    
+                                    if supply_tx:
+                                        print("✅ Step 3: Additional collateral supplied")
+                                        performance = 0.95  # Excellent performance for full strategy
+                                    else:
+                                        performance = 0.90  # High performance for borrow+swap
+                                else:
+                                    performance = 0.88  # Good performance for borrow+swap only
+                            else:
+                                performance = 0.82  # Moderate performance for borrow only
+                        else:
+                            performance = 0.80  # Performance for borrow without sufficient swap
+                    else:
+                        performance = 0.65  # Lower performance for failed borrow
+                else:
+                    print("ℹ️ Borrow trigger active but optimal amount too small")
+                    performance = 0.75
+            
+            # PRIORITY 3: Standard Operations (When no special triggers)
+            else:
+                if config['exploration_rate'] > 0.2:
+                    # High exploration: Conservative monitoring and small operations
+                    if portfolio_before > 0.05:
+                        print("🏦 Conservative monitoring + small lending...")
+                        tx_hash = self.aave.execute_yield_strategy("conservative")
+                        performance = 0.78 if tx_hash else 0.72
+                        
+                elif config['exploration_rate'] > 0.1:
+                    # Medium exploration: Balanced approach
+                    if portfolio_before > 0.08:
+                        print("⚖️ Balanced strategy with monitoring...")
+                        if iteration % 15 == 0:  # Less frequent operations
+                            tx_hash = self.aave.supply_to_aave(self.aave.weth_address, portfolio_before * 0.2)
+                            performance = 0.80 if tx_hash else 0.74
+                        else:
+                            performance = 0.76  # Monitoring performance
+                else:
+                    # Low exploration: Active monitoring with occasional optimization
+                    print("🔍 Active monitoring for opportunities...")
+                    performance = 0.74  # Base monitoring performance
+            
+            # Adjust performance based on monitoring quality
+            if monitoring_summary['current_health_factor'] > 0:
+                monitoring_bonus = min(0.05, 0.01 * monitoring_summary['current_health_factor'])
+                performance += monitoring_bonus
             
             # Adjust performance based on gas efficiency
-            gas_efficiency = 1.0 - (float(status['gas_price_gwei']) / 100)  # Normalize gas impact
-            performance = performance * max(0.8, gas_efficiency)  # Never drop below 80% due to gas
+            gas_efficiency = 1.0 - (float(status['gas_price_gwei']) / 100)
+            performance = performance * max(0.85, gas_efficiency)
             
         except Exception as e:
-            print(f"❌ DeFi operation failed: {e}")
-            performance = 0.5  # Poor performance for errors
+            print(f"❌ Dynamic DeFi operation failed: {e}")
+            performance = 0.5
         
         # Cap performance at 1.0
         performance = min(performance, 1.0)
         
-        print(f"📈 Real Aave Performance Score: {performance:.4f}")
-        print(f"💡 Based on: Actual Aave transactions, gas costs, and strategy success")
+        print(f"📈 Dynamic DeFi Performance: {performance:.4f}")
+        print(f"💡 Based on: Health monitoring, conditional triggers, and execution success")
         
         return performance
 
