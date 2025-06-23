@@ -89,15 +89,30 @@ class AaveHealthMonitor:
             return None
     
     def get_arb_price(self):
-        """Get ARB price from CoinGecko API"""
+        """Get ARB price from CoinMarketCap API"""
         try:
-            # Use CoinGecko API for ARB price
-            url = "https://api.coingecko.com/api/v3/simple/price?ids=arbitrum&vs_currencies=usd"
-            response = requests.get(url, timeout=10)
+            # Use CoinMarketCap API for ARB price
+            api_key = os.getenv('COINMARKETCAP_API_KEY')
+            if not api_key:
+                print("❌ CoinMarketCap API key not found in environment")
+                return None
+                
+            url = "https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest"
+            headers = {
+                'Accepts': 'application/json',
+                'X-CMC_PRO_API_KEY': api_key,
+            }
+            
+            params = {
+                'symbol': 'ARB',
+                'convert': 'USD'
+            }
+            
+            response = requests.get(url, headers=headers, params=params, timeout=10)
             
             if response.status_code == 200:
                 data = response.json()
-                arb_price = data['arbitrum']['usd']
+                arb_price = data['data']['ARB']['quote']['USD']['price']
                 
                 price_data = {
                     'price': arb_price,
