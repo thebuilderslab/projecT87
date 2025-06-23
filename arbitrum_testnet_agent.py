@@ -20,6 +20,7 @@ class ArbitrumTestnetAgent:
             raise ValueError("Please set PRIVATE_KEY in .env file")
         
         self.account = Account.from_key(private_key)
+        # Ensure address is properly checksummed from the start
         self.address = self.w3.to_checksum_address(self.account.address)
         
         print(f"🤖 Arbitrum Testnet Agent initialized")
@@ -30,7 +31,7 @@ class ArbitrumTestnetAgent:
         """Get ETH balance in human-readable format"""
         user_address = self.w3.to_checksum_address(self.address)
         balance_wei = self.w3.eth.get_balance(user_address)
-        return self.w3.from_wei(balance_wei, 'ether')
+        return float(self.w3.from_wei(balance_wei, 'ether'))
     
     def get_gas_price(self):
         """Get current gas price"""

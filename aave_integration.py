@@ -13,7 +13,7 @@ class AaveArbitrumIntegration:
         
         # Aave V3 Arbitrum Sepolia Contract Addresses (ensure proper EIP-55 checksum)
         self.pool_address = self.w3.to_checksum_address("0x6Cce73bEeC7447d7E8EBfdd0D9Bf4af7aA9F32e4")  # Aave V3 Pool
-        self.pool_data_provider = self.w3.to_checksum_address("0x2E5b8C3B4fE8E5A7e4f6e3b8A6F1a8E9C2F5D4E7")  # Pool Data Provider
+        self.pool_data_provider = self.w3.to_checksum_address("0x3b06dC46b3BD3A616F95D0B78bcAc2F2dE7A8E25")  # Pool Data Provider
         self.weth_address = self.w3.to_checksum_address("0x980B62Da83eFf3D4576C647993b0c1D7faf17c73")  # WETH on Arbitrum Sepolia
         self.usdc_address = self.w3.to_checksum_address("0x179522635726710Dd7D2035a81d856de4Aa7836c")  # USDC on Arbitrum Sepolia
         
@@ -113,27 +113,44 @@ class AaveArbitrumIntegration:
     
     def get_token_balance(self, token_address):
         """Get token balance for the wallet"""
-        if token_address == self.weth_address:
-            # For WETH, check both ETH and WETH balance
-            user_address = self.w3.to_checksum_address(self.address)
-            eth_balance = self.w3.eth.get_balance(user_address)
-            return self.w3.from_wei(eth_balance, 'ether')
-        else:
-            token_contract = self.w3.eth.contract(address=self.w3.to_checksum_address(token_address), abi=self.erc20_abi)
-            user_address = self.w3.to_checksum_address(self.address)
-            balance = token_contract.functions.balanceOf(user_address).call()
-            decimals = token_contract.functions.decimals().call()
-            return balance / (10 ** decimals)
+        try:
+            # Ensure all addresses are properly checksummed
+            token_address = self.w3.to_checksum_address(token_address)
+            
+            if hasattr(self.account, 'address'):
+                user_address = self.w3.to_checksum_address(self.account.address)
+            else:
+                user_address = self.w3.to_checksum_address(self.address)
+            
+            if token_address == self.weth_address:
+                # For WETH, check both ETH and WETH balance
+                eth_balance = self.w3.eth.get_balance(user_address)
+                return float(self.w3.from_wei(eth_balance, 'ether'))
+            else:
+                token_contract = self.w3.eth.contract(address=token_address, abi=self.erc20_abi)
+                balance = token_contract.functions.balanceOf(user_address).call()
+                decimals = token_contract.functions.decimals().call()
+                return float(balance) / float(10 ** decimals)
+        except Exception as e:
+            print(f"❌ Failed to get token balance: {e}")
+            return 0.0
     
     def approve_token(self, token_address, amount):
         """Approve token spending for Aave"""
         try:
-            token_contract = self.w3.eth.contract(address=self.w3.to_checksum_address(token_address), abi=self.erc20_abi)
+            # Ensure all addresses are properly checksummed
+            token_address = self.w3.to_checksum_address(token_address)
+            
+            if hasattr(self.account, 'address'):
+                user_address = self.w3.to_checksum_address(self.account.address)
+            else:
+                user_address = self.w3.to_checksum_address(self.address)
+                
+            token_contract = self.w3.eth.contract(address=token_address, abi=self.erc20_abi)
             decimals = token_contract.functions.decimals().call()
-            amount_wei = int(amount * (10 ** decimals))
+            amount_wei = int(float(amount) * (10 ** decimals))
             
             # Build approval transaction
-            user_address = self.w3.to_checksum_address(self.address)
             nonce = self.w3.eth.get_transaction_count(user_address)
             transaction = token_contract.functions.approve(
                 self.pool_address, 
