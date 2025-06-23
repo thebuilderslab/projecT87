@@ -97,8 +97,7 @@ class ArbitrumTestnetAgent:
     
     def run_real_defi_task(self, run_id, iteration, config):
         """
-        Replace simulated DeFi operations with real testnet interactions
-        This is where we'll integrate with actual DeFi protocols
+        Execute real DeFi operations using Aave protocol
         """
         print(f"\n🔄 Real DeFi Task (Run: {run_id}, Iteration: {iteration})")
         
@@ -106,28 +105,85 @@ class ArbitrumTestnetAgent:
         connected, status = self.check_network_status()
         if not connected:
             print(f"❌ Network issue: {status}")
-            return 0.0  # Poor performance due to network issues
+            return 0.0
         
         print(f"📊 Network Status: Block {status['latest_block']}, Balance: {status['eth_balance']:.6f} ETH")
         
-        # Get portfolio value before (currently just ETH)
+        # Initialize Aave and Uniswap integrations if not already done
+        if not hasattr(self, 'aave'):
+            from aave_integration import AaveArbitrumIntegration
+            self.aave = AaveArbitrumIntegration(self.w3, self.account)
+        
+        if not hasattr(self, 'uniswap'):
+            from uniswap_integration import UniswapV3Integration
+            self.uniswap = UniswapV3Integration(self.w3, self.account)
+        
+        # Get portfolio value before
         portfolio_before = status['eth_balance']
         
-        # For now, simulate strategy decision based on real network data
-        # Later we'll replace this with actual DeFi interactions
-        if config['exploration_rate'] > 0.1:
-            # In exploration mode - more conservative (simulate research)
-            simulated_gain = 0.001 * (float(status['gas_price_gwei']) / 1000000000)  # Tiny gain based on gas
-            performance = 0.7 + (simulated_gain * 100)  # Convert to performance score
-        else:
-            # In exploitation mode - use proven strategies
-            performance = 0.85 + (0.1 * (portfolio_before / 0.1))  # Better performance with more capital
+        # Execute real DeFi strategies based on configuration
+        performance = 0.7  # Base performance
+        
+        try:
+            if config['exploration_rate'] > 0.2:
+                # High exploration: Conservative lending
+                if portfolio_before > 0.05:  # Only if we have enough ETH
+                    print("🏦 Executing conservative Aave lending strategy...")
+                    tx_hash = self.aave.execute_yield_strategy("conservative")
+                    if tx_hash:
+                        performance = 0.85  # Good performance for successful lending
+                        print(f"✅ Aave lending executed successfully")
+                    else:
+                        performance = 0.6   # Lower performance for failed strategy
+                        
+            elif config['exploration_rate'] > 0.1:
+                # Medium exploration: Moderate strategies
+                if portfolio_before > 0.08:
+                    print("⚖️ Executing balanced Aave strategy...")
+                    # Alternate between supply and strategic moves
+                    if iteration % 10 == 0:  # Every 10th iteration, try lending
+                        tx_hash = self.aave.supply_to_aave(self.aave.weth_address, portfolio_before * 0.3)
+                        if tx_hash:
+                            performance = 0.82
+                    else:
+                        performance = 0.75  # Monitor and analyze
+                        
+            else:
+                # Low exploration (exploitation): Advanced leveraged strategies with swapping
+                if portfolio_before > 0.1:
+                    print("🚀 Executing advanced leveraged Aave + Uniswap strategy...")
+                    result = self.aave.execute_yield_strategy("leveraged")
+                    
+                    if result and isinstance(result, dict):
+                        # Execute collateral optimization through swapping
+                        optimization_success = self.uniswap.optimize_collateral_via_swap(
+                            self.aave, portfolio_before
+                        )
+                        
+                        if optimization_success:
+                            performance = 0.95  # Highest performance for complete strategy
+                            print(f"✅ Full DeFi strategy: Aave lending/borrowing + Uniswap optimization")
+                        else:
+                            performance = 0.92  # High performance for Aave-only
+                            
+                    elif result:
+                        performance = 0.88  # Good performance for simple supply
+                    else:
+                        performance = 0.65  # Lower performance for failed strategy
+            
+            # Adjust performance based on gas efficiency
+            gas_efficiency = 1.0 - (float(status['gas_price_gwei']) / 100)  # Normalize gas impact
+            performance = performance * max(0.8, gas_efficiency)  # Never drop below 80% due to gas
+            
+        except Exception as e:
+            print(f"❌ DeFi operation failed: {e}")
+            performance = 0.5  # Poor performance for errors
         
         # Cap performance at 1.0
         performance = min(performance, 1.0)
         
-        print(f"📈 Real Performance Score: {performance:.4f}")
-        print(f"💡 Based on: ETH balance, gas prices, and network conditions")
+        print(f"📈 Real Aave Performance Score: {performance:.4f}")
+        print(f"💡 Based on: Actual Aave transactions, gas costs, and strategy success")
         
         return performance
 
