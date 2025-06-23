@@ -11,11 +11,11 @@ class AaveArbitrumIntegration:
         self.account = account
         self.address = account.address
         
-        # Aave V3 Arbitrum Sepolia Contract Addresses
-        self.pool_address = "0x6Cce73bEeC7447d7E8EBfdd0D9Bf4af7aA9F32e4"  # Aave V3 Pool
-        self.pool_data_provider = "0x2E5b8C3B4fE8E5A7e4f6e3b8A6F1a8E9C2F5D4E7"  # Pool Data Provider
-        self.weth_address = "0x980B62Da83eFf3D4576C647993b0c1D7faf17c73"  # WETH on Arbitrum Sepolia
-        self.usdc_address = "0x179522635726710Dd7D2035a81d856de4Aa7836c"  # USDC on Arbitrum Sepolia
+        # Aave V3 Arbitrum Sepolia Contract Addresses (ensure proper EIP-55 checksum)
+        self.pool_address = self.w3.to_checksum_address("0x6Cce73bEeC7447d7E8EBfdd0D9Bf4af7aA9F32e4")  # Aave V3 Pool
+        self.pool_data_provider = self.w3.to_checksum_address("0x2E5b8C3B4fE8E5A7e4f6e3b8A6F1a8E9C2F5D4E7")  # Pool Data Provider
+        self.weth_address = self.w3.to_checksum_address("0x980B62Da83eFf3D4576C647993b0c1D7faf17c73")  # WETH on Arbitrum Sepolia
+        self.usdc_address = self.w3.to_checksum_address("0x179522635726710Dd7D2035a81d856de4Aa7836c")  # USDC on Arbitrum Sepolia
         
         # Load ABIs
         self.pool_abi = self._get_pool_abi()
@@ -115,23 +115,26 @@ class AaveArbitrumIntegration:
         """Get token balance for the wallet"""
         if token_address == self.weth_address:
             # For WETH, check both ETH and WETH balance
-            eth_balance = self.w3.eth.get_balance(self.address)
+            user_address = self.w3.to_checksum_address(self.address)
+            eth_balance = self.w3.eth.get_balance(user_address)
             return self.w3.from_wei(eth_balance, 'ether')
         else:
-            token_contract = self.w3.eth.contract(address=token_address, abi=self.erc20_abi)
-            balance = token_contract.functions.balanceOf(self.address).call()
+            token_contract = self.w3.eth.contract(address=self.w3.to_checksum_address(token_address), abi=self.erc20_abi)
+            user_address = self.w3.to_checksum_address(self.address)
+            balance = token_contract.functions.balanceOf(user_address).call()
             decimals = token_contract.functions.decimals().call()
             return balance / (10 ** decimals)
     
     def approve_token(self, token_address, amount):
         """Approve token spending for Aave"""
         try:
-            token_contract = self.w3.eth.contract(address=token_address, abi=self.erc20_abi)
+            token_contract = self.w3.eth.contract(address=self.w3.to_checksum_address(token_address), abi=self.erc20_abi)
             decimals = token_contract.functions.decimals().call()
             amount_wei = int(amount * (10 ** decimals))
             
             # Build approval transaction
-            nonce = self.w3.eth.get_transaction_count(self.address)
+            user_address = self.w3.to_checksum_address(self.address)
+            nonce = self.w3.eth.get_transaction_count(user_address)
             transaction = token_contract.functions.approve(
                 self.pool_address, 
                 amount_wei
@@ -176,11 +179,12 @@ class AaveArbitrumIntegration:
                 amount_wei = int(amount * (10 ** decimals))
             
             # Build supply transaction
-            nonce = self.w3.eth.get_transaction_count(self.address)
+            user_address = self.w3.to_checksum_address(self.address)
+            nonce = self.w3.eth.get_transaction_count(user_address)
             transaction = self.pool_contract.functions.supply(
-                token_address,    # asset
+                self.w3.to_checksum_address(token_address),    # asset
                 amount_wei,       # amount
-                self.address,     # onBehalfOf
+                user_address,     # onBehalfOf
                 0                 # referralCode
             ).build_transaction({
                 'chainId': self.w3.eth.chain_id,
@@ -216,13 +220,14 @@ class AaveArbitrumIntegration:
                 amount_wei = int(amount * (10 ** decimals))
             
             # Build borrow transaction
-            nonce = self.w3.eth.get_transaction_count(self.address)
+            user_address = self.w3.to_checksum_address(self.address)
+            nonce = self.w3.eth.get_transaction_count(user_address)
             transaction = self.pool_contract.functions.borrow(
-                token_address,         # asset
+                self.w3.to_checksum_address(token_address),         # asset
                 amount_wei,           # amount
                 interest_rate_mode,   # interestRateMode (2 = variable)
                 0,                    # referralCode
-                self.address          # onBehalfOf
+                user_address          # onBehalfOf
             ).build_transaction({
                 'chainId': self.w3.eth.chain_id,
                 'gas': 400000,
@@ -265,12 +270,13 @@ class AaveArbitrumIntegration:
                 amount_wei = int(amount * (10 ** decimals))
             
             # Build repay transaction
-            nonce = self.w3.eth.get_transaction_count(self.address)
+            user_address = self.w3.to_checksum_address(self.address)
+            nonce = self.w3.eth.get_transaction_count(user_address)
             transaction = self.pool_contract.functions.repay(
-                token_address,         # asset
+                self.w3.to_checksum_address(token_address),         # asset
                 amount_wei,           # amount
                 interest_rate_mode,   # interestRateMode
-                self.address          # onBehalfOf
+                user_address          # onBehalfOf
             ).build_transaction({
                 'chainId': self.w3.eth.chain_id,
                 'gas': 300000,

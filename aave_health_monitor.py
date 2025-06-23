@@ -18,8 +18,8 @@ class AaveHealthMonitor:
         self.health_history = deque(maxlen=100)
         self.arb_price_history = deque(maxlen=50)
         
-        # Aave V3 Data Provider for health factor
-        self.data_provider_address = "0x2E5b8C3B4fE8E5A7e4f6e3b8A6F1a8E9C2F5D4E7"
+        # Aave V3 Data Provider for health factor (ensure proper EIP-55 checksum)
+        self.data_provider_address = self.w3.to_checksum_address("0x2E5b8C3B4fE8E5A7e4f6e3b8A6F1a8E9C2F5D4E7")
         self.data_provider_abi = self._get_data_provider_abi()
         
         self.data_provider = self.w3.eth.contract(
@@ -28,7 +28,7 @@ class AaveHealthMonitor:
         )
         
         # ARB token address on Arbitrum Sepolia
-        self.arb_address = "0x912CE59144191C1204E64559FE8253a0e49E6548"
+        self.arb_address = self.w3.to_checksum_address("0x912CE59144191C1204E64559FE8253a0e49E6548")
         
         print("📊 Enhanced Aave Health Monitor initialized")
     
@@ -54,7 +54,8 @@ class AaveHealthMonitor:
     def get_current_health_factor(self):
         """Get current health factor from Aave"""
         try:
-            user_data = self.data_provider.functions.getUserAccountData(self.account.address).call()
+            user_address = self.w3.to_checksum_address(self.account.address)
+            user_data = self.data_provider.functions.getUserAccountData(user_address).call()
             
             # Extract data
             total_collateral_eth = user_data[0] / 1e18
@@ -169,7 +170,8 @@ class AaveHealthMonitor:
                 abi=self.aave.erc20_abi
             )
             
-            balance = arb_contract.functions.balanceOf(self.account.address).call()
+            user_address = self.w3.to_checksum_address(self.account.address)
+            balance = arb_contract.functions.balanceOf(user_address).call()
             decimals = arb_contract.functions.decimals().call()
             
             return balance / (10 ** decimals)

@@ -9,13 +9,13 @@ class UniswapV3Integration:
         self.account = account
         self.address = account.address
         
-        # Uniswap V3 Arbitrum Sepolia addresses
-        self.router_address = "0x101F443B4d1b059569D643917553c771E1b9663E"  # SwapRouter
-        self.quoter_address = "0xb27308f9F90D607463bb33eA1BeBb41C27CE5AB6"   # Quoter V2
+        # Uniswap V3 Arbitrum Sepolia addresses (ensure proper EIP-55 checksum)
+        self.router_address = self.w3.to_checksum_address("0x101F443B4d1b059569D643917553c771E1b9663E")  # SwapRouter
+        self.quoter_address = self.w3.to_checksum_address("0xb27308f9F90D607463bb33eA1BeBb41C27CE5AB6")   # Quoter V2
         
         # Token addresses
-        self.weth_address = "0x980B62Da83eFf3D4576C647993b0c1D7faf17c73"
-        self.usdc_address = "0x179522635726710Dd7D2035a81d856de4Aa7836c"
+        self.weth_address = self.w3.to_checksum_address("0x980B62Da83eFf3D4576C647993b0c1D7faf17c73")
+        self.usdc_address = self.w3.to_checksum_address("0x179522635726710Dd7D2035a81d856de4Aa7836c")
         
         self.router_abi = self._get_router_abi()
         self.erc20_abi = self._get_erc20_abi()

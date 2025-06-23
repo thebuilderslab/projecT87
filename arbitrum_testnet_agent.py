@@ -20,7 +20,7 @@ class ArbitrumTestnetAgent:
             raise ValueError("Please set PRIVATE_KEY in .env file")
         
         self.account = Account.from_key(private_key)
-        self.address = self.account.address
+        self.address = self.w3.to_checksum_address(self.account.address)
         
         print(f"🤖 Arbitrum Testnet Agent initialized")
         print(f"Wallet: {self.address}")
@@ -28,7 +28,8 @@ class ArbitrumTestnetAgent:
     
     def get_eth_balance(self):
         """Get ETH balance in human-readable format"""
-        balance_wei = self.w3.eth.get_balance(self.address)
+        user_address = self.w3.to_checksum_address(self.address)
+        balance_wei = self.w3.eth.get_balance(user_address)
         return self.w3.from_wei(balance_wei, 'ether')
     
     def get_gas_price(self):
@@ -45,11 +46,12 @@ class ArbitrumTestnetAgent:
         """Send a test transaction (for testing purposes)"""
         try:
             # Get current nonce
-            nonce = self.w3.eth.get_transaction_count(self.address)
+            user_address = self.w3.to_checksum_address(self.address)
+            nonce = self.w3.eth.get_transaction_count(user_address)
             
             # Build transaction
             transaction = {
-                'to': to_address,
+                'to': self.w3.to_checksum_address(to_address),
                 'value': self.w3.to_wei(amount_eth, 'ether'),
                 'gas': 21000,
                 'gasPrice': self.get_gas_price(),
