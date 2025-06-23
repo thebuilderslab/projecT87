@@ -191,12 +191,18 @@ class AaveHealthMonitor:
             total_collateral_eth = current_data['total_collateral_eth']
             total_debt_eth = current_data['total_debt_eth']
             
+            # Convert all values to float to avoid Decimal/float mixing
+            current_hf = float(current_hf)
+            total_collateral_eth = float(total_collateral_eth)
+            total_debt_eth = float(total_debt_eth)
+            target_health_factor = float(target_health_factor)
+            
             # Simplified calculation: assuming 1 ETH = $2000, 1 USDC = $1
             # Target: (collateral * liquidation_threshold) / (total_debt + new_usdc_debt) = target_hf
             
             # Assume average liquidation threshold of 82.5% for WBTC/WETH/DAI mix
             liquidation_threshold = 0.825
-            eth_price_usd = 2000  # Simplified assumption
+            eth_price_usd = 2000.0  # Simplified assumption
             
             # Calculate how much USDC we can borrow to reach target health factor
             collateral_value_usd = total_collateral_eth * eth_price_usd
@@ -208,11 +214,11 @@ class AaveHealthMonitor:
             max_debt_for_target = (collateral_value_usd * liquidation_threshold) / target_health_factor
             optimal_usdc_borrow = max_debt_for_target - current_debt_usd
             
-            return max(0, optimal_usdc_borrow)
+            return max(0.0, optimal_usdc_borrow)
             
         except Exception as e:
             print(f"❌ Failed to calculate optimal borrow: {e}")
-            return 0
+            return 0.0
     
     def get_monitoring_summary(self):
         """Get comprehensive monitoring summary"""
