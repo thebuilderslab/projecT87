@@ -360,62 +360,21 @@
                 </div>
             </div>
 
-            <!-- Controls Section -->
+            <!-- Emergency Controls Section -->
             <div class="controls">
-                <h3>🎛️ Manual Controls</h3>
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px;">
-                    <div class="parameter-group">
-                        <label for="healthTarget">Health Factor Target:</label>
-                        <input type="number" id="healthTarget" step="0.01" min="1.05" max="3.0" value="1.19">
-                    </div>
-                    <div class="parameter-group">
-                        <label for="borrowTrigger">Borrow Trigger Threshold:</label>
-                        <input type="number" id="borrowTrigger" step="0.001" min="0.001" max="0.5" value="0.02">
-                    </div>
-                    <div class="parameter-group">
-                        <label for="arbDecline">ARB Decline Threshold (%):</label>
-                        <input type="number" id="arbDecline" step="0.1" min="1" max="50" value="5">
-                    </div>
-                    <div class="parameter-group">
-                        <label for="autoMode">Auto Mode:</label>
-                        <select id="autoMode" style="width: 100%; padding: 10px; border: none; border-radius: 8px; background: rgba(255, 255, 255, 0.1); color: white; font-size: 16px;">
-                            <option value="true">Enabled</option>
-                            <option value="false">Disabled</option>
-                        </select>
-                    </div>
+                <div class="emergency-controls">
+                    <h4>🚨 Emergency Controls</h4>
+                    <div id="emergency-status" class="emergency-status inactive">✅ Agent operations normal</div>
+                    
+                    <button id="emergency-stop-btn" onclick="activateEmergencyStop()" class="action-btn emergency">
+                        🛑 EMERGENCY STOP
+                    </button>
+                    <button id="clear-stop-btn" onclick="clearEmergencyStop()" class="action-btn clear-emergency" style="display: none;">
+                        ✅ CLEAR EMERGENCY STOP
+                    </button>
+                    
+                    <div id="emergency-logs" class="emergency-logs"></div>
                 </div>
-                <div style="margin-top: 20px; text-align: center;">
-                    <button class="btn" onclick="updateParameters()">💾 Save Parameters</button>
-                    <button class="btn" onclick="refreshData()" style="margin-left: 10px;">🔄 Refresh Now</button>
-                </div>
-            </div>
-
-             <div class="controls">
-                
-                    
-                        
-                            💰 Supply Collateral
-                        
-                        
-                            📊 Execute Borrow Strategy
-                        
-                        
-                            🔄 Risk Mitigation
-                        
-                    
-
-                    
-                        <h4>🚨 Emergency Controls</h4>
-                        
-                        <button id="emergency-stop-btn" onclick="activateEmergencyStop()" class="action-btn emergency">
-                            🛑 EMERGENCY STOP
-                        </button>
-                        <button id="clear-stop-btn" onclick="clearEmergencyStop()" class="action-btn clear-emergency" style="display: none;">
-                            ✅ CLEAR EMERGENCY STOP
-                        </button>
-                        
-                    
-                
             </div>
         </div>
     </div>
@@ -547,18 +506,6 @@
             document.getElementById('lastUpdate').textContent = `Last updated: ${new Date().toLocaleTimeString()}`;
         }
 
-        // Initialize
-        document.addEventListener('DOMContentLoaded', function() {
-            refreshData();
-            fetchParameters();
-            updateLastUpdate();
-
-        // Update dashboard every 30 seconds
-        setInterval(updateDashboard, 30000);
-        setInterval(updateEmergencyStatus, 5000); // Check emergency status every 5 seconds
-        updateDashboard();
-        updateEmergencyStatus();
-
         // Emergency stop functions
         function activateEmergencyStop() {
             const reason = prompt("Enter reason for emergency stop (optional):");
@@ -647,6 +594,22 @@
                     console.error('Error fetching emergency status:', error);
                 });
         }
+
+        // Initialize dashboard
+        document.addEventListener('DOMContentLoaded', function() {
+            refreshData();
+            fetchParameters();
+            updateLastUpdate();
+            updateEmergencyStatus();
+
+            // Set up intervals
+            setInterval(() => {
+                refreshData();
+                updateLastUpdate();
+            }, 30000); // Update every 30 seconds
+            
+            setInterval(updateEmergencyStatus, 5000); // Check emergency status every 5 seconds
+        });
     </script>
 </body>
 </html>
