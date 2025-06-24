@@ -165,6 +165,10 @@ def main():
     if not safety_manager.validate_mainnet_readiness():
         print("\n❌ MAINNET VALIDATION FAILED!")
         print("Please fix the issues above before deploying to mainnet")
+        # In deployment, start web dashboard anyway for health checks
+        if os.getenv('REPLIT_DEPLOYMENT'):
+            print("🚀 Starting web dashboard for deployment health checks...")
+            start_web_dashboard()
         return
 
     print("\n✅ MAINNET VALIDATION PASSED!")

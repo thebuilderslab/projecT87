@@ -274,4 +274,4 @@ def update_parameters():
 if __name__ == '__main__':
     print("🌐 Starting DeFi Agent Web Dashboard")
     print("📱 Access your dashboard at the web preview URL")
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    app.run(host='0.0.0.0', port=5000, debug=True, threaded=True)
