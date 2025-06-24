@@ -7,6 +7,26 @@ from datetime import datetime
 class AgentDashboard:
     def __init__(self, agent):
         self.agent = agent
+        self.adjustable_params = {
+            'health_factor_target': 1.19,
+            'borrow_trigger_threshold': 0.02,
+            'arb_decline_threshold': 0.05,
+            'exploration_rate': 0.1,
+            'auto_mode': True
+        }
+        self.load_user_settings()
+        
+    def load_user_settings(self):
+        """Load user-adjusted parameters"""
+        if os.path.exists('user_settings.json'):
+            with open('user_settings.json', 'r') as f:
+                saved_params = json.load(f)
+                self.adjustable_params.update(saved_params)
+    
+    def save_user_settings(self):
+        """Save current parameters"""
+        with open('user_settings.json', 'w') as f:
+            json.dump(self.adjustable_params, f, indent=2)
         
     def display_wallet_status(self):
         """Display current wallet status with emojis"""
@@ -54,6 +74,13 @@ class AgentDashboard:
                 else:
                     risk_status = "🔴 HIGH RISK"
                 print(f"   🛡️ Risk Level: {risk_status}")
+            
+            # Current Parameter Settings
+            print(f"\n⚙️ **CURRENT PARAMETERS**")
+            print(f"   🎯 Health Factor Target: {self.adjustable_params['health_factor_target']}")
+            print(f"   📊 Borrow Trigger: {self.adjustable_params['borrow_trigger_threshold']}")
+            print(f"   📉 ARB Decline Threshold: {self.adjustable_params['arb_decline_threshold']*100:.1f}%")
+            print(f"   🔄 Auto Mode: {'✅ ON' if self.adjustable_params['auto_mode'] else '❌ OFF'}")
             
             print("="*60)
             
@@ -122,8 +149,63 @@ class AgentDashboard:
         except Exception as e:
             print(f"❌ Performance display error: {e}")
     
-    def run_live_dashboard(self):
-        """Run live updating dashboard"""
+    def show_adjustment_menu(self):
+        """Show parameter adjustment menu"""
+        print(f"\n🔧 **MANUAL ADJUSTMENT MENU**")
+        print(f"1. 🎯 Health Factor Target (current: {self.adjustable_params['health_factor_target']})")
+        print(f"2. 📊 Borrow Trigger Threshold (current: {self.adjustable_params['borrow_trigger_threshold']})")
+        print(f"3. 📉 ARB Decline Threshold (current: {self.adjustable_params['arb_decline_threshold']*100:.1f}%)")
+        print(f"4. 🤖 Toggle Auto Mode (current: {'ON' if self.adjustable_params['auto_mode'] else 'OFF'})")
+        print(f"5. 💾 Save Settings")
+        print(f"6. 🔄 Reset to Defaults")
+        print(f"0. Back to Dashboard")
+        
+        choice = input("\nSelect parameter to adjust: ")
+        
+        if choice == "1":
+            new_value = float(input(f"Enter new Health Factor Target (current: {self.adjustable_params['health_factor_target']}): "))
+            if 1.05 <= new_value <= 3.0:
+                self.adjustable_params['health_factor_target'] = new_value
+                print(f"✅ Health Factor Target updated to {new_value}")
+            else:
+                print("❌ Invalid range. Must be between 1.05 and 3.0")
+                
+        elif choice == "2":
+            new_value = float(input(f"Enter new Borrow Trigger (current: {self.adjustable_params['borrow_trigger_threshold']}): "))
+            if 0.001 <= new_value <= 0.5:
+                self.adjustable_params['borrow_trigger_threshold'] = new_value
+                print(f"✅ Borrow Trigger updated to {new_value}")
+            else:
+                print("❌ Invalid range. Must be between 0.001 and 0.5")
+                
+        elif choice == "3":
+            new_value = float(input(f"Enter new ARB Decline % (current: {self.adjustable_params['arb_decline_threshold']*100:.1f}): ")) / 100
+            if 0.01 <= new_value <= 0.5:
+                self.adjustable_params['arb_decline_threshold'] = new_value
+                print(f"✅ ARB Decline Threshold updated to {new_value*100:.1f}%")
+            else:
+                print("❌ Invalid range. Must be between 1% and 50%")
+                
+        elif choice == "4":
+            self.adjustable_params['auto_mode'] = not self.adjustable_params['auto_mode']
+            print(f"✅ Auto Mode {'ENABLED' if self.adjustable_params['auto_mode'] else 'DISABLED'}")
+            
+        elif choice == "5":
+            self.save_user_settings()
+            print("✅ Settings saved!")
+            
+        elif choice == "6":
+            self.adjustable_params = {
+                'health_factor_target': 1.19,
+                'borrow_trigger_threshold': 0.02,
+                'arb_decline_threshold': 0.05,
+                'exploration_rate': 0.1,
+                'auto_mode': True
+            }
+            print("✅ Settings reset to defaults!")
+    
+    def run_interactive_dashboard(self):
+        """Run interactive dashboard with manual controls"""
         while True:
             os.system('clear' if os.name == 'posix' else 'cls')
             print(f"🕐 Last Updated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
@@ -131,9 +213,27 @@ class AgentDashboard:
             self.display_wallet_status()
             self.display_24h_performance()
             
-            print(f"\n🔄 Refreshing in 30 seconds... (Ctrl+C to stop)")
+            print(f"\n🎛️ **CONTROLS**")
+            print(f"1. 🔧 Adjust Parameters")
+            print(f"2. 🔄 Refresh Now")
+            print(f"3. ⏸️ Pause Auto-refresh")
+            print(f"0. Exit")
+            
             try:
-                time.sleep(30)
+                choice = input("\nSelect option (or wait 30s for auto-refresh): ")
+                
+                if choice == "1":
+                    self.show_adjustment_menu()
+                elif choice == "2":
+                    continue  # Refresh immediately
+                elif choice == "3":
+                    input("⏸️ Paused. Press Enter to continue...")
+                elif choice == "0":
+                    print("\n👋 Dashboard stopped.")
+                    break
+                else:
+                    time.sleep(30)  # Auto-refresh
+                    
             except KeyboardInterrupt:
                 print("\n👋 Dashboard stopped.")
                 break
@@ -144,6 +244,6 @@ if __name__ == "__main__":
     try:
         agent = ArbitrumTestnetAgent()
         dashboard = AgentDashboard(agent)
-        dashboard.run_live_dashboard()
+        dashboard.run_interactive_dashboard()
     except Exception as e:
         print(f"❌ Failed to start dashboard: {e}")
