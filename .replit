@@ -15,7 +15,7 @@ run = ["sh", "-c", "python mainnet_launcher.py"]
 deploymentTarget = "cloudrun"
 
 [workflows]
-runButton = "Web Dashboard"
+runButton = "Verify Mainnet Secrets"
 
 [[workflows.workflow]]
 name = "Run"
@@ -70,6 +70,15 @@ mode = "sequential"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "python mainnet_launcher.py"
+
+[[workflows.workflow]]
+name = "Verify Mainnet Secrets"
+author = 39391053
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python verify_mainnet_secrets.py"
 
 [[ports]]
 localPort = 5000
