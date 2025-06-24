@@ -6,21 +6,27 @@ from eth_account import Account
 from dotenv import load_dotenv
 
 class ArbitrumTestnetAgent:
-    def __init__(self):
+    def __init__(self, network_mode='testnet'):
         load_dotenv()
 
-        # Connect to Arbitrum Sepolia Testnet
-        self.rpc_url = os.getenv('ARBITRUM_SEPOLIA_RPC', 'https://sepolia-rollup.arbitrum.io/rpc')
-        self.w3 = Web3(Web3.HTTPProvider(self.rpc_url))
+        # Network configuration
+        if network_mode == 'mainnet':
+            self.w3 = Web3(Web3.HTTPProvider('https://arb1.arbitrum.io/rpc'))
+            self.expected_chain_id = 42161
+            print("🚨 MAINNET MODE ACTIVATED - REAL FUNDS AT RISK")
+        else:
+            self.w3 = Web3(Web3.HTTPProvider('https://sepolia-rollup.arbitrum.io/rpc'))
+            self.expected_chain_id = 421614
+            print("🧪 Testnet mode - safe for testing")
 
         # Validate network connection first
         if not self.w3.is_connected():
             raise ValueError("Cannot connect to Arbitrum Sepolia RPC")
-        
+
         # Verify we're on the correct network
         chain_id = self.w3.eth.chain_id
-        if chain_id != 421614:
-            raise ValueError(f"Wrong network! Expected Arbitrum Sepolia (421614), got {chain_id}")
+        if chain_id != self.expected_chain_id:
+            raise ValueError(f"Wrong network! Expected Arbitrum Sepolia ({self.expected_chain_id}), got {chain_id}")
 
         # Load wallet
         private_key = os.getenv('PRIVATE_KEY')
@@ -168,8 +174,8 @@ class ArbitrumTestnetAgent:
         self.dai_address = self.w3.to_checksum_address("0x82E64f49Ed5EC1bC6e43DAD4FC8Af9bb3A2312EE")
         self.usdc_address = self.w3.to_checksum_address("0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d")
         self.arb_address = self.w3.to_checksum_address("0x912CE59144191C1204E64559FE8253a0e49E6548")
-        
-        print(f"🔗 Contract addresses verified for Arbitrum Sepolia (Chain ID: 421614)")
+
+        print(f"🔗 Contract addresses verified for Arbitrum Sepolia (Chain ID: {self.w3.eth.chain_id})")
         print(f"   ARB: {self.arb_address}")
         print(f"   WETH: {self.weth_address}")
         print(f"   USDC: {self.usdc_address}")
@@ -307,10 +313,49 @@ class ArbitrumTestnetAgent:
         # Cap performance at 1.0
         performance = min(performance, 1.0)
 
+        # CRITICAL: Emergency liquidation protection
+        if monitoring_summary['current_health_factor'] < 1.05:
+            print("🚨 EMERGENCY: Health factor critically low - executing emergency repay")
+            self.emergency_liquidation_protection()
+            performance *= 0.5  # Lower performance due to emergency
+
         print(f"📈 Dynamic DeFi Performance: {performance:.4f}")
         print(f"💡 Based on: Health monitoring, conditional triggers, and execution success")
 
         return performance
+
+    def emergency_liquidation_protection(self):
+        """Emergency liquidation protection - CRITICAL for mainnet"""
+        try:
+            print("🆘 EXECUTING EMERGENCY LIQUIDATION PROTECTION")
+
+            # 1. Get current debt and available assets
+            current_health = self.health_monitor.get_current_health_factor()
+            if not current_health:
+                return False
+
+            # 2. Calculate minimum repay needed to reach safe health factor (1.3)
+            total_debt_eth = current_health['total_debt_eth']
+            target_debt_reduction = total_debt_eth * 0.3  # Reduce debt by 30%
+
+            # 3. Emergency swap ARB to USDC if available
+            arb_balance = self.health_monitor.get_arb_balance()
+            if arb_balance > 1.0:  # If we have ARB tokens
+                swap_amount = min(arb_balance * 0.8, target_debt_reduction * 2000)  # Conservative swap
+                self.uniswap.swap_arb_to_usdc(swap_amount)
+
+            # 4. Emergency repay with available USDC
+            usdc_balance = self.aave.get_token_balance(self.aave.usdc_address)
+            if usdc_balance > 10:  # If we have USDC
+                repay_amount = min(usdc_balance * 0.9, target_debt_reduction * 2000)
+                self.aave.repay_to_aave(self.aave.usdc_address, repay_amount)
+
+            print("✅ Emergency protection executed")
+            return True
+
+        except Exception as e:
+            print(f"❌ Emergency protection failed: {e}")
+            return False
 
 def test_real_defi_integration():
     """Test the real DeFi agent"""
