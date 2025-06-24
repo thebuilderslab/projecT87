@@ -35,6 +35,15 @@ mode = "sequential"
 task = "shell.exec"
 args = "python web_dashboard.py"
 
+[[workflows.workflow]]
+name = "Mainnet Launcher"
+author = 39391053
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python mainnet_launcher.py"
+
 [[ports]]
 localPort = 5000
 externalPort = 80
