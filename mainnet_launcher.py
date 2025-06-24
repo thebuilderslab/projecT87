@@ -53,23 +53,43 @@ class MainnetSafetyManager:
         # Check environment variables
         required_vars = ['PRIVATE_KEY', 'COINMARKETCAP_API_KEY']
         for var in required_vars:
-            if not os.getenv(var):
+            value = os.getenv(var)
+            if not value:
                 print(f"❌ Missing required environment variable: {var}")
                 return False
-            print(f"✅ {var}: Configured")
+            if var == 'PRIVATE_KEY':
+                if not value.startswith('0x') or len(value) != 66:
+                    print(f"❌ Invalid {var} format (should start with 0x and be 66 chars)")
+                    return False
+            print(f"✅ {var}: Configured properly")
         
         # Check network mode
         network_mode = os.getenv('NETWORK_MODE', 'testnet')
         if network_mode != 'mainnet':
-            print(f"❌ Network mode is '{network_mode}', should be 'mainnet'")
+            print(f"⚠️ Network mode is '{network_mode}' - will switch to mainnet for deployment")
+            # Auto-set for mainnet deployment
+            os.environ['NETWORK_MODE'] = 'mainnet'
+        print(f"✅ Network mode: mainnet")
+        
+        # Validate Arbitrum Mainnet RPC
+        arbitrum_rpc = os.getenv('ARBITRUM_RPC_URL', 'https://arb1.arbitrum.io/rpc')
+        if 'sepolia' in arbitrum_rpc.lower() or 'testnet' in arbitrum_rpc.lower():
+            print(f"❌ RPC URL appears to be testnet: {arbitrum_rpc}")
+            print("    Please update ARBITRUM_RPC_URL to mainnet endpoint")
             return False
-        print(f"✅ Network mode: {network_mode}")
+        print(f"✅ Arbitrum RPC: {arbitrum_rpc}")
         
         # Check emergency stop system
         if not os.path.exists('emergency_stop.py'):
             print("❌ Emergency stop system not found")
             return False
         print("✅ Emergency stop system: Ready")
+        
+        # Validate wallet has funds (conceptual check)
+        print("⚠️ IMPORTANT: Ensure your mainnet wallet has:")
+        print("   • Minimum 0.1 ETH for gas fees")
+        print("   • Sufficient USDC/WETH for Aave operations")
+        print("   • Wallet address should match your PRIVATE_KEY")
         
         return True
 

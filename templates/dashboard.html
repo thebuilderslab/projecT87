@@ -365,14 +365,14 @@
                 <div class="emergency-controls">
                     <h4>🚨 Emergency Controls</h4>
                     <div id="emergency-status" class="emergency-status inactive">✅ Agent operations normal</div>
-                    
+
                     <button id="emergency-stop-btn" onclick="activateEmergencyStop()" class="action-btn emergency">
                         🛑 EMERGENCY STOP
                     </button>
                     <button id="clear-stop-btn" onclick="clearEmergencyStop()" class="action-btn clear-emergency" style="display: none;">
                         ✅ CLEAR EMERGENCY STOP
                     </button>
-                    
+
                     <div id="emergency-logs" class="emergency-logs"></div>
                 </div>
             </div>
@@ -416,13 +416,46 @@
                 document.getElementById('loading').style.display = 'none';
                 document.getElementById('dashboard').style.display = 'block';
                 document.getElementById('error').style.display = 'none';
-
-            } catch (error) {
-                console.error('Error fetching wallet status:', error);
-                document.getElementById('error').textContent = `Error: ${error.message}`;
-                document.getElementById('error').style.display = 'block';
             }
-        }
+                })
+                .catch(error => {
+                    console.error('Error fetching wallet status:', error);
+                    document.getElementById('ethBalance').textContent = 'Error loading';
+                    document.getElementById('usdcBalance').textContent = 'Error loading';
+                    document.getElementById('walletAddress').textContent = 'Error loading';
+                });
+            }
+
+            function updatePerformanceData() {
+                fetch('/api/performance')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        document.getElementById('profitLoss').textContent = `$${data.profit_loss.toFixed(2)}`;
+                        document.getElementById('operationsCount').textContent = data.operations_count;
+                        document.getElementById('successRate').textContent = `${data.success_rate.toFixed(1)}%`;
+                        document.getElementById('totalVolume').textContent = `$${data.total_volume.toFixed(2)}`;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching performance:', error);
+                });
+            }
+
+            function updateParameters() {
+                fetch('/api/parameters')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        document.getElementById('healthFactorTarget').textContent = data.health_factor_target.toFixed(2);
+                        document.getElementById('explorationRate').textContent = `${(data.exploration_rate * 100).toFixed(1)}%`;
+                        document.getElementById('operationFreq').textContent = `${data.operation_frequency}s`;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching parameters:', error);
+                });
+            }
 
         async function fetchPerformance() {
             try {
@@ -607,7 +640,7 @@
                 refreshData();
                 updateLastUpdate();
             }, 30000); // Update every 30 seconds
-            
+
             setInterval(updateEmergencyStatus, 5000); // Check emergency status every 5 seconds
         });
     </script>
