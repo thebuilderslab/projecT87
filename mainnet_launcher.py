@@ -18,18 +18,54 @@ from emergency_stop import check_emergency_status
 # Load environment variables - Force reload to ensure all secrets are available
 load_dotenv(override=True)
 
-# In deployment environment, Replit Secrets are available as environment variables
-# Force check for missing environment variables
-missing_vars = ['PROMPT_KEY', 'NETWORK_MODE']
-for var in missing_vars:
-    if not os.getenv(var):
+# Enhanced secret loading with multiple fallback methods
+def force_load_secret(var_name, default_value=None):
+    """Force load a secret with multiple fallback methods"""
+    # Method 1: Direct environment variable
+    value = os.getenv(var_name)
+    if value:
+        return value
+    
+    # Method 2: Try subprocess printenv
+    try:
         import subprocess
-        try:
-            result = subprocess.run(['printenv', var], capture_output=True, text=True)
-            if result.returncode == 0 and result.stdout.strip():
-                os.environ[var] = result.stdout.strip()
-        except:
-            pass
+        result = subprocess.run(['printenv', var_name], capture_output=True, text=True, timeout=5)
+        if result.returncode == 0 and result.stdout.strip():
+            value = result.stdout.strip()
+            os.environ[var_name] = value
+            return value
+    except:
+        pass
+    
+    # Method 3: Try reading from /proc/environ (Linux)
+    try:
+        with open('/proc/self/environ', 'rb') as f:
+            env_data = f.read().decode('utf-8', errors='ignore')
+            for line in env_data.split('\0'):
+                if line.startswith(f'{var_name}='):
+                    value = line.split('=', 1)[1]
+                    os.environ[var_name] = value
+                    return value
+    except:
+        pass
+    
+    # Method 4: Use default value if provided
+    if default_value:
+        os.environ[var_name] = default_value
+        return default_value
+    
+    return None
+
+# Force load critical secrets
+critical_secrets = {
+    'PROMPT_KEY': None,
+    'NETWORK_MODE': 'mainnet',  # Default to mainnet for launcher
+    'COINMARKETCAP_API_KEY': None,
+    'PRIVATE_KEY': None
+}
+
+for var_name, default_val in critical_secrets.items():
+    force_load_secret(var_name, default_val)
 
 # Set default NETWORK_MODE if still missing
 if not os.getenv('NETWORK_MODE'):
