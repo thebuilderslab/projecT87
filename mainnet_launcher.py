@@ -1,16 +1,30 @@
 
+#!/usr/bin/env python3
+"""
+MAINNET LAUNCHER
+Safe deployment launcher for Arbitrum Mainnet operations
+"""
+
 import os
+import sys
 import time
-import threading
+import json
+from dotenv import load_dotenv
 from arbitrum_testnet_agent import ArbitrumTestnetAgent
-from collaborative_strategy_manager import CollaborativeStrategyManager
+from web_dashboard import app
+import threading
+import signal
+from emergency_stop import check_emergency_status
+
+# Load environment variables
+load_dotenv()
 
 class MainnetSafetyManager:
     """Manages safety features for mainnet deployment"""
     
     def __init__(self):
         self.emergency_stop = False
-        self.emergency_stop_file = 'EMERGENCY_STOP.txt'
+        self.emergency_stop_file = 'EMERGENCY_STOP_ACTIVE.flag'
         self.monitoring_active = True
         
     def check_emergency_stop(self):
@@ -31,143 +45,123 @@ class MainnetSafetyManager:
             os.remove(self.emergency_stop_file)
         print("✅ Emergency stop cleared")
 
-def launch_mainnet_agent():
-    """MAINNET DEPLOYMENT LAUNCHER WITH SAFETY FEATURES"""
-    print("🚨" * 30)
-    print("MAINNET DEPLOYMENT - REAL FUNDS AT RISK")
-    print("🚨" * 30)
+    def validate_mainnet_readiness(self):
+        """Validate system is ready for mainnet deployment"""
+        print("🔍 MAINNET READINESS VALIDATION")
+        print("=" * 50)
+        
+        # Check environment variables
+        required_vars = ['PRIVATE_KEY', 'COINMARKETCAP_API_KEY']
+        for var in required_vars:
+            if not os.getenv(var):
+                print(f"❌ Missing required environment variable: {var}")
+                return False
+            print(f"✅ {var}: Configured")
+        
+        # Check network mode
+        network_mode = os.getenv('NETWORK_MODE', 'testnet')
+        if network_mode != 'mainnet':
+            print(f"❌ Network mode is '{network_mode}', should be 'mainnet'")
+            return False
+        print(f"✅ Network mode: {network_mode}")
+        
+        # Check emergency stop system
+        if not os.path.exists('emergency_stop.py'):
+            print("❌ Emergency stop system not found")
+            return False
+        print("✅ Emergency stop system: Ready")
+        
+        return True
+
+def signal_handler(signum, frame):
+    """Handle Ctrl+C gracefully"""
+    print("\n🛑 Shutdown signal received...")
+    print("🔄 Checking for emergency stop...")
+    
+    # Activate emergency stop on Ctrl+C
+    safety_manager = MainnetSafetyManager()
+    safety_manager.trigger_emergency_stop("Keyboard interrupt (Ctrl+C)")
+    
+    print("👋 Mainnet launcher stopped safely")
+    sys.exit(0)
+
+def start_web_dashboard():
+    """Start the web dashboard in a separate thread"""
+    print("🌐 Starting web dashboard...")
+    app.run(host='0.0.0.0', port=5000, debug=False, use_reloader=False)
+
+def main():
+    """Main launcher function"""
+    print("🚀 ARBITRUM MAINNET LAUNCHER")
+    print("=" * 50)
+    
+    # Set up signal handler for graceful shutdown
+    signal.signal(signal.SIGINT, signal_handler)
     
     # Initialize safety manager
     safety_manager = MainnetSafetyManager()
     
-    # Multiple confirmation steps
-    print("\n📋 PRE-DEPLOYMENT CHECKLIST:")
-    print("1. ✓ All tests passed (run python test_agent.py)")
-    print("2. ✓ Wallet funded with sufficient ETH and collateral")
-    print("3. ✓ All secrets configured for mainnet")
-    print("4. ✓ Emergency stop mechanism understood")
-    print("5. ✓ Monitoring dashboard accessible")
-    
-    confirmation1 = input("\n❓ Have you completed ALL items above? (type 'YES'): ")
-    if confirmation1 != 'YES':
-        print("❌ Deployment cancelled - complete checklist first")
+    # Check for existing emergency stop
+    if safety_manager.check_emergency_stop():
+        print("🚨 EMERGENCY STOP IS ACTIVE!")
+        print("Run 'python emergency_stop.py clear' to resume")
         return
     
-    print(f"\n🛑 EMERGENCY STOP INSTRUCTIONS:")
-    print(f"   - Create file: {safety_manager.emergency_stop_file}")
-    print(f"   - Or press Ctrl+C in console")
-    print(f"   - Agent will halt all operations immediately")
-    
-    confirmation2 = input("\n❓ Type 'DEPLOY_MAINNET_WITH_REAL_FUNDS' to proceed: ")
-    if confirmation2 != 'DEPLOY_MAINNET_WITH_REAL_FUNDS':
-        print("❌ Deployment cancelled")
+    # Validate mainnet readiness
+    if not safety_manager.validate_mainnet_readiness():
+        print("\n❌ MAINNET VALIDATION FAILED!")
+        print("Please fix the issues above before deploying to mainnet")
         return
     
+    print("\n✅ MAINNET VALIDATION PASSED!")
+    print("🔄 Starting mainnet operations...")
+    
+    # Start web dashboard in background
+    dashboard_thread = threading.Thread(target=start_web_dashboard, daemon=True)
+    dashboard_thread.start()
+    
+    # Initialize mainnet agent
     try:
-        # Initialize mainnet agent with safety checks
-        print("🔄 Initializing mainnet agent...")
-        agent = ArbitrumTestnetAgent('mainnet')
-        strategy_manager = CollaborativeStrategyManager(agent)
+        print("🤖 Initializing Arbitrum Mainnet Agent...")
+        agent = ArbitrumTestnetAgent()  # This will use mainnet settings based on NETWORK_MODE
+        print(f"✅ Agent initialized for mainnet")
+        print(f"📍 Wallet: {agent.address}")
+        print(f"🌐 Network: Arbitrum Mainnet")
         
-        print("🚀 MAINNET AGENT ACTIVE")
-        print(f"💰 Wallet: {agent.address}")
-        print(f"🌐 Network: Arbitrum Mainnet (Chain ID: {agent.w3.eth.chain_id})")
-        print(f"💵 ETH Balance: {agent.get_eth_balance():.6f} ETH")
-        
-        # Verify sufficient balance
-        eth_balance = agent.get_eth_balance()
-        if eth_balance < 0.01:  # Minimum 0.01 ETH for gas
-            safety_manager.trigger_emergency_stop("Insufficient ETH balance for gas")
-            return
-        
-        # Start monitoring thread
-        def safety_monitor():
-            while safety_manager.monitoring_active:
-                if safety_manager.check_emergency_stop():
-                    print("🛑 EMERGENCY STOP DETECTED - HALTING ALL OPERATIONS")
-                    return
-                time.sleep(5)  # Check every 5 seconds
-        
-        monitoring_thread = threading.Thread(target=safety_monitor, daemon=True)
-        monitoring_thread.start()
-        
-        # Start autonomous loop with enhanced safety
-        run_id_counter = 0
-        consecutive_failures = 0
-        max_consecutive_failures = 3
-        
-        while not safety_manager.check_emergency_stop():
-            try:
-                # Check for emergency stop flag before each iteration
-                if os.path.exists('EMERGENCY_STOP_ACTIVE.flag'):
-                    safety_manager.trigger_emergency_stop("Emergency stop flag detected")
-                    break
-                
-                run_id_counter += 1
-                print(f"\n--- MAINNET RUN: {run_id_counter} ---")
-                
-                # Pre-execution safety checks
-                current_hf = None
-                if hasattr(agent, 'health_monitor'):
-                    hf_data = agent.health_monitor.get_current_health_factor()
-                    if hf_data:
-                        current_hf = hf_data['health_factor']
-                        
-                        # Emergency stop if health factor too low
-                        if current_hf < 1.05:
-                            safety_manager.trigger_emergency_stop(f"Critical health factor: {current_hf}")
-                            break
-                
-                # Execute with conservative settings for mainnet
-                conservative_config = {
-                    'exploration_rate': 0.02,  # Very conservative
-                    'health_factor_target': 1.25,  # Higher safety margin
-                    'max_single_operation_eth': 0.1  # Limit operation size
-                }
-                
-                performance = agent.run_real_defi_task(run_id_counter, 1, conservative_config)
-                
-                # Safety performance thresholds
-                if performance < 0.3:
-                    consecutive_failures += 1
-                    print(f"⚠️ Poor performance ({performance:.2f}) - Failure count: {consecutive_failures}")
-                    
-                    if consecutive_failures >= max_consecutive_failures:
-                        safety_manager.trigger_emergency_stop("Too many consecutive failures")
-                        break
-                else:
-                    consecutive_failures = 0  # Reset failure counter
-                
-                # Conservative sleep between operations
-                time.sleep(60)  # 1 minute between operations
-                
-            except KeyboardInterrupt:
-                safety_manager.trigger_emergency_stop("User interrupted (Ctrl+C)")
+        # Start the main agent loop with emergency stop checks
+        run_id = 1
+        while True:
+            # Check emergency stop at the beginning of each loop
+            if safety_manager.check_emergency_stop():
+                print("🚨 Emergency stop detected! Halting operations...")
                 break
+            
+            print(f"\n🔄 Starting mainnet run #{run_id}")
+            
+            try:
+                # Run agent operations
+                performance = agent.run_real_defi_task(run_id, 0, {
+                    'health_factor_target': 1.25,  # More conservative for mainnet
+                    'max_iterations_per_run': 50
+                })
+                
+                print(f"📊 Run #{run_id} performance: {performance:.4f}")
+                
             except Exception as e:
-                consecutive_failures += 1
-                print(f"❌ MAINNET ERROR: {e}")
-                
-                if consecutive_failures >= max_consecutive_failures:
-                    safety_manager.trigger_emergency_stop(f"Critical error: {e}")
-                    break
-                
-                print("🛡️ Entering safe mode for 2 minutes...")
-                time.sleep(120)
-        
-        # Cleanup
-        safety_manager.monitoring_active = False
-        print("🏁 Mainnet agent stopped safely")
-        
+                print(f"❌ Error in run #{run_id}: {e}")
+                # Trigger emergency stop on critical errors
+                safety_manager.trigger_emergency_stop(f"Critical error: {str(e)}")
+                break
+            
+            run_id += 1
+            time.sleep(60)  # Wait 1 minute between runs for mainnet
+            
     except Exception as e:
-        safety_manager.trigger_emergency_stop(f"Initialization error: {e}")
-        print(f"❌ CRITICAL ERROR: {e}")
-
-def emergency_stop():
-    """Manual emergency stop trigger"""
-    safety_manager = MainnetSafetyManager()
-    safety_manager.trigger_emergency_stop("Manual emergency stop")
-    print("🚨 Emergency stop activated!")
+        print(f"❌ Failed to initialize mainnet agent: {e}")
+        safety_manager.trigger_emergency_stop(f"Initialization error: {str(e)}")
+        return
+    
+    print("👋 Mainnet launcher stopped")
 
 if __name__ == "__main__":
-    launch_mainnet_agent()
+    main()

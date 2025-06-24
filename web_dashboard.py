@@ -125,7 +125,11 @@ def get_parameters():
                 'learning_rate': 0.01,
                 'exploration_rate': 0.1,
                 'max_iterations_per_run': 100,
-                'optimization_target_threshold': 0.95
+                'optimization_target_threshold': 0.95,
+                'health_factor_target': 1.19,
+                'borrow_trigger_threshold': 0.02,
+                'arb_decline_threshold': 0.05,
+                'auto_mode': True
             }
 
         return jsonify(config)
