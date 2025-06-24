@@ -19,11 +19,11 @@ class AaveHealthMonitor:
         self.arb_price_history = deque(maxlen=50)
         
         # Aave V3 Data Provider for health factor - use correct Arbitrum Sepolia address
-        self.data_provider_address = self.w3.to_checksum_address("0x3b06dC46b3BD3A616F95D0B78bcAc2F2dE7A8E25")
+        self.data_provider_address = self.w3.to_checksum_address("0x2777f77735b5F2a64fCAFc16cE6129AD07389eA2")
         self.data_provider_abi = self._get_data_provider_abi()
         
         # ARB token address on Arbitrum Sepolia  
-        self.arb_address = self.w3.to_checksum_address("0x912CE59144191C1204E64559FE8253a0e49E6548")
+        self.arb_address = self.w3.to_checksum_address("0x7dCe2FEE5e30EFf298cD3d9B92649f00EBDfc104")
         
         # Ensure account address is properly formatted and checksummed
         if hasattr(self.account, 'address'):

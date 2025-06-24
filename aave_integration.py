@@ -12,10 +12,10 @@ class AaveArbitrumIntegration:
         self.address = account.address
         
         # Aave V3 Arbitrum Sepolia Contract Addresses (ensure proper EIP-55 checksum)
-        self.pool_address = self.w3.to_checksum_address("0x6Cce73bEeC7447d7E8EBfdd0D9Bf4af7aA9F32e4")  # Aave V3 Pool
-        self.pool_data_provider = self.w3.to_checksum_address("0x3b06dC46b3BD3A616F95D0B78bcAc2F2dE7A8E25")  # Pool Data Provider
-        self.weth_address = self.w3.to_checksum_address("0x980B62Da83eFf3D4576C647993b0c1D7faf17c73")  # WETH on Arbitrum Sepolia
-        self.usdc_address = self.w3.to_checksum_address("0x179522635726710Dd7D2035a81d856de4Aa7836c")  # USDC on Arbitrum Sepolia
+        self.pool_address = self.w3.to_checksum_address("0xBfC91D59fdAA134A4ED45f7B584cAf96D7792Eff")  # Aave V3 Pool
+        self.pool_data_provider = self.w3.to_checksum_address("0x2777f77735b5F2a64fCAFc16cE6129AD07389eA2")  # Pool Data Provider
+        self.weth_address = self.w3.to_checksum_address("0x32d5D5978905d9c6c2D4C417F0E06Fe768a4FB5a")  # WETH on Arbitrum Sepolia
+        self.usdc_address = self.w3.to_checksum_address("0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d")  # USDC on Arbitrum Sepolia
         
         # Load ABIs
         self.pool_abi = self._get_pool_abi()

@@ -1,4 +1,3 @@
-
 import os
 from web3 import Web3
 from eth_account import Account
@@ -8,25 +7,26 @@ class UniswapV3Integration:
         self.w3 = w3
         self.account = account
         self.address = account.address
-        
+
         # Uniswap V3 Arbitrum Sepolia addresses (ensure proper EIP-55 checksum)
         self.router_address = self.w3.to_checksum_address("0x101F443B4d1b059569D643917553c771E1b9663E")  # SwapRouter
-        self.quoter_address = self.w3.to_checksum_address("0xb27308f9F90D607463bb33eA1BeBb41C27CE5AB6")   # Quoter V2
-        
+        self.factory_address = self.w3.to_checksum_address("0x248AB79Bbb9bC29bB72f7Cd42F17e054Fc40188e")  # V3 Factory
+        self.quoter_address = self.w3.to_checksum_address("0x2779a0CC1c3e0E44D2542EC3637094d26349e68e")   # Quoter V2
+
         # Token addresses
         self.weth_address = self.w3.to_checksum_address("0x980B62Da83eFf3D4576C647993b0c1D7faf17c73")
         self.usdc_address = self.w3.to_checksum_address("0x179522635726710Dd7D2035a81d856de4Aa7836c")
-        
+
         self.router_abi = self._get_router_abi()
         self.erc20_abi = self._get_erc20_abi()
-        
+
         self.router_contract = self.w3.eth.contract(
             address=self.router_address, 
             abi=self.router_abi
         )
-        
+
         print(f"🔄 Uniswap V3 integration initialized")
-    
+
     def _get_router_abi(self):
         """Uniswap V3 SwapRouter ABI"""
         return [
@@ -54,7 +54,7 @@ class UniswapV3Integration:
                 "type": "function"
             }
         ]
-    
+
     def _get_erc20_abi(self):
         """Standard ERC20 ABI"""
         return [
@@ -69,17 +69,17 @@ class UniswapV3Integration:
                 "type": "function"
             }
         ]
-    
+
     def swap_tokens(self, token_in, token_out, amount_in, fee=3000):
         """Execute token swap on Uniswap V3"""
         try:
             import time
-            
+
             # Approve token spending
             if token_in != "0x0000000000000000000000000000000000000000":  # Not ETH
                 token_contract = self.w3.eth.contract(address=token_in, abi=self.erc20_abi)
                 nonce = self.w3.eth.get_transaction_count(self.address)
-                
+
                 approve_tx = token_contract.functions.approve(
                     self.router_address, 
                     amount_in
@@ -89,14 +89,14 @@ class UniswapV3Integration:
                     'gasPrice': self.w3.eth.gas_price,
                     'nonce': nonce,
                 })
-                
+
                 signed_approve = self.w3.eth.account.sign_transaction(approve_tx, self.account.key)
                 self.w3.eth.send_raw_transaction(signed_approve.rawTransaction)
                 time.sleep(3)  # Wait for approval
-            
+
             # Build swap parameters
             deadline = int(time.time()) + 300  # 5 minutes from now
-            
+
             swap_params = {
                 'tokenIn': token_in,
                 'tokenOut': token_out,
@@ -107,7 +107,7 @@ class UniswapV3Integration:
                 'amountOutMinimum': 0,  # Accept any amount (for demo)
                 'sqrtPriceLimitX96': 0
             }
-            
+
             # Build swap transaction
             nonce = self.w3.eth.get_transaction_count(self.address)
             swap_tx = self.router_contract.functions.exactInputSingle(
@@ -119,43 +119,43 @@ class UniswapV3Integration:
                 'nonce': nonce,
                 'value': amount_in if token_in == "0x0000000000000000000000000000000000000000" else 0
             })
-            
+
             # Sign and send
             signed_swap = self.w3.eth.account.sign_transaction(swap_tx, self.account.key)
             tx_hash = self.w3.eth.send_raw_transaction(signed_swap.rawTransaction)
-            
+
             print(f"✅ Swap executed: {tx_hash.hex()}")
             return tx_hash.hex()
-            
+
         except Exception as e:
             print(f"❌ Swap failed: {e}")
             return None
-    
+
     def optimize_collateral_via_swap(self, aave_integration, current_collateral_amount):
         """Swap borrowed assets to optimize collateral position"""
         try:
             print("🔄 Optimizing collateral through strategic swapping...")
-            
+
             # Example: If we borrowed USDC, swap some to ETH to rebalance
             usdc_balance = aave_integration.get_token_balance(aave_integration.usdc_address)
-            
+
             if usdc_balance > 100:  # If we have more than $100 USDC
                 # Swap 50% of USDC to ETH for rebalancing
                 swap_amount = int(usdc_balance * 0.5 * (10 ** 6))  # USDC has 6 decimals
-                
+
                 swap_tx = self.swap_tokens(
                     aave_integration.usdc_address,  # USDC in
                     aave_integration.weth_address,  # WETH out
                     swap_amount,
                     3000  # 0.3% fee
                 )
-                
+
                 if swap_tx:
                     print("✅ Collateral optimization swap completed")
                     return True
-            
+
             return False
-            
+
         except Exception as e:
             print(f"❌ Collateral optimization failed: {e}")
             return False
