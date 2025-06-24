@@ -10,5 +10,17 @@
     "action": "EMERGENCY_STOP_CLEARED",
     "reason": "Manual clear",
     "datetime": "2025-06-24 06:00:12 UTC"
+  },
+  {
+    "timestamp": 1750745124.38285,
+    "action": "EMERGENCY_STOP_ACTIVATED",
+    "reason": "Manual trigger: Final verification test before mainnet deployment",
+    "datetime": "2025-06-24 06:05:24 UTC"
+  },
+  {
+    "timestamp": 1750745130.0162628,
+    "action": "EMERGENCY_STOP_CLEARED",
+    "reason": "Manual clear",
+    "datetime": "2025-06-24 06:05:30 UTC"
   }
 ]
