@@ -120,7 +120,7 @@ class AaveArbitrumIntegration:
             if hasattr(self.account, 'address'):
                 user_address = self.w3.to_checksum_address(self.account.address)
             else:
-                user_address = self.w3.to_checksum_address(self.address)
+                user_address = self.w3.to_checksum_address(self.account.address if hasattr(self.account, 'address') else str(self.account))
             
             if token_address == self.weth_address:
                 # For WETH, check both ETH and WETH balance

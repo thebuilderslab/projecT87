@@ -22,15 +22,16 @@ class AaveHealthMonitor:
         self.data_provider_address = self.w3.to_checksum_address("0x3b06dC46b3BD3A616F95D0B78bcAc2F2dE7A8E25")
         self.data_provider_abi = self._get_data_provider_abi()
         
-        self.data_provider = self.w3.eth.contract(
-            address=self.data_provider_address,
-            abi=self.data_provider_abi
-        )
-        
-        # ARB token address on Arbitrum Sepolia
+        # ARB token address on Arbitrum Sepolia  
         self.arb_address = self.w3.to_checksum_address("0x912CE59144191C1204E64559FE8253a0e49E6548")
         
-        print("📊 Enhanced Aave Health Monitor initialized")
+        # Ensure account address is properly formatted
+        if hasattr(self.account, 'address'):
+            self.user_address = self.w3.to_checksum_address(self.account.address)
+        else:
+            self.user_address = self.w3.to_checksum_address(str(self.account))
+        
+        print(f"📊 Enhanced Aave Health Monitor initialized for {self.user_address}")
     
     def _get_data_provider_abi(self):
         """Aave V3 Pool Data Provider ABI for user account data"""
@@ -60,7 +61,16 @@ class AaveHealthMonitor:
             else:
                 user_address = self.w3.to_checksum_address(str(self.account))
             
-            user_data = self.data_provider.functions.getUserAccountData(user_address).call()
+            # Verify all contract addresses are checksummed
+            data_provider_address = self.w3.to_checksum_address(self.data_provider_address)
+            
+            # Recreate contract with checksummed address
+            data_provider_contract = self.w3.eth.contract(
+                address=data_provider_address,
+                abi=self.data_provider_abi
+            )
+            
+            user_data = data_provider_contract.functions.getUserAccountData(user_address).call()
             
             # Extract data
             total_collateral_eth = user_data[0] / 1e18
@@ -112,17 +122,29 @@ class AaveHealthMonitor:
             
             if response.status_code == 200:
                 data = response.json()
-                arb_price = data['data']['ARB']['quote']['USD']['price']
-                
-                price_data = {
-                    'price': arb_price,
-                    'timestamp': time.time()
-                }
-                
-                self.arb_price_history.append(price_data)
-                return price_data
+                if 'data' in data and 'ARB' in data['data']:
+                    arb_price = data['data']['ARB']['quote']['USD']['price']
+                    
+                    price_data = {
+                        'price': arb_price,
+                        'timestamp': time.time()
+                    }
+                    
+                    self.arb_price_history.append(price_data)
+                    return price_data
+                else:
+                    print(f"❌ Invalid CoinMarketCap response format: {data}")
+                    return None
+            elif response.status_code == 429:
+                print(f"❌ CoinMarketCap rate limit exceeded - waiting...")
+                return None
             else:
-                print(f"❌ Failed to get ARB price: HTTP {response.status_code}")
+                print(f"❌ CoinMarketCap API error: HTTP {response.status_code}")
+                try:
+                    error_data = response.json()
+                    print(f"   Error details: {error_data}")
+                except:
+                    pass
                 return None
                 
         except Exception as e:
@@ -185,16 +207,18 @@ class AaveHealthMonitor:
     def get_arb_balance(self):
         """Get current ARB token balance"""
         try:
-            arb_contract = self.w3.eth.contract(
-                address=self.arb_address, 
-                abi=self.aave.erc20_abi
-            )
+            # Ensure all addresses are properly checksummed
+            arb_address = self.w3.to_checksum_address(self.arb_address)
             
-            # Ensure account address is properly checksummed
             if hasattr(self.account, 'address'):
                 user_address = self.w3.to_checksum_address(self.account.address)
             else:
                 user_address = self.w3.to_checksum_address(str(self.account))
+            
+            arb_contract = self.w3.eth.contract(
+                address=arb_address, 
+                abi=self.aave.erc20_abi
+            )
                 
             balance = arb_contract.functions.balanceOf(user_address).call()
             decimals = arb_contract.functions.decimals().call()
