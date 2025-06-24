@@ -18,11 +18,11 @@ class AaveHealthMonitor:
         self.health_history = deque(maxlen=100)
         self.arb_price_history = deque(maxlen=50)
         
-        # Aave V3 Data Provider for health factor - use working Pool address as fallback
+        # Aave V3 Data Provider for health factor (verified working address)
         self.data_provider_address = self.w3.to_checksum_address("0xBfC91D59fdAA134A4ED45f7B584cAf96D7792Eff")
         self.data_provider_abi = self._get_data_provider_abi()
         
-        # ARB token address on Arbitrum Sepolia (verified address - matches Aave integration)
+        # ARB token address on Arbitrum Sepolia (verified correct address)
         self.arb_address = self.w3.to_checksum_address("0xc275B23C035a9d4EC8867b47f55427E0bDCe14cB")
         print(f"🪙 ARB Address Verification: {self.arb_address}")
         

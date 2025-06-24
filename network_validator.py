@@ -8,15 +8,15 @@ class ArbitrumSepoliaValidator:
         load_dotenv()
         self.w3 = Web3(Web3.HTTPProvider('https://sepolia-rollup.arbitrum.io/rpc'))
         
-        # Verified contract addresses for Arbitrum Sepolia
+        # Verified contract addresses for Arbitrum Sepolia (all checksummed)
         self.contract_addresses = {
-            'aave_pool': '0x3B06Dc46B3bD3A616f95D0b78bcaC2f2de7A8e25',
-            'aave_data_provider': '0x2F9D57E97C3DFED8676e605BC504a48E0c5917E9',
-            'weth': '0x980B62Da83eFf3D4576C647993b0c1D7faf17c73',
-            'wbtc': '0x078f358208685046a11C85e8ad32895DED33A249',
-            'dai': '0x82E64f49Ed5EC1bC6e43DAD4FC8Af9bb3A2312EE',
-            'usdc': '0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d',
-            'arb': '0xc275B23C035a9d4EC8867b47f55427E0bDCe14cB'
+            'aave_pool': self.w3.to_checksum_address('0x3B06Dc46B3bD3A616f95D0b78bcaC2f2de7A8e25'),
+            'aave_data_provider': self.w3.to_checksum_address('0xBfC91D59fdAA134A4ED45f7B584cAf96D7792Eff'),
+            'weth': self.w3.to_checksum_address('0x980B62Da83eFf3D4576C647993b0c1D7faf17c73'),
+            'wbtc': self.w3.to_checksum_address('0x078f358208685046a11C85e8ad32895DED33A249'),
+            'dai': self.w3.to_checksum_address('0x82E64f49Ed5EC1bC6e43DAD4FC8Af9bb3A2312EE'),
+            'usdc': self.w3.to_checksum_address('0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d'),
+            'arb': self.w3.to_checksum_address('0xc275B23C035a9d4EC8867b47f55427E0bDCe14cB')
         }
     
     def validate_network_connection(self):
@@ -113,14 +113,21 @@ class ArbitrumSepoliaValidator:
             return False
         
         deployed_count = 0
+        critical_contracts = ['aave_pool', 'aave_data_provider', 'weth']
+        critical_deployed = 0
         total_count = len(self.contract_addresses)
         
         for name, result in deploy_results.items():
             if result["status"] == "deployed":
                 print(f"✅ {name.upper()}: Contract deployed")
                 deployed_count += 1
+                if name in critical_contracts:
+                    critical_deployed += 1
             elif result["status"] == "not_deployed":
                 print(f"⚠️  {name.upper()}: No contract at address (may be EOA or testnet)")
+                # For tokens on testnet, this might be expected
+                if name in ['arb', 'wbtc', 'dai', 'usdc']:
+                    print(f"    💡 Token contracts may not be deployed on testnet, using mock data")
             else:
                 print(f"❌ {name.upper()}: {result}")
         
@@ -128,13 +135,18 @@ class ArbitrumSepoliaValidator:
         print(f"   Network: ✅ Connected to Arbitrum Sepolia")
         print(f"   Addresses: ✅ All properly checksummed")
         print(f"   Contracts: {deployed_count}/{total_count} verified deployed")
+        print(f"   Critical Contracts: {critical_deployed}/{len(critical_contracts)} deployed")
         
-        if deployed_count >= 3:  # At least major contracts should be deployed
-            print(f"✅ VALIDATION PASSED - System ready for operations")
+        # Pass validation if critical contracts are working
+        if critical_deployed >= 2:  # At least Aave pool and data provider
+            print(f"✅ VALIDATION PASSED - Critical contracts available, system ready")
+            return True
+        elif deployed_count >= 2:  # Some contracts working
+            print(f"⚠️  VALIDATION WARNING - Limited contract availability, but system may function")
             return True
         else:
-            print(f"⚠️  VALIDATION WARNING - Some contracts not deployed, but system may still function")
-            return True
+            print(f"❌ VALIDATION FAILED - Insufficient contract availability")
+            return False
 
 def validate_arbitrum_setup():
     """Simple validation function for imports"""
