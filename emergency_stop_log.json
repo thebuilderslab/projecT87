@@ -1,0 +1,14 @@
+[
+  {
+    "timestamp": 1750744807.7290452,
+    "action": "EMERGENCY_STOP_ACTIVATED",
+    "reason": "Manual trigger: Testing emergency stop functionality",
+    "datetime": "2025-06-24 06:00:07 UTC"
+  },
+  {
+    "timestamp": 1750744812.3755229,
+    "action": "EMERGENCY_STOP_CLEARED",
+    "reason": "Manual clear",
+    "datetime": "2025-06-24 06:00:12 UTC"
+  }
+]
