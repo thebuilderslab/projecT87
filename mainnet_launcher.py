@@ -19,16 +19,21 @@ from emergency_stop import check_emergency_status
 load_dotenv(override=True)
 
 # In deployment environment, Replit Secrets are available as environment variables
-# Force check for PROMPT_KEY in deployment
-if os.getenv('REPLIT_DEPLOYMENT') and not os.getenv('PROMPT_KEY'):
-    # Try to get it from Replit's environment
-    import subprocess
-    try:
-        result = subprocess.run(['printenv', 'PROMPT_KEY'], capture_output=True, text=True)
-        if result.returncode == 0 and result.stdout.strip():
-            os.environ['PROMPT_KEY'] = result.stdout.strip()
-    except:
-        pass
+# Force check for missing environment variables
+missing_vars = ['PROMPT_KEY', 'NETWORK_MODE']
+for var in missing_vars:
+    if not os.getenv(var):
+        import subprocess
+        try:
+            result = subprocess.run(['printenv', var], capture_output=True, text=True)
+            if result.returncode == 0 and result.stdout.strip():
+                os.environ[var] = result.stdout.strip()
+        except:
+            pass
+
+# Set default NETWORK_MODE if still missing
+if not os.getenv('NETWORK_MODE'):
+    os.environ['NETWORK_MODE'] = 'mainnet'  # Default to mainnet for launcher
 
 # Ensure environment variables are properly loaded
 print(f"🔍 Environment loading check:")
