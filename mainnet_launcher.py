@@ -20,13 +20,19 @@ load_dotenv(override=True)
 
 # Enhanced secret loading with multiple fallback methods
 def force_load_secret(var_name, default_value=None):
-    """Force load a secret with multiple fallback methods"""
-    # Method 1: Direct environment variable
-    value = os.getenv(var_name)
-    if value:
-        return value
+    """Force load a secret with multiple fallback methods and aggressive reloading"""
+    # Method 1: Force reload .env
+    try:
+        load_dotenv(override=True)
+    except:
+        pass
     
-    # Method 2: Try subprocess printenv
+    # Method 2: Direct environment variable
+    value = os.getenv(var_name)
+    if value and value.strip():
+        return value.strip()
+    
+    # Method 3: Try subprocess printenv
     try:
         import subprocess
         result = subprocess.run(['printenv', var_name], capture_output=True, text=True, timeout=5)
@@ -37,19 +43,39 @@ def force_load_secret(var_name, default_value=None):
     except:
         pass
     
-    # Method 3: Try reading from /proc/environ (Linux)
+    # Method 4: Try reading from /proc/environ (Linux)
     try:
         with open('/proc/self/environ', 'rb') as f:
             env_data = f.read().decode('utf-8', errors='ignore')
             for line in env_data.split('\0'):
                 if line.startswith(f'{var_name}='):
                     value = line.split('=', 1)[1]
-                    os.environ[var_name] = value
-                    return value
+                    if value.strip():
+                        os.environ[var_name] = value.strip()
+                        return value.strip()
     except:
         pass
     
-    # Method 4: Use default value if provided
+    # Method 5: Try reading from Replit's special env files
+    try:
+        replit_env_paths = [
+            '/home/runner/.replit/secrets',
+            '/tmp/secrets',
+            '.env.local'
+        ]
+        for env_path in replit_env_paths:
+            if os.path.exists(env_path):
+                with open(env_path, 'r') as f:
+                    for line in f:
+                        if line.startswith(f'{var_name}='):
+                            value = line.split('=', 1)[1].strip()
+                            if value:
+                                os.environ[var_name] = value
+                                return value
+    except:
+        pass
+    
+    # Method 6: Use default value if provided
     if default_value:
         os.environ[var_name] = default_value
         return default_value
@@ -111,6 +137,41 @@ if not all_linked:
     missing = [secret for secret, info in secrets_status.items() if info['status'] != 'LINKED']
     print(f"❌ MISSING LINKAGES: {', '.join(missing)}")
     print(f"💡 SOLUTION: Re-link these secrets in Replit Secrets interface")
+    print(f"\n🔧 DETAILED TROUBLESHOOTING FOR MISSING SECRETS:")
+    for secret in missing:
+        print(f"   • {secret}: Check project-specific Secrets tab (🔒 icon in sidebar)")
+        if secret == 'PROMPT_KEY':
+            print(f"     - This is CRITICAL for mainnet deployment")
+            print(f"     - Must be added from project Secrets tab")
+        elif secret == 'NETWORK_MODE':
+            print(f"     - Value must be exactly: mainnet")
+            print(f"     - Currently shows: {os.getenv('NETWORK_MODE', 'NOT_SET')}")
+
+print(f"=" * 60)
+
+# Additional validation for critical deployment requirements
+print(f"\n🚨 CRITICAL DEPLOYMENT STATUS:")
+deployment_ready = True
+critical_issues = []
+
+if not os.getenv('PROMPT_KEY'):
+    critical_issues.append("PROMPT_KEY not accessible - mainnet features disabled")
+    deployment_ready = False
+
+if os.getenv('NETWORK_MODE', 'testnet').lower() != 'mainnet':
+    critical_issues.append(f"NETWORK_MODE is '{os.getenv('NETWORK_MODE', 'testnet')}' instead of 'mainnet'")
+    deployment_ready = False
+
+if not os.getenv('PRIVATE_KEY'):
+    critical_issues.append("PRIVATE_KEY not accessible - cannot connect to wallet")
+    deployment_ready = False
+
+if deployment_ready:
+    print(f"✅ DEPLOYMENT STATUS: READY FOR MAINNET")
+else:
+    print(f"❌ DEPLOYMENT STATUS: NOT READY - {len(critical_issues)} critical issues")
+    for i, issue in enumerate(critical_issues, 1):
+        print(f"   {i}. {issue}")
 
 print(f"=" * 60)
 
