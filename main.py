@@ -1,4 +1,5 @@
 from arbitrum_testnet_agent import ArbitrumTestnetAgent, test_real_defi_integration
+from collaborative_strategy_manager import CollaborativeStrategyManager
 import time
 import json
 import os
@@ -119,7 +120,9 @@ def autonomous_agent_loop():
     # Initialize Arbitrum testnet agent
     try:
         arbitrum_agent = ArbitrumTestnetAgent()
+        strategy_manager = CollaborativeStrategyManager(arbitrum_agent)
         print("🚀 Arbitrum agent initialized successfully!")
+        print("🤝 Collaborative strategy manager ready!")
     except Exception as e:
         print(f"❌ Failed to initialize Arbitrum agent: {e}")
         print("💡 Please run 'python setup_test_wallet.py' first to set up your wallet")
@@ -145,6 +148,19 @@ def autonomous_agent_loop():
             time.sleep(1)
 
         analyze_and_improve()
+        
+        # Collaborative strategy analysis
+        print("\n🤝 COLLABORATIVE STRATEGY ANALYSIS:")
+        strategy_manager.agent_analyze_and_propose()
+        pending_proposals = strategy_manager.get_user_input_on_proposals()
+        
+        # Check for any auto-approved low-risk improvements
+        if pending_proposals:
+            for proposal in pending_proposals:
+                if proposal['risk_level'] == 'Low' and proposal['source'] == 'agent':
+                    print(f"🟢 Auto-implementing low-risk proposal: {proposal['id']}")
+                    strategy_manager.implement_approved_strategy(proposal['id'])
+        
         print(f"\n--- Autonomous Run {run_id_counter} Completed. Waiting for next run... ---")
         time.sleep(5)
 
