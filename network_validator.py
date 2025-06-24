@@ -6,17 +6,17 @@ from dotenv import load_dotenv
 class ArbitrumSepoliaValidator:
     def __init__(self):
         load_dotenv()
-        self.w3 = Web3(Web3.HTTPProvider('https://sepolia-rollup.arbitrum.io/rpc'))
+        self.w3 = Web3(Web3.HTTPProvider('https://arb1.arbitrum.io/rpc'))
         
-        # Verified contract addresses for Arbitrum Sepolia (all checksummed)
+        # Verified contract addresses for Arbitrum MAINNET (all checksummed)
         self.contract_addresses = {
-            'aave_pool': self.w3.to_checksum_address('0x3B06Dc46B3bD3A616f95D0b78bcaC2f2de7A8e25'),
-            'aave_data_provider': self.w3.to_checksum_address('0xBfC91D59fdAA134A4ED45f7B584cAf96D7792Eff'),
-            'weth': self.w3.to_checksum_address('0x980B62Da83eFf3D4576C647993b0c1D7faf17c73'),
-            'wbtc': self.w3.to_checksum_address('0x078f358208685046a11C85e8ad32895DED33A249'),
-            'dai': self.w3.to_checksum_address('0x82E64f49Ed5EC1bC6e43DAD4FC8Af9bb3A2312EE'),
-            'usdc': self.w3.to_checksum_address('0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d'),
-            'arb': self.w3.to_checksum_address('0xc275B23C035a9d4EC8867b47f55427E0bDCe14cB')
+            'aave_pool': self.w3.to_checksum_address('0x794a61358D6845594F94dc1DB02A252b5b4814aD'),
+            'aave_data_provider': self.w3.to_checksum_address('0x69FA688f1Dc47d4B5d8029D5a35FB7a548310654'),
+            'weth': self.w3.to_checksum_address('0x82aF49447D8a07e3bd95BD0d56f35241523fBab1'),
+            'wbtc': self.w3.to_checksum_address('0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f'),
+            'dai': self.w3.to_checksum_address('0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1'),
+            'usdc': self.w3.to_checksum_address('0xaf88d065e77c8cC2239327C5EDb3A432268e5831'),
+            'arb': self.w3.to_checksum_address('0x912CE59144191C1204E64559FE8253a0e49E6548')
         }
     
     def validate_network_connection(self):
@@ -27,8 +27,8 @@ class ArbitrumSepoliaValidator:
             
             # Check if we're on the right network
             chain_id = self.w3.eth.chain_id
-            if chain_id != 421614:
-                return False, f"Wrong network. Expected chain ID 421614, got {chain_id}"
+            if chain_id != 42161:
+                return False, f"Wrong network. Expected chain ID 42161, got {chain_id}"
             
             return True, "Network connection validated"
         except Exception as e:
