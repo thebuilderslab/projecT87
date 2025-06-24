@@ -157,15 +157,25 @@ class ArbitrumSepoliaValidator:
         print(f"   🏗️  Contracts: {deployed_count}/{total_count} verified deployed")
         print(f"   🎯 Critical Contracts: {critical_deployed}/{len(critical_contracts)} deployed")
         
-        # Very flexible validation for testnet environment - prioritize functionality over perfect deployment
-        if deployed_count >= 1:  # At least one contract working
+        # Testnet validation with proper requirements checking
+        if not net_valid:
+            print(f"\n❌ VALIDATION FAILED - Network connection failed")
+            return False
+            
+        if not addr_valid:
+            print(f"\n❌ VALIDATION FAILED - Address validation failed")
+            return False
+            
+        # For testnet, require at least network connection and proper addresses
+        # Contract deployment is flexible since some testnet contracts may not be available
+        if deployed_count >= 1:
             print(f"\n✅ VALIDATION PASSED - Testnet environment validated successfully")
             print(f"🚀 System ready for Arbitrum Sepolia DeFi operations")
             return True
         else:
-            print(f"\n⚠️  VALIDATION WARNING - No contracts deployed, but allowing testnet operation with mocks")
-            print(f"🚀 System will proceed with mock data for all operations")
-            return True  # Always pass for testnet to allow development
+            print(f"\n⚠️  VALIDATION WARNING - No contracts deployed")
+            print(f"🚀 Proceeding with mock data for development/testing")
+            return True  # Allow operation with mocks for testnet development
 
 def validate_arbitrum_setup():
     """Main validation function for external imports"""
