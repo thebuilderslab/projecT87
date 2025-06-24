@@ -153,8 +153,10 @@ class AaveArbitrumIntegration:
             decimals = token_contract.functions.decimals().call()
             amount_wei = int(float(amount) * (10 ** decimals))
 
-            # Build approval transaction
-            nonce = self.w3.eth.get_transaction_count(user_address)
+            # Get nonce with pending transactions included
+            nonce = self.w3.eth.get_transaction_count(user_address, 'pending')
+            print(f"🔢 Using nonce: {nonce} for approval")
+            
             transaction = token_contract.functions.approve(
                 self.pool_address, 
                 amount_wei
@@ -200,7 +202,9 @@ class AaveArbitrumIntegration:
 
             # Build supply transaction
             user_address = self.w3.to_checksum_address(self.address)
-            nonce = self.w3.eth.get_transaction_count(user_address)
+            nonce = self.w3.eth.get_transaction_count(user_address, 'pending')
+            print(f"🔢 Using nonce: {nonce} for supply")
+            
             transaction = self.pool_contract.functions.supply(
                 self.w3.to_checksum_address(token_address),    # asset
                 amount_wei,       # amount
@@ -241,7 +245,9 @@ class AaveArbitrumIntegration:
 
             # Build borrow transaction
             user_address = self.w3.to_checksum_address(self.address)
-            nonce = self.w3.eth.get_transaction_count(user_address)
+            nonce = self.w3.eth.get_transaction_count(user_address, 'pending')
+            print(f"🔢 Using nonce: {nonce} for borrow")
+            
             transaction = self.pool_contract.functions.borrow(
                 self.w3.to_checksum_address(token_address),         # asset
                 amount_wei,           # amount
@@ -291,7 +297,9 @@ class AaveArbitrumIntegration:
 
             # Build repay transaction
             user_address = self.w3.to_checksum_address(self.address)
-            nonce = self.w3.eth.get_transaction_count(user_address)
+            nonce = self.w3.eth.get_transaction_count(user_address, 'pending')
+            print(f"🔢 Using nonce: {nonce} for repay")
+            
             transaction = self.pool_contract.functions.repay(
                 self.w3.to_checksum_address(token_address),         # asset
                 amount_wei,           # amount
