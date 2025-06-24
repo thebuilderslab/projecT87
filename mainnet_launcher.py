@@ -98,6 +98,11 @@ def launch_mainnet_agent():
         
         while not safety_manager.check_emergency_stop():
             try:
+                # Check for emergency stop flag before each iteration
+                if os.path.exists('EMERGENCY_STOP_ACTIVE.flag'):
+                    safety_manager.trigger_emergency_stop("Emergency stop flag detected")
+                    break
+                
                 run_id_counter += 1
                 print(f"\n--- MAINNET RUN: {run_id_counter} ---")
                 

@@ -37,9 +37,11 @@ python test_agent.py
 ## Phase 3: Safety Mechanisms ✅
 
 ### Emergency Stop System
-- [ ] Emergency stop file: `EMERGENCY_STOP.txt`
+- [ ] Emergency stop file: `EMERGENCY_STOP_ACTIVE.flag`
 - [ ] Manual trigger: `python emergency_stop.py`
 - [ ] Clear stop: `python emergency_stop.py clear`
+- [ ] Dashboard button: "🛑 EMERGENCY STOP" in web interface
+- [ ] Status checking: `python emergency_stop.py status`
 - [ ] Keyboard interrupt: Ctrl+C
 
 ### Risk Management
@@ -74,14 +76,21 @@ python mainnet_launcher.py
 ## 🚨 EMERGENCY PROCEDURES
 
 ### Immediate Stop
-1. **Method 1:** Press `Ctrl+C` in terminal
-2. **Method 2:** Run `python emergency_stop.py`  
-3. **Method 3:** Create file `EMERGENCY_STOP.txt`
+1. **Method 1:** Click "🛑 EMERGENCY STOP" button in dashboard
+2. **Method 2:** Run `python emergency_stop.py`
+3. **Method 3:** Press `Ctrl+C` in terminal
+4. **Method 4:** Create file `EMERGENCY_STOP_ACTIVE.flag`
 
 ### Resume After Emergency
-1. Investigate issue
-2. Run `python emergency_stop.py clear`
-3. Restart with `python mainnet_launcher.py`
+1. Investigate issue thoroughly
+2. **Method 1:** Click "✅ CLEAR EMERGENCY STOP" in dashboard
+3. **Method 2:** Run `python emergency_stop.py clear`
+4. Restart with `python mainnet_launcher.py`
+
+### Emergency Status Checking
+- Check status: `python emergency_stop.py status`
+- View logs: `python emergency_stop.py logs`
+- Dashboard shows real-time status
 
 ## ⚠️ FINAL CONFIRMATION
 

@@ -130,11 +130,27 @@ class ArbitrumTestnetAgent:
 
         return performance_data[-num_entries:] if performance_data else []
 
+    def check_emergency_stop(self):
+        """Check if emergency stop is active"""
+        emergency_file = 'EMERGENCY_STOP_ACTIVE.flag'
+        if os.path.exists(emergency_file):
+            print("🚨 EMERGENCY STOP DETECTED - HALTING ALL OPERATIONS")
+            with open(emergency_file, 'r') as f:
+                content = f.read()
+                print(content)
+            return True
+        return False
+
     def run_real_defi_task(self, run_id, iteration, config):
         """
         Execute real DeFi operations using dynamic health monitoring and conditional trading
         """
         print(f"\n🔄 Dynamic DeFi Task (Run: {run_id}, Iteration: {iteration})")
+
+        # PRIORITY CHECK: Emergency stop
+        if self.check_emergency_stop():
+            print("🛑 Emergency stop active - aborting task")
+            return 0.0
 
         # Check network status
         connected, status = self.check_network_status()
@@ -181,6 +197,11 @@ class ArbitrumTestnetAgent:
         print(f"   USDC: {self.usdc_address}")
 
         try:
+            # Emergency stop check before any transaction attempts
+            if self.check_emergency_stop():
+                print("🛑 Emergency stop detected before transactions - aborting")
+                return 0.0
+
             # PRIORITY 1: Risk Mitigation (Execute first if triggered)
             if monitoring_summary['risk_trigger_active']:
                 print("🚨 EXECUTING RISK MITIGATION STRATEGY")
