@@ -1,0 +1,20 @@
+#### Micro-Step 3.1: Verify Monitoring Status & Reporting
+
+**Analysis of Monitoring Capabilities:**
+The system includes several mechanisms for health monitoring and operational reporting, critical for live mainnet operations.
+
+* **Console Logging:** Real-time operational logs and transaction details are output to the Replit console during workflow execution. This provides immediate feedback on system status, errors, and successful operations.
+    * **Access:** Directly viewable in the Replit console during and after running workflows or scripts.
+    * **Use Case:** Immediate debugging, verification of transaction execution, and high-level system health checks.
+
+* **`log_analyzer.py` Script (if present and relevant):** If there is a dedicated `log_analyzer.py` or similar script, describe its function in parsing and summarizing logs.
+    * **Function:** Parses and analyzes historical logs for trends, anomalies, and performance metrics.
+    * **Access:** Executed via the Replit shell (e.g., `python log_analyzer.py`) to process stored log files.
+    * **Use Case:** Post-mortem analysis, long-term performance tracking, and identifying recurring issues.
+
+* **Integrated Monitoring (e.g., Web Dashboard, external services):** Describe any integrated dashboards or external services mentioned in the codebase that provide a user interface for monitoring.
+    * **Description:** The "Web Dashboard" is intended to provide a user-friendly interface for real-time monitoring of live trading, wallet balances, and overall system health. It consolidates data from various system components.
+    * **Access:** Accessible via the Replit 'Webview' panel or direct URL once the dashboard is running.
+    * **Use Case:** Comprehensive overview of live operations, visual representation of metrics, and interactive control (e.g., emergency stop).
+
+* **Alerting Mechanisms (if described in code):** If the code outlines any specific alerting for critical events (e.g., low funds, failed transactions), describe them.

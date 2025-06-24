@@ -1,0 +1,34 @@
+#### Micro-Step 4.2: Confirm API Integration for Price Data and Liquidity
+
+**Price Data Sources & API Integration:**
+The system integrates with various APIs to fetch real-time cryptocurrency price data, enabling informed trading decisions.
+
+* **CoinMarketCap API:**
+    * **Function:** Used for general market data and cryptocurrency prices.
+    * **Location in Code:** (Agent will specify relevant files/functions, e.g., `data_fetcher.py` or `price_oracle.py`.)
+    * **Usage:** (Describe typical API calls and data retrieved.)
+* **Chainlink/Aave Oracles:**
+    * **Function:** Directly provides on-chain price feeds for specific assets within the DeFi protocols (e.g., Aave for lending/borrowing).
+    * **Location in Code:** (Agent will specify relevant files/functions, e.g., `aave_integration.py` or `price_oracle.py`.)
+    * **Usage:** (Describe how these are queried for real-time asset prices on-chain.)
+* **Uniswap/DEX APIs:**
+    * **Function:** Used to fetch real-time prices directly from decentralized exchanges for specific trading pairs, often via querying liquidity pools.
+    * **Location in Code:** (Agent will specify relevant files/functions, e.g., `uniswap_integration.py` or `price_oracle.py`.)
+    * **Usage:** (Describe typical queries for exchange rates.)
+
+**Liquidity Assessment Mechanisms:**
+Liquidity assessment is crucial for executing trades efficiently and minimizing slippage.
+
+* **DEX Pool Queries:** (Agent will describe how the system queries decentralized exchange liquidity pools, e.g., Uniswap V2/V3, to determine available liquidity for specific trading pairs.)
+    * **Location in Code:** (Specify files/functions involved, e.g., `uniswap_integration.py`.)
+    * **Data Points:** (Describe data points used, e.g., total value locked (TVL), available token reserves.)
+* **Aave Reserves/Protocol Data:** (Agent will describe how liquidity on lending protocols like Aave is assessed for yield farming strategies.)
+    * **Location in Code:** (Specify files/functions involved, e.g., `aave_integration.py`.)
+    * **Data Points:** (Describe data points used, e.g., available liquidity for borrowing/lending, utilization rates.)
+
+**API Key Management:**
+API keys for external services are managed securely:
+* **Replit Secrets:** Critical API keys (e.g., `COINMARKETCAP_API_KEY`, `OPTIMIZER_API_KEY`) are stored as Replit Secrets, ensuring they are not hardcoded in the codebase.
+* **Access in Code:** The system accesses these keys from the environment at runtime using `os.getenv()`.
+
+**Next Steps:** Proceed to Micro-Step 4.3 to evaluate the yield optimization strategy.
