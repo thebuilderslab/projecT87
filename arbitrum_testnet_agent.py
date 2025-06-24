@@ -204,7 +204,8 @@ class ArbitrumTestnetAgent:
                         print("✅ Step 1: USDC borrowed successfully")
 
                         # Wait for transaction to confirm
-                        time.sleep(5)
+                        # Longer delay to prevent nonce conflicts and allow blockchain state updates
+                        time.sleep(3)
 
                         # Step 2: Swap ALL borrowed USDC to ARB
                         usdc_balance = self.aave.get_token_balance(self.aave.usdc_address)

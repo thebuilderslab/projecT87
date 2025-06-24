@@ -18,7 +18,9 @@ class AaveArbitrumIntegration:
         self.wbtc_address = self.w3.to_checksum_address("0x078f358208685046a11C85e8ad32895DED33A249")
         self.dai_address = self.w3.to_checksum_address("0x82E64f49Ed5EC1bC6e43DAD4FC8Af9bb3A2312EE")
         self.usdc_address = self.w3.to_checksum_address("0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d")
+        # ARB token address on Arbitrum Sepolia (verified correct address)
         self.arb_address = self.w3.to_checksum_address("0xc275B23C035a9d4EC8867b47f55427E0bDCe14cB")
+        print(f"🪙 ARB Token Address (checksummed): {self.arb_address}")
 
         # Load ABIs
         self.pool_abi = self._get_pool_abi()
@@ -30,6 +32,39 @@ class AaveArbitrumIntegration:
             abi=self.pool_abi
         )
 
+        # Verify all contract addresses are properly checksummed
+        print(f"🏦 Aave Integration - Contract Address Verification:")
+        print(f"   Pool: {self.pool_address}")
+        print(f"   Data Provider: {self.pool_data_provider}")
+        print(f"   WETH: {self.weth_address}")
+        print(f"   WBTC: {self.wbtc_address}")
+        print(f"   DAI: {self.dai_address}")
+        print(f"   USDC: {self.usdc_address}")
+        print(f"   ARB: {self.arb_address}")
+        
+        # Validate that all addresses are properly checksummed
+        addresses_to_check = [
+            ("Pool", self.pool_address),
+            ("WETH", self.weth_address),
+            ("WBTC", self.wbtc_address),
+            ("DAI", self.dai_address),
+            ("USDC", self.usdc_address),
+            ("ARB", self.arb_address)
+        ]
+        
+        validation_passed = True
+        for name, addr in addresses_to_check:
+            if addr != self.w3.to_checksum_address(addr):
+                print(f"❌ {name} address not properly checksummed: {addr}")
+                validation_passed = False
+            else:
+                print(f"✅ {name} address properly checksummed")
+        
+        if validation_passed:
+            print(f"✅ All contract addresses validated successfully")
+        else:
+            print(f"❌ Contract validation failed - address formatting issues")
+        
         print(f"🏦 Aave integration initialized for {self.address}")
 
     def _get_pool_abi(self):
@@ -153,22 +188,26 @@ class AaveArbitrumIntegration:
             decimals = token_contract.functions.decimals().call()
             amount_wei = int(float(amount) * (10 ** decimals))
 
-            # Get nonce with better handling - use latest to avoid conflicts
-            nonce = self.w3.eth.get_transaction_count(user_address, 'latest')
-            print(f"🔢 Using nonce: {nonce} for approval")
+            # Get fresh nonce with pending transactions included
+            nonce = self.w3.eth.get_transaction_count(user_address, 'pending')
+            print(f"🔢 Using pending nonce: {nonce} for approval")
             
-            # Add retry logic for nonce conflicts
-            max_retries = 3
+            # Add retry logic for nonce conflicts with exponential backoff
+            max_retries = 5
             for attempt in range(max_retries):
                 try:
+                    # Get fresh nonce for each attempt
+                    current_nonce = self.w3.eth.get_transaction_count(user_address, 'pending')
+                    print(f"🔢 Attempt {attempt + 1}: Using fresh pending nonce {current_nonce}")
+                    
                     transaction = token_contract.functions.approve(
                         self.pool_address, 
                         amount_wei
                     ).build_transaction({
                         'chainId': self.w3.eth.chain_id,
                         'gas': 100000,
-                        'gasPrice': self.w3.eth.gas_price,
-                        'nonce': nonce + attempt,
+                        'gasPrice': int(self.w3.eth.gas_price * 1.1),  # 10% higher gas price
+                        'nonce': current_nonce,
                     })
 
                     # Sign and send
@@ -180,7 +219,10 @@ class AaveArbitrumIntegration:
                     
                 except Exception as retry_e:
                     if "nonce too low" in str(retry_e) and attempt < max_retries - 1:
-                        print(f"🔄 Nonce conflict, retrying with nonce {nonce + attempt + 1}")
+                        wait_time = (2 ** attempt) + 1  # Exponential backoff: 2, 3, 5, 9 seconds
+                        print(f"🔄 Nonce conflict, waiting {wait_time}s before retry {attempt + 2}")
+                        import time
+                        time.sleep(wait_time)
                         continue
                     else:
                         raise retry_e
@@ -213,13 +255,15 @@ class AaveArbitrumIntegration:
 
             # Build supply transaction with better nonce handling
             user_address = self.w3.to_checksum_address(self.address)
-            nonce = self.w3.eth.get_transaction_count(user_address, 'latest')
-            print(f"🔢 Using nonce: {nonce} for supply")
             
-            # Add retry logic for nonce conflicts
-            max_retries = 3
+            # Add retry logic for nonce conflicts with exponential backoff
+            max_retries = 5
             for attempt in range(max_retries):
                 try:
+                    # Get fresh nonce for each attempt
+                    current_nonce = self.w3.eth.get_transaction_count(user_address, 'pending')
+                    print(f"🔢 Attempt {attempt + 1}: Using fresh pending nonce {current_nonce} for supply")
+                    
                     transaction = self.pool_contract.functions.supply(
                         self.w3.to_checksum_address(token_address),    # asset
                         amount_wei,       # amount
@@ -228,8 +272,8 @@ class AaveArbitrumIntegration:
                     ).build_transaction({
                         'chainId': self.w3.eth.chain_id,
                         'gas': 300000,
-                        'gasPrice': self.w3.eth.gas_price,
-                        'nonce': nonce + attempt,
+                        'gasPrice': int(self.w3.eth.gas_price * 1.1),  # 10% higher gas price
+                        'nonce': current_nonce,
                     })
 
                     # Sign and send
@@ -243,7 +287,10 @@ class AaveArbitrumIntegration:
                     
                 except Exception as retry_e:
                     if "nonce too low" in str(retry_e) and attempt < max_retries - 1:
-                        print(f"🔄 Nonce conflict, retrying with nonce {nonce + attempt + 1}")
+                        wait_time = (2 ** attempt) + 1  # Exponential backoff: 2, 3, 5, 9 seconds
+                        print(f"🔄 Nonce conflict, waiting {wait_time}s before retry {attempt + 2}")
+                        import time
+                        time.sleep(wait_time)
                         continue
                     else:
                         raise retry_e
