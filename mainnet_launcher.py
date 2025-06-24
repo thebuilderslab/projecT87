@@ -66,9 +66,9 @@ class MainnetSafetyManager:
         # Check network mode
         network_mode = os.getenv('NETWORK_MODE', 'testnet')
         if network_mode != 'mainnet':
-            print(f"⚠️ Network mode is '{network_mode}' - will switch to mainnet for deployment")
-            # Auto-set for mainnet deployment
-            os.environ['NETWORK_MODE'] = 'mainnet'
+            print(f"❌ CRITICAL: Network mode is '{network_mode}' but mainnet required!")
+            print("🔧 Please set NETWORK_MODE=mainnet in Replit Secrets")
+            return False
         print(f"✅ Network mode: mainnet")
         
         # Validate Arbitrum Mainnet RPC

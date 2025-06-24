@@ -416,46 +416,13 @@
                 document.getElementById('loading').style.display = 'none';
                 document.getElementById('dashboard').style.display = 'block';
                 document.getElementById('error').style.display = 'none';
+            } catch (error) {
+                console.error('Error fetching wallet status:', error);
+                document.getElementById('ethBalance').textContent = 'Error loading';
+                document.getElementById('usdcBalance').textContent = 'Error loading';
+                document.getElementById('walletAddress').textContent = 'Error loading';
             }
-                })
-                .catch(error => {
-                    console.error('Error fetching wallet status:', error);
-                    document.getElementById('ethBalance').textContent = 'Error loading';
-                    document.getElementById('usdcBalance').textContent = 'Error loading';
-                    document.getElementById('walletAddress').textContent = 'Error loading';
-                });
-            }
-
-            function updatePerformanceData() {
-                fetch('/api/performance')
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        document.getElementById('profitLoss').textContent = `$${data.profit_loss.toFixed(2)}`;
-                        document.getElementById('operationsCount').textContent = data.operations_count;
-                        document.getElementById('successRate').textContent = `${data.success_rate.toFixed(1)}%`;
-                        document.getElementById('totalVolume').textContent = `$${data.total_volume.toFixed(2)}`;
-                    }
-                })
-                .catch(error => {
-                    console.error('Error fetching performance:', error);
-                });
-            }
-
-            function updateParameters() {
-                fetch('/api/parameters')
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        document.getElementById('healthFactorTarget').textContent = data.health_factor_target.toFixed(2);
-                        document.getElementById('explorationRate').textContent = `${(data.exploration_rate * 100).toFixed(1)}%`;
-                        document.getElementById('operationFreq').textContent = `${data.operation_frequency}s`;
-                    }
-                })
-                .catch(error => {
-                    console.error('Error fetching parameters:', error);
-                });
-            }
+        }
 
         async function fetchPerformance() {
             try {
