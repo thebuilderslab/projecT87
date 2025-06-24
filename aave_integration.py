@@ -153,26 +153,37 @@ class AaveArbitrumIntegration:
             decimals = token_contract.functions.decimals().call()
             amount_wei = int(float(amount) * (10 ** decimals))
 
-            # Get nonce with pending transactions included
-            nonce = self.w3.eth.get_transaction_count(user_address, 'pending')
+            # Get nonce with better handling - use latest to avoid conflicts
+            nonce = self.w3.eth.get_transaction_count(user_address, 'latest')
             print(f"🔢 Using nonce: {nonce} for approval")
             
-            transaction = token_contract.functions.approve(
-                self.pool_address, 
-                amount_wei
-            ).build_transaction({
-                'chainId': self.w3.eth.chain_id,
-                'gas': 100000,
-                'gasPrice': self.w3.eth.gas_price,
-                'nonce': nonce,
-            })
+            # Add retry logic for nonce conflicts
+            max_retries = 3
+            for attempt in range(max_retries):
+                try:
+                    transaction = token_contract.functions.approve(
+                        self.pool_address, 
+                        amount_wei
+                    ).build_transaction({
+                        'chainId': self.w3.eth.chain_id,
+                        'gas': 100000,
+                        'gasPrice': self.w3.eth.gas_price,
+                        'nonce': nonce + attempt,
+                    })
 
-            # Sign and send
-            signed_txn = self.w3.eth.account.sign_transaction(transaction, self.account.key)
-            tx_hash = self.w3.eth.send_raw_transaction(signed_txn.rawTransaction)
+                    # Sign and send
+                    signed_txn = self.w3.eth.account.sign_transaction(transaction, self.account.key)
+                    tx_hash = self.w3.eth.send_raw_transaction(signed_txn.rawTransaction)
 
-            print(f"✅ Token approval sent: {tx_hash.hex()}")
-            return tx_hash.hex()
+                    print(f"✅ Token approval sent: {tx_hash.hex()}")
+                    return tx_hash.hex()
+                    
+                except Exception as retry_e:
+                    if "nonce too low" in str(retry_e) and attempt < max_retries - 1:
+                        print(f"🔄 Nonce conflict, retrying with nonce {nonce + attempt + 1}")
+                        continue
+                    else:
+                        raise retry_e
 
         except Exception as e:
             print(f"❌ Approval failed: {e}")
@@ -200,31 +211,42 @@ class AaveArbitrumIntegration:
                 decimals = token_contract.functions.decimals().call()
                 amount_wei = int(amount * (10 ** decimals))
 
-            # Build supply transaction
+            # Build supply transaction with better nonce handling
             user_address = self.w3.to_checksum_address(self.address)
-            nonce = self.w3.eth.get_transaction_count(user_address, 'pending')
+            nonce = self.w3.eth.get_transaction_count(user_address, 'latest')
             print(f"🔢 Using nonce: {nonce} for supply")
             
-            transaction = self.pool_contract.functions.supply(
-                self.w3.to_checksum_address(token_address),    # asset
-                amount_wei,       # amount
-                user_address,     # onBehalfOf
-                0                 # referralCode
-            ).build_transaction({
-                'chainId': self.w3.eth.chain_id,
-                'gas': 300000,
-                'gasPrice': self.w3.eth.gas_price,
-                'nonce': nonce,
-            })
+            # Add retry logic for nonce conflicts
+            max_retries = 3
+            for attempt in range(max_retries):
+                try:
+                    transaction = self.pool_contract.functions.supply(
+                        self.w3.to_checksum_address(token_address),    # asset
+                        amount_wei,       # amount
+                        user_address,     # onBehalfOf
+                        0                 # referralCode
+                    ).build_transaction({
+                        'chainId': self.w3.eth.chain_id,
+                        'gas': 300000,
+                        'gasPrice': self.w3.eth.gas_price,
+                        'nonce': nonce + attempt,
+                    })
 
-            # Sign and send
-            signed_txn = self.w3.eth.account.sign_transaction(transaction, self.account.key)
-            tx_hash = self.w3.eth.send_raw_transaction(signed_txn.rawTransaction)
+                    # Sign and send
+                    signed_txn = self.w3.eth.account.sign_transaction(transaction, self.account.key)
+                    tx_hash = self.w3.eth.send_raw_transaction(signed_txn.rawTransaction)
 
-            print(f"✅ Supply transaction sent: {tx_hash.hex()}")
-            print(f"📊 Explorer: https://sepolia.arbiscan.io/tx/{tx_hash.hex()}")
+                    print(f"✅ Supply transaction sent: {tx_hash.hex()}")
+                    print(f"📊 Explorer: https://sepolia.arbiscan.io/tx/{tx_hash.hex()}")
 
-            return tx_hash.hex()
+                    return tx_hash.hex()
+                    
+                except Exception as retry_e:
+                    if "nonce too low" in str(retry_e) and attempt < max_retries - 1:
+                        print(f"🔄 Nonce conflict, retrying with nonce {nonce + attempt + 1}")
+                        continue
+                    else:
+                        raise retry_e
 
         except Exception as e:
             print(f"❌ Supply failed: {e}")
@@ -243,32 +265,43 @@ class AaveArbitrumIntegration:
                 decimals = token_contract.functions.decimals().call()
                 amount_wei = int(amount * (10 ** decimals))
 
-            # Build borrow transaction
+            # Build borrow transaction with better nonce handling
             user_address = self.w3.to_checksum_address(self.address)
-            nonce = self.w3.eth.get_transaction_count(user_address, 'pending')
+            nonce = self.w3.eth.get_transaction_count(user_address, 'latest')
             print(f"🔢 Using nonce: {nonce} for borrow")
             
-            transaction = self.pool_contract.functions.borrow(
-                self.w3.to_checksum_address(token_address),         # asset
-                amount_wei,           # amount
-                interest_rate_mode,   # interestRateMode (2 = variable)
-                0,                    # referralCode
-                user_address          # onBehalfOf
-            ).build_transaction({
-                'chainId': self.w3.eth.chain_id,
-                'gas': 400000,
-                'gasPrice': self.w3.eth.gas_price,
-                'nonce': nonce,
-            })
+            # Add retry logic for nonce conflicts
+            max_retries = 3
+            for attempt in range(max_retries):
+                try:
+                    transaction = self.pool_contract.functions.borrow(
+                        self.w3.to_checksum_address(token_address),         # asset
+                        amount_wei,           # amount
+                        interest_rate_mode,   # interestRateMode (2 = variable)
+                        0,                    # referralCode
+                        user_address          # onBehalfOf
+                    ).build_transaction({
+                        'chainId': self.w3.eth.chain_id,
+                        'gas': 400000,
+                        'gasPrice': self.w3.eth.gas_price,
+                        'nonce': nonce + attempt,
+                    })
 
-            # Sign and send
-            signed_txn = self.w3.eth.account.sign_transaction(transaction, self.account.key)
-            tx_hash = self.w3.eth.send_raw_transaction(signed_txn.rawTransaction)
+                    # Sign and send
+                    signed_txn = self.w3.eth.account.sign_transaction(transaction, self.account.key)
+                    tx_hash = self.w3.eth.send_raw_transaction(signed_txn.rawTransaction)
 
-            print(f"✅ Borrow transaction sent: {tx_hash.hex()}")
-            print(f"📊 Explorer: https://sepolia.arbiscan.io/tx/{tx_hash.hex()}")
+                    print(f"✅ Borrow transaction sent: {tx_hash.hex()}")
+                    print(f"📊 Explorer: https://sepolia.arbiscan.io/tx/{tx_hash.hex()}")
 
-            return tx_hash.hex()
+                    return tx_hash.hex()
+                    
+                except Exception as retry_e:
+                    if "nonce too low" in str(retry_e) and attempt < max_retries - 1:
+                        print(f"🔄 Nonce conflict, retrying with nonce {nonce + attempt + 1}")
+                        continue
+                    else:
+                        raise retry_e
 
         except Exception as e:
             print(f"❌ Borrow failed: {e}")
@@ -295,29 +328,40 @@ class AaveArbitrumIntegration:
                 decimals = token_contract.functions.decimals().call()
                 amount_wei = int(amount * (10 ** decimals))
 
-            # Build repay transaction
+            # Build repay transaction with better nonce handling
             user_address = self.w3.to_checksum_address(self.address)
-            nonce = self.w3.eth.get_transaction_count(user_address, 'pending')
+            nonce = self.w3.eth.get_transaction_count(user_address, 'latest')
             print(f"🔢 Using nonce: {nonce} for repay")
             
-            transaction = self.pool_contract.functions.repay(
-                self.w3.to_checksum_address(token_address),         # asset
-                amount_wei,           # amount
-                interest_rate_mode,   # interestRateMode
-                user_address          # onBehalfOf
-            ).build_transaction({
-                'chainId': self.w3.eth.chain_id,
-                'gas': 300000,
-                'gasPrice': self.w3.eth.gas_price,
-                'nonce': nonce,
-            })
+            # Add retry logic for nonce conflicts
+            max_retries = 3
+            for attempt in range(max_retries):
+                try:
+                    transaction = self.pool_contract.functions.repay(
+                        self.w3.to_checksum_address(token_address),         # asset
+                        amount_wei,           # amount
+                        interest_rate_mode,   # interestRateMode
+                        user_address          # onBehalfOf
+                    ).build_transaction({
+                        'chainId': self.w3.eth.chain_id,
+                        'gas': 300000,
+                        'gasPrice': self.w3.eth.gas_price,
+                        'nonce': nonce + attempt,
+                    })
 
-            # Sign and send
-            signed_txn = self.w3.eth.account.sign_transaction(transaction, self.account.key)
-            tx_hash = self.w3.eth.send_raw_transaction(signed_txn.rawTransaction)
+                    # Sign and send
+                    signed_txn = self.w3.eth.account.sign_transaction(transaction, self.account.key)
+                    tx_hash = self.w3.eth.send_raw_transaction(signed_txn.rawTransaction)
 
-            print(f"✅ Repay transaction sent: {tx_hash.hex()}")
-            return tx_hash.hex()
+                    print(f"✅ Repay transaction sent: {tx_hash.hex()}")
+                    return tx_hash.hex()
+                    
+                except Exception as retry_e:
+                    if "nonce too low" in str(retry_e) and attempt < max_retries - 1:
+                        print(f"🔄 Nonce conflict, retrying with nonce {nonce + attempt + 1}")
+                        continue
+                    else:
+                        raise retry_e
 
         except Exception as e:
             print(f"❌ Repay failed: {e}")
