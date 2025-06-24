@@ -52,11 +52,11 @@ class MainnetSafetyManager:
         # Check critical environment variables
         critical_vars = ['COINMARKETCAP_API_KEY', 'PROMPT_KEY']
         
-        # Check for private key (PRIVATE_KEY2 specifically for mainnet)
-        private_key = os.getenv('PRIVATE_KEY2')
+        # Check for private key (PRIVATE_KEY for mainnet)
+        private_key = os.getenv('PRIVATE_KEY')
         if not private_key:
-            print("❌ Missing critical environment variable: PRIVATE_KEY2")
-            print("💡 Please add PRIVATE_KEY2 to your Replit Secrets")
+            print("❌ Missing critical environment variable: PRIVATE_KEY")
+            print("💡 Please add PRIVATE_KEY to your Replit Secrets")
             return False
         
         # Validate private key format
