@@ -50,7 +50,20 @@ class MainnetSafetyManager:
         print("=" * 50)
 
         # Check critical environment variables
-        critical_vars = ['PRIVATE_KEY2', 'COINMARKETCAP_API_KEY', 'PROMPT_KEY']
+        critical_vars = ['COINMARKETCAP_API_KEY', 'PROMPT_KEY']
+        
+        # Check for private key (PRIVATE_KEY2 or PRIVATE_KEY)
+        private_key = os.getenv('PRIVATE_KEY2') or os.getenv('PRIVATE_KEY')
+        if not private_key:
+            print("❌ Missing critical environment variable: PRIVATE_KEY2 or PRIVATE_KEY")
+            print("💡 Please add PRIVATE_KEY2 to your Replit Secrets")
+            return False
+        
+        # Validate private key format
+        if len(private_key) not in [64, 66]:
+            print(f"❌ Invalid private key format (should be 64 or 66 characters)")
+            return False
+        print("✅ Private key: Configured properly")
         optional_vars = ['MAINET_ACCOUNT_KEY', 'OPTIMIZER_API_KEY']
         
         # Validate critical secrets
@@ -61,12 +74,7 @@ class MainnetSafetyManager:
                 print(f"💡 Please add {var} to your Replit Secrets")
                 return False
                 
-            if var == 'PRIVATE_KEY2':
-                # Handle both 0x-prefixed and raw hex keys
-                if len(value) not in [64, 66]:
-                    print(f"❌ Invalid {var} format (should be 64 or 66 characters)")
-                    return False
-            elif len(value.strip()) == 0:
+            if len(value.strip()) == 0:
                 print(f"❌ {var} is empty - please set a valid value")
                 return False
                 
