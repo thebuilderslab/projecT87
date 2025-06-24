@@ -123,9 +123,9 @@ class AaveHealthMonitor:
             return None
     
     def get_arb_price(self):
-        """Get ARB price from CoinMarketCap API"""
+        """Get ARB price from CoinMarketCap API with comprehensive logging"""
         try:
-            # Check for API key
+            # Check for API key with detailed validation
             api_key = os.getenv('COINMARKETCAP_API_KEY')
             print(f"🔍 CoinMarketCap API Key status: {'Found' if api_key else 'NOT FOUND'}")
             
@@ -133,11 +133,17 @@ class AaveHealthMonitor:
                 print("❌ CoinMarketCap API key not found in environment")
                 print("   Please add COINMARKETCAP_API_KEY to your Replit secrets")
                 return None
-                
+            
+            # Validate API key format
+            if len(api_key) < 32:
+                print(f"⚠️  API key seems too short (length: {len(api_key)})")
+            
+            # Prepare request with detailed logging
             url = "https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest"
             headers = {
                 'Accepts': 'application/json',
                 'X-CMC_PRO_API_KEY': api_key,
+                'User-Agent': 'Python-requests/2.31.0'
             }
             
             params = {
@@ -145,51 +151,119 @@ class AaveHealthMonitor:
                 'convert': 'USD'
             }
             
-            print(f"🌐 Making CoinMarketCap API request:")
-            print(f"   URL: {url}")
+            print(f"🌐 DETAILED CoinMarketCap API Request:")
+            print(f"   Full URL: {url}")
+            print(f"   Headers: {dict((k, v[:8] + '...' if k == 'X-CMC_PRO_API_KEY' else v) for k, v in headers.items())}")
             print(f"   Params: {params}")
-            print(f"   API Key (first 8 chars): {api_key[:8]}...")
+            print(f"   API Key prefix: {api_key[:12]}...")
+            print(f"   API Key length: {len(api_key)} chars")
             
-            response = requests.get(url, headers=headers, params=params, timeout=10)
+            # Make the request with detailed error handling
+            print(f"📤 Sending request to CoinMarketCap...")
+            response = requests.get(url, headers=headers, params=params, timeout=15)
             
-            print(f"📡 API Response Status: {response.status_code}")
+            print(f"📡 API Response Details:")
+            print(f"   Status Code: {response.status_code}")
+            print(f"   Response Headers: {dict(response.headers)}")
+            print(f"   Content-Type: {response.headers.get('content-type', 'Not specified')}")
+            
+            # Log raw response for debugging
+            response_text = response.text
+            print(f"   Raw Response (first 500 chars): {response_text[:500]}")
             
             if response.status_code == 200:
-                data = response.json()
-                print(f"✅ API Response received successfully")
-                
-                if 'data' in data and 'ARB' in data['data']:
-                    arb_price = data['data']['ARB']['quote']['USD']['price']
+                try:
+                    data = response.json()
+                    print(f"✅ JSON parsing successful")
+                    print(f"   Response structure: {list(data.keys()) if isinstance(data, dict) else 'Not a dict'}")
                     
-                    price_data = {
-                        'price': arb_price,
-                        'timestamp': time.time()
-                    }
-                    
-                    print(f"💰 ARB Price: ${arb_price:.4f}")
-                    self.arb_price_history.append(price_data)
-                    return price_data
-                else:
-                    print(f"❌ Invalid CoinMarketCap response format:")
-                    print(f"   Response keys: {list(data.keys()) if isinstance(data, dict) else 'Not a dict'}")
+                    # Detailed data validation
                     if 'data' in data:
-                        print(f"   Data keys: {list(data['data'].keys()) if isinstance(data['data'], dict) else 'Data not a dict'}")
-                    return None
+                        print(f"   Data section found with keys: {list(data['data'].keys()) if isinstance(data['data'], dict) else 'Data not a dict'}")
+                        
+                        if 'ARB' in data['data']:
+                            arb_data = data['data']['ARB']
+                            print(f"   ARB data structure: {list(arb_data.keys()) if isinstance(arb_data, dict) else 'ARB data not a dict'}")
+                            
+                            if 'quote' in arb_data and 'USD' in arb_data['quote']:
+                                usd_quote = arb_data['quote']['USD']
+                                print(f"   USD quote structure: {list(usd_quote.keys()) if isinstance(usd_quote, dict) else 'USD quote not a dict'}")
+                                
+                                if 'price' in usd_quote:
+                                    arb_price = float(usd_quote['price'])
+                                    
+                                    price_data = {
+                                        'price': arb_price,
+                                        'timestamp': time.time(),
+                                        'market_cap': usd_quote.get('market_cap', 0),
+                                        'percent_change_24h': usd_quote.get('percent_change_24h', 0),
+                                        'last_updated': usd_quote.get('last_updated', '')
+                                    }
+                                    
+                                    print(f"💰 SUCCESS - ARB Price: ${arb_price:.4f}")
+                                    print(f"   Market Cap: ${price_data['market_cap']:,.0f}")
+                                    print(f"   24h Change: {price_data['percent_change_24h']:.2f}%")
+                                    print(f"   Last Updated: {price_data['last_updated']}")
+                                    
+                                    self.arb_price_history.append(price_data)
+                                    return price_data
+                                else:
+                                    print(f"❌ Price field missing from USD quote")
+                            else:
+                                print(f"❌ USD quote missing from ARB data")
+                        else:
+                            print(f"❌ ARB symbol not found in data")
+                            print(f"   Available symbols: {list(data['data'].keys()) if isinstance(data['data'], dict) else 'None'}")
+                    else:
+                        print(f"❌ Data section missing from response")
+                        if 'status' in data:
+                            print(f"   Status info: {data['status']}")
+                    
+                except json.JSONDecodeError as je:
+                    print(f"❌ JSON parsing failed: {je}")
+                    print(f"   Raw response: {response_text}")
+                    
             elif response.status_code == 429:
-                print(f"❌ CoinMarketCap rate limit exceeded - waiting...")
-                return None
-            else:
-                print(f"❌ CoinMarketCap API error: HTTP {response.status_code}")
+                print(f"❌ Rate limit exceeded")
+                try:
+                    error_data = response.json()
+                    print(f"   Rate limit details: {error_data}")
+                except:
+                    print(f"   Raw rate limit response: {response_text}")
+                    
+            elif response.status_code == 401:
+                print(f"❌ Authentication failed - invalid API key")
+                print(f"   Check your COINMARKETCAP_API_KEY in Replit secrets")
+                
+            elif response.status_code == 400:
+                print(f"❌ Bad request")
                 try:
                     error_data = response.json()
                     print(f"   Error details: {error_data}")
                 except:
-                    print(f"   Raw response: {response.text}")
-                return None
+                    print(f"   Raw error response: {response_text}")
+                    
+            else:
+                print(f"❌ HTTP Error {response.status_code}")
+                try:
+                    error_data = response.json()
+                    print(f"   Error details: {error_data}")
+                except:
+                    print(f"   Raw error response: {response_text}")
+                    
+            return None
                 
+        except requests.exceptions.Timeout:
+            print(f"❌ Request timeout after 15 seconds")
+            return None
+        except requests.exceptions.ConnectionError as ce:
+            print(f"❌ Connection error: {ce}")
+            return None
         except Exception as e:
-            print(f"❌ ARB price fetch error: {e}")
+            print(f"❌ Unexpected error fetching ARB price: {e}")
             print(f"   Exception type: {type(e).__name__}")
+            import traceback
+            print(f"   Full traceback: {traceback.format_exc()}")
             return None
     
     def check_health_factor_increase_trigger(self, threshold=0.02):

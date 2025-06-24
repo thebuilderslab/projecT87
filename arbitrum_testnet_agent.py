@@ -98,6 +98,24 @@ class ArbitrumTestnetAgent:
         except Exception as e:
             return False, f"Network error: {e}"
     
+    def get_recent_performance(self, num_entries=50):
+        """Get recent performance data from the main performance log"""
+        import json
+        import os
+        
+        performance_data = []
+        performance_log = 'performance_log.json'
+        
+        if os.path.exists(performance_log):
+            with open(performance_log, 'r') as f:
+                for line in f:
+                    try:
+                        performance_data.append(json.loads(line))
+                    except json.JSONDecodeError:
+                        continue
+        
+        return performance_data[-num_entries:] if performance_data else []
+
     def run_real_defi_task(self, run_id, iteration, config):
         """
         Execute real DeFi operations using dynamic health monitoring and conditional trading
