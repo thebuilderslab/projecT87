@@ -71,14 +71,48 @@ for var_name, default_val in critical_secrets.items():
 if not os.getenv('NETWORK_MODE'):
     os.environ['NETWORK_MODE'] = 'mainnet'  # Default to mainnet for launcher
 
-# Ensure environment variables are properly loaded
-print(f"🔍 Environment loading check:")
+# Comprehensive secret linkage debugging
+print(f"🔍 COMPREHENSIVE SECRET LINKAGE DEBUG:")
+print(f"=" * 60)
+print(f"🔧 Environment loading check:")
 print(f"   NETWORK_MODE: {os.getenv('NETWORK_MODE', 'NOT_SET')}")
 print(f"   COINMARKETCAP_API_KEY: {'SET' if os.getenv('COINMARKETCAP_API_KEY') else 'NOT_SET'}")
 print(f"   PROMPT_KEY: {'SET' if os.getenv('PROMPT_KEY') else 'NOT_SET'}")
 print(f"   PRIVATE_KEY: {'SET' if os.getenv('PRIVATE_KEY') else 'NOT_SET'}")
 print(f"   PRIVATE_KEY2: {'SET' if os.getenv('PRIVATE_KEY2') else 'NOT_SET'}")
 print(f"   DEPLOYMENT_ENV: {'SET' if os.getenv('REPLIT_DEPLOYMENT') else 'NOT_SET'}")
+
+# Detailed secret analysis
+secrets_status = {}
+critical_secrets = ['NETWORK_MODE', 'COINMARKETCAP_API_KEY', 'PROMPT_KEY', 'PRIVATE_KEY']
+
+for secret in critical_secrets:
+    value = os.getenv(secret)
+    if value:
+        # Don't print actual values for security
+        secrets_status[secret] = {
+            'status': 'LINKED',
+            'length': len(value),
+            'type': 'string' if isinstance(value, str) else type(value).__name__
+        }
+    else:
+        secrets_status[secret] = {'status': 'NOT_LINKED', 'length': 0, 'type': 'NoneType'}
+
+print(f"\n🔗 SECRET LINKAGE ANALYSIS:")
+for secret, info in secrets_status.items():
+    status_icon = "✅" if info['status'] == 'LINKED' else "❌"
+    print(f"   {status_icon} {secret}: {info['status']} (length: {info['length']})")
+
+# Check if all critical secrets are linked
+all_linked = all(info['status'] == 'LINKED' for info in secrets_status.values())
+print(f"\n🎯 ALL CRITICAL SECRETS LINKED: {'YES' if all_linked else 'NO'}")
+
+if not all_linked:
+    missing = [secret for secret, info in secrets_status.items() if info['status'] != 'LINKED']
+    print(f"❌ MISSING LINKAGES: {', '.join(missing)}")
+    print(f"💡 SOLUTION: Re-link these secrets in Replit Secrets interface")
+
+print(f"=" * 60)
 
 class MainnetSafetyManager:
     """Manages safety features for mainnet deployment"""
