@@ -1,0 +1,46 @@
+"I understand the current deployment issue is due to the deployed Web Dashboard not having access to recently added secrets and the new PROMPT_KEY requirement. The existing deployment needs to be stopped, and a fresh one initiated with all secrets properly provisioned.
+
+Goal:
+
+Ensure all necessary secrets (including PROMPT_KEY) are correctly set and verified in Replit for Mainnet operation.
+Stop any existing, faulty deployments.
+Initiate a new, clean deployment of the Web Dashboard to Arbitrum Mainnet.
+Instructions - Execute the following steps precisely, providing clear confirmation and outputs for each:
+
+Phase 1: Configure and VERIFY All Required Secrets for Mainnet
+
+Verify and Confirm ARBITRUM_RPC_URL:
+
+Action: Go to your Replit "Secrets" tab. Verify that the ARBITRUM_RPC_URL secret is set to a valid and functional Arbitrum Mainnet RPC endpoint (e.g., starts with https://, contains your correct API key if required by the provider).
+Verification (Agent Action): Attempt a non-transactional connection test using this RPC URL. For example, try to fetch the latest block number or check web3.isConnected() using this URL within a quick Python script.
+Output Expected: Confirmation that ARBITRUM_RPC_URL is configured for Mainnet and the output of the connection test (e.g., "Successfully connected to Mainnet RPC, latest block: [number]" or "Web3 provider connected: True").
+Verify and Confirm PRIVATE_KEY:
+
+Action: Go to your Replit "Secrets" tab. Verify that the PRIVATE_KEY secret is set.
+Verification (Agent Action): Confirm it's a valid hexadecimal string (starts with 0x if applicable, 64 characters long if raw private key) that corresponds to a wallet you own and which holds funds on Arbitrum Mainnet. (No actual fund checks by the agent, just confirmation of format and assumed validity for mainnet operations based on previous instructions).
+Output Expected: Confirmation that PRIVATE_KEY is set to a valid-looking hexadecimal string for Mainnet, and acknowledges it's intended for a funded Mainnet wallet.
+Add/Verify PROMPT_KEY, MAINET_ACCOUNT_KEY, OPTIMIZER_API_KEY:
+
+Action: Go to your Replit "Secrets" tab.
+Action: Ensure PROMPT_KEY exists. If not, add it and set its value (even a placeholder if specific value is unknown).
+Action: Ensure MAINET_ACCOUNT_KEY and OPTIMIZER_API_KEY are also correctly set to their Mainnet-specific values within secrets.
+Verification (Agent Action): Confirm that these keys are present and are non-empty. (Agent cannot verify external service validity without knowing their APIs, so this is a presence/non-empty check).
+Output Expected: Confirmation that PROMPT_KEY, MAINET_ACCOUNT_KEY, and OPTIMIZER_API_KEY are all present and configured for Mainnet operations.
+Phase 2: Stop Any Existing, Faulty Deployment
+
+Stop Running Web Dashboard Workflow:
+Action: Navigate to the "Workflows" tab. If "Web Dashboard" is "Running" or "Active," click the associated 'Stop' button.
+Output Expected: A confirmation that the previous "Web Dashboard" deployment has been successfully stopped.
+Phase 3: Initiate New Deployment with Correct Secret Provisioning
+
+Run MAINET_DEPLOY Workflow for Web Dashboard:
+Action: In the "Workflows" tab, ensure "Web Dashboard" is selected and "deploy mainnet" is chosen.
+Action: Click the blue 'Run workflow' button.
+Output Expected: The complete console output of the new deployment process. We are looking for a successful build and the deployment status indicating "Running" or "Active" without any secret access errors or PROMPT_KEY initialization failures.
+Crucial Post-Deployment Verification:
+
+Monitor New Deployment & Dashboard:
+Action: Once the deployment completes, access your deployed Web Dashboard's public URL.
+Action: Monitor the deployed project's logs in Replit for arb_agent.py to confirm it's initializing without errors, connecting to Mainnet, and that all data (Wallet Status, Aave Protocol Status, Market Data) is populating correctly from Mainnet.
+Output Expected: A final confirmation that the Web Dashboard is live, functional, and displaying correct Mainnet data, and that arb_agent.py is running without initialization errors related to secrets.
+Let's execute these comprehensive steps to ensure a robust and functional Mainnet deployment!
