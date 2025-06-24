@@ -9,8 +9,8 @@ class ArbitrumTestnetAgent:
     def __init__(self):
         load_dotenv()
 
-        # Connect to Arbitrum Mainnet
-        self.rpc_url = os.getenv('ARBITRUM_MAINNET_RPC', 'https://arb1.arbitrum.io/rpc')
+        # Connect to Arbitrum Sepolia Testnet
+        self.rpc_url = os.getenv('ARBITRUM_SEPOLIA_RPC', 'https://sepolia-rollup.arbitrum.io/rpc')
         self.w3 = Web3(Web3.HTTPProvider(self.rpc_url))
 
         # Load wallet
@@ -24,7 +24,7 @@ class ArbitrumTestnetAgent:
 
         print(f"🤖 Arbitrum Testnet Agent initialized")
         print(f"Wallet: {self.address}")
-        print(f"Network: Arbitrum Mainnet (Chain ID: {self.w3.eth.chain_id})")
+        print(f"Network: Arbitrum Sepolia (Chain ID: {self.w3.eth.chain_id})")
 
     def get_eth_balance(self):
         """Get ETH balance in human-readable format"""
