@@ -7,3 +7,5 @@ eth-account
 python-dotenv
 requests
 web3
+flask
+flask
