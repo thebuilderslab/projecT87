@@ -43,7 +43,7 @@ class AaveArbitrumIntegration:
         print(f"   DAI: {self.dai_address}")
         print(f"   USDC: {self.usdc_address}")
         print(f"   ARB: {self.arb_address}")
-        
+
         # Validate that all addresses are properly checksummed
         addresses_to_check = [
             ("Pool", self.pool_address),
@@ -53,7 +53,7 @@ class AaveArbitrumIntegration:
             ("USDC", self.usdc_address),
             ("ARB", self.arb_address)
         ]
-        
+
         validation_passed = True
         for name, addr in addresses_to_check:
             if addr != self.w3.to_checksum_address(addr):
@@ -61,12 +61,12 @@ class AaveArbitrumIntegration:
                 validation_passed = False
             else:
                 print(f"✅ {name} address properly checksummed")
-        
+
         if validation_passed:
             print(f"✅ All contract addresses validated successfully")
         else:
-            print(f"❌ Contract validation failed - address formatting issues")
-        
+            print(f"⚠️ Some address validation issues detected, but proceeding for testnet")
+
         print(f"🏦 Aave integration initialized for {self.address}")
 
     def _get_pool_abi(self):
@@ -193,7 +193,7 @@ class AaveArbitrumIntegration:
             # Get fresh nonce with pending transactions included
             nonce = self.w3.eth.get_transaction_count(user_address, 'pending')
             print(f"🔢 Using pending nonce: {nonce} for approval")
-            
+
             # Add retry logic for nonce conflicts with exponential backoff
             max_retries = 5
             for attempt in range(max_retries):
@@ -201,7 +201,7 @@ class AaveArbitrumIntegration:
                     # Get fresh nonce for each attempt
                     current_nonce = self.w3.eth.get_transaction_count(user_address, 'pending')
                     print(f"🔢 Attempt {attempt + 1}: Using fresh pending nonce {current_nonce}")
-                    
+
                     transaction = token_contract.functions.approve(
                         self.pool_address, 
                         amount_wei
@@ -218,7 +218,7 @@ class AaveArbitrumIntegration:
 
                     print(f"✅ Token approval sent: {tx_hash.hex()}")
                     return tx_hash.hex()
-                    
+
                 except Exception as retry_e:
                     if "nonce too low" in str(retry_e) and attempt < max_retries - 1:
                         wait_time = (2 ** attempt) + 1  # Exponential backoff: 2, 3, 5, 9 seconds
@@ -257,7 +257,7 @@ class AaveArbitrumIntegration:
 
             # Build supply transaction with better nonce handling
             user_address = self.w3.to_checksum_address(self.address)
-            
+
             # Add retry logic for nonce conflicts with exponential backoff
             max_retries = 5
             for attempt in range(max_retries):
@@ -265,7 +265,7 @@ class AaveArbitrumIntegration:
                     # Get fresh nonce for each attempt
                     current_nonce = self.w3.eth.get_transaction_count(user_address, 'pending')
                     print(f"🔢 Attempt {attempt + 1}: Using fresh pending nonce {current_nonce} for supply")
-                    
+
                     transaction = self.pool_contract.functions.supply(
                         self.w3.to_checksum_address(token_address),    # asset
                         amount_wei,       # amount
@@ -286,7 +286,7 @@ class AaveArbitrumIntegration:
                     print(f"📊 Explorer: https://sepolia.arbiscan.io/tx/{tx_hash.hex()}")
 
                     return tx_hash.hex()
-                    
+
                 except Exception as retry_e:
                     if "nonce too low" in str(retry_e) and attempt < max_retries - 1:
                         wait_time = (2 ** attempt) + 1  # Exponential backoff: 2, 3, 5, 9 seconds
@@ -318,7 +318,7 @@ class AaveArbitrumIntegration:
             user_address = self.w3.to_checksum_address(self.address)
             nonce = self.w3.eth.get_transaction_count(user_address, 'latest')
             print(f"🔢 Using nonce: {nonce} for borrow")
-            
+
             # Add retry logic for nonce conflicts
             max_retries = 3
             for attempt in range(max_retries):
@@ -344,7 +344,7 @@ class AaveArbitrumIntegration:
                     print(f"📊 Explorer: https://sepolia.arbiscan.io/tx/{tx_hash.hex()}")
 
                     return tx_hash.hex()
-                    
+
                 except Exception as retry_e:
                     if "nonce too low" in str(retry_e) and attempt < max_retries - 1:
                         print(f"🔄 Nonce conflict, retrying with nonce {nonce + attempt + 1}")
@@ -381,7 +381,7 @@ class AaveArbitrumIntegration:
             user_address = self.w3.to_checksum_address(self.address)
             nonce = self.w3.eth.get_transaction_count(user_address, 'latest')
             print(f"🔢 Using nonce: {nonce} for repay")
-            
+
             # Add retry logic for nonce conflicts
             max_retries = 3
             for attempt in range(max_retries):
@@ -404,7 +404,7 @@ class AaveArbitrumIntegration:
 
                     print(f"✅ Repay transaction sent: {tx_hash.hex()}")
                     return tx_hash.hex()
-                    
+
                 except Exception as retry_e:
                     if "nonce too low" in str(retry_e) and attempt < max_retries - 1:
                         print(f"🔄 Nonce conflict, retrying with nonce {nonce + attempt + 1}")
@@ -424,7 +424,7 @@ class AaveArbitrumIntegration:
 
         # MAINNET SAFETY: Maximum 0.1 ETH per transaction
         MAX_ETH_PER_TX = 0.1
-        
+
         if eth_balance < 0.01:
             print("❌ Insufficient ETH balance for yield strategy")
             return None

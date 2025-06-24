@@ -13,6 +13,15 @@ class ArbitrumTestnetAgent:
         self.rpc_url = os.getenv('ARBITRUM_SEPOLIA_RPC', 'https://sepolia-rollup.arbitrum.io/rpc')
         self.w3 = Web3(Web3.HTTPProvider(self.rpc_url))
 
+        # Validate network connection first
+        if not self.w3.is_connected():
+            raise ValueError("Cannot connect to Arbitrum Sepolia RPC")
+        
+        # Verify we're on the correct network
+        chain_id = self.w3.eth.chain_id
+        if chain_id != 421614:
+            raise ValueError(f"Wrong network! Expected Arbitrum Sepolia (421614), got {chain_id}")
+
         # Load wallet
         private_key = os.getenv('PRIVATE_KEY')
         if not private_key or private_key == 'your_private_key_here':
