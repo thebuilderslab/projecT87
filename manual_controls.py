@@ -1,0 +1,54 @@
+
+from arbitrum_testnet_agent import ArbitrumTestnetAgent
+
+class ManualControls:
+    def __init__(self):
+        self.agent = ArbitrumTestnetAgent()
+        
+    def fund_wallet(self, usdc_amount=100, eth_amount=10):
+        """Instructions for funding wallet"""
+        print(f"💰 **FUNDING INSTRUCTIONS**")
+        print(f"Send {usdc_amount} USDC and {eth_amount} ETH to:")
+        print(f"📍 Wallet Address: {self.agent.address}")
+        print(f"🌐 Network: Arbitrum Sepolia")
+        print(f"🔗 Bridge: https://bridge.arbitrum.io/?destinationChain=arbitrum-sepolia")
+        
+    def execute_strategy(self, strategy_type):
+        """Execute specific strategies manually"""
+        strategies = {
+            "health_check": "Check current health factor and trigger conditions",
+            "supply_collateral": "Supply ETH/USDC as collateral to Aave",
+            "borrow_usdc": "Borrow USDC when health factor > 1.21",
+            "swap_to_arb": "Swap USDC to ARB tokens",
+            "risk_mitigation": "Swap ARB back to USDC if declining"
+        }
+        
+        print(f"\n🎯 Executing: {strategies.get(strategy_type, 'Unknown strategy')}")
+        
+        if strategy_type == "health_check":
+            summary = self.agent.health_monitor.get_monitoring_summary()
+            print(f"Current Health Factor: {summary['current_health_factor']:.4f}")
+            return summary
+            
+        elif strategy_type == "supply_collateral":
+            return self.agent.aave.supply_to_aave(
+                self.agent.aave.weth_address, 
+                self.agent.get_eth_balance() * 0.5
+            )
+            
+        # Add more manual strategies as needed
+        
+    def show_menu(self):
+        """Show interactive menu"""
+        print("\n🎛️ **MANUAL CONTROL MENU**")
+        print("1. 💰 Fund Wallet Instructions")
+        print("2. 🏥 Check Health Status") 
+        print("3. 🏦 Supply Collateral")
+        print("4. 💸 Execute Borrow Strategy")
+        print("5. 🔄 Risk Mitigation")
+        print("6. 📊 Show Dashboard")
+        print("0. Exit")
+
+if __name__ == "__main__":
+    controls = ManualControls()
+    controls.show_menu()
