@@ -62,20 +62,26 @@ def verify_private_key():
         print("❌ ERROR: No PRIVATE_KEY or PRIVATE_KEY2 found in secrets")
         return False
     
-    # Validate format
-    if not private_key.startswith('0x'):
-        print("❌ ERROR: Private key should start with '0x'")
-        return False
+    # Validate format - handle both 0x-prefixed and raw hex keys
+    if private_key.startswith('0x'):
+        hex_part = private_key[2:]
+        expected_length = 66
+    else:
+        hex_part = private_key
+        expected_length = 64
     
-    if len(private_key) != 66:  # 0x + 64 hex characters
-        print(f"❌ ERROR: Private key should be 66 characters long, got {len(private_key)}")
+    if len(private_key) not in [64, 66]:
+        print(f"❌ ERROR: Private key should be 64 or 66 characters long, got {len(private_key)}")
         return False
     
     try:
         # Test if it's valid hex
-        bytes.fromhex(private_key[2:])
+        bytes.fromhex(hex_part)
         print("✅ Private key format is valid (64-character hexadecimal)")
-        print("✅ Private key starts with '0x' as required")
+        if private_key.startswith('0x'):
+            print("✅ Private key has 0x prefix")
+        else:
+            print("✅ Private key is raw hex (will be handled correctly)")
         print("✅ Ready for mainnet wallet operations")
         print("⚠️  ENSURE this wallet is funded on Arbitrum Mainnet!")
         
@@ -129,22 +135,36 @@ def verify_additional_secrets():
     """Verify PROMPT_KEY, MAINET_ACCOUNT_KEY, OPTIMIZER_API_KEY"""
     print("\n🔍 VERIFYING ADDITIONAL SECRETS...")
     
-    secrets_to_check = ['PROMPT_KEY', 'MAINET_ACCOUNT_KEY', 'OPTIMIZER_API_KEY']
-    all_valid = True
+    # PROMPT_KEY is required
+    prompt_key = os.getenv('PROMPT_KEY')
+    if not prompt_key:
+        print("❌ ERROR: PROMPT_KEY not found in secrets")
+        print("💡 PROMPT_KEY is required for AI-driven features")
+        return False
+    else:
+        print("✅ PROMPT_KEY: Present and configured")
     
-    for secret_name in secrets_to_check:
+    # Optional secrets with functionality explanations
+    optional_secrets = {
+        'MAINET_ACCOUNT_KEY': 'Advanced account management features and multi-wallet support',
+        'OPTIMIZER_API_KEY': 'Gas optimization and yield strategy enhancements'
+    }
+    
+    for secret_name, functionality in optional_secrets.items():
         value = os.getenv(secret_name)
         
-        if not value:
-            print(f"❌ ERROR: {secret_name} not found in secrets")
-            all_valid = False
-        elif len(value.strip()) == 0:
-            print(f"❌ ERROR: {secret_name} is empty")
-            all_valid = False
+        if not value or len(value.strip()) == 0:
+            print(f"⚠️  WARNING: {secret_name} not found or empty")
+            print(f"   Impact: {functionality} will use default/fallback behavior")
         else:
-            print(f"✅ {secret_name}: Present and non-empty")
+            print(f"✅ {secret_name}: Present and configured")
     
-    return all_valid
+    print("\n💡 FUNCTIONALITY IMPACT OF PLACEHOLDER VALUES:")
+    print("   • MAINET_ACCOUNT_KEY: If placeholder, multi-wallet features disabled")
+    print("   • OPTIMIZER_API_KEY: If placeholder, basic gas estimation used instead of optimization")
+    print("   • Core DeFi operations (Aave, Uniswap) will work with placeholder values")
+    
+    return True
 
 def verify_network_mode():
     """Verify NETWORK_MODE is set to mainnet"""

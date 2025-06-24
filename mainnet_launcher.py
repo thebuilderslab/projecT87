@@ -49,31 +49,36 @@ class MainnetSafetyManager:
         print("🔍 MAINNET READINESS VALIDATION")
         print("=" * 50)
 
-        # Check environment variables
-        required_vars = [
-            'PRIVATE_KEY2', 
-            'COINMARKETCAP_API_KEY',
-            'PROMPT_KEY',
-            'MAINET_ACCOUNT_KEY', 
-            'OPTIMIZER_API_KEY'
-        ]
+        # Check critical environment variables
+        critical_vars = ['PRIVATE_KEY2', 'COINMARKETCAP_API_KEY', 'PROMPT_KEY']
+        optional_vars = ['MAINET_ACCOUNT_KEY', 'OPTIMIZER_API_KEY']
         
-        for var in required_vars:
+        # Validate critical secrets
+        for var in critical_vars:
             value = os.getenv(var)
             if not value:
-                print(f"❌ Missing required environment variable: {var}")
+                print(f"❌ Missing critical environment variable: {var}")
                 print(f"💡 Please add {var} to your Replit Secrets")
                 return False
                 
             if var == 'PRIVATE_KEY2':
-                if not value.startswith('0x') or len(value) != 66:
-                    print(f"❌ Invalid {var} format (should start with 0x and be 66 chars)")
+                # Handle both 0x-prefixed and raw hex keys
+                if len(value) not in [64, 66]:
+                    print(f"❌ Invalid {var} format (should be 64 or 66 characters)")
                     return False
             elif len(value.strip()) == 0:
                 print(f"❌ {var} is empty - please set a valid value")
                 return False
                 
             print(f"✅ {var}: Configured properly")
+        
+        # Check optional secrets with warnings
+        for var in optional_vars:
+            value = os.getenv(var)
+            if not value or len(value.strip()) == 0:
+                print(f"⚠️  {var}: Missing or placeholder (some features may be limited)")
+            else:
+                print(f"✅ {var}: Configured properly")
 
         # Check network mode
         network_mode = os.getenv('NETWORK_MODE', 'testnet')

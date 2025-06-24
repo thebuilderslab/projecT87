@@ -35,10 +35,10 @@ class ArbitrumTestnetAgent:
         if chain_id != self.expected_chain_id:
             raise ValueError(f"Wrong network! Expected Arbitrum Sepolia ({self.expected_chain_id}), got {chain_id}")
 
-        # Load private key from environment (try multiple names for compatibility)
+        # Load private key from environment (PRIVATE_KEY2 is primary for mainnet)
         private_key = os.getenv('PRIVATE_KEY2') or os.getenv('PRIVATE_KEY')
         if not private_key:
-            raise ValueError("Please set PRIVATE_KEY2 in .env file")
+            raise ValueError("Please set PRIVATE_KEY2 in Replit Secrets for mainnet deployment")
 
         self.account = Account.from_key(private_key)
         # Ensure address is properly checksummed from the start
