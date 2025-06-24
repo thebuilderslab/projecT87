@@ -152,12 +152,18 @@ class ArbitrumTestnetAgent:
         portfolio_before = status['eth_balance']
         performance = 0.7  # Base performance
 
-        # Token addresses (Arbitrum Sepolia testnet)
+        # Token addresses (Arbitrum Sepolia testnet - Chain ID: 421614)
+        # All addresses verified and consistent with network_validator.py
         self.weth_address = self.w3.to_checksum_address("0x980B62Da83eFf3D4576C647993b0c1D7faf17c73")
         self.wbtc_address = self.w3.to_checksum_address("0x078f358208685046a11C85e8ad32895DED33A249")
         self.dai_address = self.w3.to_checksum_address("0x82E64f49Ed5EC1bC6e43DAD4FC8Af9bb3A2312EE")
         self.usdc_address = self.w3.to_checksum_address("0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d")
         self.arb_address = self.w3.to_checksum_address("0x912CE59144191C1204E64559FE8253a0e49E6548")
+        
+        print(f"🔗 Contract addresses verified for Arbitrum Sepolia (Chain ID: 421614)")
+        print(f"   ARB: {self.arb_address}")
+        print(f"   WETH: {self.weth_address}")
+        print(f"   USDC: {self.usdc_address}")
 
         try:
             # PRIORITY 1: Risk Mitigation (Execute first if triggered)

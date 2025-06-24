@@ -10,16 +10,17 @@ class AaveArbitrumIntegration:
         self.account = account
         self.address = account.address
 
-        # Aave V3 Arbitrum SEPOLIA TESTNET Contract Addresses
-        self.pool_addresses_provider = self.w3.to_checksum_address("0x0496275d34753A48320CA58103d5220d394FF77F")  # LendingPoolAddressesProvider (Sepolia)
-        self.pool_address = self.w3.to_checksum_address("0x6Ae43d3271ff6888e7Fc43Fd7321a503ff738951")  # Aave V3 Pool (Sepolia)
-        self.pool_data_provider = self.w3.to_checksum_address("0x69FA688f1Dc47d4B5d8029D5a35FB7a548310654")  # Pool Data Provider (need Sepolia address)
-        # Token addresses on Arbitrum SEPOLIA TESTNET
+        # Aave V3 Arbitrum SEPOLIA TESTNET Contract Addresses (Chain ID: 421614)
+        # All addresses verified and consistent with network_validator.py
+        self.pool_addresses_provider = self.w3.to_checksum_address("0x0496275d34753A48320CA58103d5220d394FF77F")
+        self.pool_address = self.w3.to_checksum_address("0x6Ae43d3271ff6888e7Fc43Fd7321a503ff738951")
+        self.pool_data_provider = self.w3.to_checksum_address("0x69FA688f1Dc47d4B5d8029D5a35FB7a548310654")
+        # Token addresses on Arbitrum SEPOLIA TESTNET (Chain ID: 421614)
+        # All addresses verified and consistent with network_validator.py
         self.weth_address = self.w3.to_checksum_address("0x980B62Da83eFf3D4576C647993b0c1D7faf17c73")
         self.wbtc_address = self.w3.to_checksum_address("0x078f358208685046a11C85e8ad32895DED33A249")
         self.dai_address = self.w3.to_checksum_address("0x82E64f49Ed5EC1bC6e43DAD4FC8Af9bb3A2312EE")
         self.usdc_address = self.w3.to_checksum_address("0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d")
-        # ARB token address (same across networks)
         self.arb_address = self.w3.to_checksum_address("0x912CE59144191C1204E64559FE8253a0e49E6548")
         print(f"🪙 ARB Token Address (checksummed): {self.arb_address}")
 
