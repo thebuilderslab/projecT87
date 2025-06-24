@@ -50,16 +50,29 @@ class MainnetSafetyManager:
         print("=" * 50)
 
         # Check environment variables
-        required_vars = ['PRIVATE_KEY2', 'COINMARKETCAP_API_KEY']
+        required_vars = [
+            'PRIVATE_KEY2', 
+            'COINMARKETCAP_API_KEY',
+            'PROMPT_KEY',
+            'MAINET_ACCOUNT_KEY', 
+            'OPTIMIZER_API_KEY'
+        ]
+        
         for var in required_vars:
             value = os.getenv(var)
             if not value:
                 print(f"❌ Missing required environment variable: {var}")
+                print(f"💡 Please add {var} to your Replit Secrets")
                 return False
+                
             if var == 'PRIVATE_KEY2':
                 if not value.startswith('0x') or len(value) != 66:
                     print(f"❌ Invalid {var} format (should start with 0x and be 66 chars)")
                     return False
+            elif len(value.strip()) == 0:
+                print(f"❌ {var} is empty - please set a valid value")
+                return False
+                
             print(f"✅ {var}: Configured properly")
 
         # Check network mode

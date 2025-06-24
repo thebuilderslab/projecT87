@@ -6,14 +6,21 @@ from eth_account import Account
 from dotenv import load_dotenv
 
 class ArbitrumTestnetAgent:
-    def __init__(self, network_mode='testnet'):
+    def __init__(self, network_mode=None):
         load_dotenv()
+
+        # Auto-detect network mode from environment if not specified
+        if network_mode is None:
+            network_mode = os.getenv('NETWORK_MODE', 'testnet').lower()
 
         # Network configuration
         if network_mode == 'mainnet':
-            self.w3 = Web3(Web3.HTTPProvider('https://arb1.arbitrum.io/rpc'))
+            # Use custom RPC URL if provided, otherwise default
+            rpc_url = os.getenv('ARBITRUM_RPC_URL', 'https://arb1.arbitrum.io/rpc')
+            self.w3 = Web3(Web3.HTTPProvider(rpc_url))
             self.expected_chain_id = 42161
             print("🚨 MAINNET MODE ACTIVATED - REAL FUNDS AT RISK")
+            print(f"🌐 Using RPC: {rpc_url}")
         else:
             self.w3 = Web3(Web3.HTTPProvider('https://sepolia-rollup.arbitrum.io/rpc'))
             self.expected_chain_id = 421614
