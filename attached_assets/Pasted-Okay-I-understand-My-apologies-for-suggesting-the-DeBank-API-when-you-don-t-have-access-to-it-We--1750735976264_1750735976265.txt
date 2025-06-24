@@ -1,0 +1,29 @@
+Okay, I understand. My apologies for suggesting the DeBank API when you don't have access to it. We will focus solely on making the **CoinMarketCap API** work correctly for fetching ARB price data, as you have the `COINMARKETCAP_API_KEY` configured.
+
+We need to resolve this CoinMarketCap API issue, along with the persistent address checksumming error, to move forward.
+
+**Here are the revised instructions for the Replit agent:**
+
+```
+Understood. We will **not** be using the DeBank API, as I don't have access.
+
+Let's focus all efforts on definitively fixing the **CoinMarketCap API integration** and the **address checksumming error**.
+
+Please execute the following steps and provide the **specific code changes** and the **new console output** after each to confirm resolution:
+
+1.  **CoinMarketCap API Fix & Verbose Logging:**
+    * **Show me the exact code** in `aave_data_fetcher.py` (or wherever price fetching occurs) that is responsible for calling the CoinMarketCap API.
+    * **Crucially, add explicit `print()` statements or logging** within this code block to display the following information for *each* API attempt:
+        * The **full CoinMarketCap API request URL** that is being sent.
+        * The **HTTP status code** received from the API response (e.g., 200, 400, 429, 500).
+        * The **raw JSON response body** (or at least the first 500 characters if very long) if the call succeeds, or the **full error message/content** if the call fails. This will help us pinpoint the exact reason for the failure (e.g., wrong URL, invalid key, rate limit, parsing error).
+    * **Verify that the `COINMARKETCAP_API_KEY` is being correctly loaded** from environment variables and included in the API request headers.
+    * **Confirm the correct ARB symbol or ID** is being used for CoinMarketCap.
+    * **Then, re-run the agent** and show the console output, specifically looking for these new logging statements and successful ARB price fetches.
+
+2.  **Address Checksumming Fix Verification:**
+    * **Show me the exact lines of code** in all relevant files (e.g., `arbitrum_testnet_agent.py`, `aave_health_monitor.py`) where `Web3.to_checksum_address()` has been applied to *every single instance* of a raw Ethereum address (your wallet address, Aave contract addresses, etc.) before they are used with `web3.py`.
+    * **Then, re-run the agent** and show the console output to confirm the `web3.exceptions.ValidationError` is definitively gone.
+
+Do not proceed with any other aspects of the strategy until both the CoinMarketCap API fetching and address checksumming are proven to be fully functional and error-free.
+```
