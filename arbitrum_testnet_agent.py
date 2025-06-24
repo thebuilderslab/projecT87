@@ -157,7 +157,7 @@ class ArbitrumTestnetAgent:
         self.wbtc_address = self.w3.to_checksum_address("0x078f358208685046a11C85e8ad32895DED33A249")
         self.dai_address = self.w3.to_checksum_address("0x82E64f49Ed5EC1bC6e43DAD4FC8Af9bb3A2312EE")
         self.usdc_address = self.w3.to_checksum_address("0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d")
-        self.arb_address = self.w3.to_checksum_address("0xc275B23C035a9d4EC8867b47f55427E0bDCe14cB")
+        self.arb_address = self.w3.to_checksum_address("0x912CE59144191C1204E64559FE8253a0e49E6548")
 
         try:
             # PRIORITY 1: Risk Mitigation (Execute first if triggered)
