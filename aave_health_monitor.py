@@ -25,11 +25,21 @@ class AaveHealthMonitor:
         # ARB token address on Arbitrum Sepolia  
         self.arb_address = self.w3.to_checksum_address("0x912CE59144191C1204E64559FE8253a0e49E6548")
         
-        # Ensure account address is properly formatted
+        # Ensure account address is properly formatted and checksummed
         if hasattr(self.account, 'address'):
             self.user_address = self.w3.to_checksum_address(self.account.address)
         else:
-            self.user_address = self.w3.to_checksum_address(str(self.account))
+            # Handle case where account might be a string or other format
+            account_str = str(self.account)
+            if account_str.startswith('0x'):
+                self.user_address = self.w3.to_checksum_address(account_str)
+            else:
+                raise ValueError(f"Invalid account format: {account_str}")
+        
+        print(f"📊 Health Monitor Addresses:")
+        print(f"   User: {self.user_address}")
+        print(f"   Data Provider: {self.data_provider_address}")
+        print(f"   ARB Token: {self.arb_address}")
         
         print(f"📊 Enhanced Aave Health Monitor initialized for {self.user_address}")
     
@@ -55,21 +65,31 @@ class AaveHealthMonitor:
     def get_current_health_factor(self):
         """Get current health factor from Aave"""
         try:
-            # Ensure account address is properly checksummed
-            if hasattr(self.account, 'address'):
-                user_address = self.w3.to_checksum_address(self.account.address)
-            else:
-                user_address = self.w3.to_checksum_address(str(self.account))
+            # Use pre-checksummed addresses
+            user_address = self.user_address
+            data_provider_address = self.data_provider_address
             
-            # Verify all contract addresses are checksummed
-            data_provider_address = self.w3.to_checksum_address(self.data_provider_address)
+            print(f"🔍 Calling getUserAccountData with:")
+            print(f"   Contract: {data_provider_address}")
+            print(f"   User: {user_address}")
             
-            # Recreate contract with checksummed address
+            # Create contract instance
             data_provider_contract = self.w3.eth.contract(
                 address=data_provider_address,
                 abi=self.data_provider_abi
             )
             
+            # Test if contract exists
+            try:
+                code = self.w3.eth.get_code(data_provider_address)
+                if code == b'':
+                    print(f"❌ No contract deployed at {data_provider_address}")
+                    return None
+            except Exception as code_err:
+                print(f"❌ Error checking contract code: {code_err}")
+                return None
+            
+            # Call the function
             user_data = data_provider_contract.functions.getUserAccountData(user_address).call()
             
             # Extract data
@@ -92,19 +112,26 @@ class AaveHealthMonitor:
             # Store in history
             self.health_history.append(account_data)
             
+            print(f"✅ Health factor retrieved: {health_factor:.4f}")
             return account_data
             
         except Exception as e:
             print(f"❌ Failed to get health factor: {e}")
+            print(f"   Exception type: {type(e).__name__}")
+            print(f"   User address: {self.user_address}")
+            print(f"   Contract address: {self.data_provider_address}")
             return None
     
     def get_arb_price(self):
         """Get ARB price from CoinMarketCap API"""
         try:
-            # Use CoinMarketCap API for ARB price
+            # Check for API key
             api_key = os.getenv('COINMARKETCAP_API_KEY')
+            print(f"🔍 CoinMarketCap API Key status: {'Found' if api_key else 'NOT FOUND'}")
+            
             if not api_key:
                 print("❌ CoinMarketCap API key not found in environment")
+                print("   Please add COINMARKETCAP_API_KEY to your Replit secrets")
                 return None
                 
             url = "https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest"
@@ -118,10 +145,19 @@ class AaveHealthMonitor:
                 'convert': 'USD'
             }
             
+            print(f"🌐 Making CoinMarketCap API request:")
+            print(f"   URL: {url}")
+            print(f"   Params: {params}")
+            print(f"   API Key (first 8 chars): {api_key[:8]}...")
+            
             response = requests.get(url, headers=headers, params=params, timeout=10)
+            
+            print(f"📡 API Response Status: {response.status_code}")
             
             if response.status_code == 200:
                 data = response.json()
+                print(f"✅ API Response received successfully")
+                
                 if 'data' in data and 'ARB' in data['data']:
                     arb_price = data['data']['ARB']['quote']['USD']['price']
                     
@@ -130,10 +166,14 @@ class AaveHealthMonitor:
                         'timestamp': time.time()
                     }
                     
+                    print(f"💰 ARB Price: ${arb_price:.4f}")
                     self.arb_price_history.append(price_data)
                     return price_data
                 else:
-                    print(f"❌ Invalid CoinMarketCap response format: {data}")
+                    print(f"❌ Invalid CoinMarketCap response format:")
+                    print(f"   Response keys: {list(data.keys()) if isinstance(data, dict) else 'Not a dict'}")
+                    if 'data' in data:
+                        print(f"   Data keys: {list(data['data'].keys()) if isinstance(data['data'], dict) else 'Data not a dict'}")
                     return None
             elif response.status_code == 429:
                 print(f"❌ CoinMarketCap rate limit exceeded - waiting...")
@@ -144,11 +184,12 @@ class AaveHealthMonitor:
                     error_data = response.json()
                     print(f"   Error details: {error_data}")
                 except:
-                    pass
+                    print(f"   Raw response: {response.text}")
                 return None
                 
         except Exception as e:
             print(f"❌ ARB price fetch error: {e}")
+            print(f"   Exception type: {type(e).__name__}")
             return None
     
     def check_health_factor_increase_trigger(self, threshold=0.02):
@@ -207,13 +248,21 @@ class AaveHealthMonitor:
     def get_arb_balance(self):
         """Get current ARB token balance"""
         try:
-            # Ensure all addresses are properly checksummed
-            arb_address = self.w3.to_checksum_address(self.arb_address)
+            # Use pre-checksummed addresses
+            arb_address = self.arb_address
+            user_address = self.user_address
             
-            if hasattr(self.account, 'address'):
-                user_address = self.w3.to_checksum_address(self.account.address)
-            else:
-                user_address = self.w3.to_checksum_address(str(self.account))
+            print(f"🔍 Getting ARB balance for {user_address} from {arb_address}")
+            
+            # Test if ARB contract exists
+            try:
+                code = self.w3.eth.get_code(arb_address)
+                if code == b'':
+                    print(f"❌ No ARB contract deployed at {arb_address}")
+                    return 0.0
+            except Exception as code_err:
+                print(f"❌ Error checking ARB contract code: {code_err}")
+                return 0.0
             
             arb_contract = self.w3.eth.contract(
                 address=arb_address, 
@@ -223,10 +272,16 @@ class AaveHealthMonitor:
             balance = arb_contract.functions.balanceOf(user_address).call()
             decimals = arb_contract.functions.decimals().call()
             
-            return float(balance) / float(10 ** decimals)
+            formatted_balance = float(balance) / float(10 ** decimals)
+            print(f"✅ ARB balance: {formatted_balance:.4f}")
+            
+            return formatted_balance
             
         except Exception as e:
             print(f"❌ Failed to get ARB balance: {e}")
+            print(f"   Exception type: {type(e).__name__}")
+            print(f"   User address: {user_address}")
+            print(f"   ARB address: {arb_address}")
             return 0.0
     
     def calculate_optimal_usdc_borrow(self, target_health_factor=1.19):
