@@ -14,10 +14,10 @@ class NetworkValidator:
         """Validate that all required contracts exist on the network"""
         contracts_to_check = {
             "Aave Pool": "0xBfC91D59fdAA134A4ED45f7B584cAf96D7792Eff",
-            "Aave Data Provider": "0x2F9D57E97C3DFED8676e605BC504a48E0c5917E9", 
+            "Aave Data Provider": "0xBfC91D59fdAA134A4ED45f7B584cAf96D7792Eff", 
             "WETH": "0x980B62Da83eFf3D4576C647993b0c1D7faf17c73",
             "USDC": "0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d",
-            "ARB": "0x912CE59144191C1204E64559FE8253a0e49E6548",
+            "ARB": "0xc275B23C035a9d4EC8867b47f55427E0bDCe14cB",
             "Uniswap Router": "0x101F443B4d1b059569D643917553c771E1b9663E"
         }
         
