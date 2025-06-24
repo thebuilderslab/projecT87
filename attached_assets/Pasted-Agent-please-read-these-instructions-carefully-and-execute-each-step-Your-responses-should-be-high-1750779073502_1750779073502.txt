@@ -1,0 +1,83 @@
+Agent, please read these instructions carefully and execute each step. Your responses should be highly detailed, use Markdown formatting for clarity, and explicitly confirm your understanding and the state of the environment after each action.
+
+Current Project Status Acknowledgment:
+
+I acknowledge that main_backend.py has been updated to use PRIVATE_KEY2, and RPC connectivity to Arbitrum Mainnet is confirmed.
+All workflows are currently stopped, ensuring a clean deployment environment.
+Critical Discrepancy: My Replit 'Account Secrets' tab confirms that NETWORK_MODE is mainnet (all lowercase) and MAINET_ACCOUNT_KEY is present with the placeholder 0x0000000000000000000000000000000000000000. Your previous reports indicating these are incorrect or missing are inaccurate.
+Primary Goal: To successfully deploy the Web Dashboard to Arbitrum Mainnet by correctly acknowledging all secrets and executing the deployment workflow.
+
+Phase 1: Confirm Code Change & Force Secret Re-Verification (with Override)
+Acknowledge PRIVATE_KEY2 Code Update Completion:
+
+Agent Action: Internally confirm that the code modification from PRIVATE_KEY to PRIVATE_KEY2 in main_backend.py (and any other relevant files, if applicable) is definitively completed and saved.
+Expected Agent Output (Markdown Format):
+### Step 1: PRIVATE_KEY2 Code Update Confirmation
+
+**Action Performed:** Confirmed that the code modification to use `PRIVATE_KEY2` in `main_backend.py` has been completed and saved.
+**Internal State Acknowledged:** The project's source code is now configured to use `PRIVATE_KEY2` for private key retrieval.
+
+Force Re-Verification of All Critical Secrets (Override Discrepancy if Needed):
+
+Agent Action: Execute a fresh verification process for all secrets. You may run python verify_secret.py or equivalent internal mechanism to explicitly force a re-load and re-validation of all secrets from the current Replit environment variables.
+Crucial Override Instruction: If, after this re-verification, your script (verify_secret.py or similar) still incorrectly reports that NETWORK_MODE is not 'mainnet' or that MAINET_ACCOUNT_KEY is not found, you MUST explicitly state that you acknowledge my manual confirmation that these secrets ARE correct as per the Replit 'Account Secrets' tab. You are to proceed with the next steps based on my explicit confirmation, effectively overriding the script's inaccurate report for these specific secrets.
+Expected Agent Output (Markdown Format):
+### Step 2: Forced Secret Re-Verification
+
+**Action Performed:** Initiated a fresh verification process for all environment secrets.
+**Verification Output (Full `verify_secret.py` or equivalent console output):**
+(PASTE FULL CONSOLE OUTPUT OF SECRET VERIFICATION HERE, INCLUDING ANY ERRORS)
+**Agent's Acknowledged Secret Values (Post-Verification):**
+* `ARBITRUM_RPC_URL`: [Value read by agent] - Status: [Confirmed/Error]
+* `NETWORK_MODE`: [Value read by agent] - Status: [Confirmed/Acknowledged Override]
+    * *(If agent reported error for NETWORK_MODE despite correct setting):* **Acknowledged Override:** User's manual verification confirms `NETWORK_MODE` is `mainnet`. Proceeding based on user's confirmation.
+* `PRIVATE_KEY2`: [Value read by agent] - Status: [Confirmed/Error]
+* `PROMPT_KEY`: [Value read by agent] - Status: [Confirmed/Error]
+* `OPTIMIZER_API_KEY`: [Value read by agent] - Status: [Confirmed/Error]
+* `MAINET_ACCOUNT_KEY`: [Value read by agent] - Status: [Confirmed/Acknowledged Override]
+    * *(If agent reported error for MAINET_ACCOUNT_KEY despite correct setting):* **Acknowledged Override:** User's manual verification confirms `MAINET_ACCOUNT_KEY` is present. Proceeding based on user's confirmation.
+
+**Overall Secret Verification Status:** [Success/Partial Success with Overrides/Failure - If failure, state reason clearly and halt.]
+
+Phase 2: Initiate Optimized Mainnet Deployment
+Re-configure and Run MAINET_DEPLOY Workflow for Web Dashboard:
+Agent Action: Navigate to the "Workflows" tab within Replit. Select "Web Dashboard." Click the "Approve and configure build settings" button to refresh the workflow environment with all latest secret configurations. If prompted, proceed with default settings. Ensure "deploy mainnet" is selected. Finally, click the blue 'Run workflow' button.
+Expected Agent Output (Markdown Format):
+### Step 3: Initiating Mainnet Deployment Workflow
+
+**Action Performed:** Successfully initiated the "Web Dashboard" workflow with "deploy mainnet" target.
+**Workflow Console Output (Full Logs during build and deployment):**
+(PASTE FULL CONSOLE LOGS FROM THE WORKFLOW HERE - THIS WILL BE LENGTHY)
+**Deployment Status (Once workflow completes or changes status):** [Running/Active/Succeeded/Failed]
+*(If Failed):* **Error Details:** [Provide any specific errors or reasons for failure from the logs.]
+Phase 3: Post-Deployment Verification & Functional Impact Explanation
+Monitor New Deployment and Verify Dashboard Live Functionality:
+
+Agent Action: Once the deployment workflow reports completion (or becomes 'Running/Active'), attempt to access the deployed Web Dashboard via its public URL. Monitor the deployed project's logs for arb_agent.py to confirm successful initialization, connection to Mainnet, and correct population of core data (e.g., Wallet Status, Aave Protocol Status, Market Data).
+Expected Agent Output (Markdown Format):
+### Step 4: Live Dashboard Verification
+
+**Action Performed:** Attempted to access and monitor the deployed Web Dashboard.
+**Dashboard URL (if successful):** [Full URL of the deployed dashboard]
+**`arb_agent.py` Log Snippet (Relevant startup/connection logs):**
+(PASTE RELEVANT LOGS FROM arb_agent.py CONFIRMING MAINNET CONNECTION AND DATA FETCH)
+**Functional Status:** [Live and Functioning (with placeholder limitations)/Error/Not Accessible]
+**Observations:** [Briefly describe what data is visible or any immediate errors observed on the dashboard.]Provide Detailed MAINET_ACCOUNT_KEY Placeholder Impact Explanation:
+
+Agent Action: Based on its understanding of the project's codebase, provide a comprehensive explanation of how the MAINET_ACCOUNT_KEY being a placeholder affects the agent's and dashboard's functionality.
+Expected Agent Output (Markdown Format):
+### Step 5: `MAINET_ACCOUNT_KEY` Placeholder Functional Impact
+
+**Explanation:**
+The `MAINET_ACCOUNT_KEY` is currently set to a placeholder value (`0x0000000000000000000000000000000000000000`). Based on the project's typical design patterns for DeFi agents, this key is usually intended for:
+* **(Potential Use Case 1):** [Describe how the key would normally be used, e.g., "Identifying a specific user's main account for personalized dashboard views or transaction history."]
+* **(Potential Use Case 2):** [Describe another potential use, e.g., "As the default 'from' address for certain non-critical read-only calls where a specific account context is needed but no funds are involved."]
+* **(Potential Use Case 3 - if applicable to your project):** [Any other specific use case identified in the code.]
+
+**Consequences of Placeholder Value (`0x000...000`):**
+Due to the placeholder, the following functionalities will be **limited or non-operational**:
+* **[Specific Functionality 1]:** [Explain why it won't work, e.g., "Any operations requiring explicit authentication or account-specific data tied to a real Mainnet account will fail or display generic information."]
+* **[Specific Functionality 2]:** [Explain, e.g., "On-chain transactions initiated from the dashboard (if any) that rely on this key for 'from' address or authorization will not execute correctly."]
+* **[Specific Functionality 3 - if applicable]:** [Any other impact.]
+
+**Recommendation:** To enable full functionality, `MAINET_ACCOUNT_KEY` should eventually be replaced with a valid Arbitrum Mainnet account address belonging to the intended operational wallet.
