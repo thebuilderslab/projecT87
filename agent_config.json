@@ -1,6 +1,6 @@
 {
     "learning_rate": 0.01,
-    "exploration_rate": 0.29700000000000015,
+    "exploration_rate": 0.29800000000000015,
     "max_iterations_per_run": 100,
     "optimization_target_threshold": 0.95
 }
