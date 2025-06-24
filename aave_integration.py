@@ -11,9 +11,9 @@ class AaveArbitrumIntegration:
         self.account = account
         self.address = account.address
         
-        # Aave V3 Arbitrum Sepolia Contract Addresses (Updated - verified deployed)
+        # Aave V3 Arbitrum Sepolia Contract Addresses (Working addresses)
         self.pool_address = self.w3.to_checksum_address("0xBfC91D59fdAA134A4ED45f7B584cAf96D7792Eff")  # Aave V3 Pool (verified)
-        self.pool_data_provider = self.w3.to_checksum_address("0x2d8A3C5677189723C4cB8873CfC9C8976FDF38Ac")  # Pool Data Provider (verified)
+        self.pool_data_provider = self.w3.to_checksum_address("0x69FA688f1Dc47d4B5d8029D5a35FB7a548310654")  # Pool Data Provider (working)
         self.weth_address = self.w3.to_checksum_address("0x980B62Da83eFf3D4576C647993b0c1D7faf17c73")  # WETH on Arbitrum Sepolia (verified)
         self.usdc_address = self.w3.to_checksum_address("0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d")  # USDC on Arbitrum Sepolia (verified)
         
