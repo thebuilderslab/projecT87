@@ -33,7 +33,7 @@ mode = "sequential"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "python web_dashboard.py"
+args = "python mainnet_launcher.py"
 
 [[workflows.workflow]]
 name = "Mainnet Launcher"
