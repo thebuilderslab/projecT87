@@ -15,8 +15,16 @@ import threading
 import signal
 from emergency_stop import check_emergency_status
 
-# Load environment variables
-load_dotenv()
+# Load environment variables - Force reload to ensure all secrets are available
+load_dotenv(override=True)
+
+# Ensure environment variables are properly loaded
+print(f"🔍 Environment loading check:")
+print(f"   NETWORK_MODE: {os.getenv('NETWORK_MODE', 'NOT_SET')}")
+print(f"   COINMARKETCAP_API_KEY: {'SET' if os.getenv('COINMARKETCAP_API_KEY') else 'NOT_SET'}")
+print(f"   PROMPT_KEY: {'SET' if os.getenv('PROMPT_KEY') else 'NOT_SET'}")
+print(f"   PRIVATE_KEY: {'SET' if os.getenv('PRIVATE_KEY') else 'NOT_SET'}")
+print(f"   PRIVATE_KEY2: {'SET' if os.getenv('PRIVATE_KEY2') else 'NOT_SET'}")
 
 class MainnetSafetyManager:
     """Manages safety features for mainnet deployment"""
@@ -52,11 +60,12 @@ class MainnetSafetyManager:
         # Check critical environment variables
         critical_vars = ['COINMARKETCAP_API_KEY', 'PROMPT_KEY']
         
-        # Check for private key (PRIVATE_KEY for mainnet)
-        private_key = os.getenv('PRIVATE_KEY')
+        # Check for private key (try PRIVATE_KEY first, then PRIVATE_KEY2 as fallback)
+        private_key = os.getenv('PRIVATE_KEY') or os.getenv('PRIVATE_KEY2')
         if not private_key:
             print("❌ Missing critical environment variable: PRIVATE_KEY")
             print("💡 Please add PRIVATE_KEY to your Replit Secrets")
+            print("   (Or ensure PRIVATE_KEY2 is available as fallback)")
             return False
         
         # Validate private key format
