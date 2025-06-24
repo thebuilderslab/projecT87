@@ -28,9 +28,9 @@ class ArbitrumTestnetAgent:
         if chain_id != self.expected_chain_id:
             raise ValueError(f"Wrong network! Expected Arbitrum Sepolia ({self.expected_chain_id}), got {chain_id}")
 
-        # Load wallet
-        private_key = os.getenv('PRIVATE_KEY2')
-        if not private_key or private_key == 'your_private_key_here':
+        # Load private key from environment (try multiple names for compatibility)
+        private_key = os.getenv('PRIVATE_KEY2') or os.getenv('PRIVATE_KEY')
+        if not private_key:
             raise ValueError("Please set PRIVATE_KEY2 in .env file")
 
         self.account = Account.from_key(private_key)

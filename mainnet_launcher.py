@@ -1,4 +1,3 @@
-
 #!/usr/bin/env python3
 """
 MAINNET LAUNCHER
@@ -21,23 +20,23 @@ load_dotenv()
 
 class MainnetSafetyManager:
     """Manages safety features for mainnet deployment"""
-    
+
     def __init__(self):
         self.emergency_stop = False
         self.emergency_stop_file = 'EMERGENCY_STOP_ACTIVE.flag'
         self.monitoring_active = True
-        
+
     def check_emergency_stop(self):
         """Check if emergency stop has been triggered"""
         return os.path.exists(self.emergency_stop_file) or self.emergency_stop
-    
+
     def trigger_emergency_stop(self, reason="Manual trigger"):
         """Trigger emergency stop"""
         self.emergency_stop = True
         with open(self.emergency_stop_file, 'w') as f:
             f.write(f"EMERGENCY STOP TRIGGERED\nReason: {reason}\nTimestamp: {time.time()}\n")
         print(f"🚨 EMERGENCY STOP ACTIVATED: {reason}")
-    
+
     def clear_emergency_stop(self):
         """Clear emergency stop (manual intervention required)"""
         self.emergency_stop = False
@@ -49,7 +48,7 @@ class MainnetSafetyManager:
         """Validate system is ready for mainnet deployment"""
         print("🔍 MAINNET READINESS VALIDATION")
         print("=" * 50)
-        
+
         # Check environment variables
         required_vars = ['PRIVATE_KEY2', 'COINMARKETCAP_API_KEY']
         for var in required_vars:
@@ -62,7 +61,7 @@ class MainnetSafetyManager:
                     print(f"❌ Invalid {var} format (should start with 0x and be 66 chars)")
                     return False
             print(f"✅ {var}: Configured properly")
-        
+
         # Check network mode
         network_mode = os.getenv('NETWORK_MODE', 'testnet')
         if network_mode != 'mainnet':
@@ -70,7 +69,7 @@ class MainnetSafetyManager:
             print("🔧 Please set NETWORK_MODE=mainnet in Replit Secrets")
             return False
         print(f"✅ Network mode: mainnet")
-        
+
         # Validate Arbitrum Mainnet RPC
         arbitrum_rpc = os.getenv('ARBITRUM_RPC_URL', 'https://arb1.arbitrum.io/rpc')
         if 'sepolia' in arbitrum_rpc.lower() or 'testnet' in arbitrum_rpc.lower():
@@ -78,30 +77,30 @@ class MainnetSafetyManager:
             print("    Please update ARBITRUM_RPC_URL to mainnet endpoint")
             return False
         print(f"✅ Arbitrum RPC: {arbitrum_rpc}")
-        
+
         # Check emergency stop system
         if not os.path.exists('emergency_stop.py'):
             print("❌ Emergency stop system not found")
             return False
         print("✅ Emergency stop system: Ready")
-        
+
         # Validate wallet has funds (conceptual check)
         print("⚠️ IMPORTANT: Ensure your mainnet wallet has:")
         print("   • Minimum 0.1 ETH for gas fees")
         print("   • Sufficient USDC/WETH for Aave operations")
         print("   • Wallet address should match your PRIVATE_KEY")
-        
+
         return True
 
 def signal_handler(signum, frame):
     """Handle Ctrl+C gracefully"""
     print("\n🛑 Shutdown signal received...")
     print("🔄 Checking for emergency stop...")
-    
+
     # Activate emergency stop on Ctrl+C
     safety_manager = MainnetSafetyManager()
     safety_manager.trigger_emergency_stop("Keyboard interrupt (Ctrl+C)")
-    
+
     print("👋 Mainnet launcher stopped safely")
     sys.exit(0)
 
@@ -114,32 +113,32 @@ def main():
     """Main launcher function"""
     print("🚀 ARBITRUM MAINNET LAUNCHER")
     print("=" * 50)
-    
+
     # Set up signal handler for graceful shutdown
     signal.signal(signal.SIGINT, signal_handler)
-    
+
     # Initialize safety manager
     safety_manager = MainnetSafetyManager()
-    
+
     # Check for existing emergency stop
     if safety_manager.check_emergency_stop():
         print("🚨 EMERGENCY STOP IS ACTIVE!")
         print("Run 'python emergency_stop.py clear' to resume")
         return
-    
+
     # Validate mainnet readiness
     if not safety_manager.validate_mainnet_readiness():
         print("\n❌ MAINNET VALIDATION FAILED!")
         print("Please fix the issues above before deploying to mainnet")
         return
-    
+
     print("\n✅ MAINNET VALIDATION PASSED!")
     print("🔄 Starting mainnet operations...")
-    
+
     # Start web dashboard in background
     dashboard_thread = threading.Thread(target=start_web_dashboard, daemon=True)
     dashboard_thread.start()
-    
+
     # Initialize mainnet agent
     try:
         print("🤖 Initializing Arbitrum Mainnet Agent...")
@@ -147,7 +146,7 @@ def main():
         print(f"✅ Agent initialized for mainnet")
         print(f"📍 Wallet: {agent.address}")
         print(f"🌐 Network: Arbitrum Mainnet")
-        
+
         # Start the main agent loop with emergency stop checks
         run_id = 1
         while True:
@@ -155,32 +154,32 @@ def main():
             if safety_manager.check_emergency_stop():
                 print("🚨 Emergency stop detected! Halting operations...")
                 break
-            
+
             print(f"\n🔄 Starting mainnet run #{run_id}")
-            
+
             try:
                 # Run agent operations
                 performance = agent.run_real_defi_task(run_id, 0, {
                     'health_factor_target': 1.25,  # More conservative for mainnet
                     'max_iterations_per_run': 50
                 })
-                
+
                 print(f"📊 Run #{run_id} performance: {performance:.4f}")
-                
+
             except Exception as e:
                 print(f"❌ Error in run #{run_id}: {e}")
                 # Trigger emergency stop on critical errors
                 safety_manager.trigger_emergency_stop(f"Critical error: {str(e)}")
                 break
-            
+
             run_id += 1
             time.sleep(60)  # Wait 1 minute between runs for mainnet
-            
+
     except Exception as e:
         print(f"❌ Failed to initialize mainnet agent: {e}")
         safety_manager.trigger_emergency_stop(f"Initialization error: {str(e)}")
         return
-    
+
     print("👋 Mainnet launcher stopped")
 
 if __name__ == "__main__":
