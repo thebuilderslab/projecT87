@@ -983,6 +983,18 @@
         document.addEventListener('DOMContentLoaded', function() {
             console.log('DOM loaded, starting dashboard initialization...');
             initializeDashboard();
+            
+            // Failsafe: If dashboard isn't shown after 10 seconds, force show it
+            setTimeout(() => {
+                const loadingEl = document.getElementById('loading');
+                const dashboardEl = document.getElementById('dashboard');
+                
+                if (loadingEl && loadingEl.style.display !== 'none') {
+                    console.warn('Dashboard initialization took too long, forcing display...');
+                    loadingEl.style.display = 'none';
+                    if (dashboardEl) dashboardEl.style.display = 'block';
+                }
+            }, 10000);
         });
 
         // Safe initialization with proper error handling
@@ -999,28 +1011,45 @@
                 if (dashboardEl) dashboardEl.style.display = 'none';
                 if (errorEl) errorEl.style.display = 'none';
 
-                // Initialize in sequence with shorter delays
+                // Initialize in sequence with shorter delays - but don't let failures block the UI
                 await new Promise(resolve => setTimeout(resolve, 500));
 
-                // Fetch critical data first
-                await fetchParameters();
-                await new Promise(resolve => setTimeout(resolve, 200));
+                // Fetch critical data first - but continue even if some fail
+                try {
+                    await fetchParameters();
+                } catch (e) {
+                    console.warn('Parameters fetch failed, continuing...', e);
+                }
+                
+                try {
+                    await fetchWalletStatus();
+                } catch (e) {
+                    console.warn('Wallet status fetch failed, continuing...', e);
+                }
 
-                await fetchWalletStatus();
-                await new Promise(resolve => setTimeout(resolve, 200));
+                try {
+                    await fetchPerformanceData();
+                } catch (e) {
+                    console.warn('Performance data fetch failed, continuing...', e);
+                }
 
-                await fetchPerformanceData();
-                await new Promise(resolve => setTimeout(resolve, 200));
+                try {
+                    await updateEmergencyStatus();
+                } catch (e) {
+                    console.warn('Emergency status fetch failed, continuing...', e);
+                }
 
-                await updateEmergencyStatus();
-                await new Promise(resolve => setTimeout(resolve, 200));
-
-                updateNetworkInfo();
+                try {
+                    updateNetworkInfo();
+                } catch (e) {
+                    console.warn('Network info fetch failed, continuing...', e);
+                }
+                
                 updateLastUpdate();
 
                 console.log('Dashboard initialization complete - showing dashboard');
 
-                // Hide loading and show dashboard
+                // Always show dashboard even if some fetches failed
                 if (loadingEl) loadingEl.style.display = 'none';
                 if (dashboardEl) dashboardEl.style.display = 'block';
 
