@@ -394,51 +394,42 @@
 
         async function fetchWalletStatus() {
             try {
+                console.log('Fetching wallet status...');
                 const response = await fetch('/api/wallet_status');
+
                 if (!response.ok) {
                     throw new Error(`HTTP ${response.status}: ${response.statusText}`);
                 }
 
                 const data = await response.json();
+                console.log('Wallet status received:', data);
 
-                if (data.error) {
-                    console.error('Wallet status error:', data.error);
-                    document.getElementById('walletAddress').textContent = `Error: ${data.error}`;
+                if (data && data.error) {
+                    safeUpdateElement('walletAddress', `Error: ${data.error}`);
                     return;
                 }
 
-                document.getElementById('walletAddress').textContent = data.wallet_address || 'Unknown';
-                document.getElementById('ethBalance').textContent = data.eth_balance ? `${data.eth_balance.toFixed(6)} ETH` : '0 ETH';
-                document.getElementById('usdcBalance').textContent = data.usdc_balance ? `${data.usdc_balance.toFixed(2)} USDC` : '0 USDC';
-
-                const healthFactor = data.health_factor === Infinity ? '∞' : data.health_factor.toFixed(4);
-                document.getElementById('healthFactor').textContent = healthFactor;
-                document.getElementById('healthFactor').className = `status ${getHealthStatus(data.health_factor)}`;
-
-                document.getElementById('totalCollateral').textContent = data.total_collateral_usdc ? `$${data.total_collateral_usdc.toFixed(2)} USDC` : '$0.00 USDC';
-                document.getElementById('totalDebt').textContent = data.total_debt_usdc ? `$${data.total_debt_usdc.toFixed(2)} USDC` : '$0.00 USDC';
-                document.getElementById('availableBorrows').textContent = data.available_borrows_usdc ? `$${data.available_borrows_usdc.toFixed(2)} USDC` : '$0.00 USDC';
-
-                document.getElementById('arbPrice').textContent = data.arb_price ? `$${data.arb_price.toFixed(4)}` : '$0.0000';
-                document.getElementById('networkName').textContent = data.network_name || 'Unknown Network';
-
+                // Validate data structure before using
+                if (data && typeof data === 'object') {
+                    updateWalletStatus(data);
+                    console.log('Wallet status updated successfully');
+                } else {
+                    console.error('Invalid wallet status data:', data);
+                    safeUpdateElement('walletAddress', 'Invalid Data');
+                }
             } catch (error) {
                 console.error('Error fetching wallet status:', error);
-                document.getElementById('walletAddress').textContent = `Connection Error: ${error.message}`;
+                safeUpdateElement('walletAddress', 'Connection Error');
+                safeUpdateElement('ethBalance', 'Error');
+                safeUpdateElement('healthFactor', 'Error');
             }
         }
 
-        async function fetchPerformance() {
+        async function fetchPerformanceData(retryCount = 0) {
             try {
                 console.log('Fetching performance data...');
-                const response = await fetch('/api/performance', {
-                    method: 'GET',
-                    headers: {
-                        'Accept': 'application/json',
-                        'Cache-Control': 'no-cache'
-                    }
-                });
-                
+                const response = await fetch('/api/performance');
+
                 if (!response.ok) {
                     throw new Error(`HTTP ${response.status}: ${response.statusText}`);
                 }
@@ -446,36 +437,31 @@
                 const data = await response.json();
                 console.log('Performance data received:', data);
 
-                if (data.error) {
-                    console.error('Performance error:', data.error);
+                if (data && data.error) {
+                    safeUpdateElement('avgPerformance', `Error: ${data.error}`);
                     return;
                 }
 
-                // Safely update performance metrics with null checks
-                const pnl24hEl = document.getElementById('pnl24h');
-                const avgPerformanceEl = document.getElementById('avgPerformance');
-                const errorRateEl = document.getElementById('errorRate');
-                const totalOpsEl = document.getElementById('totalOps');
-
-                if (pnl24hEl) pnl24hEl.textContent = `${(data.pnl_24h || 0) >= 0 ? '+' : ''}${(data.pnl_24h || 0).toFixed(2)}%`;
-                if (avgPerformanceEl) avgPerformanceEl.textContent = (data.avg_performance || 0).toFixed(3);
-                if (errorRateEl) errorRateEl.textContent = `${(data.error_rate || 0).toFixed(1)}%`;
-                if (totalOpsEl) totalOpsEl.textContent = data.total_operations || 0;
-
-                console.log('Performance data updated successfully');
-
+                // Validate data structure before using
+                if (data && typeof data === 'object') {
+                    updatePerformanceData(data);
+                    console.log('Performance data updated successfully');
+                } else {
+                    console.error('Invalid performance data:', data);
+                    safeUpdateElement('avgPerformance', 'Invalid Data');
+                }
             } catch (error) {
-                console.error('Error fetching performance:', error);
-                // Set default values on error
-                const pnl24hEl = document.getElementById('pnl24h');
-                const avgPerformanceEl = document.getElementById('avgPerformance');
-                const errorRateEl = document.getElementById('errorRate');
-                const totalOpsEl = document.getElementById('totalOps');
+                console.error('Error fetching performance data:', error);
 
-                if (pnl24hEl) pnl24hEl.textContent = '+0.00%';
-                if (avgPerformanceEl) avgPerformanceEl.textContent = '0.000';
-                if (errorRateEl) errorRateEl.textContent = '0.0%';
-                if (totalOpsEl) totalOpsEl.textContent = '0';
+                // Retry up to 2 times with exponential backoff
+                if (retryCount < 2) {
+                    console.log(`Retrying performance data fetch (attempt ${retryCount + 1})...`);
+                    setTimeout(() => fetchPerformanceData(retryCount + 1), Math.pow(2, retryCount) * 1000);
+                } else {
+                    safeUpdateElement('avgPerformance', 'Connection Error');
+                    safeUpdateElement('errorRate', 'Error');
+                    safeUpdateElement('totalOps', 'Error');
+                }
             }
         }
 
@@ -489,7 +475,7 @@
                         'Cache-Control': 'no-cache'
                     }
                 });
-                
+
                 if (!response.ok) {
                     throw new Error(`HTTP ${response.status}: ${response.statusText}`);
                 }
@@ -552,7 +538,7 @@
                     if (borrowTriggerEl) borrowTriggerEl.value = defaults.borrowTrigger;
                     if (arbDeclineEl) arbDeclineEl.value = defaults.arbDecline.toFixed(1);
                     if (autoModeEl) autoModeEl.value = defaults.autoMode ? 'true' : 'false';
-                    
+
                     console.log('Set fallback parameter values:', defaults);
                 } catch (fallbackError) {
                     console.error('Failed to set fallback values:', fallbackError);
@@ -600,7 +586,7 @@
             try {
                 console.log('Refreshing dashboard data...');
                 fetchWalletStatus().catch(error => console.error('Error refreshing wallet status:', error));
-                fetchPerformance().catch(error => console.error('Error refreshing performance:', error));
+                fetchPerformanceData().catch(error => console.error('Error refreshing performance:', error));
             } catch (error) {
                 console.error('Error in refreshData:', error);
             }
@@ -672,7 +658,7 @@
                         'Cache-Control': 'no-cache'
                     }
                 });
-                
+
                 if (!response.ok) {
                     throw new Error(`HTTP ${response.status}: ${response.statusText}`);
                 }
@@ -825,168 +811,153 @@
             }
         }
 
-        // Modified fetch functions with better error handling
-        async function fetchWalletStatus() {
+        // Function to safely update element text content
+        function safeUpdateElement(elementId, value, defaultValue = 'Loading...') {
             try {
-                console.log('Fetching wallet status...');
-                const response = await fetch('/api/wallet_status', {
-                    method: 'GET',
-                    headers: {
-                        'Accept': 'application/json',
-                        'Cache-Control': 'no-cache'
-                    }
-                });
-
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                }
-
-                const data = await response.json();
-                console.log('Wallet status received:', data);
-
-                if (data.error) {
-                    if (data.status === 'initializing') {
-                        console.log('Agent still initializing, keeping loading state');
-                        return; // Keep showing loading
-                    }
-                    throw new Error(data.error);
-                }
-
-                // Safely update wallet status with null checks
-                const walletAddressEl = document.getElementById('walletAddress');
-                const ethBalanceEl = document.getElementById('ethBalance');
-                const usdcBalanceEl = document.getElementById('usdcBalance');
-                const networkStatusEl = document.getElementById('networkStatus');
-                const networkEl = document.getElementById('network');
-                const lastUpdateEl = document.getElementById('lastUpdate');
-
-                if (walletAddressEl) walletAddressEl.textContent = data.wallet_address || 'Unknown';
-                if (ethBalanceEl) ethBalanceEl.textContent = `${(data.eth_balance || 0).toFixed(6)} ETH`;
-                if (usdcBalanceEl) usdcBalanceEl.textContent = `${(data.usdc_balance || 0).toFixed(2)} USDC`;
-
-                // Update network status - prioritize NETWORK_MODE over chain detection
-                if (data.network_name && networkStatusEl) {
-                    networkStatusEl.textContent = `Real-time monitoring of your ${data.network_name} operations`;
-                }
-                
-                if (data.network_name && networkEl) {
-                    networkEl.textContent = data.network_name;
-                    // Visual styling for mainnet vs testnet
-                    if (data.network_name === 'Arbitrum Mainnet') {
-                        networkEl.style.color = '#00ff88';
-                        networkEl.style.fontWeight = 'bold';
-                    } else {
-                        networkEl.style.color = '#ff8800';
-                        networkEl.style.fontWeight = 'normal';
-                    }
-                }
-
-                if (lastUpdateEl) lastUpdateEl.textContent = `Last updated: ${new Date().toLocaleTimeString()}`;
-
-                // Update Aave status with safe checks
-                const healthFactorEl = document.getElementById('healthFactor');
-                const totalCollateralEl = document.getElementById('totalCollateral');
-                const totalDebtEl = document.getElementById('totalDebt');
-                const availableBorrowsEl = document.getElementById('availableBorrows');
-                const arbPriceEl = document.getElementById('arbPrice');
-
-                if (healthFactorEl) {
-                    const healthFactor = data.health_factor === Infinity ? '∞' : (data.health_factor || 0).toFixed(4);
-                    healthFactorEl.innerHTML = `
-                        <span id="healthStatus" class="status-indicator ${getHealthStatus(data.health_factor || 0)}"></span>
-                        ${healthFactor}
-                    `;
-                }
-
-                if (totalCollateralEl) totalCollateralEl.textContent = `$${(data.total_collateral_usdc || 0).toFixed(2)} USDC`;
-                if (totalDebtEl) totalDebtEl.textContent = `$${(data.total_debt_usdc || 0).toFixed(2)} USDC`;
-                if (availableBorrowsEl) availableBorrowsEl.textContent = `$${(data.available_borrows_usdc || 0).toFixed(2)} USDC`;
-                if (arbPriceEl) arbPriceEl.textContent = `$${(data.arb_price || 0).toFixed(4)}`;
-
-                // Hide loading, show dashboard
-                const loadingEl = document.getElementById('loading');
-                const dashboardEl = document.getElementById('dashboard');
-                const errorEl = document.getElementById('error');
-
-                if (loadingEl) loadingEl.style.display = 'none';
-                if (dashboardEl) dashboardEl.style.display = 'block';
-                if (errorEl) errorEl.style.display = 'none';
-
-                console.log('Wallet status updated successfully');
-
-            } catch (error) {
-                console.error('Wallet status fetch error:', error);
-                logFetchError('/api/wallet_status', error);
-                
-                // Safely update error states
-                const ethBalanceEl = document.getElementById('ethBalance');
-                const usdcBalanceEl = document.getElementById('usdcBalance');
-                const walletAddressEl = document.getElementById('walletAddress');
-                const errorEl = document.getElementById('error');
-
-                if (ethBalanceEl) ethBalanceEl.textContent = 'Error loading';
-                if (usdcBalanceEl) usdcBalanceEl.textContent = 'Error loading';
-                if (walletAddressEl) walletAddressEl.textContent = 'Error loading';
-
-                // Show error message
-                if (errorEl) {
-                    errorEl.innerHTML = `❌ Wallet Status Error: ${error.message}`;
-                    errorEl.style.display = 'block';
-                }
-            }
-        }
-
-        async function fetchParameters() {
-            try {
-                const response = await fetch('/api/parameters');
-
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                }
-
-                const data = await response.json();
-
-                if (!data.error) {
-                    document.getElementById('healthTarget').value = data.health_factor_target;
-                    document.getElementById('borrowTrigger').value = data.borrow_trigger_threshold;
-                    document.getElementById('arbDecline').value = (data.arb_decline_threshold * 100);
-                    document.getElementById('autoMode').value = data.auto_mode.toString();
+                const element = document.getElementById(elementId);
+                if (element) {
+                    const safeValue = (value !== undefined && value !== null && value !== 'undefined') ? value : defaultValue;
+                    element.textContent = safeValue;
                 } else {
-                    console.error('Parameters API returned error:', data.error);
+                    console.warn(`Element with ID '${elementId}' not found`);
                 }
-
             } catch (error) {
-                logFetchError('/api/parameters', error);
-                console.error('Error fetching parameters:', error);
+                console.error(`Error updating element ${elementId}:`, error);
             }
         }
+
+        // Function to safely update element HTML content
+        function safeUpdateHTML(elementId, html, defaultHtml = 'Loading...') {
+            try {
+                const element = document.getElementById(elementId);
+                if (element) {
+                    const safeHtml = (html !== undefined && html !== null && html !== 'undefined') ? html : defaultHtml;
+                    element.innerHTML = safeHtml;
+                } else {
+                    console.warn(`Element with ID '${elementId}' not found`);
+                }
+            } catch (error) {
+                console.error(`Error updating HTML for element ${elementId}:`, error);
+            }
+        }
+
+        function updateWalletStatus(data) {
+            try {
+                // Validate data exists and is an object
+                if (!data || typeof data !== 'object') {
+                    console.error('Invalid wallet status data structure:', data);
+                    return;
+                }
+
+                // Safely extract and validate numeric values
+                const ethBalance = parseFloat(data.eth_balance) || 0;
+                const usdcBalance = parseFloat(data.usdc_balance) || 0;
+                const healthFactor = parseFloat(data.health_factor) || 0;
+                const totalCollateral = parseFloat(data.total_collateral) || 0;
+                ```text
+        const totalDebt = parseFloat(data.total_debt) || 0;
+                const availableBorrows = parseFloat(data.available_borrows) || 0;
+                const arbPrice = parseFloat(data.arb_price) || 0;
+
+                // Update elements with validated data
+                safeUpdateElement('walletAddress', data.wallet_address || 'Unknown');
+                safeUpdateElement('ethBalance', `${ethBalance.toFixed(6)} ETH`);
+                safeUpdateElement('usdcBalance', `${usdcBalance.toFixed(2)} USDC`);
+                safeUpdateElement('healthFactor', healthFactor === 0 ? 'No positions' : healthFactor.toFixed(4));
+                safeUpdateElement('totalCollateral', `${totalCollateral.toFixed(6)} ETH`);
+                safeUpdateElement('totalDebt', `${totalDebt.toFixed(6)} ETH`);
+                safeUpdateElement('availableBorrows', `${availableBorrows.toFixed(6)} ETH`);
+                safeUpdateElement('arbPrice', `$${arbPrice.toFixed(4)}`);
+
+                // Update network info if available
+                if (data.network_name && typeof data.network_name === 'string') {
+                    safeUpdateElement('networkName', data.network_name);
+                }
+            } catch (error) {
+                console.error('Error updating wallet status:', error);
+                safeUpdateElement('walletAddress', 'Update Error');
+            }
+        }
+
+        function updatePerformanceData(data) {
+            try {
+                // Validate data exists and is an object
+                if (!data || typeof data !== 'object') {
+                    console.error('Invalid performance data structure:', data);
+                    return;
+                }
+
+                // Safely extract and validate numeric values
+                const pnl = parseFloat(data.pnl_24h) || 0;
+                const avgPerformance = parseFloat(data.avg_performance) || 0;
+                const errorRate = parseFloat(data.error_rate) || 0;
+                const totalOperations = parseInt(data.total_operations) || 0;
+
+                // Calculate display values
+                const pnlClass = pnl >= 0 ? 'positive' : 'negative';
+                const pnlIcon = pnl >= 0 ? '📈' : '📉';
+
+                // Update elements with validated data
+                safeUpdateHTML('pnl24h', `${pnlIcon} <span class="${pnlClass}">${pnl >= 0 ? '+' : ''}${pnl.toFixed(2)}%</span>`);
+                safeUpdateElement('avgPerformance', avgPerformance.toFixed(3));
+                safeUpdateElement('errorRate', `${errorRate.toFixed(1)}%`);
+                safeUpdateElement('totalOps', totalOperations);
+            } catch (error) {
+                console.error('Error updating performance data:', error);
+                safeUpdateElement('avgPerformance', 'Error');
+                safeUpdateElement('errorRate', 'Error');
+                safeUpdateElement('totalOps', 'Error');
+            }
+        }
+
+        // Global error handler to catch undefined errors
+        window.addEventListener('error', function(event) {
+            console.error('Global error caught:', event.error);
+            if (event.error && event.error.message && event.error.message.includes('undefined')) {
+                console.warn('Undefined error detected - likely a timing issue');
+                // Don't show alert for undefined errors as they may be temporary
+                event.preventDefault();
+            }
+        });
+
+        // Global unhandled promise rejection handler
+        window.addEventListener('unhandledrejection', function(event) {
+            console.error('Unhandled promise rejection:', event.reason);
+            event.preventDefault();
+        });
+
+        // Initialize dashboard when DOM is loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM loaded, starting dashboard initialization...');
+            initializeDashboard();
+        });
 
         // Safe initialization with proper error handling
         async function initializeDashboard() {
             try {
                 console.log('Initializing dashboard...');
-                
+
                 // Initialize in sequence with delays to prevent race conditions
                 await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second
-                
+
                 // Fetch critical data first
                 await fetchParameters();
                 await new Promise(resolve => setTimeout(resolve, 500));
-                
+
                 await fetchWalletStatus();
                 await new Promise(resolve => setTimeout(resolve, 500));
-                
-                await fetchPerformance();
+
+                await fetchPerformanceData();
                 await new Promise(resolve => setTimeout(resolve, 500));
-                
+
                 await updateEmergencyStatus();
                 await new Promise(resolve => setTimeout(resolve, 500));
-                
+
                 updateNetworkInfo();
                 updateLastUpdate();
-                
+
                 console.log('Dashboard initialization complete');
-                
+
                 // Set up intervals only after successful initialization
                 setInterval(() => {
                     try {
@@ -1004,7 +975,7 @@
                         console.error('Error in emergency status interval:', error);
                     }
                 }, 5000); // Check emergency status every 5 seconds
-                
+
                 setInterval(() => {
                     try {
                         updateNetworkInfo();
@@ -1012,7 +983,7 @@
                         console.error('Error in network info interval:', error);
                     }
                 }, 60000); // Check network info every 60 seconds
-                
+
             } catch (error) {
                 console.error('Dashboard initialization failed:', error);
                 // Show error state
@@ -1023,12 +994,6 @@
                 }
             }
         }
-
-        // Initialize dashboard when DOM is ready
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('DOM loaded, starting dashboard initialization...');
-            initializeDashboard();
-        });
     </script>
 </body>
 </html>
