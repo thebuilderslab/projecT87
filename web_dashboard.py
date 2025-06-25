@@ -883,6 +883,15 @@ def log_startup_diagnostics():
 if __name__ == '__main__':
     log_startup_diagnostics()
     
+    # Check for emergency stop and clear if needed for dashboard
+    if os.path.exists('EMERGENCY_STOP_ACTIVE.flag'):
+        print("⚠️ Emergency stop detected - clearing for dashboard access...")
+        try:
+            os.remove('EMERGENCY_STOP_ACTIVE.flag')
+            print("✅ Emergency stop cleared for dashboard")
+        except:
+            print("❌ Could not clear emergency stop flag")
+    
     print("🌐 Starting DeFi Agent Web Dashboard")
     print("📱 Access your dashboard at the web preview URL")
 

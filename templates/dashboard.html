@@ -1047,7 +1047,7 @@
                 if (dashboardEl) dashboardEl.style.display = 'none';
                 if (errorEl) errorEl.style.display = 'none';
 
-                // Force show dashboard after 3 seconds regardless of API status
+                // Force show dashboard after 2 seconds regardless of API status
                 setTimeout(() => {
                     console.log('⏰ Timeout: Forcing dashboard display...');
                     if (loadingEl) loadingEl.style.display = 'none';
@@ -1055,7 +1055,7 @@
                         dashboardEl.style.display = 'block';
                         console.log('✅ Dashboard forced to display');
                     }
-                }, 3000);
+                }, 2000);
 
                 // Initialize in sequence with shorter delays - but don't let failures block the UI
                 await new Promise(resolve => setTimeout(resolve, 500));

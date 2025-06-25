@@ -15,7 +15,7 @@ run = ["sh", "-c", "python mainnet_launcher.py"]
 deploymentTarget = "cloudrun"
 
 [workflows]
-runButton = "🚀 MAINNET DEPLOY"
+runButton = "🌐 Web Dashboard"
 
 [[workflows.workflow]]
 name = "Run"
@@ -106,6 +106,15 @@ mode = "sequential"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "python mainnet_launcher.py"
+
+[[workflows.workflow]]
+name = "🌐 Web Dashboard"
+author = 39391053
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python web_dashboard.py"
 
 [[ports]]
 localPort = 5000
