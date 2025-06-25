@@ -369,7 +369,7 @@ class ArbitrumTestnetAgent:
                     else:
                         # Low exploration: Active monitoring with occasional optimization
                         print("🔍 Active monitoring for opportunities...")
-                        
+
                         # Check if wallet has funds to start DeFi operations
                         if portfolio_before > 0.01:  # If we have some ETH
                             print(f"💰 Wallet has {portfolio_before:.6f} ETH - ready for DeFi operations")
@@ -431,11 +431,11 @@ class ArbitrumTestnetAgent:
         try:
             settings_file = 'user_settings.json'
             trigger_file = 'parameter_update_trigger.flag'
-            
+
             # First check for trigger file (immediate response)
             trigger_exists = os.path.exists(trigger_file)
             settings_exists = os.path.exists(settings_file)
-            
+
             if not settings_exists:
                 return False
 
@@ -460,10 +460,10 @@ class ArbitrumTestnetAgent:
 
             # Update internal parameters if they changed
             settings_changed = new_settings != self.user_settings
-            
+
             if settings_changed or trigger_exists:
                 print("🔄 PARAMETER UPDATE DETECTED:")
-                
+
                 # Show all current parameters for visibility
                 for key, value in new_settings.items():
                     if key not in ['last_updated', 'update_count']:  # Skip metadata
@@ -483,7 +483,7 @@ class ArbitrumTestnetAgent:
                 # Apply other critical settings
                 if 'auto_mode' in new_settings:
                     print(f"   ✅ Auto mode: {new_settings['auto_mode']}")
-                
+
                 if 'exploration_rate' in new_settings:
                     print(f"   ✅ Exploration rate: {new_settings['exploration_rate']}")
 
