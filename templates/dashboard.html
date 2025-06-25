@@ -235,7 +235,7 @@
     <div class="container">
         <div class="header">
             <h1>🤖 DeFi Agent Dashboard</h1>
-            <p>Real-time monitoring of your Arbitrum Sepolia operations</p>
+            <p id="networkStatus">Real-time monitoring of your Arbitrum Sepolia operations</p>
             <p id="lastUpdate">Loading...</p>
         </div>
 
@@ -398,6 +398,13 @@
                 document.getElementById('walletAddress').textContent = data.wallet_address;
                 document.getElementById('ethBalance').textContent = `${data.eth_balance.toFixed(6)} ETH`;
                 document.getElementById('usdcBalance').textContent = `${data.usdc_balance.toFixed(2)} USDC`;
+
+                // Update network status
+                if (data.network_name) {
+                    document.getElementById('networkStatus').textContent = `Real-time monitoring of your ${data.network_name} operations`;
+                }
+
+                document.getElementById('lastUpdate').textContent = `Last updated: ${new Date().toLocaleTimeString()}`;
 
                 // Update Aave status
                 const healthFactor = data.health_factor === Infinity ? '∞' : data.health_factor.toFixed(4);

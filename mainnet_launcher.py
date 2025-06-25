@@ -347,14 +347,26 @@ def start_web_dashboard():
                 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 sock.bind(('0.0.0.0', port))
                 sock.close()
+                print(f"✅ Port {port} is available")
                 return port
             except OSError:
+                print(f"❌ Port {port} is in use, trying next...")
                 continue
         return 8080
     
     port = get_available_port(5000)
     print(f"🌐 Web dashboard starting on port {port}")
-    app.run(host='0.0.0.0', port=port, debug=False, use_reloader=False)
+    print(f"🔗 Dashboard will be accessible at your Replit webview URL")
+    
+    try:
+        app.run(host='0.0.0.0', port=port, debug=False, use_reloader=False)
+    except Exception as e:
+        print(f"❌ Dashboard startup error: {e}")
+        print(f"🔄 Trying fallback port 8080...")
+        try:
+            app.run(host='0.0.0.0', port=8080, debug=False, use_reloader=False)
+        except Exception as e2:
+            print(f"❌ Fallback port failed: {e2}")
 
 def main():
     """Main launcher function"""

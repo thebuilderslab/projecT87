@@ -44,12 +44,14 @@ class ArbitrumTestnetAgent:
         # Ensure address is properly checksummed from the start
         self.address = self.w3.to_checksum_address(self.account.address)
 
-        # Display correct network name based on actual chain ID
-        if self.w3.eth.chain_id == 42161:
+        # Display correct network name based on chain ID
+        if chain_id == 42161:
             network_name = "Arbitrum Mainnet"
-        else:
+        elif chain_id == 421614:
             network_name = "Arbitrum Sepolia"
-            
+        else:
+            network_name = f"Unknown Arbitrum Network (Chain ID: {chain_id})"
+
         print(f"🤖 Arbitrum Agent initialized")
         print(f"Wallet: {self.address}")
         print(f"Network: {network_name} (Chain ID: {self.w3.eth.chain_id})")

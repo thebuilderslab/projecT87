@@ -83,6 +83,19 @@ def wallet_status():
         total_debt_usdc = health_data['total_debt_eth'] * eth_to_usd_rate
         available_borrows_usdc = health_data['available_borrows_eth'] * eth_to_usd_rate
 
+        # Get network name from agent
+        network_mode = os.getenv('NETWORK_MODE', 'testnet')
+        if hasattr(agent, 'web3') and agent.web3:
+            chain_id = agent.web3.eth.chain_id
+            if chain_id == 42161:
+                network_name = "Arbitrum Mainnet"
+            elif chain_id == 421614:
+                network_name = "Arbitrum Sepolia"
+            else:
+                network_name = f"Unknown Network (Chain ID: {chain_id})"
+        else:
+            network_name = "Arbitrum Mainnet" if network_mode == 'mainnet' else "Arbitrum Sepolia"
+
         return jsonify({
             'wallet_address': agent.address,
             'eth_balance': eth_balance,
@@ -95,6 +108,8 @@ def wallet_status():
             'total_debt_usdc': total_debt_usdc,
             'available_borrows_usdc': available_borrows_usdc,
             'arb_price': arb_price,
+            'network_name': network_name,
+            'network_mode': network_mode,
             'timestamp': time.time()
         })
 
