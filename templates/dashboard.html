@@ -736,6 +736,12 @@
                             networkElement.style.color = '#ff8800';
                             networkElement.style.fontWeight = 'normal';
                         }
+
+                        // Also update network status in header
+                        const networkStatus = document.getElementById('networkStatus');
+                        if (networkStatus) {
+                            networkStatus.textContent = `Real-time monitoring of your ${data.network_name} operations`;
+                        }
                     } else {
                         networkElement.textContent = 'Unknown Network';
                     }
@@ -867,11 +873,6 @@
                 safeUpdateElement('totalDebt', `${totalDebt.toFixed(6)} ETH`);
                 safeUpdateElement('availableBorrows', `${availableBorrows.toFixed(6)} ETH`);
                 safeUpdateElement('arbPrice', `$${arbPrice.toFixed(4)}`);
-
-                // Update network info if available
-                if (data.network_name && typeof data.network_name === 'string') {
-                    safeUpdateElement('networkName', data.network_name);
-                }
             } catch (error) {
                 console.error('Error updating wallet status:', error);
                 safeUpdateElement('walletAddress', 'Update Error');
