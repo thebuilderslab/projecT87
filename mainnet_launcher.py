@@ -15,7 +15,27 @@ import threading
 import signal
 from emergency_stop import check_emergency_status
 
-# Load environment variables - Force reload to ensure all secrets are available
+# CRITICAL: Force reload environment for deployment environments
+load_dotenv(override=True)
+
+# Force Replit deployment environment variable loading
+if os.getenv('REPLIT_DEPLOYMENT'):
+    print("🔄 DEPLOYMENT MODE: Force loading environment variables")
+    # In deployment, secrets may be injected differently
+    import subprocess
+    try:
+        # Force reload environment
+        result = subprocess.run(['printenv'], capture_output=True, text=True, timeout=10)
+        if result.returncode == 0:
+            for line in result.stdout.strip().split('\n'):
+                if '=' in line and line.strip():
+                    key, value = line.split('=', 1)
+                    if key in ['NETWORK_MODE', 'PROMPT_KEY', 'PRIVATE_KEY', 'COINMARKETCAP_API_KEY']:
+                        os.environ[key] = value
+                        print(f"🔄 Deployment env loaded: {key}")
+    except Exception as e:
+        print(f"⚠️ Environment loading warning: {e}")
+
 load_dotenv(override=True)
 
 # Enhanced secret loading with multiple fallback methods

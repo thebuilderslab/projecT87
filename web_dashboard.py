@@ -6,10 +6,31 @@ from datetime import datetime
 from arbitrum_testnet_agent import ArbitrumTestnetAgent
 from dashboard import AgentDashboard
 import threading
+import subprocess
 
 app = Flask(__name__)
 agent = None
 dashboard = None
+
+# CRITICAL: Force load environment variables for deployment
+def force_load_deployment_env():
+    """Force load environment variables in deployment mode"""
+    if os.getenv('REPLIT_DEPLOYMENT'):
+        print("🔄 WEB DASHBOARD: Loading deployment environment")
+        try:
+            result = subprocess.run(['printenv'], capture_output=True, text=True, timeout=10)
+            if result.returncode == 0:
+                for line in result.stdout.strip().split('\n'):
+                    if '=' in line and line.strip():
+                        key, value = line.split('=', 1)
+                        if key in ['NETWORK_MODE', 'PROMPT_KEY', 'PRIVATE_KEY', 'COINMARKETCAP_API_KEY']:
+                            os.environ[key] = value
+                            print(f"🔄 Dashboard env loaded: {key}")
+        except Exception as e:
+            print(f"⚠️ Dashboard env loading warning: {e}")
+
+# Load environment immediately
+force_load_deployment_env()
 
 def initialize_agent():
     """Initialize the agent in a separate thread"""
@@ -284,4 +305,19 @@ def update_parameters():
 if __name__ == '__main__':
     print("🌐 Starting DeFi Agent Web Dashboard")
     print("📱 Access your dashboard at the web preview URL")
-    app.run(host='0.0.0.0', port=5000, debug=True, threaded=True)
+    # Try different ports if 5000 is occupied
+import socket
+def get_available_port(start_port=5000):
+    for port in range(start_port, start_port + 10):
+        try:
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            sock.bind(('0.0.0.0', port))
+            sock.close()
+            return port
+        except OSError:
+            continue
+    return 8080  # Fallback port
+
+port = get_available_port(5000)
+print(f"🌐 Starting web dashboard on port {port}")
+app.run(host='0.0.0.0', port=port, debug=False, threaded=True)
