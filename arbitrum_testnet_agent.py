@@ -55,6 +55,7 @@ class ArbitrumTestnetAgent:
         print(f"🤖 Arbitrum Agent initialized")
         print(f"Wallet: {self.address}")
         print(f"Network: {network_name} (Chain ID: {self.w3.eth.chain_id})")
+        self.network_mode = network_mode
 
     def get_eth_balance(self):
         """Get ETH balance in human-readable format"""
@@ -179,6 +180,14 @@ class ArbitrumTestnetAgent:
         if not hasattr(self, 'aave'):
             from aave_integration import AaveArbitrumIntegration
             self.aave = AaveArbitrumIntegration(self.w3, self.account)
+
+             # Aave V3 Pool contract address based on network
+            if self.network_mode == 'mainnet':
+                # Arbitrum Mainnet Aave V3 Pool
+                self.aave_pool_address = '0x794a61358D6845594F94dc1DB02A252b5b4814aD'
+            else:
+                # Arbitrum Sepolia Aave V3 Pool  
+                self.aave_pool_address = '0x69FA688f1Dc47d4B5d8029D5a35FB7a548310654'
 
         if not hasattr(self, 'uniswap'):
             from uniswap_integration import UniswapV3Integration
@@ -318,27 +327,47 @@ class ArbitrumTestnetAgent:
 
             # PRIORITY 3: Standard Operations (When no special triggers)
             else:
-                if config['exploration_rate'] > 0.2:
-                    # High exploration: Conservative monitoring and small operations
-                    if portfolio_before > 0.05:
-                        print("🏦 Conservative monitoring + small lending...")
-                        tx_hash = self.aave.execute_yield_strategy("conservative")
-                        performance = 0.78 if tx_hash else 0.72
+                # Use provided config or defaults with required parameters
+                config = config or {}
 
-                elif config['exploration_rate'] > 0.1:
-                    # Medium exploration: Balanced approach
-                    if portfolio_before > 0.08:
-                        print("⚖️ Balanced strategy with monitoring...")
-                        if iteration % 15 == 0:  # Less frequent operations
-                            tx_hash = self.aave.supply_to_aave(self.aave.weth_address, portfolio_before * 0.2)
-                            performance = 0.80 if tx_hash else 0.74
-                        else:
-                            performance = 0.76  # Monitoring performance
-                else:
-                    # Low exploration: Active monitoring with occasional optimization
-                    print("🔍 Active monitoring for opportunities...")
-                    performance = 0.74  # Base monitoring performance
+                # Ensure all required parameters exist
+                default_params = {
+                    'exploration_rate': 0.1,
+                    'health_factor_target': 1.19,
+                    'borrow_trigger_threshold': 0.02,
+                    'arb_decline_threshold': 0.05,
+                    'max_iterations_per_run': 50
+                }
 
+                for param, default_value in default_params.items():
+                    if param not in config:
+                        config[param] = default_value
+
+                # Enhanced DeFi operations with real-time monitoring
+                try:
+                    if config['exploration_rate'] > 0.2:
+                        # High exploration: Conservative monitoring and small operations
+                        if portfolio_before > 0.05:
+                            print("🏦 Conservative monitoring + small lending...")
+                            tx_hash = self.aave.execute_yield_strategy("conservative")
+                            performance = 0.78 if tx_hash else 0.72
+
+                    elif config['exploration_rate'] > 0.1:
+                        # Medium exploration: Balanced approach
+                        if portfolio_before > 0.08:
+                            print("⚖️ Balanced strategy with monitoring...")
+                            if iteration % 15 == 0:  # Less frequent operations
+                                tx_hash = self.aave.supply_to_aave(self.aave.weth_address, portfolio_before * 0.2)
+                                performance = 0.80 if tx_hash else 0.74
+                            else:
+                                performance = 0.76  # Monitoring performance
+                    else:
+                        # Low exploration: Active monitoring with occasional optimization
+                        print("🔍 Active monitoring for opportunities...")
+                        performance = 0.74  # Base monitoring performance
+                except Exception as e:
+                    print(f"❌ Standard operation failed: {e}")
+                    performance = 0.5
             # Adjust performance based on monitoring quality
             if monitoring_summary['current_health_factor'] > 0:
                 monitoring_bonus = min(0.05, 0.01 * monitoring_summary['current_health_factor'])

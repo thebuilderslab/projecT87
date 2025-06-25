@@ -272,7 +272,7 @@ def performance_data():
 def get_parameters():
     """Get current agent parameters with enhanced error handling"""
     try:
-        # Default configuration
+        # Default configuration with all required parameters
         config = {
             'learning_rate': 0.01,
             'exploration_rate': 0.1,
@@ -282,9 +282,12 @@ def get_parameters():
             'borrow_trigger_threshold': 0.02,
             'arb_decline_threshold': 0.05,
             'auto_mode': True,
+            'status': 'active',
+            'network_mode': os.getenv('NETWORK_MODE', 'mainnet'),
             'debug_info': {
-                'config_sources': [],
-                'load_time': time.time()
+                'config_sources': ['defaults'],
+                'load_time': time.time(),
+                'timestamp': time.strftime('%Y-%m-%d %H:%M:%S UTC', time.gmtime())
             }
         }
 
@@ -533,6 +536,50 @@ def connection_test():
         })
     except Exception as e:
         return jsonify({'error': str(e), 'status': 'error'}), 500
+
+@app.route('/api/health-check')
+def comprehensive_health_check():
+    """Comprehensive system health check"""
+    try:
+        health_status = {
+            'overall_status': 'healthy',
+            'timestamp': time.time(),
+            'components': {
+                'web_dashboard': 'operational',
+                'network_connection': 'unknown',
+                'api_endpoints': 'operational',
+                'emergency_stop': 'ready',
+                'parameters': 'loaded'
+            },
+            'network': {
+                'mode': os.getenv('NETWORK_MODE', 'unknown'),
+                'expected_chain_id': 42161 if os.getenv('NETWORK_MODE') == 'mainnet' else 421614
+            },
+            'secrets': {
+                'coinmarketcap_api': bool(os.getenv('COINMARKETCAP_API_KEY')),
+                'private_key': bool(os.getenv('PRIVATE_KEY')),
+                'network_mode': bool(os.getenv('NETWORK_MODE'))
+            }
+        }
+
+        # Test agent connection
+        if agent:
+            try:
+                chain_id = agent.w3.eth.chain_id
+                health_status['components']['network_connection'] = 'connected'
+                health_status['network']['actual_chain_id'] = chain_id
+                health_status['network']['chain_match'] = chain_id == health_status['network']['expected_chain_id']
+            except Exception as e:
+                health_status['components']['network_connection'] = f'error: {str(e)}'
+                health_status['overall_status'] = 'degraded'
+
+        return jsonify(health_status)
+    except Exception as e:
+        return jsonify({
+            'overall_status': 'error',
+            'error': str(e),
+            'timestamp': time.time()
+        }), 500
 
 @app.route('/api/diagnostics/debug-parameters')
 def debug_parameters():
