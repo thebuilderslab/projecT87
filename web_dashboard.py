@@ -46,22 +46,21 @@ def wallet_status():
 
         if hasattr(agent, 'aave'):
             usdc_balance = agent.aave.get_token_balance(agent.aave.usdc_address)
-            health_data = agent.health_monitor.get_account_data_with_usdc()
+            health_data = agent.health_monitor.get_current_health_factor()
         else:
             usdc_balance = 0
-            health_data = {
-                'health_factor': 0, 
-                'total_collateral_eth': 0, 
-                'total_debt_eth': 0, 
-                'available_borrows_eth': 0,
-                'total_collateral_usdc': 0,
-                'total_debt_usdc': 0,
-                'available_borrows_usdc': 0
-            }
+            health_data = {'health_factor': 0, 'total_collateral_eth': 0, 'total_debt_eth': 0, 'available_borrows_eth': 0}
 
         # Get ARB price
         arb_price_data = agent.health_monitor.get_arb_price() if hasattr(agent, 'health_monitor') else None
         arb_price = arb_price_data['price'] if arb_price_data else 0
+
+        # Convert ETH values to USDC (assuming 1 ETH = $2500 for mainnet)
+        eth_to_usd_rate = 2500.0  # Conservative estimate for mainnet
+        
+        total_collateral_usdc = health_data['total_collateral_eth'] * eth_to_usd_rate
+        total_debt_usdc = health_data['total_debt_eth'] * eth_to_usd_rate
+        available_borrows_usdc = health_data['available_borrows_eth'] * eth_to_usd_rate
 
         return jsonify({
             'wallet_address': agent.address,
@@ -71,9 +70,9 @@ def wallet_status():
             'total_collateral': health_data['total_collateral_eth'],
             'total_debt': health_data['total_debt_eth'],
             'available_borrows': health_data['available_borrows_eth'],
-            'total_collateral_usdc': health_data.get('total_collateral_usdc', 0),
-            'total_debt_usdc': health_data.get('total_debt_usdc', 0),
-            'available_borrows_usdc': health_data.get('available_borrows_usdc', 0),
+            'total_collateral_usdc': total_collateral_usdc,
+            'total_debt_usdc': total_debt_usdc,
+            'available_borrows_usdc': available_borrows_usdc,
             'arb_price': arb_price,
             'timestamp': time.time()
         })

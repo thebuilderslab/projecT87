@@ -276,15 +276,15 @@
                     </div>
                     <div class="metric">
                         <span class="metric-label">Total Collateral:</span>
-                        <span id="totalCollateral" class="metric-value">0.0000 ETH</span>
+                        <span id="totalCollateral" class="metric-value">$0.00 USDC</span>
                     </div>
                     <div class="metric">
                         <span class="metric-label">Total Debt:</span>
-                        <span id="totalDebt" class="metric-value">0.0000 ETH</span>
+                        <span id="totalDebt" class="metric-value">$0.00 USDC</span>
                     </div>
                     <div class="metric">
                         <span class="metric-label">Available Borrows:</span>
-                        <span id="availableBorrows" class="metric-value">0.0000 ETH</span>
+                        <span id="availableBorrows" class="metric-value">$0.00 USDC</span>
                     </div>
                 </div>
 
@@ -405,9 +405,9 @@
                     <span id="healthStatus" class="status-indicator ${getHealthStatus(data.health_factor)}"></span>
                     ${healthFactor}
                 `;
-                document.getElementById('totalCollateral').textContent = `${data.total_collateral.toFixed(6)} ETH`;
-                document.getElementById('totalDebt').textContent = `${data.total_debt.toFixed(6)} ETH`;
-                document.getElementById('availableBorrows').textContent = `${data.available_borrows.toFixed(6)} ETH`;
+                document.getElementById('totalCollateral').textContent = `$${(data.total_collateral_usdc || 0).toFixed(2)} USDC`;
+                document.getElementById('totalDebt').textContent = `$${(data.total_debt_usdc || 0).toFixed(2)} USDC`;
+                document.getElementById('availableBorrows').textContent = `$${(data.available_borrows_usdc || 0).toFixed(2)} USDC`;
 
                 // Update market data
                 document.getElementById('arbPrice').textContent = `$${data.arb_price.toFixed(4)}`;

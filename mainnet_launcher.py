@@ -26,12 +26,12 @@ def force_load_secret(var_name, default_value=None):
         load_dotenv(override=True)
     except:
         pass
-    
+
     # Method 2: Direct environment variable
     value = os.getenv(var_name)
     if value and value.strip():
         return value.strip()
-    
+
     # Method 3: Try subprocess printenv
     try:
         import subprocess
@@ -42,7 +42,7 @@ def force_load_secret(var_name, default_value=None):
             return value
     except:
         pass
-    
+
     # Method 4: Try reading from /proc/environ (Linux)
     try:
         with open('/proc/self/environ', 'rb') as f:
@@ -55,7 +55,7 @@ def force_load_secret(var_name, default_value=None):
                         return value.strip()
     except:
         pass
-    
+
     # Method 5: Try reading from Replit's special env files
     try:
         replit_env_paths = [
@@ -74,12 +74,12 @@ def force_load_secret(var_name, default_value=None):
                                 return value
     except:
         pass
-    
+
     # Method 6: Use default value if provided
     if default_value:
         os.environ[var_name] = default_value
         return default_value
-    
+
     return None
 
 # Force load critical secrets
@@ -208,7 +208,7 @@ class MainnetSafetyManager:
 
         # Check critical environment variables
         critical_vars = ['COINMARKETCAP_API_KEY', 'PROMPT_KEY']
-        
+
         # Check for private key (try PRIVATE_KEY first, then PRIVATE_KEY2 as fallback)
         private_key = os.getenv('PRIVATE_KEY') or os.getenv('PRIVATE_KEY2')
         if not private_key:
@@ -216,14 +216,14 @@ class MainnetSafetyManager:
             print("💡 Please add PRIVATE_KEY to your Replit Secrets")
             print("   (Or ensure PRIVATE_KEY2 is available as fallback)")
             return False
-        
+
         # Validate private key format
         if len(private_key) not in [64, 66]:
             print(f"❌ Invalid private key format (should be 64 or 66 characters)")
             return False
         print("✅ Private key: Configured properly")
         optional_vars = ['MAINET_ACCOUNT_KEY', 'OPTIMIZER_API_KEY']
-        
+
         # Validate critical secrets
         for var in critical_vars:
             value = os.getenv(var)
@@ -236,13 +236,13 @@ class MainnetSafetyManager:
                     print(f"❌ Missing critical environment variable: {var}")
                     print(f"💡 Please add {var} to your Replit Secrets")
                     return False
-                
+
             if len(value.strip()) == 0:
                 print(f"❌ {var} is empty - please set a valid value")
                 return False
-                
+
             print(f"✅ {var}: Configured properly")
-        
+
         # Check optional secrets with warnings
         for var in optional_vars:
             value = os.getenv(var)
