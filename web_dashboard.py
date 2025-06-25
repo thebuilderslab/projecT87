@@ -539,10 +539,9 @@ if __name__ == '__main__':
     print("🌐 Starting DeFi Agent Web Dashboard")
     print("📱 Access your dashboard at the web preview URL")
 
-    # Find available port with detailed logging
-    port = get_available_port(5000)
+    # Use port 5000 for deployment consistency
+    port = 5000
     print(f"🌐 Starting web dashboard on port {port}")
     print(f"🔗 Dashboard will be accessible at your Replit webview URL")
 
     app.run(host='0.0.0.0', port=port, debug=False, threaded=True)
-`
