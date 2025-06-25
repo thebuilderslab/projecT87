@@ -430,24 +430,46 @@ class ArbitrumTestnetAgent:
         """Check for real-time parameter updates from dashboard"""
         try:
             settings_file = 'user_settings.json'
-            if not os.path.exists(settings_file):
+            trigger_file = 'parameter_update_trigger.flag'
+            
+            # First check for trigger file (immediate response)
+            trigger_exists = os.path.exists(trigger_file)
+            settings_exists = os.path.exists(settings_file)
+            
+            if not settings_exists:
                 return False
 
-            # Check if file was modified since last check
+            # Check if file was modified since last check OR trigger exists
             file_mtime = os.path.getmtime(settings_file)
-            if file_mtime <= self.last_settings_check:
+            should_update = (file_mtime > self.last_settings_check) or trigger_exists
+
+            if not should_update:
                 return False
 
             # Load new settings
             with open(settings_file, 'r') as f:
                 new_settings = json.load(f)
 
+            # Remove trigger file if it exists
+            if trigger_exists:
+                try:
+                    os.remove(trigger_file)
+                    print("🔥 Parameter update trigger detected and cleared")
+                except:
+                    pass
+
             # Update internal parameters if they changed
-            if new_settings != self.user_settings:
+            settings_changed = new_settings != self.user_settings
+            
+            if settings_changed or trigger_exists:
                 print("🔄 PARAMETER UPDATE DETECTED:")
+                
+                # Show all current parameters for visibility
                 for key, value in new_settings.items():
-                    if key not in self.user_settings or self.user_settings[key] != value:
-                        print(f"   📝 {key}: {self.user_settings.get(key, 'None')} → {value}")
+                    if key not in ['last_updated', 'update_count']:  # Skip metadata
+                        old_value = self.user_settings.get(key, 'None')
+                        if old_value != value or trigger_exists:
+                            print(f"   📝 {key}: {old_value} → {value}")
 
                 self.user_settings = new_settings
                 self.last_settings_check = file_mtime
@@ -458,7 +480,15 @@ class ArbitrumTestnetAgent:
                         self.health_monitor.health_factor_target = new_settings['health_factor_target']
                         print(f"   ✅ Health factor target updated to {new_settings['health_factor_target']}")
 
+                # Apply other critical settings
+                if 'auto_mode' in new_settings:
+                    print(f"   ✅ Auto mode: {new_settings['auto_mode']}")
+                
+                if 'exploration_rate' in new_settings:
+                    print(f"   ✅ Exploration rate: {new_settings['exploration_rate']}")
+
                 print("✅ Parameters updated successfully!")
+                print(f"📊 Update count: {new_settings.get('update_count', 'N/A')}")
                 return True
 
             self.last_settings_check = file_mtime

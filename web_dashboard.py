@@ -1,4 +1,3 @@
-# Applying the provided changes to update the network display logic in the Flask app.
 from flask import Flask, render_template, jsonify, request
 import json
 import os
@@ -64,12 +63,12 @@ def get_network_info():
                 'network_name': 'Arbitrum Mainnet',
                 'rpc_url': 'https://arb1.arbitrum.io/rpc'
             }
-        
+
         # Initialize agent to verify actual connection for testnet
         from arbitrum_testnet_agent import ArbitrumTestnetAgent
         agent = ArbitrumTestnetAgent()
         chain_id = agent.w3.eth.chain_id
-        
+
         print(f"🔍 Dashboard network detection - Chain ID: {chain_id}")
 
         # For testnet, verify chain ID matches
@@ -196,7 +195,7 @@ def wallet_status():
         # PRIORITY: NETWORK_MODE environment variable determines display
         network_mode = os.getenv('NETWORK_MODE', 'testnet')
         print(f"🔍 Dashboard wallet_status - NETWORK_MODE: {network_mode}")
-        
+
         # Force display based on NETWORK_MODE (authoritative source)
         if network_mode == 'mainnet':
             network_name = "Arbitrum Mainnet"
@@ -461,19 +460,19 @@ def switch_network():
     try:
         data = request.get_json()
         target_network = data.get('network', 'testnet').lower()
-        
+
         if target_network not in ['mainnet', 'testnet']:
             return jsonify({'error': 'Invalid network. Use "mainnet" or "testnet"'}), 400
-        
+
         # Update environment variable
         os.environ['NETWORK_MODE'] = target_network
-        
+
         # Save to .env file if it exists
         env_file = '.env'
         if os.path.exists(env_file):
             lines = []
             network_mode_found = False
-            
+
             with open(env_file, 'r') as f:
                 for line in f:
                     if line.strip().startswith('NETWORK_MODE='):
@@ -481,13 +480,13 @@ def switch_network():
                         network_mode_found = True
                     else:
                         lines.append(line)
-            
+
             if not network_mode_found:
                 lines.append(f'NETWORK_MODE={target_network}\n')
-            
+
             with open(env_file, 'w') as f:
                 f.writelines(lines)
-        
+
         # Log the network switch
         log_entry = {
             'timestamp': time.time(),
@@ -497,7 +496,7 @@ def switch_network():
             'datetime': time.strftime('%Y-%m-%d %H:%M:%S UTC', time.gmtime()),
             'source': 'dashboard'
         }
-        
+
         # Create network switch log
         switch_log_file = 'network_switch_log.json'
         if os.path.exists(switch_log_file):
@@ -505,11 +504,11 @@ def switch_network():
                 logs = json.load(f)
         else:
             logs = []
-        
+
         logs.append(log_entry)
         with open(switch_log_file, 'w') as f:
             json.dump(logs, f, indent=2)
-        
+
         return jsonify({
             'success': True,
             'network': target_network,
@@ -517,7 +516,7 @@ def switch_network():
             'restart_required': True,
             'timestamp': time.time()
         })
-        
+
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
@@ -592,9 +591,9 @@ def get_parameter_sync_status():
                 'sync_status': 'no_settings',
                 'message': 'No parameter settings found'
             })
-        
+
         settings_mtime = os.path.getmtime(settings_file)
-        
+
         # Check if there's evidence the agent has processed the changes
         # Look for recent log entries mentioning parameter updates
         recent_update = False
@@ -610,14 +609,14 @@ def get_parameter_sync_status():
                             break
             except:
                 pass
-        
+
         return jsonify({
             'sync_status': 'synced' if recent_update else 'pending',
             'settings_modified': settings_mtime,
             'settings_modified_readable': time.strftime('%Y-%m-%d %H:%M:%S UTC', time.gmtime(settings_mtime)),
             'message': 'Parameters synced with agent' if recent_update else 'Waiting for agent to pick up changes'
         })
-        
+
     except Exception as e:
         return jsonify({
             'sync_status': 'error',
@@ -634,10 +633,10 @@ def debug_parameters():
             'dashboard_available': dashboard is not None,
             'dashboard_has_params': hasattr(dashboard, 'adjustable_params') if dashboard else False
         }
-        
+
         # Try different parameter loading methods
         methods = {}
-        
+
         # Method 1: Default config
         methods['default_config'] = {
             'learning_rate': 0.01,
@@ -649,7 +648,7 @@ def debug_parameters():
             'arb_decline_threshold': 0.05,
             'auto_mode': True
         }
-        
+
         # Method 2: From agent_config.json
         if os.path.exists('agent_config.json'):
             try:
@@ -657,7 +656,7 @@ def debug_parameters():
                     methods['agent_config_file'] = json.load(f)
             except Exception as e:
                 methods['agent_config_file'] = {'error': str(e)}
-        
+
         # Method 3: From user_settings.json
         if os.path.exists('user_settings.json'):
             try:
@@ -665,123 +664,72 @@ def debug_parameters():
                     methods['user_settings_file'] = json.load(f)
             except Exception as e:
                 methods['user_settings_file'] = {'error': str(e)}
-        
+
         # Method 4: From dashboard
         if dashboard and hasattr(dashboard, 'adjustable_params'):
             try:
                 methods['dashboard_params'] = dashboard.adjustable_params
             except Exception as e:
                 methods['dashboard_params'] = {'error': str(e)}
-        
+
         return jsonify({
             'debug_info': debug_info,
             'parameter_methods': methods,
             'recommendation': 'Check which method is causing the issue'
         })
-        
+
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/parameters', methods=['POST'])
-def update_parameters():
-    """Update adjustable parameters"""
+def save_parameters():
+    """Save user parameters and force immediate reload"""
     try:
         data = request.get_json()
-        if not data:
-            return jsonify({'error': 'No data received'}), 400
 
-        # Use a local config if dashboard is not available
-        if dashboard and hasattr(dashboard, 'adjustable_params'):
-            params = dashboard.adjustable_params
-        else:
-            # Load from file or use defaults
-            if os.path.exists('user_settings.json'):
-                try:
-                    with open('user_settings.json', 'r') as f:
-                        params = json.load(f)
-                except:
-                    params = {}
-            else:
-                params = {}
+        # Load existing settings or create new ones
+        settings_file = 'user_settings.json'
+        existing_settings = {}
 
-        # Default values
-        default_params = {
-            'health_factor_target': 1.19,
-            'borrow_trigger_threshold': 0.02,
-            'arb_decline_threshold': 0.05,
-            'auto_mode': True
-        }
-        
-        # Ensure all default params exist
-        for key, default_value in default_params.items():
-            if key not in params:
-                params[key] = default_value
+        if os.path.exists(settings_file):
+            with open(settings_file, 'r') as f:
+                existing_settings = json.load(f)
 
-        # Validate and update parameters
-        updated = False
-        
-        if 'health_factor_target' in data:
-            try:
-                value = float(data['health_factor_target'])
-                if 1.05 <= value <= 3.0:
-                    params['health_factor_target'] = value
-                    updated = True
-            except (ValueError, TypeError):
-                pass
+        # Update with new parameters
+        existing_settings.update(data)
 
-        if 'borrow_trigger_threshold' in data:
-            try:
-                value = float(data['borrow_trigger_threshold'])
-                if 0.001 <= value <= 0.5:
-                    params['borrow_trigger_threshold'] = value
-                    updated = True
-            except (ValueError, TypeError):
-                pass
+        # Add timestamp to force reload detection
+        existing_settings['last_updated'] = time.time()
+        existing_settings['update_count'] = existing_settings.get('update_count', 0) + 1
 
-        if 'arb_decline_threshold' in data:
-            try:
-                value = float(data['arb_decline_threshold'])
-                if 0.01 <= value <= 0.5:
-                    params['arb_decline_threshold'] = value
-                    updated = True
-            except (ValueError, TypeError):
-                pass
+        # Save updated settings with explicit flush
+        with open(settings_file, 'w') as f:
+            json.dump(existing_settings, f, indent=2)
+            f.flush()  # Force write to disk
+            os.fsync(f.fileno())  # Ensure disk write
 
-        if 'auto_mode' in data:
-            try:
-                params['auto_mode'] = bool(data['auto_mode'])
-                updated = True
-            except (ValueError, TypeError):
-                pass
+        # Create a trigger file for immediate agent response
+        trigger_file = 'parameter_update_trigger.flag'
+        with open(trigger_file, 'w') as f:
+            f.write(f"Parameters updated at {time.time()}\n")
+            f.write(f"Updated: {list(data.keys())}\n")
+            f.flush()
+            os.fsync(f.fileno())
 
-        # Save settings
-        if updated:
-            try:
-                with open('user_settings.json', 'w') as f:
-                    json.dump(params, f, indent=2)
-                
-                # Update dashboard if available
-                if dashboard and hasattr(dashboard, 'adjustable_params'):
-                    dashboard.adjustable_params.update(params)
-                
-                # Add timestamp to track when changes were made
-                params['last_updated'] = time.time()
-                params['last_updated_readable'] = time.strftime('%Y-%m-%d %H:%M:%S UTC', time.gmtime())
-                
-                print(f"✅ Parameters updated via dashboard: {list(data.keys())}")
-                    
-            except Exception as e:
-                print(f"Warning: Could not save settings: {e}")
+        updated_params = list(data.keys())
+        print(f"✅ Parameters updated via dashboard: {updated_params}")
+        print(f"📁 Settings file updated with timestamp: {existing_settings['last_updated']}")
 
         return jsonify({
-            'success': True, 
-            'parameters': params,
-            'message': 'Parameters saved successfully! Agent will apply changes on next iteration.',
-            'updated_fields': list(data.keys()) if updated else []
+            'status': 'success',
+            'message': f'Parameters updated: {", ".join(updated_params)}',
+            'updated_parameters': updated_params,
+            'timestamp': existing_settings['last_updated'],
+            'update_count': existing_settings['update_count']
         })
 
     except Exception as e:
-        print(f"Error in update_parameters: {e}")
+        print(f"❌ Failed to save parameters: {e}")
         return jsonify({'error': str(e)}), 500
 
 def get_available_port(start_port=5000):
