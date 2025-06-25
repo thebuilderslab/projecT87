@@ -273,7 +273,7 @@ def performance_data():
 
 @app.route('/api/parameters')
 def get_parameters():
-    """Get current agent parameters"""
+    """Get current agent parameters with enhanced error handling"""
     try:
         # Default configuration
         config = {
@@ -284,41 +284,67 @@ def get_parameters():
             'health_factor_target': 1.19,
             'borrow_trigger_threshold': 0.02,
             'arb_decline_threshold': 0.05,
-            'auto_mode': True
+            'auto_mode': True,
+            'debug_info': {
+                'config_sources': [],
+                'load_time': time.time()
+            }
         }
 
-        # Try to load from agent_config.json if it exists
+        # Try multiple parameter sources
+        sources_tried = []
+
+        # Source 1: agent_config.json
         if os.path.exists('agent_config.json'):
             try:
                 with open('agent_config.json', 'r') as f:
                     saved_config = json.load(f)
                     if isinstance(saved_config, dict):
                         config.update(saved_config)
-            except (json.JSONDecodeError, ValueError) as e:
-                print(f"Warning: Could not parse agent_config.json: {e}")
+                        sources_tried.append('agent_config.json')
+                        config['debug_info']['config_sources'].append('agent_config.json')
+            except Exception as e:
+                sources_tried.append(f'agent_config.json (failed: {e})')
 
-        # Try to get parameters from dashboard if available
+        # Source 2: user_settings.json
+        if os.path.exists('user_settings.json'):
+            try:
+                with open('user_settings.json', 'r') as f:
+                    user_config = json.load(f)
+                    if isinstance(user_config, dict):
+                        config.update(user_config)
+                        sources_tried.append('user_settings.json')
+                        config['debug_info']['config_sources'].append('user_settings.json')
+            except Exception as e:
+                sources_tried.append(f'user_settings.json (failed: {e})')
+
+        # Source 3: dashboard parameters
         if dashboard and hasattr(dashboard, 'adjustable_params'):
             try:
                 if isinstance(dashboard.adjustable_params, dict):
                     config.update(dashboard.adjustable_params)
+                    sources_tried.append('dashboard')
+                    config['debug_info']['config_sources'].append('dashboard')
             except Exception as e:
-                print(f"Warning: Could not get dashboard parameters: {e}")
+                sources_tried.append(f'dashboard (failed: {e})')
+
+        # Add debug information
+        config['debug_info']['sources_tried'] = sources_tried
+        config['debug_info']['total_sources'] = len([s for s in sources_tried if 'failed' not in s])
 
         return jsonify(config)
+
     except Exception as e:
-        print(f"Error in get_parameters: {e}")
-        # Return default config as fallback
+        print(f"CRITICAL: get_parameters failed completely: {e}")
+        # Return minimal working config
         return jsonify({
-            'learning_rate': 0.01,
-            'exploration_rate': 0.1,
-            'max_iterations_per_run': 100,
-            'optimization_target_threshold': 0.95,
             'health_factor_target': 1.19,
             'borrow_trigger_threshold': 0.02,
             'arb_decline_threshold': 0.05,
             'auto_mode': True,
-            'error': f'Fallback config used: {str(e)}'
+            'error': str(e),
+            'fallback': True,
+            'timestamp': time.time()
         })
 
 @app.route('/api/emergency_stop', methods=['POST'])
@@ -426,6 +452,72 @@ def get_emergency_status():
                 status['recent_logs'] = logs[-3:]  # Last 3 actions
 
         return jsonify(status)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/switch-network', methods=['POST'])
+def switch_network():
+    """Switch between mainnet and testnet"""
+    try:
+        data = request.get_json()
+        target_network = data.get('network', 'testnet').lower()
+        
+        if target_network not in ['mainnet', 'testnet']:
+            return jsonify({'error': 'Invalid network. Use "mainnet" or "testnet"'}), 400
+        
+        # Update environment variable
+        os.environ['NETWORK_MODE'] = target_network
+        
+        # Save to .env file if it exists
+        env_file = '.env'
+        if os.path.exists(env_file):
+            lines = []
+            network_mode_found = False
+            
+            with open(env_file, 'r') as f:
+                for line in f:
+                    if line.strip().startswith('NETWORK_MODE='):
+                        lines.append(f'NETWORK_MODE={target_network}\n')
+                        network_mode_found = True
+                    else:
+                        lines.append(line)
+            
+            if not network_mode_found:
+                lines.append(f'NETWORK_MODE={target_network}\n')
+            
+            with open(env_file, 'w') as f:
+                f.writelines(lines)
+        
+        # Log the network switch
+        log_entry = {
+            'timestamp': time.time(),
+            'action': 'NETWORK_SWITCH',
+            'from_network': 'unknown',  # Could be enhanced to track previous
+            'to_network': target_network,
+            'datetime': time.strftime('%Y-%m-%d %H:%M:%S UTC', time.gmtime()),
+            'source': 'dashboard'
+        }
+        
+        # Create network switch log
+        switch_log_file = 'network_switch_log.json'
+        if os.path.exists(switch_log_file):
+            with open(switch_log_file, 'r') as f:
+                logs = json.load(f)
+        else:
+            logs = []
+        
+        logs.append(log_entry)
+        with open(switch_log_file, 'w') as f:
+            json.dump(logs, f, indent=2)
+        
+        return jsonify({
+            'success': True,
+            'network': target_network,
+            'message': f'Network switched to {target_network}',
+            'restart_required': True,
+            'timestamp': time.time()
+        })
+        
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 

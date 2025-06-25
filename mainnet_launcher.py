@@ -140,10 +140,24 @@ if not os.getenv('NETWORK_MODE'):
 
 # Comprehensive secret linkage debugging
 # CRITICAL: Debug print for NETWORK_MODE verification
-print(f"🚨 DEBUG: NETWORK_MODE detected as: '{os.getenv('NETWORK_MODE', 'NOT_SET')}'")
-print(f"🚨 DEBUG: NETWORK_MODE type: {type(os.getenv('NETWORK_MODE'))}")
-print(f"🚨 DEBUG: NETWORK_MODE length: {len(os.getenv('NETWORK_MODE', ''))}")
-print(f"🚨 DEBUG: Raw environment NETWORK_MODE: {repr(os.getenv('NETWORK_MODE'))}")
+network_mode_raw = os.getenv('NETWORK_MODE', 'NOT_SET')
+print(f"🚨 DEBUG: NETWORK_MODE detected as: '{network_mode_raw}'")
+print(f"🚨 DEBUG: NETWORK_MODE type: {type(network_mode_raw)}")
+print(f"🚨 DEBUG: NETWORK_MODE length: {len(network_mode_raw) if network_mode_raw else 0}")
+print(f"🚨 DEBUG: Raw environment NETWORK_MODE: {repr(network_mode_raw)}")
+
+# Additional network validation
+if network_mode_raw == 'mainnet':
+    print(f"🚀 MAINNET MODE CONFIRMED - Real funds will be used!")
+    print(f"🌐 Expected Chain ID: 42161 (Arbitrum Mainnet)")
+    print(f"🔗 RPC URL: {os.getenv('ARBITRUM_RPC_URL', 'https://arb1.arbitrum.io/rpc')}")
+elif network_mode_raw == 'testnet':
+    print(f"🧪 TESTNET MODE CONFIRMED - Safe for testing")
+    print(f"🌐 Expected Chain ID: 421614 (Arbitrum Sepolia)")
+    print(f"🔗 RPC URL: https://sepolia-rollup.arbitrum.io/rpc")
+else:
+    print(f"⚠️ UNKNOWN NETWORK MODE: {network_mode_raw}")
+    print(f"💡 Defaulting to testnet for safety")
 
 print(f"🔍 COMPREHENSIVE SECRET LINKAGE DEBUG:")
 print(f"=" * 60)
