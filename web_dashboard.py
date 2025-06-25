@@ -165,7 +165,11 @@ def check_emergency_status():
 def wallet_status():
     """Get current wallet status"""
     try:
+        print("🔍 API: /api/wallet_status called")
+        print(f"🔍 API: Agent status: {agent is not None}")
+        
         if not agent:
+            print("❌ API: Agent not initialized, returning error")
             return jsonify({
                 'error': 'Agent not initialized',
                 'status': 'initializing'
@@ -271,7 +275,9 @@ def performance_data():
 def get_parameters():
     """Get current agent parameters with robust error handling"""
     try:
-        print("🔍 API: Loading parameters...")
+        print("🔍 API: /api/parameters called - Starting parameter loading...")
+        print(f"🔍 API: Current working directory: {os.getcwd()}")
+        print(f"🔍 API: Files in directory: {os.listdir('.')}")
         
         # Always start with working defaults
         config = {
@@ -288,6 +294,7 @@ def get_parameters():
             'timestamp': time.time(),
             'success': True
         }
+        print(f"✅ API: Default config created: {config}")
 
         # Try to load user settings if available
         user_settings_file = 'user_settings.json'
@@ -438,10 +445,12 @@ def get_network_info_api():
 def get_emergency_status():
     """Get emergency stop status with robust error handling"""
     try:
-        print("🔍 API: Checking emergency status...")
+        print("🔍 API: /api/emergency_status called - Checking emergency status...")
+        print(f"🔍 API: Current working directory: {os.getcwd()}")
         
         emergency_file = 'EMERGENCY_STOP_ACTIVE.flag'
         is_active = os.path.exists(emergency_file)
+        print(f"🔍 API: Emergency file check - exists: {is_active}")
 
         status = {
             'active': is_active,
@@ -578,8 +587,47 @@ def connection_test():
 def api_test():
     """Ultra-simple API test"""
     try:
+        print("🔍 API: /api/test called - Basic connectivity test")
         return jsonify({'message': 'API is working', 'timestamp': time.time()})
     except Exception as e:
+        print(f"❌ API: /api/test failed: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/debug/test-all')
+def test_all_endpoints():
+    """Test all critical endpoints and return results"""
+    try:
+        print("🔍 API: /api/debug/test-all called")
+        results = {}
+        
+        # Test each endpoint
+        endpoints = ['/api/parameters', '/api/emergency_status', '/api/wallet_status', '/api/performance']
+        
+        for endpoint in endpoints:
+            try:
+                print(f"🔍 Testing endpoint: {endpoint}")
+                # We can't easily call the endpoints directly, but we can test their functions
+                if endpoint == '/api/parameters':
+                    result = get_parameters()
+                    results[endpoint] = {'status': 'success', 'has_data': bool(result.data)}
+                elif endpoint == '/api/emergency_status':
+                    result = get_emergency_status()
+                    results[endpoint] = {'status': 'success', 'has_data': bool(result.data)}
+                else:
+                    results[endpoint] = {'status': 'not_tested', 'reason': 'requires_request_context'}
+            except Exception as e:
+                results[endpoint] = {'status': 'error', 'error': str(e)}
+                print(f"❌ Endpoint {endpoint} failed: {e}")
+        
+        return jsonify({
+            'test_results': results,
+            'timestamp': time.time(),
+            'agent_status': agent is not None,
+            'dashboard_status': dashboard is not None
+        })
+        
+    except Exception as e:
+        print(f"❌ API: test-all failed: {e}")
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/health-check')
@@ -793,7 +841,48 @@ def get_available_port(start_port=5000):
             continue
     return 8080  # Fallback port
 
+def log_startup_diagnostics():
+    """Log comprehensive startup diagnostics"""
+    print("=" * 60)
+    print("🚀 WEB DASHBOARD STARTUP DIAGNOSTICS")
+    print("=" * 60)
+    
+    print(f"📂 Working Directory: {os.getcwd()}")
+    print(f"🌍 Environment Variables:")
+    env_vars = ['NETWORK_MODE', 'PRIVATE_KEY', 'COINMARKETCAP_API_KEY', 'REPLIT_DEPLOYMENT']
+    for var in env_vars:
+        value = os.getenv(var)
+        if value:
+            if var == 'PRIVATE_KEY':
+                print(f"   {var}: {value[:10]}...{value[-4:] if len(value) > 14 else 'short'}")
+            elif var == 'COINMARKETCAP_API_KEY':
+                print(f"   {var}: {value[:8]}...{value[-4:] if len(value) > 12 else 'short'}")
+            else:
+                print(f"   {var}: {value}")
+        else:
+            print(f"   {var}: NOT SET")
+    
+    print(f"📁 Key Files:")
+    files_to_check = ['user_settings.json', 'agent_config.json', 'EMERGENCY_STOP_ACTIVE.flag', 'performance_log.json']
+    for file in files_to_check:
+        if os.path.exists(file):
+            try:
+                size = os.path.getsize(file)
+                print(f"   ✅ {file}: {size} bytes")
+            except:
+                print(f"   ⚠️ {file}: exists but can't read size")
+        else:
+            print(f"   ❌ {file}: not found")
+    
+    print(f"🤖 Agent Initialization:")
+    print(f"   Agent object: {agent is not None}")
+    print(f"   Dashboard object: {dashboard is not None}")
+    
+    print("=" * 60)
+
 if __name__ == '__main__':
+    log_startup_diagnostics()
+    
     print("🌐 Starting DeFi Agent Web Dashboard")
     print("📱 Access your dashboard at the web preview URL")
 
