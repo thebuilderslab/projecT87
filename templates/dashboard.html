@@ -235,7 +235,7 @@
     <div class="container">
         <div class="header">
             <h1>🤖 DeFi Agent Dashboard</h1>
-            <p id="networkStatus">Real-time monitoring of your Arbitrum Sepolia operations</p>
+            <p id="networkStatus">Real-time monitoring of your Arbitrum operations</p>
             <p id="lastUpdate">Loading...</p>
         </div>
 
@@ -318,7 +318,7 @@
                     </div>
                     <div class="metric">
                         <span class="metric-label">Network:</span>
-                        <span class="metric-value" id="network">Arbitrum Sepolia</span>
+                        <span class="metric-value" id="network">Loading...</span>
                     </div>
                     <div class="metric">
                         <span class="metric-label">Status:</span>
@@ -399,9 +399,21 @@
                 document.getElementById('ethBalance').textContent = `${data.eth_balance.toFixed(6)} ETH`;
                 document.getElementById('usdcBalance').textContent = `${data.usdc_balance.toFixed(2)} USDC`;
 
-                // Update network status
+                // Update network status - prioritize NETWORK_MODE over chain detection
                 if (data.network_name) {
                     document.getElementById('networkStatus').textContent = `Real-time monitoring of your ${data.network_name} operations`;
+                    // Update the network field in Market Data card
+                    document.getElementById('network').textContent = data.network_name;
+                    
+                    // Visual styling for mainnet vs testnet
+                    const networkElement = document.getElementById('network');
+                    if (data.network_name === 'Arbitrum Mainnet') {
+                        networkElement.style.color = '#00ff88';
+                        networkElement.style.fontWeight = 'bold';
+                    } else {
+                        networkElement.style.color = '#ff8800';
+                        networkElement.style.fontWeight = 'normal';
+                    }
                 }
 
                 document.getElementById('lastUpdate').textContent = `Last updated: ${new Date().toLocaleTimeString()}`;

@@ -185,18 +185,28 @@ def wallet_status():
         total_debt_usdc = health_data['total_debt_eth'] * eth_to_usd_rate
         available_borrows_usdc = health_data['available_borrows_eth'] * eth_to_usd_rate
 
-        # Get network name from agent
+        # Get network name from agent with priority on NETWORK_MODE
         network_mode = os.getenv('NETWORK_MODE', 'testnet')
-        if hasattr(agent, 'web3') and agent.web3:
-            chain_id = agent.web3.eth.chain_id
-            if chain_id == 42161:
-                network_name = "Arbitrum Mainnet"
-            elif chain_id == 421614:
-                network_name = "Arbitrum Sepolia"
-            else:
-                network_name = f"Unknown Network (Chain ID: {chain_id})"
+        print(f"🔍 Dashboard wallet_status - NETWORK_MODE: {network_mode}")
+        
+        # Priority: NETWORK_MODE environment variable determines display
+        if network_mode == 'mainnet':
+            network_name = "Arbitrum Mainnet"
         else:
-            network_name = "Arbitrum Mainnet" if network_mode == 'mainnet' else "Arbitrum Sepolia"
+            # Fallback to chain ID detection for testnet
+            if hasattr(agent, 'web3') and agent.web3:
+                try:
+                    chain_id = agent.web3.eth.chain_id
+                    if chain_id == 42161:
+                        network_name = "Arbitrum Mainnet"
+                    elif chain_id == 421614:
+                        network_name = "Arbitrum Sepolia"
+                    else:
+                        network_name = f"Unknown Network (Chain ID: {chain_id})"
+                except:
+                    network_name = "Arbitrum Sepolia"
+            else:
+                network_name = "Arbitrum Sepolia"
 
         return jsonify({
             'wallet_address': agent.address,
@@ -355,6 +365,15 @@ def clear_emergency_stop():
             return jsonify({'success': True, 'message': 'Emergency stop cleared'})
         else:
             return jsonify({'success': False, 'message': 'No emergency stop active'})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/network-info')
+def get_network_info_api():
+    """Get current network information"""
+    try:
+        network_info = get_network_info()
+        return jsonify(network_info)
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
