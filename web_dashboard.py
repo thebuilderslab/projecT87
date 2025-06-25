@@ -581,6 +581,49 @@ def comprehensive_health_check():
             'timestamp': time.time()
         }), 500
 
+@app.route('/api/parameter-sync-status')
+def get_parameter_sync_status():
+    """Check if agent has picked up latest parameter changes"""
+    try:
+        # Check if user_settings.json exists and get its modification time
+        settings_file = 'user_settings.json'
+        if not os.path.exists(settings_file):
+            return jsonify({
+                'sync_status': 'no_settings',
+                'message': 'No parameter settings found'
+            })
+        
+        settings_mtime = os.path.getmtime(settings_file)
+        
+        # Check if there's evidence the agent has processed the changes
+        # Look for recent log entries mentioning parameter updates
+        recent_update = False
+        if os.path.exists('performance_log.json'):
+            try:
+                with open('performance_log.json', 'r') as f:
+                    lines = f.readlines()
+                    # Check last few entries for parameter update mentions
+                    for line in lines[-5:]:
+                        entry = json.loads(line)
+                        if entry.get('timestamp', 0) > settings_mtime:
+                            recent_update = True
+                            break
+            except:
+                pass
+        
+        return jsonify({
+            'sync_status': 'synced' if recent_update else 'pending',
+            'settings_modified': settings_mtime,
+            'settings_modified_readable': time.strftime('%Y-%m-%d %H:%M:%S UTC', time.gmtime(settings_mtime)),
+            'message': 'Parameters synced with agent' if recent_update else 'Waiting for agent to pick up changes'
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'sync_status': 'error',
+            'error': str(e)
+        })
+
 @app.route('/api/diagnostics/debug-parameters')
 def debug_parameters():
     """Debug parameter loading issues"""
@@ -720,11 +763,22 @@ def update_parameters():
                 # Update dashboard if available
                 if dashboard and hasattr(dashboard, 'adjustable_params'):
                     dashboard.adjustable_params.update(params)
+                
+                # Add timestamp to track when changes were made
+                params['last_updated'] = time.time()
+                params['last_updated_readable'] = time.strftime('%Y-%m-%d %H:%M:%S UTC', time.gmtime())
+                
+                print(f"✅ Parameters updated via dashboard: {list(data.keys())}")
                     
             except Exception as e:
                 print(f"Warning: Could not save settings: {e}")
 
-        return jsonify({'success': True, 'parameters': params})
+        return jsonify({
+            'success': True, 
+            'parameters': params,
+            'message': 'Parameters saved successfully! Agent will apply changes on next iteration.',
+            'updated_fields': list(data.keys()) if updated else []
+        })
 
     except Exception as e:
         print(f"Error in update_parameters: {e}")

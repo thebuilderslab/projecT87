@@ -56,6 +56,8 @@ class ArbitrumTestnetAgent:
         print(f"Wallet: {self.address}")
         print(f"Network: {network_name} (Chain ID: {self.w3.eth.chain_id})")
         self.network_mode = network_mode
+        self.last_settings_check = 0
+        self.user_settings = {}
 
     def get_eth_balance(self):
         """Get ETH balance in human-readable format"""
@@ -226,6 +228,9 @@ class ArbitrumTestnetAgent:
         print(f"   WETH: {self.weth_address}")
         print(f"   USDC: {self.usdc_address}")
 
+        # Check for parameter updates from dashboard
+        self.check_for_parameter_updates()
+
         try:
             # Emergency stop check before any transaction attempts
             if self.check_emergency_stop():
@@ -394,6 +399,48 @@ class ArbitrumTestnetAgent:
         print(f"💡 Based on: Health monitoring, conditional triggers, and execution success")
 
         return performance
+
+    def check_for_parameter_updates(self):
+        """Check for real-time parameter updates from dashboard"""
+        try:
+            settings_file = 'user_settings.json'
+            if not os.path.exists(settings_file):
+                return False
+
+            # Check if file was modified since last check
+            file_mtime = os.path.getmtime(settings_file)
+            if file_mtime <= self.last_settings_check:
+                return False
+
+            # Load new settings
+            with open(settings_file, 'r') as f:
+                new_settings = json.load(f)
+
+            # Update internal parameters if they changed
+            if new_settings != self.user_settings:
+                print("🔄 PARAMETER UPDATE DETECTED:")
+                for key, value in new_settings.items():
+                    if key not in self.user_settings or self.user_settings[key] != value:
+                        print(f"   📝 {key}: {self.user_settings.get(key, 'None')} → {value}")
+
+                self.user_settings = new_settings
+                self.last_settings_check = file_mtime
+
+                # Apply settings to health monitor if available
+                if hasattr(self, 'health_monitor') and self.health_monitor:
+                    if 'health_factor_target' in new_settings:
+                        self.health_monitor.health_factor_target = new_settings['health_factor_target']
+                        print(f"   ✅ Health factor target updated to {new_settings['health_factor_target']}")
+
+                print("✅ Parameters updated successfully!")
+                return True
+
+            self.last_settings_check = file_mtime
+            return False
+
+        except Exception as e:
+            print(f"⚠️ Parameter update check failed: {e}")
+            return False
 
     def emergency_liquidation_protection(self):
         """Emergency liquidation protection - CRITICAL for mainnet"""
