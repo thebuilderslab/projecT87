@@ -46,10 +46,18 @@ def wallet_status():
 
         if hasattr(agent, 'aave'):
             usdc_balance = agent.aave.get_token_balance(agent.aave.usdc_address)
-            health_data = agent.health_monitor.get_current_health_factor()
+            health_data = agent.health_monitor.get_account_data_with_usdc()
         else:
             usdc_balance = 0
-            health_data = {'health_factor': 0, 'total_collateral_eth': 0, 'total_debt_eth': 0, 'available_borrows_eth': 0}
+            health_data = {
+                'health_factor': 0, 
+                'total_collateral_eth': 0, 
+                'total_debt_eth': 0, 
+                'available_borrows_eth': 0,
+                'total_collateral_usdc': 0,
+                'total_debt_usdc': 0,
+                'available_borrows_usdc': 0
+            }
 
         # Get ARB price
         arb_price_data = agent.health_monitor.get_arb_price() if hasattr(agent, 'health_monitor') else None
@@ -63,6 +71,9 @@ def wallet_status():
             'total_collateral': health_data['total_collateral_eth'],
             'total_debt': health_data['total_debt_eth'],
             'available_borrows': health_data['available_borrows_eth'],
+            'total_collateral_usdc': health_data.get('total_collateral_usdc', 0),
+            'total_debt_usdc': health_data.get('total_debt_usdc', 0),
+            'available_borrows_usdc': health_data.get('available_borrows_usdc', 0),
             'arb_price': arb_price,
             'timestamp': time.time()
         })

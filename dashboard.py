@@ -36,7 +36,7 @@ class AgentDashboard:
             
             if hasattr(self.agent, 'aave'):
                 usdc_balance = self.agent.aave.get_token_balance(self.agent.aave.usdc_address)
-                health_data = self.agent.health_monitor.get_current_health_factor()
+                health_data = self.agent.health_monitor.get_account_data_with_usdc()
             else:
                 usdc_balance = 0
                 health_data = None
@@ -54,9 +54,9 @@ class AgentDashboard:
                 # Aave Protocol Status
                 print(f"\n🏥 **AAVE PROTOCOL STATUS**")
                 print(f"   ❤️ Health Factor: {health_data['health_factor']:.4f}")
-                print(f"   🔒 Total Collateral: {health_data['total_collateral_eth']:.6f} ETH")
-                print(f"   💸 Total Debt: {health_data['total_debt_eth']:.6f} ETH")
-                print(f"   📈 Available Borrow: {health_data['available_borrows_eth']:.6f} ETH")
+                print(f"   🔒 Total Collateral: {health_data['total_collateral_eth']:.6f} ETH (${health_data.get('total_collateral_usdc', 0):.2f} USDC)")
+                print(f"   💸 Total Debt: {health_data['total_debt_eth']:.6f} ETH (${health_data.get('total_debt_usdc', 0):.2f} USDC)")
+                print(f"   📈 Available Borrow: {health_data['available_borrows_eth']:.6f} ETH (${health_data.get('available_borrows_usdc', 0):.2f} USDC)")
                 
                 # Borrow Power Used
                 if health_data['total_collateral_eth'] > 0:

@@ -328,6 +328,52 @@ class AaveHealthMonitor:
         
         return risk_triggered, risk_data
     
+    def convert_eth_to_usdc(self, eth_amount):
+        """Convert ETH amount to USDC equivalent using current ARB price as proxy"""
+        try:
+            # Use ARB price data to estimate ETH/USD rate
+            # This is a simplified conversion - in production you'd want dedicated ETH price feed
+            arb_price_data = self.get_arb_price()
+            if arb_price_data:
+                # Rough estimate: 1 ETH ≈ $2000 (simplified for demo)
+                eth_price_usd = 2000.0  # This should be fetched from a proper ETH price API
+                return float(eth_amount) * eth_price_usd
+            return 0.0
+        except Exception as e:
+            print(f"❌ ETH to USDC conversion failed: {e}")
+            return 0.0
+    
+    def get_account_data_with_usdc(self):
+        """Get account data with USDC conversions"""
+        try:
+            base_data = self.get_current_health_factor()
+            if not base_data:
+                return None
+            
+            # Convert ETH values to USDC
+            total_collateral_usdc = self.convert_eth_to_usdc(base_data['total_collateral_eth'])
+            total_debt_usdc = self.convert_eth_to_usdc(base_data['total_debt_eth'])
+            available_borrows_usdc = self.convert_eth_to_usdc(base_data['available_borrows_eth'])
+            
+            # Add USDC conversions to the data
+            enhanced_data = base_data.copy()
+            enhanced_data.update({
+                'total_collateral_usdc': total_collateral_usdc,
+                'total_debt_usdc': total_debt_usdc,
+                'available_borrows_usdc': available_borrows_usdc
+            })
+            
+            print(f"💰 Account Data (USDC converted):")
+            print(f"   Collateral: {total_collateral_usdc:.2f} USDC ({base_data['total_collateral_eth']:.6f} ETH)")
+            print(f"   Debt: {total_debt_usdc:.2f} USDC ({base_data['total_debt_eth']:.6f} ETH)")
+            print(f"   Available Borrows: {available_borrows_usdc:.2f} USDC ({base_data['available_borrows_eth']:.6f} ETH)")
+            
+            return enhanced_data
+            
+        except Exception as e:
+            print(f"❌ Failed to get account data with USDC: {e}")
+            return None
+    
     def get_arb_balance(self):
         """Get current ARB token balance"""
         try:
