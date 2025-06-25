@@ -38,9 +38,7 @@ class ManualControls:
             
         elif strategy_type == "supply_wbtc":
             wbtc_amount = 0.0004087  # Specific amount requested
-            return self.agent.aave.supply_wbtc_to_aave(wbtc_amount)e.weth_address, 
-                self.agent.get_eth_balance() * 0.5
-            )
+            return self.agent.aave.supply_wbtc_to_aave(wbtc_amount)
             
         # Add more manual strategies as needed
         
