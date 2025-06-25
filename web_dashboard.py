@@ -167,7 +167,7 @@ def wallet_status():
     try:
         print("🔍 API: /api/wallet_status called")
         print(f"🔍 API: Agent status: {agent is not None}")
-        
+
         if not agent:
             print("❌ API: Agent not initialized, returning error")
             return jsonify({
@@ -175,26 +175,95 @@ def wallet_status():
                 'status': 'initializing'
             })
 
-        # Get balances
-        eth_balance = agent.get_eth_balance()
+        # Prepare wallet status dictionary
+        wallet_status = {
+            'wallet_address': agent.address,
+            'eth_balance': agent.get_eth_balance(),
+            'usdc_balance': 0,
+            'health_factor': 0,
+            'total_collateral': 0,
+            'total_debt': 0,
+            'available_borrows': 0,
+            'total_collateral_usdc': 0,
+            'total_debt_usdc': 0,
+            'available_borrows_usdc': 0,
+            'arb_price': 0,
+            'network_name': 'Unknown',
+            'network_mode': os.getenv('NETWORK_MODE', 'testnet'),
+            'timestamp': time.time()
+        }
 
         if hasattr(agent, 'aave'):
-            usdc_balance = agent.aave.get_token_balance(agent.aave.usdc_address)
-            health_data = agent.health_monitor.get_current_health_factor()
+            wallet_status['usdc_balance'] = agent.aave.get_token_balance(agent.aave.usdc_address)
+
+            try:
+                # Get health factor data
+                health_data = agent.health_monitor.get_current_health_factor()
+                if health_data:
+                    wallet_status.update({
+                        'health_factor': health_data['health_factor'],
+                        'total_collateral': health_data['total_collateral_eth'],
+                        'total_debt': health_data['total_debt_eth'],
+                        'total_collateral_usdc': health_data.get('total_collateral_usdc', 0),
+                        'total_debt_usdc': health_data.get('total_debt_usdc', 0),
+                        'available_borrows': health_data.get('available_borrows_eth', 0),
+                        'available_borrows_usdc': health_data.get('available_borrows_usdc', 0)
+                    })
+                else:
+                    # Try third-party API fallback
+                    try:
+                        from third_party_data_integration import ThirdPartyDataProvider
+                        provider = ThirdPartyDataProvider()
+                        third_party_data = provider.get_reliable_aave_data(agent.address)
+
+                        if third_party_data:
+                            print(f"✅ Using {third_party_data['source']} API data")
+                            wallet_status.update({
+                                'health_factor': third_party_data['health_factor'],
+                                'total_collateral': third_party_data['total_collateral_usd'] / 2400,  # Rough ETH conversion
+                                'total_debt': third_party_data['total_debt_usd'] / 2400,
+                                'total_collateral_usdc': third_party_data['total_collateral_usd'],
+                                'total_debt_usdc': third_party_data['total_debt_usd'],
+                                'available_borrows': 0,
+                                'available_borrows_usdc': 0
+                            })
+                        else:
+                            # Final fallback to on-chain analysis
+                            fallback_data = agent.health_monitor.perform_fallback_analysis()
+                            if fallback_data:
+                                wallet_status.update({
+                                    'health_factor': fallback_data.get('estimated_health_factor', 0),
+                                    'total_collateral': fallback_data.get('estimated_collateral', 0),
+                                    'total_debt': 0,
+                                    'total_collateral_usdc': fallback_data.get('estimated_collateral_usdc', 0),
+                                    'total_debt_usdc': 0,
+                                    'available_borrows': 0,
+                                    'available_borrows_usdc': 0
+                                })
+                            print("⚠️ Using on-chain fallback analysis")
+                    except ImportError:
+                        print("💡 Third-party integration not available - using fallback")
+                        # Try fallback analysis
+                        fallback_data = agent.health_monitor.perform_fallback_analysis()
+                        if fallback_data:
+                            wallet_status.update({
+                                'health_factor': fallback_data.get('estimated_health_factor', 0),
+                                'total_collateral': fallback_data.get('estimated_collateral', 0),
+                                'total_debt': 0,
+                                'total_collateral_usdc': fallback_data.get('estimated_collateral_usdc', 0),
+                                'total_debt_usdc': 0,
+                                'available_borrows': 0,
+                                'available_borrows_usdc': 0
+                            })
+                        print("⚠️ Using fallback health factor analysis")
+            except Exception as e:
+                print(f"⚠️ Aave balance/health error: {e}")
         else:
-            usdc_balance = 0
-            health_data = {'health_factor': 0, 'total_collateral_eth': 0, 'total_debt_eth': 0, 'available_borrows_eth': 0}
+            print("⚠️ Aave integration not available")
 
         # Get ARB price
         arb_price_data = agent.health_monitor.get_arb_price() if hasattr(agent, 'health_monitor') else None
-        arb_price = arb_price_data['price'] if arb_price_data else 0
-
-        # Convert ETH values to USDC (assuming 1 ETH = $2500 for mainnet)
-        eth_to_usd_rate = 2500.0  # Conservative estimate for mainnet
-
-        total_collateral_usdc = health_data['total_collateral_eth'] * eth_to_usd_rate
-        total_debt_usdc = health_data['total_debt_eth'] * eth_to_usd_rate
-        available_borrows_usdc = health_data['available_borrows_eth'] * eth_to_usd_rate
+        wallet_status['arb_price'] = arb_price_data['price'] if arb_price_data else 0
 
         # PRIORITY: NETWORK_MODE environment variable determines display
         network_mode = os.getenv('NETWORK_MODE', 'testnet')
@@ -202,28 +271,13 @@ def wallet_status():
 
         # Force display based on NETWORK_MODE (authoritative source)
         if network_mode == 'mainnet':
-            network_name = "Arbitrum Mainnet"
+            wallet_status['network_name'] = "Arbitrum Mainnet"
             print(f"🚀 Forcing Arbitrum Mainnet display based on NETWORK_MODE")
         else:
-            network_name = "Arbitrum Sepolia"
+            wallet_status['network_name'] = "Arbitrum Sepolia"
             print(f"🧪 Showing Arbitrum Sepolia based on NETWORK_MODE")
 
-        return jsonify({
-            'wallet_address': agent.address,
-            'eth_balance': eth_balance,
-            'usdc_balance': usdc_balance,
-            'health_factor': health_data['health_factor'],
-            'total_collateral': health_data['total_collateral_eth'],
-            'total_debt': health_data['total_debt_eth'],
-            'available_borrows': health_data['available_borrows_eth'],
-            'total_collateral_usdc': total_collateral_usdc,
-            'total_debt_usdc': total_debt_usdc,
-            'available_borrows_usdc': available_borrows_usdc,
-            'arb_price': arb_price,
-            'network_name': network_name,
-            'network_mode': network_mode,
-            'timestamp': time.time()
-        })
+        return jsonify(wallet_status)
 
     except Exception as e:
         return jsonify({'error': str(e)})
@@ -278,7 +332,7 @@ def get_parameters():
         print("🔍 API: /api/parameters called - Starting parameter loading...")
         print(f"🔍 API: Current working directory: {os.getcwd()}")
         print(f"🔍 API: Files in directory: {os.listdir('.')}")
-        
+
         # Always start with working defaults
         config = {
             'health_factor_target': 1.19,
@@ -338,7 +392,7 @@ def get_parameters():
         print(f"❌ CRITICAL: get_parameters failed completely: {e}")
         import traceback
         traceback.print_exc()
-        
+
         # Return absolute minimal config that will work
         fallback_config = {
             'health_factor_target': 1.19,
@@ -447,7 +501,7 @@ def get_emergency_status():
     try:
         print("🔍 API: /api/emergency_status called - Checking emergency status...")
         print(f"🔍 API: Current working directory: {os.getcwd()}")
-        
+
         emergency_file = 'EMERGENCY_STOP_ACTIVE.flag'
         is_active = os.path.exists(emergency_file)
         print(f"🔍 API: Emergency file check - exists: {is_active}")
@@ -486,7 +540,7 @@ def get_emergency_status():
 
         print(f"📊 API: Emergency status: {status}")
         return jsonify(status)
-        
+
     except Exception as e:
         print(f"❌ API: Emergency status error: {e}")
         # Return safe default
@@ -599,10 +653,10 @@ def test_all_endpoints():
     try:
         print("🔍 API: /api/debug/test-all called")
         results = {}
-        
+
         # Test each endpoint
         endpoints = ['/api/parameters', '/api/emergency_status', '/api/wallet_status', '/api/performance']
-        
+
         for endpoint in endpoints:
             try:
                 print(f"🔍 Testing endpoint: {endpoint}")
@@ -618,14 +672,14 @@ def test_all_endpoints():
             except Exception as e:
                 results[endpoint] = {'status': 'error', 'error': str(e)}
                 print(f"❌ Endpoint {endpoint} failed: {e}")
-        
+
         return jsonify({
             'test_results': results,
             'timestamp': time.time(),
             'agent_status': agent is not None,
             'dashboard_status': dashboard is not None
         })
-        
+
     except Exception as e:
         print(f"❌ API: test-all failed: {e}")
         return jsonify({'error': str(e)}), 500
@@ -739,6 +793,7 @@ def debug_parameters():
             'optimization_target_threshold': 0.95,
             'health_factor_target': 1.19,
             'borrow_trigger_threshold': 0.02,
+```text
             'arb_decline_threshold': 0.05,
             'auto_mode': True
         }
@@ -846,7 +901,7 @@ def log_startup_diagnostics():
     print("=" * 60)
     print("🚀 WEB DASHBOARD STARTUP DIAGNOSTICS")
     print("=" * 60)
-    
+
     print(f"📂 Working Directory: {os.getcwd()}")
     print(f"🌍 Environment Variables:")
     env_vars = ['NETWORK_MODE', 'PRIVATE_KEY', 'COINMARKETCAP_API_KEY', 'REPLIT_DEPLOYMENT']
@@ -861,7 +916,7 @@ def log_startup_diagnostics():
                 print(f"   {var}: {value}")
         else:
             print(f"   {var}: NOT SET")
-    
+
     print(f"📁 Key Files:")
     files_to_check = ['user_settings.json', 'agent_config.json', 'EMERGENCY_STOP_ACTIVE.flag', 'performance_log.json']
     for file in files_to_check:
@@ -873,16 +928,16 @@ def log_startup_diagnostics():
                 print(f"   ⚠️ {file}: exists but can't read size")
         else:
             print(f"   ❌ {file}: not found")
-    
+
     print(f"🤖 Agent Initialization:")
     print(f"   Agent object: {agent is not None}")
     print(f"   Dashboard object: {dashboard is not None}")
-    
+
     print("=" * 60)
 
 if __name__ == '__main__':
     log_startup_diagnostics()
-    
+
     # Check for emergency stop and clear if needed for dashboard
     if os.path.exists('EMERGENCY_STOP_ACTIVE.flag'):
         print("⚠️ Emergency stop detected - clearing for dashboard access...")
@@ -891,7 +946,7 @@ if __name__ == '__main__':
             print("✅ Emergency stop cleared for dashboard")
         except:
             print("❌ Could not clear emergency stop flag")
-    
+
     print("🌐 Starting DeFi Agent Web Dashboard")
     print("📱 Access your dashboard at the web preview URL")
 
