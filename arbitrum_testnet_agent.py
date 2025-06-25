@@ -369,7 +369,31 @@ class ArbitrumTestnetAgent:
                     else:
                         # Low exploration: Active monitoring with occasional optimization
                         print("🔍 Active monitoring for opportunities...")
-                        performance = 0.74  # Base monitoring performance
+                        
+                        # Check if wallet has funds to start DeFi operations
+                        if portfolio_before > 0.01:  # If we have some ETH
+                            print(f"💰 Wallet has {portfolio_before:.6f} ETH - ready for DeFi operations")
+                            # Consider starting with a small Aave supply operation
+                            if iteration % 10 == 0:  # Every 10th iteration
+                                print("🏦 Initiating small Aave supply operation...")
+                                try:
+                                    # Supply a small amount of ETH to Aave to get started
+                                    supply_amount = min(portfolio_before * 0.1, 0.001)  # 10% or max 0.001 ETH
+                                    tx_hash = self.aave.supply_to_aave(self.aave.weth_address, supply_amount)
+                                    if tx_hash:
+                                        print(f"✅ Successfully supplied {supply_amount:.6f} ETH to Aave")
+                                        performance = 0.85
+                                    else:
+                                        print("❌ Failed to supply to Aave")
+                                        performance = 0.70
+                                except Exception as e:
+                                    print(f"❌ Aave supply operation failed: {e}")
+                                    performance = 0.70
+                            else:
+                                performance = 0.74  # Base monitoring performance
+                        else:
+                            print("⚠️ Insufficient ETH balance for DeFi operations")
+                            performance = 0.65
                 except Exception as e:
                     print(f"❌ Standard operation failed: {e}")
                     performance = 0.5
@@ -389,11 +413,13 @@ class ArbitrumTestnetAgent:
         # Cap performance at 1.0
         performance = min(performance, 1.0)
 
-        # CRITICAL: Emergency liquidation protection
-        if monitoring_summary['current_health_factor'] < 1.05:
+        # CRITICAL: Emergency liquidation protection (only if there's actual debt)
+        if monitoring_summary['current_health_factor'] < 1.05 and monitoring_summary['current_health_factor'] > 0:
             print("🚨 EMERGENCY: Health factor critically low - executing emergency repay")
             self.emergency_liquidation_protection()
             performance *= 0.5  # Lower performance due to emergency
+        elif monitoring_summary['current_health_factor'] == 0:
+            print("💡 No active Aave positions detected - wallet is safe")
 
         print(f"📈 Dynamic DeFi Performance: {performance:.4f}")
         print(f"💡 Based on: Health monitoring, conditional triggers, and execution success")
