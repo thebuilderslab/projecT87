@@ -269,74 +269,56 @@ def performance_data():
 
 @app.route('/api/parameters')
 def get_parameters():
-    """Get current agent parameters with enhanced error handling"""
+    """Get current agent parameters with robust error handling"""
     try:
-        # Default configuration with all required parameters
+        print("🔍 API: Loading parameters...")
+        
+        # Always start with working defaults
         config = {
-            'learning_rate': 0.01,
-            'exploration_rate': 0.1,
-            'max_iterations_per_run': 100,
-            'optimization_target_threshold': 0.95,
             'health_factor_target': 1.19,
             'borrow_trigger_threshold': 0.02,
             'arb_decline_threshold': 0.05,
+            'exploration_rate': 0.1,
             'auto_mode': True,
+            'learning_rate': 0.01,
+            'max_iterations_per_run': 100,
+            'optimization_target_threshold': 0.95,
             'status': 'active',
             'network_mode': os.getenv('NETWORK_MODE', 'mainnet'),
-            'debug_info': {
-                'config_sources': ['defaults'],
-                'load_time': time.time(),
-                'timestamp': time.strftime('%Y-%m-%d %H:%M:%S UTC', time.gmtime())
-            }
+            'timestamp': time.time()
         }
 
-        # Try multiple parameter sources
-        sources_tried = []
-
-        # Source 1: agent_config.json
-        if os.path.exists('agent_config.json'):
+        # Try to load user settings if available
+        user_settings_file = 'user_settings.json'
+        if os.path.exists(user_settings_file):
             try:
-                with open('agent_config.json', 'r') as f:
-                    saved_config = json.load(f)
-                    if isinstance(saved_config, dict):
-                        config.update(saved_config)
-                        sources_tried.append('agent_config.json')
-                        config['debug_info']['config_sources'].append('agent_config.json')
+                with open(user_settings_file, 'r') as f:
+                    user_settings = json.load(f)
+                    if isinstance(user_settings, dict):
+                        # Only update known parameters
+                        known_params = [
+                            'health_factor_target', 'borrow_trigger_threshold', 
+                            'arb_decline_threshold', 'exploration_rate', 'auto_mode'
+                        ]
+                        for param in known_params:
+                            if param in user_settings:
+                                config[param] = user_settings[param]
+                        config['loaded_from'] = 'user_settings'
+                        print(f"✅ API: Loaded parameters from user_settings.json")
             except Exception as e:
-                sources_tried.append(f'agent_config.json (failed: {e})')
+                print(f"⚠️ API: Could not load user_settings.json: {e}")
+                config['loaded_from'] = 'defaults'
+        else:
+            config['loaded_from'] = 'defaults'
+            print(f"📝 API: Using default parameters")
 
-        # Source 2: user_settings.json
-        if os.path.exists('user_settings.json'):
-            try:
-                with open('user_settings.json', 'r') as f:
-                    user_config = json.load(f)
-                    if isinstance(user_config, dict):
-                        config.update(user_config)
-                        sources_tried.append('user_settings.json')
-                        config['debug_info']['config_sources'].append('user_settings.json')
-            except Exception as e:
-                sources_tried.append(f'user_settings.json (failed: {e})')
-
-        # Source 3: dashboard parameters
-        if dashboard and hasattr(dashboard, 'adjustable_params'):
-            try:
-                if isinstance(dashboard.adjustable_params, dict):
-                    config.update(dashboard.adjustable_params)
-                    sources_tried.append('dashboard')
-                    config['debug_info']['config_sources'].append('dashboard')
-            except Exception as e:
-                sources_tried.append(f'dashboard (failed: {e})')
-
-        # Add debug information
-        config['debug_info']['sources_tried'] = sources_tried
-        config['debug_info']['total_sources'] = len([s for s in sources_tried if 'failed' not in s])
-
+        print(f"📊 API: Returning parameters: {config}")
         return jsonify(config)
 
     except Exception as e:
-        print(f"CRITICAL: get_parameters failed completely: {e}")
-        # Return minimal working config
-        return jsonify({
+        print(f"❌ CRITICAL: get_parameters failed completely: {e}")
+        # Return absolute minimal config that will work
+        fallback_config = {
             'health_factor_target': 1.19,
             'borrow_trigger_threshold': 0.02,
             'arb_decline_threshold': 0.05,
@@ -344,7 +326,8 @@ def get_parameters():
             'error': str(e),
             'fallback': True,
             'timestamp': time.time()
-        })
+        }
+        return jsonify(fallback_config), 200
 
 @app.route('/api/emergency_stop', methods=['POST'])
 def activate_emergency_stop():
@@ -431,28 +414,56 @@ def get_network_info_api():
 
 @app.route('/api/emergency_status')
 def get_emergency_status():
-    """Get emergency stop status"""
+    """Get emergency stop status with robust error handling"""
     try:
+        print("🔍 API: Checking emergency status...")
+        
         emergency_file = 'EMERGENCY_STOP_ACTIVE.flag'
         is_active = os.path.exists(emergency_file)
 
-        status = {'active': is_active}
+        status = {
+            'active': is_active,
+            'timestamp': time.time()
+        }
 
         if is_active:
-            with open(emergency_file, 'r') as f:
-                content = f.read()
-                status['details'] = content
+            try:
+                with open(emergency_file, 'r') as f:
+                    content = f.read()
+                    status['details'] = content
+                    print("🚨 API: Emergency stop is ACTIVE")
+            except Exception as e:
+                status['details'] = f"Could not read emergency file: {e}"
+        else:
+            print("✅ API: Emergency stop is NOT active")
 
-        # Get recent logs
+        # Try to get recent logs
         log_file = 'emergency_stop_log.json'
         if os.path.exists(log_file):
-            with open(log_file, 'r') as f:
-                logs = json.load(f)
-                status['recent_logs'] = logs[-3:]  # Last 3 actions
+            try:
+                with open(log_file, 'r') as f:
+                    logs = json.load(f)
+                    if isinstance(logs, list):
+                        status['recent_logs'] = logs[-3:]  # Last 3 actions
+                    else:
+                        status['recent_logs'] = []
+            except Exception as e:
+                print(f"⚠️ API: Could not load emergency logs: {e}")
+                status['recent_logs'] = []
+        else:
+            status['recent_logs'] = []
 
+        print(f"📊 API: Emergency status: {status}")
         return jsonify(status)
+        
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        print(f"❌ API: Emergency status error: {e}")
+        # Return safe default
+        return jsonify({
+            'active': False,
+            'error': str(e),
+            'timestamp': time.time()
+        }), 200
 
 @app.route('/api/switch-network', methods=['POST'])
 def switch_network():
@@ -524,17 +535,30 @@ def switch_network():
 def connection_test():
     """Simple connection test for UI debugging"""
     try:
-        return jsonify({
+        print("🔍 API: Connection test requested")
+        response = {
             'status': 'connected',
             'timestamp': time.time(),
             'server_time': time.strftime('%Y-%m-%d %H:%M:%S UTC', time.gmtime()),
             'agent_initialized': agent is not None,
             'dashboard_available': dashboard is not None,
             'network_mode': os.getenv('NETWORK_MODE', 'unknown'),
-            'deployment_mode': bool(os.getenv('REPLIT_DEPLOYMENT'))
-        })
+            'deployment_mode': bool(os.getenv('REPLIT_DEPLOYMENT')),
+            'api_version': '1.0'
+        }
+        print(f"✅ API: Connection test successful: {response}")
+        return jsonify(response)
     except Exception as e:
+        print(f"❌ API: Connection test failed: {e}")
         return jsonify({'error': str(e), 'status': 'error'}), 500
+
+@app.route('/api/test')
+def api_test():
+    """Ultra-simple API test"""
+    try:
+        return jsonify({'message': 'API is working', 'timestamp': time.time()})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/api/health-check')
 def comprehensive_health_check():

@@ -395,61 +395,36 @@
         async function fetchWalletStatus() {
             try {
                 const response = await fetch('/api/wallet_status');
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
                 const data = await response.json();
 
                 if (data.error) {
-                    if (data.status === 'initializing') {
-                        return; // Keep showing loading
-                    }
-                    throw new Error(data.error);
+                    console.error('Wallet status error:', data.error);
+                    document.getElementById('walletAddress').textContent = `Error: ${data.error}`;
+                    return;
                 }
 
-                // Update wallet status
-                document.getElementById('walletAddress').textContent = data.wallet_address;
-                document.getElementById('ethBalance').textContent = `${data.eth_balance.toFixed(6)} ETH`;
-                document.getElementById('usdcBalance').textContent = `${data.usdc_balance.toFixed(2)} USDC`;
+                document.getElementById('walletAddress').textContent = data.wallet_address || 'Unknown';
+                document.getElementById('ethBalance').textContent = data.eth_balance ? `${data.eth_balance.toFixed(6)} ETH` : '0 ETH';
+                document.getElementById('usdcBalance').textContent = data.usdc_balance ? `${data.usdc_balance.toFixed(2)} USDC` : '0 USDC';
 
-                // Update network status - prioritize NETWORK_MODE over chain detection
-                if (data.network_name) {
-                    document.getElementById('networkStatus').textContent = `Real-time monitoring of your ${data.network_name} operations`;
-                    // Update the network field in Market Data card
-                    document.getElementById('network').textContent = data.network_name;
-
-                    // Visual styling for mainnet vs testnet
-                    const networkElement = document.getElementById('network');
-                    if (data.network_name === 'Arbitrum Mainnet') {
-                        networkElement.style.color = '#00ff88';
-                        networkElement.style.fontWeight = 'bold';
-                    } else {
-                        networkElement.style.color = '#ff8800';
-                        networkElement.style.fontWeight = 'normal';
-                    }
-                }
-
-                document.getElementById('lastUpdate').textContent = `Last updated: ${new Date().toLocaleTimeString()}`;
-
-                // Update Aave status
                 const healthFactor = data.health_factor === Infinity ? '∞' : data.health_factor.toFixed(4);
-                document.getElementById('healthFactor').innerHTML = `
-                    <span id="healthStatus" class="status-indicator ${getHealthStatus(data.health_factor)}"></span>
-                    ${healthFactor}
-                `;
-                document.getElementById('totalCollateral').textContent = `$${(data.total_collateral_usdc || 0).toFixed(2)} USDC`;
-                document.getElementById('totalDebt').textContent = `$${(data.total_debt_usdc || 0).toFixed(2)} USDC`;
-                document.getElementById('availableBorrows').textContent = `$${(data.available_borrows_usdc || 0).toFixed(2)} USDC`;
+                document.getElementById('healthFactor').textContent = healthFactor;
+                document.getElementById('healthFactor').className = `status ${getHealthStatus(data.health_factor)}`;
 
-                // Update market data
-                document.getElementById('arbPrice').textContent = `$${data.arb_price.toFixed(4)}`;
+                document.getElementById('totalCollateral').textContent = data.total_collateral_usdc ? `$${data.total_collateral_usdc.toFixed(2)} USDC` : '$0.00 USDC';
+                document.getElementById('totalDebt').textContent = data.total_debt_usdc ? `$${data.total_debt_usdc.toFixed(2)} USDC` : '$0.00 USDC';
+                document.getElementById('availableBorrows').textContent = data.available_borrows_usdc ? `$${data.available_borrows_usdc.toFixed(2)} USDC` : '$0.00 USDC';
 
-                // Hide loading, show dashboard
-                document.getElementById('loading').style.display = 'none';
-                document.getElementById('dashboard').style.display = 'block';
-                document.getElementById('error').style.display = 'none';
+                document.getElementById('arbPrice').textContent = data.arb_price ? `$${data.arb_price.toFixed(4)}` : '$0.0000';
+                document.getElementById('networkName').textContent = data.network_name || 'Unknown Network';
+
             } catch (error) {
                 console.error('Error fetching wallet status:', error);
-                document.getElementById('ethBalance').textContent = 'Error loading';
-                document.getElementById('usdcBalance').textContent = 'Error loading';
-                document.getElementById('walletAddress').textContent = 'Error loading';
+                document.getElementById('walletAddress').textContent = `Connection Error: ${error.message}`;
             }
         }
 
@@ -475,18 +450,37 @@
 
         async function fetchParameters() {
             try {
+                console.log('Fetching parameters...');
                 const response = await fetch('/api/parameters');
-                const data = await response.json();
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
 
-                if (!data.error) {
+                const data = await response.json();
+                console.log('Parameters received:', data);
+
+                if (data.error && !data.fallback) {
+                    console.error('Parameters error:', data.error);
+                    return;
+                }
+
+                // Update UI with parameters
+                if (data.health_factor_target !== undefined) {
                     document.getElementById('healthTarget').value = data.health_factor_target;
+                }
+                if (data.borrow_trigger_threshold !== undefined) {
                     document.getElementById('borrowTrigger').value = data.borrow_trigger_threshold;
-                    document.getElementById('arbDecline').value = (data.arb_decline_threshold * 100);
-                    document.getElementById('autoMode').value = data.auto_mode.toString();
+                }
+                if (data.arb_decline_threshold !== undefined) {
+                    document.getElementById('arbDecline').value = (data.arb_decline_threshold * 100).toFixed(1);
+                }
+                if (data.auto_mode !== undefined) {
+                    document.getElementById('autoMode').value = data.auto_mode ? 'true' : 'false';
                 }
 
             } catch (error) {
                 console.error('Error fetching parameters:', error);
+                // Don't show error to user for parameters, just log it
             }
         }
 
@@ -587,41 +581,45 @@
             }
         }
 
-        function updateEmergencyStatus() {
-            fetch('/api/emergency_status')
-                .then(response => response.json())
-                .then(data => {
-                    const statusDiv = document.getElementById('emergency-status');
-                    const stopBtn = document.getElementById('emergency-stop-btn');
-                    const clearBtn = document.getElementById('clear-stop-btn');
-                    const logsDiv = document.getElementById('emergency-logs');
+        async function updateEmergencyStatus() {
+            try {
+                const response = await fetch('/api/emergency_status');
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
 
-                    if (data.active) {
-                        statusDiv.innerHTML = '🚨 EMERGENCY STOP ACTIVE';
-                        statusDiv.className = 'emergency-status active';
-                        stopBtn.style.display = 'none';
-                        clearBtn.style.display = 'inline-block';
-                    } else {
-                        statusDiv.innerHTML = '✅ Agent operations normal';
-                        statusDiv.className = 'emergency-status inactive';
-                        stopBtn.style.display = 'inline-block';
-                        clearBtn.style.display = 'none';
-                    }
+                const data = await response.json();
 
-                    // Show recent logs
-                    if (data.recent_logs && data.recent_logs.length > 0) {
-                        let logsHtml = '<strong>Recent Actions:</strong><br>';
-                        data.recent_logs.forEach(log => {
-                            logsHtml += `${log.datetime}: ${log.action}<br>`;
-                        });
-                        logsDiv.innerHTML = logsHtml;
-                    } else {
-                        logsDiv.innerHTML = '';
-                    }
-                })
-                .catch(error => {
-                    console.error('Error fetching emergency status:', error);
-                });
+                const statusDiv = document.getElementById('emergency-status');
+                const stopBtn = document.getElementById('emergency-stop-btn');
+                const clearBtn = document.getElementById('clear-stop-btn');
+                const logsDiv = document.getElementById('emergency-logs');
+
+                if (data.active) {
+                    statusDiv.innerHTML = '🚨 EMERGENCY STOP ACTIVE';
+                    statusDiv.className = 'emergency-status active';
+                    stopBtn.style.display = 'none';
+                    clearBtn.style.display = 'inline-block';
+                } else {
+                    statusDiv.innerHTML = '✅ Agent operations normal';
+                    statusDiv.className = 'emergency-status inactive';
+                    stopBtn.style.display = 'inline-block';
+                    clearBtn.style.display = 'none';
+                }
+
+                // Show recent logs
+                if (data.recent_logs && data.recent_logs.length > 0) {
+                    let logsHtml = '<strong>Recent Actions:</strong><br>';
+                    data.recent_logs.forEach(log => {
+                        logsHtml += `${log.datetime}: ${log.action}<br>`;
+                    });
+                    logsDiv.innerHTML = logsHtml;
+                } else {
+                    logsDiv.innerHTML = '';
+                }
+            } catch (error) {
+                console.error('Error fetching emergency status:', error);
+            }
         }
 
         // Update network info with proper mainnet detection
@@ -828,7 +826,7 @@
             }, 30000); // Update every 30 seconds
 
             setInterval(updateEmergencyStatus, 5000); // Check emergency status every 5 seconds
-            setInterval(updateNetworkInfo, 60000); // Check network info every 60 seconds
+            setInterval(updateNetworkInfo, 60000); //// Check network info every 60 seconds
         });
     </script>
 </body>
