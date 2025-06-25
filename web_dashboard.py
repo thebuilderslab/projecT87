@@ -51,35 +51,43 @@ threading.Thread(target=initialize_agent, daemon=True).start()
 def get_network_info():
     """Get current network information with proper mainnet detection"""
     try:
-        from arbitrum_testnet_agent import ArbitrumTestnetAgent
-
-        # Force check NETWORK_MODE first for accurate detection
+        # PRIORITY 1: NETWORK_MODE environment variable (most authoritative)
         network_mode = os.getenv('NETWORK_MODE', 'testnet')
         print(f"🔍 Dashboard network detection - NETWORK_MODE: {network_mode}")
 
-        # Initialize agent to get actual chain connection
+        # Force display based on NETWORK_MODE setting
+        if network_mode == 'mainnet':
+            print(f"🚀 NETWORK_MODE=mainnet detected - forcing Arbitrum Mainnet display")
+            return {
+                'network_mode': 'mainnet',
+                'chain_id': 42161,
+                'network_name': 'Arbitrum Mainnet',
+                'rpc_url': 'https://arb1.arbitrum.io/rpc'
+            }
+        
+        # Initialize agent to verify actual connection for testnet
+        from arbitrum_testnet_agent import ArbitrumTestnetAgent
         agent = ArbitrumTestnetAgent()
         chain_id = agent.w3.eth.chain_id
-
+        
         print(f"🔍 Dashboard network detection - Chain ID: {chain_id}")
 
-        # Explicit mapping with NETWORK_MODE priority
-        if network_mode == 'mainnet' or chain_id == 42161:
-            network_name = "Arbitrum Mainnet"
-            actual_chain_id = 42161
-            rpc_url = "https://arb1.arbitrum.io/rpc"
-        elif network_mode == 'testnet' or chain_id == 421614:
+        # For testnet, verify chain ID matches
+        if chain_id == 421614:
             network_name = "Arbitrum Sepolia"
-            actual_chain_id = 421614
             rpc_url = "https://sepolia-rollup.arbitrum.io/rpc"
+        elif chain_id == 42161:
+            # If connected to mainnet but NETWORK_MODE is testnet, show warning
+            print(f"⚠️ WARNING: Connected to mainnet (42161) but NETWORK_MODE is testnet")
+            network_name = "Arbitrum Mainnet (via testnet mode)"
+            rpc_url = "https://arb1.arbitrum.io/rpc"
         else:
             network_name = f"Unknown Network (Chain ID: {chain_id})"
-            actual_chain_id = chain_id
             rpc_url = agent.w3.provider.endpoint_uri if hasattr(agent.w3.provider, 'endpoint_uri') else 'Unknown'
 
         result = {
             'network_mode': network_mode,
-            'chain_id': actual_chain_id,
+            'chain_id': chain_id,
             'network_name': network_name,
             'rpc_url': rpc_url
         }
@@ -185,28 +193,17 @@ def wallet_status():
         total_debt_usdc = health_data['total_debt_eth'] * eth_to_usd_rate
         available_borrows_usdc = health_data['available_borrows_eth'] * eth_to_usd_rate
 
-        # Get network name from agent with priority on NETWORK_MODE
+        # PRIORITY: NETWORK_MODE environment variable determines display
         network_mode = os.getenv('NETWORK_MODE', 'testnet')
         print(f"🔍 Dashboard wallet_status - NETWORK_MODE: {network_mode}")
         
-        # Priority: NETWORK_MODE environment variable determines display
+        # Force display based on NETWORK_MODE (authoritative source)
         if network_mode == 'mainnet':
             network_name = "Arbitrum Mainnet"
+            print(f"🚀 Forcing Arbitrum Mainnet display based on NETWORK_MODE")
         else:
-            # Fallback to chain ID detection for testnet
-            if hasattr(agent, 'web3') and agent.web3:
-                try:
-                    chain_id = agent.web3.eth.chain_id
-                    if chain_id == 42161:
-                        network_name = "Arbitrum Mainnet"
-                    elif chain_id == 421614:
-                        network_name = "Arbitrum Sepolia"
-                    else:
-                        network_name = f"Unknown Network (Chain ID: {chain_id})"
-                except:
-                    network_name = "Arbitrum Sepolia"
-            else:
-                network_name = "Arbitrum Sepolia"
+            network_name = "Arbitrum Sepolia"
+            print(f"🧪 Showing Arbitrum Sepolia based on NETWORK_MODE")
 
         return jsonify({
             'wallet_address': agent.address,
