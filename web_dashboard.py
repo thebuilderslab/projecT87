@@ -285,7 +285,8 @@ def get_parameters():
             'optimization_target_threshold': 0.95,
             'status': 'active',
             'network_mode': os.getenv('NETWORK_MODE', 'mainnet'),
-            'timestamp': time.time()
+            'timestamp': time.time(),
+            'success': True
         }
 
         # Try to load user settings if available
@@ -293,18 +294,29 @@ def get_parameters():
         if os.path.exists(user_settings_file):
             try:
                 with open(user_settings_file, 'r') as f:
-                    user_settings = json.load(f)
-                    if isinstance(user_settings, dict):
-                        # Only update known parameters
-                        known_params = [
-                            'health_factor_target', 'borrow_trigger_threshold', 
-                            'arb_decline_threshold', 'exploration_rate', 'auto_mode'
-                        ]
-                        for param in known_params:
-                            if param in user_settings:
-                                config[param] = user_settings[param]
-                        config['loaded_from'] = 'user_settings'
-                        print(f"✅ API: Loaded parameters from user_settings.json")
+                    content = f.read().strip()
+                    if content:
+                        user_settings = json.loads(content)
+                        if isinstance(user_settings, dict):
+                            # Only update known parameters
+                            known_params = [
+                                'health_factor_target', 'borrow_trigger_threshold', 
+                                'arb_decline_threshold', 'exploration_rate', 'auto_mode'
+                            ]
+                            for param in known_params:
+                                if param in user_settings:
+                                    config[param] = user_settings[param]
+                            config['loaded_from'] = 'user_settings'
+                            print(f"✅ API: Loaded parameters from user_settings.json")
+                        else:
+                            config['loaded_from'] = 'defaults'
+                            print(f"⚠️ API: Invalid user_settings format, using defaults")
+                    else:
+                        config['loaded_from'] = 'defaults'
+                        print(f"⚠️ API: Empty user_settings file, using defaults")
+            except (json.JSONDecodeError, ValueError) as e:
+                print(f"⚠️ API: JSON decode error in user_settings.json: {e}")
+                config['loaded_from'] = 'defaults'
             except Exception as e:
                 print(f"⚠️ API: Could not load user_settings.json: {e}")
                 config['loaded_from'] = 'defaults'
@@ -317,14 +329,24 @@ def get_parameters():
 
     except Exception as e:
         print(f"❌ CRITICAL: get_parameters failed completely: {e}")
+        import traceback
+        traceback.print_exc()
+        
         # Return absolute minimal config that will work
         fallback_config = {
             'health_factor_target': 1.19,
             'borrow_trigger_threshold': 0.02,
             'arb_decline_threshold': 0.05,
             'auto_mode': True,
+            'exploration_rate': 0.1,
+            'learning_rate': 0.01,
+            'max_iterations_per_run': 100,
+            'optimization_target_threshold': 0.95,
+            'status': 'active',
+            'network_mode': 'mainnet',
             'error': str(e),
             'fallback': True,
+            'success': False,
             'timestamp': time.time()
         }
         return jsonify(fallback_config), 200

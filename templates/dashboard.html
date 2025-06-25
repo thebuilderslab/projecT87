@@ -452,6 +452,7 @@
             try {
                 console.log('Fetching parameters...');
                 const response = await fetch('/api/parameters');
+                
                 if (!response.ok) {
                     throw new Error(`HTTP ${response.status}: ${response.statusText}`);
                 }
@@ -459,28 +460,56 @@
                 const data = await response.json();
                 console.log('Parameters received:', data);
 
+                // Check if we have valid data
+                if (!data || typeof data !== 'object') {
+                    throw new Error('Invalid parameters data received');
+                }
+
+                // Even if there's an error, try to use the data if it has fallback values
                 if (data.error && !data.fallback) {
                     console.error('Parameters error:', data.error);
                     return;
                 }
 
-                // Update UI with parameters
-                if (data.health_factor_target !== undefined) {
-                    document.getElementById('healthTarget').value = data.health_factor_target;
+                // Update UI with parameters (with safety checks)
+                const healthTargetEl = document.getElementById('healthTarget');
+                const borrowTriggerEl = document.getElementById('borrowTrigger');
+                const arbDeclineEl = document.getElementById('arbDecline');
+                const autoModeEl = document.getElementById('autoMode');
+
+                if (healthTargetEl && data.health_factor_target !== undefined && data.health_factor_target !== null) {
+                    healthTargetEl.value = data.health_factor_target;
                 }
-                if (data.borrow_trigger_threshold !== undefined) {
-                    document.getElementById('borrowTrigger').value = data.borrow_trigger_threshold;
+                if (borrowTriggerEl && data.borrow_trigger_threshold !== undefined && data.borrow_trigger_threshold !== null) {
+                    borrowTriggerEl.value = data.borrow_trigger_threshold;
                 }
-                if (data.arb_decline_threshold !== undefined) {
-                    document.getElementById('arbDecline').value = (data.arb_decline_threshold * 100).toFixed(1);
+                if (arbDeclineEl && data.arb_decline_threshold !== undefined && data.arb_decline_threshold !== null) {
+                    arbDeclineEl.value = (data.arb_decline_threshold * 100).toFixed(1);
                 }
-                if (data.auto_mode !== undefined) {
-                    document.getElementById('autoMode').value = data.auto_mode ? 'true' : 'false';
+                if (autoModeEl && data.auto_mode !== undefined && data.auto_mode !== null) {
+                    autoModeEl.value = data.auto_mode ? 'true' : 'false';
                 }
+
+                console.log('Parameters updated successfully');
 
             } catch (error) {
                 console.error('Error fetching parameters:', error);
-                // Don't show error to user for parameters, just log it
+                // Set default values if fetch fails completely
+                try {
+                    const healthTargetEl = document.getElementById('healthTarget');
+                    const borrowTriggerEl = document.getElementById('borrowTrigger');
+                    const arbDeclineEl = document.getElementById('arbDecline');
+                    const autoModeEl = document.getElementById('autoMode');
+
+                    if (healthTargetEl && !healthTargetEl.value) healthTargetEl.value = '1.19';
+                    if (borrowTriggerEl && !borrowTriggerEl.value) borrowTriggerEl.value = '0.02';
+                    if (arbDeclineEl && !arbDeclineEl.value) arbDeclineEl.value = '5.0';
+                    if (autoModeEl && !autoModeEl.value) autoModeEl.value = 'true';
+                    
+                    console.log('Set fallback parameter values');
+                } catch (fallbackError) {
+                    console.error('Failed to set fallback values:', fallbackError);
+                }
             }
         }
 
