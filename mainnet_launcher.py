@@ -134,6 +134,12 @@ if not os.getenv('NETWORK_MODE'):
     os.environ['NETWORK_MODE'] = 'mainnet'  # Default to mainnet for launcher
 
 # Comprehensive secret linkage debugging
+# CRITICAL: Debug print for NETWORK_MODE verification
+print(f"🚨 DEBUG: NETWORK_MODE detected as: '{os.getenv('NETWORK_MODE', 'NOT_SET')}'")
+print(f"🚨 DEBUG: NETWORK_MODE type: {type(os.getenv('NETWORK_MODE'))}")
+print(f"🚨 DEBUG: NETWORK_MODE length: {len(os.getenv('NETWORK_MODE', ''))}")
+print(f"🚨 DEBUG: Raw environment NETWORK_MODE: {repr(os.getenv('NETWORK_MODE'))}")
+
 print(f"🔍 COMPREHENSIVE SECRET LINKAGE DEBUG:")
 print(f"=" * 60)
 print(f"🔧 Environment loading check:")
@@ -332,7 +338,23 @@ def signal_handler(signum, frame):
 def start_web_dashboard():
     """Start the web dashboard in a separate thread"""
     print("🌐 Starting web dashboard...")
-    app.run(host='0.0.0.0', port=5000, debug=False, use_reloader=False)
+    
+    # Import the port allocation function from web_dashboard
+    import socket
+    def get_available_port(start_port=5000):
+        for port in range(start_port, start_port + 20):
+            try:
+                sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                sock.bind(('0.0.0.0', port))
+                sock.close()
+                return port
+            except OSError:
+                continue
+        return 8080
+    
+    port = get_available_port(5000)
+    print(f"🌐 Web dashboard starting on port {port}")
+    app.run(host='0.0.0.0', port=port, debug=False, use_reloader=False)
 
 def main():
     """Main launcher function"""

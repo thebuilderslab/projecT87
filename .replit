@@ -89,6 +89,15 @@ mode = "sequential"
 task = "shell.exec"
 args = "python mainnet_launcher.py"
 
+[[workflows.workflow]]
+name = "🚨 DEBUG DEPLOYMENT"
+author = 39391053
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python mainnet_launcher.py"
+
 [[ports]]
 localPort = 5000
 externalPort = 80

@@ -302,22 +302,28 @@ def update_parameters():
     except Exception as e:
         return jsonify({'error': str(e)})
 
-if __name__ == '__main__':
-    print("🌐 Starting DeFi Agent Web Dashboard")
-    print("📱 Access your dashboard at the web preview URL")
-    # Try different ports if 5000 is occupied
-import socket
 def get_available_port(start_port=5000):
-    for port in range(start_port, start_port + 10):
+    """Find an available port starting from start_port"""
+    import socket
+    for port in range(start_port, start_port + 20):
         try:
             sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             sock.bind(('0.0.0.0', port))
             sock.close()
+            print(f"✅ Port {port} is available")
             return port
         except OSError:
+            print(f"❌ Port {port} is in use, trying next...")
             continue
     return 8080  # Fallback port
 
-port = get_available_port(5000)
-print(f"🌐 Starting web dashboard on port {port}")
-app.run(host='0.0.0.0', port=port, debug=False, threaded=True)
+if __name__ == '__main__':
+    print("🌐 Starting DeFi Agent Web Dashboard")
+    print("📱 Access your dashboard at the web preview URL")
+    
+    # Find available port with detailed logging
+    port = get_available_port(5000)
+    print(f"🌐 Starting web dashboard on port {port}")
+    print(f"🔗 Dashboard will be accessible at your Replit webview URL")
+    
+    app.run(host='0.0.0.0', port=port, debug=False, threaded=True)
