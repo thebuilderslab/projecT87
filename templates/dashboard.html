@@ -501,15 +501,28 @@
                 const autoModeEl = document.getElementById('autoMode');
 
                 // Use fallback values if elements don't exist or data is invalid
-                const healthTarget = (data.health_factor_target !== undefined && data.health_factor_target !== null) ? data.health_factor_target : 1.19;
-                const borrowTrigger = (data.borrow_trigger_threshold !== undefined && data.borrow_trigger_threshold !== null) ? data.borrow_trigger_threshold : 0.02;
-                const arbDecline = (data.arb_decline_threshold !== undefined && data.arb_decline_threshold !== null) ? (data.arb_decline_threshold * 100) : 5.0;
+                const healthTarget = (data.health_factor_target !== undefined && data.health_factor_target !== null && !isNaN(data.health_factor_target)) ? data.health_factor_target : 1.19;
+                const borrowTrigger = (data.borrow_trigger_threshold !== undefined && data.borrow_trigger_threshold !== null && !isNaN(data.borrow_trigger_threshold)) ? data.borrow_trigger_threshold : 0.02;
+                const arbDecline = (data.arb_decline_threshold !== undefined && data.arb_decline_threshold !== null && !isNaN(data.arb_decline_threshold)) ? (data.arb_decline_threshold * 100) : 5.0;
                 const autoMode = (data.auto_mode !== undefined && data.auto_mode !== null) ? data.auto_mode : true;
 
-                if (healthTargetEl) healthTargetEl.value = healthTarget;
-                if (borrowTriggerEl) borrowTriggerEl.value = borrowTrigger;
-                if (arbDeclineEl) arbDeclineEl.value = arbDecline.toFixed(1);
-                if (autoModeEl) autoModeEl.value = autoMode ? 'true' : 'false';
+                // Set values with additional validation
+                if (healthTargetEl) {
+                    healthTargetEl.value = healthTarget.toFixed(2);
+                    console.log(`Set health target to: ${healthTarget}`);
+                }
+                if (borrowTriggerEl) {
+                    borrowTriggerEl.value = borrowTrigger.toFixed(3);
+                    console.log(`Set borrow trigger to: ${borrowTrigger}`);
+                }
+                if (arbDeclineEl) {
+                    arbDeclineEl.value = arbDecline.toFixed(1);
+                    console.log(`Set ARB decline to: ${arbDecline}%`);
+                }
+                if (autoModeEl) {
+                    autoModeEl.value = autoMode ? 'true' : 'false';
+                    console.log(`Set auto mode to: ${autoMode}`);
+                }
 
                 console.log('Parameters updated successfully:', {
                     healthTarget,
@@ -548,12 +561,42 @@
 
         async function updateParameters() {
             try {
+                // Get elements with safety checks
+                const healthTargetEl = document.getElementById('healthTarget');
+                const borrowTriggerEl = document.getElementById('borrowTrigger');
+                const arbDeclineEl = document.getElementById('arbDecline');
+                const autoModeEl = document.getElementById('autoMode');
+
+                // Validate all elements exist
+                if (!healthTargetEl || !borrowTriggerEl || !arbDeclineEl || !autoModeEl) {
+                    throw new Error('One or more parameter input fields not found');
+                }
+
+                // Parse values with validation
+                const healthTarget = parseFloat(healthTargetEl.value);
+                const borrowTrigger = parseFloat(borrowTriggerEl.value);
+                const arbDecline = parseFloat(arbDeclineEl.value);
+                const autoMode = autoModeEl.value === 'true';
+
+                // Validate numeric values
+                if (isNaN(healthTarget) || healthTarget < 1.05 || healthTarget > 5.0) {
+                    throw new Error('Health Factor Target must be between 1.05 and 5.0');
+                }
+                if (isNaN(borrowTrigger) || borrowTrigger < 0.001 || borrowTrigger > 0.5) {
+                    throw new Error('Borrow Trigger Threshold must be between 0.001 and 0.5');
+                }
+                if (isNaN(arbDecline) || arbDecline < 0.1 || arbDecline > 50) {
+                    throw new Error('ARB Decline Threshold must be between 0.1% and 50%');
+                }
+
                 const params = {
-                    health_factor_target: parseFloat(document.getElementById('healthTarget').value),
-                    borrow_trigger_threshold: parseFloat(document.getElementById('borrowTrigger').value),
-                    arb_decline_threshold: parseFloat(document.getElementById('arbDecline').value) / 100,
-                    auto_mode: document.getElementById('autoMode').value === 'true'
+                    health_factor_target: healthTarget,
+                    borrow_trigger_threshold: borrowTrigger,
+                    arb_decline_threshold: arbDecline / 100,
+                    auto_mode: autoMode
                 };
+
+                console.log('Sending parameters:', params);
 
                 const response = await fetch('/api/parameters', {
                     method: 'POST',
@@ -563,15 +606,25 @@
                     body: JSON.stringify(params)
                 });
 
-                const data = await response.json();
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
 
-                if (data.success) {
+                const data = await response.json();
+                console.log('Parameter update response:', data);
+
+                if (data.status === 'success' || data.success) {
                     alert('✅ Parameters updated successfully!');
+                    // Refresh parameters to show updated values
+                    setTimeout(() => {
+                        fetchParameters();
+                    }, 1000);
                 } else {
-                    alert(`❌ Error: ${data.error}`);
+                    throw new Error(data.error || data.message || 'Unknown error');
                 }
 
             } catch (error) {
+                console.error('Parameter update error:', error);
                 alert(`❌ Error updating parameters: ${error.message}`);
             }
         }
