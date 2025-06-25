@@ -430,28 +430,65 @@
 
         async function fetchPerformance() {
             try {
-                const response = await fetch('/api/performance');
+                console.log('Fetching performance data...');
+                const response = await fetch('/api/performance', {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Cache-Control': 'no-cache'
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
                 const data = await response.json();
+                console.log('Performance data received:', data);
 
                 if (data.error) {
                     console.error('Performance error:', data.error);
                     return;
                 }
 
-                document.getElementById('pnl24h').textContent = `${data.pnl_24h >= 0 ? '+' : ''}${data.pnl_24h.toFixed(2)}%`;
-                document.getElementById('avgPerformance').textContent = data.avg_performance.toFixed(3);
-                document.getElementById('errorRate').textContent = `${data.error_rate.toFixed(1)}%`;
-                document.getElementById('totalOps').textContent = data.total_operations;
+                // Safely update performance metrics with null checks
+                const pnl24hEl = document.getElementById('pnl24h');
+                const avgPerformanceEl = document.getElementById('avgPerformance');
+                const errorRateEl = document.getElementById('errorRate');
+                const totalOpsEl = document.getElementById('totalOps');
+
+                if (pnl24hEl) pnl24hEl.textContent = `${(data.pnl_24h || 0) >= 0 ? '+' : ''}${(data.pnl_24h || 0).toFixed(2)}%`;
+                if (avgPerformanceEl) avgPerformanceEl.textContent = (data.avg_performance || 0).toFixed(3);
+                if (errorRateEl) errorRateEl.textContent = `${(data.error_rate || 0).toFixed(1)}%`;
+                if (totalOpsEl) totalOpsEl.textContent = data.total_operations || 0;
+
+                console.log('Performance data updated successfully');
 
             } catch (error) {
                 console.error('Error fetching performance:', error);
+                // Set default values on error
+                const pnl24hEl = document.getElementById('pnl24h');
+                const avgPerformanceEl = document.getElementById('avgPerformance');
+                const errorRateEl = document.getElementById('errorRate');
+                const totalOpsEl = document.getElementById('totalOps');
+
+                if (pnl24hEl) pnl24hEl.textContent = '+0.00%';
+                if (avgPerformanceEl) avgPerformanceEl.textContent = '0.000';
+                if (errorRateEl) errorRateEl.textContent = '0.0%';
+                if (totalOpsEl) totalOpsEl.textContent = '0';
             }
         }
 
         async function fetchParameters() {
             try {
                 console.log('Fetching parameters...');
-                const response = await fetch('/api/parameters');
+                const response = await fetch('/api/parameters', {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Cache-Control': 'no-cache'
+                    }
+                });
                 
                 if (!response.ok) {
                     throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -466,47 +503,57 @@
                 }
 
                 // Even if there's an error, try to use the data if it has fallback values
-                if (data.error && !data.fallback) {
+                if (data.error && !data.fallback && !data.success) {
                     console.error('Parameters error:', data.error);
-                    return;
+                    throw new Error(data.error);
                 }
 
-                // Update UI with parameters (with safety checks)
+                // Update UI with parameters (with comprehensive safety checks)
                 const healthTargetEl = document.getElementById('healthTarget');
                 const borrowTriggerEl = document.getElementById('borrowTrigger');
                 const arbDeclineEl = document.getElementById('arbDecline');
                 const autoModeEl = document.getElementById('autoMode');
 
-                if (healthTargetEl && data.health_factor_target !== undefined && data.health_factor_target !== null) {
-                    healthTargetEl.value = data.health_factor_target;
-                }
-                if (borrowTriggerEl && data.borrow_trigger_threshold !== undefined && data.borrow_trigger_threshold !== null) {
-                    borrowTriggerEl.value = data.borrow_trigger_threshold;
-                }
-                if (arbDeclineEl && data.arb_decline_threshold !== undefined && data.arb_decline_threshold !== null) {
-                    arbDeclineEl.value = (data.arb_decline_threshold * 100).toFixed(1);
-                }
-                if (autoModeEl && data.auto_mode !== undefined && data.auto_mode !== null) {
-                    autoModeEl.value = data.auto_mode ? 'true' : 'false';
-                }
+                // Use fallback values if elements don't exist or data is invalid
+                const healthTarget = (data.health_factor_target !== undefined && data.health_factor_target !== null) ? data.health_factor_target : 1.19;
+                const borrowTrigger = (data.borrow_trigger_threshold !== undefined && data.borrow_trigger_threshold !== null) ? data.borrow_trigger_threshold : 0.02;
+                const arbDecline = (data.arb_decline_threshold !== undefined && data.arb_decline_threshold !== null) ? (data.arb_decline_threshold * 100) : 5.0;
+                const autoMode = (data.auto_mode !== undefined && data.auto_mode !== null) ? data.auto_mode : true;
 
-                console.log('Parameters updated successfully');
+                if (healthTargetEl) healthTargetEl.value = healthTarget;
+                if (borrowTriggerEl) borrowTriggerEl.value = borrowTrigger;
+                if (arbDeclineEl) arbDeclineEl.value = arbDecline.toFixed(1);
+                if (autoModeEl) autoModeEl.value = autoMode ? 'true' : 'false';
+
+                console.log('Parameters updated successfully:', {
+                    healthTarget,
+                    borrowTrigger,
+                    arbDecline,
+                    autoMode
+                });
 
             } catch (error) {
                 console.error('Error fetching parameters:', error);
-                // Set default values if fetch fails completely
+                // Set robust default values if fetch fails completely
+                const defaults = {
+                    healthTarget: 1.19,
+                    borrowTrigger: 0.02,
+                    arbDecline: 5.0,
+                    autoMode: true
+                };
+
                 try {
                     const healthTargetEl = document.getElementById('healthTarget');
                     const borrowTriggerEl = document.getElementById('borrowTrigger');
                     const arbDeclineEl = document.getElementById('arbDecline');
                     const autoModeEl = document.getElementById('autoMode');
 
-                    if (healthTargetEl && !healthTargetEl.value) healthTargetEl.value = '1.19';
-                    if (borrowTriggerEl && !borrowTriggerEl.value) borrowTriggerEl.value = '0.02';
-                    if (arbDeclineEl && !arbDeclineEl.value) arbDeclineEl.value = '5.0';
-                    if (autoModeEl && !autoModeEl.value) autoModeEl.value = 'true';
+                    if (healthTargetEl) healthTargetEl.value = defaults.healthTarget;
+                    if (borrowTriggerEl) borrowTriggerEl.value = defaults.borrowTrigger;
+                    if (arbDeclineEl) arbDeclineEl.value = defaults.arbDecline.toFixed(1);
+                    if (autoModeEl) autoModeEl.value = defaults.autoMode ? 'true' : 'false';
                     
-                    console.log('Set fallback parameter values');
+                    console.log('Set fallback parameter values:', defaults);
                 } catch (fallbackError) {
                     console.error('Failed to set fallback values:', fallbackError);
                 }
@@ -550,8 +597,13 @@
         }
 
         function refreshData() {
-            fetchWalletStatus();
-            fetchPerformance();
+            try {
+                console.log('Refreshing dashboard data...');
+                fetchWalletStatus().catch(error => console.error('Error refreshing wallet status:', error));
+                fetchPerformance().catch(error => console.error('Error refreshing performance:', error));
+            } catch (error) {
+                console.error('Error in refreshData:', error);
+            }
         }
 
         function updateLastUpdate() {
@@ -612,42 +664,72 @@
 
         async function updateEmergencyStatus() {
             try {
-                const response = await fetch('/api/emergency_status');
+                console.log('Fetching emergency status...');
+                const response = await fetch('/api/emergency_status', {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Cache-Control': 'no-cache'
+                    }
+                });
+                
                 if (!response.ok) {
                     throw new Error(`HTTP ${response.status}: ${response.statusText}`);
                 }
 
                 const data = await response.json();
+                console.log('Emergency status received:', data);
 
                 const statusDiv = document.getElementById('emergency-status');
                 const stopBtn = document.getElementById('emergency-stop-btn');
                 const clearBtn = document.getElementById('clear-stop-btn');
                 const logsDiv = document.getElementById('emergency-logs');
 
-                if (data.active) {
-                    statusDiv.innerHTML = '🚨 EMERGENCY STOP ACTIVE';
-                    statusDiv.className = 'emergency-status active';
-                    stopBtn.style.display = 'none';
-                    clearBtn.style.display = 'inline-block';
-                } else {
-                    statusDiv.innerHTML = '✅ Agent operations normal';
-                    statusDiv.className = 'emergency-status inactive';
-                    stopBtn.style.display = 'inline-block';
-                    clearBtn.style.display = 'none';
+                if (statusDiv) {
+                    if (data.active) {
+                        statusDiv.innerHTML = '🚨 EMERGENCY STOP ACTIVE';
+                        statusDiv.className = 'emergency-status active';
+                    } else {
+                        statusDiv.innerHTML = '✅ Agent operations normal';
+                        statusDiv.className = 'emergency-status inactive';
+                    }
+                }
+
+                if (stopBtn && clearBtn) {
+                    if (data.active) {
+                        stopBtn.style.display = 'none';
+                        clearBtn.style.display = 'inline-block';
+                    } else {
+                        stopBtn.style.display = 'inline-block';
+                        clearBtn.style.display = 'none';
+                    }
                 }
 
                 // Show recent logs
-                if (data.recent_logs && data.recent_logs.length > 0) {
-                    let logsHtml = '<strong>Recent Actions:</strong><br>';
-                    data.recent_logs.forEach(log => {
-                        logsHtml += `${log.datetime}: ${log.action}<br>`;
-                    });
-                    logsDiv.innerHTML = logsHtml;
-                } else {
-                    logsDiv.innerHTML = '';
+                if (logsDiv) {
+                    if (data.recent_logs && Array.isArray(data.recent_logs) && data.recent_logs.length > 0) {
+                        let logsHtml = '<strong>Recent Actions:</strong><br>';
+                        data.recent_logs.forEach(log => {
+                            if (log && log.datetime && log.action) {
+                                logsHtml += `${log.datetime}: ${log.action}<br>`;
+                            }
+                        });
+                        logsDiv.innerHTML = logsHtml;
+                    } else {
+                        logsDiv.innerHTML = '';
+                    }
                 }
+
+                console.log('Emergency status updated successfully');
+
             } catch (error) {
                 console.error('Error fetching emergency status:', error);
+                // Set safe defaults on error
+                const statusDiv = document.getElementById('emergency-status');
+                if (statusDiv) {
+                    statusDiv.innerHTML = '❓ Status unknown';
+                    statusDiv.className = 'emergency-status inactive';
+                }
             }
         }
 
@@ -746,72 +828,111 @@
         // Modified fetch functions with better error handling
         async function fetchWalletStatus() {
             try {
-                const response = await fetch('/api/wallet_status');
+                console.log('Fetching wallet status...');
+                const response = await fetch('/api/wallet_status', {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Cache-Control': 'no-cache'
+                    }
+                });
 
                 if (!response.ok) {
                     throw new Error(`HTTP ${response.status}: ${response.statusText}`);
                 }
 
                 const data = await response.json();
+                console.log('Wallet status received:', data);
 
                 if (data.error) {
                     if (data.status === 'initializing') {
+                        console.log('Agent still initializing, keeping loading state');
                         return; // Keep showing loading
                     }
                     throw new Error(data.error);
                 }
 
-                // Update wallet status
-                document.getElementById('walletAddress').textContent = data.wallet_address;
-                document.getElementById('ethBalance').textContent = `${data.eth_balance.toFixed(6)} ETH`;
-                document.getElementById('usdcBalance').textContent = `${data.usdc_balance.toFixed(2)} USDC`;
+                // Safely update wallet status with null checks
+                const walletAddressEl = document.getElementById('walletAddress');
+                const ethBalanceEl = document.getElementById('ethBalance');
+                const usdcBalanceEl = document.getElementById('usdcBalance');
+                const networkStatusEl = document.getElementById('networkStatus');
+                const networkEl = document.getElementById('network');
+                const lastUpdateEl = document.getElementById('lastUpdate');
+
+                if (walletAddressEl) walletAddressEl.textContent = data.wallet_address || 'Unknown';
+                if (ethBalanceEl) ethBalanceEl.textContent = `${(data.eth_balance || 0).toFixed(6)} ETH`;
+                if (usdcBalanceEl) usdcBalanceEl.textContent = `${(data.usdc_balance || 0).toFixed(2)} USDC`;
 
                 // Update network status - prioritize NETWORK_MODE over chain detection
-                if (data.network_name) {
-                    document.getElementById('networkStatus').textContent = `Real-time monitoring of your ${data.network_name} operations`;
-                    // Update the network field in Market Data card
-                    document.getElementById('network').textContent = data.network_name;
-
+                if (data.network_name && networkStatusEl) {
+                    networkStatusEl.textContent = `Real-time monitoring of your ${data.network_name} operations`;
+                }
+                
+                if (data.network_name && networkEl) {
+                    networkEl.textContent = data.network_name;
                     // Visual styling for mainnet vs testnet
-                    const networkElement = document.getElementById('network');
                     if (data.network_name === 'Arbitrum Mainnet') {
-                        networkElement.style.color = '#00ff88';
-                        networkElement.style.fontWeight = 'bold';
+                        networkEl.style.color = '#00ff88';
+                        networkEl.style.fontWeight = 'bold';
                     } else {
-                        networkElement.style.color = '#ff8800';
-                        networkElement.style.fontWeight = 'normal';
+                        networkEl.style.color = '#ff8800';
+                        networkEl.style.fontWeight = 'normal';
                     }
                 }
 
-                document.getElementById('lastUpdate').textContent = `Last updated: ${new Date().toLocaleTimeString()}`;
+                if (lastUpdateEl) lastUpdateEl.textContent = `Last updated: ${new Date().toLocaleTimeString()}`;
 
-                // Update Aave status
-                const healthFactor = data.health_factor === Infinity ? '∞' : data.health_factor.toFixed(4);
-                document.getElementById('healthFactor').innerHTML = `
-                    <span id="healthStatus" class="status-indicator ${getHealthStatus(data.health_factor)}"></span>
-                    ${healthFactor}
-                `;
-                document.getElementById('totalCollateral').textContent = `$${(data.total_collateral_usdc || 0).toFixed(2)} USDC`;
-                document.getElementById('totalDebt').textContent = `$${(data.total_debt_usdc || 0).toFixed(2)} USDC`;
-                document.getElementById('availableBorrows').textContent = `$${(data.available_borrows_usdc || 0).toFixed(2)} USDC`;
+                // Update Aave status with safe checks
+                const healthFactorEl = document.getElementById('healthFactor');
+                const totalCollateralEl = document.getElementById('totalCollateral');
+                const totalDebtEl = document.getElementById('totalDebt');
+                const availableBorrowsEl = document.getElementById('availableBorrows');
+                const arbPriceEl = document.getElementById('arbPrice');
 
-                // Update market data
-                document.getElementById('arbPrice').textContent = `$${data.arb_price.toFixed(4)}`;
+                if (healthFactorEl) {
+                    const healthFactor = data.health_factor === Infinity ? '∞' : (data.health_factor || 0).toFixed(4);
+                    healthFactorEl.innerHTML = `
+                        <span id="healthStatus" class="status-indicator ${getHealthStatus(data.health_factor || 0)}"></span>
+                        ${healthFactor}
+                    `;
+                }
+
+                if (totalCollateralEl) totalCollateralEl.textContent = `$${(data.total_collateral_usdc || 0).toFixed(2)} USDC`;
+                if (totalDebtEl) totalDebtEl.textContent = `$${(data.total_debt_usdc || 0).toFixed(2)} USDC`;
+                if (availableBorrowsEl) availableBorrowsEl.textContent = `$${(data.available_borrows_usdc || 0).toFixed(2)} USDC`;
+                if (arbPriceEl) arbPriceEl.textContent = `$${(data.arb_price || 0).toFixed(4)}`;
 
                 // Hide loading, show dashboard
-                document.getElementById('loading').style.display = 'none';
-                document.getElementById('dashboard').style.display = 'block';
-                document.getElementById('error').style.display = 'none';
+                const loadingEl = document.getElementById('loading');
+                const dashboardEl = document.getElementById('dashboard');
+                const errorEl = document.getElementById('error');
+
+                if (loadingEl) loadingEl.style.display = 'none';
+                if (dashboardEl) dashboardEl.style.display = 'block';
+                if (errorEl) errorEl.style.display = 'none';
+
+                console.log('Wallet status updated successfully');
+
             } catch (error) {
+                console.error('Wallet status fetch error:', error);
                 logFetchError('/api/wallet_status', error);
-                document.getElementById('ethBalance').textContent = 'Error loading';
-                document.getElementById('usdcBalance').textContent = 'Error loading';
-                document.getElementById('walletAddress').textContent = 'Error loading';
+                
+                // Safely update error states
+                const ethBalanceEl = document.getElementById('ethBalance');
+                const usdcBalanceEl = document.getElementById('usdcBalance');
+                const walletAddressEl = document.getElementById('walletAddress');
+                const errorEl = document.getElementById('error');
+
+                if (ethBalanceEl) ethBalanceEl.textContent = 'Error loading';
+                if (usdcBalanceEl) usdcBalanceEl.textContent = 'Error loading';
+                if (walletAddressEl) walletAddressEl.textContent = 'Error loading';
 
                 // Show error message
-                const errorDiv = document.getElementById('error');
-                errorDiv.innerHTML = `❌ Wallet Status Error: ${error.message}`;
-                errorDiv.style.display = 'block';
+                if (errorEl) {
+                    errorEl.innerHTML = `❌ Wallet Status Error: ${error.message}`;
+                    errorEl.style.display = 'block';
+                }
             }
         }
 
@@ -840,22 +961,73 @@
             }
         }
 
-        // Initialize dashboard
-        document.addEventListener('DOMContentLoaded', function() {
-            refreshData();
-            fetchParameters();
-            updateLastUpdate();
-            updateEmergencyStatus();
-            updateNetworkInfo();
-
-            // Set up intervals
-            setInterval(() => {
-                refreshData();
+        // Safe initialization with proper error handling
+        async function initializeDashboard() {
+            try {
+                console.log('Initializing dashboard...');
+                
+                // Initialize in sequence with delays to prevent race conditions
+                await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second
+                
+                // Fetch critical data first
+                await fetchParameters();
+                await new Promise(resolve => setTimeout(resolve, 500));
+                
+                await fetchWalletStatus();
+                await new Promise(resolve => setTimeout(resolve, 500));
+                
+                await fetchPerformance();
+                await new Promise(resolve => setTimeout(resolve, 500));
+                
+                await updateEmergencyStatus();
+                await new Promise(resolve => setTimeout(resolve, 500));
+                
+                updateNetworkInfo();
                 updateLastUpdate();
-            }, 30000); // Update every 30 seconds
+                
+                console.log('Dashboard initialization complete');
+                
+                // Set up intervals only after successful initialization
+                setInterval(() => {
+                    try {
+                        refreshData();
+                        updateLastUpdate();
+                    } catch (error) {
+                        console.error('Error in refresh interval:', error);
+                    }
+                }, 30000); // Update every 30 seconds
 
-            setInterval(updateEmergencyStatus, 5000); // Check emergency status every 5 seconds
-            setInterval(updateNetworkInfo, 60000); //// Check network info every 60 seconds
+                setInterval(() => {
+                    try {
+                        updateEmergencyStatus();
+                    } catch (error) {
+                        console.error('Error in emergency status interval:', error);
+                    }
+                }, 5000); // Check emergency status every 5 seconds
+                
+                setInterval(() => {
+                    try {
+                        updateNetworkInfo();
+                    } catch (error) {
+                        console.error('Error in network info interval:', error);
+                    }
+                }, 60000); // Check network info every 60 seconds
+                
+            } catch (error) {
+                console.error('Dashboard initialization failed:', error);
+                // Show error state
+                const errorEl = document.getElementById('error');
+                if (errorEl) {
+                    errorEl.innerHTML = `❌ Dashboard Initialization Error: ${error.message}`;
+                    errorEl.style.display = 'block';
+                }
+            }
+        }
+
+        // Initialize dashboard when DOM is ready
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM loaded, starting dashboard initialization...');
+            initializeDashboard();
         });
     </script>
 </body>
