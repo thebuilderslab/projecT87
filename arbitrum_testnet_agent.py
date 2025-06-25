@@ -44,9 +44,15 @@ class ArbitrumTestnetAgent:
         # Ensure address is properly checksummed from the start
         self.address = self.w3.to_checksum_address(self.account.address)
 
-        print(f"🤖 Arbitrum Testnet Agent initialized")
+        # Display correct network name based on actual chain ID
+        if self.w3.eth.chain_id == 42161:
+            network_name = "Arbitrum Mainnet"
+        else:
+            network_name = "Arbitrum Sepolia"
+            
+        print(f"🤖 Arbitrum Agent initialized")
         print(f"Wallet: {self.address}")
-        print(f"Network: Arbitrum Sepolia (Chain ID: {self.w3.eth.chain_id})")
+        print(f"Network: {network_name} (Chain ID: {self.w3.eth.chain_id})")
 
     def get_eth_balance(self):
         """Get ETH balance in human-readable format"""
@@ -190,13 +196,19 @@ class ArbitrumTestnetAgent:
         portfolio_before = status['eth_balance']
         performance = 0.7  # Base performance
 
-        # Token addresses (Arbitrum Sepolia testnet - Chain ID: 421614)
-        # All addresses verified and consistent with network_validator.py
-        self.weth_address = self.w3.to_checksum_address("0x980B62Da83eFf3D4576C647993b0c1D7faf17c73")
-        self.wbtc_address = self.w3.to_checksum_address("0x078f358208685046a11C85e8ad32895DED33A249")
-        self.dai_address = self.w3.to_checksum_address("0x82E64f49Ed5EC1bC6e43DAD4FC8Af9bb3A2312EE")
-        self.usdc_address = self.w3.to_checksum_address("0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d")
-        self.arb_address = self.w3.to_checksum_address("0x912CE59144191C1204E64559FE8253a0e49E6548")
+        # Set contract addresses based on network
+        if self.w3.eth.chain_id == 42161:  # Arbitrum Mainnet
+            self.weth_address = self.w3.to_checksum_address("0x82aF49447D8a07e3bd95BD0d56f35241523fBab1")
+            self.wbtc_address = self.w3.to_checksum_address("0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f")
+            self.dai_address = self.w3.to_checksum_address("0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1")
+            self.usdc_address = self.w3.to_checksum_address("0xA0b86a33E6416f7a9CD2E00C6b58B3e00F8f9aE5")
+            self.arb_address = self.w3.to_checksum_address("0x912CE59144191C1204E64559FE8253a0e49E6548")
+        else:  # Arbitrum Sepolia testnet (Chain ID: 421614)
+            self.weth_address = self.w3.to_checksum_address("0x980B62Da83eFf3D4576C647993b0c1D7faf17c73")
+            self.wbtc_address = self.w3.to_checksum_address("0x078f358208685046a11C85e8ad32895DED33A249")
+            self.dai_address = self.w3.to_checksum_address("0x82E64f49Ed5EC1bC6e43DAD4FC8Af9bb3A2312EE")
+            self.usdc_address = self.w3.to_checksum_address("0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d")
+            self.arb_address = self.w3.to_checksum_address("0x912CE59144191C1204E64559FE8253a0e49E6548")
 
         print(f"🔗 Contract addresses verified for Arbitrum Sepolia (Chain ID: {self.w3.eth.chain_id})")
         print(f"   ARB: {self.arb_address}")

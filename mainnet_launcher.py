@@ -18,23 +18,39 @@ from emergency_stop import check_emergency_status
 # CRITICAL: Force reload environment for deployment environments
 load_dotenv(override=True)
 
-# Force Replit deployment environment variable loading
-if os.getenv('REPLIT_DEPLOYMENT'):
+# Force Replit deployment environment variable loading with debugging
+deployment_mode = os.getenv('REPLIT_DEPLOYMENT') or os.getenv('REPLIT')
+if deployment_mode:
     print("🔄 DEPLOYMENT MODE: Force loading environment variables")
-    # In deployment, secrets may be injected differently
+    print(f"🔍 DEPLOYMENT ENV: {deployment_mode}")
+    
+    # Print current environment state before loading
+    print(f"🔍 PRE-LOAD ENV CHECK:")
+    for key in ['NETWORK_MODE', 'PROMPT_KEY', 'PRIVATE_KEY', 'COINMARKETCAP_API_KEY']:
+        current_val = os.getenv(key)
+        print(f"   {key}: {'SET' if current_val else 'NOT_SET'}")
+    
     import subprocess
     try:
         # Force reload environment
         result = subprocess.run(['printenv'], capture_output=True, text=True, timeout=10)
         if result.returncode == 0:
+            env_vars_loaded = 0
             for line in result.stdout.strip().split('\n'):
                 if '=' in line and line.strip():
                     key, value = line.split('=', 1)
                     if key in ['NETWORK_MODE', 'PROMPT_KEY', 'PRIVATE_KEY', 'COINMARKETCAP_API_KEY']:
                         os.environ[key] = value
-                        print(f"🔄 Deployment env loaded: {key}")
+                        env_vars_loaded += 1
+                        print(f"🔄 Deployment env loaded: {key} = {value[:10]}...")
+            print(f"🔄 Total env vars loaded: {env_vars_loaded}")
     except Exception as e:
         print(f"⚠️ Environment loading warning: {e}")
+        
+    # Force set NETWORK_MODE if still missing in deployment
+    if not os.getenv('NETWORK_MODE'):
+        os.environ['NETWORK_MODE'] = 'mainnet'
+        print("🔄 FORCED NETWORK_MODE to mainnet in deployment")
 
 load_dotenv(override=True)
 
