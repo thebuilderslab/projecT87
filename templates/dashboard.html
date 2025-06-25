@@ -937,26 +937,39 @@
             try {
                 console.log('Initializing dashboard...');
 
-                // Initialize in sequence with delays to prevent race conditions
-                await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second
+                // Show loading state
+                const loadingEl = document.getElementById('loading');
+                const dashboardEl = document.getElementById('dashboard');
+                const errorEl = document.getElementById('error');
+
+                if (loadingEl) loadingEl.style.display = 'block';
+                if (dashboardEl) dashboardEl.style.display = 'none';
+                if (errorEl) errorEl.style.display = 'none';
+
+                // Initialize in sequence with shorter delays
+                await new Promise(resolve => setTimeout(resolve, 500));
 
                 // Fetch critical data first
                 await fetchParameters();
-                await new Promise(resolve => setTimeout(resolve, 500));
+                await new Promise(resolve => setTimeout(resolve, 200));
 
                 await fetchWalletStatus();
-                await new Promise(resolve => setTimeout(resolve, 500));
+                await new Promise(resolve => setTimeout(resolve, 200));
 
                 await fetchPerformanceData();
-                await new Promise(resolve => setTimeout(resolve, 500));
+                await new Promise(resolve => setTimeout(resolve, 200));
 
                 await updateEmergencyStatus();
-                await new Promise(resolve => setTimeout(resolve, 500));
+                await new Promise(resolve => setTimeout(resolve, 200));
 
                 updateNetworkInfo();
                 updateLastUpdate();
 
-                console.log('Dashboard initialization complete');
+                console.log('Dashboard initialization complete - showing dashboard');
+
+                // Hide loading and show dashboard
+                if (loadingEl) loadingEl.style.display = 'none';
+                if (dashboardEl) dashboardEl.style.display = 'block';
 
                 // Set up intervals only after successful initialization
                 setInterval(() => {
@@ -986,8 +999,12 @@
 
             } catch (error) {
                 console.error('Dashboard initialization failed:', error);
-                // Show error state
+                
+                // Hide loading and show error
+                const loadingEl = document.getElementById('loading');
                 const errorEl = document.getElementById('error');
+                
+                if (loadingEl) loadingEl.style.display = 'none';
                 if (errorEl) {
                     errorEl.innerHTML = `❌ Dashboard Initialization Error: ${error.message}`;
                     errorEl.style.display = 'block';
