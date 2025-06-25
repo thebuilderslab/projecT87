@@ -275,24 +275,51 @@ def performance_data():
 def get_parameters():
     """Get current agent parameters"""
     try:
+        # Default configuration
+        config = {
+            'learning_rate': 0.01,
+            'exploration_rate': 0.1,
+            'max_iterations_per_run': 100,
+            'optimization_target_threshold': 0.95,
+            'health_factor_target': 1.19,
+            'borrow_trigger_threshold': 0.02,
+            'arb_decline_threshold': 0.05,
+            'auto_mode': True
+        }
+
+        # Try to load from agent_config.json if it exists
         if os.path.exists('agent_config.json'):
-            with open('agent_config.json', 'r') as f:
-                config = json.load(f)
-        else:
-            config = {
-                'learning_rate': 0.01,
-                'exploration_rate': 0.1,
-                'max_iterations_per_run': 100,
-                'optimization_target_threshold': 0.95,
-                'health_factor_target': 1.19,
-                'borrow_trigger_threshold': 0.02,
-                'arb_decline_threshold': 0.05,
-                'auto_mode': True
-            }
+            try:
+                with open('agent_config.json', 'r') as f:
+                    saved_config = json.load(f)
+                    if isinstance(saved_config, dict):
+                        config.update(saved_config)
+            except (json.JSONDecodeError, ValueError) as e:
+                print(f"Warning: Could not parse agent_config.json: {e}")
+
+        # Try to get parameters from dashboard if available
+        if dashboard and hasattr(dashboard, 'adjustable_params'):
+            try:
+                if isinstance(dashboard.adjustable_params, dict):
+                    config.update(dashboard.adjustable_params)
+            except Exception as e:
+                print(f"Warning: Could not get dashboard parameters: {e}")
 
         return jsonify(config)
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        print(f"Error in get_parameters: {e}")
+        # Return default config as fallback
+        return jsonify({
+            'learning_rate': 0.01,
+            'exploration_rate': 0.1,
+            'max_iterations_per_run': 100,
+            'optimization_target_threshold': 0.95,
+            'health_factor_target': 1.19,
+            'borrow_trigger_threshold': 0.02,
+            'arb_decline_threshold': 0.05,
+            'auto_mode': True,
+            'error': f'Fallback config used: {str(e)}'
+        })
 
 @app.route('/api/emergency_stop', methods=['POST'])
 def activate_emergency_stop():
@@ -406,37 +433,92 @@ def get_emergency_status():
 def update_parameters():
     """Update adjustable parameters"""
     try:
-        if not dashboard:
-            return jsonify({'error': 'Dashboard not initialized'})
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'No data received'}), 400
 
-        data = request.json
+        # Use a local config if dashboard is not available
+        if dashboard and hasattr(dashboard, 'adjustable_params'):
+            params = dashboard.adjustable_params
+        else:
+            # Load from file or use defaults
+            if os.path.exists('user_settings.json'):
+                try:
+                    with open('user_settings.json', 'r') as f:
+                        params = json.load(f)
+                except:
+                    params = {}
+            else:
+                params = {}
+
+        # Default values
+        default_params = {
+            'health_factor_target': 1.19,
+            'borrow_trigger_threshold': 0.02,
+            'arb_decline_threshold': 0.05,
+            'auto_mode': True
+        }
+        
+        # Ensure all default params exist
+        for key, default_value in default_params.items():
+            if key not in params:
+                params[key] = default_value
 
         # Validate and update parameters
+        updated = False
+        
         if 'health_factor_target' in data:
-            value = float(data['health_factor_target'])
-            if 1.05 <= value <= 3.0:
-                dashboard.adjustable_params['health_factor_target'] = value
+            try:
+                value = float(data['health_factor_target'])
+                if 1.05 <= value <= 3.0:
+                    params['health_factor_target'] = value
+                    updated = True
+            except (ValueError, TypeError):
+                pass
 
         if 'borrow_trigger_threshold' in data:
-            value = float(data['borrow_trigger_threshold'])
-            if 0.001 <= value <= 0.5:
-                dashboard.adjustable_params['borrow_trigger_threshold'] = value
+            try:
+                value = float(data['borrow_trigger_threshold'])
+                if 0.001 <= value <= 0.5:
+                    params['borrow_trigger_threshold'] = value
+                    updated = True
+            except (ValueError, TypeError):
+                pass
 
         if 'arb_decline_threshold' in data:
-            value = float(data['arb_decline_threshold'])
-            if 0.01 <= value <= 0.5:
-                dashboard.adjustable_params['arb_decline_threshold'] = value
+            try:
+                value = float(data['arb_decline_threshold'])
+                if 0.01 <= value <= 0.5:
+                    params['arb_decline_threshold'] = value
+                    updated = True
+            except (ValueError, TypeError):
+                pass
 
         if 'auto_mode' in data:
-            dashboard.adjustable_params['auto_mode'] = bool(data['auto_mode'])
+            try:
+                params['auto_mode'] = bool(data['auto_mode'])
+                updated = True
+            except (ValueError, TypeError):
+                pass
 
         # Save settings
-        dashboard.save_user_settings()
+        if updated:
+            try:
+                with open('user_settings.json', 'w') as f:
+                    json.dump(params, f, indent=2)
+                
+                # Update dashboard if available
+                if dashboard and hasattr(dashboard, 'adjustable_params'):
+                    dashboard.adjustable_params.update(params)
+                    
+            except Exception as e:
+                print(f"Warning: Could not save settings: {e}")
 
-        return jsonify({'success': True, 'parameters': dashboard.adjustable_params})
+        return jsonify({'success': True, 'parameters': params})
 
     except Exception as e:
-        return jsonify({'error': str(e)})
+        print(f"Error in update_parameters: {e}")
+        return jsonify({'error': str(e)}), 500
 
 def get_available_port(start_port=5000):
     """Find an available port starting from start_port"""
