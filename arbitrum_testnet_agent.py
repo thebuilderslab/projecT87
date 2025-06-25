@@ -237,19 +237,127 @@ class ArbitrumTestnetAgent:
                 print("🛑 Emergency stop detected before transactions - aborting")
                 return 0.0
 
-            # PRIORITY 1: Risk Mitigation (Execute first if triggered)
-            if monitoring_summary['risk_trigger_active']:
+            # Get comprehensive monitoring summary
+            monitoring_summary = self.health_monitor.get_monitoring_summary()
+
+            print(f"📊 MONITORING SUMMARY:")
+            print(f"   Health Factor: {monitoring_summary['current_health_factor']:.4f}")
+            print(f"   Total Collateral: {monitoring_summary['total_collateral_eth']:.6f} ETH")
+            print(f"   Total Debt: {monitoring_summary['total_debt_eth']:.6f} ETH")
+            print(f"   ARB Price: ${monitoring_summary['arb_price']:.4f}")
+            print(f"   Data Source: {monitoring_summary['data_source']}")
+
+            performance = 0.70  # Default performance
+
+            # PRIORITY 1: Auto-create position if none exists
+            if (monitoring_summary['total_collateral_eth'] == 0 and 
+                monitoring_summary['total_debt_eth'] == 0):
+
+                print("🚀 NO AAVE POSITION DETECTED - CREATING INITIAL POSITION")
+
+                # Check ETH balance for collateral
+                eth_balance = self.get_eth_balance()
+                print(f"💰 Current ETH Balance: {eth_balance:.6f} ETH")
+
+                if eth_balance > 0.002:  # Need some ETH for gas
+                    # Step 1: Supply ETH as collateral (use 80% of balance, keep 20% for gas)
+                    collateral_amount = eth_balance * 0.8
+                    print(f"🏦 Supplying {collateral_amount:.6f} ETH as collateral...")
+
+                    supply_tx = self.aave.supply_to_aave(
+                        self.aave.weth_address, 
+                        collateral_amount
+                    )
+
+                    if supply_tx:
+                        print("✅ Step 1: ETH supplied as collateral")
+
+                        # Wait for transaction confirmation
+                        time.sleep(10)
+
+                        # Step 2: Borrow 20 USDC (ensuring health factor stays above 3.5)
+                        usdc_borrow_amount = 20.0  # $20 USDC
+                        print(f"💳 Borrowing {usdc_borrow_amount} USDC...")
+
+                        # Safety check: ensure this maintains health factor > 3.5
+                        # Assuming ETH = $2500, 20 USDC against ETH collateral should be very safe
+                        estimated_hf = (collateral_amount * 2500 * 0.8) / usdc_borrow_amount
+                        print(f"📊 Estimated Health Factor after borrow: {estimated_hf:.2f}")
+
+                        if estimated_hf > 3.5:
+                            borrow_tx = self.aave.borrow_from_aave(
+                                self.aave.usdc_address,
+                                usdc_borrow_amount
+                            )
+
+                            if borrow_tx:
+                                print("✅ Step 2: Successfully borrowed 20 USDC")
+                                print(f"🎯 Target Health Factor: >3.5 (Estimated: {estimated_hf:.2f})")
+                                performance = 0.95  # Excellent performance for position creation
+
+                                # Set strategy mode to maintain health factor above 3.5
+                                self.target_health_factor = 3.5
+                                print(f"🔧 Agent configured to maintain Health Factor > {self.target_health_factor}")
+                            else:
+                                print("❌ Failed to borrow USDC")
+                                performance = 0.75
+                        else:
+                            print(f"⚠️ Estimated health factor {estimated_hf:.2f} too low, skipping borrow")
+                            performance = 0.80
+                    else:
+                        print("❌ Failed to supply ETH as collateral")
+                        performance = 0.65
+                else:
+                    print(f"❌ Insufficient ETH balance ({eth_balance:.6f}) for collateral")
+                    performance = 0.60
+
+                return performance
+
+            # PRIORITY 1: Health Factor Management (maintain above target)
+            current_hf = monitoring_summary['current_health_factor']
+
+            if current_hf != float('inf') and current_hf < self.target_health_factor * 1.2:  # Add 20% buffer
+                print(f"🚨 HEALTH FACTOR MANAGEMENT: Current {current_hf:.2f} < Target {self.target_health_factor}")
+
+                if current_hf < self.target_health_factor:
+                    print("⚠️ CRITICAL: Health factor below target, reducing debt...")
+
+                    # Check USDC balance to repay some debt
+                    usdc_balance = self.aave.get_token_balance(self.aave.usdc_address)
+                    if usdc_balance > 5:  # If we have USDC available
+                        repay_amount = min(usdc_balance * 0.5, 10)  # Repay up to $10
+
+                        repay_tx = self.aave.repay_to_aave(
+                            self.aave.usdc_address,
+                            repay_amount
+                        )
+
+                        if repay_tx:
+                            print(f"✅ Repaid {repay_amount:.2f} USDC to improve health factor")
+                            performance = 0.90
+                        else:
+                            performance = 0.75
+                else:
+                    print("⚠️ No USDC available for repayment")
+                    performance = 0.70
+
+                elif current_hf < self.target_health_factor * 1.5:  # Still close to target
+                    print("📊 Health factor close to target, monitoring closely...")
+                    performance = 0.80
+
+            # PRIORITY 2: Risk Mitigation (if both health factor declining AND ARB price declining)
+            elif monitoring_summary['risk_trigger_active']:
                 print("🚨 EXECUTING RISK MITIGATION STRATEGY")
 
                 arb_balance = monitoring_summary['arb_balance']
-                if arb_balance > 0.1:  # Only if we have significant ARB to swap
-                    # Swap ARB back to USDC for safety
-                    arb_amount_wei = int(arb_balance * 0.8 * (10 ** 18))  # Swap 80% of ARB holdings
+                if arb_balance > 1:  # Only if we have significant ARB holdings
+                    # Swap 80% of ARB to USDC for stability
+                    arb_swap_amount = arb_balance * 0.8
 
                     risk_swap_tx = self.uniswap.swap_tokens(
                         self.health_monitor.arb_address,  # ARB in
                         self.aave.usdc_address,           # USDC out
-                        arb_amount_wei,
+                        int(arb_swap_amount * (10 ** 18)), # ARB has 18 decimals
                         3000  # 0.3% fee
                     )
 
@@ -262,73 +370,81 @@ class ArbitrumTestnetAgent:
                     print("ℹ️ Risk trigger active but insufficient ARB balance")
                     performance = 0.72
 
-            # PRIORITY 2: Dynamic Borrow Strategy (Only if health factor increased)
-            elif monitoring_summary['borrow_trigger_active']:
-                print("🚨 EXECUTING DYNAMIC BORROW STRATEGY")
+            # PRIORITY 3: Conservative Borrow Strategy (Only if health factor well above target)
+            elif (monitoring_summary['borrow_trigger_active'] and 
+                  current_hf > self.target_health_factor * 2):  # Only borrow if HF > 7.0
 
+                print("🚨 EXECUTING CONSERVATIVE BORROW STRATEGY")
+
+                # Calculate safe borrow amount that keeps HF above target
                 optimal_usdc_borrow = monitoring_summary['optimal_usdc_borrow']
 
-                if optimal_usdc_borrow > 50:  # Only if borrowing significant amount
-                    print(f"💰 Optimal USDC borrow amount: ${optimal_usdc_borrow:.2f}")
+                # Limit borrow to maintain HF above 4.0 (buffer above 3.5 target)
+                safe_borrow_amount = min(optimal_usdc_borrow, 15.0)  # Max $15 borrow
 
-                    # Step 1: Borrow USDC to bring health factor to 1.19
+                if safe_borrow_amount > 5:  # Only if borrowing meaningful amount
+                    print(f"💰 Safe USDC borrow amount: ${safe_borrow_amount:.2f}")
+
+                    # Step 1: Borrow conservative amount of USDC
                     borrow_tx = self.aave.borrow_from_aave(
                         self.aave.usdc_address, 
-                        optimal_usdc_borrow
+                        safe_borrow_amount
                     )
 
                     if borrow_tx:
                         print("✅ Step 1: USDC borrowed successfully")
+                        print(f"🎯 Maintaining Health Factor > {self.target_health_factor}")
 
                         # Wait for transaction to confirm
-                        # Longer delay to prevent nonce conflicts and allow blockchain state updates
-                        time.sleep(3)
 
-                        # Step 2: Swap ALL borrowed USDC to ARB
-                        usdc_balance = self.aave.get_token_balance(self.aave.usdc_address)
+                    # Longer delay to prevent nonce conflicts and allow blockchain state updates
+                    time.sleep(3)
 
-                        if usdc_balance > 10:  # If we have USDC to swap
-                            usdc_amount_wei = int(usdc_balance * (10 ** 6))  # USDC has 6 decimals
+                    # Step 2: Swap ALL borrowed USDC to ARB
+                    usdc_balance = self.aave.get_token_balance(self.aave.usdc_address)
 
-                            arb_swap_tx = self.uniswap.swap_tokens(
-                                self.aave.usdc_address,           # USDC in
-                                self.health_monitor.arb_address,  # ARB out
-                                usdc_amount_wei,
-                                3000  # 0.3% fee
-                            )
+                    if usdc_balance > 10:  # If we have USDC to swap
+                        usdc_amount_wei = int(usdc_balance * (10 ** 6))  # USDC has 6 decimals
 
-                            if arb_swap_tx:
-                                print("✅ Step 2: USDC swapped to ARB")
+                        arb_swap_tx = self.uniswap.swap_tokens(
+                            self.aave.usdc_address,           # USDC in
+                            self.health_monitor.arb_address,  # ARB out
+                            usdc_amount_wei,
+                            3000  # 0.3% fee
+                        )
 
-                                # Step 3: Supply 3/4 of original USDC amount back to Aave
-                                supply_amount = optimal_usdc_borrow * 0.75
+                        if arb_swap_tx:
+                            print("✅ Step 2: USDC swapped to ARB")
 
-                                # Get current USDC balance after swap (should be minimal)
-                                # We'll use ARB value equivalent to 3/4 original USDC
+                            # Step 3: Supply 3/4 of original USDC amount back to Aave
+                            supply_amount = optimal_usdc_borrow * 0.75
 
-                                # For demo: supply some of remaining assets
-                                if status['eth_balance'] > 0.05:
-                                    supply_tx = self.aave.supply_to_aave(
-                                        self.aave.weth_address, 
-                                        status['eth_balance'] * 0.1  # Supply 10% of ETH
-                                    )
+                            # Get current USDC balance after swap (should be minimal)
+                            # We'll use ARB value equivalent to 3/4 original USDC
 
-                                    if supply_tx:
-                                        print("✅ Step 3: Additional collateral supplied")
-                                        performance = 0.95  # Excellent performance for full strategy
-                                    else:
-                                        performance = 0.90  # High performance for borrow+swap
+                            # For demo: supply some of remaining assets
+                            if status['eth_balance'] > 0.05:
+                                supply_tx = self.aave.supply_to_aave(
+                                    self.aave.weth_address, 
+                                    status['eth_balance'] * 0.1  # Supply 10% of ETH
+                                )
+
+                                if supply_tx:
+                                    print("✅ Step 3: Additional collateral supplied")
+                                    performance = 0.95  # Excellent performance for full strategy
                                 else:
-                                    performance = 0.88  # Good performance for borrow+swap only
+                                    performance = 0.90  # High performance for borrow+swap
                             else:
-                                performance = 0.82  # Moderate performance for borrow only
+                                performance = 0.88  # Good performance for borrow+swap only
                         else:
-                            performance = 0.80  # Performance for borrow without sufficient swap
+                            performance = 0.82  # Moderate performance for borrow only
                     else:
-                        performance = 0.65  # Lower performance for failed borrow
+                        performance = 0.80  # Performance for borrow without sufficient swap
                 else:
-                    print("ℹ️ Borrow trigger active but optimal amount too small")
-                    performance = 0.75
+                    performance = 0.65  # Lower performance for failed borrow
+            else:
+                print("ℹ️ Borrow trigger active but optimal amount too small")
+                performance = 0.75
 
             # PRIORITY 3: Standard Operations (When no special triggers)
             else:
