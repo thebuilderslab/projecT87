@@ -1,0 +1,25 @@
+Full, Raw Console Logs from Deployment Attempts:
+
+Why it's beneficial: Screenshots of the console (like image_9324ff.png or image_94dfdd.png) are helpful, but they often cut off crucial lines or make it hard to copy and search. Having the entire, raw text of the deployment logs allows for:
+Searching for specific keywords (e.g., "PROMPT_KEY", "NETWORK_MODE", "error", "failed", "listening", "port").
+Analyzing the exact sequence of events, including library loading, environment variable parsing, and application startup messages.
+Identifying subtle errors or warnings that might be missed in a partial screenshot.
+How to get it: After initiating a deployment in Replit, navigate to the "Deployments" tab, click on the specific deployment, and there should be an option to view or copy the logs. Copy everything displayed in the console window.
+Contents of .replit file:
+
+Why it's beneficial: This file dictates how Replit runs your project and how environment variables are passed. Knowing its exact content is crucial for understanding:
+The run command that starts your application.
+Any entrypoint configurations.
+How environment variables are supposedly being sourced or inherited.
+This helps us confirm if Replit's default behavior for secret injection is being overridden or misconfigured.
+How to get it: In your Replit project's file explorer (left sidebar), find and click on the .replit file. Copy its entire content.
+Relevant Code Snippets from mainnet_launcher.py and dashboard.py (specifically where secrets are loaded and ports are defined):
+
+Why it's beneficial: While the agent has likely seen these files, having the most up-to-date, relevant sections ensures accuracy, especially as changes are suggested.
+For mainnet_launcher.py: We need to see precisely how PROMPT_KEY, NETWORK_MODE, and PRIVATE_KEY are being accessed (e.g., os.getenv('PROMPT_KEY')) and what happens if they are not found.
+For dashboard.py: We need to see where the port is defined and how it's being used (app.run(port=5000) or similar).
+How to get it: Open the respective files in Replit and copy the relevant function or class definitions.
+Confirmation of Replit Plan/Tier:
+
+Why it's beneficial: While less common, certain Replit plans or specific project types can have different behaviors regarding resource allocation, persistent storage, or even secret handling. Knowing your plan could occasionally provide context for unusual behaviors.
+How to get it: Check your Replit account settings or the project's resource usage details.
