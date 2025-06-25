@@ -1,3 +1,4 @@
+# Applying the provided changes to update the network display logic in the Flask app.
 from flask import Flask, render_template, jsonify, request
 import json
 import os
@@ -47,10 +48,111 @@ def initialize_agent():
 # Initialize agent in background
 threading.Thread(target=initialize_agent, daemon=True).start()
 
+def get_network_info():
+    """Get current network information with proper mainnet detection"""
+    try:
+        from arbitrum_testnet_agent import ArbitrumTestnetAgent
+
+        # Force check NETWORK_MODE first for accurate detection
+        network_mode = os.getenv('NETWORK_MODE', 'testnet')
+        print(f"🔍 Dashboard network detection - NETWORK_MODE: {network_mode}")
+
+        # Initialize agent to get actual chain connection
+        agent = ArbitrumTestnetAgent()
+        chain_id = agent.w3.eth.chain_id
+
+        print(f"🔍 Dashboard network detection - Chain ID: {chain_id}")
+
+        # Explicit mapping with NETWORK_MODE priority
+        if network_mode == 'mainnet' or chain_id == 42161:
+            network_name = "Arbitrum Mainnet"
+            actual_chain_id = 42161
+            rpc_url = "https://arb1.arbitrum.io/rpc"
+        elif network_mode == 'testnet' or chain_id == 421614:
+            network_name = "Arbitrum Sepolia"
+            actual_chain_id = 421614
+            rpc_url = "https://sepolia-rollup.arbitrum.io/rpc"
+        else:
+            network_name = f"Unknown Network (Chain ID: {chain_id})"
+            actual_chain_id = chain_id
+            rpc_url = agent.w3.provider.endpoint_uri if hasattr(agent.w3.provider, 'endpoint_uri') else 'Unknown'
+
+        result = {
+            'network_mode': network_mode,
+            'chain_id': actual_chain_id,
+            'network_name': network_name,
+            'rpc_url': rpc_url
+        }
+
+        print(f"🔍 Dashboard network result: {result}")
+        return result
+
+    except Exception as e:
+        print(f"⚠️ Network info fallback due to error: {e}")
+        # Fallback based on NETWORK_MODE environment variable
+        network_mode = os.getenv('NETWORK_MODE', 'testnet')
+        if network_mode == 'mainnet':
+            return {
+                'network_mode': 'mainnet',
+                'chain_id': 42161,
+                'network_name': 'Arbitrum Mainnet',
+                'rpc_url': 'https://arb1.arbitrum.io/rpc'
+            }
+        else:
+            return {
+                'network_mode': 'testnet',
+                'chain_id': 421614,
+                'network_name': 'Arbitrum Sepolia',
+                'rpc_url': 'https://sepolia-rollup.arbitrum.io/rpc'
+            }
+
 @app.route('/')
-def index():
-    """Main dashboard page"""
-    return render_template('dashboard.html')
+def dashboard():
+    """Main dashboard page with accurate network detection"""
+    try:
+        # Get system status
+        emergency_active = check_emergency_status()
+
+        # Get comprehensive network info using our improved function
+        network_info = get_network_info()
+
+        # Try to get agent status
+        agent_status = "Initializing..."
+        try:
+            from arbitrum_testnet_agent import ArbitrumTestnetAgent
+            agent = ArbitrumTestnetAgent()
+            agent_status = "Connected"
+
+            # Verify network info matches actual connection
+            actual_chain_id = agent.w3.eth.chain_id
+            if actual_chain_id != network_info['chain_id']:
+                print(f"⚠️ Chain ID mismatch: Expected {network_info['chain_id']}, got {actual_chain_id}")
+                # Update network info with actual connection
+                network_info['chain_id'] = actual_chain_id
+                if actual_chain_id == 42161:
+                    network_info['network_name'] = 'Arbitrum Mainnet'
+                elif actual_chain_id == 421614:
+                    network_info['network_name'] = 'Arbitrum Sepolia'
+
+        except Exception as e:
+            agent_status = f"Error: {str(e)}"
+            print(f"⚠️ Agent connection error in dashboard: {e}")
+
+        return render_template('dashboard.html',
+                               emergency_active=emergency_active,
+                               agent_status=agent_status,
+                               network_info=network_info)  # Pass to template
+
+    except Exception as e:
+        return render_template('dashboard.html',
+                               emergency_active=False,
+                               agent_status=f"Dashboard Error: {str(e)}",
+                               network_info={})
+
+def check_emergency_status():
+    """Check if emergency stop is active"""
+    emergency_file = 'EMERGENCY_STOP_ACTIVE.flag'
+    return os.path.exists(emergency_file)
 
 @app.route('/api/wallet_status')
 def wallet_status():
@@ -78,7 +180,7 @@ def wallet_status():
 
         # Convert ETH values to USDC (assuming 1 ETH = $2500 for mainnet)
         eth_to_usd_rate = 2500.0  # Conservative estimate for mainnet
-        
+
         total_collateral_usdc = health_data['total_collateral_eth'] * eth_to_usd_rate
         total_debt_usdc = health_data['total_debt_eth'] * eth_to_usd_rate
         available_borrows_usdc = health_data['available_borrows_eth'] * eth_to_usd_rate
@@ -335,10 +437,11 @@ def get_available_port(start_port=5000):
 if __name__ == '__main__':
     print("🌐 Starting DeFi Agent Web Dashboard")
     print("📱 Access your dashboard at the web preview URL")
-    
+
     # Find available port with detailed logging
     port = get_available_port(5000)
     print(f"🌐 Starting web dashboard on port {port}")
     print(f"🔗 Dashboard will be accessible at your Replit webview URL")
-    
+
     app.run(host='0.0.0.0', port=port, debug=False, threaded=True)
+`

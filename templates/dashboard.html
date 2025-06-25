@@ -318,7 +318,7 @@
                     </div>
                     <div class="metric">
                         <span class="metric-label">Network:</span>
-                        <span class="metric-value">Arbitrum Sepolia</span>
+                        <span class="metric-value" id="network">Arbitrum Sepolia</span>
                     </div>
                     <div class="metric">
                         <span class="metric-label">Status:</span>
@@ -602,12 +602,40 @@
                 });
         }
 
+        // Update network info with proper mainnet detection
+        function updateNetworkInfo() {
+            fetch('/api/network-info')
+                .then(response => response.json())
+                .then(data => {
+                    console.log('Network info received:', data);
+                    const networkElement = document.getElementById('network');
+                    if (data.network_name) {
+                        networkElement.textContent = data.network_name;
+                        // Add visual indicator for mainnet
+                        if (data.network_name === 'Arbitrum Mainnet') {
+                            networkElement.style.color = '#00ff88';
+                            networkElement.style.fontWeight = 'bold';
+                        } else {
+                            networkElement.style.color = '#ff8800';
+                            networkElement.style.fontWeight = 'normal';
+                        }
+                    } else {
+                        networkElement.textContent = 'Unknown Network';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching network info:', error);
+                    document.getElementById('network').textContent = 'Error loading network info';
+                });
+        }
+
         // Initialize dashboard
         document.addEventListener('DOMContentLoaded', function() {
             refreshData();
             fetchParameters();
             updateLastUpdate();
             updateEmergencyStatus();
+            updateNetworkInfo();
 
             // Set up intervals
             setInterval(() => {
@@ -616,6 +644,7 @@
             }, 30000); // Update every 30 seconds
 
             setInterval(updateEmergencyStatus, 5000); // Check emergency status every 5 seconds
+            setInterval(updateNetworkInfo, 60000); // Check network info every 60 seconds
         });
     </script>
 </body>
