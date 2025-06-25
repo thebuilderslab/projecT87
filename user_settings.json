@@ -1,9 +1,9 @@
 {
   "health_factor_target": 3.5,
   "borrow_trigger_threshold": 0.001,
-  "arb_decline_threshold": 0.0015,
+  "arb_decline_threshold": 0.0009,
   "exploration_rate": 0.1,
   "auto_mode": true,
-  "last_updated": 1750859696.7939186,
-  "update_count": 6
+  "last_updated": 1750867056.8811822,
+  "update_count": 8
 }
