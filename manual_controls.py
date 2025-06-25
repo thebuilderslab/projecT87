@@ -33,6 +33,12 @@ class ManualControls:
         elif strategy_type == "supply_collateral":
             return self.agent.aave.supply_to_aave(
                 self.agent.aave.weth_address, 
+                0.01  # Default 0.01 ETH
+            )
+            
+        elif strategy_type == "supply_wbtc":
+            wbtc_amount = 0.0004087  # Specific amount requested
+            return self.agent.aave.supply_wbtc_to_aave(wbtc_amount)e.weth_address, 
                 self.agent.get_eth_balance() * 0.5
             )
             
