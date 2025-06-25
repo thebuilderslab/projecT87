@@ -429,6 +429,80 @@ def get_emergency_status():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+@app.route('/api/diagnostics/connection-test')
+def connection_test():
+    """Simple connection test for UI debugging"""
+    try:
+        return jsonify({
+            'status': 'connected',
+            'timestamp': time.time(),
+            'server_time': time.strftime('%Y-%m-%d %H:%M:%S UTC', time.gmtime()),
+            'agent_initialized': agent is not None,
+            'dashboard_available': dashboard is not None,
+            'network_mode': os.getenv('NETWORK_MODE', 'unknown'),
+            'deployment_mode': bool(os.getenv('REPLIT_DEPLOYMENT'))
+        })
+    except Exception as e:
+        return jsonify({'error': str(e), 'status': 'error'}), 500
+
+@app.route('/api/diagnostics/debug-parameters')
+def debug_parameters():
+    """Debug parameter loading issues"""
+    try:
+        debug_info = {
+            'config_file_exists': os.path.exists('agent_config.json'),
+            'user_settings_exists': os.path.exists('user_settings.json'),
+            'dashboard_available': dashboard is not None,
+            'dashboard_has_params': hasattr(dashboard, 'adjustable_params') if dashboard else False
+        }
+        
+        # Try different parameter loading methods
+        methods = {}
+        
+        # Method 1: Default config
+        methods['default_config'] = {
+            'learning_rate': 0.01,
+            'exploration_rate': 0.1,
+            'max_iterations_per_run': 100,
+            'optimization_target_threshold': 0.95,
+            'health_factor_target': 1.19,
+            'borrow_trigger_threshold': 0.02,
+            'arb_decline_threshold': 0.05,
+            'auto_mode': True
+        }
+        
+        # Method 2: From agent_config.json
+        if os.path.exists('agent_config.json'):
+            try:
+                with open('agent_config.json', 'r') as f:
+                    methods['agent_config_file'] = json.load(f)
+            except Exception as e:
+                methods['agent_config_file'] = {'error': str(e)}
+        
+        # Method 3: From user_settings.json
+        if os.path.exists('user_settings.json'):
+            try:
+                with open('user_settings.json', 'r') as f:
+                    methods['user_settings_file'] = json.load(f)
+            except Exception as e:
+                methods['user_settings_file'] = {'error': str(e)}
+        
+        # Method 4: From dashboard
+        if dashboard and hasattr(dashboard, 'adjustable_params'):
+            try:
+                methods['dashboard_params'] = dashboard.adjustable_params
+            except Exception as e:
+                methods['dashboard_params'] = {'error': str(e)}
+        
+        return jsonify({
+            'debug_info': debug_info,
+            'parameter_methods': methods,
+            'recommendation': 'Check which method is causing the issue'
+        })
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/api/parameters', methods=['POST'])
 def update_parameters():
     """Update adjustable parameters"""

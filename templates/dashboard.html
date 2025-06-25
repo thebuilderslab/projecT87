@@ -357,7 +357,16 @@
                 <div style="margin-top: 20px; text-align: center;">
                     <button class="btn" onclick="updateParameters()">💾 Save Parameters</button>
                     <button class="btn" onclick="refreshData()" style="margin-left: 10px;">🔄 Refresh Now</button>
-                </div>
+                    <button class="btn" onclick="runDiagnostics()" style="margin-left: 10px; background: linear-gradient(45deg, #FF9800, #F57C00);">🔍 Run Diagnostics</button>
+                </div></div>
+
+            <!-- Diagnostics Modal -->
+            <div id="diagnostics-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000;">
+                <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; color: black; padding: 30px; border-radius: 15px; max-width: 80%; max-height: 80%; overflow-y: auto;">
+                    <h3>🔍 API Diagnostics Report</h3>
+                    <div id="diagnostics-content">Running diagnostics...</div>
+                    <button onclick="closeDiagnostics()" style="margin-top: 20px; padding: 10px 20px; background: #666; color: white; border: none; border-radius: 5px;">Close</button>
+                </div></div>
             </div>
 
             <!-- Emergency Controls Section -->
@@ -639,6 +648,168 @@
                     console.error('Error fetching network info:', error);
                     document.getElementById('network').textContent = 'Error loading network info';
                 });
+        }
+
+        // Diagnostic functions
+        async function runDiagnostics() {
+            document.getElementById('diagnostics-modal').style.display = 'block';
+            document.getElementById('diagnostics-content').innerHTML = 'Running comprehensive diagnostics...';
+
+            try {
+                // Test basic connection first
+                const connectionTest = await fetch('/api/diagnostics/connection-test');
+                const connectionData = await connectionTest.json();
+
+                let diagnosticsHtml = '<h4>🔗 Connection Test</h4>';
+                diagnosticsHtml += `<pre>${JSON.stringify(connectionData, null, 2)}</pre>`;
+
+                // Test parameter loading
+                const paramTest = await fetch('/api/diagnostics/debug-parameters');
+                const paramData = await paramTest.json();
+
+                diagnosticsHtml += '<h4>⚙️ Parameter Loading Test</h4>';
+                diagnosticsHtml += `<pre>${JSON.stringify(paramData, null, 2)}</pre>`;
+
+                // Test individual endpoints
+                const endpoints = ['/api/wallet_status', '/api/performance', '/api/parameters', '/api/emergency_status'];
+                diagnosticsHtml += '<h4>🔌 Endpoint Tests</h4>';
+
+                for (const endpoint of endpoints) {
+                    try {
+                        const response = await fetch(endpoint);
+                        const data = await response.json();
+                        diagnosticsHtml += `<h5>${endpoint}</h5>`;
+                        diagnosticsHtml += `<p>Status: ${response.status} ${response.ok ? '✅' : '❌'}</p>`;
+                        if (data.error) {
+                            diagnosticsHtml += `<p style="color: red;">Error: ${data.error}</p>`;
+                        } else {
+                            diagnosticsHtml += `<p style="color: green;">Data loaded successfully</p>`;
+                        }
+                    } catch (error) {
+                        diagnosticsHtml += `<h5>${endpoint}</h5>`;
+                        diagnosticsHtml += `<p style="color: red;">❌ Failed: ${error.message}</p>`;
+                    }
+                }
+
+                document.getElementById('diagnostics-content').innerHTML = diagnosticsHtml;
+
+            } catch (error) {
+                document.getElementById('diagnostics-content').innerHTML = 
+                    `<h4 style="color: red;">Diagnostics Failed</h4>
+                     <p>Error: ${error.message}</p>
+                     <p>This indicates a serious connectivity issue.</p>`;
+            }
+        }
+
+        function closeDiagnostics() {
+            document.getElementById('diagnostics-modal').style.display = 'none';
+        }
+
+        // Enhanced error logging
+        function logFetchError(endpoint, error) {
+            console.error(`Fetch error for ${endpoint}:`, error);
+            
+            // Try to provide more specific error information
+            if (error.message.includes('Failed to fetch')) {
+                console.error('Possible causes: Server not responding, CORS issues, or network problems');
+            }
+        }
+
+        // Modified fetch functions with better error handling
+        async function fetchWalletStatus() {
+            try {
+                const response = await fetch('/api/wallet_status');
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+
+                if (data.error) {
+                    if (data.status === 'initializing') {
+                        return; // Keep showing loading
+                    }
+                    throw new Error(data.error);
+                }
+
+                // Update wallet status
+                document.getElementById('walletAddress').textContent = data.wallet_address;
+                document.getElementById('ethBalance').textContent = `${data.eth_balance.toFixed(6)} ETH`;
+                document.getElementById('usdcBalance').textContent = `${data.usdc_balance.toFixed(2)} USDC`;
+
+                // Update network status - prioritize NETWORK_MODE over chain detection
+                if (data.network_name) {
+                    document.getElementById('networkStatus').textContent = `Real-time monitoring of your ${data.network_name} operations`;
+                    // Update the network field in Market Data card
+                    document.getElementById('network').textContent = data.network_name;
+                    
+                    // Visual styling for mainnet vs testnet
+                    const networkElement = document.getElementById('network');
+                    if (data.network_name === 'Arbitrum Mainnet') {
+                        networkElement.style.color = '#00ff88';
+                        networkElement.style.fontWeight = 'bold';
+                    } else {
+                        networkElement.style.color = '#ff8800';
+                        networkElement.style.fontWeight = 'normal';
+                    }
+                }
+
+                document.getElementById('lastUpdate').textContent = `Last updated: ${new Date().toLocaleTimeString()}`;
+
+                // Update Aave status
+                const healthFactor = data.health_factor === Infinity ? '∞' : data.health_factor.toFixed(4);
+                document.getElementById('healthFactor').innerHTML = `
+                    <span id="healthStatus" class="status-indicator ${getHealthStatus(data.health_factor)}"></span>
+                    ${healthFactor}
+                `;
+                document.getElementById('totalCollateral').textContent = `$${(data.total_collateral_usdc || 0).toFixed(2)} USDC`;
+                document.getElementById('totalDebt').textContent = `$${(data.total_debt_usdc || 0).toFixed(2)} USDC`;
+                document.getElementById('availableBorrows').textContent = `$${(data.available_borrows_usdc || 0).toFixed(2)} USDC`;
+
+                // Update market data
+                document.getElementById('arbPrice').textContent = `$${data.arb_price.toFixed(4)}`;
+
+                // Hide loading, show dashboard
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('dashboard').style.display = 'block';
+                document.getElementById('error').style.display = 'none';
+            } catch (error) {
+                logFetchError('/api/wallet_status', error);
+                document.getElementById('ethBalance').textContent = 'Error loading';
+                document.getElementById('usdcBalance').textContent = 'Error loading';
+                document.getElementById('walletAddress').textContent = 'Error loading';
+                
+                // Show error message
+                const errorDiv = document.getElementById('error');
+                errorDiv.innerHTML = `❌ Wallet Status Error: ${error.message}`;
+                errorDiv.style.display = 'block';
+            }
+        }
+
+        async function fetchParameters() {
+            try {
+                const response = await fetch('/api/parameters');
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+
+                if (!data.error) {
+                    document.getElementById('healthTarget').value = data.health_factor_target;
+                    document.getElementById('borrowTrigger').value = data.borrow_trigger_threshold;
+                    document.getElementById('arbDecline').value = (data.arb_decline_threshold * 100);
+                    document.getElementById('autoMode').value = data.auto_mode.toString();
+                } else {
+                    console.error('Parameters API returned error:', data.error);
+                }
+
+            } catch (error) {
+                logFetchError('/api/parameters', error);
+                console.error('Error fetching parameters:', error);
+            }
         }
 
         // Initialize dashboard

@@ -110,3 +110,7 @@ args = "python mainnet_launcher.py"
 [[ports]]
 localPort = 5000
 externalPort = 80
+
+[[ports]]
+localPort = 5001
+externalPort = 3000
