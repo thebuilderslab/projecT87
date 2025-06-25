@@ -1,8 +1,8 @@
 from flask import Flask, render_template, jsonify, request
-import json
 import os
 import time
-from datetime import datetime
+import json
+from web3 import Web3
 from arbitrum_testnet_agent import ArbitrumTestnetAgent
 from dashboard import AgentDashboard
 import threading
@@ -197,42 +197,77 @@ def wallet_status():
             wallet_status['usdc_balance'] = agent.aave.get_token_balance(agent.aave.usdc_address)
 
             try:
-                # Get health factor data
-                health_data = agent.health_monitor.get_current_health_factor()
-                if health_data:
-                    wallet_status.update({
-                        'health_factor': health_data['health_factor'],
-                        'total_collateral': health_data['total_collateral_eth'],
-                        'total_debt': health_data['total_debt_eth'],
-                        'total_collateral_usdc': health_data.get('total_collateral_usdc', 0),
-                        'total_debt_usdc': health_data.get('total_debt_usdc', 0),
-                        'available_borrows': health_data.get('available_borrows_eth', 0),
-                        'available_borrows_usdc': health_data.get('available_borrows_usdc', 0)
-                    })
+                 # Try enhanced direct Aave contract calls
+                enhanced_aave_data = get_enhanced_aave_data(agent)
+                if enhanced_aave_data:
+                    wallet_status.update(enhanced_aave_data)
                 else:
-                    # Try third-party API fallback with priority for Zapper
-                    try:
-                        from third_party_data_integration import ThirdPartyDataProvider
-                        provider = ThirdPartyDataProvider()
-                        
-                        # Try Zapper API first if available
-                        if provider.zapper_api_key:
-                            print("🔄 Attempting Zapper API for Aave data...")
-                            zapper_data = provider.get_zapper_portfolio(agent.address)
-                            if zapper_data and zapper_data['health_factor'] > 0:
-                                print(f"✅ Zapper API successful: Health Factor {zapper_data['health_factor']:.4f}")
-                                wallet_status.update({
-                                    'health_factor': zapper_data['health_factor'],
-                                    'total_collateral': zapper_data['total_collateral_usd'] / 2400,  # Rough ETH conversion
-                                    'total_debt': zapper_data['total_debt_usd'] / 2400,
-                                    'total_collateral_usdc': zapper_data['total_collateral_usd'],
-                                    'total_debt_usdc': zapper_data['total_debt_usd'],
-                                    'available_borrows': 0,
-                                    'available_borrows_usdc': 0,
-                                    'data_source': 'zapper'
-                                })
+                    # Get health factor data
+                    health_data = agent.health_monitor.get_current_health_factor()
+                    if health_data:
+                        wallet_status.update({
+                            'health_factor': health_data['health_factor'],
+                            'total_collateral': health_data['total_collateral_eth'],
+                            'total_debt': health_data['total_debt_eth'],
+                            'total_collateral_usdc': health_data.get('total_collateral_usdc', 0),
+                            'total_debt_usdc': health_data.get('total_debt_usdc', 0),
+                            'available_borrows': health_data.get('available_borrows_eth', 0),
+                            'available_borrows_usdc': health_data.get('available_borrows_usdc', 0)
+                        })
+                    else:
+                        # Try third-party API fallback with priority for Zapper
+                        try:
+                            from third_party_data_integration import ThirdPartyDataProvider
+                            provider = ThirdPartyDataProvider()
+
+                            # Try Zapper API first if available
+                            if provider.zapper_api_key:
+                                print("🔄 Attempting Zapper API for Aave data...")
+                                zapper_data = provider.get_zapper_portfolio(agent.address)
+                                if zapper_data and zapper_data['health_factor'] > 0:
+                                    print(f"✅ Zapper API successful: Health Factor {zapper_data['health_factor']:.4f}")
+                                    wallet_status.update({
+                                        'health_factor': zapper_data['health_factor'],
+                                        'total_collateral': zapper_data['total_collateral_usd'] / 2400,  # Rough ETH conversion
+                                        'total_debt': zapper_data['total_debt_usd'] / 2400,
+                                        'total_collateral_usdc': zapper_data['total_collateral_usd'],
+                                        'total_debt_usdc': zapper_data['total_debt_usd'],
+                                        'available_borrows': 0,
+                                        'available_borrows_usdc': 0,
+                                        'data_source': 'zapper'
+                                    })
+                                else:
+                                    print("⚠️ Zapper API returned no data, trying other sources...")
+                                    third_party_data = provider.get_reliable_aave_data(agent.address)
+                                    if third_party_data:
+                                        print(f"✅ Using {third_party_data['source']} API data")
+                                        wallet_status.update({
+                                            'health_factor': third_party_data['health_factor'],
+                                            'total_collateral': third_party_data['total_collateral_usd'] / 2400,
+                                            'total_debt': third_party_data['total_debt_usd'] / 2400,
+                                            'total_collateral_usdc': third_party_data['total_collateral_usd'],
+                                            'total_debt_usdc': third_party_data['total_debt_usd'],
+                                            'available_borrows': 0,
+                                            'available_borrows_usdc': 0,
+                                            'data_source': third_party_data['source']
+                                        })
+                                    else:
+                                        # Final fallback to on-chain analysis
+                                        fallback_data = agent.health_monitor.perform_fallback_analysis()
+                                        if fallback_data:
+                                            wallet_status.update({
+                                                'health_factor': fallback_data.get('estimated_health_factor', 0),
+                                                'total_collateral': fallback_data.get('estimated_collateral', 0),
+                                                'total_debt': 0,
+                                                'total_collateral_usdc': fallback_data.get('estimated_collateral_usdc', 0),
+                                                'total_debt_usdc': 0,
+                                                'available_borrows': 0,
+                                                'available_borrows_usdc': 0,
+                                                'data_source': 'fallback'
+                                            })
+                                        print("⚠️ Using on-chain fallback analysis")
                             else:
-                                print("⚠️ Zapper API returned no data, trying other sources...")
+                                print("💡 No Zapper API key found, using other third-party sources...")
                                 third_party_data = provider.get_reliable_aave_data(agent.address)
                                 if third_party_data:
                                     print(f"✅ Using {third_party_data['source']} API data")
@@ -261,51 +296,21 @@ def wallet_status():
                                             'data_source': 'fallback'
                                         })
                                     print("⚠️ Using on-chain fallback analysis")
-                        else:
-                            print("💡 No Zapper API key found, using other third-party sources...")
-                            third_party_data = provider.get_reliable_aave_data(agent.address)
-                            if third_party_data:
-                                print(f"✅ Using {third_party_data['source']} API data")
+                        except ImportError:
+                            print("💡 Third-party integration not available - using fallback")
+                            # Try fallback analysis
+                            fallback_data = agent.health_monitor.perform_fallback_analysis()
+                            if fallback_data:
                                 wallet_status.update({
-                                    'health_factor': third_party_data['health_factor'],
-                                    'total_collateral': third_party_data['total_collateral_usd'] / 2400,
-                                    'total_debt': third_party_data['total_debt_usd'] / 2400,
-                                    'total_collateral_usdc': third_party_data['total_collateral_usd'],
-                                    'total_debt_usdc': third_party_data['total_debt_usd'],
+                                    'health_factor': fallback_data.get('estimated_health_factor', 0),
+                                    'total_collateral': fallback_data.get('estimated_collateral', 0),
+                                    'total_debt': 0,
+                                    'total_collateral_usdc': fallback_data.get('estimated_collateral_usdc', 0),
+                                    'total_debt_usdc': 0,
                                     'available_borrows': 0,
-                                    'available_borrows_usdc': 0,
-                                    'data_source': third_party_data['source']
+                                    'available_borrows_usdc': 0
                                 })
-                            else:
-                                # Final fallback to on-chain analysis
-                                fallback_data = agent.health_monitor.perform_fallback_analysis()
-                                if fallback_data:
-                                    wallet_status.update({
-                                        'health_factor': fallback_data.get('estimated_health_factor', 0),
-                                        'total_collateral': fallback_data.get('estimated_collateral', 0),
-                                        'total_debt': 0,
-                                        'total_collateral_usdc': fallback_data.get('estimated_collateral_usdc', 0),
-                                        'total_debt_usdc': 0,
-                                        'available_borrows': 0,
-                                        'available_borrows_usdc': 0,
-                                        'data_source': 'fallback'
-                                    })
-                                print("⚠️ Using on-chain fallback analysis")
-                    except ImportError:
-                        print("💡 Third-party integration not available - using fallback")
-                        # Try fallback analysis
-                        fallback_data = agent.health_monitor.perform_fallback_analysis()
-                        if fallback_data:
-                            wallet_status.update({
-                                'health_factor': fallback_data.get('estimated_health_factor', 0),
-                                'total_collateral': fallback_data.get('estimated_collateral', 0),
-                                'total_debt': 0,
-                                'total_collateral_usdc': fallback_data.get('estimated_collateral_usdc', 0),
-                                'total_debt_usdc': 0,
-                                'available_borrows': 0,
-                                'available_borrows_usdc': 0
-                            })
-                        print("⚠️ Using fallback health factor analysis")
+                            print("⚠️ Using fallback health factor analysis")
             except Exception as e:
                 print(f"⚠️ Aave balance/health error: {e}")
         else:
@@ -843,7 +848,6 @@ def debug_parameters():
             'optimization_target_threshold': 0.95,
             'health_factor_target': 1.19,
             'borrow_trigger_threshold': 0.02,
-```text
             'arb_decline_threshold': 0.05,
             'auto_mode': True
         }
@@ -1002,6 +1006,139 @@ if __name__ == '__main__':
 
     # Use port 5000 for deployment consistency
     port = 5000
+
+    def get_enhanced_aave_data(agent):
+        """Enhanced direct Aave V3 contract calls with detailed error handling"""
+        try:
+            # Aave V3 Pool address on Arbitrum Mainnet
+            aave_pool_address = "0x794a61358D6845594F94dc1DB02A252b5b4814aD"
+
+            # Enhanced ABI with all necessary functions
+            aave_pool_abi = [
+                {
+                    "inputs": [{"internalType": "address", "name": "user", "type": "address"}],
+                    "name": "getUserAccountData",
+                    "outputs": [
+                        {"internalType": "uint256", "name": "totalCollateralBase", "type": "uint256"},
+                        {"internalType": "uint256", "name": "totalDebtBase", "type": "uint256"},
+                        {"internalType": "uint256", "name": "availableBorrowsBase", "type": "uint256"},
+                        {"internalType": "uint256", "name": "currentLiquidationThreshold", "type": "uint256"},
+                        {"internalType": "uint256", "name": "ltv", "type": "uint256"},
+                        {"internalType": "uint256", "name": "healthFactor", "type": "uint256"}
+                    ],
+                    "stateMutability": "view",
+                    "type": "function"
+                },
+                {
+                    "inputs": [
+                        {"internalType": "address", "name": "asset", "type": "address"},
+                        {"internalType": "address", "name": "user", "type": "address"}
+                    ],
+                    "name": "getUserConfiguration",
+                    "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
+                    "stateMutability": "view",
+                    "type": "function"
+                }
+            ]
+
+            print(f"🔍 Calling Aave Pool contract at: {aave_pool_address}")
+            print(f"👤 For user address: {agent.address}")
+
+            # Create contract instance
+            pool_contract = agent.w3.eth.contract(
+                address=Web3.to_checksum_address(aave_pool_address),
+                abi=aave_pool_abi
+            )
+
+            # Call getUserAccountData with detailed error handling
+            print("📞 Calling getUserAccountData...")
+            try:
+                user_data = pool_contract.functions.getUserAccountData(
+                    Web3.to_checksum_address(agent.address)
+                ).call()
+
+                print(f"✅ Raw Aave data received: {user_data}")
+
+                # Parse the returned data
+                total_collateral_base = user_data[0]
+                total_debt_base = user_data[1]
+                available_borrows_base = user_data[2]
+                health_factor_raw = user_data[5]
+
+                # Convert from wei (18 decimals)
+                total_collateral_usd = total_collateral_base / (10 ** 8)  # Aave uses 8 decimals for USD
+                total_debt_usd = total_debt_base / (10 ** 8)
+                available_borrows_usd = available_borrows_base / (10 ** 8)
+
+                # Health factor has 18 decimals
+                if health_factor_raw == 2 ** 256 - 1:  # Max uint256 means no debt
+                    health_factor = float('inf')
+                else:
+                    health_factor = health_factor_raw / (10 ** 18)
+
+                print(f"📊 Parsed Aave data:")
+                print(f"   Total Collateral: ${total_collateral_usd:,.2f}")
+                print(f"   Total Debt: ${total_debt_usd:,.2f}")
+                print(f"   Health Factor: {health_factor:.4f}")
+                print(f"   Available Borrows: ${available_borrows_usd:,.2f}")
+
+                return {
+                    'health_factor': health_factor,
+                    'total_collateral': total_collateral_usd / 2400,  # Rough ETH conversion
+                    'total_debt': total_debt_usd / 2400,
+                    'total_collateral_usdc': total_collateral_usd,
+                    'total_debt_usdc': total_debt_usd,
+                    'available_borrows': available_borrows_usd / 2400,
+                    'available_borrows_usdc': available_borrows_usd,
+                    'data_source': 'aave_direct'
+                }
+
+            except Exception as contract_error:
+                print(f"❌ Contract call error: {contract_error}")
+                print(f"❌ Error type: {type(contract_error)}")
+
+                # Try alternative RPC call method
+                print("🔄 Trying alternative call method...")
+                try:
+                    # Use call with block parameter
+                    user_data_alt = pool_contract.functions.getUserAccountData(
+                        Web3.to_checksum_address(agent.address)
+                    ).call(block_identifier='latest')
+
+                    print(f"✅ Alternative call successful: {user_data_alt}")
+
+                    # Parse alternative data
+                    total_collateral_base = user_data_alt[0]
+                    total_debt_base = user_data_alt[1]
+                    health_factor_raw = user_data_alt[5]
+
+                    total_collateral_usd = total_collateral_base / (10 ** 8)
+                    total_debt_usd = total_debt_base / (10 ** 8)
+
+                    if health_factor_raw == 2 ** 256 - 1:
+                        health_factor = float('inf')
+                    else:
+                        health_factor = health_factor_raw / (10 ** 18)
+
+                    return {
+                        'health_factor': health_factor,
+                        'total_collateral': total_collateral_usd / 2400,
+                        'total_debt': total_debt_usd / 2400,
+                        'total_collateral_usdc': total_collateral_usd,
+                        'total_debt_usdc': total_debt_usd,
+                        'available_borrows': 0,
+                        'available_borrows_usdc': 0,
+                        'data_source': 'aave_direct_alt'
+                    }
+
+                except Exception as alt_error:
+                    print(f"❌ Alternative call also failed: {alt_error}")
+                    return None
+
+        except Exception as e:
+            print(f"❌ Enhanced Aave data retrieval failed: {e}")
+            print(f"❌ Exception type: {type(e)}")
+            return None
     print(f"🌐 Starting web dashboard on port {port}")
     print(f"🔗 Dashboard will be accessible at your Replit webview URL")
 
