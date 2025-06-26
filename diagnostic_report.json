@@ -1,6 +1,6 @@
 {
-  "timestamp": 1750950996.2590537,
-  "datetime": "2025-06-26T15:16:36.259054",
+  "timestamp": 1750956075.0033534,
+  "datetime": "2025-06-26T16:41:15.003354",
   "diagnostic_version": "1.0",
   "environment": {
     "python_version": "3.11.10 (main, Sep  7 2024, 01:03:31) [GCC 13.3.0]",
@@ -67,8 +67,8 @@
     "critical_files": {
       "arbitrum_testnet_agent.py": {
         "exists": true,
-        "size": 32378,
-        "modified": 1750950130.8391,
+        "size": 32346,
+        "modified": 1750956022.9499912,
         "readable": true,
         "writable": true,
         "syntax_valid": false,
@@ -81,16 +81,16 @@
       },
       "web_dashboard.py": {
         "exists": true,
-        "size": 46605,
-        "modified": 1750950131.0530994,
+        "size": 46170,
+        "modified": 1750956022.6779919,
         "readable": true,
         "writable": true,
         "syntax_valid": false,
         "syntax_error": {
-          "message": "unexpected indent (web_dashboard.py, line 264)",
-          "line": 264,
-          "offset": 24,
-          "text": "                        if health_data:\n"
+          "message": "invalid syntax (web_dashboard.py, line 376)",
+          "line": 376,
+          "offset": 13,
+          "text": "            except Exception as e:\n"
         }
       },
       "mainnet_launcher.py": {
@@ -171,13 +171,13 @@
       "arbitrum_mainnet": {
         "connected": true,
         "chain_id": 42161,
-        "latest_block": 351438981,
+        "latest_block": 351459298,
         "response_time": "fast"
       },
       "arbitrum_sepolia": {
         "connected": true,
         "chain_id": 421614,
-        "latest_block": 167455805,
+        "latest_block": 167475914,
         "response_time": "fast"
       }
     },
@@ -185,7 +185,7 @@
       "coinmarketcap": {
         "accessible": true,
         "status_code": 401,
-        "response_time": 0.12647
+        "response_time": 0.130977
       }
     },
     "general_connectivity": {}
@@ -220,7 +220,7 @@
       },
       "web_dashboard.app": {
         "success": false,
-        "error": "unexpected indent (web_dashboard.py, line 264)"
+        "error": "invalid syntax (web_dashboard.py, line 376)"
       },
       "aave_integration.AaveArbitrumIntegration": {
         "success": true
@@ -238,7 +238,7 @@
     },
     "web_dashboard": {
       "import_success": false,
-      "error": "unexpected indent (web_dashboard.py, line 264)"
+      "error": "invalid syntax (web_dashboard.py, line 376)"
     },
     "aave_integration": {},
     "workflow_status": {}
@@ -287,8 +287,8 @@
     {
       "priority": "CRITICAL",
       "category": "Syntax",
-      "issue": "Syntax error in web_dashboard.py: unexpected indent (web_dashboard.py, line 264)",
-      "solution": "Fix syntax error at line 264"
+      "issue": "Syntax error in web_dashboard.py: invalid syntax (web_dashboard.py, line 376)",
+      "solution": "Fix syntax error at line 376"
     },
     {
       "priority": "HIGH",
@@ -313,10 +313,10 @@
         "type": "syntax_error",
         "file": "web_dashboard.py",
         "details": {
-          "message": "unexpected indent (web_dashboard.py, line 264)",
-          "line": 264,
-          "offset": 24,
-          "text": "                        if health_data:\n"
+          "message": "invalid syntax (web_dashboard.py, line 376)",
+          "line": 376,
+          "offset": 13,
+          "text": "            except Exception as e:\n"
         }
       },
       {
@@ -327,7 +327,7 @@
       {
         "type": "import_error",
         "module": "web_dashboard.app",
-        "error": "unexpected indent (web_dashboard.py, line 264)"
+        "error": "invalid syntax (web_dashboard.py, line 376)"
       }
     ],
     "configuration_state": {
