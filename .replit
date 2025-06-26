@@ -15,7 +15,7 @@ run = ["sh", "-c", "python mainnet_launcher.py"]
 deploymentTarget = "cloudrun"
 
 [workflows]
-runButton = "🌐 Web Dashboard"
+runButton = "🔧 FIXED WEB DASHBOARD"
 
 [[workflows.workflow]]
 name = "Run"
@@ -261,6 +261,19 @@ args = "    print(f'❌ Error: {e}')"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "\""
+
+[[workflows.workflow]]
+name = "🔧 FIXED WEB DASHBOARD"
+author = 39391053
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python comprehensive_diagnostic.py"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python web_dashboard.py"
 
 [[ports]]
 localPort = 5000

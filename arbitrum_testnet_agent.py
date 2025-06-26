@@ -320,7 +320,6 @@ class ArbitrumTestnetAgent:
                         return 0.1
                 else:
                     print("❌ Insufficient ETH balance for operations")
-                                usdc_borrow_amount
                             )
 
                             if borrow_tx:
