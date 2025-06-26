@@ -125,6 +125,143 @@ mode = "sequential"
 task = "shell.exec"
 args = "python test_dashboard_start.py"
 
+[[workflows.workflow]]
+name = "🔍 MAINNET DIAGNOSTIC"
+author = 39391053
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python -c \""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "import os"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "print('🔍 MAINNET DIAGNOSTIC REPORT')"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "print('='*50)"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = '''print(f'NETWORK_MODE: {os.getenv(\"NETWORK_MODE\", \"NOT_SET\")}')'''
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = '''print(f'PRIVATE_KEY: {\"SET\" if os.getenv(\"PRIVATE_KEY\") else \"NOT_SET\"}')'''
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = '''print(f'COINMARKETCAP_API_KEY: {\"SET\" if os.getenv(\"COINMARKETCAP_API_KEY\") else \"NOT_SET\"}')'''
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = ""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "try:"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "    from arbitrum_testnet_agent import ArbitrumTestnetAgent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "    agent = ArbitrumTestnetAgent()"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "    print(f'Agent initialized: ✅')"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "    print(f'Chain ID: {agent.w3.eth.chain_id}')"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "    print(f'Wallet: {agent.address}')"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "    print(f'ETH Balance: {agent.get_eth_balance():.6f} ETH')"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "    print(f'Aave Pool: {agent.aave_pool_address}')"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "    "
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "    # Test enhanced Aave data"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "    import sys"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "    sys.path.append('.')"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "    from web_dashboard import get_enhanced_aave_data"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "    aave_data = get_enhanced_aave_data(agent)"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "    if aave_data:"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "        print(f'✅ Aave data retrieved successfully')"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = '''        print(f'   Health Factor: {aave_data[\"health_factor\"]}')'''
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = '''        print(f'   Collateral: ${aave_data[\"total_collateral_usdc\"]:,.2f}')'''
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = '''        print(f'   Debt: ${aave_data[\"total_debt_usdc\"]:,.2f}')'''
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "    else:"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "        print(f'❌ No Aave data retrieved')"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "        "
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "except Exception as e:"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "    print(f'❌ Error: {e}')"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "\""
+
 [[ports]]
 localPort = 5000
 externalPort = 80

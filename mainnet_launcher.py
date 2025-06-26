@@ -134,7 +134,11 @@ critical_secrets = {
 for var_name, default_val in critical_secrets.items():
     force_load_secret(var_name, default_val)
 
-# Set default NETWORK_MODE if still missing
+# CRITICAL: Force NETWORK_MODE to mainnet for launcher
+os.environ['NETWORK_MODE'] = 'mainnet'  # ALWAYS mainnet for this launcher
+print(f"🚀 FORCED NETWORK_MODE to mainnet in launcher")
+
+# Set default NETWORK_MODE if still missing (backup)
 if not os.getenv('NETWORK_MODE'):
     os.environ['NETWORK_MODE'] = 'mainnet'  # Default to mainnet for launcher
 
