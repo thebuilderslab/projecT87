@@ -196,13 +196,13 @@ def wallet_status():
         # Try enhanced direct Aave contract calls for mainnet FIRST
         print(f"🔍 Attempting enhanced Aave data retrieval for mainnet...")
         enhanced_aave_data = get_enhanced_aave_data(agent)
-        
+
         if enhanced_aave_data:
             print(f"✅ Enhanced mainnet Aave data received!")
             print(f"   Source: {enhanced_aave_data.get('data_source', 'unknown')}")
             print(f"   Health Factor: {enhanced_aave_data.get('health_factor', 0):.4f}")
             print(f"   Collateral USD: ${enhanced_aave_data.get('total_collateral_usdc', 0):,.2f}")
-            
+
             # Update wallet status with enhanced data
             wallet_status.update({
                 'health_factor': enhanced_aave_data['health_factor'],
@@ -219,7 +219,7 @@ def wallet_status():
             print(f"✅ Wallet status updated with enhanced mainnet Aave data")
         else:
             print(f"⚠️ Enhanced Aave data failed, trying fallback methods...")
-            
+
             # Only try legacy methods if enhanced fails
             if hasattr(agent, 'aave'):
                 try:
@@ -743,8 +743,7 @@ def test_all_endpoints():
             try:
                 print(f"🔍 Testing endpoint: {endpoint}")
                 # We can't easily call the endpoints directly, but we can test their functions
-                if endpoint == '/api/parameters':
-                    result = get_parameters()
+                if endpoint == '/api/parameters':                    result = get_parameters()
                     results[endpoint] = {'status': 'success', 'has_data': bool(result.data)}
                 elif endpoint == '/api/emergency_status':
                     result = get_emergency_status()
@@ -911,7 +910,7 @@ def debug_mainnet_aave():
     """Debug endpoint specifically for mainnet Aave data"""
     try:
         print("🔍 DEBUG: Mainnet Aave data endpoint called")
-        
+
         if not agent:
             return jsonify({
                 'error': 'Agent not initialized',
@@ -924,12 +923,12 @@ def debug_mainnet_aave():
         # Get network information
         chain_id = agent.w3.eth.chain_id
         network_mode = os.getenv('NETWORK_MODE', 'unknown')
-        
+
         print(f"🌐 DEBUG: Chain ID: {chain_id}, Network Mode: {network_mode}")
-        
+
         # Attempt enhanced Aave data retrieval
         aave_data = get_enhanced_aave_data(agent)
-        
+
         debug_response = {
             'timestamp': time.time(),
             'network_info': {
@@ -946,15 +945,15 @@ def debug_mainnet_aave():
                 'has_collateral': aave_data.get('total_collateral_usdc', 0) > 0 if aave_data else False
             }
         }
-        
+
         print(f"📊 DEBUG: Mainnet Aave response prepared")
         print(f"   Has data: {aave_data is not None}")
         if aave_data:
             print(f"   Collateral: ${aave_data.get('total_collateral_usdc', 0):,.2f}")
             print(f"   Health Factor: {aave_data.get('health_factor', 0):.4f}")
-        
+
         return jsonify(debug_response)
-        
+
     except Exception as e:
         print(f"❌ DEBUG: Mainnet Aave endpoint error: {e}")
         return jsonify({
@@ -972,7 +971,7 @@ def get_enhanced_aave_data(agent):
         # Force mainnet configuration
         network_mode = os.getenv('NETWORK_MODE', 'mainnet')
         print(f"🌐 Enhanced Aave data retrieval for {network_mode}")
-        
+
         # Aave V3 Pool address on Arbitrum Mainnet
         aave_pool_address = "0x794a61358D6845594F94dc1DB02A252b5b4814aD"
         print(f"🔍 Using Arbitrum Mainnet Aave Pool: {aave_pool_address}")
@@ -996,11 +995,11 @@ def get_enhanced_aave_data(agent):
         ]
 
         print(f"👤 Fetching data for wallet: {agent.address}")
-        
+
         # Verify we're connected to Arbitrum Mainnet
         chain_id = agent.w3.eth.chain_id
         print(f"🌐 Connected to Chain ID: {chain_id}")
-        
+
         if chain_id != 42161:
             print(f"⚠️ WARNING: Expected Arbitrum Mainnet (42161), got {chain_id}")
             print(f"🔄 Proceeding anyway for debugging...")
@@ -1008,7 +1007,7 @@ def get_enhanced_aave_data(agent):
         # Create contract instance with explicit checksum
         user_address = Web3.to_checksum_address(agent.address)
         pool_address = Web3.to_checksum_address(aave_pool_address)
-        
+
         pool_contract = agent.w3.eth.contract(
             address=pool_address,
             abi=aave_pool_abi
@@ -1021,9 +1020,9 @@ def get_enhanced_aave_data(agent):
             if contract_code == b'':
                 print(f"❌ No contract at {pool_address}")
                 return None
-            
+
             print(f"✅ Contract verified at {pool_address}")
-            
+
             # Make the call with explicit parameters
             user_data = pool_contract.functions.getUserAccountData(user_address).call()
             print(f"✅ Raw Aave mainnet data: {user_data}")
@@ -1040,7 +1039,7 @@ def get_enhanced_aave_data(agent):
             total_collateral_usd = total_collateral_base / (10 ** 8)
             total_debt_usd = total_debt_base / (10 ** 8)
             available_borrows_usd = available_borrows_base / (10 ** 8)
-            
+
             # Convert percentages (4 decimals to percentage)
             liquidation_threshold_pct = liquidation_threshold / 100  # Convert to percentage
             ltv_pct = ltv / 100
@@ -1061,7 +1060,7 @@ def get_enhanced_aave_data(agent):
 
             # Convert to ETH estimates (rough conversion for compatibility)
             eth_price_estimate = 2400  # USD per ETH estimate
-            
+
             enhanced_data = {
                 'health_factor': health_factor,
                 'total_collateral': total_collateral_usd / eth_price_estimate,  # ETH equivalent
@@ -1076,14 +1075,14 @@ def get_enhanced_aave_data(agent):
                 'chain_id': chain_id,
                 'timestamp': time.time()
             }
-            
+
             print(f"✅ SUCCESS: Mainnet Aave data retrieved and processed")
             return enhanced_data
 
         except Exception as contract_error:
             print(f"❌ Mainnet contract call error: {contract_error}")
             print(f"❌ Error type: {type(contract_error)}")
-            
+
             # Try with different call parameters
             print("🔄 Trying alternative mainnet call method...")
             try:
@@ -1094,7 +1093,7 @@ def get_enhanced_aave_data(agent):
                 total_collateral_usd = user_data_alt[0] / (10 ** 8)
                 total_debt_usd = user_data_alt[1] / (10 ** 8)
                 available_borrows_usd = user_data_alt[2] / (10 ** 8)
-                
+
                 if user_data_alt[5] == 2 ** 256 - 1:
                     health_factor = float('inf')
                 else:
@@ -1260,168 +1259,6 @@ if __name__ == '__main__':
     # Use port 5000 for deployment consistency
     port = 5000
 
-    def get_enhanced_aave_data(agent):
-        """Enhanced direct Aave V3 contract calls for Arbitrum Mainnet with comprehensive error handling"""
-        try:
-            # Force mainnet configuration
-            network_mode = os.getenv('NETWORK_MODE', 'mainnet')
-            print(f"🌐 Enhanced Aave data retrieval for {network_mode}")
-            
-            # Aave V3 Pool address on Arbitrum Mainnet
-            aave_pool_address = "0x794a61358D6845594F94dc1DB02A252b5b4814aD"
-            print(f"🔍 Using Arbitrum Mainnet Aave Pool: {aave_pool_address}")
-
-            # Enhanced ABI with all necessary functions
-            aave_pool_abi = [
-                {
-                    "inputs": [{"internalType": "address", "name": "user", "type": "address"}],
-                    "name": "getUserAccountData",
-                    "outputs": [
-                        {"internalType": "uint256", "name": "totalCollateralBase", "type": "uint256"},
-                        {"internalType": "uint256", "name": "totalDebtBase", "type": "uint256"},
-                        {"internalType": "uint256", "name": "availableBorrowsBase", "type": "uint256"},
-                        {"internalType": "uint256", "name": "currentLiquidationThreshold", "type": "uint256"},
-                        {"internalType": "uint256", "name": "ltv", "type": "uint256"},
-                        {"internalType": "uint256", "name": "healthFactor", "type": "uint256"}
-                    ],
-                    "stateMutability": "view",
-                    "type": "function"
-                }
-            ]
-
-            print(f"👤 Fetching data for wallet: {agent.address}")
-            
-            # Verify we're connected to Arbitrum Mainnet
-            chain_id = agent.w3.eth.chain_id
-            print(f"🌐 Connected to Chain ID: {chain_id}")
-            
-            if chain_id != 42161:
-                print(f"⚠️ WARNING: Expected Arbitrum Mainnet (42161), got {chain_id}")
-                print(f"🔄 Proceeding anyway for debugging...")
-
-            # Create contract instance with explicit checksum
-            user_address = Web3.to_checksum_address(agent.address)
-            pool_address = Web3.to_checksum_address(aave_pool_address)
-            
-            pool_contract = agent.w3.eth.contract(
-                address=pool_address,
-                abi=aave_pool_abi
-            )
-
-            print("📞 Calling getUserAccountData on Arbitrum Mainnet...")
-            try:
-                # First verify the contract exists
-                contract_code = agent.w3.eth.get_code(pool_address)
-                if contract_code == b'':
-                    print(f"❌ No contract at {pool_address}")
-                    return None
-                
-                print(f"✅ Contract verified at {pool_address}")
-                
-                # Make the call with explicit parameters
-                user_data = pool_contract.functions.getUserAccountData(user_address).call()
-                print(f"✅ Raw Aave mainnet data: {user_data}")
-
-                # Parse the returned data (Aave V3 format)
-                total_collateral_base = user_data[0]  # Base currency (USD) with 8 decimals
-                total_debt_base = user_data[1]        # Base currency (USD) with 8 decimals
-                available_borrows_base = user_data[2] # Base currency (USD) with 8 decimals
-                liquidation_threshold = user_data[3]  # Percentage with 4 decimals (e.g., 8500 = 85%)
-                ltv = user_data[4]                    # Percentage with 4 decimals
-                health_factor_raw = user_data[5]      # 18 decimals or max uint256 for no debt
-
-                # Convert from Aave's base units (8 decimals for USD amounts)
-                total_collateral_usd = total_collateral_base / (10 ** 8)
-                total_debt_usd = total_debt_base / (10 ** 8)
-                available_borrows_usd = available_borrows_base / (10 ** 8)
-                
-                # Convert percentages (4 decimals to percentage)
-                liquidation_threshold_pct = liquidation_threshold / 100  # Convert to percentage
-                ltv_pct = ltv / 100
-
-                # Health factor conversion (18 decimals or infinite)
-                if health_factor_raw == 2 ** 256 - 1:  # Max uint256 means no debt
-                    health_factor = float('inf')
-                else:
-                    health_factor = health_factor_raw / (10 ** 18)
-
-                print(f"📊 MAINNET AAVE DATA PARSED:")
-                print(f"   💰 Total Collateral: ${total_collateral_usd:,.2f} USD")
-                print(f"   🔴 Total Debt: ${total_debt_usd:,.2f} USD")
-                print(f"   💚 Available Borrows: ${available_borrows_usd:,.2f} USD")
-                print(f"   ⚡ Health Factor: {health_factor:.4f if health_factor != float('inf') else '∞'}")
-                print(f"   📈 Liquidation Threshold: {liquidation_threshold_pct:.1f}%")
-                print(f"   📊 LTV: {ltv_pct:.1f}%")
-
-                # Convert to ETH estimates (rough conversion for compatibility)
-                eth_price_estimate = 2400  # USD per ETH estimate
-                
-                enhanced_data = {
-                    'health_factor': health_factor,
-                    'total_collateral': total_collateral_usd / eth_price_estimate,  # ETH equivalent
-                    'total_debt': total_debt_usd / eth_price_estimate,
-                    'total_collateral_usdc': total_collateral_usd,
-                    'total_debt_usdc': total_debt_usd,
-                    'available_borrows': available_borrows_usd / eth_price_estimate,
-                    'available_borrows_usdc': available_borrows_usd,
-                    'liquidation_threshold': liquidation_threshold_pct,
-                    'ltv': ltv_pct,
-                    'data_source': 'aave_mainnet_direct',
-                    'chain_id': chain_id,
-                    'timestamp': time.time()
-                }
-                
-                print(f"✅ SUCCESS: Mainnet Aave data retrieved and processed")
-                return enhanced_data
-
-            except Exception as contract_error:
-                print(f"❌ Mainnet contract call error: {contract_error}")
-                print(f"❌ Error type: {type(contract_error)}")
-                
-                # Try with different call parameters
-                print("🔄 Trying alternative mainnet call method...")
-                try:
-                    user_data_alt = pool_contract.functions.getUserAccountData(user_address).call(block_identifier='latest')
-                    print(f"✅ Alternative mainnet call successful: {user_data_alt}")
-
-                    # Process alternative data with same logic
-                    total_collateral_usd = user_data_alt[0] / (10 ** 8)
-                    total_debt_usd = user_data_alt[1] / (10 ** 8)
-                    available_borrows_usd = user_data_alt[2] / (10 ** 8)
-                    
-                    if user_data_alt[5] == 2 ** 256 - 1:
-                        health_factor = float('inf')
-                    else:
-                        health_factor = user_data_alt[5] / (10 ** 18)
-
-                    print(f"📊 ALTERNATIVE MAINNET DATA:")
-                    print(f"   💰 Collateral: ${total_collateral_usd:,.2f}")
-                    print(f"   🔴 Debt: ${total_debt_usd:,.2f}")
-                    print(f"   ⚡ Health Factor: {health_factor:.4f if health_factor != float('inf') else '∞'}")
-
-                    return {
-                        'health_factor': health_factor,
-                        'total_collateral': total_collateral_usd / 2400,
-                        'total_debt': total_debt_usd / 2400,
-                        'total_collateral_usdc': total_collateral_usd,
-                        'total_debt_usdc': total_debt_usd,
-                        'available_borrows': available_borrows_usd / 2400,
-                        'available_borrows_usdc': available_borrows_usd,
-                        'data_source': 'aave_mainnet_alt',
-                        'chain_id': chain_id,
-                        'timestamp': time.time()
-                    }
-
-                except Exception as alt_error:
-                    print(f"❌ Alternative mainnet call failed: {alt_error}")
-                    return None
-
-        except Exception as e:
-            print(f"❌ Enhanced mainnet Aave data retrieval failed: {e}")
-            print(f"❌ Exception type: {type(e)}")
-            import traceback
-            print(f"❌ Full traceback: {traceback.format_exc()}")
-            return None
     print(f"🌐 Starting web dashboard on port {port}")
     print(f"🔗 Dashboard will be accessible at your Replit webview URL")
 
