@@ -1,6 +1,6 @@
 {
-  "timestamp": 1750949856.6098895,
-  "datetime": "2025-06-26T14:57:36.609890",
+  "timestamp": 1750950996.2590537,
+  "datetime": "2025-06-26T15:16:36.259054",
   "diagnostic_version": "1.0",
   "environment": {
     "python_version": "3.11.10 (main, Sep  7 2024, 01:03:31) [GCC 13.3.0]",
@@ -67,30 +67,30 @@
     "critical_files": {
       "arbitrum_testnet_agent.py": {
         "exists": true,
-        "size": 32386,
-        "modified": 1750948588.4542773,
+        "size": 32378,
+        "modified": 1750950130.8391,
         "readable": true,
         "writable": true,
         "syntax_valid": false,
         "syntax_error": {
           "message": "unexpected indent (arbitrum_testnet_agent.py, line 325)",
           "line": 325,
-          "offset": 28,
-          "text": "                            if borrow_tx:\n"
+          "offset": 24,
+          "text": "                        if borrow_tx:\n"
         }
       },
       "web_dashboard.py": {
         "exists": true,
-        "size": 46589,
-        "modified": 1750948588.655277,
+        "size": 46605,
+        "modified": 1750950131.0530994,
         "readable": true,
         "writable": true,
         "syntax_valid": false,
         "syntax_error": {
-          "message": "expected an indented block after 'try' statement on line 261 (web_dashboard.py, line 263)",
-          "line": 263,
-          "offset": 12,
-          "text": "            health_data = agent.health_monitor.get_current_health_factor()\n"
+          "message": "unexpected indent (web_dashboard.py, line 264)",
+          "line": 264,
+          "offset": 24,
+          "text": "                        if health_data:\n"
         }
       },
       "mainnet_launcher.py": {
@@ -171,13 +171,13 @@
       "arbitrum_mainnet": {
         "connected": true,
         "chain_id": 42161,
-        "latest_block": 351434412,
+        "latest_block": 351438981,
         "response_time": "fast"
       },
       "arbitrum_sepolia": {
         "connected": true,
         "chain_id": 421614,
-        "latest_block": 167451302,
+        "latest_block": 167455805,
         "response_time": "fast"
       }
     },
@@ -185,7 +185,7 @@
       "coinmarketcap": {
         "accessible": true,
         "status_code": 401,
-        "response_time": 0.115391
+        "response_time": 0.12647
       }
     },
     "general_connectivity": {}
@@ -220,7 +220,7 @@
       },
       "web_dashboard.app": {
         "success": false,
-        "error": "expected an indented block after 'try' statement on line 261 (web_dashboard.py, line 263)"
+        "error": "unexpected indent (web_dashboard.py, line 264)"
       },
       "aave_integration.AaveArbitrumIntegration": {
         "success": true
@@ -238,7 +238,7 @@
     },
     "web_dashboard": {
       "import_success": false,
-      "error": "expected an indented block after 'try' statement on line 261 (web_dashboard.py, line 263)"
+      "error": "unexpected indent (web_dashboard.py, line 264)"
     },
     "aave_integration": {},
     "workflow_status": {}
@@ -287,8 +287,8 @@
     {
       "priority": "CRITICAL",
       "category": "Syntax",
-      "issue": "Syntax error in web_dashboard.py: expected an indented block after 'try' statement on line 261 (web_dashboard.py, line 263)",
-      "solution": "Fix syntax error at line 263"
+      "issue": "Syntax error in web_dashboard.py: unexpected indent (web_dashboard.py, line 264)",
+      "solution": "Fix syntax error at line 264"
     },
     {
       "priority": "HIGH",
@@ -305,18 +305,18 @@
         "details": {
           "message": "unexpected indent (arbitrum_testnet_agent.py, line 325)",
           "line": 325,
-          "offset": 28,
-          "text": "                            if borrow_tx:\n"
+          "offset": 24,
+          "text": "                        if borrow_tx:\n"
         }
       },
       {
         "type": "syntax_error",
         "file": "web_dashboard.py",
         "details": {
-          "message": "expected an indented block after 'try' statement on line 261 (web_dashboard.py, line 263)",
-          "line": 263,
-          "offset": 12,
-          "text": "            health_data = agent.health_monitor.get_current_health_factor()\n"
+          "message": "unexpected indent (web_dashboard.py, line 264)",
+          "line": 264,
+          "offset": 24,
+          "text": "                        if health_data:\n"
         }
       },
       {
@@ -327,7 +327,7 @@
       {
         "type": "import_error",
         "module": "web_dashboard.app",
-        "error": "expected an indented block after 'try' statement on line 261 (web_dashboard.py, line 263)"
+        "error": "unexpected indent (web_dashboard.py, line 264)"
       }
     ],
     "configuration_state": {
