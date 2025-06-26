@@ -324,8 +324,8 @@ class ArbitrumTestnetAgent:
 
                         if borrow_tx:
                             print("✅ Step 2: Successfully borrowed 20 USDC")
-                                print(f"🎯 Target Health Factor: >3.5 (Estimated: {estimated_hf:.2f})")
-                                performance = 0.95  # Excellent performance for position creation
+                            print(f"🎯 Target Health Factor: >3.5 (Estimated: {estimated_hf:.2f})")
+                            performance = 0.95  # Excellent performance for position creation
 
                                 # Set strategy mode to maintain health factor above 3.5
                                 self.target_health_factor = 3.5

@@ -261,9 +261,9 @@ def wallet_status():
                 try:
                     # Get health factor data
                     health_data = agent.health_monitor.get_current_health_factor()
-                        if health_data:
-                            wallet_status.update({
-                                'health_factor': health_data['health_factor'],
+                    if health_data:
+                        wallet_status.update({
+                            'health_factor': health_data['health_factor'],
                                 'total_collateral': health_data['total_collateral_eth'],
                                 'total_debt': health_data['total_debt_eth'],
                                 'total_collateral_usdc': health_data.get('total_collateral_usdc', 0),
@@ -778,7 +778,8 @@ def test_all_endpoints():
             try:
                 print(f"🔍 Testing endpoint: {endpoint}")
                 # We can't easily call the endpoints directly, but we can test their functions
-                if endpoint == '/api/parameters':                    result = get_parameters()
+                if endpoint == '/api/parameters':
+                    result = get_parameters()
                     results[endpoint] = {'status': 'success', 'has_data': bool(result.data)}
                 elif endpoint == '/api/emergency_status':
                     result = get_emergency_status()
