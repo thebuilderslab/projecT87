@@ -322,8 +322,8 @@ class ArbitrumTestnetAgent:
                     print("❌ Insufficient ETH balance for operations")
                     return 0.6
 
-                            if borrow_tx:
-                                print("✅ Step 2: Successfully borrowed 20 USDC")
+                        if borrow_tx:
+                            print("✅ Step 2: Successfully borrowed 20 USDC")
                                 print(f"🎯 Target Health Factor: >3.5 (Estimated: {estimated_hf:.2f})")
                                 performance = 0.95  # Excellent performance for position creation
 

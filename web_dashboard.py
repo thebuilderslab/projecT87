@@ -259,8 +259,8 @@ def wallet_status():
                     wallet_status['usdc_balance'] = 0
 
                 try:
-            # Get health factor data
-            health_data = agent.health_monitor.get_current_health_factor()
+                    # Get health factor data
+                    health_data = agent.health_monitor.get_current_health_factor()
                         if health_data:
                             wallet_status.update({
                                 'health_factor': health_data['health_factor'],
