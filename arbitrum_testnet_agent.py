@@ -327,12 +327,12 @@ class ArbitrumTestnetAgent:
                             print(f"🎯 Target Health Factor: >3.5 (Estimated: {estimated_hf:.2f})")
                             performance = 0.95  # Excellent performance for position creation
 
-                                # Set strategy mode to maintain health factor above 3.5
-                                self.target_health_factor = 3.5
-                                print(f"🔧 Agent configured to maintain Health Factor > {self.target_health_factor}")
-                            else:
-                                print("❌ Failed to borrow USDC")
-                                performance = 0.75
+                            # Set strategy mode to maintain health factor above 3.5
+                            self.target_health_factor = 3.5
+                            print(f"🔧 Agent configured to maintain Health Factor > {self.target_health_factor}")
+                        else:
+                            print("❌ Failed to borrow USDC")
+                            performance = 0.75
                         else:
                             print(f"⚠️ Estimated health factor {estimated_hf:.2f} too low, skipping borrow")
                             performance = 0.80
