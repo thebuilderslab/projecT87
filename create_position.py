@@ -1,111 +1,353 @@
 
-#!/usr/bin/env python3
-"""
-Create Initial Aave Position Script
-Supply ETH as collateral and borrow 20 USDC to create position
-"""
-
 import os
 import time
-from arbitrum_testnet_agent import ArbitrumTestnetAgent
+from web3 import Web3
+from eth_account import Account
+from dotenv import load_dotenv
 
-def main():
-    """Create initial Aave position with 20 USDC borrow"""
-    print("🚀 CREATING INITIAL AAVE POSITION")
-    print("=" * 50)
-
-    try:
-        print("🤖 Initializing DeFi agent...")
-        agent = ArbitrumTestnetAgent()
-
-        print("📍 Wallet:", agent.address)
-        print("🌐 Chain ID:", agent.w3.eth.chain_id)
-        print("💰 ETH Balance:", agent.get_eth_balance(), "ETH")
-
-        # Check if position already exists
-        monitoring_summary = agent.health_monitor.get_monitoring_summary()
+class PositionCreator:
+    def __init__(self):
+        load_dotenv()
         
-        if (monitoring_summary['total_collateral_eth'] > 0 or 
-            monitoring_summary['total_debt_eth'] > 0):
-            print("ℹ️ Aave position already exists!")
-            print(f"   Collateral: {monitoring_summary['total_collateral_eth']:.6f} ETH")
-            print(f"   Debt: {monitoring_summary['total_debt_eth']:.6f} ETH")
-            print(f"   Health Factor: {monitoring_summary['current_health_factor']:.2f}")
-            return
-
-        # Get ETH balance
-        eth_balance = agent.get_eth_balance()
+        # Use mainnet for real position
+        self.w3 = Web3(Web3.HTTPProvider('https://arb1.arbitrum.io/rpc'))
+        
+        private_key = os.getenv('PRIVATE_KEY')
+        if not private_key:
+            raise ValueError("PRIVATE_KEY not found in environment")
+            
+        self.account = Account.from_key(private_key)
+        self.address = self.w3.to_checksum_address(self.account.address)
+        
+        # Arbitrum mainnet addresses
+        self.aave_pool = "0x794a61358D6845594F94dc1DB02A252b5b4814aD"
+        self.weth_address = "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1"
+        self.usdc_address = "0xA0b86a33E6416f7a9CD2E00C6b58B3e00F8f9aE5"
+        
+        print(f"🤖 Position Creator initialized")
+        print(f"Wallet: {self.address}")
+        print(f"Network: Arbitrum Mainnet")
+        
+    def get_eth_balance(self):
+        """Get ETH balance"""
+        balance_wei = self.w3.eth.get_balance(self.address)
+        return float(self.w3.from_wei(balance_wei, 'ether'))
+        
+    def get_aave_position(self):
+        """Get current Aave position"""
+        aave_abi = [
+            {
+                "inputs": [{"internalType": "address", "name": "user", "type": "address"}],
+                "name": "getUserAccountData",
+                "outputs": [
+                    {"internalType": "uint256", "name": "totalCollateralBase", "type": "uint256"},
+                    {"internalType": "uint256", "name": "totalDebtBase", "type": "uint256"},
+                    {"internalType": "uint256", "name": "availableBorrowsBase", "type": "uint256"},
+                    {"internalType": "uint256", "name": "currentLiquidationThreshold", "type": "uint256"},
+                    {"internalType": "uint256", "name": "ltv", "type": "uint256"},
+                    {"internalType": "uint256", "name": "healthFactor", "type": "uint256"}
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            }
+        ]
+        
+        pool_contract = self.w3.eth.contract(
+            address=self.aave_pool,
+            abi=aave_abi
+        )
+        
+        try:
+            user_data = pool_contract.functions.getUserAccountData(self.address).call()
+            
+            total_collateral_usd = user_data[0] / (10 ** 8)
+            total_debt_usd = user_data[1] / (10 ** 8)
+            available_borrows_usd = user_data[2] / (10 ** 8)
+            
+            if user_data[5] == 2 ** 256 - 1:
+                health_factor = float('inf')
+            else:
+                health_factor = user_data[5] / (10 ** 18)
+                
+            return {
+                'collateral': total_collateral_usd,
+                'debt': total_debt_usd,
+                'available_borrows': available_borrows_usd,
+                'health_factor': health_factor
+            }
+        except Exception as e:
+            print(f"❌ Error getting Aave position: {e}")
+            return None
+            
+    def supply_eth_collateral(self, amount_eth):
+        """Supply ETH as collateral to Aave"""
+        try:
+            # WETH ABI for deposit
+            weth_abi = [
+                {
+                    "inputs": [],
+                    "name": "deposit",
+                    "outputs": [],
+                    "stateMutability": "payable",
+                    "type": "function"
+                },
+                {
+                    "inputs": [
+                        {"internalType": "address", "name": "spender", "type": "address"},
+                        {"internalType": "uint256", "name": "amount", "type": "uint256"}
+                    ],
+                    "name": "approve",
+                    "outputs": [{"internalType": "bool", "name": "", "type": "bool"}],
+                    "stateMutability": "nonpayable",
+                    "type": "function"
+                }
+            ]
+            
+            # Aave Pool ABI for supply
+            pool_abi = [
+                {
+                    "inputs": [
+                        {"internalType": "address", "name": "asset", "type": "address"},
+                        {"internalType": "uint256", "name": "amount", "type": "uint256"},
+                        {"internalType": "address", "name": "onBehalfOf", "type": "address"},
+                        {"internalType": "uint16", "name": "referralCode", "type": "uint16"}
+                    ],
+                    "name": "supply",
+                    "outputs": [],
+                    "stateMutability": "nonpayable",
+                    "type": "function"
+                }
+            ]
+            
+            weth_contract = self.w3.eth.contract(address=self.weth_address, abi=weth_abi)
+            pool_contract = self.w3.eth.contract(address=self.aave_pool, abi=pool_abi)
+            
+            amount_wei = self.w3.to_wei(amount_eth, 'ether')
+            
+            # Step 1: Convert ETH to WETH
+            print(f"🔄 Converting {amount_eth:.6f} ETH to WETH...")
+            nonce = self.w3.eth.get_transaction_count(self.address)
+            
+            deposit_tx = weth_contract.functions.deposit().build_transaction({
+                'from': self.address,
+                'value': amount_wei,
+                'gas': 100000,
+                'gasPrice': self.w3.eth.gas_price,
+                'nonce': nonce
+            })
+            
+            signed_tx = self.w3.eth.account.sign_transaction(deposit_tx, self.account.key)
+            tx_hash = self.w3.eth.send_raw_transaction(signed_tx.rawTransaction)
+            receipt = self.w3.eth.wait_for_transaction_receipt(tx_hash)
+            
+            if receipt.status != 1:
+                print("❌ WETH deposit failed")
+                return False
+                
+            print("✅ ETH converted to WETH")
+            
+            # Step 2: Approve WETH to Aave Pool
+            print("🔄 Approving WETH to Aave Pool...")
+            nonce = self.w3.eth.get_transaction_count(self.address)
+            
+            approve_tx = weth_contract.functions.approve(self.aave_pool, amount_wei).build_transaction({
+                'from': self.address,
+                'gas': 100000,
+                'gasPrice': self.w3.eth.gas_price,
+                'nonce': nonce
+            })
+            
+            signed_tx = self.w3.eth.account.sign_transaction(approve_tx, self.account.key)
+            tx_hash = self.w3.eth.send_raw_transaction(signed_tx.rawTransaction)
+            receipt = self.w3.eth.wait_for_transaction_receipt(tx_hash)
+            
+            if receipt.status != 1:
+                print("❌ WETH approval failed")
+                return False
+                
+            print("✅ WETH approved")
+            
+            # Step 3: Supply WETH to Aave
+            print("🔄 Supplying WETH to Aave...")
+            nonce = self.w3.eth.get_transaction_count(self.address)
+            
+            supply_tx = pool_contract.functions.supply(
+                self.weth_address,
+                amount_wei,
+                self.address,
+                0
+            ).build_transaction({
+                'from': self.address,
+                'gas': 300000,
+                'gasPrice': self.w3.eth.gas_price,
+                'nonce': nonce
+            })
+            
+            signed_tx = self.w3.eth.account.sign_transaction(supply_tx, self.account.key)
+            tx_hash = self.w3.eth.send_raw_transaction(signed_tx.rawTransaction)
+            receipt = self.w3.eth.wait_for_transaction_receipt(tx_hash)
+            
+            if receipt.status == 1:
+                print(f"✅ Successfully supplied {amount_eth:.6f} ETH to Aave")
+                return True
+            else:
+                print("❌ Aave supply failed")
+                return False
+                
+        except Exception as e:
+            print(f"❌ Supply ETH error: {e}")
+            return False
+            
+    def borrow_usdc(self, amount_usdc):
+        """Borrow USDC from Aave"""
+        try:
+            pool_abi = [
+                {
+                    "inputs": [
+                        {"internalType": "address", "name": "asset", "type": "address"},
+                        {"internalType": "uint256", "name": "amount", "type": "uint256"},
+                        {"internalType": "uint256", "name": "interestRateMode", "type": "uint256"},
+                        {"internalType": "uint16", "name": "referralCode", "type": "uint16"},
+                        {"internalType": "address", "name": "onBehalfOf", "type": "address"}
+                    ],
+                    "name": "borrow",
+                    "outputs": [],
+                    "stateMutability": "nonpayable",
+                    "type": "function"
+                }
+            ]
+            
+            pool_contract = self.w3.eth.contract(address=self.aave_pool, abi=pool_abi)
+            
+            # USDC has 6 decimals
+            amount_wei = int(amount_usdc * (10 ** 6))
+            
+            print(f"🔄 Borrowing {amount_usdc:.2f} USDC...")
+            nonce = self.w3.eth.get_transaction_count(self.address)
+            
+            borrow_tx = pool_contract.functions.borrow(
+                self.usdc_address,
+                amount_wei,
+                2,  # Variable interest rate
+                0,  # Referral code
+                self.address
+            ).build_transaction({
+                'from': self.address,
+                'gas': 300000,
+                'gasPrice': self.w3.eth.gas_price,
+                'nonce': nonce
+            })
+            
+            signed_tx = self.w3.eth.account.sign_transaction(borrow_tx, self.account.key)
+            tx_hash = self.w3.eth.send_raw_transaction(signed_tx.rawTransaction)
+            receipt = self.w3.eth.wait_for_transaction_receipt(tx_hash)
+            
+            if receipt.status == 1:
+                print(f"✅ Successfully borrowed {amount_usdc:.2f} USDC")
+                return True
+            else:
+                print("❌ USDC borrow failed")
+                return False
+                
+        except Exception as e:
+            print(f"❌ Borrow USDC error: {e}")
+            return False
+            
+    def create_position_and_maintain_health(self):
+        """Create position with 20 USDC borrow and maintain health factor > 3.5"""
+        print("🚀 CREATING AAVE POSITION WITH HEALTH FACTOR > 3.5")
+        print("=" * 60)
+        
+        # Check current position
+        position = self.get_aave_position()
+        if position and position['debt'] > 0:
+            print(f"⚠️ Existing position detected:")
+            print(f"   Collateral: ${position['collateral']:.2f}")
+            print(f"   Debt: ${position['debt']:.2f}")
+            print(f"   Health Factor: {position['health_factor']:.2f}")
+            
+            if position['health_factor'] < 3.5:
+                print("🚨 Health factor below target 3.5!")
+                return False
+            else:
+                print("✅ Health factor already above 3.5")
+                return True
+        
+        # Check ETH balance
+        eth_balance = self.get_eth_balance()
+        print(f"💰 Current ETH Balance: {eth_balance:.6f} ETH")
         
         if eth_balance < 0.002:
-            print(f"❌ Insufficient ETH balance ({eth_balance:.6f}) for position creation")
-            print("💡 Need at least 0.002 ETH for gas fees")
-            return
-
-        # Step 1: Supply ETH as collateral
-        collateral_amount = eth_balance * 0.8  # Use 80%, keep 20% for gas
-        print(f"\n🏦 Step 1: Supplying {collateral_amount:.6f} ETH as collateral...")
+            print("❌ Insufficient ETH balance for gas and collateral")
+            return False
+            
+        # Calculate safe collateral amount (keep some ETH for gas)
+        collateral_eth = min(eth_balance * 0.9, 0.02)  # Use 90% or max 0.02 ETH
         
-        supply_tx = agent.aave.supply_to_aave(
-            agent.aave.weth_address,
-            collateral_amount
-        )
-        
-        if not supply_tx:
-            print("❌ Failed to supply ETH as collateral")
-            return
-        
-        print(f"✅ ETH supplied successfully! TX: {supply_tx}")
-        print("⏳ Waiting 15 seconds for confirmation...")
-        time.sleep(15)
-
-        # Step 2: Borrow 20 USDC
-        usdc_borrow_amount = 20.0
-        print(f"\n💳 Step 2: Borrowing {usdc_borrow_amount} USDC...")
-        
-        # Safety check: estimate health factor
+        # Estimate health factor with 20 USDC borrow
         # Assuming ETH = $2500, LTV = 80%
-        eth_price_estimate = 2500
-        collateral_value = collateral_amount * eth_price_estimate
-        estimated_hf = (collateral_value * 0.8) / usdc_borrow_amount
+        eth_price = 2500
+        collateral_value = collateral_eth * eth_price
+        ltv = 0.8
+        max_borrow = collateral_value * ltv
         
-        print(f"📊 Estimated Health Factor: {estimated_hf:.2f}")
+        borrow_amount = 20.0  # $20 USDC
+        estimated_hf = (collateral_value * ltv) / borrow_amount
+        
+        print(f"📊 Estimated Position:")
+        print(f"   Collateral: {collateral_eth:.6f} ETH (${collateral_value:.2f})")
+        print(f"   Borrow: ${borrow_amount:.2f} USDC")
+        print(f"   Estimated Health Factor: {estimated_hf:.2f}")
         
         if estimated_hf < 3.5:
-            print(f"⚠️ Estimated health factor {estimated_hf:.2f} below target 3.5")
-            print("💡 Reducing borrow amount for safety...")
-            usdc_borrow_amount = min(15.0, (collateral_value * 0.8) / 4.0)  # Target HF = 4.0
-            print(f"🔧 Adjusted borrow amount: {usdc_borrow_amount:.2f} USDC")
+            print("❌ Estimated health factor too low!")
+            # Reduce borrow amount to achieve target HF
+            safe_borrow = (collateral_value * ltv) / 3.5
+            print(f"💡 Safe borrow amount: ${safe_borrow:.2f}")
+            borrow_amount = min(safe_borrow, 15.0)
+            
+        print(f"🎯 Proceeding with ${borrow_amount:.2f} USDC borrow")
         
-        borrow_tx = agent.aave.borrow_from_aave(
-            agent.aave.usdc_address,
-            usdc_borrow_amount
-        )
+        # Step 1: Supply ETH as collateral
+        if not self.supply_eth_collateral(collateral_eth):
+            return False
+            
+        time.sleep(5)  # Wait for confirmation
         
-        if not borrow_tx:
-            print("❌ Failed to borrow USDC")
-            return
+        # Step 2: Borrow USDC
+        if not self.borrow_usdc(borrow_amount):
+            return False
+            
+        time.sleep(5)  # Wait for confirmation
         
-        print(f"✅ USDC borrowed successfully! TX: {borrow_tx}")
-        print("⏳ Waiting 10 seconds for final confirmation...")
-        time.sleep(10)
-
-        # Step 3: Verify position
-        print(f"\n📊 Step 3: Verifying created position...")
-        final_summary = agent.health_monitor.get_monitoring_summary()
-        
-        print(f"🎯 POSITION CREATED SUCCESSFULLY!")
-        print(f"   Collateral: {final_summary['total_collateral_eth']:.6f} ETH")
-        print(f"   Debt: {final_summary['total_debt_eth']:.6f} ETH")
-        print(f"   Health Factor: {final_summary['current_health_factor']:.2f}")
-        print(f"   Target Health Factor: > 3.5 ✅")
-        
-        print(f"\n🤖 Agent is now configured to maintain Health Factor > 3.5")
-        print(f"🚀 You can now run the main agent to manage this position automatically!")
-
-    except Exception as e:
-        print(f"❌ Error creating position: {e}")
-        import traceback
-        traceback.print_exc()
+        # Step 3: Verify final position
+        final_position = self.get_aave_position()
+        if final_position:
+            print(f"\n✅ POSITION CREATED SUCCESSFULLY!")
+            print(f"   Collateral: ${final_position['collateral']:.2f}")
+            print(f"   Debt: ${final_position['debt']:.2f}")
+            print(f"   Health Factor: {final_position['health_factor']:.2f}")
+            
+            if final_position['health_factor'] > 3.5:
+                print(f"🎉 Health factor {final_position['health_factor']:.2f} > 3.5 ✅")
+                return True
+            else:
+                print(f"⚠️ Health factor {final_position['health_factor']:.2f} < 3.5")
+                return False
+        else:
+            print("❌ Could not verify final position")
+            return False
 
 if __name__ == "__main__":
-    main()
+    try:
+        creator = PositionCreator()
+        success = creator.create_position_and_maintain_health()
+        
+        if success:
+            print("\n🎉 SUCCESS: Position created with health factor > 3.5")
+            print("🤖 Bot will now maintain this position automatically")
+        else:
+            print("\n❌ FAILED: Could not create safe position")
+            
+    except Exception as e:
+        print(f"❌ Error: {e}")

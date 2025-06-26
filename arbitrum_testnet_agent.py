@@ -342,9 +342,9 @@ class ArbitrumTestnetAgent:
                     print("⚠️ No USDC available for repayment")
                     performance = 0.70
 
-                elif current_hf < self.target_health_factor * 1.5:  # Still close to target
-                    print("📊 Health factor close to target, monitoring closely...")
-                    performance = 0.80
+            elif current_hf < self.target_health_factor * 1.5:  # Still close to target
+                print("📊 Health factor close to target, monitoring closely...")
+                performance = 0.80
 
             # PRIORITY 2: Risk Mitigation (if both health factor declining AND ARB price declining)
             elif monitoring_summary['risk_trigger_active']:

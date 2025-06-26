@@ -114,7 +114,7 @@ mode = "sequential"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "python web_dashboard.py"
+args = "python create_position.py && python web_dashboard.py"
 
 [[workflows.workflow]]
 name = "🧪 Test Dashboard"
