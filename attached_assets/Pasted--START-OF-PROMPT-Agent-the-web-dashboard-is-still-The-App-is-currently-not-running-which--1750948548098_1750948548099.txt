@@ -1,0 +1,35 @@
+-- START OF PROMPT ---
+
+"Agent, the web dashboard is still The App is currently not running., which means the Flask application is failing to start.
+
+Your last comprehensive diagnostic run identified the following critical issues, contradicting your earlier statement that one of them was fixed:
+
+IndentationError in arbitrum_testnet_agent.py at line 323.
+
+SyntaxError: invalid syntax in web_dashboard.py at line 376.
+
+These syntax errors are the direct cause of the application failing to launch. My goal is to get the dashboard running so we can verify the Mainnet Aave data display.
+
+Your immediate priority is to correctly fix these specific syntax errors in arbitrum_testnet_agent.py and web_dashboard.py.
+
+For debugging and verification, your output must provide the following critical information:
+
+Precise Fixes Applied: For each syntax error, clearly state:
+
+The file name (arbitrum_testnet_agent.py or web_dashboard.py).
+
+The line number(s) where the change was made.
+
+The exact code change (e.g., "removed extra indent," "corrected missing colon," "changed 'func def' to 'def func():'").
+
+A brief explanation of why that specific change fixes the syntax error.
+
+Full Server-Side Startup Logs: After applying the fixes, you need to attempt to restart the application. Provide the complete server-side console output/logs from this startup attempt. This is crucial as it will show whether the app started successfully or if a new runtime error occurred.
+
+Confirmation of Application Status: State definitively whether "The App is currently not running" is resolved and the dashboard is now accessible.
+
+Re-run Diagnostic Confirmation (Optional, but preferred if app fails to start): If the app still fails to start after your fixes, please re-run the comprehensive_diagnostic.py script and provide its full output again. This will confirm if the syntax errors are truly gone or if new ones have appeared.
+
+We need to get the app launching before we can proceed with anything else.
+
+--- END OF PROMPT ---

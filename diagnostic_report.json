@@ -1,0 +1,351 @@
+{
+  "timestamp": 1750944389.1734254,
+  "datetime": "2025-06-26T13:26:29.173426",
+  "diagnostic_version": "1.0",
+  "environment": {
+    "python_version": "3.11.10 (main, Sep  7 2024, 01:03:31) [GCC 13.3.0]",
+    "platform": "linux",
+    "working_directory": "/home/runner/workspace",
+    "environment_variables": {
+      "NETWORK_MODE": {
+        "present": true,
+        "length": 7,
+        "starts_with": "mainnet",
+        "type": "str"
+      },
+      "PRIVATE_KEY": {
+        "present": true,
+        "length": 64,
+        "starts_with": "0dc00851ae",
+        "type": "str"
+      },
+      "PRIVATE_KEY2": {
+        "present": false,
+        "length": 0,
+        "starts_with": null,
+        "type": "NoneType"
+      },
+      "COINMARKETCAP_API_KEY": {
+        "present": true,
+        "length": 36,
+        "starts_with": "1d8c060c-e",
+        "type": "str"
+      },
+      "PROMPT_KEY": {
+        "present": true,
+        "length": 164,
+        "starts_with": "sk-proj-jD",
+        "type": "str"
+      },
+      "OPTIMIZER_API_KEY": {
+        "present": true,
+        "length": 35,
+        "starts_with": "QN_c21f6bb",
+        "type": "str"
+      },
+      "ARBITRUM_RPC_URL": {
+        "present": true,
+        "length": 28,
+        "starts_with": "https://ar",
+        "type": "str"
+      },
+      "REPLIT_DEPLOYMENT": {
+        "present": false,
+        "length": 0,
+        "starts_with": null,
+        "type": "NoneType"
+      }
+    },
+    "replit_specific": {
+      "is_deployment": false,
+      "replit_env": false,
+      "home_dir": "/home/runner",
+      "user": "runner"
+    }
+  },
+  "file_system": {
+    "critical_files": {
+      "arbitrum_testnet_agent.py": {
+        "exists": true,
+        "size": 32385,
+        "modified": 1750944388.3379126,
+        "readable": true,
+        "writable": true,
+        "syntax_valid": false,
+        "syntax_error": {
+          "message": "unexpected indent (arbitrum_testnet_agent.py, line 323)",
+          "line": 323,
+          "offset": 28,
+          "text": "                            )\n"
+        }
+      },
+      "web_dashboard.py": {
+        "exists": true,
+        "size": 46613,
+        "modified": 1750912534.3028717,
+        "readable": true,
+        "writable": true,
+        "syntax_valid": false,
+        "syntax_error": {
+          "message": "invalid syntax (web_dashboard.py, line 376)",
+          "line": 376,
+          "offset": 13,
+          "text": "            except Exception as e:\n"
+        }
+      },
+      "mainnet_launcher.py": {
+        "exists": true,
+        "size": 19054,
+        "modified": 1750900807.3562407,
+        "readable": true,
+        "writable": true,
+        "syntax_valid": true
+      },
+      "aave_integration.py": {
+        "exists": true,
+        "size": 24955,
+        "modified": 1750825060.0368307,
+        "readable": true,
+        "writable": true,
+        "syntax_valid": true
+      },
+      "aave_health_monitor.py": {
+        "exists": true,
+        "size": 26778,
+        "modified": 1750873837.7282228,
+        "readable": true,
+        "writable": true,
+        "syntax_valid": true
+      },
+      "user_settings.json": {
+        "exists": true,
+        "size": 212,
+        "modified": 1750867560.109541,
+        "readable": true,
+        "writable": true
+      },
+      "agent_config.json": {
+        "exists": true,
+        "size": 151,
+        "modified": 1750758634.8828921,
+        "readable": true,
+        "writable": true
+      },
+      "EMERGENCY_STOP_ACTIVE.flag": {
+        "exists": false
+      },
+      "performance_log.json": {
+        "exists": true,
+        "size": 1449083,
+        "modified": 1750779440.8542182,
+        "readable": true,
+        "writable": true
+      },
+      ".env": {
+        "exists": true,
+        "size": 435,
+        "modified": 1750689244.7251654,
+        "readable": true,
+        "writable": true
+      },
+      ".replit": {
+        "exists": true,
+        "size": 5923,
+        "modified": 1750900826.5792136,
+        "readable": true,
+        "writable": true
+      },
+      "requirements.txt": {
+        "exists": true,
+        "size": 131,
+        "modified": 1750745591.6917489,
+        "readable": true,
+        "writable": true
+      }
+    },
+    "directory_structure": {},
+    "permissions": {}
+  },
+  "network": {
+    "rpc_endpoints": {
+      "arbitrum_mainnet": {
+        "connected": true,
+        "chain_id": 42161,
+        "latest_block": 351412543,
+        "response_time": "fast"
+      },
+      "arbitrum_sepolia": {
+        "connected": true,
+        "chain_id": 421614,
+        "latest_block": 167429872,
+        "response_time": "fast"
+      }
+    },
+    "api_endpoints": {
+      "coinmarketcap": {
+        "accessible": true,
+        "status_code": 401,
+        "response_time": 0.132436
+      }
+    },
+    "general_connectivity": {}
+  },
+  "dependencies": {
+    "required_modules": {
+      "web3": {
+        "available": true,
+        "version": "6.15.1"
+      },
+      "flask": {
+        "available": true,
+        "version": "3.1.1"
+      },
+      "requests": {
+        "available": true,
+        "version": "2.31.0"
+      },
+      "eth_account": {
+        "available": true,
+        "version": "unknown"
+      },
+      "python-dotenv": {
+        "available": false,
+        "error": "No module named 'python-dotenv'"
+      }
+    },
+    "import_tests": {
+      "arbitrum_testnet_agent.ArbitrumTestnetAgent": {
+        "success": false,
+        "error": "unexpected indent (arbitrum_testnet_agent.py, line 323)"
+      },
+      "web_dashboard.app": {
+        "success": false,
+        "error": "invalid syntax (web_dashboard.py, line 376)"
+      },
+      "aave_integration.AaveArbitrumIntegration": {
+        "success": true
+      },
+      "aave_health_monitor.AaveHealthMonitor": {
+        "success": true
+      }
+    }
+  },
+  "application": {
+    "agent_initialization": {
+      "success": false,
+      "error": "unexpected indent (arbitrum_testnet_agent.py, line 323)",
+      "traceback": "Traceback (most recent call last):\n  File \"/home/runner/workspace/comprehensive_diagnostic.py\", line 278, in test_application_components\n    from arbitrum_testnet_agent import ArbitrumTestnetAgent\n  File \"/home/runner/workspace/arbitrum_testnet_agent.py\", line 323\n    )\nIndentationError: unexpected indent\n"
+    },
+    "web_dashboard": {
+      "import_success": false,
+      "error": "invalid syntax (web_dashboard.py, line 376)"
+    },
+    "aave_integration": {},
+    "workflow_status": {}
+  },
+  "errors": {
+    "recent_errors": [],
+    "log_analysis": {
+      "performance_log.json": {
+        "size": 1449083,
+        "lines": 12398,
+        "recent_entries": [
+          "{\"run_id\": 1, \"iteration\": 5, \"performance_metric\": 0.7992, \"timestamp\": 1750779414.5429826, \"metadata\": {}}",
+          "{\"run_id\": 1, \"iteration\": 6, \"performance_metric\": 0.7992, \"timestamp\": 1750779421.3074238, \"metadata\": {}}",
+          "{\"run_id\": 1, \"iteration\": 7, \"performance_metric\": 0.7992, \"timestamp\": 1750779428.3223758, \"metadata\": {}}",
+          "{\"run_id\": 1, \"iteration\": 8, \"performance_metric\": 0.7992, \"timestamp\": 1750779435.0759766, \"metadata\": {}}",
+          ""
+        ]
+      },
+      "emergency_stop_log.json": {
+        "size": 729,
+        "lines": 26,
+        "recent_entries": [
+          "    \"action\": \"EMERGENCY_STOP_CLEARED\",",
+          "    \"reason\": \"Manual clear\",",
+          "    \"datetime\": \"2025-06-24 06:05:30 UTC\"",
+          "  }",
+          "]"
+        ]
+      }
+    },
+    "common_patterns": []
+  },
+  "recommendations": [
+    {
+      "priority": "HIGH",
+      "category": "Environment",
+      "issue": "Missing environment variables: PRIVATE_KEY2, REPLIT_DEPLOYMENT",
+      "solution": "Add missing variables to Replit Secrets panel"
+    },
+    {
+      "priority": "CRITICAL",
+      "category": "Syntax",
+      "issue": "Syntax error in arbitrum_testnet_agent.py: unexpected indent (arbitrum_testnet_agent.py, line 323)",
+      "solution": "Fix syntax error at line 323"
+    },
+    {
+      "priority": "CRITICAL",
+      "category": "Syntax",
+      "issue": "Syntax error in web_dashboard.py: invalid syntax (web_dashboard.py, line 376)",
+      "solution": "Fix syntax error at line 376"
+    },
+    {
+      "priority": "HIGH",
+      "category": "Application",
+      "issue": "Agent initialization failed",
+      "solution": "Check network connectivity and environment variables"
+    }
+  ],
+  "ai_analysis_data": {
+    "error_patterns": [
+      {
+        "type": "syntax_error",
+        "file": "arbitrum_testnet_agent.py",
+        "details": {
+          "message": "unexpected indent (arbitrum_testnet_agent.py, line 323)",
+          "line": 323,
+          "offset": 28,
+          "text": "                            )\n"
+        }
+      },
+      {
+        "type": "syntax_error",
+        "file": "web_dashboard.py",
+        "details": {
+          "message": "invalid syntax (web_dashboard.py, line 376)",
+          "line": 376,
+          "offset": 13,
+          "text": "            except Exception as e:\n"
+        }
+      },
+      {
+        "type": "import_error",
+        "module": "arbitrum_testnet_agent.ArbitrumTestnetAgent",
+        "error": "unexpected indent (arbitrum_testnet_agent.py, line 323)"
+      },
+      {
+        "type": "import_error",
+        "module": "web_dashboard.app",
+        "error": "invalid syntax (web_dashboard.py, line 376)"
+      }
+    ],
+    "configuration_state": {
+      "network_mode": "mainnet",
+      "secrets_configured": 6,
+      "total_secrets_needed": 8,
+      "deployment_mode": false
+    },
+    "dependency_matrix": {
+      "web3_available": true,
+      "flask_available": true,
+      "agent_importable": false,
+      "dashboard_importable": false
+    },
+    "failure_points": [
+      "agent_initialization",
+      "web_dashboard_import"
+    ],
+    "system_health_score": 0
+  }
+}
