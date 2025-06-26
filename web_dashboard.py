@@ -47,6 +47,36 @@ def initialize_agent():
 # Initialize agent in background
 threading.Thread(target=initialize_agent, daemon=True).start()
 
+def get_enhanced_aave_data(agent):
+    """Enhanced Aave data retrieval for mainnet operations"""
+    try:
+        if not agent or not hasattr(agent, 'health_monitor'):
+            print("⚠️ No agent or health monitor available")
+            return None
+
+        # Try to get comprehensive health data
+        health_data = agent.health_monitor.get_current_health_factor()
+        if health_data and health_data.get('health_factor', 0) > 0:
+            return {
+                'health_factor': health_data['health_factor'],
+                'total_collateral': health_data.get('total_collateral_eth', 0),
+                'total_debt': health_data.get('total_debt_eth', 0),
+                'total_collateral_usdc': health_data.get('total_collateral_usdc', 0),
+                'total_debt_usdc': health_data.get('total_debt_usdc', 0),
+                'available_borrows': health_data.get('available_borrows_eth', 0),
+                'available_borrows_usdc': health_data.get('available_borrows_usdc', 0),
+                'liquidation_threshold': health_data.get('liquidation_threshold', 0),
+                'ltv': health_data.get('ltv', 0),
+                'data_source': 'health_monitor'
+            }
+
+        print("⚠️ Enhanced Aave data: health monitor returned no data")
+        return None
+
+    except Exception as e:
+        print(f"❌ Enhanced Aave data error: {e}")
+        return None
+
 def get_network_info():
     """Get current network information with proper mainnet detection"""
     try:
@@ -326,18 +356,21 @@ def wallet_status():
                             except ImportError:
                                 print("💡 Third-party integration not available - using fallback")
                                 # Try fallback analysis
-                                fallback_data = agent.health_monitor.perform_fallback_analysis()
-                                if fallback_data:
-                                    wallet_status.update({
-                                        'health_factor': fallback_data.get('estimated_health_factor', 0),
-                                        'total_collateral': fallback_data.get('estimated_collateral', 0),
-                                        'total_debt': 0,
-                                        'total_collateral_usdc': fallback_data.get('estimated_collateral_usdc', 0),
-                                        'total_debt_usdc': 0,
-                                        'available_borrows': 0,
-                                        'available_borrows_usdc': 0
-                                    })
-                                print("⚠️ Using fallback health factor analysis")
+                                try:
+                                    fallback_data = agent.health_monitor.perform_fallback_analysis()
+                                    if fallback_data:
+                                        wallet_status.update({
+                                            'health_factor': fallback_data.get('estimated_health_factor', 0),
+                                            'total_collateral': fallback_data.get('estimated_collateral', 0),
+                                            'total_debt': 0,
+                                            'total_collateral_usdc': fallback_data.get('estimated_collateral_usdc', 0),
+                                            'total_debt_usdc': 0,
+                                            'available_borrows': 0,
+                                            'available_borrows_usdc': 0
+                                        })
+                                    print("⚠️ Using fallback health factor analysis")
+                                except Exception as e:
+                                    print(f"⚠️ Fallback analysis error: {e}")
                 except Exception as e:
                     print(f"⚠️ Aave balance/health error: {e}")
             except Exception as e:
