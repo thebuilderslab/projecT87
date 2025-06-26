@@ -62,7 +62,7 @@ def get_enhanced_aave_data(agent):
                 'total_collateral': health_data.get('total_collateral_eth', 0),
                 'total_debt': health_data.get('total_debt_eth', 0),
                 'total_collateral_usdc': health_data.get('total_collateral_usdc', 0),
-                'total_debt_usdc': health_data.get('total_debt_usdc', 0),
+                'total_debt': health_data.get('total_debt_usdc', 0),
                 'available_borrows': health_data.get('available_borrows_eth', 0),
                 'available_borrows_usdc': health_data.get('available_borrows_usdc', 0),
                 'liquidation_threshold': health_data.get('liquidation_threshold', 0),
@@ -741,6 +741,7 @@ def connection_test():
             'timestamp': time.time(),
             'server_time': time.strftime('%Y-%m-%d %H:%M:%S UTC', time.gmtime()),
             ```python
+            '```python
             'agent_initialized': agent is not None,
             'dashboard_available': dashboard is not None,
             'network_mode': os.getenv('NETWORK_MODE', 'unknown'),
