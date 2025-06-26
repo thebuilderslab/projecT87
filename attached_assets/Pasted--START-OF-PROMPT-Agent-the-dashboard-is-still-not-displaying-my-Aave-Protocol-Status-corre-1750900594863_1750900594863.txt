@@ -1,0 +1,29 @@
+--- START OF PROMPT ---
+
+"Agent, the dashboard is still not displaying my Aave Protocol Status correctly (Health Factor, Total Collateral, Total Debt still at 0.0000), despite your recent efforts and the 'Arbitrum Mainnet' network now showing.
+
+Before we dive into another round of specific dashboard debugging, I want to ensure the entire codebase is robustly configured and fully functional for Arbitrum Mainnet operations, not just testnet.
+
+Therefore, please perform a full codebase diagnostic with the following objectives:
+
+Confirm Mainnet Readiness of All Functions: Review all relevant code, especially in mainnet_launcher.py, aave_health_monitor.py, and web_dashboard.py, to ensure that any functions or logic that were originally developed or tested for a testnet environment are now fully adapted and correctly configured to operate on Arbitrum Mainnet. This means:
+
+All contract addresses (e.g., Aave Pool, WBTC, WETH, USDC) must be Mainnet addresses.
+All RPC URLs must point to a Mainnet Arbitrum endpoint.
+All chain IDs (42161) must be Mainnet chain IDs.
+Any conditional logic for testnet vs. mainnet must correctly default to or prioritize Mainnet when mainnet_launcher.py is run.
+Comprehensive Endpoint and Data Flow Review:
+
+Backend Endpoints: Thoroughly re-verify all backend API endpoints (/api/wallet_status, /api/debug/mainnet-aave, etc.) to ensure they are successfully fetching, processing, and returning actual, live Mainnet data for my wallet (0x5B823270e3719CDe8669e5e5326B455EaA8a350b). Look for any silent failures, data type mismatches, or execution reverted errors that might prevent accurate data from reaching the API response.
+UI Fetching & Parsing: Confirm that the frontend (JavaScript in templates/dashboard.html) is correctly making requests to these backend endpoints, is properly parsing the JSON responses, and is populating the UI elements (especially 'Aave Protocol Status') with the retrieved data.
+Error Handling: Verify that error handling is robust throughout the backend-to-frontend data flow, and that errors are logged clearly without causing the dashboard to fail or display incorrect default values (like zeros).
+Address Previous Issues: Ensure that the issues of execution reverted from direct Aave contract calls and the failure of the Zapper API have been addressed or successfully bypassed by a working fallback (e.g., if DeBank is being attempted, confirm its status).
+
+Your primary deliverable from this diagnostic should be a clear report of:
+
+Any issues found related to Mainnet readiness or data fetching.
+The specific code changes implemented to resolve these issues.
+Confirmation that the Health Factor, Total Collateral, and Total Debt values are expected to display correctly on the dashboard after these changes.
+After this diagnostic, I will provide the new dashboard screenshot and console logs for final verification."
+
+--- END OF PROMPT ---
