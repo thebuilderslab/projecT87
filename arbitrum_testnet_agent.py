@@ -330,20 +330,19 @@ class ArbitrumTestnetAgent:
                             # Set strategy mode to maintain health factor above 3.5
                             self.target_health_factor = 3.5
                             print(f"🔧 Agent configured to maintain Health Factor > {self.target_health_factor}")
+                            return performance
                         else:
                             print("❌ Failed to borrow USDC")
-                            performance = 0.75
+                            return 0.3
                     else:
                         print(f"⚠️ Estimated health factor {estimated_hf:.2f} too low, skipping borrow")
-                        performance = 0.80
+                        return 0.1
                 else:
                     print("❌ Failed to supply ETH as collateral")
-                    performance = 0.65
+                    return 0.1
             else:
                 print(f"❌ Insufficient ETH balance ({eth_balance:.6f}) for collateral")
-                performance = 0.60
-
-            return performance
+                return 0.6
 
             # PRIORITY 1: Health Factor Management (maintain above target)
             current_hf = monitoring_summary['current_health_factor']
