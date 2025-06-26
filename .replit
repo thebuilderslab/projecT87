@@ -15,7 +15,7 @@ run = ["sh", "-c", "python mainnet_launcher.py"]
 deploymentTarget = "cloudrun"
 
 [workflows]
-runButton = "🔧 FIXED WEB DASHBOARD"
+runButton = "🚀 Launch Dashboard"
 
 [[workflows.workflow]]
 name = "Run"
@@ -270,6 +270,19 @@ mode = "sequential"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "python comprehensive_diagnostic.py"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python web_dashboard.py"
+
+[[workflows.workflow]]
+name = "🚀 Launch Dashboard"
+author = 39391053
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python quick_test.py"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"

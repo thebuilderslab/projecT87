@@ -333,17 +333,17 @@ class ArbitrumTestnetAgent:
                         else:
                             print("❌ Failed to borrow USDC")
                             performance = 0.75
-                        else:
-                            print(f"⚠️ Estimated health factor {estimated_hf:.2f} too low, skipping borrow")
-                            performance = 0.80
                     else:
-                        print("❌ Failed to supply ETH as collateral")
-                        performance = 0.65
+                        print(f"⚠️ Estimated health factor {estimated_hf:.2f} too low, skipping borrow")
+                        performance = 0.80
                 else:
-                    print(f"❌ Insufficient ETH balance ({eth_balance:.6f}) for collateral")
-                    performance = 0.60
+                    print("❌ Failed to supply ETH as collateral")
+                    performance = 0.65
+            else:
+                print(f"❌ Insufficient ETH balance ({eth_balance:.6f}) for collateral")
+                performance = 0.60
 
-                return performance
+            return performance
 
             # PRIORITY 1: Health Factor Management (maintain above target)
             current_hf = monitoring_summary['current_health_factor']

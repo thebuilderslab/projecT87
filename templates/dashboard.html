@@ -3,98 +3,82 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🤖 DeFi Agent Dashboard</title>
+    <title>DeFi Agent Dashboard</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            min-height: 100vh;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
             padding: 20px;
+            background: #0f172a;
+            color: #e2e8f0;
+            min-height: 100vh;
         }
-
         .container {
             max-width: 1200px;
             margin: 0 auto;
         }
-
         .header {
             text-align: center;
             margin-bottom: 30px;
         }
-
-        .header h1 {
-            font-size: 2.5em;
-            margin-bottom: 10px;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
-        }
-
-        .grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 20px;
-            margin-bottom: 30px;
-        }
-
-        .card {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            border-radius: 15px;
-            padding: 25px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-        }
-
-        .card h3 {
+        .status-card {
+            background: #1e293b;
+            border-radius: 12px;
+            padding: 20px;
             margin-bottom: 20px;
-            font-size: 1.3em;
-            color: #fff;
+            border: 1px solid #334155;
         }
-
+        .network-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .mainnet { background: #dc2626; color: white; }
+        .testnet { background: #059669; color: white; }
         .metric {
             display: flex;
             justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-            padding: 10px;
-            background: rgba(255, 255, 255, 0.05);
+            margin: 10px 0;
+            padding: 10px 0;
+            border-bottom: 1px solid #334155;
+        }
+        .metric:last-child { border-bottom: none; }
+        .metric-label { color: #94a3b8; }
+        .metric-value { font-weight: bold; }
+        .emergency-btn {
+            background: #dc2626;
+            color: white;
+            border: none;
+            padding: 12px 24px;
             border-radius: 8px;
-        }
-
-        .metric-label {
-            font-weight: 500;
-        }
-
-        .metric-value {
+            cursor: pointer;
             font-weight: bold;
-            font-size: 1.1em;
+            margin: 10px 5px;
         }
-
-        .status-indicator {
-            display: inline-block;
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            margin-right: 8px;
+        .clear-btn {
+            background: #059669;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            margin: 10px 5px;
         }
-
-        .status-safe { background-color: #4CAF50; }
-        .status-warning { background-color: #FF9800; }
-        .status-danger { background-color: #F44336; }
-
+        .loading {
+            text-align: center;
+            color: #64748b;
+            padding: 20px;
+        }
         .controls {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            border-radius: 15px;
-            padding: 25px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            background: #1e293b;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 1px solid #334155;
         }
 
         .parameter-group {
@@ -107,22 +91,23 @@
             font-weight: 500;
         }
 
-        .parameter-group input {
+        .parameter-group input, .parameter-group select {
             width: 100%;
             padding: 10px;
             border: none;
             border-radius: 8px;
-            background: rgba(255, 255, 255, 0.1);
-            color: white;
+            background: #334155;
+            color: #e2e8f0;
             font-size: 16px;
+            margin-bottom: 10px;
         }
 
         .parameter-group input::placeholder {
-            color: rgba(255, 255, 255, 0.7);
+            color: #94a3b8;
         }
 
         .btn {
-            background: linear-gradient(45deg, #4CAF50, #45a049);
+            background: #4CAF50;
             color: white;
             border: none;
             padding: 12px 24px;
@@ -130,105 +115,12 @@
             cursor: pointer;
             font-size: 16px;
             font-weight: 500;
-            transition: all 0.3s ease;
+            transition: background-color 0.3s ease;
+            margin: 5px;
         }
 
         .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-        }
-
-        .loading {
-            text-align: center;
-            padding: 40px;
-            font-size: 1.2em;
-        }
-
-        .error {
-            background: rgba(244, 67, 54, 0.2);
-            border: 1px solid rgba(244, 67, 54, 0.5);
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-        }
-
-        .wallet-address {
-            font-family: monospace;
-            background: rgba(0, 0, 0, 0.2);
-            padding: 8px;
-            border-radius: 4px;
-            word-break: break-all;
-            font-size: 0.9em;
-        }
-
-        @media (max-width: 768px) {
-            .grid {
-                grid-template-columns: 1fr;
-            }
-
-            .header h1 {
-                font-size: 2em;
-            }
-        }
-
-        .action-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-        }
-
-        .emergency-controls {
-            border: 2px solid #ff4444;
-            border-radius: 8px;
-            padding: 15px;
-            margin-top: 20px;
-            background: rgba(255, 68, 68, 0.1);
-        }
-
-        .action-btn.emergency {
-            background: linear-gradient(135deg, #ff4444, #cc0000);
-            color: white;
-            font-weight: bold;
-            font-size: 16px;
-            padding: 12px 24px;
-        }
-
-        .action-btn.emergency:hover {
-            background: linear-gradient(135deg, #ff0000, #990000);
-        }
-
-        .action-btn.clear-emergency {
-            background: linear-gradient(135deg, #44ff44, #00cc00);
-            color: white;
-            font-weight: bold;
-        }
-
-        .emergency-status {
-            padding: 10px;
-            border-radius: 5px;
-            margin: 10px 0;
-            font-weight: bold;
-        }
-
-        .emergency-status.active {
-            background: rgba(255, 0, 0, 0.2);
-            border: 1px solid #ff0000;
-            color: #ff0000;
-        }
-
-        .emergency-status.inactive {
-            background: rgba(0, 255, 0, 0.2);
-            border: 1px solid #00cc00;
-            color: #00aa00;
-        }
-
-        .emergency-logs {
-            margin-top: 10px;
-            font-size: 12px;
-            max-height: 100px;
-            overflow-y: auto;
-            background: rgba(0,0,0,0.1);
-            padding: 8px;
-            border-radius: 4px;
+            background: #45a049;
         }
     </style>
 </head>
@@ -236,7 +128,7 @@
     <div class="container">
         <div class="header">
             <h1>🤖 DeFi Agent Dashboard</h1>
-            <p id="networkStatus">Real-time monitoring of your Arbitrum operations</p>
+            <p id="networkStatus">Real-time Arbitrum DeFi Operations</p>
             <p id="lastUpdate">Loading...</p>
         </div>
 
@@ -258,91 +150,49 @@
         <div id="error" class="error" style="display: none;"></div>
 
         <div id="dashboard" style="display: none;">
-            <div class="grid">
-                <!-- Wallet Status Card -->
-                <div class="card">
-                    <h3>💰 Wallet Status</h3>
-                    <div class="metric">
-                        <span class="metric-label">Wallet Address:</span>
-                        <span id="walletAddress" class="wallet-address">Loading...</span>
-                    </div>
-                    <div class="metric">
-                        <span class="metric-label">ETH Balance:</span>
-                        <span id="ethBalance" class="metric-value">0.0000 ETH</span>
-                    </div>
-                    <div class="metric">
-                        <span class="metric-label">USDC Balance:</span>
-                        <span id="usdcBalance" class="metric-value">0.00 USDC</span>
-                    </div>
-                </div>
 
-                <!-- Aave Protocol Card -->
-                <div class="card">
-                    <h3>🏥 Aave Protocol Status</h3>
+            <div class="status-card">
+                <h3>🌐 Network Status</h3>
+                <div id="network-info">
+                    <span class="network-badge mainnet">Arbitrum Mainnet</span>
                     <div class="metric">
-                        <span class="metric-label">Health Factor:</span>
-                        <span id="healthFactor" class="metric-value">
-                            <span id="healthStatus" class="status-indicator status-safe"></span>
-                            ∞
-                        </span>
-                    </div>
-                    <div class="metric">
-                        <span class="metric-label">Total Collateral:</span>
-                        <span id="totalCollateral" class="metric-value">$0.00 USDC</span>
-                    </div>
-                    <div class="metric">
-                        <span class="metric-label">Total Debt:</span>
-                        <span id="totalDebt" class="metric-value">$0.00 USDC</span>
-                    </div>
-                    <div class="metric">
-                        <span class="metric-label">Available Borrows:</span>
-                        <span id="availableBorrows" class="metric-value">$0.00 USDC</span>
-                    </div>
-                </div>
-
-                <!-- Performance Card -->
-                <div class="card">
-                    <h3>📊 24h Performance</h3>
-                    <div class="metric">
-                        <span class="metric-label">P/L (24h):</span>
-                        <span id="pnl24h" class="metric-value">+0.00%</span>
-                    </div>
-                    <div class="metric">
-                        <span class="metric-label">Avg Performance:</span>
-                        <span id="avgPerformance" class="metric-value">0.000</span>
-                    </div>
-                    <div class="metric">
-                        <span class="metric-label">Error Rate:</span>
-                        <span id="errorRate" class="metric-value">0.0%</span>
-                    </div>
-                    <div class="metric">
-                        <span class="metric-label">Total Operations:</span>
-                        <span id="totalOps" class="metric-value">0</span>
-                    </div>
-                </div>
-
-                <!-- Market Data Card -->
-                <div class="card">
-                    <h3>📈 Market Data</h3>
-                    <div class="metric">
-                        <span class="metric-label">ARB Price:</span>
-                        <span id="arbPrice" class="metric-value">$0.0000</span>
-                    </div>
-                    <div class="metric">
-                        <span class="metric-label">Network:</span>
-                        <span class="metric-value" id="network">Loading...</span>
-                    </div>
-                    <div class="metric">
-                        <span class="metric-label">Status:</span>
-                        <span id="agentStatus" class="metric-value">
-                            <span class="status-indicator status-safe"></span>
-                            Active
-                        </span>
+                        <span class="metric-label">Agent Status:</span>
+                        <span class="metric-value" id="agent-status">Loading...</span>
                     </div>
                 </div>
             </div>
 
-            <!-- Controls Section -->
+            <div class="status-card">
+                <h3>💰 Wallet Status</h3>
+                <div id="wallet-status" class="loading">Loading wallet data...</div>
+            </div>
+
+            <div class="status-card">
+                <h3>🏦 Aave Protocol Status</h3>
+                <div id="aave-status" class="loading">Loading Aave data...</div>
+            </div>
+
+            <div class="status-card">
+                <h3>📊 24h Performance</h3>
+                <div class="metric">
+                    <span class="metric-label">P/L (24h):</span>
+                    <span id="pnl24h" class="metric-value">+0.00%</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Avg Performance:</span>
+                    <span id="avgPerformance" class="metric-value">0.000</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Error Rate:</span>
+                    <span id="errorRate" class="metric-value">0.0%</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Total Operations:</span>
+                    <span id="totalOps" class="metric-value">0</span>
+                </div>
+            </div>
+
+             <!-- Controls Section -->
             <div class="controls">
                 <h3>🎛️ Manual Controls</h3>
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px;">
@@ -371,7 +221,8 @@
                     <button class="btn" onclick="refreshData()" style="margin-left: 10px;">🔄 Refresh Now</button>
                     <button class="btn" onclick="runDiagnostics()" style="margin-left: 10px; background: linear-gradient(45deg, #FF9800, #F57C00);">🔍 Run Diagnostics</button>
                     <button class="btn" onclick="debugMainnetAave()" style="margin-left: 10px; background: linear-gradient(45deg, #9C27B0, #673AB7);">🚀 Debug Mainnet Aave</button>
-                </div></div>
+                </div>
+            </div>
 
             <!-- Diagnostics Modal -->
             <div id="diagnostics-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000;">
@@ -379,23 +230,14 @@
                     <h3>🔍 API Diagnostics Report</h3>
                     <div id="diagnostics-content">Running diagnostics...</div>
                     <button onclick="closeDiagnostics()" style="margin-top: 20px; padding: 10px 20px; background: #666; color: white; border: none; border-radius: 5px;">Close</button>
-                </div></div>
+                </div>
             </div>
 
-            <!-- Emergency Controls Section -->
-            <div class="controls">
-                <div class="emergency-controls">
-                    <h4>🚨 Emergency Controls</h4>
-                    <div id="emergency-status" class="emergency-status inactive">✅ Agent operations normal</div>
-
-                    <button id="emergency-stop-btn" onclick="activateEmergencyStop()" class="action-btn emergency">
-                        🛑 EMERGENCY STOP
-                    </button>
-                    <button id="clear-stop-btn" onclick="clearEmergencyStop()" class="action-btn clear-emergency" style="display: none;">
-                        ✅ CLEAR EMERGENCY STOP
-                    </button>
-
-                    <div id="emergency-logs" class="emergency-logs"></div>
+            <div class="status-card">
+                <h3>🚨 Emergency Controls</h3>
+                <div id="emergency-status">
+                    <p style="color: #059669;">✅ System Operating Normally</p>
+                    <button class="emergency-btn" onclick="activateEmergency()">🛑 Emergency Stop</button>
                 </div>
             </div>
         </div>
@@ -404,824 +246,148 @@
     <script>
         let updateInterval;
 
-        async function fetchWalletStatus() {
+        async function fetchData(endpoint) {
             try {
-                console.log('🔍 Fetching wallet status...');
-                
-                // Add timeout to prevent hanging
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 10000);
-                
-                const response = await fetch('/api/wallet_status', {
-                    signal: controller.signal,
-                    headers: {
-                        'Accept': 'application/json',
-                        'Cache-Control': 'no-cache'
-                    }
-                });
-                
-                clearTimeout(timeoutId);
-
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                }
-
-                const data = await response.json();
-                console.log('💰 Wallet status received:', data);
-
-                if (data && data.error) {
-                    console.warn('⚠️ Wallet status API returned error:', data.error);
-                    safeUpdateElement('walletAddress', `Error: ${data.error}`);
-                    return;
-                }
-
-                // Validate data structure before using
-                if (data && typeof data === 'object') {
-                    updateWalletStatus(data);
-                    console.log('✅ Wallet status updated successfully');
-                } else {
-                    console.error('❌ Invalid wallet status data:', data);
-                    safeUpdateElement('walletAddress', 'Invalid Data');
-                }
+                const response = await fetch(endpoint);
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                return await response.json();
             } catch (error) {
-                if (error.name === 'AbortError') {
-                    console.error('⏰ Wallet status fetch timeout');
-                    safeUpdateElement('walletAddress', 'Timeout - Retrying...');
-                } else {
-                    console.error('❌ Error fetching wallet status:', error);
-                    safeUpdateElement('walletAddress', 'Connection Error');
-                }
-                safeUpdateElement('ethBalance', 'Loading...');
-                safeUpdateElement('healthFactor', 'Loading...');
+                console.error(`Error fetching ${endpoint}:`, error);
+                return null;
             }
         }
 
-        async function fetchPerformanceData(retryCount = 0) {
-            try {
-                console.log('Fetching performance data...');
-                const response = await fetch('/api/performance');
+        async function updateWalletStatus() {
+            const data = await fetchData('/api/wallet_status');
+            const container = document.getElementById('wallet-status');
 
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                }
-
-                const data = await response.json();
-                console.log('Performance data received:', data);
-
-                if (data && data.error) {
-                    safeUpdateElement('avgPerformance', `Error: ${data.error}`);
-                    return;
-                }
-
-                // Validate data structure before using
-                if (data && typeof data === 'object') {
-                    updatePerformanceData(data);
-                    console.log('Performance data updated successfully');
-                } else {
-                    console.error('Invalid performance data:', data);
-                    safeUpdateElement('avgPerformance', 'Invalid Data');
-                }
-            } catch (error) {
-                console.error('Error fetching performance data:', error);
-
-                // Retry up to 2 times with exponential backoff
-                if (retryCount < 2) {
-                    console.log(`Retrying performance data fetch (attempt ${retryCount + 1})...`);
-                    setTimeout(() => fetchPerformanceData(retryCount + 1), Math.pow(2, retryCount) * 1000);
-                } else {
-                    safeUpdateElement('avgPerformance', 'Connection Error');
-                    safeUpdateElement('errorRate', 'Error');
-                    safeUpdateElement('totalOps', 'Error');
-                }
+            if (data && !data.error) {
+                container.innerHTML = `
+                    <div class="metric">
+                        <span class="metric-label">Address:</span>
+                        <span class="metric-value">${data.wallet_address || 'N/A'}</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">ETH Balance:</span>
+                        <span class="metric-value">${(data.eth_balance || 0).toFixed(6)} ETH</span>
+                    </div>
+                `;
+            } else {
+                container.innerHTML = `<p style="color: #dc2626;">Error loading wallet data</p>`;
             }
         }
 
-        async function fetchParameters() {
-            try {
-                console.log('Fetching parameters...');
-                const response = await fetch('/api/parameters', {
-                    method: 'GET',
-                    headers: {
-                        'Accept': 'application/json',
-                        'Cache-Control': 'no-cache'
-                    }
-                });
+        async function updateAaveStatus() {
+            const data = await fetchData('/api/wallet_status');
+            const container = document.getElementById('aave-status');
 
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                }
+            if (data && !data.error) {
+                const healthFactor = data.health_factor || 0;
+                const collateral = data.total_collateral_usdc || 0;
+                const debt = data.total_debt_usdc || 0;
 
-                const data = await response.json();
-                console.log('Parameters received:', data);
+                let healthColor = '#059669'; // Green
+                if (healthFactor < 1.5 && healthFactor > 0) healthColor = '#dc2626'; // Red
+                else if (healthFactor < 2.0 && healthFactor > 0) healthColor = '#f59e0b'; // Yellow
 
-                // Check if we have valid data
-                if (!data || typeof data !== 'object') {
-                    throw new Error('Invalid parameters data received');
-                }
-
-                // Even if there's an error, try to use the data if it has fallback values
-                if (data.error && !data.fallback && !data.success) {
-                    console.error('Parameters error:', data.error);
-                    throw new Error(data.error);
-                }
-
-                // Update UI with parameters (with comprehensive safety checks)
-                const healthTargetEl = document.getElementById('healthTarget');
-                const borrowTriggerEl = document.getElementById('borrowTrigger');
-                const arbDeclineEl = document.getElementById('arbDecline');
-                const autoModeEl = document.getElementById('autoMode');
-
-                // Use fallback values if elements don't exist or data is invalid
-                const healthTarget = (data.health_factor_target !== undefined && data.health_factor_target !== null && !isNaN(data.health_factor_target)) ? data.health_factor_target : 1.19;
-                const borrowTrigger = (data.borrow_trigger_threshold !== undefined && data.borrow_trigger_threshold !== null && !isNaN(data.borrow_trigger_threshold)) ? data.borrow_trigger_threshold : 0.02;
-                const arbDecline = (data.arb_decline_threshold !== undefined && data.arb_decline_threshold !== null && !isNaN(data.arb_decline_threshold)) ? (data.arb_decline_threshold * 100) : 5.0;
-                const autoMode = (data.auto_mode !== undefined && data.auto_mode !== null) ? data.auto_mode : true;
-
-                // Set values with additional validation
-                if (healthTargetEl) {
-                    healthTargetEl.value = healthTarget.toFixed(2);
-                    console.log(`Set health target to: ${healthTarget}`);
-                }
-                if (borrowTriggerEl) {
-                    borrowTriggerEl.value = borrowTrigger.toFixed(3);
-                    console.log(`Set borrow trigger to: ${borrowTrigger}`);
-                }
-                if (arbDeclineEl) {
-                    arbDeclineEl.value = arbDecline.toFixed(1);
-                    console.log(`Set ARB decline to: ${arbDecline}%`);
-                }
-                if (autoModeEl) {
-                    autoModeEl.value = autoMode ? 'true' : 'false';
-                    console.log(`Set auto mode to: ${autoMode}`);
-                }
-
-                console.log('Parameters updated successfully:', {
-                    healthTarget,
-                    borrowTrigger,
-                    arbDecline,
-                    autoMode
-                });
-
-            } catch (error) {
-                console.error('Error fetching parameters:', error);
-                // Set robust default values if fetch fails completely
-                const defaults = {
-                    healthTarget: 1.19,
-                    borrowTrigger: 0.02,
-                    arbDecline: 5.0,
-                    autoMode: true
-                };
-
-                try {
-                    const healthTargetEl = document.getElementById('healthTarget');
-                    const borrowTriggerEl = document.getElementById('borrowTrigger');
-                    const arbDeclineEl = document.getElementById('arbDecline');
-                    const autoModeEl = document.getElementById('autoMode');
-
-                    if (healthTargetEl) healthTargetEl.value = defaults.healthTarget;
-                    if (borrowTriggerEl) borrowTriggerEl.value = defaults.borrowTrigger;
-                    if (arbDeclineEl) arbDeclineEl.value = defaults.arbDecline.toFixed(1);
-                    if (autoModeEl) autoModeEl.value = defaults.autoMode ? 'true' : 'false';
-
-                    console.log('Set fallback parameter values:', defaults);
-                } catch (fallbackError) {
-                    console.error('Failed to set fallback values:', fallbackError);
-                }
+                container.innerHTML = `
+                    <div class="metric">
+                        <span class="metric-label">Health Factor:</span>
+                        <span class="metric-value" style="color: ${healthColor};">
+                            ${healthFactor > 0 ? healthFactor.toFixed(4) : 'No Position'}
+                        </span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Total Collateral:</span>
+                        <span class="metric-value">$${collateral.toFixed(2)}</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Total Debt:</span>
+                        <span class="metric-value">$${debt.toFixed(2)}</span>
+                    </div>
+                `;
+            } else {
+                container.innerHTML = `<p style="color: #dc2626;">Error loading Aave data</p>`;
             }
         }
 
-        async function updateParameters() {
-            try {
-                // Get elements with safety checks
-                const healthTargetEl = document.getElementById('healthTarget');
-                const borrowTriggerEl = document.getElementById('borrowTrigger');
-                const arbDeclineEl = document.getElementById('arbDecline');
-                const autoModeEl = document.getElementById('autoMode');
-
-                // Validate all elements exist
-                if (!healthTargetEl || !borrowTriggerEl || !arbDeclineEl || !autoModeEl) {
-                    throw new Error('One or more parameter input fields not found');
-                }
-
-                // Parse values with validation
-                const healthTarget = parseFloat(healthTargetEl.value);
-                const borrowTrigger = parseFloat(borrowTriggerEl.value);
-                const arbDecline = parseFloat(arbDeclineEl.value);
-                const autoMode = autoModeEl.value === 'true';
-
-                // Validate numeric values
-                if (isNaN(healthTarget) || healthTarget < 1.05 || healthTarget > 5.0) {
-                    throw new Error('Health Factor Target must be between 1.05 and 5.0');
-                }
-                if (isNaN(borrowTrigger) || borrowTrigger < 0.001 || borrowTrigger > 0.5) {
-                    throw new Error('Borrow Trigger Threshold must be between 0.001 and 0.5');
-                }
-                if (isNaN(arbDecline) || arbDecline < 0.1 || arbDecline > 50) {
-                    throw new Error('ARB Decline Threshold must be between 0.1% and 50%');
-                }
-
-                const params = {
-                    health_factor_target: healthTarget,
-                    borrow_trigger_threshold: borrowTrigger,
-                    arb_decline_threshold: arbDecline / 100,
-                    auto_mode: autoMode
-                };
-
-                console.log('Sending parameters:', params);
-
-                const response = await fetch('/api/parameters', {
+        async function activateEmergency() {
+             try {
+                const response = await fetch('/api/emergency_stop', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(params)
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ reason: 'Manual emergency stop via dashboard' })
                 });
 
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                }
-
-                const data = await response.json();
-                console.log('Parameter update response:', data);
-
-                if (data.status === 'success' || data.success) {
-                    alert('✅ Parameters updated successfully!');
-                    // Refresh parameters to show updated values
-                    setTimeout(() => {
-                        fetchParameters();
-                    }, 1000);
+                if (response.ok) {
+                    location.reload();
                 } else {
-                    throw new Error(data.error || data.message || 'Unknown error');
+                    alert('Failed to activate emergency stop');
                 }
-
             } catch (error) {
-                console.error('Parameter update error:', error);
-                alert(`❌ Error updating parameters: ${error.message}`);
+                alert('Error activating emergency stop');
             }
         }
 
-        function getHealthStatus(healthFactor) {
-            if (healthFactor === Infinity || healthFactor > 2.0) return 'status-safe';
-            if (healthFactor > 1.5) return 'status-warning';
-            return 'status-danger';
-        }
-
-        function refreshData() {
+        async function clearEmergency() {
             try {
-                console.log('Refreshing dashboard data...');
-                fetchWalletStatus().catch(error => console.error('Error refreshing wallet status:', error));
-                fetchPerformanceData().catch(error => console.error('Error refreshing performance:', error));
+                const response = await fetch('/api/emergency_stop', { method: 'DELETE' });
+
+                if (response.ok) {
+                    location.reload();
+                } else {
+                    alert('Failed to clear emergency stop');
+                }
             } catch (error) {
-                console.error('Error in refreshData:', error);
+                alert('Error clearing emergency stop');
             }
         }
 
-        function updateLastUpdate() {
-            document.getElementById('lastUpdate').textContent = `Last updated: ${new Date().toLocaleTimeString()}`;
+        function startUpdates() {
+            updateWalletStatus();
+            updateAaveStatus();
+            updateNetworkInfo();
+
+            updateInterval = setInterval(() => {
+                updateWalletStatus();
+                updateAaveStatus();
+                updateLastUpdate();
+            }, 30000); // Update every 30 seconds
         }
 
-        // Emergency stop functions
-        function activateEmergencyStop() {
-            const reason = prompt("Enter reason for emergency stop (optional):");
-            if (reason === null) return; // User cancelled
-
-            if (confirm("🚨 Are you sure you want to activate EMERGENCY STOP?\n\nThis will immediately halt all agent operations!")) {
-                fetch('/api/emergency_stop', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        reason: reason || 'Emergency stop via dashboard'
-                    })
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        alert('🚨 Emergency stop activated successfully!');
-                        updateEmergencyStatus();
-                    } else {
-                        alert('Error activating emergency stop: ' + (data.error || 'Unknown error'));
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    alert('Error activating emergency stop');
-                });
-            }
-        }
-
-        function clearEmergencyStop() {
-            if (confirm("⚠️ Are you sure you want to CLEAR the emergency stop?\n\nThis will allow agent operations to resume when restarted.")) {
-                fetch('/api/emergency_stop', {
-                    method: 'DELETE'
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        alert('✅ Emergency stop cleared! You can now restart the agent.');
-                        updateEmergencyStatus();
-                    } else {
-                        alert('Info: ' + data.message);
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    alert('Error clearing emergency stop');
-                });
-            }
-        }
-
-        async function updateEmergencyStatus() {
-            try {
-                console.log('Fetching emergency status...');
-                const response = await fetch('/api/emergency_status', {
-                    method: 'GET',
-                    headers: {
-                        'Accept': 'application/json',
-                        'Cache-Control': 'no-cache'
-                    }
-                });
-
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                }
-
-                const data = await response.json();
-                console.log('Emergency status received:', data);
-
-                const statusDiv = document.getElementById('emergency-status');
-                const stopBtn = document.getElementById('emergency-stop-btn');
-                const clearBtn = document.getElementById('clear-stop-btn');
-                const logsDiv = document.getElementById('emergency-logs');
-
-                if (statusDiv) {
-                    if (data.active) {
-                        statusDiv.innerHTML = '🚨 EMERGENCY STOP ACTIVE';
-                        statusDiv.className = 'emergency-status active';
-                    } else {
-                        statusDiv.innerHTML = '✅ Agent operations normal';
-                        statusDiv.className = 'emergency-status inactive';
-                    }
-                }
-
-                if (stopBtn && clearBtn) {
-                    if (data.active) {
-                        stopBtn.style.display = 'none';
-                        clearBtn.style.display = 'inline-block';
-                    } else {
-                        stopBtn.style.display = 'inline-block';
-                        clearBtn.style.display = 'none';
-                    }
-                }
-
-                // Show recent logs
-                if (logsDiv) {
-                    if (data.recent_logs && Array.isArray(data.recent_logs) && data.recent_logs.length > 0) {
-                        let logsHtml = '<strong>Recent Actions:</strong><br>';
-                        data.recent_logs.forEach(log => {
-                            if (log && log.datetime && log.action) {
-                                logsHtml += `${log.datetime}: ${log.action}<br>`;
-                            }
-                        });
-                        logsDiv.innerHTML = logsHtml;
-                    } else {
-                        logsDiv.innerHTML = '';
-                    }
-                }
-
-                console.log('Emergency status updated successfully');
-
-            } catch (error) {
-                console.error('Error fetching emergency status:', error);
-                // Set safe defaults on error
-                const statusDiv = document.getElementById('emergency-status');
-                if (statusDiv) {
-                    statusDiv.innerHTML = '❓ Status unknown';
-                    statusDiv.className = 'emergency-status inactive';
-                }
-            }
-        }
-
-        // Update network info with proper mainnet detection
+         // Update network info with proper mainnet detection
         function updateNetworkInfo() {
             fetch('/api/network-info')
                 .then(response => response.json())
                 .then(data => {
                     console.log('Network info received:', data);
-                    const networkElement = document.getElementById('network');
+                    const networkElement = document.getElementById('networkStatus');
                     if (data.network_name) {
-                        networkElement.textContent = data.network_name;
-                        // Add visual indicator for mainnet
-                        if (data.network_name === 'Arbitrum Mainnet') {
-                            networkElement.style.color = '#00ff88';
-                            networkElement.style.fontWeight = 'bold';
-                        } else {
-                            networkElement.style.color = '#ff8800';
-                            networkElement.style.fontWeight = 'normal';
-                        }
-
-                        // Also update network status in header
-                        const networkStatus = document.getElementById('networkStatus');
-                        if (networkStatus) {
-                            networkStatus.textContent = `Real-time monitoring of your ${data.network_name} operations`;
-                        }
+                        networkElement.textContent = `Real-time monitoring of your ${data.network_name} operations`;
                     } else {
                         networkElement.textContent = 'Unknown Network';
                     }
                 })
                 .catch(error => {
                     console.error('Error fetching network info:', error);
-                    document.getElementById('network').textContent = 'Error loading network info';
+                    document.getElementById('networkStatus').textContent = 'Error loading network info';
                 });
         }
 
-        // Diagnostic functions
-        async function runDiagnostics() {
-            document.getElementById('diagnostics-modal').style.display = 'block';
-            document.getElementById('diagnostics-content').innerHTML = 'Running comprehensive diagnostics...';
-
-            try {
-                // Test basic connection first
-                const connectionTest = await fetch('/api/diagnostics/connection-test');
-                const connectionData = await connectionTest.json();
-
-                let diagnosticsHtml = '<h4>🔗 Connection Test</h4>';
-                diagnosticsHtml += `<pre>${JSON.stringify(connectionData, null, 2)}</pre>`;
-
-                // Test parameter loading
-                const paramTest = await fetch('/api/diagnostics/debug-parameters');
-                const paramData = await paramTest.json();
-
-                diagnosticsHtml += '<h4>⚙️ Parameter Loading Test</h4>';
-                diagnosticsHtml += `<pre>${JSON.stringify(paramData, null, 2)}</pre>`;
-
-                // Test individual endpoints
-                const endpoints = ['/api/wallet_status', '/api/performance', '/api/parameters', '/api/emergency_status'];
-                diagnosticsHtml += '<h4>🔌 Endpoint Tests</h4>';
-
-                for (const endpoint of endpoints) {
-                    try {
-                        const response = await fetch(endpoint);
-                        const data = await response.json();
-                        diagnosticsHtml += `<h5>${endpoint}</h5>`;
-                        diagnosticsHtml += `<p>Status: ${response.status} ${response.ok ? '✅' : '❌'}</p>`;
-                        if (data.error) {
-                            diagnosticsHtml += `<p style="color: red;">Error: ${data.error}</p>`;
-                        } else {
-                            diagnosticsHtml += `<p style="color: green;">Data loaded successfully</p>`;
-                        }
-                    } catch (error) {
-                        diagnosticsHtml += `<h5>${endpoint}</h5>`;
-                        diagnosticsHtml += `<p style="color: red;">❌ Failed: ${error.message}</p>`;
-                    }
-                }
-
-                document.getElementById('diagnostics-content').innerHTML = diagnosticsHtml;
-
-            } catch (error) {
-                document.getElementById('diagnostics-content').innerHTML = 
-                    `<h4 style="color: red;">Diagnostics Failed</h4>
-                     <p>Error: ${error.message}</p>
-                     <p>This indicates a serious connectivity issue.</p>`;
-            }
+        function updateLastUpdate() {
+            document.getElementById('lastUpdate').textContent = `Last updated: ${new Date().toLocaleTimeString()}`;
         }
 
-        function closeDiagnostics() {
-            document.getElementById('diagnostics-modal').style.display = 'none';
-        }
-
-        async function debugMainnetAave() {
-            document.getElementById('diagnostics-modal').style.display = 'block';
-            document.getElementById('diagnostics-content').innerHTML = 'Testing mainnet Aave data retrieval...';
-
-            try {
-                const response = await fetch('/api/debug/mainnet-aave');
-                const data = await response.json();
-
-                let debugHtml = '<h4>🚀 Mainnet Aave Debug Results</h4>';
-                
-                if (response.ok) {
-                    debugHtml += '<h5>🌐 Network Information</h5>';
-                    debugHtml += `<pre>${JSON.stringify(data.network_info, null, 2)}</pre>`;
-                    
-                    debugHtml += '<h5>📊 Aave Data</h5>';
-                    if (data.aave_data) {
-                        debugHtml += '<p style="color: green;">✅ Aave data retrieved successfully!</p>';
-                        debugHtml += `<pre>${JSON.stringify(data.aave_data, null, 2)}</pre>`;
-                        
-                        if (data.aave_data.total_collateral_usdc > 0) {
-                            debugHtml += `<p style="color: green; font-weight: bold;">💰 Collateral Found: $${data.aave_data.total_collateral_usdc.toFixed(2)}</p>`;
-                        }
-                    } else {
-                        debugHtml += '<p style="color: red;">❌ No Aave data retrieved</p>';
-                    }
-                    
-                    debugHtml += '<h5>🔍 Debug Status</h5>';
-                    debugHtml += `<pre>${JSON.stringify(data.debug_status, null, 2)}</pre>`;
-                } else {
-                    debugHtml += `<p style="color: red;">❌ Debug failed: ${data.error}</p>`;
-                    if (data.debug_info) {
-                        debugHtml += `<pre>${JSON.stringify(data.debug_info, null, 2)}</pre>`;
-                    }
-                }
-
-                document.getElementById('diagnostics-content').innerHTML = debugHtml;
-
-            } catch (error) {
-                document.getElementById('diagnostics-content').innerHTML = 
-                    `<h4 style="color: red;">Mainnet Aave Debug Failed</h4>
-                     <p>Error: ${error.message}</p>`;
-            }
-        }
-
-        // Enhanced error logging
-        function logFetchError(endpoint, error) {
-            console.error(`Fetch error for ${endpoint}:`, error);
-
-            // Try to provide more specific error information
-            if (error.message.includes('Failed to fetch')) {
-                console.error('Possible causes: Server not responding, CORS issues, or network problems');
-            }
-        }
-
-        // Function to safely update element text content
-        function safeUpdateElement(elementId, value, defaultValue = 'Loading...') {
-            try {
-                const element = document.getElementById(elementId);
-                if (element) {
-                    const safeValue = (value !== undefined && value !== null && value !== 'undefined') ? value : defaultValue;
-                    element.textContent = safeValue;
-                } else {
-                    console.warn(`Element with ID '${elementId}' not found`);
-                }
-            } catch (error) {
-                console.error(`Error updating element ${elementId}:`, error);
-            }
-        }
-
-        // Function to safely update element HTML content
-        function safeUpdateHTML(elementId, html, defaultHtml = 'Loading...') {
-            try {
-                const element = document.getElementById(elementId);
-                if (element) {
-                    const safeHtml = (html !== undefined && html !== null && html !== 'undefined') ? html : defaultHtml;
-                    element.innerHTML = safeHtml;
-                } else {
-                    console.warn(`Element with ID '${elementId}' not found`);
-                }
-            } catch (error) {
-                console.error(`Error updating HTML for element ${elementId}:`, error);
-            }
-        }
-
-        function updateWalletStatus(data) {
-            try {
-                // Validate data exists and is an object
-                if (!data || typeof data !== 'object') {
-                    console.error('Invalid wallet status data structure:', data);
-                    return;
-                }
-
-                // Safely extract and validate numeric values
-                const ethBalance = parseFloat(data.eth_balance) || 0;
-                const usdcBalance = parseFloat(data.usdc_balance) || 0;
-                const healthFactor = parseFloat(data.health_factor) || 0;
-                const totalCollateral = parseFloat(data.total_collateral) || 0;
-                const totalDebt = parseFloat(data.total_debt) || 0;
-                const availableBorrows = parseFloat(data.available_borrows) || 0;
-                const arbPrice = parseFloat(data.arb_price) || 0;
-
-                // Update elements with validated data
-                safeUpdateElement('walletAddress', data.wallet_address || 'Unknown');
-                safeUpdateElement('ethBalance', `${ethBalance.toFixed(6)} ETH`);
-                safeUpdateElement('usdcBalance', `${usdcBalance.toFixed(2)} USDC`);
-                safeUpdateElement('healthFactor', healthFactor === 0 ? 'No positions' : healthFactor.toFixed(4));
-                safeUpdateElement('totalCollateral', `${totalCollateral.toFixed(6)} ETH`);
-                safeUpdateElement('totalDebt', `${totalDebt.toFixed(6)} ETH`);
-                safeUpdateElement('availableBorrows', `${availableBorrows.toFixed(6)} ETH`);
-                safeUpdateElement('arbPrice', `$${arbPrice.toFixed(4)}`);
-            } catch (error) {
-                console.error('Error updating wallet status:', error);
-                safeUpdateElement('walletAddress', 'Update Error');
-            }
-        }
-
-        function updatePerformanceData(data) {
-            try {
-                // Validate data exists and is an object
-                if (!data || typeof data !== 'object') {
-                    console.error('Invalid performance data structure:', data);
-                    return;
-                }
-
-                // Safely extract and validate numeric values
-                const pnl = parseFloat(data.pnl_24h) || 0;
-                const avgPerformance = parseFloat(data.avg_performance) || 0;
-                const errorRate = parseFloat(data.error_rate) || 0;
-                const totalOperations = parseInt(data.total_operations) || 0;
-
-                // Calculate display values
-                const pnlClass = pnl >= 0 ? 'positive' : 'negative';
-                const pnlIcon = pnl >= 0 ? '📈' : '📉';
-
-                // Update elements with validated data
-                safeUpdateHTML('pnl24h', `${pnlIcon} <span class="${pnlClass}">${pnl >= 0 ? '+' : ''}${pnl.toFixed(2)}%</span>`);
-                safeUpdateElement('avgPerformance', avgPerformance.toFixed(3));
-                safeUpdateElement('errorRate', `${errorRate.toFixed(1)}%`);
-                safeUpdateElement('totalOps', totalOperations);
-            } catch (error) {
-                console.error('Error updating performance data:', error);
-                safeUpdateElement('avgPerformance', 'Error');
-                safeUpdateElement('errorRate', 'Error');
-                safeUpdateElement('totalOps', 'Error');
-            }
-        }
-
-        // Global error handler to catch undefined errors
-        window.addEventListener('error', function(event) {
-            console.error('Global error caught:', event.error);
-            if (event.error && event.error.message && event.error.message.includes('undefined')) {
-                console.warn('Undefined error detected - likely a timing issue');
-                // Don't show alert for undefined errors as they may be temporary
-                event.preventDefault();
-            }
-        });
-
-        // Global unhandled promise rejection handler
-        window.addEventListener('unhandledrejection', function(event) {
-            console.error('Unhandled promise rejection:', event.reason);
-            event.preventDefault();
-        });
-
-        // Initialize dashboard when DOM is loaded
+        // Start updates when page loads
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('DOM loaded, starting dashboard initialization...');
-            initializeDashboard();
-            
-            // Failsafe: If dashboard isn't shown after 10 seconds, force show it
-            setTimeout(() => {
-                const loadingEl = document.getElementById('loading');
-                const dashboardEl = document.getElementById('dashboard');
-                
-                if (loadingEl && loadingEl.style.display !== 'none') {
-                    console.warn('Dashboard initialization took too long, forcing display...');
-                    loadingEl.style.display = 'none';
-                    if (dashboardEl) dashboardEl.style.display = 'block';
-                }
-            }, 10000);
+            const loadingEl = document.getElementById('loading');
+            const dashboardEl = document.getElementById('dashboard');
+
+            if (loadingEl) loadingEl.style.display = 'none';
+            if (dashboardEl) dashboardEl.style.display = 'block';
+
+            startUpdates();
         });
-
-        // Safe initialization with proper error handling
-        async function initializeDashboard() {
-            try {
-                console.log('🚀 Initializing dashboard...');
-
-                // Show loading state
-                const loadingEl = document.getElementById('loading');
-                const dashboardEl = document.getElementById('dashboard');
-                const errorEl = document.getElementById('error');
-
-                console.log('📱 Elements found:', {
-                    loading: !!loadingEl,
-                    dashboard: !!dashboardEl,
-                    error: !!errorEl
-                });
-
-                if (loadingEl) loadingEl.style.display = 'block';
-                if (dashboardEl) dashboardEl.style.display = 'none';
-                if (errorEl) errorEl.style.display = 'none';
-
-                // Force show dashboard after 2 seconds regardless of API status
-                setTimeout(() => {
-                    console.log('⏰ Timeout: Forcing dashboard display...');
-                    if (loadingEl) loadingEl.style.display = 'none';
-                    if (dashboardEl) {
-                        dashboardEl.style.display = 'block';
-                        console.log('✅ Dashboard forced to display');
-                    }
-                }, 2000);
-
-                // Initialize in sequence with shorter delays - but don't let failures block the UI
-                await new Promise(resolve => setTimeout(resolve, 500));
-
-                // Fetch critical data first - but continue even if some fail
-                try {
-                    console.log('📊 Fetching parameters...');
-                    await fetchParameters();
-                    console.log('✅ Parameters loaded');
-                } catch (e) {
-                    console.warn('⚠️ Parameters fetch failed, using defaults...', e);
-                    // Set default values directly
-                    const healthTargetEl = document.getElementById('healthTarget');
-                    const borrowTriggerEl = document.getElementById('borrowTrigger');
-                    const arbDeclineEl = document.getElementById('arbDecline');
-                    const autoModeEl = document.getElementById('autoMode');
-                    
-                    if (healthTargetEl) healthTargetEl.value = '1.19';
-                    if (borrowTriggerEl) borrowTriggerEl.value = '0.02';
-                    if (arbDeclineEl) arbDeclineEl.value = '5.0';
-                    if (autoModeEl) autoModeEl.value = 'true';
-                }
-                
-                try {
-                    console.log('💰 Fetching wallet status...');
-                    await fetchWalletStatus();
-                    console.log('✅ Wallet status loaded');
-                } catch (e) {
-                    console.warn('⚠️ Wallet status fetch failed, using defaults...', e);
-                    // Set default values
-                    safeUpdateElement('walletAddress', 'Connecting...');
-                    safeUpdateElement('ethBalance', '0.0000 ETH');
-                    safeUpdateElement('usdcBalance', '0.00 USDC');
-                    safeUpdateElement('healthFactor', 'No positions');
-                }
-
-                try {
-                    console.log('📈 Fetching performance data...');
-                    await fetchPerformanceData();
-                    console.log('✅ Performance data loaded');
-                } catch (e) {
-                    console.warn('⚠️ Performance data fetch failed, using defaults...', e);
-                    safeUpdateElement('pnl24h', '+0.00%');
-                    safeUpdateElement('avgPerformance', '0.000');
-                    safeUpdateElement('errorRate', '0.0%');
-                    safeUpdateElement('totalOps', '0');
-                }
-
-                try {
-                    console.log('🚨 Fetching emergency status...');
-                    await updateEmergencyStatus();
-                    console.log('✅ Emergency status loaded');
-                } catch (e) {
-                    console.warn('⚠️ Emergency status fetch failed, using defaults...', e);
-                    const statusDiv = document.getElementById('emergency-status');
-                    if (statusDiv) {
-                        statusDiv.innerHTML = '✅ Agent operations normal';
-                        statusDiv.className = 'emergency-status inactive';
-                    }
-                }
-
-                try {
-                    console.log('🌐 Updating network info...');
-                    updateNetworkInfo();
-                    console.log('✅ Network info updated');
-                } catch (e) {
-                    console.warn('⚠️ Network info fetch failed, using defaults...', e);
-                    safeUpdateElement('network', 'Arbitrum Mainnet');
-                }
-                
-                updateLastUpdate();
-
-                console.log('🎉 Dashboard initialization complete - showing dashboard');
-
-                // Always show dashboard even if some fetches failed
-                if (loadingEl) loadingEl.style.display = 'none';
-                if (dashboardEl) {
-                    dashboardEl.style.display = 'block';
-                    console.log('✅ Dashboard is now visible');
-                }
-
-                // Set up intervals only after successful initialization
-                setInterval(() => {
-                    try {
-                        refreshData();
-                        updateLastUpdate();
-                    } catch (error) {
-                        console.error('Error in refresh interval:', error);
-                    }
-                }, 30000); // Update every 30 seconds
-
-                setInterval(() => {
-                    try {
-                        updateEmergencyStatus();
-                    } catch (error) {
-                        console.error('Error in emergency status interval:', error);
-                    }
-                }, 5000); // Check emergency status every 5 seconds
-
-                setInterval(() => {
-                    try {
-                        updateNetworkInfo();
-                    } catch (error) {
-                        console.error('Error in network info interval:', error);
-                    }
-                }, 60000); // Check network info every 60 seconds
-
-            } catch (error) {
-                console.error('Dashboard initialization failed:', error);
-                
-                // Hide loading and show error
-                const loadingEl = document.getElementById('loading');
-                const errorEl = document.getElementById('error');
-                
-                if (loadingEl) loadingEl.style.display = 'none';
-                if (errorEl) {
-                    errorEl.innerHTML = `❌ Dashboard Initialization Error: ${error.message}`;
-                    errorEl.style.display = 'block';
-                }
-            }
-        }
     </script>
 </body>
 </html>

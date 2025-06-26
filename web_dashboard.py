@@ -373,8 +373,6 @@ def wallet_status():
                                 print(f"⚠️ Fallback analysis error: {e}")
                 except Exception as e:
                     print(f"⚠️ Aave balance/health error: {e}")
-            except Exception as e:
-                print(f"⚠️ Aave integration error: {e}")
         else:
             print("⚠️ Aave integration not available")
 
