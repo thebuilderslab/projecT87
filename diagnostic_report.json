@@ -1,6 +1,6 @@
 {
-  "timestamp": 1750956075.0033534,
-  "datetime": "2025-06-26T16:41:15.003354",
+  "timestamp": 1750956342.1632254,
+  "datetime": "2025-06-26T16:45:42.163226",
   "diagnostic_version": "1.0",
   "environment": {
     "python_version": "3.11.10 (main, Sep  7 2024, 01:03:31) [GCC 13.3.0]",
@@ -67,8 +67,8 @@
     "critical_files": {
       "arbitrum_testnet_agent.py": {
         "exists": true,
-        "size": 32346,
-        "modified": 1750956022.9499912,
+        "size": 32306,
+        "modified": 1750956301.5704224,
         "readable": true,
         "writable": true,
         "syntax_valid": false,
@@ -81,16 +81,16 @@
       },
       "web_dashboard.py": {
         "exists": true,
-        "size": 46170,
-        "modified": 1750956022.6779919,
+        "size": 46074,
+        "modified": 1750956301.8974218,
         "readable": true,
         "writable": true,
         "syntax_valid": false,
         "syntax_error": {
           "message": "invalid syntax (web_dashboard.py, line 376)",
           "line": 376,
-          "offset": 13,
-          "text": "            except Exception as e:\n"
+          "offset": 9,
+          "text": "        else:\n"
         }
       },
       "mainnet_launcher.py": {
@@ -143,15 +143,15 @@
       },
       ".env": {
         "exists": true,
-        "size": 435,
-        "modified": 1750689244.7251654,
+        "size": 372,
+        "modified": 1750956302.0804214,
         "readable": true,
         "writable": true
       },
       ".replit": {
         "exists": true,
-        "size": 6202,
-        "modified": 1750944453.840778,
+        "size": 6455,
+        "modified": 1750956326.779371,
         "readable": true,
         "writable": true
       },
@@ -171,13 +171,13 @@
       "arbitrum_mainnet": {
         "connected": true,
         "chain_id": 42161,
-        "latest_block": 351459298,
+        "latest_block": 351460356,
         "response_time": "fast"
       },
       "arbitrum_sepolia": {
         "connected": true,
         "chain_id": 421614,
-        "latest_block": 167475914,
+        "latest_block": 167476966,
         "response_time": "fast"
       }
     },
@@ -185,7 +185,7 @@
       "coinmarketcap": {
         "accessible": true,
         "status_code": 401,
-        "response_time": 0.130977
+        "response_time": 0.126319
       }
     },
     "general_connectivity": {}
@@ -315,8 +315,8 @@
         "details": {
           "message": "invalid syntax (web_dashboard.py, line 376)",
           "line": 376,
-          "offset": 13,
-          "text": "            except Exception as e:\n"
+          "offset": 9,
+          "text": "        else:\n"
         }
       },
       {
