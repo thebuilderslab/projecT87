@@ -116,6 +116,15 @@ mode = "sequential"
 task = "shell.exec"
 args = "python web_dashboard.py"
 
+[[workflows.workflow]]
+name = "🧪 Test Dashboard"
+author = 39391053
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python test_dashboard_start.py"
+
 [[ports]]
 localPort = 5000
 externalPort = 80

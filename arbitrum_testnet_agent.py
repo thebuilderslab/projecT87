@@ -11,7 +11,7 @@ class ArbitrumTestnetAgent:
 
         # Auto-detect network mode from environment if not specified
         if network_mode is None:
-            network_mode = os.getenv('NETWORK_MODE', 'testnet').lower()
+            network_mode = os.getenv('NETWORK_MODE', 'mainnet').lower()  # Default to mainnet for real positions
 
         # Network configuration
         if network_mode == 'mainnet':
@@ -58,6 +58,7 @@ class ArbitrumTestnetAgent:
         self.network_mode = network_mode
         self.last_settings_check = 0
         self.user_settings = {}
+        self.target_health_factor = 3.5  # Initialize default target health factor
 
     def get_eth_balance(self):
         """Get ETH balance in human-readable format"""
