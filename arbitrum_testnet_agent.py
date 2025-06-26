@@ -292,6 +292,24 @@ class ArbitrumTestnetAgent:
                             )
 
                             if borrow_tx:
+                                print("✅ Step 2: USDC borrowed successfully")
+                                print(f"🎯 Position created with health factor > 3.5")
+                                return 0.9  # High performance score
+                            else:
+                                print("❌ Step 2: USDC borrow failed")
+                                return 0.3
+                        else:
+                            print("❌ Estimated health factor too low for safe borrowing")
+                            return 0.1
+                    else:
+                        print("❌ Step 1: ETH supply failed")
+                        return 0.1
+                else:
+                    print("❌ Insufficient ETH balance for operations")
+                                usdc_borrow_amount
+                            )
+
+                            if borrow_tx:
                                 print("✅ Step 2: Successfully borrowed 20 USDC")
                                 print(f"🎯 Target Health Factor: >3.5 (Estimated: {estimated_hf:.2f})")
                                 performance = 0.95  # Excellent performance for position creation

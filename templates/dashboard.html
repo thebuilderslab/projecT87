@@ -370,6 +370,7 @@
                     <button class="btn" onclick="updateParameters()">💾 Save Parameters</button>
                     <button class="btn" onclick="refreshData()" style="margin-left: 10px;">🔄 Refresh Now</button>
                     <button class="btn" onclick="runDiagnostics()" style="margin-left: 10px; background: linear-gradient(45deg, #FF9800, #F57C00);">🔍 Run Diagnostics</button>
+                    <button class="btn" onclick="debugMainnetAave()" style="margin-left: 10px; background: linear-gradient(45deg, #9C27B0, #673AB7);">🚀 Debug Mainnet Aave</button>
                 </div></div>
 
             <!-- Diagnostics Modal -->
@@ -888,6 +889,50 @@
 
         function closeDiagnostics() {
             document.getElementById('diagnostics-modal').style.display = 'none';
+        }
+
+        async function debugMainnetAave() {
+            document.getElementById('diagnostics-modal').style.display = 'block';
+            document.getElementById('diagnostics-content').innerHTML = 'Testing mainnet Aave data retrieval...';
+
+            try {
+                const response = await fetch('/api/debug/mainnet-aave');
+                const data = await response.json();
+
+                let debugHtml = '<h4>🚀 Mainnet Aave Debug Results</h4>';
+                
+                if (response.ok) {
+                    debugHtml += '<h5>🌐 Network Information</h5>';
+                    debugHtml += `<pre>${JSON.stringify(data.network_info, null, 2)}</pre>`;
+                    
+                    debugHtml += '<h5>📊 Aave Data</h5>';
+                    if (data.aave_data) {
+                        debugHtml += '<p style="color: green;">✅ Aave data retrieved successfully!</p>';
+                        debugHtml += `<pre>${JSON.stringify(data.aave_data, null, 2)}</pre>`;
+                        
+                        if (data.aave_data.total_collateral_usdc > 0) {
+                            debugHtml += `<p style="color: green; font-weight: bold;">💰 Collateral Found: $${data.aave_data.total_collateral_usdc.toFixed(2)}</p>`;
+                        }
+                    } else {
+                        debugHtml += '<p style="color: red;">❌ No Aave data retrieved</p>';
+                    }
+                    
+                    debugHtml += '<h5>🔍 Debug Status</h5>';
+                    debugHtml += `<pre>${JSON.stringify(data.debug_status, null, 2)}</pre>`;
+                } else {
+                    debugHtml += `<p style="color: red;">❌ Debug failed: ${data.error}</p>`;
+                    if (data.debug_info) {
+                        debugHtml += `<pre>${JSON.stringify(data.debug_info, null, 2)}</pre>`;
+                    }
+                }
+
+                document.getElementById('diagnostics-content').innerHTML = debugHtml;
+
+            } catch (error) {
+                document.getElementById('diagnostics-content').innerHTML = 
+                    `<h4 style="color: red;">Mainnet Aave Debug Failed</h4>
+                     <p>Error: ${error.message}</p>`;
+            }
         }
 
         // Enhanced error logging
