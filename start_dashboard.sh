@@ -1,2 +1,2 @@
 #!/bin/bash
-python -c " print('🚀 STARTING WEB DASHBOARD'); print('=' * 50); print('⏳ Initializing components...'); try: from web_dashboard import app; print('✅ Web dashboard imported successfully'); except Exception as e: print(f'❌ Import failed: {e}'); exit(1); print('🌐 Starting Flask server on 5000...'); print('📱 Dashboard will be ready when you see: \"Running on http://0.0.0.0:5000\"'); print('🔗 Access your dashboard through the Replit webview URL'); print('⚠️ Wait for the \"Running on\" message before accessing'); " && python web_dashboard.py
+python web_dashboard.py
