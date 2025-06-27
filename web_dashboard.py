@@ -271,13 +271,15 @@ def wallet_status():
                             'available_borrows': health_data.get('available_borrows_eth', 0),
                             'available_borrows_usdc': health_data.get('available_borrows_usdc', 0)
                         })
-                            else:                        
-
-
-
-
+                        else:
+                            print("⚠️ Health monitor returned no data, trying fallback methods...")
                             
-                            if provider.zapper_api_key:
+                            # Try third-party data providers
+                            try:
+                                from third_party_data_integration import ThirdPartyDataProvider
+                                provider = ThirdPartyDataProvider()
+                                
+                                if provider.zapper_api_key:
                                 print("🔄 Attempting Zapper API for Aave data...")
                                 zapper_data = provider.get_zapper_portfolio(agent.address)
                                 if zapper_data and zapper_data['health_factor'] > 0:
