@@ -259,13 +259,13 @@ def wallet_status():
                     wallet_status['usdc_balance'] = 0
 
                 try:
-                    # Get health factor data
-                    health_data = agent.health_monitor.get_current_health_factor()
-                    if health_data:
-                        wallet_status.update({
-                            'health_factor': health_data['health_factor'],
-                            'total_collateral': health_data['total_collateral_eth'],
-                            'total_debt': health_data['total_debt_eth'],
+                        # Get health factor data
+                        health_data = agent.health_monitor.get_current_health_factor()
+                        if health_data:
+                            wallet_status.update({
+                                'health_factor': health_data['health_factor'],
+                                'total_collateral': health_data['total_collateral_eth'],
+                                'total_debt': health_data['total_debt_eth'],
                             'total_collateral_usdc': health_data.get('total_collateral_usdc', 0),
                             'total_debt_usdc': health_data.get('total_debt_usdc', 0),
                             'available_borrows': health_data.get('available_borrows_eth', 0),
