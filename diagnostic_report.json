@@ -1,6 +1,6 @@
 {
-  "timestamp": 1751034734.0645027,
-  "datetime": "2025-06-27T14:32:14.064503",
+  "timestamp": 1751049838.099883,
+  "datetime": "2025-06-27T18:43:58.099883",
   "diagnostic_version": "1.0",
   "environment": {
     "python_version": "3.11.10 (main, Sep  7 2024, 01:03:31) [GCC 13.3.0]",
@@ -67,30 +67,24 @@
     "critical_files": {
       "arbitrum_testnet_agent.py": {
         "exists": true,
-        "size": 31315,
-        "modified": 1751034712.975935,
+        "size": 31339,
+        "modified": 1751042582.533062,
         "readable": true,
         "writable": true,
-        "syntax_valid": false,
-        "syntax_error": {
-          "message": "invalid syntax (arbitrum_testnet_agent.py, line 462)",
-          "line": 462,
-          "offset": 13,
-          "text": "            else:\n"
-        }
+        "syntax_valid": true
       },
       "web_dashboard.py": {
         "exists": true,
-        "size": 46069,
-        "modified": 1751034713.1889346,
+        "size": 46099,
+        "modified": 1751049561.9766936,
         "readable": true,
         "writable": true,
         "syntax_valid": false,
         "syntax_error": {
-          "message": "invalid syntax (web_dashboard.py, line 376)",
-          "line": 376,
-          "offset": 9,
-          "text": "        else:\n"
+          "message": "unindent does not match any outer indentation level (web_dashboard.py, line 274)",
+          "line": 274,
+          "offset": 26,
+          "text": "                    else:\n"
         }
       },
       "mainnet_launcher.py": {
@@ -171,13 +165,13 @@
       "arbitrum_mainnet": {
         "connected": true,
         "chain_id": 42161,
-        "latest_block": 351773486,
+        "latest_block": 351833681,
         "response_time": "fast"
       },
       "arbitrum_sepolia": {
         "connected": true,
         "chain_id": 421614,
-        "latest_block": 167788142,
+        "latest_block": 167848117,
         "response_time": "fast"
       }
     },
@@ -185,7 +179,7 @@
       "coinmarketcap": {
         "accessible": true,
         "status_code": 401,
-        "response_time": 0.265914
+        "response_time": 0.146055
       }
     },
     "general_connectivity": {}
@@ -215,12 +209,11 @@
     },
     "import_tests": {
       "arbitrum_testnet_agent.ArbitrumTestnetAgent": {
-        "success": false,
-        "error": "invalid syntax (arbitrum_testnet_agent.py, line 462)"
+        "success": true
       },
       "web_dashboard.app": {
         "success": false,
-        "error": "invalid syntax (web_dashboard.py, line 376)"
+        "error": "unindent does not match any outer indentation level (web_dashboard.py, line 274)"
       },
       "aave_integration.AaveArbitrumIntegration": {
         "success": true
@@ -232,13 +225,15 @@
   },
   "application": {
     "agent_initialization": {
-      "success": false,
-      "error": "invalid syntax (arbitrum_testnet_agent.py, line 462)",
-      "traceback": "Traceback (most recent call last):\n  File \"/home/runner/workspace/comprehensive_diagnostic.py\", line 278, in test_application_components\n    from arbitrum_testnet_agent import ArbitrumTestnetAgent\n  File \"/home/runner/workspace/arbitrum_testnet_agent.py\", line 462\n    else:\n    ^^^^\nSyntaxError: invalid syntax\n"
+      "success": true,
+      "address": "0x5B823270e3719CDe8669e5e5326B455EaA8a350b",
+      "network_mode": "mainnet",
+      "chain_id": 42161,
+      "eth_balance": 0.000661396522192864
     },
     "web_dashboard": {
       "import_success": false,
-      "error": "invalid syntax (web_dashboard.py, line 376)"
+      "error": "unindent does not match any outer indentation level (web_dashboard.py, line 274)"
     },
     "aave_integration": {},
     "workflow_status": {}
@@ -281,53 +276,26 @@
     {
       "priority": "CRITICAL",
       "category": "Syntax",
-      "issue": "Syntax error in arbitrum_testnet_agent.py: invalid syntax (arbitrum_testnet_agent.py, line 462)",
-      "solution": "Fix syntax error at line 462"
-    },
-    {
-      "priority": "CRITICAL",
-      "category": "Syntax",
-      "issue": "Syntax error in web_dashboard.py: invalid syntax (web_dashboard.py, line 376)",
-      "solution": "Fix syntax error at line 376"
-    },
-    {
-      "priority": "HIGH",
-      "category": "Application",
-      "issue": "Agent initialization failed",
-      "solution": "Check network connectivity and environment variables"
+      "issue": "Syntax error in web_dashboard.py: unindent does not match any outer indentation level (web_dashboard.py, line 274)",
+      "solution": "Fix syntax error at line 274"
     }
   ],
   "ai_analysis_data": {
     "error_patterns": [
       {
         "type": "syntax_error",
-        "file": "arbitrum_testnet_agent.py",
-        "details": {
-          "message": "invalid syntax (arbitrum_testnet_agent.py, line 462)",
-          "line": 462,
-          "offset": 13,
-          "text": "            else:\n"
-        }
-      },
-      {
-        "type": "syntax_error",
         "file": "web_dashboard.py",
         "details": {
-          "message": "invalid syntax (web_dashboard.py, line 376)",
-          "line": 376,
-          "offset": 9,
-          "text": "        else:\n"
+          "message": "unindent does not match any outer indentation level (web_dashboard.py, line 274)",
+          "line": 274,
+          "offset": 26,
+          "text": "                    else:\n"
         }
-      },
-      {
-        "type": "import_error",
-        "module": "arbitrum_testnet_agent.ArbitrumTestnetAgent",
-        "error": "invalid syntax (arbitrum_testnet_agent.py, line 462)"
       },
       {
         "type": "import_error",
         "module": "web_dashboard.app",
-        "error": "invalid syntax (web_dashboard.py, line 376)"
+        "error": "unindent does not match any outer indentation level (web_dashboard.py, line 274)"
       }
     ],
     "configuration_state": {
@@ -339,13 +307,12 @@
     "dependency_matrix": {
       "web3_available": true,
       "flask_available": true,
-      "agent_importable": false,
+      "agent_importable": true,
       "dashboard_importable": false
     },
     "failure_points": [
-      "agent_initialization",
       "web_dashboard_import"
     ],
-    "system_health_score": 0
+    "system_health_score": 40
   }
 }

@@ -271,13 +271,10 @@ def wallet_status():
                             'available_borrows': health_data.get('available_borrows_eth', 0),
                             'available_borrows_usdc': health_data.get('available_borrows_usdc', 0)
                         })
-                    else:
-                            # Try third-party API fallback with priority for Zapper
+                    else:# Try third-party API fallback with priority for Zapper
                             try:
                                 from third_party_data_integration import ThirdPartyDataProvider
-                                provider = ThirdPartyDataProvider()
-
-                            # Try Zapper API first if available
+                                provider = ThirdPartyDataProvider()                            # Try Zapper API first if available
                             if provider.zapper_api_key:
                                 print("🔄 Attempting Zapper API for Aave data...")
                                 zapper_data = provider.get_zapper_portfolio(agent.address)
