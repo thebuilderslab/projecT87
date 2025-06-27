@@ -325,8 +325,8 @@ def wallet_status():
                                             })
                                         print("⚠️ Using on-chain fallback analysis")
                             else:
-                                print("💡 No Zapper API key found, using other third-party sources...")
-                                third_party_data = provider.get_reliable_aave_data(agent.address)
+                            print("💡 No Zapper API key found, using other third-party sources...")
+                            third_party_data = provider.get_reliable_aave_data(agent.address)
                                 if third_party_data:
                                     print(f"✅ Using {third_party_data['source']} API data")
                                     wallet_status.update({
