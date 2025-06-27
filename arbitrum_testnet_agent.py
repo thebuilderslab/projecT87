@@ -319,7 +319,7 @@ class ArbitrumTestnetAgent:
                         print("❌ Step 1: ETH supply failed")
                         return 0.1
                 else:
-                    print("❌ Insufficient ETH balance for operations")
+                    print(f"❌ Insufficient ETH balance ({eth_balance:.6f}) for collateral")
                     return 0.6
             else:
                 print(f"❌ Insufficient ETH balance ({eth_balance:.6f}) for collateral")
