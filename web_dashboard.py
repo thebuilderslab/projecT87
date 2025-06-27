@@ -372,10 +372,10 @@ def wallet_status():
                                     print("⚠️ Using fallback health factor analysis")
                                 except Exception as e:
                                     print(f"⚠️ Fallback analysis error: {e}")
-                except Exception as e:
-                    print(f"⚠️ Aave balance/health error: {e}")
-        else:
-            print("⚠️ Aave integration not available")
+                        except Exception as e:
+                            print(f"⚠️ Aave balance/health error: {e}")
+            else:
+                print("⚠️ Aave integration not available")
 
         # Get ARB price
         arb_price_data = agent.health_monitor.get_arb_price() if hasattr(agent, 'health_monitor') else None
