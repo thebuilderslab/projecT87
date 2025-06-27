@@ -354,24 +354,24 @@ def wallet_status():
                                                 'data_source': 'fallback'
                                             })
                                         print("⚠️ Using on-chain fallback analysis")
-                        except ImportError:
-                            print("💡 Third-party integration not available - using fallback")
-                            # Try fallback analysis
-                            try:
-                                fallback_data = agent.health_monitor.perform_fallback_analysis()
-                                if fallback_data:
-                                    wallet_status.update({
-                                        'health_factor': fallback_data.get('estimated_health_factor', 0),
-                                        'total_collateral': fallback_data.get('estimated_collateral', 0),
-                                        'total_debt': 0,
-                                        'total_collateral_usdc': fallback_data.get('estimated_collateral_usdc', 0),
-                                        'total_debt_usdc': 0,
-                                        'available_borrows': 0,
-                                        'available_borrows_usdc': 0
-                                    })
-                                print("⚠️ Using fallback health factor analysis")
-                            except Exception as e:
-                                print(f"⚠️ Fallback analysis error: {e}")
+                            except ImportError:
+                                print("💡 Third-party integration not available - using fallback")
+                                # Try fallback analysis
+                                try:
+                                    fallback_data = agent.health_monitor.perform_fallback_analysis()
+                                    if fallback_data:
+                                        wallet_status.update({
+                                            'health_factor': fallback_data.get('estimated_health_factor', 0),
+                                            'total_collateral': fallback_data.get('estimated_collateral', 0),
+                                            'total_debt': 0,
+                                            'total_collateral_usdc': fallback_data.get('estimated_collateral_usdc', 0),
+                                            'total_debt_usdc': 0,
+                                            'available_borrows': 0,
+                                            'available_borrows_usdc': 0
+                                        })
+                                    print("⚠️ Using fallback health factor analysis")
+                                except Exception as e:
+                                    print(f"⚠️ Fallback analysis error: {e}")
                 except Exception as e:
                     print(f"⚠️ Aave balance/health error: {e}")
         else:
