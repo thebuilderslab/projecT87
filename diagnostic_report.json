@@ -1,6 +1,6 @@
 {
-  "timestamp": 1750956342.1632254,
-  "datetime": "2025-06-26T16:45:42.163226",
+  "timestamp": 1751034734.0645027,
+  "datetime": "2025-06-27T14:32:14.064503",
   "diagnostic_version": "1.0",
   "environment": {
     "python_version": "3.11.10 (main, Sep  7 2024, 01:03:31) [GCC 13.3.0]",
@@ -67,22 +67,22 @@
     "critical_files": {
       "arbitrum_testnet_agent.py": {
         "exists": true,
-        "size": 32306,
-        "modified": 1750956301.5704224,
+        "size": 31315,
+        "modified": 1751034712.975935,
         "readable": true,
         "writable": true,
         "syntax_valid": false,
         "syntax_error": {
-          "message": "unexpected indent (arbitrum_testnet_agent.py, line 325)",
-          "line": 325,
-          "offset": 24,
-          "text": "                        if borrow_tx:\n"
+          "message": "invalid syntax (arbitrum_testnet_agent.py, line 462)",
+          "line": 462,
+          "offset": 13,
+          "text": "            else:\n"
         }
       },
       "web_dashboard.py": {
         "exists": true,
-        "size": 46074,
-        "modified": 1750956301.8974218,
+        "size": 46069,
+        "modified": 1751034713.1889346,
         "readable": true,
         "writable": true,
         "syntax_valid": false,
@@ -171,13 +171,13 @@
       "arbitrum_mainnet": {
         "connected": true,
         "chain_id": 42161,
-        "latest_block": 351460356,
+        "latest_block": 351773486,
         "response_time": "fast"
       },
       "arbitrum_sepolia": {
         "connected": true,
         "chain_id": 421614,
-        "latest_block": 167476966,
+        "latest_block": 167788142,
         "response_time": "fast"
       }
     },
@@ -185,7 +185,7 @@
       "coinmarketcap": {
         "accessible": true,
         "status_code": 401,
-        "response_time": 0.126319
+        "response_time": 0.265914
       }
     },
     "general_connectivity": {}
@@ -216,7 +216,7 @@
     "import_tests": {
       "arbitrum_testnet_agent.ArbitrumTestnetAgent": {
         "success": false,
-        "error": "unexpected indent (arbitrum_testnet_agent.py, line 325)"
+        "error": "invalid syntax (arbitrum_testnet_agent.py, line 462)"
       },
       "web_dashboard.app": {
         "success": false,
@@ -233,8 +233,8 @@
   "application": {
     "agent_initialization": {
       "success": false,
-      "error": "unexpected indent (arbitrum_testnet_agent.py, line 325)",
-      "traceback": "Traceback (most recent call last):\n  File \"/home/runner/workspace/comprehensive_diagnostic.py\", line 278, in test_application_components\n    from arbitrum_testnet_agent import ArbitrumTestnetAgent\n  File \"/home/runner/workspace/arbitrum_testnet_agent.py\", line 325\n    if borrow_tx:\nIndentationError: unexpected indent\n"
+      "error": "invalid syntax (arbitrum_testnet_agent.py, line 462)",
+      "traceback": "Traceback (most recent call last):\n  File \"/home/runner/workspace/comprehensive_diagnostic.py\", line 278, in test_application_components\n    from arbitrum_testnet_agent import ArbitrumTestnetAgent\n  File \"/home/runner/workspace/arbitrum_testnet_agent.py\", line 462\n    else:\n    ^^^^\nSyntaxError: invalid syntax\n"
     },
     "web_dashboard": {
       "import_success": false,
@@ -281,8 +281,8 @@
     {
       "priority": "CRITICAL",
       "category": "Syntax",
-      "issue": "Syntax error in arbitrum_testnet_agent.py: unexpected indent (arbitrum_testnet_agent.py, line 325)",
-      "solution": "Fix syntax error at line 325"
+      "issue": "Syntax error in arbitrum_testnet_agent.py: invalid syntax (arbitrum_testnet_agent.py, line 462)",
+      "solution": "Fix syntax error at line 462"
     },
     {
       "priority": "CRITICAL",
@@ -303,10 +303,10 @@
         "type": "syntax_error",
         "file": "arbitrum_testnet_agent.py",
         "details": {
-          "message": "unexpected indent (arbitrum_testnet_agent.py, line 325)",
-          "line": 325,
-          "offset": 24,
-          "text": "                        if borrow_tx:\n"
+          "message": "invalid syntax (arbitrum_testnet_agent.py, line 462)",
+          "line": 462,
+          "offset": 13,
+          "text": "            else:\n"
         }
       },
       {
@@ -322,7 +322,7 @@
       {
         "type": "import_error",
         "module": "arbitrum_testnet_agent.ArbitrumTestnetAgent",
-        "error": "unexpected indent (arbitrum_testnet_agent.py, line 325)"
+        "error": "invalid syntax (arbitrum_testnet_agent.py, line 462)"
       },
       {
         "type": "import_error",
