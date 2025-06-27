@@ -459,7 +459,7 @@ class ArbitrumTestnetAgent:
                 performance = 0.75
 
             # PRIORITY 3: Standard Operations (When no special triggers)
-            else:
+            if True:
                 # Use provided config or defaults with required parameters
                 config = config or {}
 
