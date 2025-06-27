@@ -183,4 +183,22 @@ if __name__ == "__main__":
         with open(IMPROVEMENT_LOG, 'w') as f:
             pass
 
-    autonomous_agent_loop()
+    # Ask user for mode
+    print("\nChoose operation mode:")
+    print("1. 🤖 Autonomous mode (bot runs automatically)")
+    print("2. 🎛️ Manual mode (you control each action)")
+    print("3. 🌐 Web dashboard (browser interface)")
+    
+    choice = input("Enter choice (1-3): ").strip()
+    
+    if choice == "1":
+        autonomous_agent_loop()
+    elif choice == "2":
+        print("🎛️ Starting manual controls...")
+        os.system("python manual_controls.py")
+    elif choice == "3":
+        print("🌐 Starting web dashboard...")
+        os.system("python web_dashboard.py")
+    else:
+        print("❌ Invalid choice. Starting autonomous mode by default.")
+        autonomous_agent_loop()
