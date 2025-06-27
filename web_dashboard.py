@@ -280,7 +280,7 @@ def wallet_status():
                                 provider = ThirdPartyDataProvider()
                                 
                                 if provider.zapper_api_key:
-                                print("🔄 Attempting Zapper API for Aave data...")
+                                    print("🔄 Attempting Zapper API for Aave data...")
                                 zapper_data = provider.get_zapper_portfolio(agent.address)
                                 if zapper_data and zapper_data['health_factor'] > 0:
                                     print(f"✅ Zapper API successful: Health Factor {zapper_data['health_factor']:.4f}")
