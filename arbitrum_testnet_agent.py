@@ -321,25 +321,6 @@ class ArbitrumTestnetAgent:
                 else:
                     print("❌ Insufficient ETH balance for operations")
                     return 0.6
-
-                        if borrow_tx:
-                            print("✅ Step 2: Successfully borrowed 20 USDC")
-                            print(f"🎯 Target Health Factor: >3.5 (Estimated: {estimated_hf:.2f})")
-                            performance = 0.95  # Excellent performance for position creation
-
-                            # Set strategy mode to maintain health factor above 3.5
-                            self.target_health_factor = 3.5
-                            print(f"🔧 Agent configured to maintain Health Factor > {self.target_health_factor}")
-                            return performance
-                        else:
-                            print("❌ Failed to borrow USDC")
-                            return 0.3
-                    else:
-                        print(f"⚠️ Estimated health factor {estimated_hf:.2f} too low, skipping borrow")
-                        return 0.1
-                else:
-                    print("❌ Failed to supply ETH as collateral")
-                    return 0.1
             else:
                 print(f"❌ Insufficient ETH balance ({eth_balance:.6f}) for collateral")
                 return 0.6

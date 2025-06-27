@@ -740,8 +740,6 @@ def connection_test():
             'status': 'connected',
             'timestamp': time.time(),
             'server_time': time.strftime('%Y-%m-%d %H:%M:%S UTC', time.gmtime()),
-            ```python
-            '''python
             'agent_initialized': agent is not None,
             'dashboard_available': dashboard is not None,
             'network_mode': os.getenv('NETWORK_MODE', 'unknown'),
