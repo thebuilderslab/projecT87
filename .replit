@@ -15,7 +15,7 @@ run = ["sh", "-c", "python mainnet_launcher.py"]
 deploymentTarget = "cloudrun"
 
 [workflows]
-runButton = "🚀 CLEAN DASHBOARD"
+runButton = "💰 CREATE POSITION & ACTIVATE"
 
 [[workflows.workflow]]
 name = "Run"
@@ -314,6 +314,15 @@ mode = "sequential"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "python check_agent_status.py"
+
+[[workflows.workflow]]
+name = "💰 CREATE POSITION & ACTIVATE"
+author = 39391053
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python create_and_activate.py"
 
 [[ports]]
 localPort = 5000
