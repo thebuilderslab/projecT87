@@ -324,6 +324,15 @@ mode = "sequential"
 task = "shell.exec"
 args = "python create_and_activate.py"
 
+[[workflows.workflow]]
+name = "🏦 WITHDRAW & BORROW 20 USDC"
+author = 39391053
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python withdraw_and_borrow.py"
+
 [[ports]]
 localPort = 5000
 externalPort = 80
