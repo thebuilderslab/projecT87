@@ -295,7 +295,7 @@ mode = "sequential"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "python quick_launch_dashboard.py"
+args = "python web_dashboard.py"
 
 [[ports]]
 localPort = 5000

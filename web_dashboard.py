@@ -370,11 +370,12 @@ def wallet_status():
                                             'available_borrows_usdc': 0
                                         })
                                         print("⚠️ Using fallback health factor analysis")
-                                    except BaseException as e:
-                                        print(f"⚠️ Fallback analysis error: {e}")
+                                except Exception as e:
+                                    print(f"⚠️ Fallback analysis error: {e}")
                 except Exception as e:
                     print(f"⚠️ Aave balance/health error: {e}")
-                    print("⚠️ Aave integration not available")
+            else:
+                print("⚠️ Aave integration not available")
 
         # Get ARB price
         arb_price_data = agent.health_monitor.get_arb_price() if hasattr(agent, 'health_monitor') else None
@@ -740,6 +741,7 @@ def connection_test():
             'status': 'connected',
             'timestamp': time.time(),
             'server_time': time.strftime('%Y-%m-%d %H:%M:%S UTC', time.gmtime()),
+```python
             'agent_initialized': agent is not None,
             'dashboard_available': dashboard is not None,
             'network_mode': os.getenv('NETWORK_MODE', 'unknown'),
