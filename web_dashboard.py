@@ -36,11 +36,24 @@ def initialize_agent():
     """Initialize the agent in a separate thread"""
     global agent, dashboard
     try:
+        print("🔄 Initializing agent with health monitor...")
         agent = ArbitrumTestnetAgent()
+        
+        # Ensure health monitor is properly initialized
+        if hasattr(agent, 'health_monitor') and agent.health_monitor:
+            print("✅ Health monitor confirmed active")
+        else:
+            print("🔧 Initializing health monitor...")
+            from aave_health_monitor import AaveHealthMonitor
+            agent.health_monitor = AaveHealthMonitor(agent.w3, agent.account, agent.aave_pool_address)
+            print("✅ Health monitor manually initialized")
+        
         dashboard = AgentDashboard(agent)
-        print("✅ Agent initialized for web dashboard")
+        print("✅ Agent and dashboard fully initialized for web dashboard")
     except Exception as e:
         print(f"❌ Failed to initialize agent: {e}")
+        import traceback
+        traceback.print_exc()
         agent = None
         dashboard = None
 
@@ -50,19 +63,31 @@ threading.Thread(target=initialize_agent, daemon=True).start()
 def get_enhanced_aave_data(agent):
     """Enhanced Aave data retrieval for mainnet operations"""
     try:
-        if not agent or not hasattr(agent, 'health_monitor'):
-            print("⚠️ No agent or health monitor available")
+        if not agent:
+            print("⚠️ No agent available")
             return None
+
+        # Initialize health monitor if missing
+        if not hasattr(agent, 'health_monitor') or not agent.health_monitor:
+            print("🔧 Health monitor missing, initializing...")
+            try:
+                from aave_health_monitor import AaveHealthMonitor
+                agent.health_monitor = AaveHealthMonitor(agent.w3, agent.account, agent.aave_pool_address)
+                print("✅ Health monitor initialized successfully")
+            except Exception as init_e:
+                print(f"❌ Could not initialize health monitor: {init_e}")
+                return None
 
         # Try to get comprehensive health data
         health_data = agent.health_monitor.get_current_health_factor()
         if health_data and health_data.get('health_factor', 0) > 0:
+            print(f"✅ Enhanced Aave data retrieved: Health Factor {health_data['health_factor']:.4f}")
             return {
                 'health_factor': health_data['health_factor'],
                 'total_collateral': health_data.get('total_collateral_eth', 0),
                 'total_debt': health_data.get('total_debt_eth', 0),
                 'total_collateral_usdc': health_data.get('total_collateral_usdc', 0),
-                'total_debt': health_data.get('total_debt_usdc', 0),
+                'total_debt_usdc': health_data.get('total_debt_usdc', 0),
                 'available_borrows': health_data.get('available_borrows_eth', 0),
                 'available_borrows_usdc': health_data.get('available_borrows_usdc', 0),
                 'liquidation_threshold': health_data.get('liquidation_threshold', 0),
@@ -75,6 +100,8 @@ def get_enhanced_aave_data(agent):
 
     except Exception as e:
         print(f"❌ Enhanced Aave data error: {e}")
+        import traceback
+        traceback.print_exc()
         return None
 
 def get_network_info():

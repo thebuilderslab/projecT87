@@ -306,6 +306,15 @@ mode = "sequential"
 task = "shell.exec"
 args = "python launch_dashboard_clean.py"
 
+[[workflows.workflow]]
+name = "🤖 AGENT STATUS MONITOR"
+author = 39391053
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python check_agent_status.py"
+
 [[ports]]
 localPort = 5000
 externalPort = 80
