@@ -33,7 +33,7 @@ class PositionCreator:
         return float(self.w3.from_wei(balance_wei, 'ether'))
 
     def get_aave_position(self):
-        """Get current Aave position"""
+        """Get current Aave position with detailed logging"""
         aave_abi = [
             {
                 "inputs": [{"internalType": "address", "name": "user", "type": "address"}],
@@ -57,25 +57,45 @@ class PositionCreator:
         )
 
         try:
+            print(f"🔍 Querying Aave position for wallet: {self.address}")
+            print(f"🔍 Using Aave pool: {self.aave_pool}")
+            
             user_data = pool_contract.functions.getUserAccountData(self.address).call()
+            print(f"🔍 Raw Aave data: {user_data}")
 
             total_collateral_usd = user_data[0] / (10 ** 8)
             total_debt_usd = user_data[1] / (10 ** 8)
             available_borrows_usd = user_data[2] / (10 ** 8)
+            liquidation_threshold = user_data[3] / (10 ** 4)  # Convert from basis points
+            ltv = user_data[4] / (10 ** 4)  # Convert from basis points
 
             if user_data[5] == 2 ** 256 - 1:
                 health_factor = float('inf')
             else:
                 health_factor = user_data[5] / (10 ** 18)
 
-            return {
+            position = {
                 'collateral': total_collateral_usd,
                 'debt': total_debt_usd,
                 'available_borrows': available_borrows_usd,
-                'health_factor': health_factor
+                'health_factor': health_factor,
+                'liquidation_threshold': liquidation_threshold,
+                'ltv': ltv
             }
+            
+            print(f"📊 Parsed position data:")
+            print(f"   Collateral: ${position['collateral']:.2f}")
+            print(f"   Debt: ${position['debt']:.2f}")
+            print(f"   Available Borrows: ${position['available_borrows']:.2f}")
+            print(f"   Health Factor: {position['health_factor']:.4f}")
+            print(f"   LTV: {position['ltv']:.2f}%")
+            
+            return position
+            
         except Exception as e:
             print(f"❌ Error getting Aave position: {e}")
+            import traceback
+            traceback.print_exc()
             return None
 
     def supply_eth_collateral(self, amount_eth):
@@ -218,8 +238,21 @@ class PositionCreator:
             return False
 
     def borrow_usdc(self, amount_usdc):
-        """Borrow USDC from Aave"""
+        """Borrow USDC from Aave with enhanced error handling"""
         try:
+            # Check current position first
+            current_position = self.get_aave_position()
+            if not current_position:
+                print("❌ Cannot get current Aave position")
+                return False
+                
+            available_borrows = current_position['available_borrows']
+            print(f"💰 Available to borrow: ${available_borrows:.2f}")
+            
+            if amount_usdc > available_borrows:
+                print(f"❌ Requested borrow ${amount_usdc:.2f} exceeds available ${available_borrows:.2f}")
+                return False
+            
             pool_abi = [
                 {
                     "inputs": [
@@ -241,9 +274,25 @@ class PositionCreator:
             # USDC has 6 decimals
             amount_wei = int(amount_usdc * (10 ** 6))
 
-            print(f"🔄 Borrowing {amount_usdc:.2f} USDC...")
+            print(f"🔄 Borrowing {amount_usdc:.2f} USDC (amount_wei: {amount_wei})...")
             nonce = self.w3.eth.get_transaction_count(self.address)
 
+            # Estimate gas first
+            try:
+                estimated_gas = pool_contract.functions.borrow(
+                    self.usdc_address,
+                    amount_wei,
+                    2,  # Variable interest rate
+                    0,  # Referral code
+                    self.address
+                ).estimate_gas({'from': self.address})
+                
+                gas_limit = int(estimated_gas * 1.2)  # Add 20% buffer
+                print(f"⛽ Estimated gas: {estimated_gas}, using: {gas_limit}")
+            except Exception as gas_e:
+                print(f"⚠️ Gas estimation failed: {gas_e}")
+                gas_limit = 400000  # Fallback gas limit
+            
             borrow_tx = pool_contract.functions.borrow(
                 self.usdc_address,
                 amount_wei,
@@ -252,24 +301,30 @@ class PositionCreator:
                 self.address
             ).build_transaction({
                 'from': self.address,
-                'gas': 300000,
-                'gasPrice': self.w3.eth.gas_price,
+                'gas': gas_limit,
+                'gasPrice': int(self.w3.eth.gas_price * 1.1),  # 10% higher gas price
                 'nonce': nonce
             })
 
             signed_tx = self.w3.eth.account.sign_transaction(borrow_tx, self.account.key)
             tx_hash = self.w3.eth.send_raw_transaction(signed_tx.rawTransaction)
-            receipt = self.w3.eth.wait_for_transaction_receipt(tx_hash)
+            print(f"📝 Borrow transaction hash: {tx_hash.hex()}")
+            print(f"🔗 View on Arbiscan: https://arbiscan.io/tx/{tx_hash.hex()}")
+            
+            receipt = self.w3.eth.wait_for_transaction_receipt(tx_hash, timeout=300)
 
             if receipt.status == 1:
                 print(f"✅ Successfully borrowed {amount_usdc:.2f} USDC")
                 return True
             else:
-                print("❌ USDC borrow failed")
+                print(f"❌ USDC borrow transaction failed (status: {receipt.status})")
+                print(f"🔗 Check transaction: https://arbiscan.io/tx/{tx_hash.hex()}")
                 return False
 
         except Exception as e:
             print(f"❌ Borrow USDC error: {e}")
+            if "execution reverted" in str(e):
+                print("💡 This usually means insufficient collateral or health factor too low")
             return False
 
     def create_position_and_maintain_health(self):
@@ -393,8 +448,29 @@ class PositionCreator:
 
         time.sleep(5)  # Wait for confirmation
 
-        # Step 2: Borrow USDC
-        if not self.borrow_usdc(borrow_amount):
+        # Step 2: Check actual borrowing capacity before attempting borrow
+        time.sleep(10)  # Wait for supply to fully confirm
+        
+        # Get updated position after supply
+        updated_position = self.get_aave_position()
+        if updated_position:
+            actual_available_borrows = updated_position['available_borrows']
+            print(f"💰 Actual Available Borrows: ${actual_available_borrows:.2f}")
+            
+            # Use 90% of available capacity for safety
+            safe_borrow_amount = min(borrow_amount, actual_available_borrows * 0.9)
+            print(f"🛡️ Safe Borrow Amount: ${safe_borrow_amount:.2f}")
+            
+            if safe_borrow_amount >= 1.0:  # Only proceed if we can borrow at least $1
+                if not self.borrow_usdc(safe_borrow_amount):
+                    print(f"❌ Borrow failed even with safe amount ${safe_borrow_amount:.2f}")
+                    return False
+            else:
+                print(f"⚠️ Available borrow capacity too low: ${safe_borrow_amount:.2f}")
+                print("✅ Position created with collateral only (no borrowing)")
+                return True  # Still consider this a success
+        else:
+            print("❌ Could not verify updated position after supply")
             return False
 
         time.sleep(5)  # Wait for confirmation
