@@ -283,9 +283,10 @@ class ArbitrumTestnetAgent:
                 eth_balance = self.get_eth_balance()
                 print(f"💰 Current ETH Balance: {eth_balance:.6f} ETH")
 
-                if eth_balance > 0.002:  # Need some ETH for gas
-                    # Step 1: Supply ETH as collateral (use 80% of balance, keep 20% for gas)
-                    collateral_amount = eth_balance * 0.8
+                # Arbitrum gas is very cheap - only need ~0.0001 ETH for gas
+                if eth_balance > 0.0001:  # Only need minimal ETH for gas
+                    # Step 1: Supply ETH as collateral (use 95% of balance, keep 5% for gas)
+                    collateral_amount = eth_balance * 0.95
                     print(f"🏦 Supplying {collateral_amount:.6f} ETH as collateral...")
 
                     supply_tx = self.aave.supply_to_aave(

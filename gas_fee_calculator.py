@@ -27,16 +27,16 @@ class ArbitrumGasCalculator:
             
         self.w3 = Web3(Web3.HTTPProvider(rpc_url))
         
-        # Common gas limits for different operations
+        # Realistic gas limits for Arbitrum operations
         self.gas_limits = {
             'simple_transfer': 21000,
-            'erc20_transfer': 65000,
-            'aave_supply': 250000,
-            'aave_borrow': 300000,
-            'aave_repay': 280000,
-            'aave_withdraw': 350000,
-            'uniswap_swap': 200000,
-            'approve_token': 50000
+            'erc20_transfer': 45000,    # Lower on Arbitrum
+            'aave_supply': 150000,      # Much lower on Arbitrum
+            'aave_borrow': 180000,      # Much lower on Arbitrum  
+            'aave_repay': 160000,       # Much lower on Arbitrum
+            'aave_withdraw': 200000,    # Much lower on Arbitrum
+            'uniswap_swap': 120000,     # Lower on Arbitrum
+            'approve_token': 35000      # Lower on Arbitrum
         }
         
     def get_current_gas_prices(self):

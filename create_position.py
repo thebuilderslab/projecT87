@@ -283,12 +283,15 @@ class PositionCreator:
         eth_balance = self.get_eth_balance()
         print(f"💰 Current ETH Balance: {eth_balance:.6f} ETH")
 
-        if eth_balance < 0.002:
-            print("❌ Insufficient ETH balance for gas and collateral")
+        # Arbitrum has very low gas fees - 0.0001 ETH is sufficient for gas
+        required_gas = 0.0001  # ~$0.25 for gas on Arbitrum
+        
+        if eth_balance < required_gas:
+            print(f"❌ Insufficient ETH balance. Need {required_gas:.6f} ETH for gas, have {eth_balance:.6f} ETH")
             return False
 
-        # Calculate safe collateral amount (keep some ETH for gas)
-        collateral_eth = min(eth_balance * 0.9, 0.02)  # Use 90% or max 0.02 ETH
+        # Calculate safe collateral amount (keep minimal ETH for gas)
+        collateral_eth = eth_balance - required_gas  # Use almost all ETH, keep minimal for gas
 
         # Estimate health factor with 20 USDC borrow
         # Assuming ETH = $2500, LTV = 80%
