@@ -370,7 +370,7 @@ class PositionCreator:
                 float(supply_fee['fee_eth']) + 
                 float(borrow_fee['fee_eth']) + 
                 float(approve_fee['fee_eth']) * 2 +  # Two approvals needed
-                0.00001  # Small buffer for price fluctuation
+                0.000002  # Minimal buffer for price fluctuation
             )
             required_gas = total_gas_eth
             
@@ -439,12 +439,19 @@ class PositionCreator:
                     print(f"🤖 Auto-proceeding with micro-position: ${borrow_amount:.4f} USDC")
                 else:
                     print(f"💡 Set AUTO_PROCEED_MICRO=true in secrets to auto-create micro-positions")
+                    # Auto-enable for current session with existing collateral
+                    if existing_collateral_usd > 100:
+                        borrow_amount = max(safe_borrow, 0.01)
+                        print(f"🤖 Auto-enabling micro-position due to existing collateral: ${borrow_amount:.4f} USDC")
 
         print(f"🎯 Proceeding with ${borrow_amount:.2f} USDC borrow")
 
-        # Step 1: Supply ETH as collateral
-        if not self.supply_eth_collateral(collateral_eth):
-            return False
+        # Step 1: Supply ETH as collateral (skip if existing collateral is sufficient)
+        if existing_collateral_usd < 50:  # Only supply more ETH if we need more collateral
+            if not self.supply_eth_collateral(collateral_eth):
+                return False
+        else:
+            print(f"✅ Skipping ETH supply - sufficient existing collateral: ${existing_collateral_usd:.2f}")
 
         time.sleep(5)  # Wait for confirmation
 
