@@ -290,30 +290,39 @@ class PositionCreator:
             print(f"❌ Insufficient ETH balance. Need {required_gas:.6f} ETH for gas, have {eth_balance:.6f} ETH")
             return False
 
-        # Calculate safe collateral amount (keep minimal ETH for gas)
+        # Get existing collateral value (includes WBTC + any existing WETH)
+        existing_position = self.get_aave_position()
+        existing_collateral_usd = existing_position['collateral'] if existing_position else 0
+        
+        print(f"💰 Existing Aave Collateral: ${existing_collateral_usd:.2f}")
+        
+        # Calculate additional ETH collateral we'll add
         collateral_eth = eth_balance - required_gas  # Use almost all ETH, keep minimal for gas
+        eth_price = 2500  # Assuming ETH = $2500
+        additional_collateral_usd = collateral_eth * eth_price
+        
+        # Total collateral = existing + new ETH collateral
+        total_collateral_usd = existing_collateral_usd + additional_collateral_usd
+        ltv = 0.8  # Average LTV for WBTC/WETH
+        max_safe_borrow = total_collateral_usd * ltv
 
-        # Estimate health factor with 20 USDC borrow
-        # Assuming ETH = $2500, LTV = 80%
-        eth_price = 2500
-        collateral_value = collateral_eth * eth_price
-        ltv = 0.8
-        max_borrow = collateral_value * ltv
+        borrow_amount = 20.0  # $20 USDC target
+        estimated_hf = (total_collateral_usd * ltv) / borrow_amount
 
-        borrow_amount = 20.0  # $20 USDC
-        estimated_hf = (collateral_value * ltv) / borrow_amount
-
-        print(f"📊 Estimated Position:")
-        print(f"   Collateral: {collateral_eth:.6f} ETH (${collateral_value:.2f})")
-        print(f"   Borrow: ${borrow_amount:.2f} USDC")
+        print(f"📊 Complete Position Analysis:")
+        print(f"   Existing Collateral: ${existing_collateral_usd:.2f}")
+        print(f"   Adding ETH Collateral: {collateral_eth:.6f} ETH (${additional_collateral_usd:.2f})")
+        print(f"   Total Collateral: ${total_collateral_usd:.2f}")
+        print(f"   Max Safe Borrow (80% LTV): ${max_safe_borrow:.2f}")
+        print(f"   Requested Borrow: ${borrow_amount:.2f} USDC")
         print(f"   Estimated Health Factor: {estimated_hf:.2f}")
 
         if estimated_hf < 3.5:
-            print("❌ Estimated health factor too low!")
-            # Reduce borrow amount to achieve target HF
-            safe_borrow = (collateral_value * ltv) / 3.5
-            print(f"💡 Safe borrow amount: ${safe_borrow:.2f}")
-            borrow_amount = min(safe_borrow, 15.0)
+            print("❌ Estimated health factor too low with total collateral!")
+            # Calculate safe borrow amount using total collateral
+            safe_borrow = (total_collateral_usd * ltv) / 3.5
+            print(f"💡 Safe borrow amount with total collateral: ${safe_borrow:.2f}")
+            borrow_amount = min(safe_borrow, 20.0)  # Don't exceed our target
 
         print(f"🎯 Proceeding with ${borrow_amount:.2f} USDC borrow")
 
