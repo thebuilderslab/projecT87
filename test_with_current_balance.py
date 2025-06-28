@@ -66,7 +66,7 @@ def test_current_balance():
         return False
 
 if __name__ == "__main__":
-    success = test_with_current_balance()
+    success = test_current_balance()
     
     if success:
         print("\n🎉 YOUR BALANCE IS SUFFICIENT!")
