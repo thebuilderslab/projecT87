@@ -126,11 +126,24 @@ class PositionCreator:
             # Step 1: Convert ETH to WETH
             print(f"🔄 Converting {amount_eth:.6f} ETH to WETH...")
 
-            # Estimate gas costs
-            current_gas_price = self.w3.eth.gas_price
-            gas_limit = 100000
-            estimated_fee = self.w3.from_wei(current_gas_price * gas_limit, 'ether')
-            print(f"⛽ Estimated gas fee: {estimated_fee:.8f} ETH (${float(estimated_fee) * 2500:.4f})")
+            # Dynamic gas estimation
+            try:
+                from gas_fee_calculator import ArbitrumGasCalculator
+                gas_calc = ArbitrumGasCalculator()
+                weth_deposit_fee = gas_calc.calculate_transaction_fee('erc20_transfer', 'market')
+                if weth_deposit_fee:
+                    estimated_fee = float(weth_deposit_fee['fee_eth'])
+                    print(f"⛽ Dynamic gas estimate: {estimated_fee:.8f} ETH ({weth_deposit_fee['fee_usd']})")
+                else:
+                    current_gas_price = self.w3.eth.gas_price
+                    gas_limit = 100000
+                    estimated_fee = self.w3.from_wei(current_gas_price * gas_limit, 'ether')
+                    print(f"⛽ Fallback gas estimate: {estimated_fee:.8f} ETH (${float(estimated_fee) * 2500:.4f})")
+            except:
+                current_gas_price = self.w3.eth.gas_price
+                gas_limit = 100000
+                estimated_fee = self.w3.from_wei(current_gas_price * gas_limit, 'ether')
+                print(f"⛽ Fallback gas estimate: {estimated_fee:.8f} ETH (${float(estimated_fee) * 2500:.4f})")
 
             nonce = self.w3.eth.get_transaction_count(self.address)
 
@@ -283,11 +296,42 @@ class PositionCreator:
         eth_balance = self.get_eth_balance()
         print(f"💰 Current ETH Balance: {eth_balance:.6f} ETH")
 
-        # Arbitrum has very low gas fees - 0.0001 ETH is sufficient for gas
-        required_gas = 0.0001  # ~$0.25 for gas on Arbitrum
+        # Dynamic gas calculation based on current network conditions
+        from gas_fee_calculator import ArbitrumGasCalculator
+        
+        gas_calc = ArbitrumGasCalculator()
+        
+        # Calculate realistic gas costs for all operations
+        supply_fee = gas_calc.calculate_transaction_fee('aave_supply', 'market')
+        borrow_fee = gas_calc.calculate_transaction_fee('aave_borrow', 'market')
+        approve_fee = gas_calc.calculate_transaction_fee('approve_token', 'market')
+        
+        if not all([supply_fee, borrow_fee, approve_fee]):
+            print("❌ Failed to calculate gas fees, using fallback")
+            required_gas = 0.0001  # Fallback
+        else:
+            # Total gas needed for: WETH deposit + approve + supply + borrow
+            total_gas_eth = (
+                float(supply_fee['fee_eth']) + 
+                float(borrow_fee['fee_eth']) + 
+                float(approve_fee['fee_eth']) * 2 +  # Two approvals needed
+                0.00001  # Small buffer for price fluctuation
+            )
+            required_gas = total_gas_eth
+            
+            print(f"⛽ DYNAMIC GAS CALCULATION:")
+            print(f"   WETH Deposit: {float(approve_fee['fee_eth']):.8f} ETH")
+            print(f"   WETH Approve: {float(approve_fee['fee_eth']):.8f} ETH")
+            print(f"   Aave Supply: {float(supply_fee['fee_eth']):.8f} ETH")
+            print(f"   Aave Borrow: {float(borrow_fee['fee_eth']):.8f} ETH")
+            print(f"   Buffer: 0.00001 ETH")
+            print(f"   Total Required: {required_gas:.8f} ETH")
         
         if eth_balance < required_gas:
-            print(f"❌ Insufficient ETH balance. Need {required_gas:.6f} ETH for gas, have {eth_balance:.6f} ETH")
+            print(f"❌ Insufficient ETH balance. Need {required_gas:.8f} ETH for gas, have {eth_balance:.8f} ETH")
+            shortfall = required_gas - eth_balance
+            print(f"💡 Shortfall: {shortfall:.8f} ETH (${shortfall * 2500:.4f})")
+            print(f"💡 Add at least {shortfall * 1.1:.8f} ETH to your wallet to proceed")
             return False
 
         # Get existing collateral value (includes WBTC + any existing WETH)
@@ -323,6 +367,23 @@ class PositionCreator:
             safe_borrow = (total_collateral_usd * ltv) / 3.5
             print(f"💡 Safe borrow amount with total collateral: ${safe_borrow:.2f}")
             borrow_amount = min(safe_borrow, 20.0)  # Don't exceed our target
+            
+            # If even the safe amount is very small, offer micro-position option
+            if safe_borrow < 1.0:
+                print(f"\n🔬 MICRO-POSITION OPTION:")
+                print(f"   With current balance, you could create a micro-position:")
+                print(f"   - Collateral: ${total_collateral_usd:.2f}")
+                print(f"   - Safe Borrow: ${safe_borrow:.4f} USDC")
+                print(f"   - Health Factor: ~3.5")
+                print(f"   - This demonstrates the system without requiring more funds")
+                
+                # Ask if user wants to proceed with micro-position
+                import os
+                if os.getenv('AUTO_PROCEED_MICRO', 'false').lower() == 'true':
+                    borrow_amount = max(safe_borrow, 0.01)  # Minimum 1 cent
+                    print(f"🤖 Auto-proceeding with micro-position: ${borrow_amount:.4f} USDC")
+                else:
+                    print(f"💡 Set AUTO_PROCEED_MICRO=true in secrets to auto-create micro-positions")
 
         print(f"🎯 Proceeding with ${borrow_amount:.2f} USDC borrow")
 
