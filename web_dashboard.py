@@ -371,9 +371,9 @@ def wallet_status():
                                         })
                                         print("⚠️ Using fallback health factor analysis")
                                     except Exception as e:
-                                        print(f"⚠️ Fallback analysis error: {e}
-                                              except Exception as e:
-                                              print(f"⚠️ Aave balance/health error: {e}")
+                                        print(f"⚠️ Fallback analysis error: {e}")
+                                except Exception as e:
+                                    print(f"⚠️ Aave balance/health error: {e}")
                     print(f"⚠️ Aave balance/health error: {e}")
             else:
                 print("⚠️ Aave integration not available")
@@ -742,7 +742,7 @@ def connection_test():
             'status': 'connected',
             'timestamp': time.time(),
             'server_time': time.strftime('%Y-%m-%d %H:%M:%S UTC', time.gmtime()),
-            'agent_initialized: agent is not None,
+            'agent_initialized': agent is not None,
             'dashboard_available': dashboard is not None,
             'network_mode': os.getenv('NETWORK_MODE', 'unknown'),
             'deployment_mode': bool(os.getenv('REPLIT_DEPLOYMENT')),
