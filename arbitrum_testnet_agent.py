@@ -85,10 +85,19 @@ class ArbitrumTestnetAgent:
         return self.w3.eth.gas_price
 
     def estimate_gas_cost(self, gas_limit=21000):
-        """Estimate transaction cost"""
+        """Estimate transaction cost with detailed breakdown"""
         gas_price = self.get_gas_price()
         cost_wei = gas_price * gas_limit
-        return self.w3.from_wei(cost_wei, 'ether')
+        cost_eth = self.w3.from_wei(cost_wei, 'ether')
+        
+        # Enhanced gas estimation with breakdown
+        print(f"🔧 GAS ESTIMATION BREAKDOWN:")
+        print(f"   Gas Limit: {gas_limit:,}")
+        print(f"   Gas Price: {self.w3.from_wei(gas_price, 'gwei'):.2f} gwei")
+        print(f"   Estimated Cost: {cost_eth:.8f} ETH")
+        print(f"   USD Estimate: ${float(cost_eth) * 2500:.4f}")  # Assuming ETH ~$2500
+        
+        return cost_eth
 
     def send_test_transaction(self, to_address, amount_eth):
         """Send a test transaction (for testing purposes)"""
