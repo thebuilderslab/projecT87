@@ -440,16 +440,21 @@ class PositionCreator:
                 else:
                     print(f"💡 Set AUTO_PROCEED_MICRO=true in secrets to auto-create micro-positions")
                     # Auto-enable for current session with existing collateral
-                    if existing_collateral_usd > 100:
+                    if existing_collateral_usd > 50:  # Lower threshold
                         borrow_amount = max(safe_borrow, 0.01)
                         print(f"🤖 Auto-enabling micro-position due to existing collateral: ${borrow_amount:.4f} USDC")
+                        # Set environment variable for this session
+                        os.environ['AUTO_PROCEED_MICRO'] = 'true'
 
         print(f"🎯 Proceeding with ${borrow_amount:.2f} USDC borrow")
 
         # Step 1: Supply ETH as collateral (skip if existing collateral is sufficient)
         if existing_collateral_usd < 50:  # Only supply more ETH if we need more collateral
-            if not self.supply_eth_collateral(collateral_eth):
-                return False
+            if collateral_eth > 0.0001:  # Only if we have enough ETH for gas + collateral
+                if not self.supply_eth_collateral(collateral_eth):
+                    return False
+            else:
+                print(f"⚠️ Insufficient ETH for both gas and collateral. Using existing collateral only.")
         else:
             print(f"✅ Skipping ETH supply - sufficient existing collateral: ${existing_collateral_usd:.2f}")
 
