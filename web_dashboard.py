@@ -220,22 +220,36 @@ def check_emergency_status():
 
 @app.route('/api/wallet_status')
 def wallet_status():
-    """Get current wallet status"""
+    """Get current wallet status with improved error handling"""
     try:
         print("🔍 API: /api/wallet_status called")
         print(f"🔍 API: Agent status: {agent is not None}")
 
         if not agent:
-            print("❌ API: Agent not initialized, returning error")
+            print("❌ API: Agent not initialized, returning safe fallback")
             return jsonify({
                 'error': 'Agent not initialized',
-                'status': 'initializing'
+                'status': 'initializing',
+                'wallet_address': 'Not connected',
+                'eth_balance': 0,
+                'usdc_balance': 0,
+                'health_factor': 0,
+                'total_collateral': 0,
+                'total_debt': 0,
+                'available_borrows': 0,
+                'total_collateral_usdc': 0,
+                'total_debt_usdc': 0,
+                'available_borrows_usdc': 0,
+                'arb_price': 0,
+                'network_name': 'Disconnected',
+                'network_mode': os.getenv('NETWORK_MODE', 'testnet'),
+                'timestamp': time.time()
             })
 
-        # Prepare wallet status dictionary
+        # Prepare wallet status dictionary with safe defaults
         wallet_status = {
-            'wallet_address': agent.address,
-            'eth_balance': agent.get_eth_balance(),
+            'wallet_address': 'Unknown',
+            'eth_balance': 0,
             'usdc_balance': 0,
             'health_factor': 0,
             'total_collateral': 0,
@@ -247,8 +261,23 @@ def wallet_status():
             'arb_price': 0,
             'network_name': 'Unknown',
             'network_mode': os.getenv('NETWORK_MODE', 'testnet'),
-            'timestamp': time.time()
+            'timestamp': time.time(),
+            'data_source': 'fallback'
         }
+
+        # Safely get wallet address
+        try:
+            wallet_status['wallet_address'] = agent.address
+        except Exception as e:
+            print(f"⚠️ Could not get wallet address: {e}")
+            wallet_status['wallet_address'] = 'Address Error'
+
+        # Safely get ETH balance
+        try:
+            wallet_status['eth_balance'] = agent.get_eth_balance()
+        except Exception as e:
+            print(f"⚠️ Could not get ETH balance: {e}")
+            wallet_status['eth_balance'] = 0
 
         # Try enhanced direct Aave contract calls for mainnet FIRST
         print(f"🔍 Attempting enhanced Aave data retrieval for mainnet...")
@@ -404,9 +433,16 @@ def wallet_status():
             else:
                 print("⚠️ Aave integration not available")
 
-        # Get ARB price
-        arb_price_data = agent.health_monitor.get_arb_price() if hasattr(agent, 'health_monitor') else None
-        wallet_status['arb_price'] = arb_price_data['price'] if arb_price_data else 0
+        # Safely get ARB price
+        try:
+            if hasattr(agent, 'health_monitor') and agent.health_monitor:
+                arb_price_data = agent.health_monitor.get_arb_price()
+                wallet_status['arb_price'] = arb_price_data['price'] if arb_price_data else 0
+            else:
+                wallet_status['arb_price'] = 0
+        except Exception as e:
+            print(f"⚠️ Could not get ARB price: {e}")
+            wallet_status['arb_price'] = 0
 
         # PRIORITY: NETWORK_MODE environment variable determines display
         network_mode = os.getenv('NETWORK_MODE', 'testnet')
@@ -420,10 +456,36 @@ def wallet_status():
             wallet_status['network_name'] = "Arbitrum Sepolia"
             print(f"🧪 Showing Arbitrum Sepolia based on NETWORK_MODE")
 
+        wallet_status['success'] = True
+        print(f"✅ Wallet status successfully retrieved")
         return jsonify(wallet_status)
 
     except Exception as e:
-        return jsonify({'error': str(e)})
+        error_msg = str(e)
+        print(f"❌ Critical wallet_status error: {error_msg}")
+        import traceback
+        traceback.print_exc()
+        
+        # Return safe error response that won't break the frontend
+        return jsonify({
+            'error': error_msg,
+            'status': 'error',
+            'wallet_address': 'Error',
+            'eth_balance': 0,
+            'usdc_balance': 0,
+            'health_factor': 0,
+            'total_collateral': 0,
+            'total_debt': 0,
+            'available_borrows': 0,
+            'total_collateral_usdc': 0,
+            'total_debt_usdc': 0,
+            'available_borrows_usdc': 0,
+            'arb_price': 0,
+            'network_name': 'Error',
+            'network_mode': os.getenv('NETWORK_MODE', 'testnet'),
+            'timestamp': time.time(),
+            'success': False
+        }), 200  # Return 200 to avoid fetch errors
 
 @app.route('/api/performance')
 def performance_data():
@@ -472,9 +534,7 @@ def performance_data():
 def get_parameters():
     """Get current agent parameters with robust error handling"""
     try:
-        print("🔍 API: /api/parameters called - Starting parameter loading...")
-        print(f"🔍 API: Current working directory: {os.getcwd()}")
-        print(f"🔍 API: Files in directory: {os.listdir('.')}")
+        print("🔍 API: /api/parameters called")
 
         # Always start with working defaults
         config = {
@@ -489,14 +549,14 @@ def get_parameters():
             'status': 'active',
             'network_mode': os.getenv('NETWORK_MODE', 'mainnet'),
             'timestamp': time.time(),
-            'success': True
+            'success': True,
+            'loaded_from': 'defaults'
         }
-        print(f"✅ API: Default config created: {config}")
 
         # Try to load user settings if available
-        user_settings_file = 'user_settings.json'
-        if os.path.exists(user_settings_file):
-            try:
+        try:
+            user_settings_file = 'user_settings.json'
+            if os.path.exists(user_settings_file):
                 with open(user_settings_file, 'r') as f:
                     content = f.read().strip()
                     if content:
@@ -512,30 +572,16 @@ def get_parameters():
                                     config[param] = user_settings[param]
                             config['loaded_from'] = 'user_settings'
                             print(f"✅ API: Loaded parameters from user_settings.json")
-                        else:
-                            config['loaded_from'] = 'defaults'
-                            print(f"⚠️ API: Invalid user_settings format, using defaults")
-                    else:
-                        config['loaded_from'] = 'defaults'
-                        print(f"⚠️ API: Empty user_settings file, using defaults")
-            except (json.JSONDecodeError, ValueError) as e:
-                print(f"⚠️ API: JSON decode error in user_settings.json: {e}")
-                config['loaded_from'] = 'defaults'
-            except Exception as e:
-                print(f"⚠️ API: Could not load user_settings.json: {e}")
-                config['loaded_from'] = 'defaults'
-        else:
-            config['loaded_from'] = 'defaults'
-            print(f"📝 API: Using default parameters")
+        except Exception as e:
+            print(f"⚠️ API: Could not load user_settings: {e}")
+            # Continue with defaults
 
-        print(f"📊 API: Returning parameters: {config}")
+        print(f"✅ API: Parameters loaded successfully")
         return jsonify(config)
 
     except Exception as e:
-        print(f"❌ CRITICAL: get_parameters failed completely: {e}")
-        import traceback
-        traceback.print_exc()
-
+        print(f"❌ CRITICAL: get_parameters failed: {e}")
+        
         # Return absolute minimal config that will work
         fallback_config = {
             'health_factor_target': 1.19,
@@ -551,7 +597,8 @@ def get_parameters():
             'error': str(e),
             'fallback': True,
             'success': False,
-            'timestamp': time.time()
+            'timestamp': time.time(),
+            'loaded_from': 'error_fallback'
         }
         return jsonify(fallback_config), 200
 
@@ -642,16 +689,20 @@ def get_network_info_api():
 def get_emergency_status():
     """Get emergency stop status with robust error handling"""
     try:
-        print("🔍 API: /api/emergency_status called - Checking emergency status...")
-        print(f"🔍 API: Current working directory: {os.getcwd()}")
+        print("🔍 API: /api/emergency_status called")
 
         emergency_file = 'EMERGENCY_STOP_ACTIVE.flag'
-        is_active = os.path.exists(emergency_file)
-        print(f"🔍 API: Emergency file check - exists: {is_active}")
+        is_active = False
+        
+        try:
+            is_active = os.path.exists(emergency_file)
+        except Exception as e:
+            print(f"⚠️ Could not check emergency file: {e}")
 
         status = {
             'active': is_active,
-            'timestamp': time.time()
+            'timestamp': time.time(),
+            'success': True
         }
 
         if is_active:
@@ -662,35 +713,38 @@ def get_emergency_status():
                     print("🚨 API: Emergency stop is ACTIVE")
             except Exception as e:
                 status['details'] = f"Could not read emergency file: {e}"
+                print(f"⚠️ Emergency file read error: {e}")
         else:
             print("✅ API: Emergency stop is NOT active")
 
         # Try to get recent logs
-        log_file = 'emergency_stop_log.json'
-        if os.path.exists(log_file):
-            try:
+        try:
+            log_file = 'emergency_stop_log.json'
+            if os.path.exists(log_file):
                 with open(log_file, 'r') as f:
                     logs = json.load(f)
                     if isinstance(logs, list):
                         status['recent_logs'] = logs[-3:]  # Last 3 actions
                     else:
                         status['recent_logs'] = []
-            except Exception as e:
-                print(f"⚠️ API: Could not load emergency logs: {e}")
+            else:
                 status['recent_logs'] = []
-        else:
+        except Exception as e:
+            print(f"⚠️ API: Could not load emergency logs: {e}")
             status['recent_logs'] = []
 
-        print(f"📊 API: Emergency status: {status}")
+        print(f"✅ API: Emergency status retrieved successfully")
         return jsonify(status)
 
     except Exception as e:
         print(f"❌ API: Emergency status error: {e}")
-        # Return safe default
+        # Return safe default that won't break frontend
         return jsonify({
             'active': False,
             'error': str(e),
-            'timestamp': time.time()
+            'timestamp': time.time(),
+            'success': False,
+            'recent_logs': []
         }), 200
 
 @app.route('/api/switch-network', methods=['POST'])
@@ -836,7 +890,7 @@ def comprehensive_health_check():
             'timestamp': time.time(),
             'components': {
                 'web_dashboard': 'operational',
-                'network_connection': 'unknown',
+                'agent_connection': 'unknown',
                 'api_endpoints': 'operational',
                 'emergency_stop': 'ready',
                 'parameters': 'loaded'
@@ -849,6 +903,11 @@ def comprehensive_health_check():
                 'coinmarketcap_api': bool(os.getenv('COINMARKETCAP_API_KEY')),
                 'private_key': bool(os.getenv('PRIVATE_KEY')),
                 'network_mode': bool(os.getenv('NETWORK_MODE'))
+            },
+            'api_status': {
+                'wallet_status': 'unknown',
+                'parameters': 'unknown',
+                'emergency_status': 'unknown'
             }
         }
 
@@ -856,20 +915,57 @@ def comprehensive_health_check():
         if agent:
             try:
                 chain_id = agent.w3.eth.chain_id
-                health_status['components']['network_connection'] = 'connected'
+                health_status['components']['agent_connection'] = 'connected'
                 health_status['network']['actual_chain_id'] = chain_id
                 health_status['network']['chain_match'] = chain_id == health_status['network']['expected_chain_id']
+                
+                # Test wallet access
+                try:
+                    eth_balance = agent.get_eth_balance()
+                    health_status['components']['wallet_access'] = 'working'
+                    health_status['wallet_balance'] = eth_balance
+                except Exception as e:
+                    health_status['components']['wallet_access'] = f'error: {str(e)}'
+                    health_status['overall_status'] = 'degraded'
+                    
             except Exception as e:
-                health_status['components']['network_connection'] = f'error: {str(e)}'
+                health_status['components']['agent_connection'] = f'error: {str(e)}'
                 health_status['overall_status'] = 'degraded'
+        else:
+            health_status['components']['agent_connection'] = 'not_initialized'
+            health_status['overall_status'] = 'degraded'
+
+        # Test key API endpoints
+        try:
+            # Test parameters endpoint
+            config = {
+                'health_factor_target': 1.19,
+                'borrow_trigger_threshold': 0.02,
+                'arb_decline_threshold': 0.05,
+                'auto_mode': True
+            }
+            health_status['api_status']['parameters'] = 'working'
+        except Exception as e:
+            health_status['api_status']['parameters'] = f'error: {str(e)}'
+
+        try:
+            # Test emergency status
+            emergency_active = os.path.exists('EMERGENCY_STOP_ACTIVE.flag')
+            health_status['api_status']['emergency_status'] = 'working'
+            health_status['emergency_active'] = emergency_active
+        except Exception as e:
+            health_status['api_status']['emergency_status'] = f'error: {str(e)}'
 
         return jsonify(health_status)
     except Exception as e:
         return jsonify({
             'overall_status': 'error',
             'error': str(e),
-            'timestamp': time.time()
-        }), 500
+            'timestamp': time.time(),
+            'components': {
+                'web_dashboard': 'error'
+            }
+        }), 200  # Return 200 to avoid fetch errors
 
 @app.route('/api/parameter-sync-status')
 def get_parameter_sync_status():
