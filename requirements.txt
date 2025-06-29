@@ -10,3 +10,6 @@ web3
 flask
 flask
 pytest
+numpy
+pandas
+scikit-learn
