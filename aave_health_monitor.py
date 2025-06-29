@@ -17,8 +17,11 @@ class AaveHealthMonitor:
         self.health_history = deque(maxlen=100)
         self.arb_price_history = deque(maxlen=50)
 
-        # Aave V3 Data Provider for health factor (Arbitrum Sepolia Chain ID: 421614)
-        self.data_provider_address = self.w3.to_checksum_address("0x69FA688f1Dc47d4B5d8029D5a35FB7a548310654")
+        # Aave V3 Pool address for getUserAccountData (Arbitrum Mainnet Chain ID: 42161)
+        if self.w3.eth.chain_id == 42161:  # Arbitrum Mainnet
+            self.data_provider_address = self.w3.to_checksum_address("0x794a61358D6845594F94dc1DB02A252b5b4814aD")
+        else:  # Arbitrum Sepolia (testnet)
+            self.data_provider_address = self.w3.to_checksum_address("0x69FA688f1Dc47d4B5d8029D5a35FB7a548310654")
         self.data_provider_abi = self._get_data_provider_abi()
 
         # ARB token address (Arbitrum Sepolia Chain ID: 421614)
@@ -44,15 +47,15 @@ class AaveHealthMonitor:
         print(f"📊 Enhanced Aave Health Monitor initialized for {self.user_address}")
 
     def _get_data_provider_abi(self):
-        """Aave V3 Pool Data Provider ABI for user account data"""
+        """Aave V3 Pool ABI for user account data"""
         return [
             {
                 "inputs": [{"internalType": "address", "name": "user", "type": "address"}],
                 "name": "getUserAccountData",
                 "outputs": [
-                    {"internalType": "uint256", "name": "totalCollateralETH", "type": "uint256"},
-                    {"internalType": "uint256", "name": "totalDebtETH", "type": "uint256"},
-                    {"internalType": "uint256", "name": "availableBorrowsETH", "type": "uint256"},
+                    {"internalType": "uint256", "name": "totalCollateralBase", "type": "uint256"},
+                    {"internalType": "uint256", "name": "totalDebtBase", "type": "uint256"},
+                    {"internalType": "uint256", "name": "availableBorrowsBase", "type": "uint256"},
                     {"internalType": "uint256", "name": "currentLiquidationThreshold", "type": "uint256"},
                     {"internalType": "uint256", "name": "ltv", "type": "uint256"},
                     {"internalType": "uint256", "name": "healthFactor", "type": "uint256"}
@@ -94,20 +97,31 @@ class AaveHealthMonitor:
             # Call the function
             user_data = data_provider_contract.functions.getUserAccountData(user_address).call()
 
-            # Extract data
-            total_collateral_eth = user_data[0] / 1e18
-            total_debt_eth = user_data[1] / 1e18
-            available_borrows_eth = user_data[2] / 1e18
+            # Extract data (Pool contract returns values in base units with 8 decimals)
+            total_collateral_eth = user_data[0] / 1e8  # Base unit with 8 decimals
+            total_debt_eth = user_data[1] / 1e8  # Base unit with 8 decimals  
+            available_borrows_eth = user_data[2] / 1e8  # Base unit with 8 decimals
             health_factor_raw = user_data[5]
 
             # Health factor is returned in 1e18 format, convert to decimal
             health_factor = health_factor_raw / 1e18 if health_factor_raw < 2**256 - 1 else float('inf')
 
+            # Convert to USD for display (approximate rates)
+            eth_price_usd = 2400.0  # Approximate ETH price
+            total_collateral_usdc = total_collateral_eth * eth_price_usd
+            total_debt_usdc = total_debt_eth * eth_price_usd
+            available_borrows_usdc = available_borrows_eth * eth_price_usd
+
             account_data = {
                 'total_collateral_eth': total_collateral_eth,
                 'total_debt_eth': total_debt_eth,
                 'available_borrows_eth': available_borrows_eth,
+                'total_collateral_usdc': total_collateral_usdc,
+                'total_debt_usdc': total_debt_usdc,
+                'available_borrows_usdc': available_borrows_usdc,
                 'health_factor': health_factor,
+                'liquidation_threshold': user_data[3] / 10000,  # Convert from basis points
+                'ltv': user_data[4] / 10000,  # Convert from basis points
                 'timestamp': time.time(),
                 'data_source': 'aave_contract'
             }
