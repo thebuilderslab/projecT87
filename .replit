@@ -428,6 +428,15 @@ args = "echo \"3. If both fail, try minimal manual swap:\""
 task = "shell.exec"
 args = "python manual_balance_swap.py"
 
+[[workflows.workflow]]
+name = "🔄 ULTIMATE SWAP FIX"
+author = 39391053
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python ultimate_swap_fix.py"
+
 [[ports]]
 localPort = 5000
 externalPort = 80
