@@ -28,17 +28,20 @@ def main():
         print("📍 Wallet:", agent.address)
         print("🌐 Chain ID:", agent.w3.eth.chain_id)
 
-        # Initialize integrations if not already done
-        if not hasattr(agent, 'aave'):
-            from aave_integration import AaveArbitrumIntegration
-            agent.aave = AaveArbitrumIntegration(agent.w3, agent.account)
+        # Initialize integrations
+        print("🔧 Initializing integrations...")
+        success = agent.initialize_integrations()
+        if not success:
+            print("❌ Failed to initialize integrations")
+            return
 
-        if not hasattr(agent, 'uniswap'):
-            from uniswap_integration import UniswapArbitrumIntegration
-            agent.uniswap = UniswapArbitrumIntegration(agent.w3, agent.account)
+        # Verify integrations are working
+        if not agent.aave or not agent.uniswap:
+            print("❌ Required integrations not available")
+            return
 
         # Check current USDC balance
-        usdc_balance = agent.aave.get_token_balance(agent.aave.usdc_address)
+        usdc_balance = agent.aave.get_token_balance(agent.usdc_address)
         print(f"💰 Current USDC balance: {usdc_balance:.4f}")
 
         usdc_amount = 40.6293
@@ -55,10 +58,10 @@ def main():
         # Swap USDC for WBTC using Uniswap
         # Using 500 basis points (0.05%) fee tier for USDC/WBTC
         swap_result = agent.uniswap.swap_tokens(
-            agent.aave.usdc_address,  # token_in (USDC)
-            agent.aave.wbtc_address,  # token_out (WBTC)
-            usdc_amount_wei,          # amount_in
-            500                       # fee (0.05%)
+            agent.usdc_address,  # token_in (USDC)
+            agent.wbtc_address,  # token_out (WBTC)
+            usdc_amount_wei,     # amount_in
+            500                  # fee (0.05%)
         )
 
         if not swap_result:
@@ -76,7 +79,7 @@ def main():
         time.sleep(10)
 
         # Check WBTC balance after swap
-        wbtc_balance = agent.aave.get_token_balance(agent.aave.wbtc_address)
+        wbtc_balance = agent.aave.get_token_balance(agent.wbtc_address)
         print(f"💰 WBTC received: {wbtc_balance:.8f} WBTC")
 
         if wbtc_balance < 0.00000001:  # Minimum threshold

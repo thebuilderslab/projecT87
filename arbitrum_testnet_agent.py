@@ -136,8 +136,8 @@ class ArbitrumTestnetAgent:
                 self.aave = MockAaveIntegration()
             
             try:
-                from uniswap_integration import UniswapV3Integration
-                self.uniswap = UniswapV3Integration(self.w3, self.account)
+                from uniswap_integration import UniswapArbitrumIntegration
+                self.uniswap = UniswapArbitrumIntegration(self.w3, self.account)
                 print("✅ Uniswap integration initialized.")
             except (ImportError, Exception) as e:
                 print(f"⚠️ Uniswap integration not available: {e}")
