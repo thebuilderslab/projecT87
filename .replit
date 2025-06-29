@@ -383,6 +383,51 @@ mode = "sequential"
 task = "shell.exec"
 args = "python emergency_dashboard_launch.py"
 
+[[workflows.workflow]]
+name = "🔄 FORCE SWAP OPTIONS"
+author = 39391053
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"🔄 SWAP EXECUTION OPTIONS\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"==========================\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"1. Enhanced swap with balance override\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python force_swap_with_manual_amounts.py"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"2. If above fails, try with explicit approval:\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python force_swap_with_approval.py"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"3. If both fail, try minimal manual swap:\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python manual_balance_swap.py"
+
 [[ports]]
 localPort = 5000
 externalPort = 80
