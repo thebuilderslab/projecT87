@@ -281,7 +281,11 @@ def wallet_status():
 
         # Try enhanced direct Aave contract calls for mainnet FIRST
         print(f"🔍 Attempting enhanced Aave data retrieval for mainnet...")
-        enhanced_aave_data = get_enhanced_aave_data(agent)
+        try:
+            enhanced_aave_data = get_enhanced_aave_data(agent)
+        except Exception as e:
+            print(f"⚠️ Enhanced Aave data function failed: {e}")
+            enhanced_aave_data = None
 
         if enhanced_aave_data:
             print(f"✅ Enhanced mainnet Aave data received!")
@@ -458,6 +462,13 @@ def wallet_status():
 
         wallet_status['success'] = True
         print(f"✅ Wallet status successfully retrieved")
+        print(f"📤 Returning wallet status: {wallet_status}")
+        
+        # Ensure all values are JSON serializable
+        for key, value in wallet_status.items():
+            if isinstance(value, float) and (value != value or value == float('inf')):  # Check for NaN or inf
+                wallet_status[key] = 0
+        
         return jsonify(wallet_status)
 
     except Exception as e:
@@ -467,7 +478,7 @@ def wallet_status():
         traceback.print_exc()
         
         # Return safe error response that won't break the frontend
-        return jsonify({
+        error_response = {
             'error': error_msg,
             'status': 'error',
             'wallet_address': 'Error',
@@ -485,7 +496,9 @@ def wallet_status():
             'network_mode': os.getenv('NETWORK_MODE', 'testnet'),
             'timestamp': time.time(),
             'success': False
-        }), 200  # Return 200 to avoid fetch errors
+        }
+        print(f"🚨 Returning error response: {error_response}")
+        return jsonify(error_response), 200  # Return 200 to avoid fetch errors
 
 @app.route('/api/performance')
 def performance_data():
