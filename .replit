@@ -343,6 +343,15 @@ mode = "sequential"
 task = "shell.exec"
 args = "python web_dashboard.py"
 
+[[workflows.workflow]]
+name = "🔄 SWAP USDC FOR WBTC"
+author = 39391053
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python swap_usdc_for_wbtc.py"
+
 [[ports]]
 localPort = 5000
 externalPort = 80
