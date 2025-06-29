@@ -172,12 +172,16 @@ class AaveArbitrumIntegration:
         try:
             print(f"🔍 Getting token balance for {token_address} for user {self.address}")
 
+            # Try current Web3 instance first
+            balance = self._get_balance_single_rpc(token_address)
+            if balance >= 0:
+                return balance
+
             # If agent has multiple RPC endpoints, try them
             if hasattr(self, 'agent') and hasattr(self.agent, 'rpc_endpoints'):
                 return self._get_balance_with_rpc_failover(token_address)
 
-            # Single RPC attempt
-            return self._get_balance_single_rpc(token_address)
+            return 0.0
 
         except Exception as e:
             print(f"❌ ERROR: Failed to get token balance for {token_address} for user {self.address}. Details: {e}")
@@ -186,41 +190,18 @@ class AaveArbitrumIntegration:
     def _get_balance_single_rpc(self, token_address):
         """Get balance using current RPC with enhanced error handling"""
         try:
+            # Ensure address is checksummed
+            token_address = Web3.to_checksum_address(token_address)
+            user_address = Web3.to_checksum_address(self.address)
+            
             # Create contract instance with retry logic
             token_contract = self.w3.eth.contract(
-                address=Web3.to_checksum_address(token_address),
+                address=token_address,
                 abi=self.erc20_abi
             )
 
-            # Try multiple times with different call methods
-            balance_wei = None
-            for attempt in range(3):
-                try:
-                    if attempt == 0:
-                        # Standard call
-                        balance_wei = token_contract.functions.balanceOf(self.address).call()
-                    elif attempt == 1:
-                        # Call with latest block
-                        balance_wei = token_contract.functions.balanceOf(self.address).call(block_identifier='latest')
-                    else:
-                        # Call with pending block
-                        balance_wei = token_contract.functions.balanceOf(self.address).call(block_identifier='pending')
-                    
-                    if balance_wei is not None:
-                        break
-                        
-                except Exception as e:
-                    print(f"⚠️ Attempt {attempt + 1} failed: {e}")
-                    if attempt == 2:
-                        raise e
-                    continue
-
-            if balance_wei is None:
-                print(f"❌ All balance attempts failed for {token_address}")
-                return 0.0
-
-            # Get decimals with enhanced fallback
-            decimals = None
+            # Get decimals first with enhanced fallback
+            decimals = 18  # Default
             try:
                 decimals = token_contract.functions.decimals().call()
             except Exception as decimals_error:
@@ -235,8 +216,42 @@ class AaveArbitrumIntegration:
                     decimals = 18  # WETH
                 elif token_lower == "0xda10009cbd56d0f34a29c7aa35e34d246da651d0":
                     decimals = 18  # DAI
-                else:
-                    decimals = 18  # Default
+
+            # Try multiple times with different call methods
+            balance_wei = None
+            for attempt in range(3):
+                try:
+                    if attempt == 0:
+                        # Standard call
+                        balance_wei = token_contract.functions.balanceOf(user_address).call()
+                    elif attempt == 1:
+                        # Call with latest block
+                        balance_wei = token_contract.functions.balanceOf(user_address).call(block_identifier='latest')
+                    else:
+                        # Call with specific gas limit
+                        balance_wei = token_contract.functions.balanceOf(user_address).call({'gas': 100000})
+                    
+                    if balance_wei is not None:
+                        break
+                        
+                except Exception as e:
+                    print(f"⚠️ Balance attempt {attempt + 1} failed: {e}")
+                    if attempt == 2:
+                        # Try with a different RPC approach
+                        try:
+                            # Direct low-level call
+                            data = token_contract.encodeABI(fn_name='balanceOf', args=[user_address])
+                            result = self.w3.eth.call({'to': token_address, 'data': data})
+                            balance_wei = int(result.hex(), 16)
+                            break
+                        except Exception as low_level_e:
+                            print(f"❌ Low-level call also failed: {low_level_e}")
+                            return -1  # Signal failure
+                    continue
+
+            if balance_wei is None:
+                print(f"❌ All balance attempts failed for {token_address}")
+                return -1  # Signal failure
 
             # Convert to human readable format
             balance = float(balance_wei) / float(10 ** decimals)
@@ -246,7 +261,7 @@ class AaveArbitrumIntegration:
             
         except Exception as e:
             print(f"❌ Complete balance check failed for {token_address}: {e}")
-            return 0.0
+            return -1  # Signal failure
 
     def _get_balance_with_rpc_failover(self, token_address):
         """Try multiple RPC endpoints to get token balance"""

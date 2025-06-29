@@ -62,7 +62,16 @@ def verify_system_readiness():
             print(f"⚠️ {len(issues)} ISSUE(S) FOUND:")
             for i, issue in enumerate(issues, 1):
                 print(f"   {i}. {issue}")
-            print(f"\n💡 Fix these issues and re-run verification")
+            
+            # Check if issues are just funding related
+            funding_issues = [issue for issue in issues if 'balance' in issue.lower() or 'usdc' in issue.lower()]
+            if len(funding_issues) == len(issues):
+                print(f"\n💡 All issues are funding-related. You can:")
+                print("1. Fund your wallet with ETH and USDC")
+                print("2. Or set up test mode with lower requirements:")
+                print("   python funding_bypass_handler.py")
+            else:
+                print(f"\n💡 Fix these issues and re-run verification")
             return False
             
     except Exception as e:

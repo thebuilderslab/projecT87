@@ -93,12 +93,12 @@ class ArbitrumTestnetAgent:
         if self.network_mode == 'mainnet':
             # Multiple Arbitrum Mainnet RPC endpoints for fallback
             self.rpc_endpoints = [
-                'https://arbitrum-one.publicnode.com',
-                'https://rpc.ankr.com/arbitrum',
-                'https://arbitrum.blockpi.network/v1/rpc/public',
                 os.getenv('ARBITRUM_RPC_URL', 'https://arb1.arbitrum.io/rpc'),
-                'https://arbitrum.publicnode.com',
-                'https://endpoints.omniatech.io/v1/arbitrum/one/public'
+                'https://arbitrum-one.publicnode.com',
+                'https://arbitrum.llama.fi',
+                'https://rpc.ankr.com/arbitrum',
+                'https://arbitrum-one.public.blastapi.io',
+                'https://arbitrum.blockpi.network/v1/rpc/public'
             ]
             self.expected_chain_id = 42161
             self.aave_pool_address = "0x794a61358D6845594F94dc1DB02A252b5b4814aD"
@@ -125,18 +125,28 @@ class ArbitrumTestnetAgent:
         for rpc_url in self.rpc_endpoints:
             try:
                 print(f"🔄 Trying RPC: {rpc_url}")
-                test_w3 = Web3(Web3.HTTPProvider(rpc_url))
                 
+                # Create provider with timeout
+                from web3.providers import HTTPProvider
+                provider = HTTPProvider(rpc_url, request_kwargs={'timeout': 10})
+                test_w3 = Web3(provider)
+                
+                # Test connection with timeout
                 if test_w3.is_connected():
-                    # Verify chain ID
-                    chain_id = test_w3.eth.chain_id
-                    if chain_id == self.expected_chain_id:
-                        self.w3 = test_w3
-                        self.current_rpc_url = rpc_url
-                        print(f"✅ Connected to {rpc_url} (Chain ID: {chain_id})")
-                        break
-                    else:
-                        print(f"❌ Wrong chain ID for {rpc_url}: {chain_id} (expected {self.expected_chain_id})")
+                    # Verify chain ID with timeout
+                    try:
+                        chain_id = test_w3.eth.chain_id
+                        if chain_id == self.expected_chain_id:
+                            # Test a simple call to ensure RPC is working
+                            latest_block = test_w3.eth.block_number
+                            self.w3 = test_w3
+                            self.current_rpc_url = rpc_url
+                            print(f"✅ Connected to {rpc_url} (Chain ID: {chain_id}, Block: {latest_block})")
+                            break
+                        else:
+                            print(f"❌ Wrong chain ID for {rpc_url}: {chain_id} (expected {self.expected_chain_id})")
+                    except Exception as chain_e:
+                        print(f"❌ Chain ID check failed for {rpc_url}: {chain_e}")
                 else:
                     print(f"❌ Failed to connect to {rpc_url}")
             except Exception as e:
