@@ -350,7 +350,7 @@ mode = "sequential"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "python swap_usdc_for_wbtc.py"
+args = "python enhanced_swap_usdc_for_wbtc.py"
 
 [[workflows.workflow]]
 name = "🚀 SAFE DASHBOARD"

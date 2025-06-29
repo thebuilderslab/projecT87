@@ -253,8 +253,12 @@ def get_network_info():
     """Get current network information with proper mainnet detection"""
     try:
         # PRIORITY 1: NETWORK_MODE environment variable (most authoritative)
-        network_mode = os.getenv('NETWORK_MODE', 'testnet')
+        network_mode = os.getenv('NETWORK_MODE', 'mainnet')
         print(f"🔍 Dashboard network detection - NETWORK_MODE: {network_mode}")
+        
+        # Verify private key is accessible
+        private_key = os.getenv('PRIVATE_KEY') or os.getenv('PRIVATE_KEY2')
+        print(f"🔐 Private key accessible: {'YES' if private_key else 'NO'}")
 
         # Force display based on NETWORK_MODE setting
         if network_mode == 'mainnet':

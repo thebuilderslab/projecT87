@@ -1,14 +1,15 @@
-
 #!/usr/bin/env python3
 """
 Simple Emergency Dashboard
 Works even when agent initialization fails
 """
 
-from flask import Flask, render_template_string, jsonify
+from flask import Flask, render_template_string, jsonify, request
 import os
-import json
 import time
+import json
+from arbitrum_testnet_agent import ArbitrumTestnetAgent
+from gas_fee_calculator import ArbitrumGasCalculator
 
 app = Flask(__name__)
 
@@ -69,35 +70,35 @@ DASHBOARD_HTML = """
 <body>
     <div class="container">
         <h1>🚨 Emergency DeFi Dashboard</h1>
-        
+
         <div class="status-card">
             <h3>📊 Dashboard Status</h3>
             <p>✅ Emergency Dashboard Active</p>
             <p>🕐 Last Update: <span id="lastUpdate">Loading...</span></p>
         </div>
-        
+
         <div id="networkStatus" class="status-card">
             <h3>🌐 Network Status</h3>
             <p id="networkInfo">Loading...</p>
         </div>
-        
+
         <div id="agentStatus" class="status-card">
             <h3>🤖 Agent Status</h3>
             <p id="agentInfo">Loading...</p>
         </div>
-        
+
         <div id="secretsStatus" class="status-card">
             <h3>🔐 Secrets Status</h3>
             <p id="secretsInfo">Loading...</p>
         </div>
-        
+
         <div class="status-card">
             <h3>🛠️ Emergency Actions</h3>
             <button class="refresh-btn" onclick="checkSecrets()">🔍 Check Secrets</button>
             <button class="refresh-btn" onclick="testAgent()">🤖 Test Agent</button>
             <button class="refresh-btn emergency-btn" onclick="emergencyStop()">🛑 Emergency Stop</button>
         </div>
-        
+
         <div id="logs" class="status-card">
             <h3>📝 System Logs</h3>
             <pre id="logContent">Loading system status...</pre>
@@ -108,7 +109,7 @@ DASHBOARD_HTML = """
         function updateTime() {
             document.getElementById('lastUpdate').textContent = new Date().toLocaleString();
         }
-        
+
         function checkSecrets() {
             fetch('/api/check-secrets')
                 .then(r => r.json())
@@ -119,7 +120,7 @@ DASHBOARD_HTML = """
                          COINMARKETCAP_API_KEY: ${data.coinmarketcap ? '✅ SET' : '❌ NOT SET'}`;
                 });
         }
-        
+
         function testAgent() {
             fetch('/api/test-agent')
                 .then(r => r.json())
@@ -139,7 +140,7 @@ DASHBOARD_HTML = """
                     }
                 });
         }
-        
+
         function emergencyStop() {
             if (confirm('Activate emergency stop?')) {
                 fetch('/api/emergency-stop', {method: 'POST'})
@@ -149,24 +150,44 @@ DASHBOARD_HTML = """
                     });
             }
         }
-        
+
         function loadStatus() {
             updateTime();
             checkSecrets();
             testAgent();
-            
+
             // Update logs
             fetch('/api/system-status')
                 .then(r => r.json())
                 .then(data => {
                     document.getElementById('logContent').textContent = JSON.stringify(data, null, 2);
                 });
+             // Fetch wallet status
+            fetch('/api/wallet_status')
+                .then(r => r.json())
+                .then(data => {
+                    const networkInfoDiv = document.getElementById('networkStatus');
+                    if (data.connected) {
+                        networkInfoDiv.className = 'status-card';
+                        document.getElementById('networkInfo').innerHTML =
+                            `✅ Connected to ${data.network}<br>
+                             Address: ${data.address}<br>
+                             ETH Balance: ${data.eth_balance} ETH<br>
+                             Gas Prices: ${data.current_gas_gwei} gwei<br>
+                             Private Key Source: ${data.private_key_source}`;
+                    } else {
+                        networkInfoDiv.className = 'status-card error-card';
+                        document.getElementById('networkInfo').innerHTML =
+                            `❌ Not Connected<br>
+                             Error: ${data.error}`;
+                    }
+                });
         }
-        
+
         // Auto refresh
         setInterval(updateTime, 1000);
         setInterval(loadStatus, 30000);
-        
+
         // Initial load
         loadStatus();
     </script>
@@ -230,6 +251,29 @@ def system_status():
         },
         'emergency_stop_active': os.path.exists('EMERGENCY_STOP_ACTIVE.flag')
     })
+
+@app.route('/api/wallet_status')
+def wallet_status():
+    """Get current wallet status with gas prices"""
+    try:
+        agent = ArbitrumTestnetAgent()
+
+        # Get real-time gas prices
+        gas_calc = ArbitrumGasCalculator()
+        gas_prices = gas_calc.get_current_gas_prices()
+        current_gas_gwei = agent.w3.from_wei(gas_prices['market'], 'gwei') if gas_prices else 0
+
+        return jsonify({
+            'address': agent.address,
+            'eth_balance': f"{agent.get_eth_balance():.6f}",
+            'network': 'Arbitrum Mainnet' if agent.w3.eth.chain_id == 42161 else 'Arbitrum Sepolia',
+            'chain_id': agent.w3.eth.chain_id,
+            'current_gas_gwei': f"{current_gas_gwei:.2f}",
+            'private_key_source': 'PRIVATE_KEY' if os.getenv('PRIVATE_KEY') else 'PRIVATE_KEY2',
+            'connected': True
+        })
+    except Exception as e:
+        return jsonify({'error': str(e), 'connected': False})
 
 if __name__ == '__main__':
     print("🚨 Starting Emergency Dashboard...")

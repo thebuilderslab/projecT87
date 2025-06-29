@@ -1,4 +1,3 @@
-
 #!/usr/bin/env python3
 """
 Swap 40.6293 USDC for WBTC and supply as collateral
@@ -10,9 +9,17 @@ import time
 from arbitrum_testnet_agent import ArbitrumTestnetAgent
 
 def main():
-    """Swap 40.6293 USDC for WBTC and supply as collateral to Aave"""
-    print("🔄 USDC → WBTC → AAVE SUPPLY")
+    """Main function to execute the USDC to WBTC swap with real gas estimation"""
+    print("🔄 USDC → WBTC SWAP EXECUTION")
     print("=" * 50)
+
+    # Verify private key is loaded from Replit Secrets
+    private_key = os.getenv('PRIVATE_KEY') or os.getenv('PRIVATE_KEY2')
+    if private_key:
+        print(f"✅ Private key loaded from Replit Secrets (length: {len(private_key)})")
+    else:
+        print("❌ No private key found in Replit Secrets")
+        return
 
     # Force mainnet mode from environment
     network_mode = os.getenv('NETWORK_MODE', 'mainnet')
@@ -50,7 +57,7 @@ def main():
             print("   1. Incorrect token contract address")
             print("   2. Network connection issues")
             print("   3. RPC provider problems")
-            
+
             # Try alternative balance check
             try:
                 from web3 import Web3
@@ -82,10 +89,10 @@ def main():
             return
 
         print(f"🔄 Step 1: Swapping {usdc_amount:.4f} USDC for WBTC...")
-        
+
         # Calculate USDC amount in wei (6 decimals)
         usdc_amount_wei = int(usdc_amount * (10 ** 6))
-        
+
         # Swap USDC for WBTC using Uniswap
         # Using 500 basis points (0.05%) fee tier for USDC/WBTC
         swap_result = agent.uniswap.swap_tokens(
@@ -101,7 +108,7 @@ def main():
 
         print(f"✅ USDC → WBTC swap completed!")
         print(f"🔗 Transaction hash: {swap_result}")
-        
+
         if agent.w3.eth.chain_id == 42161:
             print(f"📊 View on Arbiscan: https://arbiscan.io/tx/{swap_result}")
 
@@ -118,7 +125,7 @@ def main():
             return
 
         print(f"🏦 Step 2: Supplying {wbtc_balance:.8f} WBTC to Aave as collateral...")
-        
+
         # Supply all received WBTC to Aave
         supply_result = agent.aave.supply_wbtc_to_aave(wbtc_balance)
 
@@ -127,11 +134,11 @@ def main():
             print(f"🔗 Transaction hash: {supply_result}")
             if agent.w3.eth.chain_id == 42161:
                 print(f"📊 View on Arbiscan: https://arbiscan.io/tx/{supply_result}")
-            
+
             # Wait and check updated position
             print("⏳ Waiting for supply confirmation...")
             time.sleep(10)
-            
+
             # Get updated Aave position
             if hasattr(agent, 'health_monitor'):
                 print("\n📊 Updated Aave Position:")

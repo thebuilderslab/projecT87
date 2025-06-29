@@ -40,10 +40,11 @@ class ArbitrumGasCalculator:
         }
         
     def get_current_gas_prices(self):
-        """Get current gas prices in different tiers"""
+        """Get current gas prices in different tiers from actual network"""
         try:
-            # Get base gas price
+            # Get REAL base gas price from network (not preset minimum)
             base_gas_price = self.w3.eth.gas_price
+            print(f"🌐 Fetched real network gas price: {self.w3.from_wei(base_gas_price, 'gwei'):.2f} gwei")
             
             # Calculate different speed tiers (Arbitrum typically has consistent low fees)
             gas_tiers = {

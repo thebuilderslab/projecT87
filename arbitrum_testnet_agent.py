@@ -50,8 +50,8 @@ class ArbitrumTestnetAgent:
         # Determine network mode
         self.network_mode = network_mode or os.getenv('NETWORK_MODE', 'mainnet')
         
-        # Load private key with enhanced validation
-        private_key = os.getenv('PRIVATE_KEY2') or os.getenv('PRIVATE_KEY')
+        # Load private key with enhanced validation - prioritize PRIVATE_KEY from Replit Secrets
+        private_key = os.getenv('PRIVATE_KEY') or os.getenv('PRIVATE_KEY2')
         
         if not private_key or len(private_key.strip()) < 32:
             raise ValueError("❌ CRITICAL: No valid private key found in PRIVATE_KEY or PRIVATE_KEY2. Please set a valid private key in Replit Secrets.")

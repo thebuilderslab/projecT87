@@ -90,9 +90,28 @@ def check_prerequisites(agent):
     return issues
 
 def execute_swap_with_enhanced_error_handling(agent, usdc_amount):
-    """Execute swap with comprehensive error handling"""
+    """Execute swap with comprehensive error handling and real-time gas estimation"""
     print(f"\n🔄 EXECUTING ENHANCED SWAP: {usdc_amount:.4f} USDC → WBTC")
     print("=" * 60)
+    
+    # Get real-time gas prices from network
+    try:
+        from gas_fee_calculator import ArbitrumGasCalculator
+        gas_calc = ArbitrumGasCalculator()
+        gas_prices = gas_calc.get_current_gas_prices()
+        
+        if gas_prices:
+            current_gas_gwei = agent.w3.from_wei(gas_prices['market'], 'gwei')
+            print(f"⛽ Current network gas price: {current_gas_gwei:.2f} gwei")
+            
+            # Estimate swap cost
+            swap_fee = gas_calc.calculate_transaction_fee('uniswap_swap', 'market')
+            if swap_fee:
+                print(f"💰 Estimated swap cost: {swap_fee['fee_eth']} ETH ({swap_fee['fee_usd']})")
+        else:
+            print("⚠️ Could not fetch real-time gas prices, using network defaults")
+    except Exception as e:
+        print(f"⚠️ Gas estimation error: {e}")
     
     try:
         # Convert USDC amount to wei (6 decimals)
