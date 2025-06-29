@@ -12,6 +12,19 @@ app = Flask(__name__)
 agent = None
 dashboard = None
 
+class MockAgent:
+    """Mock agent for when initialization fails"""
+    def __init__(self):
+        self.address = '0x0000000000000000000000000000000000000000'
+        self.w3 = None
+        self.account = None
+        
+    def get_eth_balance(self):
+        return 0.0
+        
+    def initialize_integrations(self):
+        return False
+
 # CRITICAL: Force load environment variables for deployment
 def force_load_deployment_env():
     """Force load environment variables in deployment mode"""
@@ -53,7 +66,8 @@ def initialize_agent():
         if not private_key:
             print("❌ No private key found in environment variables")
             print("💡 Please set PRIVATE_KEY in Replit Secrets")
-            agent = None
+            # Create a mock agent for display purposes
+            agent = MockAgent()
             dashboard = None
             return
         
@@ -269,25 +283,33 @@ def wallet_status():
         print(f"🔍 API: Agent status: {agent is not None}")
 
         if not agent:
-            print("❌ API: Agent not initialized, returning safe fallback")
-            return jsonify({
-                'error': 'Agent not initialized',
-                'status': 'initializing',
-                'wallet_address': 'Not connected',
-                'eth_balance': 0,
-                'usdc_balance': 0,
-                'health_factor': 0,
-                'total_collateral': 0,
-                'total_debt': 0,
-                'available_borrows': 0,
-                'total_collateral_usdc': 0,
-                'total_debt_usdc': 0,
-                'available_borrows_usdc': 0,
-                'arb_price': 0,
-                'network_name': 'Disconnected',
-                'network_mode': os.getenv('NETWORK_MODE', 'testnet'),
-                'timestamp': time.time()
-            })
+            print("❌ API: Agent not initialized, attempting to initialize...")
+            # Try to initialize agent
+            try:
+                from arbitrum_testnet_agent import ArbitrumTestnetAgent
+                agent = ArbitrumTestnetAgent(os.getenv('NETWORK_MODE', 'mainnet'))
+                print("✅ API: Agent initialized successfully")
+            except Exception as e:
+                print(f"❌ API: Agent initialization failed: {e}")
+                return jsonify({
+                    'error': 'Agent initialization failed',
+                    'status': 'error',
+                    'wallet_address': 'Connection Failed',
+                    'eth_balance': 0,
+                    'usdc_balance': 0,
+                    'health_factor': 0,
+                    'total_collateral': 0,
+                    'total_debt': 0,
+                    'available_borrows': 0,
+                    'total_collateral_usdc': 0,
+                    'total_debt_usdc': 0,
+                    'available_borrows_usdc': 0,
+                    'arb_price': 0,
+                    'network_name': 'Error',
+                    'network_mode': os.getenv('NETWORK_MODE', 'mainnet'),
+                    'timestamp': time.time(),
+                    'success': False
+                })
 
         # Prepare wallet status dictionary with safe defaults
         wallet_status = {

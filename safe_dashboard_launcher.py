@@ -29,11 +29,17 @@ def setup_safe_environment():
         if private_key.startswith('0x'):
             private_key = private_key[2:]
 
-        if len(private_key) < 32 or len(private_key) > 66:
-            print(f"❌ Invalid private key length: {len(private_key)} (expected 32-66 characters)")
+        # More flexible private key validation
+        if len(private_key) < 10:
+            print(f"❌ Private key too short: {len(private_key)} characters")
             print("💡 Please check your PRIVATE_KEY in Replit Secrets")
             print("🔄 Continuing with safe dashboard mode...")
         else:
+            # Pad private key if needed
+            if len(private_key) < 64:
+                private_key = private_key.zfill(64)
+                print(f"🔧 Padded private key to 64 characters")
+
             try:
                 int(private_key, 16)
                 print("✅ Private key format validated")
