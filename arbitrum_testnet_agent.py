@@ -61,21 +61,20 @@ class ArbitrumTestnetAgent:
             private_key = private_key[2:]
         
         # Enhanced private key validation and padding
-        if len(private_key) < 8:
-            raise ValueError(f"Private key too short: {len(private_key)} characters. Please check your PRIVATE_KEY in Replit Secrets")
+        original_length = len(private_key)
         
-        # Pad private key if it's shorter than 64 characters
+        # Always pad to 64 characters if shorter
         if len(private_key) < 64:
-            # Left-pad with zeros to make it 64 characters
             private_key = private_key.zfill(64)
-            print(f"🔧 Padded private key from {len(private_key.lstrip('0'))} to 64 characters")
+            print(f"🔧 Padded private key from {original_length} to 64 characters")
         
+        # Validate it's proper hex after padding
         try:
-            # Test if it's valid hex
             int(private_key, 16)
             print(f"✅ Private key validation successful (64 chars)")
         except ValueError:
-            raise ValueError("Private key contains invalid hexadecimal characters. Please check your PRIVATE_KEY in Replit Secrets")
+            # If padding with zeros didn't work, the original key had invalid chars
+            raise ValueError(f"Private key contains invalid hexadecimal characters. Original length: {original_length}. Please check your PRIVATE_KEY in Replit Secrets")
         
         # Create account object
         try:
