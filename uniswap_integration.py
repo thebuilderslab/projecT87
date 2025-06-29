@@ -2,7 +2,7 @@ import os
 from web3 import Web3
 from eth_account import Account
 
-class UniswapV3Integration:
+class UniswapArbitrumIntegration:
     def __init__(self, w3, account):
         self.w3 = w3
         self.account = account

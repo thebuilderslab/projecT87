@@ -40,14 +40,45 @@ def main():
             print("❌ Required integrations not available")
             return
 
-        # Check current USDC balance
-        usdc_balance = agent.aave.get_token_balance(agent.usdc_address)
-        print(f"💰 Current USDC balance: {usdc_balance:.4f}")
+        # Check current USDC balance with better error handling
+        try:
+            usdc_balance = agent.aave.get_token_balance(agent.usdc_address)
+            print(f"💰 Current USDC balance: {usdc_balance:.4f}")
+        except Exception as e:
+            print(f"❌ Failed to get USDC balance: {e}")
+            print("💡 This might be due to:")
+            print("   1. Incorrect token contract address")
+            print("   2. Network connection issues")
+            print("   3. RPC provider problems")
+            
+            # Try alternative balance check
+            try:
+                from web3 import Web3
+                usdc_contract = agent.w3.eth.contract(
+                    address=agent.usdc_address,
+                    abi=[{
+                        "constant": True,
+                        "inputs": [{"name": "_owner", "type": "address"}],
+                        "name": "balanceOf",
+                        "outputs": [{"name": "balance", "type": "uint256"}],
+                        "type": "function"
+                    }]
+                )
+                balance_wei = usdc_contract.functions.balanceOf(agent.address).call()
+                usdc_balance = balance_wei / (10 ** 6)  # USDC has 6 decimals
+                print(f"💰 Alternative check - USDC balance: {usdc_balance:.4f}")
+            except Exception as alt_e:
+                print(f"❌ Alternative balance check also failed: {alt_e}")
+                print(f"💡 Please check wallet balance manually at: https://arbiscan.io/address/{agent.address}")
+                return
 
         usdc_amount = 40.6293
         if usdc_balance < usdc_amount:
             print(f"❌ Insufficient USDC balance. Need {usdc_amount:.4f}, have {usdc_balance:.4f}")
-            print("💡 Please ensure you have enough USDC in your wallet")
+            print("💡 Funding options:")
+            print(f"   1. Send USDC to: {agent.address}")
+            print("   2. Use https://app.uniswap.org/ to swap ETH → USDC")
+            print("   3. Bridge from another chain using https://bridge.arbitrum.io/")
             return
 
         print(f"🔄 Step 1: Swapping {usdc_amount:.4f} USDC for WBTC...")

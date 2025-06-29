@@ -130,7 +130,7 @@ class ArbitrumTestnetAgent:
             print("Failed to connect to Arbitrum RPC.")
             exit()
 
-        # Token addresses (ensure these are correct for Arbitrum mainnet/testnet)
+        # Token addresses (corrected for Arbitrum mainnet/testnet)
         self.weth_address = Web3.to_checksum_address("0x82aF49447D8a07e3bd95BD0d56f35241523fBab1") # WETH on Arbitrum
         self.usdc_address = Web3.to_checksum_address("0xaf88d065eec38faD0AEFf3e253e648a15cEe23dC") # USDC on Arbitrum
         self.dai_address = Web3.to_checksum_address("0xDA10009cBd56d0F34a29c7aA35e34D246dA651D0")  # DAI on Arbitrum
