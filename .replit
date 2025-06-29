@@ -455,6 +455,28 @@ mode = "sequential"
 task = "shell.exec"
 args = "python funding_bypass_handler.py"
 
+[[workflows.workflow]]
+name = "🧪 ENABLE TEST MODE"
+author = 39391053
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python funding_bypass_handler.py"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python ultimate_swap_fix.py"
+
+[[workflows.workflow]]
+name = "🔄 EXECUTE FUNDED SWAP"
+author = 39391053
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python ultimate_swap_fix.py"
+
 [[ports]]
 localPort = 5000
 externalPort = 80
