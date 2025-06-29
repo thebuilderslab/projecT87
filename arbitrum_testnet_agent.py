@@ -89,14 +89,14 @@ class ArbitrumTestnetAgent:
         gas_price = self.get_gas_price()
         cost_wei = gas_price * gas_limit
         cost_eth = self.w3.from_wei(cost_wei, 'ether')
-        
+
         # Enhanced gas estimation with breakdown
         print(f"🔧 GAS ESTIMATION BREAKDOWN:")
         print(f"   Gas Limit: {gas_limit:,}")
         print(f"   Gas Price: {self.w3.from_wei(gas_price, 'gwei'):.2f} gwei")
         print(f"   Estimated Cost: {cost_eth:.8f} ETH")
         print(f"   USD Estimate: ${float(cost_eth) * 2500:.4f}")  # Assuming ETH ~$2500
-        
+
         return cost_eth
 
     def send_test_transaction(self, to_address, amount_eth):
@@ -322,15 +322,12 @@ class ArbitrumTestnetAgent:
                             else:
                                 print("❌ Step 2: USDC borrow failed")
                                 return 0.3
-                        else:
-                            print("❌ Estimated health factor too low for safe borrowing")
-                            return 0.1
                     else:
-                        print("❌ Step 1: ETH supply failed")
+                        print("❌ Estimated health factor too low for safe borrowing")
                         return 0.1
                 else:
-                    print(f"❌ Insufficient ETH balance ({eth_balance:.6f}) for collateral")
-                    return 0.6
+                    print("❌ Step 1: ETH supply failed")
+                    return 0.1
             else:
                 print(f"❌ Insufficient ETH balance ({eth_balance:.6f}) for collateral")
                 return 0.6
