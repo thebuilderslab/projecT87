@@ -50,51 +50,37 @@ class ArbitrumTestnetAgent:
         # Determine network mode
         self.network_mode = network_mode or os.getenv('NETWORK_MODE', 'mainnet')
         
-        # Load private key with fallback and validation
+        # Load private key with enhanced validation
         private_key = os.getenv('PRIVATE_KEY2') or os.getenv('PRIVATE_KEY')
         
-        # Check for placeholder or invalid keys
         if not private_key or len(private_key.strip()) < 32:
-            print("⚠️ No valid private key found, using emergency fallback")
-            # Use a valid dummy key for emergency mode (this won't work for real transactions)
-            private_key = "0x" + "0" * 64
-        else:
-            private_key = private_key.strip()
+            raise ValueError("❌ CRITICAL: No valid private key found in PRIVATE_KEY or PRIVATE_KEY2. Please set a valid private key in Replit Secrets.")
+        
+        private_key = private_key.strip()
         
         # Clean the private key
         if private_key.startswith('0x'):
             private_key = private_key[2:]
         
-        # Check if it contains placeholder text
-        if 'your_private_key_here' in private_key.lower() or 'placeholder' in private_key.lower():
-            print("⚠️ Placeholder private key detected, using emergency fallback")
-            private_key = "0" * 64
+        # Check for placeholder text - this should fail fast
+        if 'your_private_key_here' in private_key.lower() or 'placeholder' in private_key.lower() or private_key == "0" * 64:
+            raise ValueError("❌ CRITICAL: Placeholder private key detected. Please set your actual private key in Replit Secrets.")
         
-        # Enhanced private key validation and padding
-        original_length = len(private_key)
-        
-        # Validate hex characters first
-        try:
-            # Test with current length first
-            int(private_key, 16)
-            print(f"✅ Private key contains valid hex characters")
-        except ValueError:
-            print(f"⚠️ Invalid hex characters detected, using emergency fallback")
-            private_key = "0" * 64
-            original_length = 64
-        
-        # Pad to 64 characters if needed
-        if len(private_key) < 64:
-            private_key = private_key.zfill(64)
-            print(f"🔧 Padded private key from {original_length} to 64 characters")
-        
-        # Final validation
+        # Validate hex characters
         try:
             int(private_key, 16)
-            print(f"✅ Private key validation successful (64 chars)")
         except ValueError:
-            print(f"⚠️ Final validation failed, using emergency fallback")
-            private_key = "0" * 64
+            raise ValueError("❌ CRITICAL: Private key contains invalid hexadecimal characters. Please check your private key format.")
+        
+        # Ensure proper length
+        if len(private_key) not in [64, 66]:
+            if len(private_key) < 64:
+                private_key = private_key.zfill(64)
+                print(f"🔧 Padded private key to 64 characters")
+            else:
+                raise ValueError(f"❌ CRITICAL: Private key has invalid length: {len(private_key)}. Should be 64 characters.")
+        
+        print(f"✅ Valid private key loaded (length: {len(private_key)})")
         
         # Create account object
         try:
@@ -143,39 +129,56 @@ class ArbitrumTestnetAgent:
         self.health_monitor = None
 
     def initialize_integrations(self):
-        """Initializes Aave, Uniswap, and Health Monitor integrations."""
+        """Initializes Aave, Uniswap, and Health Monitor integrations with enhanced error handling."""
+        integration_success = {'aave': False, 'uniswap': False, 'health_monitor': False}
+        
         try:
-            # Try to import and initialize integrations
+            # Initialize Aave integration
             try:
                 from aave_integration import AaveArbitrumIntegration
                 self.aave = AaveArbitrumIntegration(self.w3, self.account)
-                print("✅ Aave integration initialized.")
-            except (ImportError, Exception) as e:
-                print(f"⚠️ Aave integration not available: {e}")
-                # Create mock aave integration
+                
+                # Test Aave integration
+                test_balance = self.aave.get_token_balance(self.usdc_address)
+                print(f"✅ Aave integration initialized and tested (USDC balance: {test_balance:.6f})")
+                integration_success['aave'] = True
+            except Exception as e:
+                print(f"❌ Aave integration failed: {e}")
+                print("🔧 Using mock Aave integration - transactions will fail")
                 self.aave = MockAaveIntegration()
             
+            # Initialize Uniswap integration
             try:
                 from uniswap_integration import UniswapArbitrumIntegration
                 self.uniswap = UniswapArbitrumIntegration(self.w3, self.account)
-                print("✅ Uniswap integration initialized.")
-            except (ImportError, Exception) as e:
-                print(f"⚠️ Uniswap integration not available: {e}")
-                # Create mock uniswap integration
+                print("✅ Uniswap integration initialized")
+                integration_success['uniswap'] = True
+            except Exception as e:
+                print(f"❌ Uniswap integration failed: {e}")
+                print("🔧 Using mock Uniswap integration - swaps will fail")
                 self.uniswap = MockUniswapIntegration()
             
+            # Initialize Health Monitor
             try:
                 from aave_health_monitor import AaveHealthMonitor
                 self.health_monitor = AaveHealthMonitor(self.w3, self.address, self.aave_pool_address)
-                print("✅ Health monitor initialized.")
-            except (ImportError, Exception) as e:
-                print(f"⚠️ Health monitor not available: {e}")
-                # Create mock health monitor
+                print("✅ Health monitor initialized")
+                integration_success['health_monitor'] = True
+            except Exception as e:
+                print(f"❌ Health monitor failed: {e}")
+                print("🔧 Using mock health monitor - monitoring limited")
                 self.health_monitor = MockHealthMonitor()
             
-            return True
+            # Check if critical integrations are working
+            critical_failed = not (integration_success['aave'] and integration_success['uniswap'])
+            if critical_failed:
+                print("⚠️ WARNING: Critical integrations failed - real transactions may not work")
+                print("💡 Check your network connection and contract addresses")
+            
+            return not critical_failed
+            
         except Exception as e:
-            print(f"❌ Failed to initialize DeFi integrations: {e}")
+            print(f"❌ Critical failure in integration initialization: {e}")
             return False
 
     def check_network_status(self):
