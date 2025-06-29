@@ -317,31 +317,22 @@ class ArbitrumTestnetAgent:
             
             # Check network status
             network_ok, status = self.check_network_status()
-            # Check network status
-                    connected, status = self.check_network_status()
-                    if not connected:
-                        print(f"❌ Network issue: {status}")
-                        return 0.0
-
-            # --- START DIAGNOSTIC CODE ---
-                    print("\n🔍 DIAGNOSTIC: Checking Wallet Balances...")
-                    # Get and print ETH balance
-                    current_eth_balance = self.get_eth_balance(self.address)
-                    print(f"    DIAGNOSTIC - Wallet ETH Balance (raw): {current_eth_balance:.10f} ETH")
-
-                    # Get and print USDC balance using the Aave integration's method
-                    current_usdc_balance_from_aave_integration = self.aave.get_token_balance(self.usdc_address)
-                    print(f"    DIAGNOSTIC - Wallet USDC Balance (via Aave integration): {current_usdc_balance_from_aave_integration:.6f} USDC")
-
-                    print("🔍 DIAGNOSTIC: Wallet Balance Check Complete.")
-            # --- END DIAGNOSTIC CODE ---
-
-                    # The rest of your run_real_defi_task function follows here...
-                    # ... (like the health factor check you showed below in the image)
             if not network_ok:
                 print(f"❌ Network issue: {status}")
                 return 0.1
-            
+
+            # --- START DIAGNOSTIC CODE ---
+            print("\n🔍 DIAGNOSTIC: Checking Wallet Balances...")
+            # Get and print ETH balance
+            current_eth_balance = self.get_eth_balance(self.address)
+            print(f"    DIAGNOSTIC - Wallet ETH Balance (raw): {current_eth_balance:.10f} ETH")
+
+            # Get and print USDC balance using the Aave integration's method
+            current_usdc_balance_from_aave_integration = self.aave.get_token_balance(self.usdc_address)
+            print(f"    DIAGNOSTIC - Wallet USDC Balance (via Aave integration): {current_usdc_balance_from_aave_integration:.6f} USDC")
+
+            print("🔍 DIAGNOSTIC: Wallet Balance Check Complete.")
+            # --- END DIAGNOSTIC CODE ---
             # Get current health factor
             if hasattr(self, 'health_monitor'):
                 health_data = self.health_monitor.get_current_health_factor()
