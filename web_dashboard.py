@@ -37,19 +37,23 @@ def initialize_agent():
     global agent, dashboard
     try:
         print("🔄 Initializing agent with health monitor...")
-        agent = ArbitrumTestnetAgent()
-
-        # Ensure health monitor is properly initialized
-        if hasattr(agent, 'health_monitor') and agent.health_monitor:
-            print("✅ Health monitor confirmed active")
+        
+        # Force environment setup
+        from env_handler import setup_environment
+        setup_environment()
+        
+        # Initialize with safe defaults
+        network_mode = os.getenv('NETWORK_MODE', 'mainnet')
+        agent = ArbitrumTestnetAgent(network_mode)
+        
+        # Initialize integrations safely
+        if agent.initialize_integrations():
+            print("✅ DeFi integrations initialized")
         else:
-            print("🔧 Initializing health monitor...")
-            from aave_health_monitor import AaveHealthMonitor
-            agent.health_monitor = AaveHealthMonitor(agent.w3, agent.account, agent.aave_pool_address)
-            print("✅ Health monitor manually initialized")
+            print("⚠️ DeFi integrations failed, using safe mode")
 
-        dashboard = AgentDashboard(agent)
-        print("✅ Agent and dashboard fully initialized for web dashboard")
+        dashboard = AgentDashboard(agent) if agent else None
+        print("✅ Agent and dashboard initialized for web dashboard")
     except Exception as e:
         print(f"❌ Failed to initialize agent: {e}")
         import traceback

@@ -16,7 +16,7 @@ run = ["sh", "-c", "python mainnet_launcher.py"]
 deploymentTarget = "cloudrun"
 
 [workflows]
-runButton = "🌐 Launch Dashboard"
+runButton = "🚀 SAFE DASHBOARD"
 
 [[workflows.workflow]]
 name = "Run"
@@ -351,6 +351,15 @@ mode = "sequential"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "python swap_usdc_for_wbtc.py"
+
+[[workflows.workflow]]
+name = "🚀 SAFE DASHBOARD"
+author = 39391053
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python safe_dashboard_launcher.py"
 
 [[ports]]
 localPort = 5000

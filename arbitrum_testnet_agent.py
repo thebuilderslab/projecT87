@@ -3,7 +3,7 @@ import time
 import json # Added for potential config file, but primarily for os.getenv
 from web3 import Web3
 from aave_integration import AaveArbitrumIntegration
-from uniswap_integration import UniswapArbitrumIntegration
+from uniswap_integration import UniswapV3Integration
 from aave_health_monitor import AaveHealthMonitor
 
 class ArbitrumTestnetAgent:
@@ -46,7 +46,7 @@ class ArbitrumTestnetAgent:
         """Initializes Aave, Uniswap, and Health Monitor integrations."""
         try:
             self.aave = AaveArbitrumIntegration(self.w3, self.private_key, self.address, self.weth_address, self.usdc_address, self.dai_address)
-            self.uniswap = UniswapArbitrumIntegration(self.w3, self.private_key, self.address)
+            self.uniswap = UniswapV3Integration(self.w3, self.private_key, self.address)
             self.health_monitor = AaveHealthMonitor(self.w3, self.address, self.aave)
             print("✅ DeFi integrations initialized.")
             return True
