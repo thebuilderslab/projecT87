@@ -29,9 +29,10 @@ def setup_safe_environment():
         if private_key.startswith('0x'):
             private_key = private_key[2:]
 
-        if len(private_key) != 64:
-            print(f"❌ Invalid private key length: {len(private_key)} (expected 64)")
+        if len(private_key) < 32 or len(private_key) > 66:
+            print(f"❌ Invalid private key length: {len(private_key)} (expected 32-66 characters)")
             print("💡 Please check your PRIVATE_KEY in Replit Secrets")
+            print("🔄 Continuing with safe dashboard mode...")
         else:
             try:
                 int(private_key, 16)
@@ -39,6 +40,7 @@ def setup_safe_environment():
             except ValueError:
                 print("❌ Private key contains invalid hexadecimal characters")
                 print("💡 Please check your PRIVATE_KEY in Replit Secrets")
+                print("🔄 Continuing with safe dashboard mode...")
 
 def patch_imports():
     """Patch problematic imports"""
