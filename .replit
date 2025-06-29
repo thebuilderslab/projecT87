@@ -486,6 +486,15 @@ mode = "sequential"
 task = "workflow.run"
 args = "🤖 Autonomous Mode"
 
+[[workflows.workflow]]
+name = "🔄 SWAP & SUPPLY 50.62 USDC"
+author = 39391053
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python swap_and_supply_usdc_wbtc.py"
+
 [[ports]]
 localPort = 5000
 externalPort = 80
