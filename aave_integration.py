@@ -168,28 +168,112 @@ class AaveArbitrumIntegration:
         ]
 
     def get_token_balance(self, token_address):
-        """Get token balance for the wallet"""
+        """Get token balance for the user's address with enhanced error handling and RPC failover"""
         try:
-            # Ensure all addresses are properly checksummed
-            token_address = self.w3.to_checksum_address(token_address)
+            print(f"🔍 Getting token balance for {token_address} for user {self.address}")
 
-            if hasattr(self.account, 'address'):
-                user_address = self.w3.to_checksum_address(self.account.address)
-            else:
-                user_address = self.w3.to_checksum_address(self.account.address if hasattr(self.account, 'address') else str(self.account))
+            # If agent has multiple RPC endpoints, try them
+            if hasattr(self, 'agent') and hasattr(self.agent, 'rpc_endpoints'):
+                return self._get_balance_with_rpc_failover(token_address)
 
-            if token_address == self.weth_address:
-                # For WETH, check both ETH and WETH balance
-                eth_balance = self.w3.eth.get_balance(user_address)
-                return float(self.w3.from_wei(eth_balance, 'ether'))
-            else:
-                token_contract = self.w3.eth.contract(address=token_address, abi=self.erc20_abi)
-                balance = token_contract.functions.balanceOf(user_address).call()
-                decimals = token_contract.functions.decimals().call()
-                return float(balance) / float(10 ** decimals)
+            # Single RPC attempt
+            return self._get_balance_single_rpc(token_address)
+
         except Exception as e:
-            print(f"❌ Failed to get token balance: {e}")
+            print(f"❌ ERROR: Failed to get token balance for {token_address} for user {self.address}. Details: {e}")
             return 0.0
+
+    def _get_balance_single_rpc(self, token_address):
+        """Get balance using current RPC"""
+        # Create contract instance
+        token_contract = self.w3.eth.contract(
+            address=Web3.to_checksum_address(token_address),
+            abi=self.erc20_abi
+        )
+
+        # Get balance in wei
+        try:
+            balance_wei = token_contract.functions.balanceOf(self.address).call()
+        except Exception as balance_error:
+            print(f"❌ ERROR: Failed to get balance. Details: {balance_error}")
+            return 0.0
+
+        # Get decimals with fallback
+        try:
+            decimals = token_contract.functions.decimals().call()
+        except Exception as decimals_error:
+            print(f"⚠️ Warning: Could not get decimals for {token_address}, using default 6 for USDC. Error: {decimals_error}")
+            # Use 6 for USDC, 8 for WBTC, 18 for others
+            if token_address.lower() == "0xaf88d065eec38fad0aeff3e253e648a15cee23dc":
+                decimals = 6  # USDC
+            elif token_address.lower() == "0x2f2a2543b76a4166549f7bffbe68df6fc579b2f3":
+                decimals = 8  # WBTC
+            else:
+                decimals = 18  # Default
+
+        # Convert to human readable format
+        balance = float(balance_wei) / float(10 ** decimals)
+        print(f"✅ Token balance: {balance:.6f}")
+
+        return balance
+
+    def _get_balance_with_rpc_failover(self, token_address):
+        """Try multiple RPC endpoints to get token balance"""
+        for rpc_url in self.agent.rpc_endpoints:
+            try:
+                print(f"🔄 Trying balance check with RPC: {rpc_url}")
+
+                # Create temporary Web3 instance
+                temp_w3 = Web3(Web3.HTTPProvider(rpc_url))
+
+                if not temp_w3.is_connected():
+                    print(f"❌ RPC not connected: {rpc_url}")
+                    continue
+
+                # Verify chain ID
+                if temp_w3.eth.chain_id != self.agent.expected_chain_id:
+                    print(f"❌ Wrong chain ID for {rpc_url}")
+                    continue
+
+                # Create contract with temp Web3
+                token_contract = temp_w3.eth.contract(
+                    address=Web3.to_checksum_address(token_address),
+                    abi=self.erc20_abi
+                )
+
+                # Get balance
+                balance_wei = token_contract.functions.balanceOf(self.address).call()
+
+                # Get decimals with fallback
+                try:
+                    decimals = token_contract.functions.decimals().call()
+                except:
+                    # Use known decimals for common tokens
+                    if token_address.lower() == "0xaf88d065eec38fad0aeff3e253e648a15cee23dc":
+                        decimals = 6  # USDC
+                    elif token_address.lower() == "0x2f2a2543b76a4166549f7bffbe68df6fc579b2f3":
+                        decimals = 8  # WBTC
+                    else:
+                        decimals = 18  # Default
+
+                balance = float(balance_wei) / float(10 ** decimals)
+                print(f"✅ Successfully got balance with {rpc_url}: {balance:.6f}")
+
+                # Update main Web3 instance to working RPC
+                if rpc_url != self.agent.current_rpc_url:
+                    self.w3 = temp_w3
+                    self.agent.w3 = temp_w3
+                    self.agent.current_rpc_url = rpc_url
+                    print(f"🔄 Switched to RPC: {rpc_url}")
+
+                return balance
+
+            except Exception as e:
+                print(f"❌ Error with RPC {rpc_url}: {e}")
+                continue
+
+        print("❌ All RPC endpoints failed for token balance")
+        return 0.0
 
     def approve_token(self, token_address, amount):
         """Approve token spending for Aave"""

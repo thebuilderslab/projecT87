@@ -89,13 +89,20 @@ class ArbitrumTestnetAgent:
             raise ValueError(f"Failed to create account from private key: {e}")
         self.address = self.account.address
         
-        # Network configuration
+        # Network configuration with multiple RPC endpoints for reliability
         if self.network_mode == 'mainnet':
-            self.arb_rpc_url = os.getenv('ARBITRUM_RPC_URL', 'https://arb1.arbitrum.io/rpc')
+            # Multiple Arbitrum Mainnet RPC endpoints for fallback
+            self.rpc_endpoints = [
+                os.getenv('ARBITRUM_RPC_URL', 'https://arb1.arbitrum.io/rpc'),
+                'https://arbitrum.publicnode.com',
+                'https://endpoints.omniatech.io/v1/arbitrum/one/public',
+                'https://arbitrum-one.publicnode.com',
+                'https://rpc.arb1.arbitrum.gateway.fm'
+            ]
             self.expected_chain_id = 42161
             self.aave_pool_address = "0x794a61358D6845594F94dc1DB02A252b5b4814aD"
         else:
-            self.arb_rpc_url = 'https://sepolia-rollup.arbitrum.io/rpc'
+            self.rpc_endpoints = ['https://sepolia-rollup.arbitrum.io/rpc']
             self.expected_chain_id = 421614
             self.aave_pool_address = "0x6Ae43d3271ff6888e7Fc43Fd7321a503ff738951"
 
@@ -110,10 +117,33 @@ class ArbitrumTestnetAgent:
 
         self.previous_leveraged_value_usd = None # Initialize for tracking growth
 
-        # Initialize Web3
-        self.w3 = Web3(Web3.HTTPProvider(self.arb_rpc_url))
-        if not self.w3.is_connected():
-            print("Failed to connect to Arbitrum RPC.")
+        # Initialize Web3 with RPC failover mechanism
+        self.w3 = None
+        self.current_rpc_url = None
+        
+        for rpc_url in self.rpc_endpoints:
+            try:
+                print(f"🔄 Trying RPC: {rpc_url}")
+                test_w3 = Web3(Web3.HTTPProvider(rpc_url))
+                
+                if test_w3.is_connected():
+                    # Verify chain ID
+                    chain_id = test_w3.eth.chain_id
+                    if chain_id == self.expected_chain_id:
+                        self.w3 = test_w3
+                        self.current_rpc_url = rpc_url
+                        print(f"✅ Connected to {rpc_url} (Chain ID: {chain_id})")
+                        break
+                    else:
+                        print(f"❌ Wrong chain ID for {rpc_url}: {chain_id} (expected {self.expected_chain_id})")
+                else:
+                    print(f"❌ Failed to connect to {rpc_url}")
+            except Exception as e:
+                print(f"❌ Error with {rpc_url}: {e}")
+                continue
+        
+        if not self.w3 or not self.w3.is_connected():
+            print("❌ Failed to connect to any Arbitrum RPC endpoint.")
             exit()
 
         # Token addresses (corrected for Arbitrum mainnet/testnet)
@@ -137,6 +167,9 @@ class ArbitrumTestnetAgent:
             try:
                 from aave_integration import AaveArbitrumIntegration
                 self.aave = AaveArbitrumIntegration(self.w3, self.account)
+                
+                # Pass agent reference for RPC failover
+                self.aave.agent = self
                 
                 # Test Aave integration
                 test_balance = self.aave.get_token_balance(self.usdc_address)
