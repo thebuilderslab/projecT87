@@ -3,24 +3,45 @@ import os
 from web3 import Web3
 from dotenv import load_dotenv
 
-class ArbitrumSepoliaValidator:
+class ArbitrumNetworkValidator:
     def __init__(self):
         load_dotenv()
-        self.w3 = Web3(Web3.HTTPProvider('https://sepolia-rollup.arbitrum.io/rpc'))
         
-        # Verified contract addresses for Arbitrum SEPOLIA TESTNET (Chain ID: 421614)
-        self.contract_addresses = {
-            'aave_pool_addresses_provider': self.w3.to_checksum_address('0x0496275d34753A48320CA58103d5220d394FF77F'),
-            'aave_pool': self.w3.to_checksum_address('0x6Ae43d3271ff6888e7Fc43Fd7321a503ff738951'),
-            'aave_data_provider': self.w3.to_checksum_address('0x69FA688f1Dc47d4B5d8029D5a35FB7a548310654'),
-            'weth': self.w3.to_checksum_address('0x980B62Da83eFf3D4576C647993b0c1D7faf17c73'),
-            'wbtc': self.w3.to_checksum_address('0x078f358208685046a11C85e8ad32895DED33A249'),
-            'dai': self.w3.to_checksum_address('0x82E64f49Ed5EC1bC6e43DAD4FC8Af9bb3A2312EE'),
-            'usdc': self.w3.to_checksum_address('0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d'),
-            'arb': self.w3.to_checksum_address('0x912CE59144191C1204E64559FE8253a0e49E6548')
-        }
+        # Determine network based on NETWORK_MODE
+        network_mode = os.getenv('NETWORK_MODE', 'testnet').lower()
         
-        print(f"🔧 Network Validator initialized for Arbitrum Sepolia (Chain ID: 421614)")
+        if network_mode == 'mainnet':
+            self.w3 = Web3(Web3.HTTPProvider('https://arb1.arbitrum.io/rpc'))
+            self.expected_chain_id = 42161
+            self.network_name = "Arbitrum Mainnet"
+            # Verified contract addresses for Arbitrum MAINNET (Chain ID: 42161)
+            self.contract_addresses = {
+                'aave_pool_addresses_provider': self.w3.to_checksum_address('0xa97684ead0e402dC232d5A977953DF7ECBaB3CDb'),
+                'aave_pool': self.w3.to_checksum_address('0x794a61358D6845594F94dc1DB02A252b5b4814aD'),
+                'aave_data_provider': self.w3.to_checksum_address('0x69FA688f1Dc47d4B5d8029D5a35FB7a548310654'),
+                'weth': self.w3.to_checksum_address('0x82aF49447D8a07e3bd95BD0d56f35241523fBab1'),
+                'wbtc': self.w3.to_checksum_address('0x2f2a2543B76A4166549F7bffBE68df6Fc579b2F3'),
+                'dai': self.w3.to_checksum_address('0xDA10009cBd56D0F34a29c7aA35e34D246dA651D0'),
+                'usdc': self.w3.to_checksum_address('0xaf88d065eec38faD0AEFf3e253e648a15cEe23dC'),
+                'arb': self.w3.to_checksum_address('0x912CE59144191C1204E64559FE8253a0e49E6548')
+            }
+        else:
+            self.w3 = Web3(Web3.HTTPProvider('https://sepolia-rollup.arbitrum.io/rpc'))
+            self.expected_chain_id = 421614
+            self.network_name = "Arbitrum Sepolia"
+            # Verified contract addresses for Arbitrum SEPOLIA TESTNET (Chain ID: 421614)
+            self.contract_addresses = {
+                'aave_pool_addresses_provider': self.w3.to_checksum_address('0x0496275d34753A48320CA58103d5220d394FF77F'),
+                'aave_pool': self.w3.to_checksum_address('0x6Ae43d3271ff6888e7Fc43Fd7321a503ff738951'),
+                'aave_data_provider': self.w3.to_checksum_address('0x69FA688f1Dc47d4B5d8029D5a35FB7a548310654'),
+                'weth': self.w3.to_checksum_address('0x980B62Da83eFf3D4576C647993b0c1D7faf17c73'),
+                'wbtc': self.w3.to_checksum_address('0x078f358208685046a11C85e8ad32895DED33A249'),
+                'dai': self.w3.to_checksum_address('0x82E64f49Ed5EC1bC6e43DAD4FC8Af9bb3A2312EE'),
+                'usdc': self.w3.to_checksum_address('0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d'),
+                'arb': self.w3.to_checksum_address('0x912CE59144191C1204E64559FE8253a0e49E6548')
+            }
+        
+        print(f"🔧 Network Validator initialized for {self.network_name} (Chain ID: {self.expected_chain_id})")
     
     def validate_network_connection(self):
         """Validate connection to Arbitrum Sepolia with explicit Chain ID check"""
@@ -28,16 +49,15 @@ class ArbitrumSepoliaValidator:
             if not self.w3.is_connected():
                 return False, "Failed to connect to Arbitrum Sepolia RPC"
             
-            # CRITICAL: Explicit Chain ID validation for Arbitrum Sepolia
+            # CRITICAL: Explicit Chain ID validation
             chain_id = self.w3.eth.chain_id
-            expected_chain_id = 421614  # Arbitrum Sepolia testnet
             
-            print(f"🔍 Chain ID Check: Expected {expected_chain_id}, Got {chain_id}")
+            print(f"🔍 Chain ID Check: Expected {self.expected_chain_id}, Got {chain_id}")
             
-            if chain_id != expected_chain_id:
-                return False, f"WRONG NETWORK! Expected Arbitrum Sepolia (Chain ID: {expected_chain_id}), but connected to Chain ID: {chain_id}"
+            if chain_id != self.expected_chain_id:
+                return False, f"WRONG NETWORK! Expected {self.network_name} (Chain ID: {self.expected_chain_id}), but connected to Chain ID: {chain_id}"
             
-            return True, f"✅ Network connection validated - Arbitrum Sepolia (Chain ID: {chain_id})"
+            return True, f"✅ Network connection validated - {self.network_name} (Chain ID: {chain_id})"
             
         except Exception as e:
             return False, f"Network validation error: {e}"
@@ -179,7 +199,7 @@ class ArbitrumSepoliaValidator:
 
 def validate_arbitrum_setup():
     """Main validation function for external imports"""
-    validator = ArbitrumSepoliaValidator()
+    validator = ArbitrumNetworkValidator()
     return validator.run_full_validation()
 
 if __name__ == "__main__":

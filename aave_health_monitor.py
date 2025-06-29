@@ -17,15 +17,14 @@ class AaveHealthMonitor:
         self.health_history = deque(maxlen=100)
         self.arb_price_history = deque(maxlen=50)
 
-        # Aave V3 Pool address for getUserAccountData (Arbitrum Mainnet Chain ID: 42161)
+        # Aave V3 Pool address for getUserAccountData
         if self.w3.eth.chain_id == 42161:  # Arbitrum Mainnet
-            self.data_provider_address = self.w3.to_checksum_address("0x794a61358D6845594F94dc1DB02A252b5b4814aD")
+            self.data_provider_address = self.w3.to_checksum_address("0x69FA688f1Dc47d4B5d8029D5a35FB7a548310654")
+            self.arb_address = self.w3.to_checksum_address("0x912CE59144191C1204E64559FE8253a0e49E6548")
         else:  # Arbitrum Sepolia (testnet)
             self.data_provider_address = self.w3.to_checksum_address("0x69FA688f1Dc47d4B5d8029D5a35FB7a548310654")
+            self.arb_address = self.w3.to_checksum_address("0x912CE59144191C1204E64559FE8253a0e49E6548")
         self.data_provider_abi = self._get_data_provider_abi()
-
-        # ARB token address (Arbitrum Sepolia Chain ID: 421614)
-        self.arb_address = self.w3.to_checksum_address("0x912CE59144191C1204E64559FE8253a0e49E6548")
         print(f"🪙 ARB Address (Arbitrum Sepolia): {self.arb_address}")
 
         # Ensure account address is properly formatted and checksummed

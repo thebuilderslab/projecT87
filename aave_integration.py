@@ -15,16 +15,16 @@ class AaveArbitrumIntegration:
 
         if chain_id == 42161:  # Arbitrum Mainnet
             print(f"🌐 Initializing for Arbitrum Mainnet (Chain ID: {chain_id})")
-            # Aave V3 Arbitrum MAINNET Contract Addresses
+            # Aave V3 Arbitrum MAINNET Contract Addresses (verified deployed)
             self.pool_addresses_provider = self.w3.to_checksum_address("0xa97684ead0e402dC232d5A977953DF7ECBaB3CDb")
             self.pool_address = self.w3.to_checksum_address("0x794a61358D6845594F94dc1DB02A252b5b4814aD")
             self.pool_data_provider = self.w3.to_checksum_address("0x69FA688f1Dc47d4B5d8029D5a35FB7a548310654")
-            # Token addresses for Arbitrum Mainnet (corrected)
-            self.weth_address = Web3.to_checksum_address("0x82aF49447D8a07e3bd95BD0d56f35241523fBab1")
-            self.wbtc_address = Web3.to_checksum_address("0x2f2a2543B76A4166549F7bffBE68df6Fc579b2F3")  # Correct WBTC
-            self.dai_address = Web3.to_checksum_address("0xDA10009cBd56D0F34a29c7aA35e34D246dA651D0")   # Correct DAI
-            self.usdc_address = Web3.to_checksum_address("0xaf88d065eec38faD0AEFf3e253e648a15cEe23dC") # Correct USDC
-            self.arb_address = Web3.to_checksum_address("0x912CE59144191C1f20bDd2ce08f2a688FEaEbb0B")   # Correct ARB
+            # Token addresses for Arbitrum Mainnet (verified deployed)
+            self.weth_address = self.w3.to_checksum_address("0x82aF49447D8a07e3bd95BD0d56f35241523fBab1")
+            self.wbtc_address = self.w3.to_checksum_address("0x2f2a2543B76A4166549F7bffBE68df6Fc579b2F3")
+            self.dai_address = self.w3.to_checksum_address("0xDA10009cBd56D0F34a29c7aA35e34D246dA651D0")
+            self.usdc_address = self.w3.to_checksum_address("0xaf88d065eec38faD0AEFf3e253e648a15cEe23dC")
+            self.arb_address = self.w3.to_checksum_address("0x912CE59144191C1204E64559FE8253a0e49E6548")
         else:  # Arbitrum Sepolia Testnet (Chain ID: 421614)
             print(f"🧪 Initializing for Arbitrum Sepolia Testnet (Chain ID: {chain_id})")
             # Aave V3 Arbitrum SEPOLIA TESTNET Contract Addresses
