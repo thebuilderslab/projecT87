@@ -16,6 +16,7 @@ run = ["sh", "-c", "python mainnet_launcher.py"]
 deploymentTarget = "cloudrun"
 
 [workflows]
+runButton = "🤖 Autonomous Mode"
 
 [[workflows.workflow]]
 name = "Run"
@@ -475,6 +476,15 @@ mode = "sequential"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "python ultimate_swap_fix.py"
+
+[[workflows.workflow]]
+name = "🤖 Autonomous Mode"
+author = 39391053
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python main.py"
 
 [[ports]]
 localPort = 5000

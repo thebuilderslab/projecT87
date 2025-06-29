@@ -192,13 +192,20 @@ if __name__ == "__main__":
         with open(IMPROVEMENT_LOG, 'w') as f:
             pass
 
-    # Ask user for mode
-    print("\nChoose operation mode:")
-    print("1. 🤖 Autonomous mode (bot runs automatically)")
-    print("2. 🎛️ Manual mode (you control each action)")
-    print("3. 🌐 Web dashboard (browser interface)")
+    # Check for auto mode environment variable
+    auto_mode = os.getenv('AUTO_MODE')
+    
+    if auto_mode:
+        choice = "1"
+        print("🤖 AUTO MODE DETECTED - Starting autonomous mode...")
+    else:
+        # Ask user for mode
+        print("\nChoose operation mode:")
+        print("1. 🤖 Autonomous mode (bot runs automatically)")
+        print("2. 🎛️ Manual mode (you control each action)")
+        print("3. 🌐 Web dashboard (browser interface)")
 
-    choice = input("Enter choice (1-3): ").strip()
+        choice = input("Enter choice (1-3): ").strip()
 
     if choice == "1":
         autonomous_agent_loop()
