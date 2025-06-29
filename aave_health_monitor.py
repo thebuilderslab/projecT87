@@ -97,20 +97,26 @@ class AaveHealthMonitor:
             # Call the function
             user_data = data_provider_contract.functions.getUserAccountData(user_address).call()
 
-            # Extract data (Pool contract returns values in base units with 8 decimals)
-            total_collateral_eth = user_data[0] / 1e8  # Base unit with 8 decimals
-            total_debt_eth = user_data[1] / 1e8  # Base unit with 8 decimals  
-            available_borrows_eth = user_data[2] / 1e8  # Base unit with 8 decimals
+            # Extract data from getUserAccountData
+            # Note: Aave V3 Pool returns values in USD base units (8 decimals), not ETH
+            total_collateral_base = user_data[0] / 1e8  # USD value with 8 decimals
+            total_debt_base = user_data[1] / 1e8  # USD value with 8 decimals  
+            available_borrows_base = user_data[2] / 1e8  # USD value with 8 decimals
             health_factor_raw = user_data[5]
 
             # Health factor is returned in 1e18 format, convert to decimal
             health_factor = health_factor_raw / 1e18 if health_factor_raw < 2**256 - 1 else float('inf')
 
-            # Convert to USD for display (approximate rates)
+            # These are already in USD, so use them directly
+            total_collateral_usdc = total_collateral_base
+            total_debt_usdc = total_debt_base
+            available_borrows_usdc = available_borrows_base
+            
+            # Convert to ETH equivalent for backward compatibility (approximate)
             eth_price_usd = 2400.0  # Approximate ETH price
-            total_collateral_usdc = total_collateral_eth * eth_price_usd
-            total_debt_usdc = total_debt_eth * eth_price_usd
-            available_borrows_usdc = available_borrows_eth * eth_price_usd
+            total_collateral_eth = total_collateral_usdc / eth_price_usd
+            total_debt_eth = total_debt_usdc / eth_price_usd
+            available_borrows_eth = available_borrows_usdc / eth_price_usd
 
             account_data = {
                 'total_collateral_eth': total_collateral_eth,
@@ -130,6 +136,12 @@ class AaveHealthMonitor:
             self.health_history.append(account_data)
 
             print(f"✅ Health factor retrieved: {health_factor:.4f}")
+            print(f"💰 USD Values from Aave:")
+            print(f"   Total Collateral: ${total_collateral_usdc:,.2f}")
+            print(f"   Total Debt: ${total_debt_usdc:,.2f}")
+            print(f"   Available Borrows: ${available_borrows_usdc:,.2f}")
+            print(f"   LTV: {account_data['ltv']*100:.1f}%")
+            print(f"   Liquidation Threshold: {account_data['liquidation_threshold']*100:.1f}%")
             return account_data
 
         except Exception as e:
