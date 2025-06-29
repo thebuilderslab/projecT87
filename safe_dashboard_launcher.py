@@ -1,4 +1,3 @@
-
 #!/usr/bin/env python3
 """
 Safe Dashboard Launcher - Handles all errors gracefully
@@ -10,30 +9,44 @@ import time
 import traceback
 
 def setup_safe_environment():
-    """Setup environment with safe defaults"""
+    """Set up a safe environment for the dashboard"""
     print("🔧 Setting up safe environment...")
-    
-    # Set required environment variables if missing
-    env_defaults = {
-        'NETWORK_MODE': 'mainnet',
-        'ARB_RPC_URL': 'https://arb1.arbitrum.io/rpc',
-        'COINMARKETCAP_API_KEY': 'demo-key-12345',
-        'PROMPT_KEY': 'demo-prompt-key',
-        'PRIVATE_KEY': '0x' + '1' * 64,  # Safe dummy key
-    }
-    
-    for key, default in env_defaults.items():
-        if not os.getenv(key):
-            os.environ[key] = default
-            print(f"✅ Set {key} to default value")
+
+    # Set default RPC URL if not set
+    if not os.getenv('ARB_RPC_URL'):
+        os.environ['ARB_RPC_URL'] = 'https://arb1.arbitrum.io/rpc'
+        print("✅ Set ARB_RPC_URL to default value")
+
+    # Check for private key and provide helpful error message
+    private_key = os.getenv('PRIVATE_KEY2') or os.getenv('PRIVATE_KEY')
+    if not private_key:
+        print("❌ No private key found in environment")
+        print("💡 Please set PRIVATE_KEY in Replit Secrets")
+        print("💡 Format: 64-character hexadecimal string (with or without 0x prefix)")
+    else:
+        # Clean and validate
+        private_key = private_key.strip()
+        if private_key.startswith('0x'):
+            private_key = private_key[2:]
+
+        if len(private_key) != 64:
+            print(f"❌ Invalid private key length: {len(private_key)} (expected 64)")
+            print("💡 Please check your PRIVATE_KEY in Replit Secrets")
+        else:
+            try:
+                int(private_key, 16)
+                print("✅ Private key format validated")
+            except ValueError:
+                print("❌ Private key contains invalid hexadecimal characters")
+                print("💡 Please check your PRIVATE_KEY in Replit Secrets")
 
 def patch_imports():
     """Patch problematic imports"""
     print("🔧 Patching imports...")
-    
+
     # Create minimal mock classes if imports fail
     sys.path.insert(0, '.')
-    
+
     try:
         # Test critical imports
         from arbitrum_testnet_agent import ArbitrumTestnetAgent
@@ -46,13 +59,13 @@ def patch_imports():
                 self.address = '0x' + '0' * 40
                 self.w3 = None
                 self.account = None
-            
+
             def get_eth_balance(self):
                 return 0.0
-            
+
             def initialize_integrations(self):
                 return False
-        
+
         # Inject mock
         import types
         mock_module = types.ModuleType('arbitrum_testnet_agent')
@@ -63,10 +76,10 @@ def start_dashboard():
     """Start dashboard with comprehensive error handling"""
     try:
         print("🚀 Starting web dashboard...")
-        
+
         # Import Flask app
         from web_dashboard import app
-        
+
         # Check if port 5000 is available
         import socket
         def is_port_available(port):
@@ -76,7 +89,7 @@ def start_dashboard():
                     return True
                 except:
                     return False
-        
+
         port = 5000
         if not is_port_available(port):
             print(f"⚠️ Port {port} in use, trying alternative...")
@@ -84,10 +97,10 @@ def start_dashboard():
                 if is_port_available(p):
                     port = p
                     break
-        
+
         print(f"🌐 Starting dashboard on port {port}")
         print(f"🔗 Access your dashboard at the webview URL")
-        
+
         # Start with minimal configuration
         app.run(
             host='0.0.0.0',
@@ -96,11 +109,11 @@ def start_dashboard():
             threaded=True,
             use_reloader=False
         )
-        
+
     except Exception as e:
         print(f"❌ Dashboard startup failed: {e}")
         traceback.print_exc()
-        
+
         # Fallback: Simple status server
         print("🔄 Starting fallback status server...")
         start_fallback_server(port)
@@ -108,9 +121,9 @@ def start_dashboard():
 def start_fallback_server(port=5000):
     """Start a simple fallback server"""
     from flask import Flask, jsonify
-    
+
     fallback_app = Flask(__name__)
-    
+
     @fallback_app.route('/')
     def status():
         return """
@@ -125,7 +138,7 @@ def start_fallback_server(port=5000):
         </body>
         </html>
         """
-    
+
     @fallback_app.route('/api/status')
     def api_status():
         return jsonify({
@@ -134,14 +147,14 @@ def start_fallback_server(port=5000):
             'network': 'arbitrum_mainnet',
             'timestamp': time.time()
         })
-    
+
     fallback_app.run(host='0.0.0.0', port=port, debug=False)
 
 def main():
     """Main launcher function"""
     print("🚀 SAFE DASHBOARD LAUNCHER")
     print("=" * 50)
-    
+
     setup_safe_environment()
     patch_imports()
     start_dashboard()

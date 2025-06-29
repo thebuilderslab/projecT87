@@ -1,11 +1,8 @@
 import os
 import time
-import json # Added for potential config file, but primarily for os.getenv
+import json
 from web3 import Web3
 from eth_account import Account
-from aave_integration import AaveArbitrumIntegration
-from uniswap_integration import UniswapV3Integration
-from aave_health_monitor import AaveHealthMonitor
 
 class ArbitrumTestnetAgent:
     def __init__(self, network_mode=None):
@@ -17,8 +14,26 @@ class ArbitrumTestnetAgent:
         if not private_key:
             raise ValueError("No private key found. Please set PRIVATE_KEY or PRIVATE_KEY2 in Replit Secrets")
         
+        # Clean and validate private key
+        private_key = private_key.strip()
+        if private_key.startswith('0x'):
+            private_key = private_key[2:]
+        
+        # Validate hex format
+        if len(private_key) != 64:
+            raise ValueError(f"Private key must be 64 characters long, got {len(private_key)}")
+        
+        try:
+            # Test if it's valid hex
+            int(private_key, 16)
+        except ValueError:
+            raise ValueError("Private key contains invalid hexadecimal characters. Please check your PRIVATE_KEY in Replit Secrets")
+        
         # Create account object
-        self.account = Account.from_key(private_key)
+        try:
+            self.account = Account.from_key('0x' + private_key)
+        except Exception as e:
+            raise ValueError(f"Failed to create account from private key: {e}")
         self.address = self.account.address
         
         # Network configuration
@@ -63,10 +78,31 @@ class ArbitrumTestnetAgent:
     def initialize_integrations(self):
         """Initializes Aave, Uniswap, and Health Monitor integrations."""
         try:
-            self.aave = AaveArbitrumIntegration(self.w3, self.account)
-            self.uniswap = UniswapV3Integration(self.w3, self.account)
-            self.health_monitor = AaveHealthMonitor(self.w3, self.address, self.aave)
-            print("✅ DeFi integrations initialized.")
+            # Try to import and initialize integrations
+            try:
+                from aave_integration import AaveArbitrumIntegration
+                self.aave = AaveArbitrumIntegration(self.w3, self.account)
+                print("✅ Aave integration initialized.")
+            except ImportError:
+                print("⚠️ Aave integration not available")
+                self.aave = None
+            
+            try:
+                from uniswap_integration import UniswapV3Integration
+                self.uniswap = UniswapV3Integration(self.w3, self.account)
+                print("✅ Uniswap integration initialized.")
+            except ImportError:
+                print("⚠️ Uniswap integration not available")
+                self.uniswap = None
+            
+            try:
+                from aave_health_monitor import AaveHealthMonitor
+                self.health_monitor = AaveHealthMonitor(self.w3, self.address, self.aave)
+                print("✅ Health monitor initialized.")
+            except ImportError:
+                print("⚠️ Health monitor not available")
+                self.health_monitor = None
+            
             return True
         except Exception as e:
             print(f"❌ Failed to initialize DeFi integrations: {e}")

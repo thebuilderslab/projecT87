@@ -39,11 +39,46 @@ def initialize_agent():
         print("🔄 Initializing agent with health monitor...")
         
         # Force environment setup
-        from env_handler import setup_environment
-        setup_environment()
+        try:
+            from env_handler import setup_environment
+            setup_environment()
+        except ImportError:
+            print("⚠️ env_handler not available, continuing without it")
         
         # Initialize with safe defaults
         network_mode = os.getenv('NETWORK_MODE', 'mainnet')
+        
+        # Check if we have a valid private key before proceeding
+        private_key = os.getenv('PRIVATE_KEY2') or os.getenv('PRIVATE_KEY')
+        if not private_key:
+            print("❌ No private key found in environment variables")
+            print("💡 Please set PRIVATE_KEY in Replit Secrets")
+            agent = None
+            dashboard = None
+            return
+        
+        # Clean private key
+        private_key = private_key.strip()
+        if private_key.startswith('0x'):
+            private_key = private_key[2:]
+        
+        # Validate private key format
+        if len(private_key) != 64:
+            print(f"❌ Invalid private key length: {len(private_key)} (expected 64)")
+            print("💡 Please check your PRIVATE_KEY in Replit Secrets")
+            agent = None
+            dashboard = None
+            return
+        
+        try:
+            int(private_key, 16)
+        except ValueError:
+            print("❌ Private key contains invalid hexadecimal characters")
+            print("💡 Please check your PRIVATE_KEY in Replit Secrets")
+            agent = None
+            dashboard = None
+            return
+        
         agent = ArbitrumTestnetAgent(network_mode)
         
         # Initialize integrations safely
@@ -52,7 +87,13 @@ def initialize_agent():
         else:
             print("⚠️ DeFi integrations failed, using safe mode")
 
-        dashboard = AgentDashboard(agent) if agent else None
+        try:
+            from dashboard import AgentDashboard
+            dashboard = AgentDashboard(agent) if agent else None
+        except ImportError:
+            print("⚠️ Dashboard module not available")
+            dashboard = None
+            
         print("✅ Agent and dashboard initialized for web dashboard")
     except Exception as e:
         print(f"❌ Failed to initialize agent: {e}")
@@ -285,11 +326,16 @@ def wallet_status():
 
         # Try enhanced direct Aave contract calls for mainnet FIRST
         print(f"🔍 Attempting enhanced Aave data retrieval for mainnet...")
-        try:
-            enhanced_aave_data = get_enhanced_aave_data(agent)
-        except Exception as e:
-            print(f"⚠️ Enhanced Aave data function failed: {e}")
-            enhanced_aave_data = None
+        enhanced_aave_data = None
+        
+        if agent and hasattr(agent, 'aave') and agent.aave:
+            try:
+                enhanced_aave_data = get_enhanced_aave_data(agent)
+            except Exception as e:
+                print(f"⚠️ Enhanced Aave data function failed: {e}")
+                enhanced_aave_data = None
+        else:
+            print("⚠️ Agent or Aave integration not available for enhanced data retrieval")
 
         if enhanced_aave_data:
             print(f"✅ Enhanced mainnet Aave data received!")
