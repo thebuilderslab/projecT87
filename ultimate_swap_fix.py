@@ -247,6 +247,15 @@ def main():
     print("🚀 ULTIMATE USDC → WBTC SWAP")
     print("=" * 50)
     
+    # Check for funding bypass
+    try:
+        from funding_bypass_handler import FundingBypassHandler
+        bypass_handler = FundingBypassHandler()
+        if bypass_handler.should_bypass_funding_checks():
+            print("🧪 TEST MODE: Funding checks will use reduced requirements")
+    except ImportError:
+        bypass_handler = None
+    
     # Step 1: Load private key
     private_key = load_private_key()
     if not private_key:
@@ -275,18 +284,28 @@ def main():
     # Step 5: Check balances
     balances = check_balances(w3, account.address, token_addresses)
     
-    # Step 6: Validate swap readiness
-    min_eth_needed = 0.005  # Minimum ETH for gas
+    # Step 6: Validate swap readiness with bypass support
+    if bypass_handler:
+        requirements = bypass_handler.get_minimum_requirements()
+        min_eth_needed = requirements['min_eth']
+        min_usdc_needed = requirements['min_usdc']
+    else:
+        min_eth_needed = 0.005  # Minimum ETH for gas
+        min_usdc_needed = 1.0   # Minimum USDC for swap
+    
     usdc_to_swap = min(balances.get('USDC', 0), 40.0)  # Swap up to 40 USDC
     
     if balances['ETH'] < min_eth_needed:
         print(f"❌ Insufficient ETH for gas (need {min_eth_needed}, have {balances['ETH']:.6f})")
-        return False
+        if not bypass_handler or not bypass_handler.should_bypass_funding_checks():
+            print("💡 Run 'python wallet_funding_validator.py' for funding guidance")
+            return False
     
-    if usdc_to_swap < 1.0:
-        print(f"❌ Insufficient USDC for swap (need at least 1.0, have {balances.get('USDC', 0):.6f})")
-        print("💡 Fund your wallet with USDC on Arbitrum")
-        return False
+    if usdc_to_swap < min_usdc_needed:
+        print(f"❌ Insufficient USDC for swap (need at least {min_usdc_needed}, have {balances.get('USDC', 0):.6f})")
+        if not bypass_handler or not bypass_handler.should_bypass_funding_checks():
+            print("💡 Run 'python wallet_funding_validator.py' for funding guidance")
+            return False
     
     print(f"\n✅ Ready to swap {usdc_to_swap:.4f} USDC for WBTC")
     

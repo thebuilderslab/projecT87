@@ -437,6 +437,24 @@ mode = "sequential"
 task = "shell.exec"
 args = "python ultimate_swap_fix.py"
 
+[[workflows.workflow]]
+name = "💰 WALLET FUNDING CHECK"
+author = 39391053
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python wallet_funding_validator.py"
+
+[[workflows.workflow]]
+name = "🧪 SETUP TEST MODE"
+author = 39391053
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python funding_bypass_handler.py"
+
 [[ports]]
 localPort = 5000
 externalPort = 80
