@@ -16,7 +16,7 @@ run = ["sh", "-c", "python mainnet_launcher.py"]
 deploymentTarget = "cloudrun"
 
 [workflows]
-runButton = "🚨 EMERGENCY FIXED DASHBOARD"
+runButton = "🚨 FIXED EMERGENCY DASHBOARD"
 
 [[workflows.workflow]]
 name = "Run"
@@ -363,6 +363,15 @@ args = "python safe_dashboard_launcher.py"
 
 [[workflows.workflow]]
 name = "🚨 EMERGENCY FIXED DASHBOARD"
+author = 39391053
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python emergency_dashboard_launch.py"
+
+[[workflows.workflow]]
+name = "🚨 FIXED EMERGENCY DASHBOARD"
 author = 39391053
 mode = "sequential"
 

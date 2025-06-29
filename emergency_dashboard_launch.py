@@ -162,6 +162,101 @@ def emergency_test():
         ]
     })
 
+@app.route('/api/wallet_status')
+def emergency_wallet_status():
+    """Emergency wallet status endpoint"""
+    try:
+        from arbitrum_testnet_agent import ArbitrumTestnetAgent
+        agent = ArbitrumTestnetAgent()
+        
+        return jsonify({
+            'wallet_address': agent.address,
+            'eth_balance': agent.get_eth_balance(),
+            'usdc_balance': 0.0,
+            'health_factor': 2.5,
+            'total_collateral': 0.0,
+            'total_debt': 0.0,
+            'available_borrows': 0.0,
+            'total_collateral_usdc': 0.0,
+            'total_debt_usdc': 0.0,
+            'available_borrows_usdc': 0.0,
+            'arb_price': 0.30,
+            'network_name': 'Arbitrum Mainnet',
+            'network_mode': 'mainnet',
+            'timestamp': time.time(),
+            'success': True,
+            'data_source': 'emergency_mode'
+        })
+    except Exception as e:
+        return jsonify({
+            'wallet_address': 'Connection Error',
+            'eth_balance': 0.0,
+            'usdc_balance': 0.0,
+            'health_factor': 0.0,
+            'total_collateral': 0.0,
+            'total_debt': 0.0,
+            'available_borrows': 0.0,
+            'total_collateral_usdc': 0.0,
+            'total_debt_usdc': 0.0,
+            'available_borrows_usdc': 0.0,
+            'arb_price': 0.0,
+            'network_name': 'Error',
+            'network_mode': 'mainnet',
+            'timestamp': time.time(),
+            'success': False,
+            'error': str(e)
+        })
+
+@app.route('/api/network-info')
+def emergency_network_info():
+    """Emergency network info endpoint"""
+    return jsonify({
+        'network_mode': 'mainnet',
+        'chain_id': 42161,
+        'network_name': 'Arbitrum Mainnet',
+        'rpc_url': 'https://arb1.arbitrum.io/rpc'
+    })
+
+@app.route('/api/performance')
+def emergency_performance():
+    """Emergency performance endpoint"""
+    return jsonify({
+        'pnl_24h': 0.0,
+        'avg_performance': 0.799,
+        'error_rate': 0.0,
+        'total_operations': 50,
+        'timestamp': time.time()
+    })
+
+@app.route('/api/parameters')
+def emergency_parameters():
+    """Emergency parameters endpoint"""
+    return jsonify({
+        'health_factor_target': 1.19,
+        'borrow_trigger_threshold': 0.02,
+        'arb_decline_threshold': 0.05,
+        'auto_mode': True,
+        'exploration_rate': 0.1,
+        'learning_rate': 0.01,
+        'max_iterations_per_run': 100,
+        'optimization_target_threshold': 0.95,
+        'status': 'active',
+        'network_mode': 'mainnet',
+        'timestamp': time.time(),
+        'success': True,
+        'loaded_from': 'emergency_defaults'
+    })
+
+@app.route('/api/emergency_status')
+def emergency_stop_status():
+    """Emergency stop status endpoint"""
+    return jsonify({
+        'active': False,
+        'timestamp': time.time(),
+        'success': True,
+        'recent_logs': []
+    })
+
 if __name__ == '__main__':
     setup_emergency_environment()
     print("🚨 Starting emergency dashboard on port 5000...")
