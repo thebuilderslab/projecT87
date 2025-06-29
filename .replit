@@ -483,8 +483,8 @@ author = 39391053
 mode = "sequential"
 
 [[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "python main.py"
+task = "workflow.run"
+args = "🤖 Autonomous Mode"
 
 [[ports]]
 localPort = 5000

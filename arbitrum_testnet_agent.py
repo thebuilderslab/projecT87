@@ -159,7 +159,7 @@ class ArbitrumTestnetAgent:
 
         # Token addresses (corrected for Arbitrum mainnet/testnet)
         self.weth_address = Web3.to_checksum_address("0x82aF49447D8a07e3bd95BD0d56f35241523fBab1") # WETH on Arbitrum
-        self.usdc_address = Web3.to_checksum_address("0xaf88d065eec38faD0AEFf3e253e648a15cEe23dC") # USDC on Arbitrum
+        self.usdc_address = "0xaf88D065eEc38FAD0aEfF3e253e648a15cEE23DC"
         self.dai_address = Web3.to_checksum_address("0xDA10009cBd56d0F34a29c7aA35e34D246dA651D0")  # DAI on Arbitrum
         self.arb_address = Web3.to_checksum_address("0x912CE59144191C1f20bDd2ce08f2a688FEaEbb0B")  # ARB on Arbitrum
         self.wbtc_address = Web3.to_checksum_address("0x2f2a2543B76A4166549F7bffBE68df6Fc579b2F3") # WBTC on Arbitrum

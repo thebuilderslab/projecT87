@@ -54,7 +54,7 @@ def test_token_balance_retrieval(agent):
     print("\n🔍 TESTING TOKEN BALANCE RETRIEVAL")
     print("=" * 50)
     
-    usdc_address = "0xaf88d065eec38faD0AEFf3e253e648a15cEe23dC"
+    usdc_address = "0xaf88D065eEc38FAD0aEfF3e253e648a15cEE23DC"
     
     # Method 1: Direct Web3 call
     try:
