@@ -34,8 +34,8 @@ def main():
             agent.aave = AaveArbitrumIntegration(agent.w3, agent.account)
 
         if not hasattr(agent, 'uniswap'):
-            from uniswap_integration import UniswapV3Integration
-            agent.uniswap = UniswapV3Integration(agent.w3, agent.account)
+            from uniswap_integration import UniswapArbitrumIntegration
+            agent.uniswap = UniswapArbitrumIntegration(agent.w3, agent.account)
 
         # Check current USDC balance
         usdc_balance = agent.aave.get_token_balance(agent.aave.usdc_address)

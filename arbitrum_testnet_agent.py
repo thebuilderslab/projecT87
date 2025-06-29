@@ -2,8 +2,8 @@ import os
 import time
 import json # Added for potential config file, but primarily for os.getenv
 from web3 import Web3
-from aave_arbitrum_integration import AaveArbitrumIntegration
-from uniswap_arbitrum_integration import UniswapArbitrumIntegration
+from aave_integration import AaveArbitrumIntegration
+from uniswap_integration import UniswapArbitrumIntegration
 from aave_health_monitor import AaveHealthMonitor
 
 class ArbitrumTestnetAgent:
