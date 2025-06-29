@@ -1,4 +1,3 @@
-
 #!/usr/bin/env python3
 """
 Emergency Dashboard Launch - Complete working version
@@ -18,14 +17,14 @@ def setup_emergency_environment():
     """Set up emergency environment with all fixes"""
     print("🚨 EMERGENCY DASHBOARD SETUP")
     print("=" * 50)
-    
+
     # Ensure basic secrets
     network_mode = os.getenv('NETWORK_MODE', 'mainnet')
     private_key = os.getenv('PRIVATE_KEY2') or os.getenv('PRIVATE_KEY')
-    
+
     print(f"🔍 Network Mode: {network_mode}")
     print(f"🔍 Private Key: {'✅ Present' if private_key else '❌ Missing'}")
-    
+
     # Create basic files
     if not os.path.exists('user_settings.json'):
         settings = {
@@ -38,7 +37,7 @@ def setup_emergency_environment():
         with open('user_settings.json', 'w') as f:
             json.dump(settings, f, indent=2)
         print("✅ Created user_settings.json")
-    
+
     # Remove emergency stop
     if os.path.exists('EMERGENCY_STOP_ACTIVE.flag'):
         os.remove('EMERGENCY_STOP_ACTIVE.flag')
@@ -241,7 +240,7 @@ DASHBOARD_TEMPLATE = """
 
         function refreshAll() {
             log('🔄 Refreshing all data...');
-            
+
             // Network info
             fetch('/api/network-info')
                 .then(r => r.json())
@@ -295,7 +294,7 @@ DASHBOARD_TEMPLATE = """
 
         // Auto-refresh every 30 seconds
         setInterval(refreshAll, 30000);
-        
+
         // Initial load
         setTimeout(refreshAll, 1000);
     </script>
@@ -315,7 +314,7 @@ def emergency_status():
         # Try to get real status
         from arbitrum_testnet_agent import ArbitrumTestnetAgent
         agent = ArbitrumTestnetAgent()
-        
+
         return jsonify({
             'network': 'Arbitrum Mainnet (Connected)',
             'agent': 'Connected',
@@ -351,20 +350,20 @@ def emergency_wallet_status():
     """Emergency wallet status endpoint with proper error handling and accurate data"""
     try:
         print("🔍 Emergency API: wallet_status called")
-        
+
         # Try to initialize agent with improved error handling
         try:
             from arbitrum_testnet_agent import ArbitrumTestnetAgent
             agent = ArbitrumTestnetAgent()
             print(f"✅ Emergency agent initialized: {agent.address}")
-            
+
             # Get real data if possible
             eth_balance = agent.get_eth_balance()
-            
+
             # Get accurate Aave data
             from web_dashboard import get_enhanced_aave_data
             aave_data = get_enhanced_aave_data(agent)
-            
+
             if aave_data:
                 wallet_data = {
                     'wallet_address': agent.address,
@@ -404,13 +403,13 @@ def emergency_wallet_status():
                     'success': True,
                     'data_source': 'realistic_from_external_data'
                 }
-            
+
             print(f"✅ Emergency wallet data prepared successfully")
             return jsonify(wallet_data)
-            
+
         except Exception as agent_error:
             print(f"⚠️ Agent initialization failed: {agent_error}")
-            
+
             # Return realistic fallback data based on external portfolio data
             fallback_data = {
                 'wallet_address': 'Demo Mode (Agent Init Failed)',
@@ -431,13 +430,13 @@ def emergency_wallet_status():
                 'data_source': 'emergency_realistic_fallback',
                 'note': 'Using realistic values based on external portfolio data'
             }
-            
+
             print(f"✅ Emergency realistic fallback data prepared")
             return jsonify(fallback_data)
-            
+
     except Exception as critical_error:
         print(f"❌ Critical emergency API error: {critical_error}")
-        
+
         # Last resort - minimal working response
         critical_fallback = {
             'wallet_address': 'Emergency Mode',
@@ -458,7 +457,7 @@ def emergency_wallet_status():
             'error': str(critical_error),
             'data_source': 'critical_fallback'
         }
-        
+
         return jsonify(critical_fallback)
 
 @app.route('/api/network-info')
@@ -507,7 +506,7 @@ def save_emergency_parameters():
     try:
         data = request.get_json() or {}
         print(f"🔧 Emergency: Parameter update received: {list(data.keys())}")
-        
+
         # In emergency mode, just acknowledge the save
         return jsonify({
             'status': 'success',
