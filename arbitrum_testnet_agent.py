@@ -93,11 +93,12 @@ class ArbitrumTestnetAgent:
         if self.network_mode == 'mainnet':
             # Multiple Arbitrum Mainnet RPC endpoints for fallback
             self.rpc_endpoints = [
+                'https://arbitrum-one.publicnode.com',
+                'https://rpc.ankr.com/arbitrum',
+                'https://arbitrum.blockpi.network/v1/rpc/public',
                 os.getenv('ARBITRUM_RPC_URL', 'https://arb1.arbitrum.io/rpc'),
                 'https://arbitrum.publicnode.com',
-                'https://endpoints.omniatech.io/v1/arbitrum/one/public',
-                'https://arbitrum-one.publicnode.com',
-                'https://rpc.arb1.arbitrum.gateway.fm'
+                'https://endpoints.omniatech.io/v1/arbitrum/one/public'
             ]
             self.expected_chain_id = 42161
             self.aave_pool_address = "0x794a61358D6845594F94dc1DB02A252b5b4814aD"

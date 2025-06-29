@@ -184,38 +184,69 @@ class AaveArbitrumIntegration:
             return 0.0
 
     def _get_balance_single_rpc(self, token_address):
-        """Get balance using current RPC"""
-        # Create contract instance
-        token_contract = self.w3.eth.contract(
-            address=Web3.to_checksum_address(token_address),
-            abi=self.erc20_abi
-        )
-
-        # Get balance in wei
+        """Get balance using current RPC with enhanced error handling"""
         try:
-            balance_wei = token_contract.functions.balanceOf(self.address).call()
-        except Exception as balance_error:
-            print(f"❌ ERROR: Failed to get balance. Details: {balance_error}")
+            # Create contract instance with retry logic
+            token_contract = self.w3.eth.contract(
+                address=Web3.to_checksum_address(token_address),
+                abi=self.erc20_abi
+            )
+
+            # Try multiple times with different call methods
+            balance_wei = None
+            for attempt in range(3):
+                try:
+                    if attempt == 0:
+                        # Standard call
+                        balance_wei = token_contract.functions.balanceOf(self.address).call()
+                    elif attempt == 1:
+                        # Call with latest block
+                        balance_wei = token_contract.functions.balanceOf(self.address).call(block_identifier='latest')
+                    else:
+                        # Call with pending block
+                        balance_wei = token_contract.functions.balanceOf(self.address).call(block_identifier='pending')
+                    
+                    if balance_wei is not None:
+                        break
+                        
+                except Exception as e:
+                    print(f"⚠️ Attempt {attempt + 1} failed: {e}")
+                    if attempt == 2:
+                        raise e
+                    continue
+
+            if balance_wei is None:
+                print(f"❌ All balance attempts failed for {token_address}")
+                return 0.0
+
+            # Get decimals with enhanced fallback
+            decimals = None
+            try:
+                decimals = token_contract.functions.decimals().call()
+            except Exception as decimals_error:
+                print(f"⚠️ Using fallback decimals for {token_address}")
+                # Enhanced fallback based on known token addresses
+                token_lower = token_address.lower()
+                if token_lower == "0xaf88d065eec38fad0aeff3e253e648a15cee23dc":
+                    decimals = 6  # USDC
+                elif token_lower == "0x2f2a2543b76a4166549f7bffbe68df6fc579b2f3":
+                    decimals = 8  # WBTC
+                elif token_lower == "0x82af49447d8a07e3bd95bd0d56f35241523fbab1":
+                    decimals = 18  # WETH
+                elif token_lower == "0xda10009cbd56d0f34a29c7aa35e34d246da651d0":
+                    decimals = 18  # DAI
+                else:
+                    decimals = 18  # Default
+
+            # Convert to human readable format
+            balance = float(balance_wei) / float(10 ** decimals)
+            print(f"✅ Token balance for {token_address}: {balance:.6f}")
+
+            return balance
+            
+        except Exception as e:
+            print(f"❌ Complete balance check failed for {token_address}: {e}")
             return 0.0
-
-        # Get decimals with fallback
-        try:
-            decimals = token_contract.functions.decimals().call()
-        except Exception as decimals_error:
-            print(f"⚠️ Warning: Could not get decimals for {token_address}, using default 6 for USDC. Error: {decimals_error}")
-            # Use 6 for USDC, 8 for WBTC, 18 for others
-            if token_address.lower() == "0xaf88d065eec38fad0aeff3e253e648a15cee23dc":
-                decimals = 6  # USDC
-            elif token_address.lower() == "0x2f2a2543b76a4166549f7bffbe68df6fc579b2f3":
-                decimals = 8  # WBTC
-            else:
-                decimals = 18  # Default
-
-        # Convert to human readable format
-        balance = float(balance_wei) / float(10 ** decimals)
-        print(f"✅ Token balance: {balance:.6f}")
-
-        return balance
 
     def _get_balance_with_rpc_failover(self, token_address):
         """Try multiple RPC endpoints to get token balance"""
