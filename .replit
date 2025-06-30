@@ -16,7 +16,7 @@ run = ["sh", "-c", "python mainnet_launcher.py"]
 deploymentTarget = "cloudrun"
 
 [workflows]
-runButton = "🤖 Autonomous Mode"
+runButton = "🌐 Start Dashboard"
 
 [[workflows.workflow]]
 name = "Run"
@@ -503,6 +503,15 @@ mode = "sequential"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "python check_wallet_value.py"
+
+[[workflows.workflow]]
+name = "🌐 Start Dashboard"
+author = 39391053
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python web_dashboard.py"
 
 [[ports]]
 localPort = 5000
