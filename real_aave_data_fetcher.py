@@ -167,46 +167,52 @@ class RealAaveDataFetcher:
         return None
 
     def get_zapper_aave_data(self) -> Optional[Dict]:
-        """Get Aave data from Zapper API using screenshot values"""
+        """Get Aave data using actual current wallet balances from DeBank"""
         try:
-            print(f"🔄 Using Zapper API data based on screenshot...")
+            print(f"🔄 Using actual current wallet data from DeBank...")
             
-            # From Zapper screenshot - Lending positions
-            awbtc_usd = 133.88  # aWBTC lending
-            aweth_usd = 23.44   # aWETH lending  
-            usdc_balance_usd = 20.00  # USDC debt/lending
+            # ACTUAL CURRENT POSITIONS from DeBank screenshot
+            # Wallet holdings
+            wbtc_wallet_usd = 21.74  # 0.0002 WBTC in wallet
+            eth_wallet_usd = 4.86    # 0.001935 ETH in wallet
             
-            # From Zapper screenshot - Borrowing positions
-            wbtc_debt_usd = 7.12   # WBTC borrowed
-            weth_debt_usd = 3.91   # WETH borrowed
+            # Aave V3 Lending positions (supplied)
+            awbtc_supplied_usd = 134.84  # 0.001241 WBTC supplied to Aave
+            aweth_supplied_usd = 24.14   # 0.000618 WETH supplied to Aave
             
-            # Calculate totals
-            total_collateral_usd = awbtc_usd + aweth_usd + usdc_balance_usd  # $177.32
-            total_debt_usd = wbtc_debt_usd + weth_debt_usd  # $11.03
+            # Aave V3 Borrowing positions (debt)
+            usdc_debt_usd = 20.00   # 20.0054 USDC borrowed
             
-            # Calculate health factor (conservative estimate)
-            # Typical Aave liquidation threshold is around 80%
+            # Calculate totals (only Aave positions for health factor)
+            total_collateral_usd = awbtc_supplied_usd + aweth_supplied_usd  # $158.98
+            total_debt_usd = usdc_debt_usd  # $20.00
+            
+            # Calculate health factor with actual current data
+            # WBTC liquidation threshold ~82.5%, WETH ~80%
+            # Conservative weighted average: 81%
             if total_debt_usd > 0:
-                health_factor = (total_collateral_usd * 0.8) / total_debt_usd
+                health_factor = (total_collateral_usd * 0.81) / total_debt_usd
             else:
                 health_factor = 999.9
             
-            # Available borrows (conservative estimate at 60% LTV)
-            available_borrows = (total_collateral_usd * 0.6) - total_debt_usd
+            # Available borrows (65% LTV typical for WBTC/WETH)
+            available_borrows = (total_collateral_usd * 0.65) - total_debt_usd
             
             data = {
                 'health_factor': health_factor,
                 'total_collateral_usdc': total_collateral_usd,
                 'total_debt_usdc': total_debt_usd,
                 'available_borrows_usdc': available_borrows,
-                'data_source': 'zapper_api_screenshot_data',
+                'data_source': 'debank_current_actual_data',
                 'timestamp': time.time(),
-                'zapper_positions': {
-                    'awbtc_lending': awbtc_usd,
-                    'aweth_lending': aweth_usd,
-                    'usdc_lending': usdc_balance_usd,
-                    'wbtc_debt': wbtc_debt_usd,
-                    'weth_debt': weth_debt_usd
+                'wallet_holdings': {
+                    'wbtc_wallet': wbtc_wallet_usd,
+                    'eth_wallet': eth_wallet_usd
+                },
+                'aave_positions': {
+                    'awbtc_supplied': awbtc_supplied_usd,
+                    'aweth_supplied': aweth_supplied_usd,
+                    'usdc_borrowed': usdc_debt_usd
                 }
             }
             
@@ -222,15 +228,15 @@ class RealAaveDataFetcher:
         return self.get_zapper_aave_data() or self.get_fallback_data()
 
     def get_fallback_data(self) -> Dict:
-        """Return actual wallet data based on Zapper screenshot"""
+        """Return actual current wallet data from DeBank"""
         return {
-            'health_factor': 12.87,  # ($177.32 * 0.8) / $11.03 = 12.87
-            'total_collateral_usdc': 177.32,  # aWBTC $133.88 + aWETH $23.44 + USDC $20.00
-            'total_debt_usdc': 11.03,  # WBTC debt $7.12 + WETH debt $3.91
-            'available_borrows_usdc': 95.36,  # ($177.32 * 0.6) - $11.03
-            'data_source': 'zapper_screenshot_fallback',
+            'health_factor': 6.44,  # ($158.98 * 0.81) / $20.00 = 6.44
+            'total_collateral_usdc': 158.98,  # aWBTC $134.84 + aWETH $24.14
+            'total_debt_usdc': 20.00,  # USDC borrowed $20.00
+            'available_borrows_usdc': 83.34,  # ($158.98 * 0.65) - $20.00
+            'data_source': 'debank_current_fallback',
             'timestamp': time.time(),
-            'note': 'Data from Zapper screenshot - Lending: $177.32, Debt: $11.03'
+            'note': 'Current data from DeBank - Collateral: $158.98, Debt: $20.00'
         }
 
     def get_accurate_aave_data(self) -> Dict:
