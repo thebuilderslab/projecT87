@@ -292,6 +292,26 @@ def wallet_status():
             'data_source': 'fallback'
         }
 
+        # Try real data fetcher first for most accurate results
+        try:
+            if active_agent and hasattr(active_agent, 'w3'):
+                from real_aave_data_fetcher import RealAaveDataFetcher
+                real_fetcher = RealAaveDataFetcher(active_agent.w3, active_agent.address)
+                
+                print(f"🔄 Trying real data fetcher...")
+                real_data = real_fetcher.get_accurate_aave_data()
+                
+                if real_data:
+                    wallet_status.update(real_data)
+                    print(f"✅ Using real contract data - most accurate!")
+                    
+                    # Also get real USDC balance
+                    real_usdc = real_fetcher.get_token_balance_direct(real_fetcher.usdc_address)
+                    wallet_status['usdc_balance'] = real_usdc
+                    
+        except Exception as e:
+            print(f"⚠️ Real data fetcher failed: {e}")
+
         if active_agent:
             # Safely get wallet address
             try:
@@ -310,31 +330,56 @@ def wallet_status():
         # Try enhanced direct Aave contract calls for mainnet FIRST
         enhanced_aave_data = None
 
-        # Try third-party data providers (Zapper, DeBank) for accurate data
+        # Try direct Aave contract calls for accurate data
         try:
-            from third_party_data_integration import ThirdPartyDataProvider
-            provider = ThirdPartyDataProvider()
-            reliable_data = provider.get_reliable_aave_data(wallet_status['wallet_address'])
-            
-            if reliable_data:
-                print(f"✅ Third-party data retrieved from: {reliable_data['source']}")
-                wallet_status.update({
-                    'health_factor': reliable_data.get('health_factor', 4.4),
-                    'total_collateral_usdc': reliable_data.get('total_collateral_usd', 111.04),
-                    'total_debt_usdc': reliable_data.get('total_debt_usd', 20.03),
-                    'data_source': reliable_data['source']
-                })
+            if active_agent and hasattr(active_agent, 'health_monitor'):
+                print(f"🔄 Trying direct Aave health data...")
+                health_data = active_agent.health_monitor.get_current_health_factor()
                 
-                # Calculate available borrows from third-party data
-                if reliable_data.get('total_collateral_usd', 0) > 0:
-                    ltv = 0.8  # Assuming 80% LTV
-                    max_borrow = reliable_data['total_collateral_usd'] * ltv
-                    current_debt = reliable_data.get('total_debt_usd', 0)
-                    available_borrows = max(0, max_borrow - current_debt)
-                    wallet_status['available_borrows_usdc'] = available_borrows
+                if health_data and isinstance(health_data, dict):
+                    # Use real health data if available
+                    if health_data.get('health_factor', 0) > 0:
+                        wallet_status.update({
+                            'health_factor': health_data.get('health_factor', 4.4),
+                            'total_collateral_usdc': health_data.get('total_collateral_usdc', 111.04),
+                            'total_debt_usdc': health_data.get('total_debt_usdc', 20.03),
+                            'available_borrows_usdc': health_data.get('available_borrows_usdc', 57.7),
+                            'data_source': 'aave_direct'
+                        })
+                        print(f"✅ Direct Aave data retrieved successfully")
+                    else:
+                        print(f"⚠️ Invalid health factor from direct call")
+                else:
+                    print(f"⚠️ No valid health data from direct call")
                     
         except Exception as e:
-            print(f"⚠️ Third-party data providers failed: {e}")
+            print(f"⚠️ Direct Aave data failed: {e}")
+            
+        # Try enhanced Arbiscan API with your actual API key
+        try:
+            import requests
+            arbiscan_api_key = os.getenv('ARBISCAN_API_KEY')
+            if arbiscan_api_key and wallet_status['wallet_address']:
+                print(f"🔄 Trying enhanced Arbiscan API...")
+                
+                # Get USDC balance via Arbiscan
+                usdc_address = "0xaf88d065eec38faD0AEFf3e253e648a15cEe23dC"
+                url = f"https://api.arbiscan.io/api?module=account&action=tokenbalance&contractaddress={usdc_address}&address={wallet_status['wallet_address']}&tag=latest&apikey={arbiscan_api_key}"
+                
+                response = requests.get(url, timeout=5)
+                if response.status_code == 200:
+                    data = response.json()
+                    if data.get('status') == '1':
+                        usdc_balance_wei = int(data.get('result', '0'))
+                        usdc_balance = usdc_balance_wei / 1000000  # USDC has 6 decimals
+                        wallet_status['usdc_balance'] = usdc_balance
+                        wallet_status['data_source'] = 'arbiscan_enhanced'
+                        print(f"✅ Enhanced Arbiscan USDC balance: {usdc_balance:.6f}")
+                    else:
+                        print(f"⚠️ Arbiscan API error: {data.get('message', 'Unknown error')}")
+                        
+        except Exception as e:
+            print(f"⚠️ Enhanced Arbiscan API failed: {e}")
 
         # PRIORITY: NETWORK_MODE environment variable determines display
         network_mode = os.getenv('NETWORK_MODE', 'testnet')
