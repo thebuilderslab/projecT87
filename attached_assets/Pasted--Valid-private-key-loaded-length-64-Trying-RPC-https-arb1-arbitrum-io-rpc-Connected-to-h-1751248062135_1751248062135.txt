@@ -1,0 +1,37 @@
+✅ Valid private key loaded (length: 64)
+🔄 Trying RPC: https://arb1.arbitrum.io/rpc
+✅ Connected to https://arb1.arbitrum.io/rpc (Chain ID: 42161, Block: 352624074)
+🧪 Testing Enhanced Aave Data Fetcher
+============================================================
+🔍 Multi-source Aave data fetch for 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+🔄 Method 1: Direct contract call...
+❌ Direct contract call failed: execution reverted
+🔄 Trying alternative RPC: https://arbitrum-one.publicnode.com
+❌ Alternative RPC https://arbitrum-one.publicnode.com failed: execution reverted
+🔄 Trying alternative RPC: https://rpc.ankr.com/arbitrum
+🔄 Trying alternative RPC: https://arbitrum.llamarpc.com
+⚠️ DeBank API failed: HTTPSConnectionPool(host='openapi.debank.com', port=443): Max retries exceeded with url: /v1/user/total_balance?id=0x5B823270e3719CDe8669e5e5326B455EaA8a350b&chain_id=arb (Caused by NameResolutionError("<urllib3.connection.HTTPSConnection object at 0x7f8c604efc10>: Failed to resolve 'openapi.debank.com' ([Errno -5] No address associated with hostname)"))
+🔄 Manual calculation using Arbiscan token balances...
+✅ Arbiscan balance for 0xaf88d065eec38faD0AEFf3e253e648a15cEe23dC: 0.000000
+✅ Arbiscan balance for 0x2f2a2543B76A4166549F7bffBE68df6Fc579b2F3: 0.000000
+✅ Manual calculation: HF 999.9000, Collateral $0.00
+
+📊 COMPREHENSIVE AAVE DATA:
+   Health Factor: 999.9000
+   Total Collateral: $0.00
+   Total Debt: $0.00
+   Available Borrows: $0.00
+   Data Source: manual_calculation
+
+💰 TOKEN BALANCES:
+🔍 Multi-method token balance for 0xaf88d065eec38faD0AEFf3e253e648a15cEe23dC
+❌ Direct contract balance failed: Could not transact with/call contract function, is contract deployed correctly and chain synced?
+🔍 Multi-method token balance for 0x2f2a2543B76A4166549F7bffBE68df6Fc579b2F3
+✅ Arbiscan balance for 0x2f2a2543B76A4166549F7bffBE68df6Fc579b2F3: 0.000000
+❌ Direct contract balance failed: Could not transact with/call contract function, is contract deployed correctly and chain synced?
+🔍 Multi-method token balance for 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1
+✅ Arbiscan balance for 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1: 0.000000
+✅ Direct contract balance: 0.000000
+   USDC: 0.000000
+   WBTC: 0.00000000
+   WETH: 0.000000
