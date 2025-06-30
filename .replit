@@ -513,6 +513,15 @@ mode = "sequential"
 task = "shell.exec"
 args = "python web_dashboard.py"
 
+[[workflows.workflow]]
+name = "🔍 Check Arbiscan API"
+author = 39391053
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python check_arbiscan_integration.py"
+
 [[ports]]
 localPort = 5000
 externalPort = 80
