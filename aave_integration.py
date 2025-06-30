@@ -283,9 +283,33 @@ class AaveArbitrumIntegration:
         return -1
 
     def get_token_balance(self, token_address):
-        """Get token balance using optimized Arbiscan->RPC->Zapper sequence"""
+        """Get token balance using optimized ARBISCAN→RPC→ZAPPER sequence"""
         try:
             print(f"🔍 Optimized balance sequence for {token_address}")
+
+            # PRIORITY: Use enhanced balance fetcher if available
+            try:
+                from enhanced_balance_fetcher import EnhancedBalanceFetcher
+                
+                # Determine token symbol
+                token_symbol = 'UNKNOWN'
+                if token_address.lower() == self.usdc_address.lower():
+                    token_symbol = 'USDC'
+                elif token_address.lower() == self.wbtc_address.lower():
+                    token_symbol = 'WBTC'
+                elif token_address.lower() == self.weth_address.lower():
+                    token_symbol = 'WETH'
+                
+                if token_symbol != 'UNKNOWN':
+                    fetcher = EnhancedBalanceFetcher(self.w3, self.address)
+                    result = fetcher.get_optimized_balance(token_symbol)
+                    
+                    if result.get('success'):
+                        print(f"✅ Enhanced fetcher success: {result['balance']:.6f} (via {result['source']})")
+                        return result['balance']
+                    
+            except Exception as e:
+                print(f"⚠️ Enhanced fetcher fallback: {e}")
 
             # Step 1: Arbiscan API (highest accuracy, rate limited)
             arbiscan_balance = self.get_arbiscan_token_balance(token_address)
