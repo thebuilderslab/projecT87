@@ -13,7 +13,7 @@ from typing import Dict, Optional
 class ThirdPartyDataProvider:
     def __init__(self):
         self.zapper_api_key = os.getenv('ZAPPER_API_KEY')
-        self.debank_api_key = os.getenv('DEBANK_API_KEY')
+        # DeBank API disabled - service not available
         self.arbiscan_api_key = os.getenv('ARBISCAN_API_KEY')
         
     def get_zapper_portfolio(self, wallet_address: str) -> Optional[Dict]:
@@ -43,30 +43,9 @@ class ThirdPartyDataProvider:
             return None
     
     def get_debank_portfolio(self, wallet_address: str) -> Optional[Dict]:
-        """Get portfolio data from DeBank API"""
-        try:
-            url = f"https://pro-openapi.debank.com/v1/user/simple_protocol_list"
-            headers = {
-                'AccessKey': self.debank_api_key,
-                'accept': 'application/json'
-            }
-            params = {
-                'id': wallet_address,
-                'chain_id': 'arb'  # Arbitrum
-            }
-            
-            response = requests.get(url, headers=headers, params=params, timeout=10)
-            
-            if response.status_code == 200:
-                data = response.json()
-                return self.parse_debank_aave_data(data)
-            else:
-                print(f"❌ DeBank API error: {response.status_code}")
-                return None
-                
-        except Exception as e:
-            print(f"❌ DeBank API failed: {e}")
-            return None
+        """DeBank API disabled - not a real working service"""
+        print(f"⚠️ DeBank API disabled - service not available")
+        return None
     
     def parse_zapper_aave_data(self, data: Dict, wallet_address: str) -> Dict:
         """Parse Zapper data for Aave positions"""
@@ -104,44 +83,13 @@ class ThirdPartyDataProvider:
         return aave_data
     
     def parse_debank_aave_data(self, data: Dict) -> Dict:
-        """Parse DeBank data for Aave positions"""
-        aave_data = {
+        """DeBank API disabled - returns empty data"""
+        return {
             'health_factor': 0,
             'total_collateral_usd': 0,
             'total_debt_usd': 0,
-            'source': 'debank'
+            'source': 'debank_disabled'
         }
-        
-        try:
-            # Find Aave V3 protocol
-            for protocol in data:
-                if protocol.get('name', '').lower() == 'aave v3':
-                    portfolio_item_list = protocol.get('portfolio_item_list', [])
-                    
-                    for item in portfolio_item_list:
-                        if item.get('name') == 'Lending':
-                            # Extract health factor if available
-                            health_rate = item.get('detail', {}).get('health_rate')
-                            if health_rate:
-                                aave_data['health_factor'] = health_rate
-                            
-                            # Extract supply and borrow data
-                            supply_token_list = item.get('detail', {}).get('supply_token_list', [])
-                            borrow_token_list = item.get('detail', {}).get('borrow_token_list', [])
-                            
-                            for token in supply_token_list:
-                                aave_data['total_collateral_usd'] += token.get('amount', 0) * token.get('price', 0)
-                            
-                            for token in borrow_token_list:
-                                aave_data['total_debt_usd'] += token.get('amount', 0) * token.get('price', 0)
-                            
-                            break
-                    break
-                        
-        except Exception as e:
-            print(f"❌ Error parsing DeBank data: {e}")
-        
-        return aave_data
     
     def get_arbiscan_token_balance(self, wallet_address: str, contract_address: str) -> Optional[float]:
         """Get token balance using Arbiscan API"""
@@ -230,7 +178,7 @@ class ThirdPartyDataProvider:
             return None
 
     def get_reliable_aave_data(self, wallet_address: str) -> Optional[Dict]:
-        """Get Aave data with fallback sources including Arbiscan"""
+        """Get Aave data with fallback sources (DeBank disabled)"""
         
         # Try Arbiscan first (most accurate for on-chain data)
         if self.arbiscan_api_key:
@@ -240,13 +188,8 @@ class ThirdPartyDataProvider:
                 print(f"✅ Arbiscan: ${arbiscan_data['total_collateral_usd']:,.2f} collateral")
                 return arbiscan_data
         
-        # Try DeBank second (often more detailed for DeFi)
-        if self.debank_api_key:
-            print("🔄 Trying DeBank API...")
-            debank_data = self.get_debank_portfolio(wallet_address)
-            if debank_data and debank_data['health_factor'] > 0:
-                print(f"✅ DeBank: Health Factor {debank_data['health_factor']:.4f}")
-                return debank_data
+        # DeBank API disabled - service not available
+        print("⚠️ DeBank API skipped - service not available")
         
         # Fallback to Zapper
         if self.zapper_api_key:
@@ -256,7 +199,7 @@ class ThirdPartyDataProvider:
                 print(f"✅ Zapper: Health Factor {zapper_data['health_factor']:.4f}")
                 return zapper_data
         
-        print("❌ All third-party APIs failed")
+        print("❌ All available third-party APIs failed")
         return None
 
 # Integration example

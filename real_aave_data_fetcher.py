@@ -101,15 +101,9 @@ class RealAaveDataFetcher:
         return 0.0
 
     def get_debank_portfolio_data(self) -> Optional[Dict]:
-        """Get portfolio data from DeBank API (if available)"""
-        try:
-            # Skip DeBank API due to DNS resolution issues
-            print(f"⚠️ DeBank API temporarily disabled due to DNS issues")
-            return None
-
-        except Exception as e:
-            print(f"⚠️ DeBank API failed: {e}")
-            return None
+        """DeBank API permanently disabled - service not available"""
+        print(f"⚠️ DeBank API disabled - service not available")
+        return None
 
     def get_alternative_rpc_data(self) -> Optional[Dict]:
         """Try alternative RPC endpoints for Aave data"""
@@ -274,29 +268,8 @@ class RealAaveDataFetcher:
         if alt_data:
             return alt_data
 
-        # Method 3: Try DeBank API
-        debank_data = self.get_debank_portfolio_data()
-        if debank_data:
-            # Parse DeBank data if successful
-            try:
-                total_usd = debank_data.get('total_usd_value', 0)
-                # Estimate based on DeBank total value
-                estimated_collateral = total_usd * 0.8  # Assume 80% is collateral
-                estimated_debt = total_usd * 0.2       # Assume 20% is debt
-
-                health_factor = (estimated_collateral * 0.75) / max(estimated_debt, 1)
-
-                return {
-                    'health_factor': min(health_factor, 999.9),
-                    'total_collateral_usdc': estimated_collateral,
-                    'total_debt_usdc': estimated_debt,
-                    'available_borrows_usdc': estimated_collateral * 0.5,
-                    'data_source': 'debank_estimated',
-                    'timestamp': time.time()
-                }
-
-            except Exception as e:
-                print(f"❌ DeBank parsing failed: {e}")
+        # Method 3: DeBank API disabled (service not available)
+        print(f"⚠️ DeBank API skipped - service not available")
 
         # Method 4: Manual calculation using Arbiscan token balances
         manual_data = self.get_manual_calculated_data()
