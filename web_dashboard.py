@@ -1,4 +1,3 @@
-
 from flask import Flask, render_template, jsonify, request
 import os
 import time
@@ -239,17 +238,17 @@ def get_enhanced_aave_data(agent):
     """Get enhanced Aave data using the new fetcher"""
     try:
         from real_aave_data_fetcher import RealAaveDataFetcher
-        
+
         fetcher = RealAaveDataFetcher(agent.w3, agent.address)
         aave_data = fetcher.get_accurate_aave_data()
-        
+
         if aave_data:
             print(f"✅ Enhanced Aave data retrieved successfully")
             return aave_data
         else:
             print(f"❌ Enhanced Aave data fetch failed")
             return None
-            
+
     except Exception as e:
         print(f"❌ Enhanced Aave data error: {e}")
         return None
@@ -317,11 +316,11 @@ def wallet_status():
             if active_agent and hasattr(active_agent, 'w3'):
                 print(f"🔄 Trying enhanced real data fetcher...")
                 enhanced_data = get_enhanced_aave_data(active_agent)
-                
+
                 if enhanced_data:
                     wallet_status.update(enhanced_data)
                     print(f"✅ Enhanced real data: HF {enhanced_data['health_factor']:.4f}")
-                    
+
         except Exception as e:
             print(f"⚠️ Enhanced real data fetcher failed: {e}")
 
@@ -349,7 +348,7 @@ def wallet_status():
                         wallet_status['usdc_balance'] = enhanced_usdc
                         wallet_status['data_source'] = 'enhanced_token_balance'
                         print(f"✅ Enhanced USDC balance: {enhanced_usdc:.6f}")
-                        
+
             except Exception as e:
                 print(f"⚠️ Enhanced token balance failed: {e}")
 
