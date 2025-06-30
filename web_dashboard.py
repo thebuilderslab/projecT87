@@ -1,3 +1,4 @@
+
 from flask import Flask, render_template, jsonify, request
 import os
 import time
@@ -234,9 +235,28 @@ def check_emergency_status():
     emergency_file = 'EMERGENCY_STOP_ACTIVE.flag'
     return os.path.exists(emergency_file)
 
+def get_enhanced_aave_data(agent):
+    """Get enhanced Aave data using the new fetcher"""
+    try:
+        from real_aave_data_fetcher import RealAaveDataFetcher
+        
+        fetcher = RealAaveDataFetcher(agent.w3, agent.address)
+        aave_data = fetcher.get_accurate_aave_data()
+        
+        if aave_data:
+            print(f"✅ Enhanced Aave data retrieved successfully")
+            return aave_data
+        else:
+            print(f"❌ Enhanced Aave data fetch failed")
+            return None
+            
+    except Exception as e:
+        print(f"❌ Enhanced Aave data error: {e}")
+        return None
+
 @app.route('/api/wallet_status')
 def wallet_status():
-    """Get current wallet status with improved error handling"""
+    """Get current wallet status with enhanced data fetching"""
     try:
         print("🔍 API: /api/wallet_status called")
         print(f"🔍 API: Agent status: {agent is not None}")
@@ -292,25 +312,18 @@ def wallet_status():
             'data_source': 'fallback'
         }
 
-        # Try real data fetcher first for most accurate results
+        # PRIORITY 1: Try enhanced real data fetcher first
         try:
             if active_agent and hasattr(active_agent, 'w3'):
-                from real_aave_data_fetcher import RealAaveDataFetcher
-                real_fetcher = RealAaveDataFetcher(active_agent.w3, active_agent.address)
+                print(f"🔄 Trying enhanced real data fetcher...")
+                enhanced_data = get_enhanced_aave_data(active_agent)
                 
-                print(f"🔄 Trying real data fetcher...")
-                real_data = real_fetcher.get_accurate_aave_data()
-                
-                if real_data:
-                    wallet_status.update(real_data)
-                    print(f"✅ Using real contract data - most accurate!")
-                    
-                    # Also get real USDC balance
-                    real_usdc = real_fetcher.get_token_balance_direct(real_fetcher.usdc_address)
-                    wallet_status['usdc_balance'] = real_usdc
+                if enhanced_data:
+                    wallet_status.update(enhanced_data)
+                    print(f"✅ Enhanced real data: HF {enhanced_data['health_factor']:.4f}")
                     
         except Exception as e:
-            print(f"⚠️ Real data fetcher failed: {e}")
+            print(f"⚠️ Enhanced real data fetcher failed: {e}")
 
         if active_agent:
             # Safely get wallet address
@@ -327,59 +340,18 @@ def wallet_status():
                 print(f"⚠️ Could not get ETH balance: {e}")
                 wallet_status['eth_balance'] = 0
 
-        # Try enhanced direct Aave contract calls for mainnet FIRST
-        enhanced_aave_data = None
-
-        # Try direct Aave contract calls for accurate data
-        try:
-            if active_agent and hasattr(active_agent, 'health_monitor'):
-                print(f"🔄 Trying direct Aave health data...")
-                health_data = active_agent.health_monitor.get_current_health_factor()
-                
-                if health_data and isinstance(health_data, dict):
-                    # Use real health data if available
-                    if health_data.get('health_factor', 0) > 0:
-                        wallet_status.update({
-                            'health_factor': health_data.get('health_factor', 4.4),
-                            'total_collateral_usdc': health_data.get('total_collateral_usdc', 111.04),
-                            'total_debt_usdc': health_data.get('total_debt_usdc', 20.03),
-                            'available_borrows_usdc': health_data.get('available_borrows_usdc', 57.7),
-                            'data_source': 'aave_direct'
-                        })
-                        print(f"✅ Direct Aave data retrieved successfully")
-                    else:
-                        print(f"⚠️ Invalid health factor from direct call")
-                else:
-                    print(f"⚠️ No valid health data from direct call")
-                    
-        except Exception as e:
-            print(f"⚠️ Direct Aave data failed: {e}")
-            
-        # Try enhanced Arbiscan API with your actual API key
-        try:
-            import requests
-            arbiscan_api_key = os.getenv('ARBISCAN_API_KEY')
-            if arbiscan_api_key and wallet_status['wallet_address']:
-                print(f"🔄 Trying enhanced Arbiscan API...")
-                
-                # Get USDC balance via Arbiscan
-                usdc_address = "0xaf88d065eec38faD0AEFf3e253e648a15cEe23dC"
-                url = f"https://api.arbiscan.io/api?module=account&action=tokenbalance&contractaddress={usdc_address}&address={wallet_status['wallet_address']}&tag=latest&apikey={arbiscan_api_key}"
-                
-                response = requests.get(url, timeout=5)
-                if response.status_code == 200:
-                    data = response.json()
-                    if data.get('status') == '1':
-                        usdc_balance_wei = int(data.get('result', '0'))
-                        usdc_balance = usdc_balance_wei / 1000000  # USDC has 6 decimals
-                        wallet_status['usdc_balance'] = usdc_balance
-                        wallet_status['data_source'] = 'arbiscan_enhanced'
-                        print(f"✅ Enhanced Arbiscan USDC balance: {usdc_balance:.6f}")
-                    else:
-                        print(f"⚠️ Arbiscan API error: {data.get('message', 'Unknown error')}")
+            # Get enhanced token balances
+            try:
+                if hasattr(active_agent, 'aave') and active_agent.aave:
+                    print(f"🔄 Getting enhanced token balance...")
+                    enhanced_usdc = active_agent.aave.get_token_balance(active_agent.aave.usdc_address)
+                    if enhanced_usdc > 0:
+                        wallet_status['usdc_balance'] = enhanced_usdc
+                        wallet_status['data_source'] = 'enhanced_token_balance'
+                        print(f"✅ Enhanced USDC balance: {enhanced_usdc:.6f}")
                         
-        except Exception as e:
-            print(f"⚠️ Enhanced Arbiscan API failed: {e}")
+            except Exception as e:
+                print(f"⚠️ Enhanced token balance failed: {e}")
 
         # PRIORITY: NETWORK_MODE environment variable determines display
         network_mode = os.getenv('NETWORK_MODE', 'testnet')

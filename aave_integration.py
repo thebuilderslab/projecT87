@@ -1,8 +1,11 @@
+
 import os
 import json
 from web3 import Web3
 from eth_account import Account
 from dotenv import load_dotenv
+import requests
+import time
 
 class AaveArbitrumIntegration:
     def __init__(self, w3, account):
@@ -22,7 +25,7 @@ class AaveArbitrumIntegration:
             # Token addresses for Arbitrum Mainnet (verified deployed)
             self.weth_address = self.w3.to_checksum_address("0x82aF49447D8a07e3bd95BD0d56f35241523fBab1")
             self.wbtc_address = self.w3.to_checksum_address("0x2f2a2543B76A4166549F7bffBE68df6Fc579b2F3")
-            self.dai_address = self.w3.to_checksum_address("0xDA10009cBd56D0F34a29c7aA35e34D246dA651D0")
+            self.dai_address = self.w3.to_checksum_address("0xDA10009cBd56d0F34a29c7aA35e34D246dA651D0")
             self.usdc_address = self.w3.to_checksum_address("0xaf88d065eec38faD0AEFf3e253e648a15cEe23dC")
             self.arb_address = self.w3.to_checksum_address("0x912CE59144191C1204E64559FE8253a0e49E6548")
         else:  # Arbitrum Sepolia Testnet (Chain ID: 421614)
@@ -48,6 +51,17 @@ class AaveArbitrumIntegration:
             address=self.pool_address, 
             abi=self.pool_abi
         )
+
+        # Alternative RPC endpoints for fallback
+        self.alternative_rpcs = [
+            "https://arbitrum-one.publicnode.com",
+            "https://rpc.ankr.com/arbitrum",
+            "https://arbitrum.llamarpc.com",
+            "https://arbitrum.blockpi.network/v1/rpc/public"
+        ]
+
+        # API keys for external data sources
+        self.arbiscan_api_key = os.getenv('ARBISCAN_API_KEY')
 
         # Verify all contract addresses are properly checksummed
         network_name = "Arbitrum Mainnet" if chain_id == 42161 else "Arbitrum Sepolia"
@@ -167,159 +181,210 @@ class AaveArbitrumIntegration:
             }
         ]
 
-    def get_token_balance(self, token_address):
-        """Get token balance for the user's address with enhanced error handling and RPC failover"""
-        try:
-            print(f"🔍 Getting token balance for {token_address} for user {self.address}")
-
-            # Try current Web3 instance first
-            balance = self._get_balance_single_rpc(token_address)
-            if balance >= 0:
-                return balance
-
-            # If agent has multiple RPC endpoints, try them
-            if hasattr(self, 'agent') and hasattr(self.agent, 'rpc_endpoints'):
-                return self._get_balance_with_rpc_failover(token_address)
-
-            return 0.0
-
-        except Exception as e:
-            print(f"❌ ERROR: Failed to get token balance for {token_address} for user {self.address}. Details: {e}")
-            return 0.0
-
-    def _get_balance_single_rpc(self, token_address):
-        """Get balance using current RPC with enhanced error handling"""
-        try:
-            # Ensure address is checksummed
-            token_address = Web3.to_checksum_address(token_address)
-            user_address = Web3.to_checksum_address(self.address)
+    def get_arbiscan_token_balance(self, token_address: str) -> float:
+        """Get token balance via Arbiscan API"""
+        if not self.arbiscan_api_key:
+            print(f"⚠️ No Arbiscan API key available")
+            return -1
             
-            # Create contract instance with retry logic
-            token_contract = self.w3.eth.contract(
-                address=token_address,
-                abi=self.erc20_abi
-            )
-
-            # Get decimals first with enhanced fallback
-            decimals = 18  # Default
-            try:
-                decimals = token_contract.functions.decimals().call()
-            except Exception as decimals_error:
-                print(f"⚠️ Using fallback decimals for {token_address}")
-                # Enhanced fallback based on known token addresses
-                token_lower = token_address.lower()
-                if token_lower == "0xaf88d065eec38fad0aeff3e253e648a15cee23dc":
-                    decimals = 6  # USDC
-                elif token_lower == "0x2f2a2543b76a4166549f7bffbe68df6fc579b2f3":
-                    decimals = 8  # WBTC
-                elif token_lower == "0x82af49447d8a07e3bd95bd0d56f35241523fbab1":
-                    decimals = 18  # WETH
-                elif token_lower == "0xda10009cbd56d0f34a29c7aa35e34d246da651d0":
-                    decimals = 18  # DAI
-
-            # Try multiple times with different call methods
-            balance_wei = None
-            for attempt in range(3):
-                try:
-                    if attempt == 0:
-                        # Standard call
-                        balance_wei = token_contract.functions.balanceOf(user_address).call()
-                    elif attempt == 1:
-                        # Call with latest block
-                        balance_wei = token_contract.functions.balanceOf(user_address).call(block_identifier='latest')
-                    else:
-                        # Call with specific gas limit
-                        balance_wei = token_contract.functions.balanceOf(user_address).call({'gas': 100000})
+        try:
+            print(f"🔄 Trying Arbiscan API for token {token_address}")
+            
+            url = "https://api.arbiscan.io/api"
+            params = {
+                'module': 'account',
+                'action': 'tokenbalance',
+                'contractaddress': token_address,
+                'address': self.address,
+                'tag': 'latest',
+                'apikey': self.arbiscan_api_key
+            }
+            
+            response = requests.get(url, params=params, timeout=10)
+            if response.status_code == 200:
+                data = response.json()
+                if data.get('status') == '1':
+                    balance_wei = int(data.get('result', '0'))
                     
-                    if balance_wei is not None:
-                        break
-                        
-                except Exception as e:
-                    print(f"⚠️ Balance attempt {attempt + 1} failed: {e}")
-                    if attempt == 2:
-                        # Try with a different RPC approach
-                        try:
-                            # Direct low-level call
-                            data = token_contract.encodeABI(fn_name='balanceOf', args=[user_address])
-                            result = self.w3.eth.call({'to': token_address, 'data': data})
-                            balance_wei = int(result.hex(), 16)
-                            break
-                        except Exception as low_level_e:
-                            print(f"❌ Low-level call also failed: {low_level_e}")
-                            return -1  # Signal failure
-                    continue
-
-            if balance_wei is None:
-                print(f"❌ All balance attempts failed for {token_address}")
-                return -1  # Signal failure
-
-            # Convert to human readable format
-            balance = float(balance_wei) / float(10 ** decimals)
-            print(f"✅ Token balance for {token_address}: {balance:.6f}")
-
-            return balance
-            
+                    # Get decimals for this token
+                    decimals = 18  # Default
+                    if token_address.lower() == self.usdc_address.lower():
+                        decimals = 6
+                    elif token_address.lower() == self.wbtc_address.lower():
+                        decimals = 8
+                    
+                    balance = balance_wei / (10 ** decimals)
+                    print(f"✅ Arbiscan balance: {balance:.6f}")
+                    return balance
+                else:
+                    print(f"❌ Arbiscan API error: {data.get('message', 'Unknown error')}")
+            else:
+                print(f"❌ Arbiscan HTTP error: {response.status_code}")
+                
         except Exception as e:
-            print(f"❌ Complete balance check failed for {token_address}: {e}")
-            return -1  # Signal failure
+            print(f"❌ Arbiscan balance failed: {e}")
+        
+        return -1
 
-    def _get_balance_with_rpc_failover(self, token_address):
-        """Try multiple RPC endpoints to get token balance"""
-        for rpc_url in self.agent.rpc_endpoints:
+    def get_token_balance_with_alternative_rpc(self, token_address: str) -> float:
+        """Try alternative RPC endpoints for token balance"""
+        for rpc_url in self.alternative_rpcs:
             try:
-                print(f"🔄 Trying balance check with RPC: {rpc_url}")
-
-                # Create temporary Web3 instance
-                temp_w3 = Web3(Web3.HTTPProvider(rpc_url))
-
+                print(f"🔄 Trying alternative RPC: {rpc_url}")
+                
+                temp_w3 = Web3(Web3.HTTPProvider(rpc_url, request_kwargs={'timeout': 10}))
                 if not temp_w3.is_connected():
                     print(f"❌ RPC not connected: {rpc_url}")
                     continue
-
-                # Verify chain ID
-                if temp_w3.eth.chain_id != self.agent.expected_chain_id:
+                
+                if temp_w3.eth.chain_id != 42161:
                     print(f"❌ Wrong chain ID for {rpc_url}")
                     continue
-
-                # Create contract with temp Web3
+                
+                # Create contract with alternative RPC
                 token_contract = temp_w3.eth.contract(
                     address=Web3.to_checksum_address(token_address),
                     abi=self.erc20_abi
                 )
-
+                
                 # Get balance
                 balance_wei = token_contract.functions.balanceOf(self.address).call()
-
-                # Get decimals with fallback
+                
+                # Get decimals
                 try:
                     decimals = token_contract.functions.decimals().call()
                 except:
-                    # Use known decimals for common tokens
-                    if token_address.lower() == "0xaf88d065eec38fad0aeff3e253e648a15cee23dc":
-                        decimals = 6  # USDC
-                    elif token_address.lower() == "0x2f2a2543b76a4166549f7bffbe68df6fc579b2f3":
-                        decimals = 8  # WBTC
+                    # Use known decimals
+                    if token_address.lower() == self.usdc_address.lower():
+                        decimals = 6
+                    elif token_address.lower() == self.wbtc_address.lower():
+                        decimals = 8
                     else:
-                        decimals = 18  # Default
+                        decimals = 18
+                
+                balance = balance_wei / (10 ** decimals)
+                print(f"✅ Alternative RPC success: {balance:.6f}")
+                return balance
+                
+            except Exception as e:
+                print(f"❌ Alternative RPC {rpc_url} failed: {e}")
+                continue
+        
+        return -1
 
-                balance = float(balance_wei) / float(10 ** decimals)
-                print(f"✅ Successfully got balance with {rpc_url}: {balance:.6f}")
+    def get_token_balance(self, token_address):
+        """Get token balance with comprehensive fallback methods"""
+        try:
+            print(f"🔍 Multi-method token balance for {token_address} for user {self.address}")
 
-                # Update main Web3 instance to working RPC
-                if rpc_url != self.agent.current_rpc_url:
-                    self.w3 = temp_w3
-                    self.agent.w3 = temp_w3
-                    self.agent.current_rpc_url = rpc_url
-                    print(f"🔄 Switched to RPC: {rpc_url}")
+            # Method 1: Arbiscan API (most reliable for mainnet)
+            if self.w3.eth.chain_id == 42161:  # Only for mainnet
+                arbiscan_balance = self.get_arbiscan_token_balance(token_address)
+                if arbiscan_balance >= 0:
+                    return arbiscan_balance
 
+            # Method 2: Current RPC with multiple retry strategies
+            balance = self._get_balance_current_rpc_enhanced(token_address)
+            if balance >= 0:
                 return balance
 
-            except Exception as e:
-                print(f"❌ Error with RPC {rpc_url}: {e}")
-                continue
+            # Method 3: Alternative RPC endpoints
+            alt_balance = self.get_token_balance_with_alternative_rpc(token_address)
+            if alt_balance >= 0:
+                return alt_balance
 
-        print("❌ All RPC endpoints failed for token balance")
-        return 0.0
+            # Method 4: Return 0 if all methods fail
+            print(f"❌ All token balance methods failed for {token_address}")
+            return 0.0
+
+        except Exception as e:
+            print(f"❌ ERROR: Failed to get token balance for {token_address}. Details: {e}")
+            return 0.0
+
+    def _get_balance_current_rpc_enhanced(self, token_address):
+        """Enhanced balance retrieval with current RPC"""
+        try:
+            token_address = Web3.to_checksum_address(token_address)
+            user_address = Web3.to_checksum_address(self.address)
+            
+            # Multiple retry strategies
+            strategies = [
+                lambda: self._direct_contract_call(token_address, user_address),
+                lambda: self._low_level_call(token_address, user_address),
+                lambda: self._batch_call(token_address, user_address)
+            ]
+            
+            for i, strategy in enumerate(strategies):
+                try:
+                    print(f"🔄 Strategy {i+1} for token balance...")
+                    balance = strategy()
+                    if balance >= 0:
+                        return balance
+                except Exception as e:
+                    print(f"❌ Strategy {i+1} failed: {e}")
+                    continue
+            
+            return -1
+            
+        except Exception as e:
+            print(f"❌ Enhanced RPC balance failed: {e}")
+            return -1
+
+    def _direct_contract_call(self, token_address, user_address):
+        """Direct contract call method"""
+        token_contract = self.w3.eth.contract(
+            address=token_address,
+            abi=self.erc20_abi
+        )
+
+        # Get decimals with fallback
+        try:
+            decimals = token_contract.functions.decimals().call()
+        except:
+            decimals = self._get_known_decimals(token_address)
+
+        # Get balance with timeout
+        balance_wei = token_contract.functions.balanceOf(user_address).call()
+        balance = float(balance_wei) / float(10 ** decimals)
+        
+        print(f"✅ Direct contract call successful: {balance:.6f}")
+        return balance
+
+    def _low_level_call(self, token_address, user_address):
+        """Low-level call method"""
+        # balanceOf function selector: 0x70a08231
+        function_selector = "0x70a08231"
+        padded_address = user_address[2:].zfill(64)
+        data = function_selector + padded_address
+        
+        result = self.w3.eth.call({
+            'to': token_address,
+            'data': data
+        })
+        
+        balance_wei = int(result.hex(), 16)
+        decimals = self._get_known_decimals(token_address)
+        balance = float(balance_wei) / float(10 ** decimals)
+        
+        print(f"✅ Low-level call successful: {balance:.6f}")
+        return balance
+
+    def _batch_call(self, token_address, user_address):
+        """Batch call method (if supported)"""
+        # This is a placeholder for batch call implementation
+        # For now, fall back to direct call
+        return self._direct_contract_call(token_address, user_address)
+
+    def _get_known_decimals(self, token_address):
+        """Get known decimals for common tokens"""
+        token_decimals = {
+            self.usdc_address.lower(): 6,
+            self.wbtc_address.lower(): 8,
+            self.weth_address.lower(): 18,
+            self.dai_address.lower(): 18,
+            self.arb_address.lower(): 18
+        }
+        return token_decimals.get(token_address.lower(), 18)
 
     def approve_token(self, token_address, amount):
         """Approve token spending for Aave"""
