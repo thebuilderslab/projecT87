@@ -311,29 +311,38 @@ def wallet_status():
             'data_source': 'fallback'
         }
 
-        # PRIORITY 1: Try enhanced real data fetcher first
+        # PRIORITY 1: Try accurate DeBank fetcher first
         try:
             if active_agent and hasattr(active_agent, 'w3'):
-                print(f"🔄 Trying enhanced real data fetcher...")
-                enhanced_data = get_enhanced_aave_data(active_agent)
+                print(f"🔄 Trying accurate DeBank fetcher...")
+                from accurate_debank_fetcher import AccurateWalletDataFetcher
+                
+                fetcher = AccurateWalletDataFetcher(active_agent.w3, active_agent.address)
+                accurate_data = fetcher.get_comprehensive_wallet_data()
 
-                if enhanced_data:
-                    wallet_status.update(enhanced_data)
-                    print(f"✅ Enhanced real data: HF {enhanced_data['health_factor']:.4f}")
-                    
-                    # Override with actual wallet screenshot data if API fails
-                    if enhanced_data.get('total_collateral_usdc', 0) == 0:
-                        print("🔄 API returned zero data, using actual wallet values...")
-                        wallet_status.update({
-                            'health_factor': 5.5,
-                            'total_collateral_usdc': 612.0,  # ~$21.74 WBTC + ~$4.86 ETH + ~$590 Aave
-                            'total_debt_usdc': 0.0,
-                            'available_borrows_usdc': 350.0,
-                            'data_source': 'screenshot_corrected'
-                        })
+                if accurate_data and accurate_data.get('success'):
+                    wallet_status.update({
+                        'wallet_address': accurate_data['wallet_address'],
+                        'eth_balance': accurate_data['eth_balance'],
+                        'usdc_balance': accurate_data['usdc_balance'],
+                        'wbtc_balance': accurate_data['wbtc_balance'],
+                        'weth_balance': accurate_data['weth_balance'],
+                        'arb_balance': accurate_data.get('arb_balance', 0),
+                        'health_factor': accurate_data['health_factor'],
+                        'total_collateral': accurate_data['total_collateral'],
+                        'total_debt': accurate_data['total_debt'],
+                        'available_borrows': accurate_data['available_borrows'],
+                        'total_collateral_usdc': accurate_data['total_collateral_usdc'],
+                        'total_debt_usdc': accurate_data['total_debt_usdc'],
+                        'available_borrows_usdc': accurate_data['available_borrows_usdc'],
+                        'data_source': 'accurate_debank_fetcher'
+                    })
+                    print(f"✅ Accurate DeBank data: HF {accurate_data['health_factor']:.4f}")
+                    print(f"   Collateral: ${accurate_data['total_collateral_usdc']:.2f}")
+                    print(f"   Token balances: ETH {accurate_data['eth_balance']:.6f}, WBTC {accurate_data['wbtc_balance']:.8f}")
 
         except Exception as e:
-            print(f"⚠️ Enhanced real data fetcher failed: {e}")
+            print(f"⚠️ Accurate DeBank fetcher failed: {e}")
 
         if active_agent:
             # Safely get wallet address

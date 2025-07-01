@@ -511,7 +511,7 @@ mode = "sequential"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "python web_dashboard.py"
+args = "python improved_web_dashboard.py"
 
 [[workflows.workflow]]
 name = "🔍 Check Arbiscan API"
@@ -521,6 +521,24 @@ mode = "sequential"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "python check_arbiscan_integration.py"
+
+[[workflows.workflow]]
+name = "🚀 Launch Improved Dashboard"
+author = 39391053
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python launch_improved_dashboard.py"
+
+[[workflows.workflow]]
+name = "🔍 Test Accurate Fetcher"
+author = 39391053
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python accurate_debank_fetcher.py"
 
 [[ports]]
 localPort = 5000
