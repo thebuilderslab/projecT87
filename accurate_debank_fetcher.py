@@ -21,9 +21,9 @@ class AccurateWalletDataFetcher:
 
         # Token addresses (Arbitrum Mainnet)
         self.token_addresses = {
-            'WBTC': '0x2f2a2543B76A4166549F7BFc68df6Fc579b2F3',
+            'WBTC': '0x2f2a2543B76A4166549F7aaC2696985b3E2f6eC7',
             'WETH': '0x82aF49447D8a07e3bd95BD0d56f35241523fBab1',
-            'USDC': '0xaf88d065eec38faD0AEFf3e253e648a15cEe23dC',
+            'USDC': '0xA0b86a33E6441e88871a1c0332de32BF6b962e5a',
             'ARB': '0x912CE59144191C1204E64559FE8253a0e49E6548'
         }
 
@@ -339,6 +339,10 @@ class AccurateWalletDataFetcher:
 
         return wallet_data
 
+    def get_live_prices(self) -> Dict[str, float]:
+        """Alias for get_current_prices to maintain compatibility"""
+        return self.get_current_prices()
+
     def get_aave_data_with_hierarchy(self) -> Dict[str, Any]:
         """Get Aave data following ARBISCAN→RPC→ZAPPER hierarchy"""
         print(f"🏦 AAVE DATA FETCH - Following Hierarchy")
@@ -409,7 +413,7 @@ class AccurateWalletDataFetcher:
                     health_factor = health_factor_raw / 1e18
 
                 # Convert USD to ETH using current price
-                eth_price = self.get_live_prices().get('ETH', 2490)
+                eth_price = self.get_current_prices().get('ETH', 2490)
 
                 # Only use RPC data if it shows meaningful values (not tiny amounts)
                 if total_collateral_base > 0.01:  # At least $0.01 to be meaningful
@@ -437,7 +441,7 @@ class AccurateWalletDataFetcher:
         print(f"🔄 Step 3: Using ZAPPER/DeBank known data...")
 
         # Use actual current DeBank data from the provided screenshot
-        eth_price = self.get_live_prices().get('ETH', 2490)
+        eth_price = self.get_current_prices().get('ETH', 2490)
 
         # These are the actual values from your DeBank account
         accurate_data = {

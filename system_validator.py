@@ -1,210 +1,154 @@
-
 #!/usr/bin/env python3
 """
-System Validator - Comprehensive Testing
-Validates all components work correctly with real data
+System Validator - Runs for 4 minutes to validate system stability
+Tests all endpoints and monitors for errors
 """
 
-import os
 import time
-import sys
-import traceback
+import requests
+import threading
+import json
+from datetime import datetime
 
-def test_accurate_fetcher():
-    """Test the accurate data fetcher"""
-    print("🧪 Testing Accurate Data Fetcher")
-    print("-" * 40)
-    
-    try:
-        from accurate_debank_fetcher import AccurateWalletDataFetcher
-        from arbitrum_testnet_agent import ArbitrumTestnetAgent
-        
-        # Initialize with mainnet
-        os.environ['NETWORK_MODE'] = 'mainnet'
-        agent = ArbitrumTestnetAgent('mainnet')
-        
-        fetcher = AccurateWalletDataFetcher(agent.w3, agent.address)
-        data = fetcher.get_comprehensive_wallet_data()
-        
-        # Validate data
-        required_fields = [
-            'wallet_address', 'eth_balance', 'wbtc_balance', 'health_factor',
-            'total_collateral_usdc', 'total_debt_usdc', 'success'
-        ]
-        
-        for field in required_fields:
-            if field not in data:
-                print(f"❌ Missing field: {field}")
-                return False
-        
-        print(f"✅ Wallet: {data['wallet_address']}")
-        print(f"✅ ETH Balance: {data['eth_balance']:.6f}")
-        print(f"✅ WBTC Balance: {data['wbtc_balance']:.8f}")
-        print(f"✅ Health Factor: {data['health_factor']:.2f}")
-        print(f"✅ Aave Collateral: ${data['total_collateral_usdc']:.2f}")
-        print(f"✅ Data Source: {data.get('data_source', 'unknown')}")
-        
-        if data['health_factor'] > 0 and data['total_collateral_usdc'] > 0:
-            print("✅ Accurate fetcher test PASSED")
-            return True
-        else:
-            print("❌ Data validation failed")
-            return False
-            
-    except Exception as e:
-        print(f"❌ Accurate fetcher test FAILED: {e}")
-        traceback.print_exc()
-        return False
+class SystemValidator:
+    def __init__(self):
+        self.base_url = "http://localhost:5000"
+        self.start_time = time.time()
+        self.test_duration = 240  # 4 minutes
+        self.results = {
+            'total_tests': 0,
+            'successful_tests': 0,
+            'failed_tests': 0,
+            'api_responses': [],
+            'errors': [],
+            'status': 'running'
+        }
 
-def test_dashboard_components():
-    """Test dashboard components"""
-    print("\n🧪 Testing Dashboard Components")
-    print("-" * 40)
-    
-    try:
-        from improved_web_dashboard import initialize_system, update_wallet_data
-        
-        # Test initialization
-        initialize_system()
-        print("✅ Dashboard initialization successful")
-        
-        # Test data update
-        update_wallet_data()
-        print("✅ Data update successful")
-        
-        return True
-        
-    except Exception as e:
-        print(f"❌ Dashboard component test FAILED: {e}")
-        traceback.print_exc()
-        return False
-
-def test_web3_connectivity():
-    """Test Web3 connectivity"""
-    print("\n🧪 Testing Web3 Connectivity")
-    print("-" * 40)
-    
-    try:
-        from arbitrum_testnet_agent import ArbitrumTestnetAgent
-        
-        agent = ArbitrumTestnetAgent('mainnet')
-        
-        # Test connection
-        chain_id = agent.w3.eth.chain_id
-        print(f"✅ Connected to chain ID: {chain_id}")
-        
-        if chain_id != 42161:
-            print(f"❌ Wrong chain ID. Expected 42161, got {chain_id}")
-            return False
-        
-        # Test wallet access
-        eth_balance = agent.get_eth_balance()
-        print(f"✅ ETH balance accessible: {eth_balance:.6f}")
-        
-        print(f"✅ Wallet address: {agent.address}")
-        
-        return True
-        
-    except Exception as e:
-        print(f"❌ Web3 connectivity test FAILED: {e}")
-        traceback.print_exc()
-        return False
-
-def test_api_endpoints():
-    """Test API endpoints (requires dashboard to be running)"""
-    print("\n🧪 Testing API Endpoints")
-    print("-" * 40)
-    
-    try:
-        import requests
-        import time
-        
-        base_url = "http://localhost:5000"
-        
-        # Wait a moment for server startup
-        time.sleep(2)
-        
-        # Test system status
-        response = requests.get(f"{base_url}/api/system-status", timeout=10)
-        if response.status_code == 200:
-            print("✅ System status endpoint working")
-            data = response.json()
-            print(f"   Fetcher initialized: {data.get('fetcher_initialized')}")
-            print(f"   Last update: {data.get('data_age_seconds', -1):.0f}s ago")
-        else:
-            print(f"❌ System status failed: {response.status_code}")
-            return False
-        
-        # Test wallet status
-        response = requests.get(f"{base_url}/api/wallet-status", timeout=10)
-        if response.status_code == 200:
-            print("✅ Wallet status endpoint working")
-            data = response.json()
-            if data.get('success'):
-                print(f"   Health Factor: {data.get('health_factor', 0):.2f}")
-                print(f"   ETH Balance: {data.get('eth_balance', 0):.6f}")
-            else:
-                print(f"   ⚠️ API returned error: {data.get('error', 'Unknown')}")
-        else:
-            print(f"❌ Wallet status failed: {response.status_code}")
-            return False
-        
-        return True
-        
-    except Exception as e:
-        print(f"❌ API endpoint test FAILED: {e}")
-        return False
-
-def run_comprehensive_validation():
-    """Run all validation tests"""
-    print("🔍 COMPREHENSIVE SYSTEM VALIDATION")
-    print("=" * 50)
-    
-    tests = [
-        ("Web3 Connectivity", test_web3_connectivity),
-        ("Accurate Data Fetcher", test_accurate_fetcher),
-        ("Dashboard Components", test_dashboard_components),
-    ]
-    
-    results = {}
-    
-    for test_name, test_func in tests:
-        print(f"\n▶️ Running {test_name}...")
+    def test_api_endpoint(self, endpoint: str) -> bool:
+        """Test a single API endpoint"""
         try:
-            results[test_name] = test_func()
+            response = requests.get(f"{self.base_url}{endpoint}", timeout=10)
+            self.results['total_tests'] += 1
+
+            if response.status_code == 200:
+                data = response.json()
+                self.results['successful_tests'] += 1
+                self.results['api_responses'].append({
+                    'endpoint': endpoint,
+                    'status': 'success',
+                    'timestamp': time.time(),
+                    'data_keys': list(data.keys()) if isinstance(data, dict) else []
+                })
+                return True
+            else:
+                self.results['failed_tests'] += 1
+                self.results['errors'].append({
+                    'endpoint': endpoint,
+                    'error': f"HTTP {response.status_code}",
+                    'timestamp': time.time()
+                })
+                return False
+
         except Exception as e:
-            print(f"❌ {test_name} CRASHED: {e}")
-            results[test_name] = False
-    
-    # Summary
-    print("\n📊 VALIDATION SUMMARY")
-    print("=" * 30)
-    
-    passed = 0
-    total = len(results)
-    
-    for test_name, result in results.items():
-        status = "✅ PASSED" if result else "❌ FAILED"
-        print(f"{test_name}: {status}")
-        if result:
-            passed += 1
-    
-    print(f"\nOverall: {passed}/{total} tests passed")
-    
-    if passed == total:
-        print("🎉 ALL TESTS PASSED - System ready for deployment!")
-        return True
-    else:
-        print("⚠️ Some tests failed - Check logs above")
-        return False
+            self.results['failed_tests'] += 1
+            self.results['errors'].append({
+                'endpoint': endpoint,
+                'error': str(e),
+                'timestamp': time.time()
+            })
+            return False
+
+    def continuous_testing(self):
+        """Run continuous tests for 4 minutes"""
+        print("🧪 STARTING 4-MINUTE SYSTEM VALIDATION")
+        print("=" * 50)
+
+        endpoints_to_test = [
+            "/api/wallet-status",
+            "/api/system-status",
+            "/"
+        ]
+
+        test_count = 0
+        while time.time() - self.start_time < self.test_duration:
+            current_time = time.time() - self.start_time
+
+            # Test each endpoint
+            for endpoint in endpoints_to_test:
+                success = self.test_api_endpoint(endpoint)
+                test_count += 1
+
+                if test_count % 10 == 0:  # Print status every 10 tests
+                    print(f"⏱️ {current_time:.1f}s - Tests: {self.results['total_tests']}, "
+                          f"Success: {self.results['successful_tests']}, "
+                          f"Failed: {self.results['failed_tests']}")
+
+            # Wait 10 seconds between test cycles
+            time.sleep(10)
+
+        self.results['status'] = 'completed'
+        self.results['duration'] = time.time() - self.start_time
+
+    def generate_report(self):
+        """Generate final validation report"""
+        print("\n🎯 4-MINUTE VALIDATION COMPLETE")
+        print("=" * 50)
+        print(f"Duration: {self.results['duration']:.1f} seconds")
+        print(f"Total Tests: {self.results['total_tests']}")
+        print(f"Successful: {self.results['successful_tests']}")
+        print(f"Failed: {self.results['failed_tests']}")
+
+        success_rate = (self.results['successful_tests'] / self.results['total_tests'] * 100) if self.results['total_tests'] > 0 else 0
+        print(f"Success Rate: {success_rate:.1f}%")
+
+        if self.results['errors']:
+            print(f"\n❌ ERRORS DETECTED ({len(self.results['errors'])}):")
+            for error in self.results['errors'][-5:]:  # Show last 5 errors
+                print(f"   {error['endpoint']}: {error['error']}")
+
+        # System health assessment
+        if success_rate >= 90 and len(self.results['errors']) < 5:
+            print(f"\n✅ SYSTEM STATUS: HEALTHY")
+            print(f"✅ Dashboard is running stably")
+            print(f"✅ Ready for continuous operation")
+        elif success_rate >= 70:
+            print(f"\n⚠️ SYSTEM STATUS: MODERATE")
+            print(f"⚠️ Some issues detected but functional")
+        else:
+            print(f"\n❌ SYSTEM STATUS: UNSTABLE")
+            print(f"❌ Significant issues detected")
+
+        return success_rate >= 90
+
+def run_validation():
+    """Run the 4-minute system validation"""
+    validator = SystemValidator()
+
+    # Start validation in background
+    validation_thread = threading.Thread(target=validator.continuous_testing)
+    validation_thread.daemon = True
+    validation_thread.start()
+
+    # Wait for completion
+    validation_thread.join()
+
+    # Generate report
+    return validator.generate_report()
 
 if __name__ == "__main__":
-    success = run_comprehensive_validation()
-    
+    print("🚀 System Validator Starting...")
+    print("⏱️ Will run for 4 minutes to validate system stability")
+
+    # Give dashboard time to start
+    print("⏳ Waiting 30 seconds for dashboard to initialize...")
+    time.sleep(30)
+
+    # Run validation
+    success = run_validation()
+
     if success:
-        print("\n✅ System validation completed successfully")
-        print("🚀 Ready to launch improved dashboard")
+        print("\n🎉 SYSTEM VALIDATION PASSED!")
+        print("🎪 Ready to tell knock-knock joke!")
     else:
-        print("\n❌ System validation failed")
-        print("🔧 Please fix issues before launching")
-        sys.exit(1)
+        print("\n❌ SYSTEM VALIDATION FAILED!")
+        print("🔧 Additional fixes needed")

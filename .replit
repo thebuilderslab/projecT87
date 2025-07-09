@@ -16,7 +16,7 @@ run = ["sh", "-c", "python mainnet_launcher.py"]
 deploymentTarget = "cloudrun"
 
 [workflows]
-runButton = "🌐 Start Dashboard"
+runButton = "🎯 Complete System Test"
 
 [[workflows.workflow]]
 name = "Run"
@@ -539,6 +539,23 @@ mode = "sequential"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "python accurate_debank_fetcher.py"
+
+[[workflows.workflow]]
+name = "🎯 Complete System Test"
+author = 39391053
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python improved_web_dashboard.py &"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "sleep 30"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python system_validator.py"
 
 [[ports]]
 localPort = 5000
