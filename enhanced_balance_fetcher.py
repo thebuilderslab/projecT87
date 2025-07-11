@@ -28,10 +28,10 @@ class EnhancedBalanceFetcher:
             "https://arbitrum-one.public.blastapi.io"
         ]
 
-        # Token addresses
+        # Token addresses (Arbitrum Mainnet) - Corrected addresses
         self.token_addresses = {
-            'USDC': '0xaf88D065eEc38FAD0aEfF3e253e648a15cEE23DC',
-            'WBTC': '0x2f2a2543B76A4166549F7BFfbe68Df6FC579b2F3',
+            'USDC': '0xaf88d065eec38faD0AEfF3e253e648a15cEe23dC',
+            'WBTC': '0x2f2a2543B76A4166549F7BffBE68df6Fc579b2F3',
             'WETH': '0x82aF49447D8a07e3bd95BD0d56f35241523fBab1',
             'ARB': '0x912CE59144191C1204E64559FE8253a0e49E6548'
         }
