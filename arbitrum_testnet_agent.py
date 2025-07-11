@@ -157,6 +157,10 @@ class ArbitrumTestnetAgent:
             print("❌ Failed to connect to any Arbitrum RPC endpoint.")
             exit()
 
+        # Initialize collateral tracking for autonomous triggers
+        self.last_collateral_value_usd = 0.0
+        print("💰 Initialized last_collateral_value_usd to 0.0")
+
         # Token addresses (corrected for Arbitrum mainnet/testnet)
         self.weth_address = Web3.to_checksum_address("0x82aF49447D8a07e3bd95BD0d56f35241523fBab1") # WETH on Arbitrum
         self.usdc_address = "0xaf88D065eEc38FAD0aEfF3e253e648a15cEE23DC"
