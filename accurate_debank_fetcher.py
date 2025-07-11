@@ -285,15 +285,18 @@ class AccurateWalletDataFetcher:
         # Get Aave positions
         aave_data = self.get_aave_positions()
 
-        # Calculate USD values
+        # Calculate USD values (excluding Aave positions to avoid double counting)
         usd_values = {}
         total_wallet_usd = 0
 
         for token, balance in balances.items():
-            if token in prices:
+            if token in prices and balance > 0:
                 usd_value = balance * prices[token]
                 usd_values[token] = usd_value
                 total_wallet_usd += usd_value
+                print(f"💰 {token}: {balance:.8f} = ${usd_value:.2f}")
+
+        print(f"💰 Total Wallet Value (liquid): ${total_wallet_usd:.2f}")
 
         # Combine all data
         wallet_data = {
@@ -349,14 +352,14 @@ class AccurateWalletDataFetcher:
         print("=" * 60)
 
         result = {
-            'health_factor': 6.44,  # Current DeBank data
-            'total_collateral_eth': 0.0637,  # $158.98 / $2490 ETH
-            'total_debt_eth': 0.0080,  # $20.00 / $2490 ETH  
-            'available_borrows_eth': 0.0335,  # $83.34 / $2490 ETH
-            'total_collateral_usd': 158.98,  # aWBTC $134.84 + aWETH $24.14
-            'total_debt_usd': 20.00,  # USDC borrowed
-            'available_borrows_usd': 83.34,  # Available to borrow
-            'data_source': 'debank_hierarchy_fallback',
+            'health_factor': 0,
+            'total_collateral_eth': 0,
+            'total_debt_eth': 0,
+            'available_borrows_eth': 0,
+            'total_collateral_usd': 0,
+            'total_debt_usd': 0,
+            'available_borrows_usd': 0,
+            'data_source': 'hierarchy_failed',
             'timestamp': time.time(),
             'sequence_results': {}
         }
@@ -371,21 +374,20 @@ class AccurateWalletDataFetcher:
             print(f"⚠️ Step 1 ARBISCAN failed: {e}")
             result['sequence_results']['arbiscan'] = {'success': False, 'error': str(e)}
 
-        # Step 2: ARBITRUM_RPC_URL - Try direct RPC calls to Aave contracts
+        # Step 2: ARBITRUM_RPC_URL - Try direct RPC calls to Aave contracts  
         try:
             print(f"🔄 Step 2: Trying ARBITRUM_RPC_URL for Aave data...")
 
-            # Aave V3 Pool Data Provider on Arbitrum
-            pool_data_provider = "0x69FA688f1Dc47d4B5d8029D5a35FB7a548310654"
-
-            # ABI for getUserAccountData
-            abi = [{
+            # Try Pool contract directly (more reliable)
+            pool_address = "0x794a61358D6845594F94dc1DB02A252b5b4814aD"
+            
+            pool_abi = [{
                 "inputs": [{"name": "user", "type": "address"}],
-                "name": "getUserAccountData",
+                "name": "getUserAccountData", 
                 "outputs": [
-                    {"name": "totalCollateralBase", "type": "uint256"},
-                    {"name": "totalDebtBase", "type": "uint256"},
-                    {"name": "availableBorrowsBase", "type": "uint256"},
+                    {"name": "totalCollateralETH", "type": "uint256"},
+                    {"name": "totalDebtETH", "type": "uint256"}, 
+                    {"name": "availableBorrowsETH", "type": "uint256"},
                     {"name": "currentLiquidationThreshold", "type": "uint256"},
                     {"name": "ltv", "type": "uint256"},
                     {"name": "healthFactor", "type": "uint256"}
@@ -394,17 +396,18 @@ class AccurateWalletDataFetcher:
                 "type": "function"
             }]
 
-            contract = self.w3.eth.contract(
-                address=Web3.to_checksum_address(pool_data_provider),
-                abi=abi
+            pool_contract = self.w3.eth.contract(
+                address=Web3.to_checksum_address(pool_address),
+                abi=pool_abi
             )
 
-            aave_result = contract.functions.getUserAccountData(self.wallet_address).call()
+            print(f"📞 Calling getUserAccountData for {self.wallet_address}")
+            aave_result = pool_contract.functions.getUserAccountData(self.wallet_address).call()
 
             if aave_result and len(aave_result) >= 6:
-                total_collateral_base = aave_result[0] / 1e8  # USD with 8 decimals
-                total_debt_base = aave_result[1] / 1e8
-                available_borrows_base = aave_result[2] / 1e8
+                total_collateral_eth = aave_result[0] / 1e18  # ETH
+                total_debt_eth = aave_result[1] / 1e18        # ETH
+                available_borrows_eth = aave_result[2] / 1e18 # ETH
                 health_factor_raw = aave_result[5]
 
                 if health_factor_raw == 2**256 - 1:
@@ -412,58 +415,121 @@ class AccurateWalletDataFetcher:
                 else:
                     health_factor = health_factor_raw / 1e18
 
-                # Convert USD to ETH using current price
-                eth_price = self.get_current_prices().get('ETH', 2490)
+                # Get current ETH price for USD conversion
+                eth_price = self.get_current_prices().get('ETH', 2960)
 
-                # Only use RPC data if it shows meaningful values (not tiny amounts)
-                if total_collateral_base > 0.01:  # At least $0.01 to be meaningful
+                # Only use RPC data if it shows meaningful values
+                if total_collateral_eth > 0.001:  # At least 0.001 ETH collateral
                     result.update({
                         'health_factor': min(health_factor, 999.9),
-                        'total_collateral_usd': total_collateral_base,
-                        'total_debt_usd': total_debt_base,
-                        'available_borrows_usd': available_borrows_base,
-                        'total_collateral_eth': total_collateral_base / eth_price,
-                        'total_debt_eth': total_debt_base / eth_price,
-                        'available_borrows_eth': available_borrows_base / eth_price,
-                        'data_source': 'live_aave_contract'
+                        'total_collateral_eth': total_collateral_eth,
+                        'total_debt_eth': total_debt_eth,
+                        'available_borrows_eth': available_borrows_eth,
+                        'total_collateral_usd': total_collateral_eth * eth_price,
+                        'total_debt_usd': total_debt_eth * eth_price,
+                        'available_borrows_usd': available_borrows_eth * eth_price,
+                        'data_source': 'live_aave_pool_contract'
                     })
-                    print(f"✅ Step 2 SUCCESS: Live Aave contract data - HF {health_factor:.4f}")
+                    print(f"✅ Step 2 SUCCESS: Live Aave Pool data")
+                    print(f"   Health Factor: {health_factor:.4f}")
+                    print(f"   Collateral: {total_collateral_eth:.6f} ETH (${total_collateral_eth * eth_price:.2f})")
+                    print(f"   Debt: {total_debt_eth:.6f} ETH (${total_debt_eth * eth_price:.2f})")
                     result['sequence_results']['rpc_aave'] = {'success': True, 'health_factor': health_factor}
                     return result
                 else:
-                    print(f"⚠️ Step 2: RPC data too small (${total_collateral_base:.6f}), using DeBank data")
+                    print(f"⚠️ Step 2: No meaningful collateral found ({total_collateral_eth:.6f} ETH)")
 
         except Exception as e:
             print(f"⚠️ Step 2 RPC failed: {e}")
             result['sequence_results']['rpc_aave'] = {'success': False, 'error': str(e)}
 
-        # Step 3: ZAPPER_API_KEY/DeBank - Use known accurate data
-        print(f"🔄 Step 3: Using ZAPPER/DeBank known data...")
+        # Step 3: Try alternative approaches for accurate data
+        print(f"🔄 Step 3: Trying alternative data sources...")
 
-        # Use actual current DeBank data from the provided screenshot
-        eth_price = self.get_current_prices().get('ETH', 2490)
+        # Check if wallet has actual aToken balances
+        try:
+            atoken_addresses = {
+                'aWBTC': '0x078f358208685046a11C85e8ad32895DED33A249',  # Mainnet aWBTC
+                'aWETH': '0xe50fA9b3c56FfB159cB0FCA61F5c9D750e8128c8',  # Mainnet aWETH
+                'aUSDC': '0x625E7708f30cA75bfd92586e17077590C60eb4cD'   # Mainnet aUSDC
+            }
 
-        # These are the actual values from your DeBank account
-        accurate_data = {
-            'health_factor': 6.44,  # Calculated: ($158.98 * 0.81) / $20.00 ≈ 6.44
-            'total_collateral_usd': 158.98,  # aWBTC $134.84 + aWETH $24.14
-            'total_debt_usd': 20.00,  # USDC borrowed amount
-            'available_borrows_usd': 83.34,  # ($158.98 * 0.65) - $20.00 ≈ $83.34
+            total_collateral_value = 0
+            for token_name, token_address in atoken_addresses.items():
+                try:
+                    balance = self._get_token_balance_reliable(token_address, token_name)
+                    if balance > 0:
+                        # Get underlying token price
+                        if 'WBTC' in token_name:
+                            price = self.get_current_prices().get('WBTC', 116000)
+                            value = balance * price
+                        elif 'WETH' in token_name:
+                            price = self.get_current_prices().get('ETH', 2960)
+                            value = balance * price
+                        elif 'USDC' in token_name:
+                            value = balance  # USDC is $1
+                        
+                        total_collateral_value += value
+                        print(f"   {token_name}: {balance:.6f} (${value:.2f})")
+
+                except Exception as e:
+                    print(f"   {token_name}: Failed to get balance - {e}")
+
+            # If we found real collateral, calculate health factor
+            if total_collateral_value > 1:  # At least $1 collateral
+                # Check for debt tokens
+                debt_balance = self._get_token_balance_reliable(self.token_addresses['USDC'], 'USDC')
+                
+                # Estimate health factor (simplified calculation)
+                if debt_balance > 0:
+                    # Use conservative LTV of 75%
+                    max_safe_debt = total_collateral_value * 0.75
+                    health_factor = max_safe_debt / debt_balance if debt_balance > 0 else 999.9
+                else:
+                    health_factor = 999.9  # No debt
+                
+                eth_price = self.get_current_prices().get('ETH', 2960)
+                
+                result.update({
+                    'health_factor': min(health_factor, 999.9),
+                    'total_collateral_usd': total_collateral_value,
+                    'total_debt_usd': debt_balance,
+                    'available_borrows_usd': max(0, max_safe_debt - debt_balance),
+                    'total_collateral_eth': total_collateral_value / eth_price,
+                    'total_debt_eth': debt_balance / eth_price,
+                    'available_borrows_eth': max(0, max_safe_debt - debt_balance) / eth_price,
+                    'data_source': 'calculated_from_balances'
+                })
+                
+                print(f"✅ Step 3 SUCCESS: Calculated from token balances")
+                print(f"   Health Factor: {health_factor:.4f}")
+                print(f"   Collateral: ${total_collateral_value:.2f}")
+                print(f"   Debt: ${debt_balance:.2f}")
+                result['sequence_results']['balance_calculation'] = {'success': True, 'collateral_found': total_collateral_value}
+                return result
+
+        except Exception as e:
+            print(f"⚠️ Step 3 balance calculation failed: {e}")
+
+        # Final fallback - use last known data but mark as outdated
+        print(f"🔄 Step 4: Using last known data (may be outdated)")
+        eth_price = self.get_current_prices().get('ETH', 2960)
+        
+        fallback_data = {
+            'health_factor': 6.44,
+            'total_collateral_usd': 158.98,
+            'total_debt_usd': 20.00,
+            'available_borrows_usd': 83.34,
             'total_collateral_eth': 158.98 / eth_price,
             'total_debt_eth': 20.00 / eth_price,
             'available_borrows_eth': 83.34 / eth_price,
-            'data_source': 'debank_current_accurate'
+            'data_source': 'fallback_outdated_data'
         }
 
-        result.update(accurate_data)
-        result['sequence_results']['zapper_debank'] = {'success': True, 'source': 'known_debank_data'}
+        result.update(fallback_data)
+        result['sequence_results']['fallback'] = {'success': True, 'source': 'last_known_data', 'warning': 'may_be_outdated'}
 
-        print(f"✅ Step 3 SUCCESS: Using accurate DeBank data")
-        print(f"   Health Factor: {result['health_factor']:.2f}")
-        print(f"   Collateral: ${result['total_collateral_usd']:.2f}")
-        print(f"   Debt: ${result['total_debt_usd']:.2f}")
-        print(f"   Available: ${result['available_borrows_usd']:.2f}")
-
+        print(f"⚠️ Step 4: Using fallback data (may not be current)")
         return result
 
 def test_accurate_fetcher():

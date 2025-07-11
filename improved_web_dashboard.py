@@ -67,25 +67,25 @@ def update_wallet_data():
             
             # Ensure we have stable Aave data that follows hierarchy
             if new_data and new_data.get('success'):
-                # Keep the template stable by preserving structure
+                # Use real data from hierarchy checks
                 stable_data = {
                     'wallet_address': new_data.get('wallet_address', '0x5B823270e3719CDe8669e5e5326B455EaA8a350b'),
                     'network_name': 'Arbitrum Mainnet',
                     'network_mode': 'mainnet',
                     'chain_id': 42161,
                     
-                    # Token balances
-                    'eth_balance': new_data.get('eth_balance', 0.001935),
-                    'wbtc_balance': new_data.get('wbtc_balance', 0.0002),
-                    'weth_balance': new_data.get('weth_balance', 0.0),
-                    'usdc_balance': new_data.get('usdc_balance', 0.0),
-                    'arb_balance': new_data.get('arb_balance', 0.0),
+                    # Token balances - use actual detected balances
+                    'eth_balance': new_data.get('eth_balance', 0),
+                    'wbtc_balance': new_data.get('wbtc_balance', 0),
+                    'weth_balance': new_data.get('weth_balance', 0),
+                    'usdc_balance': new_data.get('usdc_balance', 0),
+                    'arb_balance': new_data.get('arb_balance', 0),
                     
-                    # Portfolio totals
-                    'total_wallet_usd': new_data.get('total_wallet_usd', 26.29),
+                    # Portfolio totals - use calculated values
+                    'total_wallet_usd': new_data.get('total_wallet_usd', 0),
                     
-                    # Aave data - use hierarchy results with proper fallback
-                    'health_factor': new_data.get('health_factor', 6.44),
+                    # Aave data - use hierarchy results (live data prioritized)
+                    'health_factor': new_data.get('health_factor', 0),
                     'total_collateral': new_data.get('total_collateral', 0.0637),
                     'total_debt': new_data.get('total_debt', 0.0080),
                     'available_borrows': new_data.get('available_borrows', 0.0335),
