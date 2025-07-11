@@ -172,9 +172,15 @@ def update_wallet_data():
         # Calculate USD values ONLY if we have valid prices
         eth_usd = eth_balance * prices['ETH'] if prices['ETH'] > 0 else 0
         usdc_usd = usdc_balance * prices['USDC'] if prices['USDC'] > 0 else usdc_balance
-        wbtc_usd = wbtc_balance * prices['BTC'] if prices['BTC'] > 0 and wbtc_balance > 0 else 0
+        wbtc_usd = wbtc_balance * prices['BTC'] if prices['BTC'] > 0 else 0  # Calculate even if small balance
         weth_usd = weth_balance * prices['ETH'] if prices['ETH'] > 0 else 0
         arb_usd = arb_balance * prices['ARB'] if prices['ARB'] > 0 else 0
+        
+        # Debug WBTC calculation
+        if wbtc_balance > 0:
+            print(f"🔍 WBTC USD Calculation: {wbtc_balance:.8f} WBTC × ${prices['BTC']:.2f} = ${wbtc_usd:.4f}")
+        else:
+            print(f"⚠️ WBTC balance is zero or negative: {wbtc_balance}")
 
         liquid_wallet_usd = eth_usd + usdc_usd + wbtc_usd + weth_usd + arb_usd
         total_portfolio_usd = liquid_wallet_usd + collateral_usd
