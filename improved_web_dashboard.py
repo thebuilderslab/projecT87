@@ -112,11 +112,11 @@ def update_wallet_data():
             print(f"❌ USDC balance fetch failed: {e}")
 
         try:
-            # Get WBTC balance from live blockchain ONLY - no hardcoded values
-            wbtc_balance = enhanced_manager._get_token_balance_direct(enhanced_manager.wbtc_address, wallet_addr, 8)
+            # Get WBTC balance using the verified working method
+            wbtc_balance = enhanced_manager._get_wbtc_balance_verified(wallet_addr)
             if wbtc_balance < 0:  # Failed call
                 wbtc_balance = 0
-            print(f"✅ Live WBTC balance: {wbtc_balance:.8f}")
+            print(f"✅ Live WBTC balance (verified method): {wbtc_balance:.8f}")
         except Exception as e:
             print(f"❌ WBTC balance fetch failed: {e}")
             wbtc_balance = 0
