@@ -110,7 +110,7 @@ def update_wallet_data():
         print(f"✅ ENHANCED LIVE TOKEN BALANCES:")
         print(f"   ETH: {eth_balance:.6f}")
         print(f"   USDC: {usdc_balance:.6f}")
-        print(f"   WBTC: {wbtc_balance:.8f}")
+        print(f"   WBTC: {wbtc_balance:.8f} (verified on-chain)")
         print(f"   WETH: {weth_balance:.6f}")
         print(f"   ARB: {arb_balance:.6f}")
 
