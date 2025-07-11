@@ -27,10 +27,10 @@ class EnhancedContractManager:
             "https://arbitrum.meowrpc.com"
         ]
 
-        # Token addresses (verified mainnet addresses - fixed formatting)
-        self.usdc_address = "0xaf88d065e77c7c37a8395bdd08ef64afed50ff"  # Native USDC (corrected)
-        self.usdc_bridged_address = "0xff970a61a04b1ca14834a651bab06d7307796618"  # Bridged USDC
-        self.wbtc_address = "0x2f2a2543B76A4166549F7aBb3fBE68df6F4E579b2"  # WBTC (corrected)
+        # Token addresses (verified mainnet addresses - properly formatted)
+        self.usdc_address = "0xaf88d065e77c8cF0eAEFf3e253e648a15cEe23dC"  # Native USDC (corrected)
+        self.usdc_bridged_address = "0xFF970A61A04b1cA14834A651bAb06d67307796618"  # Bridged USDC
+        self.wbtc_address = "0x2f2a2543B76A4166549F7aBb2eE68df6F4E579b2"  # WBTC (corrected)
         self.weth_address = "0x82af49447d8a07e3bd95bd0d56f35241523fbab1"
         self.arb_address = "0x912ce59144191c1204e64559fe83e3a5095c6afd"
 
