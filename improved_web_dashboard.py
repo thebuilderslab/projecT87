@@ -16,11 +16,12 @@ app = Flask(__name__)
 # Global state
 wallet_data = {}
 fetcher = None
+enhanced_manager = None
 last_update = 0
 
 def initialize_system():
-    """Initialize the wallet data fetcher"""
-    global fetcher, wallet_data
+    """Initialize the wallet data fetcher and Enhanced Contract Manager"""
+    global fetcher, wallet_data, enhanced_manager
 
     try:
         print("🚀 Initializing improved dashboard system...")
@@ -35,10 +36,29 @@ def initialize_system():
         # Initialize accurate fetcher
         fetcher = AccurateWalletDataFetcher(agent.w3, agent.address)
 
+        # Initialize Enhanced Contract Manager as primary data source
+        try:
+            from enhanced_contract_manager import EnhancedContractManager
+            enhanced_manager = EnhancedContractManager()
+            
+            print("🔧 Initializing Enhanced Contract Manager...")
+            if enhanced_manager.optimize_for_contract_calls():
+                print(f"✅ Enhanced Contract Manager initialized successfully")
+                print(f"   Optimal RPC: {enhanced_manager.working_rpc}")
+            else:
+                print("⚠️ Enhanced Contract Manager RPC optimization failed")
+                enhanced_manager = None
+                
+        except Exception as ecm_error:
+            print(f"⚠️ Enhanced Contract Manager initialization failed: {ecm_error}")
+            enhanced_manager = None
+
         # Initial data fetch
         update_wallet_data()
 
         print("✅ Dashboard system initialized successfully")
+        if enhanced_manager:
+            print("✅ Enhanced Contract Manager is active as primary data source")
 
     except Exception as e:
         print(f"❌ System initialization failed: {e}")
@@ -146,26 +166,44 @@ def update_wallet_data():
                 weth_address = "0x82af49447d8a07e3bd95bd0d56f35241523fbab1"
                 arb_address = "0x912ce59144191c1204e64559fe83e3a5095c6afd"
 
-                # Token balances with enhanced contract manager
+                # PRIMARY: Enhanced Contract Manager for all token balances
+                wallet_addr = new_data.get('wallet_address', '0x5B823270e3719CDe8669e5e5326B455EaA8a350b')
+                
                 try:
-                    from enhanced_contract_manager import EnhancedContractManager
-                    enhanced_manager = EnhancedContractManager()
+                    # Reuse the same Enhanced Contract Manager instance if available
+                    if 'enhanced_manager' not in locals():
+                        from enhanced_contract_manager import EnhancedContractManager
+                        enhanced_manager = EnhancedContractManager()
+                        enhanced_manager.optimize_for_contract_calls()
 
-                    print("🔧 Using Enhanced Contract Manager for token balances...")
-                    usdc_balance = enhanced_manager.get_token_balance_robust(usdc_address, new_data.get('wallet_address', '0x5B823270e3719CDe8669e5e5326B455EaA8a350b'))
-                    wbtc_balance = enhanced_manager.get_token_balance_robust(wbtc_address, new_data.get('wallet_address', '0x5B823270e3719CDe8669e5e5326B455EaA8a350b'))
-                    weth_balance = enhanced_manager.get_token_balance_robust(weth_address, new_data.get('wallet_address', '0x5B823270e3719CDe8669e5e5326B455EaA8a350b'))
-                    arb_balance = enhanced_manager.get_token_balance_robust(arb_address, new_data.get('wallet_address', '0x5B823270e3719CDe8669e5e5326B455EaA8a350b'))
+                    print("🔧 Enhanced Contract Manager: Fetching all token balances...")
+                    
+                    # Get all token balances using Enhanced Contract Manager
+                    usdc_balance = enhanced_manager.get_token_balance_robust(usdc_address, wallet_addr)
+                    wbtc_balance = enhanced_manager.get_token_balance_robust(wbtc_address, wallet_addr)
+                    weth_balance = enhanced_manager.get_token_balance_robust(weth_address, wallet_addr)
+                    arb_balance = enhanced_manager.get_token_balance_robust(arb_address, wallet_addr)
 
-                    print(f"✅ Enhanced token balances retrieved")
+                    print(f"✅ Enhanced Contract Manager token balances:")
+                    print(f"   USDC: {usdc_balance:.6f}")
+                    print(f"   WBTC: {wbtc_balance:.8f}")
+                    print(f"   WETH: {weth_balance:.6f}")
+                    print(f"   ARB: {arb_balance:.6f}")
+                    print(f"   RPC Used: {enhanced_manager.working_rpc}")
+
+                    # Mark that Enhanced Contract Manager was successful for tokens
+                    enhanced_tokens_success = True
 
                 except Exception as e:
-                    print(f"⚠️ Enhanced contract manager token fetch failed: {e}")
-                    # Fallback to enhanced balance fetcher
+                    print(f"❌ Enhanced Contract Manager token fetch failed: {e}")
+                    enhanced_tokens_success = False
+                    
+                    # Fallback to other methods
                     try:
                         from enhanced_balance_fetcher import EnhancedBalanceFetcher
                         balance_fetcher = EnhancedBalanceFetcher()
 
+                        print("🔄 Falling back to Enhanced Balance Fetcher...")
                         usdc_result = balance_fetcher.get_token_balance_comprehensive(usdc_address, "USDC")
                         wbtc_result = balance_fetcher.get_token_balance_comprehensive(wbtc_address, "WBTC") 
                         weth_result = balance_fetcher.get_token_balance_comprehensive(weth_address, "WETH")
@@ -176,42 +214,63 @@ def update_wallet_data():
                         weth_balance = weth_result['balance'] if weth_result['success'] else 0.0
                         arb_balance = arb_result['balance'] if arb_result['success'] else 0.0
 
-                    except Exception as e:
-                        print(f"⚠️ All balance fetchers failed: {e}")
-                        usdc_balance = wbtc_balance = weth_balance = arb_balance = 0.0
+                        print("✅ Fallback balance fetcher completed")
 
-                # Try enhanced contract manager first
+                    except Exception as fallback_e:
+                        print(f"❌ All token balance methods failed: {fallback_e}")
+                        usdc_balance = wbtc_balance = weth_balance = arb_balance = 0.0
+                        enhanced_tokens_success = False
+
+                # PRIMARY: Enhanced Contract Manager integration
                 try:
                     from enhanced_contract_manager import EnhancedContractManager
                     enhanced_manager = EnhancedContractManager()
-                    aave_pool = "0x794a61358d6845594f94dc1db02a252b5b4814ad"
-
-                    print("🔧 Using Enhanced Contract Manager for Aave data...")
-                    enhanced_aave_data = enhanced_manager.get_aave_data_robust(new_data.get('wallet_address', '0x5B823270e3719CDe8669e5e5326B455EaA8a350b'), aave_pool)
-
-                    if enhanced_aave_data:
-                        print(f"✅ Enhanced Contract Manager SUCCESS:")
-                        print(f"   Health Factor: {enhanced_aave_data['health_factor']:.2f}")
-                        print(f"   Collateral: ${enhanced_aave_data['total_collateral_usd']:.2f}")
-                        print(f"   Debt: ${enhanced_aave_data['total_debt_usd']:.2f}")
-
-                        aave_data = {
-                            'health_factor': enhanced_aave_data['health_factor'],
-                            'total_collateral_usd': enhanced_aave_data['total_collateral_usd'],
-                            'total_debt_usd': enhanced_aave_data['total_debt_usd'],
-                            'available_borrows_usd': enhanced_aave_data.get('available_borrows_usd', 0),
-                            'data_source': 'enhanced_contract_manager',
-                            'note': 'Live data from Enhanced Contract Manager'
-                        }
-                    else:
-                        print("⚠️ Enhanced Contract Manager failed, falling back to hierarchy...")
-                        # Try enhanced Aave data fetch with hierarchy
+                    
+                    # Optimize RPC for contract calls first
+                    print("🔧 Initializing Enhanced Contract Manager as primary data source...")
+                    if enhanced_manager.optimize_for_contract_calls():
+                        print("✅ Enhanced Contract Manager RPC optimization successful")
+                        
+                        wallet_addr = new_data.get('wallet_address', '0x5B823270e3719CDe8669e5e5326B455EaA8a350b')
                         aave_pool = "0x794a61358d6845594f94dc1db02a252b5b4814ad"
+
+                        # Get Aave data using Enhanced Contract Manager
+                        enhanced_aave_data = enhanced_manager.get_aave_data_robust(wallet_addr, aave_pool)
+
+                        if enhanced_aave_data:
+                            print(f"✅ Enhanced Contract Manager AAVE SUCCESS:")
+                            print(f"   Health Factor: {enhanced_aave_data['health_factor']:.2f}")
+                            print(f"   Collateral: ${enhanced_aave_data['total_collateral_usd']:.2f}")
+                            print(f"   Debt: ${enhanced_aave_data['total_debt_usd']:.2f}")
+
+                            # Override Aave data with Enhanced Contract Manager results
+                            aave_data = {
+                                'health_factor': enhanced_aave_data['health_factor'],
+                                'total_collateral_usd': enhanced_aave_data['total_collateral_usd'],
+                                'total_debt_usd': enhanced_aave_data['total_debt_usd'],
+                                'available_borrows_usd': enhanced_aave_data.get('available_borrows_usd', 0),
+                                'data_source': 'enhanced_contract_manager_primary',
+                                'note': 'Live data from Enhanced Contract Manager (Primary)',
+                                'rpc_used': enhanced_manager.working_rpc,
+                                'timestamp': enhanced_aave_data['timestamp']
+                            }
+                            
+                            # Update main data with Enhanced Contract Manager Aave results
+                            health_factor = enhanced_aave_data['health_factor']
+                            collateral_usd = enhanced_aave_data['total_collateral_usd']
+                            debt_usd = enhanced_aave_data['total_debt_usd']
+                            
+                            print("🎯 Enhanced Contract Manager data integrated as primary source")
+                        else:
+                            print("⚠️ Enhanced Contract Manager Aave fetch failed, using fallback...")
+                            aave_data = get_enhanced_aave_data(agent)
+                    else:
+                        print("⚠️ Enhanced Contract Manager RPC optimization failed, using fallback...")
                         aave_data = get_enhanced_aave_data(agent)
+                        
                 except Exception as e:
-                    print(f"⚠️ Enhanced Contract Manager error: {e}")
-                    # Try enhanced Aave data fetch with hierarchy
-                    aave_pool = "0x794a61358d6845594f94dc1db02a252b5b4814ad"
+                    print(f"❌ Enhanced Contract Manager initialization error: {e}")
+                    print("🔄 Falling back to hierarchy-based data fetching...")
                     aave_data = get_enhanced_aave_data(agent)
 
                 stable_data = {
@@ -250,6 +309,13 @@ def update_wallet_data():
                     'success': True,
                     'data_source': new_data.get('data_source', 'comprehensive_accurate_fetcher'),
                     'data_quality': new_data.get('data_quality', 'unknown'),
+                    'enhanced_contract_manager': {
+                        'active': 'enhanced_manager' in locals() and enhanced_manager is not None,
+                        'rpc_endpoint': enhanced_manager.working_rpc if 'enhanced_manager' in locals() and enhanced_manager else None,
+                        'aave_data_source': aave_data.get('data_source', 'unknown'),
+                        'tokens_success': enhanced_tokens_success if 'enhanced_tokens_success' in locals() else False,
+                        'last_optimization': enhanced_manager.last_rpc_test if 'enhanced_manager' in locals() and enhanced_manager else None
+                    },
                     'timestamp': time.time()
                 }
 
@@ -338,13 +404,28 @@ def api_refresh_data():
 @app.route('/api/system-status')
 def api_system_status():
     """Get system status information"""
+    ecm_status = {}
+    if enhanced_manager:
+        ecm_status = {
+            'active': True,
+            'working_rpc': enhanced_manager.working_rpc,
+            'last_rpc_test': enhanced_manager.last_rpc_test,
+            'rpc_performance_data': len(enhanced_manager.rpc_performance),
+            'test_interval': enhanced_manager.test_interval,
+            'performance_scores': {url: data['score'] for url, data in enhanced_manager.rpc_performance.items()} if enhanced_manager.rpc_performance else {}
+        }
+    else:
+        ecm_status = {'active': False, 'reason': 'not_initialized'}
+    
     return jsonify({
         'fetcher_initialized': fetcher is not None,
+        'enhanced_contract_manager': ecm_status,
         'last_update': last_update,
         'data_age_seconds': time.time() - last_update if last_update > 0 else -1,
         'wallet_address': wallet_data.get('wallet_address', 'Unknown'),
         'network': wallet_data.get('network_name', 'Unknown'),
         'success': wallet_data.get('success', False),
+        'data_source_info': wallet_data.get('enhanced_contract_manager', {}),
         'timestamp': time.time()
     })
 

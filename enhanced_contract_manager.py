@@ -31,11 +31,11 @@ class EnhancedContractManager:
         self.last_rpc_test = 0
         self.test_interval = 300  # 5 minutes
         
-        # Token addresses
-        self.usdc_address = "0xaf88d065eec38fad0aeff3e253e648a15cee23dc"
-        self.wbtc_address = "0x2f2a2543b76a4166549f7bffbe68df6fc579b2f3"
-        self.weth_address = "0x82af49447d8a07e3bd95bd0d56f35241523fbab1"
-        self.arb_address = "0x912ce59144191c1f20bdd2ce08f2a688feaebb0b"
+        # Token addresses (Arbitrum Mainnet)
+        self.usdc_address = "0xff970a61a04b1ca14834a651bab06d7307796618"  # USDC.e (most liquid)
+        self.wbtc_address = "0x2f2a259a8e58ac855e77f1ca9e0b950da8e53331"  # WBTC
+        self.weth_address = "0x82af49447d8a07e3bd95bd0d56f35241523fbab1"  # WETH
+        self.arb_address = "0x912ce59144191c1204e64559fe83e3a5095c6afd"  # ARB
         
     def test_rpc_performance(self, rpc_url, timeout=5):
         """Test RPC performance with multiple metrics"""
