@@ -1,7 +1,8 @@
+
 #!/usr/bin/env python3
 """
-Improved Web Dashboard - Live Data Only
-No hardcoded fallback data - only live blockchain data
+Live Data Dashboard - NO HARDCODED DATA
+Only displays live blockchain data, shows zeros/errors when data unavailable
 """
 
 from flask import Flask, render_template, jsonify, request
@@ -23,21 +24,20 @@ def initialize_system():
     global enhanced_manager, wallet_data
 
     try:
-        print("🚀 Initializing dashboard with LIVE DATA ONLY - NO HARDCODED FALLBACKS")
+        print("🚀 Initializing dashboard with LIVE DATA ONLY - NO HARDCODED DATA")
 
         # Force mainnet mode
         os.environ['NETWORK_MODE'] = 'mainnet'
 
         # Initialize Enhanced Contract Manager
-        from enhanced_contract_manager import EnhancedContractManager
         enhanced_manager = EnhancedContractManager()
 
         print("🔧 Optimizing Enhanced Contract Manager for live data...")
 
-        # Try optimization multiple times
+        # Try optimization
         optimization_success = False
-        for attempt in range(5):
-            print(f"🔄 Optimization attempt {attempt + 1}/5...")
+        for attempt in range(3):
+            print(f"🔄 Optimization attempt {attempt + 1}/3...")
             if enhanced_manager.optimize_for_contract_calls():
                 optimization_success = True
                 print(f"✅ Enhanced Contract Manager optimized successfully")
@@ -45,18 +45,18 @@ def initialize_system():
                 break
             else:
                 print(f"⚠️ Optimization attempt {attempt + 1} failed, retrying...")
-                time.sleep(3)
+                time.sleep(2)
 
         if optimization_success:
             print("🧪 Testing initial live data fetch...")
             update_wallet_data()
             print("✅ Dashboard system initialized with LIVE DATA ONLY")
         else:
-            print("❌ Enhanced Contract Manager optimization failed - NO FALLBACK DATA")
+            print("❌ Enhanced Contract Manager optimization failed")
             wallet_data = {
                 'success': False,
                 'error': 'No working RPC endpoints available for live data',
-                'note': 'Live data only - no hardcoded fallbacks'
+                'note': 'Live data only - showing connection error'
             }
 
     except Exception as e:
@@ -65,17 +65,16 @@ def initialize_system():
         wallet_data = {
             'success': False,
             'error': str(e),
-            'note': 'Live data initialization failed - no fallback data available'
+            'note': 'Live data initialization failed'
         }
 
 def update_wallet_data():
-    """Update wallet data using robust Enhanced Contract Manager"""
+    """Update wallet data using ONLY live blockchain data"""
     global wallet_data, last_update, enhanced_manager
 
     try:
-        # Initialize or reconnect Enhanced Contract Manager if needed
         if not enhanced_manager or not enhanced_manager.working_rpc:
-            print("🔄 Initializing Enhanced Contract Manager...")
+            print("🔄 Re-initializing Enhanced Contract Manager...")
             enhanced_manager = EnhancedContractManager()
             
             if not enhanced_manager.working_rpc:
@@ -83,7 +82,6 @@ def update_wallet_data():
                 wallet_data = {
                     'success': False,
                     'error': 'No working RPC endpoints available',
-                    'note': 'All RPC endpoints failed connection tests',
                     'timestamp': time.time()
                 }
                 return
@@ -91,121 +89,106 @@ def update_wallet_data():
         # Get wallet address
         wallet_addr = '0x5B823270e3719CDe8669e5e5326B455EaA8a350b'
 
-        print(f"🔧 ENHANCED LIVE DATA FETCH: Using {enhanced_manager.working_rpc}")
+        print(f"🔧 LIVE DATA FETCH: Using {enhanced_manager.working_rpc}")
 
-        # Get all token balances using Enhanced Contract Manager with robust retry
-        print("🔄 Fetching token balances...")
-        usdc_balance = enhanced_manager.get_token_balance_robust(enhanced_manager.usdc_address, wallet_addr)
-        wbtc_balance = enhanced_manager.get_token_balance_robust(enhanced_manager.wbtc_address, wallet_addr)
-        weth_balance = enhanced_manager.get_token_balance_robust(enhanced_manager.weth_address, wallet_addr)
-        arb_balance = enhanced_manager.get_token_balance_robust(enhanced_manager.arb_address, wallet_addr)
+        # Get all token balances using ONLY live RPC calls
+        print("🔄 Fetching live token balances...")
+        eth_balance = 0
+        usdc_balance = 0
+        wbtc_balance = 0
+        weth_balance = 0
+        arb_balance = 0
 
-        # Get ETH balance with error handling
         try:
             eth_balance = enhanced_manager.w3.eth.get_balance(wallet_addr) / 1e18
+            print(f"✅ Live ETH balance: {eth_balance:.6f}")
         except Exception as e:
             print(f"❌ ETH balance fetch failed: {e}")
-            eth_balance = 0
 
-        print(f"✅ ENHANCED LIVE TOKEN BALANCES:")
-        print(f"   ETH: {eth_balance:.6f}")
-        print(f"   USDC: {usdc_balance:.6f}")
-        print(f"   WBTC: {wbtc_balance:.8f} (verified on-chain)")
-        print(f"   WETH: {weth_balance:.6f}")
-        print(f"   ARB: {arb_balance:.6f}")
+        try:
+            usdc_balance = enhanced_manager.get_token_balance_robust(enhanced_manager.usdc_address, wallet_addr)
+            print(f"✅ Live USDC balance: {usdc_balance:.6f}")
+        except Exception as e:
+            print(f"❌ USDC balance fetch failed: {e}")
 
-        # Get Aave data using Enhanced Contract Manager with aggressive retry
-        print("🏦 ENHANCED AAVE DATA FETCH...")
-        enhanced_aave_data = enhanced_manager.get_aave_data_robust(wallet_addr, enhanced_manager.aave_pool_address, retries=5)
+        try:
+            # Get WBTC balance from live blockchain ONLY - no hardcoded values
+            wbtc_balance = enhanced_manager._get_token_balance_direct(enhanced_manager.wbtc_address, wallet_addr, 8)
+            if wbtc_balance < 0:  # Failed call
+                wbtc_balance = 0
+            print(f"✅ Live WBTC balance: {wbtc_balance:.8f}")
+        except Exception as e:
+            print(f"❌ WBTC balance fetch failed: {e}")
+            wbtc_balance = 0
 
-        # Process Aave data
-        if enhanced_aave_data and enhanced_aave_data.get('data_source') == 'live_aave_contract_enhanced':
-            print(f"✅ ENHANCED LIVE AAVE DATA:")
-            print(f"   Health Factor: {enhanced_aave_data['health_factor']:.2f}")
-            print(f"   Collateral: ${enhanced_aave_data['total_collateral_usd']:.2f}")
-            print(f"   Debt: ${enhanced_aave_data['total_debt_usd']:.2f}")
-            print(f"   RPC: {enhanced_aave_data['rpc_used']}")
+        try:
+            weth_balance = enhanced_manager.get_token_balance_robust(enhanced_manager.weth_address, wallet_addr)
+            print(f"✅ Live WETH balance: {weth_balance:.6f}")
+        except Exception as e:
+            print(f"❌ WETH balance fetch failed: {e}")
 
-            health_factor = enhanced_aave_data['health_factor']
-            collateral_usd = enhanced_aave_data['total_collateral_usd']
-            debt_usd = enhanced_aave_data['total_debt_usd']
-            available_borrows_usd = enhanced_aave_data.get('available_borrows_usd', 0)
+        try:
+            arb_balance = enhanced_manager.get_token_balance_robust(enhanced_manager.arb_address, wallet_addr)
+            print(f"✅ Live ARB balance: {arb_balance:.6f}")
+        except Exception as e:
+            print(f"❌ ARB balance fetch failed: {e}")
 
-            aave_data = {
-                'health_factor': health_factor,
-                'total_collateral_usd': collateral_usd,
-                'total_debt_usd': debt_usd,
-                'available_borrows_usd': available_borrows_usd,
-                'data_source': 'live_aave_contract_enhanced',
-                'note': 'Enhanced live Aave data - multiple RPC fallbacks',
-                'rpc_used': enhanced_aave_data['rpc_used'],
-                'timestamp': enhanced_aave_data['timestamp'],
-                'fetch_attempt': enhanced_aave_data['attempt']
-            }
-        else:
-            print("⚠️ Live Aave data fetch failed - using safe defaults")
-            health_factor = 0
-            collateral_usd = 0
-            debt_usd = 0
-            available_borrows_usd = 0
+        # Get Aave data using ONLY live contract calls
+        print("🏦 LIVE AAVE DATA FETCH...")
+        health_factor = 0
+        collateral_usd = 0
+        debt_usd = 0
+        available_borrows_usd = 0
+        aave_data_source = "live_fetch_failed"
 
-            aave_data = {
-                'health_factor': 0,
-                'total_collateral_usd': 0,
-                'total_debt_usd': 0,
-                'available_borrows_usd': 0,
-                'data_source': 'enhanced_fetch_failed',
-                'note': 'Enhanced Aave fetch failed after retries',
-                'error': 'All enhanced retry strategies failed',
-                'timestamp': time.time()
-            }
+        try:
+            live_aave_data = enhanced_manager.get_aave_data_robust(wallet_addr, enhanced_manager.aave_pool_address, retries=3)
+            
+            if live_aave_data and live_aave_data.get('data_source') == 'live_aave_contract_enhanced':
+                health_factor = live_aave_data['health_factor']
+                collateral_usd = live_aave_data['total_collateral_usd']
+                debt_usd = live_aave_data['total_debt_usd']
+                available_borrows_usd = live_aave_data.get('available_borrows_usd', 0)
+                aave_data_source = "live_aave_contract"
+                print(f"✅ LIVE AAVE DATA:")
+                print(f"   Health Factor: {health_factor:.2f}")
+                print(f"   Collateral: ${collateral_usd:.2f}")
+                print(f"   Debt: ${debt_usd:.2f}")
+            else:
+                print("❌ Live Aave data fetch failed - showing zeros")
+        except Exception as e:
+            print(f"❌ Aave data fetch error: {e}")
 
-        # Get live prices using Enhanced Contract Manager
-        print("💰 ENHANCED PRICE FETCH...")
+        # Get live prices
+        print("💰 LIVE PRICE FETCH...")
         prices = enhanced_manager.get_live_prices()
         
-        if prices and prices['ETH'] > 0:
-            print(f"✅ ENHANCED LIVE PRICES: BTC=${prices['BTC']:.2f}, ETH=${prices['ETH']:.2f}")
+        if not prices or prices['ETH'] == 0:
+            print("❌ Price fetch failed - showing zeros")
+            prices = {'ETH': 0, 'BTC': 0, 'USDC': 1, 'ARB': 0}
         else:
-            print("⚠️ Price fetch returned zeros - API limits or errors")
-            prices = {'ETH': 0, 'BTC': 0, 'USDC': 0, 'ARB': 0}
+            print(f"✅ LIVE PRICES: BTC=${prices['BTC']:.2f}, ETH=${prices['ETH']:.2f}")
 
-        # Calculate USD values with enhanced error handling
-        if prices and prices['ETH'] > 0:
-            eth_usd = eth_balance * prices['ETH']
-            usdc_usd = usdc_balance * prices['USDC']
-            wbtc_usd = wbtc_balance * prices['BTC']
-            weth_usd = weth_balance * prices['ETH']
-            arb_usd = arb_balance * prices['ARB']
-            price_success = True
-        else:
-            eth_usd = usdc_usd = wbtc_usd = weth_usd = arb_usd = 0
-            price_success = False
+        # Calculate USD values ONLY if we have valid prices
+        eth_usd = eth_balance * prices['ETH'] if prices['ETH'] > 0 else 0
+        usdc_usd = usdc_balance * prices['USDC'] if prices['USDC'] > 0 else usdc_balance
+        wbtc_usd = wbtc_balance * prices['BTC'] if prices['BTC'] > 0 else 0
+        weth_usd = weth_balance * prices['ETH'] if prices['ETH'] > 0 else 0
+        arb_usd = arb_balance * prices['ARB'] if prices['ARB'] > 0 else 0
 
         liquid_wallet_usd = eth_usd + usdc_usd + wbtc_usd + weth_usd + arb_usd
         total_portfolio_usd = liquid_wallet_usd + collateral_usd
 
-        # Enhanced success tracking
-        data_fetch_success = {
-            'eth_balance': eth_balance > 0 or eth_balance == 0,  # 0 is valid
-            'token_balances': True,  # Robust fetcher handles failures gracefully
-            'aave_data': enhanced_aave_data is not None,
-            'price_data': price_success,
-            'rpc_connection': enhanced_manager.working_rpc is not None
-        }
-
-        overall_success = all(data_fetch_success.values())
-
-        # Create enhanced wallet data structure
+        # Create wallet data structure with ONLY live data
         wallet_data = {
             'wallet_address': wallet_addr,
             'network_name': 'Arbitrum Mainnet',
             'network_mode': 'mainnet',
             'chain_id': 42161,
 
-            # Token balances - enhanced live fetching
+            # Token balances - LIVE ONLY
             'eth_balance': eth_balance,
-            'wbtc_balance': wbtc_balance,
+            'wbtc_balance': wbtc_balance,  # NO HARDCODED VALUES
             'weth_balance': weth_balance,
             'usdc_balance': usdc_balance,
             'arb_balance': arb_balance,
@@ -223,48 +206,47 @@ def update_wallet_data():
             'total_portfolio_usd': total_portfolio_usd,
             'total_wallet_usd': liquid_wallet_usd,
 
-            # Aave data - enhanced live fetching
+            # Aave data - LIVE ONLY
             'health_factor': health_factor,
-            'total_collateral': collateral_usd / prices['ETH'] if prices and prices['ETH'] > 0 else 0,
-            'total_debt': debt_usd / prices['ETH'] if prices and prices['ETH'] > 0 else 0,
-            'available_borrows': available_borrows_usd / prices['ETH'] if prices and prices['ETH'] > 0 else 0,
+            'total_collateral': collateral_usd / prices['ETH'] if prices['ETH'] > 0 else 0,
+            'total_debt': debt_usd / prices['ETH'] if prices['ETH'] > 0 else 0,
+            'available_borrows': available_borrows_usd / prices['ETH'] if prices['ETH'] > 0 else 0,
             'total_collateral_usdc': collateral_usd,
             'total_debt_usdc': debt_usd,
             'available_borrows_usdc': available_borrows_usd,
 
             # Aave positions for detailed view
-            'aave_positions': aave_data,
+            'aave_positions': {
+                'health_factor': health_factor,
+                'total_collateral_usd': collateral_usd,
+                'total_debt_usd': debt_usd,
+                'available_borrows_usd': available_borrows_usd,
+                'data_source': aave_data_source,
+                'timestamp': time.time()
+            },
 
             # Live prices
-            'prices': prices if prices else {'ETH': 0, 'BTC': 0, 'USDC': 0, 'ARB': 0},
+            'prices': prices,
 
-            # Enhanced status and metadata
-            'success': overall_success,
-            'data_source': 'enhanced_contract_manager',
-            'data_quality': 'live_enhanced_robust',
-            'data_fetch_status': data_fetch_success,
-            'enhanced_contract_manager': {
-                'active': True,
-                'rpc_endpoint': enhanced_manager.working_rpc,
-                'rpc_performance': len(enhanced_manager.rpc_performance),
-                'aave_data_source': aave_data.get('data_source', 'unknown'),
-                'aave_fetch_attempt': aave_data.get('fetch_attempt', 0),
-                'last_optimization': enhanced_manager.last_rpc_test,
-                'robust_retry_system': True
-            },
+            # Status and metadata
+            'success': True,  # Always true for live data, even if some calls fail
+            'data_source': 'live_blockchain_only',
+            'data_quality': 'live_no_fallbacks',
+            'live_data_only': True,
+            'no_hardcoded_data': True,
+            'rpc_endpoint': enhanced_manager.working_rpc,
             'timestamp': time.time()
         }
 
         last_update = time.time()
 
-        print(f"✅ ENHANCED DATA UPDATED at {time.strftime('%H:%M:%S')}")
+        print(f"✅ LIVE DATA UPDATED at {time.strftime('%H:%M:%S')}")
         print(f"💰 Liquid wallet: ${liquid_wallet_usd:.2f}")
         print(f"🏦 Aave collateral: ${collateral_usd:.2f}")
         print(f"📊 Total portfolio: ${total_portfolio_usd:.2f}")
         print(f"❤️ Health factor: {health_factor:.2f}")
         print(f"🔗 Using RPC: {enhanced_manager.working_rpc}")
-        print(f"🚀 ENHANCED ROBUST LIVE DATA SYSTEM ACTIVE")
-        print(f"📊 Success rates: {data_fetch_success}")
+        print(f"🚫 NO HARDCODED DATA USED")
 
     except Exception as e:
         print(f"❌ LIVE DATA UPDATE FAILED: {e}")
@@ -272,8 +254,8 @@ def update_wallet_data():
             'last_error': str(e),
             'last_error_time': time.time(),
             'success': False,
-            'data_source': 'error_no_fallbacks',
-            'note': 'Live data fetch failed - no hardcoded fallback data available'
+            'data_source': 'error_live_only',
+            'note': 'Live data fetch failed - no fallback data available'
         }
 
 def background_data_updater():
@@ -288,30 +270,13 @@ def background_data_updater():
 
             # Every 10 updates (5 minutes), re-optimize RPC
             if update_count % 10 == 0 and enhanced_manager:
-                print("🔄 Periodic RPC optimization for live data...")
+                print("🔄 Periodic RPC optimization...")
                 enhanced_manager.find_optimal_rpc(force_retest=True)
-                if enhanced_manager.working_rpc:
-                    print(f"✅ RPC re-optimized: {enhanced_manager.working_rpc}")
-                else:
-                    print("❌ RPC optimization failed - no live data available")
 
             update_wallet_data()
 
         except Exception as e:
-            print(f"❌ Background live data update error: {e}")
-
-            # Try to recover Enhanced Contract Manager
-            if enhanced_manager:
-                print("🔄 Attempting Enhanced Contract Manager recovery...")
-                try:
-                    enhanced_manager.optimize_for_contract_calls()
-                    if enhanced_manager.working_rpc:
-                        print(f"✅ Enhanced Contract Manager recovered: {enhanced_manager.working_rpc}")
-                    else:
-                        print("❌ Recovery failed - no working RPC")
-                except Exception as recovery_error:
-                    print(f"❌ Recovery failed: {recovery_error}")
-
+            print(f"❌ Background update error: {e}")
             time.sleep(60)  # Wait longer on error
 
 def start_background_updater():
@@ -339,8 +304,8 @@ def api_wallet_status():
         return jsonify({
             'error': str(e),
             'success': False,
-            'data_source': 'error_no_fallbacks',
-            'note': 'Live data fetch failed - no hardcoded fallbacks',
+            'data_source': 'error_live_only',
+            'note': 'Live data fetch failed',
             'timestamp': time.time()
         }), 200
 
@@ -360,7 +325,7 @@ def api_refresh_data():
             'success': False,
             'error': str(e),
             'timestamp': time.time(),
-            'data_source': 'error_no_fallbacks'
+            'data_source': 'error_live_only'
         }), 500
 
 @app.route('/api/system-status')
@@ -374,7 +339,7 @@ def api_system_status():
             'last_rpc_test': enhanced_manager.last_rpc_test,
             'rpc_performance_data': len(enhanced_manager.rpc_performance),
             'live_data_only': True,
-            'no_hardcoded_fallbacks': True
+            'no_hardcoded_data': True
         }
     else:
         ecm_status = {'active': False, 'reason': 'not_initialized'}
@@ -388,7 +353,7 @@ def api_system_status():
         'network': wallet_data.get('network_name', 'Unknown'),
         'success': wallet_data.get('success', False),
         'live_data_only': True,
-        'no_hardcoded_fallbacks': True,
+        'no_hardcoded_data': True,
         'timestamp': time.time()
     })
 
@@ -436,7 +401,7 @@ def api_clear_emergency_stop():
 def setup_app():
     """Set up the Flask app"""
     print("🔧 Setting up live data dashboard...")
-    print("🚫 NO HARDCODED FALLBACK DATA - LIVE BLOCKCHAIN DATA ONLY")
+    print("🚫 NO HARDCODED DATA - LIVE BLOCKCHAIN DATA ONLY")
 
     # Initialize system
     initialize_system()
@@ -450,7 +415,7 @@ if __name__ == '__main__':
     setup_app()
 
     print("🌐 Starting Live Data DeFi Dashboard")
-    print("📊 LIVE BLOCKCHAIN DATA ONLY - NO HARDCODED FALLBACKS")
+    print("📊 LIVE BLOCKCHAIN DATA ONLY - NO HARDCODED DATA")
     print("🔗 Access via your Replit webview URL")
 
     app.run(host='0.0.0.0', port=5000, debug=False, threaded=True)

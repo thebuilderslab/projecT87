@@ -181,7 +181,7 @@ class EnhancedContractManager:
             return -1
 
     def get_token_balance_robust(self, token_address, wallet_address, retries=3):
-        """Robust token balance with multiple fallback strategies and accurate WBTC handling"""
+        """Robust token balance with multiple fallback strategies - LIVE DATA ONLY"""
 
         # Determine decimals based on token
         decimals = 18  # Default
@@ -192,11 +192,7 @@ class EnhancedContractManager:
         elif token_address.lower() == self.wbtc_address.lower():
             decimals = 8
 
-        # Known accurate WBTC balance from DeBank data
-        known_wbtc_balance = 0.0002  # From your DeBank/on-chain data
-        if token_address.lower() == self.wbtc_address.lower():
-            print(f"📊 Using accurate WBTC balance from on-chain verification: {known_wbtc_balance:.8f}")
-            return known_wbtc_balance
+        # NO HARDCODED VALUES - GET LIVE DATA ONLY
 
         for attempt in range(retries):
             # Strategy 1: Direct call with current RPC
