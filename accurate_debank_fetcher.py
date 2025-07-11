@@ -681,17 +681,24 @@ class AccurateWalletDataFetcher:
             print(f"⚠️ Step 3 Alternative RPC failed: {e}")
             result['sequence_results']['alternative_rpc'] = {'success': False, 'error': str(e)}
 
-        # Step 4: ZAPPER_API_KEY fallback
+        # Step 4: ZAPPER_API_KEY fallback - FORCE ENABLED
         try:
-            print(f"🔄 Step 4: Trying ZAPPER_API_KEY fallback...")
+            print(f"🔄 Step 4: FORCING ZAPPER_API_KEY usage...")
 
             zapper_api_key = os.getenv('ZAPPER_API_KEY')
-            if zapper_api_key:                # Try Zapper API for portfolio data
+            print(f"🔑 ZAPPER_API_KEY found: {'YES' if zapper_api_key else 'NO'}")
+            
+            if zapper_api_key:
+                print(f"🔄 Initializing ThirdPartyDataProvider...")
                 from third_party_data_integration import ThirdPartyDataProvider
                 provider = ThirdPartyDataProvider()
+                
+                print(f"🔄 Calling get_zapper_portfolio for {self.wallet_address}...")
                 zapper_data = provider.get_zapper_portfolio(self.wallet_address)
+                
+                print(f"📊 Zapper data received: {zapper_data}")
 
-                if zapper_data and zapper_data.get('total_collateral_usd', 0) > 0:
+                if zapper_data and (zapper_data.get('total_collateral_usd', 0) > 0 or zapper_data.get('health_factor', 0) > 0):
                     eth_price = self.get_current_prices()['ETH']
 
                     zapper_result = {
@@ -702,29 +709,34 @@ class AccurateWalletDataFetcher:
                         'total_collateral_usd': zapper_data.get('total_collateral_usd', 158.98),
                         'total_debt_usd': zapper_data.get('total_debt_usd', 20.0),
                         'available_borrows_usd': zapper_data.get('available_borrows_usd', 83.34),
-                        'data_source': 'zapper_api_fallback',
+                        'data_source': 'zapper_api_forced',
                         'timestamp': time.time(),
                         'sequence_results': result.get('sequence_results', {})
                     }
 
-                    print(f"✅ Step 4 SUCCESS: Zapper API fallback")
+                    print(f"✅ Step 4 FORCED SUCCESS: Zapper API data retrieved")
                     print(f"   Health Factor: {zapper_result['health_factor']:.4f}")
                     print(f"   Collateral: ${zapper_result['total_collateral_usd']:.2f}")
                     print(f"   Debt: ${zapper_result['total_debt_usd']:.2f}")
 
                     result.update(zapper_result)
-                    result['sequence_results']['zapper_fallback'] = {'success': True}
+                    result['sequence_results']['zapper_fallback'] = {'success': True, 'forced': True}
                     return result
                 else:
-                    print(f"⚠️ Zapper API returned no valid data")
-                    result['sequence_results']['zapper_fallback'] = {'success': False, 'error': 'no_valid_data'}
+                    print(f"⚠️ Zapper API call completed but returned insufficient data")
+                    print(f"   Raw response: {zapper_data}")
+                    result['sequence_results']['zapper_fallback'] = {'success': False, 'error': 'insufficient_data', 'raw_response': str(zapper_data)}
             else:
-                print(f"⚠️ ZAPPER_API_KEY not available")
-                result['sequence_results']['zapper_fallback'] = {'success': False, 'error': 'no_api_key'}
+                print(f"❌ ZAPPER_API_KEY not found in environment variables")
+                print(f"💡 Please ensure ZAPPER_API_KEY is set in Replit Secrets")
+                result['sequence_results']['zapper_fallback'] = {'success': False, 'error': 'no_api_key_in_env'}
 
         except Exception as e:
-            print(f"⚠️ Step 4 Zapper fallback failed: {e}")
-            result['sequence_results']['zapper_fallback'] = {'success': False, 'error': str(e)}
+            print(f"❌ Step 4 Zapper FORCED fallback failed: {e}")
+            import traceback
+            print(f"🔍 Full error traceback:")
+            traceback.print_exc()
+            result['sequence_results']['zapper_fallback'] = {'success': False, 'error': str(e), 'traceback': traceback.format_exc()}
 
         # Final fallback - use known Aave data (last resort)
         print(f"🔄 Step 5: Using known Aave data as final fallback...")
