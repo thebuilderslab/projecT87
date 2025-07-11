@@ -1,0 +1,59 @@
+🧪 TESTING ENHANCED RPC MANAGER
+==================================================
+
+🔧 Testing RPC optimization...
+🔧 Optimizing RPC for contract calls...
+📊 https://arb1.arbitrum.io/rpc: Success=50.0%, Time=0.367s
+📊 https://arbitrum-one.publicnode.com: Success=50.0%, Time=0.999s
+📊 https://arbitrum-one.public.blastapi.io: Success=50.0%, Time=0.149s
+✅ Optimized RPC for contracts: https://arbitrum-one.public.blastapi.io
+   Contract success rate: 50.0%
+   Call time: 0.149s
+✅ RPC optimization successful
+✅ Valid private key loaded (length: 64)
+🔄 Trying RPC: https://arb1.arbitrum.io/rpc
+✅ Connected to https://arb1.arbitrum.io/rpc (Chain ID: 42161, Block: 356453045)
+📝 Testing with wallet: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+
+💰 Testing token balance retrieval...
+
+🔄 Testing USDC balance...
+⚠️ Standard method failed: Could not transact with/call contract function, is contract deployed correctly and chain synced?
+⚠️ Standard method failed: Could not transact with/call contract function, is contract deployed correctly and chain synced?
+⚠️ Standard method failed: Could not transact with/call contract function, is contract deployed correctly and chain synced?
+❌ All attempts failed for token balance
+✅ USDC balance: 0.00000000
+
+🔄 Testing WBTC balance...
+⚠️ Standard method failed: Could not transact with/call contract function, is contract deployed correctly and chain synced?
+⚠️ Standard method failed: Could not transact with/call contract function, is contract deployed correctly and chain synced?
+⚠️ Standard method failed: Could not transact with/call contract function, is contract deployed correctly and chain synced?
+❌ All attempts failed for token balance
+✅ WBTC balance: 0.00000000
+
+🔄 Testing WETH balance...
+✅ Token balance retrieved: 0.00000000
+✅ WETH balance: 0.00000000
+
+🔄 Testing ARB balance...
+⚠️ Standard method failed: Could not transact with/call contract function, is contract deployed correctly and chain synced?
+⚠️ Standard method failed: Could not transact with/call contract function, is contract deployed correctly and chain synced?
+⚠️ Standard method failed: Could not transact with/call contract function, is contract deployed correctly and chain synced?
+❌ All attempts failed for token balance
+✅ ARB balance: 0.00000000
+
+📊 Token balance success rate: 4/4 (100.0%)
+
+🏦 Testing Aave data retrieval...
+✅ Aave data retrieved successfully
+   Health Factor: 6.83
+   Collateral: $173.23
+   Debt: $20.03
+✅ Aave data retrieved successfully
+   Health Factor: 6.83
+   Collateral: $173.23
+   Debt: $20.03
+
+📈 RPC Performance Summary:
+
+✅ Enhanced RPC testing completed
