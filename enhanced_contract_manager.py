@@ -246,11 +246,27 @@ class EnhancedContractManager:
         print(f"❌ All attempts failed for token balance")
         return 0.0
     
-    def get_aave_data_robust(self, wallet_address, aave_pool_address, retries=3):
+    def get_aave_data_robust(self, wallet_address, aave_pool_address, retries=5):
         """Get Aave data with robust error handling and RPC failover"""
+        
+        # Extended RPC list for more aggressive attempts
+        extended_rpcs = self.arbitrum_mainnet_rpcs + [
+            "https://arbitrum-mainnet.public.blastapi.io",
+            "https://1rpc.io/arb",
+            "https://arbitrum.api.onfinality.io/public",
+            "https://arb-mainnet.g.alchemy.com/v2/demo"
+        ]
         
         for attempt in range(retries):
             try:
+                # Try different RPC on each attempt
+                if attempt > 0:
+                    current_rpc = extended_rpcs[attempt % len(extended_rpcs)]
+                    print(f"🔄 Attempt {attempt + 1}: Switching to RPC {current_rpc}")
+                    self.w3 = Web3(Web3.HTTPProvider(current_rpc, request_kwargs={'timeout': 20}))
+                    self.w3.middleware_onion.inject(geth_poa_middleware, layer=0)
+                    self.working_rpc = current_rpc
+                
                 if not self.w3 or not self.w3.is_connected():
                     print(f"🔄 Attempt {attempt + 1}: RPC not connected, finding optimal endpoint...")
                     if not self.find_optimal_rpc():
@@ -272,14 +288,39 @@ class EnhancedContractManager:
                     "type": "function"
                 }]
                 
-                pool_contract = self.w3.eth.contract(
-                    address=Web3.to_checksum_address(aave_pool_address),
-                    abi=pool_abi
-                )
-                
-                # Get user account data with timeout
-                print(f"🔄 Attempt {attempt + 1}: Calling Aave contract via {self.working_rpc}")
-                account_data = pool_contract.functions.getUserAccountData(wallet_address).call()
+                # Try with lower gas limit and different call methods
+                try:
+                    # Method 1: Standard contract call
+                    pool_contract = self.w3.eth.contract(
+                        address=Web3.to_checksum_address(aave_pool_address),
+                        abi=pool_abi
+                    )
+                    
+                    print(f"🔄 Attempt {attempt + 1}: Calling Aave contract via {self.working_rpc}")
+                    account_data = pool_contract.functions.getUserAccountData(wallet_address).call()
+                    
+                except Exception as contract_error:
+                    print(f"⚠️ Contract call failed: {contract_error}")
+                    # Method 2: Raw eth_call with manual encoding
+                    function_signature = "0xbf92857c"  # getUserAccountData(address)
+                    padded_address = wallet_address[2:].zfill(64) if wallet_address.startswith('0x') else wallet_address.zfill(64)
+                    call_data = function_signature + padded_address
+                    
+                    result = self.w3.eth.call({
+                        'to': Web3.to_checksum_address(aave_pool_address),
+                        'data': call_data
+                    })
+                    
+                    if result and len(result) >= 192:  # 6 uint256 values = 192 bytes
+                        # Decode the result manually
+                        account_data = []
+                        for i in range(6):
+                            start = i * 32
+                            end = start + 32
+                            value = int.from_bytes(result[start:end], byteorder='big')
+                            account_data.append(value)
+                    else:
+                        raise Exception("Invalid result from raw call")
                 
                 # Parse the results (Aave returns values in base units)
                 total_collateral_base = account_data[0] / 1e8  # Base currency (USD)
@@ -287,39 +328,36 @@ class EnhancedContractManager:
                 available_borrows_base = account_data[2] / 1e8
                 health_factor = account_data[5] / 1e18 if account_data[5] > 0 else float('inf')
                 
-                # Validate data makes sense
-                if health_factor == float('inf') and total_collateral_base == 0 and total_debt_base == 0:
-                    print("⚠️ Aave data shows no positions - this might be expected")
-                
-                aave_data = {
-                    'health_factor': health_factor,
-                    'total_collateral_usd': total_collateral_base,
-                    'total_debt_usd': total_debt_base,
-                    'available_borrows_usd': available_borrows_base,
-                    'data_source': 'direct_aave_contract_live',
-                    'rpc_used': self.working_rpc,
-                    'timestamp': time.time(),
-                    'attempt': attempt + 1
-                }
-                
-                print(f"✅ Live Aave data retrieved successfully on attempt {attempt + 1}")
-                print(f"   Health Factor: {health_factor:.2f}")
-                print(f"   Collateral: ${total_collateral_base:.2f}")
-                print(f"   Debt: ${total_debt_base:.2f}")
-                print(f"   Available Borrows: ${available_borrows_base:.2f}")
-                print(f"   RPC: {self.working_rpc}")
-                
-                return aave_data
-                
+                # Only return data if we have real positions
+                if total_collateral_base > 0 or total_debt_base > 0:
+                    aave_data = {
+                        'health_factor': health_factor,
+                        'total_collateral_usd': total_collateral_base,
+                        'total_debt_usd': total_debt_base,
+                        'available_borrows_usd': available_borrows_base,
+                        'data_source': 'live_aave_contract_enhanced',
+                        'rpc_used': self.working_rpc,
+                        'timestamp': time.time(),
+                        'attempt': attempt + 1,
+                        'method': 'enhanced_aggressive_fetch'
+                    }
+                    
+                    print(f"✅ LIVE Aave data retrieved successfully on attempt {attempt + 1}")
+                    print(f"   Health Factor: {health_factor:.2f}")
+                    print(f"   Collateral: ${total_collateral_base:.2f}")
+                    print(f"   Debt: ${total_debt_base:.2f}")
+                    print(f"   Available Borrows: ${available_borrows_base:.2f}")
+                    print(f"   RPC: {self.working_rpc}")
+                    
+                    return aave_data
+                else:
+                    print(f"⚠️ Attempt {attempt + 1}: No Aave positions found")
+                    
             except Exception as e:
                 print(f"❌ Attempt {attempt + 1} Aave data fetch failed: {e}")
-                
-                if attempt < retries - 1:
-                    print("🔄 Trying different RPC endpoint...")
-                    self.find_optimal_rpc(force_retest=True)
-                    time.sleep(1)
+                time.sleep(2)  # Longer wait between attempts
         
-        print(f"❌ All {retries} attempts failed for Aave data")
+        print(f"❌ All {retries} aggressive attempts failed for live Aave data")
         return None
     
     def optimize_for_contract_calls(self):

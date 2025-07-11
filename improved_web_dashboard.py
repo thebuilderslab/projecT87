@@ -107,25 +107,28 @@ def update_wallet_data():
         print(f"   ARB: {arb_balance:.6f}")
         print(f"   RPC Used: {enhanced_manager.working_rpc}")
 
-        # Get Aave data using Enhanced Contract Manager
+        # Get Aave data using Enhanced Contract Manager - LIVE DATA ONLY
         aave_pool = "0x794a61358d6845594f94dc1db02a252b5b4814ad"
+        print("🔄 FORCING LIVE AAVE DATA FETCH - No hardcoded fallbacks")
         enhanced_aave_data = enhanced_manager.get_aave_data_robust(wallet_addr, aave_pool)
 
-        if enhanced_aave_data:
-            print(f"✅ Enhanced Contract Manager AAVE DATA:")
+        if enhanced_aave_data and enhanced_aave_data.get('data_source') == 'live_aave_contract_enhanced':
+            print(f"✅ LIVE Enhanced Contract Manager AAVE DATA:")
             print(f"   Health Factor: {enhanced_aave_data['health_factor']:.2f}")
             print(f"   Collateral: ${enhanced_aave_data['total_collateral_usd']:.2f}")
             print(f"   Debt: ${enhanced_aave_data['total_debt_usd']:.2f}")
+            print(f"   🔴 DATA SOURCE: {enhanced_aave_data['data_source']} (LIVE)")
 
             aave_data = {
                 'health_factor': enhanced_aave_data['health_factor'],
                 'total_collateral_usd': enhanced_aave_data['total_collateral_usd'],
                 'total_debt_usd': enhanced_aave_data['total_debt_usd'],
                 'available_borrows_usd': enhanced_aave_data.get('available_borrows_usd', 0),
-                'data_source': 'enhanced_contract_manager_live',
-                'note': 'Live data from Enhanced Contract Manager',
+                'data_source': 'live_enhanced_contract_manager',
+                'note': 'LIVE data from Enhanced Contract Manager - NO FALLBACKS',
                 'rpc_used': enhanced_manager.working_rpc,
-                'timestamp': enhanced_aave_data['timestamp']
+                'timestamp': enhanced_aave_data['timestamp'],
+                'method': enhanced_aave_data.get('method', 'unknown')
             }
             
             health_factor = enhanced_aave_data['health_factor']
@@ -134,15 +137,17 @@ def update_wallet_data():
             available_borrows_usd = enhanced_aave_data.get('available_borrows_usd', 0)
             
         else:
-            print("❌ Enhanced Contract Manager Aave data failed - no fallback data will be used")
+            print("❌ ALL LIVE AAVE DATA SOURCES FAILED - DISPLAYING ZERO VALUES")
+            print("🔴 NO HARDCODED DATA WILL BE USED")
             aave_data = {
                 'health_factor': 0,
                 'total_collateral_usd': 0,
                 'total_debt_usd': 0,
                 'available_borrows_usd': 0,
-                'data_source': 'failed',
-                'note': 'All Aave data sources failed',
-                'error': 'No live data available'
+                'data_source': 'all_live_sources_failed',
+                'note': 'ALL LIVE AAVE DATA SOURCES FAILED - NO HARDCODED FALLBACKS',
+                'error': 'No live data available from any RPC endpoint',
+                'rpc_attempts': len(enhanced_manager.arbitrum_mainnet_rpcs) if enhanced_manager else 0
             }
             health_factor = 0
             collateral_usd = 0
