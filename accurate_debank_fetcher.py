@@ -6,7 +6,8 @@ Uses the exact values from your DeBank account screenshot
 
 import os
 import time
-import requests from web3 import Web3
+import requests
+from web3 import Web3
 from typing import Dict, Optional, Any
 
 class AccurateWalletDataFetcher:
