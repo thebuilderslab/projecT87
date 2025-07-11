@@ -57,16 +57,37 @@ def initialize_system():
         }
 
 def update_wallet_data():
-    """Update wallet data from fetcher"""
+    """Update wallet data from fetcher with improved validation"""
     global wallet_data, last_update
 
     try:
         if fetcher:
             new_data = fetcher.get_comprehensive_wallet_data()
 
-            # Ensure we have stable Aave data that follows hierarchy
+            # Validate and process the data
             if new_data and new_data.get('success'):
-                # Use real data from hierarchy checks
+                # Extract Aave data
+                aave_data = new_data.get('aave_positions', {})
+                
+                # Validate Aave health factor
+                health_factor = aave_data.get('health_factor', 0)
+                if health_factor <= 0:
+                    health_factor = new_data.get('health_factor', 0)
+
+                # Validate collateral data
+                collateral_usd = aave_data.get('total_collateral_usd', 0)
+                if collateral_usd <= 0:
+                    collateral_usd = new_data.get('total_collateral_usdc', 0)
+
+                # Validate debt data
+                debt_usd = aave_data.get('total_debt_usd', 0)
+                if debt_usd <= 0:
+                    debt_usd = new_data.get('total_debt_usdc', 0)
+
+                # Calculate portfolio total including Aave positions
+                liquid_wallet_usd = new_data.get('total_wallet_usd', 0)
+                total_portfolio_usd = liquid_wallet_usd + collateral_usd
+
                 stable_data = {
                     'wallet_address': new_data.get('wallet_address', '0x5B823270e3719CDe8669e5e5326B455EaA8a350b'),
                     'network_name': 'Arbitrum Mainnet',
@@ -80,43 +101,47 @@ def update_wallet_data():
                     'usdc_balance': new_data.get('usdc_balance', 0),
                     'arb_balance': new_data.get('arb_balance', 0),
 
-                    # Portfolio totals - use calculated values (liquid + Aave positions)
-                    'total_portfolio_usd': new_data.get('total_wallet_usd', 0) + new_data.get('total_collateral_usdc', 0),
-                    'total_wallet_usd': new_data.get('total_wallet_usd', 0),
+                    # Portfolio totals
+                    'total_portfolio_usd': total_portfolio_usd,
+                    'total_wallet_usd': liquid_wallet_usd,
 
-                    # Aave data - use hierarchy results (live data prioritized)
-                    'health_factor': new_data.get('health_factor', 0),
-                    'total_collateral': new_data.get('total_collateral', 0.0637),
-                    'total_debt': new_data.get('total_debt', 0.0080),
-                    'available_borrows': new_data.get('available_borrows', 0.0335),
-                    'total_collateral_usdc': new_data.get('total_collateral_usdc', 158.98),
-                    'total_debt_usdc': new_data.get('total_debt_usdc', 20.00),
-                    'available_borrows_usdc': new_data.get('available_borrows_usdc', 83.34),
+                    # Aave data with validation
+                    'health_factor': health_factor,
+                    'total_collateral': collateral_usd / new_data.get('prices', {}).get('ETH', 2970),
+                    'total_debt': debt_usd / new_data.get('prices', {}).get('ETH', 2970),
+                    'available_borrows': aave_data.get('available_borrows_usd', 0) / new_data.get('prices', {}).get('ETH', 2970),
+                    'total_collateral_usdc': collateral_usd,
+                    'total_debt_usdc': debt_usd,
+                    'available_borrows_usdc': aave_data.get('available_borrows_usd', 0),
 
                     # Aave positions for detailed view
-                    'aave_positions': new_data.get('aave_positions', {
-                        'data_source': 'debank_accurate',
-                        'health_factor': 6.44,
-                        'total_collateral_usd': 158.98,
-                        'total_debt_usd': 20.00,
-                        'available_borrows_usd': 83.34
-                    }),
+                    'aave_positions': aave_data,
 
                     # Prices
-                    'prices': new_data.get('prices', {'ETH': 2490, 'WBTC': 107330, 'USDC': 1.0}),
+                    'prices': new_data.get('prices', {'ETH': 2970, 'WBTC': 116500, 'USDC': 1.0}),
 
-                    # Status
+                    # Status and metadata
                     'success': True,
                     'data_source': new_data.get('data_source', 'comprehensive_accurate_fetcher'),
+                    'data_quality': 'validated',
                     'timestamp': time.time()
                 }
 
                 wallet_data = stable_data
                 last_update = time.time()
+                
                 print(f"✅ Wallet data updated at {time.strftime('%H:%M:%S')}")
-                print(f"📊 Aave HF: {wallet_data['health_factor']:.2f}, Collateral: ${wallet_data['total_collateral_usdc']:.2f}")
+                print(f"💰 Liquid wallet: ${liquid_wallet_usd:.2f}")
+                print(f"🏦 Aave collateral: ${collateral_usd:.2f}")
+                print(f"📊 Total portfolio: ${total_portfolio_usd:.2f}")
+                print(f"❤️ Health factor: {health_factor:.2f}")
+                
             else:
                 print("⚠️ No valid data from fetcher")
+                # Update error state
+                if 'wallet_data' in globals():
+                    wallet_data['last_fetch_error'] = 'No valid data returned'
+                    wallet_data['last_fetch_error_time'] = time.time()
         else:
             print("⚠️ No fetcher available for data update")
 
@@ -126,6 +151,7 @@ def update_wallet_data():
             wallet_data = {}
         wallet_data['last_error'] = str(e)
         wallet_data['last_error_time'] = time.time()
+        wallet_data['success'] = False
 
 def background_data_updater():
     """Background thread to update data every 30 seconds"""
