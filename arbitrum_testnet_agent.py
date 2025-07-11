@@ -387,6 +387,112 @@ class ArbitrumTestnetAgent:
                 if health_data and health_data['health_factor'] < 1.1:
                     print(f"⚠️ Low health factor: {health_data['health_factor']:.3f}")
                     return 0.2
+                
+                # Autonomous DeFi Logic - Monitor collateral and trigger actions
+                current_collateral_usdc = health_data.get('total_collateral_usdc', 0.0)
+                print(f"📈 Current collateral: ${current_collateral_usdc:.2f} USD")
+
+                # Initialize last_collateral_value_usd on first run if it's 0.0
+                if self.last_collateral_value_usd == 0.0:
+                    self.last_collateral_value_usd = current_collateral_usdc
+                    print(f"💰 First run: Setting initial last_collateral_value_usd to ${self.last_collateral_value_usd:.2f}")
+
+                # Check if collateral has increased by $10 or more
+                if current_collateral_usdc >= self.last_collateral_value_usd + 10.0:
+                    print(f"✅ Collateral increased by ${current_collateral_usdc - self.last_collateral_value_usd:.2f} (>= $10 trigger). Initiating actions!")
+
+                    # --- Start DeFi Action Sequence ---
+
+                    # Action 1: Borrow 5 USDC
+                    try:
+                        print("➡️ Action 1: Borrowing 5 USDC...")
+                        tx_hash = self.aave.borrow(
+                            asset_address=self.usdc_address,
+                            amount_in_human_readable=5.0,
+                            interest_rate_mode=2 # Aave V3 Variable Debt Mode
+                        )
+                        if tx_hash:
+                            print(f"✅ Borrowed 5 USDC. Tx: {tx_hash}")
+                        else:
+                            print("❌ Failed to borrow 5 USDC (tx_hash not returned).")
+                    except Exception as e:
+                        print(f"❌ Error borrowing USDC: {e}")
+
+                    # Action 2: Supply 4 USDC to Aave protocol
+                    try:
+                        print("➡️ Action 2: Supplying 4 USDC to Aave...")
+                        # IMPORTANT: Ensure USDC approval for Aave Pool is handled (e.g., in initialize_integrations)
+                        tx_hash = self.aave.supply(
+                            asset_address=self.usdc_address,
+                            amount_in_human_readable=4.0
+                        )
+                        if tx_hash:
+                            print(f"✅ Supplied 4 USDC to Aave. Tx: {tx_hash}")
+                        else:
+                            print("❌ Failed to supply 4 USDC (tx_hash not returned).")
+                    except Exception as e:
+                        print(f"❌ Error supplying USDC: {e}")
+
+                    # Action 3: Swap 2 USDC for WBTC
+                    try:
+                        print("➡️ Action 3: Swapping 2 USDC for WBTC...")
+                        # IMPORTANT: Ensure USDC approval for Uniswap Router is handled
+                        tx_hash = self.uniswap.swap_tokens(
+                            token_in_address=self.usdc_address,
+                            token_out_address=self.wbtc_address,
+                            amount_in_human_readable=2.0,
+                            # Consider adding min_output_amount for slippage protection if your uniswap method supports it
+                        )
+                        if tx_hash:
+                            print(f"✅ Swapped 2 USDC for WBTC. Tx: {tx_hash}")
+                        else:
+                            print("❌ Failed to swap 2 USDC for WBTC (tx_hash not returned).")
+                    except Exception as e:
+                        print(f"❌ Error swapping USDC for WBTC: {e}")
+
+                    # Action 4: Swap 1 USDC for WETH
+                    try:
+                        print("➡️ Action 4: Swapping 1 USDC for WETH...")
+                        # IMPORTANT: Ensure USDC approval for Uniswap Router is handled
+                        tx_hash = self.uniswap.swap_tokens(
+                            token_in_address=self.usdc_address,
+                            token_out_address=self.weth_address,
+                            amount_in_human_readable=1.0,
+                            # Consider adding min_output_amount for slippage protection
+                        )
+                        if tx_hash:
+                            print(f"✅ Swapped 1 USDC for WETH. Tx: {tx_hash}")
+                        else:
+                            print("❌ Failed to swap 1 USDC for WETH (tx_hash not returned).")
+                    except Exception as e:
+                        print(f"❌ Error swapping USDC for WETH: {e}")
+
+                    # Action 5: Swap 1 USDC for DAI
+                    try:
+                        print("➡️ Action 5: Swapping 1 USDC for DAI...")
+                        # IMPORTANT: Ensure USDC approval for Uniswap Router is handled
+                        tx_hash = self.uniswap.swap_tokens(
+                            token_in_address=self.usdc_address,
+                            token_out_address=self.dai_address,
+                            amount_in_human_readable=1.0,
+                            # Consider adding min_output_amount for slippage protection
+                        )
+                        if tx_hash:
+                            print(f"✅ Swapped 1 USDC for DAI. Tx: {tx_hash}")
+                        else:
+                            print("❌ Failed to swap 1 USDC for DAI (tx_hash not returned).")
+                    except Exception as e:
+                        print(f"❌ Error swapping USDC for DAI: {e}")
+
+                    # --- End DeFi Action Sequence ---
+
+                    # IMPORTANT: Update the last_collateral_value_usd *after* actions complete
+                    # This prevents immediate re-triggering on the same collateral level
+                    self.last_collateral_value_usd = current_collateral_usdc
+                    print(f"💰 Updated last_collateral_value_usd to ${self.last_collateral_value_usd:.2f} for next cycle.")
+                    
+                else:
+                    print(f"⏳ Collateral increase less than $10. Current: ${current_collateral_usdc:.2f}, Last: ${self.last_collateral_value_usd:.2f}. Waiting for next cycle.")
             
             # Simple performance metric based on successful operations
             performance = 0.85 + (iteration % 10) * 0.01  # Simulate varying performance
