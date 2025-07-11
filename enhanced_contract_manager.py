@@ -208,6 +208,7 @@ class EnhancedContractManager:
         except Exception as e:
             print(f"❌ Verified WBTC balance call failed: {e}")
             # Return the known accurate balance if all else fails
+            print(f"🔄 Using known accurate WBTC balance: 0.0002")
             return 0.0002
 
     def get_token_balance_robust(self, token_address, wallet_address, retries=3):
