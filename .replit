@@ -557,6 +557,15 @@ args = "sleep 30"
 task = "shell.exec"
 args = "python system_validator.py"
 
+[[workflows.workflow]]
+name = "🔐 Verify Linked Secrets"
+author = 39391053
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python verify_linked_secrets.py"
+
 [[ports]]
 localPort = 5000
 externalPort = 80

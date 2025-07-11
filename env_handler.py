@@ -7,6 +7,19 @@ def setup_environment():
     """Setup environment variables with fallbacks"""
     load_dotenv()
     
+    # Critical secrets that must be linked from Replit Secrets
+    critical_secrets = [
+        'ZAPPER_API_KEY',
+        'ARBITRUM_RPC_URL', 
+        'PRIVATE_KEY',
+        'PROMPT_KEY',
+        'OPTIMIZER_API_KEY',
+        'ARBISCAN_API_KEY',
+        'NETWORK_MODE',
+        'COINMARKETCAP_API_KEY',
+        'PRIVATE_KEY2'
+    ]
+    
     # Force load from Replit secrets if in deployment
     if os.getenv('REPLIT_DEPLOYMENT'):
         try:
@@ -15,20 +28,24 @@ def setup_environment():
                 for line in result.stdout.strip().split('\n'):
                     if '=' in line and line.strip():
                         key, value = line.split('=', 1)
-                        if key in ['NETWORK_MODE', 'PRIVATE_KEY', 'PRIVATE_KEY2', 'COINMARKETCAP_API_KEY', 'PROMPT_KEY']:
+                        if key in critical_secrets:
                             os.environ[key] = value
         except:
             pass
 
-    # Set defaults
+    # Set defaults for missing secrets
     if not os.getenv('NETWORK_MODE'):
         os.environ['NETWORK_MODE'] = 'mainnet'
     
-    if not os.getenv('ARB_RPC_URL'):
+    if not os.getenv('ARBITRUM_RPC_URL'):
         if os.getenv('NETWORK_MODE') == 'mainnet':
-            os.environ['ARB_RPC_URL'] = 'https://arb1.arbitrum.io/rpc'
+            os.environ['ARBITRUM_RPC_URL'] = 'https://arb1.arbitrum.io/rpc'
         else:
-            os.environ['ARB_RPC_URL'] = 'https://sepolia-rollup.arbitrum.io/rpc'
+            os.environ['ARBITRUM_RPC_URL'] = 'https://sepolia-rollup.arbitrum.io/rpc'
+    
+    # Set ARB_RPC_URL as alias for ARBITRUM_RPC_URL
+    if not os.getenv('ARB_RPC_URL'):
+        os.environ['ARB_RPC_URL'] = os.getenv('ARBITRUM_RPC_URL', 'https://arb1.arbitrum.io/rpc')
 
 def get_private_key():
     """Get private key with fallback logic"""
