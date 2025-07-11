@@ -29,6 +29,9 @@ class EnhancedBalanceFetcher:
             "https://arbitrum-one.public.blastapi.io"
         ]
 
+        # Zapper API key (if available)
+        self.zapper_api_key = os.getenv('ZAPPER_API_KEY')
+
         # Token addresses (Arbitrum Mainnet) - Corrected addresses
         self.token_addresses = {
             'USDC': '0xaf88d065eec38faD0AEfF3e253e648a15cEe23dC',
@@ -55,7 +58,7 @@ class EnhancedBalanceFetcher:
         if self.arbiscan_api_key:
             print(f"🔧 Step 1: ARBISCAN API")
             arbiscan_result = self._fetch_arbiscan_balance(token_address, token_symbol)
-            if arbiscan_result['success']:
+            if arbiscan_result['success'] and arbiscan_result['balance'] >= 0:
                 print(f"✅ ARBISCAN SUCCESS: {arbiscan_result['balance']:.6f} {token_symbol}")
                 return {
                     'balance': arbiscan_result['balance'],
@@ -64,13 +67,15 @@ class EnhancedBalanceFetcher:
                     'timestamp': time.time(),
                     'success': True
                 }
+            else:
+                print(f"⚠️ Step 1: ARBISCAN failed or returned negative value")
         else:
             print(f"⚠️ Step 1: ARBISCAN API key not available")
 
         # STEP 2: ARBITRUM RPC (Secondary Priority)
         print(f"\n🔧 Step 2: ARBITRUM RPC")
         rpc_result = self._fetch_rpc_balance(token_address, token_symbol)
-        if rpc_result['success']:
+        if rpc_result['success'] and rpc_result['balance'] >= 0:
             print(f"✅ RPC SUCCESS: {rpc_result['balance']:.6f} {token_symbol}")
             return {
                 'balance': rpc_result['balance'],
@@ -79,6 +84,8 @@ class EnhancedBalanceFetcher:
                 'timestamp': time.time(),
                 'success': True
             }
+        else:
+            print(f"⚠️ Step 2: RPC failed or returned negative value")
 
         # Step 3: ZAPPER_API_KEY
         if self.zapper_api_key:
