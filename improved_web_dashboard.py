@@ -9,7 +9,7 @@ import os
 import time
 import json
 import threading
-from accurate_debank_fetcher import AccurateWalletDataFetcher
+from enhanced_contract_manager import EnhancedContractManager
 
 app = Flask(__name__)
 
@@ -79,39 +79,37 @@ def update_wallet_data():
     global wallet_data, last_update, enhanced_manager
 
     try:
-        # Initialize Enhanced Contract Manager as primary data source
-        if not enhanced_manager:
+        # Force Enhanced Contract Manager reinitialization and optimization
+        if not enhanced_manager or not enhanced_manager.working_rpc:
             from enhanced_contract_manager import EnhancedContractManager
             enhanced_manager = EnhancedContractManager()
-            print("🔧 Initializing Enhanced Contract Manager as primary data source...")
+            print("🔧 Initializing Enhanced Contract Manager for live data...")
             
-            if enhanced_manager.optimize_for_contract_calls():
-                print(f"✅ Enhanced Contract Manager optimized: {enhanced_manager.working_rpc}")
-            else:
-                print("❌ Enhanced Contract Manager optimization failed")
+            # Force optimization to get best RPC
+            if not enhanced_manager.optimize_for_contract_calls():
+                print("⚠️ Primary optimization failed, trying fallback...")
+                enhanced_manager.find_optimal_rpc(force_retest=True)
+            
+            if not enhanced_manager.working_rpc:
+                print("❌ No working RPC found, cannot fetch live data")
                 return
 
         # Get wallet address
         wallet_addr = '0x5B823270e3719CDe8669e5e5326B455EaA8a350b'
 
-        # Token addresses
-        usdc_address = "0xff970a61a04b1ca14834a651bab06d7307796618"
-        wbtc_address = "0x2f2a259a8e58ac855e77f1ca9e0b950da8e53331"
-        weth_address = "0x82af49447d8a07e3bd95bd0d56f35241523fbab1"
-        arb_address = "0x912ce59144191c1204e64559fe83e3a5095c6afd"
-
-        print("🔧 Enhanced Contract Manager: Fetching all token balances...")
+        print(f"🔧 Enhanced Contract Manager: Using RPC {enhanced_manager.working_rpc}")
+        print("🔧 Fetching all token balances with live contract calls...")
         
         # Get all token balances using Enhanced Contract Manager
-        usdc_balance = enhanced_manager.get_token_balance_robust(usdc_address, wallet_addr)
-        wbtc_balance = enhanced_manager.get_token_balance_robust(wbtc_address, wallet_addr)
-        weth_balance = enhanced_manager.get_token_balance_robust(weth_address, wallet_addr)
-        arb_balance = enhanced_manager.get_token_balance_robust(arb_address, wallet_addr)
+        usdc_balance = enhanced_manager.get_token_balance_robust(enhanced_manager.usdc_address, wallet_addr)
+        wbtc_balance = enhanced_manager.get_token_balance_robust(enhanced_manager.wbtc_address, wallet_addr)
+        weth_balance = enhanced_manager.get_token_balance_robust(enhanced_manager.weth_address, wallet_addr)
+        arb_balance = enhanced_manager.get_token_balance_robust(enhanced_manager.arb_address, wallet_addr)
 
         # Get ETH balance directly
         eth_balance = enhanced_manager.w3.eth.get_balance(wallet_addr) / 1e18
 
-        print(f"✅ Enhanced Contract Manager balances:")
+        print(f"✅ Enhanced Contract Manager LIVE balances:")
         print(f"   ETH: {eth_balance:.6f}")
         print(f"   USDC: {usdc_balance:.6f}")
         print(f"   WBTC: {wbtc_balance:.8f}")
@@ -119,10 +117,10 @@ def update_wallet_data():
         print(f"   ARB: {arb_balance:.6f}")
         print(f"   RPC Used: {enhanced_manager.working_rpc}")
 
-        # Get Aave data using Enhanced Contract Manager - LIVE DATA ONLY
+        # Get Aave data using Enhanced Contract Manager - AGGRESSIVE LIVE FETCH
         aave_pool = "0x794a61358d6845594f94dc1db02a252b5b4814ad"
-        print("🔄 Enhanced Contract Manager: Fetching LIVE Aave data...")
-        enhanced_aave_data = enhanced_manager.get_aave_data_robust(wallet_addr, aave_pool)
+        print("🔄 Enhanced Contract Manager: Aggressive LIVE Aave data fetch...")
+        enhanced_aave_data = enhanced_manager.get_aave_data_robust(wallet_addr, aave_pool, retries=5)
 
         if enhanced_aave_data and enhanced_aave_data.get('data_source') == 'live_aave_contract_enhanced':
             print(f"✅ LIVE Enhanced Contract Manager AAVE DATA:")
