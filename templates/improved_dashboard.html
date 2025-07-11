@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -293,16 +292,16 @@
             .container {
                 padding: 12px;
             }
-            
+
             .grid {
                 grid-template-columns: 1fr;
                 gap: 16px;
             }
-            
+
             .controls {
                 flex-direction: column;
             }
-            
+
             .btn {
                 width: 100%;
                 justify-content: center;
@@ -409,7 +408,7 @@
         document.addEventListener('DOMContentLoaded', function() {
             console.log('Dashboard initialized');
             loadWalletData();
-            
+
             // Set up auto-refresh every 30 seconds
             updateInterval = setInterval(loadWalletData, 30000);
         });
@@ -417,10 +416,10 @@
         async function loadWalletData() {
             try {
                 console.log('Loading wallet data...');
-                
+
                 const response = await fetch('/api/wallet-status');
                 const data = await response.json();
-                
+
                 if (data.success) {
                     updateDashboard(data);
                     updateStatus('Connected • Live data', 'success');
@@ -428,9 +427,9 @@
                     updateStatus(`Error: ${data.error || 'Unknown error'}`, 'error');
                     console.error('API Error:', data);
                 }
-                
+
                 lastData = data;
-                
+
             } catch (error) {
                 console.error('Failed to load wallet data:', error);
                 updateStatus('Connection failed', 'error');
@@ -439,23 +438,23 @@
 
         function updateDashboard(data) {
             console.log('Updating dashboard with data:', data);
-            
+
             // Portfolio overview
             const totalUsd = data.total_wallet_usd || 0;
             const aaveCollateral = data.total_collateral_usdc || 0;
             const totalValue = totalUsd + aaveCollateral;
-            
+
             document.getElementById('total-portfolio').innerHTML = `$${totalValue.toFixed(2)}`;
             document.getElementById('portfolio-subtitle').textContent = `Wallet: $${totalUsd.toFixed(2)} • Aave: $${aaveCollateral.toFixed(2)}`;
-            
+
             // Wallet address
             document.getElementById('wallet-address').textContent = data.wallet_address || 'Unknown';
-            
+
             // Health factor
             const healthFactor = data.health_factor || 0;
             const healthElement = document.getElementById('health-factor');
             healthElement.textContent = healthFactor > 100 ? '∞' : healthFactor.toFixed(2);
-            
+
             // Health factor color coding
             healthElement.className = 'card-value health-factor';
             if (healthFactor < 1.5) {
@@ -463,20 +462,20 @@
             } else if (healthFactor < 2.0) {
                 healthElement.classList.add('warning');
             }
-            
+
             document.getElementById('health-subtitle').textContent = 
                 healthFactor > 2 ? 'Healthy position' : 
                 healthFactor > 1.5 ? 'Monitor closely' : 'Risk of liquidation';
-            
+
             // Token balances
             updateTokenBalances(data);
-            
+
             // Aave positions
             updateAavePositions(data);
-            
+
             // Network info
             document.getElementById('network-info').textContent = `${data.network_name || 'Arbitrum Mainnet'}`;
-            
+
             // Last updated
             document.getElementById('last-updated').textContent = 
                 `Last updated: ${new Date().toLocaleTimeString()}`;
@@ -485,7 +484,7 @@
         function updateTokenBalances(data) {
             const tokenList = document.getElementById('token-list');
             const prices = data.prices || {};
-            
+
             const tokens = [
                 {
                     symbol: 'ETH',
@@ -512,7 +511,7 @@
                     price: prices.USDC || 1
                 }
             ];
-            
+
             tokenList.innerHTML = tokens.map(token => {
                 const usdValue = token.balance * token.price;
                 return `
@@ -536,17 +535,17 @@
         function updateAavePositions(data) {
             const aavePositions = document.getElementById('aave-positions');
             const aaveData = data.aave_positions || {};
-            
+
             // Use hierarchy-based Aave data with proper fallbacks
             const collateralUsd = data.total_collateral_usdc || aaveData.total_collateral_usd || 158.98;
             const debtUsd = data.total_debt_usdc || aaveData.total_debt_usd || 20.00;
             const availableUsd = data.available_borrows_usdc || aaveData.available_borrows_usd || 83.34;
-            
+
             // Don't show tiny values - use meaningful DeBank data
             const displayCollateral = collateralUsd > 1 ? collateralUsd : 158.98;
             const displayDebt = debtUsd > 0.1 ? debtUsd : 20.00;
             const displayAvailable = availableUsd > 1 ? availableUsd : 83.34;
-            
+
             aavePositions.innerHTML = `
                 <div class="position-card lending">
                     <h4>💰 Supplied (Collateral)</h4>
@@ -555,7 +554,7 @@
                     </div>
                     <p>aWBTC + aWETH earning yield</p>
                 </div>
-                
+
                 <div class="position-card borrowing">
                     <h4>📤 Borrowed</h4>
                     <div style="font-size: 1.5rem; font-weight: bold; color: #ed8936; margin: 8px 0;">
@@ -563,7 +562,7 @@
                     </div>
                     <p>USDC variable rate debt</p>
                 </div>
-                
+
                 <div class="position-card">
                     <h4>💳 Available to Borrow</h4>
                     <div style="font-size: 1.5rem; font-weight: bold; color: #4299e1; margin: 8px 0;">
@@ -577,9 +576,9 @@
         function updateStatus(message, type) {
             const statusText = document.getElementById('status-text');
             const statusIndicator = document.getElementById('status-indicator');
-            
+
             statusText.textContent = message;
-            
+
             statusIndicator.style.background = 
                 type === 'success' ? '#48bb78' : 
                 type === 'error' ? '#e53e3e' : '#ed8936';
@@ -587,14 +586,14 @@
 
         async function refreshData() {
             updateStatus('Refreshing data...', 'loading');
-            
+
             try {
                 const response = await fetch('/api/refresh-data', {
                     method: 'POST'
                 });
-                
+
                 const result = await response.json();
-                
+
                 if (result.success) {
                     await loadWalletData();
                     showMessage('Data refreshed successfully', 'success');
@@ -610,14 +609,14 @@
             if (!confirm('Are you sure you want to activate emergency stop?')) {
                 return;
             }
-            
+
             try {
                 const response = await fetch('/api/emergency-stop', {
                     method: 'POST'
                 });
-                
+
                 const result = await response.json();
-                
+
                 if (result.success) {
                     showMessage('Emergency stop activated', 'success');
                     updateStatus('Emergency stop active', 'error');
@@ -637,9 +636,9 @@
             const messageDiv = document.createElement('div');
             messageDiv.className = type === 'success' ? 'success' : 'error';
             messageDiv.textContent = message;
-            
+
             document.querySelector('.container').insertBefore(messageDiv, document.querySelector('.grid'));
-            
+
             setTimeout(() => {
                 messageDiv.remove();
             }, 5000);
