@@ -249,8 +249,15 @@ class EnhancedContractManager:
     def get_aave_data_robust(self, wallet_address, aave_pool_address, retries=5):
         """Get Aave data with robust error handling and RPC failover"""
         
-        # Extended RPC list for more aggressive attempts
-        extended_rpcs = self.arbitrum_mainnet_rpcs + [
+        # Extended RPC list for more aggressive attempts - prioritize working endpoints
+        extended_rpcs = [
+            "https://arbitrum-one.public.blastapi.io",  # Often reliable
+            "https://arb1.arbitrum.io/rpc",             # Official endpoint
+            "https://arbitrum-one.publicnode.com",       # Good performance
+            "https://arbitrum.blockpi.network/v1/rpc/public",
+            "https://rpc.ankr.com/arbitrum",
+            "https://endpoints.omniatech.io/v1/arbitrum/one/public",
+            "https://arbitrum.llamarpc.com",
             "https://arbitrum-mainnet.public.blastapi.io",
             "https://1rpc.io/arb",
             "https://arbitrum.api.onfinality.io/public",

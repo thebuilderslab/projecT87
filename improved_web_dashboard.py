@@ -23,7 +23,7 @@ def initialize_system():
     global enhanced_manager, wallet_data
 
     try:
-        print("🚀 Initializing dashboard with Enhanced Contract Manager only...")
+        print("🚀 Initializing dashboard with Enhanced Contract Manager as primary data source...")
 
         # Force mainnet mode
         os.environ['NETWORK_MODE'] = 'mainnet'
@@ -32,23 +32,35 @@ def initialize_system():
         from enhanced_contract_manager import EnhancedContractManager
         enhanced_manager = EnhancedContractManager()
         
-        print("🔧 Optimizing Enhanced Contract Manager for live data...")
-        if enhanced_manager.optimize_for_contract_calls():
-            print(f"✅ Enhanced Contract Manager ready")
-            print(f"   Optimal RPC: {enhanced_manager.working_rpc}")
-            print(f"   Chain ID: 42161")
-            
-            # Initial data fetch
+        print("🔧 Optimizing Enhanced Contract Manager for maximum reliability...")
+        
+        # Try optimization multiple times to ensure we get the best RPC
+        optimization_success = False
+        for attempt in range(3):
+            print(f"🔄 Optimization attempt {attempt + 1}/3...")
+            if enhanced_manager.optimize_for_contract_calls():
+                optimization_success = True
+                print(f"✅ Enhanced Contract Manager optimized successfully")
+                print(f"   Optimal RPC: {enhanced_manager.working_rpc}")
+                print(f"   Performance score: {enhanced_manager.rpc_performance[enhanced_manager.working_rpc]['score']:.2f}")
+                print(f"   Chain ID: 42161")
+                break
+            else:
+                print(f"⚠️ Optimization attempt {attempt + 1} failed, retrying...")
+                time.sleep(2)
+        
+        if optimization_success:
+            # Initial data fetch to verify everything works
+            print("🧪 Testing initial data fetch...")
             update_wallet_data()
-            
-            print("✅ Dashboard system initialized with live data only")
+            print("✅ Dashboard system initialized with Enhanced Contract Manager")
         else:
-            print("❌ Enhanced Contract Manager optimization failed - no fallback data will be provided")
-            enhanced_manager = None
+            print("❌ Enhanced Contract Manager optimization failed after all attempts")
+            # Still keep the manager for potential recovery
             wallet_data = {
                 'success': False,
-                'error': 'Enhanced Contract Manager failed to initialize',
-                'note': 'No fallback data available - live data only'
+                'error': 'Enhanced Contract Manager optimization failed',
+                'note': 'Will attempt to recover during data updates'
             }
                 
     except Exception as e:
@@ -57,7 +69,7 @@ def initialize_system():
         wallet_data = {
             'success': False,
             'error': str(e),
-            'note': 'System initialization failed - no fallback data available'
+            'note': 'System initialization failed - Enhanced Contract Manager unavailable'
         }
 
 
@@ -109,7 +121,7 @@ def update_wallet_data():
 
         # Get Aave data using Enhanced Contract Manager - LIVE DATA ONLY
         aave_pool = "0x794a61358d6845594f94dc1db02a252b5b4814ad"
-        print("🔄 FORCING LIVE AAVE DATA FETCH - No hardcoded fallbacks")
+        print("🔄 Enhanced Contract Manager: Fetching LIVE Aave data...")
         enhanced_aave_data = enhanced_manager.get_aave_data_robust(wallet_addr, aave_pool)
 
         if enhanced_aave_data and enhanced_aave_data.get('data_source') == 'live_aave_contract_enhanced':
@@ -117,7 +129,9 @@ def update_wallet_data():
             print(f"   Health Factor: {enhanced_aave_data['health_factor']:.2f}")
             print(f"   Collateral: ${enhanced_aave_data['total_collateral_usd']:.2f}")
             print(f"   Debt: ${enhanced_aave_data['total_debt_usd']:.2f}")
-            print(f"   🔴 DATA SOURCE: {enhanced_aave_data['data_source']} (LIVE)")
+            print(f"   Available Borrows: ${enhanced_aave_data.get('available_borrows_usd', 0):.2f}")
+            print(f"   🟢 DATA SOURCE: {enhanced_aave_data['data_source']} (LIVE)")
+            print(f"   🌐 RPC: {enhanced_manager.working_rpc}")
 
             aave_data = {
                 'health_factor': enhanced_aave_data['health_factor'],
@@ -125,10 +139,11 @@ def update_wallet_data():
                 'total_debt_usd': enhanced_aave_data['total_debt_usd'],
                 'available_borrows_usd': enhanced_aave_data.get('available_borrows_usd', 0),
                 'data_source': 'live_enhanced_contract_manager',
-                'note': 'LIVE data from Enhanced Contract Manager - NO FALLBACKS',
+                'note': 'LIVE data from Enhanced Contract Manager',
                 'rpc_used': enhanced_manager.working_rpc,
                 'timestamp': enhanced_aave_data['timestamp'],
-                'method': enhanced_aave_data.get('method', 'unknown')
+                'method': enhanced_aave_data.get('method', 'enhanced_aggressive_fetch'),
+                'attempt': enhanced_aave_data.get('attempt', 1)
             }
             
             health_factor = enhanced_aave_data['health_factor']
@@ -137,22 +152,68 @@ def update_wallet_data():
             available_borrows_usd = enhanced_aave_data.get('available_borrows_usd', 0)
             
         else:
-            print("❌ ALL LIVE AAVE DATA SOURCES FAILED - DISPLAYING ZERO VALUES")
-            print("🔴 NO HARDCODED DATA WILL BE USED")
-            aave_data = {
-                'health_factor': 0,
-                'total_collateral_usd': 0,
-                'total_debt_usd': 0,
-                'available_borrows_usd': 0,
-                'data_source': 'all_live_sources_failed',
-                'note': 'ALL LIVE AAVE DATA SOURCES FAILED - NO HARDCODED FALLBACKS',
-                'error': 'No live data available from any RPC endpoint',
-                'rpc_attempts': len(enhanced_manager.arbitrum_mainnet_rpcs) if enhanced_manager else 0
-            }
-            health_factor = 0
-            collateral_usd = 0
-            debt_usd = 0
-            available_borrows_usd = 0
+            print("⚠️ Enhanced Contract Manager: Live data fetch unsuccessful, attempting failover...")
+            # Force RPC re-optimization and retry once more
+            if enhanced_manager.find_optimal_rpc(force_retest=True):
+                print(f"🔄 Retrying with optimized RPC: {enhanced_manager.working_rpc}")
+                enhanced_aave_data = enhanced_manager.get_aave_data_robust(wallet_addr, aave_pool, retries=3)
+                
+                if enhanced_aave_data and enhanced_aave_data.get('data_source') == 'live_aave_contract_enhanced':
+                    print(f"✅ RETRY SUCCESS: Enhanced Contract Manager AAVE DATA:")
+                    print(f"   Health Factor: {enhanced_aave_data['health_factor']:.2f}")
+                    print(f"   Collateral: ${enhanced_aave_data['total_collateral_usd']:.2f}")
+                    print(f"   Debt: ${enhanced_aave_data['total_debt_usd']:.2f}")
+                    print(f"   🟢 DATA SOURCE: {enhanced_aave_data['data_source']} (LIVE RETRY)")
+                    
+                    aave_data = {
+                        'health_factor': enhanced_aave_data['health_factor'],
+                        'total_collateral_usd': enhanced_aave_data['total_collateral_usd'],
+                        'total_debt_usd': enhanced_aave_data['total_debt_usd'],
+                        'available_borrows_usd': enhanced_aave_data.get('available_borrows_usd', 0),
+                        'data_source': 'live_enhanced_contract_manager_retry',
+                        'note': 'LIVE data from Enhanced Contract Manager (retry successful)',
+                        'rpc_used': enhanced_manager.working_rpc,
+                        'timestamp': enhanced_aave_data['timestamp'],
+                        'method': enhanced_aave_data.get('method', 'enhanced_aggressive_fetch'),
+                        'attempt': enhanced_aave_data.get('attempt', 1)
+                    }
+                    
+                    health_factor = enhanced_aave_data['health_factor']
+                    collateral_usd = enhanced_aave_data['total_collateral_usd']
+                    debt_usd = enhanced_aave_data['total_debt_usd']
+                    available_borrows_usd = enhanced_aave_data.get('available_borrows_usd', 0)
+                else:
+                    print("❌ Enhanced Contract Manager: All live data attempts failed")
+                    aave_data = {
+                        'health_factor': 0,
+                        'total_collateral_usd': 0,
+                        'total_debt_usd': 0,
+                        'available_borrows_usd': 0,
+                        'data_source': 'enhanced_contract_manager_failed',
+                        'note': 'Enhanced Contract Manager failed to retrieve live data',
+                        'error': 'All RPC endpoints failed',
+                        'rpc_attempts': len(enhanced_manager.arbitrum_mainnet_rpcs) if enhanced_manager else 0,
+                        'last_working_rpc': enhanced_manager.working_rpc if enhanced_manager else 'none'
+                    }
+                    health_factor = 0
+                    collateral_usd = 0
+                    debt_usd = 0
+                    available_borrows_usd = 0
+            else:
+                print("❌ Enhanced Contract Manager: RPC optimization failed")
+                aave_data = {
+                    'health_factor': 0,
+                    'total_collateral_usd': 0,
+                    'total_debt_usd': 0,
+                    'available_borrows_usd': 0,
+                    'data_source': 'enhanced_contract_manager_no_rpc',
+                    'note': 'No working RPC endpoints available',
+                    'error': 'RPC optimization failed'
+                }
+                health_factor = 0
+                collateral_usd = 0
+                debt_usd = 0
+                available_borrows_usd = 0
 
         # Get live prices (fallback to CoinGecko if CMC fails)
         try:
@@ -310,13 +371,35 @@ def update_wallet_data():
         wallet_data['success'] = False
 
 def background_data_updater():
-    """Background thread to update data every 30 seconds"""
+    """Background thread to update data every 30 seconds with RPC health monitoring"""
+    global enhanced_manager
+    
+    update_count = 0
     while True:
         try:
             time.sleep(30)  # Update every 30 seconds
+            update_count += 1
+            
+            # Every 10 updates (5 minutes), re-optimize RPC for better performance
+            if update_count % 10 == 0 and enhanced_manager:
+                print("🔄 Periodic RPC optimization...")
+                enhanced_manager.find_optimal_rpc(force_retest=True)
+                print(f"✅ RPC re-optimized: {enhanced_manager.working_rpc}")
+            
             update_wallet_data()
+            
         except Exception as e:
             print(f"❌ Background update error: {e}")
+            
+            # If Enhanced Contract Manager fails, try to reinitialize it
+            if enhanced_manager and "Enhanced Contract Manager" in str(e):
+                print("🔄 Attempting Enhanced Contract Manager recovery...")
+                try:
+                    enhanced_manager.optimize_for_contract_calls()
+                    print(f"✅ Enhanced Contract Manager recovered: {enhanced_manager.working_rpc}")
+                except Exception as recovery_error:
+                    print(f"❌ Recovery failed: {recovery_error}")
+            
             time.sleep(60)  # Wait longer on error
 
 # Start background updater
