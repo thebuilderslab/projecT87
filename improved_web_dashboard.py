@@ -140,6 +140,80 @@ def update_wallet_data():
                 liquid_wallet_usd = new_data.get('total_wallet_usd', 0)
                 total_portfolio_usd = liquid_wallet_usd + collateral_usd
 
+                # Addresses
+                usdc_address = "0xff970a61a04b1ca14834a651bab06d7307796618"
+                wbtc_address = "0x2f2a259a8e58ac855e77f1ca9e0b950da8e53331"
+                weth_address = "0x82af49447d8a07e3bd95bd0d56f35241523fbab1"
+                arb_address = "0x912ce59144191c1204e64559fe83e3a5095c6afd"
+
+                # Token balances with enhanced contract manager
+                try:
+                    from enhanced_contract_manager import EnhancedContractManager
+                    enhanced_manager = EnhancedContractManager()
+
+                    print("🔧 Using Enhanced Contract Manager for token balances...")
+                    usdc_balance = enhanced_manager.get_token_balance_robust(usdc_address, new_data.get('wallet_address', '0x5B823270e3719CDe8669e5e5326B455EaA8a350b'))
+                    wbtc_balance = enhanced_manager.get_token_balance_robust(wbtc_address, new_data.get('wallet_address', '0x5B823270e3719CDe8669e5e5326B455EaA8a350b'))
+                    weth_balance = enhanced_manager.get_token_balance_robust(weth_address, new_data.get('wallet_address', '0x5B823270e3719CDe8669e5e5326B455EaA8a350b'))
+                    arb_balance = enhanced_manager.get_token_balance_robust(arb_address, new_data.get('wallet_address', '0x5B823270e3719CDe8669e5e5326B455EaA8a350b'))
+
+                    print(f"✅ Enhanced token balances retrieved")
+
+                except Exception as e:
+                    print(f"⚠️ Enhanced contract manager token fetch failed: {e}")
+                    # Fallback to enhanced balance fetcher
+                    try:
+                        from enhanced_balance_fetcher import EnhancedBalanceFetcher
+                        balance_fetcher = EnhancedBalanceFetcher()
+
+                        usdc_result = balance_fetcher.get_token_balance_comprehensive(usdc_address, "USDC")
+                        wbtc_result = balance_fetcher.get_token_balance_comprehensive(wbtc_address, "WBTC") 
+                        weth_result = balance_fetcher.get_token_balance_comprehensive(weth_address, "WETH")
+                        arb_result = balance_fetcher.get_token_balance_comprehensive(arb_address, "ARB")
+
+                        usdc_balance = usdc_result['balance'] if usdc_result['success'] else 0.0
+                        wbtc_balance = wbtc_result['balance'] if wbtc_result['success'] else 0.0
+                        weth_balance = weth_result['balance'] if weth_result['success'] else 0.0
+                        arb_balance = arb_result['balance'] if arb_result['success'] else 0.0
+
+                    except Exception as e:
+                        print(f"⚠️ All balance fetchers failed: {e}")
+                        usdc_balance = wbtc_balance = weth_balance = arb_balance = 0.0
+
+                # Try enhanced contract manager first
+                try:
+                    from enhanced_contract_manager import EnhancedContractManager
+                    enhanced_manager = EnhancedContractManager()
+                    aave_pool = "0x794a61358d6845594f94dc1db02a252b5b4814ad"
+
+                    print("🔧 Using Enhanced Contract Manager for Aave data...")
+                    enhanced_aave_data = enhanced_manager.get_aave_data_robust(new_data.get('wallet_address', '0x5B823270e3719CDe8669e5e5326B455EaA8a350b'), aave_pool)
+
+                    if enhanced_aave_data:
+                        print(f"✅ Enhanced Contract Manager SUCCESS:")
+                        print(f"   Health Factor: {enhanced_aave_data['health_factor']:.2f}")
+                        print(f"   Collateral: ${enhanced_aave_data['total_collateral_usd']:.2f}")
+                        print(f"   Debt: ${enhanced_aave_data['total_debt_usd']:.2f}")
+
+                        aave_data = {
+                            'health_factor': enhanced_aave_data['health_factor'],
+                            'total_collateral_usd': enhanced_aave_data['total_collateral_usd'],
+                            'total_debt_usd': enhanced_aave_data['total_debt_usd'],
+                            'available_borrows_usd': enhanced_aave_data.get('available_borrows_usd', 0),
+                            'data_source': 'enhanced_contract_manager',
+                            'note': 'Live data from Enhanced Contract Manager'
+                        }
+                    else:
+                        print("⚠️ Enhanced Contract Manager failed, falling back to hierarchy...")
+                        # Try enhanced Aave data fetch with hierarchy
+                        aave_pool = "0x794a61358d6845594f94dc1db02a252b5b4814ad"
+                        aave_data = get_enhanced_aave_data(agent)
+                except Exception as e:
+                    print(f"⚠️ Enhanced Contract Manager error: {e}")
+                    # Try enhanced Aave data fetch with hierarchy
+                    aave_pool = "0x794a61358d6845594f94dc1db02a252b5b4814ad"
+                    aave_data = get_enhanced_aave_data(agent)
+
                 stable_data = {
                     'wallet_address': new_data.get('wallet_address', '0x5B823270e3719CDe8669e5e5326B455EaA8a350b'),
                     'network_name': 'Arbitrum Mainnet',
@@ -148,10 +222,10 @@ def update_wallet_data():
 
                     # Token balances - use actual detected balances
                     'eth_balance': new_data.get('eth_balance', 0),
-                    'wbtc_balance': new_data.get('wbtc_balance', 0),
-                    'weth_balance': new_data.get('weth_balance', 0),
-                    'usdc_balance': new_data.get('usdc_balance', 0),
-                    'arb_balance': new_data.get('arb_balance', 0),
+                    'wbtc_balance': wbtc_balance,
+                    'weth_balance': weth_balance,
+                    'usdc_balance': usdc_balance,
+                    'arb_balance': arb_balance,
 
                     # Portfolio totals
                     'total_portfolio_usd': total_portfolio_usd,
