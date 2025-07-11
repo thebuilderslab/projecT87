@@ -246,63 +246,81 @@ class EnhancedContractManager:
         print(f"❌ All attempts failed for token balance")
         return 0.0
     
-    def get_aave_data_robust(self, wallet_address, aave_pool_address):
-        """Get Aave data with robust error handling"""
+    def get_aave_data_robust(self, wallet_address, aave_pool_address, retries=3):
+        """Get Aave data with robust error handling and RPC failover"""
         
-        try:
-            if not self.w3 or not self.w3.is_connected():
-                if not self.find_optimal_rpc():
-                    return None
-            
-            # Aave V3 Pool ABI (getUserAccountData function)
-            pool_abi = [{
-                "inputs": [{"internalType": "address", "name": "user", "type": "address"}],
-                "name": "getUserAccountData",
-                "outputs": [
-                    {"internalType": "uint256", "name": "totalCollateralBase", "type": "uint256"},
-                    {"internalType": "uint256", "name": "totalDebtBase", "type": "uint256"},
-                    {"internalType": "uint256", "name": "availableBorrowsBase", "type": "uint256"},
-                    {"internalType": "uint256", "name": "currentLiquidationThreshold", "type": "uint256"},
-                    {"internalType": "uint256", "name": "ltv", "type": "uint256"},
-                    {"internalType": "uint256", "name": "healthFactor", "type": "uint256"}
-                ],
-                "stateMutability": "view",
-                "type": "function"
-            }]
-            
-            pool_contract = self.w3.eth.contract(
-                address=Web3.to_checksum_address(aave_pool_address),
-                abi=pool_abi
-            )
-            
-            # Get user account data
-            account_data = pool_contract.functions.getUserAccountData(wallet_address).call()
-            
-            # Parse the results (Aave returns values in base units)
-            total_collateral_base = account_data[0] / 1e8  # Base currency (USD)
-            total_debt_base = account_data[1] / 1e8
-            available_borrows_base = account_data[2] / 1e8
-            health_factor = account_data[5] / 1e18 if account_data[5] > 0 else float('inf')
-            
-            aave_data = {
-                'health_factor': health_factor,
-                'total_collateral_usd': total_collateral_base,
-                'total_debt_usd': total_debt_base,
-                'available_borrows_usd': available_borrows_base,
-                'data_source': 'direct_aave_contract',
-                'timestamp': time.time()
-            }
-            
-            print(f"✅ Aave data retrieved successfully")
-            print(f"   Health Factor: {health_factor:.2f}")
-            print(f"   Collateral: ${total_collateral_base:.2f}")
-            print(f"   Debt: ${total_debt_base:.2f}")
-            
-            return aave_data
-            
-        except Exception as e:
-            print(f"❌ Aave data fetch failed: {e}")
-            return None
+        for attempt in range(retries):
+            try:
+                if not self.w3 or not self.w3.is_connected():
+                    print(f"🔄 Attempt {attempt + 1}: RPC not connected, finding optimal endpoint...")
+                    if not self.find_optimal_rpc():
+                        continue
+                
+                # Aave V3 Pool ABI (getUserAccountData function)
+                pool_abi = [{
+                    "inputs": [{"internalType": "address", "name": "user", "type": "address"}],
+                    "name": "getUserAccountData",
+                    "outputs": [
+                        {"internalType": "uint256", "name": "totalCollateralBase", "type": "uint256"},
+                        {"internalType": "uint256", "name": "totalDebtBase", "type": "uint256"},
+                        {"internalType": "uint256", "name": "availableBorrowsBase", "type": "uint256"},
+                        {"internalType": "uint256", "name": "currentLiquidationThreshold", "type": "uint256"},
+                        {"internalType": "uint256", "name": "ltv", "type": "uint256"},
+                        {"internalType": "uint256", "name": "healthFactor", "type": "uint256"}
+                    ],
+                    "stateMutability": "view",
+                    "type": "function"
+                }]
+                
+                pool_contract = self.w3.eth.contract(
+                    address=Web3.to_checksum_address(aave_pool_address),
+                    abi=pool_abi
+                )
+                
+                # Get user account data with timeout
+                print(f"🔄 Attempt {attempt + 1}: Calling Aave contract via {self.working_rpc}")
+                account_data = pool_contract.functions.getUserAccountData(wallet_address).call()
+                
+                # Parse the results (Aave returns values in base units)
+                total_collateral_base = account_data[0] / 1e8  # Base currency (USD)
+                total_debt_base = account_data[1] / 1e8
+                available_borrows_base = account_data[2] / 1e8
+                health_factor = account_data[5] / 1e18 if account_data[5] > 0 else float('inf')
+                
+                # Validate data makes sense
+                if health_factor == float('inf') and total_collateral_base == 0 and total_debt_base == 0:
+                    print("⚠️ Aave data shows no positions - this might be expected")
+                
+                aave_data = {
+                    'health_factor': health_factor,
+                    'total_collateral_usd': total_collateral_base,
+                    'total_debt_usd': total_debt_base,
+                    'available_borrows_usd': available_borrows_base,
+                    'data_source': 'direct_aave_contract_live',
+                    'rpc_used': self.working_rpc,
+                    'timestamp': time.time(),
+                    'attempt': attempt + 1
+                }
+                
+                print(f"✅ Live Aave data retrieved successfully on attempt {attempt + 1}")
+                print(f"   Health Factor: {health_factor:.2f}")
+                print(f"   Collateral: ${total_collateral_base:.2f}")
+                print(f"   Debt: ${total_debt_base:.2f}")
+                print(f"   Available Borrows: ${available_borrows_base:.2f}")
+                print(f"   RPC: {self.working_rpc}")
+                
+                return aave_data
+                
+            except Exception as e:
+                print(f"❌ Attempt {attempt + 1} Aave data fetch failed: {e}")
+                
+                if attempt < retries - 1:
+                    print("🔄 Trying different RPC endpoint...")
+                    self.find_optimal_rpc(force_retest=True)
+                    time.sleep(1)
+        
+        print(f"❌ All {retries} attempts failed for Aave data")
+        return None
     
     def optimize_for_contract_calls(self):
         """Optimize RPC selection specifically for contract interactions"""
