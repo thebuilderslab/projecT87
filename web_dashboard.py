@@ -311,10 +311,10 @@ def wallet_status():
             'data_source': 'fallback'
         }
 
-        # PRIORITY 1: Try accurate DeBank fetcher first
+        # PRIORITY 1: Try accurate wallet data fetcher first
         try:
             if active_agent and hasattr(active_agent, 'w3'):
-                print(f"🔄 Trying accurate DeBank fetcher...")
+                print(f"🔄 Trying accurate wallet data fetcher...")
                 from accurate_debank_fetcher import AccurateWalletDataFetcher
                 
                 fetcher = AccurateWalletDataFetcher(active_agent.w3, active_agent.address)
@@ -335,14 +335,14 @@ def wallet_status():
                         'total_collateral_usdc': accurate_data['total_collateral_usdc'],
                         'total_debt_usdc': accurate_data['total_debt_usdc'],
                         'available_borrows_usdc': accurate_data['available_borrows_usdc'],
-                        'data_source': 'accurate_debank_fetcher'
+                        'data_source': 'arbitrum_rpc_arbiscan_fetcher'
                     })
-                    print(f"✅ Accurate DeBank data: HF {accurate_data['health_factor']:.4f}")
+                    print(f"✅ Accurate wallet data: HF {accurate_data['health_factor']:.4f}")
                     print(f"   Collateral: ${accurate_data['total_collateral_usdc']:.2f}")
                     print(f"   Token balances: ETH {accurate_data['eth_balance']:.6f}, WBTC {accurate_data['wbtc_balance']:.8f}")
 
         except Exception as e:
-            print(f"⚠️ Accurate DeBank fetcher failed: {e}")
+            print(f"⚠️ Accurate wallet data fetcher failed: {e}")
 
         if active_agent:
             # Safely get wallet address

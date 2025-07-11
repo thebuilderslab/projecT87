@@ -18,7 +18,8 @@ class EnhancedBalanceFetcher:
         # API Keys and URLs
         self.arbiscan_api_key = os.getenv('ARBISCAN_API_KEY')
         self.arbitrum_rpc_url = os.getenv('ARBITRUM_RPC_URL', 'https://arb1.arbitrum.io/rpc')
-        self.zapper_api_key = os.getenv('ZAPPER_API_KEY')
+        
+        # Primary data source priority: ARBISCAN_API_KEY → ARBITRUM_RPC_URL → Fallback
 
         # Alternative RPC endpoints for fallback
         self.alternative_rpcs = [
