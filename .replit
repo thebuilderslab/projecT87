@@ -16,7 +16,7 @@ run = ["sh", "-c", "python mainnet_launcher.py"]
 deploymentTarget = "cloudrun"
 
 [workflows]
-runButton = "🎯 Live Data Dashboard"
+runButton = "🚀 Enhanced Live Data Dashboard"
 
 [[workflows.workflow]]
 name = "Run"
@@ -570,6 +570,19 @@ args = "python verify_linked_secrets.py"
 name = "🎯 Live Data Dashboard"
 author = 39391053
 mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python improved_web_dashboard.py"
+
+[[workflows.workflow]]
+name = "🚀 Enhanced Live Data Dashboard"
+author = 39391053
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python enhanced_contract_manager.py"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
