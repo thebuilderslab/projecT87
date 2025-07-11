@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Improved Web Dashboard - DeBank Style Interface
+Improved Web Dashboard - Professional DeFi Interface
 Uses accurate data fetching and displays real wallet information
 """
 
@@ -47,11 +47,11 @@ def initialize_system():
         wallet_data = {
             'wallet_address': '0x5B823270e3719CDe8669e5e5326B455EaA8a350b',
             'network_name': 'Arbitrum Mainnet',
-            'eth_balance': 0.001935,
-            'wbtc_balance': 0.0002,
-            'health_factor': 6.20,
-            'total_collateral_usdc': 157.05,
-            'total_debt_usdc': 20.00,
+            'eth_balance': 0.0,
+            'wbtc_balance': 0.0,
+            'health_factor': 0.0,
+            'total_collateral_usdc': 0.0,
+            'total_debt_usdc': 0.0,
             'success': False,
             'error': str(e)
         }
@@ -331,7 +331,7 @@ if __name__ == '__main__':
     setup_app()
 
     print("🌐 Starting Improved DeFi Dashboard")
-    print("📊 DeBank-style interface with accurate data")
+    print("📊 Professional DeFi interface with multi-source data")
     print("🔗 Access via your Replit webview URL")
 
     app.run(host='0.0.0.0', port=5000, debug=False, threaded=True)

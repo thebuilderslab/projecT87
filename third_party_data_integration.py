@@ -178,28 +178,17 @@ class ThirdPartyDataProvider:
             return None
 
     def get_reliable_aave_data(self, wallet_address: str) -> Optional[Dict]:
-        """Get Aave data with fallback sources - prioritizing Zapper screenshot data"""
+        """Get Aave data with fallback sources"""
         
-        # Priority 1: Use current actual DeBank data
-        print("🔄 Using current actual DeBank data...")
-        debank_current_data = {
-            'health_factor': 6.44,  # ($158.98 * 0.81) / $20.00
-            'total_collateral_usd': 158.98,  # Aave collateral only
-            'total_debt_usd': 20.00,  # USDC debt only  
-            'available_borrows_usd': 83.34,  # Available to borrow
-            'source': 'debank_current_actual',
-            'wallet_holdings': {
-                'wbtc_wallet': 21.74,  # 0.0002 WBTC
-                'eth_wallet': 4.86     # 0.001935 ETH
-            },
-            'aave_positions': {
-                'awbtc_supplied': 134.84,  # 0.001241 WBTC
-                'aweth_supplied': 24.14,   # 0.000618 WETH
-                'usdc_borrowed': 20.00     # 20.0054 USDC
-            }
-        }
-        print(f"✅ DeBank Current Data: Health Factor {debank_current_data['health_factor']:.4f}")
-        return debank_current_data
+        # Try live contract data first
+        try:
+            print("🔄 Fetching live Aave contract data...")
+            # Implementation for live Aave data would go here
+            # For now, return None to continue to other methods
+            return None
+        except Exception as e:
+            print(f"⚠️ Live Aave data fetch failed: {e}")
+            return None
         
         # Fallback methods kept for reference but screenshot data is most accurate
         if self.arbiscan_api_key:
