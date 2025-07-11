@@ -146,7 +146,7 @@ class AccurateWalletDataFetcher:
             try:
                 from web3 import Web3
                 alt_w3 = Web3(Web3.HTTPProvider(rpc_url, request_kwargs={'timeout': 10}))
-                
+
                 if not alt_w3.is_connected():
                     continue
 
@@ -448,9 +448,14 @@ class AccurateWalletDataFetcher:
                     }
 
         except Exception as e:
-            print(f"⚠️ Live Data Provider fetch failed: {e}")
-
-        return None
+            error_msg = str(e)
+            if "execution reverted" in error_msg:
+                print(f"⚠️ Live Data Provider: Contract execution reverted (likely no Aave position)")
+            elif "could not transact" in error_msg.lower():
+                print(f"⚠️ Live Data Provider: RPC connection issue")
+            else:
+                print(f"⚠️ Live Data Provider fetch failed: {e}")
+            return None
 
     def get_comprehensive_wallet_data(self) -> Dict[str, Any]:
         """Get complete wallet data with accurate values"""
@@ -681,8 +686,7 @@ class AccurateWalletDataFetcher:
             print(f"🔄 Step 4: Trying ZAPPER_API_KEY fallback...")
 
             zapper_api_key = os.getenv('ZAPPER_API_KEY')
-            if zapper_api_key:
-                # Try Zapper API for portfolio data
+            if zapper_api_key:                # Try Zapper API for portfolio data
                 from third_party_data_integration import ThirdPartyDataProvider
                 provider = ThirdPartyDataProvider()
                 zapper_data = provider.get_zapper_portfolio(self.wallet_address)

@@ -14,6 +14,7 @@ class ThirdPartyDataProvider:
     def __init__(self):
         self.arbiscan_api_key = os.getenv('ARBISCAN_API_KEY')
         self.arbitrum_rpc_url = os.getenv('ARBITRUM_RPC_URL', 'https://arb1.arbitrum.io/rpc')
+        self.zapper_api_key = os.getenv('ZAPPER_API_KEY')
         # Focus on Arbiscan API as primary data source
         
     def get_zapper_portfolio(self, wallet_address: str) -> Optional[Dict]:
