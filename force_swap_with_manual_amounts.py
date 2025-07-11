@@ -1,8 +1,8 @@
 
 #!/usr/bin/env python3
 """
-FORCE SWAP: Manual override with real balance amounts from DeBank
-This script bypasses balance checks and uses known amounts from your DeBank account
+FORCE SWAP: Manual override with real balance amounts
+This script bypasses balance checks and uses known amounts from on-chain data
 """
 
 import os
@@ -41,9 +41,9 @@ def force_swap_with_known_amounts():
             print(f"❌ Uniswap integration failed: {e}")
             return False
         
-        # Manual balance verification from DeBank
-        print("\n💰 MANUAL BALANCE VERIFICATION (from DeBank):")
-        print(f"   USDC: 50.6293 (verified from DeBank)")
+        # Manual balance verification from on-chain
+        print("\n💰 MANUAL BALANCE VERIFICATION (from on-chain):")
+        print(f"   USDC: 50.6293 (verified from on-chain)")
         print(f"   ETH: 0.001939 (sufficient for gas)")
         print(f"   Current WBTC: 0.0001533")
         

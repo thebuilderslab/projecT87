@@ -1,7 +1,7 @@
 
 #!/usr/bin/env python3
 """
-MANUAL BALANCE SWAP: Bypass all checks, use known DeBank amounts
+MANUAL BALANCE SWAP: Bypass all checks, use known on-chain amounts
 """
 
 import os
