@@ -3,6 +3,7 @@ import time
 import json
 from web3 import Web3
 from eth_account import Account
+from gas_fee_calculator import ArbitrumGasCalculator
 
 class MockAaveIntegration:
     """Mock Aave integration for when real integration fails"""
@@ -223,49 +224,64 @@ class ArbitrumTestnetAgent:
             # --- Approve USDC for Aave and Uniswap ---
             try:
                 print("🚀 Approving USDC for Aave Pool...")
+                gas_params = self.get_optimized_gas_params('approve_token', 'market')
+                print(f"   Gas optimization: {self.w3.from_wei(gas_params['gasPrice'], 'gwei'):.2f} gwei")
                 # Approve USDC for Aave Pool (using a very large amount for effectively unlimited approval)
                 self.aave.approve_token(
                     token_address=self.usdc_address,
                     spender_address=self.aave.pool_address,
-                    amount_in_human_readable=float('inf') # Approves a very large amount
+                    amount_in_human_readable=float('inf'), # Approves a very large amount
+                    gas_params=gas_params
                 )
-                print("✅ Approved USDC for Aave Pool.")
+                print("✅ Approved USDC for Aave Pool with optimized gas.")
 
                 print("🚀 Approving USDC for Uniswap Router...")
+                gas_params = self.get_optimized_gas_params('approve_token', 'market')
+                print(f"   Gas optimization: {self.w3.from_wei(gas_params['gasPrice'], 'gwei'):.2f} gwei")
                 # Approve USDC for Uniswap Router
                 self.aave.approve_token(
                     token_address=self.usdc_address,
                     spender_address=self.uniswap.router_address,
-                    amount_in_human_readable=float('inf') # Approves a very large amount
+                    amount_in_human_readable=float('inf'), # Approves a very large amount
+                    gas_params=gas_params
                 )
-                print("✅ Approved USDC for Uniswap Router.")
+                print("✅ Approved USDC for Uniswap Router with optimized gas.")
 
                 print("🚀 Approving WBTC for Aave Pool...")
+                gas_params = self.get_optimized_gas_params('approve_token', 'market')
+                print(f"   Gas optimization: {self.w3.from_wei(gas_params['gasPrice'], 'gwei'):.2f} gwei")
                 # Approve WBTC for Aave Pool
                 self.aave.approve_token(
                     token_address=self.wbtc_address,
                     spender_address=self.aave.pool_address,
-                    amount_in_human_readable=float('inf')
+                    amount_in_human_readable=float('inf'),
+                    gas_params=gas_params
                 )
-                print("✅ Approved WBTC for Aave Pool.")
+                print("✅ Approved WBTC for Aave Pool with optimized gas.")
 
                 print("🚀 Approving WETH for Aave Pool...")
+                gas_params = self.get_optimized_gas_params('approve_token', 'market')
+                print(f"   Gas optimization: {self.w3.from_wei(gas_params['gasPrice'], 'gwei'):.2f} gwei")
                 # Approve WETH for Aave Pool
                 self.aave.approve_token(
                     token_address=self.weth_address,
                     spender_address=self.aave.pool_address,
-                    amount_in_human_readable=float('inf')
+                    amount_in_human_readable=float('inf'),
+                    gas_params=gas_params
                 )
-                print("✅ Approved WETH for Aave Pool.")
+                print("✅ Approved WETH for Aave Pool with optimized gas.")
 
                 print("🚀 Approving DAI for Aave Pool...")
+                gas_params = self.get_optimized_gas_params('approve_token', 'market')
+                print(f"   Gas optimization: {self.w3.from_wei(gas_params['gasPrice'], 'gwei'):.2f} gwei")
                 # Approve DAI for Aave Pool
                 self.aave.approve_token(
                     token_address=self.dai_address,
                     spender_address=self.aave.pool_address,
-                    amount_in_human_readable=float('inf')
+                    amount_in_human_readable=float('inf'),
+                    gas_params=gas_params
                 )
-                print("✅ Approved DAI for Aave Pool.")
+                print("✅ Approved DAI for Aave Pool with optimized gas.")
 
             except Exception as e:
                 print(f"❌ Error during token approvals: {e}")
@@ -506,13 +522,19 @@ class ArbitrumTestnetAgent:
                         # Action 2: Supply 4 USDC to Aave protocol
                         try:
                             print("➡️ Action 2: Supplying 4 USDC to Aave...")
+                            print("⛽ Optimizing gas parameters for supply transaction...")
+                            gas_params = self.get_optimized_gas_params('aave_supply', 'market')
+                            print(f"   Gas limit: {gas_params['gas']:,}")
+                            print(f"   Gas price: {self.w3.from_wei(gas_params['gasPrice'], 'gwei'):.2f} gwei")
+                            
                             # IMPORTANT: Ensure USDC approval for Aave Pool is handled (e.g., in initialize_integrations)
                             tx_hash = self.aave.supply(
                                 asset_address=self.usdc_address,
-                                amount_in_human_readable=4.0
+                                amount_in_human_readable=4.0,
+                                gas_params=gas_params
                             )
                             if tx_hash:
-                                print(f"✅ Supplied 4 USDC to Aave. Tx: {tx_hash}")
+                                print(f"✅ Supplied 4 USDC to Aave with optimized gas. Tx: {tx_hash}")
                             else:
                                 print("❌ Failed to supply 4 USDC (tx_hash not returned).")
                         except Exception as e:
@@ -521,6 +543,11 @@ class ArbitrumTestnetAgent:
                         # Action 3: Swap 2 USDC for WBTC and Supply to Aave
                         try:
                             print("➡️ Action 3: Swapping 2 USDC for WBTC...")
+                            print("⛽ Optimizing gas parameters for swap transaction...")
+                            gas_params = self.get_optimized_gas_params('uniswap_swap', 'market')
+                            print(f"   Gas limit: {gas_params['gas']:,}")
+                            print(f"   Gas price: {self.w3.from_wei(gas_params['gasPrice'], 'gwei'):.2f} gwei")
+                            
                             # Check WBTC balance before swap
                             wbtc_balance_before = self.aave.get_token_balance(self.wbtc_address)
 
@@ -528,9 +555,10 @@ class ArbitrumTestnetAgent:
                                 token_in_address=self.usdc_address,
                                 token_out_address=self.wbtc_address,
                                 amount_in_human_readable=2.0,
+                                gas_params=gas_params
                             )
                             if tx_hash:
-                                print(f"✅ Swapped 2 USDC for WBTC. Tx: {tx_hash}")
+                                print(f"✅ Swapped 2 USDC for WBTC with optimized gas. Tx: {tx_hash}")
 
                                 # Wait for transaction confirmation
                                 time.sleep(5)
@@ -541,13 +569,19 @@ class ArbitrumTestnetAgent:
 
                                 if wbtc_received > 0:
                                     print(f"➡️ Action 3b: Supplying {wbtc_received:.8f} WBTC to Aave...")
+                                    print("⛽ Optimizing gas parameters for WBTC supply...")
+                                    supply_gas_params = self.get_optimized_gas_params('aave_supply', 'market')
+                                    print(f"   Gas limit: {supply_gas_params['gas']:,}")
+                                    print(f"   Gas price: {self.w3.from_wei(supply_gas_params['gasPrice'], 'gwei'):.2f} gwei")
+                                    
                                     try:
                                         supply_tx_hash = self.aave.supply(
                                             asset_address=self.wbtc_address,
-                                            amount_in_human_readable=wbtc_received
+                                            amount_in_human_readable=wbtc_received,
+                                            gas_params=supply_gas_params
                                         )
                                         if supply_tx_hash:
-                                            print(f"✅ Supplied {wbtc_received:.8f} WBTC to Aave. Tx: {supply_tx_hash}")
+                                            print(f"✅ Supplied {wbtc_received:.8f} WBTC to Aave with optimized gas. Tx: {supply_tx_hash}")
                                         else:
                                             print("❌ Failed to supply WBTC to Aave (tx_hash not returned).")
                                     except Exception as e:
@@ -562,6 +596,11 @@ class ArbitrumTestnetAgent:
                         # Action 4: Swap 1 USDC for WETH and Supply to Aave
                         try:
                             print("➡️ Action 4: Swapping 1 USDC for WETH...")
+                            print("⛽ Optimizing gas parameters for WETH swap...")
+                            gas_params = self.get_optimized_gas_params('uniswap_swap', 'market')
+                            print(f"   Gas limit: {gas_params['gas']:,}")
+                            print(f"   Gas price: {self.w3.from_wei(gas_params['gasPrice'], 'gwei'):.2f} gwei")
+                            
                             # Check WETH balance before swap
                             weth_balance_before = self.aave.get_token_balance(self.weth_address)
 
@@ -569,9 +608,10 @@ class ArbitrumTestnetAgent:
                                 token_in_address=self.usdc_address,
                                 token_out_address=self.weth_address,
                                 amount_in_human_readable=1.0,
+                                gas_params=gas_params
                             )
                             if tx_hash:
-                                print(f"✅ Swapped 1 USDC for WETH. Tx: {tx_hash}")
+                                print(f"✅ Swapped 1 USDC for WETH with optimized gas. Tx: {tx_hash}")
 
                                 # Wait for transaction confirmation
                                 time.sleep(5)
@@ -582,13 +622,19 @@ class ArbitrumTestnetAgent:
 
                                 if weth_received > 0:
                                     print(f"➡️ Action 4b: Supplying {weth_received:.8f} WETH to Aave...")
+                                    print("⛽ Optimizing gas parameters for WETH supply...")
+                                    supply_gas_params = self.get_optimized_gas_params('aave_supply', 'market')
+                                    print(f"   Gas limit: {supply_gas_params['gas']:,}")
+                                    print(f"   Gas price: {self.w3.from_wei(supply_gas_params['gasPrice'], 'gwei'):.2f} gwei")
+                                    
                                     try:
                                         supply_tx_hash = self.aave.supply(
                                             asset_address=self.weth_address,
-                                            amount_in_human_readable=weth_received
+                                            amount_in_human_readable=weth_received,
+                                            gas_params=supply_gas_params
                                         )
                                         if supply_tx_hash:
-                                            print(f"✅ Supplied {weth_received:.8f} WETH to Aave. Tx: {supply_tx_hash}")
+                                            print(f"✅ Supplied {weth_received:.8f} WETH to Aave with optimized gas. Tx: {supply_tx_hash}")
                                         else:
                                             print("❌ Failed to supply WETH to Aave (tx_hash not returned).")
                                     except Exception as e:
@@ -603,6 +649,11 @@ class ArbitrumTestnetAgent:
                         # Action 5: Swap 1 USDC for DAI and Supply to Aave
                         try:
                             print("➡️ Action 5: Swapping 1 USDC for DAI...")
+                            print("⛽ Optimizing gas parameters for DAI swap...")
+                            gas_params = self.get_optimized_gas_params('uniswap_swap', 'market')
+                            print(f"   Gas limit: {gas_params['gas']:,}")
+                            print(f"   Gas price: {self.w3.from_wei(gas_params['gasPrice'], 'gwei'):.2f} gwei")
+                            
                             # Check DAI balance before swap
                             dai_balance_before = self.aave.get_token_balance(self.dai_address)
 
@@ -610,9 +661,10 @@ class ArbitrumTestnetAgent:
                                 token_in_address=self.usdc_address,
                                 token_out_address=self.dai_address,
                                 amount_in_human_readable=1.0,
+                                gas_params=gas_params
                             )
                             if tx_hash:
-                                print(f"✅ Swapped 1 USDC for DAI. Tx: {tx_hash}")
+                                print(f"✅ Swapped 1 USDC for DAI with optimized gas. Tx: {tx_hash}")
 
                                 # Wait for transaction confirmation
                                 time.sleep(5)
@@ -623,13 +675,19 @@ class ArbitrumTestnetAgent:
 
                                 if dai_received > 0:
                                     print(f"➡️ Action 5b: Supplying {dai_received:.8f} DAI to Aave...")
+                                    print("⛽ Optimizing gas parameters for DAI supply...")
+                                    supply_gas_params = self.get_optimized_gas_params('aave_supply', 'market')
+                                    print(f"   Gas limit: {supply_gas_params['gas']:,}")
+                                    print(f"   Gas price: {self.w3.from_wei(supply_gas_params['gasPrice'], 'gwei'):.2f} gwei")
+                                    
                                     try:
                                         supply_tx_hash = self.aave.supply(
                                             asset_address=self.dai_address,
-                                            amount_in_human_readable=dai_received
+                                            amount_in_human_readable=dai_received,
+                                            gas_params=supply_gas_params
                                         )
                                         if supply_tx_hash:
-                                            print(f"✅ Supplied {dai_received:.8f} DAI to Aave. Tx: {supply_tx_hash}")
+                                            print(f"✅ Supplied {dai_received:.8f} DAI to Aave with optimized gas. Tx: {supply_tx_hash}")
                                         else:
                                             print("❌ Failed to supply DAI to Aave (tx_hash not returned).")
                                     except Exception as e:
@@ -644,6 +702,11 @@ class ArbitrumTestnetAgent:
                         # Action 6: Swap 1 USDC for ETH (WETH) and leave in wallet
                         try:
                             print("➡️ Action 6: Swapping 1 USDC for ETH...")
+                            print("⛽ Optimizing gas parameters for final ETH swap...")
+                            gas_params = self.get_optimized_gas_params('uniswap_swap', 'market')
+                            print(f"   Gas limit: {gas_params['gas']:,}")
+                            print(f"   Gas price: {self.w3.from_wei(gas_params['gasPrice'], 'gwei'):.2f} gwei")
+                            
                             # Check WETH balance before swap
                             weth_balance_before = self.aave.get_token_balance(self.weth_address)
 
@@ -651,9 +714,10 @@ class ArbitrumTestnetAgent:
                                 token_in_address=self.usdc_address,
                                 token_out_address=self.weth_address,
                                 amount_in_human_readable=1.0,
+                                gas_params=gas_params
                             )
                             if tx_hash:
-                                print(f"✅ Swapped 1 USDC for WETH. Tx: {tx_hash}")
+                                print(f"✅ Swapped 1 USDC for WETH with optimized gas. Tx: {tx_hash}")
 
                                 # Wait for transaction confirmation
                                 time.sleep(5)
