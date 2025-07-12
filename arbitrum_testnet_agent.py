@@ -7,7 +7,7 @@ from web3 import Web3
 from eth_account import Account
 from aave_integration import AaveArbitrumIntegration
 from uniswap_integration import UniswapArbitrumIntegration as UniswapIntegration
-from aave_health_monitor import HealthMonitor
+from aave_health_monitor import AaveHealthMonitor as HealthMonitor
 from gas_fee_calculator import ArbitrumGasCalculator
 import requests
 
@@ -360,50 +360,50 @@ class ArbitrumTestnetAgent:
             # --- END DIAGNOSTIC CODE ---
 
             # Enhanced monitoring and trigger detection
-            print(f"🔍 MONITORING: Health factor {current_health_factor:.4f} (trigger threshold: 1.3)")
+            print(f"🔍 MONITORING: Health factor {current_health_factor:.4f}")
             
             # Get current Aave positions for detailed monitoring
             try:
                 monitoring_summary = self.health_monitor.get_monitoring_summary()
                 if monitoring_summary:
-                    collateral_usd = monitoring_summary.get('total_collateral_usd', 0)
+                    current_collateral_value_usd = monitoring_summary.get('total_collateral_usd', 0)
                     debt_usd = monitoring_summary.get('total_debt_usd', 0)
-                    print(f"📊 Current Position: ${collateral_usd:,.2f} collateral, ${debt_usd:,.2f} debt")
+                    print(f"📊 Current Position: ${current_collateral_value_usd:,.2f} collateral, ${debt_usd:,.2f} debt")
+                    print(f"💰 Last recorded collateral: ${self.last_collateral_value_usd:,.2f}")
+                    print(f"📈 Collateral growth: ${current_collateral_value_usd - self.last_collateral_value_usd:,.2f}")
+                else:
+                    current_collateral_value_usd = 0
             except Exception as e:
                 print(f"⚠️ Could not get detailed position data: {e}")
+                current_collateral_value_usd = 0
             
-            # Trigger condition: If health factor > 1.3, execute the sequence
-            if current_health_factor > 1.3:
-                print(f"🚀 TRIGGER ACTIVATED: Health factor {current_health_factor:.4f} > 1.3")
+            # NEW TRIGGER CONDITION: Collateral growth of $12 USD
+            if current_collateral_value_usd >= (self.last_collateral_value_usd + 12):
+                print(f"🚀 TRIGGER ACTIVATED: Collateral grew by ${current_collateral_value_usd - self.last_collateral_value_usd:.2f} (≥ $12 threshold)")
                 print(f"⚡ EXECUTING AUTONOMOUS SEQUENCE...")
-                print(f"📝 Sequence: Borrow 6 USDC → Swap to WBTC/WETH/DAI → Supply as collateral")
+                print(f"📝 Sequence: Borrow 6 USDC → Swap 2→WBTC, 1→WETH, 1→DAI, 1→WETH(wallet)")
 
-                # Step 1: Borrow 6 USDC with gas optimization
-                print("🏦 Step 1: Borrowing 6 USDC...")
+                # Step 1: Initial Borrow (6 USDC)
+                print("🏦 Action 1: Borrowing 6 USDC from Aave...")
                 gas_params = self.gas_calculator.calculate_transaction_fee('aave_borrow', speed='market')
                 if gas_params is None:
                     raise Exception("CRITICAL: Failed to get gas params for Aave borrow. Halting.")
 
                 borrow_result = self.aave.borrow(
-                    asset=self.usdc_address,
                     amount=6.0,
+                    asset=self.usdc_address,
                     gas_price=gas_params['gas_price_wei']
                 )
                 print(f"✅ Borrowed 6 USDC with optimized gas")
                 time.sleep(5)
 
-                # Step 2: Swap 2 USDC for WBTC and supply to Aave
-                print("🔄 Step 2: Swap 2 USDC → WBTC + Supply to Aave...")
-
-                # Get gas for swap
+                # Step 2: Swap 2 USDC for WBTC
+                print("🔄 Action 2: Swapping 2 USDC for WBTC...")
                 gas_params = self.gas_calculator.calculate_transaction_fee('uniswap_swap', speed='market')
                 if gas_params is None:
                     raise Exception("CRITICAL: Failed to get gas params for WBTC swap. Halting.")
 
-                # Get initial WBTC balance
                 wbtc_balance_before = self.uniswap.get_token_balance(self.wbtc_address)
-
-                # Swap USDC for WBTC
                 swap_result = self.uniswap.swap_tokens(
                     token_in=self.usdc_address,
                     token_out=self.wbtc_address,
@@ -411,119 +411,73 @@ class ArbitrumTestnetAgent:
                     gas_price=gas_params['gas_price_wei']
                 )
                 time.sleep(5)
-
-                # Get WBTC received
                 wbtc_balance_after = self.uniswap.get_token_balance(self.wbtc_address)
                 wbtc_received = wbtc_balance_after - wbtc_balance_before
-                print(f"✅ Received {wbtc_received:.8f} WBTC")
+                print(f"✅ Swapped 2 USDC for WBTC with optimized gas")
 
-                # Supply WBTC to Aave
-                gas_params = self.gas_calculator.calculate_transaction_fee('aave_supply', speed='market')
-                if gas_params is None:
-                    raise Exception("CRITICAL: Failed to get gas params for WBTC supply. Halting.")
-
-                self.aave.supply(
-                    asset=self.wbtc_address,
-                    amount=wbtc_received,
-                    gas_price=gas_params['gas_price_wei']
-                )
-                print(f"✅ Supplied {wbtc_received:.8f} WBTC to Aave")
-                time.sleep(5)
-
-                # Step 3: Swap 1 USDC for WETH and supply to Aave
-                print("🔄 Step 3: Swap 1 USDC → WETH + Supply to Aave...")
-
+                # Step 3: Swap 1 USDC for WETH
+                print("🔄 Action 3: Swapping 1 USDC for WETH...")
                 gas_params = self.gas_calculator.calculate_transaction_fee('uniswap_swap', speed='market')
                 if gas_params is None:
                     raise Exception("CRITICAL: Failed to get gas params for WETH swap. Halting.")
 
                 weth_balance_before = self.uniswap.get_token_balance(self.weth_address)
-
-                self.uniswap.swap_tokens(
+                swap_result = self.uniswap.swap_tokens(
                     token_in=self.usdc_address,
                     token_out=self.weth_address,
                     amount_in=1.0,
                     gas_price=gas_params['gas_price_wei']
                 )
                 time.sleep(5)
-
                 weth_balance_after = self.uniswap.get_token_balance(self.weth_address)
                 weth_received = weth_balance_after - weth_balance_before
-                print(f"✅ Received {weth_received:.8f} WETH")
+                print(f"✅ Swapped 1 USDC for WETH with optimized gas")
 
-                # Supply WETH to Aave
-                gas_params = self.gas_calculator.calculate_transaction_fee('aave_supply', speed='market')
-                if gas_params is None:
-                    raise Exception("CRITICAL: Failed to get gas params for WETH supply. Halting.")
-
-                self.aave.supply(
-                    asset=self.weth_address,
-                    amount=weth_received,
-                    gas_price=gas_params['gas_price_wei']
-                )
-                print(f"✅ Supplied {weth_received:.8f} WETH to Aave")
-                time.sleep(5)
-
-                # Step 4: Swap 1 USDC for DAI and supply to Aave
-                print("🔄 Step 4: Swap 1 USDC → DAI + Supply to Aave...")
-
+                # Step 4: Swap 1 USDC for DAI
+                print("🔄 Action 4: Swapping 1 USDC for DAI...")
                 gas_params = self.gas_calculator.calculate_transaction_fee('uniswap_swap', speed='market')
                 if gas_params is None:
                     raise Exception("CRITICAL: Failed to get gas params for DAI swap. Halting.")
 
                 dai_balance_before = self.uniswap.get_token_balance(self.dai_address)
-
-                self.uniswap.swap_tokens(
+                swap_result = self.uniswap.swap_tokens(
                     token_in=self.usdc_address,
                     token_out=self.dai_address,
                     amount_in=1.0,
                     gas_price=gas_params['gas_price_wei']
                 )
                 time.sleep(5)
-
                 dai_balance_after = self.uniswap.get_token_balance(self.dai_address)
                 dai_received = dai_balance_after - dai_balance_before
-                print(f"✅ Received {dai_received:.8f} DAI")
+                print(f"✅ Swapped 1 USDC for DAI with optimized gas")
 
-                # Supply DAI to Aave
-                gas_params = self.gas_calculator.calculate_transaction_fee('aave_supply', speed='market')
-                if gas_params is None:
-                    raise Exception("CRITICAL: Failed to get gas params for DAI supply. Halting.")
-
-                self.aave.supply(
-                    asset=self.dai_address,
-                    amount=dai_received,
-                    gas_price=gas_params['gas_price_wei']
-                )
-                print(f"✅ Supplied {dai_received:.8f} DAI to Aave")
-                time.sleep(5)
-
-                # Step 5: Swap remaining 2 USDC for ETH (keep as WETH)
-                print("🔄 Step 5: Swap 2 USDC → ETH (keep as WETH)...")
-
+                # Step 5: Swap 1 USDC for WETH (Keep in Wallet)
+                print("🔄 Action 5: Swapping 1 USDC for WETH (to keep in wallet)...")
                 gas_params = self.gas_calculator.calculate_transaction_fee('uniswap_swap', speed='market')
                 if gas_params is None:
-                    raise Exception("CRITICAL: Failed to get gas params for final ETH swap. Halting.")
+                    raise Exception("CRITICAL: Failed to get gas params for final WETH swap. Halting.")
 
                 final_weth_before = self.uniswap.get_token_balance(self.weth_address)
-
-                self.uniswap.swap_tokens(
+                swap_result = self.uniswap.swap_tokens(
                     token_in=self.usdc_address,
                     token_out=self.weth_address,
-                    amount_in=2.0,
+                    amount_in=1.0,
                     gas_price=gas_params['gas_price_wei']
                 )
                 time.sleep(5)
-
                 final_weth_after = self.uniswap.get_token_balance(self.weth_address)
                 final_weth_received = final_weth_after - final_weth_before
-                print(f"✅ Received {final_weth_received:.8f} WETH (kept in wallet)")
+                print(f"✅ Received {final_weth_received:.8f} WETH (kept in wallet!)")
+
+                # Update last collateral value after successful sequence completion
+                self.last_collateral_value_usd = current_collateral_value_usd
+                print(f"💰 Updated last_collateral_value_usd to: ${self.last_collateral_value_usd:,.2f}")
 
                 print("🎉 AUTONOMOUS SEQUENCE COMPLETED SUCCESSFULLY!")
                 return 0.95  # High performance score
 
             else:
-                print(f"⏸️ No action: Health factor {current_health_factor:.4f} ≤ 1.3")
+                print(f"⏸️ No action: Collateral growth ${current_collateral_value_usd - self.last_collateral_value_usd:.2f} < $12 threshold")
                 return 0.7  # Moderate performance score
 
         except Exception as e:
