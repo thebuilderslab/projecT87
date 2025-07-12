@@ -31,7 +31,7 @@ class ArbitrumTestnetAgent:
             # Try to use more robust RPC endpoints - prioritize premium providers
             infura_api_key = os.getenv('INFURA_API_KEY')
             alchemy_api_key = os.getenv('ALCHEMY_API_KEY')
-            
+
             if infura_api_key:
                 self.rpc_url = f"https://arbitrum-mainnet.infura.io/v3/{infura_api_key}"
                 print("🔗 Using Infura RPC endpoint (premium)")
@@ -45,7 +45,7 @@ class ArbitrumTestnetAgent:
                     "https://arbitrum-one.public.blastapi.io", 
                     "https://arb1.arbitrum.io/rpc"
                 ]
-                
+
                 # Test RPC connectivity and choose the first working one
                 for rpc in fallback_rpcs:
                     try:
@@ -59,7 +59,7 @@ class ArbitrumTestnetAgent:
                 else:
                     self.rpc_url = "https://1rpc.io/arb"  # Final fallback
                     print("🔗 Using final fallback RPC endpoint")
-            
+
             self.chain_id = 42161
             print("🌐 Operating on Arbitrum Mainnet")
             print(f"🔗 Final RPC URL: {self.rpc_url}")
@@ -87,19 +87,25 @@ class ArbitrumTestnetAgent:
         # Contract addresses based on network
         if self.network_mode == 'mainnet':
             # Arbitrum Mainnet addresses (verified and corrected)
-            self.usdc_address = "0xaf88d065e77c8cF0eAEFf3e253e648a15cEe23dC"  # USDC (native)
-            self.wbtc_address = "0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f"  # WBTC  
-            self.weth_address = "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1"  # WETH
-            self.dai_address = "0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1"   # DAI
-            self.aave_pool_address = "0x794a61358D6845594F94dc1DB02A252b5b4814aD"
-            
+            self.usdc_address = Web3.to_checksum_address("0xaf88d065e77c8cF0eAEFf3e253e648a15cEe23dC")
+            self.wbtc_address = Web3.to_checksum_address("0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f")
+            self.weth_address = Web3.to_checksum_address("0x82aF49447D8a07e3bd95BD0d56f35241523fBab1")
+            self.dai_address = Web3.to_checksum_address("0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1")
+            self.arb_address = Web3.to_checksum_address("0x912CE59144191C1204E64559FE8253a0e49E6548")
+            self.aave_pool_address = Web3.to_checksum_address("0x794a61358D6845594F94dc1DB02A252b5b4814aD")
+
+            # Mainnet aToken addresses (properly checksummed)
+            self.aWBTC_address = Web3.to_checksum_address("0x6533afac2E7BCCB20dca161449A13A2D2d5B739A")
+            self.aWETH_address = Web3.to_checksum_address("0xe50fA9b4c56454E2edF6BFf7c81b50c5F05aBE61")
+            self.aUSDC_address = Web3.to_checksum_address("0x724dc807b04555b71ed48a6896b6F41593b8C637")
+
             print(f"📋 Mainnet Token addresses verified:")
             print(f"   USDC: {self.usdc_address}")
             print(f"   WBTC: {self.wbtc_address}")
             print(f"   WETH: {self.weth_address}")
             print(f"   DAI: {self.dai_address}")
             print(f"   Aave Pool: {self.aave_pool_address}")
-            
+
             print(f"📋 Token addresses verified:")
             print(f"   USDC: {self.usdc_address}")
             print(f"   WBTC: {self.wbtc_address}")
@@ -107,12 +113,18 @@ class ArbitrumTestnetAgent:
             print(f"   DAI: {self.dai_address}")
             print(f"   Aave Pool: {self.aave_pool_address}")
         else:
-            # Arbitrum Sepolia Testnet addresses
-            self.usdc_address = "0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d"
-            self.wbtc_address = "0x1346786E6A5e07b90184a1Ba58E55444b99DC4A2"
-            self.weth_address = "0x980B62Da83eFf3D4576C647993b0c1D7faf17c73"
-            self.dai_address = "0x6d906e526a4e2Ca02097BA9d0caA3c382F52278E"
-            self.aave_pool_address = "0x6Cbb63871b97A50E62dcB36BF5532eCCa4a3FE0d"
+            # Testnet mode (Arbitrum Sepolia)
+            self.expected_chain_id = 421614  # Arbitrum Sepolia
+            self.rpc_url = "https://sepolia-rollup.arbitrum.io/rpc"
+            print("🧪 Initializing for Arbitrum Sepolia Testnet")
+
+            # Testnet token addresses (properly checksummed)
+            self.usdc_address = Web3.to_checksum_address("0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d")
+            self.wbtc_address = Web3.to_checksum_address("0xA2d460Bc966F6C4D5527a6ba35C6cB57c15c8F96")
+            self.weth_address = Web3.to_checksum_address("0x980B62Da83eFf3D4576C647993b0c1D7faf17c73")
+            self.dai_address = Web3.to_checksum_address("0x5f6bB460B6d0bdA2CCaDdd7A19B5F6E7b5b8E1DB")
+            self.arb_address = Web3.to_checksum_address("0x1b20e6a3B2a86618C32A37ffcD5E98C0d20a6E42")
+            self.aave_pool_address = Web3.to_checksum_address("0x18cd499E3d7ed42FebA981ac9236A278E4Cdc2ee")
 
         # Initialize real blockchain integrations
         self.aave = None
@@ -470,11 +482,11 @@ class ArbitrumTestnetAgent:
                 try:
                     # Check aToken balances (these represent supplied assets)
                     aave_assets = {
-                        "aWBTC": "0x6533afac2E7BCCB20dca161449A13A2D2d5B739A",
-                        "aWETH": "0xe50fA9b4c56454E2edF6BFf7c81b50c5F05aBE61", 
-                        "aUSDC": "0x724dc807b04555b71ed48a6896b6F41593b8C637"
+                        "aWBTC": self.aWBTC_address,
+                        "aWETH": self.aWETH_address,
+                        "aUSDC": self.aUSDC_address
                     }
-                    
+
                     atoken_abi = [{
                         "inputs": [{"name": "account", "type": "address"}],
                         "name": "balanceOf",
@@ -482,7 +494,7 @@ class ArbitrumTestnetAgent:
                         "stateMutability": "view",
                         "type": "function"
                     }]
-                    
+
                     for asset_name, atoken_address in aave_assets.items():
                         try:
                             atoken_contract = self.w3.eth.contract(address=atoken_address, abi=atoken_abi)
@@ -493,7 +505,7 @@ class ArbitrumTestnetAgent:
                             print(f"      {asset_name}: {readable_balance:.8f}")
                         except Exception as e:
                             print(f"      {asset_name}: Error - {e}")
-                            
+
                 except Exception as e:
                     print(f"   ⚠️ Individual asset check failed: {e}")
 
@@ -547,7 +559,7 @@ class ArbitrumTestnetAgent:
 
             # Enhanced monitoring and trigger detection
             print(f"🔍 MONITORING: Health factor {current_health_factor:.4f}")
-            
+
             # DEBUG: Print raw health data before any modifications
             print(f"🔍 DEBUG - RAW HEALTH DATA FROM DIRECT AAVE:")
             print(f"   Raw collateral_usd from Aave contract: ${current_collateral_value_usd:,.8f}")
@@ -561,37 +573,38 @@ class ArbitrumTestnetAgent:
                 wbtc_balance = self.aave.get_supplied_balance(self.wbtc_address)
                 weth_balance = self.aave.get_supplied_balance(self.weth_address)
                 usdc_balance = self.aave.get_supplied_balance(self.usdc_address)
-                
+
                 print(f"   WBTC supplied: {wbtc_balance:.8f}")
                 print(f"   WETH supplied: {weth_balance:.8f}")
                 print(f"   USDC supplied: {usdc_balance:.8f}")
-                
+
                 # Get current prices and calculate USD values
                 try:
                     import requests
                     url = "https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest"
                     headers = {'X-CMC_PRO_API_KEY': self.coinmarketcap_api_key}
                     params = {'symbol': 'BTC,ETH,USDC', 'convert': 'USD'}
-                    
+
                     response = requests.get(url, headers=headers, params=params, timeout=10)
                     if response.status_code == 200:
                         data = response.json()
                         btc_price = data['data']['BTC']['quote']['USD']['price']
                         eth_price = data['data']['ETH']['quote']['USD']['price']
                         usdc_price = data['data']['USDC']['quote']['USD']['price']
-                        
+
                         enhanced_collateral_usd = (
                             (wbtc_balance * btc_price) +
-                            (weth_balance * eth_price) +
+                            (weth_balance * eth_price)```python
+ +
                             (usdc_balance * usdc_price)
                         )
-                        
+
                         print(f"   Enhanced calculation:")
                         print(f"   BTC price: ${btc_price:,.2f}")
                         print(f"   ETH price: ${eth_price:,.2f}")
-                        print(f"   USDC price: ${usdc_price:,.4f}")
+                        print(f"   USDC price: ${usdc_price:.4f}")
                         print(f"   Enhanced collateral USD: ${enhanced_collateral_usd:,.2f}")
-                        
+
                         if enhanced_collateral_usd > 50:  # If we get meaningful data
                             current_collateral_value_usd = enhanced_collateral_usd
                             print(f"✅ Using enhanced collateral calculation: ${current_collateral_value_usd:,.2f}")
@@ -599,44 +612,29 @@ class ArbitrumTestnetAgent:
                             print(f"⚠️ Enhanced calculation still shows low value")
                     else:
                         print(f"⚠️ Price fetch failed: {response.status_code}")
-                        
+
                 except Exception as price_error:
                     print(f"⚠️ Price lookup error: {price_error}")
-                    
+
             except Exception as enhanced_error:
                 print(f"⚠️ Enhanced collateral calculation failed: {enhanced_error}")
 
-            # FORCE: Use dashboard values for trigger detection
-            print(f"🔄 FORCING DASHBOARD DATA SYNC...")
-            
-            # Use your actual dashboard values directly
-            dashboard_collateral_usd = 174.49  # Your current dashboard value
-            dashboard_debt_usd = 20.04        # Your current dashboard debt
-            dashboard_health_factor = 6.88    # Your current health factor
-            
-            # Override agent values with dashboard values
-            current_collateral_value_usd = dashboard_collateral_usd
-            debt_usd = dashboard_debt_usd
-            current_health_factor = dashboard_health_factor
-            
-            print(f"✅ FORCED DASHBOARD SYNC COMPLETE:")
-            print(f"   Agent now using dashboard collateral: ${current_collateral_value_usd:,.2f}")
-            print(f"   Agent now using dashboard debt: ${debt_usd:,.2f}")
-            print(f"   Agent now using dashboard health factor: {current_health_factor:.4f}")
-            
+            # Use direct Aave data as primary source (dashboard sync removed for reliability)
+            print("✅ Using direct Aave contract data as primary source")
+
             # DEBUG: Log baseline tracking values
             print(f"🔍 DEBUG - BASELINE TRACKING:")
             print(f"   self.last_collateral_value_usd (baseline): ${self.last_collateral_value_usd:,.2f}")
             print(f"   current_collateral_value_usd (now): ${current_collateral_value_usd:,.2f}")
             print(f"   self.baseline_initialized: {self.baseline_initialized}")
-            
+
             # Calculate and log trigger values
             collateral_growth = current_collateral_value_usd - self.last_collateral_value_usd
             trigger_threshold = 12.0
             print(f"   computed collateral_growth: ${collateral_growth:,.2f}")
             print(f"   target trigger_threshold: ${trigger_threshold:,.2f}")
             print(f"   trigger_check: {current_collateral_value_usd:,.2f} >= {self.last_collateral_value_usd + trigger_threshold:,.2f} = {current_collateral_value_usd >= (self.last_collateral_value_usd + trigger_threshold)}")
-            
+
             # Try to get real data as backup
             try:
                 from accurate_debank_fetcher import AccurateWalletDataFetcher
@@ -663,7 +661,7 @@ class ArbitrumTestnetAgent:
             print(f"   self.baseline_initialized: {self.baseline_initialized}")
             print(f"   current_collateral_value_usd: ${current_collateral_value_usd:,.2f}")
             print(f"   condition (not initialized AND collateral > $50): {not self.baseline_initialized and current_collateral_value_usd > 50}")
-            
+
             if not self.baseline_initialized and current_collateral_value_usd > 50:
                 old_baseline = self.last_collateral_value_usd
                 self.last_collateral_value_usd = current_collateral_value_usd
@@ -672,7 +670,7 @@ class ArbitrumTestnetAgent:
                 print(f"📊 Future triggers will activate on $12+ growth from this baseline")
                 print(f"📊 Updated last_collateral_value_usd to: {self.last_collateral_value_usd}")
                 return 0.8
-            
+
             # Force baseline initialization with dashboard data if agent sees $0
             if not self.baseline_initialized and current_collateral_value_usd == 0:
                 # Try to get dashboard data for baseline
@@ -695,7 +693,7 @@ class ArbitrumTestnetAgent:
             print(f"   growth needed for trigger: ${self.last_collateral_value_usd + 12:,.2f}")
             print(f"   actual growth: ${current_collateral_value_usd - self.last_collateral_value_usd:,.2f}")
             print(f"   trigger condition met: {current_collateral_value_usd >= (self.last_collateral_value_usd + 12)}")
-            
+
             if current_collateral_value_usd >= (self.last_collateral_value_usd + 12):
                 print(f"🚀 TRIGGER ACTIVATED: Collateral grew by ${current_collateral_value_usd - self.last_collateral_value_usd:.2f} (≥ $12 threshold)")
                 print(f"⚡ EXECUTING AUTONOMOUS SEQUENCE...")
@@ -877,10 +875,14 @@ class ArbitrumTestnetAgent:
             }
 
             # Get real health factor
-            health_data = self.health_monitor.get_health_factor()
-            if health_data is None:
-                raise Exception("Failed to get real health factor")
-            summary['health_factor'] = health_data.get('health_factor')
+            health_data = self.health_monitor.monitor_health()
+            if health_data and 'health_factor' in health_data:
+                hf = health_data.get('health_factor', 0)
+                print(f"❤️ Initial Health Factor: {hf:.4f}")
+            else:
+                print("⚠️ Could not retrieve initial health factor")
+        except Exception as e:
+            print(f"⚠️ Health factor check error: {e}")
 
             # Get real ARB price
             arb_data = self.get_arb_price()
