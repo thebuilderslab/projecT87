@@ -8,14 +8,14 @@ class MockAaveIntegration:
     """Mock Aave integration for when real integration fails"""
     def __init__(self):
         self.usdc_address = "0xaf88d065eec38faD0AEFf3e253e648a15cEe23dC"
-        
+
     def get_token_balance(self, token_address):
         return 0.0
-        
+
     def supply_to_aave(self, token_address, amount):
         print("⚠️ Mock Aave: Would supply assets")
         return None
-        
+
     def borrow_from_aave(self, token_address, amount):
         print("⚠️ Mock Aave: Would borrow assets")
         return None
@@ -38,10 +38,10 @@ class MockHealthMonitor:
             'available_borrows_eth': 0.0,
             'available_borrows_usdc': 0.0
         }
-    
+
     def get_arb_price(self):
         return {'price': 0.30}
-        
+
     def get_monitoring_summary(self):
         return {'total_collateral_usd': 0.0}
 
@@ -49,29 +49,29 @@ class ArbitrumTestnetAgent:
     def __init__(self, network_mode=None):
         # Determine network mode
         self.network_mode = network_mode or os.getenv('NETWORK_MODE', 'mainnet')
-        
+
         # Load private key with enhanced validation - prioritize PRIVATE_KEY from Replit Secrets
         private_key = os.getenv('PRIVATE_KEY') or os.getenv('PRIVATE_KEY2')
-        
+
         if not private_key or len(private_key.strip()) < 32:
             raise ValueError("❌ CRITICAL: No valid private key found in PRIVATE_KEY or PRIVATE_KEY2. Please set a valid private key in Replit Secrets.")
-        
+
         private_key = private_key.strip()
-        
+
         # Clean the private key
         if private_key.startswith('0x'):
             private_key = private_key[2:]
-        
+
         # Check for placeholder text - this should fail fast
         if 'your_private_key_here' in private_key.lower() or 'placeholder' in private_key.lower() or private_key == "0" * 64:
             raise ValueError("❌ CRITICAL: Placeholder private key detected. Please set your actual private key in Replit Secrets.")
-        
+
         # Validate hex characters
         try:
             int(private_key, 16)
         except ValueError:
             raise ValueError("❌ CRITICAL: Private key contains invalid hexadecimal characters. Please check your private key format.")
-        
+
         # Ensure proper length
         if len(private_key) not in [64, 66]:
             if len(private_key) < 64:
@@ -79,16 +79,16 @@ class ArbitrumTestnetAgent:
                 print(f"🔧 Padded private key to 64 characters")
             else:
                 raise ValueError(f"❌ CRITICAL: Private key has invalid length: {len(private_key)}. Should be 64 characters.")
-        
+
         print(f"✅ Valid private key loaded (length: {len(private_key)})")
-        
+
         # Create account object
         try:
             self.account = Account.from_key('0x' + private_key)
         except Exception as e:
             raise ValueError(f"Failed to create account from private key: {e}")
         self.address = self.account.address
-        
+
         # Network configuration with multiple RPC endpoints for reliability
         if self.network_mode == 'mainnet':
             # Multiple Arbitrum Mainnet RPC endpoints for fallback
@@ -121,16 +121,16 @@ class ArbitrumTestnetAgent:
         # Initialize Web3 with RPC failover mechanism
         self.w3 = None
         self.current_rpc_url = None
-        
+
         for rpc_url in self.rpc_endpoints:
             try:
                 print(f"🔄 Trying RPC: {rpc_url}")
-                
+
                 # Create provider with timeout
                 from web3.providers import HTTPProvider
                 provider = HTTPProvider(rpc_url, request_kwargs={'timeout': 10})
                 test_w3 = Web3(provider)
-                
+
                 # Test connection with timeout
                 if test_w3.is_connected():
                     # Verify chain ID with timeout
@@ -152,7 +152,7 @@ class ArbitrumTestnetAgent:
             except Exception as e:
                 print(f"❌ Error with {rpc_url}: {e}")
                 continue
-        
+
         if not self.w3 or not self.w3.is_connected():
             print("❌ Failed to connect to any Arbitrum RPC endpoint.")
             exit()
@@ -173,19 +173,22 @@ class ArbitrumTestnetAgent:
         self.uniswap = None
         self.health_monitor = None
 
+        # Initialize gas calculator for optimal gas pricing
+        self.gas_calculator = ArbitrumGasCalculator()
+
     def initialize_integrations(self):
         """Initializes Aave, Uniswap, and Health Monitor integrations with enhanced error handling."""
         integration_success = {'aave': False, 'uniswap': False, 'health_monitor': False}
-        
+
         try:
             # Initialize Aave integration
             try:
                 from aave_integration import AaveArbitrumIntegration
                 self.aave = AaveArbitrumIntegration(self.w3, self.account)
-                
+
                 # Pass agent reference for RPC failover
                 self.aave.agent = self
-                
+
                 # Test Aave integration
                 test_balance = self.aave.get_token_balance(self.usdc_address)
                 print(f"✅ Aave integration initialized and tested (USDC balance: {test_balance:.6f})")
@@ -194,7 +197,7 @@ class ArbitrumTestnetAgent:
                 print(f"❌ Aave integration failed: {e}")
                 print("🔧 Using mock Aave integration - transactions will fail")
                 self.aave = MockAaveIntegration()
-            
+
             # Initialize Uniswap integration
             try:
                 from uniswap_integration import UniswapArbitrumIntegration
@@ -205,7 +208,7 @@ class ArbitrumTestnetAgent:
                 print(f"❌ Uniswap integration failed: {e}")
                 print("🔧 Using mock Uniswap integration - swaps will fail")
                 self.uniswap = MockUniswapIntegration()
-            
+
             # Initialize Health Monitor
             try:
                 from aave_health_monitor import AaveHealthMonitor
@@ -216,7 +219,7 @@ class ArbitrumTestnetAgent:
                 print(f"❌ Health monitor failed: {e}")
                 print("🔧 Using mock health monitor - monitoring limited")
                 self.health_monitor = MockHealthMonitor()
-            
+
             # --- Approve USDC for Aave and Uniswap ---
             try:
                 print("🚀 Approving USDC for Aave Pool...")
@@ -275,9 +278,9 @@ class ArbitrumTestnetAgent:
             if critical_failed:
                 print("⚠️ WARNING: Critical integrations failed - real transactions may not work")
                 print("💡 Check your network connection and contract addresses")
-            
+
             return not critical_failed
-            
+
         except Exception as e:
             print(f"❌ Critical failure in integration initialization: {e}")
             return False
@@ -402,20 +405,43 @@ class ArbitrumTestnetAgent:
                     self.aave.unwrap_weth(weth_balance) # Assuming this unwraps WETH to ETH
                     print("✅ Swapped USDC to ETH for gas.")
 
+    def get_optimized_gas_params(self, operation_type, speed='market'):
+        """Get optimized gas parameters for transactions"""
+        try:
+            gas_data = self.gas_calculator.calculate_transaction_fee(operation_type, speed)
+            if gas_data:
+                return {
+                    'gas': gas_data['gas_limit'],
+                    'gasPrice': gas_data['gas_price_wei']
+                }
+            else:
+                # Fallback gas parameters
+                return {
+                    'gas': self.gas_calculator.gas_limits.get(operation_type, 200000),
+                    'gasPrice': int(self.w3.eth.gas_price * 1.1)  # 10% above current
+                }
+        except Exception as e:
+            print(f"⚠️ Gas optimization failed, using fallback: {e}")
+            # Safe fallback
+            return {
+                'gas': 200000,
+                'gasPrice': int(self.w3.eth.gas_price * 1.1) if self.w3.eth.gas_price else 100000000  # 0.1 gwei fallback
+            }
+
     def run_real_defi_task(self, run_id, iteration, config):
         """Execute real DeFi operations for autonomous agent"""
         try:
             print(f"🤖 Executing DeFi task - Run {run_id}, Iteration {iteration}")
-            
+
             # Initialize integrations if not done
             if not hasattr(self, 'aave'):
                 self.initialize_integrations()
-            
+
             # Check emergency stop
             if self.check_emergency_stop():
                 print("🛑 Emergency stop active, skipping operations")
                 return 0.0
-            
+
             # Check network status
             network_ok, status = self.check_network_status()
             if not network_ok:
@@ -440,7 +466,7 @@ class ArbitrumTestnetAgent:
                 if health_data and health_data['health_factor'] < 1.1:
                     print(f"⚠️ Low health factor: {health_data['health_factor']:.3f}")
                     return 0.2
-                
+
                 # Autonomous DeFi Logic - Monitor collateral and trigger actions
                 current_collateral_usdc = health_data.get('total_collateral_usdc', 0.0)
                 print(f"📈 Current collateral: ${current_collateral_usdc:.2f} USD")
@@ -455,190 +481,196 @@ class ArbitrumTestnetAgent:
                     print(f"✅ Collateral increased by ${current_collateral_usdc - self.last_collateral_value_usd:.2f} (>= $12 trigger). Initiating actions!")
 
                     # --- Start DeFi Action Sequence ---
+                    # --- Action 1: Borrow USDC ---
+                    print("🏦 Action 1: Borrowing 6.0 USDC from Aave...")
+                    print("⛽ Optimizing gas parameters for borrow transaction...")
+                    gas_params = self.get_optimized_gas_params('aave_borrow', 'market')
+                    print(f"   Gas limit: {gas_params['gas']:,}")
+                    print(f"   Gas price: {self.w3.from_wei(gas_params['gasPrice'], 'gwei'):.2f} gwei")
 
-                    # Action 1: Borrow 6 USDC
                     try:
-                        print("➡️ Action 1: Borrowing 6 USDC...")
-                        tx_hash = self.aave.borrow(
+                        borrow_result = self.aave.borrow(
                             asset_address=self.usdc_address,
                             amount_in_human_readable=6.0,
-                            interest_rate_mode=2 # Aave V3 Variable Debt Mode
+                            interest_rate_mode=2,  # Variable rate
+                            gas_params=gas_params  # Pass optimized gas parameters
                         )
-                        if tx_hash:
-                            print(f"✅ Borrowed 6 USDC. Tx: {tx_hash}")
-                        else:
-                            print("❌ Failed to borrow 6 USDC (tx_hash not returned).")
-                    except Exception as e:
-                        print(f"❌ Error borrowing USDC: {e}")
 
-                    # Action 2: Supply 4 USDC to Aave protocol
-                    try:
-                        print("➡️ Action 2: Supplying 4 USDC to Aave...")
-                        # IMPORTANT: Ensure USDC approval for Aave Pool is handled (e.g., in initialize_integrations)
-                        tx_hash = self.aave.supply(
-                            asset_address=self.usdc_address,
-                            amount_in_human_readable=4.0
-                        )
-                        if tx_hash:
-                            print(f"✅ Supplied 4 USDC to Aave. Tx: {tx_hash}")
+                        if borrow_result.get('success', False):
+                            print("✅ Successfully borrowed 6.0 USDC from Aave!")
+                            time.sleep(5)  # Wait for transaction confirmation
                         else:
-                            print("❌ Failed to supply 4 USDC (tx_hash not returned).")
-                    except Exception as e:
-                        print(f"❌ Error supplying USDC: {e}")
+                            print(f"❌ Failed to borrow USDC: {borrow_result.get('message', 'Unknown error')}")
+                            return False
 
-                    # Action 3: Swap 2 USDC for WBTC and Supply to Aave
-                    try:
-                        print("➡️ Action 3: Swapping 2 USDC for WBTC...")
-                        # Check WBTC balance before swap
-                        wbtc_balance_before = self.aave.get_token_balance(self.wbtc_address)
-                        
-                        tx_hash = self.uniswap.swap_tokens(
-                            token_in_address=self.usdc_address,
-                            token_out_address=self.wbtc_address,
-                            amount_in_human_readable=2.0,
-                        )
-                        if tx_hash:
-                            print(f"✅ Swapped 2 USDC for WBTC. Tx: {tx_hash}")
-                            
-                            # Wait for transaction confirmation
-                            time.sleep(5)
-                            
-                            # Check WBTC balance after swap to get received amount
-                            wbtc_balance_after = self.aave.get_token_balance(self.wbtc_address)
-                            wbtc_received = wbtc_balance_after - wbtc_balance_before
-                            
-                            if wbtc_received > 0:
-                                print(f"➡️ Action 3b: Supplying {wbtc_received:.8f} WBTC to Aave...")
-                                try:
-                                    supply_tx_hash = self.aave.supply(
-                                        asset_address=self.wbtc_address,
-                                        amount_in_human_readable=wbtc_received
-                                    )
-                                    if supply_tx_hash:
-                                        print(f"✅ Supplied {wbtc_received:.8f} WBTC to Aave. Tx: {supply_tx_hash}")
-                                    else:
-                                        print("❌ Failed to supply WBTC to Aave (tx_hash not returned).")
-                                except Exception as e:
-                                    print(f"❌ Error supplying WBTC to Aave: {e}")
+                        # Action 2: Supply 4 USDC to Aave protocol
+                        try:
+                            print("➡️ Action 2: Supplying 4 USDC to Aave...")
+                            # IMPORTANT: Ensure USDC approval for Aave Pool is handled (e.g., in initialize_integrations)
+                            tx_hash = self.aave.supply(
+                                asset_address=self.usdc_address,
+                                amount_in_human_readable=4.0
+                            )
+                            if tx_hash:
+                                print(f"✅ Supplied 4 USDC to Aave. Tx: {tx_hash}")
                             else:
-                                print("⚠️ No WBTC received from swap to supply.")
-                        else:
-                            print("❌ Failed to swap 2 USDC for WBTC (tx_hash not returned).")
-                    except Exception as e:
-                        print(f"❌ Error swapping USDC for WBTC: {e}")
+                                print("❌ Failed to supply 4 USDC (tx_hash not returned).")
+                        except Exception as e:
+                            print(f"❌ Error supplying USDC: {e}")
 
-                    # Action 4: Swap 1 USDC for WETH and Supply to Aave
-                    try:
-                        print("➡️ Action 4: Swapping 1 USDC for WETH...")
-                        # Check WETH balance before swap
-                        weth_balance_before = self.aave.get_token_balance(self.weth_address)
-                        
-                        tx_hash = self.uniswap.swap_tokens(
-                            token_in_address=self.usdc_address,
-                            token_out_address=self.weth_address,
-                            amount_in_human_readable=1.0,
-                        )
-                        if tx_hash:
-                            print(f"✅ Swapped 1 USDC for WETH. Tx: {tx_hash}")
-                            
-                            # Wait for transaction confirmation
-                            time.sleep(5)
-                            
-                            # Check WETH balance after swap to get received amount
-                            weth_balance_after = self.aave.get_token_balance(self.weth_address)
-                            weth_received = weth_balance_after - weth_balance_before
-                            
-                            if weth_received > 0:
-                                print(f"➡️ Action 4b: Supplying {weth_received:.8f} WETH to Aave...")
-                                try:
-                                    supply_tx_hash = self.aave.supply(
-                                        asset_address=self.weth_address,
-                                        amount_in_human_readable=weth_received
-                                    )
-                                    if supply_tx_hash:
-                                        print(f"✅ Supplied {weth_received:.8f} WETH to Aave. Tx: {supply_tx_hash}")
-                                    else:
-                                        print("❌ Failed to supply WETH to Aave (tx_hash not returned).")
-                                except Exception as e:
-                                    print(f"❌ Error supplying WETH to Aave: {e}")
-                            else:
-                                print("⚠️ No WETH received from swap to supply.")
-                        else:
-                            print("❌ Failed to swap 1 USDC for WETH (tx_hash not returned).")
-                    except Exception as e:
-                        print(f"❌ Error swapping USDC for WETH: {e}")
+                        # Action 3: Swap 2 USDC for WBTC and Supply to Aave
+                        try:
+                            print("➡️ Action 3: Swapping 2 USDC for WBTC...")
+                            # Check WBTC balance before swap
+                            wbtc_balance_before = self.aave.get_token_balance(self.wbtc_address)
 
-                    # Action 5: Swap 1 USDC for DAI and Supply to Aave
-                    try:
-                        print("➡️ Action 5: Swapping 1 USDC for DAI...")
-                        # Check DAI balance before swap
-                        dai_balance_before = self.aave.get_token_balance(self.dai_address)
-                        
-                        tx_hash = self.uniswap.swap_tokens(
-                            token_in_address=self.usdc_address,
-                            token_out_address=self.dai_address,
-                            amount_in_human_readable=1.0,
-                        )
-                        if tx_hash:
-                            print(f"✅ Swapped 1 USDC for DAI. Tx: {tx_hash}")
-                            
-                            # Wait for transaction confirmation
-                            time.sleep(5)
-                            
-                            # Check DAI balance after swap to get received amount
-                            dai_balance_after = self.aave.get_token_balance(self.dai_address)
-                            dai_received = dai_balance_after - dai_balance_before
-                            
-                            if dai_received > 0:
-                                print(f"➡️ Action 5b: Supplying {dai_received:.8f} DAI to Aave...")
-                                try:
-                                    supply_tx_hash = self.aave.supply(
-                                        asset_address=self.dai_address,
-                                        amount_in_human_readable=dai_received
-                                    )
-                                    if supply_tx_hash:
-                                        print(f"✅ Supplied {dai_received:.8f} DAI to Aave. Tx: {supply_tx_hash}")
-                                    else:
-                                        print("❌ Failed to supply DAI to Aave (tx_hash not returned).")
-                                except Exception as e:
-                                    print(f"❌ Error supplying DAI to Aave: {e}")
-                            else:
-                                print("⚠️ No DAI received from swap to supply.")
-                        else:
-                            print("❌ Failed to swap 1 USDC for DAI (tx_hash not returned).")
-                    except Exception as e:
-                        print(f"❌ Error swapping USDC for DAI: {e}")
+                            tx_hash = self.uniswap.swap_tokens(
+                                token_in_address=self.usdc_address,
+                                token_out_address=self.wbtc_address,
+                                amount_in_human_readable=2.0,
+                            )
+                            if tx_hash:
+                                print(f"✅ Swapped 2 USDC for WBTC. Tx: {tx_hash}")
 
-                    # Action 6: Swap 1 USDC for ETH (WETH) and leave in wallet
-                    try:
-                        print("➡️ Action 6: Swapping 1 USDC for ETH...")
-                        # Check WETH balance before swap
-                        weth_balance_before = self.aave.get_token_balance(self.weth_address)
-                        
-                        tx_hash = self.uniswap.swap_tokens(
-                            token_in_address=self.usdc_address,
-                            token_out_address=self.weth_address,
-                            amount_in_human_readable=1.0,
-                        )
-                        if tx_hash:
-                            print(f"✅ Swapped 1 USDC for WETH. Tx: {tx_hash}")
-                            
-                            # Wait for transaction confirmation
-                            time.sleep(5)
-                            
-                            # Check WETH balance after swap
-                            weth_balance_after = self.aave.get_token_balance(self.weth_address)
-                            weth_received = weth_balance_after - weth_balance_before
-                            
-                            if weth_received > 0:
-                                print(f"💰 Received {weth_received:.8f} WETH in wallet (keeping as WETH for gas reserve)")
-                                # Note: Keeping as WETH since unwrapping to ETH requires additional gas
+                                # Wait for transaction confirmation
+                                time.sleep(5)
+
+                                # Check WBTC balance after swap to get received amount
+                                wbtc_balance_after = self.aave.get_token_balance(self.wbtc_address)
+                                wbtc_received = wbtc_balance_after - wbtc_balance_before
+
+                                if wbtc_received > 0:
+                                    print(f"➡️ Action 3b: Supplying {wbtc_received:.8f} WBTC to Aave...")
+                                    try:
+                                        supply_tx_hash = self.aave.supply(
+                                            asset_address=self.wbtc_address,
+                                            amount_in_human_readable=wbtc_received
+                                        )
+                                        if supply_tx_hash:
+                                            print(f"✅ Supplied {wbtc_received:.8f} WBTC to Aave. Tx: {supply_tx_hash}")
+                                        else:
+                                            print("❌ Failed to supply WBTC to Aave (tx_hash not returned).")
+                                    except Exception as e:
+                                        print(f"❌ Error supplying WBTC to Aave: {e}")
+                                else:
+                                    print("⚠️ No WBTC received from swap to supply.")
                             else:
-                                print("⚠️ No WETH received from swap.")
-                        else:
-                            print("❌ Failed to swap 1 USDC for WETH (tx_hash not returned).")
-                    except Exception as e:
-                        print(f"❌ Error swapping USDC for WETH: {e}")
+                                print("❌ Failed to swap 2 USDC for WBTC (tx_hash not returned).")
+                        except Exception as e:
+                            print(f"❌ Error swapping USDC for WBTC: {e}")
+
+                        # Action 4: Swap 1 USDC for WETH and Supply to Aave
+                        try:
+                            print("➡️ Action 4: Swapping 1 USDC for WETH...")
+                            # Check WETH balance before swap
+                            weth_balance_before = self.aave.get_token_balance(self.weth_address)
+
+                            tx_hash = self.uniswap.swap_tokens(
+                                token_in_address=self.usdc_address,
+                                token_out_address=self.weth_address,
+                                amount_in_human_readable=1.0,
+                            )
+                            if tx_hash:
+                                print(f"✅ Swapped 1 USDC for WETH. Tx: {tx_hash}")
+
+                                # Wait for transaction confirmation
+                                time.sleep(5)
+
+                                # Check WETH balance after swap to get received amount
+                                weth_balance_after = self.aave.get_token_balance(self.weth_address)
+                                weth_received = weth_balance_after - weth_balance_before
+
+                                if weth_received > 0:
+                                    print(f"➡️ Action 4b: Supplying {weth_received:.8f} WETH to Aave...")
+                                    try:
+                                        supply_tx_hash = self.aave.supply(
+                                            asset_address=self.weth_address,
+                                            amount_in_human_readable=weth_received
+                                        )
+                                        if supply_tx_hash:
+                                            print(f"✅ Supplied {weth_received:.8f} WETH to Aave. Tx: {supply_tx_hash}")
+                                        else:
+                                            print("❌ Failed to supply WETH to Aave (tx_hash not returned).")
+                                    except Exception as e:
+                                        print(f"❌ Error supplying WETH to Aave: {e}")
+                                else:
+                                    print("⚠️ No WETH received from swap to supply.")
+                            else:
+                                print("❌ Failed to swap 1 USDC for WETH (tx_hash not returned).")
+                        except Exception as e:
+                            print(f"❌ Error swapping USDC for WETH: {e}")
+
+                        # Action 5: Swap 1 USDC for DAI and Supply to Aave
+                        try:
+                            print("➡️ Action 5: Swapping 1 USDC for DAI...")
+                            # Check DAI balance before swap
+                            dai_balance_before = self.aave.get_token_balance(self.dai_address)
+
+                            tx_hash = self.uniswap.swap_tokens(
+                                token_in_address=self.usdc_address,
+                                token_out_address=self.dai_address,
+                                amount_in_human_readable=1.0,
+                            )
+                            if tx_hash:
+                                print(f"✅ Swapped 1 USDC for DAI. Tx: {tx_hash}")
+
+                                # Wait for transaction confirmation
+                                time.sleep(5)
+
+                                # Check DAI balance after swap to get received amount
+                                dai_balance_after = self.aave.get_token_balance(self.dai_address)
+                                dai_received = dai_balance_after - dai_balance_before
+
+                                if dai_received > 0:
+                                    print(f"➡️ Action 5b: Supplying {dai_received:.8f} DAI to Aave...")
+                                    try:
+                                        supply_tx_hash = self.aave.supply(
+                                            asset_address=self.dai_address,
+                                            amount_in_human_readable=dai_received
+                                        )
+                                        if supply_tx_hash:
+                                            print(f"✅ Supplied {dai_received:.8f} DAI to Aave. Tx: {supply_tx_hash}")
+                                        else:
+                                            print("❌ Failed to supply DAI to Aave (tx_hash not returned).")
+                                    except Exception as e:
+                                        print(f"❌ Error supplying DAI to Aave: {e}")
+                                else:
+                                    print("⚠️ No DAI received from swap to supply.")
+                            else:
+                                print("❌ Failed to swap 1 USDC for DAI (tx_hash not returned).")
+                        except Exception as e:
+                            print(f"❌ Error swapping USDC for DAI: {e}")
+
+                        # Action 6: Swap 1 USDC for ETH (WETH) and leave in wallet
+                        try:
+                            print("➡️ Action 6: Swapping 1 USDC for ETH...")
+                            # Check WETH balance before swap
+                            weth_balance_before = self.aave.get_token_balance(self.weth_address)
+
+                            tx_hash = self.uniswap.swap_tokens(
+                                token_in_address=self.usdc_address,
+                                token_out_address=self.weth_address,
+                                amount_in_human_readable=1.0,
+                            )
+                            if tx_hash:
+                                print(f"✅ Swapped 1 USDC for WETH. Tx: {tx_hash}")
+
+                                # Wait for transaction confirmation
+                                time.sleep(5)
+
+                                # Check WETH balance after swap
+                                weth_balance_after = self.aave.get_token_balance(self.weth_address)
+                                weth_received = weth_balance_after - weth_balance_before
+
+                                if weth_received > 0:
+                                    print(f"💰 Received {weth_received:.8f} WETH in wallet (keeping as WETH for gas reserve)")
+                                    # Note: Keeping as WETH since unwrapping to ETH requires additional gas
+                                else:
+                                    print("⚠️ No WETH received from swap.")
+                            else:
+                                print("❌ Failed to swap 1 USDC for WETH (tx_hash not returned).")
+                        except Exception as e:
+                            print(f"❌ Error swapping USDC for WETH: {e}")
 
                     # --- End DeFi Action Sequence ---
 
@@ -646,16 +678,16 @@ class ArbitrumTestnetAgent:
                     # This prevents immediate re-triggering on the same collateral level
                     self.last_collateral_value_usd = current_collateral_usdc
                     print(f"💰 Updated last_collateral_value_usd to ${self.last_collateral_value_usd:.2f} for next cycle.")
-                    
+
                 else:
                     print(f"⏳ Collateral increase less than $12. Current: ${current_collateral_usdc:.2f}, Last: ${self.last_collateral_value_usd:.2f}. Waiting for next cycle.")
-            
+
             # Simple performance metric based on successful operations
             performance = 0.85 + (iteration % 10) * 0.01  # Simulate varying performance
             print(f"📊 Task performance: {performance:.3f}")
-            
+
             return performance
-            
+
         except Exception as e:
             print(f"❌ DeFi task failed: {e}")
             return 0.0
