@@ -597,6 +597,15 @@ mode = "sequential"
 task = "shell.exec"
 args = "python improved_web_dashboard.py"
 
+[[workflows.workflow]]
+name = "🧪 TEST REAL AGENT"
+author = 39391053
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python test_real_agent.py"
+
 [[ports]]
 localPort = 5000
 externalPort = 80
