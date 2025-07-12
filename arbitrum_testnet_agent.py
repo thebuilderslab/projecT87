@@ -143,20 +143,20 @@ class ArbitrumTestnetAgent:
         try:
             if not self.w3.is_connected():
                 return False, "Not connected to Web3 provider."
-            
+
             # Get network info
             latest_block = self.w3.eth.block_number
             gas_price = self.w3.eth.gas_price
             actual_chain_id = self.w3.eth.chain_id
-            
+
             print(f"🌐 Network Connected: Block {latest_block}, Gas Price: {Web3.from_wei(gas_price, 'gwei')} Gwei")
             print(f"🔗 RPC Endpoint: {self.rpc_url}")
             print(f"⛓️ Chain ID: {actual_chain_id} (Expected: {self.chain_id})")
-            
+
             # Validate chain ID matches expected
             if actual_chain_id != self.chain_id:
                 return False, f"Chain ID mismatch: got {actual_chain_id}, expected {self.chain_id}"
-            
+
             # Test Aave pool contract accessibility
             try:
                 pool_contract = self.w3.eth.contract(
@@ -173,7 +173,7 @@ class ArbitrumTestnetAgent:
                 print(f"✅ Aave Pool accessible: Revision {revision}")
             except Exception as e:
                 print(f"⚠️ Aave Pool access issue: {e}")
-                
+
             return True, "Connected and validated"
         except Exception as e:
             return False, f"Network check failed: {e}"
@@ -369,13 +369,13 @@ class ArbitrumTestnetAgent:
             print(f"   Network: {self.network_mode} (Chain ID: {self.chain_id})")
             print(f"   RPC Endpoint: {self.rpc_url}")
             print(f"   Aave Pool Address: {self.aave_pool_address}")
-            
+
             # Test direct Aave contract interaction
             try:
                 print(f"🔍 TESTING DIRECT AAVE CONTRACT ACCESS:")
                 # Try to get user account data directly using the Aave contract
                 from web3 import Web3
-                
+
                 # Standard Aave Pool ABI for getUserAccountData
                 pool_abi = [{
                     "inputs": [{"name": "user", "type": "address"}],
@@ -391,35 +391,35 @@ class ArbitrumTestnetAgent:
                     "stateMutability": "view",
                     "type": "function"
                 }]
-                
+
                 pool_contract = self.w3.eth.contract(
                     address=self.aave_pool_address,
                     abi=pool_abi
                 )
-                
+
                 print(f"   Attempting getUserAccountData for: {self.address}")
                 account_data = pool_contract.functions.getUserAccountData(self.address).call()
-                
+
                 total_collateral_eth = account_data[0] / (10**18)
                 total_debt_eth = account_data[1] / (10**18)
                 health_factor = account_data[5] / (10**18) if account_data[5] > 0 else float('inf')
-                
+
                 print(f"   ✅ DIRECT AAVE QUERY SUCCESS:")
                 print(f"      Total Collateral: {total_collateral_eth:.8f} ETH")
                 print(f"      Total Debt: {total_debt_eth:.8f} ETH")
                 print(f"      Health Factor: {health_factor:.4f}")
-                
+
                 # Convert to USD for comparison
                 eth_price = 3000  # Approximate
                 collateral_usd = total_collateral_eth * eth_price
                 debt_usd = total_debt_eth * eth_price
-                
+
                 print(f"      Estimated Collateral USD: ${collateral_usd:,.2f}")
                 print(f"      Estimated Debt USD: ${debt_usd:,.2f}")
-                
+
                 current_health_factor = health_factor
                 current_collateral_value_usd = collateral_usd
-                
+
             except Exception as e:
                 print(f"   ❌ DIRECT AAVE QUERY FAILED: {e}")
                 # Fallback to health monitor
@@ -431,7 +431,7 @@ class ArbitrumTestnetAgent:
                 else:
                     current_health_factor = health_data.get('health_factor', float('inf'))
                     current_collateral_value_usd = 0.0  # Will be set below
-            
+
             print(f"📊 Current Health Factor: {current_health_factor:.4f}")
 
             # Get real ARB price (strict - no fallback)
@@ -465,46 +465,40 @@ class ArbitrumTestnetAgent:
 
             # Check wallet readiness for DeFi operations
             wallet_ready = self.check_wallet_readiness_for_defi()
-            
+
             # Enhanced monitoring and trigger detection
             print(f"🔍 MONITORING: Health factor {current_health_factor:.4f}")
 
-            # Get current Aave positions for detailed monitoring (use direct contract data if available)
+            # PRIORITY: Use same data source as dashboard for consistency
             try:
-                if 'current_collateral_value_usd' not in locals():
-                    # Try monitoring summary as fallback
-                    monitoring_summary = self.health_monitor.get_monitoring_summary()
-                    if monitoring_summary:
-                        current_collateral_value_usd = monitoring_summary.get('total_collateral_usd', 0)
-                        debt_usd = monitoring_summary.get('total_debt_usd', 0)
-                    else:
-                        current_collateral_value_usd = 0
-                        debt_usd = 0
+                # Import the same enhanced fetcher used by the dashboard
+                from accurate_debank_fetcher import AccurateWalletDataFetcher
+
+                fetcher = AccurateWalletDataFetcher(self.w3, self.address)
+                dashboard_data = fetcher.get_comprehensive_wallet_data()
+
+                if dashboard_data and dashboard_data.get('success'):
+                    current_collateral_value_usd = dashboard_data['total_collateral_usdc']
+                    debt_usd = dashboard_data['total_debt_usdc']
+                    current_health_factor = dashboard_data['health_factor']
+                    print(f"✅ AGENT SYNCHRONIZED WITH DASHBOARD:")
+                    print(f"   Using same data source as web dashboard")
+                    print(f"   Collateral: ${current_collateral_value_usd:,.2f}")
+                    print(f"   Debt: ${debt_usd:,.2f}")
+                    print(f"   Health Factor: {current_health_factor:.4f}")
                 else:
-                    # Use the direct contract data from diagnostic section
-                    debt_usd = debt_usd if 'debt_usd' in locals() else 0
-                
-                print(f"📊 Current Position: ${current_collateral_value_usd:,.2f} collateral, ${debt_usd:,.2f} debt")
-                print(f"💰 Last recorded collateral: ${self.last_collateral_value_usd:,.2f}")
-                print(f"📈 Collateral growth: ${current_collateral_value_usd - self.last_collateral_value_usd:,.2f}")
-                
-                if current_collateral_value_usd == 0:
-                    # Check wallet balances directly if no Aave position detected
-                    print("🔍 No active Aave position detected. Checking wallet balances...")
-                    eth_balance = self.get_eth_balance()
-                    usdc_balance = self.aave.get_token_balance(self.usdc_address)
-                    
-                    # Estimate USD value from wallet holdings
-                    eth_price = 3000  # Approximate ETH price
-                    estimated_wallet_usd = (eth_balance * eth_price) + usdc_balance
-                    
-                    print(f"💰 Wallet Holdings: {eth_balance:.6f} ETH + {usdc_balance:.2f} USDC ≈ ${estimated_wallet_usd:.2f}")
-                    
-                    # If wallet has sufficient funds but no Aave position, suggest creating one
-                    if estimated_wallet_usd > 50:
-                        print(f"💡 SUGGESTION: You have ${estimated_wallet_usd:.2f} in wallet but no Aave position detected.")
-                        print(f"💡 This might be due to contract access issues. Check dashboard vs agent wallet address.")
-                    
+                    # Fallback to direct contract data from diagnostic section
+                    if 'current_collateral_value_usd' not in locals():
+                        monitoring_summary = self.health_monitor.get_monitoring_summary()
+                        if monitoring_summary:
+                            current_collateral_value_usd = monitoring_summary.get('total_collateral_usd', 0)
+                            debt_usd = monitoring_summary.get('total_debt_usd', 0)
+                        else:
+                            current_collateral_value_usd = 0
+                            debt_usd = 0
+                    else:
+                        debt_usd = debt_usd if 'debt_usd' in locals() else 0
+
             except Exception as e:
                 print(f"⚠️ Could not get detailed position data: {e}")
                 if 'current_collateral_value_usd' not in locals():
@@ -631,13 +625,13 @@ class ArbitrumTestnetAgent:
             else:
                 growth = current_collateral_value_usd - self.last_collateral_value_usd
                 print(f"⏸️ No action: Collateral growth ${growth:.2f} < $12 threshold")
-                
+
                 if current_collateral_value_usd == 0:
                     print(f"💡 TIP: To activate autonomous operations:")
                     print(f"   1. Supply some USDC/WETH to Aave as collateral")
                     print(f"   2. Agent will monitor for $12+ collateral growth")
                     print(f"   3. Then execute autonomous borrowing & swapping sequence")
-                
+
                 return 0.7  # Moderate performance score
 
         except Exception as e:
@@ -650,17 +644,17 @@ class ArbitrumTestnetAgent:
         try:
             eth_balance = self.get_eth_balance()
             usdc_balance = self.aave.get_token_balance(self.usdc_address)
-            
+
             print(f"🔍 WALLET READINESS CHECK:")
             print(f"   ETH Balance: {eth_balance:.6f} ETH")
             print(f"   USDC Balance: {usdc_balance:.2f} USDC")
-            
+
             # Check minimum requirements
             min_eth_for_gas = 0.001  # Minimum ETH for gas fees
             min_usdc_for_collateral = 10.0  # Minimum USDC to start with
-            
+
             ready = eth_balance >= min_eth_for_gas and usdc_balance >= min_usdc_for_collateral
-            
+
             if ready:
                 print(f"✅ Wallet ready for DeFi operations!")
             else:
@@ -669,9 +663,9 @@ class ArbitrumTestnetAgent:
                     print(f"   Need at least {min_eth_for_gas:.3f} ETH for gas (current: {eth_balance:.6f})")
                 if usdc_balance < min_usdc_for_collateral:
                     print(f"   Need at least {min_usdc_for_collateral:.1f} USDC for collateral (current: {usdc_balance:.2f})")
-            
+
             return ready
-            
+
         except Exception as e:
             print(f"❌ Error checking wallet readiness: {e}")
             return False
