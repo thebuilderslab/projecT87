@@ -574,6 +574,10 @@ class AaveArbitrumIntegration:
             print(f"❌ Supply failed: {e}")
             return None
 
+    def borrow(self, amount, asset, interest_rate_mode=2):
+        """Borrow assets from Aave (simplified interface for agent)"""
+        return self.borrow_from_aave(asset, amount, interest_rate_mode)
+
     def borrow_from_aave(self, token_address, amount, interest_rate_mode=2):
         """Borrow assets from Aave (interest_rate_mode: 1=stable, 2=variable)"""
         try:
@@ -678,7 +682,7 @@ class AaveArbitrumIntegration:
                     print(f"✅ Repay transaction sent: {tx_hash.hex()}")
                     return tx_hash.hex()
 
-except Exception as retry_e:
+                except Exception as retry_e:
                     if "nonce too low" in str(retry_e) and attempt < max_retries - 1:
                         print(f"🔄 Nonce conflict, retrying with nonce {nonce + attempt + 1}")
                         continue
@@ -688,6 +692,13 @@ except Exception as retry_e:
         except Exception as e:
             print(f"❌ Repay failed: {e}")
             return None
+
+        except Exception as retry_e:
+            if "nonce too low" in str(retry_e) and attempt < max_retries - 1:
+                print(f"🔄 Nonce conflict, retrying with nonce {nonce + attempt + 1}")
+                continue
+            else:
+                raise retry_e
 
     def supply_wbtc_to_aave(self, wbtc_amount):
         """Supply WBTC to Aave V3 as collateral"""
