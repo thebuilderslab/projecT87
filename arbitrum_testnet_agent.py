@@ -139,14 +139,42 @@ class ArbitrumTestnetAgent:
             return False
 
     def check_network_status(self):
-        """Checks the network status."""
+        """Checks the network status with comprehensive validation."""
         try:
             if not self.w3.is_connected():
                 return False, "Not connected to Web3 provider."
+            
+            # Get network info
             latest_block = self.w3.eth.block_number
             gas_price = self.w3.eth.gas_price
+            actual_chain_id = self.w3.eth.chain_id
+            
             print(f"🌐 Network Connected: Block {latest_block}, Gas Price: {Web3.from_wei(gas_price, 'gwei')} Gwei")
-            return True, "Connected"
+            print(f"🔗 RPC Endpoint: {self.rpc_url}")
+            print(f"⛓️ Chain ID: {actual_chain_id} (Expected: {self.chain_id})")
+            
+            # Validate chain ID matches expected
+            if actual_chain_id != self.chain_id:
+                return False, f"Chain ID mismatch: got {actual_chain_id}, expected {self.chain_id}"
+            
+            # Test Aave pool contract accessibility
+            try:
+                pool_contract = self.w3.eth.contract(
+                    address=self.aave_pool_address,
+                    abi=[{
+                        "inputs": [],
+                        "name": "POOL_REVISION",
+                        "outputs": [{"name": "", "type": "uint256"}],
+                        "stateMutability": "view",
+                        "type": "function"
+                    }]
+                )
+                revision = pool_contract.functions.POOL_REVISION().call()
+                print(f"✅ Aave Pool accessible: Revision {revision}")
+            except Exception as e:
+                print(f"⚠️ Aave Pool access issue: {e}")
+                
+            return True, "Connected and validated"
         except Exception as e:
             return False, f"Network check failed: {e}"
 
@@ -335,13 +363,74 @@ class ArbitrumTestnetAgent:
             if not hasattr(self, 'aave') or self.aave is None:
                 self.initialize_integrations()
 
-            # Check health factor with real data (with fallback handling)
-            health_data = self.health_monitor.get_current_health_factor()
-            if health_data is None:
-                print("⚠️ Warning: Could not get health factor from Aave. Using fallback monitoring.")
-                current_health_factor = float('inf')  # Indicates no debt position
-            else:
-                current_health_factor = health_data.get('health_factor', float('inf'))
+            # === COMPREHENSIVE DIAGNOSTIC SECTION ===
+            print(f"\n🔍 AGENT WALLET & AAVE DIAGNOSTIC:")
+            print(f"   Agent Wallet Address: {self.address}")
+            print(f"   Network: {self.network_mode} (Chain ID: {self.chain_id})")
+            print(f"   RPC Endpoint: {self.rpc_url}")
+            print(f"   Aave Pool Address: {self.aave_pool_address}")
+            
+            # Test direct Aave contract interaction
+            try:
+                print(f"🔍 TESTING DIRECT AAVE CONTRACT ACCESS:")
+                # Try to get user account data directly using the Aave contract
+                from web3 import Web3
+                
+                # Standard Aave Pool ABI for getUserAccountData
+                pool_abi = [{
+                    "inputs": [{"name": "user", "type": "address"}],
+                    "name": "getUserAccountData",
+                    "outputs": [
+                        {"name": "totalCollateralETH", "type": "uint256"},
+                        {"name": "totalDebtETH", "type": "uint256"},
+                        {"name": "availableBorrowsETH", "type": "uint256"},
+                        {"name": "currentLiquidationThreshold", "type": "uint256"},
+                        {"name": "ltv", "type": "uint256"},
+                        {"name": "healthFactor", "type": "uint256"}
+                    ],
+                    "stateMutability": "view",
+                    "type": "function"
+                }]
+                
+                pool_contract = self.w3.eth.contract(
+                    address=self.aave_pool_address,
+                    abi=pool_abi
+                )
+                
+                print(f"   Attempting getUserAccountData for: {self.address}")
+                account_data = pool_contract.functions.getUserAccountData(self.address).call()
+                
+                total_collateral_eth = account_data[0] / (10**18)
+                total_debt_eth = account_data[1] / (10**18)
+                health_factor = account_data[5] / (10**18) if account_data[5] > 0 else float('inf')
+                
+                print(f"   ✅ DIRECT AAVE QUERY SUCCESS:")
+                print(f"      Total Collateral: {total_collateral_eth:.8f} ETH")
+                print(f"      Total Debt: {total_debt_eth:.8f} ETH")
+                print(f"      Health Factor: {health_factor:.4f}")
+                
+                # Convert to USD for comparison
+                eth_price = 3000  # Approximate
+                collateral_usd = total_collateral_eth * eth_price
+                debt_usd = total_debt_eth * eth_price
+                
+                print(f"      Estimated Collateral USD: ${collateral_usd:,.2f}")
+                print(f"      Estimated Debt USD: ${debt_usd:,.2f}")
+                
+                current_health_factor = health_factor
+                current_collateral_value_usd = collateral_usd
+                
+            except Exception as e:
+                print(f"   ❌ DIRECT AAVE QUERY FAILED: {e}")
+                # Fallback to health monitor
+                health_data = self.health_monitor.get_current_health_factor()
+                if health_data is None:
+                    print("⚠️ Warning: Could not get health factor from Aave. Using fallback monitoring.")
+                    current_health_factor = float('inf')
+                    current_collateral_value_usd = 0.0
+                else:
+                    current_health_factor = health_data.get('health_factor', float('inf'))
+                    current_collateral_value_usd = 0.0  # Will be set below
             
             print(f"📊 Current Health Factor: {current_health_factor:.4f}")
 
@@ -380,18 +469,28 @@ class ArbitrumTestnetAgent:
             # Enhanced monitoring and trigger detection
             print(f"🔍 MONITORING: Health factor {current_health_factor:.4f}")
 
-            # Get current Aave positions for detailed monitoring
+            # Get current Aave positions for detailed monitoring (use direct contract data if available)
             try:
-                monitoring_summary = self.health_monitor.get_monitoring_summary()
-                if monitoring_summary:
-                    current_collateral_value_usd = monitoring_summary.get('total_collateral_usd', 0)
-                    debt_usd = monitoring_summary.get('total_debt_usd', 0)
-                    print(f"📊 Current Position: ${current_collateral_value_usd:,.2f} collateral, ${debt_usd:,.2f} debt")
-                    print(f"💰 Last recorded collateral: ${self.last_collateral_value_usd:,.2f}")
-                    print(f"📈 Collateral growth: ${current_collateral_value_usd - self.last_collateral_value_usd:,.2f}")
+                if 'current_collateral_value_usd' not in locals():
+                    # Try monitoring summary as fallback
+                    monitoring_summary = self.health_monitor.get_monitoring_summary()
+                    if monitoring_summary:
+                        current_collateral_value_usd = monitoring_summary.get('total_collateral_usd', 0)
+                        debt_usd = monitoring_summary.get('total_debt_usd', 0)
+                    else:
+                        current_collateral_value_usd = 0
+                        debt_usd = 0
                 else:
-                    # Check wallet balances directly if no Aave position exists
-                    print("🔍 No active Aave position found. Checking wallet balances...")
+                    # Use the direct contract data from diagnostic section
+                    debt_usd = debt_usd if 'debt_usd' in locals() else 0
+                
+                print(f"📊 Current Position: ${current_collateral_value_usd:,.2f} collateral, ${debt_usd:,.2f} debt")
+                print(f"💰 Last recorded collateral: ${self.last_collateral_value_usd:,.2f}")
+                print(f"📈 Collateral growth: ${current_collateral_value_usd - self.last_collateral_value_usd:,.2f}")
+                
+                if current_collateral_value_usd == 0:
+                    # Check wallet balances directly if no Aave position detected
+                    print("🔍 No active Aave position detected. Checking wallet balances...")
                     eth_balance = self.get_eth_balance()
                     usdc_balance = self.aave.get_token_balance(self.usdc_address)
                     
@@ -403,13 +502,13 @@ class ArbitrumTestnetAgent:
                     
                     # If wallet has sufficient funds but no Aave position, suggest creating one
                     if estimated_wallet_usd > 50:
-                        print(f"💡 SUGGESTION: You have ${estimated_wallet_usd:.2f} in wallet but no Aave position.")
-                        print(f"💡 Consider supplying some USDC to Aave to enable autonomous operations.")
+                        print(f"💡 SUGGESTION: You have ${estimated_wallet_usd:.2f} in wallet but no Aave position detected.")
+                        print(f"💡 This might be due to contract access issues. Check dashboard vs agent wallet address.")
                     
-                    current_collateral_value_usd = 0
             except Exception as e:
                 print(f"⚠️ Could not get detailed position data: {e}")
-                current_collateral_value_usd = 0
+                if 'current_collateral_value_usd' not in locals():
+                    current_collateral_value_usd = 0
 
             # NEW TRIGGER CONDITION: Collateral growth of $12 USD
             if current_collateral_value_usd >= (self.last_collateral_value_usd + 12):
