@@ -51,6 +51,7 @@ class ArbitrumTestnetAgent:
         self.account = Account.from_key(self.private_key)
         self.address = self.account.address
         print(f"🔑 Wallet Address: {self.address}")
+        print(f"💰 AGENT INITIALIZED WITH WALLET: {self.address}")
 
         # Contract addresses based on network
         if self.network_mode == 'mainnet':
@@ -90,6 +91,7 @@ class ArbitrumTestnetAgent:
         self.last_collateral_value_usd = 0.0
         self.baseline_initialized = False
         print("💰 Initialized last_collateral_value_usd to 0.0 (will sync with actual position)")
+        print(f"📊 Initialized last_collateral_value_usd to: {self.last_collateral_value_usd}")
 
     def initialize_integrations(self):
         """Initialize all real DeFi integrations with strict error handling"""
@@ -470,6 +472,12 @@ class ArbitrumTestnetAgent:
 
             # Enhanced monitoring and trigger detection
             print(f"🔍 MONITORING: Health factor {current_health_factor:.4f}")
+            
+            # DEBUG: Print raw health data before any modifications
+            print(f"🔍 DEBUG - RAW HEALTH DATA FROM DIRECT AAVE:")
+            print(f"   Raw collateral_usd from Aave contract: ${current_collateral_value_usd:,.8f}")
+            print(f"   Raw debt_usd from Aave contract: ${debt_usd if 'debt_usd' in locals() else 0.0:,.8f}")
+            print(f"   Raw health_factor from Aave contract: {current_health_factor:.8f}")
 
             # FORCE: Use dashboard values for trigger detection
             print(f"🔄 FORCING DASHBOARD DATA SYNC...")
@@ -489,6 +497,19 @@ class ArbitrumTestnetAgent:
             print(f"   Agent now using dashboard debt: ${debt_usd:,.2f}")
             print(f"   Agent now using dashboard health factor: {current_health_factor:.4f}")
             
+            # DEBUG: Log baseline tracking values
+            print(f"🔍 DEBUG - BASELINE TRACKING:")
+            print(f"   self.last_collateral_value_usd (baseline): ${self.last_collateral_value_usd:,.2f}")
+            print(f"   current_collateral_value_usd (now): ${current_collateral_value_usd:,.2f}")
+            print(f"   self.baseline_initialized: {self.baseline_initialized}")
+            
+            # Calculate and log trigger values
+            collateral_growth = current_collateral_value_usd - self.last_collateral_value_usd
+            trigger_threshold = 12.0
+            print(f"   computed collateral_growth: ${collateral_growth:,.2f}")
+            print(f"   target trigger_threshold: ${trigger_threshold:,.2f}")
+            print(f"   trigger_check: {current_collateral_value_usd:,.2f} >= {self.last_collateral_value_usd + trigger_threshold:,.2f} = {current_collateral_value_usd >= (self.last_collateral_value_usd + trigger_threshold)}")
+            
             # Try to get real data as backup
             try:
                 from accurate_debank_fetcher import AccurateWalletDataFetcher
@@ -497,21 +518,32 @@ class ArbitrumTestnetAgent:
 
                 if dashboard_data and dashboard_data.get('success'):
                     real_collateral = dashboard_data['total_collateral_usdc']
+                    print(f"🔍 DEBUG - REAL DATA FETCHER RESULT:")
+                    print(f"   AccurateWalletDataFetcher collateral: ${real_collateral:,.2f}")
                     if real_collateral > 100:  # If real data shows significant position
                         current_collateral_value_usd = real_collateral
                         debt_usd = dashboard_data['total_debt_usdc']
                         current_health_factor = dashboard_data['health_factor']
                         print(f"✅ REAL DATA OVERRIDE: Using live data ${real_collateral:,.2f}")
+                else:
+                    print(f"⚠️ AccurateWalletDataFetcher returned no data or failed")
 
             except Exception as e:
                 print(f"⚠️ Real data fetch failed, using forced dashboard values: {e}")
 
             # Initialize baseline on first run with meaningful position
+            print(f"🔍 DEBUG - BASELINE INITIALIZATION CHECK:")
+            print(f"   self.baseline_initialized: {self.baseline_initialized}")
+            print(f"   current_collateral_value_usd: ${current_collateral_value_usd:,.2f}")
+            print(f"   condition (not initialized AND collateral > $50): {not self.baseline_initialized and current_collateral_value_usd > 50}")
+            
             if not self.baseline_initialized and current_collateral_value_usd > 50:
+                old_baseline = self.last_collateral_value_usd
                 self.last_collateral_value_usd = current_collateral_value_usd
                 self.baseline_initialized = True
-                print(f"🎯 BASELINE INITIALIZED: Set to ${current_collateral_value_usd:,.2f}")
+                print(f"🎯 BASELINE INITIALIZED: Changed from ${old_baseline:,.2f} to ${current_collateral_value_usd:,.2f}")
                 print(f"📊 Future triggers will activate on $12+ growth from this baseline")
+                print(f"📊 Updated last_collateral_value_usd to: {self.last_collateral_value_usd}")
                 return 0.8
             
             # Force baseline initialization with dashboard data if agent sees $0
@@ -519,15 +551,24 @@ class ArbitrumTestnetAgent:
                 # Try to get dashboard data for baseline
                 try:
                     dashboard_collateral = 174.48  # Your current dashboard value
+                    old_baseline = self.last_collateral_value_usd
                     self.last_collateral_value_usd = dashboard_collateral
                     self.baseline_initialized = True
-                    print(f"🎯 BASELINE FORCE-INITIALIZED: Set to ${dashboard_collateral:,.2f} from dashboard")
+                    print(f"🎯 BASELINE FORCE-INITIALIZED: Changed from ${old_baseline:,.2f} to ${dashboard_collateral:,.2f} from dashboard")
                     print(f"📊 Future triggers will activate on $12+ growth from this baseline")
+                    print(f"📊 Updated last_collateral_value_usd to: {self.last_collateral_value_usd}")
                     return 0.8
                 except:
                     pass
 
             # NEW TRIGGER CONDITION: Collateral growth of $12 USD
+            print(f"🔍 DEBUG - FINAL TRIGGER CHECK:")
+            print(f"   current_collateral_value_usd: ${current_collateral_value_usd:,.2f}")
+            print(f"   self.last_collateral_value_usd: ${self.last_collateral_value_usd:,.2f}")
+            print(f"   growth needed for trigger: ${self.last_collateral_value_usd + 12:,.2f}")
+            print(f"   actual growth: ${current_collateral_value_usd - self.last_collateral_value_usd:,.2f}")
+            print(f"   trigger condition met: {current_collateral_value_usd >= (self.last_collateral_value_usd + 12)}")
+            
             if current_collateral_value_usd >= (self.last_collateral_value_usd + 12):
                 print(f"🚀 TRIGGER ACTIVATED: Collateral grew by ${current_collateral_value_usd - self.last_collateral_value_usd:.2f} (≥ $12 threshold)")
                 print(f"⚡ EXECUTING AUTONOMOUS SEQUENCE...")
@@ -639,8 +680,10 @@ class ArbitrumTestnetAgent:
                 print(f"✅ Received {final_weth_received:.8f} WETH (kept in wallet!)")
 
                 # Update last collateral value after successful sequence completion
+                old_baseline = self.last_collateral_value_usd
                 self.last_collateral_value_usd = current_collateral_value_usd
-                print(f"💰 Updated last_collateral_value_usd to: ${self.last_collateral_value_usd:,.2f}")
+                print(f"💰 Updated last_collateral_value_usd from ${old_baseline:,.2f} to: ${self.last_collateral_value_usd:,.2f}")
+                print(f"📊 Updated last_collateral_value_usd to: {self.last_collateral_value_usd}")
 
                 print("🎉 AUTONOMOUS SEQUENCE COMPLETED SUCCESSFULLY!")
                 return 0.95  # High performance score
@@ -648,6 +691,9 @@ class ArbitrumTestnetAgent:
             else:
                 growth = current_collateral_value_usd - self.last_collateral_value_usd
                 print(f"⏸️ No action: Collateral growth ${growth:.2f} < $12 threshold")
+                print(f"📊 Current Position: ${current_collateral_value_usd:,.2f} collateral, ${debt_usd if 'debt_usd' in locals() else 0.0:,.2f} debt")
+                print(f"💰 Last recorded collateral: ${self.last_collateral_value_usd:,.2f}")
+                print(f"📈 Collateral growth: ${growth:.2f}")
 
                 if current_collateral_value_usd == 0:
                     print(f"💡 TIP: To activate autonomous operations:")
