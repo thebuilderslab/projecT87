@@ -16,7 +16,7 @@ class AccurateWalletDataFetcher:
         self.wallet_address = wallet_address
 
         # Token addresses for Arbitrum Mainnet
-        self.usdc_address = "0xFF970A61A04b1cA14834A651bAb06d67307796618"
+        self.usdc_address = Web3.to_checksum_address('0xFF970A61A04b1cA14834A651bAb06d67307796618')  # USDC.e
         self.wbtc_address = "0x2f2a2543B76A4166549F7aBb2eE68df6F4E579b2"
         self.weth_address = "0x82af49447d8a07e3bd95bd0d56f35241523fbab1"
         self.arb_address = "0x912ce59144191c1204e64559fe83e3a5095c6afd"
