@@ -594,8 +594,7 @@ class ArbitrumTestnetAgent:
 
                         enhanced_collateral_usd = (
                             (wbtc_balance * btc_price) +
-                            (weth_balance * eth_price)```python
- +
+                            (weth_balance * eth_price) +
                             (usdc_balance * usdc_price)
                         )
 
