@@ -97,7 +97,7 @@ class ArbitrumTestnetAgent:
             # Initialize Real Aave, Uniswap, and Health Monitor Integrations
             self.aave = AaveArbitrumIntegration(self.w3, self.account)
             self.uniswap = UniswapIntegration(self.w3, self.account)
-            self.health_monitor = HealthMonitor(self.w3, self.account)
+            self.health_monitor = HealthMonitor(self.w3, self.account, self.aave)
             print("✅ Initialized Real Aave, Uniswap, and Health Monitor Integrations.")
 
             # Initialize Gas Calculator
@@ -323,7 +323,7 @@ class ArbitrumTestnetAgent:
                 self.initialize_integrations()
 
             # Check health factor with real data
-            health_data = self.health_monitor.get_health_factor()
+            health_data = self.health_monitor.get_current_health_factor()
             if health_data is None:
                 raise Exception("CRITICAL: Failed to get real health factor data. Halting.")
 
