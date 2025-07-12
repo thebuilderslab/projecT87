@@ -5,7 +5,7 @@ import random
 from datetime import datetime
 from web3 import Web3
 from eth_account import Account
-from aave_integration import AaveIntegration
+from aave_integration import AaveArbitrumIntegration
 from uniswap_integration import UniswapIntegration
 from aave_health_monitor import HealthMonitor
 from gas_fee_calculator import ArbitrumGasCalculator
@@ -89,7 +89,7 @@ class ArbitrumTestnetAgent:
             print("🚀 Initializing Real DeFi Integrations...")
 
             # Initialize Real Aave, Uniswap, and Health Monitor Integrations
-            self.aave = AaveIntegration(self.w3, self.account)
+            self.aave = AaveArbitrumIntegration(self.w3, self.account)
             self.uniswap = UniswapIntegration(self.w3, self.account)
             self.health_monitor = HealthMonitor(self.w3, self.account)
             print("✅ Initialized Real Aave, Uniswap, and Health Monitor Integrations.")
