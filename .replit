@@ -16,7 +16,7 @@ run = ["sh", "-c", "python mainnet_launcher.py"]
 deploymentTarget = "cloudrun"
 
 [workflows]
-runButton = "🧪 TEST REAL AGENT"
+runButton = "🚀 AUTONOMOUS MAINNET"
 
 [[workflows.workflow]]
 name = "Run"
@@ -609,7 +609,7 @@ args = "python test_real_agent.py"
 [[workflows.workflow]]
 name = "🚀 AUTONOMOUS MAINNET"
 author = 39391053
-mode = "sequential"
+mode = "parallel"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
