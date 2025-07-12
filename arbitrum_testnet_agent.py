@@ -31,10 +31,16 @@ class ArbitrumTestnetAgent:
             self.rpc_url = "https://arb1.arbitrum.io/rpc"
             self.chain_id = 42161
             print("🌐 Operating on Arbitrum Mainnet")
+            print(f"🔗 RPC URL: {self.rpc_url}")
+            print(f"⛓️ Chain ID: {self.chain_id}")
         else:
             self.rpc_url = "https://sepolia-rollup.arbitrum.io/rpc"
             self.chain_id = 421614
             print("🧪 Operating on Arbitrum Sepolia Testnet")
+            print(f"🔗 RPC URL: {self.rpc_url}")
+            print(f"⛓️ Chain ID: {self.chain_id}")
+        
+        print(f"🚨 NETWORK_MODE from environment: '{self.network_mode}'")
 
         # Initialize Web3
         self.w3 = Web3(Web3.HTTPProvider(self.rpc_url))
@@ -353,9 +359,24 @@ class ArbitrumTestnetAgent:
             print("🔍 DIAGNOSTIC: Wallet Balance Check Complete.")
             # --- END DIAGNOSTIC CODE ---
 
+            # Enhanced monitoring and trigger detection
+            print(f"🔍 MONITORING: Health factor {current_health_factor:.4f} (trigger threshold: 1.3)")
+            
+            # Get current Aave positions for detailed monitoring
+            try:
+                monitoring_summary = self.health_monitor.get_monitoring_summary()
+                if monitoring_summary:
+                    collateral_usd = monitoring_summary.get('total_collateral_usd', 0)
+                    debt_usd = monitoring_summary.get('total_debt_usd', 0)
+                    print(f"📊 Current Position: ${collateral_usd:,.2f} collateral, ${debt_usd:,.2f} debt")
+            except Exception as e:
+                print(f"⚠️ Could not get detailed position data: {e}")
+            
             # Trigger condition: If health factor > 1.3, execute the sequence
             if current_health_factor > 1.3:
                 print(f"🚀 TRIGGER ACTIVATED: Health factor {current_health_factor:.4f} > 1.3")
+                print(f"⚡ EXECUTING AUTONOMOUS SEQUENCE...")
+                print(f"📝 Sequence: Borrow 6 USDC → Swap to WBTC/WETH/DAI → Supply as collateral")
 
                 # Step 1: Borrow 6 USDC with gas optimization
                 print("🏦 Step 1: Borrowing 6 USDC...")

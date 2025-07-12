@@ -606,6 +606,15 @@ mode = "sequential"
 task = "shell.exec"
 args = "python test_real_agent.py"
 
+[[workflows.workflow]]
+name = "🚀 AUTONOMOUS MAINNET"
+author = 39391053
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python run_autonomous_mainnet.py"
+
 [[ports]]
 localPort = 5000
 externalPort = 80
