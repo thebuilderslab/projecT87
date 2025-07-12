@@ -547,10 +547,24 @@ class ArbitrumTestnetAgent:
             current_eth_balance = self.get_eth_balance()
             print(f"    DIAGNOSTIC - Wallet ETH Balance (raw): {current_eth_balance:.10f} ETH")
 
-            # Get and print USDC balance using the Aave integration's method
-            current_usdc_balance_from_aave_integration = self.aave.get_token_balance(self.usdc_address)
+            # Get and print USDC balance using direct contract call to avoid OptimizedBalanceFetcher errors
+            try:
+                usdc_contract = self.w3.eth.contract(
+                    address=self.usdc_address,
+                    abi=[{
+                        "inputs": [{"name": "_owner", "type": "address"}],
+                        "name": "balanceOf",
+                        "outputs": [{"name": "balance", "type": "uint256"}],
+                        "type": "function"
+                    }]
+                )
+                usdc_balance_wei = usdc_contract.functions.balanceOf(self.address).call()
+                current_usdc_balance_from_aave_integration = usdc_balance_wei / (10**6)  # USDC has 6 decimals
+            except Exception as e:
+                print(f"⚠️ Error getting USDC balance via direct contract call: {e}")
+                current_usdc_balance_from_aave_integration = 0.0
 
-            print(f"    DIAGNOSTIC - Wallet USDC Balance (via Aave integration): {current_usdc_balance_from_aave_integration:.6f} USDC")
+            print(f"    DIAGNOSTIC - Wallet USDC Balance (via direct contract): {current_usdc_balance_from_aave_integration:.6f} USDC")
 
             print("🔍 DIAGNOSTIC: Wallet Balance Check Complete.")
             # --- END DIAGNOSTIC CODE ---
@@ -570,11 +584,49 @@ class ArbitrumTestnetAgent:
             # ENHANCED: Try to get accurate collateral using asset-specific queries
             print(f"🔍 ENHANCED COLLATERAL CALCULATION:")
             try:
-                # Get individual asset balances from Aave using existing integration
-                wbtc_balance = self.aave.get_supplied_balance(self.wbtc_address) if hasattr(self, 'wbtc_address') else 0.0
-                weth_balance = self.aave.get_supplied_balance(self.weth_address) if hasattr(self, 'weth_address') else 0.0
-                usdc_balance = self.aave.get_supplied_balance(self.usdc_address) if hasattr(self, 'usdc_address') else 0.0
-                arb_balance = self.aave.get_token_balance(self.arb_address) if hasattr(self, 'arb_address') else 0.0
+                # Use direct aToken contract calls to get supplied balances
+                try:
+                    atoken_abi = [{
+                        "inputs": [{"name": "account", "type": "address"}],
+                        "name": "balanceOf",
+                        "outputs": [{"name": "", "type": "uint256"}],
+                        "stateMutability": "view",
+                        "type": "function"
+                    }]
+
+                    # Get aWBTC balance (8 decimals)
+                    try:
+                        awbtc_contract = self.w3.eth.contract(address=self.aWBTC_address, abi=atoken_abi)
+                        wbtc_balance_wei = awbtc_contract.functions.balanceOf(self.address).call()
+                        wbtc_balance = wbtc_balance_wei / (10**8)
+                    except Exception as e:
+                        print(f"❌ Error getting aWBTC balance: {e}")
+                        wbtc_balance = 0.0
+
+                    # Get aWETH balance (18 decimals)
+                    try:
+                        aweth_contract = self.w3.eth.contract(address=self.aWETH_address, abi=atoken_abi)
+                        weth_balance_wei = aweth_contract.functions.balanceOf(self.address).call()
+                        weth_balance = weth_balance_wei / (10**18)
+                    except Exception as e:
+                        print(f"❌ Error getting aWETH balance: {e}")
+                        weth_balance = 0.0
+
+                    # Get aUSDC balance (6 decimals)
+                    try:
+                        ausdc_contract = self.w3.eth.contract(address=self.aUSDC_address, abi=atoken_abi)
+                        usdc_balance_wei = ausdc_contract.functions.balanceOf(self.address).call()
+                        usdc_balance = usdc_balance_wei / (10**6)
+                    except Exception as e:
+                        print(f"❌ Error getting aUSDC balance: {e}")
+                        usdc_balance = 0.0
+
+                    # Skip ARB balance for now to avoid OptimizedBalanceFetcher error
+                    arb_balance = 0.0
+
+                except Exception as e:
+                    print(f"❌ Error in enhanced collateral calculation: {e}")
+                    wbtc_balance = weth_balance = usdc_balance = arb_balance = 0.0
 
                 print(f"   WBTC supplied: {wbtc_balance:.8f}")
                 print(f"   WETH supplied: {weth_balance:.8f}")
@@ -838,7 +890,18 @@ class ArbitrumTestnetAgent:
         """Check if wallet has sufficient funds to start DeFi operations"""
         try:
             eth_balance = self.get_eth_balance()
-            usdc_balance = self.aave.get_token_balance(self.usdc_address)
+            # Use direct contract call instead of OptimizedBalanceFetcher to avoid initialization errors
+            usdc_contract = self.w3.eth.contract(
+                    address=self.usdc_address,
+                    abi=[{
+                        "inputs": [{"name": "_owner", "type": "address"}],
+                        "name": "balanceOf",
+                        "outputs": [{"name": "balance", "type": "uint256"}],
+                        "type": "function"
+                    }]
+                )
+            usdc_balance_wei = usdc_contract.functions.balanceOf(self.address).call()
+            usdc_balance = usdc_balance_wei / (10**6)  # USDC has 6 decimals
 
             print(f"🔍 WALLET READINESS CHECK:")
             print(f"   ETH Balance: {eth_balance:.6f} ETH")
