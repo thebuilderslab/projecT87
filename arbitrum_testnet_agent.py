@@ -39,7 +39,7 @@ class ArbitrumTestnetAgent:
             print("🧪 Operating on Arbitrum Sepolia Testnet")
             print(f"🔗 RPC URL: {self.rpc_url}")
             print(f"⛓️ Chain ID: {self.chain_id}")
-        
+
         print(f"🚨 NETWORK_MODE from environment: '{self.network_mode}'")
 
         # Initialize Web3
@@ -126,9 +126,7 @@ class ArbitrumTestnetAgent:
                 # Approve token with gas optimization
                 self.aave.approve_token(
                     token_address=token_address,
-                    spender_address=self.aave_pool_address,
                     amount_in_human_readable=float('inf'),
-                    gas_price=gas_price_wei
                 )
                 print(f"✅ {token_name} approved for Aave with optimized gas")
                 time.sleep(2)
@@ -233,7 +231,13 @@ class ArbitrumTestnetAgent:
         # Swap to WETH
         if weth_amount_usdc_equiv > 0.1:
             print(f"🔄 Swapping {weth_amount_usdc_equiv:.2f} USDC to WETH...")
-            if not self.uniswap.swap_tokens(self.usdc_address, self.weth_address, weth_amount_usdc_equiv, 500):
+            swap_result = self.uniswap.swap_tokens(
+                    token_in=self.usdc_address,
+                    token_out=self.weth_address,
+                    amount_in=weth_amount_usdc_equiv,
+                    fee_tier=500
+                )
+            if not swap_result:
                 print("❌ Failed to swap USDC to WETH.")
                 success = False
             else:
@@ -253,7 +257,13 @@ class ArbitrumTestnetAgent:
         # Swap a small portion to ETH for gas if needed (and unwrap WETH)
         if eth_for_gas_usdc_equiv > 0.01: # Smallest amount for gas
             print(f"🔄 Swapping {eth_for_gas_usdc_equiv:.2f} USDC to ETH for gas...")
-            if self.uniswap.swap_tokens(self.usdc_address, self.weth_address, eth_for_gas_usdc_equiv, 500):
+            swap_result = self.uniswap.swap_tokens(
+                    token_in=self.usdc_address,
+                    token_out=self.weth_address,
+                    amount_in=eth_for_gas_usdc_equiv,
+                    fee_tier=500
+                )
+            if swap_result:
                 weth_balance = self.aave.get_token_balance(self.weth_address) # Check newly acquired WETH
                 if weth_balance > 0:
                     print(f"Unwrapping {weth_balance:.6f} WETH to ETH for gas reserve.")
@@ -364,7 +374,7 @@ class ArbitrumTestnetAgent:
 
             # Enhanced monitoring and trigger detection
             print(f"🔍 MONITORING: Health factor {current_health_factor:.4f}")
-            
+
             # Get current Aave positions for detailed monitoring
             try:
                 monitoring_summary = self.health_monitor.get_monitoring_summary()
@@ -379,7 +389,7 @@ class ArbitrumTestnetAgent:
             except Exception as e:
                 print(f"⚠️ Could not get detailed position data: {e}")
                 current_collateral_value_usd = 0
-            
+
             # NEW TRIGGER CONDITION: Collateral growth of $12 USD
             if current_collateral_value_usd >= (self.last_collateral_value_usd + 12):
                 print(f"🚀 TRIGGER ACTIVATED: Collateral grew by ${current_collateral_value_usd - self.last_collateral_value_usd:.2f} (≥ $12 threshold)")
@@ -398,7 +408,6 @@ class ArbitrumTestnetAgent:
                 borrow_result = self.aave.borrow(
                     amount=6.0,
                     asset=self.usdc_address,
-                    gas_price=gas_price_wei
                 )
                 print(f"✅ Borrowed 6 USDC with optimized gas")
                 time.sleep(5)
@@ -417,7 +426,7 @@ class ArbitrumTestnetAgent:
                     token_in=self.usdc_address,
                     token_out=self.wbtc_address,
                     amount_in=2.0,
-                    gas_price=gas_price_wei
+                    fee_tier=500
                 )
                 time.sleep(5)
                 wbtc_balance_after = self.uniswap.get_token_balance(self.wbtc_address)
@@ -438,7 +447,7 @@ class ArbitrumTestnetAgent:
                     token_in=self.usdc_address,
                     token_out=self.weth_address,
                     amount_in=1.0,
-                    gas_price=gas_price_wei
+                    fee_tier=500
                 )
                 time.sleep(5)
                 weth_balance_after = self.uniswap.get_token_balance(self.weth_address)
@@ -459,7 +468,7 @@ class ArbitrumTestnetAgent:
                     token_in=self.usdc_address,
                     token_out=self.dai_address,
                     amount_in=1.0,
-                    gas_price=gas_price_wei
+                    fee_tier=500
                 )
                 time.sleep(5)
                 dai_balance_after = self.uniswap.get_token_balance(self.dai_address)
@@ -480,7 +489,7 @@ class ArbitrumTestnetAgent:
                     token_in=self.usdc_address,
                     token_out=self.weth_address,
                     amount_in=1.0,
-                    gas_price=gas_price_wei
+                    fee_tier=500
                 )
                 time.sleep(5)
                 final_weth_after = self.uniswap.get_token_balance(self.weth_address)
