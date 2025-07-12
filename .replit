@@ -16,7 +16,7 @@ run = ["sh", "-c", "python mainnet_launcher.py"]
 deploymentTarget = "cloudrun"
 
 [workflows]
-runButton = "🚀 Pure Live Data Dashboard"
+runButton = "🧪 TEST REAL AGENT"
 
 [[workflows.workflow]]
 name = "Run"
