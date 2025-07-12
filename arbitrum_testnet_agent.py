@@ -176,21 +176,25 @@ class ArbitrumTestnetAgent:
             for token_name, token_address in tokens_to_approve:
                 print(f"🚀 Approving {token_name} for Aave Pool...")
 
-                # Get gas parameters with strict error handling
-                gas_params = self.gas_calculator.calculate_transaction_fee('approve_token', speed='market')
-                if gas_params is None:
-                    raise Exception(f"CRITICAL: Failed to get gas params for {token_name} approval. Halting.")
-
-                # Extract gas price safely
-                gas_price_wei = gas_params.get('gas_price_wei') or gas_params.get('gasPrice') or int(self.w3.eth.gas_price * 1.1)
-
-                # Approve token with gas optimization
-                self.aave.approve_token(
-                    token_address=token_address,
-                    amount=float('inf'),
-                )
-                print(f"✅ {token_name} approved for Aave with optimized gas")
-                time.sleep(2)
+                try:
+                    # Get optimized gas parameters with safety checks
+                    gas_params = self.get_optimized_gas_params('approve_token', speed='market')
+                    
+                    # Approve token with a very large but finite amount instead of infinity
+                    max_approval_amount = 2**256 - 1  # Maximum uint256 value
+                    
+                    self.aave.approve_token(
+                        token_address=token_address,
+                        amount=max_approval_amount,
+                        gas_params=gas_params
+                    )
+                    print(f"✅ {token_name} approved for Aave with optimized gas")
+                    time.sleep(2)
+                    
+                except Exception as e:
+                    print(f"⚠️ {token_name} approval failed: {e}")
+                    print(f"   Continuing with next token...")
+                    continue
 
             print("✅ All DeFi integrations initialized successfully!")
             return True
@@ -363,23 +367,38 @@ class ArbitrumTestnetAgent:
         """Get optimized gas parameters for transactions"""
         try:
             gas_data = self.gas_calculator.calculate_transaction_fee(operation_type, speed)
-            if gas_data:
+            if gas_data and gas_data.get('gas_limit') and gas_data.get('gas_price_wei'):
+                gas_limit = gas_data['gas_limit']
+                gas_price = gas_data['gas_price_wei']
+                
+                # Ensure gas values are finite and reasonable
+                if not (isinstance(gas_limit, (int, float)) and gas_limit > 0 and gas_limit < 10000000):
+                    gas_limit = 200000
+                if not (isinstance(gas_price, (int, float)) and gas_price > 0 and gas_price < 1000000000000):  # < 1000 gwei
+                    gas_price = 100000000  # 0.1 gwei fallback
+                
                 return {
-                    'gas': gas_data['gas_limit'],
-                    'gasPrice': gas_data['gas_price_wei']
+                    'gas': int(gas_limit),
+                    'gasPrice': int(gas_price)
                 }
             else:
                 # Fallback gas parameters
+                base_gas_price = self.w3.eth.gas_price
+                if base_gas_price and base_gas_price > 0 and base_gas_price < 1000000000000:
+                    safe_gas_price = int(base_gas_price * 1.1)
+                else:
+                    safe_gas_price = 100000000  # 0.1 gwei fallback
+                
                 return {
                     'gas': self.gas_calculator.gas_limits.get(operation_type, 200000),
-                    'gasPrice': int(self.w3.eth.gas_price * 1.1)  # 10% above current
+                    'gasPrice': safe_gas_price
                 }
         except Exception as e:
             print(f"⚠️ Gas optimization failed, using fallback: {e}")
-            # Safe fallback
+            # Safe fallback with finite values
             return {
                 'gas': 200000,
-                'gasPrice': int(self.w3.eth.gas_price * 1.1) if self.w3.eth.gas_price else 100000000  # 0.1 gwei fallback
+                'gasPrice': 100000000  # 0.1 gwei fallback
             }
 
     def get_arb_price(self):
@@ -557,7 +576,7 @@ class ArbitrumTestnetAgent:
             # --- END DIAGNOSTIC CODE ---
 
             # Check wallet readiness for DeFi operations
-            wallet_ready = self.check_wallet_readiness_for_defi()
+            wallet_ready = self.check_wallet_readiness_for_defi(current_collateral_value_usd)
 
             # Enhanced monitoring and trigger detection
             print(f"🔍 MONITORING: Health factor {current_health_factor:.4f}")
@@ -839,7 +858,7 @@ class ArbitrumTestnetAgent:
             print("🛑 Halting execution due to real data fetch failure")
             return 0.0  # Failed performance score
 
-    def check_wallet_readiness_for_defi(self):
+    def check_wallet_readiness_for_defi(self, current_collateral_value_usd=0.0):
         """Check if wallet has sufficient funds to start DeFi operations"""
         try:
             eth_balance = self.get_eth_balance()
@@ -881,14 +900,16 @@ class ArbitrumTestnetAgent:
             }
 
             # Get real health factor
-            health_data = self.health_monitor.monitor_health()
-            if health_data and 'health_factor' in health_data:
-                hf = health_data.get('health_factor', 0)
-                print(f"❤️ Initial Health Factor: {hf:.4f}")
-            else:
-                print("⚠️ Could not retrieve initial health factor")
-        except Exception as e:
-            print(f"⚠️ Health factor check error: {e}")
+            try:
+                health_data = self.health_monitor.get_current_health_factor()
+                if health_data and 'health_factor' in health_data:
+                    hf = health_data.get('health_factor', 0)
+                    summary['health_factor'] = hf
+                    print(f"❤️ Initial Health Factor: {hf:.4f}")
+                else:
+                    print("⚠️ Could not retrieve initial health factor")
+            except Exception as e:
+                print(f"⚠️ Health factor check error: {e}")
 
             # Get real ARB price
             arb_data = self.get_arb_price()
