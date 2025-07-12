@@ -86,8 +86,10 @@ class ArbitrumTestnetAgent:
         self.previous_leveraged_value_usd = None # Initialize for tracking growth
 
         # Initialize collateral tracking for autonomous triggers
+        # Start with 0.0 but will sync with actual position on first run
         self.last_collateral_value_usd = 0.0
-        print("💰 Initialized last_collateral_value_usd to 0.0")
+        self.baseline_initialized = False
+        print("💰 Initialized last_collateral_value_usd to 0.0 (will sync with actual position)")
 
     def initialize_integrations(self):
         """Initialize all real DeFi integrations with strict error handling"""
@@ -487,22 +489,23 @@ class ArbitrumTestnetAgent:
                     print(f"   Debt: ${debt_usd:,.2f}")
                     print(f"   Health Factor: {current_health_factor:.4f}")
                 else:
-                    # Fallback to direct contract data from diagnostic section
-                    if 'current_collateral_value_usd' not in locals():
-                        monitoring_summary = self.health_monitor.get_monitoring_summary()
-                        if monitoring_summary:
-                            current_collateral_value_usd = monitoring_summary.get('total_collateral_usd', 0)
-                            debt_usd = monitoring_summary.get('total_debt_usd', 0)
-                        else:
-                            current_collateral_value_usd = 0
-                            debt_usd = 0
-                    else:
-                        debt_usd = debt_usd if 'debt_usd' in locals() else 0
+                    # Use the direct Aave contract data from diagnostic section
+                    current_collateral_value_usd = collateral_usd if 'collateral_usd' in locals() else 0
+                    debt_usd = debt_usd if 'debt_usd' in locals() else 0
 
             except Exception as e:
                 print(f"⚠️ Could not get detailed position data: {e}")
-                if 'current_collateral_value_usd' not in locals():
-                    current_collateral_value_usd = 0
+                # Use the direct Aave contract data as fallback
+                current_collateral_value_usd = collateral_usd if 'collateral_usd' in locals() else 0
+                debt_usd = debt_usd if 'debt_usd' in locals() else 0
+
+            # Initialize baseline on first run with meaningful position
+            if not self.baseline_initialized and current_collateral_value_usd > 50:
+                self.last_collateral_value_usd = current_collateral_value_usd
+                self.baseline_initialized = True
+                print(f"🎯 BASELINE INITIALIZED: Set to ${current_collateral_value_usd:,.2f}")
+                print(f"📊 Future triggers will activate on $12+ growth from this baseline")
+                return 0.8
 
             # NEW TRIGGER CONDITION: Collateral growth of $12 USD
             if current_collateral_value_usd >= (self.last_collateral_value_usd + 12):
