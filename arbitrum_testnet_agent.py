@@ -217,6 +217,32 @@ class ArbitrumTestnetAgent:
                 print("🔧 Using mock health monitor - monitoring limited")
                 self.health_monitor = MockHealthMonitor()
             
+            # --- Approve USDC for Aave and Uniswap ---
+            try:
+                print("🚀 Approving USDC for Aave Pool...")
+                # Approve USDC for Aave Pool (using a very large amount for effectively unlimited approval)
+                self.aave.approve_token(
+                    token_address=self.usdc_address,
+                    spender_address=self.aave.pool_address,
+                    amount_in_human_readable=float('inf') # Approves a very large amount
+                )
+                print("✅ Approved USDC for Aave Pool.")
+
+                print("🚀 Approving USDC for Uniswap Router...")
+                # Approve USDC for Uniswap Router
+                self.aave.approve_token(
+                    token_address=self.usdc_address,
+                    spender_address=self.uniswap.router_address,
+                    amount_in_human_readable=float('inf') # Approves a very large amount
+                )
+                print("✅ Approved USDC for Uniswap Router.")
+
+            except Exception as e:
+                print(f"❌ Error during token approvals: {e}")
+                # It's important to know if approvals fail, but not necessarily halt the agent
+                # depending on your desired error handling.
+            # --- End Token Approvals ---
+
             # Check if critical integrations are working
             critical_failed = not (integration_success['aave'] and integration_success['uniswap'])
             if critical_failed:
