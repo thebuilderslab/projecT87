@@ -547,8 +547,15 @@ class ArbitrumTestnetAgent:
             current_eth_balance = self.get_eth_balance()
             print(f"    DIAGNOSTIC - Wallet ETH Balance (raw): {current_eth_balance:.10f} ETH")
 
-            # Get and print USDC balance using the Aave integration's method
-            current_usdc_balance_from_aave_integration = self.aave.get_token_balance(self.usdc_address)
+            # Initialize OptimizedBalanceFetcher for diagnostics
+            try:
+                from optimized_balance_fetcher import OptimizedBalanceFetcher
+                balance_fetcher = OptimizedBalanceFetcher(self.w3, self.address)
+                current_usdc_balance_from_aave_integration = balance_fetcher.fetch_balance_optimized_sequence(self.usdc_address)['balance']
+            except Exception as e:
+                print(f"❌ Error getting token balance for {self.usdc_address}: {e}")
+                current_usdc_balance_from_aave_integration = 0.0
+
             print(f"    DIAGNOSTIC - Wallet USDC Balance (via Aave integration): {current_usdc_balance_from_aave_integration:.6f} USDC")
 
             print("🔍 DIAGNOSTIC: Wallet Balance Check Complete.")
@@ -570,15 +577,21 @@ class ArbitrumTestnetAgent:
             print(f"🔍 ENHANCED COLLATERAL CALCULATION:")
             try:
                 # Get individual asset balances from Aave
-                wbtc_balance = self.aave.get_supplied_balance(self.wbtc_address)
-                weth_balance = self.aave.get_supplied_balance(self.weth_address)
-                usdc_balance = self.aave.get_supplied_balance(self.usdc_address)
+                # Initialize OptimizedBalanceFetcher properly
+                from optimized_balance_fetcher import OptimizedBalanceFetcher
+                balance_fetcher = OptimizedBalanceFetcher(self.w3, self.address)
+
+                # Get token balances - LIVE ONLY
+                wbtc_balance = balance_fetcher.fetch_balance_optimized_sequence(self.wbtc_address)['balance'] if hasattr(self, 'wbtc_address') else 0.0
+                weth_balance = balance_fetcher.fetch_balance_optimized_sequence(self.weth_address)['balance'] if hasattr(self, 'weth_address') else 0.0
+                usdc_balance = balance_fetcher.fetch_balance_optimized_sequence(self.usdc_address)['balance'] if hasattr(self, 'usdc_address') else 0.0
+                arb_balance = balance_fetcher.fetch_balance_optimized_sequence(self.arb_address)['balance'] if hasattr(self, 'arb_address') else 0.0
 
                 print(f"   WBTC supplied: {wbtc_balance:.8f}")
                 print(f"   WETH supplied: {weth_balance:.8f}")
                 print(f"   USDC supplied: {usdc_balance:.8f}")
 
-                # Get current prices and calculate USD values
+                ## Get current prices and calculate USD values
                 try:
                     import requests
                     url = "https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest"
