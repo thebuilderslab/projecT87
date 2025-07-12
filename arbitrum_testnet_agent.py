@@ -6,7 +6,7 @@ from datetime import datetime
 from web3 import Web3
 from eth_account import Account
 from aave_integration import AaveArbitrumIntegration
-from uniswap_integration import UniswapIntegration
+from uniswap_integration import UniswapArbitrumIntegration as UniswapIntegration
 from aave_health_monitor import HealthMonitor
 from gas_fee_calculator import ArbitrumGasCalculator
 import requests
