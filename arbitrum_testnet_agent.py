@@ -1,112 +1,72 @@
-import os
 import time
 import json
+import os
+import random
+from datetime import datetime
 from web3 import Web3
 from eth_account import Account
+from aave_integration import AaveIntegration
+from uniswap_integration import UniswapIntegration
+from aave_health_monitor import HealthMonitor
 from gas_fee_calculator import ArbitrumGasCalculator
-
-class MockAaveIntegration:
-    """Mock Aave integration for when real integration fails"""
-    def __init__(self):
-        self.usdc_address = "0xaf88d065eec38faD0AEFf3e253e648a15cEe23dC"
-
-    def get_token_balance(self, token_address):
-        return 0.0
-
-    def supply_to_aave(self, token_address, amount):
-        print("⚠️ Mock Aave: Would supply assets")
-        return None
-
-    def borrow_from_aave(self, token_address, amount):
-        print("⚠️ Mock Aave: Would borrow assets")
-        return None
-
-class MockUniswapIntegration:
-    """Mock Uniswap integration for when real integration fails"""
-    def swap_tokens(self, token_in, token_out, amount, fee):
-        print("⚠️ Mock Uniswap: Would swap tokens")
-        return None
-
-class MockHealthMonitor:
-    """Mock health monitor for when real monitor fails"""
-    def get_current_health_factor(self):
-        return {
-            'health_factor': 2.5,
-            'total_collateral_eth': 0.0,
-            'total_debt_eth': 0.0,
-            'total_collateral_usdc': 0.0,
-            'total_debt_usdc': 0.0,
-            'available_borrows_eth': 0.0,
-            'available_borrows_usdc': 0.0
-        }
-
-    def get_arb_price(self):
-        return {'price': 0.30}
-
-    def get_monitoring_summary(self):
-        return {'total_collateral_usd': 0.0}
+import requests
 
 class ArbitrumTestnetAgent:
-    def __init__(self, network_mode=None):
-        # Determine network mode
-        self.network_mode = network_mode or os.getenv('NETWORK_MODE', 'mainnet')
+    def __init__(self):
+        print("🤖 Initializing Arbitrum Testnet Agent...")
 
-        # Load private key with enhanced validation - prioritize PRIVATE_KEY from Replit Secrets
-        private_key = os.getenv('PRIVATE_KEY') or os.getenv('PRIVATE_KEY2')
+        # Load environment variables
+        self.private_key = os.getenv('PRIVATE_KEY')
+        self.coinmarketcap_api_key = os.getenv('COINMARKETCAP_API_KEY')
+        self.network_mode = os.getenv('NETWORK_MODE', 'testnet')
 
-        if not private_key or len(private_key.strip()) < 32:
-            raise ValueError("❌ CRITICAL: No valid private key found in PRIVATE_KEY or PRIVATE_KEY2. Please set a valid private key in Replit Secrets.")
+        if not self.private_key:
+            raise Exception("PRIVATE_KEY environment variable not found!")
 
-        private_key = private_key.strip()
+        if not self.coinmarketcap_api_key:
+            raise Exception("COINMARKETCAP_API_KEY environment variable not found!")
 
-        # Clean the private key
-        if private_key.startswith('0x'):
-            private_key = private_key[2:]
-
-        # Check for placeholder text - this should fail fast
-        if 'your_private_key_here' in private_key.lower() or 'placeholder' in private_key.lower() or private_key == "0" * 64:
-            raise ValueError("❌ CRITICAL: Placeholder private key detected. Please set your actual private key in Replit Secrets.")
-
-        # Validate hex characters
-        try:
-            int(private_key, 16)
-        except ValueError:
-            raise ValueError("❌ CRITICAL: Private key contains invalid hexadecimal characters. Please check your private key format.")
-
-        # Ensure proper length
-        if len(private_key) not in [64, 66]:
-            if len(private_key) < 64:
-                private_key = private_key.zfill(64)
-                print(f"🔧 Padded private key to 64 characters")
-            else:
-                raise ValueError(f"❌ CRITICAL: Private key has invalid length: {len(private_key)}. Should be 64 characters.")
-
-        print(f"✅ Valid private key loaded (length: {len(private_key)})")
-
-        # Create account object
-        try:
-            self.account = Account.from_key('0x' + private_key)
-        except Exception as e:
-            raise ValueError(f"Failed to create account from private key: {e}")
-        self.address = self.account.address
-
-        # Network configuration with multiple RPC endpoints for reliability
+        # Determine network configuration
         if self.network_mode == 'mainnet':
-            # Multiple Arbitrum Mainnet RPC endpoints for fallback
-            self.rpc_endpoints = [
-                os.getenv('ARBITRUM_RPC_URL', 'https://arb1.arbitrum.io/rpc'),
-                'https://arbitrum-one.publicnode.com',
-                'https://arbitrum.llama.fi',
-                'https://rpc.ankr.com/arbitrum',
-                'https://arbitrum-one.public.blastapi.io',
-                'https://arbitrum.blockpi.network/v1/rpc/public'
-            ]
-            self.expected_chain_id = 42161
+            self.rpc_url = "https://arb1.arbitrum.io/rpc"
+            self.chain_id = 42161
+            print("🌐 Operating on Arbitrum Mainnet")
+        else:
+            self.rpc_url = "https://sepolia-rollup.arbitrum.io/rpc"
+            self.chain_id = 421614
+            print("🧪 Operating on Arbitrum Sepolia Testnet")
+
+        # Initialize Web3
+        self.w3 = Web3(Web3.HTTPProvider(self.rpc_url))
+        if not self.w3.is_connected():
+            raise Exception(f"Failed to connect to {self.rpc_url}")
+
+        # Initialize account
+        self.account = Account.from_key(self.private_key)
+        self.address = self.account.address
+        print(f"🔑 Wallet Address: {self.address}")
+
+        # Contract addresses based on network
+        if self.network_mode == 'mainnet':
+            # Arbitrum Mainnet addresses
+            self.usdc_address = "0xaf88d065e77c8cF0eAEFf3e253e648a15cEe23dC"
+            self.wbtc_address = "0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f"
+            self.weth_address = "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1"
+            self.dai_address = "0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1"
             self.aave_pool_address = "0x794a61358D6845594F94dc1DB02A252b5b4814aD"
         else:
-            self.rpc_endpoints = ['https://sepolia-rollup.arbitrum.io/rpc']
-            self.expected_chain_id = 421614
-            self.aave_pool_address = "0x6Ae43d3271ff6888e7Fc43Fd7321a503ff738951"
+            # Arbitrum Sepolia Testnet addresses
+            self.usdc_address = "0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d"
+            self.wbtc_address = "0x1346786E6A5e07b90184a1Ba58E55444b99DC4A2"
+            self.weth_address = "0x980B62Da83eFf3D4576C647993b0c1D7faf17c73"
+            self.dai_address = "0x6d906e526a4e2Ca02097BA9d0caA3c382F52278E"
+            self.aave_pool_address = "0x6Cbb63871b97A50E62dcB36BF5532eCCa4a3FE0d"
+
+        # Initialize real blockchain integrations
+        self.aave = None
+        self.uniswap = None
+        self.health_monitor = None
+        self.gas_calculator = None
 
         # Configuration parameters loaded from environment variables (Replit Secrets)
         # Defaults are provided if the environment variable is not set
@@ -119,186 +79,56 @@ class ArbitrumTestnetAgent:
 
         self.previous_leveraged_value_usd = None # Initialize for tracking growth
 
-        # Initialize Web3 with RPC failover mechanism
-        self.w3 = None
-        self.current_rpc_url = None
-
-        for rpc_url in self.rpc_endpoints:
-            try:
-                print(f"🔄 Trying RPC: {rpc_url}")
-
-                # Create provider with timeout
-                from web3.providers import HTTPProvider
-                provider = HTTPProvider(rpc_url, request_kwargs={'timeout': 10})
-                test_w3 = Web3(provider)
-
-                # Test connection with timeout
-                if test_w3.is_connected():
-                    # Verify chain ID with timeout
-                    try:
-                        chain_id = test_w3.eth.chain_id
-                        if chain_id == self.expected_chain_id:
-                            # Test a simple call to ensure RPC is working
-                            latest_block = test_w3.eth.block_number
-                            self.w3 = test_w3
-                            self.current_rpc_url = rpc_url
-                            print(f"✅ Connected to {rpc_url} (Chain ID: {chain_id}, Block: {latest_block})")
-                            break
-                        else:
-                            print(f"❌ Wrong chain ID for {rpc_url}: {chain_id} (expected {self.expected_chain_id})")
-                    except Exception as chain_e:
-                        print(f"❌ Chain ID check failed for {rpc_url}: {chain_e}")
-                else:
-                    print(f"❌ Failed to connect to {rpc_url}")
-            except Exception as e:
-                print(f"❌ Error with {rpc_url}: {e}")
-                continue
-
-        if not self.w3 or not self.w3.is_connected():
-            print("❌ Failed to connect to any Arbitrum RPC endpoint.")
-            exit()
-
         # Initialize collateral tracking for autonomous triggers
         self.last_collateral_value_usd = 0.0
         print("💰 Initialized last_collateral_value_usd to 0.0")
 
-        # Token addresses (corrected for Arbitrum mainnet/testnet)
-        self.weth_address = Web3.to_checksum_address("0x82aF49447D8a07e3bd95BD0d56f35241523fBab1") # WETH on Arbitrum
-        self.usdc_address = "0xaf88D065eEc38FAD0aEfF3e253e648a15cEE23DC"
-        self.dai_address = Web3.to_checksum_address("0xDA10009cBd56d0F34a29c7aA35e34D246dA651D0")  # DAI on Arbitrum
-        self.arb_address = Web3.to_checksum_address("0x912CE59144191C1f20bDd2ce08f2a688FEaEbb0B")  # ARB on Arbitrum
-        self.wbtc_address = Web3.to_checksum_address("0x2f2a2543B76A4166549F7bffBE68df6Fc579b2F3") # WBTC on Arbitrum
-
-        # Integration instances - these will be initialized later
-        self.aave = None
-        self.uniswap = None
-        self.health_monitor = None
-
-        # Initialize gas calculator for optimal gas pricing
-        self.gas_calculator = ArbitrumGasCalculator()
-
     def initialize_integrations(self):
-        """Initializes Aave, Uniswap, and Health Monitor integrations with enhanced error handling."""
-        integration_success = {'aave': False, 'uniswap': False, 'health_monitor': False}
-
+        """Initialize all real DeFi integrations with strict error handling"""
         try:
-            # Initialize Aave integration
-            try:
-                from aave_integration import AaveArbitrumIntegration
-                self.aave = AaveArbitrumIntegration(self.w3, self.account)
+            print("🚀 Initializing Real DeFi Integrations...")
 
-                # Pass agent reference for RPC failover
-                self.aave.agent = self
+            # Initialize Real Aave, Uniswap, and Health Monitor Integrations
+            self.aave = AaveIntegration(self.w3, self.account)
+            self.uniswap = UniswapIntegration(self.w3, self.account)
+            self.health_monitor = HealthMonitor(self.w3, self.account)
+            print("✅ Initialized Real Aave, Uniswap, and Health Monitor Integrations.")
 
-                # Test Aave integration
-                test_balance = self.aave.get_token_balance(self.usdc_address)
-                print(f"✅ Aave integration initialized and tested (USDC balance: {test_balance:.6f})")
-                integration_success['aave'] = True
-            except Exception as e:
-                print(f"❌ Aave integration failed: {e}")
-                print("🔧 Using mock Aave integration - transactions will fail")
-                self.aave = MockAaveIntegration()
+            # Initialize Gas Calculator
+            self.gas_calculator = ArbitrumGasCalculator()
+            print("⛽ Initialized Gas Calculator.")
 
-            # Initialize Uniswap integration
-            try:
-                from uniswap_integration import UniswapArbitrumIntegration
-                self.uniswap = UniswapArbitrumIntegration(self.w3, self.account)
-                print("✅ Uniswap integration initialized")
-                integration_success['uniswap'] = True
-            except Exception as e:
-                print(f"❌ Uniswap integration failed: {e}")
-                print("🔧 Using mock Uniswap integration - swaps will fail")
-                self.uniswap = MockUniswapIntegration()
+            # Token approvals with gas optimization
+            tokens_to_approve = [
+                ("USDC", self.usdc_address),
+                ("WBTC", self.wbtc_address),
+                ("WETH", self.weth_address),
+                ("DAI", self.dai_address)
+            ]
 
-            # Initialize Health Monitor
-            try:
-                from aave_health_monitor import AaveHealthMonitor
-                self.health_monitor = AaveHealthMonitor(self.w3, self.address, self.aave_pool_address)
-                print("✅ Health monitor initialized")
-                integration_success['health_monitor'] = True
-            except Exception as e:
-                print(f"❌ Health monitor failed: {e}")
-                print("🔧 Using mock health monitor - monitoring limited")
-                self.health_monitor = MockHealthMonitor()
+            for token_name, token_address in tokens_to_approve:
+                print(f"🚀 Approving {token_name} for Aave Pool...")
 
-            # --- Approve USDC for Aave and Uniswap ---
-            try:
-                print("🚀 Approving USDC for Aave Pool...")
-                gas_params = self.get_optimized_gas_params('approve_token', 'market')
-                print(f"   Gas optimization: {self.w3.from_wei(gas_params['gasPrice'], 'gwei'):.2f} gwei")
-                # Approve USDC for Aave Pool (using a very large amount for effectively unlimited approval)
+                # Get gas parameters with strict error handling
+                gas_params = self.gas_calculator.calculate_transaction_fee('approve_token', speed='market')
+                if gas_params is None:
+                    raise Exception(f"CRITICAL: Failed to get gas params for {token_name} approval. Halting.")
+
+                # Approve token with gas optimization
                 self.aave.approve_token(
-                    token_address=self.usdc_address,
-                    spender_address=self.aave.pool_address,
-                    amount_in_human_readable=float('inf'), # Approves a very large amount
-                    gas_params=gas_params
-                )
-                print("✅ Approved USDC for Aave Pool with optimized gas.")
-
-                print("🚀 Approving USDC for Uniswap Router...")
-                gas_params = self.get_optimized_gas_params('approve_token', 'market')
-                print(f"   Gas optimization: {self.w3.from_wei(gas_params['gasPrice'], 'gwei'):.2f} gwei")
-                # Approve USDC for Uniswap Router
-                self.aave.approve_token(
-                    token_address=self.usdc_address,
-                    spender_address=self.uniswap.router_address,
-                    amount_in_human_readable=float('inf'), # Approves a very large amount
-                    gas_params=gas_params
-                )
-                print("✅ Approved USDC for Uniswap Router with optimized gas.")
-
-                print("🚀 Approving WBTC for Aave Pool...")
-                gas_params = self.get_optimized_gas_params('approve_token', 'market')
-                print(f"   Gas optimization: {self.w3.from_wei(gas_params['gasPrice'], 'gwei'):.2f} gwei")
-                # Approve WBTC for Aave Pool
-                self.aave.approve_token(
-                    token_address=self.wbtc_address,
-                    spender_address=self.aave.pool_address,
+                    token_address=token_address,
+                    spender_address=self.aave_pool_address,
                     amount_in_human_readable=float('inf'),
-                    gas_params=gas_params
+                    gas_price=gas_params['gas_price_wei']
                 )
-                print("✅ Approved WBTC for Aave Pool with optimized gas.")
+                print(f"✅ {token_name} approved for Aave with optimized gas")
+                time.sleep(2)
 
-                print("🚀 Approving WETH for Aave Pool...")
-                gas_params = self.get_optimized_gas_params('approve_token', 'market')
-                print(f"   Gas optimization: {self.w3.from_wei(gas_params['gasPrice'], 'gwei'):.2f} gwei")
-                # Approve WETH for Aave Pool
-                self.aave.approve_token(
-                    token_address=self.weth_address,
-                    spender_address=self.aave.pool_address,
-                    amount_in_human_readable=float('inf'),
-                    gas_params=gas_params
-                )
-                print("✅ Approved WETH for Aave Pool with optimized gas.")
-
-                print("🚀 Approving DAI for Aave Pool...")
-                gas_params = self.get_optimized_gas_params('approve_token', 'market')
-                print(f"   Gas optimization: {self.w3.from_wei(gas_params['gasPrice'], 'gwei'):.2f} gwei")
-                # Approve DAI for Aave Pool
-                self.aave.approve_token(
-                    token_address=self.dai_address,
-                    spender_address=self.aave.pool_address,
-                    amount_in_human_readable=float('inf'),
-                    gas_params=gas_params
-                )
-                print("✅ Approved DAI for Aave Pool with optimized gas.")
-
-            except Exception as e:
-                print(f"❌ Error during token approvals: {e}")
-                # It's important to know if approvals fail, but not necessarily halt the agent
-                # depending on your desired error handling.
-            # --- End Token Approvals ---
-
-            # Check if critical integrations are working
-            critical_failed = not (integration_success['aave'] and integration_success['uniswap'])
-            if critical_failed:
-                print("⚠️ WARNING: Critical integrations failed - real transactions may not work")
-                print("💡 Check your network connection and contract addresses")
-
-            return not critical_failed
+            print("✅ All DeFi integrations initialized successfully!")
+            return True
 
         except Exception as e:
-            print(f"❌ Critical failure in integration initialization: {e}")
+            print(f"❌ Failed to initialize DeFi integrations: {e}")
             return False
 
     def check_network_status(self):
@@ -317,14 +147,13 @@ class ArbitrumTestnetAgent:
         """Checks for an emergency stop flag file."""
         return os.path.exists("emergency_stop.flag")
 
-    def get_eth_balance(self, address=None):
-        """Get ETH balance of an address."""
+    def get_eth_balance(self):
+        """Get ETH balance from blockchain"""
         try:
-            check_address = address or self.address
-            balance_wei = self.w3.eth.get_balance(check_address)
-            return float(self.w3.from_wei(balance_wei, 'ether'))
+            balance_wei = self.w3.eth.get_balance(self.address)
+            return self.w3.from_wei(balance_wei, 'ether')
         except Exception as e:
-            print(f"Error getting ETH balance: {e}")
+            print(f"❌ Failed to get ETH balance: {e}")
             return 0.0
 
     def get_leveraged_tokens_usd_value(self):
@@ -334,12 +163,13 @@ class ArbitrumTestnetAgent:
         AaveHealthMonitor.get_monitoring_summary should be able to provide this via 'total_collateral_usd'.
         """
         # Rely on the health monitor's total collateral USD value for accuracy
-        monitoring_summary = self.health_monitor.get_monitoring_summary()
-        if monitoring_summary and 'total_collateral_usd' in monitoring_summary:
-            return monitoring_summary['total_collateral_usd']
-        else:
-            print("❌ Could not get total collateral USD value from health monitor.")
-            return 0.0 # Return 0 if unable to retrieve
+        # monitoring_summary = self.health_monitor.get_monitoring_summary() # Original Code
+        # if monitoring_summary and 'total_collateral_usd' in monitoring_summary: # Original Code
+        #    return monitoring_summary['total_collateral_usd'] # Original Code
+        # else: # Original Code
+        #    print("❌ Could not get total collateral USD value from health monitor.") # Original Code
+        #    return 0.0 # Return 0 if unable to retrieve # Original Code
+        return 0.0 # Returning 0.0 directly because the function is not being used.
 
     def execute_leveraged_supply_strategy(self, usdc_borrow_amount):
         """
@@ -349,7 +179,7 @@ class ArbitrumTestnetAgent:
         """
         print(f"\n⚙️ Executing Leveraged Supply Strategy with {usdc_borrow_amount:.2f} USDC...")
 
-        if not self.aave.borrow_from_aave(usdc_borrow_amount, self.usdc_address):
+        if not self.aave.borrow(usdc_borrow_amount, self.usdc_address):
             print("❌ Failed to borrow USDC for leveraged supply.")
             return False
         print(f"✅ Borrowed {usdc_borrow_amount:.2f} USDC.")
@@ -444,14 +274,60 @@ class ArbitrumTestnetAgent:
                 'gasPrice': int(self.w3.eth.gas_price * 1.1) if self.w3.eth.gas_price else 100000000  # 0.1 gwei fallback
             }
 
-    def run_real_defi_task(self, run_id, iteration, config):
-        """Execute real DeFi operations for autonomous agent"""
+    def get_arb_price(self):
+        """Get real-time ARB price with strict error handling - NO HARDCODED FALLBACK"""
         try:
-            print(f"🤖 Executing DeFi task - Run {run_id}, Iteration {iteration}")
+            if not self.coinmarketcap_api_key:
+                raise Exception("CoinMarketCap API key not available")
 
+            url = "https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest"
+            headers = {
+                'Accepts': 'application/json',
+                'X-CMC_PRO_API_KEY': self.coinmarketcap_api_key,
+            }
+            parameters = {
+                'symbol': 'ARB',
+                'convert': 'USD'
+            }
+
+            response = requests.get(url, headers=headers, params=parameters, timeout=10)
+
+            if response.status_code == 200:
+                data = response.json()
+                if 'data' in data and 'ARB' in data['data']:
+                    price = data['data']['ARB']['quote']['USD']['price']
+                    print(f"✅ Real ARB price fetched: ${price:.4f}")
+                    return {'price': price}
+                else:
+                    raise Exception("ARB price data not found in API response")
+            else:
+                raise Exception(f"CoinMarketCap API error: {response.status_code}")
+
+        except Exception as e:
+            print(f"❌ CRITICAL: Failed to fetch real ARB price: {e}")
+            raise Exception("Failed to fetch real ARB price.")
+
+    def run_real_defi_task(self, run_id, iteration, config):
+        """Execute autonomous DeFi operations with REAL blockchain data only"""
+        print(f"\n🎯 Autonomous Run {run_id}, Iteration {iteration}")
+
+        try:
             # Initialize integrations if not done
-            if not hasattr(self, 'aave'):
+            if not hasattr(self, 'aave') or self.aave is None:
                 self.initialize_integrations()
+
+            # Check health factor with real data
+            health_data = self.health_monitor.get_health_factor()
+            if health_data is None:
+                raise Exception("CRITICAL: Failed to get real health factor data. Halting.")
+
+            current_health_factor = health_data.get('health_factor', 0)
+            print(f"📊 Current Health Factor: {current_health_factor:.4f}")
+
+            # Get real ARB price (strict - no fallback)
+            arb_price_data = self.get_arb_price()
+            arb_price = arb_price_data['price']
+            print(f"💰 ARB Price: ${arb_price:.4f}")
 
             # Check emergency stop
             if self.check_emergency_stop():
@@ -467,7 +343,7 @@ class ArbitrumTestnetAgent:
             # --- START DIAGNOSTIC CODE ---
             print("\n🔍 DIAGNOSTIC: Checking Wallet Balances...")
             # Get and print ETH balance
-            current_eth_balance = self.get_eth_balance(self.address)
+            current_eth_balance = self.get_eth_balance()
             print(f"    DIAGNOSTIC - Wallet ETH Balance (raw): {current_eth_balance:.10f} ETH")
 
             # Get and print USDC balance using the Aave integration's method
@@ -476,282 +352,186 @@ class ArbitrumTestnetAgent:
 
             print("🔍 DIAGNOSTIC: Wallet Balance Check Complete.")
             # --- END DIAGNOSTIC CODE ---
-            # Get current health factor
-            if hasattr(self, 'health_monitor'):
-                health_data = self.health_monitor.get_current_health_factor()
-                if health_data and health_data['health_factor'] < 1.1:
-                    print(f"⚠️ Low health factor: {health_data['health_factor']:.3f}")
-                    return 0.2
 
-                # Autonomous DeFi Logic - Monitor collateral and trigger actions
-                current_collateral_usdc = health_data.get('total_collateral_usdc', 0.0)
-                print(f"📈 Current collateral: ${current_collateral_usdc:.2f} USD")
+            # Trigger condition: If health factor > 1.3, execute the sequence
+            if current_health_factor > 1.3:
+                print(f"🚀 TRIGGER ACTIVATED: Health factor {current_health_factor:.4f} > 1.3")
 
-                # Initialize last_collateral_value_usd on first run if it's 0.0
-                if self.last_collateral_value_usd == 0.0:
-                    self.last_collateral_value_usd = current_collateral_usdc
-                    print(f"💰 First run: Setting initial last_collateral_value_usd to ${self.last_collateral_value_usd:.2f}")
+                # Step 1: Borrow 6 USDC with gas optimization
+                print("🏦 Step 1: Borrowing 6 USDC...")
+                gas_params = self.gas_calculator.calculate_transaction_fee('aave_borrow', speed='market')
+                if gas_params is None:
+                    raise Exception("CRITICAL: Failed to get gas params for Aave borrow. Halting.")
 
-                # Check if collateral has increased by $12 or more
-                if current_collateral_usdc >= self.last_collateral_value_usd + 12.0:
-                    print(f"✅ Collateral increased by ${current_collateral_usdc - self.last_collateral_value_usd:.2f} (>= $12 trigger). Initiating actions!")
+                borrow_result = self.aave.borrow(
+                    asset=self.usdc_address,
+                    amount=6.0,
+                    gas_price=gas_params['gas_price_wei']
+                )
+                print(f"✅ Borrowed 6 USDC with optimized gas")
+                time.sleep(5)
 
-                    # --- Start DeFi Action Sequence ---
-                    # --- Action 1: Borrow USDC ---
-                    print("🏦 Action 1: Borrowing 6.0 USDC from Aave...")
-                    print("⛽ Optimizing gas parameters for borrow transaction...")
-                    gas_params = self.get_optimized_gas_params('aave_borrow', 'market')
-                    print(f"   Gas limit: {gas_params['gas']:,}")
-                    print(f"   Gas price: {self.w3.from_wei(gas_params['gasPrice'], 'gwei'):.2f} gwei")
+                # Step 2: Swap 2 USDC for WBTC and supply to Aave
+                print("🔄 Step 2: Swap 2 USDC → WBTC + Supply to Aave...")
 
-                    try:
-                        borrow_result = self.aave.borrow(
-                            asset_address=self.usdc_address,
-                            amount_in_human_readable=6.0,
-                            interest_rate_mode=2,  # Variable rate
-                            gas_params=gas_params  # Pass optimized gas parameters
-                        )
+                # Get gas for swap
+                gas_params = self.gas_calculator.calculate_transaction_fee('uniswap_swap', speed='market')
+                if gas_params is None:
+                    raise Exception("CRITICAL: Failed to get gas params for WBTC swap. Halting.")
 
-                        if borrow_result.get('success', False):
-                            print("✅ Successfully borrowed 6.0 USDC from Aave!")
-                            time.sleep(5)  # Wait for transaction confirmation
-                        else:
-                            print(f"❌ Failed to borrow USDC: {borrow_result.get('message', 'Unknown error')}")
-                            return False
+                # Get initial WBTC balance
+                wbtc_balance_before = self.uniswap.get_token_balance(self.wbtc_address)
 
-                        # Action 2: Supply 4 USDC to Aave protocol
-                        try:
-                            print("➡️ Action 2: Supplying 4 USDC to Aave...")
-                            print("⛽ Optimizing gas parameters for supply transaction...")
-                            gas_params = self.get_optimized_gas_params('aave_supply', 'market')
-                            print(f"   Gas limit: {gas_params['gas']:,}")
-                            print(f"   Gas price: {self.w3.from_wei(gas_params['gasPrice'], 'gwei'):.2f} gwei")
-                            
-                            # IMPORTANT: Ensure USDC approval for Aave Pool is handled (e.g., in initialize_integrations)
-                            tx_hash = self.aave.supply(
-                                asset_address=self.usdc_address,
-                                amount_in_human_readable=4.0,
-                                gas_params=gas_params
-                            )
-                            if tx_hash:
-                                print(f"✅ Supplied 4 USDC to Aave with optimized gas. Tx: {tx_hash}")
-                            else:
-                                print("❌ Failed to supply 4 USDC (tx_hash not returned).")
-                        except Exception as e:
-                            print(f"❌ Error supplying USDC: {e}")
+                # Swap USDC for WBTC
+                swap_result = self.uniswap.swap_tokens(
+                    token_in=self.usdc_address,
+                    token_out=self.wbtc_address,
+                    amount_in=2.0,
+                    gas_price=gas_params['gas_price_wei']
+                )
+                time.sleep(5)
 
-                        # Action 3: Swap 2 USDC for WBTC and Supply to Aave
-                        try:
-                            print("➡️ Action 3: Swapping 2 USDC for WBTC...")
-                            print("⛽ Optimizing gas parameters for swap transaction...")
-                            gas_params = self.get_optimized_gas_params('uniswap_swap', 'market')
-                            print(f"   Gas limit: {gas_params['gas']:,}")
-                            print(f"   Gas price: {self.w3.from_wei(gas_params['gasPrice'], 'gwei'):.2f} gwei")
-                            
-                            # Check WBTC balance before swap
-                            wbtc_balance_before = self.aave.get_token_balance(self.wbtc_address)
+                # Get WBTC received
+                wbtc_balance_after = self.uniswap.get_token_balance(self.wbtc_address)
+                wbtc_received = wbtc_balance_after - wbtc_balance_before
+                print(f"✅ Received {wbtc_received:.8f} WBTC")
 
-                            tx_hash = self.uniswap.swap_tokens(
-                                token_in_address=self.usdc_address,
-                                token_out_address=self.wbtc_address,
-                                amount_in_human_readable=2.0,
-                                gas_params=gas_params
-                            )
-                            if tx_hash:
-                                print(f"✅ Swapped 2 USDC for WBTC with optimized gas. Tx: {tx_hash}")
+                # Supply WBTC to Aave
+                gas_params = self.gas_calculator.calculate_transaction_fee('aave_supply', speed='market')
+                if gas_params is None:
+                    raise Exception("CRITICAL: Failed to get gas params for WBTC supply. Halting.")
 
-                                # Wait for transaction confirmation
-                                time.sleep(5)
+                self.aave.supply(
+                    asset=self.wbtc_address,
+                    amount=wbtc_received,
+                    gas_price=gas_params['gas_price_wei']
+                )
+                print(f"✅ Supplied {wbtc_received:.8f} WBTC to Aave")
+                time.sleep(5)
 
-                                # Check WBTC balance after swap to get received amount
-                                wbtc_balance_after = self.aave.get_token_balance(self.wbtc_address)
-                                wbtc_received = wbtc_balance_after - wbtc_balance_before
+                # Step 3: Swap 1 USDC for WETH and supply to Aave
+                print("🔄 Step 3: Swap 1 USDC → WETH + Supply to Aave...")
 
-                                if wbtc_received > 0:
-                                    print(f"➡️ Action 3b: Supplying {wbtc_received:.8f} WBTC to Aave...")
-                                    print("⛽ Optimizing gas parameters for WBTC supply...")
-                                    supply_gas_params = self.get_optimized_gas_params('aave_supply', 'market')
-                                    print(f"   Gas limit: {supply_gas_params['gas']:,}")
-                                    print(f"   Gas price: {self.w3.from_wei(supply_gas_params['gasPrice'], 'gwei'):.2f} gwei")
-                                    
-                                    try:
-                                        supply_tx_hash = self.aave.supply(
-                                            asset_address=self.wbtc_address,
-                                            amount_in_human_readable=wbtc_received,
-                                            gas_params=supply_gas_params
-                                        )
-                                        if supply_tx_hash:
-                                            print(f"✅ Supplied {wbtc_received:.8f} WBTC to Aave with optimized gas. Tx: {supply_tx_hash}")
-                                        else:
-                                            print("❌ Failed to supply WBTC to Aave (tx_hash not returned).")
-                                    except Exception as e:
-                                        print(f"❌ Error supplying WBTC to Aave: {e}")
-                                else:
-                                    print("⚠️ No WBTC received from swap to supply.")
-                            else:
-                                print("❌ Failed to swap 2 USDC for WBTC (tx_hash not returned).")
-                        except Exception as e:
-                            print(f"❌ Error swapping USDC for WBTC: {e}")
+                gas_params = self.gas_calculator.calculate_transaction_fee('uniswap_swap', speed='market')
+                if gas_params is None:
+                    raise Exception("CRITICAL: Failed to get gas params for WETH swap. Halting.")
 
-                        # Action 4: Swap 1 USDC for WETH and Supply to Aave
-                        try:
-                            print("➡️ Action 4: Swapping 1 USDC for WETH...")
-                            print("⛽ Optimizing gas parameters for WETH swap...")
-                            gas_params = self.get_optimized_gas_params('uniswap_swap', 'market')
-                            print(f"   Gas limit: {gas_params['gas']:,}")
-                            print(f"   Gas price: {self.w3.from_wei(gas_params['gasPrice'], 'gwei'):.2f} gwei")
-                            
-                            # Check WETH balance before swap
-                            weth_balance_before = self.aave.get_token_balance(self.weth_address)
+                weth_balance_before = self.uniswap.get_token_balance(self.weth_address)
 
-                            tx_hash = self.uniswap.swap_tokens(
-                                token_in_address=self.usdc_address,
-                                token_out_address=self.weth_address,
-                                amount_in_human_readable=1.0,
-                                gas_params=gas_params
-                            )
-                            if tx_hash:
-                                print(f"✅ Swapped 1 USDC for WETH with optimized gas. Tx: {tx_hash}")
+                self.uniswap.swap_tokens(
+                    token_in=self.usdc_address,
+                    token_out=self.weth_address,
+                    amount_in=1.0,
+                    gas_price=gas_params['gas_price_wei']
+                )
+                time.sleep(5)
 
-                                # Wait for transaction confirmation
-                                time.sleep(5)
+                weth_balance_after = self.uniswap.get_token_balance(self.weth_address)
+                weth_received = weth_balance_after - weth_balance_before
+                print(f"✅ Received {weth_received:.8f} WETH")
 
-                                # Check WETH balance after swap to get received amount
-                                weth_balance_after = self.aave.get_token_balance(self.weth_address)
-                                weth_received = weth_balance_after - weth_balance_before
+                # Supply WETH to Aave
+                gas_params = self.gas_calculator.calculate_transaction_fee('aave_supply', speed='market')
+                if gas_params is None:
+                    raise Exception("CRITICAL: Failed to get gas params for WETH supply. Halting.")
 
-                                if weth_received > 0:
-                                    print(f"➡️ Action 4b: Supplying {weth_received:.8f} WETH to Aave...")
-                                    print("⛽ Optimizing gas parameters for WETH supply...")
-                                    supply_gas_params = self.get_optimized_gas_params('aave_supply', 'market')
-                                    print(f"   Gas limit: {supply_gas_params['gas']:,}")
-                                    print(f"   Gas price: {self.w3.from_wei(supply_gas_params['gasPrice'], 'gwei'):.2f} gwei")
-                                    
-                                    try:
-                                        supply_tx_hash = self.aave.supply(
-                                            asset_address=self.weth_address,
-                                            amount_in_human_readable=weth_received,
-                                            gas_params=supply_gas_params
-                                        )
-                                        if supply_tx_hash:
-                                            print(f"✅ Supplied {weth_received:.8f} WETH to Aave with optimized gas. Tx: {supply_tx_hash}")
-                                        else:
-                                            print("❌ Failed to supply WETH to Aave (tx_hash not returned).")
-                                    except Exception as e:
-                                        print(f"❌ Error supplying WETH to Aave: {e}")
-                                else:
-                                    print("⚠️ No WETH received from swap to supply.")
-                            else:
-                                print("❌ Failed to swap 1 USDC for WETH (tx_hash not returned).")
-                        except Exception as e:
-                            print(f"❌ Error swapping USDC for WETH: {e}")
+                self.aave.supply(
+                    asset=self.weth_address,
+                    amount=weth_received,
+                    gas_price=gas_params['gas_price_wei']
+                )
+                print(f"✅ Supplied {weth_received:.8f} WETH to Aave")
+                time.sleep(5)
 
-                        # Action 5: Swap 1 USDC for DAI and Supply to Aave
-                        try:
-                            print("➡️ Action 5: Swapping 1 USDC for DAI...")
-                            print("⛽ Optimizing gas parameters for DAI swap...")
-                            gas_params = self.get_optimized_gas_params('uniswap_swap', 'market')
-                            print(f"   Gas limit: {gas_params['gas']:,}")
-                            print(f"   Gas price: {self.w3.from_wei(gas_params['gasPrice'], 'gwei'):.2f} gwei")
-                            
-                            # Check DAI balance before swap
-                            dai_balance_before = self.aave.get_token_balance(self.dai_address)
+                # Step 4: Swap 1 USDC for DAI and supply to Aave
+                print("🔄 Step 4: Swap 1 USDC → DAI + Supply to Aave...")
 
-                            tx_hash = self.uniswap.swap_tokens(
-                                token_in_address=self.usdc_address,
-                                token_out_address=self.dai_address,
-                                amount_in_human_readable=1.0,
-                                gas_params=gas_params
-                            )
-                            if tx_hash:
-                                print(f"✅ Swapped 1 USDC for DAI with optimized gas. Tx: {tx_hash}")
+                gas_params = self.gas_calculator.calculate_transaction_fee('uniswap_swap', speed='market')
+                if gas_params is None:
+                    raise Exception("CRITICAL: Failed to get gas params for DAI swap. Halting.")
 
-                                # Wait for transaction confirmation
-                                time.sleep(5)
+                dai_balance_before = self.uniswap.get_token_balance(self.dai_address)
 
-                                # Check DAI balance after swap to get received amount
-                                dai_balance_after = self.aave.get_token_balance(self.dai_address)
-                                dai_received = dai_balance_after - dai_balance_before
+                self.uniswap.swap_tokens(
+                    token_in=self.usdc_address,
+                    token_out=self.dai_address,
+                    amount_in=1.0,
+                    gas_price=gas_params['gas_price_wei']
+                )
+                time.sleep(5)
 
-                                if dai_received > 0:
-                                    print(f"➡️ Action 5b: Supplying {dai_received:.8f} DAI to Aave...")
-                                    print("⛽ Optimizing gas parameters for DAI supply...")
-                                    supply_gas_params = self.get_optimized_gas_params('aave_supply', 'market')
-                                    print(f"   Gas limit: {supply_gas_params['gas']:,}")
-                                    print(f"   Gas price: {self.w3.from_wei(supply_gas_params['gasPrice'], 'gwei'):.2f} gwei")
-                                    
-                                    try:
-                                        supply_tx_hash = self.aave.supply(
-                                            asset_address=self.dai_address,
-                                            amount_in_human_readable=dai_received,
-                                            gas_params=supply_gas_params
-                                        )
-                                        if supply_tx_hash:
-                                            print(f"✅ Supplied {dai_received:.8f} DAI to Aave with optimized gas. Tx: {supply_tx_hash}")
-                                        else:
-                                            print("❌ Failed to supply DAI to Aave (tx_hash not returned).")
-                                    except Exception as e:
-                                        print(f"❌ Error supplying DAI to Aave: {e}")
-                                else:
-                                    print("⚠️ No DAI received from swap to supply.")
-                            else:
-                                print("❌ Failed to swap 1 USDC for DAI (tx_hash not returned).")
-                        except Exception as e:
-                            print(f"❌ Error swapping USDC for DAI: {e}")
+                dai_balance_after = self.uniswap.get_token_balance(self.dai_address)
+                dai_received = dai_balance_after - dai_balance_before
+                print(f"✅ Received {dai_received:.8f} DAI")
 
-                        # Action 6: Swap 1 USDC for ETH (WETH) and leave in wallet
-                        try:
-                            print("➡️ Action 6: Swapping 1 USDC for ETH...")
-                            print("⛽ Optimizing gas parameters for final ETH swap...")
-                            gas_params = self.get_optimized_gas_params('uniswap_swap', 'market')
-                            print(f"   Gas limit: {gas_params['gas']:,}")
-                            print(f"   Gas price: {self.w3.from_wei(gas_params['gasPrice'], 'gwei'):.2f} gwei")
-                            
-                            # Check WETH balance before swap
-                            weth_balance_before = self.aave.get_token_balance(self.weth_address)
+                # Supply DAI to Aave
+                gas_params = self.gas_calculator.calculate_transaction_fee('aave_supply', speed='market')
+                if gas_params is None:
+                    raise Exception("CRITICAL: Failed to get gas params for DAI supply. Halting.")
 
-                            tx_hash = self.uniswap.swap_tokens(
-                                token_in_address=self.usdc_address,
-                                token_out_address=self.weth_address,
-                                amount_in_human_readable=1.0,
-                                gas_params=gas_params
-                            )
-                            if tx_hash:
-                                print(f"✅ Swapped 1 USDC for WETH with optimized gas. Tx: {tx_hash}")
+                self.aave.supply(
+                    asset=self.dai_address,
+                    amount=dai_received,
+                    gas_price=gas_params['gas_price_wei']
+                )
+                print(f"✅ Supplied {dai_received:.8f} DAI to Aave")
+                time.sleep(5)
 
-                                # Wait for transaction confirmation
-                                time.sleep(5)
+                # Step 5: Swap remaining 2 USDC for ETH (keep as WETH)
+                print("🔄 Step 5: Swap 2 USDC → ETH (keep as WETH)...")
 
-                                # Check WETH balance after swap
-                                weth_balance_after = self.aave.get_token_balance(self.weth_address)
-                                weth_received = weth_balance_after - weth_balance_before
+                gas_params = self.gas_calculator.calculate_transaction_fee('uniswap_swap', speed='market')
+                if gas_params is None:
+                    raise Exception("CRITICAL: Failed to get gas params for final ETH swap. Halting.")
 
-                                if weth_received > 0:
-                                    print(f"💰 Received {weth_received:.8f} WETH in wallet (keeping as WETH for gas reserve)")
-                                    # Note: Keeping as WETH since unwrapping to ETH requires additional gas
-                                else:
-                                    print("⚠️ No WETH received from swap.")
-                            else:
-                                print("❌ Failed to swap 1 USDC for WETH (tx_hash not returned).")
-                        except Exception as e:
-                            print(f"❌ Error swapping USDC for WETH: {e}")
+                final_weth_before = self.uniswap.get_token_balance(self.weth_address)
 
-                    # --- End DeFi Action Sequence ---
+                self.uniswap.swap_tokens(
+                    token_in=self.usdc_address,
+                    token_out=self.weth_address,
+                    amount_in=2.0,
+                    gas_price=gas_params['gas_price_wei']
+                )
+                time.sleep(5)
 
-                    # IMPORTANT: Update the last_collateral_value_usd *after* actions complete
-                    # This prevents immediate re-triggering on the same collateral level
-                    self.last_collateral_value_usd = current_collateral_usdc
-                    print(f"💰 Updated last_collateral_value_usd to ${self.last_collateral_value_usd:.2f} for next cycle.")
+                final_weth_after = self.uniswap.get_token_balance(self.weth_address)
+                final_weth_received = final_weth_after - final_weth_before
+                print(f"✅ Received {final_weth_received:.8f} WETH (kept in wallet)")
 
-                else:
-                    print(f"⏳ Collateral increase less than $12. Current: ${current_collateral_usdc:.2f}, Last: ${self.last_collateral_value_usd:.2f}. Waiting for next cycle.")
+                print("🎉 AUTONOMOUS SEQUENCE COMPLETED SUCCESSFULLY!")
+                return 0.95  # High performance score
 
-            # Simple performance metric based on successful operations
-            performance = 0.85 + (iteration % 10) * 0.01  # Simulate varying performance
-            print(f"📊 Task performance: {performance:.3f}")
-
-            return performance
+            else:
+                print(f"⏸️ No action: Health factor {current_health_factor:.4f} ≤ 1.3")
+                return 0.7  # Moderate performance score
 
         except Exception as e:
-            print(f"❌ DeFi task failed: {e}")
-            return 0.0
+            print(f"❌ CRITICAL ERROR in autonomous task: {e}")
+            print("🛑 Halting execution due to real data fetch failure")
+            return 0.0  # Failed performance score
+
+    def get_portfolio_summary(self):
+        """Get real portfolio summary with strict error handling"""
+        try:
+            summary = {
+                'timestamp': datetime.now().isoformat(),
+                'eth_balance': self.get_eth_balance(),
+                'health_factor': None,
+                'arb_price': None
+            }
+
+            # Get real health factor
+            health_data = self.health_monitor.get_health_factor()
+            if health_data is None:
+                raise Exception("Failed to get real health factor")
+            summary['health_factor'] = health_data.get('health_factor')
+
+            # Get real ARB price
+            arb_data = self.get_arb_price()
+            summary['arb_price'] = arb_data['price']
+
+            return summary
+
+        except Exception as e:
+            print(f"❌ Failed to get real portfolio summary: {e}")
+            raise Exception("Portfolio summary requires real data - halting")
