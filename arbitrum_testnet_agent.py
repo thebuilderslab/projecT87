@@ -126,7 +126,7 @@ class ArbitrumTestnetAgent:
                 # Approve token with gas optimization
                 self.aave.approve_token(
                     token_address=token_address,
-                    amount_in_human_readable=float('inf'),
+                    amount=float('inf'),
                 )
                 print(f"✅ {token_name} approved for Aave with optimized gas")
                 time.sleep(2)
