@@ -1,0 +1,30 @@
+Now that `arbitrum_testnet_agent.py` has been updated to use real blockchain data, strict error handling, and the gas optimizer, the next critical step is to test and validate its functionality on the Arbitrum testnet (or mainnet, depending on NETWORK_MODE).
+
+Please guide me through the process of setting up and running a test of the `ArbitrumTestnetAgent` to ensure all implemented features work as expected with real data.
+
+**Part 1: Pre-Test Setup & Verification**
+
+1.  **Confirm Network Configuration:** Double-check `arbitrum_testnet_agent.py` to ensure `self.network_mode` is correctly set to your desired testnet (e.g., 'sepolia_arbitrum' or similar testnet name you are using) or 'mainnet' if you intend to run on mainnet.
+2.  **Verify Private Key & API Keys:** Confirm that your `PRIVATE_KEY` and `COINMARKETCAP_API_KEY` are correctly set in Replit Secrets and are accessible by the agent. Without these, the agent will not be able to connect to the blockchain or fetch real prices.
+3.  **Fund Your Test Account:** Ensure the `PRIVATE_KEY` associated wallet address on the chosen Arbitrum testnet has sufficient test ETH (for gas) and some test tokens (e.g., test USDC, WBTC, WETH, DAI) to perform supply, borrow, and swap operations. You might need to use a testnet faucet for this.
+4.  **Confirm Real RPC Endpoint:** Verify that the RPC endpoint configured in `arbitrum_testnet_agent.py` (e.g., `self.rpc_url`) is for the chosen Arbitrum testnet and is functional.
+
+**Part 2: Running the Test Agent**
+
+1.  **Execute the Agent:** Provide the command or instructions to run `arbitrum_testnet_agent.py` within the Replit environment. This typically involves running the main Python file.
+2.  **Monitor Output:** Guide me on what to look for in the console output. I expect to see:
+    * Confirmation messages for initialized real integrations (Aave, Uniswap, Health Monitor, Gas Calculator).
+    * Real-time health factor values, token balances, and ARB prices being displayed.
+    * Print statements indicating gas optimization calculations for each transaction.
+    * Messages confirming successful blockchain transactions (approvals, borrows, supplies, swaps) with real transaction hashes.
+3.  **Monitor Blockchain Explorer:** Advise me on how to use an Arbitrum testnet blockchain explorer (e.g., Arbiscan for Sepolia Arbitrum Testnet) to verify transactions on-chain using the transaction hashes printed by the agent. I want to see actual transactions sent with the calculated gas.
+
+**Part 3: Validating Strict Error Handling**
+
+1.  **Simulate a Data Fetch Failure (Optional but Recommended):** If feasible and safe (e.g., by temporarily invalidating a non-critical API key or slightly misconfiguring an RPC endpoint to trigger a failure without risking real funds), guide me on how to simulate a data fetching failure (e.g., for ARB price or gas params) to confirm that the agent correctly halts or raises an exception as per the "no mock fallback" policy.
+
+**Part 4: Post-Test Review**
+
+1.  **Review Agent Behavior:** After the test run, provide guidance on how to evaluate the agent's overall performance. Did it complete its tasks autonomously? Was the health factor maintained? Were transactions efficient with optimized gas?
+
+Provide clear, step-by-step instructions for each part, ensuring I understand what to do and what to look for at each stage.
