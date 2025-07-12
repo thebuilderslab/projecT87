@@ -120,12 +120,15 @@ class ArbitrumTestnetAgent:
                 if gas_params is None:
                     raise Exception(f"CRITICAL: Failed to get gas params for {token_name} approval. Halting.")
 
+                # Extract gas price safely
+                gas_price_wei = gas_params.get('gas_price_wei') or gas_params.get('gasPrice') or int(self.w3.eth.gas_price * 1.1)
+
                 # Approve token with gas optimization
                 self.aave.approve_token(
                     token_address=token_address,
                     spender_address=self.aave_pool_address,
                     amount_in_human_readable=float('inf'),
-                    gas_price=gas_params['gas_price_wei']
+                    gas_price=gas_price_wei
                 )
                 print(f"✅ {token_name} approved for Aave with optimized gas")
                 time.sleep(2)
@@ -389,10 +392,13 @@ class ArbitrumTestnetAgent:
                 if gas_params is None:
                     raise Exception("CRITICAL: Failed to get gas params for Aave borrow. Halting.")
 
+                # Extract gas price safely
+                gas_price_wei = gas_params.get('gas_price_wei') or gas_params.get('gasPrice') or int(self.w3.eth.gas_price * 1.1)
+
                 borrow_result = self.aave.borrow(
                     amount=6.0,
                     asset=self.usdc_address,
-                    gas_price=gas_params['gas_price_wei']
+                    gas_price=gas_price_wei
                 )
                 print(f"✅ Borrowed 6 USDC with optimized gas")
                 time.sleep(5)
@@ -403,12 +409,15 @@ class ArbitrumTestnetAgent:
                 if gas_params is None:
                     raise Exception("CRITICAL: Failed to get gas params for WBTC swap. Halting.")
 
+                # Extract gas price safely
+                gas_price_wei = gas_params.get('gas_price_wei') or gas_params.get('gasPrice') or int(self.w3.eth.gas_price * 1.1)
+
                 wbtc_balance_before = self.uniswap.get_token_balance(self.wbtc_address)
                 swap_result = self.uniswap.swap_tokens(
                     token_in=self.usdc_address,
                     token_out=self.wbtc_address,
                     amount_in=2.0,
-                    gas_price=gas_params['gas_price_wei']
+                    gas_price=gas_price_wei
                 )
                 time.sleep(5)
                 wbtc_balance_after = self.uniswap.get_token_balance(self.wbtc_address)
@@ -421,12 +430,15 @@ class ArbitrumTestnetAgent:
                 if gas_params is None:
                     raise Exception("CRITICAL: Failed to get gas params for WETH swap. Halting.")
 
+                # Extract gas price safely
+                gas_price_wei = gas_params.get('gas_price_wei') or gas_params.get('gasPrice') or int(self.w3.eth.gas_price * 1.1)
+
                 weth_balance_before = self.uniswap.get_token_balance(self.weth_address)
                 swap_result = self.uniswap.swap_tokens(
                     token_in=self.usdc_address,
                     token_out=self.weth_address,
                     amount_in=1.0,
-                    gas_price=gas_params['gas_price_wei']
+                    gas_price=gas_price_wei
                 )
                 time.sleep(5)
                 weth_balance_after = self.uniswap.get_token_balance(self.weth_address)
@@ -439,12 +451,15 @@ class ArbitrumTestnetAgent:
                 if gas_params is None:
                     raise Exception("CRITICAL: Failed to get gas params for DAI swap. Halting.")
 
+                # Extract gas price safely
+                gas_price_wei = gas_params.get('gas_price_wei') or gas_params.get('gasPrice') or int(self.w3.eth.gas_price * 1.1)
+
                 dai_balance_before = self.uniswap.get_token_balance(self.dai_address)
                 swap_result = self.uniswap.swap_tokens(
                     token_in=self.usdc_address,
                     token_out=self.dai_address,
                     amount_in=1.0,
-                    gas_price=gas_params['gas_price_wei']
+                    gas_price=gas_price_wei
                 )
                 time.sleep(5)
                 dai_balance_after = self.uniswap.get_token_balance(self.dai_address)
@@ -457,12 +472,15 @@ class ArbitrumTestnetAgent:
                 if gas_params is None:
                     raise Exception("CRITICAL: Failed to get gas params for final WETH swap. Halting.")
 
+                # Extract gas price safely
+                gas_price_wei = gas_params.get('gas_price_wei') or gas_params.get('gasPrice') or int(self.w3.eth.gas_price * 1.1)
+
                 final_weth_before = self.uniswap.get_token_balance(self.weth_address)
                 swap_result = self.uniswap.swap_tokens(
                     token_in=self.usdc_address,
                     token_out=self.weth_address,
                     amount_in=1.0,
-                    gas_price=gas_params['gas_price_wei']
+                    gas_price=gas_price_wei
                 )
                 time.sleep(5)
                 final_weth_after = self.uniswap.get_token_balance(self.weth_address)
