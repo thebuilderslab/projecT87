@@ -693,13 +693,6 @@ class AaveArbitrumIntegration:
             print(f"❌ Repay failed: {e}")
             return None
 
-        except Exception as retry_e:
-            if "nonce too low" in str(retry_e) and attempt < max_retries - 1:
-                print(f"🔄 Nonce conflict, retrying with nonce {nonce + attempt + 1}")
-                continue
-            else:
-                raise retry_e
-
     def supply_wbtc_to_aave(self, wbtc_amount):
         """Supply WBTC to Aave V3 as collateral"""
         try:
