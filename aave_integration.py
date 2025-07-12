@@ -283,60 +283,68 @@ class AaveArbitrumIntegration:
         return -1
 
     def get_token_balance(self, token_address):
-        """Get token balance using optimized ARBISCAN→RPC→ZAPPER sequence"""
+        """Get token balance for the user's address"""
         try:
-            print(f"🔍 Optimized balance sequence for {token_address}")
+            # Use optimized balance fetcher
+            from optimized_balance_fetcher import OptimizedBalanceFetcher
 
-            # PRIORITY: Use enhanced balance fetcher if available
-            try:
-                from enhanced_balance_fetcher import EnhancedBalanceFetcher
-                
-                # Determine token symbol
-                token_symbol = 'UNKNOWN'
-                if token_address.lower() == self.usdc_address.lower():
-                    token_symbol = 'USDC'
-                elif token_address.lower() == self.wbtc_address.lower():
-                    token_symbol = 'WBTC'
-                elif token_address.lower() == self.weth_address.lower():
-                    token_symbol = 'WETH'
-                
-                if token_symbol != 'UNKNOWN':
-                    fetcher = EnhancedBalanceFetcher(self.w3, self.address)
-                    result = fetcher.get_optimized_balance(token_symbol)
-                    
-                    if result.get('success'):
-                        print(f"✅ Enhanced fetcher success: {result['balance']:.6f} (via {result['source']})")
-                        return result['balance']
-                    
-            except Exception as e:
-                print(f"⚠️ Enhanced fetcher fallback: {e}")
+            fetcher = OptimizedBalanceFetcher(self.w3)
+            balance = fetcher.get_token_balance(self.account.address, token_address)
 
-            # Step 1: Arbiscan API (highest accuracy, rate limited)
-            arbiscan_balance = self.get_arbiscan_token_balance(token_address)
-            if arbiscan_balance >= 0:
-                print(f"✅ Arbiscan API success: {arbiscan_balance:.6f}")
-                return arbiscan_balance
-
-            # Step 2: Direct RPC call (good reliability)
-            print(f"🔄 Arbiscan failed, trying RPC...")
-            balance = self._get_balance_current_rpc_enhanced(token_address)
-            if balance >= 0:
-                print(f"✅ RPC success: {balance:.6f}")
-                return balance
-
-            # Step 3: Zapper API / Known data fallback
-            print(f"🔄 RPC failed, trying Zapper fallback...")
-            zapper_balance = self.get_zapper_fallback_balance(token_address)
-            if zapper_balance >= 0:
-                print(f"✅ Zapper fallback success: {zapper_balance:.6f}")
-                return zapper_balance
-
-            # All methods failed
-            print(f"❌ All balance methods failed for {token_address}")
-            return 0.0
+            return balance
 
         except Exception as e:
-            print(f"❌ ERROR: Token balance fetch failed: {e}")
+            print(f"❌ Error getting token balance for {token_address}: {e}")
+            return 0.0
+
+    def get_supplied_balance(self, token_address):
+        """Get the amount of tokens supplied to Aave for this asset"""
+        try:
+            # Standard ERC20 ABI for aToken balance
+            atoken_abi = [{
+                "inputs": [{"name": "account", "type": "address"}],
+                "name": "balanceOf",
+                "outputs": [{"name": "", "type": "uint256"}],
+                "stateMutability": "view",
+                "type": "function"
+            }, {
+                "inputs": [],
+                "name": "decimals",
+                "outputs": [{"name": "", "type": "uint8"}],
+                "stateMutability": "view",
+                "type": "function"
+            }]
+
+            # Aave aToken addresses for Arbitrum Mainnet
+            atoken_addresses = {
+                "0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f": "0x6533afac2E7BCCB20dca161449A13A2D2d5B739A",  # WBTC -> aWBTC
+                "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1": "0xe50fA9b4c56454E2edF6BFf7c81b50c5F05aBE61",  # WETH -> aWETH
+                "0xaf88d065e77c8cF0eAEFf3e253e648a15cEe23dC": "0x724dc807b04555b71ed48a6896b6F41593b8C637",  # USDC -> aUSDC
+            }
+
+            atoken_address = atoken_addresses.get(token_address)
+            if not atoken_address:
+                print(f"⚠️ No aToken mapping for {token_address}")
+                return 0.0
+
+            # Create aToken contract
+            atoken_contract = self.w3.eth.contract(
+                address=atoken_address,
+                abi=atoken_abi
+            )
+
+            # Get balance and decimals
+            balance_wei = atoken_contract.functions.balanceOf(self.account.address).call()
+            decimals = atoken_contract.functions.decimals().call()
+
+            # Convert to readable format
+            balance = balance_wei / (10 ** decimals)
+
+            print(f"✅ Supplied {balance:.8f} of token {token_address} (aToken: {atoken_address})")
+            return balance
+
+        except Exception as e:
+            print(f"❌ Error getting supplied balance for {token_address}: {e}")
             return 0.0
 
     def get_zapper_fallback_balance(self, token_address: str) -> float:
@@ -670,6 +678,7 @@ class AaveArbitrumIntegration:
                     print(f"✅ Repay transaction sent: {tx_hash.hex()}")
                     return tx_hash.hex()
 
+```python
                 except Exception as retry_e:
                     if "nonce too low" in str(retry_e) and attempt < max_retries - 1:
                         print(f"🔄 Nonce conflict, retrying with nonce {nonce + attempt + 1}")
