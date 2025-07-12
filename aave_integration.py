@@ -678,8 +678,7 @@ class AaveArbitrumIntegration:
                     print(f"✅ Repay transaction sent: {tx_hash.hex()}")
                     return tx_hash.hex()
 
-```python
-                except Exception as retry_e:
+except Exception as retry_e:
                     if "nonce too low" in str(retry_e) and attempt < max_retries - 1:
                         print(f"🔄 Nonce conflict, retrying with nonce {nonce + attempt + 1}")
                         continue

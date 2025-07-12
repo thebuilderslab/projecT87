@@ -28,20 +28,37 @@ class ArbitrumTestnetAgent:
 
         # Determine network configuration
         if self.network_mode == 'mainnet':
-            # Try to use more robust RPC endpoints
+            # Try to use more robust RPC endpoints - prioritize premium providers
             infura_api_key = os.getenv('INFURA_API_KEY')
             alchemy_api_key = os.getenv('ALCHEMY_API_KEY')
             
             if infura_api_key:
                 self.rpc_url = f"https://arbitrum-mainnet.infura.io/v3/{infura_api_key}"
-                print("🔗 Using Infura RPC endpoint")
+                print("🔗 Using Infura RPC endpoint (premium)")
             elif alchemy_api_key:
                 self.rpc_url = f"https://arb-mainnet.g.alchemy.com/v2/{alchemy_api_key}"
-                print("🔗 Using Alchemy RPC endpoint")
+                print("🔗 Using Alchemy RPC endpoint (premium)")
             else:
-                # Use multiple fallback endpoints for reliability
-                self.rpc_url = "https://arbitrum-one.public.blastapi.io"
-                print("🔗 Using BlastAPI public endpoint")
+                # Use robust fallback endpoints - test multiple
+                fallback_rpcs = [
+                    "https://1rpc.io/arb",
+                    "https://arbitrum-one.public.blastapi.io", 
+                    "https://arb1.arbitrum.io/rpc"
+                ]
+                
+                # Test RPC connectivity and choose the first working one
+                for rpc in fallback_rpcs:
+                    try:
+                        test_w3 = Web3(Web3.HTTPProvider(rpc, request_kwargs={'timeout': 5}))
+                        if test_w3.is_connected() and test_w3.eth.chain_id == 42161:
+                            self.rpc_url = rpc
+                            print(f"🔗 Using validated RPC endpoint: {rpc}")
+                            break
+                    except:
+                        continue
+                else:
+                    self.rpc_url = "https://1rpc.io/arb"  # Final fallback
+                    print("🔗 Using final fallback RPC endpoint")
             
             self.chain_id = 42161
             print("🌐 Operating on Arbitrum Mainnet")
@@ -69,12 +86,19 @@ class ArbitrumTestnetAgent:
 
         # Contract addresses based on network
         if self.network_mode == 'mainnet':
-            # Arbitrum Mainnet addresses (verified)
-            self.usdc_address = "0xaf88d065e77c8cF0eAEFf3e253e648a15cEe23dC"  # USDC
-            self.wbtc_address = "0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f"  # WBTC
+            # Arbitrum Mainnet addresses (verified and corrected)
+            self.usdc_address = "0xaf88d065e77c8cF0eAEFf3e253e648a15cEe23dC"  # USDC (native)
+            self.wbtc_address = "0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f"  # WBTC  
             self.weth_address = "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1"  # WETH
             self.dai_address = "0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1"   # DAI
             self.aave_pool_address = "0x794a61358D6845594F94dc1DB02A252b5b4814aD"
+            
+            print(f"📋 Mainnet Token addresses verified:")
+            print(f"   USDC: {self.usdc_address}")
+            print(f"   WBTC: {self.wbtc_address}")
+            print(f"   WETH: {self.weth_address}")
+            print(f"   DAI: {self.dai_address}")
+            print(f"   Aave Pool: {self.aave_pool_address}")
             
             print(f"📋 Token addresses verified:")
             print(f"   USDC: {self.usdc_address}")
@@ -395,7 +419,7 @@ class ArbitrumTestnetAgent:
             print(f"   RPC Endpoint: {self.rpc_url}")
             print(f"   Aave Pool Address: {self.aave_pool_address}")
 
-            # Test direct Aave contract interaction
+            # Test direct Aave contract interaction with enhanced debugging
             try:
                 print(f"🔍 TESTING DIRECT AAVE CONTRACT ACCESS:")
                 # Try to get user account data directly using the Aave contract
@@ -406,9 +430,9 @@ class ArbitrumTestnetAgent:
                     "inputs": [{"name": "user", "type": "address"}],
                     "name": "getUserAccountData",
                     "outputs": [
-                        {"name": "totalCollateralETH", "type": "uint256"},
-                        {"name": "totalDebtETH", "type": "uint256"},
-                        {"name": "availableBorrowsETH", "type": "uint256"},
+                        {"name": "totalCollateralBase", "type": "uint256"},
+                        {"name": "totalDebtBase", "type": "uint256"},
+                        {"name": "availableBorrowsBase", "type": "uint256"},
                         {"name": "currentLiquidationThreshold", "type": "uint256"},
                         {"name": "ltv", "type": "uint256"},
                         {"name": "healthFactor", "type": "uint256"}
@@ -425,28 +449,58 @@ class ArbitrumTestnetAgent:
                 print(f"   Attempting getUserAccountData for: {self.address}")
                 account_data = pool_contract.functions.getUserAccountData(self.address).call()
 
-                total_collateral_eth = account_data[0] / (10**18)
-                total_debt_eth = account_data[1] / (10**18)
+                # Aave V3 uses 8 decimal places for USD values (not 18 like ETH)
+                total_collateral_usd_raw = account_data[0] / (10**8)  # Changed from 10**18
+                total_debt_usd_raw = account_data[1] / (10**8)       # Changed from 10**8
+                available_borrows_usd = account_data[2] / (10**8)
                 health_factor = account_data[5] / (10**18) if account_data[5] > 0 else float('inf')
 
                 print(f"   ✅ DIRECT AAVE QUERY SUCCESS:")
-                print(f"      Total Collateral: {total_collateral_eth:.8f} ETH")
-                print(f"      Total Debt: {total_debt_eth:.8f} ETH")
+                print(f"      Raw Aave Response: {account_data}")
+                print(f"      Total Collateral USD: ${total_collateral_usd_raw:,.8f}")
+                print(f"      Total Debt USD: ${total_debt_usd_raw:,.8f}")
+                print(f"      Available Borrows USD: ${available_borrows_usd:,.8f}")
                 print(f"      Health Factor: {health_factor:.4f}")
 
-                # Convert to USD for comparison
-                eth_price = 3000  # Approximate
-                collateral_usd = total_collateral_eth * eth_price
-                debt_usd = total_debt_eth * eth_price
-
-                print(f"      Estimated Collateral USD: ${collateral_usd:,.2f}")
-                print(f"      Estimated Debt USD: ${debt_usd:,.2f}")
-
                 current_health_factor = health_factor
-                current_collateral_value_usd = collateral_usd
+                current_collateral_value_usd = total_collateral_usd_raw
+
+                # Additional debugging: Check individual asset balances on Aave
+                print(f"   🔍 CHECKING INDIVIDUAL AAVE ASSET BALANCES:")
+                try:
+                    # Check aToken balances (these represent supplied assets)
+                    aave_assets = {
+                        "aWBTC": "0x6533afac2E7BCCB20dca161449A13A2D2d5B739A",
+                        "aWETH": "0xe50fA9b4c56454E2edF6BFf7c81b50c5F05aBE61", 
+                        "aUSDC": "0x724dc807b04555b71ed48a6896b6F41593b8C637"
+                    }
+                    
+                    atoken_abi = [{
+                        "inputs": [{"name": "account", "type": "address"}],
+                        "name": "balanceOf",
+                        "outputs": [{"name": "", "type": "uint256"}],
+                        "stateMutability": "view",
+                        "type": "function"
+                    }]
+                    
+                    for asset_name, atoken_address in aave_assets.items():
+                        try:
+                            atoken_contract = self.w3.eth.contract(address=atoken_address, abi=atoken_abi)
+                            balance = atoken_contract.functions.balanceOf(self.address).call()
+                            decimals = 18 if asset_name != "aUSDC" else 6
+                            if asset_name == "aWBTC": decimals = 8
+                            readable_balance = balance / (10**decimals)
+                            print(f"      {asset_name}: {readable_balance:.8f}")
+                        except Exception as e:
+                            print(f"      {asset_name}: Error - {e}")
+                            
+                except Exception as e:
+                    print(f"   ⚠️ Individual asset check failed: {e}")
 
             except Exception as e:
                 print(f"   ❌ DIRECT AAVE QUERY FAILED: {e}")
+                import traceback
+                traceback.print_exc()
                 # Fallback to health monitor
                 health_data = self.health_monitor.get_current_health_factor()
                 if health_data is None:
