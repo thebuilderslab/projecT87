@@ -179,10 +179,10 @@ class ArbitrumTestnetAgent:
                 try:
                     # Get optimized gas parameters with safety checks
                     gas_params = self.get_optimized_gas_params('approve_token', speed='market')
-                    
+
                     # Approve token with a very large but finite amount instead of infinity
                     max_approval_amount = 2**256 - 1  # Maximum uint256 value
-                    
+
                     self.aave.approve_token(
                         token_address=token_address,
                         amount=max_approval_amount,
@@ -190,7 +190,7 @@ class ArbitrumTestnetAgent:
                     )
                     print(f"✅ {token_name} approved for Aave with optimized gas")
                     time.sleep(2)
-                    
+
                 except Exception as e:
                     print(f"⚠️ {token_name} approval failed: {e}")
                     print(f"   Continuing with next token...")
@@ -370,13 +370,13 @@ class ArbitrumTestnetAgent:
             if gas_data and gas_data.get('gas_limit') and gas_data.get('gas_price_wei'):
                 gas_limit = gas_data['gas_limit']
                 gas_price = gas_data['gas_price_wei']
-                
+
                 # Ensure gas values are finite and reasonable
                 if not (isinstance(gas_limit, (int, float)) and gas_limit > 0 and gas_limit < 10000000):
                     gas_limit = 200000
                 if not (isinstance(gas_price, (int, float)) and gas_price > 0 and gas_price < 1000000000000):  # < 1000 gwei
                     gas_price = 100000000  # 0.1 gwei fallback
-                
+
                 return {
                     'gas': int(gas_limit),
                     'gasPrice': int(gas_price)
@@ -388,7 +388,7 @@ class ArbitrumTestnetAgent:
                     safe_gas_price = int(base_gas_price * 1.1)
                 else:
                     safe_gas_price = 100000000  # 0.1 gwei fallback
-                
+
                 return {
                     'gas': self.gas_calculator.gas_limits.get(operation_type, 200000),
                     'gasPrice': safe_gas_price
@@ -593,10 +593,11 @@ class ArbitrumTestnetAgent:
                 # Use the already successful Aave contract data instead of individual aToken calls
                 # The direct Aave getUserAccountData call is working perfectly - use that data
                 print(f"   Using successful Aave contract data: ${current_collateral_value_usd:.2f}")
-                
+
                 # Estimate asset breakdown based on known position (optional - for display only)
                 wbtc_balance = 0.0  # Will be determined from Aave collateral data
-                weth_balance = 0.0  # Will be determined from Aave collateral data  
+                weth_balance = 0.0  # Will be determined from Aave```python
+ collateral data  
                 usdc_balance = 0.0  # Will be determined from Aave collateral data
                 arb_balance = 0.0   # Not in Aave currently
 
@@ -725,6 +726,15 @@ class ArbitrumTestnetAgent:
                 print(f"📝 Sequence: Borrow 6 USDC → Swap 2→WBTC, 1→WETH, 1→DAI, 1→WETH(wallet)")
 
                 # Check if we have borrowing capacity before proceeding
+                health_data = self.health_monitor.get_current_health_factor()
+                if health_data is None:
+                    print("⚠️ Warning: Could not get health factor from Aave. Using fallback monitoring.")
+                    current_health_factor = float('inf')
+                    current_collateral_value_usd = 0.0
+                else:
+                    current_health_factor = health_data.get('health_factor', float('inf'))
+                    current_collateral_value_usd = health_data.get('total_collateral_usdc', 0.0)
+
                 if current_health_factor < 2.0:
                     print(f"⚠️ Health factor {current_health_factor:.2f} too low for borrowing. Skipping sequence.")
                     return 0.5
@@ -862,14 +872,14 @@ class ArbitrumTestnetAgent:
         """Check if wallet has sufficient funds to start DeFi operations"""
         try:
             eth_balance = self.get_eth_balance()
-            
+
             print(f"🔍 WALLET READINESS CHECK:")
             print(f"   ETH Balance: {eth_balance:.6f} ETH")
             print(f"   Aave Position: ${current_collateral_value_usd:.2f} collateral")
 
             # Check minimum requirements - we have substantial Aave position already
             min_eth_for_gas = 0.001  # Minimum ETH for gas fees
-            
+
             ready = eth_balance >= min_eth_for_gas and current_collateral_value_usd > 50
 
             if ready:
