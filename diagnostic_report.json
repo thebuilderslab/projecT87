@@ -1,6 +1,6 @@
 {
-  "timestamp": 1751049838.099883,
-  "datetime": "2025-06-27T18:43:58.099883",
+  "timestamp": 1752442217.567079,
+  "datetime": "2025-07-13T21:30:17.567080",
   "diagnostic_version": "1.0",
   "environment": {
     "python_version": "3.11.10 (main, Sep  7 2024, 01:03:31) [GCC 13.3.0]",
@@ -67,25 +67,19 @@
     "critical_files": {
       "arbitrum_testnet_agent.py": {
         "exists": true,
-        "size": 31339,
-        "modified": 1751042582.533062,
+        "size": 50193,
+        "modified": 1752441314.8635745,
         "readable": true,
         "writable": true,
         "syntax_valid": true
       },
       "web_dashboard.py": {
         "exists": true,
-        "size": 46099,
-        "modified": 1751049561.9766936,
+        "size": 43986,
+        "modified": 1752205914.2493703,
         "readable": true,
         "writable": true,
-        "syntax_valid": false,
-        "syntax_error": {
-          "message": "unindent does not match any outer indentation level (web_dashboard.py, line 274)",
-          "line": 274,
-          "offset": 26,
-          "text": "                    else:\n"
-        }
+        "syntax_valid": true
       },
       "mainnet_launcher.py": {
         "exists": true,
@@ -97,31 +91,31 @@
       },
       "aave_integration.py": {
         "exists": true,
-        "size": 24955,
-        "modified": 1750825060.0368307,
+        "size": 37349,
+        "modified": 1752441698.0222847,
         "readable": true,
         "writable": true,
         "syntax_valid": true
       },
       "aave_health_monitor.py": {
         "exists": true,
-        "size": 26778,
-        "modified": 1750873837.7282228,
+        "size": 28558,
+        "modified": 1751240227.7026908,
         "readable": true,
         "writable": true,
         "syntax_valid": true
       },
       "user_settings.json": {
         "exists": true,
-        "size": 212,
-        "modified": 1750867560.109541,
+        "size": 242,
+        "modified": 1751165164.9866261,
         "readable": true,
         "writable": true
       },
       "agent_config.json": {
         "exists": true,
         "size": 151,
-        "modified": 1750758634.8828921,
+        "modified": 1751209105.1160874,
         "readable": true,
         "writable": true
       },
@@ -130,8 +124,8 @@
       },
       "performance_log.json": {
         "exists": true,
-        "size": 1449083,
-        "modified": 1750779440.8542182,
+        "size": 1482613,
+        "modified": 1751209104.0640876,
         "readable": true,
         "writable": true
       },
@@ -144,15 +138,15 @@
       },
       ".replit": {
         "exists": true,
-        "size": 6455,
-        "modified": 1750956326.779371,
+        "size": 13363,
+        "modified": 1752289560.4548929,
         "readable": true,
         "writable": true
       },
       "requirements.txt": {
         "exists": true,
-        "size": 131,
-        "modified": 1750745591.6917489,
+        "size": 157,
+        "modified": 1751168999.5772574,
         "readable": true,
         "writable": true
       }
@@ -165,13 +159,13 @@
       "arbitrum_mainnet": {
         "connected": true,
         "chain_id": 42161,
-        "latest_block": 351833681,
+        "latest_block": 357392798,
         "response_time": "fast"
       },
       "arbitrum_sepolia": {
         "connected": true,
         "chain_id": 421614,
-        "latest_block": 167848117,
+        "latest_block": 173249325,
         "response_time": "fast"
       }
     },
@@ -179,7 +173,7 @@
       "coinmarketcap": {
         "accessible": true,
         "status_code": 401,
-        "response_time": 0.146055
+        "response_time": 0.134282
       }
     },
     "general_connectivity": {}
@@ -212,8 +206,7 @@
         "success": true
       },
       "web_dashboard.app": {
-        "success": false,
-        "error": "unindent does not match any outer indentation level (web_dashboard.py, line 274)"
+        "success": true
       },
       "aave_integration.AaveArbitrumIntegration": {
         "success": true
@@ -229,11 +222,11 @@
       "address": "0x5B823270e3719CDe8669e5e5326B455EaA8a350b",
       "network_mode": "mainnet",
       "chain_id": 42161,
-      "eth_balance": 0.000661396522192864
+      "eth_balance": "0.001922150223691299"
     },
     "web_dashboard": {
-      "import_success": false,
-      "error": "unindent does not match any outer indentation level (web_dashboard.py, line 274)"
+      "import_success": true,
+      "flask_app": "<class 'flask.app.Flask'>"
     },
     "aave_integration": {},
     "workflow_status": {}
@@ -242,13 +235,13 @@
     "recent_errors": [],
     "log_analysis": {
       "performance_log.json": {
-        "size": 1449083,
-        "lines": 12398,
+        "size": 1482613,
+        "lines": 12698,
         "recent_entries": [
-          "{\"run_id\": 1, \"iteration\": 5, \"performance_metric\": 0.7992, \"timestamp\": 1750779414.5429826, \"metadata\": {}}",
-          "{\"run_id\": 1, \"iteration\": 6, \"performance_metric\": 0.7992, \"timestamp\": 1750779421.3074238, \"metadata\": {}}",
-          "{\"run_id\": 1, \"iteration\": 7, \"performance_metric\": 0.7992, \"timestamp\": 1750779428.3223758, \"metadata\": {}}",
-          "{\"run_id\": 1, \"iteration\": 8, \"performance_metric\": 0.7992, \"timestamp\": 1750779435.0759766, \"metadata\": {}}",
+          "{\"run_id\": 1, \"iteration\": 96, \"performance_metric\": 0.9099999999999999, \"timestamp\": 1751209097.310107, \"metadata\": {}}",
+          "{\"run_id\": 1, \"iteration\": 97, \"performance_metric\": 0.9199999999999999, \"timestamp\": 1751209099.2348206, \"metadata\": {}}",
+          "{\"run_id\": 1, \"iteration\": 98, \"performance_metric\": 0.9299999999999999, \"timestamp\": 1751209101.185036, \"metadata\": {}}",
+          "{\"run_id\": 1, \"iteration\": 99, \"performance_metric\": 0.94, \"timestamp\": 1751209103.1259918, \"metadata\": {}}",
           ""
         ]
       },
@@ -272,32 +265,10 @@
       "category": "Environment",
       "issue": "Missing environment variables: PRIVATE_KEY2, REPLIT_DEPLOYMENT",
       "solution": "Add missing variables to Replit Secrets panel"
-    },
-    {
-      "priority": "CRITICAL",
-      "category": "Syntax",
-      "issue": "Syntax error in web_dashboard.py: unindent does not match any outer indentation level (web_dashboard.py, line 274)",
-      "solution": "Fix syntax error at line 274"
     }
   ],
   "ai_analysis_data": {
-    "error_patterns": [
-      {
-        "type": "syntax_error",
-        "file": "web_dashboard.py",
-        "details": {
-          "message": "unindent does not match any outer indentation level (web_dashboard.py, line 274)",
-          "line": 274,
-          "offset": 26,
-          "text": "                    else:\n"
-        }
-      },
-      {
-        "type": "import_error",
-        "module": "web_dashboard.app",
-        "error": "unindent does not match any outer indentation level (web_dashboard.py, line 274)"
-      }
-    ],
+    "error_patterns": [],
     "configuration_state": {
       "network_mode": "mainnet",
       "secrets_configured": 6,
@@ -308,11 +279,9 @@
       "web3_available": true,
       "flask_available": true,
       "agent_importable": true,
-      "dashboard_importable": false
+      "dashboard_importable": true
     },
-    "failure_points": [
-      "web_dashboard_import"
-    ],
-    "system_health_score": 40
+    "failure_points": [],
+    "system_health_score": 80
   }
 }

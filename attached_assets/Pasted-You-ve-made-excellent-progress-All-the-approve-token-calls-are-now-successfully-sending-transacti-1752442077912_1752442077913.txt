@@ -1,0 +1,56 @@
+You've made excellent progress! All the `approve_token` calls are now successfully sending transactions, which is a major step forward.
+
+However, a new critical error has appeared related to `OptimizedBalanceFetcher`. The console output shows:
+
+`❌ Error getting token balance for 0x...: 'OptimizedBalanceFetcher' object has no attribute 'get_token_balance'`
+
+This means the `OptimizedBalanceFetcher` class is missing the `get_token_balance` method, or it's incorrectly defined/accessed.
+
+**Your task is to fix the `OptimizedBalanceFetcher` class within `aave_integration.py` (or any related file where it's defined) so that it properly includes and exposes a `get_token_balance` method.**
+
+Here's how you should approach this:
+
+1.  **Locate the `OptimizedBalanceFetcher` class definition.**
+2.  **Add or correct the `get_token_balance` method within this class.** It should be an instance method that takes at least `self` and `token_address` as arguments, and ideally `web3` and `contract_abi` if those are needed for fetching the balance. It should return the token balance for the given `token_address` and `wallet_address` (which is typically part of the class's `self` context).
+    * **Crucial Reminder:** When fetching token balances, you'll need the token's contract instance and its ABI. Ensure `OptimizedBalanceFetcher` has access to these or can construct them.
+    * **Don't forget token decimals!** ERC-20 token balances are returned as raw `uint256` values (wei equivalent), so they need to be divided by `10 ** decimals` to get the human-readable amount. You'll likely need a way to get the `decimals` for each token.
+3.  **Ensure all existing calls to `self.optimized_balance_fetcher.get_token_balance(...)` are correctly structured** to match the method's new signature.
+
+**Example (conceptual) of what `get_token_balance` might look like:**
+
+```python
+# Inside OptimizedBalanceFetcher class
+class OptimizedBalanceFetcher:
+    def __init__(self, web3, wallet_address, token_addresses_with_abis):
+        self.web3 = web3
+        self.wallet_address = wallet_address
+        self.token_contracts = {}
+        for token_symbol, data in token_addresses_with_abis.items():
+            token_address = self.web3.to_checksum_address(data['address'])
+            token_abi = data['abi'] # Assuming you pass ABIs or load them
+            self.token_contracts[token_symbol] = self.web3.eth.contract(address=token_address, abi=token_abi)
+
+    def get_token_balance(self, token_symbol_or_address):
+        """Fetches the balance of a given token for the wallet_address."""
+        try:
+            # Handle both symbol and direct address if needed
+            if token_symbol_or_address in self.token_contracts:
+                token_contract = self.token_contracts[token_symbol_or_address]
+            else: # Assume it's a direct address and try to get the contract
+                token_contract = self.web3.eth.contract(address=self.web3.to_checksum_address(token_symbol_or_address), abi=YOUR_ERC20_ABI_HERE)
+            
+            # Fetch raw balance
+            raw_balance = token_contract.functions.balanceOf(self.wallet_address).call()
+            
+            # Get decimals (this part is crucial and might need a separate lookup or a common ERC-20 ABI that includes decimals())
+            decimals = token_contract.functions.decimals().call() # Common way to get decimals
+            
+            # Convert to human-readable format
+            human_readable_balance = raw_balance / (10 ** decimals)
+            return human_readable_balance
+        except Exception as e:
+            print(f"Error fetching balance for {token_symbol_or_address}: {e}")
+            return 0.0 # Return 0.0 or handle as appropriate
+
+# Ensure your initialization of OptimizedBalanceFetcher passes necessary data (like token ABIs)
+# and that wherever you call `get_token_balance`, you're passing the correct argument (e.g., "USDC" or "0x...")
