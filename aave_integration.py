@@ -460,7 +460,18 @@ class AaveArbitrumIntegration:
                 user_address = self.w3.to_checksum_address(self.address)
 
             token_contract = self.w3.eth.contract(address=token_address, abi=self.erc20_abi)
-            
+
+            # Validate that the approve function exists in the contract
+            if not hasattr(token_contract.functions, 'approve'):
+                raise ValueError(f"Token contract at {token_address} does not have approve function")
+
+            # Get the approve function to validate its signature
+            approve_function = token_contract.functions.approve
+            print(f"🔍 Contract function validation:")
+            print(f"   Token contract: {token_address}")
+            print(f"   Approve function found: ✅")
+            print(f"   Function object: {approve_function}")
+
             # Handle infinite approval for large amounts or use MAX_UINT256
             if amount >= 2**255:  # Very large amount, use infinite approval
                 amount_wei = 2**256 - 1  # MAX_UINT256
@@ -477,7 +488,7 @@ class AaveArbitrumIntegration:
                         decimals = 8
                     else:
                         decimals = 18
-                
+
                 amount_wei = int(float(amount) * (10 ** decimals))
                 print(f"🔢 Converting {amount} to {amount_wei} wei using {decimals} decimals")
 
@@ -497,10 +508,24 @@ class AaveArbitrumIntegration:
                     current_nonce = self.w3.eth.get_transaction_count(user_address, 'pending')
                     print(f"🔢 Attempt {attempt + 1}: Using fresh pending nonce {current_nonce}")
 
-                    # Build transaction with explicit types
+                    # Validate parameters before building transaction
+                    spender_address = self.w3.to_checksum_address(self.pool_address)
+                    amount_uint256 = int(amount_wei)
+
+                    # Ensure amount is within uint256 range (0 to 2^256 - 1)
+                    if amount_uint256 < 0:
+                        raise ValueError(f"Amount cannot be negative: {amount_uint256}")
+                    if amount_uint256 > 2**256 - 1:
+                        raise ValueError(f"Amount exceeds uint256 max: {amount_uint256}")
+
+                    print(f"🔍 Approve parameters validation:")
+                    print(f"   Spender: {spender_address} (type: {type(spender_address)})")
+                    print(f"   Amount: {amount_uint256} (type: {type(amount_uint256)})")
+
+                    # Build transaction with validated parameters
                     transaction = token_contract.functions.approve(
-                        self.w3.to_checksum_address(self.pool_address),  # Ensure spender is checksummed
-                        amount_wei  # This should be a plain integer
+                        spender_address,  # Validated checksummed address
+                        amount_uint256    # Validated uint256 integer
                     ).build_transaction({
                         'chainId': self.w3.eth.chain_id,
                         'gas': 100000,
@@ -641,7 +666,8 @@ class AaveArbitrumIntegration:
 
                     # Sign and send
                     signed_txn = self.w3.eth.account.sign_transaction(transaction, self.account.key)
-                    tx_hash = self.w3.eth.send_raw_transaction(signed_txn.rawTransaction)
+                    tx_hash```python
+ = self.w3.eth.send_raw_transaction(signed_txn.rawTransaction)
 
                     print(f"✅ Borrow transaction sent: {tx_hash.hex()}")
                     print(f"📊 Explorer: https://sepolia.arbiscan.io/tx/{tx_hash.hex()}")
