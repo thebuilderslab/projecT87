@@ -16,7 +16,7 @@ run = ["sh", "-c", "python mainnet_launcher.py"]
 deploymentTarget = "cloudrun"
 
 [workflows]
-runButton = "🚀 FIXED DASHBOARD & AUTONOMOUS"
+runButton = "🔗 DASHBOARD + AUTONOMOUS"
 
 [[workflows.workflow]]
 name = "Run"
