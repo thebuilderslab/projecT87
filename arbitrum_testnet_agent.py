@@ -596,8 +596,8 @@ class ArbitrumTestnetAgent:
 
                 # Estimate asset breakdown based on known position (optional - for display only)
                 wbtc_balance = 0.0  # Will be determined from Aave collateral data
-                weth_balance = 0.0  # Will be determined from Aave```python
- collateral data  
+                weth_balance = 0.0  # Will be determined from Aave
+ collateral data
                 usdc_balance = 0.0  # Will be determined from Aave collateral data
                 arb_balance = 0.0   # Not in Aave currently
 
@@ -605,7 +605,7 @@ class ArbitrumTestnetAgent:
                 print(f"   WETH supplied: {weth_balance:.8f}")
                 print(f"   USDC supplied: {usdc_balance:.8f}")
 
-                ## Get current prices and calculate USD values
+                # Get current prices and calculate USD values
                 try:
                     import requests
                     url = "https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest"
