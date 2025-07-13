@@ -59,7 +59,7 @@ def run_autonomous_mainnet_agent():
         
         # Check initial health factor
         try:
-            health_data = agent.health_monitor.get_health_factor()
+            health_data = agent.health_monitor.get_current_health_factor()
             if health_data:
                 hf = health_data.get('health_factor', 0)
                 log_agent_activity(f"❤️ Initial Health Factor: {hf:.4f}")
