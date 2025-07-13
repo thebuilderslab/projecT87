@@ -364,62 +364,71 @@ class ArbitrumTestnetAgent:
                     print("✅ Swapped USDC to ETH for gas.")
 
     def get_optimized_gas_params(self, operation_type, speed='market'):
-        """Get optimized gas parameters for transactions with robust validation"""
+        """Get optimized gas parameters for transactions with comprehensive validation"""
         try:
+            # Validate inputs first
+            if not operation_type or not isinstance(operation_type, str):
+                print(f"⚠️ Invalid operation_type: {operation_type}, using 'generic'")
+                operation_type = 'generic'
+            
+            if speed not in ['slow', 'market', 'fast', 'instant']:
+                print(f"⚠️ Invalid speed: {speed}, using 'market'")
+                speed = 'market'
+            
             gas_data = self.gas_calculator.calculate_transaction_fee(operation_type, speed)
             
-            # Initialize with safe fallback values
-            safe_gas_limit = 200000
+            # Initialize with safe fallback values based on operation type
+            operation_gas_limits = {
+                'approve_token': 60000,
+                'aave_supply': 150000,
+                'aave_borrow': 180000,
+                'aave_repay': 160000,
+                'uniswap_swap': 120000,
+                'generic': 200000
+            }
+            safe_gas_limit = operation_gas_limits.get(operation_type, 200000)
             safe_gas_price = 100000000  # 0.1 gwei fallback
             
             if gas_data:
-                # Extract and validate gas limit
+                # Extract and validate gas limit with enhanced checks
                 gas_limit = gas_data.get('gas_limit', safe_gas_limit)
                 
-                # Robust validation for gas limit
-                if (isinstance(gas_limit, (int, float)) and 
-                    not (gas_limit == float('inf') or gas_limit == float('-inf') or 
-                         gas_limit != gas_limit or  # Check for NaN
-                         gas_limit <= 0 or gas_limit > 10000000)):
+                # Comprehensive validation for gas limit
+                if self._is_valid_numeric(gas_limit, min_val=21000, max_val=10000000):
                     safe_gas_limit = int(gas_limit)
                 else:
-                    print(f"⚠️ Invalid gas limit detected: {gas_limit}, using fallback: {safe_gas_limit}")
+                    print(f"⚠️ Invalid gas limit detected: {gas_limit} (type: {type(gas_limit)}), using fallback: {safe_gas_limit}")
                 
-                # Extract and validate gas price
-                gas_price = gas_data.get('gas_price_wei') or gas_data.get('gasPrice')
+                # Extract and validate gas price with multiple key attempts
+                gas_price = (gas_data.get('gas_price_wei') or 
+                           gas_data.get('gasPrice') or 
+                           gas_data.get('gas_price') or
+                           gas_data.get('gasPrice_wei'))
                 
                 if gas_price is not None:
-                    # Robust validation for gas price
-                    if (isinstance(gas_price, (int, float)) and 
-                        not (gas_price == float('inf') or gas_price == float('-inf') or 
-                             gas_price != gas_price or  # Check for NaN
-                             gas_price <= 0 or gas_price > 1000000000000)):  # < 1000 gwei
+                    # Comprehensive validation for gas price (1 wei to 1000 gwei)
+                    if self._is_valid_numeric(gas_price, min_val=1, max_val=1000000000000):
                         safe_gas_price = int(gas_price)
                     else:
-                        print(f"⚠️ Invalid gas price detected: {gas_price}, using fallback: {safe_gas_price}")
+                        print(f"⚠️ Invalid gas price detected: {gas_price} (type: {type(gas_price)}), using fallback: {safe_gas_price}")
                         
             # If no gas data or all values invalid, try network gas price as backup
             if safe_gas_price == 100000000:  # Still using fallback
                 try:
                     base_gas_price = self.w3.eth.gas_price
-                    if (base_gas_price and isinstance(base_gas_price, (int, float)) and
-                        not (base_gas_price == float('inf') or base_gas_price == float('-inf') or
-                             base_gas_price != base_gas_price) and
-                        base_gas_price > 0 and base_gas_price < 1000000000000):
+                    if self._is_valid_numeric(base_gas_price, min_val=1, max_val=1000000000000):
                         safe_gas_price = int(base_gas_price * 1.1)
-                        print(f"✅ Using network gas price: {safe_gas_price} wei")
+                        print(f"✅ Using network gas price: {safe_gas_price} wei ({self.w3.from_wei(safe_gas_price, 'gwei'):.3f} gwei)")
                     else:
                         print(f"⚠️ Network gas price invalid: {base_gas_price}, using fallback")
                 except Exception as gas_error:
                     print(f"⚠️ Failed to get network gas price: {gas_error}")
             
-            # Final validation before return
-            if safe_gas_limit <= 0 or safe_gas_limit > 10000000:
-                safe_gas_limit = 200000
-            if safe_gas_price <= 0 or safe_gas_price > 1000000000000:
-                safe_gas_price = 100000000
+            # Final safety validation with overflow protection
+            safe_gas_limit = max(21000, min(safe_gas_limit, 10000000))
+            safe_gas_price = max(1, min(safe_gas_price, 1000000000000))
                 
-            print(f"✅ Gas params for {operation_type}: limit={safe_gas_limit}, price={safe_gas_price} wei")
+            print(f"✅ Gas params for {operation_type}: limit={safe_gas_limit:,}, price={safe_gas_price:,} wei ({self.w3.from_wei(safe_gas_price, 'gwei'):.3f} gwei)")
             
             return {
                 'gas': safe_gas_limit,
@@ -428,6 +437,8 @@ class ArbitrumTestnetAgent:
             
         except Exception as e:
             print(f"❌ Gas optimization completely failed: {e}")
+            import traceback
+            print(f"🔍 Stack trace: {traceback.format_exc()}")
             # Ultra-safe fallback with minimal viable values
             fallback_params = {
                 'gas': 200000,
@@ -435,6 +446,49 @@ class ArbitrumTestnetAgent:
             }
             print(f"🛡️ Using ultra-safe fallback gas params: {fallback_params}")
             return fallback_params
+
+    def _is_valid_numeric(self, value, min_val=0, max_val=float('inf')):
+        """Helper function to validate numeric values with comprehensive checks"""
+        try:
+            # Check if value exists and is numeric
+            if value is None:
+                return False
+                
+            # Handle string representations of numbers
+            if isinstance(value, str):
+                try:
+                    value = float(value)
+                except (ValueError, TypeError):
+                    return False
+            
+            # Check if it's a numeric type
+            if not isinstance(value, (int, float, complex)):
+                return False
+            
+            # Check for infinity
+            if value == float('inf') or value == float('-inf'):
+                return False
+                
+            # Check for NaN
+            if value != value:  # NaN check
+                return False
+                
+            # Check for complex numbers (shouldn't be used for gas)
+            if isinstance(value, complex):
+                return False
+                
+            # Range validation
+            if value < min_val or value > max_val:
+                return False
+                
+            # Check for extremely large numbers that could cause overflow
+            if abs(value) > 2**63 - 1:  # Max safe integer
+                return False
+                
+            return True
+            
+        except Exception:
+            return False
 
     def get_arb_price(self):
         """Get real-time ARB price with strict error handling - NO HARDCODED FALLBACK"""
