@@ -364,42 +364,77 @@ class ArbitrumTestnetAgent:
                     print("✅ Swapped USDC to ETH for gas.")
 
     def get_optimized_gas_params(self, operation_type, speed='market'):
-        """Get optimized gas parameters for transactions"""
+        """Get optimized gas parameters for transactions with robust validation"""
         try:
             gas_data = self.gas_calculator.calculate_transaction_fee(operation_type, speed)
-            if gas_data and gas_data.get('gas_limit') and gas_data.get('gas_price_wei'):
-                gas_limit = gas_data['gas_limit']
-                gas_price = gas_data['gas_price_wei']
-
-                # Ensure gas values are finite and reasonable
-                if not (isinstance(gas_limit, (int, float)) and gas_limit > 0 and gas_limit < 10000000):
-                    gas_limit = 200000
-                if not (isinstance(gas_price, (int, float)) and gas_price > 0 and gas_price < 1000000000000):  # < 1000 gwei
-                    gas_price = 100000000  # 0.1 gwei fallback
-
-                return {
-                    'gas': int(gas_limit),
-                    'gasPrice': int(gas_price)
-                }
-            else:
-                # Fallback gas parameters
-                base_gas_price = self.w3.eth.gas_price
-                if base_gas_price and base_gas_price > 0 and base_gas_price < 1000000000000:
-                    safe_gas_price = int(base_gas_price * 1.1)
+            
+            # Initialize with safe fallback values
+            safe_gas_limit = 200000
+            safe_gas_price = 100000000  # 0.1 gwei fallback
+            
+            if gas_data:
+                # Extract and validate gas limit
+                gas_limit = gas_data.get('gas_limit', safe_gas_limit)
+                
+                # Robust validation for gas limit
+                if (isinstance(gas_limit, (int, float)) and 
+                    not (gas_limit == float('inf') or gas_limit == float('-inf') or 
+                         gas_limit != gas_limit or  # Check for NaN
+                         gas_limit <= 0 or gas_limit > 10000000)):
+                    safe_gas_limit = int(gas_limit)
                 else:
-                    safe_gas_price = 100000000  # 0.1 gwei fallback
-
-                return {
-                    'gas': self.gas_calculator.gas_limits.get(operation_type, 200000),
-                    'gasPrice': safe_gas_price
-                }
-        except Exception as e:
-            print(f"⚠️ Gas optimization failed, using fallback: {e}")
-            # Safe fallback with finite values
+                    print(f"⚠️ Invalid gas limit detected: {gas_limit}, using fallback: {safe_gas_limit}")
+                
+                # Extract and validate gas price
+                gas_price = gas_data.get('gas_price_wei') or gas_data.get('gasPrice')
+                
+                if gas_price is not None:
+                    # Robust validation for gas price
+                    if (isinstance(gas_price, (int, float)) and 
+                        not (gas_price == float('inf') or gas_price == float('-inf') or 
+                             gas_price != gas_price or  # Check for NaN
+                             gas_price <= 0 or gas_price > 1000000000000)):  # < 1000 gwei
+                        safe_gas_price = int(gas_price)
+                    else:
+                        print(f"⚠️ Invalid gas price detected: {gas_price}, using fallback: {safe_gas_price}")
+                        
+            # If no gas data or all values invalid, try network gas price as backup
+            if safe_gas_price == 100000000:  # Still using fallback
+                try:
+                    base_gas_price = self.w3.eth.gas_price
+                    if (base_gas_price and isinstance(base_gas_price, (int, float)) and
+                        not (base_gas_price == float('inf') or base_gas_price == float('-inf') or
+                             base_gas_price != base_gas_price) and
+                        base_gas_price > 0 and base_gas_price < 1000000000000):
+                        safe_gas_price = int(base_gas_price * 1.1)
+                        print(f"✅ Using network gas price: {safe_gas_price} wei")
+                    else:
+                        print(f"⚠️ Network gas price invalid: {base_gas_price}, using fallback")
+                except Exception as gas_error:
+                    print(f"⚠️ Failed to get network gas price: {gas_error}")
+            
+            # Final validation before return
+            if safe_gas_limit <= 0 or safe_gas_limit > 10000000:
+                safe_gas_limit = 200000
+            if safe_gas_price <= 0 or safe_gas_price > 1000000000000:
+                safe_gas_price = 100000000
+                
+            print(f"✅ Gas params for {operation_type}: limit={safe_gas_limit}, price={safe_gas_price} wei")
+            
             return {
-                'gas': 200000,
-                'gasPrice': 100000000  # 0.1 gwei fallback
+                'gas': safe_gas_limit,
+                'gasPrice': safe_gas_price
             }
+            
+        except Exception as e:
+            print(f"❌ Gas optimization completely failed: {e}")
+            # Ultra-safe fallback with minimal viable values
+            fallback_params = {
+                'gas': 200000,
+                'gasPrice': 100000000  # 0.1 gwei
+            }
+            print(f"🛡️ Using ultra-safe fallback gas params: {fallback_params}")
+            return fallback_params
 
     def get_arb_price(self):
         """Get real-time ARB price with strict error handling - NO HARDCODED FALLBACK"""
