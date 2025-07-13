@@ -78,8 +78,9 @@ def initialize_agent():
         if len(private_key) < 32 or len(private_key) > 66:
             print(f"❌ Invalid private key length: {len(private_key)} (expected 32-66 characters)")
             print("💡 Please check your PRIVATE_KEY in Replit Secrets")
-            # Don't return - continue with initialization to show dashboard
-            print("🔄 Continuing with dashboard initialization...")
+            agent = MockAgent()
+            dashboard = None
+            return
         else:
             try:
                 int(private_key, 16)
@@ -87,10 +88,12 @@ def initialize_agent():
             except ValueError:
                 print("❌ Private key contains invalid hexadecimal characters")
                 print("💡 Please check your PRIVATE_KEY in Replit Secrets")
-                print("🔄 Continuing with dashboard initialization...")
+                agent = MockAgent()
+                dashboard = None
+                return
 
         from arbitrum_testnet_agent import ArbitrumTestnetAgent
-        agent = ArbitrumTestnetAgent(network_mode)
+        agent = ArbitrumTestnetAgent()
 
         # Initialize integrations safely
         if agent.initialize_integrations():
@@ -363,11 +366,14 @@ def wallet_status():
             try:
                 if hasattr(active_agent, 'aave') and active_agent.aave:
                     print(f"🔄 Getting enhanced token balance...")
-                    enhanced_usdc = active_agent.aave.get_token_balance(active_agent.aave.usdc_address)
-                    if enhanced_usdc > 0:
-                        wallet_status['usdc_balance'] = enhanced_usdc
-                        wallet_status['data_source'] = 'enhanced_token_balance'
-                        print(f"✅ Enhanced USDC balance: {enhanced_usdc:.6f}")
+                    if hasattr(active_agent.aave, 'get_token_balance'):
+                        enhanced_usdc = active_agent.aave.get_token_balance(active_agent.aave.usdc_address)
+                        if enhanced_usdc > 0:
+                            wallet_status['usdc_balance'] = enhanced_usdc
+                            wallet_status['data_source'] = 'enhanced_token_balance'
+                            print(f"✅ Enhanced USDC balance: {enhanced_usdc:.6f}")
+                    else:
+                        print(f"⚠️ get_token_balance method not available on aave integration")
 
             except Exception as e:
                 print(f"⚠️ Enhanced token balance failed: {e}")

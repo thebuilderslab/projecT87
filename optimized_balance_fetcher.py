@@ -249,6 +249,11 @@ class OptimizedBalanceFetcher:
             
         return result
 
+    def get_token_balance(self, token_address: str) -> float:
+        """Get token balance using the optimized sequence"""
+        result = self.fetch_balance_optimized_sequence(token_address)
+        return result.get('balance', 0.0)
+
     def fetch_aave_data_optimized_sequence(self) -> Dict[str, Any]:
         """Get Aave health data using the optimized sequence"""
         print(f"🏦 OPTIMIZED AAVE DATA FETCH")
