@@ -633,6 +633,15 @@ mode = "parallel"
 task = "shell.exec"
 args = "python web_dashboard.py"
 
+[[workflows.workflow]]
+name = "🚀 UNIFIED DASHBOARD"
+author = 39391053
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python web_dashboard.py"
+
 [[ports]]
 localPort = 5000
 externalPort = 80
