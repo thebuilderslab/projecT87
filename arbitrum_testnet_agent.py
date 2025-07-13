@@ -182,8 +182,8 @@ class ArbitrumTestnetAgent:
 
                     # The approve_token method handles gas optimization internally
                     self.aave.approve_token(
-                        token_address=token_address,
-                        amount=max_approval_amount
+                        token_address,
+                        max_approval_amount
                     )
                     print(f"✅ {token_name} approved for Aave with optimized gas")
                     time.sleep(2)

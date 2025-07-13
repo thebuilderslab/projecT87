@@ -460,8 +460,30 @@ class AaveArbitrumIntegration:
                 user_address = self.w3.to_checksum_address(self.address)
 
             token_contract = self.w3.eth.contract(address=token_address, abi=self.erc20_abi)
-            decimals = token_contract.functions.decimals().call()
-            amount_wei = int(float(amount) * (10 ** decimals))
+            
+            # Handle infinite approval for large amounts or use MAX_UINT256
+            if amount >= 2**255:  # Very large amount, use infinite approval
+                amount_wei = 2**256 - 1  # MAX_UINT256
+                print(f"🔓 Using infinite approval (MAX_UINT256)")
+            else:
+                # Get decimals for proper conversion
+                try:
+                    decimals = token_contract.functions.decimals().call()
+                except:
+                    # Fallback decimals based on known tokens
+                    if token_address.lower() == self.usdc_address.lower():
+                        decimals = 6
+                    elif token_address.lower() == self.wbtc_address.lower():
+                        decimals = 8
+                    else:
+                        decimals = 18
+                
+                amount_wei = int(float(amount) * (10 ** decimals))
+                print(f"🔢 Converting {amount} to {amount_wei} wei using {decimals} decimals")
+
+            # Ensure amount_wei is a proper integer
+            amount_wei = int(amount_wei)
+            print(f"🔓 Approving {amount_wei} wei for token {token_address}")
 
             # Get fresh nonce with pending transactions included
             nonce = self.w3.eth.get_transaction_count(user_address, 'pending')
@@ -475,14 +497,16 @@ class AaveArbitrumIntegration:
                     current_nonce = self.w3.eth.get_transaction_count(user_address, 'pending')
                     print(f"🔢 Attempt {attempt + 1}: Using fresh pending nonce {current_nonce}")
 
+                    # Build transaction with explicit types
                     transaction = token_contract.functions.approve(
-                        self.pool_address, 
-                        amount_wei
+                        self.w3.to_checksum_address(self.pool_address),  # Ensure spender is checksummed
+                        amount_wei  # This should be a plain integer
                     ).build_transaction({
                         'chainId': self.w3.eth.chain_id,
                         'gas': 100000,
                         'gasPrice': int(self.w3.eth.gas_price * 1.1),  # 10% higher gas price
                         'nonce': current_nonce,
+                        'from': user_address,  # Explicitly set from address
                     })
 
                     # Sign and send
@@ -504,6 +528,8 @@ class AaveArbitrumIntegration:
 
         except Exception as e:
             print(f"❌ Approval failed: {e}")
+            import traceback
+            print(f"🔍 Full error trace: {traceback.format_exc()}")
             return None
 
     def supply_to_aave(self, token_address, amount):
