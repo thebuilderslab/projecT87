@@ -596,8 +596,7 @@ class ArbitrumTestnetAgent:
 
                 # Estimate asset breakdown based on known position (optional - for display only)
                 wbtc_balance = 0.0  # Will be determined from Aave collateral data
-                weth_balance = 0.0  # Will be determined from Aave
- collateral data
+                weth_balance = 0.0  # Will be determined fromAave collateral data
                 usdc_balance = 0.0  # Will be determined from Aave collateral data
                 arb_balance = 0.0   # Not in Aave currently
 
