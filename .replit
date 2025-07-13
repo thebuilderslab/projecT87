@@ -16,7 +16,7 @@ run = ["sh", "-c", "python mainnet_launcher.py"]
 deploymentTarget = "cloudrun"
 
 [workflows]
-runButton = "🚀 AUTONOMOUS MAINNET"
+runButton = "🚀 FIXED DASHBOARD & AUTONOMOUS"
 
 [[workflows.workflow]]
 name = "Run"
@@ -614,6 +614,15 @@ mode = "parallel"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "python run_autonomous_mainnet.py"
+
+[[workflows.workflow]]
+name = "🚀 FIXED DASHBOARD & AUTONOMOUS"
+author = 39391053
+mode = "parallel"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python web_dashboard.py"
 
 [[ports]]
 localPort = 5000
