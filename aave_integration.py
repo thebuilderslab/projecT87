@@ -666,8 +666,7 @@ class AaveArbitrumIntegration:
 
                     # Sign and send
                     signed_txn = self.w3.eth.account.sign_transaction(transaction, self.account.key)
-                    tx_hash```python
- = self.w3.eth.send_raw_transaction(signed_txn.rawTransaction)
+                    tx_hash = self.w3.eth.send_raw_transaction(signed_txn.rawTransaction)
 
                     print(f"✅ Borrow transaction sent: {tx_hash.hex()}")
                     print(f"📊 Explorer: https://sepolia.arbiscan.io/tx/{tx_hash.hex()}")
