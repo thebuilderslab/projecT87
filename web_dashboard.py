@@ -720,8 +720,11 @@ if __name__ == '__main__':
     print("🚀 Starting DeFi Agent Web Dashboard")
     print("📱 Access your dashboard at the web preview URL")
 
-    # Use port 5000 for deployment consistency
-    port = 5000
+    # Use dynamic port selection to avoid conflicts
+    port = get_available_port(5000)
+    
+    if port != 5000:
+        print(f"⚠️ Port 5000 in use, using port {port} instead")
 
     print(f"🌐 Starting web dashboard on port {port}")
     print(f"🔗 Dashboard will be accessible at your Replit webview URL")
