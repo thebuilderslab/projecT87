@@ -610,7 +610,7 @@ class ArbitrumTestnetAgent:
                     # Check aToken balances (these represent supplied assets)
                     aave_assets = {
                         "aWBTC": self.aWBTC_address,
-                        ""aWETH": self.aWETH_address,
+                        "aWETH": self.aWETH_address,
                         "aUSDC": self.aUSDC_address
                     }
 
@@ -692,7 +692,8 @@ class ArbitrumTestnetAgent:
             # DEBUG: Print raw health data before any modifications
             print(f"🔍 DEBUG - RAW HEALTH DATA FROM DIRECT AAVE:")
             print(f"   Raw collateral_usd from Aave contract: ${current_collateral_value_usd:,.8f}")
-            print(f"   Raw debt_usd from Aave contract: ${debt_usd if 'debt_usd' in locals() else 0.0:,.8f}")
+            debt_usd_value = debt_usd if 'debt_usd' in locals() else 0.0
+            print(f"   Raw debt_usd from Aave contract: ${debt_usd_value:,.8f}")
             print(f"   Raw health_factor from Aave contract: {current_health_factor:.8f}")
 
             # ENHANCED: Try to get accurate collateral using asset-specific queries
