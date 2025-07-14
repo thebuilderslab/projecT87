@@ -1,0 +1,82 @@
+
+🎯 Autonomous Run 1, Iteration 5
+
+🔍 AGENT WALLET & AAVE DIAGNOSTIC:
+   Agent Wallet Address: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+   Network: mainnet (Chain ID: 42161)
+   RPC Endpoint: https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f938ff891c141
+   Aave Pool Address: 0x794a61358D6845594F94dc1DB02A252b5b4814aD
+🔍 USING DASHBOARD'S SUCCESSFUL DATA FETCHING METHOD:
+📊 Using cached autonomous agent data from latest logs
+   ✅ DASHBOARD DATA FETCH SUCCESS:
+      Health Factor: 6.9022
+      Total Collateral USD: $175.17
+      Total Debt USD: $20.04
+      Available Borrows USD: $109.83
+      Data Source: autonomous_mainnet_cached
+   🔍 CHECKING INDIVIDUAL AAVE ASSET BALANCES:
+      aWBTC: Error - Could not transact with/call contract function, is contract deployed correctly and chain synced?
+      aWETH: Error - Could not transact with/call contract function, is contract deployed correctly and chain synced?
+      aUSDC: 0.00000000
+📊 Current Health Factor: 6.9022
+✅ Real ARB price fetched: $0.4118
+💰 ARB Price: $0.4118
+🌐 Network Connected: Block 357451273, Gas Price: 0.01 Gwei
+🔗 RPC Endpoint: https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f938ff891c141
+⛓️ Chain ID: 42161 (Expected: 42161)
+✅ Aave Pool accessible: Revision 8
+
+🔍 DIAGNOSTIC: Checking Wallet Balances...
+    DIAGNOSTIC - Wallet ETH Balance (raw): 0.0018801895 ETH
+    DIAGNOSTIC - Using Aave position data instead of individual token balances
+    DIAGNOSTIC - Wallet USDC Balance (via direct contract): 0.000000 USDC
+🔍 DIAGNOSTIC: Wallet Balance Check Complete.
+🔍 WALLET READINESS CHECK:
+   ETH Balance: 0.001880 ETH
+   Aave Position: $175.17 collateral
+✅ Wallet ready for DeFi operations!
+   Sufficient ETH for gas: 0.001880 ETH
+   Active Aave position: $175.17
+🔍 MONITORING: Health factor 6.9022
+🔍 DEBUG - RAW HEALTH DATA FROM DIRECT AAVE:
+   Raw collateral_usd from Aave contract: $175.17000000
+   Raw debt_usd from Aave contract: $20.04000000
+   Raw health_factor from Aave contract: 6.90220000
+🔍 ENHANCED COLLATERAL CALCULATION:
+   Using successful Aave contract data: $175.17
+   WBTC supplied: 0.00000000
+   WETH supplied: 0.00000000
+   USDC supplied: 0.00000000
+   Enhanced calculation:
+   BTC price: $118,978.29
+   ETH price: $2,966.31
+   USDC price: $0.9997
+   Enhanced collateral USD: $0.00
+⚠️ Enhanced calculation still shows low value
+✅ Using direct Aave contract data as primary source
+🔍 DEBUG - BASELINE TRACKING:
+   self.last_collateral_value_usd (baseline): $175.17
+   current_collateral_value_usd (now): $175.17
+   self.baseline_initialized: True
+🔍 DEBUG - FINAL TRIGGER CHECK:
+   current_collateral_value_usd: $175.17
+   self.last_collateral_value_usd: $175.17
+   collateral_growth: $0.00
+   trigger_threshold_usd: $0.50
+   trigger condition met: False
+⚠️ Real data fetch failed, using forced dashboard values: Unknown format '0xFF970A61A04b1cA14834A651bAb06d67307796618', attempted to normalize to '0xff970a61a04b1ca14834a651bab06d67307796618'
+🔍 DEBUG - BASELINE INITIALIZATION CHECK:
+   self.baseline_initialized: True
+   current_collateral_value_usd: $175.17
+   condition (not initialized AND collateral > $50): False
+🔍 DEBUG - FINAL TRIGGER CHECK:
+   current_collateral_value_usd: $175.17
+   self.last_collateral_value_usd: $175.17
+   growth needed for trigger: $187.17
+   actual growth: $0.00
+   trigger condition met: False
+⏸️ No action: Collateral growth $0.00 < $12 threshold
+📊 Current Position: $175.17 collateral, $20.04 debt
+💰 Last recorded collateral: $175.17
+📈 Collateral growth: $0.00
+[01:33:59] INFO: ✔️ Moderate performance cycle: 0.700
