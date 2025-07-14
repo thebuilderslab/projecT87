@@ -616,27 +616,9 @@ task = "shell.exec"
 args = "python run_autonomous_mainnet.py"
 
 [[workflows.workflow]]
-name = "🚀 FIXED DASHBOARD & AUTONOMOUS"
-author = 39391053
-mode = "parallel"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "python web_dashboard.py"
-
-[[workflows.workflow]]
 name = "🔗 DASHBOARD + AUTONOMOUS"
 author = 39391053
 mode = "parallel"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "python web_dashboard.py"
-
-[[workflows.workflow]]
-name = "🚀 UNIFIED DASHBOARD"
-author = 39391053
-mode = "sequential"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
@@ -666,3 +648,7 @@ externalPort = 3001
 [[ports]]
 localPort = 5003
 externalPort = 3002
+
+[[ports]]
+localPort = 5004
+externalPort = 3003
