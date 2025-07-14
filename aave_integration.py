@@ -630,59 +630,268 @@ class AaveArbitrumIntegration:
         return self.borrow_from_aave(asset, amount, interest_rate_mode)
 
     def borrow_from_aave(self, token_address, amount, interest_rate_mode=2):
-        """Borrow assets from Aave (interest_rate_mode: 1=stable, 2=variable)"""
+        """Borrow assets from Aave with enhanced error handling and RPC fallback"""
+        print(f"💰 Enhanced Borrow: {amount} tokens from Aave...")
+        
+        # Enhanced pre-flight checks
         try:
-            print(f"💰 Borrowing {amount} tokens from Aave...")
-
-            # Convert amount to wei
-            if token_address == self.weth_address:
-                amount_wei = self.w3.to_wei(amount, 'ether')
-            else:
-                token_contract = self.w3.eth.contract(address=token_address, abi=self.erc20_abi)
-                decimals = token_contract.functions.decimals().call()
-                amount_wei = int(amount * (10 ** decimals))
-
-            # Build borrow transaction with better nonce handling
+            # 1. Validate inputs
+            if amount <= 0:
+                raise ValueError(f"Invalid borrow amount: {amount}")
+            
             user_address = self.w3.to_checksum_address(self.address)
-            nonce = self.w3.eth.get_transaction_count(user_address, 'latest')
-            print(f"🔢 Using nonce: {nonce} for borrow")
-
-            # Add retry logic for nonce conflicts
-            max_retries = 3
-            for attempt in range(max_retries):
+            token_address = self.w3.to_checksum_address(token_address)
+            
+            print(f"🔍 Pre-flight validation:")
+            print(f"   User: {user_address}")
+            print(f"   Token: {token_address}")
+            print(f"   Amount: {amount}")
+            
+            # 2. Check current position using multiple methods
+            position_data = self._get_robust_position_data(user_address)
+            if not position_data:
+                raise Exception("Could not fetch current Aave position data")
+            
+            available_borrows = position_data.get('available_borrows_usd', 0)
+            health_factor = position_data.get('health_factor', 0)
+            
+            print(f"📊 Position check:")
+            print(f"   Available borrows: ${available_borrows:.2f}")
+            print(f"   Health factor: {health_factor:.2f}")
+            
+            # 3. Safety validations
+            if health_factor < 1.5:
+                raise Exception(f"Health factor too low for borrowing: {health_factor:.2f} < 1.5")
+            
+            if available_borrows < amount:
+                raise Exception(f"Insufficient borrowing capacity: ${available_borrows:.2f} < ${amount:.2f}")
+            
+            # 4. Convert amount with proper decimals
+            amount_wei = self._convert_to_wei_with_fallback(token_address, amount)
+            print(f"💱 Amount conversion: {amount} → {amount_wei} wei")
+            
+            # 5. Multiple RPC attempt strategy
+            rpc_endpoints = [
+                self.w3.provider.endpoint_uri,  # Current RPC
+                *self.alternative_rpcs[:2]      # Top 2 alternatives
+            ]
+            
+            for rpc_idx, rpc_url in enumerate(rpc_endpoints):
                 try:
-                    transaction = self.pool_contract.functions.borrow(
-                        self.w3.to_checksum_address(token_address),         # asset
-                        amount_wei,           # amount
-                        interest_rate_mode,   # interestRateMode (2 = variable)
-                        0,                    # referralCode
-                        user_address          # onBehalfOf
-                    ).build_transaction({
-                        'chainId': self.w3.eth.chain_id,
-                        'gas': 400000,
-                        'gasPrice': self.w3.eth.gas_price,
-                        'nonce': nonce + attempt,
-                    })
-
-                    # Sign and send
-                    signed_txn = self.w3.eth.account.sign_transaction(transaction, self.account.key)
-                    tx_hash = self.w3.eth.send_raw_transaction(signed_txn.rawTransaction)
-
-                    print(f"✅ Borrow transaction sent: {tx_hash.hex()}")
-                    print(f"📊 Explorer: https://sepolia.arbiscan.io/tx/{tx_hash.hex()}")
-
-                    return tx_hash.hex()
-
-                except Exception as retry_e:
-                    if "nonce too low" in str(retry_e) and attempt < max_retries - 1:
-                        print(f"🔄 Nonce conflict, retrying with nonce {nonce + attempt + 1}")
-                        continue
+                    print(f"🔄 Attempt {rpc_idx + 1}: Using RPC {rpc_url}")
+                    
+                    # Use current w3 for first attempt, create new for alternatives
+                    if rpc_idx == 0:
+                        w3_instance = self.w3
+                        pool_contract = self.pool_contract
                     else:
-                        raise retry_e
-
+                        w3_instance = Web3(Web3.HTTPProvider(rpc_url, request_kwargs={'timeout': 30}))
+                        if not w3_instance.is_connected():
+                            print(f"❌ RPC {rpc_url} not connected")
+                            continue
+                        
+                        pool_contract = w3_instance.eth.contract(
+                            address=self.pool_address,
+                            abi=self.pool_abi
+                        )
+                    
+                    # Enhanced transaction building
+                    tx_result = self._execute_borrow_transaction(
+                        w3_instance, pool_contract, token_address, 
+                        amount_wei, interest_rate_mode, user_address
+                    )
+                    
+                    if tx_result:
+                        print(f"✅ Borrow successful via RPC {rpc_idx + 1}")
+                        return tx_result
+                        
+                except Exception as rpc_error:
+                    print(f"❌ RPC {rpc_idx + 1} failed: {rpc_error}")
+                    if rpc_idx == len(rpc_endpoints) - 1:
+                        raise rpc_error
+                    continue
+            
+            raise Exception("All RPC endpoints failed for borrow operation")
+            
         except Exception as e:
-            print(f"❌ Borrow failed: {e}")
+            print(f"❌ Enhanced borrow failed: {e}")
+            # Detailed error diagnostics
+            self._log_borrow_failure_diagnostics(token_address, amount, str(e))
             return None
+    
+    def _get_robust_position_data(self, user_address):
+        """Get position data with multiple fallback methods"""
+        try:
+            # Method 1: Direct Aave contract call
+            account_data = self.pool_contract.functions.getUserAccountData(user_address).call()
+            return {
+                'total_collateral_usd': account_data[0] / 1e8,
+                'total_debt_usd': account_data[1] / 1e8,
+                'available_borrows_usd': account_data[2] / 1e8,
+                'health_factor': account_data[5] / 1e18 if account_data[5] > 0 else float('inf'),
+                'source': 'direct_contract'
+            }
+        except Exception as e:
+            print(f"⚠️ Direct contract call failed: {e}")
+            
+            # Method 2: Alternative RPC fallback
+            for rpc_url in self.alternative_rpcs:
+                try:
+                    temp_w3 = Web3(Web3.HTTPProvider(rpc_url, request_kwargs={'timeout': 15}))
+                    if temp_w3.is_connected():
+                        temp_contract = temp_w3.eth.contract(address=self.pool_address, abi=self.pool_abi)
+                        account_data = temp_contract.functions.getUserAccountData(user_address).call()
+                        return {
+                            'total_collateral_usd': account_data[0] / 1e8,
+                            'total_debt_usd': account_data[1] / 1e8,
+                            'available_borrows_usd': account_data[2] / 1e8,
+                            'health_factor': account_data[5] / 1e18 if account_data[5] > 0 else float('inf'),
+                            'source': f'fallback_rpc_{rpc_url}'
+                        }
+                except:
+                    continue
+            
+            return None
+    
+    def _convert_to_wei_with_fallback(self, token_address, amount):
+        """Convert amount to wei with multiple fallback methods"""
+        try:
+            # Method 1: Direct decimals call
+            token_contract = self.w3.eth.contract(address=token_address, abi=self.erc20_abi)
+            decimals = token_contract.functions.decimals().call()
+            return int(amount * (10 ** decimals))
+        except:
+            # Method 2: Known decimals fallback
+            known_decimals = {
+                self.usdc_address.lower(): 6,
+                self.wbtc_address.lower(): 8,
+                self.weth_address.lower(): 18,
+                self.dai_address.lower(): 18
+            }
+            decimals = known_decimals.get(token_address.lower(), 18)
+            print(f"⚠️ Using fallback decimals {decimals} for {token_address}")
+            return int(amount * (10 ** decimals))
+    
+    def _execute_borrow_transaction(self, w3_instance, pool_contract, token_address, 
+                                   amount_wei, interest_rate_mode, user_address):
+        """Execute borrow transaction with enhanced error handling"""
+        
+        # Get fresh nonce and gas data
+        nonce = w3_instance.eth.get_transaction_count(user_address, 'pending')
+        
+        # Enhanced gas estimation with fallbacks
+        try:
+            estimated_gas = pool_contract.functions.borrow(
+                token_address, amount_wei, interest_rate_mode, 0, user_address
+            ).estimate_gas({'from': user_address})
+            
+            gas_limit = int(estimated_gas * 1.2)  # 20% buffer
+            print(f"⛽ Estimated gas: {estimated_gas}, using: {gas_limit}")
+        except:
+            gas_limit = 500000  # Conservative fallback
+            print(f"⚠️ Gas estimation failed, using fallback: {gas_limit}")
+        
+        # Enhanced gas price with network conditions
+        try:
+            current_gas_price = w3_instance.eth.gas_price
+            gas_price = int(current_gas_price * 1.15)  # 15% premium for faster inclusion
+        except:
+            gas_price = int(0.1 * 1e9)  # 0.1 gwei fallback
+        
+        print(f"⛽ Gas price: {gas_price} wei ({gas_price / 1e9:.2f} gwei)")
+        
+        # Multiple transaction attempts with increasing gas
+        gas_multipliers = [1.0, 1.3, 1.6]  # Progressive gas increases
+        
+        for attempt, multiplier in enumerate(gas_multipliers):
+            try:
+                adjusted_gas_price = int(gas_price * multiplier)
+                current_nonce = nonce + attempt
+                
+                print(f"🔄 Transaction attempt {attempt + 1}:")
+                print(f"   Nonce: {current_nonce}")
+                print(f"   Gas limit: {gas_limit}")
+                print(f"   Gas price: {adjusted_gas_price} wei")
+                
+                # Build transaction
+                transaction = pool_contract.functions.borrow(
+                    token_address,
+                    amount_wei,
+                    interest_rate_mode,
+                    0,  # referralCode
+                    user_address
+                ).build_transaction({
+                    'chainId': w3_instance.eth.chain_id,
+                    'gas': gas_limit,
+                    'gasPrice': adjusted_gas_price,
+                    'nonce': current_nonce,
+                    'from': user_address
+                })
+                
+                # Sign and send
+                signed_txn = w3_instance.eth.account.sign_transaction(transaction, self.account.key)
+                tx_hash = w3_instance.eth.send_raw_transaction(signed_txn.rawTransaction)
+                
+                tx_hash_hex = tx_hash.hex()
+                print(f"✅ Transaction sent: {tx_hash_hex}")
+                
+                # Determine explorer URL
+                if w3_instance.eth.chain_id == 42161:
+                    explorer_url = f"https://arbiscan.io/tx/{tx_hash_hex}"
+                else:
+                    explorer_url = f"https://sepolia.arbiscan.io/tx/{tx_hash_hex}"
+                
+                print(f"📊 View on explorer: {explorer_url}")
+                
+                return tx_hash_hex
+                
+            except Exception as tx_error:
+                print(f"❌ Transaction attempt {attempt + 1} failed: {tx_error}")
+                
+                # Check for specific error types
+                if "nonce too low" in str(tx_error):
+                    # Update nonce and retry
+                    nonce = w3_instance.eth.get_transaction_count(user_address, 'pending')
+                    print(f"🔄 Updated nonce to {nonce}")
+                elif "insufficient funds" in str(tx_error):
+                    raise Exception("Insufficient ETH for gas fees")
+                elif "execution reverted" in str(tx_error):
+                    raise Exception("Transaction reverted - check Aave position and borrowing capacity")
+                
+                if attempt == len(gas_multipliers) - 1:
+                    raise tx_error
+        
+        return None
+    
+    def _log_borrow_failure_diagnostics(self, token_address, amount, error_msg):
+        """Log detailed diagnostics for borrow failures"""
+        try:
+            diagnostics = {
+                'timestamp': time.time(),
+                'token_address': token_address,
+                'amount': amount,
+                'error': error_msg,
+                'network': {
+                    'chain_id': self.w3.eth.chain_id,
+                    'latest_block': self.w3.eth.block_number,
+                    'gas_price': self.w3.eth.gas_price
+                },
+                'account': {
+                    'address': self.address,
+                    'eth_balance': self.w3.eth.get_balance(self.address),
+                    'nonce': self.w3.eth.get_transaction_count(self.address)
+                }
+            }
+            
+            print(f"📋 Borrow failure diagnostics saved")
+            
+            # Save to file for analysis
+            with open('borrow_failure_log.json', 'a') as f:
+                import json
+                f.write(json.dumps(diagnostics) + '\n')
+                
+        except Exception as diag_error:
+            print(f"⚠️ Failed to log diagnostics: {diag_error}")
 
     def repay_to_aave(self, token_address, amount, interest_rate_mode=2):
         """Repay borrowed assets to Aave"""

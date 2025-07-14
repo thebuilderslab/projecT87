@@ -26,57 +26,226 @@ class ArbitrumTestnetAgent:
         if not self.coinmarketcap_api_key:
             raise Exception("COINMARKETCAP_API_KEY environment variable not found!")
 
-        # Determine network configuration
+        # Enhanced RPC management with automatic failover
+        self.rpc_manager = self._initialize_enhanced_rpc_manager()
+        self.rpc_url = self.rpc_manager['primary_rpc']
+        self.alternative_rpcs = self.rpc_manager['fallback_rpcs']
+        
+        print(f"🚨 NETWORK_MODE from environment: '{self.network_mode}'")
+        print(f"🔗 Primary RPC: {self.rpc_url}")
+        print(f"🔄 Fallback RPCs: {len(self.alternative_rpcs)} available")
+
+        # Initialize Web3 with enhanced connection handling
+        self.w3 = self._create_robust_web3_connection(self.rpc_url)
+        if not self.w3 or not self.w3.is_connected():
+            # Try fallback RPCs
+            print("⚠️ Primary RPC failed, trying fallbacks...")
+            for fallback_rpc in self.alternative_rpcs:
+                try:
+                    self.w3 = self._create_robust_web3_connection(fallback_rpc)
+                    if self.w3 and self.w3.is_connected():
+                        self.rpc_url = fallback_rpc
+                        print(f"✅ Connected via fallback RPC: {fallback_rpc}")
+                        break
+                except:
+                    continue
+            else:
+                raise Exception("Failed to connect to any available RPC endpoint")
+    
+    def _initialize_enhanced_rpc_manager(self):
+        """Initialize enhanced RPC management with premium and fallback endpoints"""
         if self.network_mode == 'mainnet':
-            # Try to use more robust RPC endpoints - prioritize premium providers
+            # Premium RPC providers (priority order)
+            premium_rpcs = []
+            
             infura_api_key = os.getenv('INFURA_API_KEY')
             alchemy_api_key = os.getenv('ALCHEMY_API_KEY')
-
+            
             if infura_api_key:
-                self.rpc_url = f"https://arbitrum-mainnet.infura.io/v3/{infura_api_key}"
-                print("🔗 Using Infura RPC endpoint (premium)")
-            elif alchemy_api_key:
-                self.rpc_url = f"https://arb-mainnet.g.alchemy.com/v2/{alchemy_api_key}"
-                print("🔗 Using Alchemy RPC endpoint (premium)")
-            else:
-                # Use robust fallback endpoints - test multiple
-                fallback_rpcs = [
-                    "https://1rpc.io/arb",
-                    "https://arbitrum-one.public.blastapi.io", 
-                    "https://arb1.arbitrum.io/rpc"
-                ]
-
-                # Test RPC connectivity and choose the first working one
-                for rpc in fallback_rpcs:
-                    try:
-                        test_w3 = Web3(Web3.HTTPProvider(rpc, request_kwargs={'timeout': 5}))
-                        if test_w3.is_connected() and test_w3.eth.chain_id == 42161:
-                            self.rpc_url = rpc
-                            print(f"🔗 Using validated RPC endpoint: {rpc}")
-                            break
-                    except:
-                        continue
-                else:
-                    self.rpc_url = "https://1rpc.io/arb"  # Final fallback
-                    print("🔗 Using final fallback RPC endpoint")
-
+                premium_rpcs.append(f"https://arbitrum-mainnet.infura.io/v3/{infura_api_key}")
+            if alchemy_api_key:
+                premium_rpcs.append(f"https://arb-mainnet.g.alchemy.com/v2/{alchemy_api_key}")
+            
+            # Public RPC endpoints (tested for reliability)
+            public_rpcs = [
+                "https://arb1.arbitrum.io/rpc",
+                "https://arbitrum-one.publicnode.com",
+                "https://arbitrum.llamarpc.com", 
+                "https://rpc.ankr.com/arbitrum",
+                "https://arbitrum-one.public.blastapi.io",
+                "https://1rpc.io/arb",
+                "https://arbitrum.blockpi.network/v1/rpc/public"
+            ]
+            
+            # Test and rank all available RPCs
+            tested_rpcs = self._test_and_rank_rpcs(premium_rpcs + public_rpcs, 42161)
+            
             self.chain_id = 42161
             print("🌐 Operating on Arbitrum Mainnet")
-            print(f"🔗 Final RPC URL: {self.rpc_url}")
-            print(f"⛓️ Chain ID: {self.chain_id}")
+            
         else:
-            self.rpc_url = "https://sepolia-rollup.arbitrum.io/rpc"
+            # Testnet RPCs
+            testnet_rpcs = [
+                "https://sepolia-rollup.arbitrum.io/rpc",
+                "https://arbitrum-sepolia.blockpi.network/v1/rpc/public"
+            ]
+            
+            tested_rpcs = self._test_and_rank_rpcs(testnet_rpcs, 421614)
+            
             self.chain_id = 421614
             print("🧪 Operating on Arbitrum Sepolia Testnet")
-            print(f"🔗 RPC URL: {self.rpc_url}")
-            print(f"⛓️ Chain ID: {self.chain_id}")
-
-        print(f"🚨 NETWORK_MODE from environment: '{self.network_mode}'")
-
-        # Initialize Web3
-        self.w3 = Web3(Web3.HTTPProvider(self.rpc_url))
-        if not self.w3.is_connected():
-            raise Exception(f"Failed to connect to {self.rpc_url}")
+        
+        if not tested_rpcs:
+            raise Exception("No working RPC endpoints found")
+        
+        return {
+            'primary_rpc': tested_rpcs[0],
+            'fallback_rpcs': tested_rpcs[1:],
+            'total_available': len(tested_rpcs)
+        }
+    
+    def _test_and_rank_rpcs(self, rpc_list, expected_chain_id):
+        """Test RPC endpoints and rank by performance"""
+        working_rpcs = []
+        
+        for rpc_url in rpc_list:
+            try:
+                print(f"🔍 Testing RPC: {rpc_url}")
+                
+                # Create test connection
+                test_w3 = Web3(Web3.HTTPProvider(rpc_url, request_kwargs={'timeout': 10}))
+                
+                # Comprehensive tests
+                start_time = time.time()
+                
+                # Test 1: Basic connectivity
+                if not test_w3.is_connected():
+                    print(f"❌ Not connected: {rpc_url}")
+                    continue
+                
+                # Test 2: Chain ID verification
+                chain_id = test_w3.eth.chain_id
+                if chain_id != expected_chain_id:
+                    print(f"❌ Wrong chain ID {chain_id}: {rpc_url}")
+                    continue
+                
+                # Test 3: Latest block (freshness test)
+                latest_block = test_w3.eth.get_block('latest')
+                if not latest_block or latest_block.number < 1000000:
+                    print(f"❌ Invalid block data: {rpc_url}")
+                    continue
+                
+                # Test 4: Gas price (network responsiveness)
+                gas_price = test_w3.eth.gas_price
+                if not gas_price or gas_price <= 0:
+                    print(f"❌ Invalid gas price: {rpc_url}")
+                    continue
+                
+                response_time = time.time() - start_time
+                
+                working_rpcs.append({
+                    'url': rpc_url,
+                    'response_time': response_time,
+                    'block_number': latest_block.number,
+                    'gas_price': gas_price
+                })
+                
+                print(f"✅ RPC passed tests: {rpc_url} ({response_time:.2f}s)")
+                
+            except Exception as e:
+                print(f"❌ RPC test failed: {rpc_url} - {e}")
+                continue
+        
+        # Sort by response time (fastest first)
+        working_rpcs.sort(key=lambda x: x['response_time'])
+        
+        print(f"📊 RPC Test Results: {len(working_rpcs)}/{len(rpc_list)} endpoints working")
+        
+        return [rpc['url'] for rpc in working_rpcs]
+    
+    def _create_robust_web3_connection(self, rpc_url):
+        """Create a robust Web3 connection with optimized settings"""
+        try:
+            # Enhanced request settings for reliability
+            request_kwargs = {
+                'timeout': 30,
+                'headers': {
+                    'User-Agent': 'ArbitrumAgent/1.0',
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                }
+            }
+            
+            # Add retry settings for better reliability
+            from requests.adapters import HTTPAdapter
+            from urllib3.util.retry import Retry
+            
+            import requests
+            session = requests.Session()
+            
+            retry_strategy = Retry(
+                total=3,
+                backoff_factor=0.3,
+                status_forcelist=[429, 500, 502, 503, 504],
+            )
+            
+            adapter = HTTPAdapter(max_retries=retry_strategy)
+            session.mount("http://", adapter)
+            session.mount("https://", adapter)
+            
+            # Create Web3 instance
+            w3 = Web3(Web3.HTTPProvider(rpc_url, request_kwargs=request_kwargs, session=session))
+            
+            # Add middleware for PoA networks if needed
+            if hasattr(Web3, 'middleware_onion'):
+                from web3.middleware import geth_poa_middleware
+                w3.middleware_onion.inject(geth_poa_middleware, layer=0)
+            
+            return w3
+            
+        except Exception as e:
+            print(f"❌ Failed to create Web3 connection to {rpc_url}: {e}")
+            return None
+    
+    def switch_to_fallback_rpc(self):
+        """Switch to next available RPC endpoint"""
+        if not self.alternative_rpcs:
+            print("⚠️ No fallback RPCs available")
+            return False
+        
+        current_rpc = self.rpc_url
+        
+        for fallback_rpc in self.alternative_rpcs:
+            if fallback_rpc != current_rpc:
+                try:
+                    print(f"🔄 Switching to fallback RPC: {fallback_rpc}")
+                    
+                    new_w3 = self._create_robust_web3_connection(fallback_rpc)
+                    if new_w3 and new_w3.is_connected():
+                        # Test with a simple call
+                        new_w3.eth.block_number
+                        
+                        # Switch to new RPC
+                        self.w3 = new_w3
+                        self.rpc_url = fallback_rpc
+                        
+                        # Re-initialize contracts with new w3
+                        if hasattr(self, 'aave'):
+                            self.aave.w3 = new_w3
+                            self.aave.pool_contract = new_w3.eth.contract(
+                                address=self.aave.pool_address,
+                                abi=self.aave.pool_abi
+                            )
+                        
+                        print(f"✅ Successfully switched to: {fallback_rpc}")
+                        return True
+                        
+                except Exception as e:
+                    print(f"❌ Fallback RPC {fallback_rpc} failed: {e}")
+                    continue
+        
+        print("❌ All fallback RPCs failed")
+        return False
 
         # Initialize account
         self.account = Account.from_key(self.private_key)
@@ -984,50 +1153,110 @@ class ArbitrumTestnetAgent:
                     usdc_amount = int(0.5 * (10**6))  # Ultra-safe fallback: 0.5 USDC
                     safe_borrow = 0.5
 
-                # Execute borrow with enhanced error reporting
-                print(f"🔄 Executing borrow: ${safe_borrow:.2f} USDC ({usdc_amount:,} units)")
+                # Execute borrow with enhanced error handling and automatic RPC failover
+                print(f"🔄 Executing enhanced borrow: ${safe_borrow:.2f} USDC ({usdc_amount:,} units)")
 
-                borrow_result = self.aave.borrow(
-                    amount=usdc_amount,
-                    asset=self.usdc_address,
-                )
-
-                if borrow_result:
-                    actual_amount = usdc_amount / (10**6)
-                    print(f"✅ Successfully borrowed ${actual_amount:.2f} USDC")
-                    print(f"   Transaction completed safely with {safe_percentage*100}% safety margin")
-                else:
-                    print(f"❌ Borrow failed - performing detailed error analysis...")
-
-                    # Enhanced error diagnostics
+                # Multiple attempt strategy with RPC failover
+                max_borrow_attempts = 3
+                for borrow_attempt in range(max_borrow_attempts):
                     try:
-                        health_data = self.health_monitor.get_current_health_factor()
-                        if health_data:
-                            hf = health_data.get('health_factor', 0)
-                            collateral = health_data.get('total_collateral_usdc', 0)
-                            debt = health_data.get('total_debt_usdc', 0)
-                            available = health_data.get('available_borrows_usdc', 0)
+                        print(f"💰 Borrow attempt {borrow_attempt + 1}/{max_borrow_attempts}")
+                        
+                        borrow_result = self.aave.borrow(
+                            amount=usdc_amount,
+                            asset=self.usdc_address,
+                        )
 
-                            print(f"📊 Post-failure diagnostics:")
-                            print(f"   Health Factor: {hf:.2f}")
-                            print(f"   Collateral: ${collateral:.2f}")
-                            print(f"   Current Debt: ${debt:.2f}")
-                            print(f"   Available Borrows: ${available:.2f}")
-
-                            # Specific failure reasons
-                            if hf < 1.1:
-                                print(f"   ❌ Failure reason: Health factor too low ({hf:.2f})")
-                            elif available < safe_borrow:
-                                print(f"   ❌ Failure reason: Insufficient capacity (${available:.2f} < ${safe_borrow:.2f})")
-                            elif debt + safe_borrow > collateral * 0.8:
-                                print(f"   ❌ Failure reason: Would exceed lending limits")
-                            else:
-                                print(f"   ❌ Failure reason: Unknown - possibly network or contract issue")
+                        if borrow_result:
+                            actual_amount = usdc_amount / (10**6)
+                            print(f"✅ Successfully borrowed ${actual_amount:.2f} USDC")
+                            print(f"   Transaction hash: {borrow_result}")
+                            print(f"   Safety margin maintained: {safe_percentage*100}%")
+                            break  # Success - exit retry loop
                         else:
-                            print(f"   ❌ Could not retrieve diagnostic data")
-                    except Exception as diag_err:
-                        print(f"   ❌ Diagnostic error: {diag_err}")
+                            raise Exception("Borrow returned None - transaction failed")
+                            
+                    except Exception as borrow_error:
+                        print(f"❌ Borrow attempt {borrow_attempt + 1} failed: {borrow_error}")
+                        
+                        # Check if it's an RPC-related error
+                        if any(keyword in str(borrow_error).lower() for keyword in 
+                               ['could not transact', 'connection', 'timeout', 'network', 'rpc']):
+                            
+                            if borrow_attempt < max_borrow_attempts - 1:
+                                print(f"🔄 RPC error detected, switching to fallback...")
+                                
+                                # Try switching RPC
+                                if self.switch_to_fallback_rpc():
+                                    print(f"✅ Switched RPC, retrying borrow...")
+                                    # Re-initialize Aave integration with new RPC
+                                    self.aave.w3 = self.w3
+                                    self.aave.pool_contract = self.w3.eth.contract(
+                                        address=self.aave.pool_address,
+                                        abi=self.aave.pool_abi
+                                    )
+                                    time.sleep(3)  # Brief pause before retry
+                                    continue
+                                else:
+                                    print(f"❌ RPC switch failed")
+                        
+                        # If this is the last attempt or non-RPC error, break
+                        if borrow_attempt == max_borrow_attempts - 1:
+                            print(f"❌ All borrow attempts failed - performing detailed analysis...")
+                            
+                            # Enhanced error diagnostics
+                            try:
+                                health_data = self.health_monitor.get_current_health_factor()
+                                if health_data:
+                                    hf = health_data.get('health_factor', 0)
+                                    collateral = health_data.get('total_collateral_usdc', 0)
+                                    debt = health_data.get('total_debt_usdc', 0)
+                                    available = health_data.get('available_borrows_usdc', 0)
 
+                                    print(f"📊 Final diagnostics:")
+                                    print(f"   Health Factor: {hf:.2f}")
+                                    print(f"   Collateral: ${collateral:.2f}")
+                                    print(f"   Current Debt: ${debt:.2f}")
+                                    print(f"   Available Borrows: ${available:.2f}")
+                                    print(f"   Current RPC: {self.rpc_url}")
+
+                                    # Categorize failure reasons
+                                    if hf < 1.1:
+                                        print(f"   ❌ Category: Health factor too low ({hf:.2f})")
+                                    elif available < safe_borrow:
+                                        print(f"   ❌ Category: Insufficient capacity")
+                                    elif "could not transact" in str(borrow_error).lower():
+                                        print(f"   ❌ Category: RPC/Network connectivity issue")
+                                    elif "execution reverted" in str(borrow_error).lower():
+                                        print(f"   ❌ Category: Smart contract execution failed")
+                                    else:
+                                        print(f"   ❌ Category: Unknown technical issue")
+                                        
+                                    # Save failure log for analysis
+                                    failure_log = {
+                                        'timestamp': time.time(),
+                                        'error': str(borrow_error),
+                                        'attempts': max_borrow_attempts,
+                                        'rpc_used': self.rpc_url,
+                                        'health_factor': hf,
+                                        'available_borrows': available,
+                                        'requested_amount': safe_borrow
+                                    }
+                                    
+                                    with open('borrow_failure_analysis.json', 'w') as f:
+                                        import json
+                                        json.dump(failure_log, f, indent=2)
+                                        
+                                else:
+                                    print(f"   ❌ Could not retrieve position data for diagnostics")
+                                    
+                            except Exception as diag_err:
+                                print(f"   ❌ Diagnostic analysis failed: {diag_err}")
+
+                            return 0.3
+                else:
+                    # This block executes if the loop completed without breaking (all attempts failed)
+                    print(f"❌ All {max_borrow_attempts} borrow attempts exhausted")
                     return 0.3
                 time.sleep(5)
 
