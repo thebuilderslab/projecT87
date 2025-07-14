@@ -367,13 +367,13 @@ class ArbitrumTestnetAgent:
             if not operation_type or not isinstance(operation_type, str):
                 print(f"⚠️ Invalid operation_type: {operation_type}, using 'generic'")
                 operation_type = 'generic'
-            
+
             if speed not in ['slow', 'market', 'fast', 'instant']:
                 print(f"⚠️ Invalid speed: {speed}, using 'market'")
                 speed = 'market'
-            
+
             gas_data = self.gas_calculator.calculate_transaction_fee(operation_type, speed)
-            
+
             # Initialize with safe fallback values based on operation type
             operation_gas_limits = {
                 'approve_token': 60000,
@@ -385,30 +385,30 @@ class ArbitrumTestnetAgent:
             }
             safe_gas_limit = operation_gas_limits.get(operation_type, 200000)
             safe_gas_price = 100000000  # 0.1 gwei fallback
-            
+
             if gas_data:
                 # Extract and validate gas limit with enhanced checks
                 gas_limit = gas_data.get('gas_limit', safe_gas_limit)
-                
+
                 # Comprehensive validation for gas limit
                 if self._is_valid_numeric(gas_limit, min_val=21000, max_val=10000000):
                     safe_gas_limit = int(gas_limit)
                 else:
                     print(f"⚠️ Invalid gas limit detected: {gas_limit} (type: {type(gas_limit)}), using fallback: {safe_gas_limit}")
-                
+
                 # Extract and validate gas price with multiple key attempts
                 gas_price = (gas_data.get('gas_price_wei') or 
                            gas_data.get('gasPrice') or 
                            gas_data.get('gas_price') or
                            gas_data.get('gasPrice_wei'))
-                
+
                 if gas_price is not None:
                     # Comprehensive validation for gas price (1 wei to 1000 gwei)
                     if self._is_valid_numeric(gas_price, min_val=1, max_val=1000000000000):
                         safe_gas_price = int(gas_price)
                     else:
                         print(f"⚠️ Invalid gas price detected: {gas_price} (type: {type(gas_price)}), using fallback: {safe_gas_price}")
-                        
+
             # If no gas data or all values invalid, try network gas price as backup
             if safe_gas_price == 100000000:  # Still using fallback
                 try:
@@ -420,18 +420,18 @@ class ArbitrumTestnetAgent:
                         print(f"⚠️ Network gas price invalid: {base_gas_price}, using fallback")
                 except Exception as gas_error:
                     print(f"⚠️ Failed to get network gas price: {gas_error}")
-            
+
             # Final safety validation with overflow protection
             safe_gas_limit = max(21000, min(safe_gas_limit, 10000000))
             safe_gas_price = max(1, min(safe_gas_price, 1000000000000))
-                
+
             print(f"✅ Gas params for {operation_type}: limit={safe_gas_limit:,}, price={safe_gas_price:,} wei ({self.w3.from_wei(safe_gas_price, 'gwei'):.3f} gwei)")
-            
+
             return {
                 'gas': safe_gas_limit,
                 'gasPrice': safe_gas_price
             }
-            
+
         except Exception as e:
             print(f"❌ Gas optimization completely failed: {e}")
             import traceback
@@ -450,40 +450,40 @@ class ArbitrumTestnetAgent:
             # Check if value exists and is numeric
             if value is None:
                 return False
-                
+
             # Handle string representations of numbers
             if isinstance(value, str):
                 try:
                     value = float(value)
                 except (ValueError, TypeError):
                     return False
-            
+
             # Check if it's a numeric type
             if not isinstance(value, (int, float, complex)):
                 return False
-            
+
             # Check for infinity
             if value == float('inf') or value == float('-inf'):
                 return False
-                
+
             # Check for NaN
             if value != value:  # NaN check
                 return False
-                
+
             # Check for complex numbers (shouldn't be used for gas)
             if isinstance(value, complex):
                 return False
-                
+
             # Range validation
             if value < min_val or value > max_val:
                 return False
-                
+
             # Check for extremely large numbers that could cause overflow
             if abs(value) > 2**63 - 1:  # Max safe integer
                 return False
-                
+
             return True
-            
+
         except Exception:
             return False
 
@@ -806,7 +806,7 @@ class ArbitrumTestnetAgent:
             print(f"   trigger condition met: {current_collateral_value_usd >= (self.last_collateral_value_usd + 12)}")
 
             if current_collateral_value_usd >= (self.last_collateral_value_usd + 12):
-                print(f"🚀 TRIGGER ACTIVATED: Collateral grew by ${current_collateral_value_usd - self.last_collateral_value_usd:.2f} (≥ $12 threshold)")
+                print(f"🚀 TRIGGER ACTIVATED! Collateral growth: ${collateral_growth:,.2f}")
                 print(f"⚡ EXECUTING AUTONOMOUS SEQUENCE...")
                 print(f"📝 Sequence: Borrow 6 USDC → Swap 2→WBTC, 1→WETH, 1→DAI, 1→WETH(wallet)")
 
@@ -826,7 +826,7 @@ class ArbitrumTestnetAgent:
 
                 # Step 1: Initial Borrow (6 USDC)
                 print("🏦 Action 1: Borrowing 6 USDC from Aave...")
-                
+
                 borrow_result = self.aave.borrow(
                     amount=6.0,
                     asset=self.usdc_address,
@@ -836,7 +836,7 @@ class ArbitrumTestnetAgent:
 
                 # Step 2: Swap 2 USDC for WBTC
                 print("🔄 Action 2: Swapping 2 USDC for WBTC...")
-                
+
                 wbtc_balance_before = self.uniswap.get_token_balance(self.wbtc_address)
                 swap_result = self.uniswap.swap_tokens(
                     token_in=self.usdc_address,
@@ -851,7 +851,7 @@ class ArbitrumTestnetAgent:
 
                 # Step 3: Swap 1 USDC for WETH
                 print("🔄 Action 3: Swapping 1 USDC for WETH...")
-                
+
                 weth_balance_before = self.uniswap.get_token_balance(self.weth_address)
                 swap_result = self.uniswap.swap_tokens(
                     token_in=self.usdc_address,
@@ -866,7 +866,7 @@ class ArbitrumTestnetAgent:
 
                 # Step 4: Swap 1 USDC for DAI
                 print("🔄 Action 4: Swapping 1 USDC for DAI...")
-                
+
                 dai_balance_before = self.uniswap.get_token_balance(self.dai_address)
                 swap_result = self.uniswap.swap_tokens(
                     token_in=self.usdc_address,
@@ -881,7 +881,7 @@ class ArbitrumTestnetAgent:
 
                 # Step 5: Swap 1 USDC for WETH (Keep in Wallet)
                 print("🔄 Action 5: Swapping 1 USDC for WETH (to keep in wallet)...")
-                
+
                 final_weth_before = self.uniswap.get_token_balance(self.weth_address)
                 swap_result = self.uniswap.swap_tokens(
                     token_in=self.usdc_address,
@@ -905,7 +905,8 @@ class ArbitrumTestnetAgent:
 
             else:
                 growth = current_collateral_value_usd - self.last_collateral_value_usd
-                print(f"⏸️ No action: Collateral growth ${growth:.2f} < $12 threshold")
+                print(f"⏸️ No action: Collateral growth ${collateral_growth:,.2f} < ${trigger_threshold} threshold")
+                print(f"💡 Add ${trigger_threshold - collateral_growth:,.2f} more collateral to trigger autonomous sequence")
                 print(f"📊 Current Position: ${current_collateral_value_usd:,.2f} collateral, ${debt_usd if 'debt_usd' in locals() else 0.0:,.2f} debt")
                 print(f"💰 Last recorded collateral: ${self.last_collateral_value_usd:,.2f}")
                 print(f"📈 Collateral growth: ${growth:.2f}")
