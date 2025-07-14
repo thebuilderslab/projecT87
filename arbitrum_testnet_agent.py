@@ -741,10 +741,16 @@ class ArbitrumTestnetAgent:
 
             # Calculate and log trigger values
             collateral_growth = current_collateral_value_usd - self.last_collateral_value_usd
-            trigger_threshold = 12.0
-            print(f"   computed collateral_growth: ${collateral_growth:,.2f}")
-            print(f"   target trigger_threshold: ${trigger_threshold:,.2f}")
-            print(f"   trigger_check: {current_collateral_value_usd:,.2f} >= {self.last_collateral_value_usd + trigger_threshold:,.2f} = {current_collateral_value_usd >= (self.last_collateral_value_usd + trigger_threshold)}")
+            # Debug trigger check - FIXED: Check growth amount, not absolute value
+            trigger_threshold_usd = 0.50  # $0.50 USD growth trigger (lowered for testing)
+            trigger_condition_met = collateral_growth >= trigger_threshold_usd
+
+            print(f"🔍 DEBUG - FINAL TRIGGER CHECK:")
+            print(f"   current_collateral_value_usd: ${current_collateral_value_usd:.2f}")
+            print(f"   self.last_collateral_value_usd: ${self.last_collateral_value_usd:.2f}")
+            print(f"   collateral_growth: ${collateral_growth:.2f}")
+            print(f"   trigger_threshold_usd: ${trigger_threshold_usd:.2f}")
+            print(f"   trigger condition met: {trigger_condition_met}")
 
             # Try to get real data as backup
             try:
@@ -806,7 +812,7 @@ class ArbitrumTestnetAgent:
             print(f"   trigger condition met: {current_collateral_value_usd >= (self.last_collateral_value_usd + 12)}")
 
             if current_collateral_value_usd >= (self.last_collateral_value_usd + 12):
-                print(f"🚀 TRIGGER ACTIVATED! Collateral growth: ${collateral_growth:,.2f}")
+                print(f"🚀 TRIGGER ACTIVATED: Collateral grew by ${current_collateral_value_usd - self.last_collateral_value_usd:.2f} (≥ $12 threshold)")
                 print(f"⚡ EXECUTING AUTONOMOUS SEQUENCE...")
                 print(f"📝 Sequence: Borrow 6 USDC → Swap 2→WBTC, 1→WETH, 1→DAI, 1→WETH(wallet)")
 
@@ -905,8 +911,7 @@ class ArbitrumTestnetAgent:
 
             else:
                 growth = current_collateral_value_usd - self.last_collateral_value_usd
-                print(f"⏸️ No action: Collateral growth ${collateral_growth:,.2f} < ${trigger_threshold} threshold")
-                print(f"💡 Add ${trigger_threshold - collateral_growth:,.2f} more collateral to trigger autonomous sequence")
+                print(f"⏸️ No action: Collateral growth ${growth:.2f} < $12 threshold")
                 print(f"📊 Current Position: ${current_collateral_value_usd:,.2f} collateral, ${debt_usd if 'debt_usd' in locals() else 0.0:,.2f} debt")
                 print(f"💰 Last recorded collateral: ${self.last_collateral_value_usd:,.2f}")
                 print(f"📈 Collateral growth: ${growth:.2f}")
