@@ -840,45 +840,34 @@ class ArbitrumTestnetAgent:
             except Exception as fresh_error:
                 print(f"   ⚠️ Fresh data fetch failed: {fresh_error}")
 
-            # FIXED: Always update baseline to current collateral value for accurate tracking
-            print(f"🔍 DEBUG - BASELINE UPDATE CHECK (USING ENHANCED POSITION DATA):")
+            # FIXED: Initialize baseline only once, don't update until after successful trigger
+            print(f"🔍 DEBUG - BASELINE INITIALIZATION CHECK:")
             print(f"   self.baseline_initialized: {self.baseline_initialized}")
             print(f"   current_collateral_value_usd (ENHANCED): ${current_collateral_value_usd:,.2f}")
-            print(f"   old_baseline: ${self.last_collateral_value_usd:,.2f}")
+            print(f"   current baseline: ${self.last_collateral_value_usd:,.2f}")
 
-            # Update baseline to current collateral value (this ensures trigger logic works correctly)
-            if current_collateral_value_usd > 50:  # Only update if we have meaningful collateral
-                old_baseline = self.last_collateral_value_usd
+            # Initialize baseline only once at the very beginning
+            if not self.baseline_initialized and current_collateral_value_usd > 50:
+                self.last_collateral_value_usd = current_collateral_value_usd
+                self.baseline_initialized = True
+                print(f"🎯 BASELINE INITIALIZED: Set to ${current_collateral_value_usd:,.2f}")
                 
-                # Check if baseline should be updated (don't update if values are identical)
-                if abs(current_collateral_value_usd - self.last_collateral_value_usd) > 0.01:
-                    self.last_collateral_value_usd = current_collateral_value_usd
-                    
-                    if not self.baseline_initialized:
-                        self.baseline_initialized = True
-                        print(f"🎯 BASELINE INITIALIZED: Set to ${current_collateral_value_usd:,.2f}")
-                    else:
-                        print(f"📊 BASELINE UPDATED: From ${old_baseline:,.2f} to ${current_collateral_value_usd:,.2f}")
-                    
-                    # Save updated baseline to file for persistence
-                    baseline_data = {
-                        'last_collateral_value_usd': self.last_collateral_value_usd,
-                        'baseline_initialized': True,
-                        'timestamp': time.time(),
-                        'wallet_address': self.address,
-                        'data_source': 'enhanced_position_detection'
-                    }
-                    with open('agent_baseline.json', 'w') as f:
-                        import json
-                        json.dump(baseline_data, f, indent=2)
-                else:
-                    print(f"📊 BASELINE UNCHANGED: Values identical (${current_collateral_value_usd:,.2f})")
+                # Save initialized baseline to file for persistence
+                baseline_data = {
+                    'last_collateral_value_usd': self.last_collateral_value_usd,
+                    'baseline_initialized': True,
+                    'timestamp': time.time(),
+                    'wallet_address': self.address,
+                    'data_source': 'initial_baseline_setup'
+                }
+                with open('agent_baseline.json', 'w') as f:
+                    import json
+                    json.dump(baseline_data, f, indent=2)
                 
                 print(f"📈 Next trigger will activate when collateral reaches: ${self.last_collateral_value_usd + 12:,.2f}")
                 print(f"💡 Add $12+ worth of collateral to activate autonomous sequence")
-                print(f"🎯 CURRENT GAP: Need ${(self.last_collateral_value_usd + 12) - current_collateral_value_usd:,.2f} more collateral")
-                    
-                return 0.8
+                print(f"🎯 CURRENT GAP: Need $12.00 more collateral")
+                return 0.8</old_str>
 
             # FIXED: Detect actual position changes instead of hardcoded values
             if not self.baseline_initialized and current_collateral_value_usd == 0:
@@ -1127,11 +1116,25 @@ class ArbitrumTestnetAgent:
                 final_weth_received = final_weth_after - final_weth_before
                 print(f"✅ Received {final_weth_received:.8f} WETH (kept in wallet for gas!)")
 
-                # Update last collateral value after successful sequence completion
+                # IMPORTANT: Only update baseline AFTER successful trigger execution
                 old_baseline = self.last_collateral_value_usd
                 self.last_collateral_value_usd = current_collateral_value_usd
-                print(f"💰 Updated last_collateral_value_usd from ${old_baseline:,.2f} to: ${self.last_collateral_value_usd:,.2f}")
-                print(f"📊 Updated last_collateral_value_usd to: {self.last_collateral_value_usd}")
+                print(f"📊 BASELINE UPDATED: From ${old_baseline:,.2f} to ${self.last_collateral_value_usd:,.2f} after successful trigger execution")
+                
+                # Save updated baseline to file for persistence
+                baseline_data = {
+                    'last_collateral_value_usd': self.last_collateral_value_usd,
+                    'baseline_initialized': True,
+                    'timestamp': time.time(),
+                    'wallet_address': self.address,
+                    'data_source': 'post_trigger_baseline_update'
+                }
+                with open('agent_baseline.json', 'w') as f:
+                    import json
+                    json.dump(baseline_data, f, indent=2)
+                
+                print(f"📈 Next trigger will activate when collateral reaches: ${self.last_collateral_value_usd + 12:,.2f}")
+                print(f"💡 Add $12+ worth of collateral to activate autonomous sequence")</old_str>
 
                 print("🎉 AUTONOMOUS SEQUENCE COMPLETED SUCCESSFULLY!")
                 print("📈 Summary: Borrowed 6 USDC → Swapped & Supplied to Aave:")
