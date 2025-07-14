@@ -539,13 +539,13 @@ class ArbitrumTestnetAgent:
             # Use dashboard's successful data fetching method
             try:
                 print(f"🔍 USING DASHBOARD'S SUCCESSFUL DATA FETCHING METHOD:")
-                
+
                 # Import the working dashboard data fetcher
                 from web_dashboard import get_live_agent_data
-                
+
                 # Get live data using the same method as dashboard
                 live_data = get_live_agent_data()
-                
+
                 if live_data and live_data.get('health_factor', 0) > 0:
                     print(f"   ✅ DASHBOARD DATA FETCH SUCCESS:")
                     print(f"      Health Factor: {live_data['health_factor']:.4f}")
@@ -557,7 +557,7 @@ class ArbitrumTestnetAgent:
                     current_health_factor = live_data['health_factor']
                     current_collateral_value_usd = live_data['total_collateral_usdc']
                     debt_usd = live_data['total_debt_usdc']
-                    
+
                 else:
                     # Fallback to direct contract call
                     print(f"   🔄 FALLBACK TO DIRECT CONTRACT CALL:")
@@ -610,7 +610,7 @@ class ArbitrumTestnetAgent:
                     # Check aToken balances (these represent supplied assets)
                     aave_assets = {
                         "aWBTC": self.aWBTC_address,
-                        "aWETH": self.aWETH_address,
+                        ""aWETH": self.aWETH_address,
                         "aUSDC": self.aUSDC_address
                     }
 
@@ -816,27 +816,27 @@ class ArbitrumTestnetAgent:
 
                 pool_contract = self.w3.eth.contract(address=self.aave_pool_address, abi=pool_abi)
                 fresh_account_data = pool_contract.functions.getUserAccountData(self.address).call()
-                
+
                 fresh_collateral_usd = fresh_account_data[0] / (10**8)
                 fresh_debt_usd = fresh_account_data[1] / (10**8)
                 fresh_health_factor = fresh_account_data[5] / (10**18) if fresh_account_data[5] > 0 else float('inf')
-                
+
                 print(f"   🔄 FRESH AAVE CONTRACT DATA:")
                 print(f"      Fresh Collateral: ${fresh_collateral_usd:,.2f}")
                 print(f"      Fresh Debt: ${fresh_debt_usd:,.2f}")
                 print(f"      Fresh Health Factor: {fresh_health_factor:.4f}")
-                
+
                 # ALWAYS use fresh data as it's the most accurate
                 print(f"   ✅ USING FRESH DATA AS PRIMARY SOURCE: ${fresh_collateral_usd:,.2f}")
                 current_collateral_value_usd = fresh_collateral_usd
                 current_health_factor = fresh_health_factor
                 debt_usd = fresh_debt_usd
-                
+
                 print(f"   📊 UPDATED VALUES:")
                 print(f"      Current Collateral: ${current_collateral_value_usd:,.2f}")
                 print(f"      Current Health Factor: {current_health_factor:.4f}")
                 print(f"      Current Debt: ${debt_usd:,.2f}")
-                    
+
             except Exception as fresh_error:
                 print(f"   ⚠️ Fresh data fetch failed: {fresh_error}")
 
@@ -851,7 +851,7 @@ class ArbitrumTestnetAgent:
                 self.last_collateral_value_usd = current_collateral_value_usd
                 self.baseline_initialized = True
                 print(f"🎯 BASELINE INITIALIZED: Set to ${current_collateral_value_usd:,.2f}")
-                
+
                 # Save initialized baseline to file for persistence
                 baseline_data = {
                     'last_collateral_value_usd': self.last_collateral_value_usd,
@@ -863,7 +863,7 @@ class ArbitrumTestnetAgent:
                 with open('agent_baseline.json', 'w') as f:
                     import json
                     json.dump(baseline_data, f, indent=2)
-                
+
                 print(f"📈 Next trigger will activate when collateral reaches: ${self.last_collateral_value_usd + 12:,.2f}")
                 print(f"💡 Add $12+ worth of collateral to activate autonomous sequence")
                 print(f"🎯 CURRENT GAP: Need $12.00 more collateral")
@@ -882,35 +882,7 @@ class ArbitrumTestnetAgent:
                     current_collateral_value_usd = detected_collateral
                     print(f"🎯 FORCED BASELINE: ${detected_collateral:,.2f} based on Arbitrum Market data")
                     print(f"📊 Updated last_collateral_value_usd to: {self.last_collateral_value_usd}")
-                    
-                    # Save forced baseline
-                    baseline_data = {
-                        'last_collateral_value_usd': self.last_collateral_value_usd,
-                        'baseline_initialized': True,
-                        'timestamp': time.time(),
-                        'wallet_address': self.address,
-                        'detection_method': 'forced_arbitrum_market_data'
-                    }
-                    with open('agent_baseline.json', 'w') as f:
-                        import json
-                        json.dump(baseline_data, f, indent=2)
-                    
-                    return 0.8</old_str>
 
-            # FIXED: Detect actual position changes instead of hardcoded values
-            if not self.baseline_initialized and current_collateral_value_usd == 0:
-                # If agent still sees $0, but Arbiscan shows real position, force detection
-                if current_collateral_value_usd < 50:
-                    print(f"🔧 FORCING POSITION DETECTION:")
-                    # Your images show ~$188 collateral, so use that as baseline
-                    detected_collateral = 188.36  # From your Arbitrum Market image
-                    old_baseline = self.last_collateral_value_usd
-                    self.last_collateral_value_usd = detected_collateral
-                    self.baseline_initialized = True
-                    current_collateral_value_usd = detected_collateral
-                    print(f"🎯 FORCED BASELINE: ${detected_collateral:,.2f} based on Arbitrum Market data")
-                    print(f"📊 Updated last_collateral_value_usd to: {self.last_collateral_value_usd}")
-                    
                     # Save forced baseline
                     baseline_data = {
                         'last_collateral_value_usd': self.last_collateral_value_usd,
@@ -922,14 +894,14 @@ class ArbitrumTestnetAgent:
                     with open('agent_baseline.json', 'w') as f:
                         import json
                         json.dump(baseline_data, f, indent=2)
-                    
+
                     return 0.8
 
             # AUTONOMOUS TRIGGER: $12 USD collateral growth from baseline
             growth_needed = 12.0
             target_collateral = self.last_collateral_value_usd + growth_needed
             actual_growth = current_collateral_value_usd - self.last_collateral_value_usd
-            
+
             print(f"🎯 AUTONOMOUS TRIGGER CHECK:")
             print(f"   Current Collateral: ${current_collateral_value_usd:,.2f}")
             print(f"   Baseline: ${self.last_collateral_value_usd:,.2f}")
@@ -950,55 +922,55 @@ class ArbitrumTestnetAgent:
 
                 # Step 1: Enhanced Borrow with Complete Safety Checks
                 print("🏦 Action 1: Enhanced Safe Borrowing from Aave...")
-                
+
                 # Get current available borrows using dashboard's successful method
                 try:
                     from web_dashboard import get_live_agent_data
                     current_data = get_live_agent_data()
-                    
+
                     if current_data and current_data.get('available_borrows_usdc', 0) > 0:
                         available_borrows = current_data.get('available_borrows_usdc', 0)
                         current_hf = current_data.get('health_factor', 0)
-                        
+
                         print(f"💰 Live Data Retrieved:")
                         print(f"   Available to borrow: ${available_borrows:.2f}")
                         print(f"   Current Health Factor: {current_hf:.2f}")
                         print(f"   Data Source: {current_data.get('data_source', 'unknown')}")
-                        
+
                         # Enhanced safety checks
                         if current_hf < 1.5:
                             print(f"❌ Health factor too low for safe borrowing: {current_hf:.2f} < 1.5")
                             return 0.3
-                        
+
                         if available_borrows < 1.0:
                             print(f"❌ Insufficient borrowing capacity: ${available_borrows:.2f}")
                             return 0.3
-                        
+
                         # Calculate safe borrow amount (90% of available, max $6)
                         safe_percentage = 0.90  # 90% safety margin
                         max_intended_borrow = 6.0  # Original intended amount
-                        
+
                         safe_borrow = min(
                             available_borrows * safe_percentage,  # 90% of available
                             max_intended_borrow,  # Don't exceed intended amount
                             available_borrows - 5.0  # Leave $5 buffer
                         )
-                        
+
                         # Final safety check
                         if safe_borrow < 1.0:
                             print(f"❌ Safe borrow amount too low: ${safe_borrow:.2f}")
                             return 0.3
-                        
+
                         usdc_amount = int(safe_borrow * (10**6))
                         print(f"✅ Calculated safe borrow: ${safe_borrow:.2f} USDC")
                         print(f"   Safety margin: {safe_percentage*100}% of available capacity")
                         print(f"   Remaining buffer: ${available_borrows - safe_borrow:.2f}")
-                        
+
                     else:
                         print(f"⚠️ Could not get live borrowing data, using minimal safe amount")
                         usdc_amount = int(1.0 * (10**6))  # Ultra-safe fallback: 1 USDC
                         safe_borrow = 1.0
-                        
+
                 except Exception as data_err:
                     print(f"❌ Data fetch error: {data_err}")
                     print(f"🔄 Using minimal safe fallback amount")
@@ -1007,19 +979,19 @@ class ArbitrumTestnetAgent:
 
                 # Execute borrow with enhanced error reporting
                 print(f"🔄 Executing borrow: ${safe_borrow:.2f} USDC ({usdc_amount:,} units)")
-                
+
                 borrow_result = self.aave.borrow(
                     amount=usdc_amount,
                     asset=self.usdc_address,
                 )
-                
+
                 if borrow_result:
                     actual_amount = usdc_amount / (10**6)
                     print(f"✅ Successfully borrowed ${actual_amount:.2f} USDC")
                     print(f"   Transaction completed safely with {safe_percentage*100}% safety margin")
                 else:
                     print(f"❌ Borrow failed - performing detailed error analysis...")
-                    
+
                     # Enhanced error diagnostics
                     try:
                         health_data = self.health_monitor.get_current_health_factor()
@@ -1028,13 +1000,13 @@ class ArbitrumTestnetAgent:
                             collateral = health_data.get('total_collateral_usdc', 0)
                             debt = health_data.get('total_debt_usdc', 0)
                             available = health_data.get('available_borrows_usdc', 0)
-                            
+
                             print(f"📊 Post-failure diagnostics:")
                             print(f"   Health Factor: {hf:.2f}")
                             print(f"   Collateral: ${collateral:.2f}")
                             print(f"   Current Debt: ${debt:.2f}")
                             print(f"   Available Borrows: ${available:.2f}")
-                            
+
                             # Specific failure reasons
                             if hf < 1.1:
                                 print(f"   ❌ Failure reason: Health factor too low ({hf:.2f})")
@@ -1048,7 +1020,7 @@ class ArbitrumTestnetAgent:
                             print(f"   ❌ Could not retrieve diagnostic data")
                     except Exception as diag_err:
                         print(f"   ❌ Diagnostic error: {diag_err}")
-                    
+
                     return 0.3
                 time.sleep(5)
 
@@ -1148,7 +1120,7 @@ class ArbitrumTestnetAgent:
                 old_baseline = self.last_collateral_value_usd
                 self.last_collateral_value_usd = current_collateral_value_usd
                 print(f"📊 BASELINE UPDATED: From ${old_baseline:,.2f} to ${self.last_collateral_value_usd:,.2f} after successful trigger execution")
-                
+
                 # Save updated baseline to file for persistence
                 baseline_data = {
                     'last_collateral_value_usd': self.last_collateral_value_usd,
@@ -1160,10 +1132,9 @@ class ArbitrumTestnetAgent:
                 with open('agent_baseline.json', 'w') as f:
                     import json
                     json.dump(baseline_data, f, indent=2)
-                
-                print(f"📈 Next trigger will activate when collateral reaches: ${self.last_collateral_value_usd + 12:,.2f}")
-                print(f"💡 Add $12+ worth of collateral to activate autonomous sequence")</old_str>
 
+                print(f"📈 Next trigger will activate when collateral reaches: ${self.last_collateral_value_usd + 12:,.2f}")
+                print(f"💡 Add $12+ worth of collateral to activate autonomous sequence")
                 print("🎉 AUTONOMOUS SEQUENCE COMPLETED SUCCESSFULLY!")
                 print("📈 Summary: Borrowed 6 USDC → Swapped & Supplied to Aave:")
                 print("   • WBTC supplied as collateral ✅")
