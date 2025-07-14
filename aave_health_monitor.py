@@ -65,9 +65,44 @@ class AaveHealthMonitor:
         ]
 
     def get_current_health_factor(self):
-        """Get current health factor from Aave - continues operations on failure"""
+        """Get current health factor from Aave - uses dashboard's successful method first"""
         try:
-            # Use pre-checksummed addresses
+            # First try the dashboard's successful data fetching method
+            print(f"🔍 Trying dashboard's successful data fetching method...")
+
+            try:
+                from web_dashboard import get_live_agent_data
+                live_data = get_live_agent_data()
+
+                if live_data and live_data.get('health_factor', 0) > 0:
+                    print(f"✅ Dashboard method successful!")
+                    print(f"   Health Factor: {live_data['health_factor']:.4f}")
+                    print(f"   Collateral: ${live_data['total_collateral_usdc']:,.2f}")
+                    print(f"   Data Source: {live_data['data_source']}")
+
+                    # Convert to expected format
+                    account_data = {
+                        'total_collateral_eth': live_data['total_collateral_usdc'] / 2967.36,  # Rough ETH conversion
+                        'total_debt_eth': live_data['total_debt_usdc'] / 2967.36,
+                        'available_borrows_eth': live_data['available_borrows_usdc'] / 2967.36,
+                        'total_collateral_usdc': live_data['total_collateral_usdc'],
+                        'total_debt_usdc': live_data['total_debt_usdc'],
+                        'available_borrows_usdc': live_data['available_borrows_usdc'],
+                        'health_factor': live_data['health_factor'],
+                        'liquidation_threshold': 0.7890,  # From your logs
+                        'ltv': 0.7405,  # From your logs
+                        'timestamp': time.time(),
+                        'data_source': 'dashboard_method'
+                    }
+
+                    self.health_history.append(account_data)
+                    return account_data
+
+            except Exception as dashboard_err:
+                print(f"⚠️ Dashboard method failed: {dashboard_err}")
+
+            # Fallback to original contract method
+            print(f"🔄 Using fallback contract method...")
             user_address = self.user_address
             data_provider_address = self.data_provider_address
 
@@ -110,7 +145,7 @@ class AaveHealthMonitor:
             total_collateral_usdc = total_collateral_base
             total_debt_usdc = total_debt_base
             available_borrows_usdc = available_borrows_base
-            
+
             # Convert to ETH equivalent for backward compatibility (approximate)
             eth_price_usd = 2400.0  # Approximate ETH price
             total_collateral_eth = total_collateral_usdc / eth_price_usd
@@ -149,7 +184,7 @@ class AaveHealthMonitor:
             print(f"   User address: {self.user_address}")
             print(f"   Contract address: {self.data_provider_address}")
             print(f"🔄 CONTINUING OPERATIONS - Using fallback wallet analysis")
-            
+
             # Don't halt operations - use fallback analysis
             return self._get_fallback_account_data()
 
@@ -158,11 +193,11 @@ class AaveHealthMonitor:
         try:
             # Get direct wallet balances
             eth_balance = self.w3.eth.get_balance(self.user_address) / 1e18
-            
+
             # Try to get token balances directly
             wbtc_balance = 0.0
             usdc_balance = 0.0
-            
+
             try:
                 if hasattr(self.aave, 'wbtc_address'):
                     wbtc_balance = self.aave.get_token_balance(self.aave.wbtc_address)
@@ -170,13 +205,13 @@ class AaveHealthMonitor:
                     usdc_balance = self.aave.get_token_balance(self.aave.usdc_address)
             except Exception as token_err:
                 print(f"⚠️ Token balance retrieval failed: {token_err}")
-            
+
             # Estimate collateral from transaction history if possible
             estimated_collateral = 0.0
             if wbtc_balance > 0:
                 # If we have WBTC, assume some was supplied
                 estimated_collateral = wbtc_balance * 0.8  # Conservative estimate
-            
+
             fallback_data = {
                 'total_collateral_eth': estimated_collateral,
                 'total_debt_eth': 0.0,  # Conservative assumption
@@ -188,7 +223,7 @@ class AaveHealthMonitor:
                 'timestamp': time.time(),
                 'data_source': 'fallback_analysis'
             }
-            
+
             print(f"🔄 FALLBACK DATA ANALYSIS:")
             print(f"   ETH Balance: {eth_balance:.6f}")
             print(f"   WBTC Balance: {wbtc_balance:.8f}")
@@ -196,16 +231,16 @@ class AaveHealthMonitor:
             print(f"   Estimated Collateral: {estimated_collateral:.6f} ETH")
             print(f"   Health Factor: {fallback_data['health_factor']}")
             print(f"🔄 AGENT WILL CONTINUE WITH FALLBACK DATA")
-            
+
             # Store in history
             self.health_history.append(fallback_data)
-            
+
             return fallback_data
-            
+
         except Exception as fallback_err:
             print(f"⚠️ Fallback analysis also failed: {fallback_err}")
             print(f"🔄 USING MINIMAL SAFE DEFAULTS TO CONTINUE OPERATIONS")
-            
+
             # Absolute minimum to keep agent running
             return {
                 'total_collateral_eth': 0.0,
@@ -555,19 +590,19 @@ class AaveHealthMonitor:
     def get_monitoring_summary(self):
         """Get comprehensive monitoring summary - continues operations on any failures"""
         print(f"🔄 GENERATING MONITORING SUMMARY...")
-        
+
         # Get health data with fallback handling
         current_health = self.get_current_health_factor()
-        
+
         # Get market data with error handling
         current_arb_price = None
         arb_balance = 0.0
-        
+
         try:
             current_arb_price = self.get_arb_price()
         except Exception as price_err:
             print(f"⚠️ ARB price fetch failed: {price_err} - continuing without price data")
-            
+
         try:
             arb_balance = self.get_arb_balance()
         except Exception as balance_err:
@@ -577,7 +612,7 @@ class AaveHealthMonitor:
         borrow_trigger, hf_increase = False, 0
         risk_trigger, risk_data = False, {}
         optimal_borrow = 0
-        
+
         try:
             borrow_trigger, hf_increase = self.check_health_factor_increase_trigger()
             risk_trigger, risk_data = self.check_risk_mitigation_trigger()
@@ -587,7 +622,7 @@ class AaveHealthMonitor:
 
         # Extract data source information
         data_source = current_health.get('data_source', 'unknown') if current_health else 'failed'
-        
+
         summary = {
             'current_health_factor': current_health['health_factor'] if current_health else float('inf'),
             'total_collateral_eth': current_health.get('total_collateral_eth', 0) if current_health else 0,

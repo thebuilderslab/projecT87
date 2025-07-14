@@ -536,51 +536,73 @@ class ArbitrumTestnetAgent:
             print(f"   RPC Endpoint: {self.rpc_url}")
             print(f"   Aave Pool Address: {self.aave_pool_address}")
 
-            # Test direct Aave contract interaction with enhanced debugging
+            # Use dashboard's successful data fetching method
             try:
-                print(f"🔍 TESTING DIRECT AAVE CONTRACT ACCESS:")
-                # Try to get user account data directly using the Aave contract
-                from web3 import Web3
+                print(f"🔍 USING DASHBOARD'S SUCCESSFUL DATA FETCHING METHOD:")
+                
+                # Import the working dashboard data fetcher
+                from web_dashboard import get_live_agent_data
+                
+                # Get live data using the same method as dashboard
+                live_data = get_live_agent_data()
+                
+                if live_data and live_data.get('health_factor', 0) > 0:
+                    print(f"   ✅ DASHBOARD DATA FETCH SUCCESS:")
+                    print(f"      Health Factor: {live_data['health_factor']:.4f}")
+                    print(f"      Total Collateral USD: ${live_data['total_collateral_usdc']:,.2f}")
+                    print(f"      Total Debt USD: ${live_data['total_debt_usdc']:,.2f}")
+                    print(f"      Available Borrows USD: ${live_data['available_borrows_usdc']:,.2f}")
+                    print(f"      Data Source: {live_data['data_source']}")
 
-                # Standard Aave Pool ABI for getUserAccountData
-                pool_abi = [{
-                    "inputs": [{"name": "user", "type": "address"}],
-                    "name": "getUserAccountData",
-                    "outputs": [
-                        {"name": "totalCollateralBase", "type": "uint256"},
-                        {"name": "totalDebtBase", "type": "uint256"},
-                        {"name": "availableBorrowsBase", "type": "uint256"},
-                        {"name": "currentLiquidationThreshold", "type": "uint256"},
-                        {"name": "ltv", "type": "uint256"},
-                        {"name": "healthFactor", "type": "uint256"}
-                    ],
-                    "stateMutability": "view",
-                    "type": "function"
-                }]
+                    current_health_factor = live_data['health_factor']
+                    current_collateral_value_usd = live_data['total_collateral_usdc']
+                    debt_usd = live_data['total_debt_usdc']
+                    
+                else:
+                    # Fallback to direct contract call
+                    print(f"   🔄 FALLBACK TO DIRECT CONTRACT CALL:")
+                    from web3 import Web3
 
-                pool_contract = self.w3.eth.contract(
-                    address=self.aave_pool_address,
-                    abi=pool_abi
-                )
+                    # Standard Aave Pool ABI for getUserAccountData
+                    pool_abi = [{
+                        "inputs": [{"name": "user", "type": "address"}],
+                        "name": "getUserAccountData",
+                        "outputs": [
+                            {"name": "totalCollateralBase", "type": "uint256"},
+                            {"name": "totalDebtBase", "type": "uint256"},
+                            {"name": "availableBorrowsBase", "type": "uint256"},
+                            {"name": "currentLiquidationThreshold", "type": "uint256"},
+                            {"name": "ltv", "type": "uint256"},
+                            {"name": "healthFactor", "type": "uint256"}
+                        ],
+                        "stateMutability": "view",
+                        "type": "function"
+                    }]
 
-                print(f"   Attempting getUserAccountData for: {self.address}")
-                account_data = pool_contract.functions.getUserAccountData(self.address).call()
+                    pool_contract = self.w3.eth.contract(
+                        address=self.aave_pool_address,
+                        abi=pool_abi
+                    )
 
-                # Aave V3 uses 8 decimal places for USD values (not 18 like ETH)
-                total_collateral_usd_raw = account_data[0] / (10**8)  # Changed from 10**18
-                total_debt_usd_raw = account_data[1] / (10**8)       # Changed from 10**8
-                available_borrows_usd = account_data[2] / (10**8)
-                health_factor = account_data[5] / (10**18) if account_data[5] > 0 else float('inf')
+                    print(f"   Attempting getUserAccountData for: {self.address}")
+                    account_data = pool_contract.functions.getUserAccountData(self.address).call()
 
-                print(f"   ✅ DIRECT AAVE QUERY SUCCESS:")
-                print(f"      Raw Aave Response: {account_data}")
-                print(f"      Total Collateral USD: ${total_collateral_usd_raw:,.8f}")
-                print(f"      Total Debt USD: ${total_debt_usd_raw:,.8f}")
-                print(f"      Available Borrows USD: ${available_borrows_usd:,.8f}")
-                print(f"      Health Factor: {health_factor:.4f}")
+                    # Aave V3 uses 8 decimal places for USD values (not 18 like ETH)
+                    total_collateral_usd_raw = account_data[0] / (10**8)
+                    total_debt_usd_raw = account_data[1] / (10**8)
+                    available_borrows_usd = account_data[2] / (10**8)
+                    health_factor = account_data[5] / (10**18) if account_data[5] > 0 else float('inf')
 
-                current_health_factor = health_factor
-                current_collateral_value_usd = total_collateral_usd_raw
+                    print(f"   ✅ DIRECT AAVE QUERY SUCCESS:")
+                    print(f"      Raw Aave Response: {account_data}")
+                    print(f"      Total Collateral USD: ${total_collateral_usd_raw:,.8f}")
+                    print(f"      Total Debt USD: ${total_debt_usd_raw:,.8f}")
+                    print(f"      Available Borrows USD: ${available_borrows_usd:,.8f}")
+                    print(f"      Health Factor: {health_factor:.4f}")
+
+                    current_health_factor = health_factor
+                    current_collateral_value_usd = total_collateral_usd_raw
+                    debt_usd = total_debt_usd_raw
 
                 # Additional debugging: Check individual asset balances on Aave
                 print(f"   🔍 CHECKING INDIVIDUAL AAVE ASSET BALANCES:")
