@@ -826,46 +826,57 @@ class ArbitrumTestnetAgent:
                 print(f"      Fresh Debt: ${fresh_debt_usd:,.2f}")
                 print(f"      Fresh Health Factor: {fresh_health_factor:.4f}")
                 
-                # Override with fresh data if significantly different
-                if abs(fresh_collateral_usd - current_collateral_value_usd) > 1.0:
-                    print(f"   🔄 OVERRIDING WITH FRESH DATA: ${fresh_collateral_usd:,.2f}")
-                    current_collateral_value_usd = fresh_collateral_usd
-                    current_health_factor = fresh_health_factor
-                    debt_usd = fresh_debt_usd
+                # ALWAYS use fresh data as it's the most accurate
+                print(f"   ✅ USING FRESH DATA AS PRIMARY SOURCE: ${fresh_collateral_usd:,.2f}")
+                current_collateral_value_usd = fresh_collateral_usd
+                current_health_factor = fresh_health_factor
+                debt_usd = fresh_debt_usd
+                
+                print(f"   📊 UPDATED VALUES:")
+                print(f"      Current Collateral: ${current_collateral_value_usd:,.2f}")
+                print(f"      Current Health Factor: {current_health_factor:.4f}")
+                print(f"      Current Debt: ${debt_usd:,.2f}")
                     
             except Exception as fresh_error:
                 print(f"   ⚠️ Fresh data fetch failed: {fresh_error}")
 
             # FIXED: Always update baseline to current collateral value for accurate tracking
-            print(f"🔍 DEBUG - BASELINE UPDATE CHECK:")
+            print(f"🔍 DEBUG - BASELINE UPDATE CHECK (USING ENHANCED POSITION DATA):")
             print(f"   self.baseline_initialized: {self.baseline_initialized}")
-            print(f"   current_collateral_value_usd: ${current_collateral_value_usd:,.2f}")
+            print(f"   current_collateral_value_usd (ENHANCED): ${current_collateral_value_usd:,.2f}")
             print(f"   old_baseline: ${self.last_collateral_value_usd:,.2f}")
 
             # Update baseline to current collateral value (this ensures trigger logic works correctly)
             if current_collateral_value_usd > 50:  # Only update if we have meaningful collateral
                 old_baseline = self.last_collateral_value_usd
-                self.last_collateral_value_usd = current_collateral_value_usd
                 
-                if not self.baseline_initialized:
-                    self.baseline_initialized = True
-                    print(f"🎯 BASELINE INITIALIZED: Set to ${current_collateral_value_usd:,.2f}")
+                # Check if baseline should be updated (don't update if values are identical)
+                if abs(current_collateral_value_usd - self.last_collateral_value_usd) > 0.01:
+                    self.last_collateral_value_usd = current_collateral_value_usd
+                    
+                    if not self.baseline_initialized:
+                        self.baseline_initialized = True
+                        print(f"🎯 BASELINE INITIALIZED: Set to ${current_collateral_value_usd:,.2f}")
+                    else:
+                        print(f"📊 BASELINE UPDATED: From ${old_baseline:,.2f} to ${current_collateral_value_usd:,.2f}")
+                    
+                    # Save updated baseline to file for persistence
+                    baseline_data = {
+                        'last_collateral_value_usd': self.last_collateral_value_usd,
+                        'baseline_initialized': True,
+                        'timestamp': time.time(),
+                        'wallet_address': self.address,
+                        'data_source': 'enhanced_position_detection'
+                    }
+                    with open('agent_baseline.json', 'w') as f:
+                        import json
+                        json.dump(baseline_data, f, indent=2)
                 else:
-                    print(f"📊 BASELINE UPDATED: From ${old_baseline:,.2f} to ${current_collateral_value_usd:,.2f}")
+                    print(f"📊 BASELINE UNCHANGED: Values identical (${current_collateral_value_usd:,.2f})")
                 
-                print(f"📈 Next trigger will activate when collateral reaches: ${current_collateral_value_usd + 12:,.2f}")
+                print(f"📈 Next trigger will activate when collateral reaches: ${self.last_collateral_value_usd + 12:,.2f}")
                 print(f"💡 Add $12+ worth of collateral to activate autonomous sequence")
-                
-                # Save updated baseline to file for persistence
-                baseline_data = {
-                    'last_collateral_value_usd': self.last_collateral_value_usd,
-                    'baseline_initialized': True,
-                    'timestamp': time.time(),
-                    'wallet_address': self.address
-                }
-                with open('agent_baseline.json', 'w') as f:
-                    import json
-                    json.dump(baseline_data, f, indent=2)
+                print(f"🎯 CURRENT GAP: Need ${(self.last_collateral_value_usd + 12) - current_collateral_value_usd:,.2f} more collateral")
                     
                 return 0.8
 
@@ -898,12 +909,13 @@ class ArbitrumTestnetAgent:
                     return 0.8
 
             # NEW TRIGGER CONDITION: Collateral growth of $12 USD
-            print(f"🔍 DEBUG - FINAL TRIGGER CHECK:")
+            print(f"🔍 DEBUG - FINAL TRIGGER CHECK (USING ENHANCED POSITION DATA):")
             print(f"   current_collateral_value_usd: ${current_collateral_value_usd:,.2f}")
             print(f"   self.last_collateral_value_usd: ${self.last_collateral_value_usd:,.2f}")
             print(f"   growth needed for trigger: ${self.last_collateral_value_usd + 12:,.2f}")
             print(f"   actual growth: ${current_collateral_value_usd - self.last_collateral_value_usd:,.2f}")
             print(f"   trigger condition met: {current_collateral_value_usd >= (self.last_collateral_value_usd + 12)}")
+            print(f"   🎯 REAL POSITION: ${current_collateral_value_usd:,.2f} vs BASELINE: ${self.last_collateral_value_usd:,.2f}")
 
             if current_collateral_value_usd >= (self.last_collateral_value_usd + 12):
                 print(f"🚀 TRIGGER ACTIVATED: Collateral grew by ${current_collateral_value_usd - self.last_collateral_value_usd:.2f} (≥ $12 threshold)")
