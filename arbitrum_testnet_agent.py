@@ -817,15 +817,6 @@ class ArbitrumTestnetAgent:
                 print(f"📝 Sequence: Borrow 6 USDC → Swap 2→WBTC, 1→WETH, 1→DAI, 1→WETH(wallet)")
 
                 # Check if we have borrowing capacity before proceeding
-                health_data = self.health_monitor.get_current_health_factor()
-                if health_data is None:
-                    print("⚠️ Warning: Could not get health factor from Aave. Using fallback monitoring.")
-                    current_health_factor = float('inf')
-                    current_collateral_value_usd = 0.0
-                else:
-                    current_health_factor = health_data.get('health_factor', float('inf'))
-                    current_collateral_value_usd = health_data.get('total_collateral_usdc', 0.0)
-
                 if current_health_factor < 2.0:
                     print(f"⚠️ Health factor {current_health_factor:.2f} too low for borrowing. Skipping sequence.")
                     return 0.5
@@ -833,25 +824,33 @@ class ArbitrumTestnetAgent:
                 # Step 1: Initial Borrow (6 USDC)
                 print("🏦 Action 1: Borrowing 6 USDC from Aave...")
 
+                # Convert 6 USDC to proper format (6 decimals)
+                usdc_amount = int(6.0 * (10**6))  # 6 USDC = 6,000,000 units
                 borrow_result = self.aave.borrow(
-                    amount=6.0,
+                    amount=usdc_amount,
                     asset=self.usdc_address,
                 )
-                print(f"✅ Borrowed 6 USDC")
+                if borrow_result:
+                    print(f"✅ Borrowed 6 USDC")
+                else:
+                    print(f"❌ Failed to borrow 6 USDC - insufficient collateral or health factor too low")
+                    return 0.3
                 time.sleep(5)
 
                 # Step 2: Swap 2 USDC for WBTC
                 print("🔄 Action 2: Swapping 2 USDC for WBTC...")
 
-                wbtc_balance_before = self.uniswap.get_token_balance(self.wbtc_address)
+                wbtc_balance_before = self.aave.get_token_balance(self.wbtc_address)
+                # Convert 2 USDC to proper format (6 decimals)
+                usdc_swap_amount = int(2.0 * (10**6))  # 2 USDC = 2,000,000 units
                 swap_result = self.uniswap.swap_tokens(
                     token_in=self.usdc_address,
                     token_out=self.wbtc_address,
-                    amount_in=2.0,
+                    amount_in=usdc_swap_amount,
                     fee_tier=500
                 )
                 time.sleep(5)
-                wbtc_balance_after = self.uniswap.get_token_balance(self.wbtc_address)
+                wbtc_balance_after = self.aave.get_token_balance(self.wbtc_address)
                 wbtc_received = wbtc_balance_after - wbtc_balance_before
                 print(f"✅ Swapped 2 USDC for {wbtc_received:.8f} WBTC")
 
@@ -866,15 +865,17 @@ class ArbitrumTestnetAgent:
                 # Step 3: Swap 1 USDC for WETH
                 print("🔄 Action 3: Swapping 1 USDC for WETH...")
 
-                weth_balance_before = self.uniswap.get_token_balance(self.weth_address)
+                weth_balance_before = self.aave.get_token_balance(self.weth_address)
+                # Convert 1 USDC to proper format (6 decimals)
+                usdc_swap_amount = int(1.0 * (10**6))  # 1 USDC = 1,000,000 units
                 swap_result = self.uniswap.swap_tokens(
                     token_in=self.usdc_address,
                     token_out=self.weth_address,
-                    amount_in=1.0,
+                    amount_in=usdc_swap_amount,
                     fee_tier=500
                 )
                 time.sleep(5)
-                weth_balance_after = self.uniswap.get_token_balance(self.weth_address)
+                weth_balance_after = self.aave.get_token_balance(self.weth_address)
                 weth_received = weth_balance_after - weth_balance_before
                 print(f"✅ Swapped 1 USDC for {weth_received:.8f} WETH")
 
@@ -889,15 +890,17 @@ class ArbitrumTestnetAgent:
                 # Step 4: Swap 1 USDC for DAI
                 print("🔄 Action 4: Swapping 1 USDC for DAI...")
 
-                dai_balance_before = self.uniswap.get_token_balance(self.dai_address)
+                dai_balance_before = self.aave.get_token_balance(self.dai_address)
+                # Convert 1 USDC to proper format (6 decimals)
+                usdc_swap_amount = int(1.0 * (10**6))  # 1 USDC = 1,000,000 units
                 swap_result = self.uniswap.swap_tokens(
                     token_in=self.usdc_address,
                     token_out=self.dai_address,
-                    amount_in=1.0,
+                    amount_in=usdc_swap_amount,
                     fee_tier=500
                 )
                 time.sleep(5)
-                dai_balance_after = self.uniswap.get_token_balance(self.dai_address)
+                dai_balance_after = self.aave.get_token_balance(self.dai_address)
                 dai_received = dai_balance_after - dai_balance_before
                 print(f"✅ Swapped 1 USDC for {dai_received:.8f} DAI")
 
@@ -912,15 +915,17 @@ class ArbitrumTestnetAgent:
                 # Step 5: Swap 1 USDC for WETH (Keep in Wallet)
                 print("🔄 Action 5: Swapping 1 USDC for WETH (to keep in wallet)...")
 
-                final_weth_before = self.uniswap.get_token_balance(self.weth_address)
+                final_weth_before = self.aave.get_token_balance(self.weth_address)
+                # Convert 1 USDC to proper format (6 decimals)
+                usdc_swap_amount = int(1.0 * (10**6))  # 1 USDC = 1,000,000 units
                 swap_result = self.uniswap.swap_tokens(
                     token_in=self.usdc_address,
                     token_out=self.weth_address,
-                    amount_in=1.0,
+                    amount_in=usdc_swap_amount,
                     fee_tier=500
                 )
                 time.sleep(5)
-                final_weth_after = self.uniswap.get_token_balance(self.weth_address)
+                final_weth_after = self.aave.get_token_balance(self.weth_address)
                 final_weth_received = final_weth_after - final_weth_before
                 print(f"✅ Received {final_weth_received:.8f} WETH (kept in wallet for gas!)")
 
