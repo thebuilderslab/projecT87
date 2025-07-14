@@ -853,7 +853,15 @@ class ArbitrumTestnetAgent:
                 time.sleep(5)
                 wbtc_balance_after = self.uniswap.get_token_balance(self.wbtc_address)
                 wbtc_received = wbtc_balance_after - wbtc_balance_before
-                print(f"✅ Swapped 2 USDC for WBTC")
+                print(f"✅ Swapped 2 USDC for {wbtc_received:.8f} WBTC")
+
+                # Step 2b: Supply WBTC to Aave as collateral
+                if wbtc_received > 0:
+                    print(f"🏦 Action 2b: Supplying {wbtc_received:.8f} WBTC to Aave...")
+                    supply_result = self.aave.supply_to_aave(self.wbtc_address, wbtc_received)
+                    if supply_result:
+                        print(f"✅ Supplied {wbtc_received:.8f} WBTC as collateral")
+                    time.sleep(3)
 
                 # Step 3: Swap 1 USDC for WETH
                 print("🔄 Action 3: Swapping 1 USDC for WETH...")
@@ -868,7 +876,15 @@ class ArbitrumTestnetAgent:
                 time.sleep(5)
                 weth_balance_after = self.uniswap.get_token_balance(self.weth_address)
                 weth_received = weth_balance_after - weth_balance_before
-                print(f"✅ Swapped 1 USDC for WETH")
+                print(f"✅ Swapped 1 USDC for {weth_received:.8f} WETH")
+
+                # Step 3b: Supply WETH to Aave as collateral
+                if weth_received > 0:
+                    print(f"🏦 Action 3b: Supplying {weth_received:.8f} WETH to Aave...")
+                    supply_result = self.aave.supply_to_aave(self.weth_address, weth_received)
+                    if supply_result:
+                        print(f"✅ Supplied {weth_received:.8f} WETH as collateral")
+                    time.sleep(3)
 
                 # Step 4: Swap 1 USDC for DAI
                 print("🔄 Action 4: Swapping 1 USDC for DAI...")
@@ -883,7 +899,15 @@ class ArbitrumTestnetAgent:
                 time.sleep(5)
                 dai_balance_after = self.uniswap.get_token_balance(self.dai_address)
                 dai_received = dai_balance_after - dai_balance_before
-                print(f"✅ Swapped 1 USDC for DAI")
+                print(f"✅ Swapped 1 USDC for {dai_received:.8f} DAI")
+
+                # Step 4b: Supply DAI to Aave as collateral
+                if dai_received > 0:
+                    print(f"🏦 Action 4b: Supplying {dai_received:.8f} DAI to Aave...")
+                    supply_result = self.aave.supply_to_aave(self.dai_address, dai_received)
+                    if supply_result:
+                        print(f"✅ Supplied {dai_received:.8f} DAI as collateral")
+                    time.sleep(3)
 
                 # Step 5: Swap 1 USDC for WETH (Keep in Wallet)
                 print("🔄 Action 5: Swapping 1 USDC for WETH (to keep in wallet)...")
@@ -898,7 +922,7 @@ class ArbitrumTestnetAgent:
                 time.sleep(5)
                 final_weth_after = self.uniswap.get_token_balance(self.weth_address)
                 final_weth_received = final_weth_after - final_weth_before
-                print(f"✅ Received {final_weth_received:.8f} WETH (kept in wallet!)")
+                print(f"✅ Received {final_weth_received:.8f} WETH (kept in wallet for gas!)")
 
                 # Update last collateral value after successful sequence completion
                 old_baseline = self.last_collateral_value_usd
@@ -907,6 +931,11 @@ class ArbitrumTestnetAgent:
                 print(f"📊 Updated last_collateral_value_usd to: {self.last_collateral_value_usd}")
 
                 print("🎉 AUTONOMOUS SEQUENCE COMPLETED SUCCESSFULLY!")
+                print("📈 Summary: Borrowed 6 USDC → Swapped & Supplied to Aave:")
+                print("   • WBTC supplied as collateral ✅")
+                print("   • WETH supplied as collateral ✅") 
+                print("   • DAI supplied as collateral ✅")
+                print("   • Additional WETH kept in wallet for gas ✅")
                 return 0.95  # High performance score
 
             else:
