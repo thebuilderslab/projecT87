@@ -642,6 +642,15 @@ mode = "sequential"
 task = "shell.exec"
 args = "python web_dashboard.py"
 
+[[workflows.workflow]]
+name = "🧪 TEST TRIGGER"
+author = 39391053
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python test_trigger_simulation.py"
+
 [[ports]]
 localPort = 5000
 externalPort = 80
