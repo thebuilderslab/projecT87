@@ -836,21 +836,27 @@ class ArbitrumTestnetAgent:
             except Exception as fresh_error:
                 print(f"   ⚠️ Fresh data fetch failed: {fresh_error}")
 
-            # Initialize baseline on first run with meaningful position
-            print(f"🔍 DEBUG - BASELINE INITIALIZATION CHECK:")
+            # FIXED: Always update baseline to current collateral value for accurate tracking
+            print(f"🔍 DEBUG - BASELINE UPDATE CHECK:")
             print(f"   self.baseline_initialized: {self.baseline_initialized}")
             print(f"   current_collateral_value_usd: ${current_collateral_value_usd:,.2f}")
-            print(f"   condition (not initialized AND collateral > $50): {not self.baseline_initialized and current_collateral_value_usd > 50}")
+            print(f"   old_baseline: ${self.last_collateral_value_usd:,.2f}")
 
-            if not self.baseline_initialized and current_collateral_value_usd > 50:
+            # Update baseline to current collateral value (this ensures trigger logic works correctly)
+            if current_collateral_value_usd > 50:  # Only update if we have meaningful collateral
                 old_baseline = self.last_collateral_value_usd
                 self.last_collateral_value_usd = current_collateral_value_usd
-                self.baseline_initialized = True
-                print(f"🎯 BASELINE INITIALIZED: Changed from ${old_baseline:,.2f} to ${current_collateral_value_usd:,.2f}")
-                print(f"📊 Future triggers will activate on $12+ growth from this baseline")
-                print(f"📊 Updated last_collateral_value_usd to: {self.last_collateral_value_usd}")
                 
-                # Save baseline to file for persistence
+                if not self.baseline_initialized:
+                    self.baseline_initialized = True
+                    print(f"🎯 BASELINE INITIALIZED: Set to ${current_collateral_value_usd:,.2f}")
+                else:
+                    print(f"📊 BASELINE UPDATED: From ${old_baseline:,.2f} to ${current_collateral_value_usd:,.2f}")
+                
+                print(f"📈 Next trigger will activate when collateral reaches: ${current_collateral_value_usd + 12:,.2f}")
+                print(f"💡 Add $12+ worth of collateral to activate autonomous sequence")
+                
+                # Save updated baseline to file for persistence
                 baseline_data = {
                     'last_collateral_value_usd': self.last_collateral_value_usd,
                     'baseline_initialized': True,
