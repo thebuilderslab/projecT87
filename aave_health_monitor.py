@@ -65,24 +65,43 @@ class AaveHealthMonitor:
         ]
 
     def get_current_health_factor(self):
-        """Get current health factor from Aave - uses dashboard's successful method first"""
+        """Get current health factor from Aave - uses dashboard's successful method first with enhanced validation"""
         try:
-            # First try the dashboard's successful data fetching method
-            print(f"🔍 Trying dashboard's successful data fetching method...")
+            # Enhanced dashboard data fetching with validation
+            print(f"🔍 Enhanced dashboard data fetching with validation...")
 
             try:
                 from web_dashboard import get_live_agent_data
                 live_data = get_live_agent_data()
 
-                if live_data and live_data.get('health_factor', 0) > 0:
-                    print(f"✅ Dashboard method successful!")
+                # Enhanced data validation
+                if live_data and self._validate_aave_data(live_data):
+                    print(f"✅ Dashboard method successful with validated data!")
                     print(f"   Health Factor: {live_data['health_factor']:.4f}")
                     print(f"   Collateral: ${live_data['total_collateral_usdc']:,.2f}")
+                    print(f"   Debt: ${live_data['total_debt_usdc']:,.2f}")
                     print(f"   Available Borrows: ${live_data['available_borrows_usdc']:,.2f}")
                     print(f"   Data Source: {live_data['data_source']}")
+                    print(f"   Data Quality: ✅ VALIDATED")
 
-                    # Use current ETH price for accurate conversion
-                    eth_price_usd = 2984.40  # Current ETH price from your logs
+                    # Get current ETH price for accurate conversion
+                    try:
+                        import requests
+                        url = "https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest"
+                        headers = {'X-CMC_PRO_API_KEY': os.getenv('COINMARKETCAP_API_KEY')}
+                        params = {'symbol': 'ETH', 'convert': 'USD'}
+                        
+                        response = requests.get(url, headers=headers, params=params, timeout=10)
+                        if response.status_code == 200:
+                            data = response.json()
+                            eth_price_usd = data['data']['ETH']['quote']['USD']['price']
+                            print(f"   Live ETH price: ${eth_price_usd:.2f}")
+                        else:
+                            eth_price_usd = 2980.0  # Fallback price
+                            print(f"   Using fallback ETH price: ${eth_price_usd:.2f}")
+                    except:
+                        eth_price_usd = 2980.0  # Safe fallback
+                        print(f"   Using safe fallback ETH price: ${eth_price_usd:.2f}")
                     
                     # Convert to expected format with accurate ETH values
                     account_data = {
@@ -96,14 +115,21 @@ class AaveHealthMonitor:
                         'liquidation_threshold': 0.7890,  # From your logs
                         'ltv': 0.7405,  # From your logs
                         'timestamp': time.time(),
-                        'data_source': 'dashboard_method'
+                        'data_source': 'dashboard_method_validated',
+                        'data_quality': 'high',
+                        'eth_price_used': eth_price_usd
                     }
 
                     self.health_history.append(account_data)
                     return account_data
+                else:
+                    failure_reason = self._get_data_failure_reason(live_data)
+                    print(f"❌ Dashboard data validation failed: {failure_reason}")
 
             except Exception as dashboard_err:
-                print(f"⚠️ Dashboard method failed: {dashboard_err}")
+                print(f"❌ Dashboard method failed with specific error: {dashboard_err}")
+                print(f"   Error type: {type(dashboard_err).__name__}")
+                print(f"   Attempting fallback methods...")
 
             # Fallback to original contract method
             print(f"🔄 Using fallback contract method...")
@@ -251,6 +277,68 @@ class AaveHealthMonitor:
                 'total_debt_eth': 0.0,
                 'available_borrows_eth': 0.0,
                 'health_factor': float('inf'),
+
+
+    def _validate_aave_data(self, data):
+        """Validate Aave data quality and completeness"""
+        if not data or not isinstance(data, dict):
+            return False
+        
+        required_fields = ['health_factor', 'total_collateral_usdc', 'total_debt_usdc', 'available_borrows_usdc']
+        
+        for field in required_fields:
+            if field not in data:
+                print(f"   ❌ Missing required field: {field}")
+                return False
+            
+            value = data[field]
+            if value is None or (isinstance(value, (int, float)) and value < 0):
+                print(f"   ❌ Invalid value for {field}: {value}")
+                return False
+        
+        # Additional business logic validation
+        health_factor = data.get('health_factor', 0)
+        collateral = data.get('total_collateral_usdc', 0)
+        debt = data.get('total_debt_usdc', 0)
+        available = data.get('available_borrows_usdc', 0)
+        
+        # Health factor should be reasonable
+        if health_factor < 0.1 or health_factor > 100:
+            print(f"   ❌ Unrealistic health factor: {health_factor}")
+            return False
+        
+        # Debt should not exceed collateral significantly
+        if debt > collateral * 2:
+            print(f"   ❌ Debt too high relative to collateral: ${debt:.2f} vs ${collateral:.2f}")
+            return False
+        
+        # Available borrows should be reasonable
+        if available > collateral:
+            print(f"   ❌ Available borrows exceed collateral: ${available:.2f} vs ${collateral:.2f}")
+            return False
+        
+        return True
+    
+    def _get_data_failure_reason(self, data):
+        """Get specific reason for data validation failure"""
+        if not data:
+            return "No data received"
+        
+        if not isinstance(data, dict):
+            return f"Invalid data type: {type(data)}"
+        
+        required_fields = ['health_factor', 'total_collateral_usdc', 'total_debt_usdc', 'available_borrows_usdc']
+        missing_fields = [field for field in required_fields if field not in data]
+        
+        if missing_fields:
+            return f"Missing fields: {missing_fields}"
+        
+        health_factor = data.get('health_factor', 0)
+        if health_factor <= 0:
+            return f"Invalid health factor: {health_factor}"
+        
+        return "Data validation failed for unknown reason"
+
                 'timestamp': time.time(),
                 'data_source': 'minimal_defaults'
             }

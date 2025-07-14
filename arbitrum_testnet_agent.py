@@ -843,36 +843,66 @@ class ArbitrumTestnetAgent:
                     print(f"⚠️ Health factor {current_health_factor:.2f} too low for borrowing. Skipping sequence.")
                     return 0.5
 
-                # Step 1: Initial Borrow (6 USDC) - Use successful data method
-                print("🏦 Action 1: Borrowing 6 USDC from Aave...")
+                # Step 1: Enhanced Borrow with Complete Safety Checks
+                print("🏦 Action 1: Enhanced Safe Borrowing from Aave...")
                 
                 # Get current available borrows using dashboard's successful method
                 try:
                     from web_dashboard import get_live_agent_data
                     current_data = get_live_agent_data()
-                    if current_data:
+                    
+                    if current_data and current_data.get('available_borrows_usdc', 0) > 0:
                         available_borrows = current_data.get('available_borrows_usdc', 0)
-                        print(f"💰 Available to borrow: ${available_borrows:.2f} (from dashboard method)")
+                        current_hf = current_data.get('health_factor', 0)
                         
-                        if available_borrows < 6.0:
-                            print(f"⚠️ Insufficient borrowing capacity: ${available_borrows:.2f} < $6.00")
-                            # Use safe borrow amount
-                            safe_borrow = min(available_borrows * 0.9, 5.0)  # 90% of available or $5 max
-                            if safe_borrow >= 1.0:
-                                print(f"🔄 Using safe borrow amount: ${safe_borrow:.2f}")
-                                usdc_amount = int(safe_borrow * (10**6))
-                            else:
-                                print(f"❌ Available borrow too low: ${safe_borrow:.2f}")
-                                return 0.3
-                        else:
-                            usdc_amount = int(6.0 * (10**6))  # 6 USDC = 6,000,000 units
+                        print(f"💰 Live Data Retrieved:")
+                        print(f"   Available to borrow: ${available_borrows:.2f}")
+                        print(f"   Current Health Factor: {current_hf:.2f}")
+                        print(f"   Data Source: {current_data.get('data_source', 'unknown')}")
+                        
+                        # Enhanced safety checks
+                        if current_hf < 1.5:
+                            print(f"❌ Health factor too low for safe borrowing: {current_hf:.2f} < 1.5")
+                            return 0.3
+                        
+                        if available_borrows < 1.0:
+                            print(f"❌ Insufficient borrowing capacity: ${available_borrows:.2f}")
+                            return 0.3
+                        
+                        # Calculate safe borrow amount (90% of available, max $6)
+                        safe_percentage = 0.90  # 90% safety margin
+                        max_intended_borrow = 6.0  # Original intended amount
+                        
+                        safe_borrow = min(
+                            available_borrows * safe_percentage,  # 90% of available
+                            max_intended_borrow,  # Don't exceed intended amount
+                            available_borrows - 5.0  # Leave $5 buffer
+                        )
+                        
+                        # Final safety check
+                        if safe_borrow < 1.0:
+                            print(f"❌ Safe borrow amount too low: ${safe_borrow:.2f}")
+                            return 0.3
+                        
+                        usdc_amount = int(safe_borrow * (10**6))
+                        print(f"✅ Calculated safe borrow: ${safe_borrow:.2f} USDC")
+                        print(f"   Safety margin: {safe_percentage*100}% of available capacity")
+                        print(f"   Remaining buffer: ${available_borrows - safe_borrow:.2f}")
+                        
                     else:
-                        print(f"⚠️ Could not get current data, using fallback amount")
-                        usdc_amount = int(1.0 * (10**6))  # Safe fallback: 1 USDC
+                        print(f"⚠️ Could not get live borrowing data, using minimal safe amount")
+                        usdc_amount = int(1.0 * (10**6))  # Ultra-safe fallback: 1 USDC
+                        safe_borrow = 1.0
+                        
                 except Exception as data_err:
-                    print(f"⚠️ Data fetch error: {data_err}, using safe amount")
-                    usdc_amount = int(1.0 * (10**6))  # Safe fallback
+                    print(f"❌ Data fetch error: {data_err}")
+                    print(f"🔄 Using minimal safe fallback amount")
+                    usdc_amount = int(0.5 * (10**6))  # Ultra-safe fallback: 0.5 USDC
+                    safe_borrow = 0.5
 
+                # Execute borrow with enhanced error reporting
+                print(f"🔄 Executing borrow: ${safe_borrow:.2f} USDC ({usdc_amount:,} units)")
+                
                 borrow_result = self.aave.borrow(
                     amount=usdc_amount,
                     asset=self.usdc_address,
@@ -880,20 +910,40 @@ class ArbitrumTestnetAgent:
                 
                 if borrow_result:
                     actual_amount = usdc_amount / (10**6)
-                    print(f"✅ Borrowed ${actual_amount:.2f} USDC successfully")
+                    print(f"✅ Successfully borrowed ${actual_amount:.2f} USDC")
+                    print(f"   Transaction completed safely with {safe_percentage*100}% safety margin")
                 else:
-                    print(f"❌ Failed to borrow - checking error details...")
-                    # Try to get more specific error information
-                    health_data = self.health_monitor.get_current_health_factor()
-                    if health_data:
-                        hf = health_data.get('health_factor', 0)
-                        available = health_data.get('available_borrows_usdc', 0)
-                        print(f"   Current Health Factor: {hf:.2f}")
-                        print(f"   Available Borrows: ${available:.2f}")
-                        if hf < 1.1:
-                            print(f"   Error: Health factor too low for borrowing")
-                        elif available < 1.0:
-                            print(f"   Error: No borrowing capacity available")
+                    print(f"❌ Borrow failed - performing detailed error analysis...")
+                    
+                    # Enhanced error diagnostics
+                    try:
+                        health_data = self.health_monitor.get_current_health_factor()
+                        if health_data:
+                            hf = health_data.get('health_factor', 0)
+                            collateral = health_data.get('total_collateral_usdc', 0)
+                            debt = health_data.get('total_debt_usdc', 0)
+                            available = health_data.get('available_borrows_usdc', 0)
+                            
+                            print(f"📊 Post-failure diagnostics:")
+                            print(f"   Health Factor: {hf:.2f}")
+                            print(f"   Collateral: ${collateral:.2f}")
+                            print(f"   Current Debt: ${debt:.2f}")
+                            print(f"   Available Borrows: ${available:.2f}")
+                            
+                            # Specific failure reasons
+                            if hf < 1.1:
+                                print(f"   ❌ Failure reason: Health factor too low ({hf:.2f})")
+                            elif available < safe_borrow:
+                                print(f"   ❌ Failure reason: Insufficient capacity (${available:.2f} < ${safe_borrow:.2f})")
+                            elif debt + safe_borrow > collateral * 0.8:
+                                print(f"   ❌ Failure reason: Would exceed lending limits")
+                            else:
+                                print(f"   ❌ Failure reason: Unknown - possibly network or contract issue")
+                        else:
+                            print(f"   ❌ Could not retrieve diagnostic data")
+                    except Exception as diag_err:
+                        print(f"   ❌ Diagnostic error: {diag_err}")
+                    
                     return 0.3
                 time.sleep(5)
 
