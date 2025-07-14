@@ -1,6 +1,6 @@
 {
-  "timestamp": 1752442217.567079,
-  "datetime": "2025-07-13T21:30:17.567080",
+  "timestamp": 1752449756.4819915,
+  "datetime": "2025-07-13T23:35:56.481992",
   "diagnostic_version": "1.0",
   "environment": {
     "python_version": "3.11.10 (main, Sep  7 2024, 01:03:31) [GCC 13.3.0]",
@@ -75,8 +75,8 @@
       },
       "web_dashboard.py": {
         "exists": true,
-        "size": 43986,
-        "modified": 1752205914.2493703,
+        "size": 29476,
+        "modified": 1752446389.3267314,
         "readable": true,
         "writable": true,
         "syntax_valid": true
@@ -138,8 +138,8 @@
       },
       ".replit": {
         "exists": true,
-        "size": 13363,
-        "modified": 1752289560.4548929,
+        "size": 13906,
+        "modified": 1752449357.2735188,
         "readable": true,
         "writable": true
       },
@@ -159,13 +159,13 @@
       "arbitrum_mainnet": {
         "connected": true,
         "chain_id": 42161,
-        "latest_block": 357392798,
+        "latest_block": 357422938,
         "response_time": "fast"
       },
       "arbitrum_sepolia": {
         "connected": true,
         "chain_id": 421614,
-        "latest_block": 173249325,
+        "latest_block": 173278493,
         "response_time": "fast"
       }
     },
@@ -173,7 +173,7 @@
       "coinmarketcap": {
         "accessible": true,
         "status_code": 401,
-        "response_time": 0.134282
+        "response_time": 0.102746
       }
     },
     "general_connectivity": {}
@@ -222,7 +222,7 @@
       "address": "0x5B823270e3719CDe8669e5e5326B455EaA8a350b",
       "network_mode": "mainnet",
       "chain_id": 42161,
-      "eth_balance": "0.001922150223691299"
+      "eth_balance": "0.001912263075162299"
     },
     "web_dashboard": {
       "import_success": true,
