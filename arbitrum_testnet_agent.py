@@ -763,15 +763,15 @@ class ArbitrumTestnetAgent:
 
             # Calculate and log trigger values
             collateral_growth = current_collateral_value_usd - self.last_collateral_value_usd
-            # Debug trigger check - FIXED: Check growth amount, not absolute value
-            trigger_threshold_usd = 0.50  # $0.50 USD growth trigger (lowered for testing)
-            trigger_condition_met = collateral_growth >= trigger_threshold_usd
+            # FIXED: Use only the $12 growth trigger, remove conflicting small threshold
+            main_trigger_threshold = 12.0  # $12 USD growth trigger for autonomous sequence
+            trigger_condition_met = collateral_growth >= main_trigger_threshold
 
-            print(f"🔍 DEBUG - FINAL TRIGGER CHECK:")
+            print(f"🔍 DEBUG - TRIGGER CHECK:")
             print(f"   current_collateral_value_usd: ${current_collateral_value_usd:.2f}")
-            print(f"   self.last_collateral_value_usd: ${self.last_collateral_value_usd:.2f}")
+            print(f"   baseline (last_collateral): ${self.last_collateral_value_usd:.2f}")
             print(f"   collateral_growth: ${collateral_growth:.2f}")
-            print(f"   trigger_threshold_usd: ${trigger_threshold_usd:.2f}")
+            print(f"   main_trigger_threshold: ${main_trigger_threshold:.2f}")
             print(f"   trigger condition met: {trigger_condition_met}")
 
             # Try to get real data as backup
@@ -908,16 +908,20 @@ class ArbitrumTestnetAgent:
                     
                     return 0.8
 
-            # NEW TRIGGER CONDITION: Collateral growth of $12 USD
-            print(f"🔍 DEBUG - FINAL TRIGGER CHECK (USING ENHANCED POSITION DATA):")
-            print(f"   current_collateral_value_usd: ${current_collateral_value_usd:,.2f}")
-            print(f"   self.last_collateral_value_usd: ${self.last_collateral_value_usd:,.2f}")
-            print(f"   growth needed for trigger: ${self.last_collateral_value_usd + 12:,.2f}")
-            print(f"   actual growth: ${current_collateral_value_usd - self.last_collateral_value_usd:,.2f}")
-            print(f"   trigger condition met: {current_collateral_value_usd >= (self.last_collateral_value_usd + 12)}")
-            print(f"   🎯 REAL POSITION: ${current_collateral_value_usd:,.2f} vs BASELINE: ${self.last_collateral_value_usd:,.2f}")
+            # AUTONOMOUS TRIGGER: $12 USD collateral growth from baseline
+            growth_needed = 12.0
+            target_collateral = self.last_collateral_value_usd + growth_needed
+            actual_growth = current_collateral_value_usd - self.last_collateral_value_usd
+            
+            print(f"🎯 AUTONOMOUS TRIGGER CHECK:")
+            print(f"   Current Collateral: ${current_collateral_value_usd:,.2f}")
+            print(f"   Baseline: ${self.last_collateral_value_usd:,.2f}")
+            print(f"   Target for Trigger: ${target_collateral:,.2f}")
+            print(f"   Actual Growth: ${actual_growth:,.2f}")
+            print(f"   Growth Needed: ${growth_needed:,.2f}")
+            print(f"   ✅ TRIGGER READY: {actual_growth >= growth_needed}")
 
-            if current_collateral_value_usd >= (self.last_collateral_value_usd + 12):
+            if actual_growth >= growth_needed:
                 print(f"🚀 TRIGGER ACTIVATED: Collateral grew by ${current_collateral_value_usd - self.last_collateral_value_usd:.2f} (≥ $12 threshold)")
                 print(f"⚡ EXECUTING AUTONOMOUS SEQUENCE...")
                 print(f"📝 Sequence: Borrow 6 USDC → Swap 2→WBTC, 1→WETH, 1→DAI, 1→WETH(wallet)")
