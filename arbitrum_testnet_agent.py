@@ -847,11 +847,17 @@ class ArbitrumTestnetAgent:
             print(f"   current_collateral_value_usd (ENHANCED): ${current_collateral_value_usd:,.2f}")
             print(f"   current baseline: ${self.last_collateral_value_usd:,.2f}")
 
-            # Initialize baseline only once at the very beginning
-            if not self.baseline_initialized and current_collateral_value_usd > 50:
+            # Initialize baseline only once at the very beginning OR reset if requested
+            if (not self.baseline_initialized and current_collateral_value_usd > 50) or \
+               (current_collateral_value_usd > 50 and os.path.exists('reset_baseline.flag')):
                 self.last_collateral_value_usd = current_collateral_value_usd
                 self.baseline_initialized = True
-                print(f"🎯 BASELINE INITIALIZED: Set to ${current_collateral_value_usd:,.2f}")
+                print(f"🎯 BASELINE INITIALIZED/RESET: Set to ${current_collateral_value_usd:,.2f}")
+                
+                # Remove reset flag if it exists
+                if os.path.exists('reset_baseline.flag'):
+                    os.remove('reset_baseline.flag')
+                    print("🔄 Baseline reset flag removed")
 
                 # Save initialized baseline to file for persistence
                 baseline_data = {
