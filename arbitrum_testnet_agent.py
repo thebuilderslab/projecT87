@@ -843,19 +843,57 @@ class ArbitrumTestnetAgent:
                     print(f"⚠️ Health factor {current_health_factor:.2f} too low for borrowing. Skipping sequence.")
                     return 0.5
 
-                # Step 1: Initial Borrow (6 USDC)
+                # Step 1: Initial Borrow (6 USDC) - Use successful data method
                 print("🏦 Action 1: Borrowing 6 USDC from Aave...")
+                
+                # Get current available borrows using dashboard's successful method
+                try:
+                    from web_dashboard import get_live_agent_data
+                    current_data = get_live_agent_data()
+                    if current_data:
+                        available_borrows = current_data.get('available_borrows_usdc', 0)
+                        print(f"💰 Available to borrow: ${available_borrows:.2f} (from dashboard method)")
+                        
+                        if available_borrows < 6.0:
+                            print(f"⚠️ Insufficient borrowing capacity: ${available_borrows:.2f} < $6.00")
+                            # Use safe borrow amount
+                            safe_borrow = min(available_borrows * 0.9, 5.0)  # 90% of available or $5 max
+                            if safe_borrow >= 1.0:
+                                print(f"🔄 Using safe borrow amount: ${safe_borrow:.2f}")
+                                usdc_amount = int(safe_borrow * (10**6))
+                            else:
+                                print(f"❌ Available borrow too low: ${safe_borrow:.2f}")
+                                return 0.3
+                        else:
+                            usdc_amount = int(6.0 * (10**6))  # 6 USDC = 6,000,000 units
+                    else:
+                        print(f"⚠️ Could not get current data, using fallback amount")
+                        usdc_amount = int(1.0 * (10**6))  # Safe fallback: 1 USDC
+                except Exception as data_err:
+                    print(f"⚠️ Data fetch error: {data_err}, using safe amount")
+                    usdc_amount = int(1.0 * (10**6))  # Safe fallback
 
-                # Convert 6 USDC to proper format (6 decimals)
-                usdc_amount = int(6.0 * (10**6))  # 6 USDC = 6,000,000 units
                 borrow_result = self.aave.borrow(
                     amount=usdc_amount,
                     asset=self.usdc_address,
                 )
+                
                 if borrow_result:
-                    print(f"✅ Borrowed 6 USDC")
+                    actual_amount = usdc_amount / (10**6)
+                    print(f"✅ Borrowed ${actual_amount:.2f} USDC successfully")
                 else:
-                    print(f"❌ Failed to borrow 6 USDC - insufficient collateral or health factor too low")
+                    print(f"❌ Failed to borrow - checking error details...")
+                    # Try to get more specific error information
+                    health_data = self.health_monitor.get_current_health_factor()
+                    if health_data:
+                        hf = health_data.get('health_factor', 0)
+                        available = health_data.get('available_borrows_usdc', 0)
+                        print(f"   Current Health Factor: {hf:.2f}")
+                        print(f"   Available Borrows: ${available:.2f}")
+                        if hf < 1.1:
+                            print(f"   Error: Health factor too low for borrowing")
+                        elif available < 1.0:
+                            print(f"   Error: No borrowing capacity available")
                     return 0.3
                 time.sleep(5)
 

@@ -78,13 +78,17 @@ class AaveHealthMonitor:
                     print(f"✅ Dashboard method successful!")
                     print(f"   Health Factor: {live_data['health_factor']:.4f}")
                     print(f"   Collateral: ${live_data['total_collateral_usdc']:,.2f}")
+                    print(f"   Available Borrows: ${live_data['available_borrows_usdc']:,.2f}")
                     print(f"   Data Source: {live_data['data_source']}")
 
-                    # Convert to expected format
+                    # Use current ETH price for accurate conversion
+                    eth_price_usd = 2984.40  # Current ETH price from your logs
+                    
+                    # Convert to expected format with accurate ETH values
                     account_data = {
-                        'total_collateral_eth': live_data['total_collateral_usdc'] / 2967.36,  # Rough ETH conversion
-                        'total_debt_eth': live_data['total_debt_usdc'] / 2967.36,
-                        'available_borrows_eth': live_data['available_borrows_usdc'] / 2967.36,
+                        'total_collateral_eth': live_data['total_collateral_usdc'] / eth_price_usd,
+                        'total_debt_eth': live_data['total_debt_usdc'] / eth_price_usd,
+                        'available_borrows_eth': live_data['available_borrows_usdc'] / eth_price_usd,
                         'total_collateral_usdc': live_data['total_collateral_usdc'],
                         'total_debt_usdc': live_data['total_debt_usdc'],
                         'available_borrows_usdc': live_data['available_borrows_usdc'],
