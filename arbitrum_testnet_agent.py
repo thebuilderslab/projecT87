@@ -350,7 +350,7 @@ class ArbitrumTestnetAgent:
 
         # Cooldown settings
         self.last_successful_operation_time = 0  # Unix timestamp of last op
-        self.operation_cooldown_seconds = 60 * 10 # 10 minute cooldown
+        self.operation_cooldown_seconds = 60 # 1 minute cooldown
         self.last_operation_type = None  # Track type of last operation
         return True
 
@@ -362,10 +362,10 @@ class ArbitrumTestnetAgent:
 
         # Different cooldown periods for different operations
         cooldown_periods = {
-            'borrow': 60 * 15,  # 15 minutes for borrow operations
-            'supply': 60 * 10,  # 10 minutes for supply operations  
-            'swap': 60 * 5,     # 5 minutes for swap operations
-            'general': 60 * 10  # 10 minutes for general operations
+            'borrow': 60,  # 1 minute for borrow operations
+            'supply': 60,  # 1 minute for supply operations  
+            'swap': 60,    # 1 minute for swap operations
+            'general': 60  # 1 minute for general operations
         }
 
         required_cooldown = cooldown_periods.get(operation_type, self.operation_cooldown_seconds)
