@@ -279,13 +279,13 @@ class ArbitrumTestnetAgent:
 
         # Contract addresses based on network
         if self.network_mode == 'mainnet':
-            # Arbitrum Mainnet addresses (verified and corrected)
-            self.usdc_address = Web3.to_checksum_address("0xaf88d065e77c8cF0eAEFf3e253e648a15cEe23dC")
-            self.wbtc_address = Web3.to_checksum_address("0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f")
-            self.weth_address = Web3.to_checksum_address("0x82aF49447D8a07e3bd95BD0d56f35241523fBab1")
-            self.dai_address = Web3.to_checksum_address("0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1")
+            # Arbitrum Mainnet addresses (properly checksummed and consistent)
+            self.usdc_address = Web3.to_checksum_address("0xaf88d065e77c8cf0eaeff3e253e648a15cee23dc")
+            self.wbtc_address = Web3.to_checksum_address("0x2f2a2543b76a4166549f7aab2e75bef0aefc5b0f")
+            self.weth_address = Web3.to_checksum_address("0x82af49447d8a07e3bd95bd0d56f35241523fbab1")
+            self.dai_address = Web3.to_checksum_address("0xda10009cbd5d07dd0cecc66161fc93d7c9000da1")
             self.arb_address = Web3.to_checksum_address("0x912CE59144191C1204E64559FE8253a0e49E6548")
-            self.aave_pool_address = Web3.to_checksum_address("0x794a61358D6845594F94dc1DB02A252b5b4814aD")
+            self.aave_pool_address = Web3.to_checksum_address("0x794a61358d6845594f94dc1db02a252b5b4814ad")
 
             # Mainnet aToken addresses (properly checksummed)
             self.aWBTC_address = Web3.to_checksum_address("0x6533afac2E7BCCB20dca161449A13A2D2d5B739A")
@@ -341,6 +341,7 @@ class ArbitrumTestnetAgent:
         # Start with 0.0 but will sync with actual position on first run
         self.last_collateral_value_usd = 0.0
         self.baseline_initialized = False
+        self.baseline_sync_attempted = False
         print("💰 Initialized last_collateral_value_usd to 0.0 (will sync with actual position)")
         print(f"📊 Initialized last_collateral_value_usd to: {self.last_collateral_value_usd}")
 
@@ -639,7 +640,7 @@ class ArbitrumTestnetAgent:
         except Exception as e:
             print(f"❌ Gas optimization completely failed: {e}")
             import traceback
-            print(f"🔍 Stack trace: {traceback.format_exc()}")
+            print(f"🔍 Stack trace: {traceback.format_exc()}")<string>
             # Ultra-safe fallback with minimal viable values
             fallback_params = {
                 'gas': 200000,
@@ -1048,7 +1049,7 @@ class ArbitrumTestnetAgent:
             print(f"🔍 DEBUG - BASELINE INITIALIZATION CHECK:")
             print(f"   self.baseline_initialized: {self.baseline_initialized}")
             print(f"   current_collateral_value_usd (ENHANCED): ${current_collateral_value_usd:,.2f}")
-            print(f"   current baseline: ${self.last_collateral_value_usd:,.2f}")
+            print(f"   current baseline: ${self.last_collateral_value_usd:.2f}")
 
             # Initialize baseline only once at the very beginning OR reset if requested
             if (not self.baseline_initialized and current_collateral_value_usd > 50) or \
@@ -1536,4 +1537,18 @@ class ArbitrumTestnetAgent:
         except Exception as e:
             print(f"❌ Error during borrow failure analysis: {e}")
 
-    # def execute_autonomous_sequence_enhanced(self, growth_amount): - Moved earlier
+    def normalize_address(self, address):
+        """Ensure address is properly formatted and checksummed"""
+        if not address:
+            return None
+
+        try:
+            # Use Web3's built-in checksum validation
+            return Web3.to_checksum_address(address)
+        except Exception as e:
+            print(f"[AGENT] ⚠️ Address normalization failed for {address}: {e}")
+            # Fallback: manual cleanup
+            clean_address = address.lower()
+            if clean_address.startswith('0x'):
+                clean_address = clean_address[2:]
+            return f"0x{clean_address}"

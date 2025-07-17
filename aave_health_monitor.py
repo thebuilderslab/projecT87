@@ -661,7 +661,7 @@ class AaveHealthMonitor:
             liquidation_threshold = float(0.825)
             eth_price_usd = float(2000.0)  # Simplified assumption
 
-            # Calculate how much USDC we can borrow to reach target health factor
+            # Calculate how much USDC we canborrow to reach target health factor
             collateral_value_usd = total_collateral_eth * eth_price_usd
             current_debt_usd = total_debt_eth * eth_price_usd
 
@@ -676,6 +676,17 @@ class AaveHealthMonitor:
         except Exception as e:
             print(f"❌ Failed to calculate optimal borrow: {e}")
             return 0.0
+
+    def get_individual_aave_balances(self):
+        """Get individual aToken balances with enhanced error handling"""
+        balances = {}
+
+        # aToken addresses for Arbitrum Mainnet (corrected addresses)
+        atoken_addresses = {
+            'aWBTC': Web3.to_checksum_address('0x078f358208685046a11c85e8ad32895ded33a249'),
+            'aWETH': Web3.to_checksum_address('0xe50fa9b3c56ffb159cb0fca61f5c9d750e8128c8'),
+            'aUSDC': Web3.to_checksum_address('0x625e7708f30ca75bfd92586e17077590c60eb4cd')
+        }
 
     def get_monitoring_summary(self):
         """Get comprehensive monitoring summary - continues operations on any failures"""
