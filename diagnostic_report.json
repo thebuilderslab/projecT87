@@ -1,6 +1,6 @@
 {
-  "timestamp": 1752449756.4819915,
-  "datetime": "2025-07-13T23:35:56.481992",
+  "timestamp": 1752724785.6771975,
+  "datetime": "2025-07-17T03:59:45.677198",
   "diagnostic_version": "1.0",
   "environment": {
     "python_version": "3.11.10 (main, Sep  7 2024, 01:03:31) [GCC 13.3.0]",
@@ -67,16 +67,16 @@
     "critical_files": {
       "arbitrum_testnet_agent.py": {
         "exists": true,
-        "size": 50193,
-        "modified": 1752441314.8635745,
+        "size": 71211,
+        "modified": 1752724785.2098036,
         "readable": true,
         "writable": true,
         "syntax_valid": true
       },
       "web_dashboard.py": {
         "exists": true,
-        "size": 29476,
-        "modified": 1752446389.3267314,
+        "size": 33501,
+        "modified": 1752723435.37976,
         "readable": true,
         "writable": true,
         "syntax_valid": true
@@ -91,16 +91,16 @@
       },
       "aave_integration.py": {
         "exists": true,
-        "size": 37349,
-        "modified": 1752441698.0222847,
+        "size": 48762,
+        "modified": 1752717349.8162527,
         "readable": true,
         "writable": true,
         "syntax_valid": true
       },
       "aave_health_monitor.py": {
         "exists": true,
-        "size": 28558,
-        "modified": 1751240227.7026908,
+        "size": 34537,
+        "modified": 1752455265.6786454,
         "readable": true,
         "writable": true,
         "syntax_valid": true
@@ -138,8 +138,8 @@
       },
       ".replit": {
         "exists": true,
-        "size": 13906,
-        "modified": 1752449357.2735188,
+        "size": 14568,
+        "modified": 1752723754.3545406,
         "readable": true,
         "writable": true
       },
@@ -159,13 +159,13 @@
       "arbitrum_mainnet": {
         "connected": true,
         "chain_id": 42161,
-        "latest_block": 357422938,
+        "latest_block": 358524607,
         "response_time": "fast"
       },
       "arbitrum_sepolia": {
         "connected": true,
         "chain_id": 421614,
-        "latest_block": 173278493,
+        "latest_block": 174344780,
         "response_time": "fast"
       }
     },
@@ -173,7 +173,7 @@
       "coinmarketcap": {
         "accessible": true,
         "status_code": 401,
-        "response_time": 0.102746
+        "response_time": 0.141186
       }
     },
     "general_connectivity": {}
@@ -222,7 +222,7 @@
       "address": "0x5B823270e3719CDe8669e5e5326B455EaA8a350b",
       "network_mode": "mainnet",
       "chain_id": 42161,
-      "eth_balance": "0.001912263075162299"
+      "eth_balance": "0.001807924456092299"
     },
     "web_dashboard": {
       "import_success": true,
