@@ -91,53 +91,66 @@ class UniswapArbitrumIntegration:
         try:
             import time
 
+            # Convert amount_in to wei FIRST
+            amount_in_wei = self._convert_to_wei(token_in, amount_in)
+            print(f"🔄 Converting {amount_in} to {amount_in_wei} wei for {token_in}")
+
             # Approve token spending
             if token_in != "0x0000000000000000000000000000000000000000":  # Not ETH
                 token_contract = self.w3.eth.contract(address=token_in, abi=self.erc20_abi)
                 nonce = self.w3.eth.get_transaction_count(self.address)
 
-                # Convert amount_in to wei
-                amount_in_wei = self._convert_to_wei(token_in, amount_in)
+                # Enhanced gas price calculation
+                base_gas_price = self.w3.eth.gas_price
+                optimized_gas_price = int(base_gas_price * 1.2)  # 20% higher than base
 
                 approve_tx = token_contract.functions.approve(
                     self.router_address, 
-                    amount_in_wei # Use amount in wei
+                    amount_in_wei  # Use properly converted wei amount
                 ).build_transaction({
                     'chainId': self.w3.eth.chain_id,
                     'gas': 100000,
-                    'gasPrice': self.w3.eth.gas_price,
+                    'gasPrice': optimized_gas_price,  # Use optimized gas price
                     'nonce': nonce,
                 })
 
                 signed_approve = self.w3.eth.account.sign_transaction(approve_tx, self.account.key)
                 self.w3.eth.send_raw_transaction(signed_approve.rawTransaction)
-                time.sleep(3)  # Wait for approval
+                print(f"✅ Approval transaction sent with gas price: {optimized_gas_price}")
+                time.sleep(5)  # Wait longer for approval confirmation
 
-            # Build swap parameters
+            # Build swap parameters with proper wei amounts
             deadline = int(time.time()) + 300  # 5 minutes from now
 
             swap_params = {
                 'tokenIn': token_in,
                 'tokenOut': token_out,
-                'fee': fee,  # 0.3% fee tier
+                'fee': fee,
                 'recipient': self.address,
                 'deadline': deadline,
-                'amountIn': amount_in,
-                'amountOutMinimum': 0,  # Accept any amount (for demo)
+                'amountIn': amount_in_wei,  # Use wei amount here
+                'amountOutMinimum': 0,
                 'sqrtPriceLimitX96': 0
             }
 
-            # Build swap transaction
+            # Build swap transaction with enhanced gas optimization
             nonce = self.w3.eth.get_transaction_count(self.address)
+            
+            # Enhanced gas calculation for swap
+            base_gas_price = self.w3.eth.gas_price
+            swap_gas_price = int(base_gas_price * 1.3)  # 30% higher for swap operations
+            
             swap_tx = self.router_contract.functions.exactInputSingle(
                 swap_params
             ).build_transaction({
                 'chainId': self.w3.eth.chain_id,
-                'gas': 300000,
-                'gasPrice': self.w3.eth.gas_price,
+                'gas': 350000,  # Higher gas limit for complex swaps
+                'gasPrice': swap_gas_price,  # Use optimized gas price
                 'nonce': nonce,
-                'value': amount_in if token_in == "0x0000000000000000000000000000000000000000" else 0
+                'value': amount_in_wei if token_in == "0x0000000000000000000000000000000000000000" else 0
             })
+
+            print(f"🔄 Swap transaction built with gas price: {swap_gas_price} ({self.w3.from_wei(swap_gas_price, 'gwei'):.2f} gwei)")
 
             # Sign and send
             signed_swap = self.w3.eth.account.sign_transaction(swap_tx, self.account.key)

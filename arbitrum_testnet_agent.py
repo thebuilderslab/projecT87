@@ -1920,7 +1920,7 @@ class ArbitrumTestnetAgent:
             }
 
     def detect_manual_override(self):
-        """Detect when manual override is active"""
+        """Detect when manual override is active with enhanced logging"""
         override_files = [
             'manual_override.flag',
             'trigger_test.flag', 
@@ -1928,16 +1928,28 @@ class ArbitrumTestnetAgent:
             'test_mode.flag'
         ]
 
+        print(f"🔍 Checking for manual override files...")
         for flag_file in override_files:
             if os.path.exists(flag_file):
-                print(f"🔧 Manual override detected: {flag_file}")
+                print(f"🚀 MANUAL OVERRIDE DETECTED: {flag_file} exists")
+                try:
+                    # Read flag file content for additional context
+                    with open(flag_file, 'r') as f:
+                        content = f.read().strip()
+                        print(f"   Flag content: {content}")
+                except:
+                    pass
                 return True
+            else:
+                print(f"   {flag_file}: Not found")
 
         # Check for manual override environment variable
-        if os.getenv('MANUAL_OVERRIDE') == 'true':
-            print(f"🔧 Manual override detected: MANUAL_OVERRIDE env var")
+        manual_env = os.getenv('MANUAL_OVERRIDE', '').lower()
+        if manual_env in ['true', '1', 'yes', 'on']:
+            print(f"🚀 MANUAL OVERRIDE DETECTED: MANUAL_OVERRIDE env var = {manual_env}")
             return True
 
+        print(f"   No manual override detected")
         return False
 
     def calculate_safe_borrow_amount(self, growth_amount, available_borrows_usd):
