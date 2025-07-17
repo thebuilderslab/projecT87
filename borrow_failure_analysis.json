@@ -1,0 +1,9 @@
+{
+  "timestamp": 1752721890.1685903,
+  "error": "AaveArbitrumIntegration.borrow_from_aave() got an unexpected keyword argument 'token_address'",
+  "attempts": 3,
+  "rpc_used": "https://arbitrum-one.public.blastapi.io",
+  "health_factor": 4.346,
+  "available_borrows": 108.27,
+  "requested_amount": 6.0
+}
