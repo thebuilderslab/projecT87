@@ -1,6 +1,6 @@
 {
-  "timestamp": 1752731399.4970376,
-  "datetime": "2025-07-17T05:49:59.497039",
+  "timestamp": 1752759370.9375434,
+  "datetime": "2025-07-17T13:36:10.937545",
   "overall_status": "NEEDS_ATTENTION",
   "critical_issues": [
     "DeFi integrations failed to initialize"
