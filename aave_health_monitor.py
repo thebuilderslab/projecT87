@@ -73,6 +73,25 @@ class AaveHealthMonitor:
             try:
                 from web_dashboard import get_live_agent_data
                 live_data = get_live_agent_data()
+                
+                # Enhanced validation with timeout protection
+                if not live_data:
+                    raise Exception("No live data received from dashboard")
+                    
+                # Validate required fields exist
+                required_fields = ['health_factor', 'total_collateral_usdc', 'total_debt_usdc', 'available_borrows_usdc']
+                for field in required_fields:
+                    if field not in live_data:
+                        raise Exception(f"Missing required field: {field}")
+                        
+                # Validate data ranges
+                if live_data['health_factor'] <= 0 or live_data['health_factor'] > 1000:
+                    raise Exception(f"Invalid health factor: {live_data['health_factor']}")
+                    
+                if live_data['total_collateral_usdc'] < 0:
+                    raise Exception(f"Invalid collateral amount: {live_data['total_collateral_usdc']}")
+                    
+                live_data = get_live_agent_data()
 
                 # Enhanced data validation
                 if live_data and self._validate_aave_data(live_data):

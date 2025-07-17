@@ -165,6 +165,10 @@ class EnhancedBorrowManager:
         try:
             print("🔄 Mechanism 1: Direct Aave integration")
 
+            # Get optimized gas parameters first
+            gas_params = self.agent.get_optimized_gas_params('aave_borrow')
+            print(f"✅ Got gas parameters: {gas_params}")
+
             # Try multiple borrow method signatures with correct parameter order
             if hasattr(self.agent.aave, 'borrow_from_aave'):
                 # Convert USD to wei for proper amount format

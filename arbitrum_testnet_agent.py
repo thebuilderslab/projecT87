@@ -253,26 +253,26 @@ class ArbitrumTestnetAgent:
         """Initialize account after RPC setup"""
         # Validate and clean private key format
         private_key = self.private_key.strip()
-        
+
         # Ensure proper format - remove 0x prefix if present for validation
         if private_key.startswith('0x'):
             hex_part = private_key[2:]
         else:
             hex_part = private_key
-            
+
         # Validate hex format and length
         if len(hex_part) != 64:
             raise Exception(f"Invalid private key length: {len(hex_part)} (expected 64)")
-            
+
         try:
             int(hex_part, 16)  # Test if valid hex
         except ValueError:
             raise Exception("Invalid private key format: contains non-hex characters")
-            
+
         # Ensure 0x prefix for Account.from_key()
         if not private_key.startswith('0x'):
             private_key = '0x' + private_key
-            
+
         # Initialize account
         self.account = Account.from_key(private_key)
         self.address = self.account.address
@@ -633,7 +633,8 @@ class ArbitrumTestnetAgent:
             safe_gas_limit = max(21000, min(safe_gas_limit, 10000000))
             safe_gas_price = max(1, min(safe_gas_price, 1000000000000))
 
-            print(f"✅ Gas params for {operation_type}: limit={safe_gas_limit:,}, price={safe_gas_price:,} wei ({self.w3.from_wei(safe_gas_price, 'gwei'):.3f} gwei)")
+            print(f"✅ Gas params for {operation_type}: limit={safe_gas_limit:,}, price={safe_gas_price:,} wei ({self.w3.from_wei(safe_gas_price, 'gwei'):.3f}```python
+ gwei)")
 
             return {
                 'gas': safe_gas_limit,
@@ -850,12 +851,12 @@ class ArbitrumTestnetAgent:
                                     address=checksum_address, 
                                     abi=enhanced_atoken_abi
                                 )
-                                
+
                                 # Get balance with proper error handling
                                 balance = atoken_contract.functions.balanceOf(
                                     Web3.to_checksum_address(self.address)
                                 ).call()
-                                
+
                                 # Try to get decimals from contract, fallback to known values
                                 try:
                                     decimals = atoken_contract.functions.decimals().call()
@@ -863,17 +864,17 @@ class ArbitrumTestnetAgent:
                                     decimals = 18 if asset_name != "aUSDC" else 6
                                     if asset_name == "aWBTC":
                                         decimals = 8
-                                
+
                                 return balance, decimals
 
                             # Use circuit breaker for protection
                             balance, decimals = self.circuit_breaker.call(fetch_atoken_balance)
                             readable_balance = balance / (10**decimals)
                             print(f"      {asset_name}: {readable_balance:.8f}")
-                                        
+
                         except Exception as e:
                             print(f"      {asset_name}: Protected call failed - {e}")
-                            
+
                             # Attempt RPC failover if circuit breaker fails
                             if "circuit breaker" in str(e).lower():
                                 print(f"      Attempting RPC failover for {asset_name}...")
@@ -893,7 +894,7 @@ class ArbitrumTestnetAgent:
                                             if asset_name == "aWBTC":
                                                 decimals = 8
                                             return balance / (10**decimals)
-                                        
+
                                         readable_balance = retry_fetch()
                                         print(f"      {asset_name}: {readable_balance:.8f} (after RPC failover)")
                                     except Exception as retry_error:
@@ -1184,11 +1185,11 @@ class ArbitrumTestnetAgent:
             # ENHANCED: Check for manual trigger override or test mode
             manual_trigger_file = 'trigger_test.flag'
             force_trigger = os.path.exists(manual_trigger_file)
-            
+
             # Also check for low-threshold testing mode
             test_mode_file = 'test_mode.flag'
             test_mode = os.path.exists(test_mode_file)
-            
+
             if force_trigger:
                 print(f"🚀 MANUAL TRIGGER DETECTED: Overriding growth requirement")
                 trigger_ready = True
@@ -1373,18 +1374,18 @@ class ArbitrumTestnetAgent:
 
                 if borrow_success:
                     print(f"✅ Borrow successful - proceeding with swap and supply sequence")
-                    
+
                     # Action 2: Execute Swap Operations
                     print(f"🔄 Action 2: Executing Swap Operations...")
                     swap_success = self.execute_swap_sequence(safe_borrow_amount)
                     sequence_results['swap_success'] = swap_success
-                    
+
                     if swap_success:
                         # Action 3: Execute Supply Operations
                         print(f"🏦 Action 3: Executing Supply Operations...")
                         supply_success = self.execute_supply_sequence()
                         sequence_results['supply_success'] = supply_success
-                        
+
                         if supply_success:
                             print(f"✅ Complete autonomous sequence successful!")
                             sequence_results['total_performance'] = 1.0
@@ -1394,7 +1395,7 @@ class ArbitrumTestnetAgent:
                     else:
                         print(f"⚠️ Swap operations failed, but borrow succeeded")
                         sequence_results['total_performance'] = 0.5
-                    
+
                     # Update baseline after successful operation
                     self.update_baseline_after_success()
                 else:
@@ -1416,7 +1417,7 @@ class ArbitrumTestnetAgent:
     def execute_enhanced_borrow_with_retry(self, safe_borrow_amount):
         """Execute enhanced borrow with multiple retry attempts and enhanced validation"""
         max_attempts = 3
-        
+
         # Pre-validation checks
         try:
             # Verify current health factor is safe
@@ -1434,27 +1435,27 @@ class ArbitrumTestnetAgent:
                 "stateMutability": "view",
                 "type": "function"
             }]
-            
+
             pool_contract = self.w3.eth.contract(address=self.aave_pool_address, abi=pool_abi)
             account_data = pool_contract.functions.getUserAccountData(self.address).call()
-            
+
             current_health_factor = account_data[5] / (10**18) if account_data[5] > 0 else float('inf')
             available_borrows_usd = account_data[2] / (10**8)
-            
+
             print(f"🔍 Pre-borrow validation:")
             print(f"   Current HF: {current_health_factor:.4f}")
             print(f"   Available borrows: ${available_borrows_usd:.2f}")
             print(f"   Requested: ${safe_borrow_amount:.2f}")
-            
+
             # Safety checks
             if current_health_factor < 1.5:
                 print(f"❌ Health factor too low for borrowing: {current_health_factor:.4f}")
                 return False
-                
+
             if available_borrows_usd < safe_borrow_amount:
                 print(f"❌ Insufficient borrowing capacity")
                 return False
-                
+
         except Exception as validation_error:
             print(f"❌ Pre-borrow validation failed: {validation_error}")
             return False
@@ -1466,10 +1467,10 @@ class ArbitrumTestnetAgent:
 
                 # Convert amount to wei for USDC (6 decimals)
                 usdc_amount_wei = int(safe_borrow_amount * (10 ** 6))
-                
+
                 # Enhanced gas estimation
                 gas_params = self.get_optimized_gas_params('aave_borrow', 'market')
-                
+
                 # Use the Aave integration's borrow_from_aave method with gas optimization
                 borrow_result = self.aave.borrow_from_aave(
                     usdc_amount_wei,      # amount
@@ -1478,26 +1479,26 @@ class ArbitrumTestnetAgent:
 
                 if borrow_result:
                     print(f"✅ Enhanced borrow successful: {borrow_result}")
-                    
+
                     # Verify borrow actually happened
                     time.sleep(3)  # Wait for transaction confirmation
-                    
+
                     # Check new balance
                     new_account_data = pool_contract.functions.getUserAccountData(self.address).call()
                     new_debt_usd = new_account_data[1] / (10**8)
                     new_health_factor = new_account_data[5] / (10**18) if new_account_data[5] > 0 else float('inf')
-                    
+
                     print(f"✅ Post-borrow verification:")
                     print(f"   New debt: ${new_debt_usd:.2f}")
                     print(f"   New HF: {new_health_factor:.4f}")
-                    
+
                     return True
                 else:
                     print(f"❌ Enhanced borrow attempt {attempt + 1} failed - no result")
 
             except Exception as e:
                 print(f"❌ Enhanced borrow attempt {attempt + 1} error: {e}")
-                
+
                 # Enhanced error analysis
                 error_details = {
                     'timestamp': time.time(),
@@ -1510,11 +1511,11 @@ class ArbitrumTestnetAgent:
                     'requested_amount': safe_borrow_amount,
                     'gas_params': gas_params
                 }
-                
+
                 # Check if it's a gas-related error
                 if 'gas' in str(e).lower() or 'out of gas' in str(e).lower():
                     print(f"⚠️ Gas-related error detected - adjusting for next attempt")
-                    
+
                 # Check if it's an RPC error
                 if 'rpc' in str(e).lower() or 'connection' in str(e).lower():
                     print(f"⚠️ RPC error detected - switching endpoint")
@@ -1540,22 +1541,22 @@ class ArbitrumTestnetAgent:
         """Validate that all required integrations are properly initialized"""
         try:
             print(f"🔍 Validating integrations...")
-            
+
             # Check Aave integration
             if not self.aave:
                 print("❌ Aave integration not initialized")
                 return False
-            
+
             # Check Uniswap integration
             if not self.uniswap:
                 print("❌ Uniswap integration not initialized")
                 return False
-            
+
             # Check Health Monitor
             if not self.health_monitor:
                 print("❌ Health Monitor not initialized")
                 return False
-            
+
             # Test basic functionality
             try:
                 # Test Aave connection
@@ -1563,71 +1564,27 @@ class ArbitrumTestnetAgent:
                 if not current_hf or current_hf.get('health_factor', 0) <= 0:
                     print("❌ Aave health factor check failed")
                     return False
-                
+
                 # Test token address availability
                 required_addresses = [
                     self.usdc_address, self.wbtc_address, 
                     self.weth_address, self.dai_address
                 ]
-                
+
                 for addr in required_addresses:
                     if not addr or len(addr) != 42:
                         print(f"❌ Invalid token address: {addr}")
                         return False
-                
+
                 print(f"✅ All integrations validated successfully")
                 return True
-                
+
             except Exception as test_error:
                 print(f"❌ Integration test failed: {test_error}")
                 return False
-                
+
         except Exception as e:
             print(f"❌ Validation error: {e}")
-            return False
-
-    def update_baseline_after_success(self):
-        """Update baseline after successful autonomous operation"""
-        try:
-            # Get fresh collateral data
-            pool_abi = [{
-                "inputs": [{"name": "user", "type": "address"}],
-                "name": "getUserAccountData",
-                "outputs": [
-                    {"name": "totalCollateralBase", "type": "uint256"},
-                    {"name": "totalDebtBase", "type": "uint256"},
-                    {"name": "availableBorrowsBase", "type": "uint256"},
-                    {"name": "currentLiquidationThreshold", "type": "uint256"},
-                    {"name": "ltv", "type": "uint256"},
-                    {"name": "healthFactor", "type": "uint256"}
-                ],
-                "stateMutability": "view",
-                "type": "function"
-            }]
-
-            pool_contract = self.w3.eth.contract(
-                address=self.aave_pool_address,
-                abi=pool_abi
-            )
-
-            account_data = pool_contract.functions.getUserAccountData(self.address).call()
-            new_collateral_value_usd = account_data[0] / (10**8)
-
-            # Update baseline and operation tracking
-            old_baseline = self.last_collateral_value_usd
-            self.last_collateral_value_usd = new_collateral_value_usd
-            self.last_successful_operation_time = time.time()
-
-            print(f"✅ BASELINE UPDATED:")
-            print(f"   Old baseline: ${old_baseline:.2f}")
-            print(f"   New baseline: ${new_collateral_value_usd:.2f}")
-            print(f"   Next trigger threshold: ${new_collateral_value_usd + 12.0:.2f}")
-            print(f"   Operation cooldown until: {time.strftime('%H:%M:%S', time.localtime(self.last_successful_operation_time + self.operation_cooldown_seconds))}")
-
-            return True
-
-        except Exception as e:
-            print(f"❌ Failed to update baseline: {e}")
             return False
 
     def is_operation_on_cooldown(self):
@@ -1677,20 +1634,20 @@ class ArbitrumTestnetAgent:
         """Execute the planned swap sequence: 2→WBTC, 1→WETH, 1→DAI, 1→WETH(wallet)"""
         try:
             print(f"🔄 Starting swap sequence with {borrowed_amount:.2f} USDC")
-            
+
             # Ensure integrations are ready
             if not self.uniswap:
                 print("❌ Uniswap integration not initialized")
                 return False
-            
+
             # Calculate swap amounts based on strategy
             wbtc_amount = borrowed_amount * 0.33  # ~2 USDC → WBTC
             weth_amount = borrowed_amount * 0.17  # ~1 USDC → WETH  
             dai_amount = borrowed_amount * 0.17   # ~1 USDC → DAI
             wallet_weth_amount = borrowed_amount * 0.17  # ~1 USDC → WETH (for wallet)
-            
+
             swap_results = []
-            
+
             # Swap 1: USDC → WBTC
             if wbtc_amount > 0.1:
                 print(f"🔄 Swapping {wbtc_amount:.2f} USDC → WBTC...")
@@ -1707,7 +1664,7 @@ class ArbitrumTestnetAgent:
                     print(f"❌ WBTC swap error: {e}")
                     swap_results.append(False)
                 time.sleep(2)
-            
+
             # Swap 2: USDC → WETH
             if weth_amount > 0.1:
                 print(f"🔄 Swapping {weth_amount:.2f} USDC → WETH...")
@@ -1724,7 +1681,7 @@ class ArbitrumTestnetAgent:
                     print(f"❌ WETH swap error: {e}")
                     swap_results.append(False)
                 time.sleep(2)
-            
+
             # Swap 3: USDC → DAI
             if dai_amount > 0.1:
                 print(f"🔄 Swapping {dai_amount:.2f} USDC → DAI...")
@@ -1741,7 +1698,7 @@ class ArbitrumTestnetAgent:
                     print(f"❌ DAI swap error: {e}")
                     swap_results.append(False)
                 time.sleep(2)
-            
+
             # Swap 4: USDC → WETH (for wallet)
             if wallet_weth_amount > 0.1:
                 print(f"🔄 Swapping {wallet_weth_amount:.2f} USDC → WETH (wallet)...")
@@ -1758,14 +1715,14 @@ class ArbitrumTestnetAgent:
                     print(f"❌ Wallet WETH swap error: {e}")
                     swap_results.append(False)
                 time.sleep(2)
-            
+
             # Check overall success
             successful_swaps = sum(1 for result in swap_results if result)
             total_swaps = len(swap_results)
-            
+
             print(f"✅ Swap sequence complete: {successful_swaps}/{total_swaps} successful")
             return successful_swaps >= (total_swaps * 0.5)  # 50% success threshold
-            
+
         except Exception as e:
             print(f"❌ Swap sequence failed: {e}")
             return False
@@ -1774,14 +1731,14 @@ class ArbitrumTestnetAgent:
         """Execute supply operations for acquired tokens"""
         try:
             print(f"🏦 Starting supply sequence...")
-            
+
             # Ensure integrations are ready
             if not self.aave:
                 print("❌ Aave integration not initialized")
                 return False
-            
+
             supply_results = []
-            
+
             # Supply WBTC to Aave
             try:
                 wbtc_balance = self.aave.get_token_balance(self.wbtc_address)
@@ -1797,7 +1754,7 @@ class ArbitrumTestnetAgent:
             except Exception as e:
                 print(f"❌ WBTC supply error: {e}")
                 supply_results.append(False)
-            
+
             # Supply WETH to Aave
             try:
                 weth_balance = self.aave.get_token_balance(self.weth_address)
@@ -1813,7 +1770,7 @@ class ArbitrumTestnetAgent:
             except Exception as e:
                 print(f"❌ WETH supply error: {e}")
                 supply_results.append(False)
-            
+
             # Supply DAI to Aave  
             try:
                 dai_balance = self.aave.get_token_balance(self.dai_address)
@@ -1829,18 +1786,18 @@ class ArbitrumTestnetAgent:
             except Exception as e:
                 print(f"❌ DAI supply error: {e}")
                 supply_results.append(False)
-            
+
             # Check overall success
             successful_supplies = sum(1 for result in supply_results if result)
             total_supplies = len(supply_results)
-            
+
             if total_supplies > 0:
                 print(f"✅ Supply sequence complete: {successful_supplies}/{total_supplies} successful")
                 return successful_supplies >= (total_supplies * 0.5)  # 50% success threshold
             else:
                 print(f"ℹ️ No tokens to supply")
                 return True
-            
+
         except Exception as e:
             print(f"❌ Supply sequence failed: {e}")
             return False
@@ -1850,7 +1807,7 @@ class ArbitrumTestnetAgent:
         try:
             # Get current network gas price
             current_gas_price = self.w3.eth.gas_price
-            
+
             # Base gas limits for different operations
             gas_limits = {
                 'aave_borrow': 300000,
@@ -1860,7 +1817,7 @@ class ArbitrumTestnetAgent:
                 'uniswap_swap': 350000,
                 'default': 200000
             }
-            
+
             # Gas price multipliers based on market conditions
             price_multipliers = {
                 'low': 1.0,
@@ -1869,17 +1826,17 @@ class ArbitrumTestnetAgent:
                 'urgent': 1.5,
                 'market': 1.2  # For market operations
             }
-            
+
             gas_limit = gas_limits.get(operation_type, gas_limits['default'])
             price_multiplier = price_multipliers.get(market_condition, 1.1)
-            
+
             optimized_gas_price = int(current_gas_price * price_multiplier)
-            
+
             return {
                 'gas': gas_limit,
                 'gasPrice': optimized_gas_price
             }
-            
+
         except Exception as e:
             print(f"⚠️ Gas optimization failed, using defaults: {e}")
             return {
@@ -1980,25 +1937,48 @@ class ArbitrumTestnetAgent:
         try:
             # Clean address string first
             address_str = str(address).strip()
-            
+
             # Handle different address formats
             if address_str.lower().startswith('0x'):
                 hex_part = address_str[2:]
             else:
                 hex_part = address_str
-                
+
             # Validate hex format
             if len(hex_part) != 40:
                 raise ValueError(f"Invalid address length: {len(hex_part)} (expected 40)")
-                
+
             # Test if valid hex
             int(hex_part, 16)
-            
+
             # Reconstruct with 0x prefix and apply checksum
             full_address = f"0x{hex_part}"
             return Web3.to_checksum_address(full_address)
-            
+
         except Exception as e:
             print(f"[AGENT] ⚠️ Address normalization failed for {address}: {e}")
             # Return original if normalization fails
             return str(address)
+
+    def update_baseline_after_success(self, new_collateral_value):
+        """Update baseline after successful operation"""
+        try:
+            self.last_collateral_value_usd = new_collateral_value
+            self.last_successful_operation_time = time.time()
+
+            # Save to file for persistence
+            baseline_data = {
+                'last_collateral_value_usd': new_collateral_value,
+                'last_successful_operation_time': self.last_successful_operation_time,
+                'timestamp': time.time()
+            }
+
+            with open('agent_baseline.json', 'w') as f:
+                json.dump(baseline_data, f, indent=2)
+
+            print(f"✅ Baseline updated: ${new_collateral_value:.2f}")
+            return True
+
+        except Exception as e:
+            print(f"❌ Error updating baseline: {e}")
+            return False
