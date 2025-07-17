@@ -1295,7 +1295,12 @@ class ArbitrumTestnetAgent:
         """Enhanced autonomous sequence with better error handling and optimization"""
         print(f"🚀 TRIGGER ACTIVATED: Collateral grew by ${growth_amount:.2f} (≥ $12 threshold)")
         print(f"⚡ EXECUTING AUTONOMOUS SEQUENCE...")
-        print(f"📝 Sequence: Borrow 6 USDC → Swap 2→WBTC, 1→WETH, 1→DAI, 1→WETH(wallet)")
+        print(f"📝 Sequence: Borrow 6 USDC → Swap 2→WBTC, 1→WETH, 1→DAI, 1→WETH(wallet) → Supply to Aave")
+
+        # Validate all integrations are ready
+        if not self.validate_integrations_ready():
+            print("❌ Critical integrations not ready - aborting sequence")
+            return 0.1
 
         # Calculated conservative borrow amount
         safe_borrow_amount = min(6.0, growth_amount * 0.4)  # 40% of growth, max $6
@@ -1453,6 +1458,56 @@ class ArbitrumTestnetAgent:
 
         return False
 
+    def validate_integrations_ready(self):
+        """Validate that all required integrations are properly initialized"""
+        try:
+            print(f"🔍 Validating integrations...")
+            
+            # Check Aave integration
+            if not self.aave:
+                print("❌ Aave integration not initialized")
+                return False
+            
+            # Check Uniswap integration
+            if not self.uniswap:
+                print("❌ Uniswap integration not initialized")
+                return False
+            
+            # Check Health Monitor
+            if not self.health_monitor:
+                print("❌ Health Monitor not initialized")
+                return False
+            
+            # Test basic functionality
+            try:
+                # Test Aave connection
+                current_hf = self.health_monitor.get_current_health_factor()
+                if not current_hf or current_hf.get('health_factor', 0) <= 0:
+                    print("❌ Aave health factor check failed")
+                    return False
+                
+                # Test token address availability
+                required_addresses = [
+                    self.usdc_address, self.wbtc_address, 
+                    self.weth_address, self.dai_address
+                ]
+                
+                for addr in required_addresses:
+                    if not addr or len(addr) != 42:
+                        print(f"❌ Invalid token address: {addr}")
+                        return False
+                
+                print(f"✅ All integrations validated successfully")
+                return True
+                
+            except Exception as test_error:
+                print(f"❌ Integration test failed: {test_error}")
+                return False
+                
+        except Exception as e:
+            print(f"❌ Validation error: {e}")
+            return False
+
     def update_baseline_after_success(self):
         """Update baseline after successful autonomous operation"""
         try:
@@ -1545,6 +1600,11 @@ class ArbitrumTestnetAgent:
         try:
             print(f"🔄 Starting swap sequence with {borrowed_amount:.2f} USDC")
             
+            # Ensure integrations are ready
+            if not self.uniswap:
+                print("❌ Uniswap integration not initialized")
+                return False
+            
             # Calculate swap amounts based on strategy
             wbtc_amount = borrowed_amount * 0.33  # ~2 USDC → WBTC
             weth_amount = borrowed_amount * 0.17  # ~1 USDC → WETH  
@@ -1556,37 +1616,69 @@ class ArbitrumTestnetAgent:
             # Swap 1: USDC → WBTC
             if wbtc_amount > 0.1:
                 print(f"🔄 Swapping {wbtc_amount:.2f} USDC → WBTC...")
-                wbtc_result = self.uniswap.swap_tokens(
-                    self.usdc_address, self.wbtc_address, wbtc_amount, 500
-                )
-                swap_results.append(wbtc_result)
+                try:
+                    wbtc_result = self.uniswap.swap_tokens(
+                        self.usdc_address, self.wbtc_address, wbtc_amount, 500
+                    )
+                    swap_results.append(wbtc_result)
+                    if wbtc_result:
+                        print(f"✅ WBTC swap successful")
+                    else:
+                        print(f"❌ WBTC swap failed")
+                except Exception as e:
+                    print(f"❌ WBTC swap error: {e}")
+                    swap_results.append(False)
                 time.sleep(2)
             
             # Swap 2: USDC → WETH
             if weth_amount > 0.1:
                 print(f"🔄 Swapping {weth_amount:.2f} USDC → WETH...")
-                weth_result = self.uniswap.swap_tokens(
-                    self.usdc_address, self.weth_address, weth_amount, 500
-                )
-                swap_results.append(weth_result)
+                try:
+                    weth_result = self.uniswap.swap_tokens(
+                        self.usdc_address, self.weth_address, weth_amount, 500
+                    )
+                    swap_results.append(weth_result)
+                    if weth_result:
+                        print(f"✅ WETH swap successful")
+                    else:
+                        print(f"❌ WETH swap failed")
+                except Exception as e:
+                    print(f"❌ WETH swap error: {e}")
+                    swap_results.append(False)
                 time.sleep(2)
             
             # Swap 3: USDC → DAI
             if dai_amount > 0.1:
                 print(f"🔄 Swapping {dai_amount:.2f} USDC → DAI...")
-                dai_result = self.uniswap.swap_tokens(
-                    self.usdc_address, self.dai_address, dai_amount, 500
-                )
-                swap_results.append(dai_result)
+                try:
+                    dai_result = self.uniswap.swap_tokens(
+                        self.usdc_address, self.dai_address, dai_amount, 500
+                    )
+                    swap_results.append(dai_result)
+                    if dai_result:
+                        print(f"✅ DAI swap successful")
+                    else:
+                        print(f"❌ DAI swap failed")
+                except Exception as e:
+                    print(f"❌ DAI swap error: {e}")
+                    swap_results.append(False)
                 time.sleep(2)
             
             # Swap 4: USDC → WETH (for wallet)
             if wallet_weth_amount > 0.1:
                 print(f"🔄 Swapping {wallet_weth_amount:.2f} USDC → WETH (wallet)...")
-                wallet_weth_result = self.uniswap.swap_tokens(
-                    self.usdc_address, self.weth_address, wallet_weth_amount, 500
-                )
-                swap_results.append(wallet_weth_result)
+                try:
+                    wallet_weth_result = self.uniswap.swap_tokens(
+                        self.usdc_address, self.weth_address, wallet_weth_amount, 500
+                    )
+                    swap_results.append(wallet_weth_result)
+                    if wallet_weth_result:
+                        print(f"✅ Wallet WETH swap successful")
+                    else:
+                        print(f"❌ Wallet WETH swap failed")
+                except Exception as e:
+                    print(f"❌ Wallet WETH swap error: {e}")
+                    swap_results.append(False)
                 time.sleep(2)
             
             # Check overall success
@@ -1605,31 +1697,60 @@ class ArbitrumTestnetAgent:
         try:
             print(f"🏦 Starting supply sequence...")
             
+            # Ensure integrations are ready
+            if not self.aave:
+                print("❌ Aave integration not initialized")
+                return False
+            
             supply_results = []
             
             # Supply WBTC to Aave
-            wbtc_balance = self.aave.get_token_balance(self.wbtc_address)
-            if wbtc_balance > 0:
-                print(f"🏦 Supplying {wbtc_balance:.8f} WBTC to Aave...")
-                wbtc_supply = self.aave.supply_to_aave(self.wbtc_address, wbtc_balance)
-                supply_results.append(wbtc_supply)
-                time.sleep(2)
+            try:
+                wbtc_balance = self.aave.get_token_balance(self.wbtc_address)
+                if wbtc_balance > 0:
+                    print(f"🏦 Supplying {wbtc_balance:.8f} WBTC to Aave...")
+                    wbtc_supply = self.aave.supply_to_aave(self.wbtc_address, wbtc_balance)
+                    supply_results.append(wbtc_supply)
+                    if wbtc_supply:
+                        print(f"✅ WBTC supply successful")
+                    else:
+                        print(f"❌ WBTC supply failed")
+                    time.sleep(2)
+            except Exception as e:
+                print(f"❌ WBTC supply error: {e}")
+                supply_results.append(False)
             
             # Supply WETH to Aave
-            weth_balance = self.aave.get_token_balance(self.weth_address)
-            if weth_balance > 0:
-                print(f"🏦 Supplying {weth_balance:.8f} WETH to Aave...")
-                weth_supply = self.aave.supply_to_aave(self.weth_address, weth_balance)
-                supply_results.append(weth_supply)
-                time.sleep(2)
+            try:
+                weth_balance = self.aave.get_token_balance(self.weth_address)
+                if weth_balance > 0:
+                    print(f"🏦 Supplying {weth_balance:.8f} WETH to Aave...")
+                    weth_supply = self.aave.supply_to_aave(self.weth_address, weth_balance)
+                    supply_results.append(weth_supply)
+                    if weth_supply:
+                        print(f"✅ WETH supply successful")
+                    else:
+                        print(f"❌ WETH supply failed")
+                    time.sleep(2)
+            except Exception as e:
+                print(f"❌ WETH supply error: {e}")
+                supply_results.append(False)
             
             # Supply DAI to Aave  
-            dai_balance = self.aave.get_token_balance(self.dai_address)
-            if dai_balance > 0:
-                print(f"🏦 Supplying {dai_balance:.8f} DAI to Aave...")
-                dai_supply = self.aave.supply_to_aave(self.dai_address, dai_balance)
-                supply_results.append(dai_supply)
-                time.sleep(2)
+            try:
+                dai_balance = self.aave.get_token_balance(self.dai_address)
+                if dai_balance > 0:
+                    print(f"🏦 Supplying {dai_balance:.8f} DAI to Aave...")
+                    dai_supply = self.aave.supply_to_aave(self.dai_address, dai_balance)
+                    supply_results.append(dai_supply)
+                    if dai_supply:
+                        print(f"✅ DAI supply successful")
+                    else:
+                        print(f"❌ DAI supply failed")
+                    time.sleep(2)
+            except Exception as e:
+                print(f"❌ DAI supply error: {e}")
+                supply_results.append(False)
             
             # Check overall success
             successful_supplies = sum(1 for result in supply_results if result)
