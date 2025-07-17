@@ -977,7 +977,7 @@ class ArbitrumTestnetAgent:
                 fetcher = AccurateWalletDataFetcher(self.w3, self.address)
                 dashboard_data = fetcher.get_comprehensive_wallet_data()
 
-                if dashboard_data and dashboard_data.get('success')):
+                if dashboard_data and dashboard_data.get('success'):
                     real_collateral = dashboard_data['total_collateral_usdc']
                     print(f"🔍 DEBUG - REAL DATA FETCHER RESULT:")
                     print(f"   AccurateWalletDataFetcher collateral: ${real_collateral:,.2f}")
