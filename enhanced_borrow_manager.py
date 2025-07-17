@@ -17,14 +17,21 @@ class EnhancedBorrowManager:
 
     def safe_borrow_with_fallbacks(self, amount_usd, token_address):
         """
-        Execute borrowing with multiple fallback mechanisms
+        Execute borrowing with multiple fallback mechanisms and cooldown management
         """
         print(f"🏦 Enhanced Borrow Manager: Borrowing ${amount_usd:.2f}")
+        
+        # Check cooldown first
+        if hasattr(self.agent, 'is_operation_in_cooldown'):
+            in_cooldown, remaining_time = self.agent.is_operation_in_cooldown('borrow')
+            if in_cooldown:
+                print(f"⏰ Borrow operation in cooldown for {remaining_time:.0f}s")
+                return None
 
         # Mechanism 1: Direct Aave integration
         result = self._try_direct_aave_borrow(amount_usd, token_address)
         if result:
-            return result
+            return self._record_success(result)
 
         # Mechanism 2: Alternative parameter order
         result = self._try_alternative_parameter_order(amount_usd, token_address)
@@ -59,6 +66,12 @@ class EnhancedBorrowManager:
 
         print("❌ All borrowing mechanisms failed")
         return None
+    
+    def _record_success(self, result):
+        """Record successful operation and return result"""
+        if result and hasattr(self.agent, 'record_successful_operation'):
+            self.agent.record_successful_operation('borrow')
+        return result
 
     def _try_aave_api_fallback(self, amount_usd, token_address):
         """Try Aave API fallback mechanism"""
@@ -165,19 +178,13 @@ class EnhancedBorrowManager:
         try:
             print("🔄 Mechanism 1: Direct Aave integration")
 
-            # Get optimized gas parameters first
-            gas_params = self.agent.get_optimized_gas_params('aave_borrow')
+            # Get optimized gas parameters first  
+            gas_params = self.agent.get_optimized_gas_params('aave_borrow', 'market')
             print(f"✅ Got gas parameters: {gas_params}")
 
             # Try multiple borrow method signatures with correct parameter order
-            if hasattr(self.agent.aave, 'borrow_from_aave'):
-                # Convert USD to wei for proper amount format
-                decimals = self._get_token_decimals(token_address)
-                amount_wei = int(amount_usd * (10 ** decimals))
-                # Correct signature: borrow_from_aave(amount_wei, token_address, interest_rate_mode=2)
-                borrow_result = self.agent.aave.borrow_from_aave(amount_wei, token_address)
-            elif hasattr(self.agent.aave, 'borrow'):
-                # Alternative method with same signature
+            if hasattr(self.agent.aave, 'borrow'):
+                # Use the standard borrow method that expects USD amount
                 borrow_result = self.agent.aave.borrow(amount_usd, token_address)
             else:
                 raise Exception("No borrow method found in Aave integration")

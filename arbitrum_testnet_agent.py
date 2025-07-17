@@ -351,7 +351,38 @@ class ArbitrumTestnetAgent:
         # Cooldown settings
         self.last_successful_operation_time = 0  # Unix timestamp of last op
         self.operation_cooldown_seconds = 60 * 10 # 10 minute cooldown
+        self.last_operation_type = None  # Track type of last operation
         return True
+    
+    def is_operation_in_cooldown(self, operation_type="general"):
+        """Check if operation is in cooldown period"""
+        import time
+        current_time = time.time()
+        time_since_last = current_time - self.last_successful_operation_time
+        
+        # Different cooldown periods for different operations
+        cooldown_periods = {
+            'borrow': 60 * 15,  # 15 minutes for borrow operations
+            'supply': 60 * 10,  # 10 minutes for supply operations  
+            'swap': 60 * 5,     # 5 minutes for swap operations
+            'general': 60 * 10  # 10 minutes for general operations
+        }
+        
+        required_cooldown = cooldown_periods.get(operation_type, self.operation_cooldown_seconds)
+        
+        if time_since_last < required_cooldown:
+            remaining_time = required_cooldown - time_since_last
+            print(f"⏰ Operation '{operation_type}' in cooldown. {remaining_time:.0f}s remaining")
+            return True, remaining_time
+        
+        return False, 0
+    
+    def record_successful_operation(self, operation_type="general"):
+        """Record successful operation for cooldown tracking"""
+        import time
+        self.last_successful_operation_time = time.time()
+        self.last_operation_type = operation_type
+        print(f"✅ Operation '{operation_type}' recorded. Next operation available in {self.operation_cooldown_seconds}s")
 
     def initialize_integrations(self):
         """Initialize all real DeFi integrations with strict error handling"""
@@ -633,8 +664,7 @@ class ArbitrumTestnetAgent:
             safe_gas_limit = max(21000, min(safe_gas_limit, 10000000))
             safe_gas_price = max(1, min(safe_gas_price, 1000000000000))
 
-            print(f"✅ Gas params for {operation_type}: limit={safe_gas_limit:,}, price={safe_gas_price:,} wei ({self.w3.from_wei(safe_gas_price, 'gwei'):.3f}```python
- gwei)")
+            print(f"✅ Gas params for {operation_type}: limit={safe_gas_limit:,}, price={safe_gas_price:,} wei ({self.w3.from_wei(safe_gas_price, 'gwei'):.3f} gwei)")
 
             return {
                 'gas': safe_gas_limit,

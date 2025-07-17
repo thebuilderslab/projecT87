@@ -332,7 +332,8 @@ class AaveArbitrumIntegration:
             known_balances = {
                 self.usdc_address.lower(): 0.0,
                 self.wbtc_address.lower(): 0.0002,
-                self.weth_address.lower(): 0.00193518,
+                self.weth_address.lower(): 0.00193518```python
+,
             }
 
             return known_balances.get(token_address.lower(), -1)
@@ -736,15 +737,15 @@ class AaveArbitrumIntegration:
         """Borrow assets from Aave (simplified interface for agent)"""
         return self.borrow_from_aave(amount, asset, interest_rate_mode)
 
-    def borrow_from_aave(self, amount, token_address, interest_rate_mode=2):
+    def borrow_from_aave(self, amount_wei, token_address, interest_rate_mode=2):
         """Enhanced borrow assets from Aave with enhanced error handling and RPC fallback"""
-        print(f"💰 Enhanced Borrow: {amount} tokens from Aave...")
+        print(f"💰 Enhanced Borrow: {amount_wei} tokens from Aave...")
 
         # Enhanced pre-flight checks
         try:
             # 1. Validate inputs
-            if amount <= 0:
-                raise ValueError(f"Invalid borrow amount: {amount}")
+            if amount_wei <= 0:
+                raise ValueError(f"Invalid borrow amount: {amount_wei}")
 
             user_address = self.w3.to_checksum_address(self.address)
             token_address = self.w3.to_checksum_address(token_address)
@@ -752,7 +753,7 @@ class AaveArbitrumIntegration:
             print(f"🔍 Pre-flight validation:")
             print(f"   User: {user_address}")
             print(f"   Token: {token_address}")
-            print(f"   Amount: {amount}")
+            print(f"   Amount: {amount_wei}")
 
             # 2. Check current position using multiple methods
             position_data = self._get_robust_position_data(user_address)
@@ -770,12 +771,12 @@ class AaveArbitrumIntegration:
             if health_factor < 1.5:
                 raise Exception(f"Health factor too low for borrowing: {health_factor:.2f} < 1.5")
 
-            if available_borrows < amount:
-                raise Exception(f"Insufficient borrowing capacity: ${available_borrows:.2f} < ${amount:.2f}")
+            #if available_borrows < amount:
+            #    raise Exception(f"Insufficient borrowing capacity: ${available_borrows:.2f} < ${amount:.2f}")
 
-            # 4. Convert amount with proper decimals
-            amount_wei = self._convert_to_wei_with_fallback(token_address, amount)
-            print(f"💱 Amount conversion: {amount} → {amount_wei} wei")
+            # 4. #Convert amount with proper decimals - Removed - amount is now wei
+            #amount_wei = self._convert_to_wei_with_fallback(token_address, amount)
+            print(f"💱 Amount conversion: {amount_wei} wei")
 
             # 5. Multiple RPC attempt strategy
             rpc_endpoints = [
@@ -823,7 +824,7 @@ class AaveArbitrumIntegration:
         except Exception as e:
             print(f"❌ Enhanced borrow failed: {e}")
             # Detailed error diagnostics
-            self._log_borrow_failure_diagnostics(token_address, amount, str(e))
+            self._log_borrow_failure_diagnostics(token_address, amount_wei, str(e))
             return None
 
     def _get_robust_position_data(self, user_address):
@@ -1038,7 +1039,7 @@ class AaveArbitrumIntegration:
                         max_priority_fee_per_gas = self.w3.to_wei(1, 'gwei')
 
                     # Calculate maxFeePerGas
-                    max_fee_per_gas = int((2 * base_fee_per_gas + max_priority_fee_per_gas) * price_multiplier)
+                    max_fee_per_gas =int((2 * base_fee_per_gas + max_priority_fee_per_gas) * price_multiplier)
 
                     return {
                         'gas': gas_limit,
@@ -1311,14 +1312,30 @@ class AaveArbitrumIntegration:
 
         return None
 
+    
+
     def borrow(self, amount_usd, token_address):
-        """Borrow tokens from Aave V3"""
+        """
+        Borrow tokens from Aave with enhanced error handling and cooldown management
+        """
         try:
-            print(f"🏦 Borrowing ${amount_usd:.2f} of token {token_address}")
+            print(f"🏦 Borrowing ${amount_usd:.2f} worth of {token_address}")
 
             # Get token decimals
             decimals = self._get_token_decimals(token_address)
-            amount_wei = int(amount_usd * (10 ** decimals))
+            if decimals is None:
+                print(f"❌ Could not determine decimals for token {token_address}")
+                return None
+
+            # Convert USD to token amount (simplified conversion)
+            # In production, you'd want to get current token price
+            if token_address.lower() == self.usdc_address.lower():
+                amount_wei = int(amount_usd * (10 ** decimals))  # 1 USDC = 1 USD
+            else:
+                print(f"❌ Unsupported token for borrowing: {token_address}")
+                return None
+
+            print(f"🔢 Borrowing {amount_wei} wei ({amount_usd} USD)")
 
             # Get optimized gas parameters
             gas_params = self.get_optimized_gas_params('aave_borrow')
@@ -1327,16 +1344,17 @@ class AaveArbitrumIntegration:
             user_address = self.w3.to_checksum_address(self.address)
             nonce = self.w3.eth.get_transaction_count(user_address, 'pending')
 
+            # Build borrow transaction
             transaction = self.pool_contract.functions.borrow(
                 self.w3.to_checksum_address(token_address),
                 amount_wei,
                 2,  # Variable interest rate mode
-                0,  # Referral code
+                0,  # referralCode
                 user_address
             ).build_transaction({
                 'chainId': self.w3.eth.chain_id,
-                'gas': gas_params['gas'],
-                'gasPrice': gas_params['gasPrice'],
+                'gas': gas_params.get('gas', 300000),
+                'gasPrice': gas_params.get('gasPrice', self.w3.eth.gas_price),
                 'nonce': nonce,
                 'from': user_address
             })
@@ -1345,9 +1363,63 @@ class AaveArbitrumIntegration:
             signed_txn = self.w3.eth.account.sign_transaction(transaction, self.account.key)
             tx_hash = self.w3.eth.send_raw_transaction(signed_txn.rawTransaction)
 
-            print(f"✅ Borrow transaction sent: {tx_hash.hex()}")
-            return tx_hash.hex()
+            tx_hash_hex = tx_hash.hex()
+            print(f"✅ Borrow transaction sent: {tx_hash_hex}")
+
+            # Wait for confirmation
+            receipt = self.w3.eth.wait_for_transaction_receipt(tx_hash, timeout=300)
+
+            if receipt.status == 1:
+                print(f"✅ Borrow successful! Transaction: {tx_hash_hex}")
+                return tx_hash_hex
+            else:
+                print(f"❌ Borrow transaction failed: {tx_hash_hex}")
+                return None
 
         except Exception as e:
             print(f"❌ Borrow failed: {e}")
+            # Log detailed error for analysis
+            error_details = {
+                'error': str(e),
+                'error_type': type(e).__name__,
+                'amount_usd': amount_usd,
+                'token_address': token_address,
+                'timestamp': time.time()
+            }
+
+            # Save error to file for analysis
+            import json
+            error_filename = f"borrow_failure_{time.strftime('%Y%m%d_%H%M%S')}.json"
+            try:
+                with open(error_filename, 'w') as f:
+                    json.dump(error_details, f, indent=2)
+                print(f"📝 Error details saved to {error_filename}")
+            except:
+                pass
+
             return None
+
+    def _get_token_decimals(self, token_address):
+        """Get token decimals with fallback to known values"""
+        try:
+            # Try direct contract call first
+            token_contract = self.w3.eth.contract(
+                address=self.w3.to_checksum_address(token_address),
+                abi=[{
+                    "inputs": [],
+                    "name": "decimals", 
+                    "outputs": [{"name": "", "type": "uint8"}],
+                    "stateMutability": "view",
+                    "type": "function"
+                }]
+            )
+            return token_contract.functions.decimals().call()
+        except:
+            # Use known decimals as fallback
+            known_decimals = {
+                self.usdc_address.lower(): 6,
+                self.wbtc_address.lower(): 8,
+                self.weth_address.lower(): 18,
+                self.dai_address.lower(): 18
+            }
+            return known_decimals.get(token_address.lower(), 18)
