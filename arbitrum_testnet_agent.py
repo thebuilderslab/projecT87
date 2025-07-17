@@ -1472,9 +1472,8 @@ class ArbitrumTestnetAgent:
                 
                 # Use the Aave integration's borrow_from_aave method with gas optimization
                 borrow_result = self.aave.borrow_from_aave(
-                    self.usdc_address,    # token_address
                     usdc_amount_wei,      # amount
-                    2                     # interest_rate_mode (Variable rate mode)
+                    self.usdc_address     # asset_address
                 )
 
                 if borrow_result:
