@@ -648,7 +648,6 @@ class ArbitrumTestnetAgent:
                     else:
                         print(f"⚠️ Invalid gas price detected: {gas_price} (type: {type(gas_price)}), using fallback: {safe_gas_price}")
 
-            ```text
             # If no gas data or all values invalid, try network gas price as backup
             if safe_gas_price == 100000000:  # Still using fallback
                 try:
