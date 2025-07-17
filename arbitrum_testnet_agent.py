@@ -1230,7 +1230,7 @@ class ArbitrumTestnetAgent:
                Target for Trigger: ${self.last_collateral_value_usd + 12.0:.2f}
                Actual Growth: ${collateral_growth:.2f}
                Growth Needed: $12.00
-               Manual Override: {force_trigger}
+               Manual Override: {manual_override}
                ✅ TRIGGER READY: {trigger_ready}""")
 
             # Check cooldown before executing
@@ -1918,6 +1918,115 @@ class ArbitrumTestnetAgent:
                 'gas': 250000,
                 'gasPrice': int(0.1 * 1e9)  # 0.1 gwei fallback
             }
+
+    def detect_manual_override(self):
+        """Detect when manual override is active"""
+        override_files = [
+            'manual_override.flag',
+            'trigger_test.flag', 
+            'force_trigger.flag',
+            'test_mode.flag'
+        ]
+        
+        for flag_file in override_files:
+            if os.path.exists(flag_file):
+                print(f"🔧 Manual override detected: {flag_file}")
+                return True
+                
+        # Check for manual override environment variable
+        if os.getenv('MANUAL_OVERRIDE') == 'true':
+            print(f"🔧 Manual override detected: MANUAL_OVERRIDE env var")
+            return True
+            
+        return False
+    
+    def calculate_safe_borrow_amount(self, growth_amount, available_borrows_usd):
+        """Calculate safe borrow amount with proper fallbacks"""
+        print(f"🧮 Calculating safe borrow amount:")
+        print(f"   Growth amount: ${growth_amount:.2f}")
+        print(f"   Available capacity: ${available_borrows_usd:.2f}")
+        
+        # Check for manual override first
+        manual_override_active = self.detect_manual_override()
+        
+        if manual_override_active:
+            print(f"🔧 Manual override active - using percentage-based calculation")
+            # Use 20% of available borrowing capacity for manual override
+            safe_amount = available_borrows_usd * 0.20
+            safe_amount = max(1.0, min(safe_amount, available_borrows_usd * 0.80))  # Between $1 and 80% of capacity
+            print(f"💰 Manual override borrow amount: ${safe_amount:.2f}")
+            return safe_amount
+        
+        # Normal growth-based calculation
+        if growth_amount > 0:
+            # Use 40% of the growth amount, but cap at 60% of available capacity
+            growth_based_amount = growth_amount * 0.40
+            capacity_limit = available_borrows_usd * 0.60
+            safe_amount = min(growth_based_amount, capacity_limit)
+        else:
+            print(f"⚠️ Negative growth detected: ${growth_amount:.2f}")
+            # For negative growth, use small percentage of available capacity
+            safe_amount = available_borrows_usd * 0.10  # Use 10% of available capacity
+        
+        # Ensure minimum viable amount
+        safe_amount = max(1.0, safe_amount)
+        
+        # Ensure we don't exceed available capacity
+        safe_amount = min(safe_amount, available_borrows_usd * 0.80)
+        
+        print(f"💰 Calculated safe borrow amount: ${safe_amount:.2f}")
+        return safe_amount
+    
+    def update_baseline_after_success(self):
+        """Update baseline after successful operation"""
+        try:
+            # Get fresh position data
+            pool_abi = [{
+                "inputs": [{"name": "user", "type": "address"}],
+                "name": "getUserAccountData",
+                "outputs": [
+                    {"name": "totalCollateralBase", "type": "uint256"},
+                    {"name": "totalDebtBase", "type": "uint256"},
+                    {"name": "availableBorrowsBase", "type": "uint256"},
+                    {"name": "currentLiquidationThreshold", "type": "uint256"},
+                    {"name": "ltv", "type": "uint256"},
+                    {"name": "healthFactor", "type": "uint256"}
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            }]
+
+            pool_contract = self.w3.eth.contract(address=self.aave_pool_address, abi=pool_abi)
+            account_data = pool_contract.functions.getUserAccountData(self.address).call()
+            new_collateral_usd = account_data[0] / (10**8)
+            
+            # Update baseline to new collateral value
+            old_baseline = self.last_collateral_value_usd
+            self.last_collateral_value_usd = new_collateral_usd
+            
+            print(f"📊 Baseline updated after successful operation:")
+            print(f"   Old baseline: ${old_baseline:.2f}")
+            print(f"   New baseline: ${new_collateral_usd:.2f}")
+            print(f"   Next trigger at: ${new_collateral_usd + 12.0:.2f}")
+            
+            # Save updated baseline
+            baseline_data = {
+                'last_collateral_value_usd': self.last_collateral_value_usd,
+                'baseline_initialized': True,
+                'timestamp': time.time(),
+                'wallet_address': self.address,
+                'update_reason': 'successful_operation'
+            }
+            
+            with open('agent_baseline.json', 'w') as f:
+                import json
+                json.dump(baseline_data, f, indent=2)
+                
+            return True
+            
+        except Exception as e:
+            print(f"❌ Failed to update baseline: {e}")
+            return False
 
     def analyze_borrow_failure(self):
         """

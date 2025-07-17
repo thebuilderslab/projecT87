@@ -21,10 +21,46 @@ class EnhancedBorrowManager:
         """
         print(f"🏦 Enhanced Borrow Manager: Borrowing ${amount_usd:.2f}")
         
-        # Enhanced input validation
+        # Enhanced input validation with override support
         if amount_usd <= 0:
-            print(f"⚠️ Invalid borrow amount: ${amount_usd}, operation cancelled")
-            return None
+            # Check if manual override is active and we can use fallback amount
+            if hasattr(self.agent, 'detect_manual_override') and self.agent.detect_manual_override():
+                print(f"🔧 Manual override active - calculating fallback borrow amount")
+                try:
+                    # Get available borrowing capacity
+                    pool_abi = [{
+                        "inputs": [{"name": "user", "type": "address"}],
+                        "name": "getUserAccountData",
+                        "outputs": [
+                            {"name": "totalCollateralBase", "type": "uint256"},
+                            {"name": "totalDebtBase", "type": "uint256"},
+                            {"name": "availableBorrowsBase", "type": "uint256"},
+                            {"name": "currentLiquidationThreshold", "type": "uint256"},
+                            {"name": "ltv", "type": "uint256"},
+                            {"name": "healthFactor", "type": "uint256"}
+                        ],
+                        "stateMutability": "view",
+                        "type": "function"
+                    }]
+                    
+                    pool_contract = self.agent.w3.eth.contract(address=self.agent.aave_pool_address, abi=pool_abi)
+                    account_data = pool_contract.functions.getUserAccountData(self.agent.address).call()
+                    available_borrows_usd = account_data[2] / (10**8)
+                    
+                    # Use the agent's calculation logic
+                    amount_usd = self.agent.calculate_safe_borrow_amount(0.0, available_borrows_usd)
+                    print(f"🔧 Override borrow amount: ${amount_usd:.2f}")
+                    
+                    if amount_usd <= 0:
+                        print(f"❌ Even override calculation resulted in invalid amount: ${amount_usd}")
+                        return None
+                        
+                except Exception as e:
+                    print(f"❌ Failed to calculate override amount: {e}")
+                    return None
+            else:
+                print(f"⚠️ Invalid borrow amount: ${amount_usd}, operation cancelled")
+                return None
             
         # Check cooldown first
         if hasattr(self.agent, 'is_operation_in_cooldown'):
