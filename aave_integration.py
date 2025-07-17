@@ -1,5 +1,6 @@
 import os
 import json
+import math
 from web3 import Web3
 from eth_account import Account
 from dotenv import load_dotenv
@@ -995,8 +996,8 @@ class AaveArbitrumIntegration:
 
         return None
 
-    def get_optimized_gas_params(self, operation_type='default', market_condition='normal'):
-        """Get optimized gas parameters for different operations"""
+    def get_optimized_gas_params(self, operation_type='aave_borrow', market_condition='normal'):
+        """Get optimized gas parameters for different operations with enhanced EIP-1559 support"""
         try:
             # Get current network gas price
             current_gas_price = self.w3.eth.gas_price
@@ -1023,6 +1024,31 @@ class AaveArbitrumIntegration:
             gas_limit = gas_limits.get(operation_type, gas_limits['default'])
             price_multiplier = price_multipliers.get(market_condition, 1.1)
             
+            # Try EIP-1559 gas parameters first (for Arbitrum Mainnet)
+            try:
+                latest_block = self.w3.eth.get_block('latest')
+                if 'baseFeePerGas' in latest_block:
+                    base_fee_per_gas = latest_block['baseFeePerGas']
+                    
+                    # Get max priority fee or use default
+                    try:
+                        max_priority_fee_per_gas = self.w3.eth.max_priority_fee
+                        max_priority_fee_per_gas = max(max_priority_fee_per_gas, self.w3.to_wei(1, 'gwei'))
+                    except:
+                        max_priority_fee_per_gas = self.w3.to_wei(1, 'gwei')
+                    
+                    # Calculate maxFeePerGas
+                    max_fee_per_gas = int((2 * base_fee_per_gas + max_priority_fee_per_gas) * price_multiplier)
+                    
+                    return {
+                        'gas': gas_limit,
+                        'maxFeePerGas': max_fee_per_gas,
+                        'maxPriorityFeePerGas': max_priority_fee_per_gas
+                    }
+            except Exception as eip1559_error:
+                print(f"⚠️ EIP-1559 gas estimation failed: {eip1559_error}")
+            
+            # Fallback to legacy gas price
             optimized_gas_price = int(current_gas_price * price_multiplier)
             
             return {
