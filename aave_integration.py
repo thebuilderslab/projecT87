@@ -668,8 +668,7 @@ class AaveArbitrumIntegration:
 
             # 4. Convert amount with proper decimals
             amount_wei = self._convert_to_wei_with_fallback(token_address, amount)
-            print(f"```python
-💱 Amount conversion: {amount} → {amount_wei} wei")
+            print(f"💱 Amount conversion: {amount} → {amount_wei} wei")
 
             # 5. Multiple RPC attempt strategy
             rpc_endpoints = [
