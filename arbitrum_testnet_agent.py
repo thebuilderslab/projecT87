@@ -638,7 +638,6 @@ class ArbitrumTestnetAgent:
             fallback_params = {
                 'gas': 200000,
                 'gasPrice': 100000000  # 0.1 gwei
-            ```python
             }
             print(f"🛡️ Using ultra-safe fallback gas params: {fallback_params}")
             return fallback_params

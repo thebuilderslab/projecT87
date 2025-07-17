@@ -1,0 +1,836 @@
+[AGENT] 🔍 CHECKING INDIVIDUAL AAVE ASSET BALANCES:
+[AGENT] aWBTC: Error - Could not transact with/call contract function, is contract deployed correctly and chain synced?
+[AGENT] aWETH: Error - Could not transact with/call contract function, is contract deployed correctly and chain synced?
+[AGENT] aUSDC: 0.00000000
+[AGENT] 📊 Current Health Factor: 4.0124
+[AGENT] ✅ Real ARB price fetched: $0.4333
+[AGENT] 💰 ARB Price: $0.4333
+[AGENT] 🌐 Network Connected: Block 358535610, Gas Price: 0.01 Gwei
+[AGENT] 🔗 RPC Endpoint: https://arbitrum-one.public.blastapi.io
+[AGENT] ⛓️ Chain ID: 42161 (Expected: 42161)
+[AGENT] ✅ Aave Pool accessible: Revision 8
+[AGENT] 
+[AGENT] 🔍 DIAGNOSTIC: Checking Wallet Balances...
+[AGENT] DIAGNOSTIC - Wallet ETH Balance (raw): 0.0017916284 ETH
+[AGENT] DIAGNOSTIC - Using Aave position data instead of individual token balances
+[AGENT] DIAGNOSTIC - Wallet USDC Balance (via direct contract): 0.000000 USDC
+[AGENT] 🔍 DIAGNOSTIC: Wallet Balance Check Complete.
+[AGENT] 🔍 WALLET READINESS CHECK:
+[AGENT] ETH Balance: 0.001792 ETH
+[AGENT] Aave Position: $177.87 collateral
+[AGENT] ✅ Wallet ready for DeFi operations!
+[AGENT] Sufficient ETH for gas: 0.001792 ETH
+[AGENT] Active Aave position: $177.87
+[AGENT] 🔍 MONITORING: Health factor 4.0124
+[AGENT] 🔍 DEBUG - RAW HEALTH DATA FROM DIRECT AAVE:
+[AGENT] Raw collateral_usd from Aave contract: $177.86792078
+[AGENT] Raw debt_usd from Aave contract: $35.05586149
+[AGENT] Raw health_factor from Aave contract: 4.01239467
+[AGENT] 🔍 ENHANCED COLLATERAL CALCULATION:
+[AGENT] Using successful Aave contract data: $177.87
+[AGENT] WBTC supplied: 0.00000000
+[AGENT] WETH supplied: 0.00000000
+[AGENT] USDC supplied: 0.00000000
+[AGENT] Enhanced calculation:
+[AGENT] BTC price: $118,447.61
+[AGENT] ETH price: $3,345.15
+[AGENT] USDC price: $0.9998
+[AGENT] Enhanced collateral USD: $0.00
+[AGENT] ⚠️ Enhanced calculation still shows low value
+[AGENT] ✅ Using direct Aave contract data as primary source
+[AGENT] 🔍 DEBUG - BASELINE TRACKING:
+[AGENT] self.last_collateral_value_usd (baseline): $177.87
+[AGENT] current_collateral_value_usd (now): $177.87
+[AGENT] self.baseline_initialized: True
+[AGENT] 🔍 DEBUG - TRIGGER CHECK:
+[AGENT] current_collateral_value_usd: $177.87
+[AGENT] baseline (last_collateral): $177.87
+[AGENT] collateral_growth: $0.00
+[AGENT] main_trigger_threshold: $12.00
+[AGENT] trigger condition met: False
+[AGENT] ⚠️ Real data fetch failed, using forced dashboard values: Unknown format '0xFF970A61A04b1cA14834A651bAb06d67307796618', attempted to normalize to '0xff970a61a04b1ca14834a651bab06d67307796618'
+[AGENT] ✅ Using verified contract addresses (skipping normalization)
+[AGENT] 🔍 ENHANCED POSITION DETECTION:
+[AGENT] 🔄 FRESH AAVE CONTRACT DATA:
+[AGENT] Fresh Collateral: $177.87
+[AGENT] Fresh Debt: $35.06
+[AGENT] Fresh Health Factor: 4.0124
+[AGENT] ✅ USING FRESH DATA AS PRIMARY SOURCE: $177.87
+[AGENT] 📊 UPDATED VALUES:
+[AGENT] Current Collateral: $177.87
+[AGENT] Current Health Factor: 4.0124
+[AGENT] Current Debt: $35.06
+[AGENT] 🔍 DEBUG - BASELINE INITIALIZATION CHECK:
+[AGENT] self.baseline_initialized: True
+[AGENT] current_collateral_value_usd (ENHANCED): $177.87
+[AGENT] current baseline: $177.87
+[AGENT] 
+[AGENT] 🎯 AUTONOMOUS TRIGGER CHECK:
+[AGENT] Current Collateral: $177.87
+[AGENT] Baseline: $177.87
+[AGENT] Target for Trigger: $189.87
+[AGENT] Actual Growth: $0.00
+[AGENT] Growth Needed: $12.00
+[AGENT] Manual Override: False
+[AGENT] ✅ TRIGGER READY: False
+[AGENT] ⏸️ No action: Collateral growth $0.00 < $12 threshold
+[AGENT] 📊 Current Position: $177.87 collateral, $35.06 debt
+[AGENT] 💰 Last recorded collateral: $177.87
+[AGENT] 📈 Collateral growth: $0.00
+[AGENT] [04:45:35] INFO: ✔️ Moderate performance cycle: 0.700
+[AGENT] [04:46:05] INFO: 🔄 Monitoring cycle 1-4
+[AGENT] 
+[AGENT] 🎯 Autonomous Run 1, Iteration 4
+[AGENT] 
+[AGENT] 🔍 AGENT WALLET & AAVE DIAGNOSTIC:
+[AGENT] Agent Wallet Address: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+[AGENT] Network: mainnet (Chain ID: 42161)
+[AGENT] RPC Endpoint: https://arbitrum-one.public.blastapi.io
+[AGENT] Aave Pool Address: 0x794a61358D6845594F94dc1DB02A252b5b4814aD
+[AGENT] 🔍 USING FRESH AAVE CONTRACT DATA (RELIABLE SOURCE):
+[AGENT] 📊 Getting fresh data from Aave Pool: 0x794a61358D6845594F94dc1DB02A252b5b4814aD
+[AGENT] ✅ FRESH AAVE CONTRACT DATA:
+[AGENT] Total Collateral USD: $177.87
+[AGENT] Total Debt USD: $35.06
+[AGENT] Available Borrows USD: $97.03
+[AGENT] Health Factor: 4.0124
+[AGENT] Data Source: LIVE_AAVE_CONTRACT
+[AGENT] 🔍 CHECKING INDIVIDUAL AAVE ASSET BALANCES:
+[AGENT] aWBTC: Error - Could not transact with/call contract function, is contract deployed correctly and chain synced?
+[AGENT] aWETH: Error - Could not transact with/call contract function, is contract deployed correctly and chain synced?
+[AGENT] aUSDC: 0.00000000
+[AGENT] 📊 Current Health Factor: 4.0124
+[AGENT] ✅ Real ARB price fetched: $0.4333
+[AGENT] 💰 ARB Price: $0.4333
+[AGENT] 🌐 Network Connected: Block 358535733, Gas Price: 0.01 Gwei
+[AGENT] 🔗 RPC Endpoint: https://arbitrum-one.public.blastapi.io
+[AGENT] ⛓️ Chain ID: 42161 (Expected: 42161)
+[AGENT] ✅ Aave Pool accessible: Revision 8
+[AGENT] 
+[AGENT] 🔍 DIAGNOSTIC: Checking Wallet Balances...
+[AGENT] DIAGNOSTIC - Wallet ETH Balance (raw): 0.0017916284 ETH
+[AGENT] DIAGNOSTIC - Using Aave position data instead of individual token balances
+[AGENT] DIAGNOSTIC - Wallet USDC Balance (via direct contract): 0.000000 USDC
+[AGENT] 🔍 DIAGNOSTIC: Wallet Balance Check Complete.
+[AGENT] 🔍 WALLET READINESS CHECK:
+[AGENT] ETH Balance: 0.001792 ETH
+[AGENT] Aave Position: $177.87 collateral
+[AGENT] ✅ Wallet ready for DeFi operations!
+[AGENT] Sufficient ETH for gas: 0.001792 ETH
+[AGENT] Active Aave position: $177.87
+[AGENT] 🔍 MONITORING: Health factor 4.0124
+[AGENT] 🔍 DEBUG - RAW HEALTH DATA FROM DIRECT AAVE:
+[AGENT] Raw collateral_usd from Aave contract: $177.86792125
+[AGENT] Raw debt_usd from Aave contract: $35.05586348
+[AGENT] Raw health_factor from Aave contract: 4.01239445
+[AGENT] 🔍 ENHANCED COLLATERAL CALCULATION:
+[AGENT] Using successful Aave contract data: $177.87
+[AGENT] WBTC supplied: 0.00000000
+[AGENT] WETH supplied: 0.00000000
+[AGENT] USDC supplied: 0.00000000
+[AGENT] Enhanced calculation:
+[AGENT] BTC price: $118,447.61
+[AGENT] ETH price: $3,345.15
+[AGENT] USDC price: $0.9998
+[AGENT] Enhanced collateral USD: $0.00
+[AGENT] ⚠️ Enhanced calculation still shows low value
+[AGENT] ✅ Using direct Aave contract data as primary source
+[AGENT] 🔍 DEBUG - BASELINE TRACKING:
+[AGENT] self.last_collateral_value_usd (baseline): $177.87
+[AGENT] current_collateral_value_usd (now): $177.87
+[AGENT] self.baseline_initialized: True
+[AGENT] 🔍 DEBUG - TRIGGER CHECK:
+[AGENT] current_collateral_value_usd: $177.87
+[AGENT] baseline (last_collateral): $177.87
+[AGENT] collateral_growth: $0.00
+[AGENT] main_trigger_threshold: $12.00
+[AGENT] trigger condition met: False
+[AGENT] ⚠️ Real data fetch failed, using forced dashboard values: Unknown format '0xFF970A61A04b1cA14834A651bAb06d67307796618', attempted to normalize to '0xff970a61a04b1ca14834a651bab06d67307796618'
+[AGENT] ✅ Using verified contract addresses (skipping normalization)
+[AGENT] 🔍 ENHANCED POSITION DETECTION:
+[AGENT] 🔄 FRESH AAVE CONTRACT DATA:
+[AGENT] Fresh Collateral: $177.87
+[AGENT] Fresh Debt: $35.06
+[AGENT] Fresh Health Factor: 4.0124
+[AGENT] ✅ USING FRESH DATA AS PRIMARY SOURCE: $177.87
+[AGENT] 📊 UPDATED VALUES:
+[AGENT] Current Collateral: $177.87
+[AGENT] Current Health Factor: 4.0124
+[AGENT] Current Debt: $35.06
+[AGENT] 🔍 DEBUG - BASELINE INITIALIZATION CHECK:
+[AGENT] self.baseline_initialized: True
+[AGENT] current_collateral_value_usd (ENHANCED): $177.87
+[AGENT] current baseline: $177.87
+[AGENT] 
+[AGENT] 🎯 AUTONOMOUS TRIGGER CHECK:
+[AGENT] Current Collateral: $177.87
+[AGENT] Baseline: $177.87
+[AGENT] Target for Trigger: $189.87
+[AGENT] Actual Growth: $0.00
+[AGENT] Growth Needed: $12.00
+[AGENT] Manual Override: False
+[AGENT] ✅ TRIGGER READY: False
+[AGENT] ⏸️ No action: Collateral growth $0.00 < $12 threshold
+[AGENT] 📊 Current Position: $177.87 collateral, $35.06 debt
+[AGENT] 💰 Last recorded collateral: $177.87
+[AGENT] 📈 Collateral growth: $0.00
+[AGENT] [04:46:06] INFO: ✔️ Moderate performance cycle: 0.700
+[AGENT] [04:46:36] INFO: 🔄 Monitoring cycle 1-5
+[AGENT] 
+[AGENT] 🎯 Autonomous Run 1, Iteration 5
+[AGENT] 
+[AGENT] 🔍 AGENT WALLET & AAVE DIAGNOSTIC:
+[AGENT] Agent Wallet Address: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+[AGENT] Network: mainnet (Chain ID: 42161)
+[AGENT] RPC Endpoint: https://arbitrum-one.public.blastapi.io
+[AGENT] Aave Pool Address: 0x794a61358D6845594F94dc1DB02A252b5b4814aD
+[AGENT] 🔍 USING FRESH AAVE CONTRACT DATA (RELIABLE SOURCE):
+[AGENT] 📊 Getting fresh data from Aave Pool: 0x794a61358D6845594F94dc1DB02A252b5b4814aD
+[AGENT] ✅ FRESH AAVE CONTRACT DATA:
+[AGENT] Total Collateral USD: $177.87
+[AGENT] Total Debt USD: $35.06
+[AGENT] Available Borrows USD: $97.03
+[AGENT] Health Factor: 4.0124
+[AGENT] Data Source: LIVE_AAVE_CONTRACT
+[AGENT] 🔍 CHECKING INDIVIDUAL AAVE ASSET BALANCES:
+[AGENT] aWBTC: Error - Could not transact with/call contract function, is contract deployed correctly and chain synced?
+[AGENT] aWETH: Error - Could not transact with/call contract function, is contract deployed correctly and chain synced?
+[AGENT] aUSDC: 0.00000000
+[AGENT] 📊 Current Health Factor: 4.0124
+[AGENT] ✅ Real ARB price fetched: $0.4333
+[AGENT] 💰 ARB Price: $0.4333
+[AGENT] 🌐 Network Connected: Block 358535856, Gas Price: 0.01 Gwei
+[AGENT] 🔗 RPC Endpoint: https://arbitrum-one.public.blastapi.io
+[AGENT] ⛓️ Chain ID: 42161 (Expected: 42161)
+[AGENT] ✅ Aave Pool accessible: Revision 8
+[AGENT] 
+[AGENT] 🔍 DIAGNOSTIC: Checking Wallet Balances...
+[AGENT] DIAGNOSTIC - Wallet ETH Balance (raw): 0.0017916284 ETH
+[AGENT] DIAGNOSTIC - Using Aave position data instead of individual token balances
+[AGENT] DIAGNOSTIC - Wallet USDC Balance (via direct contract): 0.000000 USDC
+[AGENT] 🔍 DIAGNOSTIC: Wallet Balance Check Complete.
+[AGENT] 🔍 WALLET READINESS CHECK:
+[AGENT] ETH Balance: 0.001792 ETH
+[AGENT] Aave Position: $177.87 collateral
+[AGENT] ✅ Wallet ready for DeFi operations!
+[AGENT] Sufficient ETH for gas: 0.001792 ETH
+[AGENT] Active Aave position: $177.87
+[AGENT] 🔍 MONITORING: Health factor 4.0124
+[AGENT] 🔍 DEBUG - RAW HEALTH DATA FROM DIRECT AAVE:
+[AGENT] Raw collateral_usd from Aave contract: $177.86792172
+[AGENT] Raw debt_usd from Aave contract: $35.05586548
+[AGENT] Raw health_factor from Aave contract: 4.01239423
+[AGENT] 🔍 ENHANCED COLLATERAL CALCULATION:
+[AGENT] Using successful Aave contract data: $177.87
+[AGENT] WBTC supplied: 0.00000000
+[AGENT] WETH supplied: 0.00000000
+[AGENT] USDC supplied: 0.00000000
+[AGENT] Enhanced calculation:
+[AGENT] BTC price: $118,416.07
+[AGENT] ETH price: $3,345.67
+[AGENT] USDC price: $0.9999
+[AGENT] Enhanced collateral USD: $0.00
+[AGENT] ⚠️ Enhanced calculation still shows low value
+[AGENT] ✅ Using direct Aave contract data as primary source
+[AGENT] 🔍 DEBUG - BASELINE TRACKING:
+[AGENT] self.last_collateral_value_usd (baseline): $177.87
+[AGENT] current_collateral_value_usd (now): $177.87
+[AGENT] self.baseline_initialized: True
+[AGENT] 🔍 DEBUG - TRIGGER CHECK:
+[AGENT] current_collateral_value_usd: $177.87
+[AGENT] baseline (last_collateral): $177.87
+[AGENT] collateral_growth: $0.00
+[AGENT] main_trigger_threshold: $12.00
+[AGENT] trigger condition met: False
+[AGENT] ⚠️ Real data fetch failed, using forced dashboard values: Unknown format '0xFF970A61A04b1cA14834A651bAb06d67307796618', attempted to normalize to '0xff970a61a04b1ca14834a651bab06d67307796618'
+[AGENT] ✅ Using verified contract addresses (skipping normalization)
+[AGENT] 🔍 ENHANCED POSITION DETECTION:
+[AGENT] 🔄 FRESH AAVE CONTRACT DATA:
+[AGENT] Fresh Collateral: $177.87
+[AGENT] Fresh Debt: $35.06
+[AGENT] Fresh Health Factor: 4.0124
+[AGENT] ✅ USING FRESH DATA AS PRIMARY SOURCE: $177.87
+[AGENT] 📊 UPDATED VALUES:
+[AGENT] Current Collateral: $177.87
+[AGENT] Current Health Factor: 4.0124
+[AGENT] Current Debt: $35.06
+[AGENT] 🔍 DEBUG - BASELINE INITIALIZATION CHECK:
+[AGENT] self.baseline_initialized: True
+[AGENT] current_collateral_value_usd (ENHANCED): $177.87
+[AGENT] current baseline: $177.87
+[AGENT] 
+[AGENT] 🎯 AUTONOMOUS TRIGGER CHECK:
+[AGENT] Current Collateral: $177.87
+[AGENT] Baseline: $177.87
+[AGENT] Target for Trigger: $189.87
+[AGENT] Actual Growth: $0.00
+[AGENT] Growth Needed: $12.00
+[AGENT] Manual Override: False
+[AGENT] ✅ TRIGGER READY: False
+[AGENT] ⏸️ No action: Collateral growth $0.00 < $12 threshold
+[AGENT] 📊 Current Position: $177.87 collateral, $35.06 debt
+[AGENT] 💰 Last recorded collateral: $177.87
+[AGENT] 📈 Collateral growth: $0.00
+[AGENT] [04:46:37] INFO: ✔️ Moderate performance cycle: 0.700
+[AGENT] [04:47:07] INFO: 🔄 Monitoring cycle 1-6
+[AGENT] 
+[AGENT] 🎯 Autonomous Run 1, Iteration 6
+[AGENT] 
+[AGENT] 🔍 AGENT WALLET & AAVE DIAGNOSTIC:
+[AGENT] Agent Wallet Address: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+[AGENT] Network: mainnet (Chain ID: 42161)
+[AGENT] RPC Endpoint: https://arbitrum-one.public.blastapi.io
+[AGENT] Aave Pool Address: 0x794a61358D6845594F94dc1DB02A252b5b4814aD
+[AGENT] 🔍 USING FRESH AAVE CONTRACT DATA (RELIABLE SOURCE):
+[AGENT] 📊 Getting fresh data from Aave Pool: 0x794a61358D6845594F94dc1DB02A252b5b4814aD
+[AGENT] ✅ FRESH AAVE CONTRACT DATA:
+[AGENT] Total Collateral USD: $177.89
+[AGENT] Total Debt USD: $35.06
+[AGENT] Available Borrows USD: $97.04
+[AGENT] Health Factor: 4.0128
+[AGENT] Data Source: LIVE_AAVE_CONTRACT
+[AGENT] 🔍 CHECKING INDIVIDUAL AAVE ASSET BALANCES:
+[AGENT] aWBTC: Error - Could not transact with/call contract function, is contract deployed correctly and chain synced?
+[AGENT] aWETH: Error - Could not transact with/call contract function, is contract deployed correctly and chain synced?
+[AGENT] aUSDC: 0.00000000
+[AGENT] 📊 Current Health Factor: 4.0128
+[AGENT] ✅ Real ARB price fetched: $0.4333
+[AGENT] 💰 ARB Price: $0.4333
+[AGENT] 🌐 Network Connected: Block 358535980, Gas Price: 0.01 Gwei
+[AGENT] 🔗 RPC Endpoint: https://arbitrum-one.public.blastapi.io
+[AGENT] ⛓️ Chain ID: 42161 (Expected: 42161)
+[AGENT] ✅ Aave Pool accessible: Revision 8
+[AGENT] 
+[AGENT] 🔍 DIAGNOSTIC: Checking Wallet Balances...
+[AGENT] DIAGNOSTIC - Wallet ETH Balance (raw): 0.0017916284 ETH
+[AGENT] DIAGNOSTIC - Using Aave position data instead of individual token balances
+[AGENT] DIAGNOSTIC - Wallet USDC Balance (via direct contract): 0.000000 USDC
+[AGENT] 🔍 DIAGNOSTIC: Wallet Balance Check Complete.
+[AGENT] 🔍 WALLET READINESS CHECK:
+[AGENT] ETH Balance: 0.001792 ETH
+[AGENT] Aave Position: $177.89 collateral
+[AGENT] ✅ Wallet ready for DeFi operations!
+[AGENT] Sufficient ETH for gas: 0.001792 ETH
+[AGENT] Active Aave position: $177.89
+[AGENT] 🔍 MONITORING: Health factor 4.0128
+[AGENT] 🔍 DEBUG - RAW HEALTH DATA FROM DIRECT AAVE:
+[AGENT] Raw collateral_usd from Aave contract: $177.88526970
+[AGENT] Raw debt_usd from Aave contract: $35.05586648
+[AGENT] Raw health_factor from Aave contract: 4.01278546
+[AGENT] 🔍 ENHANCED COLLATERAL CALCULATION:
+[AGENT] Using successful Aave contract data: $177.89
+[AGENT] WBTC supplied: 0.00000000
+[AGENT] WETH supplied: 0.00000000
+[AGENT] USDC supplied: 0.00000000
+[AGENT] Enhanced calculation:
+[AGENT] BTC price: $118,416.07
+[AGENT] ETH price: $3,345.67
+[AGENT] USDC price: $0.9999
+[AGENT] Enhanced collateral USD: $0.00
+[AGENT] ⚠️ Enhanced calculation still shows low value
+[AGENT] ✅ Using direct Aave contract data as primary source
+[AGENT] 🔍 DEBUG - BASELINE TRACKING:
+[AGENT] self.last_collateral_value_usd (baseline): $177.87
+[AGENT] current_collateral_value_usd (now): $177.89
+[AGENT] self.baseline_initialized: True
+[AGENT] 🔍 DEBUG - TRIGGER CHECK:
+[AGENT] current_collateral_value_usd: $177.89
+[AGENT] baseline (last_collateral): $177.87
+[AGENT] collateral_growth: $0.02
+[AGENT] main_trigger_threshold: $12.00
+[AGENT] trigger condition met: False
+[AGENT] ⚠️ Real data fetch failed, using forced dashboard values: Unknown format '0xFF970A61A04b1cA14834A651bAb06d67307796618', attempted to normalize to '0xff970a61a04b1ca14834a651bab06d67307796618'
+[AGENT] ✅ Using verified contract addresses (skipping normalization)
+[AGENT] 🔍 ENHANCED POSITION DETECTION:
+[AGENT] 🔄 FRESH AAVE CONTRACT DATA:
+[AGENT] Fresh Collateral: $177.89
+[AGENT] Fresh Debt: $35.06
+[AGENT] Fresh Health Factor: 4.0128
+[AGENT] ✅ USING FRESH DATA AS PRIMARY SOURCE: $177.89
+[AGENT] 📊 UPDATED VALUES:
+[AGENT] Current Collateral: $177.89
+[AGENT] Current Health Factor: 4.0128
+[AGENT] Current Debt: $35.06
+[AGENT] 🔍 DEBUG - BASELINE INITIALIZATION CHECK:
+[AGENT] self.baseline_initialized: True
+[AGENT] current_collateral_value_usd (ENHANCED): $177.89
+[AGENT] current baseline: $177.87
+[AGENT] 
+[AGENT] 🎯 AUTONOMOUS TRIGGER CHECK:
+[AGENT] Current Collateral: $177.89
+[AGENT] Baseline: $177.87
+[AGENT] Target for Trigger: $189.87
+[AGENT] Actual Growth: $0.02
+[AGENT] Growth Needed: $12.00
+[AGENT] Manual Override: False
+[AGENT] ✅ TRIGGER READY: False
+[AGENT] ⏸️ No action: Collateral growth $0.02 < $12 threshold
+[AGENT] 📊 Current Position: $177.89 collateral, $35.06 debt
+[AGENT] 💰 Last recorded collateral: $177.87
+[AGENT] 📈 Collateral growth: $0.02
+[AGENT] [04:47:08] INFO: ✔️ Moderate performance cycle: 0.700
+[AGENT] [04:47:38] INFO: 🔄 Monitoring cycle 1-7
+[AGENT] 
+[AGENT] 🎯 Autonomous Run 1, Iteration 7
+[AGENT] 
+[AGENT] 🔍 AGENT WALLET & AAVE DIAGNOSTIC:
+[AGENT] Agent Wallet Address: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+[AGENT] Network: mainnet (Chain ID: 42161)
+[AGENT] RPC Endpoint: https://arbitrum-one.public.blastapi.io
+[AGENT] Aave Pool Address: 0x794a61358D6845594F94dc1DB02A252b5b4814aD
+[AGENT] 🔍 USING FRESH AAVE CONTRACT DATA (RELIABLE SOURCE):
+[AGENT] 📊 Getting fresh data from Aave Pool: 0x794a61358D6845594F94dc1DB02A252b5b4814aD
+[AGENT] ✅ FRESH AAVE CONTRACT DATA:
+[AGENT] Total Collateral USD: $177.89
+[AGENT] Total Debt USD: $35.06
+[AGENT] Available Borrows USD: $97.04
+[AGENT] Health Factor: 4.0128
+[AGENT] Data Source: LIVE_AAVE_CONTRACT
+[AGENT] 🔍 CHECKING INDIVIDUAL AAVE ASSET BALANCES:
+[AGENT] aWBTC: Error - Could not transact with/call contract function, is contract deployed correctly and chain synced?
+[AGENT] aWETH: Error - Could not transact with/call contract function, is contract deployed correctly and chain synced?
+[AGENT] aUSDC: 0.00000000
+[AGENT] 📊 Current Health Factor: 4.0128
+[AGENT] ✅ Real ARB price fetched: $0.4335
+[AGENT] 💰 ARB Price: $0.4335
+[AGENT] 🌐 Network Connected: Block 358536102, Gas Price: 0.01 Gwei
+[AGENT] 🔗 RPC Endpoint: https://arbitrum-one.public.blastapi.io
+[AGENT] ⛓️ Chain ID: 42161 (Expected: 42161)
+[AGENT] ✅ Aave Pool accessible: Revision 8
+[AGENT] 
+[AGENT] 🔍 DIAGNOSTIC: Checking Wallet Balances...
+[AGENT] DIAGNOSTIC - Wallet ETH Balance (raw): 0.0017916284 ETH
+[AGENT] DIAGNOSTIC - Using Aave position data instead of individual token balances
+[AGENT] DIAGNOSTIC - Wallet USDC Balance (via direct contract): 0.000000 USDC
+[AGENT] 🔍 DIAGNOSTIC: Wallet Balance Check Complete.
+[AGENT] 🔍 WALLET READINESS CHECK:
+[AGENT] ETH Balance: 0.001792 ETH
+[AGENT] Aave Position: $177.89 collateral
+[AGENT] ✅ Wallet ready for DeFi operations!
+[AGENT] Sufficient ETH for gas: 0.001792 ETH
+[AGENT] Active Aave position: $177.89
+[AGENT] 🔍 MONITORING: Health factor 4.0128
+[AGENT] 🔍 DEBUG - RAW HEALTH DATA FROM DIRECT AAVE:
+[AGENT] Raw collateral_usd from Aave contract: $177.88527018
+[AGENT] Raw debt_usd from Aave contract: $35.05586848
+[AGENT] Raw health_factor from Aave contract: 4.01278524
+[AGENT] 🔍 ENHANCED COLLATERAL CALCULATION:
+[AGENT] Using successful Aave contract data: $177.89
+[AGENT] WBTC supplied: 0.00000000
+[AGENT] WETH supplied: 0.00000000
+[AGENT] USDC supplied: 0.00000000
+[AGENT] Enhanced calculation:
+[AGENT] BTC price: $118,416.07
+[AGENT] ETH price: $3,345.75
+[AGENT] USDC price: $0.9999
+[AGENT] Enhanced collateral USD: $0.00
+[AGENT] ⚠️ Enhanced calculation still shows low value
+[AGENT] ✅ Using direct Aave contract data as primary source
+[AGENT] 🔍 DEBUG - BASELINE TRACKING:
+[AGENT] self.last_collateral_value_usd (baseline): $177.87
+[AGENT] current_collateral_value_usd (now): $177.89
+[AGENT] self.baseline_initialized: True
+[AGENT] 🔍 DEBUG - TRIGGER CHECK:
+[AGENT] current_collateral_value_usd: $177.89
+[AGENT] baseline (last_collateral): $177.87
+[AGENT] collateral_growth: $0.02
+[AGENT] main_trigger_threshold: $12.00
+[AGENT] trigger condition met: False
+[AGENT] ⚠️ Real data fetch failed, using forced dashboard values: Unknown format '0xFF970A61A04b1cA14834A651bAb06d67307796618', attempted to normalize to '0xff970a61a04b1ca14834a651bab06d67307796618'
+[AGENT] ✅ Using verified contract addresses (skipping normalization)
+[AGENT] 🔍 ENHANCED POSITION DETECTION:
+[AGENT] 🔄 FRESH AAVE CONTRACT DATA:
+[AGENT] Fresh Collateral: $177.89
+[AGENT] Fresh Debt: $35.06
+[AGENT] Fresh Health Factor: 4.0128
+[AGENT] ✅ USING FRESH DATA AS PRIMARY SOURCE: $177.89
+[AGENT] 📊 UPDATED VALUES:
+[AGENT] Current Collateral: $177.89
+[AGENT] Current Health Factor: 4.0128
+[AGENT] Current Debt: $35.06
+[AGENT] 🔍 DEBUG - BASELINE INITIALIZATION CHECK:
+[AGENT] self.baseline_initialized: True
+[AGENT] current_collateral_value_usd (ENHANCED): $177.89
+[AGENT] current baseline: $177.87
+[AGENT] 
+[AGENT] 🎯 AUTONOMOUS TRIGGER CHECK:
+[AGENT] Current Collateral: $177.89
+[AGENT] Baseline: $177.87
+[AGENT] Target for Trigger: $189.87
+[AGENT] Actual Growth: $0.02
+[AGENT] Growth Needed: $12.00
+[AGENT] Manual Override: False
+[AGENT] ✅ TRIGGER READY: False
+[AGENT] ⏸️ No action: Collateral growth $0.02 < $12 threshold
+[AGENT] 📊 Current Position: $177.89 collateral, $35.06 debt
+[AGENT] 💰 Last recorded collateral: $177.87
+[AGENT] 📈 Collateral growth: $0.02
+[AGENT] [04:47:39] INFO: ✔️ Moderate performance cycle: 0.700
+[AGENT] [04:48:09] INFO: 🔄 Monitoring cycle 1-8
+[AGENT] 
+[AGENT] 🎯 Autonomous Run 1, Iteration 8
+[AGENT] 
+[AGENT] 🔍 AGENT WALLET & AAVE DIAGNOSTIC:
+[AGENT] Agent Wallet Address: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+[AGENT] Network: mainnet (Chain ID: 42161)
+[AGENT] RPC Endpoint: https://arbitrum-one.public.blastapi.io
+[AGENT] Aave Pool Address: 0x794a61358D6845594F94dc1DB02A252b5b4814aD
+[AGENT] 🔍 USING FRESH AAVE CONTRACT DATA (RELIABLE SOURCE):
+[AGENT] 📊 Getting fresh data from Aave Pool: 0x794a61358D6845594F94dc1DB02A252b5b4814aD
+[AGENT] ✅ FRESH AAVE CONTRACT DATA:
+[AGENT] Total Collateral USD: $177.87
+[AGENT] Total Debt USD: $35.06
+[AGENT] Available Borrows USD: $97.03
+[AGENT] Health Factor: 4.0124
+[AGENT] Data Source: LIVE_AAVE_CONTRACT
+[AGENT] 🔍 CHECKING INDIVIDUAL AAVE ASSET BALANCES:
+[AGENT] aWBTC: Error - Could not transact with/call contract function, is contract deployed correctly and chain synced?
+[AGENT] aWETH: Error - Could not transact with/call contract function, is contract deployed correctly and chain synced?
+[AGENT] aUSDC: 0.00000000
+[AGENT] 📊 Current Health Factor: 4.0124
+[AGENT] ✅ Real ARB price fetched: $0.4335
+[AGENT] 💰 ARB Price: $0.4335
+[AGENT] 🌐 Network Connected: Block 358536226, Gas Price: 0.01 Gwei
+[AGENT] 🔗 RPC Endpoint: https://arbitrum-one.public.blastapi.io
+[AGENT] ⛓️ Chain ID: 42161 (Expected: 42161)
+[AGENT] ✅ Aave Pool accessible: Revision 8
+[AGENT] 
+[AGENT] 🔍 DIAGNOSTIC: Checking Wallet Balances...
+[AGENT] DIAGNOSTIC - Wallet ETH Balance (raw): 0.0017916284 ETH
+[AGENT] DIAGNOSTIC - Using Aave position data instead of individual token balances
+[AGENT] DIAGNOSTIC - Wallet USDC Balance (via direct contract): 0.000000 USDC
+[AGENT] 🔍 DIAGNOSTIC: Wallet Balance Check Complete.
+[AGENT] 🔍 WALLET READINESS CHECK:
+[AGENT] ETH Balance: 0.001792 ETH
+[AGENT] Aave Position: $177.87 collateral
+[AGENT] ✅ Wallet ready for DeFi operations!
+[AGENT] Sufficient ETH for gas: 0.001792 ETH
+[AGENT] Active Aave position: $177.87
+[AGENT] 🔍 MONITORING: Health factor 4.0124
+[AGENT] 🔍 DEBUG - RAW HEALTH DATA FROM DIRECT AAVE:
+[AGENT] Raw collateral_usd from Aave contract: $177.86698406
+[AGENT] Raw debt_usd from Aave contract: $35.05587048
+[AGENT] Raw health_factor from Aave contract: 4.01237251
+[AGENT] 🔍 ENHANCED COLLATERAL CALCULATION:
+[AGENT] Using successful Aave contract data: $177.87
+[AGENT] WBTC supplied: 0.00000000
+[AGENT] WETH supplied: 0.00000000
+[AGENT] USDC supplied: 0.00000000
+[AGENT] Enhanced calculation:
+[AGENT] BTC price: $118,416.07
+[AGENT] ETH price: $3,345.75
+[AGENT] USDC price: $0.9999
+[AGENT] Enhanced collateral USD: $0.00
+[AGENT] ⚠️ Enhanced calculation still shows low value
+[AGENT] ✅ Using direct Aave contract data as primary source
+[AGENT] 🔍 DEBUG - BASELINE TRACKING:
+[AGENT] self.last_collateral_value_usd (baseline): $177.87
+[AGENT] current_collateral_value_usd (now): $177.87
+[AGENT] self.baseline_initialized: True
+[AGENT] 🔍 DEBUG - TRIGGER CHECK:
+[AGENT] current_collateral_value_usd: $177.87
+[AGENT] baseline (last_collateral): $177.87
+[AGENT] collateral_growth: $-0.00
+[AGENT] main_trigger_threshold: $12.00
+[AGENT] trigger condition met: False
+[AGENT] ⚠️ Real data fetch failed, using forced dashboard values: Unknown format '0xFF970A61A04b1cA14834A651bAb06d67307796618', attempted to normalize to '0xff970a61a04b1ca14834a651bab06d67307796618'
+[AGENT] ✅ Using verified contract addresses (skipping normalization)
+[AGENT] 🔍 ENHANCED POSITION DETECTION:
+[AGENT] 🔄 FRESH AAVE CONTRACT DATA:
+[AGENT] Fresh Collateral: $177.87
+[AGENT] Fresh Debt: $35.06
+[AGENT] Fresh Health Factor: 4.0124
+[AGENT] ✅ USING FRESH DATA AS PRIMARY SOURCE: $177.87
+[AGENT] 📊 UPDATED VALUES:
+[AGENT] Current Collateral: $177.87
+[AGENT] Current Health Factor: 4.0124
+[AGENT] Current Debt: $35.06
+[AGENT] 🔍 DEBUG - BASELINE INITIALIZATION CHECK:
+[AGENT] self.baseline_initialized: True
+[AGENT] current_collateral_value_usd (ENHANCED): $177.87
+[AGENT] current baseline: $177.87
+[AGENT] 
+[AGENT] 🎯 AUTONOMOUS TRIGGER CHECK:
+[AGENT] Current Collateral: $177.87
+[AGENT] Baseline: $177.87
+[AGENT] Target for Trigger: $189.87
+[AGENT] Actual Growth: $-0.00
+[AGENT] Growth Needed: $12.00
+[AGENT] Manual Override: False
+[AGENT] ✅ TRIGGER READY: False
+[AGENT] ⏸️ No action: Collateral growth $-0.00 < $12 threshold
+[AGENT] 📊 Current Position: $177.87 collateral, $35.06 debt
+[AGENT] 💰 Last recorded collateral: $177.87
+[AGENT] 📈 Collateral growth: $-0.00
+[AGENT] [04:48:10] INFO: ✔️ Moderate performance cycle: 0.700
+[AGENT] [04:48:40] INFO: 🔄 Monitoring cycle 1-9
+[AGENT] 
+[AGENT] 🎯 Autonomous Run 1, Iteration 9
+[AGENT] 
+[AGENT] 🔍 AGENT WALLET & AAVE DIAGNOSTIC:
+[AGENT] Agent Wallet Address: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+[AGENT] Network: mainnet (Chain ID: 42161)
+[AGENT] RPC Endpoint: https://arbitrum-one.public.blastapi.io
+[AGENT] Aave Pool Address: 0x794a61358D6845594F94dc1DB02A252b5b4814aD
+[AGENT] 🔍 USING FRESH AAVE CONTRACT DATA (RELIABLE SOURCE):
+[AGENT] 📊 Getting fresh data from Aave Pool: 0x794a61358D6845594F94dc1DB02A252b5b4814aD
+[AGENT] ✅ FRESH AAVE CONTRACT DATA:
+[AGENT] Total Collateral USD: $192.78
+[AGENT] Total Debt USD: $35.06
+[AGENT] Available Borrows USD: $108.22
+[AGENT] Health Factor: 4.3444
+[AGENT] Data Source: LIVE_AAVE_CONTRACT
+[AGENT] 🔍 CHECKING INDIVIDUAL AAVE ASSET BALANCES:
+[AGENT] aWBTC: Error - Could not transact with/call contract function, is contract deployed correctly and chain synced?
+[AGENT] aWETH: Error - Could not transact with/call contract function, is contract deployed correctly and chain synced?
+[AGENT] aUSDC: 15.00589000
+[AGENT] 📊 Current Health Factor: 4.3444
+[AGENT] ✅ Real ARB price fetched: $0.4334
+[AGENT] 💰 ARB Price: $0.4334
+[AGENT] 🌐 Network Connected: Block 358536350, Gas Price: 0.01 Gwei
+[AGENT] 🔗 RPC Endpoint: https://arbitrum-one.public.blastapi.io
+[AGENT] ⛓️ Chain ID: 42161 (Expected: 42161)
+[AGENT] ✅ Aave Pool accessible: Revision 8
+[AGENT] 
+[AGENT] 🔍 DIAGNOSTIC: Checking Wallet Balances...
+[AGENT] DIAGNOSTIC - Wallet ETH Balance (raw): 0.0017897856 ETH
+[AGENT] DIAGNOSTIC - Using Aave position data instead of individual token balances
+[AGENT] DIAGNOSTIC - Wallet USDC Balance (via direct contract): 0.000000 USDC
+[AGENT] 🔍 DIAGNOSTIC: Wallet Balance Check Complete.
+[AGENT] 🔍 WALLET READINESS CHECK:
+[AGENT] ETH Balance: 0.001790 ETH
+[AGENT] Aave Position: $192.78 collateral
+[AGENT] ✅ Wallet ready for DeFi operations!
+[AGENT] Sufficient ETH for gas: 0.001790 ETH
+[AGENT] Active Aave position: $192.78
+[AGENT] 🔍 MONITORING: Health factor 4.3444
+[AGENT] 🔍 DEBUG - RAW HEALTH DATA FROM DIRECT AAVE:
+[AGENT] Raw collateral_usd from Aave contract: $192.77998959
+[AGENT] Raw debt_usd from Aave contract: $35.05587248
+[AGENT] Raw health_factor from Aave contract: 4.34438458
+[AGENT] 🔍 ENHANCED COLLATERAL CALCULATION:
+[AGENT] Using successful Aave contract data: $192.78
+[AGENT] WBTC supplied: 0.00000000
+[AGENT] WETH supplied: 0.00000000
+[AGENT] USDC supplied: 0.00000000
+[AGENT] Enhanced calculation:
+[AGENT] BTC price: $118,405.72
+[AGENT] ETH price: $3,345.35
+[AGENT] USDC price: $0.9998
+[AGENT] Enhanced collateral USD: $0.00
+[AGENT] ⚠️ Enhanced calculation still shows low value
+[AGENT] ✅ Using direct Aave contract data as primary source
+[AGENT] 🔍 DEBUG - BASELINE TRACKING:
+[AGENT] self.last_collateral_value_usd (baseline): $177.87
+[AGENT] current_collateral_value_usd (now): $192.78
+[AGENT] self.baseline_initialized: True
+[AGENT] 🔍 DEBUG - TRIGGER CHECK:
+[AGENT] current_collateral_value_usd: $192.78
+[AGENT] baseline (last_collateral): $177.87
+[AGENT] collateral_growth: $14.91
+[AGENT] main_trigger_threshold: $12.00
+[AGENT] trigger condition met: True
+[AGENT] ⚠️ Real data fetch failed, using forced dashboard values: Unknown format '0xFF970A61A04b1cA14834A651bAb06d67307796618', attempted to normalize to '0xff970a61a04b1ca14834a651bab06d67307796618'
+[AGENT] ✅ Using verified contract addresses (skipping normalization)
+[AGENT] 🔍 ENHANCED POSITION DETECTION:
+[AGENT] 🔄 FRESH AAVE CONTRACT DATA:
+[AGENT] Fresh Collateral: $192.78
+[AGENT] Fresh Debt: $35.06
+[AGENT] Fresh Health Factor: 4.3444
+[AGENT] ✅ USING FRESH DATA AS PRIMARY SOURCE: $192.78
+[AGENT] 📊 UPDATED VALUES:
+[AGENT] Current Collateral: $192.78
+[AGENT] Current Health Factor: 4.3444
+[AGENT] Current Debt: $35.06
+[AGENT] 🔍 DEBUG - BASELINE INITIALIZATION CHECK:
+[AGENT] self.baseline_initialized: True
+[AGENT] current_collateral_value_usd (ENHANCED): $192.78
+[AGENT] current baseline: $177.87
+[AGENT] 
+[AGENT] 🎯 AUTONOMOUS TRIGGER CHECK:
+[AGENT] Current Collateral: $192.78
+[AGENT] Baseline: $177.87
+[AGENT] Target for Trigger: $189.87
+[AGENT] Actual Growth: $14.91
+[AGENT] Growth Needed: $12.00
+[AGENT] Manual Override: False
+[AGENT] ✅ TRIGGER READY: True
+[AGENT] 🚀 Executing autonomous sequence (cooldown clear)
+[AGENT] 🚀 TRIGGER ACTIVATED: Collateral grew by $14.91 (≥ $12 threshold)
+[AGENT] ⚡ EXECUTING AUTONOMOUS SEQUENCE...
+[AGENT] 📝 Sequence: Borrow 6 USDC → Swap 2→WBTC, 1→WETH, 1→DAI, 1→WETH(wallet)
+[AGENT] 💰 Calculated safe borrow: $5.96 USDC
+[AGENT] 🏦 Action 1: SIMPLIFIED Safe Borrowing from Aave...
+[AGENT] 💰 Direct Aave Data Retrieved:
+[AGENT] Available to borrow: $108.22
+[AGENT] Current Health Factor: 4.34
+[AGENT] Requested borrow: $5.96
+[AGENT] ✅ Safety validation passed:
+[AGENT] Safety margin: 94.5% of available capacity
+[AGENT] Remaining buffer: $102.25
+[AGENT] 🔄 Enhanced borrow attempt 1/3
+[AGENT] ❌ Enhanced borrow attempt 1 error: AaveArbitrumIntegration.borrow_from_aave() takes 3 positional arguments but 4 were given
+[AGENT] 🔄 Enhanced borrow attempt 2/3
+[AGENT] ❌ Enhanced borrow attempt 2 error: AaveArbitrumIntegration.borrow_from_aave() takes 3 positional arguments but 4 were given
+[AGENT] 🔄 Enhanced borrow attempt 3/3
+[AGENT] ❌ Enhanced borrow attempt 3 error: AaveArbitrumIntegration.borrow_from_aave() takes 3 positional arguments but 4 were given
+[AGENT] ❌ All borrow attempts failed - performing detailed analysis...
+[AGENT] 📊 Performing detailed analysis of borrow failure...
+[AGENT] 🔍 Enhanced dashboard data fetching with validation...
+[AGENT] 📊 Using agent baseline data: $177.87
+[AGENT] ✅ Dashboard method successful with validated data!
+[AGENT] Health Factor: 4.3460
+[AGENT] Collateral: $177.87
+[AGENT] Debt: $35.06
+[AGENT] Available Borrows: $108.27
+[AGENT] Data Source: agent_baseline_file
+[AGENT] Data Quality: ✅ VALIDATED
+[AGENT] Live ETH price: $3345.35
+[AGENT] 🌐 Fetched real network gas price: 0.01 gwei
+[AGENT] ✅ Using network gas price: 11000000 wei (0.011 gwei)
+[AGENT] ✅ Gas params for aave_borrow: limit=180,000, price=11,000,000 wei (0.011 gwei)
+[AGENT] ❌ Could not save borrow failure analysis: Object of type Decimal is not JSON serializable
+[AGENT] [04:48:45] WARNING: ⚠️ Low performance cycle: 0.300
+[AGENT] [04:49:15] INFO: 🔄 Monitoring cycle 1-10
+[AGENT] 
+[AGENT] 🎯 Autonomous Run 1, Iteration 10
+[AGENT] 
+[AGENT] 🔍 AGENT WALLET & AAVE DIAGNOSTIC:
+[AGENT] Agent Wallet Address: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+[AGENT] Network: mainnet (Chain ID: 42161)
+[AGENT] RPC Endpoint: https://arbitrum-one.public.blastapi.io
+[AGENT] Aave Pool Address: 0x794a61358D6845594F94dc1DB02A252b5b4814aD
+[AGENT] 🔍 USING FRESH AAVE CONTRACT DATA (RELIABLE SOURCE):
+[AGENT] 📊 Getting fresh data from Aave Pool: 0x794a61358D6845594F94dc1DB02A252b5b4814aD
+[AGENT] ✅ FRESH AAVE CONTRACT DATA:
+[AGENT] Total Collateral USD: $192.78
+[AGENT] Total Debt USD: $35.06
+[AGENT] Available Borrows USD: $108.22
+[AGENT] Health Factor: 4.3444
+[AGENT] Data Source: LIVE_AAVE_CONTRACT
+[AGENT] 🔍 CHECKING INDIVIDUAL AAVE ASSET BALANCES:
+[AGENT] aWBTC: Error - Could not transact with/call contract function, is contract deployed correctly and chain synced?
+[AGENT] aWETH: Error - Could not transact with/call contract function, is contract deployed correctly and chain synced?
+[AGENT] aUSDC: 15.00589100
+[AGENT] 📊 Current Health Factor: 4.3444
+[AGENT] ✅ Real ARB price fetched: $0.4334
+[AGENT] 💰 ARB Price: $0.4334
+[AGENT] 🌐 Network Connected: Block 358536491, Gas Price: 0.01 Gwei
+[AGENT] 🔗 RPC Endpoint: https://arbitrum-one.public.blastapi.io
+[AGENT] ⛓️ Chain ID: 42161 (Expected: 42161)
+[AGENT] ✅ Aave Pool accessible: Revision 8
+[AGENT] 
+[AGENT] 🔍 DIAGNOSTIC: Checking Wallet Balances...
+[AGENT] DIAGNOSTIC - Wallet ETH Balance (raw): 0.0017897856 ETH
+[AGENT] DIAGNOSTIC - Using Aave position data instead of individual token balances
+[AGENT] DIAGNOSTIC - Wallet USDC Balance (via direct contract): 0.000000 USDC
+[AGENT] 🔍 DIAGNOSTIC: Wallet Balance Check Complete.
+[AGENT] 🔍 WALLET READINESS CHECK:
+[AGENT] ETH Balance: 0.001790 ETH
+[AGENT] Aave Position: $192.78 collateral
+[AGENT] ✅ Wallet ready for DeFi operations!
+[AGENT] Sufficient ETH for gas: 0.001790 ETH
+[AGENT] Active Aave position: $192.78
+[AGENT] 🔍 MONITORING: Health factor 4.3444
+[AGENT] 🔍 DEBUG - RAW HEALTH DATA FROM DIRECT AAVE:
+[AGENT] Raw collateral_usd from Aave contract: $192.77999113
+[AGENT] Raw debt_usd from Aave contract: $35.05587448
+[AGENT] Raw health_factor from Aave contract: 4.34438436
+[AGENT] 🔍 ENHANCED COLLATERAL CALCULATION:
+[AGENT] Using successful Aave contract data: $192.78
+[AGENT] WBTC supplied: 0.00000000
+[AGENT] WETH supplied: 0.00000000
+[AGENT] USDC supplied: 0.00000000
+[AGENT] Enhanced calculation:
+[AGENT] BTC price: $118,405.72
+[AGENT] ETH price: $3,345.35
+[AGENT] USDC price: $0.9998
+[AGENT] Enhanced collateral USD: $0.00
+[AGENT] ⚠️ Enhanced calculation still shows low value
+[AGENT] ✅ Using direct Aave contract data as primary source
+[AGENT] 🔍 DEBUG - BASELINE TRACKING:
+[AGENT] self.last_collateral_value_usd (baseline): $177.87
+[AGENT] current_collateral_value_usd (now): $192.78
+[AGENT] self.baseline_initialized: True
+[AGENT] 🔍 DEBUG - TRIGGER CHECK:
+[AGENT] current_collateral_value_usd: $192.78
+[AGENT] baseline (last_collateral): $177.87
+[AGENT] collateral_growth: $14.91
+[AGENT] main_trigger_threshold: $12.00
+[AGENT] trigger condition met: True
+[AGENT] ⚠️ Real data fetch failed, using forced dashboard values: Unknown format '0xFF970A61A04b1cA14834A651bAb06d67307796618', attempted to normalize to '0xff970a61a04b1ca14834a651bab06d67307796618'
+[AGENT] ✅ Using verified contract addresses (skipping normalization)
+[AGENT] 🔍 ENHANCED POSITION DETECTION:
+[AGENT] 🔄 FRESH AAVE CONTRACT DATA:
+[AGENT] Fresh Collateral: $192.78
+[AGENT] Fresh Debt: $35.06
+[AGENT] Fresh Health Factor: 4.3444
+[AGENT] ✅ USING FRESH DATA AS PRIMARY SOURCE: $192.78
+[AGENT] 📊 UPDATED VALUES:
+[AGENT] Current Collateral: $192.78
+[AGENT] Current Health Factor: 4.3444
+[AGENT] Current Debt: $35.06
+[AGENT] 🔍 DEBUG - BASELINE INITIALIZATION CHECK:
+[AGENT] self.baseline_initialized: True
+[AGENT] current_collateral_value_usd (ENHANCED): $192.78
+[AGENT] current baseline: $177.87
+[AGENT] 
+[AGENT] 🎯 AUTONOMOUS TRIGGER CHECK:
+[AGENT] Current Collateral: $192.78
+[AGENT] Baseline: $177.87
+[AGENT] Target for Trigger: $189.87
+[AGENT] Actual Growth: $14.91
+[AGENT] Growth Needed: $12.00
+[AGENT] Manual Override: False
+[AGENT] ✅ TRIGGER READY: True
+[AGENT] 🚀 Executing autonomous sequence (cooldown clear)
+[AGENT] 🚀 TRIGGER ACTIVATED: Collateral grew by $14.91 (≥ $12 threshold)
+[AGENT] ⚡ EXECUTING AUTONOMOUS SEQUENCE...
+[AGENT] 📝 Sequence: Borrow 6 USDC → Swap 2→WBTC, 1→WETH, 1→DAI, 1→WETH(wallet)
+[AGENT] 💰 Calculated safe borrow: $5.96 USDC
+[AGENT] 🏦 Action 1: SIMPLIFIED Safe Borrowing from Aave...
+[AGENT] 💰 Direct Aave Data Retrieved:
+[AGENT] Available to borrow: $108.22
+[AGENT] Current Health Factor: 4.34
+[AGENT] Requested borrow: $5.96
+[AGENT] ✅ Safety validation passed:
+[AGENT] Safety margin: 94.5% of available capacity
+[AGENT] Remaining buffer: $102.25
+[AGENT] 🔄 Enhanced borrow attempt 1/3
+[AGENT] ❌ Enhanced borrow attempt 1 error: AaveArbitrumIntegration.borrow_from_aave() takes 3 positional arguments but 4 were given
+[AGENT] 🔄 Enhanced borrow attempt 2/3
+[AGENT] ❌ Enhanced borrow attempt 2 error: AaveArbitrumIntegration.borrow_from_aave() takes 3 positional arguments but 4 were given
+[AGENT] 🔄 Enhanced borrow attempt 3/3
+[AGENT] ❌ Enhanced borrow attempt 3 error: AaveArbitrumIntegration.borrow_from_aave() takes 3 positional arguments but 4 were given
+[AGENT] ❌ All borrow attempts failed - performing detailed analysis...
+[AGENT] 📊 Performing detailed analysis of borrow failure...
+[AGENT] 🔍 Enhanced dashboard data fetching with validation...
+[AGENT] 📊 Using agent baseline data: $177.87
+[AGENT] ✅ Dashboard method successful with validated data!
+[AGENT] Health Factor: 4.3460
+[AGENT] Collateral: $177.87
+[AGENT] Debt: $35.06
+[AGENT] Available Borrows: $108.27
+[AGENT] Data Source: agent_baseline_file
+[AGENT] Data Quality: ✅ VALIDATED
+[AGENT] Live ETH price: $3345.35
+[AGENT] 🌐 Fetched real network gas price: 0.01 gwei
+[AGENT] ✅ Using network gas price: 11000000 wei (0.011 gwei)
+[AGENT] ✅ Gas params for aave_borrow: limit=180,000, price=11,000,000 wei (0.011 gwei)
+[AGENT] ❌ Could not save borrow failure analysis: Object of type Decimal is not JSON serializable
+[AGENT] [04:49:22] WARNING: ⚠️ Low performance cycle: 0.300
+[AGENT] [04:49:52] INFO: 🔄 Monitoring cycle 1-11
+[AGENT] 
+[AGENT] 🎯 Autonomous Run 1, Iteration 11
+[AGENT] 
+[AGENT] 🔍 AGENT WALLET & AAVE DIAGNOSTIC:
+[AGENT] Agent Wallet Address: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+[AGENT] Network: mainnet (Chain ID: 42161)
+[AGENT] RPC Endpoint: https://arbitrum-one.public.blastapi.io
+[AGENT] Aave Pool Address: 0x794a61358D6845594F94dc1DB02A252b5b4814aD
+[AGENT] 🔍 USING FRESH AAVE CONTRACT DATA (RELIABLE SOURCE):
+[AGENT] 📊 Getting fresh data from Aave Pool: 0x794a61358D6845594F94dc1DB02A252b5b4814aD
+[AGENT] ✅ FRESH AAVE CONTRACT DATA:
+[AGENT] Total Collateral USD: $192.78
+[AGENT] Total Debt USD: $35.06
+[AGENT] Available Borrows USD: $108.22
