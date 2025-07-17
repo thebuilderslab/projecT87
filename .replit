@@ -16,7 +16,7 @@ run = ["sh", "-c", "python mainnet_launcher.py"]
 deploymentTarget = "cloudrun"
 
 [workflows]
-runButton = "🚀 AUTONOMOUS MAINNET"
+runButton = "🚀 PARALLEL AUTONOMOUS MAINNET"
 
 [[workflows.workflow]]
 name = "Run"
@@ -632,6 +632,15 @@ mode = "sequential"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "python test_trigger_simulation.py"
+
+[[workflows.workflow]]
+name = "🚀 PARALLEL AUTONOMOUS MAINNET"
+author = 39391053
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python parallel_dashboard_launcher.py"
 
 [[ports]]
 localPort = 5000
