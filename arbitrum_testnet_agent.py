@@ -1438,12 +1438,12 @@ class ArbitrumTestnetAgent:
         fetching and error recovery mechanisms.
         """
         try:
-            from web_dashboard import get_live_agent_data
-            dashboard_data = get_live_agent_data()  # Call the data retrieval function
+            from unified_aave_data_fetcher import get_unified_aave_data
+            live_aave_data = get_unified_aave_data(self)  # Get live Aave data directly
 
-            if dashboard_data and dashboard_data.get('success'):
-                print(f"✅ Enhanced Data Fetch: Data retrieved successfully.")
-                return dashboard_data  # Return the fetched data
+            if live_aave_data and live_aave_data.get('success'):
+                print(f"✅ Enhanced Data Fetch: Live Aave data retrieved successfully.")
+                return live_aave_data  # Return the live data
             else:
                 print(f"⚠️ Enhanced Data Fetch: No data or data fetch failed.")
                 return None  # Indicate data retrieval failure

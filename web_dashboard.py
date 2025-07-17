@@ -101,9 +101,29 @@ def check_autonomous_agent_running():
         return False
 
 def get_live_agent_data():
-    """Get live data from autonomous agent with enhanced validation"""
+    """Get live data from unified Aave fetcher - eliminates cached data issues"""
     try:
-        # Method 1: Try to read from performance log for latest data
+        # Use unified fetcher for live Aave data
+        from unified_aave_data_fetcher import get_unified_aave_data
+        
+        # Try to get agent instance for live data
+        try:
+            from arbitrum_testnet_agent import ArbitrumTestnetAgent
+            agent = ArbitrumTestnetAgent()
+            
+            # Get live Aave data directly from contracts
+            live_data = get_unified_aave_data(agent)
+            
+            if live_data:
+                print(f"📊 Using LIVE AAVE CONTRACT data: HF {live_data['health_factor']:.4f}")
+                return live_data
+            else:
+                print(f"⚠️ Live data fetch failed, trying fallback methods...")
+                
+        except Exception as agent_error:
+            print(f"⚠️ Agent initialization failed: {agent_error}")
+        
+        # Fallback: Try to read from performance log for latest data
         if os.path.exists('performance_log.json'):
             with open('performance_log.json', 'r') as f:
                 lines = f.readlines()
@@ -114,17 +134,17 @@ def get_live_agent_data():
 
                     # Check if we have fresh Aave data from autonomous agent
                     if metadata and metadata.get('health_factor', 0) > 0:
-                        print(f"📊 Using live autonomous agent data: HF {metadata.get('health_factor', 0):.4f}")
+                        print(f"📊 Using cached autonomous agent data: HF {metadata.get('health_factor', 0):.4f}")
                         return {
                             'health_factor': metadata.get('health_factor', 4.3460),
-                            'total_collateral_usdc': metadata.get('total_collateral_usdc', 192.85),
+                            'total_collateral_usdc': metadata.get('total_collateral_usdc', 177.73),
                             'total_debt_usdc': metadata.get('total_debt_usdc', 35.06),
                             'available_borrows_usdc': metadata.get('available_borrows_usdc', 108.27),
-                            'baseline_collateral': metadata.get('baseline_collateral', 192.85),
-                            'next_trigger_threshold': metadata.get('baseline_collateral', 192.85) + 12.0,
-                            'data_source': 'autonomous_agent_live',
+                            'baseline_collateral': metadata.get('baseline_collateral', 177.73),
+                            'next_trigger_threshold': metadata.get('baseline_collateral', 177.73) + 12.0,
+                            'data_source': 'autonomous_agent_cached',
                             'last_update': latest.get('timestamp', time.time()),
-                            'data_quality': 'VALIDATED'
+                            'data_quality': 'CACHED'
                         }
 
                     # Also check for direct Aave data in the log entry
