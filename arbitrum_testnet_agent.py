@@ -828,59 +828,100 @@ class ArbitrumTestnetAgent:
                 print(f"      Health Factor: {current_health_factor:.4f}")
                 print(f"      Data Source: LIVE_AAVE_CONTRACT")
 
-                # Additional debugging: Check individual asset balances on Aave
+                # Enhanced aToken balance checking with circuit breaker protection
                 print(f"   🔍 CHECKING INDIVIDUAL AAVE ASSET BALANCES:")
                 try:
+                    # Initialize circuit breaker if not exists
+                    if not hasattr(self, 'circuit_breaker'):
+                        from rpc_circuit_breaker import RPCCircuitBreaker
+                        self.circuit_breaker = RPCCircuitBreaker()
+
                     # Check aToken balances (these represent supplied assets)
                     aave_assets = {
                         "aWBTC": "0x6533afac2E7BCCB20dca161449A13A2D2d5B739A",
-                        "aWETH": "0xe50fA9b4c56454E2edF6BFf7c81b50c5F05aBE61",
+                        "aWETH": "0xe50fA9b4c56454E2edF6BFf7c81b50c5F05aBE61", 
                         "aUSDC": "0x724dc807b04555b71ed48a6896b6F41593b8C637"
                     }
 
-                    atoken_abi = [{
-                        "inputs": [{"internalType": "address", "name": "account", "type": "address"}],
-                        "name": "balanceOf",
-                        "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
-                        "stateMutability": "view",
-                        "type": "function"
-                    }]
+                    # Enhanced ABI for aTokens (includes both ERC20 and aToken-specific functions)
+                    enhanced_atoken_abi = [
+                        {
+                            "inputs": [{"internalType": "address", "name": "account", "type": "address"}],
+                            "name": "balanceOf",
+                            "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
+                            "stateMutability": "view",
+                            "type": "function"
+                        },
+                        {
+                            "inputs": [],
+                            "name": "decimals",
+                            "outputs": [{"internalType": "uint8", "name": "", "type": "uint8"}],
+                            "stateMutability": "view",
+                            "type": "function"
+                        }
+                    ]
 
                     for asset_name, atoken_address in aave_assets.items():
                         try:
-                            # Use checksum address
-                            checksum_address = Web3.to_checksum_address(atoken_address)
-                            atoken_contract = self.w3.eth.contract(
-                                address=checksum_address, 
-                                abi=atoken_abi
-                            )
-                            
-                            # Try with retry mechanism
-                            max_retries = 3
-                            for attempt in range(max_retries):
+                            def fetch_atoken_balance():
+                                # Use checksum address
+                                checksum_address = Web3.to_checksum_address(atoken_address)
+                                atoken_contract = self.w3.eth.contract(
+                                    address=checksum_address, 
+                                    abi=enhanced_atoken_abi
+                                )
+                                
+                                # Get balance with proper error handling
+                                balance = atoken_contract.functions.balanceOf(
+                                    Web3.to_checksum_address(self.address)
+                                ).call()
+                                
+                                # Try to get decimals from contract, fallback to known values
                                 try:
-                                    balance = atoken_contract.functions.balanceOf(
-                                        Web3.to_checksum_address(self.address)
-                                    ).call()
-                                    
+                                    decimals = atoken_contract.functions.decimals().call()
+                                except:
                                     decimals = 18 if asset_name != "aUSDC" else 6
-                                    if asset_name == "aWBTC": 
+                                    if asset_name == "aWBTC":
                                         decimals = 8
-                                    readable_balance = balance / (10**decimals)
-                                    print(f"      {asset_name}: {readable_balance:.8f}")
-                                    break
-                                    
-                                except Exception as retry_error:
-                                    if attempt == max_retries - 1:
-                                        print(f"      {asset_name}: Failed after {max_retries} attempts - {retry_error}")
-                                    else:
-                                        time.sleep(1)  # Brief delay before retry
+                                
+                                return balance, decimals
+
+                            # Use circuit breaker for protection
+                            balance, decimals = self.circuit_breaker.call(fetch_atoken_balance)
+                            readable_balance = balance / (10**decimals)
+                            print(f"      {asset_name}: {readable_balance:.8f}")
                                         
                         except Exception as e:
-                            print(f"      {asset_name}: Contract error - {e}")
+                            print(f"      {asset_name}: Protected call failed - {e}")
+                            
+                            # Attempt RPC failover if circuit breaker fails
+                            if "circuit breaker" in str(e).lower():
+                                print(f"      Attempting RPC failover for {asset_name}...")
+                                if self.switch_to_fallback_rpc():
+                                    print(f"      RPC switched, retrying {asset_name}...")
+                                    try:
+                                        def retry_fetch():
+                                            checksum_address = Web3.to_checksum_address(atoken_address)
+                                            atoken_contract = self.w3.eth.contract(
+                                                address=checksum_address,
+                                                abi=enhanced_atoken_abi
+                                            )
+                                            balance = atoken_contract.functions.balanceOf(
+                                                Web3.to_checksum_address(self.address)
+                                            ).call()
+                                            decimals = 18 if asset_name != "aUSDC" else 6
+                                            if asset_name == "aWBTC":
+                                                decimals = 8
+                                            return balance / (10**decimals)
+                                        
+                                        readable_balance = retry_fetch()
+                                        print(f"      {asset_name}: {readable_balance:.8f} (after RPC failover)")
+                                    except Exception as retry_error:
+                                        print(f"      {asset_name}: Failed even after RPC failover - {retry_error}")
 
                 except Exception as e:
                     print(f"   ⚠️ Individual asset check failed: {e}")
+                    print(f"   This is non-critical - using aggregate Aave data instead")
 
             except Exception as e:
                 print(f"⚠️ Fresh Aave contract data failed: {e}")
