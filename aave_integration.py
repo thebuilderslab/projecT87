@@ -522,13 +522,43 @@ class AaveArbitrumIntegration:
                     print(f"   Spender: {spender_address} (type: {type(spender_address)})")
                     print(f"   Amount: {amount_uint256} (type: {type(amount_uint256)})")
 
+                    # Pre-transaction validation to prevent contract rejections
+                    print(f"🔍 Pre-transaction validation:")
+
+                    # Check if token contract supports standard ERC20 approve
+                    try:
+                        # Try to call approve with 0 amount first (this should always work)
+                        test_transaction = token_contract.functions.approve(
+                            spender_address, 0
+                        ).build_transaction({
+                            'chainId': self.w3.eth.chain_id,
+                            'gas': 100000,
+                            'gasPrice': int(self.w3.eth.gas_price * 1.1),
+                            'nonce': current_nonce,
+                            'from': user_address,
+                        })
+
+                        # Estimate gas for the actual transaction
+                        estimated_gas = token_contract.functions.approve(
+                            spender_address, amount_uint256
+                        ).estimate_gas({'from': user_address})
+
+                        print(f"   ✅ Pre-validation passed, estimated gas: {estimated_gas}")
+
+                        # Use higher gas limit based on estimation
+                        gas_limit = min(int(estimated_gas * 1.5), 200000)
+
+                    except Exception as validation_error:
+                        print(f"   ⚠️ Pre-validation warning: {validation_error}")
+                        gas_limit = 100000  # Use default if estimation fails
+
                     # Build transaction with validated parameters
                     transaction = token_contract.functions.approve(
                         spender_address,  # Validated checksummed address
                         amount_uint256    # Validated uint256 integer
                     ).build_transaction({
                         'chainId': self.w3.eth.chain_id,
-                        'gas': 100000,
+                        'gas': gas_limit,
                         'gasPrice': int(self.w3.eth.gas_price * 1.1),  # 10% higher gas price
                         'nonce': current_nonce,
                         'from': user_address,  # Explicitly set from address
@@ -630,7 +660,7 @@ class AaveArbitrumIntegration:
                         'nonce': current_nonce,
                     })
 
-                    # Sign and send
+                    # Sign andsend
                     signed_txn = self.w3.eth.account.sign_transaction(transaction, self.account.key)
                     tx_hash = self.w3.eth.send_raw_transaction(signed_txn.rawTransaction)
 
@@ -875,21 +905,21 @@ class AaveArbitrumIntegration:
 
             except Exception as tx_error:
                 print(f"❌ Transaction attempt {attempt + 1} failed: {tx_error}")
-                
+
                 # Enhanced error diagnostics
                 error_str = str(tx_error).lower()
                 print(f"🔍 Detailed error analysis:")
                 print(f"   Error type: {type(tx_error).__name__}")
                 print(f"   Error message: {str(tx_error)}")
-                
+
                 # Check underlying connection issues
                 if hasattr(tx_error, '__cause__') and tx_error.__cause__:
                     print(f"   Underlying cause: {tx_error.__cause__}")
-                
+
                 # Network-specific error detection
                 network_errors = ['connection reset', 'timeout', 'rate limit', 'gateway timeout', 
                                 'connection refused', 'name resolution failed', 'network unreachable']
-                
+
                 for net_err in network_errors:
                     if net_err in error_str:
                         print(f"🌐 Network issue detected: {net_err}")
