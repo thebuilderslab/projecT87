@@ -160,3 +160,85 @@ class RPCHealthMonitor:
             'monitoring_active': self.monitoring_active
         }
         return report
+<line_number>1</line_number>
+#!/usr/bin/env python3
+"""
+RPC Health Monitor - Monitors RPC endpoint health and switches automatically
+"""
+
+import time
+import threading
+import requests
+from web3 import Web3
+
+class RPCHealthMonitor:
+    def __init__(self, agent):
+        self.agent = agent
+        self.is_monitoring = False
+        self.health_check_interval = 30  # seconds
+        self.failure_threshold = 3
+        self.failure_counts = {}
+        
+    def start_monitoring(self):
+        """Start background health monitoring"""
+        if not self.is_monitoring:
+            self.is_monitoring = True
+            thread = threading.Thread(target=self._monitor_loop, daemon=True)
+            thread.start()
+            print("✅ RPC health monitoring started")
+    
+    def stop_monitoring(self):
+        """Stop health monitoring"""
+        self.is_monitoring = False
+        print("⏹️ RPC health monitoring stopped")
+    
+    def _monitor_loop(self):
+        """Main monitoring loop"""
+        while self.is_monitoring:
+            try:
+                self._check_current_rpc_health()
+                time.sleep(self.health_check_interval)
+            except Exception as e:
+                print(f"⚠️ Health monitor error: {e}")
+                time.sleep(5)
+    
+    def _check_current_rpc_health(self):
+        """Check health of current RPC endpoint"""
+        try:
+            current_rpc = self.agent.rpc_url
+            
+            # Test basic connectivity
+            start_time = time.time()
+            block_number = self.agent.w3.eth.block_number
+            response_time = time.time() - start_time
+            
+            if response_time > 10:  # Slow response
+                print(f"⚠️ Slow RPC response: {response_time:.2f}s")
+                self._record_failure(current_rpc)
+            else:
+                self._record_success(current_rpc)
+                
+        except Exception as e:
+            print(f"❌ RPC health check failed: {e}")
+            self._record_failure(self.agent.rpc_url)
+            
+            # Trigger RPC switch if too many failures
+            if self._should_switch_rpc():
+                print("🔄 Triggering RPC switch due to health failures")
+                self.agent.switch_to_fallback_rpc()
+    
+    def _record_failure(self, rpc_url):
+        """Record a failure for an RPC endpoint"""
+        if rpc_url not in self.failure_counts:
+            self.failure_counts[rpc_url] = 0
+        self.failure_counts[rpc_url] += 1
+    
+    def _record_success(self, rpc_url):
+        """Record a success for an RPC endpoint"""
+        if rpc_url in self.failure_counts:
+            self.failure_counts[rpc_url] = max(0, self.failure_counts[rpc_url] - 1)
+    
+    def _should_switch_rpc(self):
+        """Determine if we should switch RPCs"""
+        current_failures = self.failure_counts.get(self.agent.rpc_url, 0)
+        return current_failures >= self.failure_threshold

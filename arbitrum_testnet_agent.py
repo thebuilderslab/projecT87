@@ -271,11 +271,34 @@ class ArbitrumTestnetAgent:
 
     def _initialize_account(self):
         """Initialize account after RPC setup"""
+        # Validate and clean private key format
+        private_key = self.private_key.strip()
+        
+        # Ensure proper format - remove 0x prefix if present for validation
+        if private_key.startswith('0x'):
+            hex_part = private_key[2:]
+        else:
+            hex_part = private_key
+            
+        # Validate hex format and length
+        if len(hex_part) != 64:
+            raise Exception(f"Invalid private key length: {len(hex_part)} (expected 64)")
+            
+        try:
+            int(hex_part, 16)  # Test if valid hex
+        except ValueError:
+            raise Exception("Invalid private key format: contains non-hex characters")
+            
+        # Ensure 0x prefix for Account.from_key()
+        if not private_key.startswith('0x'):
+            private_key = '0x' + private_key
+            
         # Initialize account
-        self.account = Account.from_key(self.private_key)
+        self.account = Account.from_key(private_key)
         self.address = self.account.address
         print(f"🔑 Wallet Address: {self.address}")
         print(f"💰 AGENT INITIALIZED WITH WALLET: {self.address}")
+        print(f"✅ Private key format validated and normalized")
 
         # Contract addresses based on network
         if self.network_mode == 'mainnet':
@@ -810,29 +833,51 @@ class ArbitrumTestnetAgent:
                 try:
                     # Check aToken balances (these represent supplied assets)
                     aave_assets = {
-                        "aWBTC": self.aWBTC_address,
-                        "aWETH": self.aWETH_address,
-                        "aUSDC": self.aUSDC_address
+                        "aWBTC": "0x6533afac2E7BCCB20dca161449A13A2D2d5B739A",
+                        "aWETH": "0xe50fA9b4c56454E2edF6BFf7c81b50c5F05aBE61",
+                        "aUSDC": "0x724dc807b04555b71ed48a6896b6F41593b8C637"
                     }
 
                     atoken_abi = [{
-                        "inputs": [{"name": "account", "type": "address"}],
+                        "inputs": [{"internalType": "address", "name": "account", "type": "address"}],
                         "name": "balanceOf",
-                        "outputs": [{"name": "", "type": "uint256"}],
+                        "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
                         "stateMutability": "view",
                         "type": "function"
                     }]
 
                     for asset_name, atoken_address in aave_assets.items():
                         try:
-                            atoken_contract = self.w3.eth.contract(address=atoken_address, abi=atoken_abi)
-                            balance = atoken_contract.functions.balanceOf(self.address).call()
-                            decimals = 18 if asset_name != "aUSDC" else 6
-                            if asset_name == "aWBTC": decimals = 8
-                            readable_balance = balance / (10**decimals)
-                            print(f"      {asset_name}: {readable_balance:.8f}")
+                            # Use checksum address
+                            checksum_address = Web3.to_checksum_address(atoken_address)
+                            atoken_contract = self.w3.eth.contract(
+                                address=checksum_address, 
+                                abi=atoken_abi
+                            )
+                            
+                            # Try with retry mechanism
+                            max_retries = 3
+                            for attempt in range(max_retries):
+                                try:
+                                    balance = atoken_contract.functions.balanceOf(
+                                        Web3.to_checksum_address(self.address)
+                                    ).call()
+                                    
+                                    decimals = 18 if asset_name != "aUSDC" else 6
+                                    if asset_name == "aWBTC": 
+                                        decimals = 8
+                                    readable_balance = balance / (10**decimals)
+                                    print(f"      {asset_name}: {readable_balance:.8f}")
+                                    break
+                                    
+                                except Exception as retry_error:
+                                    if attempt == max_retries - 1:
+                                        print(f"      {asset_name}: Failed after {max_retries} attempts - {retry_error}")
+                                    else:
+                                        time.sleep(1)  # Brief delay before retry
+                                        
                         except Exception as e:
-                            print(f"      {asset_name}: Error - {e}")
+                            print(f"      {asset_name}: Contract error - {e}")
 
                 except Exception as e:
                     print(f"   ⚠️ Individual asset check failed: {e}")
@@ -1543,12 +1588,27 @@ class ArbitrumTestnetAgent:
             return None
 
         try:
-            # Use Web3's built-in checksum validation
-            return Web3.to_checksum_address(address)
+            # Clean address string first
+            address_str = str(address).strip()
+            
+            # Handle different address formats
+            if address_str.lower().startswith('0x'):
+                hex_part = address_str[2:]
+            else:
+                hex_part = address_str
+                
+            # Validate hex format
+            if len(hex_part) != 40:
+                raise ValueError(f"Invalid address length: {len(hex_part)} (expected 40)")
+                
+            # Test if valid hex
+            int(hex_part, 16)
+            
+            # Reconstruct with 0x prefix and apply checksum
+            full_address = f"0x{hex_part}"
+            return Web3.to_checksum_address(full_address)
+            
         except Exception as e:
             print(f"[AGENT] ⚠️ Address normalization failed for {address}: {e}")
-            # Fallback: manual cleanup
-            clean_address = address.lower()
-            if clean_address.startswith('0x'):
-                clean_address = clean_address[2:]
-            return f"0x{clean_address}"
+            # Return original if normalization fails
+            return str(address)
