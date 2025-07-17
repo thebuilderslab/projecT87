@@ -208,37 +208,55 @@ class ArbitrumTestnetAgent:
             return None
     
     def switch_to_fallback_rpc(self):
-        """Switch to next available RPC endpoint"""
+        """Switch to next available RPC endpoint with enhanced error handling"""
         if not self.alternative_rpcs:
             print("⚠️ No fallback RPCs available")
             return False
         
         current_rpc = self.rpc_url
         
+        # Initialize circuit breaker if not exists
+        if not hasattr(self, 'circuit_breaker'):
+            from rpc_circuit_breaker import RPCCircuitBreaker
+            self.circuit_breaker = RPCCircuitBreaker()
+        
         for fallback_rpc in self.alternative_rpcs:
             if fallback_rpc != current_rpc:
                 try:
                     print(f"🔄 Switching to fallback RPC: {fallback_rpc}")
                     
-                    new_w3 = self._create_robust_web3_connection(fallback_rpc)
-                    if new_w3 and new_w3.is_connected():
-                        # Test with a simple call
-                        new_w3.eth.block_number
-                        
-                        # Switch to new RPC
-                        self.w3 = new_w3
-                        self.rpc_url = fallback_rpc
-                        
-                        # Re-initialize contracts with new w3
-                        if hasattr(self, 'aave'):
-                            self.aave.w3 = new_w3
+                    # Test connection with circuit breaker protection
+                    def test_connection():
+                        new_w3 = self._create_robust_web3_connection(fallback_rpc)
+                        if new_w3 and new_w3.is_connected():
+                            # Test with a simple call
+                            block_num = new_w3.eth.block_number
+                            return new_w3
+                        raise Exception("Connection test failed")
+                    
+                    new_w3 = self.circuit_breaker.call(test_connection)
+                    
+                    # Switch to new RPC
+                    self.w3 = new_w3
+                    self.rpc_url = fallback_rpc
+                    
+                    # Re-initialize contracts with new w3
+                    if hasattr(self, 'aave') and self.aave:
+                        self.aave.w3 = new_w3
+                        if hasattr(self.aave, 'pool_contract'):
                             self.aave.pool_contract = new_w3.eth.contract(
                                 address=self.aave.pool_address,
                                 abi=self.aave.pool_abi
                             )
-                        
-                        print(f"✅ Successfully switched to: {fallback_rpc}")
-                        return True
+                    
+                    # Start health monitoring for new RPC
+                    if not hasattr(self, 'health_monitor'):
+                        from rpc_health_monitor import RPCHealthMonitor
+                        self.health_monitor = RPCHealthMonitor(self)
+                        self.health_monitor.start_monitoring()
+                    
+                    print(f"✅ Successfully switched to: {fallback_rpc}")
+                    return True
                         
                 except Exception as e:
                     print(f"❌ Fallback RPC {fallback_rpc} failed: {e}")

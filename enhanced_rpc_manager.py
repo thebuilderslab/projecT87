@@ -26,47 +26,108 @@ class EnhancedRPCManager:
         self.working_rpc = None
         self.w3 = None
         
-    def find_working_rpc(self):
-        """Find a working RPC endpoint with comprehensive testing"""
+    def find_working_rpc(self, max_retries=3):
+        """Find a working RPC endpoint with comprehensive testing and retries"""
         print("🔍 Testing RPC endpoints for reliability...")
         
-        for rpc_url in self.arbitrum_mainnet_rpcs:
-            if self.test_rpc_endpoint(rpc_url):
-                self.working_rpc = rpc_url
-                self.w3 = Web3(Web3.HTTPProvider(rpc_url, request_kwargs={'timeout': 30}))
-                self.w3.middleware_onion.inject(geth_poa_middleware, layer=0)
-                print(f"✅ Using RPC: {rpc_url}")
-                return True
+        for attempt in range(max_retries):
+            for rpc_url in self.arbitrum_mainnet_rpcs:
+                if self.test_rpc_endpoint(rpc_url):
+                    self.working_rpc = rpc_url
+                    # Enhanced connection settings for reliability
+                    self.w3 = Web3(Web3.HTTPProvider(
+                        rpc_url, 
+                        request_kwargs={
+                            'timeout': 30,
+                            'headers': {
+                                'User-Agent': 'ArbitrumAgent/1.0',
+                                'Connection': 'keep-alive'
+                            }
+                        }
+                    ))
+                    self.w3.middleware_onion.inject(geth_poa_middleware, layer=0)
+                    print(f"✅ Using RPC: {rpc_url}")
+                    return True
+            
+            if attempt < max_retries - 1:
+                print(f"⚠️ Attempt {attempt + 1} failed, retrying in 2 seconds...")
+                time.sleep(2)
         
-        print("❌ No working RPC endpoints found")
+        print("❌ No working RPC endpoints found after all retries")
         return False
     
-    def test_rpc_endpoint(self, rpc_url):
-        """Test RPC endpoint with multiple checks"""
+    def test_rpc_endpoint(self, rpc_url, timeout=15):
+        """Test RPC endpoint with multiple checks and timeout handling"""
         try:
-            # Test 1: Basic connectivity
-            w3 = Web3(Web3.HTTPProvider(rpc_url, request_kwargs={'timeout': 10}))
+            # Enhanced connection with timeout and retry settings
+            from requests.adapters import HTTPAdapter
+            from urllib3.util.retry import Retry
+            import requests
+            
+            session = requests.Session()
+            retry_strategy = Retry(
+                total=2,
+                backoff_factor=0.5,
+                status_forcelist=[429, 500, 502, 503, 504, 520, 521, 522, 523, 524],
+                method_whitelist=["HEAD", "GET", "POST"]
+            )
+            adapter = HTTPAdapter(max_retries=retry_strategy)
+            session.mount("http://", adapter)
+            session.mount("https://", adapter)
+            
+            # Test 1: Basic connectivity with session
+            w3 = Web3(Web3.HTTPProvider(
+                rpc_url, 
+                request_kwargs={
+                    'timeout': timeout,
+                    'headers': {'User-Agent': 'ArbitrumAgent/1.0'}
+                },
+                session=session
+            ))
+            
             if not w3.is_connected():
                 return False
             
-            # Test 2: Chain ID verification
+            # Test 2: Chain ID verification with timeout
+            start_time = time.time()
             chain_id = w3.eth.chain_id
+            if time.time() - start_time > timeout:
+                print(f"❌ RPC {rpc_url} chain_id call timeout")
+                return False
+                
             if chain_id != 42161:  # Arbitrum mainnet
                 return False
             
-            # Test 3: Latest block
+            # Test 3: Latest block with timeout
+            start_time = time.time()
             latest_block = w3.eth.get_block('latest')
+            if time.time() - start_time > timeout:
+                print(f"❌ RPC {rpc_url} get_block call timeout")
+                return False
+                
             if not latest_block or latest_block.number < 1000000:
                 return False
             
-            # Test 4: Gas price
+            # Test 4: Gas price with timeout
+            start_time = time.time()
             gas_price = w3.eth.gas_price
+            if time.time() - start_time > timeout:
+                print(f"❌ RPC {rpc_url} gas_price call timeout")
+                return False
+                
             if not gas_price or gas_price <= 0:
                 return False
             
-            print(f"✅ RPC {rpc_url} passed all tests")
+            response_time = time.time() - start_time
+            print(f"✅ RPC {rpc_url} passed all tests ({response_time:.2f}s)")
             return True
             
+        except requests.exceptions.Timeout:
+            print(f"❌ RPC {rpc_url} failed: Connection timeout")
+            return False
+        except requests.exceptions.ConnectionError:
+            print(f"❌ RPC {rpc_url} failed: Connection error")
+            return False
         except Exception as e:
             print(f"❌ RPC {rpc_url} failed: {e}")
             return False
