@@ -57,32 +57,19 @@ class ArbitrumTestnetAgent:
         self._initialize_account()
 
     def _initialize_enhanced_rpc_manager(self):
-        """Initialize enhanced RPC management with premium and fallback endpoints"""
+        """Initialize enhanced RPC management with only working endpoints"""
         if self.network_mode == 'mainnet':
-            # Premium RPC providers (priority order)
-            premium_rpcs = []
-
-            infura_api_key = os.getenv('INFURA_API_KEY')
-            alchemy_api_key = os.getenv('ALCHEMY_API_KEY')
-
-            if infura_api_key:
-                premium_rpcs.append(f"https://arbitrum-mainnet.infura.io/v3/{infura_api_key}")
-            if alchemy_api_key:
-                premium_rpcs.append(f"https://arb-mainnet.g.alchemy.com/v2/{alchemy_api_key}")
-
-            # Public RPC endpoints (tested for reliability)
-            public_rpcs = [
+            # Only use working RPC endpoints based on your test results
+            working_rpcs = [
+                "https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f938ff891c141",
                 "https://arb1.arbitrum.io/rpc",
                 "https://arbitrum-one.publicnode.com",
-                "https://arbitrum.llamarpc.com", 
-                "https://rpc.ankr.com/arbitrum",
                 "https://arbitrum-one.public.blastapi.io",
-                "https://1rpc.io/arb",
-                "https://arbitrum.blockpi.network/v1/rpc/public"
+                "https://1rpc.io/arb"
             ]
 
-            # Test and rank all available RPCs
-            tested_rpcs = self._test_and_rank_rpcs(premium_rpcs + public_rpcs, 42161)
+            # Test and rank only the working RPCs for performance
+            tested_rpcs = self._test_and_rank_rpcs(working_rpcs, 42161)
 
             self.chain_id = 42161
             print("🌐 Operating on Arbitrum Mainnet")
@@ -212,61 +199,54 @@ class ArbitrumTestnetAgent:
             return None
 
     def switch_to_fallback_rpc(self):
-        """Switch to next available RPC endpoint with enhanced error handling"""
+        """Switch to next available working RPC endpoint"""
         if not self.alternative_rpcs:
             print("⚠️ No fallback RPCs available")
             return False
 
         current_rpc = self.rpc_url
+        working_rpcs = [
+            "https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f938ff891c141",
+            "https://arb1.arbitrum.io/rpc",
+            "https://arbitrum-one.publicnode.com",
+            "https://arbitrum-one.public.blastapi.io",
+            "https://1rpc.io/arb"
+        ]
 
-        # Initialize circuit breaker if not exists
-        if not hasattr(self, 'circuit_breaker'):
-            from rpc_circuit_breaker import RPCCircuitBreaker
-            self.circuit_breaker = RPCCircuitBreaker()
+        # Only try working RPCs that are different from current
+        available_rpcs = [rpc for rpc in working_rpcs if rpc != current_rpc]
 
-        for fallback_rpc in self.alternative_rpcs:
-            if fallback_rpc != current_rpc:
-                try:
-                    print(f"🔄 Switching to fallback RPC: {fallback_rpc}")
+        for fallback_rpc in available_rpcs:
+            try:
+                print(f"🔄 Switching to working RPC: {fallback_rpc}")
 
-                    # Test connection with circuit breaker protection
-                    def test_connection():
-                        new_w3 = self._create_robust_web3_connection(fallback_rpc)
-                        if new_w3 and new_w3.is_connected():
-                            # Test with a simple call
-                            block_num = new_w3.eth.block_number
-                            return new_w3
-                        raise Exception("Connection test failed")
+                # Test connection directly
+                new_w3 = self._create_robust_web3_connection(fallback_rpc)
+                if new_w3 and new_w3.is_connected():
+                    # Test with a simple call
+                    block_num = new_w3.eth.block_number
+                    if block_num > 0:
+                        # Switch to new RPC
+                        self.w3 = new_w3
+                        self.rpc_url = fallback_rpc
 
-                    new_w3 = self.circuit_breaker.call(test_connection)
+                        # Re-initialize contracts with new w3
+                        if hasattr(self, 'aave') and self.aave:
+                            self.aave.w3 = new_w3
+                            if hasattr(self.aave, 'pool_contract'):
+                                self.aave.pool_contract = new_w3.eth.contract(
+                                    address=self.aave.pool_address,
+                                    abi=self.aave.pool_abi
+                                )
 
-                    # Switch to new RPC
-                    self.w3 = new_w3
-                    self.rpc_url = fallback_rpc
+                        print(f"✅ Successfully switched to: {fallback_rpc}")
+                        return True
 
-                    # Re-initialize contracts with new w3
-                    if hasattr(self, 'aave') and self.aave:
-                        self.aave.w3 = new_w3
-                        if hasattr(self.aave, 'pool_contract'):
-                            self.aave.pool_contract = new_w3.eth.contract(
-                                address=self.aave.pool_address,
-                                abi=self.aave.pool_abi
-                            )
+            except Exception as e:
+                print(f"❌ Working RPC {fallback_rpc} failed: {e}")
+                continue
 
-                    # Start health monitoring for new RPC
-                    if not hasattr(self, 'health_monitor'):
-                        from rpc_health_monitor import RPCHealthMonitor
-                        self.health_monitor = RPCHealthMonitor(self)
-                        self.health_monitor.start_monitoring()
-
-                    print(f"✅ Successfully switched to: {fallback_rpc}")
-                    return True
-
-                except Exception as e:
-                    print(f"❌ Fallback RPC {fallback_rpc} failed: {e}")
-                    continue
-
-        print("❌ All fallback RPCs failed")
+        print("❌ All working RPC fallbacks failed")
         return False
 
     def _initialize_account(self):
