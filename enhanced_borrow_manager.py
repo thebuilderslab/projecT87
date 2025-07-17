@@ -165,10 +165,12 @@ class EnhancedBorrowManager:
         try:
             print("🔄 Mechanism 1: Direct Aave integration")
 
-            # Try multiple borrow method signatures
+            # Try multiple borrow method signatures with correct parameter order
             if hasattr(self.agent.aave, 'borrow_from_aave'):
+                # Correct signature: borrow_from_aave(amount, token_address, interest_rate_mode=2)
                 borrow_result = self.agent.aave.borrow_from_aave(amount_usd, token_address)
             elif hasattr(self.agent.aave, 'borrow'):
+                # Alternative method with same signature
                 borrow_result = self.agent.aave.borrow(amount_usd, token_address)
             else:
                 raise Exception("No borrow method found in Aave integration")
@@ -196,6 +198,8 @@ class EnhancedBorrowManager:
 
         except Exception as e:
             print(f"❌ Mechanism 2 failed: {e}")
+
+        return Noneanism 2 failed: {e}")
 
         return None
 
