@@ -65,17 +65,17 @@ class EnhancedBorrowManager:
         try:
             print("🔄 Mechanism 5: Aave API fallback")
             from aave_api_fallback import AaveAPIFallback
-            
+
             api_fallback = AaveAPIFallback(self.agent)
             result = api_fallback.execute_borrow_via_flashloan(amount_usd, token_address)
-            
+
             if result:
                 print(f"✅ Mechanism 5 success: {result}")
                 return result
-                
+
         except Exception as e:
             print(f"❌ Mechanism 5 failed: {e}")
-        
+
         return None
 
     def _try_compound_fallback(self, amount_usd):
@@ -83,47 +83,47 @@ class EnhancedBorrowManager:
         try:
             print("🔄 Mechanism 6: Compound V3 fallback")
             from compound_v3_integration import CompoundV3Fallback
-            
+
             compound_fallback = CompoundV3Fallback(self.agent)
             result = compound_fallback.borrow_from_compound(amount_usd)
-            
+
             if result:
                 print(f"✅ Mechanism 6 success: {result}")
                 return result
-                
+
         except Exception as e:
             print(f"❌ Mechanism 6 failed: {e}")
-        
+
         return None
 
     def _try_defi_pulse_api(self, amount_usd, token_address):
         """Try DeFi Pulse API for lending operations"""
         try:
             print("🔄 Mechanism 7: DeFi Pulse API")
-            
+
             # Use DeFi Pulse API for borrow operations
             import requests
-            
+
             # Get current lending rates
             response = requests.get(f"https://api.defipulse.com/v1/lending/rates")
             if response.status_code == 200:
                 rates_data = response.json()
-                
+
                 # Find best borrowing rate for the token
                 best_rate = None
                 for protocol in rates_data.get('protocols', []):
                     if protocol.get('name') == 'Aave':
                         best_rate = protocol.get('borrow_rate')
                         break
-                
+
                 if best_rate:
                     print(f"✅ Found borrowing rate: {best_rate}%")
                     # Execute borrow via direct contract call with optimized parameters
                     return self._execute_optimized_borrow(amount_usd, token_address, best_rate)
-                    
+
         except Exception as e:
             print(f"❌ Mechanism 7 failed: {e}")
-        
+
         return None
 
     def _execute_optimized_borrow(self, amount_usd, token_address, rate):
@@ -132,10 +132,10 @@ class EnhancedBorrowManager:
             # Convert to wei with proper decimals
             decimals = self._get_token_decimals(token_address)
             amount_wei = int(amount_usd * (10 ** decimals))
-            
+
             # Use rate to optimize gas price
             gas_multiplier = 1.5 if rate > 5.0 else 1.2
-            
+
             # Execute with optimized gas
             tx = self.agent.aave.pool_contract.functions.borrow(
                 Web3.to_checksum_address(token_address),
@@ -150,12 +150,12 @@ class EnhancedBorrowManager:
                 'nonce': self.agent.w3.eth.get_transaction_count(self.agent.address, 'pending'),
                 'from': self.agent.address
             })
-            
+
             signed_tx = self.agent.w3.eth.account.sign_transaction(tx, self.agent.account.key)
             tx_hash = self.agent.w3.eth.send_raw_transaction(signed_tx.rawTransaction)
-            
+
             return tx_hash.hex()
-            
+
         except Exception as e:
             print(f"❌ Optimized borrow failed: {e}")
             return None
