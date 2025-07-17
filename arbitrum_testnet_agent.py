@@ -275,7 +275,6 @@ class ArbitrumTestnetAgent:
         self.address = self.account.address
         print(f"🔑 Wallet Address: {self.address}")
         print(f"💰 AGENT INITIALIZED WITH WALLET: {self.address}")
-        return True
 
         # Contract addresses based on network
         if self.network_mode == 'mainnet':
@@ -342,6 +341,8 @@ class ArbitrumTestnetAgent:
         self.baseline_initialized = False
         print("💰 Initialized last_collateral_value_usd to 0.0 (will sync with actual position)")
         print(f"📊 Initialized last_collateral_value_usd to: {self.last_collateral_value_usd}")
+        
+        return True
 
     def initialize_integrations(self):
         """Initialize all real DeFi integrations with strict error handling"""
