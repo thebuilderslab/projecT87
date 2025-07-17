@@ -648,6 +648,7 @@ class ArbitrumTestnetAgent:
                     else:
                         print(f"⚠️ Invalid gas price detected: {gas_price} (type: {type(gas_price)}), using fallback: {safe_gas_price}")
 
+            ```text
             # If no gas data or all values invalid, try network gas price as backup
             if safe_gas_price == 100000000:  # Still using fallback
                 try:
@@ -1221,6 +1222,9 @@ class ArbitrumTestnetAgent:
             test_mode = os.path.exists(test_mode_file)
 
             if force_trigger:
+                # 🚀 MANUAL TRIGGER DETECTED: Overriding growth requirement
+                self.manual_override_active = True
+
                 print(f"🚀 MANUAL TRIGGER DETECTED: Overriding growth requirement")
                 trigger_ready = True
             elif test_mode and actual_growth >= 1.0:  # Lower threshold for testing
@@ -1248,9 +1252,11 @@ class ArbitrumTestnetAgent:
                     return performance_score
             else:
                 growth = current_collateral_value_usd - self.last_collateral_value_usd
+                # if not trigger_condition:
+                self.manual_override_active = False
                 print(f"⏸️ No action: Collateral growth ${growth:.2f} < $12 threshold")
                 print(f"📊 Current Position: ${current_collateral_value_usd:,.2f} collateral, ${debt_usd if 'debt_usd' in locals() else 0.0:,.2f} debt")
-                print(f"💰 Last recorded collateral: ${self.last_collateral_value_usd:,.2f}")
+                print(f"💰 Last recorded collateral: ${self.last_collateral_value_usd:.2f}")
                 print(f"📈 Collateral growth: ${growth:.2f}")
 
                 if current_collateral_value_usd == 0:
@@ -2048,3 +2054,25 @@ class ArbitrumTestnetAgent:
         except Exception as e:
             print(f"⚠️ Baseline update failed: {e}")
             return False
+
+    def calculate_optimal_borrow_amount(self, collateral_growth, available_borrows):
+        """
+        Calculates the optimal borrow amount based on collateral growth and available borrows.
+        This function now considers a manual override scenario.
+        """
+        # Calculate optimal borrow amount based on growth
+        growth_based_borrow = collateral_growth * self.re_leverage_percentage
+
+        # If growth is insufficient but manual override is active, use minimum viable amount
+        if collateral_growth < self.growth_trigger_threshold and hasattr(self, 'manual_override_active') and self.manual_override_active:
+            # Use a small percentage of available borrowing capacity
+            growth_based_borrow = available_borrows * 0.1  # 10% of available capacity
+            print(f"🔧 Manual override: Using 10% of available capacity: ${growth_based_borrow:.2f}")
+
+        # Apply constraints
+        optimal_borrow = max(
+            self.min_borrow_releverage,
+            min(growth_based_borrow, self.max_borrow_releverage, available_borrows * 0.8)
+        )
+
+        return optimal_borrow
