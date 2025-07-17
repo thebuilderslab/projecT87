@@ -1360,10 +1360,31 @@ class ArbitrumTestnetAgent:
                 sequence_results['borrow_success'] = borrow_success
 
                 if borrow_success:
+                    print(f"✅ Borrow successful - proceeding with swap and supply sequence")
+                    
+                    # Action 2: Execute Swap Operations
+                    print(f"🔄 Action 2: Executing Swap Operations...")
+                    swap_success = self.execute_swap_sequence(safe_borrow_amount)
+                    sequence_results['swap_success'] = swap_success
+                    
+                    if swap_success:
+                        # Action 3: Execute Supply Operations
+                        print(f"🏦 Action 3: Executing Supply Operations...")
+                        supply_success = self.execute_supply_sequence()
+                        sequence_results['supply_success'] = supply_success
+                        
+                        if supply_success:
+                            print(f"✅ Complete autonomous sequence successful!")
+                            sequence_results['total_performance'] = 1.0
+                        else:
+                            print(f"⚠️ Supply operations failed, but borrow/swap succeeded")
+                            sequence_results['total_performance'] = 0.7
+                    else:
+                        print(f"⚠️ Swap operations failed, but borrow succeeded")
+                        sequence_results['total_performance'] = 0.5
+                    
                     # Update baseline after successful operation
-                    print(f"✅ Borrow successful - updating baseline to current collateral")
                     self.update_baseline_after_success()
-                    sequence_results['total_performance'] = 0.9
                 else:
                     print(f"❌ All borrow attempts failed - performing detailed analysis...")
                     self.analyze_borrow_failure()
@@ -1518,6 +1539,112 @@ class ArbitrumTestnetAgent:
         except Exception as e:
             print(f"❌ Enhanced Data Fetch Error: {e}")
             return None  # Handle exceptions during data retrieval
+
+    def execute_swap_sequence(self, borrowed_amount):
+        """Execute the planned swap sequence: 2→WBTC, 1→WETH, 1→DAI, 1→WETH(wallet)"""
+        try:
+            print(f"🔄 Starting swap sequence with {borrowed_amount:.2f} USDC")
+            
+            # Calculate swap amounts based on strategy
+            wbtc_amount = borrowed_amount * 0.33  # ~2 USDC → WBTC
+            weth_amount = borrowed_amount * 0.17  # ~1 USDC → WETH  
+            dai_amount = borrowed_amount * 0.17   # ~1 USDC → DAI
+            wallet_weth_amount = borrowed_amount * 0.17  # ~1 USDC → WETH (for wallet)
+            
+            swap_results = []
+            
+            # Swap 1: USDC → WBTC
+            if wbtc_amount > 0.1:
+                print(f"🔄 Swapping {wbtc_amount:.2f} USDC → WBTC...")
+                wbtc_result = self.uniswap.swap_tokens(
+                    self.usdc_address, self.wbtc_address, wbtc_amount, 500
+                )
+                swap_results.append(wbtc_result)
+                time.sleep(2)
+            
+            # Swap 2: USDC → WETH
+            if weth_amount > 0.1:
+                print(f"🔄 Swapping {weth_amount:.2f} USDC → WETH...")
+                weth_result = self.uniswap.swap_tokens(
+                    self.usdc_address, self.weth_address, weth_amount, 500
+                )
+                swap_results.append(weth_result)
+                time.sleep(2)
+            
+            # Swap 3: USDC → DAI
+            if dai_amount > 0.1:
+                print(f"🔄 Swapping {dai_amount:.2f} USDC → DAI...")
+                dai_result = self.uniswap.swap_tokens(
+                    self.usdc_address, self.dai_address, dai_amount, 500
+                )
+                swap_results.append(dai_result)
+                time.sleep(2)
+            
+            # Swap 4: USDC → WETH (for wallet)
+            if wallet_weth_amount > 0.1:
+                print(f"🔄 Swapping {wallet_weth_amount:.2f} USDC → WETH (wallet)...")
+                wallet_weth_result = self.uniswap.swap_tokens(
+                    self.usdc_address, self.weth_address, wallet_weth_amount, 500
+                )
+                swap_results.append(wallet_weth_result)
+                time.sleep(2)
+            
+            # Check overall success
+            successful_swaps = sum(1 for result in swap_results if result)
+            total_swaps = len(swap_results)
+            
+            print(f"✅ Swap sequence complete: {successful_swaps}/{total_swaps} successful")
+            return successful_swaps >= (total_swaps * 0.5)  # 50% success threshold
+            
+        except Exception as e:
+            print(f"❌ Swap sequence failed: {e}")
+            return False
+
+    def execute_supply_sequence(self):
+        """Execute supply operations for acquired tokens"""
+        try:
+            print(f"🏦 Starting supply sequence...")
+            
+            supply_results = []
+            
+            # Supply WBTC to Aave
+            wbtc_balance = self.aave.get_token_balance(self.wbtc_address)
+            if wbtc_balance > 0:
+                print(f"🏦 Supplying {wbtc_balance:.8f} WBTC to Aave...")
+                wbtc_supply = self.aave.supply_to_aave(self.wbtc_address, wbtc_balance)
+                supply_results.append(wbtc_supply)
+                time.sleep(2)
+            
+            # Supply WETH to Aave
+            weth_balance = self.aave.get_token_balance(self.weth_address)
+            if weth_balance > 0:
+                print(f"🏦 Supplying {weth_balance:.8f} WETH to Aave...")
+                weth_supply = self.aave.supply_to_aave(self.weth_address, weth_balance)
+                supply_results.append(weth_supply)
+                time.sleep(2)
+            
+            # Supply DAI to Aave  
+            dai_balance = self.aave.get_token_balance(self.dai_address)
+            if dai_balance > 0:
+                print(f"🏦 Supplying {dai_balance:.8f} DAI to Aave...")
+                dai_supply = self.aave.supply_to_aave(self.dai_address, dai_balance)
+                supply_results.append(dai_supply)
+                time.sleep(2)
+            
+            # Check overall success
+            successful_supplies = sum(1 for result in supply_results if result)
+            total_supplies = len(supply_results)
+            
+            if total_supplies > 0:
+                print(f"✅ Supply sequence complete: {successful_supplies}/{total_supplies} successful")
+                return successful_supplies >= (total_supplies * 0.5)  # 50% success threshold
+            else:
+                print(f"ℹ️ No tokens to supply")
+                return True
+            
+        except Exception as e:
+            print(f"❌ Supply sequence failed: {e}")
+            return False
 
     def analyze_borrow_failure(self):
         """
