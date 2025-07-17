@@ -1235,22 +1235,51 @@ class ArbitrumTestnetAgent:
         }
 
         try:
-            # Action 1: Enhanced Safe Borrowing from Aave
-            print(f"🏦 Action 1: Enhanced Safe Borrowing from Aave...")
+            # Action 1: SIMPLIFIED Safe Borrowing from Aave
+            print(f"🏦 Action 1: SIMPLIFIED Safe Borrowing from Aave...")
 
-            # Get enhanced data for borrowing decision
-            dashboard_data = self.get_enhanced_dashboard_data()
-            if dashboard_data and dashboard_data.get('available_borrows_usdc', 0) >= safe_borrow_amount:
-                print(f"💰 Live Data Retrieved:")
-                print(f"   Available to borrow: ${dashboard_data['available_borrows_usdc']:.2f}")
-                print(f"   Current Health Factor: {dashboard_data.get('health_factor', 0):.2f}")
-                print(f"   Data Source: {dashboard_data.get('data_source', 'unknown')}")
+            # Use direct Aave contract data instead of enhanced fetch
+            try:
+                pool_abi = [{
+                    "inputs": [{"name": "user", "type": "address"}],
+                    "name": "getUserAccountData",
+                    "outputs": [
+                        {"name": "totalCollateralBase", "type": "uint256"},
+                        {"name": "totalDebtBase", "type": "uint256"},
+                        {"name": "availableBorrowsBase", "type": "uint256"},
+                        {"name": "currentLiquidationThreshold", "type": "uint256"},
+                        {"name": "ltv", "type": "uint256"},
+                        {"name": "healthFactor", "type": "uint256"}
+                    ],
+                    "stateMutability": "view",
+                    "type": "function"
+                }]
 
-            # Calculate safety margin
-                safety_margin = (dashboard_data['available_borrows_usdc'] - safe_borrow_amount) / dashboard_data['available_borrows_usdc']
-                print(f"✅ Calculated safe borrow: ${safe_borrow_amount:.2f} USDC")
+                pool_contract = self.w3.eth.contract(address=self.aave_pool_address, abi=pool_abi)
+                account_data = pool_contract.functions.getUserAccountData(self.address).call()
+
+                available_borrows_usd = account_data[2] / (10**8)
+                current_health_factor = account_data[5] / (10**18) if account_data[5] > 0 else float('inf')
+
+                print(f"💰 Direct Aave Data Retrieved:")
+                print(f"   Available to borrow: ${available_borrows_usd:.2f}")
+                print(f"   Current Health Factor: {current_health_factor:.2f}")
+                print(f"   Requested borrow: ${safe_borrow_amount:.2f}")
+
+                # Safety checks
+                if current_health_factor < 2.0:
+                    print(f"❌ Health factor too low: {current_health_factor:.2f} < 2.0")
+                    return 0.1
+
+                if available_borrows_usd < safe_borrow_amount:
+                    print(f"❌ Insufficient borrowing capacity: ${available_borrows_usd:.2f} < ${safe_borrow_amount:.2f}")
+                    return 0.1
+
+                # Calculate safety margin
+                safety_margin = (available_borrows_usd - safe_borrow_amount) / available_borrows_usd
+                print(f"✅ Safety validation passed:")
                 print(f"   Safety margin: {safety_margin*100:.1f}% of available capacity")
-                print(f"   Remaining buffer: ${dashboard_data['available_borrows_usdc'] - safe_borrow_amount:.2f}")
+                print(f"   Remaining buffer: ${available_borrows_usd - safe_borrow_amount:.2f}")
 
                 # Execute enhanced borrow with multiple attempts
                 borrow_success = self.execute_enhanced_borrow_with_retry(safe_borrow_amount)
@@ -1265,8 +1294,9 @@ class ArbitrumTestnetAgent:
                     print(f"❌ All borrow attempts failed - performing detailed analysis...")
                     self.analyze_borrow_failure()
                     sequence_results['total_performance'] = 0.3
-            else:
-                print(f"❌ Insufficient available borrowing capacity or data unavailable")
+
+            except Exception as contract_error:
+                print(f"❌ Direct Aave contract call failed: {contract_error}")
                 sequence_results['total_performance'] = 0.1
 
             return sequence_results['total_performance']
