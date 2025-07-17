@@ -537,19 +537,47 @@ class AaveArbitrumIntegration:
                     # Sign and send
                     signed_txn = self.w3.eth.account.sign_transaction(transaction, self.account.key)
                     tx_hash = self.w3.eth.send_raw_transaction(signed_txn.rawTransaction)
+                    print(f"✅ Token approval transaction sent to network: {tx_hash.hex()}") # Keep this line, it means it was submitted.
 
-                    print(f"✅ Token approval sent: {tx_hash.hex()}")
-                    return tx_hash.hex()
+                    # Add these new lines:
+                    print(f"⏳ Waiting for transaction receipt for {tx_hash.hex()} (timeout: 300s)...")
+                    receipt = self.w3.eth.wait_for_transaction_receipt(tx_hash, timeout=300) # 5-minute timeout
+
+                    if receipt.status == 1:
+                        print(f"✅ Token approval successful: {tx_hash.hex()}")
+                        return tx_hash.hex() # Return only on success
+                    else:
+                        # Transaction reverted (status is 0)
+                        print(f"❌ Transaction reverted (status 0) for tx_hash: {tx_hash.hex()}")
+                        # Optional: Attempt to get transaction details for more info on revert
+                        try:
+                            tx_details = self.w3.eth.get_transaction(tx_hash)
+                            print(f"    Transaction details: {tx_details}")
+                        except Exception as get_tx_e:
+                            print(f"    Could not fetch transaction details: {get_tx_e}")
+                        raise Exception(f"Transaction {tx_hash.hex()} reverted with status 0.")
 
                 except Exception as retry_e:
+                    # Check for nonce issues for retries
                     if "nonce too low" in str(retry_e) and attempt < max_retries - 1:
-                        wait_time = (2 ** attempt) + 1  # Exponential backoff: 2, 3, 5, 9 seconds
-                        print(f"🔄 Nonce conflict, waiting {wait_time}s before retry {attempt + 2}")
+                        wait_time = (2 ** attempt) + 1
+                        print(f"🔄 Nonce conflict detected for {token_address}, waiting {wait_time}s before retry {attempt + 2}")
                         import time
                         time.sleep(wait_time)
-                        continue
+                        continue # Retry with a fresh nonce
+                    elif "intrinsic gas too low" in str(retry_e):
+                        # This error is still happening. We'll add specific logging for it.
+                        print(f"❌ Approval failed for token {token_address} with 'intrinsic gas too low'. This is unexpected given the gas limit.")
+                        print(f"   Error: {retry_e}")
+                        # Do NOT retry for this error type, break the loop
+                        break
                     else:
+                        # For other general errors, print and continue
+                        print(f"❌ Approval failed for token {token_address}: {retry_e}") # Add token_address for clarity
                         raise retry_e
+                # If all retries fail (this part comes after the for loop, outside the try/except block)
+                print(f"🚨 All approval attempts failed for token {token_address}.")
+                return None # Return None if all attempts failed
 
         except Exception as e:
             print(f"❌ Approval failed: {e}")
