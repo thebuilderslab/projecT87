@@ -1,10 +1,8 @@
 {
-  "timestamp": 1752759370.9375434,
-  "datetime": "2025-07-17T13:36:10.937545",
-  "overall_status": "NEEDS_ATTENTION",
-  "critical_issues": [
-    "DeFi integrations failed to initialize"
-  ],
+  "timestamp": 1752760793.3905506,
+  "datetime": "2025-07-17T13:59:53.390553",
+  "overall_status": "GOOD",
+  "critical_issues": [],
   "warnings": [
     "PRIVATE_KEY may have incorrect format"
   ],
@@ -27,8 +25,11 @@
       "initialization": "\u2705 Agent created successfully",
       "wallet_address": "\u2705 Wallet: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b",
       "network_connection": "\u2705 Connected to chain 42161",
-      "eth_balance": "\u2705 ETH Balance: 0.001760 ETH",
-      "integrations": "\u274c DeFi integrations failed"
+      "eth_balance": "\u2705 ETH Balance: 0.001749 ETH",
+      "integrations": "\u2705 DeFi integrations initialized",
+      "aave": "\u2705 Aave integration ready",
+      "uniswap": "\u2705 Uniswap integration ready",
+      "health_monitor": "\u2705 Health monitor ready"
     },
     "dashboard": {
       "import": "\u2705 Dashboard imports successfully",
@@ -41,7 +42,7 @@
       "gas_calculator_import": "\u2705 Gas calculator imports"
     },
     "trigger_system": {
-      "baseline_file": "\u2705 Baseline: $178.20",
+      "baseline_file": "\u2705 Baseline: $177.77",
       "performance_log": "\u2705 Performance log exists"
     },
     "emergency_systems": {

@@ -1,0 +1,2049 @@
+ VERIFIED AUTONOMOUS SYSTEM LAUNCHER
+============================================================
+📅 2025-07-17 13:42:11 UTC
+🔍 Step 1: System Diagnostic
+🚀 Step 2: Autonomous Launch (if diagnostic passes)
+============================================================
+🔍 RUNNING SYSTEM DIAGNOSTIC FIRST...
+🔍 COMPREHENSIVE AUTONOMOUS SYSTEM DIAGNOSTIC===============
+================================================================================
+
+🔍 CHECKING ENVIRONMENT VARIABLES...
+   Environment variables: 3/3 configured
+
+🔍 CHECKING FILE INTEGRITY...
+   File integrity: 7/7 files valid
+
+🔍 CHECKING AGENT INITIALIZATION...
+🤖 Initializing Arbitrum Testnet Agent...
+🔍 Testing RPC: https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f938ff891c141
+✅ RPC passed tests: https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f938ff891c141 (0.53s)
+🔍 Testing RPC: https://arb1.arbitrum.io/rpc
+✅ RPC passed tests: https://arb1.arbitrum.io/rpc (0.43s)
+🔍 Testing RPC: https://arbitrum-one.publicnode.com
+✅ RPC passed tests: https://arbitrum-one.publicnode.com (1.02s)
+🔍 Testing RPC: https://arbitrum.llamarpc.com
+❌ Not connected: https://arbitrum.llamarpc.com
+🔍 Testing RPC: https://rpc.ankr.com/arbitrum
+❌ Not connected: https://rpc.ankr.com/arbitrum
+🔍 Testing RPC: https://arbitrum-one.public.blastapi.io
+✅ RPC passed tests: https://arbitrum-one.public.blastapi.io (0.16s)
+🔍 Testing RPC: https://1rpc.io/arb
+✅ RPC passed tests: https://1rpc.io/arb (0.14s)
+🔍 Testing RPC: https://arbitrum.blockpi.network/v1/rpc/public
+❌ Not connected: https://arbitrum.blockpi.network/v1/rpc/public
+📊 RPC Test Results: 5/8 endpoints working
+🌐 Operating on Arbitrum Mainnet
+🚨 NETWORK_MODE from environment: 'mainnet'
+🔗 Primary RPC: https://1rpc.io/arb
+🔄 Fallback RPCs: 4 available
+🔑 Wallet Address: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+💰 AGENT INITIALIZED WITH WALLET: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+✅ Private key format validated and normalized
+📋 Mainnet Token addresses verified:
+   USDC: 0xAf88D065e77C8cF0EAEfF3e253e648A15CEe23dC
+   WBTC: 0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f
+   WETH: 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1
+   DAI: 0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1
+   Aave Pool: 0x794a61358D6845594F94dc1DB02A252b5b4814aD
+📋 Token addresses verified:
+   USDC: 0xAf88D065e77C8cF0EAEfF3e253e648A15CEe23dC
+   WBTC: 0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f
+   WETH: 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1
+   DAI: 0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1
+   Aave Pool: 0x794a61358D6845594F94dc1DB02A252b5b4814aD
+💰 Initialized last_collateral_value_usd to 0.0 (will sync with actual position)
+📊 Initialized last_collateral_value_usd to: 0.0
+🚀 Initializing Real DeFi Integrations...
+🌐 Initializing for Arbitrum Mainnet (Chain ID: 42161)
+🪙 ARB Token Address (checksummed): 0x912CE59144191C1204E64559FE8253a0e49E6548
+🏦 Aave Integration - Contract Address Verification (Arbitrum Mainnet):
+   Pool: 0x794a61358D6845594F94dc1DB02A252b5b4814aD
+   Data Provider: 0x69FA688f1Dc47d4B5d8029D5a35FB7a548310654
+   WETH: 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1
+   WBTC: 0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f
+   DAI: 0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1
+   USDC: 0xAf88D065e77C8cF0EAEfF3e253e648A15CEe23dC
+   ARB: 0x912CE59144191C1204E64559FE8253a0e49E6548
+✅ Pool address properly checksummed
+✅ WETH address properly checksummed
+✅ WBTC address properly checksummed
+✅ DAI address properly checksummed
+✅ USDC address properly checksummed
+✅ ARB address properly checksummed
+✅ All contract addresses validated successfully for Arbitrum Mainnet
+🏦 Aave integration initialized for 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+🔄 Uniswap V3 integration initialized
+🪙 ARB Address (Arbitrum Sepolia): 0x912CE59144191C1204E64559FE8253a0e49E6548
+📊 Health Monitor Addresses:
+   User: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+   Data Provider: 0x69FA688f1Dc47d4B5d8029D5a35FB7a548310654
+   ARB Token: 0x912CE59144191C1204E64559FE8253a0e49E6548
+📊 Enhanced Aave Health Monitor initialized for 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+✅ Initialized Real Aave, Uniswap, and Health Monitor Integrations.
+⛽ Gas Calculator: Arbitrum Mainnet
+⛽ Initialized Gas Calculator.
+🏦 Initialized Enhanced Borrow Manager.
+🚀 Approving USDC for Aave Pool...
+🔍 Contract function validation:
+   Token contract: 0xAf88D065e77C8cF0EAEfF3e253e648A15CEe23dC
+   Approve function found: ✅
+   Function object: <Function approve>
+🔓 Using infinite approval (MAX_UINT256)
+🔓 Approving 115792089237316195423570985008687907853269984665640564039457584007913129639935 wei for token 0xAf88D065e77C8cF0EAEfF3e253e648A15CEe23dC
+🔢 Using pending nonce: 310 for approval
+🔢 Attempt 1: Using fresh pending nonce 310
+🔍 Approve parameters validation:
+   Spender: 0x794a61358D6845594F94dc1DB02A252b5b4814aD (type: <class 'str'>)
+   Amount: 115792089237316195423570985008687907853269984665640564039457584007913129639935 (type: <class 'int'>)
+✅ Token approval sent: 0x5d6cb49fbe882c59ec12cbb216fc9713aaf8efdb852834d65a51cd076053502c
+✅ USDC approved for Aave with optimized gas
+🚀 Approving WBTC for Aave Pool...
+🔍 Contract function validation:
+   Token contract: 0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f
+   Approve function found: ✅
+   Function object: <Function approve>
+🔓 Using infinite approval (MAX_UINT256)
+🔓 Approving 115792089237316195423570985008687907853269984665640564039457584007913129639935 wei for token 0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f
+🔢 Using pending nonce: 311 for approval
+🔢 Attempt 1: Using fresh pending nonce 311
+🔍 Approve parameters validation:
+   Spender: 0x794a61358D6845594F94dc1DB02A252b5b4814aD (type: <class 'str'>)
+   Amount: 115792089237316195423570985008687907853269984665640564039457584007913129639935 (type: <class 'int'>)
+✅ Token approval sent: 0xd1b743f1f7388c1050e7d08461cf754e30f9a17dced9ade5fb7b97f1fad1c74c
+✅ WBTC approved for Aave with optimized gas
+🚀 Approving WETH for Aave Pool...
+🔍 Contract function validation:
+   Token contract: 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1
+   Approve function found: ✅
+   Function object: <Function approve>
+🔓 Using infinite approval (MAX_UINT256)
+🔓 Approving 115792089237316195423570985008687907853269984665640564039457584007913129639935 wei for token 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1
+🔢 Using pending nonce: 312 for approval
+🔢 Attempt 1: Using fresh pending nonce 312
+🔍 Approve parameters validation:
+   Spender: 0x794a61358D6845594F94dc1DB02A252b5b4814aD (type: <class 'str'>)
+   Amount: 115792089237316195423570985008687907853269984665640564039457584007913129639935 (type: <class 'int'>)
+✅ Token approval sent: 0x2f61b9be09e7ff98b3a64d3c2662a79f704acb3719704425d847f18395d27a8c
+✅ WETH approved for Aave with optimized gas
+🚀 Approving DAI for Aave Pool...
+🔍 Contract function validation:
+   Token contract: 0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1
+   Approve function found: ✅
+   Function object: <Function approve>
+🔓 Using infinite approval (MAX_UINT256)
+🔓 Approving 115792089237316195423570985008687907853269984665640564039457584007913129639935 wei for token 0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1
+🔢 Using pending nonce: 313 for approval
+🔢 Attempt 1: Using fresh pending nonce 313
+🔍 Approve parameters validation:
+   Spender: 0x794a61358D6845594F94dc1DB02A252b5b4814aD (type: <class 'str'>)
+   Amount: 115792089237316195423570985008687907853269984665640564039457584007913129639935 (type: <class 'int'>)
+✅ Token approval sent: 0xbf49139c7ad36ce1e23bbdd222b583e81e0944cbbb25e432b39053ebd7d09b9f
+✅ DAI approved for Aave with optimized gas
+✅ All DeFi integrations initialized successfully!
+   Agent initialization: ✅ Success
+
+🔍 CHECKING DASHBOARD FUNCTIONALITY...
+🔄 Dashboard: Connecting to running autonomous agent...
+🤖 Initializing Arbitrum Testnet Agent...
+🔍 Testing RPC: https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f938ff891c141
+🔍 Autonomous agent running check: False
+⚠️ Dashboard: Autonomous agent not running, using cached data
+✅ Dashboard: Successfully connected to autonomous agent data
+✅ RPC passed tests: https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f938ff891c141 (0.30s)
+🔍 Testing RPC: https://arb1.arbitrum.io/rpc
+✅ RPC passed tests: https://arb1.arbitrum.io/rpc (0.40s)
+🔍 Testing RPC: https://arbitrum-one.publicnode.com
+✅ RPC passed tests: https://arbitrum-one.publicnode.com (1.02s)
+🔍 Testing RPC: https://arbitrum.llamarpc.com
+❌ Not connected: https://arbitrum.llamarpc.com
+🔍 Testing RPC: https://rpc.ankr.com/arbitrum
+❌ Not connected: https://rpc.ankr.com/arbitrum
+🔍 Testing RPC: https://arbitrum-one.public.blastapi.io
+✅ RPC passed tests: https://arbitrum-one.public.blastapi.io (0.11s)
+🔍 Testing RPC: https://1rpc.io/arb
+✅ RPC passed tests: https://1rpc.io/arb (0.12s)
+🔍 Testing RPC: https://arbitrum.blockpi.network/v1/rpc/public
+❌ Not connected: https://arbitrum.blockpi.network/v1/rpc/public
+📊 RPC Test Results: 5/8 endpoints working
+🌐 Operating on Arbitrum Mainnet
+🚨 NETWORK_MODE from environment: 'mainnet'
+🔗 Primary RPC: https://arbitrum-one.public.blastapi.io
+🔄 Fallback RPCs: 4 available
+🔑 Wallet Address: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+💰 AGENT INITIALIZED WITH WALLET: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+✅ Private key format validated and normalized
+📋 Mainnet Token addresses verified:
+   USDC: 0xAf88D065e77C8cF0EAEfF3e253e648A15CEe23dC
+   WBTC: 0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f
+   WETH: 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1
+   DAI: 0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1
+   Aave Pool: 0x794a61358D6845594F94dc1DB02A252b5b4814aD
+📋 Token addresses verified:
+   USDC: 0xAf88D065e77C8cF0EAEfF3e253e648A15CEe23dC
+   WBTC: 0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f
+   WETH: 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1
+   DAI: 0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1
+   Aave Pool: 0x794a61358D6845594F94dc1DB02A252b5b4814aD
+💰 Initialized last_collateral_value_usd to 0.0 (will sync with actual position)
+📊 Initialized last_collateral_value_usd to: 0.0
+✅ Unified fetcher initialized for Aave Pool: 0x794a61358D6845594F94dc1DB02A252b5b4814aD
+🔍 LIVE AAVE FETCH Attempt 1: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+✅ LIVE AAVE DATA RETRIEVED:
+   Health Factor: 4.0126
+   Collateral: $177.84
+   Debt: $35.06
+   Available Borrows: $97.06
+   Data Source: LIVE_AAVE_CONTRACT
+   Data Quality: ✅ VALIDATED
+✅ Unified data validated: Data validated successfully
+📊 Using LIVE AAVE CONTRACT data: HF 4.0126
+   Dashboard functionality: ✅ Working
+
+🔍 CHECKING DEFI INTEGRATIONS...
+   DeFi integrations: 4/4 working
+
+🔍 CHECKING AUTONOMOUS FUNCTIONS...
+🤖 Initializing Arbitrum Testnet Agent...
+🔍 Testing RPC: https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f938ff891c141
+✅ RPC passed tests: https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f938ff891c141 (0.31s)
+🔍 Testing RPC: https://arb1.arbitrum.io/rpc
+✅ RPC passed tests: https://arb1.arbitrum.io/rpc (0.38s)
+🔍 Testing RPC: https://arbitrum-one.publicnode.com
+✅ RPC passed tests: https://arbitrum-one.publicnode.com (1.00s)
+🔍 Testing RPC: https://arbitrum.llamarpc.com
+❌ Not connected: https://arbitrum.llamarpc.com
+🔍 Testing RPC: https://rpc.ankr.com/arbitrum
+❌ Not connected: https://rpc.ankr.com/arbitrum
+🔍 Testing RPC: https://arbitrum-one.public.blastapi.io
+✅ RPC passed tests: https://arbitrum-one.public.blastapi.io (0.11s)
+🔍 Testing RPC: https://1rpc.io/arb
+✅ RPC passed tests: https://1rpc.io/arb (0.10s)
+🔍 Testing RPC: https://arbitrum.blockpi.network/v1/rpc/public
+❌ Not connected: https://arbitrum.blockpi.network/v1/rpc/public
+📊 RPC Test Results: 5/8 endpoints working
+🌐 Operating on Arbitrum Mainnet
+🚨 NETWORK_MODE from environment: 'mainnet'
+🔗 Primary RPC: https://1rpc.io/arb
+🔄 Fallback RPCs: 4 available
+🔑 Wallet Address: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+💰 AGENT INITIALIZED WITH WALLET: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+✅ Private key format validated and normalized
+📋 Mainnet Token addresses verified:
+   USDC: 0xAf88D065e77C8cF0EAEfF3e253e648A15CEe23dC
+   WBTC: 0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f
+   WETH: 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1
+   DAI: 0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1
+   Aave Pool: 0x794a61358D6845594F94dc1DB02A252b5b4814aD
+📋 Token addresses verified:
+   USDC: 0xAf88D065e77C8cF0EAEfF3e253e648A15CEe23dC
+   WBTC: 0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f
+   WETH: 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1
+   DAI: 0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1
+   Aave Pool: 0x794a61358D6845594F94dc1DB02A252b5b4814aD
+💰 Initialized last_collateral_value_usd to 0.0 (will sync with actual position)
+📊 Initialized last_collateral_value_usd to: 0.0
+   Autonomous functions: 7/7 available
+
+🔍 CHECKING TRIGGER SYSTEM...
+   Trigger system: ✅ Ready
+
+🔍 CHECKING EMERGENCY SYSTEMS...
+   Emergency systems: ✅ Ready
+
+🔍 CHECKING NETWORK CONNECTIVITY...
+   Network connectivity: 2 RPC endpoints working
+
+================================================================================
+🎯 FINAL SYSTEM ASSESSMENT
+================================================================================
+✅ SYSTEM STATUS: GOOD
+✅ All critical systems operational
+⚠️ 1 minor warning(s) detected
+
+⚠️ WARNINGS (1):
+   1. PRIVATE_KEY may have incorrect format
+
+🔧 RECOMMENDED IMPROVEMENTS:
+
+🚀 SYSTEM READY FOR OPERATION:
+   • Run: python complete_autonomous_launcher.py
+   • Monitor dashboard at: http://localhost:5000
+   • Emergency stop available if needed
+================================================================================
+
+📄 Diagnostic report saved to: system_diagnostic_report.json
+
+
+✅ DIAGNOSTIC PASSED - SYSTEM READY FOR LAUNCH!
+🎉 All critical components verified
+
+🚀 LAUNCHING VERIFIED AUTONOMOUS SYSTEM...
+============================================================
+🚀 COMPLETE AUTONOMOUS MAINNET SYSTEM
+============================================================
+🌐 Network: Arbitrum Mainnet
+🤖 Mode: Full Autonomous Operation with Dashboard
+🛑 Emergency Stop: Create 'EMERGENCY_STOP_ACTIVE.flag' to halt
+============================================================
+[13:43:04] SUCCESS: ✅ All required secrets are present
+[13:43:04] INFO: 🌐 Starting Web Dashboard...
+[13:43:04] SUCCESS: ✅ Dashboard process started
+[13:43:19] INFO: ⏰ Dashboard initialization complete
+[13:43:19] INFO: 🤖 Starting Autonomous Agent...
+[13:43:19] SUCCESS: ✅ Autonomous agent process started
+[13:43:29] INFO: ⏰ Autonomous agent initialization complete
+[13:43:29] SUCCESS: 🎯 SYSTEM FULLY OPERATIONAL
+[13:43:29] INFO: 📊 Dashboard: http://localhost:5000
+[13:43:29] INFO: 🤖 Autonomous agent monitoring for triggers
+[13:43:29] INFO: 💰 Current baseline: $177.79, Next trigger: $189.79
+[13:43:29] INFO: 🛑 Press Ctrl+C to stop all processes
+[DASHBOARD] 🔄 Dashboard: Connecting to running autonomous agent...
+[DASHBOARD] ============================================================
+[DASHBOARD] 🚀 WEB DASHBOARD STARTUP DIAGNOSTICS
+[DASHBOARD] ============================================================
+[DASHBOARD] 📂 Working Directory: /home/runner/workspace
+[DASHBOARD] 🌍 Environment Variables:
+[DASHBOARD] NETWORK_MODE: mainnet
+[DASHBOARD] PRIVATE_KEY: 0dc00851ae...86a9
+[DASHBOARD] COINMARKETCAP_API_KEY: 1d8c060c...0bca
+[DASHBOARD] REPLIT_DEPLOYMENT: NOT SET
+[DASHBOARD] 📁 Key Files:
+[DASHBOARD] ⚠️ user_settings.json: exists but can't read size
+[DASHBOARD] ⚠️ agent_config.json: exists but can't read size
+[DASHBOARD] ❌ EMERGENCY_STOP_ACTIVE.flag: not found
+[DASHBOARD] ⚠️ performance_log.json: exists but can't read size
+[DASHBOARD] 🤖 Agent Initialization:
+[DASHBOARD] Agent object: True
+[DASHBOARD] Dashboard object: True
+[DASHBOARD] ============================================================
+[DASHBOARD] 🚀 Starting DeFi Agent Web Dashboard
+[DASHBOARD] 📱 Access your dashboard at the web preview URL
+[DASHBOARD] ✅ Port 5000 is available
+[DASHBOARD] 🌐 Starting web dashboard on port 5000
+[DASHBOARD] 🔗 Dashboard will be accessible at your Replit webview URL
+[DASHBOARD] 🔍 Autonomous agent running check: True
+[DASHBOARD] ✅ Dashboard: Connected to running AUTONOMOUS MAINNET agent
+[DASHBOARD] ✅ Dashboard: Successfully connected to autonomous agent data
+[DASHBOARD] * Serving Flask app 'web_dashboard'
+[DASHBOARD] * Debug mode: off
+[AGENT] 🚀 ARBITRUM MAINNET AUTONOMOUS AGENT
+[AGENT] ============================================================
+[AGENT] 🌐 Network: Arbitrum Mainnet (Chain ID: 42161)
+[AGENT] 🤖 Mode: Continuous Autonomous Operation
+[AGENT] 🛑 Emergency Stop: Create 'EMERGENCY_STOP_ACTIVE.flag' to halt
+[AGENT] ============================================================
+[AGENT] [13:43:20] INFO: Initializing Arbitrum Mainnet Agent...
+[AGENT] 🤖 Initializing Arbitrum Testnet Agent...
+[AGENT] 🔍 Testing RPC: https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f938ff891c141
+[AGENT] ✅ RPC passed tests: https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f938ff891c141 (0.51s)
+[AGENT] 🔍 Testing RPC: https://arb1.arbitrum.io/rpc
+[AGENT] ✅ RPC passed tests: https://arb1.arbitrum.io/rpc (0.40s)
+[AGENT] 🔍 Testing RPC: https://arbitrum-one.publicnode.com
+[AGENT] ✅ RPC passed tests: https://arbitrum-one.publicnode.com (0.95s)
+[AGENT] 🔍 Testing RPC: https://arbitrum.llamarpc.com
+[AGENT] ❌ Not connected: https://arbitrum.llamarpc.com
+[AGENT] 🔍 Testing RPC: https://rpc.ankr.com/arbitrum
+[AGENT] ❌ Not connected: https://rpc.ankr.com/arbitrum
+[AGENT] 🔍 Testing RPC: https://arbitrum-one.public.blastapi.io
+[AGENT] ✅ RPC passed tests: https://arbitrum-one.public.blastapi.io (0.14s)
+[AGENT] 🔍 Testing RPC: https://1rpc.io/arb
+[AGENT] ✅ RPC passed tests: https://1rpc.io/arb (0.15s)
+[AGENT] 🔍 Testing RPC: https://arbitrum.blockpi.network/v1/rpc/public
+[AGENT] ❌ Not connected: https://arbitrum.blockpi.network/v1/rpc/public
+[AGENT] 📊 RPC Test Results: 5/8 endpoints working
+[AGENT] 🌐 Operating on Arbitrum Mainnet
+[AGENT] 🚨 NETWORK_MODE from environment: 'mainnet'
+[AGENT] 🔗 Primary RPC: https://arbitrum-one.public.blastapi.io
+[AGENT] 🔄 Fallback RPCs: 4 available
+[AGENT] 🔑 Wallet Address: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+[AGENT] 💰 AGENT INITIALIZED WITH WALLET: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+[AGENT] ✅ Private key format validated and normalized
+[AGENT] 📋 Mainnet Token addresses verified:
+[AGENT] USDC: 0xAf88D065e77C8cF0EAEfF3e253e648A15CEe23dC
+[AGENT] WBTC: 0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f
+[AGENT] WETH: 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1
+[AGENT] DAI: 0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1
+[AGENT] Aave Pool: 0x794a61358D6845594F94dc1DB02A252b5b4814aD
+[AGENT] 📋 Token addresses verified:
+[AGENT] USDC: 0xAf88D065e77C8cF0EAEfF3e253e648A15CEe23dC
+[AGENT] WBTC: 0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f
+[AGENT] WETH: 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1
+[AGENT] DAI: 0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1
+[AGENT] Aave Pool: 0x794a61358D6845594F94dc1DB02A252b5b4814aD
+[AGENT] 💰 Initialized last_collateral_value_usd to 0.0 (will sync with actual position)
+[AGENT] 📊 Initialized last_collateral_value_usd to: 0.0
+[AGENT] [13:43:32] INFO: ✅ Connected to Arbitrum Mainnet (Chain ID: 42161)
+[AGENT] [13:43:32] INFO: 📍 Wallet Address: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+[AGENT] [13:43:32] INFO: 🔄 Initializing DeFi integrations...
+[AGENT] 🚀 Initializing Real DeFi Integrations...
+[AGENT] 🌐 Initializing for Arbitrum Mainnet (Chain ID: 42161)
+[AGENT] 🪙 ARB Token Address (checksummed): 0x912CE59144191C1204E64559FE8253a0e49E6548
+[AGENT] 🏦 Aave Integration - Contract Address Verification (Arbitrum Mainnet):
+[AGENT] Pool: 0x794a61358D6845594F94dc1DB02A252b5b4814aD
+[AGENT] Data Provider: 0x69FA688f1Dc47d4B5d8029D5a35FB7a548310654
+[AGENT] WETH: 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1
+[AGENT] WBTC: 0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f
+[AGENT] DAI: 0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1
+[AGENT] USDC: 0xAf88D065e77C8cF0EAEfF3e253e648A15CEe23dC
+[AGENT] ARB: 0x912CE59144191C1204E64559FE8253a0e49E6548
+[AGENT] ✅ Pool address properly checksummed
+[AGENT] ✅ WETH address properly checksummed
+[AGENT] ✅ WBTC address properly checksummed
+[AGENT] ✅ DAI address properly checksummed
+[AGENT] ✅ USDC address properly checksummed
+[AGENT] ✅ ARB address properly checksummed
+[AGENT] ✅ All contract addresses validated successfully for Arbitrum Mainnet
+[AGENT] 🏦 Aave integration initialized for 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+[AGENT] 🔄 Uniswap V3 integration initialized
+[AGENT] 🪙 ARB Address (Arbitrum Sepolia): 0x912CE59144191C1204E64559FE8253a0e49E6548
+[AGENT] 📊 Health Monitor Addresses:
+[AGENT] User: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+[AGENT] Data Provider: 0x69FA688f1Dc47d4B5d8029D5a35FB7a548310654
+[AGENT] ARB Token: 0x912CE59144191C1204E64559FE8253a0e49E6548
+[AGENT] 📊 Enhanced Aave Health Monitor initialized for 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+[AGENT] ✅ Initialized Real Aave, Uniswap, and Health Monitor Integrations.
+[AGENT] ⛽ Gas Calculator: Arbitrum Mainnet
+[AGENT] ⛽ Initialized Gas Calculator.
+[AGENT] 🏦 Initialized Enhanced Borrow Manager.
+[AGENT] 🚀 Approving USDC for Aave Pool...
+[AGENT] 🔍 Contract function validation:
+[AGENT] Token contract: 0xAf88D065e77C8cF0EAEfF3e253e648A15CEe23dC
+[AGENT] Approve function found: ✅
+[AGENT] Function object: <Function approve>
+[AGENT] 🔓 Using infinite approval (MAX_UINT256)
+[AGENT] 🔓 Approving 115792089237316195423570985008687907853269984665640564039457584007913129639935 wei for token 0xAf88D065e77C8cF0EAEfF3e253e648A15CEe23dC
+[AGENT] 🔢 Using pending nonce: 314 for approval
+[AGENT] 🔢 Attempt 1: Using fresh pending nonce 314
+[AGENT] 🔍 Approve parameters validation:
+[AGENT] Spender: 0x794a61358D6845594F94dc1DB02A252b5b4814aD (type: <class 'str'>)
+[AGENT] Amount: 115792089237316195423570985008687907853269984665640564039457584007913129639935 (type: <class 'int'>)
+[AGENT] ✅ Token approval sent: 0x5c2d05f7c78f2ecf8a03a5eee5599edb62b57038bc3db2086aeff7227fb5a9b5
+[AGENT] ✅ USDC approved for Aave with optimized gas
+[AGENT] 🚀 Approving WBTC for Aave Pool...
+[AGENT] 🔍 Contract function validation:
+[AGENT] Token contract: 0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f
+[AGENT] Approve function found: ✅
+[AGENT] Function object: <Function approve>
+[AGENT] 🔓 Using infinite approval (MAX_UINT256)
+[AGENT] 🔓 Approving 115792089237316195423570985008687907853269984665640564039457584007913129639935 wei for token 0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f
+[AGENT] 🔢 Using pending nonce: 315 for approval
+[AGENT] 🔢 Attempt 1: Using fresh pending nonce 315
+[AGENT] 🔍 Approve parameters validation:
+[AGENT] Spender: 0x794a61358D6845594F94dc1DB02A252b5b4814aD (type: <class 'str'>)
+[AGENT] Amount: 115792089237316195423570985008687907853269984665640564039457584007913129639935 (type: <class 'int'>)
+[AGENT] ✅ Token approval sent: 0x455f5e0e36502812c37b46d192274524ddc02ae4c56bae6b99ce92827754ef4d
+[AGENT] ✅ WBTC approved for Aave with optimized gas
+[AGENT] 🚀 Approving WETH for Aave Pool...
+[AGENT] 🔍 Contract function validation:
+[AGENT] Token contract: 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1
+[AGENT] Approve function found: ✅
+[AGENT] Function object: <Function approve>
+[AGENT] 🔓 Using infinite approval (MAX_UINT256)
+[AGENT] 🔓 Approving 115792089237316195423570985008687907853269984665640564039457584007913129639935 wei for token 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1
+[AGENT] 🔢 Using pending nonce: 316 for approval
+[AGENT] 🔢 Attempt 1: Using fresh pending nonce 316
+[AGENT] 🔍 Approve parameters validation:
+[AGENT] Spender: 0x794a61358D6845594F94dc1DB02A252b5b4814aD (type: <class 'str'>)
+[AGENT] Amount: 115792089237316195423570985008687907853269984665640564039457584007913129639935 (type: <class 'int'>)
+[AGENT] ✅ Token approval sent: 0x80f1b24a5ccc0b4a12015c5f01d9726f6f5bf12b5e57d6a3e53321870aec4c41
+[AGENT] ✅ WETH approved for Aave with optimized gas
+[AGENT] 🚀 Approving DAI for Aave Pool...
+[AGENT] 🔍 Contract function validation:
+[AGENT] Token contract: 0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1
+[AGENT] Approve function found: ✅
+[AGENT] Function object: <Function approve>
+[AGENT] 🔓 Using infinite approval (MAX_UINT256)
+[AGENT] 🔓 Approving 115792089237316195423570985008687907853269984665640564039457584007913129639935 wei for token 0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1
+[AGENT] 🔢 Using pending nonce: 317 for approval
+[AGENT] 🔢 Attempt 1: Using fresh pending nonce 317
+[AGENT] 🔍 Approve parameters validation:
+[AGENT] Spender: 0x794a61358D6845594F94dc1DB02A252b5b4814aD (type: <class 'str'>)
+[AGENT] Amount: 115792089237316195423570985008687907853269984665640564039457584007913129639935 (type: <class 'int'>)
+[AGENT] ✅ Token approval sent: 0x761d0285d05e8f285f7267f9f825e73539ec09a8536f0cc137273b7dd66fd653
+[AGENT] ✅ DAI approved for Aave with optimized gas
+[AGENT] ✅ All DeFi integrations initialized successfully!
+[AGENT] [13:43:43] INFO: ✅ DeFi integrations initialized successfully
+[AGENT] [13:43:43] INFO: 📊 Performing initial status check...
+[AGENT] [13:43:43] INFO: 💰 ETH Balance: 0.001749 ETH
+[AGENT] 🔍 Enhanced dashboard data fetching with validation...
+[AGENT] 🔄 Dashboard: Connecting to running autonomous agent...
+[AGENT] 🤖 Initializing Arbitrum Testnet Agent...
+[AGENT] 🔍 Testing RPC: https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f938ff891c141
+[DASHBOARD] 🔍 Autonomous agent running check: True
+[DASHBOARD] 🔍 API: Fetching wallet status...
+[DASHBOARD] 🔍 Autonomous agent running check: True
+[DASHBOARD] 🤖 Initializing Arbitrum Testnet Agent...
+[DASHBOARD] 🔍 Testing RPC: https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f938ff891c141
+[DASHBOARD] ✅ RPC passed tests: https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f938ff891c141 (0.50s)
+[DASHBOARD] 🔍 Testing RPC: https://arb1.arbitrum.io/rpc
+[DASHBOARD] ✅ RPC passed tests: https://arb1.arbitrum.io/rpc (0.37s)
+[DASHBOARD] 🔍 Testing RPC: https://arbitrum-one.publicnode.com
+[DASHBOARD] ✅ RPC passed tests: https://arbitrum-one.publicnode.com (0.85s)
+[DASHBOARD] 🔍 Testing RPC: https://arbitrum.llamarpc.com
+[DASHBOARD] ❌ Not connected: https://arbitrum.llamarpc.com
+[DASHBOARD] 🔍 Testing RPC: https://rpc.ankr.com/arbitrum
+[DASHBOARD] ❌ Not connected: https://rpc.ankr.com/arbitrum
+[DASHBOARD] 🔍 Testing RPC: https://arbitrum-one.public.blastapi.io
+[DASHBOARD] ✅ RPC passed tests: https://arbitrum-one.public.blastapi.io (0.13s)
+[DASHBOARD] 🔍 Testing RPC: https://1rpc.io/arb
+[DASHBOARD] ✅ RPC passed tests: https://1rpc.io/arb (0.16s)
+[DASHBOARD] 🔍 Testing RPC: https://arbitrum.blockpi.network/v1/rpc/public
+[DASHBOARD] ❌ Not connected: https://arbitrum.blockpi.network/v1/rpc/public
+[DASHBOARD] 📊 RPC Test Results: 5/8 endpoints working
+[DASHBOARD] 🌐 Operating on Arbitrum Mainnet
+[DASHBOARD] 🚨 NETWORK_MODE from environment: 'mainnet'
+[DASHBOARD] 🔗 Primary RPC: https://arbitrum-one.public.blastapi.io
+[DASHBOARD] 🔄 Fallback RPCs: 4 available
+[DASHBOARD] 🔑 Wallet Address: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+[DASHBOARD] 💰 AGENT INITIALIZED WITH WALLET: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+[DASHBOARD] ✅ Private key format validated and normalized
+[DASHBOARD] 📋 Mainnet Token addresses verified:
+[DASHBOARD] USDC: 0xAf88D065e77C8cF0EAEfF3e253e648A15CEe23dC
+[DASHBOARD] WBTC: 0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f
+[DASHBOARD] WETH: 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1
+[DASHBOARD] DAI: 0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1
+[DASHBOARD] Aave Pool: 0x794a61358D6845594F94dc1DB02A252b5b4814aD
+[DASHBOARD] 📋 Token addresses verified:
+[DASHBOARD] USDC: 0xAf88D065e77C8cF0EAEfF3e253e648A15CEe23dC
+[DASHBOARD] WBTC: 0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f
+[DASHBOARD] WETH: 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1
+[DASHBOARD] DAI: 0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1
+[DASHBOARD] Aave Pool: 0x794a61358D6845594F94dc1DB02A252b5b4814aD
+[DASHBOARD] 💰 Initialized last_collateral_value_usd to 0.0 (will sync with actual position)
+[DASHBOARD] 📊 Initialized last_collateral_value_usd to: 0.0
+[DASHBOARD] ✅ Unified fetcher initialized for Aave Pool: 0x794a61358D6845594F94dc1DB02A252b5b4814aD
+[DASHBOARD] 🔍 LIVE AAVE FETCH Attempt 1: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+[DASHBOARD] ✅ LIVE AAVE DATA RETRIEVED:
+[DASHBOARD] Health Factor: 4.0111
+[DASHBOARD] Collateral: $177.77
+[DASHBOARD] Debt: $35.06
+[DASHBOARD] Available Borrows: $96.99
+[DASHBOARD] Data Source: LIVE_AAVE_CONTRACT
+[DASHBOARD] Data Quality: ✅ VALIDATED
+[DASHBOARD] ✅ Unified data validated: Data validated successfully
+[DASHBOARD] 📊 Using LIVE AAVE CONTRACT data: HF 4.0111
+[DASHBOARD] 🔍 Autonomous agent running check: True
+[DASHBOARD] ✅ Wallet status retrieved: HF 4.0111, Agent Running: True
+[DASHBOARD] 🔍 API: Fetching wallet status...
+[DASHBOARD] 🤖 Initializing Arbitrum Testnet Agent...
+[DASHBOARD] 🔍 Testing RPC: https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f938ff891c141
+[DASHBOARD] ✅ RPC passed tests: https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f938ff891c141 (0.30s)
+[DASHBOARD] 🔍 Testing RPC: https://arb1.arbitrum.io/rpc
+[DASHBOARD] ✅ RPC passed tests: https://arb1.arbitrum.io/rpc (0.35s)
+[DASHBOARD] 🔍 Testing RPC: https://arbitrum-one.publicnode.com
+[DASHBOARD] ✅ RPC passed tests: https://arbitrum-one.publicnode.com (0.91s)
+[DASHBOARD] 🔍 Testing RPC: https://arbitrum.llamarpc.com
+[DASHBOARD] ❌ Not connected: https://arbitrum.llamarpc.com
+[DASHBOARD] 🔍 Testing RPC: https://rpc.ankr.com/arbitrum
+[DASHBOARD] ❌ Not connected: https://rpc.ankr.com/arbitrum
+[DASHBOARD] 🔍 Testing RPC: https://arbitrum-one.public.blastapi.io
+[DASHBOARD] ✅ RPC passed tests: https://arbitrum-one.public.blastapi.io (0.11s)
+[DASHBOARD] 🔍 Testing RPC: https://1rpc.io/arb
+[DASHBOARD] ✅ RPC passed tests: https://1rpc.io/arb (0.13s)
+[DASHBOARD] 🔍 Testing RPC: https://arbitrum.blockpi.network/v1/rpc/public
+[DASHBOARD] ❌ Not connected: https://arbitrum.blockpi.network/v1/rpc/public
+[DASHBOARD] 📊 RPC Test Results: 5/8 endpoints working
+[DASHBOARD] 🌐 Operating on Arbitrum Mainnet
+[DASHBOARD] 🚨 NETWORK_MODE from environment: 'mainnet'
+[DASHBOARD] 🔗 Primary RPC: https://arbitrum-one.public.blastapi.io
+[DASHBOARD] 🔄 Fallback RPCs: 4 available
+[DASHBOARD] 🔑 Wallet Address: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+[DASHBOARD] 💰 AGENT INITIALIZED WITH WALLET: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+[DASHBOARD] ✅ Private key format validated and normalized
+[DASHBOARD] 📋 Mainnet Token addresses verified:
+[DASHBOARD] USDC: 0xAf88D065e77C8cF0EAEfF3e253e648A15CEe23dC
+[DASHBOARD] WBTC: 0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f
+[DASHBOARD] WETH: 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1
+[DASHBOARD] DAI: 0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1
+[DASHBOARD] Aave Pool: 0x794a61358D6845594F94dc1DB02A252b5b4814aD
+[DASHBOARD] 📋 Token addresses verified:
+[DASHBOARD] USDC: 0xAf88D065e77C8cF0EAEfF3e253e648A15CEe23dC
+[DASHBOARD] WBTC: 0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f
+[DASHBOARD] WETH: 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1
+[DASHBOARD] DAI: 0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1
+[DASHBOARD] Aave Pool: 0x794a61358D6845594F94dc1DB02A252b5b4814aD
+[DASHBOARD] 💰 Initialized last_collateral_value_usd to 0.0 (will sync with actual position)
+[DASHBOARD] 📊 Initialized last_collateral_value_usd to: 0.0
+[DASHBOARD] 🔍 LIVE AAVE FETCH Attempt 1: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+[DASHBOARD] ✅ LIVE AAVE DATA RETRIEVED:
+[DASHBOARD] Health Factor: 4.0111
+[DASHBOARD] Collateral: $177.77
+[DASHBOARD] Debt: $35.06
+[DASHBOARD] Available Borrows: $96.99
+[DASHBOARD] Data Source: LIVE_AAVE_CONTRACT
+[DASHBOARD] Data Quality: ✅ VALIDATED
+[DASHBOARD] ✅ Unified data validated: Data validated successfully
+[DASHBOARD] 📊 Using LIVE AAVE CONTRACT data: HF 4.0111
+[DASHBOARD] 🔍 Autonomous agent running check: True
+[DASHBOARD] ✅ Wallet status retrieved: HF 4.0111, Agent Running: True
+[DASHBOARD] 🔍 API: Fetching wallet status...
+[DASHBOARD] 🤖 Initializing Arbitrum Testnet Agent...
+[DASHBOARD] 🔍 Testing RPC: https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f938ff891c141
+[DASHBOARD] ✅ RPC passed tests: https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f938ff891c141 (0.29s)
+[DASHBOARD] 🔍 Testing RPC: https://arb1.arbitrum.io/rpc
+[DASHBOARD] ✅ RPC passed tests: https://arb1.arbitrum.io/rpc (0.35s)
+[DASHBOARD] 🔍 Testing RPC: https://arbitrum-one.publicnode.com
+[DASHBOARD] ✅ RPC passed tests: https://arbitrum-one.publicnode.com (1.00s)
+[DASHBOARD] 🔍 Testing RPC: https://arbitrum.llamarpc.com
+[DASHBOARD] ❌ Not connected: https://arbitrum.llamarpc.com
+[DASHBOARD] 🔍 Testing RPC: https://rpc.ankr.com/arbitrum
+[DASHBOARD] ❌ Not connected: https://rpc.ankr.com/arbitrum
+[DASHBOARD] 🔍 Testing RPC: https://arbitrum-one.public.blastapi.io
+[DASHBOARD] ✅ RPC passed tests: https://arbitrum-one.public.blastapi.io (0.11s)
+[DASHBOARD] 🔍 Testing RPC: https://1rpc.io/arb
+[DASHBOARD] ✅ RPC passed tests: https://1rpc.io/arb (0.13s)
+[DASHBOARD] 🔍 Testing RPC: https://arbitrum.blockpi.network/v1/rpc/public
+[DASHBOARD] ❌ Not connected: https://arbitrum.blockpi.network/v1/rpc/public
+[DASHBOARD] 📊 RPC Test Results: 5/8 endpoints working
+[DASHBOARD] 🌐 Operating on Arbitrum Mainnet
+[DASHBOARD] 🚨 NETWORK_MODE from environment: 'mainnet'
+[DASHBOARD] 🔗 Primary RPC: https://arbitrum-one.public.blastapi.io
+[DASHBOARD] 🔄 Fallback RPCs: 4 available
+[DASHBOARD] 🔑 Wallet Address: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+[DASHBOARD] 💰 AGENT INITIALIZED WITH WALLET: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+[DASHBOARD] ✅ Private key format validated and normalized
+[DASHBOARD] 📋 Mainnet Token addresses verified:
+[DASHBOARD] USDC: 0xAf88D065e77C8cF0EAEfF3e253e648A15CEe23dC
+[DASHBOARD] WBTC: 0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f
+[DASHBOARD] WETH: 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1
+[DASHBOARD] DAI: 0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1
+[DASHBOARD] Aave Pool: 0x794a61358D6845594F94dc1DB02A252b5b4814aD
+[DASHBOARD] 📋 Token addresses verified:
+[DASHBOARD] USDC: 0xAf88D065e77C8cF0EAEfF3e253e648A15CEe23dC
+[DASHBOARD] WBTC: 0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f
+[DASHBOARD] WETH: 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1
+[DASHBOARD] DAI: 0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1
+[DASHBOARD] Aave Pool: 0x794a61358D6845594F94dc1DB02A252b5b4814aD
+[DASHBOARD] 💰 Initialized last_collateral_value_usd to 0.0 (will sync with actual position)
+[DASHBOARD] 📊 Initialized last_collateral_value_usd to: 0.0
+[DASHBOARD] 🔍 LIVE AAVE FETCH Attempt 1: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+[DASHBOARD] ✅ LIVE AAVE DATA RETRIEVED:
+[DASHBOARD] Health Factor: 4.0111
+[DASHBOARD] Collateral: $177.77
+[DASHBOARD] Debt: $35.06
+[DASHBOARD] Available Borrows: $96.99
+[DASHBOARD] Data Source: LIVE_AAVE_CONTRACT
+[DASHBOARD] Data Quality: ✅ VALIDATED
+[DASHBOARD] ✅ Unified data validated: Data validated successfully
+[DASHBOARD] 📊 Using LIVE AAVE CONTRACT data: HF 4.0111
+[DASHBOARD] 🔍 Autonomous agent running check: True
+[DASHBOARD] ✅ Wallet status retrieved: HF 4.0111, Agent Running: True
+[DASHBOARD] 🔍 API: Fetching wallet status...
+[DASHBOARD] 🤖 Initializing Arbitrum Testnet Agent...
+[AGENT] 🔍 Autonomous agent running check: True
+[AGENT] ✅ Dashboard: Connected to running AUTONOMOUS MAINNET agent
+[AGENT] ✅ Dashboard: Successfully connected to autonomous agent data
+[AGENT] ✅ RPC passed tests: https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f938ff891c141 (0.30s)
+[AGENT] 🔍 Testing RPC: https://arb1.arbitrum.io/rpc
+[AGENT] ✅ RPC passed tests: https://arb1.arbitrum.io/rpc (0.35s)
+[AGENT] 🔍 Testing RPC: https://arbitrum-one.publicnode.com
+[AGENT] ✅ RPC passed tests: https://arbitrum-one.publicnode.com (0.94s)
+[AGENT] 🔍 Testing RPC: https://arbitrum.llamarpc.com
+[AGENT] ❌ Not connected: https://arbitrum.llamarpc.com
+[AGENT] 🔍 Testing RPC: https://rpc.ankr.com/arbitrum
+[AGENT] ❌ Not connected: https://rpc.ankr.com/arbitrum
+[AGENT] 🔍 Testing RPC: https://arbitrum-one.public.blastapi.io
+[AGENT] ✅ RPC passed tests: https://arbitrum-one.public.blastapi.io (0.09s)
+[AGENT] 🔍 Testing RPC: https://1rpc.io/arb
+[AGENT] ✅ RPC passed tests: https://1rpc.io/arb (0.11s)
+[AGENT] 🔍 Testing RPC: https://arbitrum.blockpi.network/v1/rpc/public
+[AGENT] ❌ Not connected: https://arbitrum.blockpi.network/v1/rpc/public
+[AGENT] 📊 RPC Test Results: 5/8 endpoints working
+[AGENT] 🌐 Operating on Arbitrum Mainnet
+[AGENT] 🚨 NETWORK_MODE from environment: 'mainnet'
+[AGENT] 🔗 Primary RPC: https://arbitrum-one.public.blastapi.io
+[AGENT] 🔄 Fallback RPCs: 4 available
+[AGENT] 🔑 Wallet Address: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+[AGENT] 💰 AGENT INITIALIZED WITH WALLET: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+[AGENT] ✅ Private key format validated and normalized
+[AGENT] 📋 Mainnet Token addresses verified:
+[AGENT] USDC: 0xAf88D065e77C8cF0EAEfF3e253e648A15CEe23dC
+[AGENT] WBTC: 0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f
+[AGENT] WETH: 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1
+[AGENT] DAI: 0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1
+[AGENT] Aave Pool: 0x794a61358D6845594F94dc1DB02A252b5b4814aD
+[AGENT] 📋 Token addresses verified:
+[AGENT] USDC: 0xAf88D065e77C8cF0EAEfF3e253e648A15CEe23dC
+[AGENT] WBTC: 0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f
+[AGENT] WETH: 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1
+[AGENT] DAI: 0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1
+[AGENT] Aave Pool: 0x794a61358D6845594F94dc1DB02A252b5b4814aD
+[AGENT] 💰 Initialized last_collateral_value_usd to 0.0 (will sync with actual position)
+[AGENT] 📊 Initialized last_collateral_value_usd to: 0.0
+[AGENT] ✅ Unified fetcher initialized for Aave Pool: 0x794a61358D6845594F94dc1DB02A252b5b4814aD
+[AGENT] 🔍 LIVE AAVE FETCH Attempt 1: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+[AGENT] ✅ LIVE AAVE DATA RETRIEVED:
+[AGENT] Health Factor: 4.0111
+[AGENT] Collateral: $177.77
+[AGENT] Debt: $35.06
+[AGENT] Available Borrows: $96.99
+[AGENT] Data Source: LIVE_AAVE_CONTRACT
+[AGENT] Data Quality: ✅ VALIDATED
+[AGENT] ✅ Unified data validated: Data validated successfully
+[AGENT] 📊 Using LIVE AAVE CONTRACT data: HF 4.0111
+[AGENT] ✅ Dashboard method successful with validated data!
+[AGENT] Health Factor: 4.0111
+[AGENT] Collateral: $177.77
+[AGENT] Debt: $35.06
+[AGENT] Available Borrows: $96.99
+[AGENT] Data Source: LIVE_AAVE_CONTRACT
+[AGENT] Data Quality: ✅ VALIDATED
+[AGENT] Live ETH price: $3410.72
+[AGENT] [13:43:56] INFO: ❤️ Initial Health Factor: 4.0111
+[AGENT] [13:43:56] INFO: 🎯 Starting autonomous monitoring loop...
+[AGENT] 
+[AGENT] ============================================================
+[AGENT] 🔍 MONITORING AAVE POSITIONS FOR TRIGGERS
+[AGENT] 💡 Add funds to your Aave supply to test trigger activation
+[AGENT] 🔔 Watch for 'TRIGGER ACTIVATED' messages below
+[AGENT] ============================================================
+[AGENT] 
+[AGENT] [13:43:56] INFO: 🔄 Monitoring cycle 1-0
+[AGENT] 
+[AGENT] 🎯 Autonomous Run 1, Iteration 0
+[AGENT] 
+[AGENT] 🔍 AGENT WALLET & AAVE DIAGNOSTIC:
+[AGENT] Agent Wallet Address: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+[AGENT] Network: mainnet (Chain ID: 42161)
+[AGENT] RPC Endpoint: https://arbitrum-one.public.blastapi.io
+[AGENT] Aave Pool Address: 0x794a61358D6845594F94dc1DB02A252b5b4814aD
+[AGENT] 🔍 USING FRESH AAVE CONTRACT DATA (RELIABLE SOURCE):
+[AGENT] 📊 Getting fresh data from Aave Pool: 0x794a61358D6845594F94dc1DB02A252b5b4814aD
+[AGENT] ✅ FRESH AAVE CONTRACT DATA:
+[AGENT] Total Collateral USD: $177.77
+[AGENT] Total Debt USD: $35.06
+[AGENT] Available Borrows USD: $96.99
+[AGENT] Health Factor: 4.0111
+[AGENT] Data Source: LIVE_AAVE_CONTRACT
+[AGENT] 🔍 CHECKING INDIVIDUAL AAVE ASSET BALANCES:
+[AGENT] ⚠️ Individual asset check failed: invalid syntax (rpc_circuit_breaker.py, line 85)
+[AGENT] This is non-critical - using aggregate Aave data instead
+[AGENT] 📊 Current Health Factor: 4.0111
+[AGENT] ✅ Real ARB price fetched: $0.4466
+[AGENT] 💰 ARB Price: $0.4466
+[AGENT] 🌐 Network Connected: Block 358665060, Gas Price: 0.040977 Gwei
+[AGENT] 🔗 RPC Endpoint: https://arbitrum-one.public.blastapi.io
+[AGENT] ⛓️ Chain ID: 42161 (Expected: 42161)
+[AGENT] ✅ Aave Pool accessible: Revision 8
+[AGENT] 
+[AGENT] 🔍 DIAGNOSTIC: Checking Wallet Balances...
+[AGENT] DIAGNOSTIC - Wallet ETH Balance (raw): 0.0017494926 ETH
+[AGENT] DIAGNOSTIC - Using Aave position data instead of individual token balances
+[AGENT] DIAGNOSTIC - Wallet USDC Balance (via direct contract): 0.000000 USDC
+[AGENT] 🔍 DIAGNOSTIC: Wallet Balance Check Complete.
+[AGENT] 🔍 WALLET READINESS CHECK:
+[AGENT] ETH Balance: 0.001749 ETH
+[AGENT] Aave Position: $177.77 collateral
+[AGENT] ✅ Wallet ready for DeFi operations!
+[AGENT] Sufficient ETH for gas: 0.001749 ETH
+[AGENT] Active Aave position: $177.77
+[AGENT] 🔍 MONITORING: Health factor 4.0111
+[AGENT] 🔍 DEBUG - RAW HEALTH DATA FROM DIRECT AAVE:
+[AGENT] Raw collateral_usd from Aave contract: $177.77396294
+[AGENT] Raw debt_usd from Aave contract: $35.05781315
+[AGENT] Raw health_factor from Aave contract: 4.01106607
+[AGENT] 🔍 ENHANCED COLLATERAL CALCULATION:
+[AGENT] Using successful Aave contract data: $177.77
+[AGENT] WBTC supplied: 0.00000000
+[AGENT] WETH supplied: 0.00000000
+[AGENT] USDC supplied: 0.00000000
+[AGENT] Enhanced calculation:
+[AGENT] BTC price: $117,953.16
+[AGENT] ETH price: $3,404.68
+[AGENT] USDC price: $0.9997
+[AGENT] Enhanced collateral USD: $0.00
+[AGENT] ⚠️ Enhanced calculation still shows low value
+[AGENT] ✅ Using direct Aave contract data as primary source
+[AGENT] 🔍 DEBUG - BASELINE TRACKING:
+[AGENT] self.last_collateral_value_usd (baseline): $0.00
+[AGENT] current_collateral_value_usd (now): $177.77
+[AGENT] self.baseline_initialized: False
+[AGENT] 🔍 DEBUG - TRIGGER CHECK:
+[AGENT] current_collateral_value_usd: $177.77
+[AGENT] baseline (last_collateral): $0.00
+[AGENT] collateral_growth: $177.77
+[AGENT] main_trigger_threshold: $12.00
+[AGENT] trigger condition met: True
+[AGENT] ⚠️ Real data fetch failed, using forced dashboard values: Unknown format '0xFF970A61A04b1cA14834A651bAb06d67307796618', attempted to normalize to '0xff970a61a04b1ca14834a651bab06d67307796618'
+[AGENT] ✅ Using verified contract addresses (skipping normalization)
+[AGENT] 🔍 ENHANCED POSITION DETECTION:
+[AGENT] 🔄 FRESH AAVE CONTRACT DATA:
+[AGENT] Fresh Collateral: $177.77
+[AGENT] Fresh Debt: $35.06
+[AGENT] Fresh Health Factor: 4.0111
+[AGENT] ✅ USING FRESH DATA AS PRIMARY SOURCE: $177.77
+[AGENT] 📊 UPDATED VALUES:
+[AGENT] Current Collateral: $177.77
+[AGENT] Current Health Factor: 4.0111
+[AGENT] Current Debt: $35.06
+[AGENT] 🔍 DEBUG - BASELINE INITIALIZATION CHECK:
+[AGENT] self.baseline_initialized: False
+[AGENT] current_collateral_value_usd (ENHANCED): $177.77
+[AGENT] current baseline: $0.00
+[AGENT] 🎯 BASELINE INITIALIZED/RESET: Set to $177.77
+[AGENT] 📈 Next trigger will activate when collateral reaches: $189.77
+[AGENT] 💡 Add $12+ worth of collateral to activate autonomous sequence
+[AGENT] 🎯 CURRENT GAP: Need $12.00 more collateral
+[AGENT] [13:43:56] INFO: ✔️ Moderate performance cycle: 0.800
+[AGENT] [13:44:26] INFO: 🔄 Monitoring cycle 1-1
+[AGENT] 
+[AGENT] 🎯 Autonomous Run 1, Iteration 1
+[AGENT] 
+[AGENT] 🔍 AGENT WALLET & AAVE DIAGNOSTIC:
+[AGENT] Agent Wallet Address: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+[AGENT] Network: mainnet (Chain ID: 42161)
+[AGENT] RPC Endpoint: https://arbitrum-one.public.blastapi.io
+[AGENT] Aave Pool Address: 0x794a61358D6845594F94dc1DB02A252b5b4814aD
+[AGENT] 🔍 USING FRESH AAVE CONTRACT DATA (RELIABLE SOURCE):
+[AGENT] 📊 Getting fresh data from Aave Pool: 0x794a61358D6845594F94dc1DB02A252b5b4814aD
+[AGENT] ✅ FRESH AAVE CONTRACT DATA:
+[AGENT] Total Collateral USD: $177.48
+[AGENT] Total Debt USD: $35.06
+[AGENT] Available Borrows USD: $96.78
+[AGENT] Health Factor: 4.0045
+[AGENT] Data Source: LIVE_AAVE_CONTRACT
+[AGENT] 🔍 CHECKING INDIVIDUAL AAVE ASSET BALANCES:
+[AGENT] ⚠️ Individual asset check failed: invalid syntax (rpc_circuit_breaker.py, line 85)
+[AGENT] This is non-critical - using aggregate Aave data instead
+[AGENT] 📊 Current Health Factor: 4.0045
+[AGENT] ✅ Real ARB price fetched: $0.4466
+[AGENT] 💰 ARB Price: $0.4466
+[AGENT] 🌐 Network Connected: Block 358665182, Gas Price: 0.054793 Gwei
+[AGENT] 🔗 RPC Endpoint: https://arbitrum-one.public.blastapi.io
+[AGENT] ⛓️ Chain ID: 42161 (Expected: 42161)
+[AGENT] ✅ Aave Pool accessible: Revision 8
+[AGENT] 
+[DASHBOARD] 🔍 Testing RPC: https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f938ff891c141
+[DASHBOARD] ✅ RPC passed tests: https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f938ff891c141 (0.29s)
+[DASHBOARD] 🔍 Testing RPC: https://arb1.arbitrum.io/rpc
+[DASHBOARD] ✅ RPC passed tests: https://arb1.arbitrum.io/rpc (0.33s)
+[DASHBOARD] 🔍 Testing RPC: https://arbitrum-one.publicnode.com
+[DASHBOARD] ✅ RPC passed tests: https://arbitrum-one.publicnode.com (0.97s)
+[DASHBOARD] 🔍 Testing RPC: https://arbitrum.llamarpc.com
+[DASHBOARD] ❌ Not connected: https://arbitrum.llamarpc.com
+[DASHBOARD] 🔍 Testing RPC: https://rpc.ankr.com/arbitrum
+[DASHBOARD] ❌ Not connected: https://rpc.ankr.com/arbitrum
+[DASHBOARD] 🔍 Testing RPC: https://arbitrum-one.public.blastapi.io
+[DASHBOARD] ✅ RPC passed tests: https://arbitrum-one.public.blastapi.io (0.12s)
+[DASHBOARD] 🔍 Testing RPC: https://1rpc.io/arb
+[DASHBOARD] ✅ RPC passed tests: https://1rpc.io/arb (0.10s)
+[DASHBOARD] 🔍 Testing RPC: https://arbitrum.blockpi.network/v1/rpc/public
+[DASHBOARD] ❌ Not connected: https://arbitrum.blockpi.network/v1/rpc/public
+[DASHBOARD] 📊 RPC Test Results: 5/8 endpoints working
+[DASHBOARD] 🌐 Operating on Arbitrum Mainnet
+[DASHBOARD] 🚨 NETWORK_MODE from environment: 'mainnet'
+[DASHBOARD] 🔗 Primary RPC: https://1rpc.io/arb
+[DASHBOARD] 🔄 Fallback RPCs: 4 available
+[DASHBOARD] 🔑 Wallet Address: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+[DASHBOARD] 💰 AGENT INITIALIZED WITH WALLET: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+[DASHBOARD] ✅ Private key format validated and normalized
+[DASHBOARD] 📋 Mainnet Token addresses verified:
+[DASHBOARD] USDC: 0xAf88D065e77C8cF0EAEfF3e253e648A15CEe23dC
+[DASHBOARD] WBTC: 0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f
+[DASHBOARD] WETH: 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1
+[DASHBOARD] DAI: 0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1
+[DASHBOARD] Aave Pool: 0x794a61358D6845594F94dc1DB02A252b5b4814aD
+[DASHBOARD] 📋 Token addresses verified:
+[DASHBOARD] USDC: 0xAf88D065e77C8cF0EAEfF3e253e648A15CEe23dC
+[DASHBOARD] WBTC: 0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f
+[DASHBOARD] WETH: 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1
+[DASHBOARD] DAI: 0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1
+[DASHBOARD] Aave Pool: 0x794a61358D6845594F94dc1DB02A252b5b4814aD
+[DASHBOARD] 💰 Initialized last_collateral_value_usd to 0.0 (will sync with actual position)
+[DASHBOARD] 📊 Initialized last_collateral_value_usd to: 0.0
+[DASHBOARD] 🔍 LIVE AAVE FETCH Attempt 1: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+[DASHBOARD] ✅ LIVE AAVE DATA RETRIEVED:
+[DASHBOARD] Health Factor: 4.0111
+[DASHBOARD] Collateral: $177.77
+[DASHBOARD] Debt: $35.06
+[DASHBOARD] Available Borrows: $96.99
+[DASHBOARD] Data Source: LIVE_AAVE_CONTRACT
+[DASHBOARD] Data Quality: ✅ VALIDATED
+[DASHBOARD] ✅ Unified data validated: Data validated successfully
+[DASHBOARD] 📊 Using LIVE AAVE CONTRACT data: HF 4.0111
+[DASHBOARD] 🔍 Autonomous agent running check: True
+[DASHBOARD] ✅ Wallet status retrieved: HF 4.0111, Agent Running: True
+[DASHBOARD] 🔍 API: Fetching wallet status...
+[DASHBOARD] 🤖 Initializing Arbitrum Testnet Agent...
+[DASHBOARD] 🔍 Testing RPC: https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f938ff891c141
+[DASHBOARD] ✅ RPC passed tests: https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f938ff891c141 (0.30s)
+[DASHBOARD] 🔍 Testing RPC: https://arb1.arbitrum.io/rpc
+[DASHBOARD] ✅ RPC passed tests: https://arb1.arbitrum.io/rpc (0.34s)
+[DASHBOARD] 🔍 Testing RPC: https://arbitrum-one.publicnode.com
+[DASHBOARD] ✅ RPC passed tests: https://arbitrum-one.publicnode.com (1.04s)
+[DASHBOARD] 🔍 Testing RPC: https://arbitrum.llamarpc.com
+[DASHBOARD] ❌ Not connected: https://arbitrum.llamarpc.com
+[DASHBOARD] 🔍 Testing RPC: https://rpc.ankr.com/arbitrum
+[DASHBOARD] ❌ Not connected: https://rpc.ankr.com/arbitrum
+[DASHBOARD] 🔍 Testing RPC: https://arbitrum-one.public.blastapi.io
+[DASHBOARD] ✅ RPC passed tests: https://arbitrum-one.public.blastapi.io (0.12s)
+[DASHBOARD] 🔍 Testing RPC: https://1rpc.io/arb
+[DASHBOARD] ✅ RPC passed tests: https://1rpc.io/arb (0.11s)
+[DASHBOARD] 🔍 Testing RPC: https://arbitrum.blockpi.network/v1/rpc/public
+[DASHBOARD] ❌ Not connected: https://arbitrum.blockpi.network/v1/rpc/public
+[DASHBOARD] 📊 RPC Test Results: 5/8 endpoints working
+[DASHBOARD] 🌐 Operating on Arbitrum Mainnet
+[DASHBOARD] 🚨 NETWORK_MODE from environment: 'mainnet'
+[DASHBOARD] 🔗 Primary RPC: https://1rpc.io/arb
+[DASHBOARD] 🔄 Fallback RPCs: 4 available
+[DASHBOARD] 🔑 Wallet Address: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+[DASHBOARD] 💰 AGENT INITIALIZED WITH WALLET: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+[DASHBOARD] ✅ Private key format validated and normalized
+[DASHBOARD] 📋 Mainnet Token addresses verified:
+[DASHBOARD] USDC: 0xAf88D065e77C8cF0EAEfF3e253e648A15CEe23dC
+[DASHBOARD] WBTC: 0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f
+[DASHBOARD] WETH: 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1
+[DASHBOARD] DAI: 0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1
+[DASHBOARD] Aave Pool: 0x794a61358D6845594F94dc1DB02A252b5b4814aD
+[DASHBOARD] 📋 Token addresses verified:
+[DASHBOARD] USDC: 0xAf88D065e77C8cF0EAEfF3e253e648A15CEe23dC
+[DASHBOARD] WBTC: 0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f
+[DASHBOARD] WETH: 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1
+[DASHBOARD] DAI: 0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1
+[DASHBOARD] Aave Pool: 0x794a61358D6845594F94dc1DB02A252b5b4814aD
+[DASHBOARD] 💰 Initialized last_collateral_value_usd to 0.0 (will sync with actual position)
+[DASHBOARD] 📊 Initialized last_collateral_value_usd to: 0.0
+[DASHBOARD] 🔍 LIVE AAVE FETCH Attempt 1: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+[DASHBOARD] ✅ LIVE AAVE DATA RETRIEVED:
+[DASHBOARD] Health Factor: 4.0073
+[DASHBOARD] Collateral: $177.61
+[DASHBOARD] Debt: $35.06
+[DASHBOARD] Available Borrows: $96.89
+[DASHBOARD] Data Source: LIVE_AAVE_CONTRACT
+[DASHBOARD] Data Quality: ✅ VALIDATED
+[DASHBOARD] ✅ Unified data validated: Data validated successfully
+[DASHBOARD] 📊 Using LIVE AAVE CONTRACT data: HF 4.0073
+[DASHBOARD] 🔍 Autonomous agent running check: True
+[DASHBOARD] ✅ Wallet status retrieved: HF 4.0073, Agent Running: True
+[DASHBOARD] 🔍 API: Fetching wallet status...
+[DASHBOARD] 🤖 Initializing Arbitrum Testnet Agent...
+[DASHBOARD] 🔍 Testing RPC: https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f938ff891c141
+[DASHBOARD] ✅ RPC passed tests: https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f938ff891c141 (0.29s)
+[DASHBOARD] 🔍 Testing RPC: https://arb1.arbitrum.io/rpc
+[DASHBOARD] ✅ RPC passed tests: https://arb1.arbitrum.io/rpc (0.35s)
+[DASHBOARD] 🔍 Testing RPC: https://arbitrum-one.publicnode.com
+[DASHBOARD] ✅ RPC passed tests: https://arbitrum-one.publicnode.com (0.84s)
+[DASHBOARD] 🔍 Testing RPC: https://arbitrum.llamarpc.com
+[DASHBOARD] ❌ Not connected: https://arbitrum.llamarpc.com
+[DASHBOARD] 🔍 Testing RPC: https://rpc.ankr.com/arbitrum
+[DASHBOARD] ❌ Not connected: https://rpc.ankr.com/arbitrum
+[DASHBOARD] 🔍 Testing RPC: https://arbitrum-one.public.blastapi.io
+[DASHBOARD] ✅ RPC passed tests: https://arbitrum-one.public.blastapi.io (0.09s)
+[DASHBOARD] 🔍 Testing RPC: https://1rpc.io/arb
+[DASHBOARD] ✅ RPC passed tests: https://1rpc.io/arb (0.10s)
+[DASHBOARD] 🔍 Testing RPC: https://arbitrum.blockpi.network/v1/rpc/public
+[DASHBOARD] ❌ Not connected: https://arbitrum.blockpi.network/v1/rpc/public
+[DASHBOARD] 📊 RPC Test Results: 5/8 endpoints working
+[DASHBOARD] 🌐 Operating on Arbitrum Mainnet
+[DASHBOARD] 🚨 NETWORK_MODE from environment: 'mainnet'
+[DASHBOARD] 🔗 Primary RPC: https://arbitrum-one.public.blastapi.io
+[DASHBOARD] 🔄 Fallback RPCs: 4 available
+[DASHBOARD] 🔑 Wallet Address: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+[DASHBOARD] 💰 AGENT INITIALIZED WITH WALLET: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+[DASHBOARD] ✅ Private key format validated and normalized
+[DASHBOARD] 📋 Mainnet Token addresses verified:
+[DASHBOARD] USDC: 0xAf88D065e77C8cF0EAEfF3e253e648A15CEe23dC
+[DASHBOARD] WBTC: 0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f
+[DASHBOARD] WETH: 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1
+[DASHBOARD] DAI: 0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1
+[DASHBOARD] Aave Pool: 0x794a61358D6845594F94dc1DB02A252b5b4814aD
+[DASHBOARD] 📋 Token addresses verified:
+[DASHBOARD] USDC: 0xAf88D065e77C8cF0EAEfF3e253e648A15CEe23dC
+[DASHBOARD] WBTC: 0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f
+[DASHBOARD] WETH: 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1
+[DASHBOARD] DAI: 0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1
+[DASHBOARD] Aave Pool: 0x794a61358D6845594F94dc1DB02A252b5b4814aD
+[DASHBOARD] 💰 Initialized last_collateral_value_usd to 0.0 (will sync with actual position)
+[DASHBOARD] 📊 Initialized last_collateral_value_usd to: 0.0
+[DASHBOARD] 🔍 LIVE AAVE FETCH Attempt 1: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+[DASHBOARD] ✅ LIVE AAVE DATA RETRIEVED:
+[DASHBOARD] Health Factor: 4.0045
+[DASHBOARD] Collateral: $177.48
+[DASHBOARD] Debt: $35.06
+[DASHBOARD] Available Borrows: $96.78
+[DASHBOARD] Data Source: LIVE_AAVE_CONTRACT
+[DASHBOARD] Data Quality: ✅ VALIDATED
+[DASHBOARD] ✅ Unified data validated: Data validated successfully
+[DASHBOARD] 📊 Using LIVE AAVE CONTRACT data: HF 4.0045
+[DASHBOARD] 🔍 Autonomous agent running check: True
+[DASHBOARD] ✅ Wallet status retrieved: HF 4.0045, Agent Running: True
+[DASHBOARD] 🔍 API: Fetching wallet status...
+[DASHBOARD] 🤖 Initializing Arbitrum Testnet Agent...
+[DASHBOARD] 🔍 Testing RPC: https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f938ff891c141
+[DASHBOARD] ✅ RPC passed tests: https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f938ff891c141 (0.32s)
+[DASHBOARD] 🔍 Testing RPC: https://arb1.arbitrum.io/rpc
+[DASHBOARD] ✅ RPC passed tests: https://arb1.arbitrum.io/rpc (0.34s)
+[DASHBOARD] 🔍 Testing RPC: https://arbitrum-one.publicnode.com
+[DASHBOARD] ✅ RPC passed tests: https://arbitrum-one.publicnode.com (0.88s)
+[DASHBOARD] 🔍 Testing RPC: https://arbitrum.llamarpc.com
+[DASHBOARD] ❌ Not connected: https://arbitrum.llamarpc.com
+[DASHBOARD] 🔍 Testing RPC: https://rpc.ankr.com/arbitrum
+[DASHBOARD] ❌ Not connected: https://rpc.ankr.com/arbitrum
+[DASHBOARD] 🔍 Testing RPC: https://arbitrum-one.public.blastapi.io
+[DASHBOARD] ✅ RPC passed tests: https://arbitrum-one.public.blastapi.io (0.10s)
+[DASHBOARD] 🔍 Testing RPC: https://1rpc.io/arb
+[DASHBOARD] ✅ RPC passed tests: https://1rpc.io/arb (0.11s)
+[DASHBOARD] 🔍 Testing RPC: https://arbitrum.blockpi.network/v1/rpc/public
+[DASHBOARD] ❌ Not connected: https://arbitrum.blockpi.network/v1/rpc/public
+[DASHBOARD] 📊 RPC Test Results: 5/8 endpoints working
+[DASHBOARD] 🌐 Operating on Arbitrum Mainnet
+[DASHBOARD] 🚨 NETWORK_MODE from environment: 'mainnet'
+[DASHBOARD] 🔗 Primary RPC: https://arbitrum-one.public.blastapi.io
+[DASHBOARD] 🔄 Fallback RPCs: 4 available
+[DASHBOARD] 🔑 Wallet Address: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+[DASHBOARD] 💰 AGENT INITIALIZED WITH WALLET: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+[DASHBOARD] ✅ Private key format validated and normalized
+[DASHBOARD] 📋 Mainnet Token addresses verified:
+[DASHBOARD] USDC: 0xAf88D065e77C8cF0EAEfF3e253e648A15CEe23dC
+[DASHBOARD] WBTC: 0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f
+[DASHBOARD] WETH: 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1
+[DASHBOARD] DAI: 0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1
+[DASHBOARD] Aave Pool: 0x794a61358D6845594F94dc1DB02A252b5b4814aD
+[DASHBOARD] 📋 Token addresses verified:
+[DASHBOARD] USDC: 0xAf88D065e77C8cF0EAEfF3e253e648A15CEe23dC
+[DASHBOARD] WBTC: 0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f
+[DASHBOARD] WETH: 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1
+[DASHBOARD] DAI: 0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1
+[DASHBOARD] Aave Pool: 0x794a61358D6845594F94dc1DB02A252b5b4814aD
+[DASHBOARD] 💰 Initialized last_collateral_value_usd to 0.0 (will sync with actual position)
+[DASHBOARD] 📊 Initialized last_collateral_value_usd to: 0.0
+[DASHBOARD] 🔍 LIVE AAVE FETCH Attempt 1: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+[DASHBOARD] ✅ LIVE AAVE DATA RETRIEVED:
+[DASHBOARD] Health Factor: 4.0026
+[DASHBOARD] Collateral: $177.40
+[DASHBOARD] Debt: $35.06
+[DASHBOARD] Available Borrows: $96.71
+[DASHBOARD] Data Source: LIVE_AAVE_CONTRACT
+[DASHBOARD] Data Quality: ✅ VALIDATED
+[DASHBOARD] ✅ Unified data validated: Data validated successfully
+[DASHBOARD] 📊 Using LIVE AAVE CONTRACT data: HF 4.0026
+[DASHBOARD] 🔍 Autonomous agent running check: True
+[DASHBOARD] ✅ Wallet status retrieved: HF 4.0026, Agent Running: True
+[DASHBOARD] 🔍 API: Fetching wallet status...
+[DASHBOARD] 🤖 Initializing Arbitrum Testnet Agent...
+[DASHBOARD] 🔍 Testing RPC: https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f938ff891c141
+[DASHBOARD] ✅ RPC passed tests: https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f938ff891c141 (0.30s)
+[DASHBOARD] 🔍 Testing RPC: https://arb1.arbitrum.io/rpc
+[DASHBOARD] ✅ RPC passed tests: https://arb1.arbitrum.io/rpc (0.35s)
+[DASHBOARD] 🔍 Testing RPC: https://arbitrum-one.publicnode.com
+[DASHBOARD] ✅ RPC passed tests: https://arbitrum-one.publicnode.com (0.90s)
+[DASHBOARD] 🔍 Testing RPC: https://arbitrum.llamarpc.com
+[DASHBOARD] ❌ Not connected: https://arbitrum.llamarpc.com
+[DASHBOARD] 🔍 Testing RPC: https://rpc.ankr.com/arbitrum
+[DASHBOARD] ❌ Not connected: https://rpc.ankr.com/arbitrum
+[DASHBOARD] 🔍 Testing RPC: https://arbitrum-one.public.blastapi.io
+[DASHBOARD] ✅ RPC passed tests: https://arbitrum-one.public.blastapi.io (0.10s)
+[DASHBOARD] 🔍 Testing RPC: https://1rpc.io/arb
+[DASHBOARD] ✅ RPC passed tests: https://1rpc.io/arb (0.10s)
+[DASHBOARD] 🔍 Testing RPC: https://arbitrum.blockpi.network/v1/rpc/public
+[DASHBOARD] ❌ Not connected: https://arbitrum.blockpi.network/v1/rpc/public
+[DASHBOARD] 📊 RPC Test Results: 5/8 endpoints working
+[DASHBOARD] 🌐 Operating on Arbitrum Mainnet
+[DASHBOARD] 🚨 NETWORK_MODE from environment: 'mainnet'
+[DASHBOARD] 🔗 Primary RPC: https://arbitrum-one.public.blastapi.io
+[DASHBOARD] 🔄 Fallback RPCs: 4 available
+[DASHBOARD] 🔑 Wallet Address: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+[DASHBOARD] 💰 AGENT INITIALIZED WITH WALLET: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+[DASHBOARD] ✅ Private key format validated and normalized
+[DASHBOARD] 📋 Mainnet Token addresses verified:
+[DASHBOARD] USDC: 0xAf88D065e77C8cF0EAEfF3e253e648A15CEe23dC
+[DASHBOARD] WBTC: 0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f
+[DASHBOARD] WETH: 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1
+[DASHBOARD] DAI: 0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1
+[DASHBOARD] Aave Pool: 0x794a61358D6845594F94dc1DB02A252b5b4814aD
+[DASHBOARD] 📋 Token addresses verified:
+[DASHBOARD] USDC: 0xAf88D065e77C8cF0EAEfF3e253e648A15CEe23dC
+[DASHBOARD] WBTC: 0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f
+[DASHBOARD] WETH: 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1
+[DASHBOARD] DAI: 0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1
+[DASHBOARD] Aave Pool: 0x794a61358D6845594F94dc1DB02A252b5b4814aD
+[DASHBOARD] 💰 Initialized last_collateral_value_usd to 0.0 (will sync with actual position)
+[DASHBOARD] 📊 Initialized last_collateral_value_usd to: 0.0
+[DASHBOARD] 🔍 LIVE AAVE FETCH Attempt 1: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+[DASHBOARD] ✅ LIVE AAVE DATA RETRIEVED:
+[DASHBOARD] Health Factor: 4.0020
+[DASHBOARD] Collateral: $177.37
+[DASHBOARD] Debt: $35.06
+[DASHBOARD] Available Borrows: $96.70
+[DASHBOARD] Data Source: LIVE_AAVE_CONTRACT
+[DASHBOARD] Data Quality: ✅ VALIDATED
+[DASHBOARD] ✅ Unified data validated: Data validated successfully
+[DASHBOARD] 📊 Using LIVE AAVE CONTRACT data: HF 4.0020
+[DASHBOARD] 🔍 Autonomous agent running check: True
+[DASHBOARD] ✅ Wallet status retrieved: HF 4.0020, Agent Running: True
+[DASHBOARD] 🔍 API: Fetching wallet status...
+[DASHBOARD] 🤖 Initializing Arbitrum Testnet Agent...
+[DASHBOARD] 🔍 Testing RPC: https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f938ff891c141
+[DASHBOARD] ✅ RPC passed tests: https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f938ff891c141 (0.31s)
+[DASHBOARD] 🔍 Testing RPC: https://arb1.arbitrum.io/rpc
+[DASHBOARD] ✅ RPC passed tests: https://arb1.arbitrum.io/rpc (0.33s)
+[DASHBOARD] 🔍 Testing RPC: https://arbitrum-one.publicnode.com
+[DASHBOARD] ✅ RPC passed tests: https://arbitrum-one.publicnode.com (0.90s)
+[DASHBOARD] 🔍 Testing RPC: https://arbitrum.llamarpc.com
+[DASHBOARD] ❌ Not connected: https://arbitrum.llamarpc.com
+[DASHBOARD] 🔍 Testing RPC: https://rpc.ankr.com/arbitrum
+[DASHBOARD] ❌ Not connected: https://rpc.ankr.com/arbitrum
+[DASHBOARD] 🔍 Testing RPC: https://arbitrum-one.public.blastapi.io
+[DASHBOARD] ✅ RPC passed tests: https://arbitrum-one.public.blastapi.io (0.11s)
+[DASHBOARD] 🔍 Testing RPC: https://1rpc.io/arb
+[DASHBOARD] ✅ RPC passed tests: https://1rpc.io/arb (0.12s)
+[DASHBOARD] 🔍 Testing RPC: https://arbitrum.blockpi.network/v1/rpc/public
+[DASHBOARD] ❌ Not connected: https://arbitrum.blockpi.network/v1/rpc/public
+[DASHBOARD] 📊 RPC Test Results: 5/8 endpoints working
+[DASHBOARD] 🌐 Operating on Arbitrum Mainnet
+[DASHBOARD] 🚨 NETWORK_MODE from environment: 'mainnet'
+[DASHBOARD] 🔗 Primary RPC: https://arbitrum-one.public.blastapi.io
+[DASHBOARD] 🔄 Fallback RPCs: 4 available
+[DASHBOARD] 🔑 Wallet Address: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+[DASHBOARD] 💰 AGENT INITIALIZED WITH WALLET: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+[DASHBOARD] ✅ Private key format validated and normalized
+[DASHBOARD] 📋 Mainnet Token addresses verified:
+[DASHBOARD] USDC: 0xAf88D065e77C8cF0EAEfF3e253e648A15CEe23dC
+[DASHBOARD] WBTC: 0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f
+[DASHBOARD] WETH: 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1
+[DASHBOARD] DAI: 0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1
+[DASHBOARD] Aave Pool: 0x794a61358D6845594F94dc1DB02A252b5b4814aD
+[DASHBOARD] 📋 Token addresses verified:
+[DASHBOARD] USDC: 0xAf88D065e77C8cF0EAEfF3e253e648A15CEe23dC
+[DASHBOARD] WBTC: 0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f
+[DASHBOARD] WETH: 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1
+[DASHBOARD] DAI: 0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1
+[DASHBOARD] Aave Pool: 0x794a61358D6845594F94dc1DB02A252b5b4814aD
+[DASHBOARD] 💰 Initialized last_collateral_value_usd to 0.0 (will sync with actual position)
+[DASHBOARD] 📊 Initialized last_collateral_value_usd to: 0.0
+[DASHBOARD] 🔍 LIVE AAVE FETCH Attempt 1: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+[DASHBOARD] ✅ LIVE AAVE DATA RETRIEVED:
+[DASHBOARD] Health Factor: 4.0003
+[DASHBOARD] Collateral: $177.30
+[DASHBOARD] Debt: $35.06
+[DASHBOARD] Available Borrows: $96.64
+[DASHBOARD] Data Source: LIVE_AAVE_CONTRACT
+[DASHBOARD] Data Quality: ✅ VALIDATED
+[DASHBOARD] ✅ Unified data validated: Data validated successfully
+[DASHBOARD] 📊 Using LIVE AAVE CONTRACT data: HF 4.0003
+[DASHBOARD] 🔍 Autonomous agent running check: True
+[DASHBOARD] ✅ Wallet status retrieved: HF 4.0003, Agent Running: True
+[DASHBOARD] 🔍 API: Fetching wallet status...
+[DASHBOARD] 🤖 Initializing Arbitrum Testnet Agent...
+[DASHBOARD] 🔍 Testing RPC: https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f938ff891c141
+[DASHBOARD] ✅ RPC passed tests: https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f938ff891c141 (0.30s)
+[DASHBOARD] 🔍 Testing RPC: https://arb1.arbitrum.io/rpc
+[DASHBOARD] ✅ RPC passed tests: https://arb1.arbitrum.io/rpc (0.32s)
+[DASHBOARD] 🔍 Testing RPC: https://arbitrum-one.publicnode.com
+[DASHBOARD] ✅ RPC passed tests: https://arbitrum-one.publicnode.com (0.97s)
+[DASHBOARD] 🔍 Testing RPC: https://arbitrum.llamarpc.com
+[DASHBOARD] ❌ Not connected: https://arbitrum.llamarpc.com
+[DASHBOARD] 🔍 Testing RPC: https://rpc.ankr.com/arbitrum
+[DASHBOARD] ❌ Not connected: https://rpc.ankr.com/arbitrum
+[DASHBOARD] 🔍 Testing RPC: https://arbitrum-one.public.blastapi.io
+[AGENT] 🔍 DIAGNOSTIC: Checking Wallet Balances...
+[AGENT] DIAGNOSTIC - Wallet ETH Balance (raw): 0.0017494926 ETH
+[AGENT] DIAGNOSTIC - Using Aave position data instead of individual token balances
+[AGENT] DIAGNOSTIC - Wallet USDC Balance (via direct contract): 0.000000 USDC
+[AGENT] 🔍 DIAGNOSTIC: Wallet Balance Check Complete.
+[AGENT] 🔍 WALLET READINESS CHECK:
+[AGENT] ETH Balance: 0.001749 ETH
+[AGENT] Aave Position: $177.48 collateral
+[AGENT] ✅ Wallet ready for DeFi operations!
+[AGENT] Sufficient ETH for gas: 0.001749 ETH
+[AGENT] Active Aave position: $177.48
+[AGENT] 🔍 MONITORING: Health factor 4.0045
+[AGENT] 🔍 DEBUG - RAW HEALTH DATA FROM DIRECT AAVE:
+[AGENT] Raw collateral_usd from Aave contract: $177.48347213
+[AGENT] Raw debt_usd from Aave contract: $35.05781515
+[AGENT] Raw health_factor from Aave contract: 4.00451157
+[AGENT] 🔍 ENHANCED COLLATERAL CALCULATION:
+[AGENT] Using successful Aave contract data: $177.48
+[AGENT] WBTC supplied: 0.00000000
+[AGENT] WETH supplied: 0.00000000
+[AGENT] USDC supplied: 0.00000000
+[AGENT] Enhanced calculation:
+[AGENT] BTC price: $117,953.16
+[AGENT] ETH price: $3,404.68
+[AGENT] USDC price: $0.9997
+[AGENT] Enhanced collateral USD: $0.00
+[AGENT] ⚠️ Enhanced calculation still shows low value
+[AGENT] ✅ Using direct Aave contract data as primary source
+[AGENT] 🔍 DEBUG - BASELINE TRACKING:
+[AGENT] self.last_collateral_value_usd (baseline): $177.77
+[AGENT] current_collateral_value_usd (now): $177.48
+[AGENT] self.baseline_initialized: True
+[AGENT] 🔍 DEBUG - TRIGGER CHECK:
+[AGENT] current_collateral_value_usd: $177.48
+[AGENT] baseline (last_collateral): $177.77
+[AGENT] collateral_growth: $-0.29
+[AGENT] main_trigger_threshold: $12.00
+[AGENT] trigger condition met: False
+[AGENT] ⚠️ Real data fetch failed, using forced dashboard values: Unknown format '0xFF970A61A04b1cA14834A651bAb06d67307796618', attempted to normalize to '0xff970a61a04b1ca14834a651bab06d67307796618'
+[AGENT] ✅ Using verified contract addresses (skipping normalization)
+[AGENT] 🔍 ENHANCED POSITION DETECTION:
+[AGENT] 🔄 FRESH AAVE CONTRACT DATA:
+[AGENT] Fresh Collateral: $177.48
+[AGENT] Fresh Debt: $35.06
+[AGENT] Fresh Health Factor: 4.0045
+[AGENT] ✅ USING FRESH DATA AS PRIMARY SOURCE: $177.48
+[AGENT] 📊 UPDATED VALUES:
+[AGENT] Current Collateral: $177.48
+[AGENT] Current Health Factor: 4.0045
+[AGENT] Current Debt: $35.06
+[AGENT] 🔍 DEBUG - BASELINE INITIALIZATION CHECK:
+[AGENT] self.baseline_initialized: True
+[AGENT] current_collateral_value_usd (ENHANCED): $177.48
+[AGENT] current baseline: $177.77
+[AGENT] 
+[AGENT] 🎯 AUTONOMOUS TRIGGER CHECK:
+[AGENT] Current Collateral: $177.48
+[AGENT] Baseline: $177.77
+[AGENT] Target for Trigger: $189.77
+[AGENT] Actual Growth: $-0.29
+[AGENT] Growth Needed: $12.00
+[AGENT] Manual Override: False
+[AGENT] ✅ TRIGGER READY: False
+[AGENT] ⏸️ No action: Collateral growth $-0.29 < $12 threshold
+[AGENT] 📊 Current Position: $177.48 collateral, $35.06 debt
+[AGENT] 💰 Last recorded collateral: $177.77
+[AGENT] 📈 Collateral growth: $-0.29
+[AGENT] [13:44:27] INFO: ✔️ Moderate performance cycle: 0.700
+[AGENT] [13:44:57] INFO: 🔄 Monitoring cycle 1-2
+[AGENT] 
+[AGENT] 🎯 Autonomous Run 1, Iteration 2
+[AGENT] 
+[AGENT] 🔍 AGENT WALLET & AAVE DIAGNOSTIC:
+[AGENT] Agent Wallet Address: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+[AGENT] Network: mainnet (Chain ID: 42161)
+[AGENT] RPC Endpoint: https://arbitrum-one.public.blastapi.io
+[AGENT] Aave Pool Address: 0x794a61358D6845594F94dc1DB02A252b5b4814aD
+[AGENT] 🔍 USING FRESH AAVE CONTRACT DATA (RELIABLE SOURCE):
+[AGENT] 📊 Getting fresh data from Aave Pool: 0x794a61358D6845594F94dc1DB02A252b5b4814aD
+[AGENT] ✅ FRESH AAVE CONTRACT DATA:
+[AGENT] Total Collateral USD: $177.37
+[AGENT] Total Debt USD: $35.06
+[AGENT] Available Borrows USD: $96.70
+[AGENT] Health Factor: 4.0020
+[AGENT] Data Source: LIVE_AAVE_CONTRACT
+[AGENT] 🔍 CHECKING INDIVIDUAL AAVE ASSET BALANCES:
+[AGENT] ⚠️ Individual asset check failed: invalid syntax (rpc_circuit_breaker.py, line 85)
+[AGENT] This is non-critical - using aggregate Aave data instead
+[AGENT] 📊 Current Health Factor: 4.0020
+[AGENT] ✅ Real ARB price fetched: $0.4466
+[AGENT] 💰 ARB Price: $0.4466
+[AGENT] 🌐 Network Connected: Block 358665304, Gas Price: 0.065902 Gwei
+[AGENT] 🔗 RPC Endpoint: https://arbitrum-one.public.blastapi.io
+[AGENT] ⛓️ Chain ID: 42161 (Expected: 42161)
+[AGENT] ✅ Aave Pool accessible: Revision 8
+[AGENT] 
+[AGENT] 🔍 DIAGNOSTIC: Checking Wallet Balances...
+[AGENT] DIAGNOSTIC - Wallet ETH Balance (raw): 0.0017494926 ETH
+[AGENT] DIAGNOSTIC - Using Aave position data instead of individual token balances
+[AGENT] DIAGNOSTIC - Wallet USDC Balance (via direct contract): 0.000000 USDC
+[AGENT] 🔍 DIAGNOSTIC: Wallet Balance Check Complete.
+[AGENT] 🔍 WALLET READINESS CHECK:
+[AGENT] ETH Balance: 0.001749 ETH
+[AGENT] Aave Position: $177.37 collateral
+[AGENT] ✅ Wallet ready for DeFi operations!
+[AGENT] Sufficient ETH for gas: 0.001749 ETH
+[AGENT] Active Aave position: $177.37
+[AGENT] 🔍 MONITORING: Health factor 4.0020
+[AGENT] 🔍 DEBUG - RAW HEALTH DATA FROM DIRECT AAVE:
+[AGENT] Raw collateral_usd from Aave contract: $177.37346773
+[AGENT] Raw debt_usd from Aave contract: $35.05781715
+[AGENT] Raw health_factor from Aave contract: 4.00202934
+[AGENT] 🔍 ENHANCED COLLATERAL CALCULATION:
+[AGENT] Using successful Aave contract data: $177.37
+[AGENT] WBTC supplied: 0.00000000
+[AGENT] WETH supplied: 0.00000000
+[AGENT] USDC supplied: 0.00000000
+[AGENT] Enhanced calculation:
+[AGENT] BTC price: $117,927.64
+[AGENT] ETH price: $3,396.54
+[AGENT] USDC price: $0.9997
+[AGENT] Enhanced collateral USD: $0.00
+[AGENT] ⚠️ Enhanced calculation still shows low value
+[AGENT] ✅ Using direct Aave contract data as primary source
+[AGENT] 🔍 DEBUG - BASELINE TRACKING:
+[AGENT] self.last_collateral_value_usd (baseline): $177.77
+[AGENT] current_collateral_value_usd (now): $177.37
+[AGENT] self.baseline_initialized: True
+[AGENT] 🔍 DEBUG - TRIGGER CHECK:
+[AGENT] current_collateral_value_usd: $177.37
+[AGENT] baseline (last_collateral): $177.77
+[AGENT] collateral_growth: $-0.40
+[AGENT] main_trigger_threshold: $12.00
+[AGENT] trigger condition met: False
+[AGENT] ⚠️ Real data fetch failed, using forced dashboard values: Unknown format '0xFF970A61A04b1cA14834A651bAb06d67307796618', attempted to normalize to '0xff970a61a04b1ca14834a651bab06d67307796618'
+[AGENT] ✅ Using verified contract addresses (skipping normalization)
+[AGENT] 🔍 ENHANCED POSITION DETECTION:
+[AGENT] 🔄 FRESH AAVE CONTRACT DATA:
+[AGENT] Fresh Collateral: $177.37
+[AGENT] Fresh Debt: $35.06
+[AGENT] Fresh Health Factor: 4.0020
+[AGENT] ✅ USING FRESH DATA AS PRIMARY SOURCE: $177.37
+[AGENT] 📊 UPDATED VALUES:
+[AGENT] Current Collateral: $177.37
+[AGENT] Current Health Factor: 4.0020
+[AGENT] Current Debt: $35.06
+[AGENT] 🔍 DEBUG - BASELINE INITIALIZATION CHECK:
+[AGENT] self.baseline_initialized: True
+[AGENT] current_collateral_value_usd (ENHANCED): $177.37
+[AGENT] current baseline: $177.77
+[AGENT] 
+[AGENT] 🎯 AUTONOMOUS TRIGGER CHECK:
+[AGENT] Current Collateral: $177.37
+[AGENT] Baseline: $177.77
+[AGENT] Target for Trigger: $189.77
+[AGENT] Actual Growth: $-0.40
+[AGENT] Growth Needed: $12.00
+[AGENT] Manual Override: False
+[AGENT] ✅ TRIGGER READY: False
+[AGENT] ⏸️ No action: Collateral growth $-0.40 < $12 threshold
+[AGENT] 📊 Current Position: $177.37 collateral, $35.06 debt
+[AGENT] 💰 Last recorded collateral: $177.77
+[AGENT] 📈 Collateral growth: $-0.40
+[AGENT] [13:44:58] INFO: ✔️ Moderate performance cycle: 0.700
+[AGENT] [13:45:28] INFO: 🔄 Monitoring cycle 1-3
+[AGENT] 
+[AGENT] 🎯 Autonomous Run 1, Iteration 3
+[AGENT] 
+[AGENT] 🔍 AGENT WALLET & AAVE DIAGNOSTIC:
+[AGENT] Agent Wallet Address: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+[AGENT] Network: mainnet (Chain ID: 42161)
+[AGENT] RPC Endpoint: https://arbitrum-one.public.blastapi.io
+[AGENT] Aave Pool Address: 0x794a61358D6845594F94dc1DB02A252b5b4814aD
+[AGENT] 🔍 USING FRESH AAVE CONTRACT DATA (RELIABLE SOURCE):
+[AGENT] 📊 Getting fresh data from Aave Pool: 0x794a61358D6845594F94dc1DB02A252b5b4814aD
+[AGENT] ✅ FRESH AAVE CONTRACT DATA:
+[AGENT] Total Collateral USD: $177.24
+[AGENT] Total Debt USD: $35.06
+[AGENT] Available Borrows USD: $96.60
+[AGENT] Health Factor: 3.9990
+[AGENT] Data Source: LIVE_AAVE_CONTRACT
+[AGENT] 🔍 CHECKING INDIVIDUAL AAVE ASSET BALANCES:
+[AGENT] ⚠️ Individual asset check failed: invalid syntax (rpc_circuit_breaker.py, line 85)
+[AGENT] This is non-critical - using aggregate Aave data instead
+[AGENT] 📊 Current Health Factor: 3.9990
+[AGENT] ✅ Real ARB price fetched: $0.4466
+[AGENT] 💰 ARB Price: $0.4466
+[AGENT] 🌐 Network Connected: Block 358665426, Gas Price: 0.088817 Gwei
+[AGENT] 🔗 RPC Endpoint: https://arbitrum-one.public.blastapi.io
+[AGENT] ⛓️ Chain ID: 42161 (Expected: 42161)
+[AGENT] ✅ Aave Pool accessible: Revision 8
+[AGENT] 
+[AGENT] 🔍 DIAGNOSTIC: Checking Wallet Balances...
+[AGENT] DIAGNOSTIC - Wallet ETH Balance (raw): 0.0017494926 ETH
+[AGENT] DIAGNOSTIC - Using Aave position data instead of individual token balances
+[DASHBOARD] ✅ RPC passed tests: https://arbitrum-one.public.blastapi.io (0.09s)
+[DASHBOARD] 🔍 Testing RPC: https://1rpc.io/arb
+[DASHBOARD] ✅ RPC passed tests: https://1rpc.io/arb (0.13s)
+[DASHBOARD] 🔍 Testing RPC: https://arbitrum.blockpi.network/v1/rpc/public
+[DASHBOARD] ❌ Not connected: https://arbitrum.blockpi.network/v1/rpc/public
+[DASHBOARD] 📊 RPC Test Results: 5/8 endpoints working
+[DASHBOARD] 🌐 Operating on Arbitrum Mainnet
+[DASHBOARD] 🚨 NETWORK_MODE from environment: 'mainnet'
+[DASHBOARD] 🔗 Primary RPC: https://arbitrum-one.public.blastapi.io
+[DASHBOARD] 🔄 Fallback RPCs: 4 available
+[DASHBOARD] 🔑 Wallet Address: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+[DASHBOARD] 💰 AGENT INITIALIZED WITH WALLET: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+[DASHBOARD] ✅ Private key format validated and normalized
+[DASHBOARD] 📋 Mainnet Token addresses verified:
+[DASHBOARD] USDC: 0xAf88D065e77C8cF0EAEfF3e253e648A15CEe23dC
+[DASHBOARD] WBTC: 0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f
+[DASHBOARD] WETH: 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1
+[DASHBOARD] DAI: 0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1
+[DASHBOARD] Aave Pool: 0x794a61358D6845594F94dc1DB02A252b5b4814aD
+[DASHBOARD] 📋 Token addresses verified:
+[DASHBOARD] USDC: 0xAf88D065e77C8cF0EAEfF3e253e648A15CEe23dC
+[DASHBOARD] WBTC: 0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f
+[DASHBOARD] WETH: 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1
+[DASHBOARD] DAI: 0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1
+[DASHBOARD] Aave Pool: 0x794a61358D6845594F94dc1DB02A252b5b4814aD
+[DASHBOARD] 💰 Initialized last_collateral_value_usd to 0.0 (will sync with actual position)
+[DASHBOARD] 📊 Initialized last_collateral_value_usd to: 0.0
+[DASHBOARD] 🔍 LIVE AAVE FETCH Attempt 1: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+[DASHBOARD] ✅ LIVE AAVE DATA RETRIEVED:
+[DASHBOARD] Health Factor: 3.9990
+[DASHBOARD] Collateral: $177.24
+[DASHBOARD] Debt: $35.06
+[DASHBOARD] Available Borrows: $96.60
+[DASHBOARD] Data Source: LIVE_AAVE_CONTRACT
+[DASHBOARD] Data Quality: ✅ VALIDATED
+[DASHBOARD] ✅ Unified data validated: Data validated successfully
+[DASHBOARD] 📊 Using LIVE AAVE CONTRACT data: HF 3.9990
+[DASHBOARD] 🔍 Autonomous agent running check: True
+[DASHBOARD] ✅ Wallet status retrieved: HF 3.9990, Agent Running: True
+[DASHBOARD] 🔍 API: Fetching wallet status...
+[DASHBOARD] 🤖 Initializing Arbitrum Testnet Agent...
+[DASHBOARD] 🔍 Testing RPC: https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f938ff891c141
+[DASHBOARD] ✅ RPC passed tests: https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f938ff891c141 (0.30s)
+[DASHBOARD] 🔍 Testing RPC: https://arb1.arbitrum.io/rpc
+[DASHBOARD] ✅ RPC passed tests: https://arb1.arbitrum.io/rpc (0.37s)
+[DASHBOARD] 🔍 Testing RPC: https://arbitrum-one.publicnode.com
+[DASHBOARD] ✅ RPC passed tests: https://arbitrum-one.publicnode.com (0.90s)
+[DASHBOARD] 🔍 Testing RPC: https://arbitrum.llamarpc.com
+[DASHBOARD] ❌ Not connected: https://arbitrum.llamarpc.com
+[DASHBOARD] 🔍 Testing RPC: https://rpc.ankr.com/arbitrum
+[DASHBOARD] ❌ Not connected: https://rpc.ankr.com/arbitrum
+[DASHBOARD] 🔍 Testing RPC: https://arbitrum-one.public.blastapi.io
+[DASHBOARD] ✅ RPC passed tests: https://arbitrum-one.public.blastapi.io (0.17s)
+[DASHBOARD] 🔍 Testing RPC: https://1rpc.io/arb
+[DASHBOARD] ✅ RPC passed tests: https://1rpc.io/arb (0.13s)
+[DASHBOARD] 🔍 Testing RPC: https://arbitrum.blockpi.network/v1/rpc/public
+[DASHBOARD] ❌ Not connected: https://arbitrum.blockpi.network/v1/rpc/public
+[DASHBOARD] 📊 RPC Test Results: 5/8 endpoints working
+[DASHBOARD] 🌐 Operating on Arbitrum Mainnet
+[DASHBOARD] 🚨 NETWORK_MODE from environment: 'mainnet'
+[DASHBOARD] 🔗 Primary RPC: https://1rpc.io/arb
+[DASHBOARD] 🔄 Fallback RPCs: 4 available
+[DASHBOARD] 🔑 Wallet Address: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+[DASHBOARD] 💰 AGENT INITIALIZED WITH WALLET: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+[DASHBOARD] ✅ Private key format validated and normalized
+[DASHBOARD] 📋 Mainnet Token addresses verified:
+[DASHBOARD] USDC: 0xAf88D065e77C8cF0EAEfF3e253e648A15CEe23dC
+[DASHBOARD] WBTC: 0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f
+[DASHBOARD] WETH: 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1
+[DASHBOARD] DAI: 0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1
+[DASHBOARD] Aave Pool: 0x794a61358D6845594F94dc1DB02A252b5b4814aD
+[DASHBOARD] 📋 Token addresses verified:
+[DASHBOARD] USDC: 0xAf88D065e77C8cF0EAEfF3e253e648A15CEe23dC
+[DASHBOARD] WBTC: 0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f
+[DASHBOARD] WETH: 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1
+[DASHBOARD] DAI: 0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1
+[DASHBOARD] Aave Pool: 0x794a61358D6845594F94dc1DB02A252b5b4814aD
+[DASHBOARD] 💰 Initialized last_collateral_value_usd to 0.0 (will sync with actual position)
+[DASHBOARD] 📊 Initialized last_collateral_value_usd to: 0.0
+[DASHBOARD] 🔍 LIVE AAVE FETCH Attempt 1: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+[DASHBOARD] ✅ LIVE AAVE DATA RETRIEVED:
+[DASHBOARD] Health Factor: 3.9990
+[DASHBOARD] Collateral: $177.24
+[DASHBOARD] Debt: $35.06
+[DASHBOARD] Available Borrows: $96.60
+[DASHBOARD] Data Source: LIVE_AAVE_CONTRACT
+[DASHBOARD] Data Quality: ✅ VALIDATED
+[DASHBOARD] ✅ Unified data validated: Data validated successfully
+[DASHBOARD] 📊 Using LIVE AAVE CONTRACT data: HF 3.9990
+[DASHBOARD] 🔍 Autonomous agent running check: True
+[DASHBOARD] ✅ Wallet status retrieved: HF 3.9990, Agent Running: True
+[DASHBOARD] 🔍 API: Fetching wallet status...
+[DASHBOARD] 🤖 Initializing Arbitrum Testnet Agent...
+[DASHBOARD] 🔍 Testing RPC: https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f938ff891c141
+[DASHBOARD] ✅ RPC passed tests: https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f938ff891c141 (0.32s)
+[DASHBOARD] 🔍 Testing RPC: https://arb1.arbitrum.io/rpc
+[DASHBOARD] ✅ RPC passed tests: https://arb1.arbitrum.io/rpc (0.33s)
+[DASHBOARD] 🔍 Testing RPC: https://arbitrum-one.publicnode.com
+[DASHBOARD] ✅ RPC passed tests: https://arbitrum-one.publicnode.com (0.79s)
+[DASHBOARD] 🔍 Testing RPC: https://arbitrum.llamarpc.com
+[DASHBOARD] ❌ Not connected: https://arbitrum.llamarpc.com
+[DASHBOARD] 🔍 Testing RPC: https://rpc.ankr.com/arbitrum
+[DASHBOARD] ❌ Not connected: https://rpc.ankr.com/arbitrum
+[DASHBOARD] 🔍 Testing RPC: https://arbitrum-one.public.blastapi.io
+[DASHBOARD] ✅ RPC passed tests: https://arbitrum-one.public.blastapi.io (0.11s)
+[DASHBOARD] 🔍 Testing RPC: https://1rpc.io/arb
+[DASHBOARD] ✅ RPC passed tests: https://1rpc.io/arb (0.09s)
+[DASHBOARD] 🔍 Testing RPC: https://arbitrum.blockpi.network/v1/rpc/public
+[DASHBOARD] ❌ Not connected: https://arbitrum.blockpi.network/v1/rpc/public
+[DASHBOARD] 📊 RPC Test Results: 5/8 endpoints working
+[DASHBOARD] 🌐 Operating on Arbitrum Mainnet
+[DASHBOARD] 🚨 NETWORK_MODE from environment: 'mainnet'
+[DASHBOARD] 🔗 Primary RPC: https://1rpc.io/arb
+[DASHBOARD] 🔄 Fallback RPCs: 4 available
+[DASHBOARD] 🔑 Wallet Address: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+[DASHBOARD] 💰 AGENT INITIALIZED WITH WALLET: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+[DASHBOARD] ✅ Private key format validated and normalized
+[DASHBOARD] 📋 Mainnet Token addresses verified:
+[DASHBOARD] USDC: 0xAf88D065e77C8cF0EAEfF3e253e648A15CEe23dC
+[DASHBOARD] WBTC: 0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f
+[DASHBOARD] WETH: 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1
+[DASHBOARD] DAI: 0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1
+[DASHBOARD] Aave Pool: 0x794a61358D6845594F94dc1DB02A252b5b4814aD
+[DASHBOARD] 📋 Token addresses verified:
+[DASHBOARD] USDC: 0xAf88D065e77C8cF0EAEfF3e253e648A15CEe23dC
+[DASHBOARD] WBTC: 0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f
+[DASHBOARD] WETH: 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1
+[DASHBOARD] DAI: 0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1
+[DASHBOARD] Aave Pool: 0x794a61358D6845594F94dc1DB02A252b5b4814aD
+[DASHBOARD] 💰 Initialized last_collateral_value_usd to 0.0 (will sync with actual position)
+[DASHBOARD] 📊 Initialized last_collateral_value_usd to: 0.0
+[DASHBOARD] 🔍 LIVE AAVE FETCH Attempt 1: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+[DASHBOARD] ✅ LIVE AAVE DATA RETRIEVED:
+[DASHBOARD] Health Factor: 3.9983
+[DASHBOARD] Collateral: $177.21
+[DASHBOARD] Debt: $35.06
+[DASHBOARD] Available Borrows: $96.57
+[DASHBOARD] Data Source: LIVE_AAVE_CONTRACT
+[DASHBOARD] Data Quality: ✅ VALIDATED
+[DASHBOARD] ✅ Unified data validated: Data validated successfully
+[DASHBOARD] 📊 Using LIVE AAVE CONTRACT data: HF 3.9983
+[DASHBOARD] 🔍 Autonomous agent running check: True
+[DASHBOARD] ✅ Wallet status retrieved: HF 3.9983, Agent Running: True
+[DASHBOARD] 🔍 API: Fetching wallet status...
+[DASHBOARD] 🤖 Initializing Arbitrum Testnet Agent...
+[DASHBOARD] 🔍 Testing RPC: https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f938ff891c141
+[DASHBOARD] ✅ RPC passed tests: https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f938ff891c141 (0.30s)
+[DASHBOARD] 🔍 Testing RPC: https://arb1.arbitrum.io/rpc
+[DASHBOARD] ✅ RPC passed tests: https://arb1.arbitrum.io/rpc (0.35s)
+[DASHBOARD] 🔍 Testing RPC: https://arbitrum-one.publicnode.com
+[DASHBOARD] ✅ RPC passed tests: https://arbitrum-one.publicnode.com (0.97s)
+[DASHBOARD] 🔍 Testing RPC: https://arbitrum.llamarpc.com
+[DASHBOARD] ❌ Not connected: https://arbitrum.llamarpc.com
+[DASHBOARD] 🔍 Testing RPC: https://rpc.ankr.com/arbitrum
+[DASHBOARD] ❌ Not connected: https://rpc.ankr.com/arbitrum
+[DASHBOARD] 🔍 Testing RPC: https://arbitrum-one.public.blastapi.io
+[DASHBOARD] ✅ RPC passed tests: https://arbitrum-one.public.blastapi.io (0.10s)
+[DASHBOARD] 🔍 Testing RPC: https://1rpc.io/arb
+[DASHBOARD] ✅ RPC passed tests: https://1rpc.io/arb (0.11s)
+[DASHBOARD] 🔍 Testing RPC: https://arbitrum.blockpi.network/v1/rpc/public
+[DASHBOARD] ❌ Not connected: https://arbitrum.blockpi.network/v1/rpc/public
+[DASHBOARD] 📊 RPC Test Results: 5/8 endpoints working
+[DASHBOARD] 🌐 Operating on Arbitrum Mainnet
+[AGENT] DIAGNOSTIC - Wallet USDC Balance (via direct contract): 0.000000 USDC
+[AGENT] 🔍 DIAGNOSTIC: Wallet Balance Check Complete.
+[AGENT] 🔍 WALLET READINESS CHECK:
+[AGENT] ETH Balance: 0.001749 ETH
+[AGENT] Aave Position: $177.24 collateral
+[AGENT] ✅ Wallet ready for DeFi operations!
+[AGENT] Sufficient ETH for gas: 0.001749 ETH
+[AGENT] Active Aave position: $177.24
+[AGENT] 🔍 MONITORING: Health factor 3.9990
+[AGENT] 🔍 DEBUG - RAW HEALTH DATA FROM DIRECT AAVE:
+[AGENT] Raw collateral_usd from Aave contract: $177.23952199
+[AGENT] Raw debt_usd from Aave contract: $35.05781915
+[AGENT] Raw health_factor from Aave contract: 3.99900693
+[AGENT] 🔍 ENHANCED COLLATERAL CALCULATION:
+[AGENT] Using successful Aave contract data: $177.24
+[AGENT] WBTC supplied: 0.00000000
+[AGENT] WETH supplied: 0.00000000
+[AGENT] USDC supplied: 0.00000000
+[AGENT] Enhanced calculation:
+[AGENT] BTC price: $117,927.64
+[AGENT] ETH price: $3,396.54
+[AGENT] USDC price: $0.9997
+[AGENT] Enhanced collateral USD: $0.00
+[AGENT] ⚠️ Enhanced calculation still shows low value
+[AGENT] ✅ Using direct Aave contract data as primary source
+[AGENT] 🔍 DEBUG - BASELINE TRACKING:
+[AGENT] self.last_collateral_value_usd (baseline): $177.77
+[AGENT] current_collateral_value_usd (now): $177.24
+[AGENT] self.baseline_initialized: True
+[AGENT] 🔍 DEBUG - TRIGGER CHECK:
+[AGENT] current_collateral_value_usd: $177.24
+[AGENT] baseline (last_collateral): $177.77
+[AGENT] collateral_growth: $-0.53
+[AGENT] main_trigger_threshold: $12.00
+[AGENT] trigger condition met: False
+[AGENT] ⚠️ Real data fetch failed, using forced dashboard values: Unknown format '0xFF970A61A04b1cA14834A651bAb06d67307796618', attempted to normalize to '0xff970a61a04b1ca14834a651bab06d67307796618'
+[AGENT] ✅ Using verified contract addresses (skipping normalization)
+[AGENT] 🔍 ENHANCED POSITION DETECTION:
+[AGENT] 🔄 FRESH AAVE CONTRACT DATA:
+[AGENT] Fresh Collateral: $177.24
+[AGENT] Fresh Debt: $35.06
+[AGENT] Fresh Health Factor: 3.9990
+[AGENT] ✅ USING FRESH DATA AS PRIMARY SOURCE: $177.24
+[AGENT] 📊 UPDATED VALUES:
+[AGENT] Current Collateral: $177.24
+[AGENT] Current Health Factor: 3.9990
+[AGENT] Current Debt: $35.06
+[AGENT] 🔍 DEBUG - BASELINE INITIALIZATION CHECK:
+[AGENT] self.baseline_initialized: True
+[AGENT] current_collateral_value_usd (ENHANCED): $177.24
+[AGENT] current baseline: $177.77
+[AGENT] 
+[AGENT] 🎯 AUTONOMOUS TRIGGER CHECK:
+[AGENT] Current Collateral: $177.24
+[AGENT] Baseline: $177.77
+[AGENT] Target for Trigger: $189.77
+[AGENT] Actual Growth: $-0.53
+[AGENT] Growth Needed: $12.00
+[AGENT] Manual Override: False
+[AGENT] ✅ TRIGGER READY: False
+[AGENT] ⏸️ No action: Collateral growth $-0.53 < $12 threshold
+[AGENT] 📊 Current Position: $177.24 collateral, $35.06 debt
+[AGENT] 💰 Last recorded collateral: $177.77
+[AGENT] 📈 Collateral growth: $-0.53
+[AGENT] [13:45:28] INFO: ✔️ Moderate performance cycle: 0.700
+[AGENT] [13:45:58] INFO: 🔄 Monitoring cycle 1-4
+[AGENT] 
+[AGENT] 🎯 Autonomous Run 1, Iteration 4
+[AGENT] 
+[AGENT] 🔍 AGENT WALLET & AAVE DIAGNOSTIC:
+[AGENT] Agent Wallet Address: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+[AGENT] Network: mainnet (Chain ID: 42161)
+[AGENT] RPC Endpoint: https://arbitrum-one.public.blastapi.io
+[AGENT] Aave Pool Address: 0x794a61358D6845594F94dc1DB02A252b5b4814aD
+[AGENT] 🔍 USING FRESH AAVE CONTRACT DATA (RELIABLE SOURCE):
+[AGENT] 📊 Getting fresh data from Aave Pool: 0x794a61358D6845594F94dc1DB02A252b5b4814aD
+[AGENT] ✅ FRESH AAVE CONTRACT DATA:
+[AGENT] Total Collateral USD: $177.21
+[AGENT] Total Debt USD: $35.06
+[AGENT] Available Borrows USD: $96.57
+[AGENT] Health Factor: 3.9983
+[AGENT] Data Source: LIVE_AAVE_CONTRACT
+[AGENT] 🔍 CHECKING INDIVIDUAL AAVE ASSET BALANCES:
+[AGENT] ⚠️ Individual asset check failed: invalid syntax (rpc_circuit_breaker.py, line 85)
+[AGENT] This is non-critical - using aggregate Aave data instead
+[AGENT] 📊 Current Health Factor: 3.9983
+[AGENT] ✅ Real ARB price fetched: $0.4460
+[AGENT] 💰 ARB Price: $0.4460
+[AGENT] 🌐 Network Connected: Block 358665549, Gas Price: 0.097932 Gwei
+[AGENT] 🔗 RPC Endpoint: https://arbitrum-one.public.blastapi.io
+[AGENT] ⛓️ Chain ID: 42161 (Expected: 42161)
+[AGENT] ✅ Aave Pool accessible: Revision 8
+[AGENT] 
+[AGENT] 🔍 DIAGNOSTIC: Checking Wallet Balances...
+[AGENT] DIAGNOSTIC - Wallet ETH Balance (raw): 0.0017494926 ETH
+[AGENT] DIAGNOSTIC - Using Aave position data instead of individual token balances
+[AGENT] DIAGNOSTIC - Wallet USDC Balance (via direct contract): 0.000000 USDC
+[AGENT] 🔍 DIAGNOSTIC: Wallet Balance Check Complete.
+[AGENT] 🔍 WALLET READINESS CHECK:
+[AGENT] ETH Balance: 0.001749 ETH
+[AGENT] Aave Position: $177.21 collateral
+[AGENT] ✅ Wallet ready for DeFi operations!
+[AGENT] Sufficient ETH for gas: 0.001749 ETH
+[AGENT] Active Aave position: $177.21
+[AGENT] 🔍 MONITORING: Health factor 3.9983
+[AGENT] 🔍 DEBUG - RAW HEALTH DATA FROM DIRECT AAVE:
+[AGENT] Raw collateral_usd from Aave contract: $177.20618545
+[AGENT] Raw debt_usd from Aave contract: $35.05782115
+[AGENT] Raw health_factor from Aave contract: 3.99825454
+[AGENT] 🔍 ENHANCED COLLATERAL CALCULATION:
+[AGENT] Using successful Aave contract data: $177.21
+[AGENT] WBTC supplied: 0.00000000
+[AGENT] WETH supplied: 0.00000000
+[AGENT] USDC supplied: 0.00000000
+[AGENT] Enhanced calculation:
+[AGENT] BTC price: $117,883.37
+[AGENT] ETH price: $3,384.90
+[AGENT] USDC price: $0.9998
+[AGENT] Enhanced collateral USD: $0.00
+[AGENT] ⚠️ Enhanced calculation still shows low value
+[AGENT] ✅ Using direct Aave contract data as primary source
+[AGENT] 🔍 DEBUG - BASELINE TRACKING:
+[AGENT] self.last_collateral_value_usd (baseline): $177.77
+[AGENT] current_collateral_value_usd (now): $177.21
+[AGENT] self.baseline_initialized: True
+[AGENT] 🔍 DEBUG - TRIGGER CHECK:
+[AGENT] current_collateral_value_usd: $177.21
+[AGENT] baseline (last_collateral): $177.77
+[AGENT] collateral_growth: $-0.57
+[AGENT] main_trigger_threshold: $12.00
+[AGENT] trigger condition met: False
+[AGENT] ⚠️ Real data fetch failed, using forced dashboard values: Unknown format '0xFF970A61A04b1cA14834A651bAb06d67307796618', attempted to normalize to '0xff970a61a04b1ca14834a651bab06d67307796618'
+[AGENT] ✅ Using verified contract addresses (skipping normalization)
+[AGENT] 🔍 ENHANCED POSITION DETECTION:
+[AGENT] 🔄 FRESH AAVE CONTRACT DATA:
+[AGENT] Fresh Collateral: $177.21
+[AGENT] Fresh Debt: $35.06
+[AGENT] Fresh Health Factor: 3.9983
+[AGENT] ✅ USING FRESH DATA AS PRIMARY SOURCE: $177.21
+[AGENT] 📊 UPDATED VALUES:
+[AGENT] Current Collateral: $177.21
+[AGENT] Current Health Factor: 3.9983
+[AGENT] Current Debt: $35.06
+[AGENT] 🔍 DEBUG - BASELINE INITIALIZATION CHECK:
+[AGENT] self.baseline_initialized: True
+[AGENT] current_collateral_value_usd (ENHANCED): $177.21
+[AGENT] current baseline: $177.77
+[AGENT] 
+[AGENT] 🎯 AUTONOMOUS TRIGGER CHECK:
+[AGENT] Current Collateral: $177.21
+[AGENT] Baseline: $177.77
+[AGENT] Target for Trigger: $189.77
+[AGENT] Actual Growth: $-0.57
+[AGENT] Growth Needed: $12.00
+[AGENT] Manual Override: False
+[AGENT] ✅ TRIGGER READY: False
+[AGENT] ⏸️ No action: Collateral growth $-0.57 < $12 threshold
+[AGENT] 📊 Current Position: $177.21 collateral, $35.06 debt
+[AGENT] 💰 Last recorded collateral: $177.77
+[AGENT] 📈 Collateral growth: $-0.57
+[AGENT] [13:45:59] INFO: ✔️ Moderate performance cycle: 0.700
+[AGENT] [13:46:29] INFO: 🔄 Monitoring cycle 1-5
+[AGENT] 
+[AGENT] 🎯 Autonomous Run 1, Iteration 5
+[AGENT] 
+[AGENT] 🔍 AGENT WALLET & AAVE DIAGNOSTIC:
+[AGENT] Agent Wallet Address: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+[AGENT] Network: mainnet (Chain ID: 42161)
+[AGENT] RPC Endpoint: https://arbitrum-one.public.blastapi.io
+[AGENT] Aave Pool Address: 0x794a61358D6845594F94dc1DB02A252b5b4814aD
+[AGENT] 🔍 USING FRESH AAVE CONTRACT DATA (RELIABLE SOURCE):
+[AGENT] 📊 Getting fresh data from Aave Pool: 0x794a61358D6845594F94dc1DB02A252b5b4814aD
+[AGENT] ✅ FRESH AAVE CONTRACT DATA:
+[AGENT] Total Collateral USD: $177.17
+[AGENT] Total Debt USD: $35.06
+[AGENT] Available Borrows USD: $96.54
+[AGENT] Health Factor: 3.9970
+[AGENT] Data Source: LIVE_AAVE_CONTRACT
+[AGENT] 🔍 CHECKING INDIVIDUAL AAVE ASSET BALANCES:
+[AGENT] ⚠️ Individual asset check failed: invalid syntax (rpc_circuit_breaker.py, line 85)
+[AGENT] This is non-critical - using aggregate Aave data instead
+[AGENT] 📊 Current Health Factor: 3.9970
+[AGENT] ✅ Real ARB price fetched: $0.4460
+[AGENT] 💰 ARB Price: $0.4460
+[AGENT] 🌐 Network Connected: Block 358665672, Gas Price: 0.133169 Gwei
+[AGENT] 🔗 RPC Endpoint: https://arbitrum-one.public.blastapi.io
+[AGENT] ⛓️ Chain ID: 42161 (Expected: 42161)
+[AGENT] ✅ Aave Pool accessible: Revision 8
+[AGENT] 
+[AGENT] 🔍 DIAGNOSTIC: Checking Wallet Balances...
+[AGENT] DIAGNOSTIC - Wallet ETH Balance (raw): 0.0017494926 ETH
+[AGENT] DIAGNOSTIC - Using Aave position data instead of individual token balances
+[AGENT] DIAGNOSTIC - Wallet USDC Balance (via direct contract): 0.000000 USDC
+[AGENT] 🔍 DIAGNOSTIC: Wallet Balance Check Complete.
+[AGENT] 🔍 WALLET READINESS CHECK:
+[AGENT] ETH Balance: 0.001749 ETH
+[DASHBOARD] 🚨 NETWORK_MODE from environment: 'mainnet'
+[DASHBOARD] 🔗 Primary RPC: https://arbitrum-one.public.blastapi.io
+[DASHBOARD] 🔄 Fallback RPCs: 4 available
+[DASHBOARD] 🔑 Wallet Address: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+[DASHBOARD] 💰 AGENT INITIALIZED WITH WALLET: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+[DASHBOARD] ✅ Private key format validated and normalized
+[DASHBOARD] 📋 Mainnet Token addresses verified:
+[DASHBOARD] USDC: 0xAf88D065e77C8cF0EAEfF3e253e648A15CEe23dC
+[DASHBOARD] WBTC: 0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f
+[DASHBOARD] WETH: 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1
+[DASHBOARD] DAI: 0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1
+[DASHBOARD] Aave Pool: 0x794a61358D6845594F94dc1DB02A252b5b4814aD
+[DASHBOARD] 📋 Token addresses verified:
+[DASHBOARD] USDC: 0xAf88D065e77C8cF0EAEfF3e253e648A15CEe23dC
+[DASHBOARD] WBTC: 0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f
+[DASHBOARD] WETH: 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1
+[DASHBOARD] DAI: 0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1
+[DASHBOARD] Aave Pool: 0x794a61358D6845594F94dc1DB02A252b5b4814aD
+[DASHBOARD] 💰 Initialized last_collateral_value_usd to 0.0 (will sync with actual position)
+[DASHBOARD] 📊 Initialized last_collateral_value_usd to: 0.0
+[DASHBOARD] 🔍 LIVE AAVE FETCH Attempt 1: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+[DASHBOARD] ✅ LIVE AAVE DATA RETRIEVED:
+[DASHBOARD] Health Factor: 3.9983
+[DASHBOARD] Collateral: $177.21
+[DASHBOARD] Debt: $35.06
+[DASHBOARD] Available Borrows: $96.57
+[DASHBOARD] Data Source: LIVE_AAVE_CONTRACT
+[DASHBOARD] Data Quality: ✅ VALIDATED
+[DASHBOARD] ✅ Unified data validated: Data validated successfully
+[DASHBOARD] 📊 Using LIVE AAVE CONTRACT data: HF 3.9983
+[DASHBOARD] 🔍 Autonomous agent running check: True
+[DASHBOARD] ✅ Wallet status retrieved: HF 3.9983, Agent Running: True
+[DASHBOARD] 🔍 API: Fetching wallet status...
+[DASHBOARD] 🤖 Initializing Arbitrum Testnet Agent...
+[DASHBOARD] 🔍 Testing RPC: https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f938ff891c141
+[DASHBOARD] ✅ RPC passed tests: https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f938ff891c141 (0.31s)
+[DASHBOARD] 🔍 Testing RPC: https://arb1.arbitrum.io/rpc
+[DASHBOARD] ✅ RPC passed tests: https://arb1.arbitrum.io/rpc (0.33s)
+[DASHBOARD] 🔍 Testing RPC: https://arbitrum-one.publicnode.com
+[DASHBOARD] ✅ RPC passed tests: https://arbitrum-one.publicnode.com (0.81s)
+[DASHBOARD] 🔍 Testing RPC: https://arbitrum.llamarpc.com
+[DASHBOARD] ❌ Not connected: https://arbitrum.llamarpc.com
+[DASHBOARD] 🔍 Testing RPC: https://rpc.ankr.com/arbitrum
+[DASHBOARD] ❌ Not connected: https://rpc.ankr.com/arbitrum
+[DASHBOARD] 🔍 Testing RPC: https://arbitrum-one.public.blastapi.io
+[DASHBOARD] ✅ RPC passed tests: https://arbitrum-one.public.blastapi.io (0.10s)
+[DASHBOARD] 🔍 Testing RPC: https://1rpc.io/arb
+[DASHBOARD] ✅ RPC passed tests: https://1rpc.io/arb (0.12s)
+[DASHBOARD] 🔍 Testing RPC: https://arbitrum.blockpi.network/v1/rpc/public
+[DASHBOARD] ❌ Not connected: https://arbitrum.blockpi.network/v1/rpc/public
+[DASHBOARD] 📊 RPC Test Results: 5/8 endpoints working
+[DASHBOARD] 🌐 Operating on Arbitrum Mainnet
+[DASHBOARD] 🚨 NETWORK_MODE from environment: 'mainnet'
+[DASHBOARD] 🔗 Primary RPC: https://arbitrum-one.public.blastapi.io
+[DASHBOARD] 🔄 Fallback RPCs: 4 available
+[DASHBOARD] 🔑 Wallet Address: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+[DASHBOARD] 💰 AGENT INITIALIZED WITH WALLET: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+[DASHBOARD] ✅ Private key format validated and normalized
+[DASHBOARD] 📋 Mainnet Token addresses verified:
+[DASHBOARD] USDC: 0xAf88D065e77C8cF0EAEfF3e253e648A15CEe23dC
+[DASHBOARD] WBTC: 0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f
+[DASHBOARD] WETH: 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1
+[DASHBOARD] DAI: 0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1
+[DASHBOARD] Aave Pool: 0x794a61358D6845594F94dc1DB02A252b5b4814aD
+[DASHBOARD] 📋 Token addresses verified:
+[DASHBOARD] USDC: 0xAf88D065e77C8cF0EAEfF3e253e648A15CEe23dC
+[DASHBOARD] WBTC: 0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f
+[DASHBOARD] WETH: 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1
+[DASHBOARD] DAI: 0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1
+[DASHBOARD] Aave Pool: 0x794a61358D6845594F94dc1DB02A252b5b4814aD
+[DASHBOARD] 💰 Initialized last_collateral_value_usd to 0.0 (will sync with actual position)
+[DASHBOARD] 📊 Initialized last_collateral_value_usd to: 0.0
+[DASHBOARD] 🔍 LIVE AAVE FETCH Attempt 1: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+[DASHBOARD] ✅ LIVE AAVE DATA RETRIEVED:
+[DASHBOARD] Health Factor: 3.9970
+[DASHBOARD] Collateral: $177.17
+[DASHBOARD] Debt: $35.06
+[DASHBOARD] Available Borrows: $96.54
+[DASHBOARD] Data Source: LIVE_AAVE_CONTRACT
+[DASHBOARD] Data Quality: ✅ VALIDATED
+[DASHBOARD] ✅ Unified data validated: Data validated successfully
+[DASHBOARD] 📊 Using LIVE AAVE CONTRACT data: HF 3.9970
+[DASHBOARD] 🔍 Autonomous agent running check: True
+[DASHBOARD] ✅ Wallet status retrieved: HF 3.9970, Agent Running: True
+[DASHBOARD] 🔍 API: Fetching wallet status...
+[DASHBOARD] 🤖 Initializing Arbitrum Testnet Agent...
+[DASHBOARD] 🔍 Testing RPC: https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f938ff891c141
+[DASHBOARD] ✅ RPC passed tests: https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f938ff891c141 (0.30s)
+[DASHBOARD] 🔍 Testing RPC: https://arb1.arbitrum.io/rpc
+[DASHBOARD] ✅ RPC passed tests: https://arb1.arbitrum.io/rpc (0.34s)
+[DASHBOARD] 🔍 Testing RPC: https://arbitrum-one.publicnode.com
+[DASHBOARD] ✅ RPC passed tests: https://arbitrum-one.publicnode.com (1.04s)
+[DASHBOARD] 🔍 Testing RPC: https://arbitrum.llamarpc.com
+[DASHBOARD] ❌ Not connected: https://arbitrum.llamarpc.com
+[DASHBOARD] 🔍 Testing RPC: https://rpc.ankr.com/arbitrum
+[DASHBOARD] ❌ Not connected: https://rpc.ankr.com/arbitrum
+[DASHBOARD] 🔍 Testing RPC: https://arbitrum-one.public.blastapi.io
+[DASHBOARD] ✅ RPC passed tests: https://arbitrum-one.public.blastapi.io (0.10s)
+[DASHBOARD] 🔍 Testing RPC: https://1rpc.io/arb
+[DASHBOARD] ✅ RPC passed tests: https://1rpc.io/arb (0.10s)
+[DASHBOARD] 🔍 Testing RPC: https://arbitrum.blockpi.network/v1/rpc/public
+[DASHBOARD] ❌ Not connected: https://arbitrum.blockpi.network/v1/rpc/public
+[DASHBOARD] 📊 RPC Test Results: 5/8 endpoints working
+[DASHBOARD] 🌐 Operating on Arbitrum Mainnet
+[DASHBOARD] 🚨 NETWORK_MODE from environment: 'mainnet'
+[DASHBOARD] 🔗 Primary RPC: https://arbitrum-one.public.blastapi.io
+[DASHBOARD] 🔄 Fallback RPCs: 4 available
+[DASHBOARD] 🔑 Wallet Address: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+[DASHBOARD] 💰 AGENT INITIALIZED WITH WALLET: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+[DASHBOARD] ✅ Private key format validated and normalized
+[DASHBOARD] 📋 Mainnet Token addresses verified:
+[DASHBOARD] USDC: 0xAf88D065e77C8cF0EAEfF3e253e648A15CEe23dC
+[DASHBOARD] WBTC: 0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f
+[DASHBOARD] WETH: 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1
+[DASHBOARD] DAI: 0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1
+[DASHBOARD] Aave Pool: 0x794a61358D6845594F94dc1DB02A252b5b4814aD
+[DASHBOARD] 📋 Token addresses verified:
+[DASHBOARD] USDC: 0xAf88D065e77C8cF0EAEfF3e253e648A15CEe23dC
+[DASHBOARD] WBTC: 0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f
+[DASHBOARD] WETH: 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1
+[DASHBOARD] DAI: 0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1
+[DASHBOARD] Aave Pool: 0x794a61358D6845594F94dc1DB02A252b5b4814aD
+[DASHBOARD] 💰 Initialized last_collateral_value_usd to 0.0 (will sync with actual position)
+[DASHBOARD] 📊 Initialized last_collateral_value_usd to: 0.0
+[DASHBOARD] 🔍 LIVE AAVE FETCH Attempt 1: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+[DASHBOARD] ✅ LIVE AAVE DATA RETRIEVED:
+[DASHBOARD] Health Factor: 3.9949
+[DASHBOARD] Collateral: $177.06
+[DASHBOARD] Debt: $35.06
+[DASHBOARD] Available Borrows: $96.46
+[DASHBOARD] Data Source: LIVE_AAVE_CONTRACT
+[DASHBOARD] Data Quality: ✅ VALIDATED
+[DASHBOARD] ✅ Unified data validated: Data validated successfully
+[DASHBOARD] 📊 Using LIVE AAVE CONTRACT data: HF 3.9949
+[DASHBOARD] 🔍 Autonomous agent running check: True
+[DASHBOARD] ✅ Wallet status retrieved: HF 3.9949, Agent Running: True
+[DASHBOARD] 🔍 API: Fetching wallet status...
+[DASHBOARD] 🤖 Initializing Arbitrum Testnet Agent...
+[DASHBOARD] 🔍 Testing RPC: https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f938ff891c141
+[DASHBOARD] ✅ RPC passed tests: https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f938ff891c141 (0.31s)
+[DASHBOARD] 🔍 Testing RPC: https://arb1.arbitrum.io/rpc
+[DASHBOARD] ✅ RPC passed tests: https://arb1.arbitrum.io/rpc (0.34s)
+[DASHBOARD] 🔍 Testing RPC: https://arbitrum-one.publicnode.com
+[DASHBOARD] ✅ RPC passed tests: https://arbitrum-one.publicnode.com (0.75s)
+[DASHBOARD] 🔍 Testing RPC: https://arbitrum.llamarpc.com
+[DASHBOARD] ❌ Not connected: https://arbitrum.llamarpc.com
+[DASHBOARD] 🔍 Testing RPC: https://rpc.ankr.com/arbitrum
+[DASHBOARD] ❌ Not connected: https://rpc.ankr.com/arbitrum
+[DASHBOARD] 🔍 Testing RPC: https://arbitrum-one.public.blastapi.io
+[DASHBOARD] ✅ RPC passed tests: https://arbitrum-one.public.blastapi.io (0.09s)
+[DASHBOARD] 🔍 Testing RPC: https://1rpc.io/arb
+[DASHBOARD] ✅ RPC passed tests: https://1rpc.io/arb (0.11s)
+[DASHBOARD] 🔍 Testing RPC: https://arbitrum.blockpi.network/v1/rpc/public
+[DASHBOARD] ❌ Not connected: https://arbitrum.blockpi.network/v1/rpc/public
+[DASHBOARD] 📊 RPC Test Results: 5/8 endpoints working
+[DASHBOARD] 🌐 Operating on Arbitrum Mainnet
+[DASHBOARD] 🚨 NETWORK_MODE from environment: 'mainnet'
+[DASHBOARD] 🔗 Primary RPC: https://arbitrum-one.public.blastapi.io
+[DASHBOARD] 🔄 Fallback RPCs: 4 available
+[DASHBOARD] 🔑 Wallet Address: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+[AGENT] Aave Position: $177.17 collateral
+[AGENT] ✅ Wallet ready for DeFi operations!
+[AGENT] Sufficient ETH for gas: 0.001749 ETH
+[AGENT] Active Aave position: $177.17
+[AGENT] 🔍 MONITORING: Health factor 3.9970
+[AGENT] 🔍 DEBUG - RAW HEALTH DATA FROM DIRECT AAVE:
+[AGENT] Raw collateral_usd from Aave contract: $177.17093450
+[AGENT] Raw debt_usd from Aave contract: $35.05782315
+[AGENT] Raw health_factor from Aave contract: 3.99695359
+[AGENT] 🔍 ENHANCED COLLATERAL CALCULATION:
+[AGENT] Using successful Aave contract data: $177.17
+[AGENT] WBTC supplied: 0.00000000
+[AGENT] WETH supplied: 0.00000000
+[AGENT] USDC supplied: 0.00000000
+[AGENT] Enhanced calculation:
+[AGENT] BTC price: $117,883.37
+[AGENT] ETH price: $3,384.90
+[AGENT] USDC price: $0.9998
+[AGENT] Enhanced collateral USD: $0.00
+[AGENT] ⚠️ Enhanced calculation still shows low value
+[AGENT] ✅ Using direct Aave contract data as primary source
+[AGENT] 🔍 DEBUG - BASELINE TRACKING:
+[AGENT] self.last_collateral_value_usd (baseline): $177.77
+[AGENT] current_collateral_value_usd (now): $177.17
+[AGENT] self.baseline_initialized: True
+[AGENT] 🔍 DEBUG - TRIGGER CHECK:
+[AGENT] current_collateral_value_usd: $177.17
+[AGENT] baseline (last_collateral): $177.77
+[AGENT] collateral_growth: $-0.60
+[AGENT] main_trigger_threshold: $12.00
+[AGENT] trigger condition met: False
+[AGENT] ⚠️ Real data fetch failed, using forced dashboard values: Unknown format '0xFF970A61A04b1cA14834A651bAb06d67307796618', attempted to normalize to '0xff970a61a04b1ca14834a651bab06d67307796618'
+[AGENT] ✅ Using verified contract addresses (skipping normalization)
+[AGENT] 🔍 ENHANCED POSITION DETECTION:
+[AGENT] 🔄 FRESH AAVE CONTRACT DATA:
+[AGENT] Fresh Collateral: $177.17
+[AGENT] Fresh Debt: $35.06
+[AGENT] Fresh Health Factor: 3.9970
+[AGENT] ✅ USING FRESH DATA AS PRIMARY SOURCE: $177.17
+[AGENT] 📊 UPDATED VALUES:
+[AGENT] Current Collateral: $177.17
+[AGENT] Current Health Factor: 3.9970
+[AGENT] Current Debt: $35.06
+[AGENT] 🔍 DEBUG - BASELINE INITIALIZATION CHECK:
+[AGENT] self.baseline_initialized: True
+[AGENT] current_collateral_value_usd (ENHANCED): $177.17
+[AGENT] current baseline: $177.77
+[AGENT] 
+[AGENT] 🎯 AUTONOMOUS TRIGGER CHECK:
+[AGENT] Current Collateral: $177.17
+[AGENT] Baseline: $177.77
+[AGENT] Target for Trigger: $189.77
+[AGENT] Actual Growth: $-0.60
+[AGENT] Growth Needed: $12.00
+[AGENT] Manual Override: False
+[AGENT] ✅ TRIGGER READY: False
+[AGENT] ⏸️ No action: Collateral growth $-0.60 < $12 threshold
+[AGENT] 📊 Current Position: $177.17 collateral, $35.06 debt
+[AGENT] 💰 Last recorded collateral: $177.77
+[AGENT] 📈 Collateral growth: $-0.60
+[AGENT] [13:46:29] INFO: ✔️ Moderate performance cycle: 0.700
+[AGENT] [13:46:59] INFO: 🔄 Monitoring cycle 1-6
+[AGENT] 
+[AGENT] 🎯 Autonomous Run 1, Iteration 6
+[AGENT] 
+[AGENT] 🔍 AGENT WALLET & AAVE DIAGNOSTIC:
+[AGENT] Agent Wallet Address: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+[AGENT] Network: mainnet (Chain ID: 42161)
+[AGENT] RPC Endpoint: https://arbitrum-one.public.blastapi.io
+[AGENT] Aave Pool Address: 0x794a61358D6845594F94dc1DB02A252b5b4814aD
+[AGENT] 🔍 USING FRESH AAVE CONTRACT DATA (RELIABLE SOURCE):
+[AGENT] 📊 Getting fresh data from Aave Pool: 0x794a61358D6845594F94dc1DB02A252b5b4814aD
+[AGENT] ✅ FRESH AAVE CONTRACT DATA:
+[AGENT] Total Collateral USD: $176.99
+[AGENT] Total Debt USD: $35.06
+[AGENT] Available Borrows USD: $96.41
+[AGENT] Health Factor: 3.9929
+[AGENT] Data Source: LIVE_AAVE_CONTRACT
+[AGENT] 🔍 CHECKING INDIVIDUAL AAVE ASSET BALANCES:
+[AGENT] ⚠️ Individual asset check failed: invalid syntax (rpc_circuit_breaker.py, line 85)
+[AGENT] This is non-critical - using aggregate Aave data instead
+[AGENT] 📊 Current Health Factor: 3.9929
+[AGENT] ✅ Real ARB price fetched: $0.4460
+[AGENT] 💰 ARB Price: $0.4460
+[AGENT] 🌐 Network Connected: Block 358665794, Gas Price: 0.149541 Gwei
+[AGENT] 🔗 RPC Endpoint: https://arbitrum-one.public.blastapi.io
+[AGENT] ⛓️ Chain ID: 42161 (Expected: 42161)
+[AGENT] ✅ Aave Pool accessible: Revision 8
+[AGENT] 
+[AGENT] 🔍 DIAGNOSTIC: Checking Wallet Balances...
+[AGENT] DIAGNOSTIC - Wallet ETH Balance (raw): 0.0017494926 ETH
+[AGENT] DIAGNOSTIC - Using Aave position data instead of individual token balances
+[AGENT] DIAGNOSTIC - Wallet USDC Balance (via direct contract): 0.000000 USDC
+[AGENT] 🔍 DIAGNOSTIC: Wallet Balance Check Complete.
+[AGENT] 🔍 WALLET READINESS CHECK:
+[AGENT] ETH Balance: 0.001749 ETH
+[AGENT] Aave Position: $176.99 collateral
+[AGENT] ✅ Wallet ready for DeFi operations!
+[AGENT] Sufficient ETH for gas: 0.001749 ETH
+[AGENT] Active Aave position: $176.99
+[AGENT] 🔍 MONITORING: Health factor 3.9929
+[AGENT] 🔍 DEBUG - RAW HEALTH DATA FROM DIRECT AAVE:
+[AGENT] Raw collateral_usd from Aave contract: $176.98988666
+[AGENT] Raw debt_usd from Aave contract: $35.05782415
+[AGENT] Raw health_factor from Aave contract: 3.99286906
+[AGENT] 🔍 ENHANCED COLLATERAL CALCULATION:
+[AGENT] Using successful Aave contract data: $176.99
+[AGENT] WBTC supplied: 0.00000000
+[AGENT] WETH supplied: 0.00000000
+[AGENT] USDC supplied: 0.00000000
+[AGENT] Enhanced calculation:
+[AGENT] BTC price: $117,694.89
+[AGENT] ETH price: $3,375.34
+[AGENT] USDC price: $0.9998
+[AGENT] Enhanced collateral USD: $0.00
+[AGENT] ⚠️ Enhanced calculation still shows low value
+[AGENT] ✅ Using direct Aave contract data as primary source
+[AGENT] 🔍 DEBUG - BASELINE TRACKING:
+[AGENT] self.last_collateral_value_usd (baseline): $177.77
+[AGENT] current_collateral_value_usd (now): $176.99
+[AGENT] self.baseline_initialized: True
+[AGENT] 🔍 DEBUG - TRIGGER CHECK:
+[AGENT] current_collateral_value_usd: $176.99
+[AGENT] baseline (last_collateral): $177.77
+[AGENT] collateral_growth: $-0.78
+[AGENT] main_trigger_threshold: $12.00
+[AGENT] trigger condition met: False
+[AGENT] ⚠️ Real data fetch failed, using forced dashboard values: Unknown format '0xFF970A61A04b1cA14834A651bAb06d67307796618', attempted to normalize to '0xff970a61a04b1ca14834a651bab06d67307796618'
+[AGENT] ✅ Using verified contract addresses (skipping normalization)
+[AGENT] 🔍 ENHANCED POSITION DETECTION:
+[AGENT] 🔄 FRESH AAVE CONTRACT DATA:
+[AGENT] Fresh Collateral: $176.99
+[AGENT] Fresh Debt: $35.06
+[AGENT] Fresh Health Factor: 3.9929
+[AGENT] ✅ USING FRESH DATA AS PRIMARY SOURCE: $176.99
+[AGENT] 📊 UPDATED VALUES:
+[AGENT] Current Collateral: $176.99
+[AGENT] Current Health Factor: 3.9929
+[AGENT] Current Debt: $35.06
+[AGENT] 🔍 DEBUG - BASELINE INITIALIZATION CHECK:
+[AGENT] self.baseline_initialized: True
+[AGENT] current_collateral_value_usd (ENHANCED): $176.99
+[AGENT] current baseline: $177.77
+[AGENT] 
+[AGENT] 🎯 AUTONOMOUS TRIGGER CHECK:
+[AGENT] Current Collateral: $176.99
+[AGENT] Baseline: $177.77
+[AGENT] Target for Trigger: $189.77
+[AGENT] Actual Growth: $-0.78
+[AGENT] Growth Needed: $12.00
+[AGENT] Manual Override: False
+[AGENT] ✅ TRIGGER READY: False
+[AGENT] ⏸️ No action: Collateral growth $-0.78 < $12 threshold
+[AGENT] 📊 Current Position: $176.99 collateral, $35.06 debt
+[AGENT] 💰 Last recorded collateral: $177.77
+[AGENT] 📈 Collateral growth: $-0.78
+[AGENT] [13:47:00] INFO: ✔️ Moderate performance cycle: 0.700
+[AGENT] [13:47:30] INFO: 🔄 Monitoring cycle 1-7
+[AGENT] 
+[AGENT] 🎯 Autonomous Run 1, Iteration 7
+[AGENT] 
+[AGENT] 🔍 AGENT WALLET & AAVE DIAGNOSTIC:
+[AGENT] Agent Wallet Address: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+[AGENT] Network: mainnet (Chain ID: 42161)
+[AGENT] RPC Endpoint: https://arbitrum-one.public.blastapi.io
+[AGENT] Aave Pool Address: 0x794a61358D6845594F94dc1DB02A252b5b4814aD
+[AGENT] 🔍 USING FRESH AAVE CONTRACT DATA (RELIABLE SOURCE):
+[AGENT] 📊 Getting fresh data from Aave Pool: 0x794a61358D6845594F94dc1DB02A252b5b4814aD
+[AGENT] ✅ FRESH AAVE CONTRACT DATA:
+[AGENT] Total Collateral USD: $177.15
+[AGENT] Total Debt USD: $35.06
+[AGENT] Available Borrows USD: $96.53
+[AGENT] Health Factor: 3.9965
+[AGENT] Data Source: LIVE_AAVE_CONTRACT
+[AGENT] 🔍 CHECKING INDIVIDUAL AAVE ASSET BALANCES:
+[AGENT] ⚠️ Individual asset check failed: invalid syntax (rpc_circuit_breaker.py, line 85)
+[AGENT] This is non-critical - using aggregate Aave data instead
+[AGENT] 📊 Current Health Factor: 3.9965
+[AGENT] ✅ Real ARB price fetched: $0.4460
+[AGENT] 💰 ARB Price: $0.4460
+[AGENT] 🌐 Network Connected: Block 358665924, Gas Price: 0.150893 Gwei
+[AGENT] 🔗 RPC Endpoint: https://arbitrum-one.public.blastapi.io
+[AGENT] ⛓️ Chain ID: 42161 (Expected: 42161)
+[AGENT] ✅ Aave Pool accessible: Revision 8
+[AGENT] 
+[AGENT] 🔍 DIAGNOSTIC: Checking Wallet Balances...
+[AGENT] DIAGNOSTIC - Wallet ETH Balance (raw): 0.0017494926 ETH
+[AGENT] DIAGNOSTIC - Using Aave position data instead of individual token balances
+[AGENT] DIAGNOSTIC - Wallet USDC Balance (via direct contract): 0.000000 USDC
+[AGENT] 🔍 DIAGNOSTIC: Wallet Balance Check Complete.
+[AGENT] 🔍 WALLET READINESS CHECK:
+[AGENT] ETH Balance: 0.001749 ETH
+[AGENT] Aave Position: $177.15 collateral
+[AGENT] ✅ Wallet ready for DeFi operations!
+[AGENT] Sufficient ETH for gas: 0.001749 ETH
+[AGENT] Active Aave position: $177.15
