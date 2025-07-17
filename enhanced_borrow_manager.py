@@ -41,7 +41,54 @@ class EnhancedBorrowManager:
         if result:
             return result
 
+        # Mechanism 5: Aave API Fallback
+        result = self._try_aave_api_fallback(amount_usd, token_address)
+        if result:
+            return result
+
+        # Mechanism 6: Compound V3 Fallback (USDC only)
+        if token_address.lower() == self.agent.usdc_address.lower():
+            result = self._try_compound_fallback(amount_usd)
+            if result:
+                return result
+
         print("❌ All borrowing mechanisms failed")
+        return None
+
+    def _try_aave_api_fallback(self, amount_usd, token_address):
+        """Try Aave API fallback mechanism"""
+        try:
+            print("🔄 Mechanism 5: Aave API fallback")
+            from aave_api_fallback import AaveAPIFallback
+            
+            api_fallback = AaveAPIFallback(self.agent)
+            result = api_fallback.execute_borrow_via_flashloan(amount_usd, token_address)
+            
+            if result:
+                print(f"✅ Mechanism 5 success: {result}")
+                return result
+                
+        except Exception as e:
+            print(f"❌ Mechanism 5 failed: {e}")
+        
+        return None
+
+    def _try_compound_fallback(self, amount_usd):
+        """Try Compound V3 as fallback for USDC"""
+        try:
+            print("🔄 Mechanism 6: Compound V3 fallback")
+            from compound_v3_integration import CompoundV3Fallback
+            
+            compound_fallback = CompoundV3Fallback(self.agent)
+            result = compound_fallback.borrow_from_compound(amount_usd)
+            
+            if result:
+                print(f"✅ Mechanism 6 success: {result}")
+                return result
+                
+        except Exception as e:
+            print(f"❌ Mechanism 6 failed: {e}")
+        
         return None
 
     def _try_direct_aave_borrow(self, amount_usd, token_address):
@@ -49,13 +96,11 @@ class EnhancedBorrowManager:
         try:
             print("🔄 Mechanism 1: Direct Aave integration")
 
-            # Use the Aave integration's borrow method with correct parameters
-            # Convert USD amount to proper token amount with decimals
-            usdc_amount_proper = amount_usd  # Keep as USD amount for borrow method
-
-            borrow_result = self.agent.aave.borrow(
-                usdc_amount_proper,   # amount in USD
-                token_address  # token address
+            # Use the correct method signature - borrow_from_aave takes 3 args total
+            borrow_result = self.agent.aave.borrow_from_aave(
+                amount_usd,      # amount in USD
+                token_address    # token address
+                # No third argument - interest_rate_mode has default value
             )
 
             if borrow_result:
@@ -72,7 +117,7 @@ class EnhancedBorrowManager:
         try:
             print("🔄 Mechanism 2: Alternative parameter order")
 
-            # Try the simple borrow method
+            # Try the simple borrow method with correct signature
             tx_hash = self.agent.aave.borrow(amount_usd, token_address)
 
             if tx_hash:
