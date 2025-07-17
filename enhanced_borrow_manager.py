@@ -199,8 +199,6 @@ class EnhancedBorrowManager:
         except Exception as e:
             print(f"❌ Mechanism 2 failed: {e}")
 
-        return Noneanism 2 failed: {e}")
-
         return None
 
     def _try_manual_step_borrow(self, amount_usd, token_address):
