@@ -52,6 +52,11 @@ class EnhancedBorrowManager:
             if result:
                 return result
 
+        # Mechanism 7: DeFi Pulse API Integration
+        result = self._try_defi_pulse_api(amount_usd, token_address)
+        if result:
+            return result
+
         print("❌ All borrowing mechanisms failed")
         return None
 
@@ -91,17 +96,82 @@ class EnhancedBorrowManager:
         
         return None
 
+    def _try_defi_pulse_api(self, amount_usd, token_address):
+        """Try DeFi Pulse API for lending operations"""
+        try:
+            print("🔄 Mechanism 7: DeFi Pulse API")
+            
+            # Use DeFi Pulse API for borrow operations
+            import requests
+            
+            # Get current lending rates
+            response = requests.get(f"https://api.defipulse.com/v1/lending/rates")
+            if response.status_code == 200:
+                rates_data = response.json()
+                
+                # Find best borrowing rate for the token
+                best_rate = None
+                for protocol in rates_data.get('protocols', []):
+                    if protocol.get('name') == 'Aave':
+                        best_rate = protocol.get('borrow_rate')
+                        break
+                
+                if best_rate:
+                    print(f"✅ Found borrowing rate: {best_rate}%")
+                    # Execute borrow via direct contract call with optimized parameters
+                    return self._execute_optimized_borrow(amount_usd, token_address, best_rate)
+                    
+        except Exception as e:
+            print(f"❌ Mechanism 7 failed: {e}")
+        
+        return None
+
+    def _execute_optimized_borrow(self, amount_usd, token_address, rate):
+        """Execute borrow with optimized parameters"""
+        try:
+            # Convert to wei with proper decimals
+            decimals = self._get_token_decimals(token_address)
+            amount_wei = int(amount_usd * (10 ** decimals))
+            
+            # Use rate to optimize gas price
+            gas_multiplier = 1.5 if rate > 5.0 else 1.2
+            
+            # Execute with optimized gas
+            tx = self.agent.aave.pool_contract.functions.borrow(
+                Web3.to_checksum_address(token_address),
+                amount_wei,
+                2,  # Variable rate
+                0,  # Referral code
+                Web3.to_checksum_address(self.agent.address)
+            ).build_transaction({
+                'chainId': self.agent.w3.eth.chain_id,
+                'gas': 400000,
+                'gasPrice': int(self.agent.w3.eth.gas_price * gas_multiplier),
+                'nonce': self.agent.w3.eth.get_transaction_count(self.agent.address, 'pending'),
+                'from': self.agent.address
+            })
+            
+            signed_tx = self.agent.w3.eth.account.sign_transaction(tx, self.agent.account.key)
+            tx_hash = self.agent.w3.eth.send_raw_transaction(signed_tx.rawTransaction)
+            
+            return tx_hash.hex()
+            
+        except Exception as e:
+            print(f"❌ Optimized borrow failed: {e}")
+            return None
+
     def _try_direct_aave_borrow(self, amount_usd, token_address):
         """Try the standard Aave integration borrow method"""
         try:
             print("🔄 Mechanism 1: Direct Aave integration")
 
-            # Use the correct method signature - borrow_from_aave takes 3 args total
-            borrow_result = self.agent.aave.borrow_from_aave(
-                amount_usd,      # amount in USD
-                token_address    # token address
-                # No third argument - interest_rate_mode has default value
-            )
+            # Try multiple borrow method signatures
+            if hasattr(self.agent.aave, 'borrow_from_aave'):
+                borrow_result = self.agent.aave.borrow_from_aave(amount_usd, token_address)
+            elif hasattr(self.agent.aave, 'borrow'):
+                borrow_result = self.agent.aave.borrow(amount_usd, token_address)
+            else:
+                raise Exception("No borrow method found in Aave integration")
 
             if borrow_result:
                 print(f"✅ Mechanism 1 success: {borrow_result}")

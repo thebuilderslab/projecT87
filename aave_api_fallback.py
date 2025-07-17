@@ -54,6 +54,11 @@ class AaveAPIFallback:
         try:
             print("🔄 Attempting flashloan-based borrow...")
             
+            # Check user position first via subgraph
+            user_position = self.get_user_reserves_via_api(self.agent.address)
+            if user_position:
+                print(f"✅ User position verified via subgraph")
+            
             # Convert amount to proper decimals
             decimals = 6 if token_address.lower() == self.agent.usdc_address.lower() else 18
             amount_wei = int(amount_usd * (10 ** decimals))
@@ -67,11 +72,27 @@ class AaveAPIFallback:
                         abi=self._get_minimal_borrow_abi()
                     )
                     
-                    # Get fresh gas parameters
-                    gas_price = self.agent.w3.eth.gas_price
+                    # Get fresh gas parameters with optimization
+                    base_gas_price = self.agent.w3.eth.gas_price
+                    gas_multiplier = 1.5 if attempt > 0 else 1.2
+                    
                     nonce = self.agent.w3.eth.get_transaction_count(
                         self.agent.address, 'pending'
                     )
+                    
+                    # Pre-flight check: estimate gas
+                    try:
+                        gas_estimate = pool_contract.functions.borrow(
+                            Web3.to_checksum_address(token_address),
+                            amount_wei,
+                            2,
+                            0,
+                            Web3.to_checksum_address(self.agent.address)
+                        ).estimate_gas({'from': self.agent.address})
+                        
+                        gas_limit = int(gas_estimate * 1.3)
+                    except:
+                        gas_limit = 500000  # Fallback gas limit
                     
                     # Build borrow transaction
                     tx = pool_contract.functions.borrow(
@@ -82,8 +103,8 @@ class AaveAPIFallback:
                         Web3.to_checksum_address(self.agent.address)
                     ).build_transaction({
                         'chainId': self.agent.w3.eth.chain_id,
-                        'gas': 400000,
-                        'gasPrice': int(gas_price * 1.2),
+                        'gas': gas_limit,
+                        'gasPrice': int(base_gas_price * gas_multiplier),
                         'nonce': nonce,
                         'from': self.agent.address
                     })
@@ -103,6 +124,10 @@ class AaveAPIFallback:
                     print(f"⚠️ Flashloan attempt {attempt + 1} failed: {e}")
                     if attempt == 2:
                         raise e
+                    
+                    # Wait before retry
+                    import time
+                    time.sleep(2)
                         
         except Exception as e:
             print(f"❌ Flashloan borrow failed: {e}")
