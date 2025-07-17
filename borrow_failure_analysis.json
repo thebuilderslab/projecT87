@@ -1,9 +1,9 @@
 {
-  "timestamp": 1752727939.0453258,
+  "timestamp": 1752728012.7927308,
   "error": "AaveArbitrumIntegration.borrow_from_aave() takes 3 positional arguments but 4 were given",
   "attempts": 3,
   "rpc_used": "https://arbitrum-one.public.blastapi.io",
   "health_factor": 4.346,
   "available_borrows": 108.27,
-  "requested_amount": 5.973544599999991
+  "requested_amount": 5.98409256
 }
