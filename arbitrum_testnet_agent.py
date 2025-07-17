@@ -51,6 +51,9 @@ class ArbitrumTestnetAgent:
                     continue
             else:
                 raise Exception("Failed to connect to any available RPC endpoint")
+        
+        # Initialize account after successful RPC connection
+        self._initialize_account()
     
     def _initialize_enhanced_rpc_manager(self):
         """Initialize enhanced RPC management with premium and fallback endpoints"""
@@ -265,11 +268,14 @@ class ArbitrumTestnetAgent:
         print("❌ All fallback RPCs failed")
         return False
 
+    def _initialize_account(self):
+        """Initialize account after RPC setup"""
         # Initialize account
         self.account = Account.from_key(self.private_key)
         self.address = self.account.address
         print(f"🔑 Wallet Address: {self.address}")
         print(f"💰 AGENT INITIALIZED WITH WALLET: {self.address}")
+        return True
 
         # Contract addresses based on network
         if self.network_mode == 'mainnet':
