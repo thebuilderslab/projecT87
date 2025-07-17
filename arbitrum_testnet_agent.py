@@ -731,46 +731,46 @@ class ArbitrumTestnetAgent:
             print(f"   Aave Pool Address: {self.aave_pool_address}")
 
             # FIXED: Use only fresh Aave contract data for reliable trigger detection
-        try:
-            print(f"🔍 USING FRESH AAVE CONTRACT DATA (RELIABLE SOURCE):")
-            from web3 import Web3
+            try:
+                print(f"🔍 USING FRESH AAVE CONTRACT DATA (RELIABLE SOURCE):")
+                from web3 import Web3
 
-            # Standard Aave Pool ABI for getUserAccountData
-            pool_abi = [{
-                "inputs": [{"name": "user", "type": "address"}],
-                "name": "getUserAccountData",
-                "outputs": [
-                    {"name": "totalCollateralBase", "type": "uint256"},
-                    {"name": "totalDebtBase", "type": "uint256"},
-                    {"name": "availableBorrowsBase", "type": "uint256"},
-                    {"name": "currentLiquidationThreshold", "type": "uint256"},
-                    {"name": "ltv", "type": "uint256"},
-                    {"name": "healthFactor", "type": "uint256"}
-                ],
-                "stateMutability": "view",
-                "type": "function"
-            }]
+                # Standard Aave Pool ABI for getUserAccountData
+                pool_abi = [{
+                    "inputs": [{"name": "user", "type": "address"}],
+                    "name": "getUserAccountData",
+                    "outputs": [
+                        {"name": "totalCollateralBase", "type": "uint256"},
+                        {"name": "totalDebtBase", "type": "uint256"},
+                        {"name": "availableBorrowsBase", "type": "uint256"},
+                        {"name": "currentLiquidationThreshold", "type": "uint256"},
+                        {"name": "ltv", "type": "uint256"},
+                        {"name": "healthFactor", "type": "uint256"}
+                    ],
+                    "stateMutability": "view",
+                    "type": "function"
+                }]
 
-            pool_contract = self.w3.eth.contract(
-                address=self.aave_pool_address,
-                abi=pool_abi
-            )
+                pool_contract = self.w3.eth.contract(
+                    address=self.aave_pool_address,
+                    abi=pool_abi
+                )
 
-            print(f"   📊 Getting fresh data from Aave Pool: {self.aave_pool_address}")
-            account_data = pool_contract.functions.getUserAccountData(self.address).call()
+                print(f"   📊 Getting fresh data from Aave Pool: {self.aave_pool_address}")
+                account_data = pool_contract.functions.getUserAccountData(self.address).call()
 
-            # Aave V3 uses 8 decimal places for USD values (not 18 like ETH)
-            current_collateral_value_usd = account_data[0] / (10**8)
-            debt_usd = account_data[1] / (10**8)
-            available_borrows_usd = account_data[2] / (10**8)
-            current_health_factor = account_data[5] / (10**18) if account_data[5] > 0 else float('inf')
+                # Aave V3 uses 8 decimal places for USD values (not 18 like ETH)
+                current_collateral_value_usd = account_data[0] / (10**8)
+                debt_usd = account_data[1] / (10**8)
+                available_borrows_usd = account_data[2] / (10**8)
+                current_health_factor = account_data[5] / (10**18) if account_data[5] > 0 else float('inf')
 
-            print(f"   ✅ FRESH AAVE CONTRACT DATA:")
-            print(f"      Total Collateral USD: ${current_collateral_value_usd:,.2f}")
-            print(f"      Total Debt USD: ${debt_usd:,.2f}")
-            print(f"      Available Borrows USD: ${available_borrows_usd:,.2f}")
-            print(f"      Health Factor: {current_health_factor:.4f}")
-            print(f"      Data Source: LIVE_AAVE_CONTRACT")
+                print(f"   ✅ FRESH AAVE CONTRACT DATA:")
+                print(f"      Total Collateral USD: ${current_collateral_value_usd:,.2f}")
+                print(f"      Total Debt USD: ${debt_usd:,.2f}")
+                print(f"      Available Borrows USD: ${available_borrows_usd:,.2f}")
+                print(f"      Health Factor: {current_health_factor:.4f}")
+                print(f"      Data Source: LIVE_AAVE_CONTRACT")
 
                 # Additional debugging: Check individual asset balances on Aave
                 print(f"   🔍 CHECKING INDIVIDUAL AAVE ASSET BALANCES:")
@@ -803,6 +803,13 @@ class ArbitrumTestnetAgent:
 
                 except Exception as e:
                     print(f"   ⚠️ Individual asset check failed: {e}")
+
+            except Exception as e:
+                print(f"⚠️ Fresh Aave contract data failed: {e}")
+                # Use default values if contract call fails
+                current_collateral_value_usd = 0.0
+                debt_usd = 0.0
+                current_health_factor = float('inf')
 
             
 
