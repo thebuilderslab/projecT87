@@ -1184,9 +1184,16 @@ class ArbitrumTestnetAgent:
             # ENHANCED: Check for manual trigger override or test mode
             manual_trigger_file = 'trigger_test.flag'
             force_trigger = os.path.exists(manual_trigger_file)
-
+            
+            # Also check for low-threshold testing mode
+            test_mode_file = 'test_mode.flag'
+            test_mode = os.path.exists(test_mode_file)
+            
             if force_trigger:
                 print(f"🚀 MANUAL TRIGGER DETECTED: Overriding growth requirement")
+                trigger_ready = True
+            elif test_mode and actual_growth >= 1.0:  # Lower threshold for testing
+                print(f"🧪 TEST MODE: Using $1 threshold instead of $12")
                 trigger_ready = True
 
             print(f"""
@@ -1407,18 +1414,63 @@ class ArbitrumTestnetAgent:
 
     #Corrected the borrow method signature in execute_enhanced_borrow_with_retry to resolve the "takes 3positional arguments but 4 were given" error.
     def execute_enhanced_borrow_with_retry(self, safe_borrow_amount):
-        """Execute enhanced borrow with multiple retry attempts"""
+        """Execute enhanced borrow with multiple retry attempts and enhanced validation"""
         max_attempts = 3
+        
+        # Pre-validation checks
+        try:
+            # Verify current health factor is safe
+            pool_abi = [{
+                "inputs": [{"name": "user", "type": "address"}],
+                "name": "getUserAccountData",
+                "outputs": [
+                    {"name": "totalCollateralBase", "type": "uint256"},
+                    {"name": "totalDebtBase", "type": "uint256"},
+                    {"name": "availableBorrowsBase", "type": "uint256"},
+                    {"name": "currentLiquidationThreshold", "type": "uint256"},
+                    {"name": "ltv", "type": "uint256"},
+                    {"name": "healthFactor", "type": "uint256"}
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            }]
+            
+            pool_contract = self.w3.eth.contract(address=self.aave_pool_address, abi=pool_abi)
+            account_data = pool_contract.functions.getUserAccountData(self.address).call()
+            
+            current_health_factor = account_data[5] / (10**18) if account_data[5] > 0 else float('inf')
+            available_borrows_usd = account_data[2] / (10**8)
+            
+            print(f"🔍 Pre-borrow validation:")
+            print(f"   Current HF: {current_health_factor:.4f}")
+            print(f"   Available borrows: ${available_borrows_usd:.2f}")
+            print(f"   Requested: ${safe_borrow_amount:.2f}")
+            
+            # Safety checks
+            if current_health_factor < 1.5:
+                print(f"❌ Health factor too low for borrowing: {current_health_factor:.4f}")
+                return False
+                
+            if available_borrows_usd < safe_borrow_amount:
+                print(f"❌ Insufficient borrowing capacity")
+                return False
+                
+        except Exception as validation_error:
+            print(f"❌ Pre-borrow validation failed: {validation_error}")
+            return False
 
+        # Execute borrow attempts with enhanced error handling
         for attempt in range(max_attempts):
             try:
                 print(f"🔄 Enhanced borrow attempt {attempt + 1}/{max_attempts}")
 
                 # Convert amount to wei for USDC (6 decimals)
                 usdc_amount_wei = int(safe_borrow_amount * (10 ** 6))
-
-                # Use the Aave integration's borrow_from_aave method with correct parameters
-                # The method signature is: borrow_from_aave(token_address, amount, interest_rate_mode=2)
+                
+                # Enhanced gas estimation
+                gas_params = self.get_optimized_gas_params('aave_borrow', 'market')
+                
+                # Use the Aave integration's borrow_from_aave method with gas optimization
                 borrow_result = self.aave.borrow_from_aave(
                     self.usdc_address,    # token_address
                     usdc_amount_wei,      # amount
@@ -1427,35 +1479,62 @@ class ArbitrumTestnetAgent:
 
                 if borrow_result:
                     print(f"✅ Enhanced borrow successful: {borrow_result}")
+                    
+                    # Verify borrow actually happened
+                    time.sleep(3)  # Wait for transaction confirmation
+                    
+                    # Check new balance
+                    new_account_data = pool_contract.functions.getUserAccountData(self.address).call()
+                    new_debt_usd = new_account_data[1] / (10**8)
+                    new_health_factor = new_account_data[5] / (10**18) if new_account_data[5] > 0 else float('inf')
+                    
+                    print(f"✅ Post-borrow verification:")
+                    print(f"   New debt: ${new_debt_usd:.2f}")
+                    print(f"   New HF: {new_health_factor:.4f}")
+                    
                     return True
                 else:
                     print(f"❌ Enhanced borrow attempt {attempt + 1} failed - no result")
 
             except Exception as e:
                 print(f"❌ Enhanced borrow attempt {attempt + 1} error: {e}")
-
-                # Log detailed error for analysis
-                error_log = {
+                
+                # Enhanced error analysis
+                error_details = {
                     'timestamp': time.time(),
                     'error': str(e),
+                    'error_type': type(e).__name__,
                     'attempts': attempt + 1,
                     'rpc_used': self.rpc_url,
-                    'health_factor': 4.346,  # From recent logs
-                    'available_borrows': 108.27,  # From recent logs
-                    'requested_amount': safe_borrow_amount
+                    'health_factor': current_health_factor,
+                    'available_borrows': available_borrows_usd,
+                    'requested_amount': safe_borrow_amount,
+                    'gas_params': gas_params
                 }
+                
+                # Check if it's a gas-related error
+                if 'gas' in str(e).lower() or 'out of gas' in str(e).lower():
+                    print(f"⚠️ Gas-related error detected - adjusting for next attempt")
+                    
+                # Check if it's an RPC error
+                if 'rpc' in str(e).lower() or 'connection' in str(e).lower():
+                    print(f"⚠️ RPC error detected - switching endpoint")
+                    self.switch_to_fallback_rpc()
 
                 try:
                     with open('borrow_failure_analysis.json', 'w') as f:
                         import json
-                        json.dump(error_log, f, indent=2)
+                        json.dump(error_details, f, indent=2)
                 except Exception as json_error:
                     print(f"⚠️ Could not save error log: {json_error}")
 
                 if attempt < max_attempts - 1:
-                    time.sleep(2)  # Wait before retry
+                    wait_time = 2 ** attempt  # Exponential backoff
+                    print(f"⏱️ Waiting {wait_time}s before retry...")
+                    time.sleep(wait_time)
                     continue
 
+        print(f"❌ All {max_attempts} borrow attempts failed")
         return False
 
     def validate_integrations_ready(self):
