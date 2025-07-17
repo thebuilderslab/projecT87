@@ -1,11 +1,12 @@
 {
-  "timestamp": 1752783891.2583122,
-  "datetime": "2025-07-17T20:24:51.258314",
+  "timestamp": 1752784110.5406938,
+  "datetime": "2025-07-17T20:28:30.540695",
   "overall_status": "CRITICAL",
   "critical_issues": [
-    "Syntax error in arbitrum_testnet_agent.py: unterminated string literal (detected at line 636) (arbitrum_testnet_agent.py, line 636)",
-    "Agent initialization failed: unterminated string literal (detected at line 636) (arbitrum_testnet_agent.py, line 636)",
-    "Cannot test autonomous functions: unterminated string literal (detected at line 636) (arbitrum_testnet_agent.py, line 636)"
+    "Syntax error in aave_integration.py: invalid syntax (aave_integration.py, line 335)",
+    "Agent initialization failed: invalid syntax (aave_integration.py, line 335)",
+    "Aave integration import error: invalid syntax (aave_integration.py, line 335)",
+    "Cannot test autonomous functions: invalid syntax (aave_integration.py, line 335)"
   ],
   "warnings": [
     "PRIVATE_KEY may have incorrect format"
@@ -17,23 +18,23 @@
       "NETWORK_MODE": "\u2705 Set: mainnet"
     },
     "files": {
-      "arbitrum_testnet_agent.py": "\u274c Syntax error: unterminated string literal (detected at line 636) (arbitrum_testnet_agent.py, line 636)",
+      "arbitrum_testnet_agent.py": "\u2705 Valid syntax",
       "web_dashboard.py": "\u2705 Valid syntax",
       "complete_autonomous_launcher.py": "\u2705 Valid syntax",
-      "aave_integration.py": "\u2705 Valid syntax",
+      "aave_integration.py": "\u274c Syntax error: invalid syntax (aave_integration.py, line 335)",
       "uniswap_integration.py": "\u2705 Valid syntax",
       "aave_health_monitor.py": "\u2705 Valid syntax",
       "gas_fee_calculator.py": "\u2705 Valid syntax"
     },
     "agent": {
-      "error": "\u274c Failed to initialize: unterminated string literal (detected at line 636) (arbitrum_testnet_agent.py, line 636)"
+      "error": "\u274c Failed to initialize: invalid syntax (aave_integration.py, line 335)"
     },
     "dashboard": {
       "import": "\u2705 Dashboard imports successfully",
       "live_data": "\u2705 Live data function working"
     },
     "defi_integrations": {
-      "aave_import": "\u2705 Aave integration imports",
+      "aave_import": "\u274c Aave import error: invalid syntax (aave_integration.py, line 335)",
       "uniswap_import": "\u2705 Uniswap integration imports",
       "health_monitor_import": "\u2705 Health monitor imports",
       "gas_calculator_import": "\u2705 Gas calculator imports"
@@ -55,7 +56,7 @@
   },
   "function_tests": {
     "autonomous_functions": {
-      "agent_creation": "\u274c Cannot create agent: unterminated string literal (detected at line 636) (arbitrum_testnet_agent.py, line 636)"
+      "agent_creation": "\u274c Cannot create agent: invalid syntax (aave_integration.py, line 335)"
     }
   },
   "recommendations": []
