@@ -1,11 +1,11 @@
 {
-  "timestamp": 1752724036.5629995,
-  "datetime": "2025-07-17T03:47:16.563002",
+  "timestamp": 1752724350.0488925,
+  "datetime": "2025-07-17T03:52:30.048894",
   "overall_status": "CRITICAL",
   "critical_issues": [
-    "Syntax error in arbitrum_testnet_agent.py: expected an indented block after 'except' statement on line 997 (arbitrum_testnet_agent.py, line 998)",
-    "Agent initialization failed: expected an indented block after 'except' statement on line 997 (arbitrum_testnet_agent.py, line 998)",
-    "Cannot test autonomous functions: expected an indented block after 'except' statement on line 997 (arbitrum_testnet_agent.py, line 998)"
+    "Syntax error in arbitrum_testnet_agent.py: expected 'except' or 'finally' block (arbitrum_testnet_agent.py, line 1001)",
+    "Agent initialization failed: expected 'except' or 'finally' block (arbitrum_testnet_agent.py, line 1001)",
+    "Cannot test autonomous functions: expected 'except' or 'finally' block (arbitrum_testnet_agent.py, line 1001)"
   ],
   "warnings": [
     "PRIVATE_KEY may have incorrect format"
@@ -17,7 +17,7 @@
       "NETWORK_MODE": "\u2705 Set: mainnet"
     },
     "files": {
-      "arbitrum_testnet_agent.py": "\u274c Syntax error: expected an indented block after 'except' statement on line 997 (arbitrum_testnet_agent.py, line 998)",
+      "arbitrum_testnet_agent.py": "\u274c Syntax error: expected 'except' or 'finally' block (arbitrum_testnet_agent.py, line 1001)",
       "web_dashboard.py": "\u2705 Valid syntax",
       "complete_autonomous_launcher.py": "\u2705 Valid syntax",
       "aave_integration.py": "\u2705 Valid syntax",
@@ -26,7 +26,7 @@
       "gas_fee_calculator.py": "\u2705 Valid syntax"
     },
     "agent": {
-      "error": "\u274c Failed to initialize: expected an indented block after 'except' statement on line 997 (arbitrum_testnet_agent.py, line 998)"
+      "error": "\u274c Failed to initialize: expected 'except' or 'finally' block (arbitrum_testnet_agent.py, line 1001)"
     },
     "dashboard": {
       "import": "\u2705 Dashboard imports successfully",
@@ -55,7 +55,7 @@
   },
   "function_tests": {
     "autonomous_functions": {
-      "agent_creation": "\u274c Cannot create agent: expected an indented block after 'except' statement on line 997 (arbitrum_testnet_agent.py, line 998)"
+      "agent_creation": "\u274c Cannot create agent: expected 'except' or 'finally' block (arbitrum_testnet_agent.py, line 1001)"
     }
   },
   "recommendations": []
