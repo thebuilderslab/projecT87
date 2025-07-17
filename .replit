@@ -16,7 +16,7 @@ run = ["sh", "-c", "python mainnet_launcher.py"]
 deploymentTarget = "cloudrun"
 
 [workflows]
-runButton = "🔍 VERIFIED AUTONOMOUS LAUNCH"
+runButton = "🔧 SYSTEM VALIDATION"
 
 [[workflows.workflow]]
 name = "Run"
