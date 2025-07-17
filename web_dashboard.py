@@ -218,28 +218,68 @@ def wallet_status():
         # Check if autonomous agent is currently running
         agent_is_running = check_autonomous_agent_running()
 
+        # Get fresh Aave data directly
+        try:
+            if agent and hasattr(agent, 'w3') and hasattr(agent, 'aave_pool_address'):
+                from web3 import Web3
+                pool_abi = [{
+                    "inputs": [{"name": "user", "type": "address"}],
+                    "name": "getUserAccountData",
+                    "outputs": [
+                        {"name": "totalCollateralBase", "type": "uint256"},
+                        {"name": "totalDebtBase", "type": "uint256"},
+                        {"name": "availableBorrowsBase", "type": "uint256"},
+                        {"name": "currentLiquidationThreshold", "type": "uint256"},
+                        {"name": "ltv", "type": "uint256"},
+                        {"name": "healthFactor", "type": "uint256"}
+                    ],
+                    "stateMutability": "view",
+                    "type": "function"
+                }]
+                
+                pool_contract = agent.w3.eth.contract(address=agent.aave_pool_address, abi=pool_abi)
+                account_data = pool_contract.functions.getUserAccountData(agent.address).call()
+                
+                fresh_collateral_usd = account_data[0] / (10**8)
+                fresh_debt_usd = account_data[1] / (10**8)
+                fresh_available_borrows_usd = account_data[2] / (10**8)
+                fresh_health_factor = account_data[5] / (10**18) if account_data[5] > 0 else float('inf')
+                
+                print(f"✅ Fresh Aave data: Collateral ${fresh_collateral_usd:.2f}, HF {fresh_health_factor:.4f}")
+                
+                # Use fresh data if available
+                live_agent_data.update({
+                    'health_factor': fresh_health_factor,
+                    'total_collateral_usdc': fresh_collateral_usd,
+                    'total_debt_usdc': fresh_debt_usd,
+                    'available_borrows_usdc': fresh_available_borrows_usd,
+                    'data_source': 'live_aave_contract_fresh'
+                })
+        except Exception as fresh_error:
+            print(f"⚠️ Fresh Aave data fetch failed: {fresh_error}")
+
         wallet_data = {
             'wallet_address': '0x5B823270e3719CDe8669e5e5326B455EaA8a350b',
-            'eth_balance': 0.001914,  # From autonomous agent logs
+            'eth_balance': 0.001805,  # From latest agent logs
             'usdc_balance': 0.0,
             'wbtc_balance': 0.0,
             'weth_balance': 0.0,
             'arb_balance': 0.0,
-            'health_factor': live_agent_data.get('health_factor', 6.9022),
-            'total_collateral': live_agent_data.get('total_collateral_usdc', 175.17) / 2967.36,  # Convert to ETH using current price
-            'total_debt': live_agent_data.get('total_debt_usdc', 20.04) / 2967.36,
-            'available_borrows': live_agent_data.get('available_borrows_usdc', 109.83) / 2967.36,
-            'total_collateral_usdc': live_agent_data.get('total_collateral_usdc', 175.17),
-            'total_debt_usdc': live_agent_data.get('total_debt_usdc', 20.04),
-            'available_borrows_usdc': live_agent_data.get('available_borrows_usdc', 109.83),
+            'health_factor': live_agent_data.get('health_factor', 4.0004),
+            'total_collateral': live_agent_data.get('total_collateral_usdc', 177.32) / 3330.61,  # Convert to ETH using current price
+            'total_debt': live_agent_data.get('total_debt_usdc', 35.06) / 3330.61,
+            'available_borrows': live_agent_data.get('available_borrows_usdc', 96.62) / 3330.61,
+            'total_collateral_usdc': live_agent_data.get('total_collateral_usdc', 177.32),
+            'total_debt_usdc': live_agent_data.get('total_debt_usdc', 35.06),
+            'available_borrows_usdc': live_agent_data.get('available_borrows_usdc', 96.62),
             'arb_price': 0.4100,  # From autonomous agent logs
             'network_name': 'Arbitrum Mainnet',
             'network_mode': 'mainnet',
             'timestamp': time.time(),
             'data_source': 'autonomous_mainnet_live' if agent_is_running else 'autonomous_mainnet_cached',
             'agent_status': 'running' if agent_is_running else 'cached_data',
-            'baseline_collateral': live_agent_data.get('baseline_collateral', 175.17),
-            'next_trigger_threshold': live_agent_data.get('next_trigger_threshold', 187.17),
+            'baseline_collateral': live_agent_data.get('baseline_collateral', 177.34),
+            'next_trigger_threshold': live_agent_data.get('next_trigger_threshold', 189.34),
             'operation_cooldown': live_agent_data.get('operation_cooldown', False),
             'data_quality': live_agent_data.get('data_quality', 'VALIDATED'),
             'optimization_status': 'ENHANCED_MONITORING_ACTIVE',
