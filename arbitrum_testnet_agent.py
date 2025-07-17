@@ -324,6 +324,7 @@ class ArbitrumTestnetAgent:
         self.uniswap = None
         self.health_monitor = None
         self.gas_calculator = None
+        self.enhanced_borrow_manager = None
 
         # Configuration parameters loaded from environment variables (Replit Secrets)
         # Defaults are provided if the environment variable is not set
@@ -362,6 +363,11 @@ class ArbitrumTestnetAgent:
             # Initialize Gas Calculator
             self.gas_calculator = ArbitrumGasCalculator()
             print("⛽ Initialized Gas Calculator.")
+
+            # Initialize Enhanced Borrow Manager
+            from enhanced_borrow_manager import EnhancedBorrowManager
+            self.enhanced_borrow_manager = EnhancedBorrowManager(self)
+            print("🏦 Initialized Enhanced Borrow Manager.")
 
             # Token approvals with gas optimization
             tokens_to_approve = [

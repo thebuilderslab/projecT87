@@ -627,9 +627,9 @@ class AaveArbitrumIntegration:
 
     def borrow(self, amount, asset, interest_rate_mode=2):
         """Borrow assets from Aave (simplified interface for agent)"""
-        return self.borrow_from_aave(asset, amount, interest_rate_mode)
+        return self.borrow_from_aave(amount, asset, interest_rate_mode)
 
-    def borrow_from_aave(self, token_address, amount, interest_rate_mode=2):
+    def borrow_from_aave(self, amount, token_address, interest_rate_mode=2):
         """Enhanced borrow assets from Aave with enhanced error handling and RPC fallback"""
         print(f"💰 Enhanced Borrow: {amount} tokens from Aave...")
 
