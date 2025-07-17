@@ -995,9 +995,9 @@ class ArbitrumTestnetAgent:
                         self.usdc_address = normalized_usdc
 
             except Exception as format_error:
-            print(f"⚠️ Address format normalization failed: {format_error}")
+                print(f"⚠️ Address format normalization failed: {format_error}")
 
-        # ENHANCED POSITION DETECTION: Force refresh with direct contract call
+            # ENHANCED POSITION DETECTION: Force refresh with direct contract call
         print(f"🔍 ENHANCED POSITION DETECTION:")
         try:
             # Always get fresh data from Aave contract
