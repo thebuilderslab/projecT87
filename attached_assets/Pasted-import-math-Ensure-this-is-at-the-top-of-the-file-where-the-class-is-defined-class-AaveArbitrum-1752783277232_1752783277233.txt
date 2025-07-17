@@ -1,0 +1,81 @@
+import math # Ensure this is at the top of the file where the class is defined
+
+class AaveArbitrumIntegration:
+    def __init__(self, web3_instance, wallet_address, logger=None):
+        self.web3 = web3_instance
+        self.wallet_address = wallet_address
+        self.logger = logger # Assuming a logger might be passed
+        # ... (keep existing initializations)
+
+    def get_optimized_gas_params(self, transaction_dict: dict) -> dict:
+        """
+        Estimates and returns optimized gas parameters (gas limit, maxFeePerGas, maxPriorityFeePerGas)
+        for a given transaction dictionary on Arbitrum Mainnet, favoring EIP-1559.
+        Includes a fallback for robustness.
+        """
+        if self.logger:
+            self.logger.info("Attempting to get optimized gas parameters...")
+
+        try:
+            # Ensure 'from' address is present for accurate estimation
+            if 'from' not in transaction_dict:
+                transaction_dict['from'] = self.wallet_address
+
+            # 1. Estimate gas limit
+            # Add a buffer (e.g., 20%) to the estimated gas for safety on dynamic networks
+            estimated_gas_limit = self.web3.eth.estimate_gas(transaction_dict)
+            gas_limit_with_buffer = math.ceil(estimated_gas_limit * 1.20)
+            if self.logger:
+                self.logger.info(f"Estimated gas limit: {estimated_gas_limit}, with buffer: {gas_limit_with_buffer}")
+
+            # 2. Get EIP-1559 gas prices (standard for Arbitrum Mainnet)
+            latest_block = self.web3.eth.get_block('latest')
+            base_fee_per_gas = latest_block['baseFeePerGas'] # This is in wei
+
+            # Fetch current recommended priority fee (or use a sensible default)
+            # Max priority fee should be sufficient but not excessively high
+            # A common approach is to add a small fixed value or query the network's current max_priority_fee
+            max_priority_fee_per_gas_raw = self.web3.eth.max_priority_fee
+
+            # Set a practical max priority fee. For L2s, this might be very low (e.g., 1 Gwei or even less)
+            # It should be at least the fetched raw value, plus a small buffer, or a sensible minimum.
+            # Let's use the fetched value with a minimum of 1 Gwei for robustness.
+            max_priority_fee_per_gas = max(max_priority_fee_per_gas_raw, self.web3.to_wei(1, 'gwei'))
+            if self.logger:
+                self.logger.info(f"Base fee per gas: {self.web3.from_wei(base_fee_per_gas, 'gwei')} Gwei")
+                self.logger.info(f"Max priority fee per gas (raw): {self.web3.from_wei(max_priority_fee_per_gas_raw, 'gwei')} Gwei")
+                self.logger.info(f"Max priority fee per gas (used): {self.web3.from_wei(max_priority_fee_per_gas, 'gwei')} Gwei")
+
+
+            # Calculate maxFeePerGas. It must be >= (2 * base_fee_per_gas + max_priority_fee_per_gas)
+            # Add a small buffer to maxFeePerGas too for transaction acceptance
+            max_fee_per_gas = (2 * base_fee_per_gas) + max_priority_fee_per_gas
+            if self.logger:
+                self.logger.info(f"Max fee per gas: {self.web3.from_wei(max_fee_per_gas, 'gwei')} Gwei")
+
+            return {
+                'gas': gas_limit_with_buffer,
+                'maxFeePerGas': max_fee_per_gas,
+                'maxPriorityFeePerGas': max_priority_fee_per_gas
+            }
+
+        except Exception as e:
+            if self.logger:
+                self.logger.warning(f"Failed to get EIP-1559 gas parameters ({e}). Falling back to legacy gas price...")
+            # Fallback to legacy gas price in case of EIP-1559 issues or if the RPC doesn't support it
+            try:
+                legacy_gas_price = self.web3.eth.gas_price
+                # Re-estimate gas limit for consistency
+                estimated_gas_limit = self.web3.eth.estimate_gas(transaction_dict)
+                gas_limit_with_buffer = math.ceil(estimated_gas_limit * 1.20)
+                if self.logger:
+                    self.logger.info(f"Fallback gas price: {self.web3.from_wei(legacy_gas_price, 'gwei')} Gwei")
+                    self.logger.info(f"Fallback estimated gas limit: {gas_limit_with_buffer}")
+                return {
+                    'gas': gas_limit_with_buffer,
+                    'gasPrice': legacy_gas_price
+                }
+            except Exception as e_fallback:
+                if self.logger:
+                    self.logger.error(f"CRITICAL ERROR: Failed to get any gas parameters, even fallback: {e_fallback}")
+                raise # Re-raise the error as the transaction cannot proceed without gas params
