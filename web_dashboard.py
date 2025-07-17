@@ -90,7 +90,9 @@ def check_autonomous_agent_running():
     try:
         # Check if autonomous agent process is active
         result = subprocess.run(['ps', 'aux'], capture_output=True, text=True, timeout=5)
-        is_running = 'run_autonomous_mainnet.py' in result.stdout
+        is_running = ('run_autonomous_mainnet.py' in result.stdout or 
+                     'arbitrum_testnet_agent.py' in result.stdout or
+                     'ArbitrumTestnetAgent' in result.stdout)
         print(f"🔍 Autonomous agent running check: {is_running}")
         return is_running
     except Exception as e:
