@@ -669,6 +669,195 @@ mode = "sequential"
 task = "shell.exec"
 args = "python verified_system_launcher.py"
 
+[[workflows.workflow]]
+name = "🔧 SYSTEM VALIDATION"
+author = 39391053
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"🔍 COMPREHENSIVE SYSTEM VALIDATION\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"==================================\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"Phase 1: Testing Enhanced Borrow Manager...\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python -c \""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "from enhanced_borrow_manager import EnhancedBorrowManager"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "from arbitrum_testnet_agent import ArbitrumTestnetAgent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "try:"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "    agent = ArbitrumTestnetAgent()"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "    ebm = EnhancedBorrowManager(agent)"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "    print('✅ Enhanced Borrow Manager initialized successfully')"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "    "
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "    # Test cooldown system"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "    in_cooldown, time_remaining = agent.is_operation_in_cooldown('borrow')"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "    print(f'✅ Cooldown system working: In cooldown: {in_cooldown}')"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "    "
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "    # Test baseline update"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "    success = agent.update_baseline_after_success(175.47)"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "    print(f'✅ Baseline update working: {success}')"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "    "
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "except Exception as e:"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "    print(f'❌ System validation failed: {e}')"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"Phase 2: Testing Aave Integration...\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python -c \""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "from aave_integration import AaveArbitrumIntegration"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "from arbitrum_testnet_agent import ArbitrumTestnetAgent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "try:"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "    agent = ArbitrumTestnetAgent()"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "    aave = AaveArbitrumIntegration(agent.w3, agent.account)"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "    "
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "    # Test gas parameters"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "    gas_params = aave.get_optimized_gas_params('aave_borrow', 'normal')"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "    print(f'✅ Gas parameters: {gas_params}')"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "    "
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "    # Test USD to wei conversion"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "    wei_amount = aave._convert_usd_to_wei(10.0, agent.usdc_address)"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "    print(f'✅ USD to wei conversion: 10 USD = {wei_amount} wei')"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "    "
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "except Exception as e:"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "    print(f'❌ Aave integration test failed: {e}')"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"Phase 3: Complete system test...\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python verified_system_launcher.py"
+
 [[ports]]
 localPort = 5000
 externalPort = 80

@@ -353,13 +353,13 @@ class ArbitrumTestnetAgent:
         self.operation_cooldown_seconds = 60 * 10 # 10 minute cooldown
         self.last_operation_type = None  # Track type of last operation
         return True
-    
+
     def is_operation_in_cooldown(self, operation_type="general"):
         """Check if operation is in cooldown period"""
         import time
         current_time = time.time()
         time_since_last = current_time - self.last_successful_operation_time
-        
+
         # Different cooldown periods for different operations
         cooldown_periods = {
             'borrow': 60 * 15,  # 15 minutes for borrow operations
@@ -367,16 +367,16 @@ class ArbitrumTestnetAgent:
             'swap': 60 * 5,     # 5 minutes for swap operations
             'general': 60 * 10  # 10 minutes for general operations
         }
-        
+
         required_cooldown = cooldown_periods.get(operation_type, self.operation_cooldown_seconds)
-        
+
         if time_since_last < required_cooldown:
             remaining_time = required_cooldown - time_since_last
             print(f"⏰ Operation '{operation_type}' in cooldown. {remaining_time:.0f}s remaining")
             return True, remaining_time
-        
+
         return False, 0
-    
+
     def record_successful_operation(self, operation_type="general"):
         """Record successful operation for cooldown tracking"""
         import time
@@ -1344,6 +1344,17 @@ class ArbitrumTestnetAgent:
         safe_borrow_amount = min(6.0, growth_amount * 0.4)  # 40% of growth, max $6
         print(f"💰 Calculated safe borrow: ${safe_borrow_amount:.2f} USDC")
 
+        # Skip borrow operation if amount is not positive
+        if safe_borrow_amount <= 0:
+            print(f"⚠️ Skipping borrow operation - calculated amount ${safe_borrow_amount:.2f} is not positive")
+            print(f"📊 Position is healthy but no additional borrowing capacity available")
+
+            # Record successful monitoring cycle
+            if hasattr(self, 'record_successful_operation'):
+                self.record_successful_operation('monitoring')
+
+            return 0.75  # Good performance score for successful monitoring
+
         sequence_results = {
             'borrow_success': False,
             'swap_success': False,
@@ -1990,25 +2001,50 @@ class ArbitrumTestnetAgent:
             # Return original if normalization fails
             return str(address)
 
-    def update_baseline_after_success(self, new_collateral_value):
-        """Update baseline after successful operation"""
+    def update_baseline_after_success(self):
+        """Update baseline collateral value after successful operation"""
         try:
-            self.last_collateral_value_usd = new_collateral_value
-            self.last_successful_operation_time = time.time()
+            # Get fresh collateral value from Aave contract
+            pool_abi = [{
+                "inputs": [{"name": "user", "type": "address"}],
+                "name": "getUserAccountData",
+                "outputs": [
+                    {"name": "totalCollateralBase", "type": "uint256"},
+                    {"name": "totalDebtBase", "type": "uint256"},
+                    {"name": "availableBorrowsBase", "type": "uint256"},
+                    {"name": "currentLiquidationThreshold", "type": "uint256"},
+                    {"name": "ltv", "type": "uint256"},
+                    {"name": "healthFactor", "type": "uint256"}
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            }]
+            pool_contract = self.w3.eth.contract(address=self.aave_pool_address, abi=pool_abi)
+            account_data = pool_contract.functions.getUserAccountData(self.address).call()
+            new_collateral_value = account_data[0] / (10**8)
 
-            # Save to file for persistence
+            old_baseline = self.last_collateral_value_usd
+            self.last_collateral_value_usd = new_collateral_value
+            self.baseline_initialized = True
+
+            print(f"📊 Baseline updated: ${old_baseline:.2f} → ${new_collateral_value:.2f}")
+            print(f"🎯 Next trigger at: ${new_collateral_value + 12:.2f}")
+
+            # Save baseline to file for persistence
+            import json
             baseline_data = {
-                'last_collateral_value_usd': new_collateral_value,
-                'last_successful_operation_time': self.last_successful_operation_time,
-                'timestamp': time.time()
+                'last_collateral_value_usd': self.last_collateral_value_usd,
+                'baseline_initialized': True,
+                'timestamp': time.time(),
+                'wallet_address': self.address,
+                'update_source': 'successful_operation'
             }
 
             with open('agent_baseline.json', 'w') as f:
                 json.dump(baseline_data, f, indent=2)
 
-            print(f"✅ Baseline updated: ${new_collateral_value:.2f}")
             return True
 
         except Exception as e:
-            print(f"❌ Error updating baseline: {e}")
+            print(f"⚠️ Baseline update failed: {e}")
             return False

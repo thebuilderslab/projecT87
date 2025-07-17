@@ -920,13 +920,13 @@ class AaveArbitrumIntegration:
                 print(f"   Gas limit: {gas_limit}")
                 print(f"   Gas price: {adjusted_gas_price} wei")
 
-                # Build transaction
+                # Build borrow transaction with correct parameter types
                 transaction = pool_contract.functions.borrow(
-                    token_address,
-                    amount_wei,
-                    interest_rate_mode,
-                    0,  # referralCode
-                    user_address
+                    Web3.to_checksum_address(token_address),  # address
+                    int(amount_wei),                          # uint256
+                    int(interest_rate_mode),                  # uint256 
+                    int(0),                                   # uint16 referralCode
+                    Web3.to_checksum_address(user_address)    # address onBehalfOf
                 ).build_transaction({
                     'chainId': w3_instance.eth.chain_id,
                     'gas': gas_limit,
@@ -1311,7 +1311,7 @@ class AaveArbitrumIntegration:
 
         return None
 
-    
+
 
     def borrow(self, amount_usd, token_address):
         """

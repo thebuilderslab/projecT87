@@ -21,12 +21,20 @@ class EnhancedBorrowManager:
         """
         print(f"🏦 Enhanced Borrow Manager: Borrowing ${amount_usd:.2f}")
         
+        # Enhanced input validation
+        if amount_usd <= 0:
+            print(f"⚠️ Invalid borrow amount: ${amount_usd}, operation cancelled")
+            return None
+            
         # Check cooldown first
         if hasattr(self.agent, 'is_operation_in_cooldown'):
-            in_cooldown, remaining_time = self.agent.is_operation_in_cooldown('borrow')
-            if in_cooldown:
-                print(f"⏰ Borrow operation in cooldown for {remaining_time:.0f}s")
-                return None
+            try:
+                in_cooldown, remaining_time = self.agent.is_operation_in_cooldown('borrow')
+                if in_cooldown:
+                    print(f"⏰ Borrow operation in cooldown for {remaining_time:.0f}s")
+                    return None
+            except Exception as cooldown_error:
+                print(f"⚠️ Cooldown check failed: {cooldown_error}, proceeding with operation")
 
         # Mechanism 1: Direct Aave integration
         result = self._try_direct_aave_borrow(amount_usd, token_address)
@@ -178,9 +186,17 @@ class EnhancedBorrowManager:
         try:
             print("🔄 Mechanism 1: Direct Aave integration")
 
-            # Get optimized gas parameters first  
-            gas_params = self.agent.get_optimized_gas_params('aave_borrow', 'market')
-            print(f"✅ Got gas parameters: {gas_params}")
+            # Get optimized gas parameters with proper method signature
+            try:
+                gas_params = self.agent.get_optimized_gas_params('aave_borrow', 'market')
+                print(f"✅ Got gas parameters: {gas_params}")
+            except TypeError:
+                # Fallback for method signature mismatch
+                if hasattr(self.agent.aave, 'get_optimized_gas_params'):
+                    gas_params = self.agent.aave.get_optimized_gas_params('aave_borrow', 'market')
+                else:
+                    gas_params = {'gas': 300000, 'gasPrice': 100000000}
+                print(f"✅ Got fallback gas parameters: {gas_params}")
 
             # Try multiple borrow method signatures with correct parameter order
             if hasattr(self.agent.aave, 'borrow'):
