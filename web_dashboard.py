@@ -47,7 +47,7 @@ def initialize_agent():
 
         # Always create agent since autonomous mainnet is running
         agent = WorkingAgent()
-        
+
         # Check if autonomous agent is running
         if check_autonomous_agent_running():
             print("✅ Dashboard: Connected to running AUTONOMOUS MAINNET agent")
@@ -108,7 +108,7 @@ def get_live_agent_data():
                     # Get the most recent entry
                     latest = json.loads(lines[-1])
                     metadata = latest.get('metadata', {})
-                    
+
                     # Check if we have fresh Aave data from autonomous agent
                     if metadata and metadata.get('health_factor', 0) > 0:
                         print(f"📊 Using live autonomous agent data: HF {metadata.get('health_factor', 0):.4f}")
@@ -120,7 +120,7 @@ def get_live_agent_data():
                             'data_source': 'autonomous_agent_live',
                             'last_update': latest.get('timestamp', time.time())
                         }
-                    
+
                     # Also check for direct Aave data in the log entry
                     if 'aave_data' in latest:
                         aave_data = latest['aave_data']
@@ -135,7 +135,7 @@ def get_live_agent_data():
                         }
     except Exception as e:
         print(f"⚠️ Error reading autonomous agent data: {e}")
-    
+
     # Return current live data from autonomous agent console (updated with latest values)
     print("📊 Using latest autonomous agent data from console logs")
     return {
@@ -182,10 +182,10 @@ def wallet_status():
 
         # Get live data from autonomous agent if available
         live_agent_data = get_live_agent_data()
-        
+
         # Check if autonomous agent is currently running
         agent_is_running = check_autonomous_agent_running()
-        
+
         wallet_data = {
             'wallet_address': '0x5B823270e3719CDe8669e5e5326B455EaA8a350b',
             'eth_balance': 0.001914,  # From autonomous agent logs
@@ -761,7 +761,7 @@ def log_startup_diagnostics():
     for file in files_to_check:
         if os.path.exists(file):
             try:
-                size = os.path.getsize(file)
+                size = os.path.path.getsize(file)
                 print(f"   ✅ {file}: {size} bytes")
             except:
                 print(f"   ⚠️ {file}: exists but can't read size")
@@ -791,7 +791,7 @@ if __name__ == '__main__':
 
     # Use dynamic port selection to avoid conflicts
     port = get_available_port(5000)
-    
+
     if port != 5000:
         print(f"⚠️ Port 5000 in use, using port {port} instead")
 
