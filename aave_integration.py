@@ -472,23 +472,31 @@ class AaveArbitrumIntegration:
             print(f"   Approve function found: ✅")
             print(f"   Function object: {approve_function}")
 
-            # Handle infinite approval for large amounts or use MAX_UINT256
-            if amount >= 2**255:  # Very large amount, use infinite approval
-                amount_wei = 2**256 - 1  # MAX_UINT256
-                print(f"🔓 Using infinite approval (MAX_UINT256)")
-            else:
-                # Get decimals for proper conversion
-                try:
-                    decimals = token_contract.functions.decimals().call()
-                except:
-                    # Fallback decimals based on known tokens
-                    if token_address.lower() == self.usdc_address.lower():
-                        decimals = 6
-                    elif token_address.lower() == self.wbtc_address.lower():
-                        decimals = 8
-                    else:
-                        decimals = 18
+            # SMART approval amount based on token balance and use case
+            try:
+                # Get current token balance
+                current_balance = token_contract.functions.balanceOf(user_address).call()
+                decimals = token_contract.functions.decimals().call()
+            except:
+                # Fallback decimals based on known tokens
+                if token_address.lower() == self.usdc_address.lower():
+                    decimals = 6
+                elif token_address.lower() == self.wbtc_address.lower():
+                    decimals = 8
+                else:
+                    decimals = 18
+                current_balance = 0
 
+            if amount >= 2**255:  # Very large amount requested
+                if current_balance > 0:
+                    # Use infinite approval only if user has balance
+                    amount_wei = 2**256 - 1  # MAX_UINT256
+                    print(f"🔓 Using infinite approval (MAX_UINT256) - user has balance")
+                else:
+                    # Use reasonable approval amount for zero balance
+                    amount_wei = 1000000 * (10 ** decimals)  # 1M tokens
+                    print(f"🔧 Using reduced approval for zero balance: {amount_wei}")
+            else:
                 amount_wei = int(float(amount) * (10 ** decimals))
                 print(f"🔢 Converting {amount} to {amount_wei} wei using {decimals} decimals")
 
@@ -522,10 +530,45 @@ class AaveArbitrumIntegration:
                     print(f"   Spender: {spender_address} (type: {type(spender_address)})")
                     print(f"   Amount: {amount_uint256} (type: {type(amount_uint256)})")
 
-                    # Pre-transaction validation to prevent contract rejections
-                    print(f"🔍 Pre-transaction validation:")
+                    # COMPREHENSIVE pre-transaction validation to prevent contract rejections
+                    print(f"🔍 COMPREHENSIVE Pre-transaction validation:")
 
-                    # Check if token contract supports standard ERC20 approve
+                    # CRITICAL: Check token balance first
+                    try:
+                        current_balance = token_contract.functions.balanceOf(user_address).call()
+                        decimals = token_contract.functions.decimals().call()
+                        readable_balance = current_balance / (10 ** decimals)
+                        
+                        print(f"   💰 Current token balance: {readable_balance:.8f}")
+                        
+                        # VALIDATION 1: Check if user has ANY balance
+                        if current_balance == 0:
+                            print(f"   ❌ CRITICAL: Zero token balance - approval will likely fail")
+                            print(f"   💡 Solution: Fund wallet with this token before approval")
+                            # Don't return None immediately - let user decide
+                        
+                        # VALIDATION 2: Check current allowance
+                        current_allowance = token_contract.functions.allowance(
+                            user_address, spender_address
+                        ).call()
+                        print(f"   🔐 Current allowance: {current_allowance}")
+                        
+                        # VALIDATION 3: Check if approval is even needed
+                        if current_allowance >= amount_uint256:
+                            print(f"   ✅ Sufficient allowance already exists ({current_allowance} >= {amount_uint256})")
+                            print(f"   ⚡ Skipping unnecessary approval transaction")
+                            return f"approval_skipped_sufficient_allowance_{current_allowance}"
+                        
+                        # VALIDATION 4: For tokens with zero balance, use smaller approval amount
+                        if current_balance == 0:
+                            # Use smaller approval amount for zero-balance tokens
+                            amount_uint256 = min(amount_uint256, 1000000 * (10 ** decimals))  # 1M tokens max
+                            print(f"   🔧 Adjusted approval amount for zero balance: {amount_uint256}")
+                        
+                    except Exception as balance_error:
+                        print(f"   ⚠️ Balance check failed: {balance_error}")
+
+                    # VALIDATION 5: Test contract compatibility
                     try:
                         # Try to call approve with 0 amount first (this should always work)
                         test_transaction = token_contract.functions.approve(
@@ -538,18 +581,27 @@ class AaveArbitrumIntegration:
                             'from': user_address,
                         })
 
-                        # Estimate gas for the actual transaction
+                        # VALIDATION 6: Estimate gas for the actual transaction
                         estimated_gas = token_contract.functions.approve(
                             spender_address, amount_uint256
                         ).estimate_gas({'from': user_address})
 
-                        print(f"   ✅ Pre-validation passed, estimated gas: {estimated_gas}")
+                        print(f"   ✅ Contract compatibility validated, estimated gas: {estimated_gas}")
 
                         # Use higher gas limit based on estimation
                         gas_limit = min(int(estimated_gas * 1.5), 200000)
 
                     except Exception as validation_error:
-                        print(f"   ⚠️ Pre-validation warning: {validation_error}")
+                        print(f"   ❌ CRITICAL: Contract validation failed: {validation_error}")
+                        
+                        # Check for specific error patterns
+                        error_str = str(validation_error).lower()
+                        if "insufficient" in error_str or "balance" in error_str:
+                            print(f"   💡 This is likely due to insufficient token balance")
+                            print(f"   🔧 Consider funding the wallet with this token first")
+                        elif "allowance" in error_str:
+                            print(f"   💡 This might be an allowance-related issue")
+                        
                         gas_limit = 100000  # Use default if estimation fails
 
                     # Build transaction with validated parameters
