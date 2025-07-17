@@ -279,13 +279,13 @@ class ArbitrumTestnetAgent:
 
         # Contract addresses based on network
         if self.network_mode == 'mainnet':
-            # Arbitrum Mainnet addresses (properly checksummed and consistent)
-            self.usdc_address = Web3.to_checksum_address("0xaf88d065e77c8cf0eaeff3e253e648a15cee23dc")
-            self.wbtc_address = Web3.to_checksum_address("0x2f2a2543b76a4166549f7aab2e75bef0aefc5b0f")
-            self.weth_address = Web3.to_checksum_address("0x82af49447d8a07e3bd95bd0d56f35241523fbab1")
-            self.dai_address = Web3.to_checksum_address("0xda10009cbd5d07dd0cecc66161fc93d7c9000da1")
+            # Arbitrum Mainnet addresses (verified from CoinGecko and Aave documentation)
+            self.usdc_address = Web3.to_checksum_address("0xAf88D065e77C8cF0EAEfF3e253e648A15CEe23dC")
+            self.wbtc_address = Web3.to_checksum_address("0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f")
+            self.weth_address = Web3.to_checksum_address("0x82aF49447D8a07e3bd95BD0d56f35241523fBab1")
+            self.dai_address = Web3.to_checksum_address("0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1")
             self.arb_address = Web3.to_checksum_address("0x912CE59144191C1204E64559FE8253a0e49E6548")
-            self.aave_pool_address = Web3.to_checksum_address("0x794a61358d6845594f94dc1db02a252b5b4814ad")
+            self.aave_pool_address = Web3.to_checksum_address("0x794a61358D6845594F94dc1DB02A252b5b4814aD")
 
             # Mainnet aToken addresses (properly checksummed)
             self.aWBTC_address = Web3.to_checksum_address("0x6533afac2E7BCCB20dca161449A13A2D2d5B739A")
@@ -640,7 +640,7 @@ class ArbitrumTestnetAgent:
         except Exception as e:
             print(f"❌ Gas optimization completely failed: {e}")
             import traceback
-            print(f"🔍 Stack trace: {traceback.format_exc()}")<string>
+            print(f"🔍 Stack trace: {traceback.format_exc()}")
             # Ultra-safe fallback with minimal viable values
             fallback_params = {
                 'gas': 200000,
