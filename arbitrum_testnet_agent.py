@@ -648,7 +648,7 @@ class ArbitrumTestnetAgent:
                     else:
                         print(f"⚠️ Invalid gas price detected: {gas_price} (type: {type(gas_price)}), using fallback: {safe_gas_price}")
 
-            # If no gas data or all values invalid, try network gas price as backup
+                # If no gas data or all values invalid, try network gas price as backup
             if safe_gas_price == 100000000:  # Still using fallback
                 try:
                     base_gas_price = self.w3.eth.gas_price
@@ -1214,7 +1214,7 @@ class ArbitrumTestnetAgent:
 
             # Enhanced manual override detection
             manual_override = self.detect_manual_override()
-            
+
             if manual_override:
                 self.manual_override_active = True
                 print(f"🚀 MANUAL OVERRIDE DETECTED: Bypassing growth requirement")
@@ -1309,7 +1309,7 @@ class ArbitrumTestnetAgent:
             try:
                 health_data = self.health_monitor.get_current_health_factor()
                 if health_data and 'health_factor' in health_data:
-                    hf = health_data.get('health_factor', 0)
+                    hf = health_data.get('health_factor', 0)```text
                     summary['health_factor'] = hf
                     print(f"❤️ Initial Health Factor: {hf:.4f}")
                 else:
@@ -1358,22 +1358,22 @@ class ArbitrumTestnetAgent:
             pool_contract = self.w3.eth.contract(address=self.aave_pool_address, abi=pool_abi)
             account_data = pool_contract.functions.getUserAccountData(self.address).call()
             available_borrows_usd = account_data[2] / (10**8)
-            
+
             print(f"💰 Available borrowing capacity: ${available_borrows_usd:.2f}")
-            
+
         except Exception as e:
             print(f"❌ Failed to get borrowing capacity: {e}")
             return 0.1
 
         # Enhanced borrow amount calculation with manual override detection
         safe_borrow_amount = self.calculate_safe_borrow_amount(growth_amount, available_borrows_usd)
-        
+
         print(f"💰 Calculated safe borrow: ${safe_borrow_amount:.2f} USDC")
 
         # Ensure positive borrow amount
         if safe_borrow_amount <= 0:
             print(f"⚠️ Calculated borrow amount ${safe_borrow_amount:.2f} is not positive")
-            
+
             # Try using minimum viable amount if manual override is active
             if hasattr(self, 'manual_override_active') and self.manual_override_active:
                 min_viable_amount = min(1.0, available_borrows_usd * 0.05)  # 5% of capacity, min $1
@@ -1927,28 +1927,28 @@ class ArbitrumTestnetAgent:
             'force_trigger.flag',
             'test_mode.flag'
         ]
-        
+
         for flag_file in override_files:
             if os.path.exists(flag_file):
                 print(f"🔧 Manual override detected: {flag_file}")
                 return True
-                
+
         # Check for manual override environment variable
         if os.getenv('MANUAL_OVERRIDE') == 'true':
             print(f"🔧 Manual override detected: MANUAL_OVERRIDE env var")
             return True
-            
+
         return False
-    
+
     def calculate_safe_borrow_amount(self, growth_amount, available_borrows_usd):
         """Calculate safe borrow amount with proper fallbacks"""
         print(f"🧮 Calculating safe borrow amount:")
         print(f"   Growth amount: ${growth_amount:.2f}")
         print(f"   Available capacity: ${available_borrows_usd:.2f}")
-        
+
         # Check for manual override first
         manual_override_active = self.detect_manual_override()
-        
+
         if manual_override_active:
             print(f"🔧 Manual override active - using percentage-based calculation")
             # Use 20% of available borrowing capacity for manual override
@@ -1956,7 +1956,7 @@ class ArbitrumTestnetAgent:
             safe_amount = max(1.0, min(safe_amount, available_borrows_usd * 0.80))  # Between $1 and 80% of capacity
             print(f"💰 Manual override borrow amount: ${safe_amount:.2f}")
             return safe_amount
-        
+
         # Normal growth-based calculation
         if growth_amount > 0:
             # Use 40% of the growth amount, but cap at 60% of available capacity
@@ -1967,16 +1967,16 @@ class ArbitrumTestnetAgent:
             print(f"⚠️ Negative growth detected: ${growth_amount:.2f}")
             # For negative growth, use small percentage of available capacity
             safe_amount = available_borrows_usd * 0.10  # Use 10% of available capacity
-        
+
         # Ensure minimum viable amount
         safe_amount = max(1.0, safe_amount)
-        
+
         # Ensure we don't exceed available capacity
         safe_amount = min(safe_amount, available_borrows_usd * 0.80)
-        
+
         print(f"💰 Calculated safe borrow amount: ${safe_amount:.2f}")
         return safe_amount
-    
+
     def update_baseline_after_success(self):
         """Update baseline after successful operation"""
         try:
@@ -1999,16 +1999,16 @@ class ArbitrumTestnetAgent:
             pool_contract = self.w3.eth.contract(address=self.aave_pool_address, abi=pool_abi)
             account_data = pool_contract.functions.getUserAccountData(self.address).call()
             new_collateral_usd = account_data[0] / (10**8)
-            
+
             # Update baseline to new collateral value
             old_baseline = self.last_collateral_value_usd
             self.last_collateral_value_usd = new_collateral_usd
-            
+
             print(f"📊 Baseline updated after successful operation:")
             print(f"   Old baseline: ${old_baseline:.2f}")
             print(f"   New baseline: ${new_collateral_usd:.2f}")
             print(f"   Next trigger at: ${new_collateral_usd + 12.0:.2f}")
-            
+
             # Save updated baseline
             baseline_data = {
                 'last_collateral_value_usd': self.last_collateral_value_usd,
@@ -2017,13 +2017,13 @@ class ArbitrumTestnetAgent:
                 'wallet_address': self.address,
                 'update_reason': 'successful_operation'
             }
-            
+
             with open('agent_baseline.json', 'w') as f:
                 import json
                 json.dump(baseline_data, f, indent=2)
-                
+
             return True
-            
+
         except Exception as e:
             print(f"❌ Failed to update baseline: {e}")
             return False
@@ -2184,7 +2184,7 @@ class ArbitrumTestnetAgent:
             }
 
             with open('agent_baseline.json', 'w') as f:
-                json.dump(baseline_data, f, indent=2)
+                json.dump(baseline_data, f)
 
             return True
 
@@ -2200,10 +2200,10 @@ class ArbitrumTestnetAgent:
         print(f"🔍 Calculating safe borrow amount:")
         print(f"   Growth amount: ${growth_amount:.2f}")
         print(f"   Available borrows: ${available_borrows_usd:.2f}")
-        
+
         # Check for manual override conditions
         manual_override_active = self.detect_manual_override()
-        
+
         if manual_override_active:
             print(f"🔧 Manual override detected - using capacity-based calculation")
             # Use percentage of available borrowing capacity instead of growth
@@ -2212,16 +2212,16 @@ class ArbitrumTestnetAgent:
             safe_amount = max(safe_amount, 0.5)  # Minimum $0.50
             print(f"🔧 Manual override calculation: ${safe_amount:.2f} (15% of capacity)")
             return safe_amount
-        
+
         # Normal growth-based calculation
         if growth_amount > 0:
             growth_based_amount = min(growth_amount * 0.4, 6.0)  # 40% of growth, max $6
             print(f"📈 Growth-based calculation: ${growth_based_amount:.2f}")
-            
+
             # Ensure it doesn't exceed available capacity
             if growth_based_amount <= available_borrows_usd * 0.8:
                 return max(growth_based_amount, 0.5)  # Minimum $0.50
-        
+
         # Fallback for negative growth or insufficient capacity
         print(f"⚠️ Using fallback calculation due to negative growth or capacity constraints")
         fallback_amount = min(available_borrows_usd * 0.05, 2.0)  # 5% of capacity, max $2
@@ -2237,22 +2237,22 @@ class ArbitrumTestnetAgent:
             if os.path.exists(file_path):
                 print(f"🔧 Manual override detected: {file_path} exists")
                 return True
-        
+
         # Check if manual_override_active attribute is set
         if hasattr(self, 'manual_override_active') and self.manual_override_active:
             print(f"🔧 Manual override detected: manual_override_active = True")
             return True
-        
+
         # Check for test mode
         if os.path.exists('test_mode.flag'):
             print(f"🧪 Test mode detected - treating as manual override")
             return True
-        
+
         # Check environment variable
         if os.getenv('MANUAL_OVERRIDE', '').lower() in ['true', '1', 'yes']:
             print(f"🔧 Manual override detected: MANUAL_OVERRIDE environment variable")
             return True
-        
+
         return False
 
     def calculate_optimal_borrow_amount(self, collateral_growth, available_borrows):
@@ -2260,3 +2260,51 @@ class ArbitrumTestnetAgent:
         Legacy method - redirects to new calculate_safe_borrow_amount
         """
         return self.calculate_safe_borrow_amount(collateral_growth, available_borrows)
+
+    def get_optimized_gas_params(self, w3_instance, operation_type='default', market_condition='normal'):
+        """Get optimized gas parameters for different operations"""
+        try:
+            # Get current network gas price
+            # Enhanced gas price with network conditions
+            try:
+                current_gas_price = w3_instance.eth.gas_price
+                # Use higher multiplier for current network conditions
+                gas_price = int(current_gas_price * 2.0)  # 100% premium for reliable inclusion
+            except:
+                gas_price = int(0.5 * 1e9)  # 0.5 gwei fallback
+
+            # Base gas limits for different operations
+            gas_limits = {
+                'aave_borrow': 300000,
+                'aave_supply': 250000,
+                'aave_repay': 200000,
+                'token_approval': 100000,
+                'uniswap_swap': 350000,
+                'default': 200000
+            }
+
+            # Gas price multipliers based on market conditions
+            price_multipliers = {
+                'low': 1.0,
+                'normal': 1.1,
+                'high': 1.3,
+                'urgent': 1.5,
+                'market': 1.2  # For market operations
+            }
+
+            gas_limit = gas_limits.get(operation_type, gas_limits['default'])
+            price_multiplier = price_multipliers.get(market_condition, 1.1)
+
+            optimized_gas_price = int(gas_price * price_multiplier)
+
+            return {
+                'gas': gas_limit,
+                'gasPrice': optimized_gas_price
+            }
+
+        except Exception as e:
+            print(f"⚠️ Gas optimization failed, using defaults: {e}")
+            return {
+                'gas': 250000,
+                'gasPrice': int(0.1 * 1e9)  # 0.1 gwei fallback
+            }

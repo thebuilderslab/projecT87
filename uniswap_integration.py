@@ -70,6 +70,22 @@ class UniswapArbitrumIntegration:
             }
         ]
 
+    def _convert_to_wei(self, token_address, amount):
+        """Convert amount to wei based on token decimals"""
+        try:
+            token_contract = self.w3.eth.contract(address=token_address, abi=self.erc20_abi)
+            decimals = token_contract.functions.decimals().call()
+        except:
+            # Fallback decimals if contract call fails
+            if token_address.lower() == "0xaf88d065e77c8cf0eaeff3e253e648a15cee23dc":  # USDC
+                decimals = 6
+            elif token_address.lower() == "0x2f2a2543b76a4166549f7aab2e75bef0aefc5b0f":  # WBTC
+                decimals = 8
+            else:
+                decimals = 18
+        return int(amount * (10 ** decimals))
+
+
     def swap_tokens(self, token_in, token_out, amount_in, fee=3000):
         """Execute token swap on Uniswap V3"""
         try:
@@ -80,9 +96,12 @@ class UniswapArbitrumIntegration:
                 token_contract = self.w3.eth.contract(address=token_in, abi=self.erc20_abi)
                 nonce = self.w3.eth.get_transaction_count(self.address)
 
+                # Convert amount_in to wei
+                amount_in_wei = self._convert_to_wei(token_in, amount_in)
+
                 approve_tx = token_contract.functions.approve(
                     self.router_address, 
-                    amount_in
+                    amount_in_wei # Use amount in wei
                 ).build_transaction({
                     'chainId': self.w3.eth.chain_id,
                     'gas': 100000,
@@ -141,7 +160,7 @@ class UniswapArbitrumIntegration:
 
             if usdc_balance > 100:  # If we have more than $100 USDC
                 # Swap 50% of USDC to ETH for rebalancing
-                swap_amount = int(usdc_balance * 0.5 * (10 ** 6))  # USDC has 6 decimals
+                swap_amount = int(usdc_balance * 0.5)  # Remove (10 ** 6), handled in swap_tokens
 
                 swap_tx = self.swap_tokens(
                     aave_integration.usdc_address,  # USDC in
