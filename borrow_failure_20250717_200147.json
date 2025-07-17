@@ -1,0 +1,13 @@
+{
+  "timestamp": 1752782504.69695,
+  "rpc_used": "https://1rpc.io/arb",
+  "wallet_address": "0x5B823270e3719CDe8669e5e5326B455EaA8a350b",
+  "network_mode": "mainnet",
+  "chain_id": 42161,
+  "usdc_address": "0xAf88D065e77C8cF0EAEfF3e253e648A15CEe23dC",
+  "aave_pool_address": "0x794a61358D6845594F94dc1DB02A252b5b4814aD",
+  "health_factor": 3.948778459007115,
+  "available_borrows_usdc": 94.91223943,
+  "total_collateral_usdc": 175.3527069,
+  "total_debt_usdc": 35.05918692,
+  "eth_balance": 
