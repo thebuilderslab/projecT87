@@ -998,49 +998,49 @@ class ArbitrumTestnetAgent:
                 print(f"⚠️ Address format normalization failed: {format_error}")
 
             # ENHANCED POSITION DETECTION: Force refresh with direct contract call
-        print(f"🔍 ENHANCED POSITION DETECTION:")
-        try:
-            # Always get fresh data from Aave contract
-            pool_abi = [{
-                "inputs": [{"name": "user", "type": "address"}],
-                "name": "getUserAccountData",
-                "outputs": [
-                    {"name": "totalCollateralBase", "type": "uint256"},
-                    {"name": "totalDebtBase", "type": "uint256"},
-                    {"name": "availableBorrowsBase", "type": "uint256"},
-                    {"name": "currentLiquidationThreshold", "type": "uint256"},
-                    {"name": "ltv", "type": "uint256"},
-                    {"name": "healthFactor", "type": "uint256"}
-                ],
-                "stateMutability": "view",
-                "type": "function"
-            }]
+            print(f"🔍 ENHANCED POSITION DETECTION:")
+            try:
+                # Always get fresh data from Aave contract
+                pool_abi = [{
+                    "inputs": [{"name": "user", "type": "address"}],
+                    "name": "getUserAccountData",
+                    "outputs": [
+                        {"name": "totalCollateralBase", "type": "uint256"},
+                        {"name": "totalDebtBase", "type": "uint256"},
+                        {"name": "availableBorrowsBase", "type": "uint256"},
+                        {"name": "currentLiquidationThreshold", "type": "uint256"},
+                        {"name": "ltv", "type": "uint256"},
+                        {"name": "healthFactor", "type": "uint256"}
+                    ],
+                    "stateMutability": "view",
+                    "type": "function"
+                }]
 
-            pool_contract = self.w3.eth.contract(address=self.aave_pool_address, abi=pool_abi)
-            fresh_account_data = pool_contract.functions.getUserAccountData(self.address).call()
+                pool_contract = self.w3.eth.contract(address=self.aave_pool_address, abi=pool_abi)
+                fresh_account_data = pool_contract.functions.getUserAccountData(self.address).call()
 
-            fresh_collateral_usd = fresh_account_data[0] / (10**8)
-            fresh_debt_usd = fresh_account_data[1] / (10**8)
-            fresh_health_factor = fresh_account_data[5] / (10**18) if fresh_account_data[5] > 0 else float('inf')
+                fresh_collateral_usd = fresh_account_data[0] / (10**8)
+                fresh_debt_usd = fresh_account_data[1] / (10**8)
+                fresh_health_factor = fresh_account_data[5] / (10**18) if fresh_account_data[5] > 0 else float('inf')
 
-            print(f"   🔄 FRESH AAVE CONTRACT DATA:")
-            print(f"      Fresh Collateral: ${fresh_collateral_usd:,.2f}")
-            print(f"      Fresh Debt: ${fresh_debt_usd:,.2f}")
-            print(f"      Fresh Health Factor: {fresh_health_factor:.4f}")
+                print(f"   🔄 FRESH AAVE CONTRACT DATA:")
+                print(f"      Fresh Collateral: ${fresh_collateral_usd:,.2f}")
+                print(f"      Fresh Debt: ${fresh_debt_usd:,.2f}")
+                print(f"      Fresh Health Factor: {fresh_health_factor:.4f}")
 
-            # ALWAYS use fresh data as it's the most accurate
-            print(f"   ✅ USING FRESH DATA AS PRIMARY SOURCE: ${fresh_collateral_usd:,.2f}")
-            current_collateral_value_usd = fresh_collateral_usd
-            current_health_factor = fresh_health_factor
-            debt_usd = fresh_debt_usd
+                # ALWAYS use fresh data as it's the most accurate
+                print(f"   ✅ USING FRESH DATA AS PRIMARY SOURCE: ${fresh_collateral_usd:,.2f}")
+                current_collateral_value_usd = fresh_collateral_usd
+                current_health_factor = fresh_health_factor
+                debt_usd = fresh_debt_usd
 
-            print(f"   📊 UPDATED VALUES:")
-            print(f"      Current Collateral: ${current_collateral_value_usd:,.2f}")
-            print(f"      Current Health Factor: {current_health_factor:.4f}")
-            print(f"      Current Debt: ${debt_usd:,.2f}")
+                print(f"   📊 UPDATED VALUES:")
+                print(f"      Current Collateral: ${current_collateral_value_usd:,.2f}")
+                print(f"      Current Health Factor: {current_health_factor:.4f}")
+                print(f"      Current Debt: ${debt_usd:,.2f}")
 
-        except Exception as fresh_error:
-            print(f"   ⚠️ Fresh data fetch failed: {fresh_error}")
+            except Exception as fresh_error:
+                print(f"   ⚠️ Fresh data fetch failed: {fresh_error}")
 
             # FIXED: Initialize baseline only once, don't update until after successful trigger
             print(f"🔍 DEBUG - BASELINE INITIALIZATION CHECK:")
