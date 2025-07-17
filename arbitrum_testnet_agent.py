@@ -987,14 +987,14 @@ class ArbitrumTestnetAgent:
 
             # Enhanced data format handling - normalize address formats
             try:
-            # Attempt to normalize any problematic address formats
-            if hasattr(self, 'usdc_address') and self.usdc_address:
-                normalized_usdc = self.w3.to_checksum_address(self.usdc_address.lower())
-                if normalized_usdc != self.usdc_address:
-                    print(f"🔧 Normalized USDC address: {self.usdc_address} → {normalized_usdc}")
-                    self.usdc_address = normalized_usdc
+                # Attempt to normalize any problematic address formats
+                if hasattr(self, 'usdc_address') and self.usdc_address:
+                    normalized_usdc = self.w3.to_checksum_address(self.usdc_address.lower())
+                    if normalized_usdc != self.usdc_address:
+                        print(f"🔧 Normalized USDC address: {self.usdc_address} → {normalized_usdc}")
+                        self.usdc_address = normalized_usdc
 
-        except Exception as format_error:
+            except Exception as format_error:
             print(f"⚠️ Address format normalization failed: {format_error}")
 
         # ENHANCED POSITION DETECTION: Force refresh with direct contract call
@@ -1042,7 +1042,7 @@ class ArbitrumTestnetAgent:
         except Exception as fresh_error:
             print(f"   ⚠️ Fresh data fetch failed: {fresh_error}")
 
-        # FIXED: Initialize baseline only once, don't update until after successful trigger
+            # FIXED: Initialize baseline only once, don't update until after successful trigger
             print(f"🔍 DEBUG - BASELINE INITIALIZATION CHECK:")
             print(f"   self.baseline_initialized: {self.baseline_initialized}")
             print(f"   current_collateral_value_usd (ENHANCED): ${current_collateral_value_usd:,.2f}")
