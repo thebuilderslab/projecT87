@@ -847,16 +847,42 @@ class AaveArbitrumIntegration:
 
             except Exception as tx_error:
                 print(f"❌ Transaction attempt {attempt + 1} failed: {tx_error}")
+                
+                # Enhanced error diagnostics
+                error_str = str(tx_error).lower()
+                print(f"🔍 Detailed error analysis:")
+                print(f"   Error type: {type(tx_error).__name__}")
+                print(f"   Error message: {str(tx_error)}")
+                
+                # Check underlying connection issues
+                if hasattr(tx_error, '__cause__') and tx_error.__cause__:
+                    print(f"   Underlying cause: {tx_error.__cause__}")
+                
+                # Network-specific error detection
+                network_errors = ['connection reset', 'timeout', 'rate limit', 'gateway timeout', 
+                                'connection refused', 'name resolution failed', 'network unreachable']
+                
+                for net_err in network_errors:
+                    if net_err in error_str:
+                        print(f"🌐 Network issue detected: {net_err}")
+                        break
 
                 # Check for specific error types
-                if "nonce too low" in str(tx_error):
-                    # Update nonce and retry
+                if "nonce too low" in error_str:
                     nonce = w3_instance.eth.get_transaction_count(user_address, 'pending')
                     print(f"🔄 Updated nonce to {nonce}")
-                elif "insufficient funds" in str(tx_error):
+                elif "insufficient funds" in error_str:
                     raise Exception("Insufficient ETH for gas fees")
-                elif "execution reverted" in str(tx_error):
+                elif "execution reverted" in error_str:
                     raise Exception("Transaction reverted - check Aave position and borrowing capacity")
+                elif "could not transact" in error_str:
+                    print(f"🔍 Contract interaction failed - checking RPC connection")
+                    # Test RPC connectivity
+                    try:
+                        latest_block = w3_instance.eth.block_number
+                        print(f"   RPC responsive: latest block {latest_block}")
+                    except Exception as rpc_test:
+                        print(f"   RPC unresponsive: {rpc_test}")
 
                 if attempt == len(gas_multipliers) - 1:
                     raise tx_error

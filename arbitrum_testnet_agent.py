@@ -638,7 +638,7 @@ class ArbitrumTestnetAgent:
             }
 
         except Exception as e:
-            print(f"❌ Gas optimization completely failed: {e}")
+            print(f"❌ Gas optimization completelyfailed: {e}")
             import traceback
             print(f"🔍 Stack trace: {traceback.format_exc()}")
             # Ultra-safe fallback with minimal viable values
@@ -977,7 +977,7 @@ class ArbitrumTestnetAgent:
                 fetcher = AccurateWalletDataFetcher(self.w3, self.address)
                 dashboard_data = fetcher.get_comprehensive_wallet_data()
 
-                if dashboard_data and dashboard_data.get('success'):
+                if dashboard_data and dashboard_data.get('success')):
                     real_collateral = dashboard_data['total_collateral_usdc']
                     print(f"🔍 DEBUG - REAL DATA FETCHER RESULT:")
                     print(f"   AccurateWalletDataFetcher collateral: ${real_collateral:,.2f}")
@@ -1312,7 +1312,7 @@ class ArbitrumTestnetAgent:
             print(f"❌ Autonomous sequence failed: {e}")
             return 0.0
 
-    #Corrected the borrow method signature in execute_enhanced_borrow_with_retry to resolve the "takes 3 positional arguments but 4 were given" error.
+    #Corrected the borrow method signature in execute_enhanced_borrow_with_retry to resolve the "takes 3positional arguments but 4 were given" error.
     def execute_enhanced_borrow_with_retry(self, safe_borrow_amount):
         """Execute enhanced borrow with multiple retry attempts"""
         max_attempts = 3
@@ -1441,7 +1441,7 @@ class ArbitrumTestnetAgent:
             from web_dashboard import get_live_agent_data
             dashboard_data = get_live_agent_data()  # Call the data retrieval function
 
-            if dashboard_data and dashboard_data.get('success'):
+            if dashboard_data and dashboard_data.get('success')):
                 print(f"✅ Enhanced Data Fetch: Data retrieved successfully.")
                 return dashboard_data  # Return the fetched data
             else:
