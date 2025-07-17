@@ -30,7 +30,7 @@ class ArbitrumTestnetAgent:
         self.rpc_manager = self._initialize_enhanced_rpc_manager()
         self.rpc_url = self.rpc_manager['primary_rpc']
         self.alternative_rpcs = self.rpc_manager['fallback_rpcs']
-        
+
         print(f"🚨 NETWORK_MODE from environment: '{self.network_mode}'")
         print(f"🔗 Primary RPC: {self.rpc_url}")
         print(f"🔄 Fallback RPCs: {len(self.alternative_rpcs)} available")
@@ -51,24 +51,24 @@ class ArbitrumTestnetAgent:
                     continue
             else:
                 raise Exception("Failed to connect to any available RPC endpoint")
-        
+
         # Initialize account after successful RPC connection
         self._initialize_account()
-    
+
     def _initialize_enhanced_rpc_manager(self):
         """Initialize enhanced RPC management with premium and fallback endpoints"""
         if self.network_mode == 'mainnet':
             # Premium RPC providers (priority order)
             premium_rpcs = []
-            
+
             infura_api_key = os.getenv('INFURA_API_KEY')
             alchemy_api_key = os.getenv('ALCHEMY_API_KEY')
-            
+
             if infura_api_key:
                 premium_rpcs.append(f"https://arbitrum-mainnet.infura.io/v3/{infura_api_key}")
             if alchemy_api_key:
                 premium_rpcs.append(f"https://arb-mainnet.g.alchemy.com/v2/{alchemy_api_key}")
-            
+
             # Public RPC endpoints (tested for reliability)
             public_rpcs = [
                 "https://arb1.arbitrum.io/rpc",
@@ -79,93 +79,93 @@ class ArbitrumTestnetAgent:
                 "https://1rpc.io/arb",
                 "https://arbitrum.blockpi.network/v1/rpc/public"
             ]
-            
+
             # Test and rank all available RPCs
             tested_rpcs = self._test_and_rank_rpcs(premium_rpcs + public_rpcs, 42161)
-            
+
             self.chain_id = 42161
             print("🌐 Operating on Arbitrum Mainnet")
-            
+
         else:
             # Testnet RPCs
             testnet_rpcs = [
                 "https://sepolia-rollup.arbitrum.io/rpc",
                 "https://arbitrum-sepolia.blockpi.network/v1/rpc/public"
             ]
-            
+
             tested_rpcs = self._test_and_rank_rpcs(testnet_rpcs, 421614)
-            
+
             self.chain_id = 421614
             print("🧪 Operating on Arbitrum Sepolia Testnet")
-        
+
         if not tested_rpcs:
             raise Exception("No working RPC endpoints found")
-        
+
         return {
             'primary_rpc': tested_rpcs[0],
             'fallback_rpcs': tested_rpcs[1:],
             'total_available': len(tested_rpcs)
         }
-    
+
     def _test_and_rank_rpcs(self, rpc_list, expected_chain_id):
         """Test RPC endpoints and rank by performance"""
         working_rpcs = []
-        
+
         for rpc_url in rpc_list:
             try:
                 print(f"🔍 Testing RPC: {rpc_url}")
-                
+
                 # Create test connection
                 test_w3 = Web3(Web3.HTTPProvider(rpc_url, request_kwargs={'timeout': 10}))
-                
+
                 # Comprehensive tests
                 start_time = time.time()
-                
+
                 # Test 1: Basic connectivity
                 if not test_w3.is_connected():
                     print(f"❌ Not connected: {rpc_url}")
                     continue
-                
+
                 # Test 2: Chain ID verification
                 chain_id = test_w3.eth.chain_id
                 if chain_id != expected_chain_id:
                     print(f"❌ Wrong chain ID {chain_id}: {rpc_url}")
                     continue
-                
+
                 # Test 3: Latest block (freshness test)
                 latest_block = test_w3.eth.get_block('latest')
                 if not latest_block or latest_block.number < 1000000:
                     print(f"❌ Invalid block data: {rpc_url}")
                     continue
-                
+
                 # Test 4: Gas price (network responsiveness)
                 gas_price = test_w3.eth.gas_price
                 if not gas_price or gas_price <= 0:
                     print(f"❌ Invalid gas price: {rpc_url}")
                     continue
-                
+
                 response_time = time.time() - start_time
-                
+
                 working_rpcs.append({
                     'url': rpc_url,
                     'response_time': response_time,
                     'block_number': latest_block.number,
                     'gas_price': gas_price
                 })
-                
+
                 print(f"✅ RPC passed tests: {rpc_url} ({response_time:.2f}s)")
-                
+
             except Exception as e:
                 print(f"❌ RPC test failed: {rpc_url} - {e}")
                 continue
-        
+
         # Sort by response time (fastest first)
         working_rpcs.sort(key=lambda x: x['response_time'])
-        
+
         print(f"📊 RPC Test Results: {len(working_rpcs)}/{len(rpc_list)} endpoints working")
-        
+
         return [rpc['url'] for rpc in working_rpcs]
-    
+
     def _create_robust_web3_connection(self, rpc_url):
         """Create a robust Web3 connection with optimized settings"""
         try:
@@ -178,56 +178,56 @@ class ArbitrumTestnetAgent:
                     'Content-Type': 'application/json'
                 }
             }
-            
+
             # Add retry settings for better reliability
             from requests.adapters import HTTPAdapter
             from urllib3.util.retry import Retry
-            
+
             import requests
             session = requests.Session()
-            
+
             retry_strategy = Retry(
                 total=3,
                 backoff_factor=0.3,
                 status_forcelist=[429, 500, 502, 503, 504],
             )
-            
+
             adapter = HTTPAdapter(max_retries=retry_strategy)
             session.mount("http://", adapter)
             session.mount("https://", adapter)
-            
+
             # Create Web3 instance
             w3 = Web3(Web3.HTTPProvider(rpc_url, request_kwargs=request_kwargs, session=session))
-            
+
             # Add middleware for PoA networks if needed
             if hasattr(Web3, 'middleware_onion'):
                 from web3.middleware import geth_poa_middleware
                 w3.middleware_onion.inject(geth_poa_middleware, layer=0)
-            
+
             return w3
-            
+
         except Exception as e:
             print(f"❌ Failed to create Web3 connection to {rpc_url}: {e}")
             return None
-    
+
     def switch_to_fallback_rpc(self):
         """Switch to next available RPC endpoint with enhanced error handling"""
         if not self.alternative_rpcs:
             print("⚠️ No fallback RPCs available")
             return False
-        
+
         current_rpc = self.rpc_url
-        
+
         # Initialize circuit breaker if not exists
         if not hasattr(self, 'circuit_breaker'):
             from rpc_circuit_breaker import RPCCircuitBreaker
             self.circuit_breaker = RPCCircuitBreaker()
-        
+
         for fallback_rpc in self.alternative_rpcs:
             if fallback_rpc != current_rpc:
                 try:
                     print(f"🔄 Switching to fallback RPC: {fallback_rpc}")
-                    
+
                     # Test connection with circuit breaker protection
                     def test_connection():
                         new_w3 = self._create_robust_web3_connection(fallback_rpc)
@@ -236,13 +236,13 @@ class ArbitrumTestnetAgent:
                             block_num = new_w3.eth.block_number
                             return new_w3
                         raise Exception("Connection test failed")
-                    
+
                     new_w3 = self.circuit_breaker.call(test_connection)
-                    
+
                     # Switch to new RPC
                     self.w3 = new_w3
                     self.rpc_url = fallback_rpc
-                    
+
                     # Re-initialize contracts with new w3
                     if hasattr(self, 'aave') and self.aave:
                         self.aave.w3 = new_w3
@@ -251,20 +251,20 @@ class ArbitrumTestnetAgent:
                                 address=self.aave.pool_address,
                                 abi=self.aave.pool_abi
                             )
-                    
+
                     # Start health monitoring for new RPC
                     if not hasattr(self, 'health_monitor'):
                         from rpc_health_monitor import RPCHealthMonitor
                         self.health_monitor = RPCHealthMonitor(self)
                         self.health_monitor.start_monitoring()
-                    
+
                     print(f"✅ Successfully switched to: {fallback_rpc}")
                     return True
-                        
+
                 except Exception as e:
                     print(f"❌ Fallback RPC {fallback_rpc} failed: {e}")
                     continue
-        
+
         print("❌ All fallback RPCs failed")
         return False
 
@@ -341,7 +341,7 @@ class ArbitrumTestnetAgent:
         self.baseline_initialized = False
         print("💰 Initialized last_collateral_value_usd to 0.0 (will sync with actual position)")
         print(f"📊 Initialized last_collateral_value_usd to: {self.last_collateral_value_usd}")
-        
+
         return True
 
     def initialize_integrations(self):
@@ -730,73 +730,47 @@ class ArbitrumTestnetAgent:
             print(f"   RPC Endpoint: {self.rpc_url}")
             print(f"   Aave Pool Address: {self.aave_pool_address}")
 
-            # Use dashboard's successful data fetching method
-            try:
-                print(f"🔍 USING DASHBOARD'S SUCCESSFUL DATA FETCHING METHOD:")
+            # FIXED: Use only fresh Aave contract data for reliable trigger detection
+        try:
+            print(f"🔍 USING FRESH AAVE CONTRACT DATA (RELIABLE SOURCE):")
+            from web3 import Web3
 
-                # Import the working dashboard data fetcher
-                from web_dashboard import get_live_agent_data
+            # Standard Aave Pool ABI for getUserAccountData
+            pool_abi = [{
+                "inputs": [{"name": "user", "type": "address"}],
+                "name": "getUserAccountData",
+                "outputs": [
+                    {"name": "totalCollateralBase", "type": "uint256"},
+                    {"name": "totalDebtBase", "type": "uint256"},
+                    {"name": "availableBorrowsBase", "type": "uint256"},
+                    {"name": "currentLiquidationThreshold", "type": "uint256"},
+                    {"name": "ltv", "type": "uint256"},
+                    {"name": "healthFactor", "type": "uint256"}
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            }]
 
-                # Get live data using the same method as dashboard
-                live_data = get_live_agent_data()
+            pool_contract = self.w3.eth.contract(
+                address=self.aave_pool_address,
+                abi=pool_abi
+            )
 
-                if live_data and live_data.get('health_factor', 0) > 0:
-                    print(f"   ✅ DASHBOARD DATA FETCH SUCCESS:")
-                    print(f"      Health Factor: {live_data['health_factor']:.4f}")
-                    print(f"      Total Collateral USD: ${live_data['total_collateral_usdc']:,.2f}")
-                    print(f"      Total Debt USD: ${live_data['total_debt_usdc']:,.2f}")
-                    print(f"      Available Borrows USD: ${live_data['available_borrows_usdc']:,.2f}")
-                    print(f"      Data Source: {live_data['data_source']}")
+            print(f"   📊 Getting fresh data from Aave Pool: {self.aave_pool_address}")
+            account_data = pool_contract.functions.getUserAccountData(self.address).call()
 
-                    current_health_factor = live_data['health_factor']
-                    current_collateral_value_usd = live_data['total_collateral_usdc']
-                    debt_usd = live_data['total_debt_usdc']
+            # Aave V3 uses 8 decimal places for USD values (not 18 like ETH)
+            current_collateral_value_usd = account_data[0] / (10**8)
+            debt_usd = account_data[1] / (10**8)
+            available_borrows_usd = account_data[2] / (10**8)
+            current_health_factor = account_data[5] / (10**18) if account_data[5] > 0 else float('inf')
 
-                else:
-                    # Fallback to direct contract call
-                    print(f"   🔄 FALLBACK TO DIRECT CONTRACT CALL:")
-                    from web3 import Web3
-
-                    # Standard Aave Pool ABI for getUserAccountData
-                    pool_abi = [{
-                        "inputs": [{"name": "user", "type": "address"}],
-                        "name": "getUserAccountData",
-                        "outputs": [
-                            {"name": "totalCollateralBase", "type": "uint256"},
-                            {"name": "totalDebtBase", "type": "uint256"},
-                            {"name": "availableBorrowsBase", "type": "uint256"},
-                            {"name": "currentLiquidationThreshold", "type": "uint256"},
-                            {"name": "ltv", "type": "uint256"},
-                            {"name": "healthFactor", "type": "uint256"}
-                        ],
-                        "stateMutability": "view",
-                        "type": "function"
-                    }]
-
-                    pool_contract = self.w3.eth.contract(
-                        address=self.aave_pool_address,
-                        abi=pool_abi
-                    )
-
-                    print(f"   Attempting getUserAccountData for: {self.address}")
-                    account_data = pool_contract.functions.getUserAccountData(self.address).call()
-
-                    # Aave V3 uses 8 decimal places for USD values (not 18 like ETH)
-                    total_collateral_usd_raw = account_data[0] / (10**8)
-                    total_debt_usd_raw = account_data[1] / (10**8)
-                    available_borrows_usd = account_data[2] / (10**8)
-                    health_factor = account_data[5] / (10**18) if account_data[5] > 0 else float('inf')
-
-                    print(f"   ✅ DIRECT AAVE QUERY SUCCESS:")
-                    print(f"      Raw Aave Response: {account_data}")
-                    print(f"      Total Collateral USD: ${total_collateral_usd_raw:,.8f}")
-                    print(f"      Total Debt USD: ${total_debt_usd_raw:,.8f}")
-                    print(f"      Available Borrows USD: ${available_borrows_usd:,.8f}")
-                    print(f"      Health Factor: {health_factor:.4f}")
-
-                    current_health_factor = health_factor
-                    current_collateral_value_usd = total_collateral_usd_raw
-                    debt_usd = total_debt_usd_raw
+            print(f"   ✅ FRESH AAVE CONTRACT DATA:")
+            print(f"      Total Collateral USD: ${current_collateral_value_usd:,.2f}")
+            print(f"      Total Debt USD: ${debt_usd:,.2f}")
+            print(f"      Available Borrows USD: ${available_borrows_usd:,.2f}")
+            print(f"      Health Factor: {current_health_factor:.4f}")
+            print(f"      Data Source: LIVE_AAVE_CONTRACT")
 
                 # Additional debugging: Check individual asset balances on Aave
                 print(f"   🔍 CHECKING INDIVIDUAL AAVE ASSET BALANCES:")
@@ -830,19 +804,7 @@ class ArbitrumTestnetAgent:
                 except Exception as e:
                     print(f"   ⚠️ Individual asset check failed: {e}")
 
-            except Exception as e:
-                print(f"   ❌ DIRECT AAVE QUERY FAILED: {e}")
-                import traceback
-                traceback.print_exc()
-                # Fallback to health monitor
-                health_data = self.health_monitor.get_current_health_factor()
-                if health_data is None:
-                    print("⚠️ Warning: Could not get health factor from Aave. Using fallback monitoring.")
-                    current_health_factor = float('inf')
-                    current_collateral_value_usd = 0.0
-                else:
-                    current_health_factor = health_data.get('health_factor', float('inf'))
-                    current_collateral_value_usd = 0.0  # Will be set below
+            
 
             print(f"📊 Current Health Factor: {current_health_factor:.4f}")
 
@@ -1047,7 +1009,7 @@ class ArbitrumTestnetAgent:
                 self.last_collateral_value_usd = current_collateral_value_usd
                 self.baseline_initialized = True
                 print(f"🎯 BASELINE INITIALIZED/RESET: Set to ${current_collateral_value_usd:,.2f}")
-                
+
                 # Remove reset flag if it exists
                 if os.path.exists('reset_baseline.flag'):
                     os.remove('reset_baseline.flag')
@@ -1186,7 +1148,7 @@ class ArbitrumTestnetAgent:
                 for borrow_attempt in range(max_borrow_attempts):
                     try:
                         print(f"💰 Borrow attempt {borrow_attempt + 1}/{max_borrow_attempts}")
-                        
+
                         borrow_result = self.aave.borrow(
                             amount=usdc_amount,
                             asset=self.usdc_address,
@@ -1200,17 +1162,17 @@ class ArbitrumTestnetAgent:
                             break  # Success - exit retry loop
                         else:
                             raise Exception("Borrow returned None - transaction failed")
-                            
+
                     except Exception as borrow_error:
                         print(f"❌ Borrow attempt {borrow_attempt + 1} failed: {borrow_error}")
-                        
+
                         # Check if it's an RPC-related error
                         if any(keyword in str(borrow_error).lower() for keyword in 
                                ['could not transact', 'connection', 'timeout', 'network', 'rpc']):
-                            
+
                             if borrow_attempt < max_borrow_attempts - 1:
                                 print(f"🔄 RPC error detected, switching to fallback...")
-                                
+
                                 # Try switching RPC
                                 if self.switch_to_fallback_rpc():
                                     print(f"✅ Switched RPC, retrying borrow...")
@@ -1224,11 +1186,11 @@ class ArbitrumTestnetAgent:
                                     continue
                                 else:
                                     print(f"❌ RPC switch failed")
-                        
+
                         # If this is the last attempt or non-RPC error, break
                         if borrow_attempt == max_borrow_attempts - 1:
                             print(f"❌ All borrow attempts failed - performing detailed analysis...")
-                            
+
                             # Enhanced error diagnostics
                             try:
                                 health_data = self.health_monitor.get_current_health_factor()
@@ -1256,7 +1218,7 @@ class ArbitrumTestnetAgent:
                                         print(f"   ❌ Category: Smart contract execution failed")
                                     else:
                                         print(f"   ❌ Category: Unknown technical issue")
-                                        
+
                                     # Save failure log for analysis
                                     failure_log = {
                                         'timestamp': time.time(),
@@ -1267,14 +1229,14 @@ class ArbitrumTestnetAgent:
                                         'available_borrows': available,
                                         'requested_amount': safe_borrow
                                     }
-                                    
+
                                     with open('borrow_failure_analysis.json', 'w') as f:
                                         import json
                                         json.dump(failure_log, f, indent=2)
-                                        
+
                                 else:
                                     print(f"   ❌ Could not retrieve position data for diagnostics")
-                                    
+
                             except Exception as diag_err:
                                 print(f"   ❌ Diagnostic analysis failed: {diag_err}")
 
