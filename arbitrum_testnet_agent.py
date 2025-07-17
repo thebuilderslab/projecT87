@@ -1104,50 +1104,50 @@ class ArbitrumTestnetAgent:
                 return 0.8
 
             # AUTONOMOUS TRIGGER: $12 USD collateral growth from baseline
-        growth_needed = 12.0
-        target_collateral = self.last_collateral_value_usd + growth_needed
-        actual_growth = current_collateral_value_usd - self.last_collateral_value_usd
+            growth_needed = 12.0
+            target_collateral = self.last_collateral_value_usd + growth_needed
+            actual_growth = current_collateral_value_usd - self.last_collateral_value_usd
 
-        # Check if trigger is ready
-        trigger_ready = actual_growth >= growth_needed
+            # Check if trigger is ready
+            trigger_ready = actual_growth >= growth_needed
 
-        print(f"""
-        🎯 AUTONOMOUS TRIGGER CHECK:
-           Current Collateral: ${current_collateral_value_usd:.2f}
-           Baseline: ${self.last_collateral_value_usd:.2f}
-           Target for Trigger: ${self.last_collateral_value_usd + 12.0:.2f}
-           Actual Growth: ${collateral_growth:.2f}
-           Growth Needed: $12.00
-           ✅ TRIGGER READY: {trigger_ready}""")
+            print(f"""
+            🎯 AUTONOMOUS TRIGGER CHECK:
+               Current Collateral: ${current_collateral_value_usd:.2f}
+               Baseline: ${self.last_collateral_value_usd:.2f}
+               Target for Trigger: ${self.last_collateral_value_usd + 12.0:.2f}
+               Actual Growth: ${collateral_growth:.2f}
+               Growth Needed: $12.00
+               ✅ TRIGGER READY: {trigger_ready}""")
 
-        # Check cooldown before executing
-        if trigger_ready:
-            if self.is_operation_on_cooldown():
-                print(f"⏰ Trigger ready but operation on cooldown - waiting...")
-                return 0.5  # Moderate performance score for waiting
+            # Check cooldown before executing
+            if trigger_ready:
+                if self.is_operation_on_cooldown():
+                    print(f"⏰ Trigger ready but operation on cooldown - waiting...")
+                    return 0.5  # Moderate performance score for waiting
+                else:
+                    print(f"🚀 Executing autonomous sequence (cooldown clear)")
+                    performance_score = self.execute_autonomous_sequence_enhanced(collateral_growth)
+                    return performance_score
             else:
-                print(f"🚀 Executing autonomous sequence (cooldown clear)")
-                performance_score = self.execute_autonomous_sequence_enhanced(collateral_growth)
-                return performance_score
-        else:
-            growth = current_collateral_value_usd - self.last_collateral_value_usd
-            print(f"⏸️ No action: Collateral growth ${growth:.2f} < $12 threshold")
-            print(f"📊 Current Position: ${current_collateral_value_usd:,.2f} collateral, ${debt_usd if 'debt_usd' in locals() else 0.0:,.2f} debt")
-            print(f"💰 Last recorded collateral: ${self.last_collateral_value_usd:,.2f}")
-            print(f"📈 Collateral growth: ${growth:.2f}")
+                growth = current_collateral_value_usd - self.last_collateral_value_usd
+                print(f"⏸️ No action: Collateral growth ${growth:.2f} < $12 threshold")
+                print(f"📊 Current Position: ${current_collateral_value_usd:,.2f} collateral, ${debt_usd if 'debt_usd' in locals() else 0.0:,.2f} debt")
+                print(f"💰 Last recorded collateral: ${self.last_collateral_value_usd:,.2f}")
+                print(f"📈 Collateral growth: ${growth:.2f}")
 
-            if current_collateral_value_usd == 0:
-                print(f"💡 TIP: To activate autonomous operations:")
-                print(f"   1. Supply some USDC/WETH to Aave as collateral")
-                print(f"   2. Agent will monitor for $12+ collateral growth")
-                print(f"   3. Then execute autonomous borrowing & swapping sequence")
+                if current_collateral_value_usd == 0:
+                    print(f"💡 TIP: To activate autonomous operations:")
+                    print(f"   1. Supply some USDC/WETH to Aave as collateral")
+                    print(f"   2. Agent will monitor for $12+ collateral growth")
+                    print(f"   3. Then execute autonomous borrowing & swapping sequence")
 
-            return 0.7  # Moderate performance score
+                return 0.7  # Moderate performance score
 
-    except Exception as e:
-        print(f"❌ CRITICAL ERROR in autonomous task: {e}")
-        print("🛑 Halting execution due to real data fetch failure")
-        return 0.0  # Failed performance score
+        except Exception as e:
+            print(f"❌ CRITICAL ERROR in autonomous task: {e}")
+            print("🛑 Halting execution due to real data fetch failure")
+            return 0.0  # Failed performance score
 
     def check_wallet_readiness_for_defi(self, current_collateral_value_usd=0.0):
         """Check if wallet has sufficient funds to start DeFi operations"""
