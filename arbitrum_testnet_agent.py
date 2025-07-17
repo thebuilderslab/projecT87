@@ -1441,7 +1441,7 @@ class ArbitrumTestnetAgent:
             from web_dashboard import get_live_agent_data
             dashboard_data = get_live_agent_data()  # Call the data retrieval function
 
-            if dashboard_data and dashboard_data.get('success')):
+            if dashboard_data and dashboard_data.get('success'):
                 print(f"✅ Enhanced Data Fetch: Data retrieved successfully.")
                 return dashboard_data  # Return the fetched data
             else:
