@@ -1213,21 +1213,14 @@ class ArbitrumTestnetAgent:
             # Check if trigger is ready
             trigger_ready = actual_growth >= growth_needed
 
-            # ENHANCED: Check for manual trigger override or test mode
-            manual_trigger_file = 'trigger_test.flag'
-            force_trigger = os.path.exists(manual_trigger_file)
-
-            # Also check for low-threshold testing mode
-            test_mode_file = 'test_mode.flag'
-            test_mode = os.path.exists(test_mode_file)
-
-            if force_trigger:
-                # 🚀 MANUAL TRIGGER DETECTED: Overriding growth requirement
+            # Enhanced manual override detection
+            manual_override = self.detect_manual_override()
+            
+            if manual_override:
                 self.manual_override_active = True
-
-                print(f"🚀 MANUAL TRIGGER DETECTED: Overriding growth requirement")
+                print(f"🚀 MANUAL OVERRIDE DETECTED: Bypassing growth requirement")
                 trigger_ready = True
-            elif test_mode and actual_growth >= 1.0:  # Lower threshold for testing
+            elif os.path.exists('test_mode.flag') and actual_growth >= 1.0:  # Lower threshold for testing
                 print(f"🧪 TEST MODE: Using $1 threshold instead of $12")
                 trigger_ready = True
 
@@ -1339,27 +1332,63 @@ class ArbitrumTestnetAgent:
         """Enhanced autonomous sequence with better error handling and optimization"""
         print(f"🚀 TRIGGER ACTIVATED: Collateral grew by ${growth_amount:.2f} (≥ $12 threshold)")
         print(f"⚡ EXECUTING AUTONOMOUS SEQUENCE...")
-        print(f"📝 Sequence: Borrow 6 USDC → Swap 2→WBTC, 1→WETH, 1→DAI, 1→WETH(wallet) → Supply to Aave")
+        print(f"📝 Sequence: Borrow USDC → Swap →WBTC, WETH, DAI → Supply to Aave")
 
         # Validate all integrations are ready
         if not self.validate_integrations_ready():
             print("❌ Critical integrations not ready - aborting sequence")
             return 0.1
 
-        # Calculated conservative borrow amount
-        safe_borrow_amount = min(6.0, growth_amount * 0.4)  # 40% of growth, max $6
+        # Get available borrowing capacity first
+        try:
+            pool_abi = [{
+                "inputs": [{"name": "user", "type": "address"}],
+                "name": "getUserAccountData",
+                "outputs": [
+                    {"name": "totalCollateralBase", "type": "uint256"},
+                    {"name": "totalDebtBase", "type": "uint256"},
+                    {"name": "availableBorrowsBase", "type": "uint256"},
+                    {"name": "currentLiquidationThreshold", "type": "uint256"},
+                    {"name": "ltv", "type": "uint256"},
+                    {"name": "healthFactor", "type": "uint256"}
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            }]
+
+            pool_contract = self.w3.eth.contract(address=self.aave_pool_address, abi=pool_abi)
+            account_data = pool_contract.functions.getUserAccountData(self.address).call()
+            available_borrows_usd = account_data[2] / (10**8)
+            
+            print(f"💰 Available borrowing capacity: ${available_borrows_usd:.2f}")
+            
+        except Exception as e:
+            print(f"❌ Failed to get borrowing capacity: {e}")
+            return 0.1
+
+        # Enhanced borrow amount calculation with manual override detection
+        safe_borrow_amount = self.calculate_safe_borrow_amount(growth_amount, available_borrows_usd)
+        
         print(f"💰 Calculated safe borrow: ${safe_borrow_amount:.2f} USDC")
 
-        # Skip borrow operation if amount is not positive
+        # Ensure positive borrow amount
         if safe_borrow_amount <= 0:
-            print(f"⚠️ Skipping borrow operation - calculated amount ${safe_borrow_amount:.2f} is not positive")
-            print(f"📊 Position is healthy but no additional borrowing capacity available")
-
-            # Record successful monitoring cycle
-            if hasattr(self, 'record_successful_operation'):
-                self.record_successful_operation('monitoring')
-
-            return 0.75  # Good performance score for successful monitoring
+            print(f"⚠️ Calculated borrow amount ${safe_borrow_amount:.2f} is not positive")
+            
+            # Try using minimum viable amount if manual override is active
+            if hasattr(self, 'manual_override_active') and self.manual_override_active:
+                min_viable_amount = min(1.0, available_borrows_usd * 0.05)  # 5% of capacity, min $1
+                if min_viable_amount > 0.1:
+                    safe_borrow_amount = min_viable_amount
+                    print(f"🔧 Manual override: Using minimum viable amount ${safe_borrow_amount:.2f}")
+                else:
+                    print(f"❌ Even minimum viable amount too small: ${min_viable_amount:.2f}")
+                    return 0.75
+            else:
+                print(f"📊 Position is healthy but no additional borrowing capacity available")
+                if hasattr(self, 'record_successful_operation'):
+                    self.record_successful_operation('monitoring')
+                return 0.75
 
         sequence_results = {
             'borrow_success': False,
@@ -2055,24 +2084,71 @@ class ArbitrumTestnetAgent:
             print(f"⚠️ Baseline update failed: {e}")
             return False
 
+    def calculate_safe_borrow_amount(self, growth_amount, available_borrows_usd):
+        """
+        Enhanced borrow amount calculation with proper manual override detection
+        and fallback logic to ensure positive amounts
+        """
+        print(f"🔍 Calculating safe borrow amount:")
+        print(f"   Growth amount: ${growth_amount:.2f}")
+        print(f"   Available borrows: ${available_borrows_usd:.2f}")
+        
+        # Check for manual override conditions
+        manual_override_active = self.detect_manual_override()
+        
+        if manual_override_active:
+            print(f"🔧 Manual override detected - using capacity-based calculation")
+            # Use percentage of available borrowing capacity instead of growth
+            capacity_based_amount = available_borrows_usd * 0.15  # 15% of available capacity
+            safe_amount = min(capacity_based_amount, 10.0)  # Cap at $10
+            safe_amount = max(safe_amount, 0.5)  # Minimum $0.50
+            print(f"🔧 Manual override calculation: ${safe_amount:.2f} (15% of capacity)")
+            return safe_amount
+        
+        # Normal growth-based calculation
+        if growth_amount > 0:
+            growth_based_amount = min(growth_amount * 0.4, 6.0)  # 40% of growth, max $6
+            print(f"📈 Growth-based calculation: ${growth_based_amount:.2f}")
+            
+            # Ensure it doesn't exceed available capacity
+            if growth_based_amount <= available_borrows_usd * 0.8:
+                return max(growth_based_amount, 0.5)  # Minimum $0.50
+        
+        # Fallback for negative growth or insufficient capacity
+        print(f"⚠️ Using fallback calculation due to negative growth or capacity constraints")
+        fallback_amount = min(available_borrows_usd * 0.05, 2.0)  # 5% of capacity, max $2
+        return max(fallback_amount, 0.1)  # Minimum $0.10
+
+    def detect_manual_override(self):
+        """
+        Detect when manual override is active through multiple indicators
+        """
+        # Check for manual trigger files
+        manual_files = ['trigger_test.flag', 'manual_override.flag', 'force_borrow.flag']
+        for file_path in manual_files:
+            if os.path.exists(file_path):
+                print(f"🔧 Manual override detected: {file_path} exists")
+                return True
+        
+        # Check if manual_override_active attribute is set
+        if hasattr(self, 'manual_override_active') and self.manual_override_active:
+            print(f"🔧 Manual override detected: manual_override_active = True")
+            return True
+        
+        # Check for test mode
+        if os.path.exists('test_mode.flag'):
+            print(f"🧪 Test mode detected - treating as manual override")
+            return True
+        
+        # Check environment variable
+        if os.getenv('MANUAL_OVERRIDE', '').lower() in ['true', '1', 'yes']:
+            print(f"🔧 Manual override detected: MANUAL_OVERRIDE environment variable")
+            return True
+        
+        return False
+
     def calculate_optimal_borrow_amount(self, collateral_growth, available_borrows):
         """
-        Calculates the optimal borrow amount based on collateral growth and available borrows.
-        This function now considers a manual override scenario.
+        Legacy method - redirects to new calculate_safe_borrow_amount
         """
-        # Calculate optimal borrow amount based on growth
-        growth_based_borrow = collateral_growth * self.re_leverage_percentage
-
-        # If growth is insufficient but manual override is active, use minimum viable amount
-        if collateral_growth < self.growth_trigger_threshold and hasattr(self, 'manual_override_active') and self.manual_override_active:
-            # Use a small percentage of available borrowing capacity
-            growth_based_borrow = available_borrows * 0.1  # 10% of available capacity
-            print(f"🔧 Manual override: Using 10% of available capacity: ${growth_based_borrow:.2f}")
-
-        # Apply constraints
-        optimal_borrow = max(
-            self.min_borrow_releverage,
-            min(growth_based_borrow, self.max_borrow_releverage, available_borrows * 0.8)
-        )
-
-        return optimal_borrow
+        return self.calculate_safe_borrow_amount(collateral_growth, available_borrows)

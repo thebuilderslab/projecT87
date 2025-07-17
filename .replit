@@ -858,6 +858,59 @@ args = "echo \"Phase 3: Complete system test...\""
 task = "shell.exec"
 args = "python verified_system_launcher.py"
 
+[[workflows.workflow]]
+name = "🧪 Test Fixed Borrow Logic"
+author = 39391053
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"🧪 TESTING FIXED BORROW LOGIC\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"==============================\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"Testing manual override detection and borrow calculations...\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python test_manual_override.py"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"Testing with manual trigger flag...\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "touch trigger_test.flag"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python test_manual_override.py"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"Running comprehensive system validation...\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python verified_system_launcher.py"
+
 [[ports]]
 localPort = 5000
 externalPort = 80
