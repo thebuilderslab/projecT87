@@ -16,7 +16,7 @@ run = ["sh", "-c", "python mainnet_launcher.py"]
 deploymentTarget = "cloudrun"
 
 [workflows]
-runButton = "🚀 AUTONOMOUS MAINNET"
+runButton = "🚀 COMPLETE AUTONOMOUS SYSTEM"
 
 [[workflows.workflow]]
 name = "Run"
@@ -650,6 +650,15 @@ mode = "sequential"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "python data_consistency_checker.py"
+
+[[workflows.workflow]]
+name = "🚀 COMPLETE AUTONOMOUS SYSTEM"
+author = 39391053
+mode = "parallel"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python complete_autonomous_launcher.py"
 
 [[ports]]
 localPort = 5000

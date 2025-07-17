@@ -985,8 +985,8 @@ class ArbitrumTestnetAgent:
             except Exception as e:
                 print(f"⚠️ Real data fetch failed, using forced dashboard values: {e}")
 
-        # Enhanced data format handling - normalize address formats
-        try:
+            # Enhanced data format handling - normalize address formats
+            try:
             # Attempt to normalize any problematic address formats
             if hasattr(self, 'usdc_address') and self.usdc_address:
                 normalized_usdc = self.w3.to_checksum_address(self.usdc_address.lower())
@@ -1249,7 +1249,7 @@ class ArbitrumTestnetAgent:
                 print(f"   Safety margin: {safety_margin*100:.1f}% of available capacity")
                 print(f"   Remaining buffer: ${dashboard_data['available_borrows_usdc'] - safe_borrow_amount:.2f}")
 
-                # Execute enhanced borrow with multiple attempts - FIXED FUNCTION CALL
+                # Execute enhanced borrow with multiple attempts
                 borrow_success = self.execute_enhanced_borrow_with_retry(safe_borrow_amount)
                 sequence_results['borrow_success'] = borrow_success
 
