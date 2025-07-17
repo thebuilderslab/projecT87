@@ -58,7 +58,7 @@ def monitor_processes(dashboard_process, agent_process):
                 print("⚠️ Dashboard process died, restarting...")
                 dashboard_process = start_dashboard()
             
-            # Check agent
+            # Check agent  
             if agent_process and agent_process.poll() is not None:
                 print("⚠️ Autonomous agent process died, restarting...")
                 agent_process = start_autonomous_agent()
@@ -72,7 +72,9 @@ def monitor_processes(dashboard_process, agent_process):
                     agent_process.terminate()
                 break
                 
-            time.sleep(30)  # Check every 30 seconds
+            # Print status every 5 minutes
+            print(f"✅ Both processes running - Dashboard PID: {dashboard_process.pid if dashboard_process else 'None'}, Agent PID: {agent_process.pid if agent_process else 'None'}")
+            time.sleep(300)  # Check every 5 minutes
             
         except KeyboardInterrupt:
             print("\n🛑 Shutting down all processes...")
@@ -80,10 +82,12 @@ def monitor_processes(dashboard_process, agent_process):
                 dashboard_process.terminate()
             if agent_process:
                 agent_process.terminate()
-            break
+            return True  # Successful shutdown
         except Exception as e:
             print(f"❌ Monitor error: {e}")
             time.sleep(10)
+    
+    return True  # Successful completion
 
 def main():
     """Main launcher function"""
