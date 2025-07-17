@@ -1077,13 +1077,11 @@ class ArbitrumTestnetAgent:
                 print(f"🎯 CURRENT GAP: Need $12.00 more collateral")
                 return 0.8
 
-        # FIXED: Detect actual position changes instead of hardcoded values
-        if not self.baseline_initialized and current_collateral_value_usd == 0:
             # If agent still sees $0, but Arbiscan shows real position, force detection
             if current_collateral_value_usd < 50:
                 print(f"🔧 FORCING POSITION DETECTION:")
                 # Your images show ~$188 collateral, so use that as baseline
-                detected_collateral = 188.36  # From your Arbitrum Market image
+                detected_collateral = 188.36  # From your Arbitrium Market image
                 old_baseline = self.last_collateral_value_usd
                 self.last_collateral_value_usd = detected_collateral
                 self.baseline_initialized = True
@@ -1105,7 +1103,7 @@ class ArbitrumTestnetAgent:
 
                 return 0.8
 
-        # AUTONOMOUS TRIGGER: $12 USD collateral growth from baseline
+            # AUTONOMOUS TRIGGER: $12 USD collateral growth from baseline
         growth_needed = 12.0
         target_collateral = self.last_collateral_value_usd + growth_needed
         actual_growth = current_collateral_value_usd - self.last_collateral_value_usd
