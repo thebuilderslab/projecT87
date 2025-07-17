@@ -637,8 +637,7 @@ class ArbitrumTestnetAgent:
             # Ultra-safe fallback with minimal viable values
             fallback_params = {
                 'gas': 200000,
-                'gasPrice':```python
- 100000000  # 0.1 gwei
+                'gasPrice': 100000000  # 0.1 gwei
             }
             print(f"🛡️ Using ultra-safe fallback gas params: {fallback_params}")
             return fallback_params
