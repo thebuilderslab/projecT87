@@ -1845,6 +1845,48 @@ class ArbitrumTestnetAgent:
             print(f"❌ Supply sequence failed: {e}")
             return False
 
+    def get_optimized_gas_params(self, operation_type='default', market_condition='normal'):
+        """Get optimized gas parameters for different operations"""
+        try:
+            # Get current network gas price
+            current_gas_price = self.w3.eth.gas_price
+            
+            # Base gas limits for different operations
+            gas_limits = {
+                'aave_borrow': 300000,
+                'aave_supply': 250000,
+                'aave_repay': 200000,
+                'token_approval': 100000,
+                'uniswap_swap': 350000,
+                'default': 200000
+            }
+            
+            # Gas price multipliers based on market conditions
+            price_multipliers = {
+                'low': 1.0,
+                'normal': 1.1,
+                'high': 1.3,
+                'urgent': 1.5,
+                'market': 1.2  # For market operations
+            }
+            
+            gas_limit = gas_limits.get(operation_type, gas_limits['default'])
+            price_multiplier = price_multipliers.get(market_condition, 1.1)
+            
+            optimized_gas_price = int(current_gas_price * price_multiplier)
+            
+            return {
+                'gas': gas_limit,
+                'gasPrice': optimized_gas_price
+            }
+            
+        except Exception as e:
+            print(f"⚠️ Gas optimization failed, using defaults: {e}")
+            return {
+                'gas': 250000,
+                'gasPrice': int(0.1 * 1e9)  # 0.1 gwei fallback
+            }
+
     def analyze_borrow_failure(self):
         """
         Analyzes borrow failure in detail and saves diagnostic information.
