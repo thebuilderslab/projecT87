@@ -6,9 +6,9 @@ Provides multiple mechanisms for reliable borrowing operations
 
 import time
 import json
+import os
 from decimal import Decimal
 from web3 import Web3
-import os
 
 class EnhancedBorrowManager:
     def __init__(self, agent):
@@ -49,7 +49,7 @@ class EnhancedBorrowManager:
                     available_borrows_usd = account_data[2] / (10**8)
 
                     # Use the agent's calculation logic
-                    amount_usd = self.agent.calculate_safe_borrow_amount(0.0, available_borrows_usd)
+                    amount_usd = self.calculate_safe_borrow_amount(0.0, available_borrows_usd)
                     print(f"🔧 Override borrow amount: ${amount_usd:.2f}")
 
                     if amount_usd <= 0:
@@ -243,10 +243,7 @@ class EnhancedBorrowManager:
 
             # Get optimized gas parameters
             try:
-                if hasattr(self.agent.aave, 'get_optimized_gas_params'):
-                    gas_params = self.agent.aave.get_optimized_gas_params('aave_borrow', 'market')
-                else:
-                    gas_params = {'gas': 400000, 'gasPrice': self.agent.w3.to_wei(1, 'gwei')}
+                gas_params = self.get_optimized_gas_params('aave_borrow', 'market')
                 print(f"✅ Got gas parameters: {gas_params}")
             except Exception as gas_error:
                 print(f"⚠️ Gas parameter error: {gas_error}")
@@ -325,7 +322,7 @@ class EnhancedBorrowManager:
                     nonce = self.agent.w3.eth.get_transaction_count(user_address, 'pending')
 
                     # Get optimized gas parameters
-                    gas_params = self.agent.aave.get_optimized_gas_params('aave_borrow', 'urgent' if attempt > 2 else 'market')
+                    gas_params = self.get_optimized_gas_params('aave_borrow', 'urgent' if attempt > 2 else 'market')
 
                     # Apply progressive multiplier
                     if 'gasPrice' in gas_params:
@@ -533,6 +530,45 @@ class EnhancedBorrowManager:
 
         return False
 
+    def calculate_safe_borrow_amount(self, growth_amount, available_borrows_usd):
+        """
+        Calculate safe borrow amount with proper fallbacks and manual override detection
+        """
+        print(f"🧮 Calculating safe borrow amount:")
+        print(f"   Growth amount: ${growth_amount:.2f}")
+        print(f"   Available capacity: ${available_borrows_usd:.2f}")
+
+        # Check for manual override first
+        manual_override_active = self.detect_manual_override()
+
+        if manual_override_active:
+            print(f"🔧 Manual override active - using percentage-based calculation")
+            # Use 20% of available borrowing capacity for manual override
+            safe_amount = available_borrows_usd * 0.20
+            safe_amount = max(1.0, min(safe_amount, available_borrows_usd * 0.80))  # Between $1 and 80% of capacity
+            print(f"💰 Manual override borrow amount: ${safe_amount:.2f}")
+            return safe_amount
+
+        # Normal growth-based calculation
+        if growth_amount > 0:
+            # Use 40% of the growth amount, but cap at 60% of available capacity
+            growth_based_amount = growth_amount * 0.40
+            capacity_limit = available_borrows_usd * 0.60
+            safe_amount = min(growth_based_amount, capacity_limit)
+        else:
+            print(f"⚠️ Negative growth detected: ${growth_amount:.2f}")
+            # For negative growth, use small percentage of available capacity
+            safe_amount = available_borrows_usd * 0.10  # Use 10% of available capacity
+
+        # Ensure minimum viable amount
+        safe_amount = max(1.0, safe_amount)
+
+        # Ensure we don't exceed available capacity
+        safe_amount = min(safe_amount, available_borrows_usd * 0.80)
+
+        print(f"💰 Calculated safe borrow amount: ${safe_amount:.2f}")
+        return safe_amount
+
     def get_optimized_gas_params(self, operation_type='default', market_condition='normal'):
         """
         Calculate gas parameters based on market conditions
@@ -541,10 +577,10 @@ class EnhancedBorrowManager:
             # Use agent's aave integration if available
             if hasattr(self.agent, 'aave') and hasattr(self.agent.aave, 'get_optimized_gas_params'):
                 return self.agent.aave.get_optimized_gas_params(operation_type, market_condition)
-            
+
             # Fallback gas parameters
             base_gas_price = self.agent.w3.eth.gas_price if hasattr(self.agent, 'w3') else self.agent.w3.to_wei(1, 'gwei')
-            
+
             # Gas limits for different operations
             gas_limits = {
                 'aave_borrow': 400000,
@@ -552,22 +588,23 @@ class EnhancedBorrowManager:
                 'uniswap_swap': 350000,
                 'default': 250000
             }
-            
+
             # Market condition multipliers
             multipliers = {
                 'normal': 1.2,
                 'volatile': 1.5,
-                'urgent': 2.0
+                'urgent': 2.0,
+                'market': 1.3
             }
-            
+
             gas_limit = gas_limits.get(operation_type, gas_limits['default'])
             multiplier = multipliers.get(market_condition, 1.2)
-            
+
             return {
                 'gas': gas_limit,
                 'gasPrice': int(base_gas_price * multiplier)
             }
-            
+
         except Exception as e:
             print(f"⚠️ Gas parameter calculation failed: {e}")
             return {

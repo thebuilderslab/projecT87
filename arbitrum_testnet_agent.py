@@ -2401,13 +2401,13 @@ class ArbitrumTestnetAgent:
         """
         return self.calculate_safe_borrow_amount(collateral_growth, available_borrows)
 
-    def get_optimized_gas_params(self, w3_instance, operation_type='default', market_condition='normal'):
+    def get_optimized_gas_params(self, operation_type='default', market_condition='normal'):
         """Get optimized gas parameters for different operations"""
         try:
             # Get current network gas price
             # Enhanced gas price with network conditions
             try:
-                current_gas_price = w3_instance.eth.gas_price
+                current_gas_price = self.w3.eth.gas_price
                 # Use higher multiplier for current network conditions
                 gas_price = int(current_gas_price * 2.0)  # 100% premium for reliable inclusion
             except:
