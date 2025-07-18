@@ -59,17 +59,17 @@ class ArbitrumTestnetAgent:
     def _initialize_enhanced_rpc_manager(self):
         """Initialize enhanced RPC management with only working endpoints"""
         if self.network_mode == 'mainnet':
-            # Only use working RPC endpoints based on your test results
-            working_rpcs = [
+            # Multiple RPC endpoints for reliability - prioritizing most stable
+            self.rpc_endpoints = [
                 "https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f938ff891c141",
-                "https://arb1.arbitrum.io/rpc",
-                "https://arbitrum-one.publicnode.com",
+                "https://arb1.arbitrum.io/rpc", 
                 "https://arbitrum-one.public.blastapi.io",
-                "https://1rpc.io/arb"
+                "https://rpc.ankr.com/arbitrum",
+                "https://arbitrum-one.publicnode.com"
             ]
 
             # Test and rank only the working RPCs for performance
-            tested_rpcs = self._test_and_rank_rpcs(working_rpcs, 42161)
+            tested_rpcs = self._test_and_rank_rpcs(self.rpc_endpoints, 42161)
 
             self.chain_id = 42161
             print("🌐 Operating on Arbitrum Mainnet")
@@ -360,22 +360,22 @@ class ArbitrumTestnetAgent:
             if new_collateral_value_usd is not None:
                 self.last_collateral_value_usd = new_collateral_value_usd
                 print(f"✅ Updated baseline collateral: ${new_collateral_value_usd:.2f}")
-                
+
                 # Save to agent baseline file
                 baseline_data = {
                     'timestamp': time.time(),
                     'collateral_value_usd': new_collateral_value_usd,
                     'updated_by': 'successful_operation'
                 }
-                
+
                 with open('agent_baseline.json', 'w') as f:
                     json.dump(baseline_data, f, indent=2)
-                    
+
                 return True
             else:
                 print("⚠️ No collateral value provided for baseline update")
                 return False
-                
+
         except Exception as e:
             print(f"❌ Failed to update baseline: {e}")
             return False
@@ -420,7 +420,7 @@ class ArbitrumTestnetAgent:
         Detect when manual override is active through multiple indicators
         """
         import os
-        
+
         # Check for manual trigger files
         manual_files = ['trigger_test.flag', 'manual_override.flag', 'force_borrow.flag']
         for file_path in manual_files:
@@ -450,12 +450,12 @@ class ArbitrumTestnetAgent:
         import time
         current_time = time.time()
         time_since_last = current_time - self.last_successful_operation_time
-        
+
         if time_since_last < self.operation_cooldown_seconds:
             remaining_time = self.operation_cooldown_seconds - time_since_last
             print(f"⏰ Operation in cooldown. {remaining_time:.0f}s remaining")
             return True
-        
+
         return False
 
     def is_operation_in_cooldown(self, operation_type="general"):
@@ -682,7 +682,7 @@ class ArbitrumTestnetAgent:
                 print("✅ Swapped USDC to WETH.")
                 time.sleep(5)
 
-        # Swap to DAI (initial allocation)
+        # Swap to DAI```python
         if dai_amount_usdc_equiv > 0.1:
             print(f"🔄 Swapping {dai_amount_usdc_equiv:.2f} USDC to DAI...")
             if not self.uniswap.swap_tokens(self.usdc_address, self.dai_address, dai_amount_usdc_equiv, 500):
@@ -1328,6 +1328,7 @@ class ArbitrumTestnetAgent:
                     print(f"   2. Agent will monitor for $12+ collateral growth")
                     print(f"   3. Then execute autonomous borrowing & swapping sequence")
 
+                ```python
                 return 0.7  # Moderate performance score
 
         except Exception as e:
@@ -2081,7 +2082,8 @@ class ArbitrumTestnetAgent:
             }]
 
             pool_contract = self.w3.eth.contract(address=self.aave_pool_address, abi=pool_abi)
-            account_data = pool_contract.functions.getUserAccountData(self.address).call()
+            account_data = pool_contract.functions.getUserAccountData(```python
+self.address).call()
             new_collateral_usd = account_data[0] / (10**8)
 
             # Update baseline to new collateral value
