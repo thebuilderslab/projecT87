@@ -2085,7 +2085,7 @@ class ArbitrumTestnetAgent:
 
             # Update the baseline
             self.last_collateral_value_usd = new_collateral_value
-            
+
             # Save to file for persistence
             try:
                 baseline_data = {
@@ -2095,14 +2095,14 @@ class ArbitrumTestnetAgent:
                 }
                 with open('agent_baseline.json', 'w') as f:
                     json.dump(baseline_data, f, indent=2)
-                    
+
                 print(f"✅ Baseline updated to ${new_collateral_value:.2f}")
                 return True
-                
+
             except Exception as save_error:
                 print(f"⚠️ Failed to save baseline: {save_error}")
                 return False
-                
+
         except Exception as e:
             print(f"❌ Baseline update failed: {e}")
             return False
@@ -2115,16 +2115,16 @@ class ArbitrumTestnetAgent:
         try:
             cooldown_file = f'{operation_type}_cooldown.json'
             cooldown_duration = 300  # 5 minutes default
-            
+
             if not os.path.exists(cooldown_file):
                 return False, 0
-                
+
             with open(cooldown_file, 'r') as f:
                 cooldown_data = json.load(f)
-                
+
             last_operation_time = cooldown_data.get('timestamp', 0)
             elapsed_time = time.time() - last_operation_time
-            
+
             if elapsed_time < cooldown_duration:
                 remaining_time = cooldown_duration - elapsed_time
                 return True, remaining_time
@@ -2132,7 +2132,7 @@ class ArbitrumTestnetAgent:
                 # Cooldown expired, remove file
                 os.remove(cooldown_file)
                 return False, 0
-                
+
         except Exception as e:
             print(f"⚠️ Cooldown check failed: {e}")
             return False, 0
@@ -2147,27 +2147,27 @@ class ArbitrumTestnetAgent:
                 'timestamp': time.time(),
                 'success': True
             }
-            
+
             cooldown_file = f'{operation_type}_cooldown.json'
             with open(cooldown_file, 'w') as f:
                 json.dump(cooldown_data, f, indent=2)
-                
+
             print(f"✅ Recorded successful {operation_type} operation")
             return True
-            
+
         except Exception as e:
             print(f"⚠️ Failed to record operation: {e}")
             return False
 
     def save_baseline_data(self, baseline_data):
-        """Save baseline data to file"""
+        """Save baseline data to file with proper error handling"""
         try:
             with open('agent_baseline.json', 'w') as f:
                 import json
                 json.dump(baseline_data, f, indent=2)
             return True
         except Exception as e:
-            print(f"❌ Failed to update baseline: {e}")
+            print(f"❌ Failed to save baseline data: {e}")
             return False
 
     def analyze_borrow_failure(self):
