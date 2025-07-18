@@ -968,6 +968,55 @@ args = "echo \"Phase 3: System launcher test...\""
 task = "shell.exec"
 args = "python verified_system_launcher.py"
 
+[[workflows.workflow]]
+name = "🧪 TEST COMPREHENSIVE FIXES"
+author = 39391053
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"🧪 TESTING ALL COMPREHENSIVE FIXES\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"=================================\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"Phase 1: Syntax validation...\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python -m py_compile enhanced_borrow_manager.py"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"Phase 2: Comprehensive system test...\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python test_comprehensive_fixes.py"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"Phase 3: Run diagnostic tool...\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python borrow_diagnostic_tool.py"
+
 [[ports]]
 localPort = 5000
 externalPort = 80
