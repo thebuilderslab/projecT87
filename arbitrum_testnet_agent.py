@@ -2159,12 +2159,13 @@ class ArbitrumTestnetAgent:
             print(f"⚠️ Failed to record operation: {e}")
             return False
 
+    def save_baseline_data(self, baseline_data):
+        """Save baseline data to file"""
+        try:
             with open('agent_baseline.json', 'w') as f:
                 import json
                 json.dump(baseline_data, f, indent=2)
-
             return True
-
         except Exception as e:
             print(f"❌ Failed to update baseline: {e}")
             return False
