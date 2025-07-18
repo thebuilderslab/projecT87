@@ -1,10 +1,8 @@
 {
-  "timestamp": 1752815652.0560331,
-  "datetime": "2025-07-18T05:14:12.056034",
-  "overall_status": "NEEDS_ATTENTION",
-  "critical_issues": [
-    "DeFi integrations failed to initialize"
-  ],
+  "timestamp": 1752818161.9053824,
+  "datetime": "2025-07-18T05:56:01.905385",
+  "overall_status": "GOOD",
+  "critical_issues": [],
   "warnings": [
     "PRIVATE_KEY may have incorrect format"
   ],
@@ -27,8 +25,11 @@
       "initialization": "\u2705 Agent created successfully",
       "wallet_address": "\u2705 Wallet: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b",
       "network_connection": "\u2705 Connected to chain 42161",
-      "eth_balance": "\u2705 ETH Balance: 0.000548 ETH",
-      "integrations": "\u274c DeFi integrations failed"
+      "eth_balance": "\u2705 ETH Balance: 0.000542 ETH",
+      "integrations": "\u2705 DeFi integrations initialized",
+      "aave": "\u2705 Aave integration ready",
+      "uniswap": "\u2705 Uniswap integration ready",
+      "health_monitor": "\u2705 Health monitor ready"
     },
     "dashboard": {
       "import": "\u2705 Dashboard imports successfully",
