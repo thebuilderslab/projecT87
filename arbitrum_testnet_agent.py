@@ -1309,7 +1309,7 @@ class ArbitrumTestnetAgent:
             try:
                 health_data = self.health_monitor.get_current_health_factor()
                 if health_data and 'health_factor' in health_data:
-                    hf = health_data.get('health_factor', 0)```text
+                    hf = health_data.get('health_factor', 0)
                     summary['health_factor'] = hf
                     print(f"❤️ Initial Health Factor: {hf:.4f}")
                 else:
