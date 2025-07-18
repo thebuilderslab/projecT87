@@ -266,8 +266,8 @@ class AaveArbitrumIntegration:
             # Use optimized balance fetcher
             from optimized_balance_fetcher import OptimizedBalanceFetcher
 
-            fetcher = OptimizedBalanceFetcher(self.w3, wallet_address=self.account.address)
-            balance = fetcher.get_token_balance(self.account.address, token_address)
+            fetcher = OptimizedBalanceFetcher(self.account.address)
+            balance = fetcher.get_token_balance(token_address)
 
             return balance
 
