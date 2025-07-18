@@ -852,43 +852,6 @@ class EnhancedBorrowManager:
                 elif "allowance" in error_lower:
                     analysis.update({
                         'summary': 'Token allowance issue',
-                        'retry_recommended': False,
-                        'reason': 'Need to approve token spending first'
-                    })
-
-            return analysis
-
-        except Exception as e:
-            print(f"❌ Revert analysis failed: {e}")
-            return {
-                'revert_data': None,
-                'retry_recommended': False,
-                'suggested_action': None,
-                'summary': 'Analysis failed',
-                'reason': str(e)
-            }
-                        'retry_recommended': False,
-                        'reason': 'Asset borrowing is disabled by protocol'
-                    })
-
-                elif "collateral balance" in error_lower or "no collateral" in error_lower:
-                    analysis.update({
-                        'summary': 'Insufficient or no collateral',
-                        'retry_recommended': False,
-                        'reason': 'Need to supply collateral before borrowing'
-                    })
-
-                elif "gas" in error_lower and ("low" in error_lower or "insufficient" in error_lower):
-                    analysis.update({
-                        'summary': 'Insufficient gas for transaction',
-                        'retry_recommended': True,
-                        'suggested_action': 'increase_gas',
-                        'reason': 'Transaction ran out of gas'
-                    })
-
-                elif "allowance" in error_lower:
-                    analysis.update({
-                        'summary': 'Token allowance issue',
                         'retry_recommended': True,
                         'suggested_action': 'check_allowance',
                         'reason': 'Need to approve token spending'
