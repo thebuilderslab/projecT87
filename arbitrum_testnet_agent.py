@@ -37,46 +37,72 @@ class ArbitrumTestnetAgent:
         print(f"🔄 Fallback RPCs: {len(self.alternative_rpcs)} available")
 
         # Initialize Web3 with enhanced connection handling
+        print(f"🔍 DEBUG: Attempting to create Web3 connection with primary RPC: {self.rpc_url}")
         self.w3 = self._create_robust_web3_connection(self.rpc_url)
+        
         if not self.w3 or not self.w3.is_connected():
             # Try fallback RPCs
             print("⚠️ Primary RPC failed, trying fallbacks...")
-            for fallback_rpc in self.alternative_rpcs:
+            for i, fallback_rpc in enumerate(self.alternative_rpcs):
                 try:
+                    print(f"🔍 DEBUG: Trying fallback RPC {i+1}/{len(self.alternative_rpcs)}: {fallback_rpc}")
                     self.w3 = self._create_robust_web3_connection(fallback_rpc)
                     if self.w3 and self.w3.is_connected():
                         self.rpc_url = fallback_rpc
                         print(f"✅ Connected via fallback RPC: {fallback_rpc}")
                         break
-                except:
+                except Exception as e:
+                    print(f"❌ Fallback RPC {fallback_rpc} failed: {e}")
                     continue
             else:
                 raise Exception("Failed to connect to any available RPC endpoint")
+        else:
+            print(f"✅ Successfully connected to primary RPC: {self.rpc_url}")
+        
+        # Final verification of Web3 connection
+        try:
+            chain_id = self.w3.eth.chain_id
+            block_number = self.w3.eth.block_number
+            print(f"🔍 DEBUG: Web3 connection verified - Chain ID: {chain_id}, Latest Block: {block_number}")
+        except Exception as e:
+            print(f"❌ Web3 connection verification failed: {e}")
+            raise Exception(f"Web3 connection not functional: {e}")
 
         # Initialize account after successful RPC connection
         self._initialize_account()
 
     def _initialize_enhanced_rpc_manager(self):
         """Initialize enhanced RPC management with only working endpoints"""
+        print("🔍 DEBUG: Starting RPC manager initialization...")
+        print(f"🔍 DEBUG: Network mode: {self.network_mode}")
+        
         if self.network_mode == 'mainnet':
             # Get Alchemy RPC URL from Replit secrets first
             alchemy_rpc_url = os.getenv('ALCHEMY_RPC_URL')
+            print(f"🔍 DEBUG: ALCHEMY_RPC_URL from env: {alchemy_rpc_url}")
             
             # Multiple RPC endpoints for reliability - prioritizing Alchemy if available
             self.rpc_endpoints = []
             
             if alchemy_rpc_url:
                 self.rpc_endpoints.append(alchemy_rpc_url)
-                print(f"🔗 Using Alchemy RPC from secrets: {alchemy_rpc_url[:50]}...")
+                print(f"🔗 DEBUG: Added Alchemy RPC to endpoints list: {alchemy_rpc_url[:50]}...")
+            else:
+                print("⚠️ DEBUG: No ALCHEMY_RPC_URL found in environment variables")
             
             # Add fallback endpoints
-            self.rpc_endpoints.extend([
+            fallback_endpoints = [
                 "https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f938ff891c141",
                 "https://arb1.arbitrum.io/rpc", 
                 "https://arbitrum-one.public.blastapi.io",
                 "https://rpc.ankr.com/arbitrum",
                 "https://arbitrum-one.publicnode.com"
-            ])
+            ]
+            
+            self.rpc_endpoints.extend(fallback_endpoints)
+            print(f"🔍 DEBUG: Total RPC endpoints to test: {len(self.rpc_endpoints)}")
+            for i, rpc in enumerate(self.rpc_endpoints):
+                print(f"   {i+1}. {rpc[:60]}...")
 
             # Test and rank only the working RPCs for performance
             tested_rpcs = self._test_and_rank_rpcs(self.rpc_endpoints, 42161)
@@ -98,6 +124,10 @@ class ArbitrumTestnetAgent:
 
         if not tested_rpcs:
             raise Exception("No working RPC endpoints found")
+
+        print(f"🔍 DEBUG: Final RPC selection results:")
+        print(f"   Primary RPC: {tested_rpcs[0]}")
+        print(f"   Fallback RPCs: {len(tested_rpcs[1:])} available")
 
         return {
             'primary_rpc': tested_rpcs[0],
