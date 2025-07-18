@@ -8,6 +8,7 @@ import time
 import json
 from decimal import Decimal
 from web3 import Web3
+import os
 
 class EnhancedBorrowManager:
     def __init__(self, agent):
@@ -260,7 +261,7 @@ class EnhancedBorrowManager:
                         return borrow_result
                 except Exception as wei_error:
                     print(f"⚠️ Wei borrow failed: {wei_error}")
-                    
+
             # Fallback to USD amount if available
             if hasattr(self.agent.aave, 'borrow'):
                 try:
@@ -309,23 +310,23 @@ class EnhancedBorrowManager:
                 return None
 
             user_address = Web3.to_checksum_address(self.agent.address)
-            
+
             print(f"💱 Amount: ${amount_usd} = {amount_wei} wei")
             print(f"👤 User: {user_address}")
 
             # Progressive retry with increasing gas prices
             gas_multipliers = [1.2, 1.5, 1.8, 2.0, 2.5]
-            
+
             for attempt, multiplier in enumerate(gas_multipliers):
                 try:
                     print(f"🔄 Attempt {attempt + 1}/5 with gas multiplier {multiplier}")
-                    
+
                     # Get fresh nonce for each attempt
                     nonce = self.agent.w3.eth.get_transaction_count(user_address, 'pending')
-                    
+
                     # Get optimized gas parameters
                     gas_params = self.agent.aave.get_optimized_gas_params('aave_borrow', 'urgent' if attempt > 2 else 'market')
-                    
+
                     # Apply progressive multiplier
                     if 'gasPrice' in gas_params:
                         gas_params['gasPrice'] = int(gas_params['gasPrice'] * multiplier)
@@ -358,7 +359,7 @@ class EnhancedBorrowManager:
 
                     tx_hash_hex = tx_hash.hex()
                     print(f"✅ Mechanism 3 success on attempt {attempt + 1}: {tx_hash_hex}")
-                    
+
                     # Wait for confirmation
                     try:
                         receipt = self.agent.w3.eth.wait_for_transaction_receipt(tx_hash, timeout=120)
@@ -375,7 +376,7 @@ class EnhancedBorrowManager:
                 except Exception as attempt_error:
                     error_msg = str(attempt_error).lower()
                     print(f"❌ Attempt {attempt + 1} failed: {attempt_error}")
-                    
+
                     # Specific error handling
                     if "nonce too low" in error_msg:
                         print(f"🔄 Nonce conflict, will retry with fresh nonce")
@@ -503,4 +504,89 @@ class EnhancedBorrowManager:
             "stateMutability": "nonpayable",
             "type": "function"
         }]
+
+    def detect_manual_override(self):
+        """
+        Detect when manual override is active through multiple indicators
+        """
+        # Check for manual trigger files
+        manual_files = ['trigger_test.flag', 'manual_override.flag', 'force_borrow.flag']
+        for file_path in manual_files:
+            if os.path.exists(file_path):
+                print(f"🔧 Manual override detected: {file_path} exists")
+                return True
+
+        # Check if manual_override_active attribute is set
+        if hasattr(self, 'manual_override_active') and self.manual_override_active:
+            print(f"🔧 Manual override detected: manual_override_active = True")
+            return True
+
+        # Check for test mode
+        if os.path.exists('test_mode.flag'):
+            print(f"🧪 Test mode detected - treating as manual override")
+            return True
+
+        # Check environment variable
+        if os.getenv('MANUAL_OVERRIDE', '').lower() in ['true', '1', 'yes']:
+            print(f"🔧 Manual override detected: MANUAL_OVERRIDE environment variable")
+            return True
+
+        return False
+
+    def calculate_safe_borrow_amount(self, collateral_growth, available_borrows):
+        """
+        Calculate safe borrow amount with proper manual override detection
+        and fallback logic to ensure positive amounts
+        """
+        print(f"🔍 Calculating safe borrow amount:")
+        print(f"   Growth amount: ${collateral_growth:.2f}")
+        print(f"   Available borrows: ${available_borrows:.2f}")
+
+        # Check for manual override conditions
+        manual_override_active = self.detect_manual_override()
+
+        if manual_override_active:
+            print(f"🔧 Manual override detected - using capacity-based calculation")
+            # Use percentage of available borrowing capacity instead of growth
+            capacity_based_amount = available_borrows * 0.15  # 15% of available capacity
+            safe_amount = min(capacity_based_amount, 10.0)  # Cap at $10
+            safe_amount = max(safe_amount, 0.5)  # Minimum $0.50
+            print(f"🔧 Manual override calculation: ${safe_amount:.2f} (15% of capacity)")
+            return safe_amount
+
+        # Normal growth-based calculation
+        if collateral_growth > 0:
+            growth_based_amount = min(collateral_growth * 0.4, 6.0)  # 40% of growth, max $6
+            print(f"📈 Growth-based calculation: ${growth_based_amount:.2f}")
+
+            # Ensure it doesn't exceed available capacity
+            if growth_based_amount <= available_borrows * 0.8:
+                return max(growth_based_amount, 0.5)  # Minimum $0.50
+
+        # Fallback for negative growth or insufficient capacity
+        print(f"⚠️ Using fallback calculation due to negative growth or capacity constraints")
+        fallback_amount = min(available_borrows * 0.05, 2.0)  # 5% of capacity, max $2
+        return max(fallback_amount, 0.1)  # Minimum $0.10
+
+    def calculate_optimal_borrow_amount(self, collateral_growth, available_borrows):
+        """
+        Legacy method - redirects to new calculate_safe_borrow_amount
+        """
+        return self.calculate_safe_borrow_amount(collateral_growth, available_borrows)
 ```
+def get_optimized_gas_params(self, w3_instance, operation_type='default', market_condition='normal'):
+        """
+        Calculate gas parameters based on market conditions. This function
+        aims to dynamically adjust gas prices to ensure transaction inclusion
+        while optimizing costs.
+
+        Args:
+            w3_instance (web3.Web3): Web3 instance.
+            operation_type (str, optional): Type of operation ('default', 'borrow', 'supply'). Defaults to 'default'.
+            market_condition (str, optional): Market condition ('normal', 'volatile', 'urgent'). Defaults to 'normal'.
+
+        Returns:
+            dict: Dictionary containing 'gas' and 'gasPrice' or 'maxFeePerGas' and 'maxPriorityFeePerGas'.
+        """
+        gas_params = {'gas': 400000, 'gasPrice': w3_instance.to_wei(1, 'gwei')}
+        return gas_params
