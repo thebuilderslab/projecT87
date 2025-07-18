@@ -291,113 +291,103 @@ class AaveArbitrumIntegration:
             return 0.0
 
     def get_supplied_balance(self, token_address):
-        """Get the amount of tokens supplied to Aave for this asset"""
-        import logging
-        
+        """Get the amount of tokens supplied to Aave for this asset with enhanced error handling"""
         try:
-            logging.debug(f"DEBUG: get_supplied_balance called with token_address: {token_address}")
-            
-            # Standard ERC20 ABI for aToken balance
-            atoken_abi = [{
-                "inputs": [{"name": "account", "type": "address"}],
-                "name": "balanceOf",
-                "outputs": [{"name": "", "type": "uint256"}],
-                "stateMutability": "view",
-                "type": "function"
-            }, {
-                "inputs": [],
-                "name": "decimals",
-                "outputs": [{"name": "", "type": "uint8"}],
-                "stateMutability": "view",
-                "type": "function"
-            }]
+            print(f"🔍 Getting supplied balance for token: {token_address}")
 
-            # Updated Aave aToken addresses for Arbitrum Mainnet (verified from Aave V3 docs)
-            atoken_addresses = {
-                "0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f": "0x6533afac2E7BCCB20dca161449A13A2D2d5B739A",  # WBTC -> aWBTC
-                "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1": "0xe50fA9b4c56454E2edF6BFf7c81b50c5F05aBE61",  # WETH -> aWETH
-                "0xAf88D065e77C8cF0EAEfF3e253e648A15CEe23dC": "0x724dc807b04555b71ed48a6896b6F41593b8C637",  # USDC -> aUSDC
+            # Comprehensive aToken mapping for Arbitrum Mainnet
+            atoken_mapping = {
+                self.usdc_address.lower(): "0x724dc807b04555b71ed48a6896b6F41593b8C637",  # aArbUSDC
+                self.wbtc_address.lower(): "0x6533afac2E7BCCB20dca161449A13A2D2d5B739A",  # aArbWBTC  
+                self.weth_address.lower(): "0xe50fA9b4c56454E2edF6BFf7c81b50c5F05aBE61",  # aArbWETH
+                self.dai_address.lower(): "0x82E64f49Ed5EC1bC6e43DAD4FC8Af9bb3A2312EE"   # aArbDAI
             }
-            
-            # Fallback: Try direct balance check using Pool contract getUserAccountData
-            try:
-                # Use the main pool contract to get user data which includes supplied amounts
-                pool_contract = self.w3.eth.contract(
-                    address=self.pool_address,
-                    abi=self.pool_abi
-                )
-                
-                user_data = pool_contract.functions.getUserAccountData(self.account.address).call()
-                total_collateral_base = user_data[0] / (10**8)  # Convert from base units to USD
-                
-                # If we have collateral, return a proportional amount for this token
-                if total_collateral_base > 0:
-                    # Get token decimals
-                    token_decimals = self._get_known_decimals(token_address)
-                    
-                    # For now, return 0 but the system will use the main pool data
-                    logging.debug(f"DEBUG: Using fallback - total collateral: ${total_collateral_base:.2f}")
-                    return 0.0
-                    
-            except Exception as fallback_error:
-                logging.error(f"DEBUG: Fallback pool check failed: {fallback_error}")
-            
-            logging.debug(f"DEBUG: Available aToken mappings: {atoken_addresses}")
 
-            # Normalize token address for lookup
-            normalized_token = Web3.to_checksum_address(token_address)
-            logging.debug(f"DEBUG: Normalized token address: {normalized_token}")
-            
-            atoken_address = atoken_addresses.get(normalized_token)
-            logging.debug(f"DEBUG: Found aToken address: {atoken_address}")
-            
+            atoken_address = atoken_mapping.get(token_address.lower())
             if not atoken_address:
-                logging.warning(f"WARNING: No aToken mapping for {normalized_token}")
-                print(f"⚠️ No aToken mapping for {normalized_token}")
+                print(f"⚠️ No aToken mapping found for {token_address}")
                 return 0.0
 
-            # Ensure aToken address is properly checksummed
-            checksummed_atoken = Web3.to_checksum_address(atoken_address)
-            logging.debug(f"DEBUG: Checksummed aToken address: {checksummed_atoken}")
-            logging.debug(f"DEBUG: Wallet address for balance check: {self.account.address}")
-            
-            # Create aToken contract
-            atoken_contract = self.w3.eth.contract(
-                address=checksummed_atoken,
-                abi=atoken_abi
-            )
-            logging.debug(f"DEBUG: aToken contract created successfully")
+            print(f"📍 Using aToken address: {atoken_address}")
 
-            # Get balance and decimals
-            logging.debug(f"DEBUG: Calling balanceOf({self.account.address}) on aToken contract")
-            balance_wei = atoken_contract.functions.balanceOf(self.account.address).call()
-            logging.debug(f"DEBUG: Raw balance_wei returned: {balance_wei}")
-            
-            logging.debug(f"DEBUG: Calling decimals() on aToken contract")
-            decimals = atoken_contract.functions.decimals().call()
-            logging.debug(f"DEBUG: Decimals returned: {decimals}")
+            # Enhanced aToken ABI with multiple function signatures
+            enhanced_atoken_abi = [
+                {
+                    "inputs": [{"name": "account", "type": "address"}],
+                    "name": "balanceOf", 
+                    "outputs": [{"name": "", "type": "uint256"}],
+                    "stateMutability": "view",
+                    "type": "function"
+                },
+                {
+                    "inputs": [],
+                    "name": "decimals",
+                    "outputs": [{"name": "", "type": "uint8"}],
+                    "stateMutability": "view", 
+                    "type": "function"
+                },
+                {
+                    "inputs": [],
+                    "name": "symbol",
+                    "outputs": [{"name": "", "type": "string"}],
+                    "stateMutability": "view",
+                    "type": "function"
+                }
+            ]
 
-            # Convert to readable format
-            balance = balance_wei / (10 ** decimals)
-            logging.debug(f"DEBUG: Converted balance: {balance}")
+            # Multiple RPC attempt strategy
+            rpcs_to_try =```python
+ [
+                self.w3,  # Current primary
+                *[Web3(Web3.HTTPProvider(rpc)) for rpc in self.alternative_rpcs[:2]]  # Top 2 fallbacks
+            ]
 
-            print(f"✅ Supplied {balance:.8f} of token {token_address} (aToken: {atoken_address})")
-            return balance
+            for attempt, w3_instance in enumerate(rpcs_to_try):
+                try:
+                    if not w3_instance.is_connected():
+                        continue
+
+                    print(f"🔄 Attempt {attempt + 1}: Using RPC endpoint")
+
+                    # Create contract with enhanced error checking
+                    atoken_contract = w3_instance.eth.contract(
+                        address=w3_instance.to_checksum_address(atoken_address),
+                        abi=enhanced_atoken_abi
+                    )
+
+                    # Verify contract exists
+                    try:
+                        symbol = atoken_contract.functions.symbol().call()
+                        print(f"✅ Contract verified: {symbol}")
+                    except:
+                        print(f"⚠️ Contract verification failed, proceeding anyway")
+
+                    # Get balance with timeout
+                    user_address = w3_instance.to_checksum_address(self.address)
+                    balance_wei = atoken_contract.functions.balanceOf(user_address).call()
+
+                    # Get decimals from aToken contract directly
+                    try:
+                        decimals = atoken_contract.functions.decimals().call()
+                    except:
+                        # Fallback to underlying token decimals
+                        decimals = self._get_token_decimals(token_address)
+
+                    balance = balance_wei / (10 ** decimals)
+
+                    print(f"✅ Successfully retrieved balance: {balance:.8f}")
+                    return balance
+
+                except Exception as rpc_error:
+                    print(f"❌ RPC attempt {attempt + 1} failed: {rpc_error}")
+                    continue
+
+            # If all RPC attempts fail, return 0 but don't crash
+            print(f"⚠️ All RPC attempts failed for {token_address}, returning 0")
+            return 0.0
 
         except Exception as e:
-            logging.error(f"ERROR: get_supplied_balance failed for {token_address}: {e}", exc_info=True)
-            print(f"❌ Error getting supplied balance for {token_address}: {e}")
-            
-            # Final fallback: Try alternative RPC or return 0
-            try:
-                # Try with alternative RPC if available
-                fallback_balance = self.get_token_balance_with_alternative_rpc(token_address)
-                if fallback_balance >= 0:
-                    print(f"✅ Fallback RPC returned balance: {fallback_balance}")
-                    return fallback_balance
-            except Exception as fallback_error:
-                logging.error(f"DEBUG: Fallback RPC also failed: {fallback_error}")
-            
+            print(f"❌ Critical error in get_supplied_balance for {token_address}: {e}")
             return 0.0
 
     def get_zapper_fallback_balance(self, token_address: str) -> float:
@@ -499,13 +489,13 @@ class AaveArbitrumIntegration:
             self.arb_address.lower(): 18
         }
         return token_decimals.get(token_address.lower(), 18)
-    
+
     def get_optimized_gas_params(self, operation_type='default', market_condition='normal'):
         """Get optimized gas parameters for transactions"""
         try:
             # Base gas price from network
             base_gas_price = self.w3.eth.gas_price
-            
+
             # Gas limits for different operations
             gas_limits = {
                 'approve_token': 60000,
@@ -515,7 +505,7 @@ class AaveArbitrumIntegration:
                 'uniswap_swap': 120000,
                 'default': 200000
             }
-            
+
             # Market condition multipliers
             multipliers = {
                 'normal': 1.2,
@@ -523,15 +513,15 @@ class AaveArbitrumIntegration:
                 'urgent': 2.0,
                 'market': 1.3
             }
-            
+
             gas_limit = gas_limits.get(operation_type, gas_limits['default'])
             multiplier = multipliers.get(market_condition, 1.2)
-            
+
             return {
                 'gas': gas_limit,
                 'gasPrice': int(base_gas_price * multiplier)
             }
-            
+
         except Exception as e:
             print(f"⚠️ Gas parameter calculation failed: {e}")
             return {
@@ -544,7 +534,7 @@ class AaveArbitrumIntegration:
         try:
             # Get token decimals
             decimals = self._get_known_decimals(token_address)
-            
+
             # For USDC, 1 USD = 1 USDC (approximately)
             if token_address.lower() == self.usdc_address.lower():
                 amount_wei = int(amount_usd * (10 ** decimals))
@@ -553,7 +543,7 @@ class AaveArbitrumIntegration:
                 # For other tokens, would need price conversion
                 # For now, only support USDC borrowing
                 raise ValueError(f"USD to wei conversion not supported for token: {token_address}")
-                
+
         except Exception as e:
             print(f"❌ USD to wei conversion failed: {e}")
             return 0
@@ -1058,7 +1048,7 @@ class AaveArbitrumIntegration:
         # Multiple transaction attempts with increasing gas
         gas_multipliers = [1.0, 1.3, 1.6]  # Progressive gas increases
 
-        for attempt, multiplier in enumerate(gas_multipliers):
+        for attempt, multiplier in enumerate(gasmultipliers):
             try:
                 adjusted_gas_price = int(gas_price * multiplier)
                 current_nonce = nonce + attempt
@@ -1811,8 +1801,7 @@ class AaveArbitrumIntegration:
             wbtc_supplied = self.get_supplied_balance(self.wbtc_address)
             usdc_supplied = self.get_supplied_balance(self.usdc_address)
 
-            # Output balances
-            print(f"   Wallet WETH balance:   {weth_balance:.8f}")
+            # Output balancesprint(f"   Wallet WETH balance:   {weth_balance:.8f}")
             print(f"   Wallet WBTC balance:   {wbtc_balance:.8f}")
             print(f"   Wallet USDC balance:   {usdc_balance:.8f}")
 
