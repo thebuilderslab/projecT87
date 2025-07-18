@@ -276,7 +276,7 @@ class EnhancedBorrowManager:
 
         return None
 
-    def _try_alternative_parameter_order(self, amount_usd, token_address):
+    def _try_alternative_parameter_order(self, self, amount_usd, token_address):
         """Try with different parameter arrangements"""
         try:
             print("🔄 Mechanism 2: Alternative parameter order")
@@ -530,7 +530,7 @@ class EnhancedBorrowManager:
 
         return False
 
-    
+
 
     def get_optimized_gas_params(self, operation_type='default', market_condition='normal'):
         """
@@ -575,4 +575,142 @@ class EnhancedBorrowManager:
                 'gasPrice': self.agent.w3.to_wei(1, 'gwei') if hasattr(self.agent, 'w3') else 1000000000
             }
 
-    
+    def _execute_borrow_transaction(self, w3_instance, pool_contract, token_address, 
+                                   amount_wei, interest_rate_mode, user_address):
+        """Execute borrow transaction with enhanced error handling and higher gas limits"""
+
+        # Get fresh nonce and gas data
+        nonce = w3_instance.eth.get_transaction_count(user_address, 'pending')
+
+        # CRITICAL: Use much higher gas limits for Aave borrowing
+        try:
+            estimated_gas = pool_contract.functions.borrow(
+                token_address, amount_wei, interest_rate_mode, 0, user_address
+            ).estimate_gas({'from': user_address})
+
+            gas_limit = max(int(estimated_gas * 1.5), 600000)  # At least 600k gas
+            print(f"⛽ Estimated gas: {estimated_gas}, using: {gas_limit}")
+        except Exception as gas_est_error:
+            gas_limit = 800000  # Much higher fallback for complex operations
+            print(f"⚠️ Gas estimation failed ({gas_est_error}), using high fallback: {gas_limit}")
+
+        # Enhanced gas price with network conditions
+        try:
+            current_gas_price = w3_instance.eth.gas_price
+            gas_price = int(current_gas_price * 2.0)  # Much higher premium for reliability
+        except:
+            gas_price = int(1.0 * 1e9)  # 1.0 gwei fallback (higher)
+
+        print(f"⛽ Gas price: {gas_price} wei ({gas_price / 1e9:.2f} gwei)")
+
+        # Pre-transaction validation
+        try:
+            print(f"🔍 Pre-transaction validation:")
+
+            # Check current account data
+            account_data = pool_contract.functions.getUserAccountData(user_address).call()
+            available_borrows = account_data[2] / (10**8)
+            health_factor = account_data[5] / (10**18) if account_data[5] > 0 else float('inf')
+
+            print(f"   Available borrows: ${available_borrows:.2f}")
+            print(f"   Health factor: {health_factor:.4f}")
+            print(f"   Requested amount: ${amount_wei / (10**6):.2f}")
+
+            if available_borrows < (amount_wei / (10**6)):
+                print(f"❌ CRITICAL: Insufficient borrowing capacity!")
+                return None
+
+            if health_factor < 1.2:
+                print(f"❌ CRITICAL: Health factor too low for borrowing!")
+                return None
+
+        except Exception as validation_error:
+            print(f"⚠️ Pre-transaction validation failed: {validation_error}")
+
+        # Multiple transaction attempts with increasing gas
+        gas_multipliers = [1.0, 1.5, 2.0, 2.5]  # More aggressive gas increases
+        gas_limit_multipliers = [1.0, 1.2, 1.5, 2.0]  # Also increase gas limits
+
+        for attempt, (gas_mult, limit_mult) in enumerate(zip(gas_multipliers, gas_limit_multipliers)):
+            try:
+                adjusted_gas_price = int(gas_price * gas_mult)
+                adjusted_gas_limit = int(gas_limit * limit_mult)
+                current_nonce = nonce + attempt
+
+                print(f"🔄 Enhanced attempt {attempt + 1}:")
+                print(f"   Nonce: {current_nonce}")
+                print(f"   Gas limit: {adjusted_gas_limit:,}")
+                print(f"   Gas price: {adjusted_gas_price:,} wei ({adjusted_gas_price / 1e9:.3f} gwei)")
+
+                # Build borrow transaction with enhanced parameters
+                transaction = pool_contract.functions.borrow(
+                    Web3.to_checksum_address(token_address),  # address
+                    int(amount_wei),                          # uint256
+                    int(interest_rate_mode),                  # uint256 
+                    int(0),                                   # uint16 referralCode
+                    Web3.to_checksum_address(user_address)    # address onBehalfOf
+                ).build_transaction({
+                    'chainId': w3_instance.eth.chain_id,
+                    'gas': adjusted_gas_limit,
+                    'gasPrice': adjusted_gas_price,
+                    'nonce': current_nonce,
+                    'from': user_address
+                })
+
+                # Sign and send
+                signed_txn = w3_instance.eth.account.sign_transaction(transaction, self.agent.account.key)
+                tx_hash = w3_instance.eth.send_raw_transaction(signed_txn.rawTransaction)
+
+                tx_hash_hex = tx_hash.hex()
+                print(f"✅ Transaction sent: {tx_hash_hex}")
+
+                # Wait for confirmation with timeout
+                try:
+                    print(f"⏳ Waiting for confirmation...")
+                    receipt = w3_instance.eth.wait_for_transaction_receipt(tx_hash, timeout=300)
+
+                    if receipt.status == 1:
+                        print(f"🎉 BORROW SUCCESS! Transaction confirmed: {tx_hash_hex}")
+                        explorer_url = f"https://arbiscan.io/tx/{tx_hash_hex}"
+                        print(f"📊 View on Arbiscan: {explorer_url}")
+                        return tx_hash_hex
+                    else:
+                        print(f"❌ Transaction reverted (status=0): {tx_hash_hex}")
+                        # Try to get revert reason
+                        try:
+                            w3_instance.eth.call(transaction, receipt.blockNumber)
+                        except Exception as revert_error:
+                            print(f"   Revert reason: {revert_error}")
+                        continue
+
+                except Exception as wait_error:
+                    print(f"⚠️ Confirmation timeout: {wait_error}")
+                    print(f"   Transaction may still succeed: {tx_hash_hex}")
+                    return tx_hash_hex
+
+            except Exception as tx_error:
+                print(f"❌ Enhanced attempt {attempt + 1} failed: {tx_error}")
+
+                error_str = str(tx_error).lower()
+
+                # Specific error handling
+                if "nonce too low" in error_str:
+                    nonce = w3_instance.eth.get_transaction_count(user_address, 'pending')
+                    print(f"🔄 Updated nonce to {nonce}")
+                elif "insufficient funds" in error_str:
+                    print(f"💰 Insufficient ETH for gas fees")
+                    break
+                elif "execution reverted" in error_str:
+                    print(f"🔍 Contract execution reverted - may be an Aave protocol restriction")
+                    if "HEALTH_FACTOR_LOWER_THAN_LIQUIDATION_THRESHOLD" in str(tx_error):
+                        print(f"   → Health factor too low for borrowing")
+                        break
+                    elif "COLLATERAL_BALANCE_IS_ZERO" in str(tx_error):
+                        print(f"   → No collateral available for borrowing")
+                        break
+
+                if attempt == len(gas_multipliers) - 1:
+                    print(f"🚨 All enhanced attempts failed")
+                    return None
+
+        return None
