@@ -1,1 +1,7 @@
-{"last_collateral_value_usd": 214.5503936, "baseline_initialized": true, "timestamp": 1752809050.6742554, "wallet_address": "0x5B823270e3719CDe8669e5e5326B455EaA8a350b", "update_source": "successful_operation"}
+{
+  "last_collateral_value_usd": 203.07331254,
+  "baseline_initialized": true,
+  "timestamp": 1752813703.7614386,
+  "wallet_address": "0x5B823270e3719CDe8669e5e5326B455EaA8a350b",
+  "data_source": "initial_baseline_setup"
+}
