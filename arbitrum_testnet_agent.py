@@ -1997,6 +1997,167 @@ class ArbitrumTestnetAgent:
                 'update_reason': 'successful_operation'
             }
 
+
+
+    def detect_manual_override(self):
+        """
+        Detect when manual override is active through multiple indicators
+        """
+        # Check for manual trigger files
+        manual_files = ['trigger_test.flag', 'manual_override.flag', 'force_borrow.flag']
+        for file_path in manual_files:
+            if os.path.exists(file_path):
+                print(f"🔧 Manual override detected: {file_path} exists")
+                return True
+
+        # Check if manual_override_active attribute is set
+        if hasattr(self, 'manual_override_active') and self.manual_override_active:
+            print(f"🔧 Manual override detected: manual_override_active = True")
+            return True
+
+        # Check for test mode
+        if os.path.exists('test_mode.flag'):
+            print(f"🧪 Test mode detected - treating as manual override")
+            return True
+
+        # Check environment variable
+        if os.getenv('MANUAL_OVERRIDE', '').lower() in ['true', '1', 'yes']:
+            print(f"🔧 Manual override detected: MANUAL_OVERRIDE environment variable")
+            return True
+
+        return False
+
+    def calculate_safe_borrow_amount(self, collateral_growth, available_borrows):
+        """
+        Calculate safe borrow amount with proper manual override detection
+        and fallback logic to ensure positive amounts
+        """
+        print(f"🔍 Calculating safe borrow amount:")
+        print(f"   Growth amount: ${collateral_growth:.2f}")
+        print(f"   Available borrows: ${available_borrows:.2f}")
+
+        # Check for manual override conditions
+        manual_override_active = self.detect_manual_override()
+
+        if manual_override_active:
+            print(f"🔧 Manual override detected - using capacity-based calculation")
+            # Use percentage of available borrowing capacity instead of growth
+            capacity_based_amount = available_borrows * 0.15  # 15% of available capacity
+            safe_amount = min(capacity_based_amount, 10.0)  # Cap at $10
+            safe_amount = max(safe_amount, 0.5)  # Minimum $0.50
+            print(f"🔧 Manual override calculation: ${safe_amount:.2f} (15% of capacity)")
+            return safe_amount
+
+        # Normal growth-based calculation
+        if collateral_growth > 0:
+            growth_based_amount = min(collateral_growth * 0.4, 6.0)  # 40% of growth, max $6
+            print(f"📈 Growth-based calculation: ${growth_based_amount:.2f}")
+
+            # Ensure it doesn't exceed available capacity
+            if growth_based_amount <= available_borrows * 0.8:
+                return max(growth_based_amount, 0.5)  # Minimum $0.50
+
+        # Fallback for negative growth or insufficient capacity
+        print(f"⚠️ Using fallback calculation due to negative growth or capacity constraints")
+        fallback_amount = min(available_borrows * 0.05, 2.0)  # 5% of capacity, max $2
+        return max(fallback_amount, 0.1)  # Minimum $0.10
+
+    def calculate_optimal_borrow_amount(self, collateral_growth, available_borrows):
+        """
+        Legacy method - redirects to new calculate_safe_borrow_amount
+        """
+        return self.calculate_safe_borrow_amount(collateral_growth, available_borrows)
+
+    def update_baseline_after_success(self, new_collateral_value=None):
+        """
+        Update baseline collateral value after successful operation
+        """
+        try:
+            if new_collateral_value is None:
+                # Get current collateral value
+                health_data = self.health_monitor.get_current_health_factor()
+                if health_data and 'total_collateral_usdc' in health_data:
+                    new_collateral_value = health_data['total_collateral_usdc']
+                else:
+                    print(f"⚠️ Could not get current collateral for baseline update")
+                    return False
+
+            # Update the baseline
+            self.last_collateral_value_usd = new_collateral_value
+            
+            # Save to file for persistence
+            try:
+                baseline_data = {
+                    'last_collateral_value_usd': new_collateral_value,
+                    'timestamp': time.time(),
+                    'updated_by': 'update_baseline_after_success'
+                }
+                with open('agent_baseline.json', 'w') as f:
+                    json.dump(baseline_data, f, indent=2)
+                    
+                print(f"✅ Baseline updated to ${new_collateral_value:.2f}")
+                return True
+                
+            except Exception as save_error:
+                print(f"⚠️ Failed to save baseline: {save_error}")
+                return False
+                
+        except Exception as e:
+            print(f"❌ Baseline update failed: {e}")
+            return False
+
+    def is_operation_in_cooldown(self, operation_type):
+        """
+        Check if an operation is in cooldown period
+        Returns (is_in_cooldown, remaining_time)
+        """
+        try:
+            cooldown_file = f'{operation_type}_cooldown.json'
+            cooldown_duration = 300  # 5 minutes default
+            
+            if not os.path.exists(cooldown_file):
+                return False, 0
+                
+            with open(cooldown_file, 'r') as f:
+                cooldown_data = json.load(f)
+                
+            last_operation_time = cooldown_data.get('timestamp', 0)
+            elapsed_time = time.time() - last_operation_time
+            
+            if elapsed_time < cooldown_duration:
+                remaining_time = cooldown_duration - elapsed_time
+                return True, remaining_time
+            else:
+                # Cooldown expired, remove file
+                os.remove(cooldown_file)
+                return False, 0
+                
+        except Exception as e:
+            print(f"⚠️ Cooldown check failed: {e}")
+            return False, 0
+
+    def record_successful_operation(self, operation_type):
+        """
+        Record successful operation for cooldown tracking
+        """
+        try:
+            cooldown_data = {
+                'operation_type': operation_type,
+                'timestamp': time.time(),
+                'success': True
+            }
+            
+            cooldown_file = f'{operation_type}_cooldown.json'
+            with open(cooldown_file, 'w') as f:
+                json.dump(cooldown_data, f, indent=2)
+                
+            print(f"✅ Recorded successful {operation_type} operation")
+            return True
+            
+        except Exception as e:
+            print(f"⚠️ Failed to record operation: {e}")
+            return False
+
             with open('agent_baseline.json', 'w') as f:
                 import json
                 json.dump(baseline_data, f, indent=2)

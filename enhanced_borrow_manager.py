@@ -533,60 +533,44 @@ class EnhancedBorrowManager:
 
         return False
 
-    def calculate_safe_borrow_amount(self, collateral_growth, available_borrows):
+    def get_optimized_gas_params(self, operation_type='default', market_condition='normal'):
         """
-        Calculate safe borrow amount with proper manual override detection
-        and fallback logic to ensure positive amounts
+        Calculate gas parameters based on market conditions
         """
-        print(f"🔍 Calculating safe borrow amount:")
-        print(f"   Growth amount: ${collateral_growth:.2f}")
-        print(f"   Available borrows: ${available_borrows:.2f}")
-
-        # Check for manual override conditions
-        manual_override_active = self.detect_manual_override()
-
-        if manual_override_active:
-            print(f"🔧 Manual override detected - using capacity-based calculation")
-            # Use percentage of available borrowing capacity instead of growth
-            capacity_based_amount = available_borrows * 0.15  # 15% of available capacity
-            safe_amount = min(capacity_based_amount, 10.0)  # Cap at $10
-            safe_amount = max(safe_amount, 0.5)  # Minimum $0.50
-            print(f"🔧 Manual override calculation: ${safe_amount:.2f} (15% of capacity)")
-            return safe_amount
-
-        # Normal growth-based calculation
-        if collateral_growth > 0:
-            growth_based_amount = min(collateral_growth * 0.4, 6.0)  # 40% of growth, max $6
-            print(f"📈 Growth-based calculation: ${growth_based_amount:.2f}")
-
-            # Ensure it doesn't exceed available capacity
-            if growth_based_amount <= available_borrows * 0.8:
-                return max(growth_based_amount, 0.5)  # Minimum $0.50
-
-        # Fallback for negative growth or insufficient capacity
-        print(f"⚠️ Using fallback calculation due to negative growth or capacity constraints")
-        fallback_amount = min(available_borrows * 0.05, 2.0)  # 5% of capacity, max $2
-        return max(fallback_amount, 0.1)  # Minimum $0.10
-
-    def calculate_optimal_borrow_amount(self, collateral_growth, available_borrows):
-        """
-        Legacy method - redirects to new calculate_safe_borrow_amount
-        """
-        return self.calculate_safe_borrow_amount(collateral_growth, available_borrows)
-```
-def get_optimized_gas_params(self, w3_instance, operation_type='default', market_condition='normal'):
-        """
-        Calculate gas parameters based on market conditions. This function
-        aims to dynamically adjust gas prices to ensure transaction inclusion
-        while optimizing costs.
-
-        Args:
-            w3_instance (web3.Web3): Web3 instance.
-            operation_type (str, optional): Type of operation ('default', 'borrow', 'supply'). Defaults to 'default'.
-            market_condition (str, optional): Market condition ('normal', 'volatile', 'urgent'). Defaults to 'normal'.
-
-        Returns:
-            dict: Dictionary containing 'gas' and 'gasPrice' or 'maxFeePerGas' and 'maxPriorityFeePerGas'.
-        """
-        gas_params = {'gas': 400000, 'gasPrice': w3_instance.to_wei(1, 'gwei')}
-        return gas_params
+        try:
+            # Use agent's aave integration if available
+            if hasattr(self.agent, 'aave') and hasattr(self.agent.aave, 'get_optimized_gas_params'):
+                return self.agent.aave.get_optimized_gas_params(operation_type, market_condition)
+            
+            # Fallback gas parameters
+            base_gas_price = self.agent.w3.eth.gas_price if hasattr(self.agent, 'w3') else self.agent.w3.to_wei(1, 'gwei')
+            
+            # Gas limits for different operations
+            gas_limits = {
+                'aave_borrow': 400000,
+                'aave_supply': 300000,
+                'uniswap_swap': 350000,
+                'default': 250000
+            }
+            
+            # Market condition multipliers
+            multipliers = {
+                'normal': 1.2,
+                'volatile': 1.5,
+                'urgent': 2.0
+            }
+            
+            gas_limit = gas_limits.get(operation_type, gas_limits['default'])
+            multiplier = multipliers.get(market_condition, 1.2)
+            
+            return {
+                'gas': gas_limit,
+                'gasPrice': int(base_gas_price * multiplier)
+            }
+            
+        except Exception as e:
+            print(f"⚠️ Gas parameter calculation failed: {e}")
+            return {
+                'gas': 400000,
+                'gasPrice': self.agent.w3.to_wei(1, 'gwei') if hasattr(self.agent, 'w3') else 1000000000
+            }
