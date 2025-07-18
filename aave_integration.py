@@ -334,6 +334,11 @@ class AaveArbitrumIntegration:
                 self.wbtc_address.lower(): 0.0002,
                 self.weth_address.lower(): 0.00193518
             }
+            return known_balances.get(token_address.lower(), -1)
+
+        except Exception as e:
+            print(f"❌ Zapper fallback failed: {e}")
+            return -1
 ```
             return known_balances.get(token_address.lower(), -1)
 
@@ -1038,25 +1043,69 @@ class AaveArbitrumIntegration:
                 'urgent': 1.8,
                 'market': 1.3
             }
-            
-            # Apply condition multiplier
-            if speed in condition_multipliers:
-                gas_price = int(gas_price * condition_multipliers[speed])
-            
-            return {
+
+            gas_limit = gas_limits.get(operation_type, gas_limits['default'])
+            total_multiplier = base_multiplier * condition_multipliers.get(market_condition, 1.1)
+
+            print(f"   Network congestion factor: {network_congestion:.2f}")
+            print(f"   Total gas multiplier: {total_multiplier:.2f}")
+
+            # Try EIP-1559 first (Arbitrum supports it)
+            try:
+                if 'baseFeePerGas' in current_block:
+                    # Calculate priority fee based on network conditions
+                    if network_congestion > 1.5:
+                        priority_fee = self.w3.to_wei(2, 'gwei')  # Higher priority in congestion
+                    else:
+                        priority_fee = self.w3.to_wei(0.5, 'gwei')  # Standard priority
+
+                    # Ensure we're always above base fee
+                    max_fee = int((base_fee * total_multiplier) + priority_fee)
+
+                    # Safety minimum - never go below 0.1 gwei
+                    min_fee = self.w3.to_wei(0.1, 'gwei')
+                    max_fee = max(max_fee, min_fee)
+
+                    gas_params = {
+                        'gas': gas_limit,
+                        'maxFeePerGas': max_fee,
+                        'maxPriorityFeePerGas': priority_fee
+                    }
+
+                    print(f"✅ EIP-1559 gas params:")
+                    print(f"   Gas limit: {gas_limit:,}")
+                    print(f"   Max fee: {max_fee / 1e9:.2f} gwei")
+                    print(f"   Priority fee: {priority_fee / 1e9:.2f} gwei")
+
+                    return gas_params
+
+            except Exception as eip1559_error:
+                print(f"⚠️ EIP-1559 failed, using legacy: {eip1559_error}")
+
+            # Fallback to legacy gas pricing
+            legacy_gas_price = int(current_gas_price * total_multiplier)
+
+            # Ensure minimum gas price
+            min_gas_price = self.w3.to_wei(0.1, 'gwei')
+            legacy_gas_price = max(legacy_gas_price, min_gas_price)
+
+            gas_params = {
                 'gas': gas_limit,
-                'gasPrice': gas_price,
-                'maxFeePerGas': gas_price,
-                'maxPriorityFeePerGas': min(gas_price // 10, 2000000000)  # 2 gwei max
+                'gasPrice': legacy_gas_price
             }
-            
+
+            print(f"✅ Legacy gas params:")
+            print(f"   Gas limit: {gas_limit:,}")
+            print(f"   Gas price: {legacy_gas_price / 1e9:.2f} gwei")
+
+            return gas_params
+
         except Exception as e:
             print(f"❌ Gas optimization failed: {e}")
-            # Fallback gas parameters
+            # Ultra-safe fallback
             return {
-                'gas': 200000,
-                'gasPrice': 100000000  # 0.1 gwei
-            }
+                'gas': 500000,  # Conservative high limit
+                'gasPrice': self.w3.to_wei(1, 'gwei')  # 1 gwei minimum
             }
 
             gas_limit = gas_limits.get(operation_type, gas_limits['default'])
