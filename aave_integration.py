@@ -425,6 +425,25 @@ class AaveArbitrumIntegration:
         }
         return token_decimals.get(token_address.lower(), 18)
 
+    def _convert_usd_to_wei(self, amount_usd, token_address):
+        """Convert USD amount to wei for the specified token"""
+        try:
+            # Get token decimals
+            decimals = self._get_known_decimals(token_address)
+            
+            # For USDC, 1 USD = 1 USDC (approximately)
+            if token_address.lower() == self.usdc_address.lower():
+                amount_wei = int(amount_usd * (10 ** decimals))
+                return amount_wei
+            else:
+                # For other tokens, would need price conversion
+                # For now, only support USDC borrowing
+                raise ValueError(f"USD to wei conversion not supported for token: {token_address}")
+                
+        except Exception as e:
+            print(f"❌ USD to wei conversion failed: {e}")
+            return 0
+
     def approve_token(self, token_address, amount):
         """Approve token spending for Aave"""
         try:

@@ -354,6 +354,67 @@ class ArbitrumTestnetAgent:
         self.last_operation_type = None  # Track type of last operation
         return True
 
+    def update_baseline_after_success(self, new_collateral_value_usd=None):
+        """Update baseline collateral value after successful operation"""
+        try:
+            if new_collateral_value_usd is not None:
+                self.last_collateral_value_usd = new_collateral_value_usd
+                print(f"✅ Updated baseline collateral: ${new_collateral_value_usd:.2f}")
+                
+                # Save to agent baseline file
+                baseline_data = {
+                    'timestamp': time.time(),
+                    'collateral_value_usd': new_collateral_value_usd,
+                    'updated_by': 'successful_operation'
+                }
+                
+                with open('agent_baseline.json', 'w') as f:
+                    json.dump(baseline_data, f, indent=2)
+                    
+                return True
+            else:
+                print("⚠️ No collateral value provided for baseline update")
+                return False
+                
+        except Exception as e:
+            print(f"❌ Failed to update baseline: {e}")
+            return False
+
+    def execute_enhanced_borrow_with_retry(self, amount_usd):
+        """Execute borrow with enhanced retry mechanism"""
+        try:
+            if hasattr(self, 'enhanced_borrow_manager') and self.enhanced_borrow_manager:
+                return self.enhanced_borrow_manager.execute_enhanced_borrow_with_retry(amount_usd)
+            else:
+                print("❌ Enhanced borrow manager not available")
+                return False
+        except Exception as e:
+            print(f"❌ Enhanced borrow execution failed: {e}")
+            return False
+
+    def calculate_safe_borrow_amount(self, growth_amount, available_borrows_usd):
+        """Calculate a safe borrow amount based on growth and available capacity"""
+        try:
+            if available_borrows_usd <= 0:
+                return 0.0
+
+            # Conservative approach: use 15% of available capacity or $10, whichever is smaller
+            safe_amount = min(available_borrows_usd * 0.15, 10.0)
+
+            # Ensure minimum of $0.5 if there's any capacity
+            if safe_amount > 0:
+                safe_amount = max(safe_amount, 0.5)
+
+            print(f"💰 Safe borrow calculation:")
+            print(f"   Available: ${available_borrows_usd:.2f}")
+            print(f"   Safe amount (15%): ${safe_amount:.2f}")
+
+            return safe_amount
+
+        except Exception as e:
+            print(f"❌ Safe borrow calculation failed: {e}")
+            return 0.0
+
     def is_operation_in_cooldown(self, operation_type="general"):
         """Check if operation is in cooldown period"""
         import time

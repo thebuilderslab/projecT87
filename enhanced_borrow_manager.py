@@ -300,7 +300,7 @@ class EnhancedBorrowManager:
 
             # Enhanced pre-validation before attempting borrow
             print(f"🔍 Enhanced pre-borrow validation...")
-            
+
             # Check current account data from Aave
             pool_abi = [{
                 "inputs": [{"name": "user", "type": "address"}],
@@ -316,28 +316,28 @@ class EnhancedBorrowManager:
                 "stateMutability": "view",
                 "type": "function"
             }]
-            
+
             pool_contract = self.agent.w3.eth.contract(
                 address=self.agent.aave_pool_address,
                 abi=pool_abi
             )
-            
+
             user_address = Web3.to_checksum_address(self.agent.address)
             account_data = pool_contract.functions.getUserAccountData(user_address).call()
-            
+
             available_borrows_usd = account_data[2] / (10**8)
             current_hf = account_data[5] / (10**18) if account_data[5] > 0 else float('inf')
-            
+
             print(f"   Available borrows: ${available_borrows_usd:.2f}")
             print(f"   Current HF: {current_hf:.4f}")
             print(f"   Requested: ${amount_usd:.2f}")
-            
+
             # Validate borrowing capacity with safety margin
             if amount_usd > available_borrows_usd * 0.9:  # Use 90% of available
                 safe_amount = available_borrows_usd * 0.8  # Reduce to 80%
                 print(f"⚠️ Reducing borrow amount for safety: ${safe_amount:.2f}")
                 amount_usd = safe_amount
-                
+
             if amount_usd < 0.5:
                 print(f"❌ Amount too small after safety reduction: ${amount_usd:.2f}")
                 return None
@@ -407,7 +407,7 @@ class EnhancedBorrowManager:
                             return tx_hash_hex
                         else:
                             print(f"❌ Borrow reverted: {tx_hash_hex}")
-                            
+
                             # Try to get revert reason
                             try:
                                 # Replay transaction to get revert reason
@@ -415,7 +415,7 @@ class EnhancedBorrowManager:
                             except Exception as revert_error:
                                 error_msg = str(revert_error)
                                 print(f"   🔍 Revert reason: {error_msg}")
-                                
+
                                 # Check for specific Aave errors
                                 if "HEALTH_FACTOR_LOWER_THAN_LIQUIDATION_THRESHOLD" in error_msg:
                                     print(f"   💡 Solution: Reduce borrow amount or add more collateral")
@@ -430,7 +430,7 @@ class EnhancedBorrowManager:
                                 elif "BORROWING_NOT_ENABLED" in error_msg:
                                     print(f"   💡 Solution: Asset borrowing is disabled")
                                     return None
-                                
+
                             continue
                     except Exception as wait_error:
                         print(f"⚠️ Confirmation timeout: {wait_error}")
@@ -767,40 +767,3 @@ class EnhancedBorrowManager:
                     else:
                         print(f"❌ Transaction reverted (status=0): {tx_hash_hex}")
                         # Try to get revert reason
-                        try:
-                            w3_instance.eth.call(transaction, receipt.blockNumber)
-                        except Exception as revert_error:
-                            print(f"   Revert reason: {revert_error}")
-                        continue
-
-                except Exception as wait_error:
-                    print(f"⚠️ Confirmation timeout: {wait_error}")
-                    print(f"   Transaction may still succeed: {tx_hash_hex}")
-                    return tx_hash_hex
-
-            except Exception as tx_error:
-                print(f"❌ Enhanced attempt {attempt + 1} failed: {tx_error}")
-
-                error_str = str(tx_error).lower()
-
-                # Specific error handling
-                if "nonce too low" in error_str:
-                    nonce = w3_instance.eth.get_transaction_count(user_address, 'pending')
-                    print(f"🔄 Updated nonce to {nonce}")
-                elif "insufficient funds" in error_str:
-                    print(f"💰 Insufficient ETH for gas fees")
-                    break
-                elif "execution reverted" in error_str:
-                    print(f"🔍 Contract execution reverted - may be an Aave protocol restriction")
-                    if "HEALTH_FACTOR_LOWER_THAN_LIQUIDATION_THRESHOLD" in str(tx_error):
-                        print(f"   → Health factor too low for borrowing")
-                        break
-                    elif "COLLATERAL_BALANCE_IS_ZERO" in str(tx_error):
-                        print(f"   → No collateral available for borrowing")
-                        break
-
-                if attempt == len(gas_multipliers) - 1:
-                    print(f"🚨 All enhanced attempts failed")
-                    return None
-
-        return None
