@@ -783,7 +783,7 @@ class EnhancedBorrowManager:
                             return None
                 except Exception as get_tx_e:
                             print(f"    Could not fetch transaction details: {get_tx_e}")
-                        raise Exception(f"Transaction {tx_hash_hex} reverted with status 0.")
+                            raise Exception(f"Transaction {tx_hash_hex} reverted with status 0.")
 
                 except Exception as retry_error:
                     print(f"❌ Enhanced attempt {attempt + 1} failed: {retry_error}")
@@ -792,11 +792,7 @@ class EnhancedBorrowManager:
                         break
                     continue
 
-            return None
-
-        except Exception as e:
-            print(f"❌ Enhanced borrow transaction failed: {e}")
-            return None
+        return None
 
     def _analyze_transaction_revert(self, tx_hash, transaction, receipt):
         """Analyze why a transaction reverted and suggest actions"""
@@ -834,6 +830,43 @@ class EnhancedBorrowManager:
                 elif "borrowing not enabled" in error_lower:
                     analysis.update({
                         'summary': 'Borrowing disabled for this asset',
+                        'retry_recommended': False,
+                        'reason': 'Asset borrowing is disabled by protocol'
+                    })
+
+                elif "collateral balance" in error_lower or "no collateral" in error_lower:
+                    analysis.update({
+                        'summary': 'Insufficient or no collateral',
+                        'retry_recommended': False,
+                        'reason': 'Need to supply collateral before borrowing'
+                    })
+
+                elif "gas" in error_lower and ("low" in error_lower or "insufficient" in error_lower):
+                    analysis.update({
+                        'summary': 'Insufficient gas for transaction',
+                        'retry_recommended': True,
+                        'suggested_action': 'increase_gas',
+                        'reason': 'Transaction ran out of gas'
+                    })
+
+                elif "allowance" in error_lower:
+                    analysis.update({
+                        'summary': 'Token allowance issue',
+                        'retry_recommended': False,
+                        'reason': 'Need to approve token spending first'
+                    })
+
+            return analysis
+
+        except Exception as e:
+            print(f"❌ Revert analysis failed: {e}")
+            return {
+                'revert_data': None,
+                'retry_recommended': False,
+                'suggested_action': None,
+                'summary': 'Analysis failed',
+                'reason': str(e)
+            }
                         'retry_recommended': False,
                         'reason': 'Asset borrowing is disabled by protocol'
                     })

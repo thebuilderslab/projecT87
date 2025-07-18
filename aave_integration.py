@@ -424,6 +424,45 @@ class AaveArbitrumIntegration:
             self.arb_address.lower(): 18
         }
         return token_decimals.get(token_address.lower(), 18)
+    
+    def get_optimized_gas_params(self, operation_type='default', market_condition='normal'):
+        """Get optimized gas parameters for transactions"""
+        try:
+            # Base gas price from network
+            base_gas_price = self.w3.eth.gas_price
+            
+            # Gas limits for different operations
+            gas_limits = {
+                'approve_token': 60000,
+                'aave_supply': 150000,
+                'aave_borrow': 180000,
+                'aave_repay': 160000,
+                'uniswap_swap': 120000,
+                'default': 200000
+            }
+            
+            # Market condition multipliers
+            multipliers = {
+                'normal': 1.2,
+                'volatile': 1.5,
+                'urgent': 2.0,
+                'market': 1.3
+            }
+            
+            gas_limit = gas_limits.get(operation_type, gas_limits['default'])
+            multiplier = multipliers.get(market_condition, 1.2)
+            
+            return {
+                'gas': gas_limit,
+                'gasPrice': int(base_gas_price * multiplier)
+            }
+            
+        except Exception as e:
+            print(f"⚠️ Gas parameter calculation failed: {e}")
+            return {
+                'gas': 200000,
+                'gasPrice': 100000000  # 0.1 gwei fallback
+            }
 
     def _convert_usd_to_wei(self, amount_usd, token_address):
         """Convert USD amount to wei for the specified token"""
