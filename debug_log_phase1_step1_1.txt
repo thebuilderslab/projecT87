@@ -734,3 +734,35 @@ Traceback (most recent call last):
     ```python
     ^
 SyntaxError: invalid syntax
+2025-07-18 15:18:50,684 - ERROR - ERROR: Standalone diagnostic failed: invalid syntax (arbitrum_testnet_agent.py, line 2094)
+Traceback (most recent call last):
+  File "/home/runner/workspace/standalone_balance_debug.py", line 27, in debug_token_balances
+    from arbitrum_testnet_agent import ArbitrumTestnetAgent
+  File "/home/runner/workspace/arbitrum_testnet_agent.py", line 2094
+    account_data = pool_contract.functions.getUserAccountData(```python
+                                                              ^
+SyntaxError: invalid syntax
+2025-07-18 15:24:52,521 - ERROR - ERROR: Standalone diagnostic failed: invalid syntax (arbitrum_testnet_agent.py, line 2094)
+Traceback (most recent call last):
+  File "/home/runner/workspace/standalone_balance_debug.py", line 27, in debug_token_balances
+    from arbitrum_testnet_agent import ArbitrumTestnetAgent
+  File "/home/runner/workspace/arbitrum_testnet_agent.py", line 2094
+    account_data = pool_contract.functions.getUserAccountData(```python
+                                                              ^
+SyntaxError: invalid syntax
+2025-07-18 15:25:14,271 - ERROR - ERROR: Standalone diagnostic failed: invalid syntax (arbitrum_testnet_agent.py, line 2094)
+Traceback (most recent call last):
+  File "/home/runner/workspace/standalone_balance_debug.py", line 27, in debug_token_balances
+    from arbitrum_testnet_agent import ArbitrumTestnetAgent
+  File "/home/runner/workspace/arbitrum_testnet_agent.py", line 2094
+    account_data = pool_contract.functions.getUserAccountData(```python
+                                                              ^
+SyntaxError: invalid syntax
+2025-07-18 15:25:47,087 - ERROR - ERROR: Standalone diagnostic failed: invalid syntax (arbitrum_testnet_agent.py, line 2094)
+Traceback (most recent call last):
+  File "/home/runner/workspace/standalone_balance_debug.py", line 27, in debug_token_balances
+    from arbitrum_testnet_agent import ArbitrumTestnetAgent
+  File "/home/runner/workspace/arbitrum_testnet_agent.py", line 2094
+    account_data = pool_contract.functions.getUserAccountData(```python
+                                                              ^
+SyntaxError: invalid syntax
