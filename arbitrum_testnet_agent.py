@@ -670,96 +670,195 @@ class ArbitrumTestnetAgent:
         return 0.0 # Returning 0.0 directly because the function is not being used.
 
     def execute_leveraged_supply_strategy(self, usdc_borrow_amount):
-        """
-        Executes a strategy of borrowing USDC, swapping it for other assets,
-        and supplying them as collateral to increase leverage.
-        Revised to supply ALL remaining USDC as DAI collateral.
-        """
-        print(f"\n⚙️ Executing Leveraged Supply Strategy with {usdc_borrow_amount:.2f} USDC...")
+        """Execute leveraged supply strategy: borrow → swap → supply"""
+        print(f"⚙️ Executing Leveraged Supply Strategy with {usdc_borrow_amount:.2f} USDC...")
 
-        if not self.aave.borrow(usdc_borrow_amount, self.usdc_address):
-            print("❌ Failed to borrow USDC for leveraged supply.")
-            return False
-        print(f"✅ Borrowed {usdc_borrow_amount:.2f} USDC.")
-        time.sleep(5) # Give network time
-
-        # Define distribution percentages
-        # Adjust these percentages based on your desired asset allocation
-        WBTC_PERCENT = 0.30 # 30% of borrowed USDC converted to WBTC
-        WETH_PERCENT = 0.20 # 20% of borrowed USDC converted to WETH
-        DAI_PERCENT = 0.10  # 10% of borrowed USDC converted to DAI (initial direct allocation)
-        ETH_GAS_RESERVE_PERCENT = 0.05 # 5% of borrowed USDC converted to ETH for gas
-        # The remaining will be converted to DAI and supplied
-
-        current_usdc_balance = self.aave.get_token_balance(self.usdc_address)
-        print(f"Current USDC balance after borrow: {current_usdc_balance:.2f}")
-
-        # Ensure we don't try to swap more than we have
-        usdc_to_swap_base = min(current_usdc_balance, usdc_borrow_amount)
-        if usdc_to_swap_base < 1.0: # Check if there's enough to even attempt swaps
-            print("❌ Insufficient USDC to proceed with leveraged supply swaps.")
-            return False
-
-        # Calculate amounts based on percentage
-        wbtc_amount_usdc_equiv = usdc_to_swap_base * WBTC_PERCENT
-        weth_amount_usdc_equiv = usdc_to_swap_base * WETH_PERCENT
-        dai_amount_usdc_equiv = usdc_to_swap_base * DAI_PERCENT
-        eth_for_gas_usdc_equiv = usdc_to_swap_base * ETH_GAS_RESERVE_PERCENT
-
-        # Perform swaps
-        success = True
-
-        # Swap to WBTC
-        if wbtc_amount_usdc_equiv > 0.1: # Only swap if meaningful amount
-            print(f"🔄 Swapping {wbtc_amount_usdc_equiv:.2f} USDC to WBTC...")
-            if not self.uniswap.swap_tokens(self.usdc_address, self.wbtc_address, wbtc_amount_usdc_equiv, 500):
-                print("❌ Failed to swap USDC to WBTC.")
-                success = False
+        # Step 1: Borrow USDC using enhanced borrow manager
+        print("🏦 Attempting to borrow USDC...")
+        try:
+            if hasattr(self, 'enhanced_borrow_manager') and self.enhanced_borrow_manager:
+                borrow_result = self.enhanced_borrow_manager.safe_borrow_with_fallbacks(usdc_borrow_amount, self.usdc_address)
             else:
-                print("✅ Swapped USDC to WBTC.")
-                time.sleep(5)
+                # Fallback to direct Aave borrow if enhanced manager not available
+                borrow_result = self.aave.borrow(usdc_borrow_amount, self.usdc_address)
+            
+            if not borrow_result:
+                print("❌ Failed to borrow USDC")
+                return False
+            print(f"✅ Successfully borrowed USDC. Result: {borrow_result}")
+        except Exception as e:
+            print(f"❌ Borrow error: {e}")
+            return False
+
+        # Brief pause for transaction confirmation
+        time.sleep(3)
+
+        # Step 2: Define asset allocation
+        WBTC_PERCENT = 0.30  # 30% to WBTC
+        WETH_PERCENT = 0.20  # 20% to WETH
+        DAI_PERCENT = 0.10   # 10% to DAI
+        # Remaining 40% stays as USDC for gas and reserves
+
+        # Step 3: Get current USDC balance after borrowing
+        try:
+            current_usdc_balance = self.aave.get_token_balance(self.usdc_address)
+            print(f"💰 Current USDC balance after borrow: {current_usdc_balance:.6f}")
+            
+            if current_usdc_balance < 1.0:
+                print("❌ Insufficient USDC balance for swaps")
+                return False
+        except Exception as e:
+            print(f"❌ Failed to get USDC balance: {e}")
+            return False
+
+        # Step 4: Execute swaps with proper error handling
+        swap_results = {}
+        
+        # Swap to WBTC
+        wbtc_amount_to_swap = current_usdc_balance * WBTC_PERCENT
+        if wbtc_amount_to_swap > 0.1:
+            print(f"🔄 Swapping {wbtc_amount_to_swap:.6f} USDC to WBTC...")
+            try:
+                wbtc_tx_hash = self.uniswap.swap_tokens(self.usdc_address, self.wbtc_address, wbtc_amount_to_swap, 500)
+                if not wbtc_tx_hash:
+                    print("❌ Failed to swap to WBTC")
+                    return False
+                print(f"✅ Swapped to WBTC. Tx Hash: {wbtc_tx_hash}")
+                swap_results['wbtc'] = wbtc_tx_hash
+                time.sleep(3)
+            except Exception as e:
+                print(f"❌ WBTC swap error: {e}")
+                return False
 
         # Swap to WETH
-        if weth_amount_usdc_equiv > 0.1:
-            print(f"🔄 Swapping {weth_amount_usdc_equiv:.2f} USDC to WETH...")
-            swap_result = self.uniswap.swap_tokens(
-                    token_in=self.usdc_address,
-                    token_out=self.weth_address,
-                    amount_in=weth_amount_usdc_equiv,
-                    fee_tier=500
-                )
-            if not swap_result:
-                print("❌ Failed to swap USDC to WETH.")
-                success = False
-            else:
-                print("✅ Swapped USDC to WETH.")
-                time.sleep(5)
+        weth_amount_to_swap = current_usdc_balance * WETH_PERCENT
+        if weth_amount_to_swap > 0.1:
+            print(f"🔄 Swapping {weth_amount_to_swap:.6f} USDC to WETH...")
+            try:
+                weth_tx_hash = self.uniswap.swap_tokens(self.usdc_address, self.weth_address, weth_amount_to_swap, 500)
+                if not weth_tx_hash:
+                    print("❌ Failed to swap to WETH")
+                    return False
+                print(f"✅ Swapped to WETH. Tx Hash: {weth_tx_hash}")
+                swap_results['weth'] = weth_tx_hash
+                time.sleep(3)
+            except Exception as e:
+                print(f"❌ WETH swap error: {e}")
+                return False
 
         # Swap to DAI
-        if dai_amount_usdc_equiv > 0.1:
-            print(f"🔄 Swapping {dai_amount_usdc_equiv:.2f} USDC to DAI...")
-            if not self.uniswap.swap_tokens(self.usdc_address, self.dai_address, dai_amount_usdc_equiv, 500):
-                print("❌ Failed to swap USDC to DAI.")
-                success = False
-            else:
-                print("✅ Swapped USDC to DAI.")
-                time.sleep(5)
+        dai_amount_to_swap = current_usdc_balance * DAI_PERCENT
+        if dai_amount_to_swap > 0.1:
+            print(f"🔄 Swapping {dai_amount_to_swap:.6f} USDC to DAI...")
+            try:
+                dai_tx_hash = self.uniswap.swap_tokens(self.usdc_address, self.dai_address, dai_amount_to_swap, 500)
+                if not dai_tx_hash:
+                    print("❌ Failed to swap to DAI")
+                    return False
+                print(f"✅ Swapped to DAI. Tx Hash: {dai_tx_hash}")
+                swap_results['dai'] = dai_tx_hash
+                time.sleep(3)
+            except Exception as e:
+                print(f"❌ DAI swap error: {e}")
+                return False
 
-        # Swap a small portion to ETH for gas if needed (and unwrap WETH)
-        if eth_for_gas_usdc_equiv > 0.01: # Smallest amount for gas
-            print(f"🔄 Swapping {eth_for_gas_usdc_equiv:.2f} USDC to ETH for gas...")
-            swap_result = self.uniswap.swap_tokens(
-                    token_in=self.usdc_address,
-                    token_out=self.weth_address,
-                    amount_in=eth_for_gas_usdc_equiv,
-                    fee_tier=500
-                )
-            if swap_result:
-                weth_balance = self.aave.get_token_balance(self.weth_address) # Check newly acquired WETH
-                if weth_balance > 0:
-                    print(f"Unwrapping {weth_balance:.6f} WETH to ETH for gas reserve.")
-                    self.aave.unwrap_weth(weth_balance) # Assuming this unwraps WETH to ETH
-                    print("✅ Swapped USDC to ETH for gas.")
+        # Step 5: Get updated balances after swaps
+        print("📊 Checking updated balances after swaps...")
+        try:
+            current_wbtc_balance = self.aave.get_token_balance(self.wbtc_address)
+            current_weth_balance = self.aave.get_token_balance(self.weth_address)
+            current_dai_balance = self.aave.get_token_balance(self.dai_address)
+            
+            print(f"   WBTC balance: {current_wbtc_balance:.8f}")
+            print(f"   WETH balance: {current_weth_balance:.8f}")
+            print(f"   DAI balance: {current_dai_balance:.6f}")
+        except Exception as e:
+            print(f"❌ Failed to get token balances: {e}")
+            return False
+
+        # Step 6: Supply newly acquired assets as collateral
+        print("🏦 Supplying newly acquired assets as collateral...")
+        supply_results = {}
+
+        # Supply WBTC
+        if current_wbtc_balance > 0:
+            print(f"🔓 Approving WBTC for Aave supply ({current_wbtc_balance:.8f})...")
+            try:
+                if not self.aave.approve_token(self.wbtc_address, current_wbtc_balance):
+                    print("❌ Failed to approve WBTC")
+                    return False
+                
+                print("🏦 Supplying WBTC to Aave...")
+                supply_result = self.aave.supply_to_aave(self.wbtc_address, current_wbtc_balance)
+                if not supply_result:
+                    print("❌ Failed to supply WBTC")
+                    return False
+                print(f"✅ Successfully supplied {current_wbtc_balance:.8f} WBTC")
+                supply_results['wbtc'] = supply_result
+                time.sleep(3)
+            except Exception as e:
+                print(f"❌ WBTC supply error: {e}")
+                return False
+
+        # Supply WETH
+        if current_weth_balance > 0:
+            print(f"🔓 Approving WETH for Aave supply ({current_weth_balance:.8f})...")
+            try:
+                if not self.aave.approve_token(self.weth_address, current_weth_balance):
+                    print("❌ Failed to approve WETH")
+                    return False
+                
+                print("🏦 Supplying WETH to Aave...")
+                supply_result = self.aave.supply_to_aave(self.weth_address, current_weth_balance)
+                if not supply_result:
+                    print("❌ Failed to supply WETH")
+                    return False
+                print(f"✅ Successfully supplied {current_weth_balance:.8f} WETH")
+                supply_results['weth'] = supply_result
+                time.sleep(3)
+            except Exception as e:
+                print(f"❌ WETH supply error: {e}")
+                return False
+
+        # Supply DAI
+        if current_dai_balance > 0:
+            print(f"🔓 Approving DAI for Aave supply ({current_dai_balance:.6f})...")
+            try:
+                if not self.aave.approve_token(self.dai_address, current_dai_balance):
+                    print("❌ Failed to approve DAI")
+                    return False
+                
+                print("🏦 Supplying DAI to Aave...")
+                supply_result = self.aave.supply_to_aave(self.dai_address, current_dai_balance)
+                if not supply_result:
+                    print("❌ Failed to supply DAI")
+                    return False
+                print(f"✅ Successfully supplied {current_dai_balance:.6f} DAI")
+                supply_results['dai'] = supply_result
+                time.sleep(3)
+            except Exception as e:
+                print(f"❌ DAI supply error: {e}")
+                return False
+
+        # Step 7: Update baseline and record success
+        try:
+            # Get updated collateral value for baseline tracking
+            if hasattr(self, 'health_monitor') and self.health_monitor:
+                health_data = self.health_monitor.get_monitoring_summary()
+                if health_data and 'total_collateral_usd' in health_data:
+                    self.update_baseline_after_success(health_data['total_collateral_usd'])
+            
+            # Record successful operation
+            self.record_successful_operation('leveraged_supply')
+        except Exception as e:
+            print(f"⚠️ Warning: Failed to update baseline: {e}")
+
+        print("🎉 Leveraged Supply Strategy Completed Successfully!")
+        print(f"📊 Summary:")
+        print(f"   Swap Results: {len(swap_results)} successful swaps")
+        print(f"   Supply Results: {len(supply_results)} successful supplies")
+        
+        return True
 
     def get_optimized_gas_params(self, operation_type, speed='market'):
         """Get optimized gas parameters for transactions with comprehensive validation"""
