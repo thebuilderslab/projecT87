@@ -276,7 +276,7 @@ class EnhancedBorrowManager:
 
         return None
 
-    def _try_alternative_parameter_order(self, self, amount_usd, token_address):
+    def _try_alternative_parameter_order(self, amount_usd, token_address):
         """Try with different parameter arrangements"""
         try:
             print("🔄 Mechanism 2: Alternative parameter order")
@@ -530,7 +530,31 @@ class EnhancedBorrowManager:
 
         return False
 
+    def calculate_safe_borrow_amount(self, growth_amount, available_borrows_usd):
+        """
+        Calculate a safe borrow amount based on growth and available capacity
+        """
+        try:
+            # Use agent's calculation logic if available
+            if hasattr(self.agent, 'calculate_safe_borrow_amount'):
+                return self.agent.calculate_safe_borrow_amount(growth_amount, available_borrows_usd)
 
+            # Fallback calculation logic
+            if available_borrows_usd <= 0:
+                return 0.0
+
+            # Conservative approach: use 15% of available capacity or $10, whichever is smaller
+            safe_amount = min(available_borrows_usd * 0.15, 10.0)
+
+            # Ensure minimum of $0.5 if there's any capacity
+            if safe_amount > 0:
+                safe_amount = max(safe_amount, 0.5)
+
+            return safe_amount
+
+        except Exception as e:
+            print(f"❌ Safe borrow calculation failed: {e}")
+            return 0.0
 
     def get_optimized_gas_params(self, operation_type='default', market_condition='normal'):
         """
