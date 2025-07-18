@@ -79,6 +79,18 @@ class EnhancedBorrowManager:
             except Exception as cooldown_error:
                 print(f"⚠️ Cooldown check failed: {cooldown_error}, proceeding with operation")
 
+        # Validate prerequisites
+        validation = self._validate_prerequisites(amount_usd, token_address)
+        if not validation['success']:
+            print(f"❌ Prerequisites validation failed: {validation['error']}")
+            return None
+        
+        # Show warnings if any
+        for warning in validation.get('warnings', []):
+            print(f"⚠️ Warning: {warning}")
+        
+        print(f"✅ Prerequisites validation passed - proceeding with borrow")
+
         # Mechanism 1: Direct Aave integration
         result = self._try_direct_aave_borrow(amount_usd, token_address)
         if result:
@@ -794,6 +806,107 @@ class EnhancedBorrowManager:
                 continue
 
         return None
+
+    def _validate_prerequisites(self, amount_usd, token_address):
+        """Validate prerequisites for borrowing operation"""
+        validation_result = {
+            'success': False,
+            'error': None,
+            'warnings': [],
+            'data': {}
+        }
+        
+        try:
+            print(f"🔍 Validating borrow prerequisites for ${amount_usd:.2f}")
+            
+            # Check network connectivity
+            if not self.agent.w3.is_connected():
+                validation_result['error'] = "Network connection lost"
+                return validation_result
+            
+            # Check ETH balance for gas
+            eth_balance = self.agent.get_eth_balance()
+            min_eth_required = 0.001  # 0.001 ETH minimum
+            
+            if eth_balance < min_eth_required:
+                validation_result['error'] = f"Insufficient ETH for gas: {eth_balance:.6f} (minimum: {min_eth_required})"
+                return validation_result
+            
+            # Check if amount is positive
+            if amount_usd <= 0:
+                validation_result['error'] = f"Invalid borrow amount: ${amount_usd:.2f}"
+                return validation_result
+            
+            # Get current Aave position data
+            try:
+                pool_abi = [{
+                    "inputs": [{"name": "user", "type": "address"}],
+                    "name": "getUserAccountData",
+                    "outputs": [
+                        {"name": "totalCollateralBase", "type": "uint256"},
+                        {"name": "totalDebtBase", "type": "uint256"},
+                        {"name": "availableBorrowsBase", "type": "uint256"},
+                        {"name": "currentLiquidationThreshold", "type": "uint256"},
+                        {"name": "ltv", "type": "uint256"},
+                        {"name": "healthFactor", "type": "uint256"}
+                    ],
+                    "stateMutability": "view",
+                    "type": "function"
+                }]
+                
+                pool_contract = self.agent.w3.eth.contract(
+                    address=self.agent.aave_pool_address,
+                    abi=pool_abi
+                )
+                
+                account_data = pool_contract.functions.getUserAccountData(self.agent.address).call()
+                
+                total_collateral_usd = account_data[0] / (10**8)
+                total_debt_usd = account_data[1] / (10**8)
+                available_borrows_usd = account_data[2] / (10**8)
+                health_factor = account_data[5] / (10**18) if account_data[5] > 0 else float('inf')
+                
+                validation_result['data'] = {
+                    'total_collateral_usd': total_collateral_usd,
+                    'total_debt_usd': total_debt_usd,
+                    'available_borrows_usd': available_borrows_usd,
+                    'health_factor': health_factor,
+                    'eth_balance': eth_balance
+                }
+                
+                # Check collateral requirements
+                if total_collateral_usd < 50.0:
+                    validation_result['error'] = f"Insufficient collateral value: ${total_collateral_usd:.2f} (minimum: $50)"
+                    return validation_result
+                
+                # Check available borrows
+                if available_borrows_usd < amount_usd:
+                    validation_result['error'] = f"Insufficient borrowing capacity: ${available_borrows_usd:.2f} < ${amount_usd:.2f}"
+                    return validation_result
+                
+                # Check health factor
+                if health_factor < 1.5:
+                    validation_result['error'] = f"Health factor too low: {health_factor:.3f} (minimum: 1.5)"
+                    return validation_result
+                
+                # Add warnings for borderline conditions
+                if health_factor < 2.0:
+                    validation_result['warnings'].append(f"Health factor relatively low: {health_factor:.3f}")
+                
+                if available_borrows_usd < amount_usd * 2:
+                    validation_result['warnings'].append(f"Limited borrowing headroom: ${available_borrows_usd:.2f}")
+                
+                print(f"✅ Prerequisites validation passed")
+                validation_result['success'] = True
+                return validation_result
+                
+            except Exception as aave_error:
+                validation_result['error'] = f"Aave pool contract not responsive: {aave_error}"
+                return validation_result
+                
+        except Exception as e:
+            validation_result['error'] = f"Validation failed: {e}"
+            return validation_result
 
     def _analyze_transaction_revert(self, tx_hash, transaction, receipt):
         """Analyze why a transaction reverted and suggest actions"""
