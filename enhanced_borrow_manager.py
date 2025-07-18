@@ -876,6 +876,19 @@ class EnhancedBorrowManager:
             print(f"   Revert analysis: {analysis['summary']}")
             if analysis['retry_recommended']:
                 print(f"   Suggested action: {analysis['suggested_action']}")
+
+            return analysis
+
+        except Exception as analysis_error:
+            print(f"❌ Transaction revert analysis failed: {analysis_error}")
+            return {
+                'revert_data': None,
+                'retry_recommended': False,
+                'suggested_action': None,
+                'summary': 'Analysis failed',
+                'reason': 'Unable to analyze transaction failure'
+            }
+                print(f"   Suggested action: {analysis['suggested_action']}")
             else:
                 print(f"   No retry: {analysis['reason']}")
 
