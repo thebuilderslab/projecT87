@@ -293,21 +293,27 @@ class AaveArbitrumIntegration:
                 "type": "function"
             }]
 
-            # Aave aToken addresses for Arbitrum Mainnet
+            # Aave aToken addresses for Arbitrum Mainnet - properly checksummed
             atoken_addresses = {
                 "0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f": "0x6533afac2E7BCCB20dca161449A13A2D2d5B739A",  # WBTC -> aWBTC
                 "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1": "0xe50fA9b4c56454E2edF6BFf7c81b50c5F05aBE61",  # WETH -> aWETH
-                "0xaf88d065e77c8cF0eAEFf3e253e648A15CEe23dC": "0x724dc807b04555b71ed48a6896b6F41593b8C637",  # USDC -> aUSDC
+                "0xAf88D065e77C8cF0EAEfF3e253e648A15CEe23dC": "0x724dc807b04555b71ed48a6896b6F41593b8C637",  # USDC -> aUSDC
             }
 
-            atoken_address = atoken_addresses.get(token_address)
+            # Normalize token address for lookup
+            normalized_token = Web3.to_checksum_address(token_address)
+            atoken_address = atoken_addresses.get(normalized_token)
+            
             if not atoken_address:
-                print(f"⚠️ No aToken mapping for {token_address}")
+                print(f"⚠️ No aToken mapping for {normalized_token}")
                 return 0.0
 
+            # Ensure aToken address is properly checksummed
+            checksummed_atoken = Web3.to_checksum_address(atoken_address)
+            
             # Create aToken contract
             atoken_contract = self.w3.eth.contract(
-                address=atoken_address,
+                address=checksummed_atoken,
                 abi=atoken_abi
             )
 
