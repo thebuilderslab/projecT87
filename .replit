@@ -16,7 +16,7 @@ run = ["sh", "-c", "python mainnet_launcher.py"]
 deploymentTarget = "cloudrun"
 
 [workflows]
-runButton = "🔍 VERIFIED AUTONOMOUS LAUNCH"
+runButton = "🔍 COMPREHENSIVE SYSTEM TEST"
 
 [[workflows.workflow]]
 name = "Run"
@@ -906,6 +906,63 @@ args = "echo \"\""
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "echo \"Running comprehensive system validation...\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python verified_system_launcher.py"
+
+[[workflows.workflow]]
+name = "🔍 COMPREHENSIVE SYSTEM TEST"
+author = 39391053
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"🔍 RUNNING COMPREHENSIVE SYSTEM TESTS\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"====================================\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"Phase 1: Syntax validation...\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python -m py_compile verified_system_launcher.py"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python -m py_compile enhanced_borrow_manager.py"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python -m py_compile borrow_diagnostic_tool.py"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"Phase 2: DeFi integration test...\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python borrow_diagnostic_tool.py"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"Phase 3: System launcher test...\""
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"

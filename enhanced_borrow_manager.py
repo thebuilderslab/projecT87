@@ -16,6 +16,12 @@ class EnhancedBorrowManager:
         self.max_retries = 5
         self.retry_delay = 2
 
+    def execute_enhanced_borrow_with_retry(self, amount_usd):
+        """Execute enhanced borrow with comprehensive retry mechanisms"""
+        # Default to USDC for borrowing
+        token_address = self.agent.usdc_address
+        return self.safe_borrow_with_fallbacks(amount_usd, token_address)
+
     def safe_borrow_with_fallbacks(self, amount_usd, token_address):
         """
         Execute borrowing with multiple fallback mechanisms and cooldown management
