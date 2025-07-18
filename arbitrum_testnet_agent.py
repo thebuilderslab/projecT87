@@ -17,12 +17,24 @@ class ArbitrumTestnetAgent:
         print("🤖 Initializing Arbitrum Testnet Agent...")
 
         # Load environment variables
-        self.private_key = os.getenv('PRIVATE_KEY')
+        self.private_key = os.getenv('WALLET_PRIVATE_KEY')
+        # Ensure the wallet address is derived from the private key or explicitly set
+        # This is where your wallet's private key will be loaded from Replit secrets
+        wallet_private_key = os.environ.get("WALLET_PRIVATE_KEY")
+        print(f"DEBUG: WALLET_PRIVATE_KEY loaded from environment: {'[REDACTED]' if wallet_private_key else 'None'}") # ADD THIS LINE
+        if not wallet_private_key:
+            raise ValueError("WALLET_PRIVATE_KEY environment variable not set.")
+            # Ensure the wallet address is derived from the private key or explicitly set
+            # This is where your wallet's private key will be loaded from Replit secrets
+            wallet_private_key = os.environ.get("WALLET_PRIVATE_KEY")
+            print(f"DEBUG: WALLET_PRIVATE_KEY loaded from environment: {'[REDACTED]' if wallet_private_key else 'None'}") # ADD THIS LINE
+            if not wallet_private_key:
+                raise ValueError("WALLET_PRIVATE_KEY environment variable not set.")
         self.coinmarketcap_api_key = os.getenv('COINMARKETCAP_API_KEY')
         self.network_mode = os.getenv('NETWORK_MODE', 'testnet')
 
         if not self.private_key:
-            raise Exception("PRIVATE_KEY environment variable not found!")
+            raise Exception("WALLET_PRIVATE_KEY environment variable not found!")
 
         if not self.coinmarketcap_api_key:
             raise Exception("COINMARKETCAP_API_KEY environment variable not found!")

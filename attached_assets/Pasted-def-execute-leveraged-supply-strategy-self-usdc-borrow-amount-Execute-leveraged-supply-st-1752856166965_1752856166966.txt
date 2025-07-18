@@ -1,0 +1,106 @@
+def execute_leveraged_supply_strategy(self, usdc_borrow_amount):
+    """Execute leveraged supply strategy: borrow → swap → supply"""
+    print(f"⚙️ Executing Leveraged Supply Strategy with {usdc_borrow_amount:.2f} USDC...")
+
+    # Step 1: Borrow USDC
+    # Ensure aave.borrow (via EnhancedBorrowManager) returns a tx_hash or boolean indicating success
+    print("Attempting to borrow USDC...")
+    borrow_result = self.enhanced_borrow_manager.safe_borrow_with_fallbacks(usdc_borrow_amount, self.usdc_address)
+    if not borrow_result: # Assuming safe_borrow_with_fallbacks returns True/False or tx_hash on success
+        print("❌ Failed to borrow USDC")
+        return False
+    print(f"✅ Successfully borrowed USDC. Tx Hash: {borrow_result}")
+
+    # Optional: Wait for borrow transaction to confirm if subsequent steps depend on it immediately
+    # self.w3.eth.wait_for_transaction_receipt(borrow_result)
+
+    # Step 2: Define asset allocation (already in place)
+    WBTC_PERCENT = 0.30
+    WETH_PERCENT = 0.20
+    DAI_PERCENT = 0.10
+
+    # Get current USDC balance in wallet AFTER borrowing
+    current_usdc_balance = self.aave.get_token_balance(self.usdc_address, self.address) # Ensure this gets wallet balance
+
+    # Step 3: Execute swaps
+    # Swap to WBTC
+    wbtc_amount_to_swap = current_usdc_balance * WBTC_PERCENT
+    if wbtc_amount_to_swap > 0.1: # Add check for minimum swap amount
+        print(f"Attempting to swap {wbtc_amount_to_swap:.2f} USDC to WBTC...")
+        wbtc_tx_hash = self.uniswap.swap_tokens(self.usdc_address, self.wbtc_address, wbtc_amount_to_swap, 500)
+        if not wbtc_tx_hash:
+            print("❌ Failed to swap to WBTC")
+            # Handle error: return or try to recover
+            return False
+        print(f"✅ Swapped to WBTC. Tx Hash: {wbtc_tx_hash}")
+        # Optional: Wait for WBTC swap transaction to confirm
+
+    # Swap to WETH
+    weth_amount_to_swap = current_usdc_balance * WETH_PERCENT
+    if weth_amount_to_swap > 0.1: # Add check for minimum swap amount
+        print(f"Attempting to swap {weth_amount_to_swap:.2f} USDC to WETH...")
+        weth_tx_hash = self.uniswap.swap_tokens(self.usdc_address, self.weth_address, weth_amount_to_swap, 500)
+        if not weth_tx_hash:
+            print("❌ Failed to swap to WETH")
+            # Handle error: return or try to recover
+            return False
+        print(f"✅ Swapped to WETH. Tx Hash: {weth_tx_hash}")
+        # Optional: Wait for WETH swap transaction to confirm
+
+    # Swap to DAI (if needed, based on DAI_PERCENT)
+    dai_amount_to_swap = current_usdc_balance * DAI_PERCENT
+    if dai_amount_to_swap > 0.1: # Add check for minimum swap amount
+        print(f"Attempting to swap {dai_amount_to_swap:.2f} USDC to DAI...")
+        dai_tx_hash = self.uniswap.swap_tokens(self.usdc_address, self.dai_address, dai_amount_to_swap, 500)
+        if not dai_tx_hash:
+            print("❌ Failed to swap to DAI")
+            return False
+        print(f"✅ Swapped to DAI. Tx Hash: {dai_tx_hash}")
+
+    # After swaps, get updated balances of the acquired tokens in your wallet
+    # This is crucial because swap amounts are estimates, actual received may vary
+    current_wbtc_wallet_balance = self.aave.get_token_balance(self.wbtc_address, self.address)
+    current_weth_wallet_balance = self.aave.get_token_balance(self.weth_address, self.address)
+    current_dai_wallet_balance = self.aave.get_token_balance(self.dai_address, self.address) # If DAI swap implemented
+
+    # Step 4: Supply newly acquired assets as collateral to Aave
+    print("Attempting to supply newly acquired assets as collateral...")
+
+    # Supply WBTC
+    if current_wbtc_wallet_balance > 0:
+        print(f"Approving WBTC for Aave supply ({current_wbtc_wallet_balance:.8f})...")
+        if not self.aave.approve_token(self.wbtc_address, current_wbtc_wallet_balance): # Use aave's approve
+            print("❌ Failed to approve WBTC")
+            return False
+        print("Supplying WBTC to Aave...")
+        if not self.aave.supply(current_wbtc_wallet_balance, self.wbtc_address):
+            print("❌ Failed to supply WBTC")
+            return False
+        print(f"✅ Successfully supplied {current_wbtc_wallet_balance:.8f} WBTC.")
+
+    # Supply WETH
+    if current_weth_wallet_balance > 0:
+        print(f"Approving WETH for Aave supply ({current_weth_wallet_balance:.8f})...")
+        if not self.aave.approve_token(self.weth_address, current_weth_wallet_balance): # Use aave's approve
+            print("❌ Failed to approve WETH")
+            return False
+        print("Supplying WETH to Aave...")
+        if not self.aave.supply(current_weth_wallet_balance, self.weth_address):
+            print("❌ Failed to supply WETH")
+            return False
+        print(f"✅ Successfully supplied {current_weth_wallet_balance:.8f} WETH.")
+
+    # Supply DAI (if DAI swap and supply are implemented)
+    if current_dai_wallet_balance > 0:
+        print(f"Approving DAI for Aave supply ({current_dai_wallet_balance:.2f})...")
+        if not self.aave.approve_token(self.dai_address, current_dai_wallet_balance):
+            print("❌ Failed to approve DAI")
+            return False
+        print("Supplying DAI to Aave...")
+        if not self.aave.supply(current_dai_wallet_balance, self.dai_address):
+            print("❌ Failed to supply DAI")
+            return False
+        print(f"✅ Successfully supplied {current_dai_wallet_balance:.2f} DAI.")
+
+    print("🎉 Leveraged Supply Strategy Completed Successfully!")
+    return True
