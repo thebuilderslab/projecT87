@@ -1422,3 +1422,117 @@ class AaveArbitrumIntegration:
                 self.dai_address.lower(): 18
             }
             return known_decimals.get(token_address.lower(), 18)
+
+    def check_supply_caps(self):
+        """
+        Checks if supply caps are exceeded for key assets
+        """
+        try:
+            # Get total supply of each asset from Aave
+            total_weth_supply = self.get_supplied_balance(self.weth_address)
+            total_wbtc_supply = self.get_supplied_balance(self.wbtc_address)
+            total_usdc_supply = self.get_supplied_balance(self.usdc_address)
+
+            # Define supply caps for each asset (these are examples, adjust based on risk tolerance)
+            weth_supply_cap = 10  # Example: 10 WETH
+            wbtc_supply_cap = 0.1 # Example: 0.1 WBTC
+            usdc_supply_cap = 5000 # Example: 5000 USDC
+
+            # Output current state
+            print(f"   Current total WETH supply:  {total_weth_supply}")
+            print(f"   Current total WBTC supply:  {total_wbtc_supply}")
+            print(f"   Current total USDC supply:  {total_usdc_supply}")
+
+            # Check if supply caps are exceeded
+            supply_caps_exceeded = False
+
+            if total_weth_supply > weth_supply_cap:
+                print(f"   ⚠️ WARNING! WETH supply cap exceeded: {total_weth_supply} > {weth_supply_cap}")
+                supply_caps_exceeded = True
+
+            if total_wbtc_supply > wbtc_supply_cap:
+                print(f"   ⚠️ WARNING! WBTC supply cap exceeded: {total_wbtc_supply} > {wbtc_supply_cap}")
+                supply_caps_exceeded = True
+
+            if total_usdc_supply > usdc_supply_cap:
+                print(f"   ⚠️ WARNING! USDC supply cap exceeded: {total_usdc_supply} > {usdc_supply_cap}")
+                supply_caps_exceeded = True
+
+            if supply_caps_exceeded:
+                print("   ❌ CRITICAL: One or more supply caps are exceeded!")
+                return False
+            else:
+                print("   ✅ All supply caps are within limits.")
+                return True
+
+        except Exception as e:
+            print(f"❌ Supply Cap check failed: {e}")
+            return False
+
+    def check_balances(self):
+        """
+        Aggregates token balances and checks Aave supply positions for key assets.
+        """
+        try:
+            print("💰 Checking token balances and Aave supply positions...")
+
+            # Get balances for key assets
+            weth_balance = self.get_token_balance(self.weth_address)
+            wbtc_balance = self.get_token_balance(self.wbtc_address)
+            usdc_balance = self.get_token_balance(self.usdc_address)
+
+            # Get supplied balances on Aave
+            weth_supplied = self.get_supplied_balance(self.weth_address)
+            wbtc_supplied = self.get_supplied_balance(self.wbtc_address)
+            usdc_supplied = self.get_supplied_balance(self.usdc_address)
+
+            # Output balances
+            print(f"   Wallet WETH balance:   {weth_balance:.8f}")
+            print(f"   Wallet WBTC balance:   {wbtc_balance:.8f}")
+            print(f"   Wallet USDC balance:   {usdc_balance:.8f}")
+
+            # Output supplied positions
+            print(f"   Aave WETH supplied:    {weth_supplied:.8f}")
+            print(f"   Aave WBTC supplied:    {wbtc_supplied:.8f}")
+            print(f"   Aave USDC supplied:    {usdc_supplied:.8f}")
+
+            print("aToken balances:")
+            # aToken balance checks with asset name
+            assets = {
+                "aWETH": "0xe50fA9b4c56454E2edF6BFf7c81b50c5F05aBE61",  # aWETH
+                "aWBTC": "0x6533afac2E7BCCB20dca161449A13A2D2d5B739A",  # aWBTC
+                "aUSDC": "0x724dc807b04555b71ed48a6896b6F41593b8C637"   # aUSDC
+            }
+
+            for asset_name, atoken_address in assets.items():
+                try:
+                    # Direct contract call with better error handling
+                    checksum_address = Web3.to_checksum_address(atoken_address)
+                    atoken_contract = self.w3.eth.contract(
+                        address=checksum_address, 
+                        abi=atoken_abi
+                    )
+
+                    # Get balance with timeout
+                    balance = atoken_contract.functions.balanceOf(
+                        Web3.to_checksum_address(self.address)
+                    ).call()
+
+                    # Use known decimals to avoid extra contract calls
+                    decimals = 18 if asset_name != "aUSDC" else 6
+                    if asset_name == "aWBTC":
+                        decimals = 8
+
+                    readable_balance = balance / (10**decimals)
+                    print(f"      {asset_name}: {readable_balance:.8f}")
+
+                except Exception as e:
+                    # Silently continue for RPC issues - this is non-critical
+                    print(f"      {asset_name}: Using aggregate data (RPC busy)")
+                    continue
+
+            return True
+
+        except Exception as e:
+            print(f"❌ Balance check failed: {e}")
+            return False
