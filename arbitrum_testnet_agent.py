@@ -2091,8 +2091,7 @@ class ArbitrumTestnetAgent:
             }]
 
             pool_contract = self.w3.eth.contract(address=self.aave_pool_address, abi=pool_abi)
-            account_data = pool_contract.functions.getUserAccountData(```python
-self.address).call()
+            account_data = pool_contract.functions.getUserAccountData(self.address).call()
             new_collateral_usd = account_data[0] / (10**8)
 
             # Update baseline to new collateral value
