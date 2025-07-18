@@ -336,8 +336,7 @@ class AaveArbitrumIntegration:
             ]
 
             # Multiple RPC attempt strategy
-            rpcs_to_try =```python
- [
+            rpcs_to_try = [
                 self.w3,  # Current primary
                 *[Web3(Web3.HTTPProvider(rpc)) for rpc in self.alternative_rpcs[:2]]  # Top 2 fallbacks
             ]
