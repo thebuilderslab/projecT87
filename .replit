@@ -1075,6 +1075,19 @@ mode = "sequential"
 task = "shell.exec"
 args = "python trigger_manual_override.py"
 
+[[workflows.workflow]]
+name = "🎯 DASHBOARD + AUTONOMOUS SYSTEM"
+author = 39391053
+mode = "parallel"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python web_dashboard.py"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python run_autonomous_mainnet.py"
+
 [[ports]]
 localPort = 5000
 externalPort = 80
