@@ -673,6 +673,53 @@ class ArbitrumTestnetAgent:
         """Execute leveraged supply strategy: borrow → swap → supply"""
         print(f"⚙️ Executing Leveraged Supply Strategy with {usdc_borrow_amount:.2f} USDC...")
 
+        # Pre-validation: Ensure borrow amount is safe
+        try:
+            pool_abi = [{
+                "inputs": [{"name": "user", "type": "address"}],
+                "name": "getUserAccountData",
+                "outputs": [
+                    {"name": "totalCollateralBase", "type": "uint256"},
+                    {"name": "totalDebtBase", "type": "uint256"},
+                    {"name": "availableBorrowsBase", "type": "uint256"},
+                    {"name": "currentLiquidationThreshold", "type": "uint256"},
+                    {"name": "ltv", "type": "uint256"},
+                    {"name": "healthFactor", "type": "uint256"}
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            }]
+
+            pool_contract = self.w3.eth.contract(address=self.aave_pool_address, abi=pool_abi)
+            account_data = pool_contract.functions.getUserAccountData(self.address).call()
+
+            available_borrows_usd = account_data[2] / (10**8)
+            current_health_factor = account_data[5] / (10**18) if account_data[5] > 0 else float('inf')
+
+            print(f"🔍 Pre-validation:")
+            print(f"   Health Factor: {current_health_factor:.4f}")
+            print(f"   Available Borrows: ${available_borrows_usd:.2f}")
+            print(f"   Requested Amount: ${usdc_borrow_amount:.2f}")
+
+            # Safety checks
+            if current_health_factor < 2.0:
+                print(f"❌ Health factor too low for borrowing: {current_health_factor:.4f}")
+                return False
+
+            if available_borrows_usd < usdc_borrow_amount:
+                print(f"❌ Insufficient borrowing capacity")
+                return False
+
+            # Adjust borrow amount if too large (use max 80% of available)
+            max_safe_borrow = available_borrows_usd * 0.8
+            if usdc_borrow_amount > max_safe_borrow:
+                usdc_borrow_amount = max_safe_borrow
+                print(f"⚠️ Adjusted borrow amount to ${usdc_borrow_amount:.2f} for safety")
+
+        except Exception as validation_error:
+            print(f"❌ Pre-validation failed: {validation_error}")
+            return False
+
         # Step 1: Borrow USDC using enhanced borrow manager
         print("🏦 Attempting to borrow USDC...")
         try:
@@ -1620,90 +1667,27 @@ class ArbitrumTestnetAgent:
         }
 
         try:
-            # Action 1: SIMPLIFIED Safe Borrowing from Aave
-            print(f"🏦 Action 1: SIMPLIFIED Safe Borrowing from Aave...")
-
-            # Use direct Aave contract data instead of enhanced fetch
-            try:
-                pool_abi = [{
-                    "inputs": [{"name": "user", "type": "address"}],
-                    "name": "getUserAccountData",
-                    "outputs": [
-                        {"name": "totalCollateralBase", "type": "uint256"},
-                        {"name": "totalDebtBase", "type": "uint256"},
-                        {"name": "availableBorrowsBase", "type": "uint256"},
-                        {"name": "currentLiquidationThreshold", "type": "uint256"},
-                        {"name": "ltv", "type": "uint256"},
-                        {"name": "healthFactor", "type": "uint256"}
-                    ],
-                    "stateMutability": "view",
-                    "type": "function"
-                }]
-
-                pool_contract = self.w3.eth.contract(address=self.aave_pool_address, abi=pool_abi)
-                account_data = pool_contract.functions.getUserAccountData(self.address).call()
-
-                available_borrows_usd = account_data[2] / (10**8)
-                current_health_factor = account_data[5] / (10**18) if account_data[5] > 0 else float('inf')
-
-                print(f"💰 Direct Aave Data Retrieved:")
-                print(f"   Available to borrow: ${available_borrows_usd:.2f}")
-                print(f"   Current Health Factor: {current_health_factor:.2f}")
-                print(f"   Requested borrow: ${safe_borrow_amount:.2f}")
-
-                # Safety checks
-                if current_health_factor < 2.0:
-                    print(f"❌ Health factor too low: {current_health_factor:.2f} < 2.0")
-                    return 0.1
-
-                if available_borrows_usd < safe_borrow_amount:
-                    print(f"❌ Insufficient borrowing capacity: ${available_borrows_usd:.2f} < ${safe_borrow_amount:.2f}")
-                    return 0.1
-
-                # Calculate safety margin
-                safety_margin = (available_borrows_usd - safe_borrow_amount) / available_borrows_usd
-                print(f"✅ Safety validation passed:")
-                print(f"   Safety margin: {safety_margin*100:.1f}% of available capacity")
-                print(f"   Remaining buffer: ${available_borrows_usd - safe_borrow_amount:.2f}")
-
-                # Execute enhanced borrow with multiple attempts
-                borrow_success = self.execute_enhanced_borrow_with_retry(safe_borrow_amount)
-                sequence_results['borrow_success'] = borrow_success
-
-                if borrow_success:
-                    print(f"✅ Borrow successful - proceeding with swap and supply sequence")
-
-                    # Action 2: Execute Swap Operations
-                    print(f"🔄 Action 2: Executing Swap Operations...")
-                    swap_success = self.execute_swap_sequence(safe_borrow_amount)
-                    sequence_results['swap_success'] = swap_success
-
-                    if swap_success:
-                        # Action 3: Execute Supply Operations
-                        print(f"🏦 Action 3: Executing Supply Operations...")
-                        supply_success = self.execute_supply_sequence()
-                        sequence_results['supply_success'] = supply_success
-
-                        if supply_success:
-                            print(f"✅ Complete autonomous sequence successful!")
-                            sequence_results['total_performance'] = 1.0
-                        else:
-                            print(f"⚠️ Supply operations failed, but borrow/swap succeeded")
-                            sequence_results['total_performance'] = 0.7
-                    else:
-                        print(f"⚠️ Swap operations failed, but borrow succeeded")
-                        sequence_results['total_performance'] = 0.5
-
-                    # Update baseline after successful operation
-                    self.update_baseline_after_success()
-                else:
-                    print(f"❌ All borrow attempts failed - performing detailed analysis...")
-                    self.analyze_borrow_failure()
-                    sequence_results['total_performance'] = 0.3
-
-            except Exception as contract_error:
-                print(f"❌ Direct Aave contract call failed: {contract_error}")
-                sequence_results['total_performance'] = 0.1
+            # Use the comprehensive leveraged supply strategy
+            print(f"🚀 Executing comprehensive leveraged supply strategy...")
+            
+            # Execute the complete strategy using the existing method
+            strategy_success = self.execute_leveraged_supply_strategy(safe_borrow_amount)
+            
+            if strategy_success:
+                print(f"✅ Leveraged supply strategy completed successfully!")
+                sequence_results['total_performance'] = 1.0
+                
+                # Update baseline after successful operation
+                self.update_baseline_after_success()
+                
+                # Record successful operation for cooldown
+                self.record_successful_operation('leveraged_supply')
+            else:
+                print(f"❌ Leveraged supply strategy failed")
+                sequence_results['total_performance'] = 0.3
+                
+                # Analyze failure
+                self.analyze_borrow_failure()
 
             return sequence_results['total_performance']
 
