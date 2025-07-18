@@ -52,12 +52,11 @@ class AaveArbitrumIntegration:
             abi=self.pool_abi
         )
 
-        # Alternative RPC endpoints for fallback
+        # Alternative RPC endpoints for fallback (removed unauthorized endpoints)
         self.alternative_rpcs = [
             "https://arbitrum-one.publicnode.com",
-            "https://rpc.ankr.com/arbitrum",
-            "https://arbitrum.llamarpc.com",
-            "https://arbitrum.blockpi.network/v1/rpc/public"
+            "https://arb1.arbitrum.io/rpc",
+            "https://arbitrum-one.public.blastapi.io"
         ]
 
         # API keys for external data sources
@@ -100,7 +99,7 @@ class AaveArbitrumIntegration:
         print(f"🏦 Aave integration initialized for {self.address}")
 
     def _get_pool_abi(self):
-        """Aave V3 Pool ABI (simplified for key functions)"""
+        """Aave V3 Pool ABI (complete with getUserAccountData function)"""
         return [
             {
                 "inputs": [
@@ -148,6 +147,22 @@ class AaveArbitrumIntegration:
                 "name": "repay",
                 "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
                 "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {"internalType": "address", "name": "user", "type": "address"}
+                ],
+                "name": "getUserAccountData",
+                "outputs": [
+                    {"internalType": "uint256", "name": "totalCollateralBase", "type": "uint256"},
+                    {"internalType": "uint256", "name": "totalDebtBase", "type": "uint256"},
+                    {"internalType": "uint256", "name": "availableBorrowsBase", "type": "uint256"},
+                    {"internalType": "uint256", "name": "currentLiquidationThreshold", "type": "uint256"},
+                    {"internalType": "uint256", "name": "ltv", "type": "uint256"},
+                    {"internalType": "uint256", "name": "healthFactor", "type": "uint256"}
+                ],
+                "stateMutability": "view",
                 "type": "function"
             }
         ]

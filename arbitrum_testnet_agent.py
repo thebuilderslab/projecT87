@@ -103,12 +103,11 @@ class ArbitrumTestnetAgent:
             else:
                 print("⚠️ DEBUG: No ALCHEMY_RPC_URL found in environment variables")
 
-            # Add fallback endpoints
+            # Add fallback endpoints (removed unauthorized Ankr endpoint)
             fallback_endpoints = [
                 "https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f938ff891c141",
                 "https://arb1.arbitrum.io/rpc", 
                 "https://arbitrum-one.public.blastapi.io",
-                "https://rpc.ankr.com/arbitrum",
                 "https://arbitrum-one.publicnode.com"
             ]
 
@@ -262,8 +261,7 @@ class ArbitrumTestnetAgent:
             "https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f938ff891c141",
             "https://arb1.arbitrum.io/rpc",
             "https://arbitrum-one.publicnode.com",
-            "https://arbitrum-one.public.blastapi.io",
-            "https://1rpc.io/arb"
+            "https://arbitrum-one.public.blastapi.io"
         ]
 
         # Only try working RPCs that are different from current
