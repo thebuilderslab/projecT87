@@ -387,6 +387,11 @@ class ArbitrumTestnetAgent:
     def initialize_integrations(self):
         """Initialize all real DeFi integrations with strict error handling"""
         try:
+            # Check if already initialized to prevent multiple initializations
+            if hasattr(self, 'aave') and self.aave is not None:
+                print("✅ DeFi integrations already initialized, skipping...")
+                return True
+
             print("🚀 Initializing Real DeFi Integrations...")
 
             # Initialize Real Aave, Uniswap, and Health Monitor Integrations
@@ -854,19 +859,12 @@ class ArbitrumTestnetAgent:
                         "aUSDC": "0x724dc807b04555b71ed48a6896b6F41593b8C637"
                     }
 
-                    # Enhanced ABI for aTokens (includes both ERC20 and aToken-specific functions)
-                    enhanced_atoken_abi = [
+                    # Simplified ABI for aToken balance only
+                    atoken_abi = [
                         {
                             "inputs": [{"internalType": "address", "name": "account", "type": "address"}],
                             "name": "balanceOf",
                             "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
-                            "stateMutability": "view",
-                            "type": "function"
-                        },
-                        {
-                            "inputs": [],
-                            "name": "decimals",
-                            "outputs": [{"internalType": "uint8", "name": "", "type": "uint8"}],
                             "stateMutability": "view",
                             "type": "function"
                         }
@@ -874,61 +872,30 @@ class ArbitrumTestnetAgent:
 
                     for asset_name, atoken_address in aave_assets.items():
                         try:
-                            def fetch_atoken_balance():
-                                # Use checksum address
-                                checksum_address = Web3.to_checksum_address(atoken_address)
-                                atoken_contract = self.w3.eth.contract(
-                                    address=checksum_address, 
-                                    abi=enhanced_atoken_abi
-                                )
+                            # Direct contract call without circuit breaker
+                            checksum_address = Web3.to_checksum_address(atoken_address)
+                            atoken_contract = self.w3.eth.contract(
+                                address=checksum_address, 
+                                abi=atoken_abi
+                            )
 
-                                # Get balance with proper error handling
-                                balance = atoken_contract.functions.balanceOf(
-                                    Web3.to_checksum_address(self.address)
-                                ).call()
+                            # Get balance with timeout
+                            balance = atoken_contract.functions.balanceOf(
+                                Web3.to_checksum_address(self.address)
+                            ).call()
 
-                                # Try to get decimals from contract, fallback to known values
-                                try:
-                                    decimals = atoken_contract.functions.decimals().call()
-                                except:
-                                    decimals = 18 if asset_name != "aUSDC" else 6
-                                    if asset_name == "aWBTC":
-                                        decimals = 8
+                            # Use known decimals to avoid extra contract calls
+                            decimals = 18 if asset_name != "aUSDC" else 6
+                            if asset_name == "aWBTC":
+                                decimals = 8
 
-                                return balance, decimals
-
-                            # Use circuit breaker for protection
-                            balance, decimals = self.circuit_breaker.call(fetch_atoken_balance)
                             readable_balance = balance / (10**decimals)
                             print(f"      {asset_name}: {readable_balance:.8f}")
 
                         except Exception as e:
-                            print(f"      {asset_name}: Protected call failed - {e}")
-
-                            # Attempt RPC failover if circuit breaker fails
-                            if "circuit breaker" in str(e).lower():
-                                print(f"      Attempting RPC failover for {asset_name}...")
-                                if self.switch_to_fallback_rpc():
-                                    print(f"      RPC switched, retrying {asset_name}...")
-                                    try:
-                                        def retry_fetch():
-                                            checksum_address = Web3.to_checksum_address(atoken_address)
-                                            atoken_contract = self.w3.eth.contract(
-                                                address=checksum_address,
-                                                abi=enhanced_atoken_abi
-                                            )
-                                            balance = atoken_contract.functions.balanceOf(
-                                                Web3.to_checksum_address(self.address)
-                                            ).call()
-                                            decimals = 18 if asset_name != "aUSDC" else 6
-                                            if asset_name == "aWBTC":
-                                                decimals = 8
-                                            return balance / (10**decimals)
-
-                                        readable_balance = retry_fetch()
-                                        print(f"      {asset_name}: {readable_balance:.8f} (after RPC failover)")
-                                    except Exception as retry_error:
-                                        print(f"      {asset_name}: Failed even after RPC failover - {retry_error}")
+                            print(f"      {asset_name}: Balance check failed - {e}")
+                            # Continue with next asset instead of failing completely
+                            continue
 
                 except Exception as e:
                     print(f"   ⚠️ Individual asset check failed: {e}")
