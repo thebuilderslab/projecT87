@@ -277,7 +277,11 @@ class AaveArbitrumIntegration:
 
     def get_supplied_balance(self, token_address):
         """Get the amount of tokens supplied to Aave for this asset"""
+        import logging
+        
         try:
+            logging.debug(f"DEBUG: get_supplied_balance called with token_address: {token_address}")
+            
             # Standard ERC20 ABI for aToken balance
             atoken_abi = [{
                 "inputs": [{"name": "account", "type": "address"}],
@@ -299,35 +303,51 @@ class AaveArbitrumIntegration:
                 "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1": "0xe50fA9b4c56454E2edF6BFf7c81b50c5F05aBE61",  # WETH -> aWETH
                 "0xAf88D065e77C8cF0EAEfF3e253e648A15CEe23dC": "0x724dc807b04555b71ed48a6896b6F41593b8C637",  # USDC -> aUSDC
             }
+            
+            logging.debug(f"DEBUG: Available aToken mappings: {atoken_addresses}")
 
             # Normalize token address for lookup
             normalized_token = Web3.to_checksum_address(token_address)
+            logging.debug(f"DEBUG: Normalized token address: {normalized_token}")
+            
             atoken_address = atoken_addresses.get(normalized_token)
+            logging.debug(f"DEBUG: Found aToken address: {atoken_address}")
             
             if not atoken_address:
+                logging.warning(f"WARNING: No aToken mapping for {normalized_token}")
                 print(f"⚠️ No aToken mapping for {normalized_token}")
                 return 0.0
 
             # Ensure aToken address is properly checksummed
             checksummed_atoken = Web3.to_checksum_address(atoken_address)
+            logging.debug(f"DEBUG: Checksummed aToken address: {checksummed_atoken}")
+            logging.debug(f"DEBUG: Wallet address for balance check: {self.account.address}")
             
             # Create aToken contract
             atoken_contract = self.w3.eth.contract(
                 address=checksummed_atoken,
                 abi=atoken_abi
             )
+            logging.debug(f"DEBUG: aToken contract created successfully")
 
             # Get balance and decimals
+            logging.debug(f"DEBUG: Calling balanceOf({self.account.address}) on aToken contract")
             balance_wei = atoken_contract.functions.balanceOf(self.account.address).call()
+            logging.debug(f"DEBUG: Raw balance_wei returned: {balance_wei}")
+            
+            logging.debug(f"DEBUG: Calling decimals() on aToken contract")
             decimals = atoken_contract.functions.decimals().call()
+            logging.debug(f"DEBUG: Decimals returned: {decimals}")
 
             # Convert to readable format
             balance = balance_wei / (10 ** decimals)
+            logging.debug(f"DEBUG: Converted balance: {balance}")
 
             print(f"✅ Supplied {balance:.8f} of token {token_address} (aToken: {atoken_address})")
             return balance
 
         except Exception as e:
+            logging.error(f"ERROR: get_supplied_balance failed for {token_address}: {e}", exc_info=True)
             print(f"❌ Error getting supplied balance for {token_address}: {e}")
             return 0.0
 
