@@ -333,8 +333,8 @@ class AaveArbitrumIntegration:
                 self.usdc_address.lower(): 0.0,
                 self.wbtc_address.lower(): 0.0002,
                 self.weth_address.lower(): 0.00193518
-            }```python
-```python
+            }
+            
             return known_balances.get(token_address.lower(), -1)
 
         except Exception as e:
