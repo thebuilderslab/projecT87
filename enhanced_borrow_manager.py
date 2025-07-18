@@ -782,15 +782,15 @@ class EnhancedBorrowManager:
                             print(f"   ❌ No retry recommended: {revert_analysis['reason']}")
                             return None
                 except Exception as get_tx_e:
-                            print(f"    Could not fetch transaction details: {get_tx_e}")
-                            raise Exception(f"Transaction {tx_hash_hex} reverted with status 0.")
+                    print(f"    Could not fetch transaction details: {get_tx_e}")
+                    raise Exception(f"Transaction {tx_hash_hex} reverted with status 0.")
 
-                except Exception as retry_error:
-                    print(f"❌ Enhanced attempt {attempt + 1} failed: {retry_error}")
-                    if attempt == len(gas_multipliers) - 1:
-                        print(f"🚨 All enhanced attempts failed")
-                        break
-                    continue
+            except Exception as retry_error:
+                print(f"❌ Enhanced attempt {attempt + 1} failed: {retry_error}")
+                if attempt == len(gas_multipliers) - 1:
+                    print(f"🚨 All enhanced attempts failed")
+                    break
+                continue
 
         return None
 
@@ -883,7 +883,9 @@ class EnhancedBorrowManager:
         except Exception as e:
             print(f"⚠️ Revert analysis failed: {e}")
             return {
-                'summary': 'Analysis failed',
+                'revert_data': None,
                 'retry_recommended': False,
-                'reason': 'Could not analyze revert reason'
+                'suggested_action': None,
+                'summary': 'Analysis failed',
+                'reason': str(e)
             }
