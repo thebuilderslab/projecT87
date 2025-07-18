@@ -1991,16 +1991,17 @@ class ArbitrumTestnetAgent:
 
             # Save updated baseline
             import json
-            baseline_data = {
-                'last_collateral_value_usd': self.last_collateral_value_usd,
-                'baseline_initialized': True,
-                'timestamp': time.time(),
-                'wallet_address': self.address,
-                'update_reason': 'successful_operation'
-            }
+```python
+                baseline_data = {
+                    'last_collateral_value_usd': self.last_collateral_value_usd,
+                    'baseline_initialized': True,
+                    'timestamp': time.time(),
+                    'wallet_address': self.address,
+                    'update_reason': 'successful_operation'
+                }
 
-            # Save baseline data to file
-            return self.save_baseline_data(baseline_data)
+                # Save baseline data to file
+                return self.save_baseline_data(baseline_data)
 
         except Exception as e:
             print(f"❌ Baseline update failed: {e}")
