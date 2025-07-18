@@ -1798,7 +1798,7 @@ class AaveArbitrumIntegration:
             # Get supplied balances on Aave
             weth_supplied = self.get_supplied_balance(self.weth_address)
             wbtc_supplied = self.get_supplied_balance(self.wbtc_address)
-            usdc_supplied = self.get_supplied_balance(self.usdc_address)
+            usdc_suppliedsupplied = self.get_supplied_balance(self.usdc_address)
 
             # Output balancesprint(f"   Wallet WETH balance:   {weth_balance:.8f}")
             print(f"   Wallet WBTC balance:   {wbtc_balance:.8f}")
