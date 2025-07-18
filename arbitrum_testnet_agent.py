@@ -39,7 +39,7 @@ class ArbitrumTestnetAgent:
         # Initialize Web3 with enhanced connection handling
         print(f"🔍 DEBUG: Attempting to create Web3 connection with primary RPC: {self.rpc_url}")
         self.w3 = self._create_robust_web3_connection(self.rpc_url)
-        
+
         if not self.w3 or not self.w3.is_connected():
             # Try fallback RPCs
             print("⚠️ Primary RPC failed, trying fallbacks...")
@@ -58,7 +58,7 @@ class ArbitrumTestnetAgent:
                 raise Exception("Failed to connect to any available RPC endpoint")
         else:
             print(f"✅ Successfully connected to primary RPC: {self.rpc_url}")
-        
+
         # Final verification of Web3 connection
         try:
             chain_id = self.w3.eth.chain_id
@@ -75,21 +75,21 @@ class ArbitrumTestnetAgent:
         """Initialize enhanced RPC management with only working endpoints"""
         print("🔍 DEBUG: Starting RPC manager initialization...")
         print(f"🔍 DEBUG: Network mode: {self.network_mode}")
-        
+
         if self.network_mode == 'mainnet':
             # Get Alchemy RPC URL from Replit secrets first
             alchemy_rpc_url = os.getenv('ALCHEMY_RPC_URL')
             print(f"🔍 DEBUG: ALCHEMY_RPC_URL from env: {alchemy_rpc_url}")
-            
+
             # Multiple RPC endpoints for reliability - prioritizing Alchemy if available
             self.rpc_endpoints = []
-            
+
             if alchemy_rpc_url:
                 self.rpc_endpoints.append(alchemy_rpc_url)
                 print(f"🔗 DEBUG: Added Alchemy RPC to endpoints list: {alchemy_rpc_url[:50]}...")
             else:
                 print("⚠️ DEBUG: No ALCHEMY_RPC_URL found in environment variables")
-            
+
             # Add fallback endpoints
             fallback_endpoints = [
                 "https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f938ff891c141",
@@ -98,7 +98,7 @@ class ArbitrumTestnetAgent:
                 "https://rpc.ankr.com/arbitrum",
                 "https://arbitrum-one.publicnode.com"
             ]
-            
+
             self.rpc_endpoints.extend(fallback_endpoints)
             print(f"🔍 DEBUG: Total RPC endpoints to test: {len(self.rpc_endpoints)}")
             for i, rpc in enumerate(self.rpc_endpoints):
@@ -722,7 +722,7 @@ class ArbitrumTestnetAgent:
                 print("✅ Swapped USDC to WETH.")
                 time.sleep(5)
 
-        # Swap to DAI```python
+        # Swap to DAI
         if dai_amount_usdc_equiv > 0.1:
             print(f"🔄 Swapping {dai_amount_usdc_equiv:.2f} USDC to DAI...")
             if not self.uniswap.swap_tokens(self.usdc_address, self.dai_address, dai_amount_usdc_equiv, 500):
