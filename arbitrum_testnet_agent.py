@@ -722,6 +722,12 @@ class ArbitrumTestnetAgent:
 
         # Step 1: Borrow USDC using enhanced borrow manager
         print("🏦 Attempting to borrow USDC...")
+        print(f"🔍 DEBUG: Attempting to borrow USDC with amount: ${usdc_borrow_amount:.2f}")
+        
+        # Check ETH balance before borrowing
+        eth_balance = self.get_eth_balance()
+        print(f"🔍 DEBUG: Current ETH balance before borrow: {eth_balance:.6f} ETH")
+        
         try:
             if hasattr(self, 'enhanced_borrow_manager') and self.enhanced_borrow_manager:
                 borrow_result = self.enhanced_borrow_manager.safe_borrow_with_fallbacks(usdc_borrow_amount, self.usdc_address)
@@ -734,7 +740,12 @@ class ArbitrumTestnetAgent:
                 return False
             print(f"✅ Successfully borrowed USDC. Result: {borrow_result}")
         except Exception as e:
-            print(f"❌ Borrow error: {e}")
+            print(f"❌ ERROR: Borrow transaction failed. Details: {e}")
+            if "insufficient funds for gas * price + value" in str(e).lower():
+                print("🚨 CRITICAL: This is likely due to insufficient ETH for gas.")
+                print(f"   Current ETH balance: {eth_balance:.6f} ETH")
+            elif "gas required exceeds allowance" in str(e).lower() or "out of gas" in str(e).lower():
+                print("🚨 CRITICAL: Transaction likely ran out of gas. Consider increasing gas limit estimate.")
             return False
 
         # Brief pause for transaction confirmation
@@ -765,6 +776,7 @@ class ArbitrumTestnetAgent:
         wbtc_amount_to_swap = current_usdc_balance * WBTC_PERCENT
         if wbtc_amount_to_swap > 0.1:
             print(f"🔄 Swapping {wbtc_amount_to_swap:.6f} USDC to WBTC...")
+            print(f"🔍 DEBUG: Attempting to swap {wbtc_amount_to_swap:.6f} USDC for WBTC.")
             try:
                 wbtc_tx_hash = self.uniswap.swap_tokens(self.usdc_address, self.wbtc_address, wbtc_amount_to_swap, 500)
                 if not wbtc_tx_hash:
@@ -774,13 +786,18 @@ class ArbitrumTestnetAgent:
                 swap_results['wbtc'] = wbtc_tx_hash
                 time.sleep(3)
             except Exception as e:
-                print(f"❌ WBTC swap error: {e}")
+                print(f"❌ ERROR: WBTC swap transaction failed. Details: {e}")
+                if "insufficient funds for gas * price + value" in str(e).lower():
+                    print("🚨 CRITICAL: This is likely due to insufficient ETH for gas.")
+                elif "gas required exceeds allowance" in str(e).lower() or "out of gas" in str(e).lower():
+                    print("🚨 CRITICAL: Transaction likely ran out of gas. Consider increasing gas limit estimate.")
                 return False
 
         # Swap to WETH
         weth_amount_to_swap = current_usdc_balance * WETH_PERCENT
         if weth_amount_to_swap > 0.1:
             print(f"🔄 Swapping {weth_amount_to_swap:.6f} USDC to WETH...")
+            print(f"🔍 DEBUG: Attempting to swap {weth_amount_to_swap:.6f} USDC for WETH.")
             try:
                 weth_tx_hash = self.uniswap.swap_tokens(self.usdc_address, self.weth_address, weth_amount_to_swap, 500)
                 if not weth_tx_hash:
@@ -790,13 +807,18 @@ class ArbitrumTestnetAgent:
                 swap_results['weth'] = weth_tx_hash
                 time.sleep(3)
             except Exception as e:
-                print(f"❌ WETH swap error: {e}")
+                print(f"❌ ERROR: WETH swap transaction failed. Details: {e}")
+                if "insufficient funds for gas * price + value" in str(e).lower():
+                    print("🚨 CRITICAL: This is likely due to insufficient ETH for gas.")
+                elif "gas required exceeds allowance" in str(e).lower() or "out of gas" in str(e).lower():
+                    print("🚨 CRITICAL: Transaction likely ran out of gas. Consider increasing gas limit estimate.")
                 return False
 
         # Swap to DAI
         dai_amount_to_swap = current_usdc_balance * DAI_PERCENT
         if dai_amount_to_swap > 0.1:
             print(f"🔄 Swapping {dai_amount_to_swap:.6f} USDC to DAI...")
+            print(f"🔍 DEBUG: Attempting to swap {dai_amount_to_swap:.6f} USDC for DAI.")
             try:
                 dai_tx_hash = self.uniswap.swap_tokens(self.usdc_address, self.dai_address, dai_amount_to_swap, 500)
                 if not dai_tx_hash:
@@ -806,7 +828,11 @@ class ArbitrumTestnetAgent:
                 swap_results['dai'] = dai_tx_hash
                 time.sleep(3)
             except Exception as e:
-                print(f"❌ DAI swap error: {e}")
+                print(f"❌ ERROR: DAI swap transaction failed. Details: {e}")
+                if "insufficient funds for gas * price + value" in str(e).lower():
+                    print("🚨 CRITICAL: This is likely due to insufficient ETH for gas.")
+                elif "gas required exceeds allowance" in str(e).lower() or "out of gas" in str(e).lower():
+                    print("🚨 CRITICAL: Transaction likely ran out of gas. Consider increasing gas limit estimate.")
                 return False
 
         # Step 5: Get updated balances after swaps
@@ -830,12 +856,14 @@ class ArbitrumTestnetAgent:
         # Supply WBTC
         if current_wbtc_balance > 0:
             print(f"🔓 Approving WBTC for Aave supply ({current_wbtc_balance:.8f})...")
+            print(f"🔍 DEBUG: Attempting to approve {current_wbtc_balance:.8f} WBTC for supply.")
             try:
                 if not self.aave.approve_token(self.wbtc_address, current_wbtc_balance):
                     print("❌ Failed to approve WBTC")
                     return False
                 
                 print("🏦 Supplying WBTC to Aave...")
+                print(f"🔍 DEBUG: Attempting to supply {current_wbtc_balance:.8f} WBTC to Aave.")
                 supply_result = self.aave.supply_to_aave(self.wbtc_address, current_wbtc_balance)
                 if not supply_result:
                     print("❌ Failed to supply WBTC")
@@ -844,7 +872,11 @@ class ArbitrumTestnetAgent:
                 supply_results['wbtc'] = supply_result
                 time.sleep(3)
             except Exception as e:
-                print(f"❌ WBTC supply error: {e}")
+                print(f"❌ ERROR: WBTC supply/approval transaction failed. Details: {e}")
+                if "insufficient funds for gas * price + value" in str(e).lower():
+                    print("🚨 CRITICAL: This is likely due to insufficient ETH for gas.")
+                elif "gas required exceeds allowance" in str(e).lower() or "out of gas" in str(e).lower():
+                    print("🚨 CRITICAL: Transaction likely ran out of gas. Consider increasing gas limit estimate.")
                 return False
 
         # Supply WETH
@@ -919,6 +951,14 @@ class ArbitrumTestnetAgent:
                 print(f"⚠️ Invalid speed: {speed}, using 'market'")
                 speed = 'market'
 
+            # DIAGNOSTIC: Get current network gas price for comparison
+            try:
+                current_base_gas_price = self.w3.eth.gas_price
+                print(f"🔍 DEBUG: Current network base gas price: {self.w3.from_wei(current_base_gas_price, 'gwei'):.3f} Gwei")
+            except Exception as e:
+                print(f"⚠️ DEBUG: Failed to get network gas price: {e}")
+                current_base_gas_price = 100000000  # 0.1 gwei fallback
+
             gas_data = self.gas_calculator.calculate_transaction_fee(operation_type, speed)
 
             # Initialize with safe fallback values based on operation type
@@ -972,12 +1012,17 @@ class ArbitrumTestnetAgent:
             safe_gas_limit = max(21000, min(safe_gas_limit, 10000000))
             safe_gas_price = max(1, min(safe_gas_price, 1000000000000))
 
-            print(f"✅ Gas params for {operation_type}: limit={safe_gas_limit:,}, price={safe_gas_price:,} wei ({self.w3.from_wei(safe_gas_price, 'gwei'):.3f} gwei)")
-
-            return {
+            # DIAGNOSTIC: Final gas parameters
+            final_gas_params = {
                 'gas': safe_gas_limit,
                 'gasPrice': safe_gas_price
             }
+            
+            print(f"🔍 DEBUG: Optimized gas parameters calculated: {final_gas_params}")
+            print(f"🔍 DEBUG: Gas limit: {safe_gas_limit:,}, Gas price: {safe_gas_price:,} wei ({self.w3.from_wei(safe_gas_price, 'gwei'):.3f} gwei)")
+            print(f"✅ Gas params for {operation_type}: limit={safe_gas_limit:,}, price={safe_gas_price:,} wei ({self.w3.from_wei(safe_gas_price, 'gwei'):.3f} gwei)")
+
+            return final_gas_params
 
         except Exception as e:
             print(f"❌ Gas optimization completelyfailed: {e}")

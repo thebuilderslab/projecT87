@@ -681,8 +681,20 @@ class EnhancedBorrowManager:
                                    amount_wei, interest_rate_mode, user_address):
         """Execute borrow transaction with enhanced error handling and higher gas limits"""
 
+        print(f"🔍 DEBUG: Starting transaction execution for borrow operation")
+        print(f"🔍 DEBUG: Token: {token_address}, Amount: {amount_wei} wei, User: {user_address}")
+
         # Get fresh nonce and gas data
         nonce = w3_instance.eth.get_transaction_count(user_address, 'pending')
+        print(f"🔍 DEBUG: Current nonce: {nonce}")
+
+        # Check ETH balance before transaction
+        try:
+            eth_balance_wei = w3_instance.eth.get_balance(user_address)
+            eth_balance_eth = w3_instance.from_wei(eth_balance_wei, 'ether')
+            print(f"🔍 DEBUG: Current ETH balance: {eth_balance_eth:.6f} ETH ({eth_balance_wei:,} wei)")
+        except Exception as balance_error:
+            print(f"⚠️ DEBUG: Failed to get ETH balance: {balance_error}")
 
         # CRITICAL: Use much higher gas limits for Aave borrowing
         try:
@@ -700,10 +712,16 @@ class EnhancedBorrowManager:
         try:
             current_gas_price = w3_instance.eth.gas_price
             gas_price = int(current_gas_price * 2.0)  # Much higher premium for reliability
+            print(f"🔍 DEBUG: Current network base gas price: {w3_instance.from_wei(current_gas_price, 'gwei'):.3f} Gwei")
         except:
             gas_price = int(1.0 * 1e9)  # 1.0 gwei fallback (higher)
 
         print(f"⛽ Gas price: {gas_price} wei ({gas_price / 1e9:.2f} gwei)")
+        
+        # Calculate total transaction cost
+        max_gas_cost_wei = gas_limit * gas_price
+        max_gas_cost_eth = w3_instance.from_wei(max_gas_cost_wei, 'ether')
+        print(f"🔍 DEBUG: Maximum gas cost: {max_gas_cost_eth:.6f} ETH ({max_gas_cost_wei:,} wei)")
 
         # Pre-transaction validation
         try:
@@ -758,6 +776,12 @@ class EnhancedBorrowManager:
                     'nonce': current_nonce,
                     'from': user_address
                 })
+
+                print(f"🔍 DEBUG: Transaction dictionary to be sent: {transaction}")
+                
+                # Verify transaction cost vs balance
+                total_cost = transaction['gas'] * transaction['gasPrice']
+                print(f"🔍 DEBUG: Total transaction cost: {w3_instance.from_wei(total_cost, 'ether'):.6f} ETH")
 
                 # Sign and send
                 signed_txn = w3_instance.eth.account.sign_transaction(transaction, self.agent.account.key)
