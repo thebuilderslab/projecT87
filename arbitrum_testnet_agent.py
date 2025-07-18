@@ -1338,7 +1338,6 @@ class ArbitrumTestnetAgent:
                     print(f"   2. Agent will monitor for $12+ collateral growth")
                     print(f"   3. Then execute autonomous borrowing & swapping sequence")
 
-                ```python
                 return 0.7  # Moderate performance score
 
         except Exception as e:
