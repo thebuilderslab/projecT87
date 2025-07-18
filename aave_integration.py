@@ -1033,10 +1033,30 @@ class AaveArbitrumIntegration:
             # Additional multipliers based on market conditions
             condition_multipliers = {
                 'low': 1.0,
-'normal': 1.1,
+                'normal': 1.1,
                 'high': 1.4,
                 'urgent': 1.8,
                 'market': 1.3
+            }
+            
+            # Apply condition multiplier
+            if speed in condition_multipliers:
+                gas_price = int(gas_price * condition_multipliers[speed])
+            
+            return {
+                'gas': gas_limit,
+                'gasPrice': gas_price,
+                'maxFeePerGas': gas_price,
+                'maxPriorityFeePerGas': min(gas_price // 10, 2000000000)  # 2 gwei max
+            }
+            
+        except Exception as e:
+            print(f"❌ Gas optimization failed: {e}")
+            # Fallback gas parameters
+            return {
+                'gas': 200000,
+                'gasPrice': 100000000  # 0.1 gwei
+            }
             }
 
             gas_limit = gas_limits.get(operation_type, gas_limits['default'])
