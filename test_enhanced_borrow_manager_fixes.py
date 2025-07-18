@@ -44,7 +44,15 @@ def test_enhanced_borrow_manager_complete():
             
             print(f"📊 Validation Results:")
             print(f"   Success: {validation['success']}")
-            print(f"   Error: {validation.get('error', 'None')}")
+            if validation.get('error'):
+                print(f"   Error: {validation['error']}")
+            if validation.get('warnings'):
+                print(f"   Warnings: {validation['warnings']}")
+            if validation.get('data'):
+                data = validation['data']
+                print(f"   Data keys: {list(data.keys())}")
+            
+            return validation['success']ation.get('error', 'None')}")
             print(f"   Warnings: {len(validation.get('warnings', []))}")
             
             if validation['data']:

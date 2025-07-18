@@ -37,17 +37,19 @@ def test_enhanced_borrow_manager():
         
         print(f"🔍 Prerequisites validation result:")
         print(f"   Success: {validation['success']}")
-        if validation['error']:
+        if validation.get('error'):
             print(f"   Error: {validation['error']}")
-        if validation['warnings']:
+        if validation.get('warnings'):
             print(f"   Warnings: {validation['warnings']}")
             
         # Test with live data
         if validation['success']:
             print(f"✅ Prerequisites validation method working correctly")
-            data = validation['data']
-            print(f"   Collateral: ${data['total_collateral_usd']:.2f}")
-            print(f"   Available Borrows: ${data['available_borrows_usd']:.2f}")
+            data = validation.get('data', {})
+            if 'total_collateral_usd' in data:
+                print(f"   Collateral: ${data['total_collateral_usd']:.2f}")
+            if 'available_borrows_usd' in data:
+                print(f"   Available Borrows: ${data['available_borrows_usd']:.2f}")rows_usd']:.2f}")
             print(f"   Health Factor: {data['health_factor']:.3f}")
             print(f"   ETH Balance: {data['eth_balance']:.6f}")
             

@@ -1257,6 +1257,191 @@ args = "echo \"\""
 task = "shell.exec"
 args = "echo \"✅ Enhanced diagnostic system ready for testing!\""
 
+[[workflows.workflow]]
+name = "🔍 Test Enhanced Diagnostics Fixed"
+author = 39391053
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"🔍 TESTING ENHANCED DIAGNOSTIC SYSTEM (FIXED)\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"=============================================\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"Phase 1: Testing diagnostic prints in arbitrum_testnet_agent.py...\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python -c \""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "from arbitrum_testnet_agent import ArbitrumTestnetAgent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "print('✅ Testing agent initialization with enhanced diagnostics...')"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "try:"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "    agent = ArbitrumTestnetAgent()"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "    print('✅ Agent initialized successfully')"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "    "
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "    # Test gas parameter calculation with diagnostics"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "    gas_params = agent.get_optimized_gas_params('aave_borrow', 'market')"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "    print(f'✅ Gas parameters with diagnostics: {gas_params}')"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "    "
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "    # Test ETH balance check"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "    eth_balance = agent.get_eth_balance()"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "    print(f'✅ ETH balance check: {eth_balance:.6f} ETH')"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "    "
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "except Exception as e:"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "    print(f'❌ Enhanced diagnostic test failed: {e}')"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"Phase 2: Testing enhanced borrow manager diagnostics...\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python -c \""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "from enhanced_borrow_manager import EnhancedBorrowManager"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "from arbitrum_testnet_agent import ArbitrumTestnetAgent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "try:"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "    agent = ArbitrumTestnetAgent()"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "    ebm = EnhancedBorrowManager(agent)"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "    print('✅ Enhanced Borrow Manager with diagnostics initialized')"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "    "
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "    # Test validation with diagnostics"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "    validation = ebm._validate_prerequisites(1.0, agent.usdc_address)"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = '''    print(f'✅ Prerequisites validation with diagnostics: {validation[\"success\"]}')'''
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "    "
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "    if validation.get('data'):"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "        data = validation['data']"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = '''        print(f'📊 Validation data: ETH={data.get(\"eth_balance\", 0):.6f}, HF={data.get(\"health_factor\", 0):.2f}')'''
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "    "
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "except Exception as e:"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "    print(f'❌ Enhanced borrow manager diagnostic test failed: {e}')"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"✅ Enhanced diagnostic system ready for testing!\""
+
 [[ports]]
 localPort = 5000
 externalPort = 80

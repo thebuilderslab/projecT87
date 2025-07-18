@@ -837,6 +837,7 @@ class EnhancedBorrowManager:
         """Comprehensive validation before borrowing"""
         try:
             warnings = []
+            data = {}
 
             # Check if manual override is active
             if self.detect_manual_override():
@@ -844,21 +845,28 @@ class EnhancedBorrowManager:
 
             # Basic amount validation
             if amount_usd <= 0:
-                return {'success': False, 'error': f'Invalid amount: ${amount_usd}'}
+                return {'success': False, 'error': f'Invalid amount: ${amount_usd}', 'warnings': [], 'data': {}}
 
             # Check ETH balance for gas (increased minimum)
             eth_balance = self.agent.get_eth_balance()
             min_eth_needed = 0.0005  # Increased minimum
+            data['eth_balance'] = eth_balance
             if eth_balance < min_eth_needed:
-                return {'success': False, 'error': f'Insufficient ETH for gas: {eth_balance:.6f} (minimum: {min_eth_needed})'}
+                return {'success': False, 'error': f'Insufficient ETH for gas: {eth_balance:.6f} (minimum: {min_eth_needed})', 'warnings': warnings, 'data': data}
 
             # Check health factor
             try:
-                health_data = self.agent.health_monitor.get_current_health_factor()
-                if health_data and health_data.get('health_factor', 0) < 1.1:
-                    return {'success': False, 'error': f'Health factor too low: {health_data["health_factor"]:.2f}'}
+                if hasattr(self.agent, 'health_monitor') and self.agent.health_monitor:
+                    health_data = self.agent.health_monitor.get_current_health_factor()
+                    if health_data and health_data.get('health_factor', 0) < 1.1:
+                        return {'success': False, 'error': f'Health factor too low: {health_data["health_factor"]:.2f}', 'warnings': warnings, 'data': data}
+                    data['health_factor'] = health_data.get('health_factor', 0) if health_data else 0
+                else:
+                    warnings.append("Health monitor not available")
+                    data['health_factor'] = 0
             except Exception as hf_error:
                 warnings.append(f"Health factor check failed: {hf_error}")
+                data['health_factor'] = 0
 
             # Check available borrowing capacity
             try:
@@ -883,26 +891,35 @@ class EnhancedBorrowManager:
                 )
 
                 account_data = pool_contract.functions.getUserAccountData(self.agent.address).call()
+                total_collateral_usd = account_data[0] / (10**8)
+                total_debt_usd = account_data[1] / (10**8)
                 available_borrows_usd = account_data[2] / (10**8)
+                
+                # Store data for diagnostics
+                data['total_collateral_usd'] = total_collateral_usd
+                data['total_debt_usd'] = total_debt_usd
+                data['available_borrows_usd'] = available_borrows_usd
 
                 if amount_usd > available_borrows_usd * 0.9:  # Use 90% of available
-                    return {'success': False, 'error': f'Insufficient borrow capacity: ${amount_usd:.2f} > ${available_borrows_usd * 0.9:.2f}'}
+                    return {'success': False, 'error': f'Insufficient borrow capacity: ${amount_usd:.2f} > ${available_borrows_usd * 0.9:.2f}', 'warnings': warnings, 'data': data}
 
             except Exception as capacity_error:
                 warnings.append(f"Borrow capacity check failed: {capacity_error}")
+                data['available_borrows_usd'] = 0
 
             # Check RPC connectivity
             try:
                 latest_block = self.agent.w3.eth.block_number
+                data['latest_block'] = latest_block
                 if latest_block < 1000000:  # Sanity check
                     warnings.append("RPC may not be fully synced")
             except Exception as rpc_error:
-                return {'success': False, 'error': f'RPC connectivity issue: {rpc_error}'}
+                return {'success': False, 'error': f'RPC connectivity issue: {rpc_error}', 'warnings': warnings, 'data': data}
 
-            return {'success': True, 'warnings': warnings}
+            return {'success': True, 'error': None, 'warnings': warnings, 'data': data}
 
         except Exception as e:
-            return {'success': False, 'error': f'Validation error: {e}'}
+            return {'success': False, 'error': f'Validation error: {e}', 'warnings': [], 'data': {}}
 
     def _analyze_transaction_revert(self, tx_hash_hex, transaction, receipt):
         """Comprehensive transaction revert analysis"""
