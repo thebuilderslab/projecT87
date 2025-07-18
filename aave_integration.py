@@ -339,12 +339,6 @@ class AaveArbitrumIntegration:
         except Exception as e:
             print(f"❌ Zapper fallback failed: {e}")
             return -1
-```
-            return known_balances.get(token_address.lower(), -1)
-
-        except Exception as e:
-            print(f"❌ Zapper fallback failed: {e}")
-            return -1
 
     def _get_balance_current_rpc_enhanced(self, token_address):
         """Enhanced balance retrieval with current RPC"""
@@ -884,6 +878,22 @@ class AaveArbitrumIntegration:
             print(f"⚠️ Using fallback decimals {decimals} for {token_address}")
             return int(amount * (10 ** decimals))
 
+    def _convert_usd_to_wei(self, usd_amount, token_address):
+        """Convert USD amount to wei for specific token"""
+        try:
+            # For USDC, 1 USD = 1 USDC
+            if token_address.lower() == self.usdc_address.lower():
+                return int(usd_amount * (10 ** 6))  # USDC has 6 decimals
+            else:
+                # For other tokens, would need price conversion
+                # For now, assume 1:1 ratio or implement price fetching
+                token_contract = self.w3.eth.contract(address=token_address, abi=self.erc20_abi)
+                decimals = token_contract.functions.decimals().call()
+                return int(usd_amount * (10 ** decimals))
+        except Exception as e:
+            print(f"⚠️ USD to wei conversion failed: {e}")
+            return int(usd_amount * (10 ** 18))  # Default 18 decimals
+
     def _execute_borrow_transaction(self, w3_instance, pool_contract, token_address, 
                                    amount_wei, interest_rate_mode, user_address):
         """Execute borrow transaction with enhanced error handling"""
@@ -1107,8 +1117,6 @@ class AaveArbitrumIntegration:
                 'gas': 500000,  # Conservative high limit
                 'gasPrice': self.w3.to_wei(1, 'gwei')  # 1 gwei minimum
             }
-
-            gas_limit = gas_limits.get(operation_type, gas_limits['default'])
             total_multiplier = base_multiplier * condition_multipliers.get(market_condition, 1.1)
 
             print(f"   Network congestion factor: {network_congestion:.2f}")
