@@ -1,6 +1,6 @@
 {
-  "timestamp": 1752810971.0904877,
-  "datetime": "2025-07-18T03:56:11.090489",
+  "timestamp": 1752811016.064102,
+  "datetime": "2025-07-18T03:56:56.064103",
   "overall_status": "CRITICAL",
   "critical_issues": [
     "Syntax error in aave_integration.py: expected 'except' or 'finally' block (aave_integration.py, line 337)",
