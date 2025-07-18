@@ -1,0 +1,37 @@
+[AGENT] 🔄 Borrow attempt 2/3
+[AGENT] 🔧 Attempt 2: nonce=1473, gas_price=21418200
+[AGENT] ✅ Borrow successful: 0x286f37a92602a141e970b7ef02e3a4cf0c28cdf1618777f65867657e878bc053
+[AGENT] ❌ Borrow reverted: 0x286f37a92602a141e970b7ef02e3a4cf0c28cdf1618777f65867657e878bc053
+[AGENT] 🔄 Borrow attempt 3/3
+[AGENT] 🔧 Attempt 3: nonce=1474, gas_price=24826200
+[AGENT] ✅ Borrow successful: 0x66d2cbdf857efd83321e340765a546d8e2e5d8a6d283718c69652f70d850eb6f
+[AGENT] ❌ Borrow reverted: 0x66d2cbdf857efd83321e340765a546d8e2e5d8a6d283718c69652f70d850eb6f
+[AGENT] ❌ Enhanced borrow attempt 2 failed - no result
+[AGENT] 🔄 Enhanced borrow attempt 3/3
+[AGENT] 🏦 Borrowing $10.00 worth of 0xAf88D065e77C8cF0EAEfF3e253e648A15CEe23dC
+[AGENT] 🔢 Borrowing 10000000 wei (10.0 USD)
+[AGENT] 🔧 Getting optimized gas for aave_borrow in normal conditions
+[AGENT] ⛽ Network gas conditions:
+[AGENT] Current gas price: 0.01 gwei
+[AGENT] Base fee: 0.01 gwei
+[AGENT] Network congestion factor: 1.00
+[AGENT] Total gas multiplier: 1.32
+[AGENT] ✅ EIP-1559 gas params:
+[AGENT] Gas limit: 400,000
+[AGENT] Max fee: 0.52 gwei
+[AGENT] Priority fee: 0.50 gwei
+[AGENT] 🔄 Borrow attempt 1/3
+[AGENT] 🔧 Attempt 1: nonce=1475, gas_price=17587500
+[AGENT] ✅ Borrow successful: 0x8519170d8f7bbc395608e2024e4798aad9f45dc0803161a11235d05c01640dea
+[AGENT] ❌ Borrow reverted: 0x8519170d8f7bbc395608e2024e4798aad9f45dc0803161a11235d05c01640dea
+[AGENT] 🔄 Borrow attempt 2/3
+[AGENT] 🔧 Attempt 2: nonce=1476, gas_price=21187800
+[AGENT] ✅ Borrow successful: 0xe1b38ba8add4b860141864c24812412aecd65a1172d10b71a7465fdb37c2b9af
+[AGENT] ❌ Borrow reverted: 0xe1b38ba8add4b860141864c24812412aecd65a1172d10b71a7465fdb37c2b9af
+[AGENT] 🔄 Borrow attempt 3/3
+[AGENT] 🔧 Attempt 3: nonce=1477, gas_price=24639300
+[AGENT] ✅ Borrow successful: 0x6cf857257fbcc504f51654d04a32d817b157ead3b961d845177c132128dbb717
+[AGENT] ❌ Borrow reverted: 0x6cf857257fbcc504f51654d04a32d817b157ead3b961d845177c132128dbb717
+[AGENT] ❌ Enhanced borrow attempt 3 failed - no result
+[AGENT] ❌ All 3 borrow attempts failed
+[AGENT] ❌ All borrow attempts failed - performing detailed analysis...
