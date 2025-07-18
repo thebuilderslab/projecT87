@@ -1,12 +1,12 @@
 {
-  "timestamp": 1752809972.8321826,
-  "datetime": "2025-07-18T03:39:32.832184",
+  "timestamp": 1752810105.625004,
+  "datetime": "2025-07-18T03:41:45.625006",
   "overall_status": "CRITICAL",
   "critical_issues": [
-    "Syntax error in aave_integration.py: invalid syntax (aave_integration.py, line 336)",
-    "Agent initialization failed: invalid syntax (aave_integration.py, line 336)",
-    "Aave integration import error: invalid syntax (aave_integration.py, line 336)",
-    "Cannot test autonomous functions: invalid syntax (aave_integration.py, line 336)"
+    "Syntax error in aave_integration.py: invalid syntax (aave_integration.py, line 1036)",
+    "Agent initialization failed: invalid syntax (aave_integration.py, line 1036)",
+    "Aave integration import error: invalid syntax (aave_integration.py, line 1036)",
+    "Cannot test autonomous functions: invalid syntax (aave_integration.py, line 1036)"
   ],
   "warnings": [
     "PRIVATE_KEY may have incorrect format"
@@ -21,20 +21,20 @@
       "arbitrum_testnet_agent.py": "\u2705 Valid syntax",
       "web_dashboard.py": "\u2705 Valid syntax",
       "complete_autonomous_launcher.py": "\u2705 Valid syntax",
-      "aave_integration.py": "\u274c Syntax error: invalid syntax (aave_integration.py, line 336)",
+      "aave_integration.py": "\u274c Syntax error: invalid syntax (aave_integration.py, line 1036)",
       "uniswap_integration.py": "\u2705 Valid syntax",
       "aave_health_monitor.py": "\u2705 Valid syntax",
       "gas_fee_calculator.py": "\u2705 Valid syntax"
     },
     "agent": {
-      "error": "\u274c Failed to initialize: invalid syntax (aave_integration.py, line 336)"
+      "error": "\u274c Failed to initialize: invalid syntax (aave_integration.py, line 1036)"
     },
     "dashboard": {
       "import": "\u2705 Dashboard imports successfully",
       "live_data": "\u2705 Live data function working"
     },
     "defi_integrations": {
-      "aave_import": "\u274c Aave import error: invalid syntax (aave_integration.py, line 336)",
+      "aave_import": "\u274c Aave import error: invalid syntax (aave_integration.py, line 1036)",
       "uniswap_import": "\u2705 Uniswap integration imports",
       "health_monitor_import": "\u2705 Health monitor imports",
       "gas_calculator_import": "\u2705 Gas calculator imports"
@@ -56,7 +56,7 @@
   },
   "function_tests": {
     "autonomous_functions": {
-      "agent_creation": "\u274c Cannot create agent: invalid syntax (aave_integration.py, line 336)"
+      "agent_creation": "\u274c Cannot create agent: invalid syntax (aave_integration.py, line 1036)"
     }
   },
   "recommendations": []
