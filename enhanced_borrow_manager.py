@@ -298,6 +298,50 @@ class EnhancedBorrowManager:
         try:
             print("🔄 Mechanism 3: Manual step-by-step borrow with retry logic")
 
+            # Enhanced pre-validation before attempting borrow
+            print(f"🔍 Enhanced pre-borrow validation...")
+            
+            # Check current account data from Aave
+            pool_abi = [{
+                "inputs": [{"name": "user", "type": "address"}],
+                "name": "getUserAccountData",
+                "outputs": [
+                    {"name": "totalCollateralBase", "type": "uint256"},
+                    {"name": "totalDebtBase", "type": "uint256"},
+                    {"name": "availableBorrowsBase", "type": "uint256"},
+                    {"name": "currentLiquidationThreshold", "type": "uint256"},
+                    {"name": "ltv", "type": "uint256"},
+                    {"name": "healthFactor", "type": "uint256"}
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            }]
+            
+            pool_contract = self.agent.w3.eth.contract(
+                address=self.agent.aave_pool_address,
+                abi=pool_abi
+            )
+            
+            user_address = Web3.to_checksum_address(self.agent.address)
+            account_data = pool_contract.functions.getUserAccountData(user_address).call()
+            
+            available_borrows_usd = account_data[2] / (10**8)
+            current_hf = account_data[5] / (10**18) if account_data[5] > 0 else float('inf')
+            
+            print(f"   Available borrows: ${available_borrows_usd:.2f}")
+            print(f"   Current HF: {current_hf:.4f}")
+            print(f"   Requested: ${amount_usd:.2f}")
+            
+            # Validate borrowing capacity with safety margin
+            if amount_usd > available_borrows_usd * 0.9:  # Use 90% of available
+                safe_amount = available_borrows_usd * 0.8  # Reduce to 80%
+                print(f"⚠️ Reducing borrow amount for safety: ${safe_amount:.2f}")
+                amount_usd = safe_amount
+                
+            if amount_usd < 0.5:
+                print(f"❌ Amount too small after safety reduction: ${amount_usd:.2f}")
+                return None
+
             # Get token decimals and convert amount
             decimals = self._get_token_decimals(token_address)
             if token_address.lower() == self.agent.usdc_address.lower():
@@ -305,8 +349,6 @@ class EnhancedBorrowManager:
             else:
                 print(f"❌ Unsupported token: {token_address}")
                 return None
-
-            user_address = Web3.to_checksum_address(self.agent.address)
 
             print(f"💱 Amount: ${amount_usd} = {amount_wei} wei")
             print(f"👤 User: {user_address}")
@@ -355,16 +397,40 @@ class EnhancedBorrowManager:
                     tx_hash = self.agent.w3.eth.send_raw_transaction(signed_txn.rawTransaction)
 
                     tx_hash_hex = tx_hash.hex()
-                    print(f"✅ Mechanism 3 success on attempt {attempt + 1}: {tx_hash_hex}")
+                    print(f"✅ Borrow successful: {tx_hash_hex}")
 
-                    # Wait for confirmation
+                    # Wait for confirmation with detailed error analysis
                     try:
                         receipt = self.agent.w3.eth.wait_for_transaction_receipt(tx_hash, timeout=120)
                         if receipt.status == 1:
-                            print(f"✅ Transaction confirmed: {tx_hash_hex}")
+                            print(f"🎉 BORROW CONFIRMED: {tx_hash_hex}")
                             return tx_hash_hex
                         else:
-                            print(f"❌ Transaction reverted: {tx_hash_hex}")
+                            print(f"❌ Borrow reverted: {tx_hash_hex}")
+                            
+                            # Try to get revert reason
+                            try:
+                                # Replay transaction to get revert reason
+                                self.agent.w3.eth.call(transaction, receipt.blockNumber)
+                            except Exception as revert_error:
+                                error_msg = str(revert_error)
+                                print(f"   🔍 Revert reason: {error_msg}")
+                                
+                                # Check for specific Aave errors
+                                if "HEALTH_FACTOR_LOWER_THAN_LIQUIDATION_THRESHOLD" in error_msg:
+                                    print(f"   💡 Solution: Reduce borrow amount or add more collateral")
+                                    # Try with smaller amount
+                                    if amount_usd > 5.0:
+                                        print(f"   🔄 Retrying with smaller amount...")
+                                        smaller_amount = amount_usd * 0.5
+                                        return self._try_manual_step_borrow(smaller_amount, token_address)
+                                elif "COLLATERAL_BALANCE_IS_ZERO" in error_msg:
+                                    print(f"   💡 Solution: Add collateral before borrowing")
+                                    return None
+                                elif "BORROWING_NOT_ENABLED" in error_msg:
+                                    print(f"   💡 Solution: Asset borrowing is disabled")
+                                    return None
+                                
                             continue
                     except Exception as wait_error:
                         print(f"⚠️ Confirmation timeout: {wait_error}")
