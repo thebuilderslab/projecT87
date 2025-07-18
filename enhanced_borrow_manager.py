@@ -530,42 +530,7 @@ class EnhancedBorrowManager:
 
         return False
 
-    def calculate_safe_borrow_amount(self, growth_amount, available_borrows_usd):
-        """Calculate safe borrow amount with proper fallbacks and manual override detection"""
-        print(f"🧮 Calculating safe borrow amount:")
-        print(f"   Growth amount: ${growth_amount:.2f}")
-        print(f"   Available capacity: ${available_borrows_usd:.2f}")
-
-        # Check for manual override first
-        manual_override_active = self.detect_manual_override()
-
-        if manual_override_active:
-            print(f"🔧 Manual override active - using percentage-based calculation")
-            # Use 20% of available borrowing capacity for manual override
-            safe_amount = available_borrows_usd * 0.20
-            safe_amount = max(1.0, min(safe_amount, available_borrows_usd * 0.80))  # Between $1 and 80% of capacity
-            print(f"💰 Manual override borrow amount: ${safe_amount:.2f}")
-            return safe_amount
-
-        # Normal growth-based calculation
-        if growth_amount > 0:
-            # Use 40% of the growth amount, but cap at 60% of available capacity
-            growth_based_amount = growth_amount * 0.40
-            capacity_limit = available_borrows_usd * 0.60
-            safe_amount = min(growth_based_amount, capacity_limit)
-        else:
-            print(f"⚠️ Negative growth detected: ${growth_amount:.2f}")
-            # For negative growth, use small percentage of available capacity
-            safe_amount = available_borrows_usd * 0.10  # Use 10% of available capacity
-
-        # Ensure minimum viable amount
-        safe_amount = max(1.0, safe_amount)
-
-        # Ensure we don't exceed available capacity
-        safe_amount = min(safe_amount, available_borrows_usd * 0.80)
-
-        print(f"💰 Calculated safe borrow amount: ${safe_amount:.2f}")
-        return safe_amount
+    
 
     def get_optimized_gas_params(self, operation_type='default', market_condition='normal'):
         """
@@ -610,30 +575,4 @@ class EnhancedBorrowManager:
                 'gasPrice': self.agent.w3.to_wei(1, 'gwei') if hasattr(self.agent, 'w3') else 1000000000
             }
 
-    def detect_manual_override(self):
-        """
-        Detect when manual override is active through multiple indicators
-        """
-        # Check for manual trigger files
-        manual_files = ['trigger_test.flag', 'manual_override.flag', 'force_borrow.flag']
-        for file_path in manual_files:
-            if os.path.exists(file_path):
-                print(f"🔧 Manual override detected: {file_path} exists")
-                return True
-
-        # Check if manual_override_active attribute is set
-        if hasattr(self.agent, 'manual_override_active') and self.agent.manual_override_active:
-            print(f"🔧 Manual override detected: manual_override_active = True")
-            return True
-
-        # Check for test mode
-        if os.path.exists('test_mode.flag'):
-            print(f"🧪 Test mode detected - treating as manual override")
-            return True
-
-        # Check environment variable
-        if os.getenv('MANUAL_OVERRIDE', '').lower() in ['true', '1', 'yes']:
-            print(f"🔧 Manual override detected: MANUAL_OVERRIDE environment variable")
-            return True
-
-        return False
+    

@@ -648,7 +648,7 @@ class ArbitrumTestnetAgent:
 
                 if gas_price is not None:
                     # Comprehensive validation for gas price (1 wei to 1000 gwei)
-                    if self._is_valid_numeric(gas_price, min_val=1, max_val=1000000000000):
+                    if self._is_valid_numeric(gas_price, min_val=1, max_val=100000000000):
                         safe_gas_price = int(gas_price)
                     else:
                         print(f"⚠️ Invalid gas price detected: {gas_price} (type: {type(gas_price)}), using fallback: {safe_gas_price}")
@@ -1987,9 +1987,10 @@ class ArbitrumTestnetAgent:
             print(f"📊 Baseline updated after successful operation:")
             print(f"   Old baseline: ${old_baseline:.2f}")
             print(f"   New baseline: ${new_collateral_usd:.2f}")
-            print(f"   Next trigger at: ${new_collateral_usd + 12.0:.2f}")
+            print(f"   Next trigger at: ${new_collateral_usd + 12:.2f}")
 
             # Save updated baseline
+            import json
             baseline_data = {
                 'last_collateral_value_usd': self.last_collateral_value_usd,
                 'baseline_initialized': True,
@@ -1998,7 +1999,24 @@ class ArbitrumTestnetAgent:
                 'update_reason': 'successful_operation'
             }
 
+            # Save baseline data to file
+            return self.save_baseline_data(baseline_data)
 
+        except Exception as e:
+            print(f"❌ Baseline update failed: {e}")
+            return False
+
+    def save_baseline_data(self, baseline_data):
+        """Save baseline data to file with proper error handling"""
+        try:
+            with open('agent_baseline.json', 'w') as f:
+                import json
+                json.dump(baseline_data, f, indent=2)
+            print(f"✅ Baseline data saved successfully")
+            return True
+        except Exception as e:
+            print(f"❌ Failed to save baseline data: {e}")
+            return False
 
     def detect_manual_override(self):
         """
@@ -2157,17 +2175,6 @@ class ArbitrumTestnetAgent:
 
         except Exception as e:
             print(f"⚠️ Failed to record operation: {e}")
-            return False
-
-    def save_baseline_data(self, baseline_data):
-        """Save baseline data to file with proper error handling"""
-        try:
-            with open('agent_baseline.json', 'w') as f:
-                import json
-                json.dump(baseline_data, f, indent=2)
-            return True
-        except Exception as e:
-            print(f"❌ Failed to save baseline data: {e}")
             return False
 
     def analyze_borrow_failure(self):
