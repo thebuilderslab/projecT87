@@ -609,3 +609,31 @@ class EnhancedBorrowManager:
                 'gas': 400000,
                 'gasPrice': self.agent.w3.to_wei(1, 'gwei') if hasattr(self.agent, 'w3') else 1000000000
             }
+
+    def detect_manual_override(self):
+        """
+        Detect when manual override is active through multiple indicators
+        """
+        # Check for manual trigger files
+        manual_files = ['trigger_test.flag', 'manual_override.flag', 'force_borrow.flag']
+        for file_path in manual_files:
+            if os.path.exists(file_path):
+                print(f"🔧 Manual override detected: {file_path} exists")
+                return True
+
+        # Check if manual_override_active attribute is set
+        if hasattr(self.agent, 'manual_override_active') and self.agent.manual_override_active:
+            print(f"🔧 Manual override detected: manual_override_active = True")
+            return True
+
+        # Check for test mode
+        if os.path.exists('test_mode.flag'):
+            print(f"🧪 Test mode detected - treating as manual override")
+            return True
+
+        # Check environment variable
+        if os.getenv('MANUAL_OVERRIDE', '').lower() in ['true', '1', 'yes']:
+            print(f"🔧 Manual override detected: MANUAL_OVERRIDE environment variable")
+            return True
+
+        return False
