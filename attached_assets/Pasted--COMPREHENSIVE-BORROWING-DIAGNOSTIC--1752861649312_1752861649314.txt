@@ -1,0 +1,884 @@
+ COMPREHENSIVE BORROWING DIAGNOSTIC
+============================================================
+🤖 Initializing Arbitrum Agent...
+🤖 Initializing Arbitrum Testnet Agent...
+DEBUG: WALLET_PRIVATE_KEY loaded from environment: [REDACTED]
+🔍 DEBUG: Starting RPC manager initialization...
+🔍 DEBUG: Network mode: mainnet
+DEBUG: ALCHEMY_RPC_URL loaded from environment: https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-bM9XgIIU
+🔍 DEBUG: ALCHEMY_RPC_URL from env: https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-bM9XgIIU
+🔗 DEBUG: Added Alchemy RPC to endpoints list: https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-...
+🔍 DEBUG: Total RPC endpoints to test: 5
+   1. https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-bM9XgIIU...
+   2. https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f93...
+   3. https://arb1.arbitrum.io/rpc...
+   4. https://arbitrum-one.public.blastapi.io...
+   5. https://arbitrum-one.publicnode.com...
+🔍 Testing RPC: https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-bM9XgIIU
+✅ RPC passed tests: https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-bM9XgIIU (0.25s)
+🔍 Testing RPC: https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f938ff891c141
+✅ RPC passed tests: https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f938ff891c141 (0.55s)
+🔍 Testing RPC: https://arb1.arbitrum.io/rpc
+✅ RPC passed tests: https://arb1.arbitrum.io/rpc (0.38s)
+🔍 Testing RPC: https://arbitrum-one.public.blastapi.io
+✅ RPC passed tests: https://arbitrum-one.public.blastapi.io (0.19s)
+🔍 Testing RPC: https://arbitrum-one.publicnode.com
+✅ RPC passed tests: https://arbitrum-one.publicnode.com (0.96s)
+📊 RPC Test Results: 5/5 endpoints working
+🌐 Operating on Arbitrum Mainnet
+🔍 DEBUG: Final RPC selection results:
+   Primary RPC: https://arbitrum-one.public.blastapi.io
+   Fallback RPCs: 4 available
+🚨 NETWORK_MODE from environment: 'mainnet'
+🔗 Primary RPC: https://arbitrum-one.public.blastapi.io
+🔄 Fallback RPCs: 4 available
+🔍 DEBUG: Attempting to create Web3 connection with primary RPC: https://arbitrum-one.public.blastapi.io
+✅ Successfully connected to primary RPC: https://arbitrum-one.public.blastapi.io
+🔍 DEBUG: Web3 connection verified - Chain ID: 42161, Latest Block: 359072591
+🔑 Wallet Address: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+💰 AGENT INITIALIZED WITH WALLET: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+✅ Private key format validated and normalized
+📋 Mainnet Token addresses verified:
+   USDC: 0xAf88D065e77C8cF0EAEfF3e253e648A15CEe23dC
+   WBTC: 0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f
+   WETH: 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1
+   DAI: 0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1
+   Aave Pool: 0x794a61358D6845594F94dc1DB02A252b5b4814aD
+📋 Token addresses verified:
+   USDC: 0xAf88D065e77C8cF0EAEfF3e253e648A15CEe23dC
+   WBTC: 0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f
+   WETH: 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1
+   DAI: 0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1
+   Aave Pool: 0x794a61358D6845594F94dc1DB02A252b5b4814aD
+💰 Initialized last_collateral_value_usd to 0.0 (will sync with actual position)
+📊 Initialized last_collateral_value_usd to: 0.0
+🚀 Initializing Real DeFi Integrations...
+🌐 Initializing for Arbitrum Mainnet (Chain ID: 42161)
+🪙 ARB Token Address (checksummed): 0x912CE59144191C1204E64559FE8253a0e49E6548
+🏦 Aave Integration - Contract Address Verification (Arbitrum Mainnet):
+   Pool: 0x794a61358D6845594F94dc1DB02A252b5b4814aD
+   Data Provider: 0x69FA688f1Dc47d4B5d8029D5a35FB7a548310654
+   WETH: 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1
+   WBTC: 0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f
+   DAI: 0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1
+   USDC: 0xAf88D065e77C8cF0EAEfF3e253e648A15CEe23dC
+   ARB: 0x912CE59144191C1204E64559FE8253a0e49E6548
+✅ Pool address properly checksummed
+✅ WETH address properly checksummed
+✅ WBTC address properly checksummed
+✅ DAI address properly checksummed
+✅ USDC address properly checksummed
+✅ ARB address properly checksummed
+✅ All contract addresses validated successfully for Arbitrum Mainnet
+🏦 Aave integration initialized for 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+🔄 Uniswap V3 integration initialized
+🪙 ARB Address (Arbitrum Sepolia): 0x912CE59144191C1204E64559FE8253a0e49E6548
+📊 Health Monitor Addresses:
+   User: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+   Data Provider: 0x69FA688f1Dc47d4B5d8029D5a35FB7a548310654
+   ARB Token: 0x912CE59144191C1204E64559FE8253a0e49E6548
+📊 Enhanced Aave Health Monitor initialized for 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+✅ Initialized Real Aave, Uniswap, and Health Monitor Integrations.
+⛽ Gas Calculator: Arbitrum Mainnet
+⛽ Initialized Gas Calculator.
+🏦 Initialized Enhanced Borrow Manager.
+🚀 Approving USDC for Aave Pool...
+🔍 Contract function validation:
+   Token contract: 0xAf88D065e77C8cF0EAEfF3e253e648A15CEe23dC
+   Approve function found: ✅
+   Function object: <Function approve>
+🔧 Using reduced approval for zero balance: 1000000000000
+🔓 Approving 1000000000000 wei for token 0xAf88D065e77C8cF0EAEfF3e253e648A15CEe23dC
+🔢 Using pending nonce: 1816 for approval
+🔢 Attempt 1: Using fresh pending nonce 1816
+🔍 Approve parameters validation:
+   Spender: 0x794a61358D6845594F94dc1DB02A252b5b4814aD (type: <class 'str'>)
+   Amount: 1000000000000 (type: <class 'int'>)
+🔍 COMPREHENSIVE Pre-transaction validation:
+   ⚠️ Balance check failed: Could not transact with/call contract function, is contract deployed correctly and chain synced?
+   🔧 Proceeding with transaction anyway - this might be an RPC issue
+   ✅ Contract compatibility validated, estimated gas: 34838
+✅ Token approval transaction sent to network: 0x239ceb000f4feb6351347ae33fa4622bb69f1ec63aa279202b2267ac26a82679
+⏳ Waiting for transaction receipt for 0x239ceb000f4feb6351347ae33fa4622bb69f1ec63aa279202b2267ac26a82679 (timeout: 300s)...
+✅ Token approval successful: 0x239ceb000f4feb6351347ae33fa4622bb69f1ec63aa279202b2267ac26a82679
+✅ USDC approved for Aave with optimized gas
+🚀 Approving WBTC for Aave Pool...
+🔍 Contract function validation:
+   Token contract: 0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f
+   Approve function found: ✅
+   Function object: <Function approve>
+🔧 Using reduced approval for zero balance: 100000000000000
+🔓 Approving 100000000000000 wei for token 0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f
+🔢 Using pending nonce: 1817 for approval
+🔢 Attempt 1: Using fresh pending nonce 1817
+🔍 Approve parameters validation:
+   Spender: 0x794a61358D6845594F94dc1DB02A252b5b4814aD (type: <class 'str'>)
+   Amount: 100000000000000 (type: <class 'int'>)
+🔍 COMPREHENSIVE Pre-transaction validation:
+   💰 Current token balance: 0.00000000
+   ❌ CRITICAL: Zero token balance detected
+   💡 SOLUTION: This is the likely cause of approval failures
+   🔧 RECOMMENDATION: Fund wallet with this token first
+   ⚠️ Proceeding with minimal approval amount for future funding
+   🔐 Current allowance: 115792089237316195423570985008687907853269984665640564039457584007913129618847
+   ✅ Sufficient allowance already exists (115792089237316195423570985008687907853269984665640564039457584007913129618847 >= 100000000000)
+   ⚡ Skipping unnecessary approval transaction
+✅ WBTC approved for Aave with optimized gas
+🚀 Approving WETH for Aave Pool...
+🔍 Contract function validation:
+   Token contract: 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1
+   Approve function found: ✅
+   Function object: <Function approve>
+🔧 Using reduced approval for zero balance: 1000000000000000000000000
+🔓 Approving 1000000000000000000000000 wei for token 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1
+🔢 Using pending nonce: 1817 for approval
+🔢 Attempt 1: Using fresh pending nonce 1817
+🔍 Approve parameters validation:
+   Spender: 0x794a61358D6845594F94dc1DB02A252b5b4814aD (type: <class 'str'>)
+   Amount: 1000000000000000000000000 (type: <class 'int'>)
+🔍 COMPREHENSIVE Pre-transaction validation:
+   💰 Current token balance: 0.00000000
+   ❌ CRITICAL: Zero token balance detected
+   💡 SOLUTION: This is the likely cause of approval failures
+   🔧 RECOMMENDATION: Fund wallet with this token first
+   ⚠️ Proceeding with minimal approval amount for future funding
+   🔐 Current allowance: 115792089237316195423570985008687907853269984665640564039457579914298733187402
+   ✅ Sufficient allowance already exists (115792089237316195423570985008687907853269984665640564039457579914298733187402 >= 1000000000000000000000)
+   ⚡ Skipping unnecessary approval transaction
+✅ WETH approved for Aave with optimized gas
+🚀 Approving DAI for Aave Pool...
+🔍 Contract function validation:
+   Token contract: 0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1
+   Approve function found: ✅
+   Function object: <Function approve>
+🔓 Using infinite approval (MAX_UINT256) - user has balance
+🔓 Approving 115792089237316195423570985008687907853269984665640564039457584007913129639935 wei for token 0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1
+🔢 Using pending nonce: 1817 for approval
+🔢 Attempt 1: Using fresh pending nonce 1817
+🔍 Approve parameters validation:
+   Spender: 0x794a61358D6845594F94dc1DB02A252b5b4814aD (type: <class 'str'>)
+   Amount: 115792089237316195423570985008687907853269984665640564039457584007913129639935 (type: <class 'int'>)
+🔍 COMPREHENSIVE Pre-transaction validation:
+   💰 Current token balance: 13.76047076
+   🔐 Current allowance: 115792089237316195423570985008687907853269984665640564039457584007913129639935
+   ✅ Sufficient allowance already exists (115792089237316195423570985008687907853269984665640564039457584007913129639935 >= 115792089237316195423570985008687907853269984665640564039457584007913129639935)
+   ⚡ Skipping unnecessary approval transaction
+✅ DAI approved for Aave with optimized gas
+✅ All DeFi integrations initialized successfully!
+✅ Agent initialized successfully
+
+🏥 DIAGNOSING HEALTH FACTOR VALIDATION...
+🔍 Enhanced dashboard data fetching with validation...
+🔄 Dashboard: Connecting to running autonomous agent...
+🤖 Initializing Arbitrum Testnet Agent...
+DEBUG: WALLET_PRIVATE_KEY loaded from environment: [REDACTED]
+🔍 DEBUG: Starting RPC manager initialization...
+🔍 DEBUG: Network mode: mainnet
+DEBUG: ALCHEMY_RPC_URL loaded from environment: https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-bM9XgIIU
+🔍 DEBUG: ALCHEMY_RPC_URL from env: https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-bM9XgIIU
+🔗 DEBUG: Added Alchemy RPC to endpoints list: https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-...
+🔍 DEBUG: Total RPC endpoints to test: 5
+   1. https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-bM9XgIIU...
+   2. https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f93...
+   3. https://arb1.arbitrum.io/rpc...
+   4. https://arbitrum-one.public.blastapi.io...
+   5. https://arbitrum-one.publicnode.com...
+🔍 Testing RPC: https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-bM9XgIIU
+🔍 Autonomous agent running check: False
+⚠️ Dashboard: Autonomous agent not running, using cached data
+✅ Dashboard: Successfully connected to autonomous agent data
+✅ RPC passed tests: https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-bM9XgIIU (0.17s)
+🔍 Testing RPC: https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f938ff891c141
+✅ RPC passed tests: https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f938ff891c141 (0.29s)
+🔍 Testing RPC: https://arb1.arbitrum.io/rpc
+✅ RPC passed tests: https://arb1.arbitrum.io/rpc (0.34s)
+🔍 Testing RPC: https://arbitrum-one.public.blastapi.io
+✅ RPC passed tests: https://arbitrum-one.public.blastapi.io (0.12s)
+🔍 Testing RPC: https://arbitrum-one.publicnode.com
+✅ RPC passed tests: https://arbitrum-one.publicnode.com (0.91s)
+📊 RPC Test Results: 5/5 endpoints working
+🌐 Operating on Arbitrum Mainnet
+🔍 DEBUG: Final RPC selection results:
+   Primary RPC: https://arbitrum-one.public.blastapi.io
+   Fallback RPCs: 4 available
+🚨 NETWORK_MODE from environment: 'mainnet'
+🔗 Primary RPC: https://arbitrum-one.public.blastapi.io
+🔄 Fallback RPCs: 4 available
+🔍 DEBUG: Attempting to create Web3 connection with primary RPC: https://arbitrum-one.public.blastapi.io
+✅ Successfully connected to primary RPC: https://arbitrum-one.public.blastapi.io
+🔍 DEBUG: Web3 connection verified - Chain ID: 42161, Latest Block: 359072647
+🔑 Wallet Address: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+💰 AGENT INITIALIZED WITH WALLET: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+✅ Private key format validated and normalized
+📋 Mainnet Token addresses verified:
+   USDC: 0xAf88D065e77C8cF0EAEfF3e253e648A15CEe23dC
+   WBTC: 0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f
+   WETH: 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1
+   DAI: 0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1
+   Aave Pool: 0x794a61358D6845594F94dc1DB02A252b5b4814aD
+📋 Token addresses verified:
+   USDC: 0xAf88D065e77C8cF0EAEfF3e253e648A15CEe23dC
+   WBTC: 0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f
+   WETH: 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1
+   DAI: 0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1
+   Aave Pool: 0x794a61358D6845594F94dc1DB02A252b5b4814aD
+💰 Initialized last_collateral_value_usd to 0.0 (will sync with actual position)
+📊 Initialized last_collateral_value_usd to: 0.0
+✅ Unified fetcher initialized for Aave Pool: 0x794a61358D6845594F94dc1DB02A252b5b4814aD
+🔍 LIVE AAVE FETCH Attempt 1: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+✅ LIVE AAVE DATA RETRIEVED:
+   Health Factor: 4.2627
+   Collateral: $190.09
+   Debt: $35.07
+   Available Borrows: $105.12
+   Data Source: LIVE_AAVE_CONTRACT
+   Data Quality: ✅ VALIDATED
+✅ Unified data validated: Data validated successfully
+📊 Using LIVE AAVE CONTRACT data: HF 4.2627
+🤖 Initializing Arbitrum Testnet Agent...
+DEBUG: WALLET_PRIVATE_KEY loaded from environment: [REDACTED]
+🔍 DEBUG: Starting RPC manager initialization...
+🔍 DEBUG: Network mode: mainnet
+DEBUG: ALCHEMY_RPC_URL loaded from environment: https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-bM9XgIIU
+🔍 DEBUG: ALCHEMY_RPC_URL from env: https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-bM9XgIIU
+🔗 DEBUG: Added Alchemy RPC to endpoints list: https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-...
+🔍 DEBUG: Total RPC endpoints to test: 5
+   1. https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-bM9XgIIU...
+   2. https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f93...
+   3. https://arb1.arbitrum.io/rpc...
+   4. https://arbitrum-one.public.blastapi.io...
+   5. https://arbitrum-one.publicnode.com...
+🔍 Testing RPC: https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-bM9XgIIU
+✅ RPC passed tests: https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-bM9XgIIU (0.20s)
+🔍 Testing RPC: https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f938ff891c141
+✅ RPC passed tests: https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f938ff891c141 (0.29s)
+🔍 Testing RPC: https://arb1.arbitrum.io/rpc
+✅ RPC passed tests: https://arb1.arbitrum.io/rpc (0.35s)
+🔍 Testing RPC: https://arbitrum-one.public.blastapi.io
+✅ RPC passed tests: https://arbitrum-one.public.blastapi.io (0.11s)
+🔍 Testing RPC: https://arbitrum-one.publicnode.com
+✅ RPC passed tests: https://arbitrum-one.publicnode.com (0.76s)
+📊 RPC Test Results: 5/5 endpoints working
+🌐 Operating on Arbitrum Mainnet
+🔍 DEBUG: Final RPC selection results:
+   Primary RPC: https://arbitrum-one.public.blastapi.io
+   Fallback RPCs: 4 available
+🚨 NETWORK_MODE from environment: 'mainnet'
+🔗 Primary RPC: https://arbitrum-one.public.blastapi.io
+🔄 Fallback RPCs: 4 available
+🔍 DEBUG: Attempting to create Web3 connection with primary RPC: https://arbitrum-one.public.blastapi.io
+✅ Successfully connected to primary RPC: https://arbitrum-one.public.blastapi.io
+🔍 DEBUG: Web3 connection verified - Chain ID: 42161, Latest Block: 359072655
+🔑 Wallet Address: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+💰 AGENT INITIALIZED WITH WALLET: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+✅ Private key format validated and normalized
+📋 Mainnet Token addresses verified:
+   USDC: 0xAf88D065e77C8cF0EAEfF3e253e648A15CEe23dC
+   WBTC: 0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f
+   WETH: 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1
+   DAI: 0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1
+   Aave Pool: 0x794a61358D6845594F94dc1DB02A252b5b4814aD
+📋 Token addresses verified:
+   USDC: 0xAf88D065e77C8cF0EAEfF3e253e648A15CEe23dC
+   WBTC: 0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f
+   WETH: 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1
+   DAI: 0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1
+   Aave Pool: 0x794a61358D6845594F94dc1DB02A252b5b4814aD
+💰 Initialized last_collateral_value_usd to 0.0 (will sync with actual position)
+📊 Initialized last_collateral_value_usd to: 0.0
+🔍 LIVE AAVE FETCH Attempt 1: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+✅ LIVE AAVE DATA RETRIEVED:
+   Health Factor: 4.2627
+   Collateral: $190.09
+   Debt: $35.07
+   Available Borrows: $105.12
+   Data Source: LIVE_AAVE_CONTRACT
+   Data Quality: ✅ VALIDATED
+✅ Unified data validated: Data validated successfully
+📊 Using LIVE AAVE CONTRACT data: HF 4.2627
+✅ Dashboard method successful with validated data!
+   Health Factor: 4.2627
+   Collateral: $190.09
+   Debt: $35.07
+   Available Borrows: $105.12
+   Data Source: LIVE_AAVE_CONTRACT
+   Data Quality: ✅ VALIDATED
+   Live ETH price: $3599.71
+   Current Health Factor: 4.2627
+   Total Collateral: $190.09
+   Total Debt: $35.07
+   Available Borrows: $105.12
+✅ Health Factor validation passed
+
+⛽ DIAGNOSING GAS OPTIMIZATION...
+   Gas Limit: 300,000
+   Gas Price: 43,544,600 wei (0.044 gwei)
+   Network Gas Price: 19,793,000 wei (0.020 gwei)
+✅ Gas optimization diagnosis completed
+
+💰 DIAGNOSING TOKEN BALANCES...
+2025-07-18 17:58:56,990 - DEBUG - DEBUG: Checking ETH balance for wallet 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+2025-07-18 17:58:56,991 - DEBUG - Making request. Method: eth_getBalance
+2025-07-18 17:58:56,991 - DEBUG - Making request HTTP. URI: https://arbitrum-one.public.blastapi.io, Method: eth_getBalance
+2025-07-18 17:58:57,020 - DEBUG - https://arbitrum-one.public.blastapi.io:443 "POST / HTTP/1.1" 200 77
+2025-07-18 17:58:57,021 - DEBUG - Getting response HTTP. URI: https://arbitrum-one.public.blastapi.io, Method: eth_getBalance, Response: {'jsonrpc': '2.0', 'id': 71, 'result': '0x6f1573a31684f'}
+2025-07-18 17:58:57,021 - DEBUG - DEBUG: Raw ETH balance: 0.0019542068 ETH
+   ETH Balance: 0.001954 ETH
+2025-07-18 17:58:57,021 - DEBUG - DEBUG: Expected aToken addresses: {'WBTC': '0x6533afac2E7BCCB20dca161449A13A2D2d5B739A', 'WETH': '0xe50fA9b4c56454E2edF6BFf7c81b50c5F05aBE61', 'USDC': '0x724dc807b04555b71ed48a6896b6F41593b8C637'}
+2025-07-18 17:58:57,021 - DEBUG - DEBUG: ===== Checking WBTC Supplied Balance =====
+2025-07-18 17:58:57,021 - DEBUG - DEBUG: Token name: WBTC
+2025-07-18 17:58:57,021 - DEBUG - DEBUG: Underlying token address passed: 0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f
+2025-07-18 17:58:57,021 - DEBUG - DEBUG: Expected aToken address: 0x6533afac2E7BCCB20dca161449A13A2D2d5B739A
+2025-07-18 17:58:57,021 - DEBUG - DEBUG: Wallet address: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+2025-07-18 17:58:57,021 - DEBUG - DEBUG: Calling self.agent.aave.get_supplied_balance(0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f)
+2025-07-18 17:58:57,021 - DEBUG - DEBUG: get_supplied_balance called with token_address: 0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f
+2025-07-18 17:58:57,021 - DEBUG - DEBUG: Available aToken mappings: {'0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f': '0x6533afac2E7BCCB20dca161449A13A2D2d5B739A', '0x82aF49447D8a07e3bd95BD0d56f35241523fBab1': '0xe50fA9b4c56454E2edF6BFf7c81b50c5F05aBE61', '0xAf88D065e77C8cF0EAEfF3e253e648A15CEe23dC': '0x724dc807b04555b71ed48a6896b6F41593b8C637'}
+2025-07-18 17:58:57,022 - DEBUG - DEBUG: Normalized token address: 0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f
+2025-07-18 17:58:57,022 - DEBUG - DEBUG: Found aToken address: 0x6533afac2E7BCCB20dca161449A13A2D2d5B739A
+2025-07-18 17:58:57,022 - DEBUG - DEBUG: Checksummed aToken address: 0x6533afac2E7bCcb20DcA161449a13a2D2D5B739A
+2025-07-18 17:58:57,022 - DEBUG - DEBUG: Wallet address for balance check: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+2025-07-18 17:58:57,029 - DEBUG - DEBUG: aToken contract created successfully
+2025-07-18 17:58:57,030 - DEBUG - DEBUG: Calling balanceOf(0x5B823270e3719CDe8669e5e5326B455EaA8a350b) on aToken contract
+2025-07-18 17:58:57,032 - DEBUG - Making request. Method: eth_call
+2025-07-18 17:58:57,032 - DEBUG - Making request. Method: eth_chainId
+2025-07-18 17:58:57,032 - DEBUG - Making request HTTP. URI: https://arbitrum-one.public.blastapi.io, Method: eth_chainId
+2025-07-18 17:58:57,057 - DEBUG - https://arbitrum-one.public.blastapi.io:443 "POST / HTTP/1.1" 200 68
+2025-07-18 17:58:57,058 - DEBUG - Getting response HTTP. URI: https://arbitrum-one.public.blastapi.io, Method: eth_chainId, Response: {'jsonrpc': '2.0', 'id': 72, 'result': '0xa4b1'}
+2025-07-18 17:58:57,059 - DEBUG - Making request HTTP. URI: https://arbitrum-one.public.blastapi.io, Method: eth_call
+2025-07-18 17:58:57,089 - DEBUG - https://arbitrum-one.public.blastapi.io:443 "POST / HTTP/1.1" 200 64
+2025-07-18 17:58:57,089 - DEBUG - Getting response HTTP. URI: https://arbitrum-one.public.blastapi.io, Method: eth_call, Response: {'jsonrpc': '2.0', 'id': 73, 'result': '0x'}
+2025-07-18 17:58:57,090 - DEBUG - Making request. Method: eth_getCode
+2025-07-18 17:58:57,090 - DEBUG - Making request HTTP. URI: https://arbitrum-one.public.blastapi.io, Method: eth_getCode
+2025-07-18 17:58:57,119 - DEBUG - https://arbitrum-one.public.blastapi.io:443 "POST / HTTP/1.1" 200 64
+2025-07-18 17:58:57,119 - DEBUG - Getting response HTTP. URI: https://arbitrum-one.public.blastapi.io, Method: eth_getCode, Response: {'jsonrpc': '2.0', 'id': 74, 'result': '0x'}
+2025-07-18 17:58:57,119 - ERROR - ERROR: get_supplied_balance failed for 0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f: Could not transact with/call contract function, is contract deployed correctly and chain synced?
+Traceback (most recent call last):
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/web3/contract/utils.py", line 111, in call_contract_function
+    output_data = w3.codec.decode(output_types, return_data)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/eth_abi/codec.py", line 162, in decode
+    return cast(Tuple[Any, ...], decoder(stream))
+                                 ^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/eth_abi/decoding.py", line 131, in __call__
+    return self.decode(stream)
+           ^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/eth_utils/functional.py", line 47, in inner
+    return callback(fn(*args, **kwargs))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/eth_abi/decoding.py", line 224, in decode
+    self.validate_pointers(stream)
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/eth_abi/decoding.py", line 218, in validate_pointers
+    decoder(stream)
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/eth_abi/decoding.py", line 131, in __call__
+    return self.decode(stream)
+           ^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/eth_abi/decoding.py", line 250, in decode
+    raw_data = self.read_data_from_stream(stream)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/eth_abi/decoding.py", line 389, in read_data_from_stream
+    raise InsufficientDataBytes(
+eth_abi.exceptions.InsufficientDataBytes: Tried to read 32 bytes, only got 0 bytes.
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/runner/workspace/aave_integration.py", line 350, in get_supplied_balance
+    balance_wei = atoken_contract.functions.balanceOf(self.account.address).call()
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/web3/contract/contract.py", line 305, in call
+    return call_contract_function(
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/web3/contract/utils.py", line 129, in call_contract_function
+    raise BadFunctionCallOutput(msg) from e
+web3.exceptions.BadFunctionCallOutput: Could not transact with/call contract function, is contract deployed correctly and chain synced?
+❌ Error getting supplied balance for 0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f: Could not transact with/call contract function, is contract deployed correctly and chain synced?
+2025-07-18 17:58:57,121 - DEBUG - DEBUG: Raw supplied balance returned: 0.0
+2025-07-18 17:58:57,121 - DEBUG - DEBUG: Type of returned balance: <class 'float'>
+   WBTC Supplied: 0.000000
+2025-07-18 17:58:57,121 - DEBUG - DEBUG: WBTC has zero balance, no USD value added
+2025-07-18 17:58:57,121 - DEBUG - DEBUG: ===== Checking WETH Supplied Balance =====
+2025-07-18 17:58:57,121 - DEBUG - DEBUG: Token name: WETH
+2025-07-18 17:58:57,122 - DEBUG - DEBUG: Underlying token address passed: 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1
+2025-07-18 17:58:57,122 - DEBUG - DEBUG: Expected aToken address: 0xe50fA9b4c56454E2edF6BFf7c81b50c5F05aBE61
+2025-07-18 17:58:57,122 - DEBUG - DEBUG: Wallet address: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+2025-07-18 17:58:57,122 - DEBUG - DEBUG: Calling self.agent.aave.get_supplied_balance(0x82aF49447D8a07e3bd95BD0d56f35241523fBab1)
+2025-07-18 17:58:57,122 - DEBUG - DEBUG: get_supplied_balance called with token_address: 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1
+2025-07-18 17:58:57,122 - DEBUG - DEBUG: Available aToken mappings: {'0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f': '0x6533afac2E7BCCB20dca161449A13A2D2d5B739A', '0x82aF49447D8a07e3bd95BD0d56f35241523fBab1': '0xe50fA9b4c56454E2edF6BFf7c81b50c5F05aBE61', '0xAf88D065e77C8cF0EAEfF3e253e648A15CEe23dC': '0x724dc807b04555b71ed48a6896b6F41593b8C637'}
+2025-07-18 17:58:57,122 - DEBUG - DEBUG: Normalized token address: 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1
+2025-07-18 17:58:57,122 - DEBUG - DEBUG: Found aToken address: 0xe50fA9b4c56454E2edF6BFf7c81b50c5F05aBE61
+2025-07-18 17:58:57,122 - DEBUG - DEBUG: Checksummed aToken address: 0xE50Fa9B4C56454E2edF6bFF7C81B50c5F05abe61
+2025-07-18 17:58:57,122 - DEBUG - DEBUG: Wallet address for balance check: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+2025-07-18 17:58:57,131 - DEBUG - DEBUG: aToken contract created successfully
+2025-07-18 17:58:57,131 - DEBUG - DEBUG: Calling balanceOf(0x5B823270e3719CDe8669e5e5326B455EaA8a350b) on aToken contract
+2025-07-18 17:58:57,132 - DEBUG - Making request. Method: eth_call
+2025-07-18 17:58:57,132 - DEBUG - Making request. Method: eth_chainId
+2025-07-18 17:58:57,132 - DEBUG - Making request HTTP. URI: https://arbitrum-one.public.blastapi.io, Method: eth_chainId
+2025-07-18 17:58:57,160 - DEBUG - https://arbitrum-one.public.blastapi.io:443 "POST / HTTP/1.1" 200 68
+2025-07-18 17:58:57,161 - DEBUG - Getting response HTTP. URI: https://arbitrum-one.public.blastapi.io, Method: eth_chainId, Response: {'jsonrpc': '2.0', 'id': 75, 'result': '0xa4b1'}
+2025-07-18 17:58:57,162 - DEBUG - Making request HTTP. URI: https://arbitrum-one.public.blastapi.io, Method: eth_call
+2025-07-18 17:58:57,186 - DEBUG - https://arbitrum-one.public.blastapi.io:443 "POST / HTTP/1.1" 200 64
+2025-07-18 17:58:57,187 - DEBUG - Getting response HTTP. URI: https://arbitrum-one.public.blastapi.io, Method: eth_call, Response: {'jsonrpc': '2.0', 'id': 76, 'result': '0x'}
+2025-07-18 17:58:57,188 - DEBUG - Making request. Method: eth_getCode
+2025-07-18 17:58:57,188 - DEBUG - Making request HTTP. URI: https://arbitrum-one.public.blastapi.io, Method: eth_getCode
+2025-07-18 17:58:57,214 - DEBUG - https://arbitrum-one.public.blastapi.io:443 "POST / HTTP/1.1" 200 64
+2025-07-18 17:58:57,214 - DEBUG - Getting response HTTP. URI: https://arbitrum-one.public.blastapi.io, Method: eth_getCode, Response: {'jsonrpc': '2.0', 'id': 77, 'result': '0x'}
+2025-07-18 17:58:57,214 - ERROR - ERROR: get_supplied_balance failed for 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1: Could not transact with/call contract function, is contract deployed correctly and chain synced?
+Traceback (most recent call last):
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/web3/contract/utils.py", line 111, in call_contract_function
+    output_data = w3.codec.decode(output_types, return_data)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/eth_abi/codec.py", line 162, in decode
+    return cast(Tuple[Any, ...], decoder(stream))
+                                 ^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/eth_abi/decoding.py", line 131, in __call__
+    return self.decode(stream)
+           ^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/eth_utils/functional.py", line 47, in inner
+    return callback(fn(*args, **kwargs))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/eth_abi/decoding.py", line 224, in decode
+    self.validate_pointers(stream)
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/eth_abi/decoding.py", line 218, in validate_pointers
+    decoder(stream)
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/eth_abi/decoding.py", line 131, in __call__
+    return self.decode(stream)
+           ^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/eth_abi/decoding.py", line 250, in decode
+    raw_data = self.read_data_from_stream(stream)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/eth_abi/decoding.py", line 389, in read_data_from_stream
+    raise InsufficientDataBytes(
+eth_abi.exceptions.InsufficientDataBytes: Tried to read 32 bytes, only got 0 bytes.
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/runner/workspace/aave_integration.py", line 350, in get_supplied_balance
+    balance_wei = atoken_contract.functions.balanceOf(self.account.address).call()
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/web3/contract/contract.py", line 305, in call
+    return call_contract_function(
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/web3/contract/utils.py", line 129, in call_contract_function
+    raise BadFunctionCallOutput(msg) from e
+web3.exceptions.BadFunctionCallOutput: Could not transact with/call contract function, is contract deployed correctly and chain synced?
+❌ Error getting supplied balance for 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1: Could not transact with/call contract function, is contract deployed correctly and chain synced?
+2025-07-18 17:58:57,215 - DEBUG - DEBUG: Raw supplied balance returned: 0.0
+2025-07-18 17:58:57,215 - DEBUG - DEBUG: Type of returned balance: <class 'float'>
+   WETH Supplied: 0.000000
+2025-07-18 17:58:57,215 - DEBUG - DEBUG: WETH has zero balance, no USD value added
+2025-07-18 17:58:57,215 - DEBUG - DEBUG: ===== Checking USDC Supplied Balance =====
+2025-07-18 17:58:57,215 - DEBUG - DEBUG: Token name: USDC
+2025-07-18 17:58:57,215 - DEBUG - DEBUG: Underlying token address passed: 0xAf88D065e77C8cF0EAEfF3e253e648A15CEe23dC
+2025-07-18 17:58:57,216 - DEBUG - DEBUG: Expected aToken address: 0x724dc807b04555b71ed48a6896b6F41593b8C637
+2025-07-18 17:58:57,216 - DEBUG - DEBUG: Wallet address: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+2025-07-18 17:58:57,216 - DEBUG - DEBUG: Calling self.agent.aave.get_supplied_balance(0xAf88D065e77C8cF0EAEfF3e253e648A15CEe23dC)
+2025-07-18 17:58:57,216 - DEBUG - DEBUG: get_supplied_balance called with token_address: 0xAf88D065e77C8cF0EAEfF3e253e648A15CEe23dC
+2025-07-18 17:58:57,216 - DEBUG - DEBUG: Available aToken mappings: {'0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f': '0x6533afac2E7BCCB20dca161449A13A2D2d5B739A', '0x82aF49447D8a07e3bd95BD0d56f35241523fBab1': '0xe50fA9b4c56454E2edF6BFf7c81b50c5F05aBE61', '0xAf88D065e77C8cF0EAEfF3e253e648A15CEe23dC': '0x724dc807b04555b71ed48a6896b6F41593b8C637'}
+2025-07-18 17:58:57,216 - DEBUG - DEBUG: Normalized token address: 0xAf88D065e77C8cF0EAEfF3e253e648A15CEe23dC
+2025-07-18 17:58:57,216 - DEBUG - DEBUG: Found aToken address: 0x724dc807b04555b71ed48a6896b6F41593b8C637
+2025-07-18 17:58:57,216 - DEBUG - DEBUG: Checksummed aToken address: 0x724dc807b04555b71ed48a6896b6F41593b8C637
+2025-07-18 17:58:57,216 - DEBUG - DEBUG: Wallet address for balance check: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+2025-07-18 17:58:57,222 - DEBUG - DEBUG: aToken contract created successfully
+2025-07-18 17:58:57,222 - DEBUG - DEBUG: Calling balanceOf(0x5B823270e3719CDe8669e5e5326B455EaA8a350b) on aToken contract
+2025-07-18 17:58:57,224 - DEBUG - Making request. Method: eth_call
+2025-07-18 17:58:57,224 - DEBUG - Making request. Method: eth_chainId
+2025-07-18 17:58:57,224 - DEBUG - Making request HTTP. URI: https://arbitrum-one.public.blastapi.io, Method: eth_chainId
+2025-07-18 17:58:57,252 - DEBUG - https://arbitrum-one.public.blastapi.io:443 "POST / HTTP/1.1" 200 68
+2025-07-18 17:58:57,252 - DEBUG - Getting response HTTP. URI: https://arbitrum-one.public.blastapi.io, Method: eth_chainId, Response: {'jsonrpc': '2.0', 'id': 78, 'result': '0xa4b1'}
+2025-07-18 17:58:57,253 - DEBUG - Making request HTTP. URI: https://arbitrum-one.public.blastapi.io, Method: eth_call
+2025-07-18 17:58:57,280 - DEBUG - https://arbitrum-one.public.blastapi.io:443 "POST / HTTP/1.1" 200 67
+2025-07-18 17:58:57,281 - DEBUG - Getting response HTTP. URI: https://arbitrum-one.public.blastapi.io, Method: eth_call, Response: {'jsonrpc': '2.0', 'id': 79, 'result': '0x0000000000000000000000000000000000000000000000000000000000000000'}
+2025-07-18 17:58:57,281 - DEBUG - DEBUG: Raw balance_wei returned: 0
+2025-07-18 17:58:57,281 - DEBUG - DEBUG: Calling decimals() on aToken contract
+2025-07-18 17:58:57,282 - DEBUG - Making request. Method: eth_call
+2025-07-18 17:58:57,282 - DEBUG - Making request. Method: eth_chainId
+2025-07-18 17:58:57,282 - DEBUG - Making request HTTP. URI: https://arbitrum-one.public.blastapi.io, Method: eth_chainId
+2025-07-18 17:58:57,305 - DEBUG - https://arbitrum-one.public.blastapi.io:443 "POST / HTTP/1.1" 200 68
+2025-07-18 17:58:57,306 - DEBUG - Getting response HTTP. URI: https://arbitrum-one.public.blastapi.io, Method: eth_chainId, Response: {'jsonrpc': '2.0', 'id': 80, 'result': '0xa4b1'}
+2025-07-18 17:58:57,307 - DEBUG - Making request HTTP. URI: https://arbitrum-one.public.blastapi.io, Method: eth_call
+2025-07-18 17:58:57,331 - DEBUG - https://arbitrum-one.public.blastapi.io:443 "POST / HTTP/1.1" 200 68
+2025-07-18 17:58:57,332 - DEBUG - Getting response HTTP. URI: https://arbitrum-one.public.blastapi.io, Method: eth_call, Response: {'jsonrpc': '2.0', 'id': 81, 'result': '0x0000000000000000000000000000000000000000000000000000000000000006'}
+2025-07-18 17:58:57,332 - DEBUG - DEBUG: Decimals returned: 6
+2025-07-18 17:58:57,332 - DEBUG - DEBUG: Converted balance: 0.0
+✅ Supplied 0.00000000 of token 0xAf88D065e77C8cF0EAEfF3e253e648A15CEe23dC (aToken: 0x724dc807b04555b71ed48a6896b6F41593b8C637)
+2025-07-18 17:58:57,332 - DEBUG - DEBUG: Raw supplied balance returned: 0.0
+2025-07-18 17:58:57,332 - DEBUG - DEBUG: Type of returned balance: <class 'float'>
+   USDC Supplied: 0.000000
+2025-07-18 17:58:57,332 - DEBUG - DEBUG: USDC has zero balance, no USD value added
+   Estimated Total Supplied Value: $0.00
+✅ Token balance diagnosis completed
+
+🏦 DIAGNOSING AAVE PROTOCOL STATE...
+2025-07-18 17:58:57,333 - DEBUG - Making request. Method: eth_call
+2025-07-18 17:58:57,333 - DEBUG - Making request. Method: eth_chainId
+2025-07-18 17:58:57,334 - DEBUG - Making request HTTP. URI: https://arbitrum-one.public.blastapi.io, Method: eth_chainId
+2025-07-18 17:58:57,366 - DEBUG - https://arbitrum-one.public.blastapi.io:443 "POST / HTTP/1.1" 200 68
+2025-07-18 17:58:57,366 - DEBUG - Getting response HTTP. URI: https://arbitrum-one.public.blastapi.io, Method: eth_chainId, Response: {'jsonrpc': '2.0', 'id': 82, 'result': '0xa4b1'}
+2025-07-18 17:58:57,367 - DEBUG - Making request HTTP. URI: https://arbitrum-one.public.blastapi.io, Method: eth_call
+2025-07-18 17:58:57,399 - DEBUG - https://arbitrum-one.public.blastapi.io:443 "POST / HTTP/1.1" 200 124
+2025-07-18 17:58:57,399 - DEBUG - Getting response HTTP. URI: https://arbitrum-one.public.blastapi.io, Method: eth_call, Response: {'jsonrpc': '2.0', 'id': 83, 'result': '0x000000000000000000000000000000000000000000000000000000046d09c19500000000000000000000000000000000000000000000000000000000d106c52e000000000000000000000000000000000000000000000000000000027296d3300000000000000000000000000000000000000000000000000000000000001eb80000000000000000000000000000000000000000000000000000000000001ccf0000000000000000000000000000000000000000000000003b2839115958fbff'}
+   Aave Pool Contract: ✅ Responsive
+   USDC Borrowing: ✅ Likely enabled (pool responsive)
+2025-07-18 17:58:57,413 - DEBUG - Making request. Method: eth_call
+2025-07-18 17:58:57,413 - DEBUG - Making request. Method: eth_chainId
+2025-07-18 17:58:57,413 - DEBUG - Making request HTTP. URI: https://arbitrum-one.public.blastapi.io, Method: eth_chainId
+2025-07-18 17:58:57,443 - DEBUG - https://arbitrum-one.public.blastapi.io:443 "POST / HTTP/1.1" 200 68
+2025-07-18 17:58:57,444 - DEBUG - Getting response HTTP. URI: https://arbitrum-one.public.blastapi.io, Method: eth_chainId, Response: {'jsonrpc': '2.0', 'id': 84, 'result': '0xa4b1'}
+2025-07-18 17:58:57,445 - DEBUG - Making request HTTP. URI: https://arbitrum-one.public.blastapi.io, Method: eth_call
+2025-07-18 17:58:57,489 - DEBUG - https://arbitrum-one.public.blastapi.io:443 "POST / HTTP/1.1" 200 64
+2025-07-18 17:58:57,489 - DEBUG - Getting response HTTP. URI: https://arbitrum-one.public.blastapi.io, Method: eth_call, Response: {'jsonrpc': '2.0', 'id': 85, 'result': '0x'}
+2025-07-18 17:58:57,490 - DEBUG - Making request. Method: eth_getCode
+2025-07-18 17:58:57,491 - DEBUG - Making request HTTP. URI: https://arbitrum-one.public.blastapi.io, Method: eth_getCode
+2025-07-18 17:58:57,520 - DEBUG - https://arbitrum-one.public.blastapi.io:443 "POST / HTTP/1.1" 200 64
+2025-07-18 17:58:57,521 - DEBUG - Getting response HTTP. URI: https://arbitrum-one.public.blastapi.io, Method: eth_getCode, Response: {'jsonrpc': '2.0', 'id': 86, 'result': '0x'}
+   USDC Approval Check: ❌ Error - Could not transact with/call contract function, is contract deployed correctly and chain synced?
+✅ Protocol state diagnosis completed
+
+🧪 TESTING SMALL BORROW OPERATION...
+🔍 Enhanced dashboard data fetching with validation...
+🤖 Initializing Arbitrum Testnet Agent...
+DEBUG: WALLET_PRIVATE_KEY loaded from environment: [REDACTED]
+🔍 DEBUG: Starting RPC manager initialization...
+🔍 DEBUG: Network mode: mainnet
+DEBUG: ALCHEMY_RPC_URL loaded from environment: https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-bM9XgIIU
+🔍 DEBUG: ALCHEMY_RPC_URL from env: https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-bM9XgIIU
+🔗 DEBUG: Added Alchemy RPC to endpoints list: https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-...
+🔍 DEBUG: Total RPC endpoints to test: 5
+   1. https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-bM9XgIIU...
+   2. https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f93...
+   3. https://arb1.arbitrum.io/rpc...
+   4. https://arbitrum-one.public.blastapi.io...
+   5. https://arbitrum-one.publicnode.com...
+🔍 Testing RPC: https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-bM9XgIIU
+2025-07-18 17:58:57,523 - DEBUG - Making request HTTP. URI: https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-bM9XgIIU, Method: web3_clientVersion
+2025-07-18 17:58:57,572 - DEBUG - https://arb-mainnet.g.alchemy.com:443 "POST /v2/6ZvYzOV1E80R-bM9XgIIU HTTP/1.1" 200 None
+2025-07-18 17:58:57,572 - DEBUG - Getting response HTTP. URI: https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-bM9XgIIU, Method: web3_clientVersion, Response: {'jsonrpc': '2.0', 'id': 0, 'result': 'nitro/v3.6.5-89cef87/linux-amd64/go1.23.1'}
+2025-07-18 17:58:57,572 - DEBUG - Making request. Method: eth_chainId
+2025-07-18 17:58:57,572 - DEBUG - Making request HTTP. URI: https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-bM9XgIIU, Method: eth_chainId
+2025-07-18 17:58:57,624 - DEBUG - https://arb-mainnet.g.alchemy.com:443 "POST /v2/6ZvYzOV1E80R-bM9XgIIU HTTP/1.1" 200 None
+2025-07-18 17:58:57,624 - DEBUG - Getting response HTTP. URI: https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-bM9XgIIU, Method: eth_chainId, Response: {'jsonrpc': '2.0', 'id': 1, 'result': '0xa4b1'}
+2025-07-18 17:58:57,625 - DEBUG - Making request. Method: eth_getBlockByNumber
+2025-07-18 17:58:57,625 - DEBUG - Making request HTTP. URI: https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-bM9XgIIU, Method: eth_getBlockByNumber
+2025-07-18 17:58:57,660 - DEBUG - https://arb-mainnet.g.alchemy.com:443 "POST /v2/6ZvYzOV1E80R-bM9XgIIU HTTP/1.1" 200 None
+2025-07-18 17:58:57,661 - DEBUG - Getting response HTTP. URI: https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-bM9XgIIU, Method: eth_getBlockByNumber, Response: {'jsonrpc': '2.0', 'id': 2, 'result': {'baseFeePerGas': '0x12e6228', 'difficulty': '0x1', 'extraData': '0x4866c2214f5d92b5b052933387f432534d9c921bc0f987c6d1f42cc5a068203a', 'gasLimit': '0x4000000000000', 'gasUsed': '0x64dd7', 'hash': '0x4ec93ed389eee897fba151b430cdbb2b7e14e9ad0e87b21f8d41cc6d0a10489c', 'l1BlockNumber': '0x15e2795', 'logsBloom': '0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000', 'miner': '0xa4b000000000000000000073657175656e636572', 'mixHash': '0x00000000000244d900000000015e279500000000000000280000000000000000', 'nonce': '0x00000000001f37e9', 'number': '0x15670392', 'parentHash': '0x66d82f75fc283755fc808e11d16fb708670d2f8026d94d357e21625701fa703b', 'receiptsRoot': '0x2031a77c9c3500e23eb7ec93dad2e6a8fca2eda4202aee157b17fdac91e69c5a', 'sendCount': '0x244d9', 'sendRoot': '0x4866c2214f5d92b5b052933387f432534d9c921bc0f987c6d1f42cc5a068203a', 'sha3Uncles': '0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347', 'size': '0x73e', 'stateRoot': '0xcdef4c26c69b2d73e2e766d22205d077686e9856ddd443879d3753ed4312e902', 'timestamp': '0x687a8b61', 'transactions': ['0x6cfdf1acc7e9ffa0303a4cd474ec926af25d7dcdb4ff84439178b38f483fe698', '0xd0694357bd1bd6daf87f4fa670c3aa80d343901a8a65f19300274d5f7c8877c4', '0xc41e40e74851fdf2d66ddb92e570f9f7482a2afb820a8e38499fd32fdeec8ee0'], 'transactionsRoot': '0x305f7dace0a2bff2b6c66370b6e15f7de38593319d718474760231af4d326fda', 'uncles': []}}
+2025-07-18 17:58:57,661 - DEBUG - Making request. Method: eth_gasPrice
+2025-07-18 17:58:57,662 - DEBUG - Making request HTTP. URI: https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-bM9XgIIU, Method: eth_gasPrice
+2025-07-18 17:58:57,698 - DEBUG - https://arb-mainnet.g.alchemy.com:443 "POST /v2/6ZvYzOV1E80R-bM9XgIIU HTTP/1.1" 200 None
+2025-07-18 17:58:57,699 - DEBUG - Getting response HTTP. URI: https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-bM9XgIIU, Method: eth_gasPrice, Response: {'jsonrpc': '2.0', 'id': 3, 'result': '0x12ba6f0'}
+✅ RPC passed tests: https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-bM9XgIIU (0.18s)
+🔍 Testing RPC: https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f938ff891c141
+2025-07-18 17:58:57,701 - DEBUG - Making request HTTP. URI: https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f938ff891c141, Method: web3_clientVersion
+2025-07-18 17:58:57,774 - DEBUG - https://arbitrum-mainnet.infura.io:443 "POST /v3/5d36f0061cbc4dda980f938ff891c141 HTTP/1.1" 200 78
+2025-07-18 17:58:57,774 - DEBUG - Getting response HTTP. URI: https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f938ff891c141, Method: web3_clientVersion, Response: {'jsonrpc': '2.0', 'id': 0, 'result': 'nitro/v3.6.7-a7c9f1e/linux-arm64/go1.23.1'}
+2025-07-18 17:58:57,774 - DEBUG - Making request. Method: eth_chainId
+2025-07-18 17:58:57,774 - DEBUG - Making request HTTP. URI: https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f938ff891c141, Method: eth_chainId
+2025-07-18 17:58:57,846 - DEBUG - https://arbitrum-mainnet.infura.io:443 "POST /v3/5d36f0061cbc4dda980f938ff891c141 HTTP/1.1" 200 42
+2025-07-18 17:58:57,847 - DEBUG - Getting response HTTP. URI: https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f938ff891c141, Method: eth_chainId, Response: {'jsonrpc': '2.0', 'id': 1, 'result': '0xa4b1'}
+2025-07-18 17:58:57,847 - DEBUG - Making request. Method: eth_getBlockByNumber
+2025-07-18 17:58:57,847 - DEBUG - Making request HTTP. URI: https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f938ff891c141, Method: eth_getBlockByNumber
+2025-07-18 17:58:57,919 - DEBUG - https://arbitrum-mainnet.infura.io:443 "POST /v3/5d36f0061cbc4dda980f938ff891c141 HTTP/1.1" 200 837
+2025-07-18 17:58:57,919 - DEBUG - Getting response HTTP. URI: https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f938ff891c141, Method: eth_getBlockByNumber, Response: {'jsonrpc': '2.0', 'id': 2, 'result': {'baseFeePerGas': '0x12ba6f0', 'difficulty': '0x1', 'extraData': '0x4866c2214f5d92b5b052933387f432534d9c921bc0f987c6d1f42cc5a068203a', 'gasLimit': '0x4000000000000', 'gasUsed': '0x76771', 'hash': '0xe5e390cb23210b5b7da262d2cb2e62c9b562c394b9b8a41f48a5e04b51a00171', 'l1BlockNumber': '0x15e2795', 'logsBloom': '0x00400000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000020000000000004000040000000000000000000000004008000000000000000000040000000000000002000002000000000000000000000000000000000000000000000000000010000000000000000000100000000000000000000000000000000000000080000000000000000000000000000000000000000001000000040000000000000040000000000000000002000000000001000000000000000000000000000100051000000040000000000000000000100000000000000000000000000000000000000000000000', 'miner': '0xa4b000000000000000000073657175656e636572', 'mixHash': '0x00000000000244d900000000015e279500000000000000280000000000000000', 'nonce': '0x00000000001f37e9', 'number': '0x15670393', 'parentHash': '0x4ec93ed389eee897fba151b430cdbb2b7e14e9ad0e87b21f8d41cc6d0a10489c', 'receiptsRoot': '0x35ed9c4c0ea54aeae05e5d5cfdaab9cc7771a7ab78fc9ab8a7d85766ca058bcd', 'sendCount': '0x244d9', 'sendRoot': '0x4866c2214f5d92b5b052933387f432534d9c921bc0f987c6d1f42cc5a068203a', 'sha3Uncles': '0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347', 'size': '0x977', 'stateRoot': '0x525ebdceb4754f11332822bd6251ba60653f0cea9d89b8216b5320bc08841b74', 'timestamp': '0x687a8b61', 'transactions': ['0x4a135ea30bcfda45112462138875cdc325d789e5370aa40287a317a754157b22', '0x7f22d80746fc68072d0bf2ab4b5b231efad2d0ea81202cf182e17f884ed380c3', '0x966cbfc3301af848492afe429ea76d7ca32ccadf8fde3f6ec14cb06d8c274928', '0xd36b5e0efb8a5e0526b4ff4a3c88196fe389de9d5ad088f8dbc0fccbafd8d2e1'], 'transactionsRoot': '0xaa68b20396d1e6b062be91bb1b3e0577f4617a1aaf1e43b5e494a550321d027b', 'uncles': []}}
+2025-07-18 17:58:57,920 - DEBUG - Making request. Method: eth_gasPrice
+2025-07-18 17:58:57,920 - DEBUG - Making request HTTP. URI: https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f938ff891c141, Method: eth_gasPrice
+2025-07-18 17:58:57,994 - DEBUG - https://arbitrum-mainnet.infura.io:443 "POST /v3/5d36f0061cbc4dda980f938ff891c141 HTTP/1.1" 200 46
+2025-07-18 17:58:57,994 - DEBUG - Getting response HTTP. URI: https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f938ff891c141, Method: eth_gasPrice, Response: {'jsonrpc': '2.0', 'id': 3, 'result': '0x12bca18'}
+✅ RPC passed tests: https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f938ff891c141 (0.29s)
+🔍 Testing RPC: https://arb1.arbitrum.io/rpc
+2025-07-18 17:58:57,996 - DEBUG - Making request HTTP. URI: https://arb1.arbitrum.io/rpc, Method: web3_clientVersion
+2025-07-18 17:58:58,101 - DEBUG - https://arb1.arbitrum.io:443 "POST /rpc HTTP/1.1" 200 104
+2025-07-18 17:58:58,101 - DEBUG - Getting response HTTP. URI: https://arb1.arbitrum.io/rpc, Method: web3_clientVersion, Response: {'jsonrpc': '2.0', 'id': 0, 'result': 'nitro/v3.6.8-rc.1-d6c96a5/linux-amd64/go1.23.1'}
+2025-07-18 17:58:58,101 - DEBUG - Making request. Method: eth_chainId
+2025-07-18 17:58:58,101 - DEBUG - Making request HTTP. URI: https://arb1.arbitrum.io/rpc, Method: eth_chainId
+2025-07-18 17:58:58,179 - DEBUG - https://arb1.arbitrum.io:443 "POST /rpc HTTP/1.1" 200 67
+2025-07-18 17:58:58,179 - DEBUG - Getting response HTTP. URI: https://arb1.arbitrum.io/rpc, Method: eth_chainId, Response: {'jsonrpc': '2.0', 'id': 1, 'result': '0xa4b1'}
+2025-07-18 17:58:58,179 - DEBUG - Making request. Method: eth_getBlockByNumber
+2025-07-18 17:58:58,179 - DEBUG - Making request HTTP. URI: https://arb1.arbitrum.io/rpc, Method: eth_getBlockByNumber
+2025-07-18 17:58:58,258 - DEBUG - https://arb1.arbitrum.io:443 "POST /rpc HTTP/1.1" 200 737
+2025-07-18 17:58:58,259 - DEBUG - Getting response HTTP. URI: https://arb1.arbitrum.io/rpc, Method: eth_getBlockByNumber, Response: {'jsonrpc': '2.0', 'id': 2, 'result': {'baseFeePerGas': '0x12e6228', 'difficulty': '0x1', 'extraData': '0x4866c2214f5d92b5b052933387f432534d9c921bc0f987c6d1f42cc5a068203a', 'gasLimit': '0x4000000000000', 'gasUsed': '0x64dd7', 'hash': '0x4ec93ed389eee897fba151b430cdbb2b7e14e9ad0e87b21f8d41cc6d0a10489c', 'l1BlockNumber': '0x15e2795', 'logsBloom': '0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000', 'miner': '0xa4b000000000000000000073657175656e636572', 'mixHash': '0x00000000000244d900000000015e279500000000000000280000000000000000', 'nonce': '0x00000000001f37e9', 'number': '0x15670392', 'parentHash': '0x66d82f75fc283755fc808e11d16fb708670d2f8026d94d357e21625701fa703b', 'receiptsRoot': '0x2031a77c9c3500e23eb7ec93dad2e6a8fca2eda4202aee157b17fdac91e69c5a', 'sendCount': '0x244d9', 'sendRoot': '0x4866c2214f5d92b5b052933387f432534d9c921bc0f987c6d1f42cc5a068203a', 'sha3Uncles': '0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347', 'size': '0x73e', 'stateRoot': '0xcdef4c26c69b2d73e2e766d22205d077686e9856ddd443879d3753ed4312e902', 'timestamp': '0x687a8b61', 'transactions': ['0x6cfdf1acc7e9ffa0303a4cd474ec926af25d7dcdb4ff84439178b38f483fe698', '0xd0694357bd1bd6daf87f4fa670c3aa80d343901a8a65f19300274d5f7c8877c4', '0xc41e40e74851fdf2d66ddb92e570f9f7482a2afb820a8e38499fd32fdeec8ee0'], 'transactionsRoot': '0x305f7dace0a2bff2b6c66370b6e15f7de38593319d718474760231af4d326fda', 'uncles': []}}
+2025-07-18 17:58:58,259 - DEBUG - Making request. Method: eth_gasPrice
+2025-07-18 17:58:58,259 - DEBUG - Making request HTTP. URI: https://arb1.arbitrum.io/rpc, Method: eth_gasPrice
+2025-07-18 17:58:58,342 - DEBUG - https://arb1.arbitrum.io:443 "POST /rpc HTTP/1.1" 200 70
+2025-07-18 17:58:58,343 - DEBUG - Getting response HTTP. URI: https://arb1.arbitrum.io/rpc, Method: eth_gasPrice, Response: {'jsonrpc': '2.0', 'id': 3, 'result': '0x12bca18'}
+✅ RPC passed tests: https://arb1.arbitrum.io/rpc (0.35s)
+🔍 Testing RPC: https://arbitrum-one.public.blastapi.io
+2025-07-18 17:58:58,344 - DEBUG - Making request HTTP. URI: https://arbitrum-one.public.blastapi.io, Method: web3_clientVersion
+2025-07-18 17:58:58,370 - DEBUG - https://arbitrum-one.public.blastapi.io:443 "POST / HTTP/1.1" 200 102
+2025-07-18 17:58:58,370 - DEBUG - Getting response HTTP. URI: https://arbitrum-one.public.blastapi.io, Method: web3_clientVersion, Response: {'jsonrpc': '2.0', 'id': 0, 'result': 'nitro/v3.6.5-89cef87/linux-amd64/go1.23.1'}
+2025-07-18 17:58:58,370 - DEBUG - Making request. Method: eth_chainId
+2025-07-18 17:58:58,370 - DEBUG - Making request HTTP. URI: https://arbitrum-one.public.blastapi.io, Method: eth_chainId
+2025-07-18 17:58:58,395 - DEBUG - https://arbitrum-one.public.blastapi.io:443 "POST / HTTP/1.1" 200 67
+2025-07-18 17:58:58,395 - DEBUG - Getting response HTTP. URI: https://arbitrum-one.public.blastapi.io, Method: eth_chainId, Response: {'jsonrpc': '2.0', 'id': 1, 'result': '0xa4b1'}
+2025-07-18 17:58:58,396 - DEBUG - Making request. Method: eth_getBlockByNumber
+2025-07-18 17:58:58,396 - DEBUG - Making request HTTP. URI: https://arbitrum-one.public.blastapi.io, Method: eth_getBlockByNumber
+2025-07-18 17:58:58,424 - DEBUG - https://arbitrum-one.public.blastapi.io:443 "POST / HTTP/1.1" 200 1122
+2025-07-18 17:58:58,425 - DEBUG - Getting response HTTP. URI: https://arbitrum-one.public.blastapi.io, Method: eth_getBlockByNumber, Response: {'jsonrpc': '2.0', 'id': 2, 'result': {'baseFeePerGas': '0x12bf8f8', 'difficulty': '0x1', 'extraData': '0x4866c2214f5d92b5b052933387f432534d9c921bc0f987c6d1f42cc5a068203a', 'gasLimit': '0x4000000000000', 'gasUsed': '0x1a6864', 'hash': '0xb8505b7d2fe119811dda0a02adfcfedcdfae4a346dffd77253d7383c6b4f6bd8', 'l1BlockNumber': '0x15e2795', 'logsBloom': '0x001000000000000080080401004000200001000000000008200810000310000100000000000000000400000008820000090040010c44200120400000040400402400000140410008000010081001200000000000040400020000000000000100000100080000000000000015000000100200040000044200000000100008000000c8000001000000000000000000000800000020200000000000021800800000000000002000000000000020000000000000000040000200000000000004000000002042000005000000000000000100000000080200000002400000000040040000000200000000000000001000200000000000004000004000000004000000', 'miner': '0xa4b000000000000000000073657175656e636572', 'mixHash': '0x00000000000244d900000000015e279500000000000000280000000000000000', 'nonce': '0x00000000001f37e9', 'number': '0x15670395', 'parentHash': '0x798bdb18eebd9a0a6be8320f90a5dd9a5f26a54c16bac4b8b7a70e39be3477e4', 'receiptsRoot': '0x6852d1afb64428b45aa4a6cd3283069b253906285757cc3aa5649698d1db02ad', 'sendCount': '0x244d9', 'sendRoot': '0x4866c2214f5d92b5b052933387f432534d9c921bc0f987c6d1f42cc5a068203a', 'sha3Uncles': '0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347', 'size': '0x1212', 'stateRoot': '0xfff7287d60f85b47c78705b0ec584c31402e40668985d8d740efb9de24373418', 'timestamp': '0x687a8b61', 'transactions': ['0x4d14eafb8208b61800f024ff62e8df68180d40616eb4cfaf89c4903fd3b42191', '0x78285a804e9284137f1cd990cd8e55e2b1b2b3f93efd396a7c37b13546af6cb2', '0x89aac5a044cfd89d3aa2ab66756008ce99b40aa8cb0b723787aa7259f1aae50e', '0xf71378101c72a02f5a1ce305f657374ba69abb68f0428af5bf51f2933640e7dd', '0x976b1e09e6a59a1ac6c10dc0440efb13243aa36787d96b9938121491ef409a90', '0x3d3cb4a7df82452ae4b9c082d18067b7430ecf4f2741a5f651d6bff73a178d74', '0x581485f79941a0528b54299212afb466fd0046646dfa71571918c2944bfa081e', '0xfa358b0a89362d3ec25bb201fe12b7a413b3638c5fe514adfb05c36f25e2d098', '0x697131916ddcd3c9b93eaf799451759c78ae9635dd96e47ba409331e5d135ea0', '0x0008931659f4452c8d163b71292d72f5f7aeeb3a99197c7c6e6337e455e583df'], 'transactionsRoot': '0xa3e2144d5b8f930d7e102ec74b5e4b25341d0d6a85be98de0a9c7e0be20c5a66', 'uncles': []}}
+2025-07-18 17:58:58,426 - DEBUG - Making request. Method: eth_gasPrice
+2025-07-18 17:58:58,426 - DEBUG - Making request HTTP. URI: https://arbitrum-one.public.blastapi.io, Method: eth_gasPrice
+2025-07-18 17:58:58,454 - DEBUG - https://arbitrum-one.public.blastapi.io:443 "POST / HTTP/1.1" 200 70
+2025-07-18 17:58:58,455 - DEBUG - Getting response HTTP. URI: https://arbitrum-one.public.blastapi.io, Method: eth_gasPrice, Response: {'jsonrpc': '2.0', 'id': 3, 'result': '0x12bf8f8'}
+✅ RPC passed tests: https://arbitrum-one.public.blastapi.io (0.11s)
+🔍 Testing RPC: https://arbitrum-one.publicnode.com
+2025-07-18 17:58:58,456 - DEBUG - Making request HTTP. URI: https://arbitrum-one.publicnode.com, Method: web3_clientVersion
+2025-07-18 17:58:58,677 - DEBUG - https://arbitrum-one.publicnode.com:443 "POST / HTTP/1.1" 200 None
+2025-07-18 17:58:58,677 - DEBUG - Getting response HTTP. URI: https://arbitrum-one.publicnode.com, Method: web3_clientVersion, Response: {'jsonrpc': '2.0', 'id': 0, 'result': 'nitro/vd6c96a5-modified/linux-amd64/go1.23.10'}
+2025-07-18 17:58:58,678 - DEBUG - Making request. Method: eth_chainId
+2025-07-18 17:58:58,678 - DEBUG - Making request HTTP. URI: https://arbitrum-one.publicnode.com, Method: eth_chainId
+2025-07-18 17:58:58,764 - DEBUG - https://arbitrum-one.publicnode.com:443 "POST / HTTP/1.1" 200 None
+2025-07-18 17:58:58,765 - DEBUG - Getting response HTTP. URI: https://arbitrum-one.publicnode.com, Method: eth_chainId, Response: {'jsonrpc': '2.0', 'result': '0xa4b1', 'id': 1}
+2025-07-18 17:58:58,765 - DEBUG - Making request. Method: eth_getBlockByNumber
+2025-07-18 17:58:58,765 - DEBUG - Making request HTTP. URI: https://arbitrum-one.publicnode.com, Method: eth_getBlockByNumber
+2025-07-18 17:58:59,006 - DEBUG - https://arbitrum-one.publicnode.com:443 "POST / HTTP/1.1" 200 None
+2025-07-18 17:58:59,007 - DEBUG - Getting response HTTP. URI: https://arbitrum-one.publicnode.com, Method: eth_getBlockByNumber, Response: {'jsonrpc': '2.0', 'id': 2, 'result': {'baseFeePerGas': '0x12a85e0', 'difficulty': '0x1', 'extraData': '0x4866c2214f5d92b5b052933387f432534d9c921bc0f987c6d1f42cc5a068203a', 'gasLimit': '0x4000000000000', 'gasUsed': '0x17e2ee', 'hash': '0x4c8a4bc74817ba7ead7d8a5af9cb07c58d9165d7ad0dfb464699bc0de1d5f72c', 'l1BlockNumber': '0x15e2795', 'logsBloom': '0x40040040006000000024000008400000100000000020060000000000000004000000004200000000420a0800c800020000009001040080000000000000204e000002100010000000010001088000000000000000100008200000000400040904002000000008000008044000000410004808000801000000020000100041002000000800000840000020100000008010001000010000800002000800048400800310000000000000000000200000081040200101010010000a0100004000020000008002004004800400080000001084001004020010010c00600008000050001010200002000000004000000010401092000002020000000000000000000048', 'miner': '0xa4b000000000000000000073657175656e636572', 'mixHash': '0x00000000000244d900000000015e279500000000000000280000000000000000', 'nonce': '0x00000000001f37e9', 'number': '0x15670398', 'parentHash': '0xba89c9d08d051ae3378aa5620372e36a51ea5662cb632f2599953d5f51efc3a0', 'receiptsRoot': '0x52bcf51d8dbb0a8fec5db267ac926be0229334a5324865b5325ce8c024ea599c', 'sendCount': '0x244d9', 'sendRoot': '0x4866c2214f5d92b5b052933387f432534d9c921bc0f987c6d1f42cc5a068203a', 'sha3Uncles': '0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347', 'size': '0xef2', 'stateRoot': '0x202193d62f8d426ad88b6635f03c750aecbe0d74edfa0fbe6447284c3d3a50ff', 'timestamp': '0x687a8b62', 'transactions': ['0x3a0a9f1c4a49107355406c846b38f95c8254484da8653de1e46092e8100371fd', '0x1d587c6431f7b25a1bc68f73fc2923d4f99c1d507eb639f4fb0d24ceef49b154', '0xbd3a6a69b4cb8434eb6cb2ed397ecdf49e7fccd7f037d564d6fcf2365a39a348', '0xfddd09ed04a8c2b30d0895f8b6f65f4d54b4c8c8e4a40397f57b8676604dbff4', '0x8048a9848bb76e6ff009838f551b80b9ccf2030885c86921088f770adbf09581'], 'transactionsRoot': '0xe62892ffb762652887beacb53a7c77bef0bd8cda84fd7478e38c7449054864d6', 'uncles': []}}
+2025-07-18 17:58:59,008 - DEBUG - Making request. Method: eth_gasPrice
+2025-07-18 17:58:59,008 - DEBUG - Making request HTTP. URI: https://arbitrum-one.publicnode.com, Method: eth_gasPrice
+2025-07-18 17:58:59,249 - DEBUG - https://arbitrum-one.publicnode.com:443 "POST / HTTP/1.1" 200 None
+2025-07-18 17:58:59,250 - DEBUG - Getting response HTTP. URI: https://arbitrum-one.publicnode.com, Method: eth_gasPrice, Response: {'jsonrpc': '2.0', 'id': 3, 'result': '0x12aacf0'}
+✅ RPC passed tests: https://arbitrum-one.publicnode.com (0.79s)
+📊 RPC Test Results: 5/5 endpoints working
+🌐 Operating on Arbitrum Mainnet
+🔍 DEBUG: Final RPC selection results:
+   Primary RPC: https://arbitrum-one.public.blastapi.io
+   Fallback RPCs: 4 available
+🚨 NETWORK_MODE from environment: 'mainnet'
+🔗 Primary RPC: https://arbitrum-one.public.blastapi.io
+🔄 Fallback RPCs: 4 available
+🔍 DEBUG: Attempting to create Web3 connection with primary RPC: https://arbitrum-one.public.blastapi.io
+2025-07-18 17:58:59,251 - DEBUG - Making request HTTP. URI: https://arbitrum-one.public.blastapi.io, Method: web3_clientVersion
+2025-07-18 17:58:59,276 - DEBUG - https://arbitrum-one.public.blastapi.io:443 "POST / HTTP/1.1" 200 102
+2025-07-18 17:58:59,277 - DEBUG - Getting response HTTP. URI: https://arbitrum-one.public.blastapi.io, Method: web3_clientVersion, Response: {'jsonrpc': '2.0', 'id': 0, 'result': 'nitro/v3.6.5-89cef87/linux-amd64/go1.23.1'}
+✅ Successfully connected to primary RPC: https://arbitrum-one.public.blastapi.io
+2025-07-18 17:58:59,277 - DEBUG - Making request. Method: eth_chainId
+2025-07-18 17:58:59,277 - DEBUG - Making request HTTP. URI: https://arbitrum-one.public.blastapi.io, Method: eth_chainId
+2025-07-18 17:58:59,304 - DEBUG - https://arbitrum-one.public.blastapi.io:443 "POST / HTTP/1.1" 200 67
+2025-07-18 17:58:59,304 - DEBUG - Getting response HTTP. URI: https://arbitrum-one.public.blastapi.io, Method: eth_chainId, Response: {'jsonrpc': '2.0', 'id': 1, 'result': '0xa4b1'}
+2025-07-18 17:58:59,304 - DEBUG - Making request. Method: eth_blockNumber
+2025-07-18 17:58:59,305 - DEBUG - Making request HTTP. URI: https://arbitrum-one.public.blastapi.io, Method: eth_blockNumber
+2025-07-18 17:58:59,338 - DEBUG - https://arbitrum-one.public.blastapi.io:443 "POST / HTTP/1.1" 200 71
+2025-07-18 17:58:59,339 - DEBUG - Getting response HTTP. URI: https://arbitrum-one.public.blastapi.io, Method: eth_blockNumber, Response: {'jsonrpc': '2.0', 'id': 2, 'result': '0x15670399'}
+🔍 DEBUG: Web3 connection verified - Chain ID: 42161, Latest Block: 359072665
+🔑 Wallet Address: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+💰 AGENT INITIALIZED WITH WALLET: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+✅ Private key format validated and normalized
+📋 Mainnet Token addresses verified:
+   USDC: 0xAf88D065e77C8cF0EAEfF3e253e648A15CEe23dC
+   WBTC: 0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f
+   WETH: 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1
+   DAI: 0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1
+   Aave Pool: 0x794a61358D6845594F94dc1DB02A252b5b4814aD
+📋 Token addresses verified:
+   USDC: 0xAf88D065e77C8cF0EAEfF3e253e648A15CEe23dC
+   WBTC: 0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f
+   WETH: 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1
+   DAI: 0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1
+   Aave Pool: 0x794a61358D6845594F94dc1DB02A252b5b4814aD
+💰 Initialized last_collateral_value_usd to 0.0 (will sync with actual position)
+📊 Initialized last_collateral_value_usd to: 0.0
+🔍 LIVE AAVE FETCH Attempt 1: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+2025-07-18 17:58:59,343 - DEBUG - Making request. Method: eth_call
+2025-07-18 17:58:59,343 - DEBUG - Making request. Method: eth_chainId
+2025-07-18 17:58:59,343 - DEBUG - Making request HTTP. URI: https://arbitrum-one.public.blastapi.io, Method: eth_chainId
+2025-07-18 17:58:59,367 - DEBUG - https://arbitrum-one.public.blastapi.io:443 "POST / HTTP/1.1" 200 67
+2025-07-18 17:58:59,367 - DEBUG - Getting response HTTP. URI: https://arbitrum-one.public.blastapi.io, Method: eth_chainId, Response: {'jsonrpc': '2.0', 'id': 7, 'result': '0xa4b1'}
+2025-07-18 17:58:59,368 - DEBUG - Making request HTTP. URI: https://arbitrum-one.public.blastapi.io, Method: eth_call
+2025-07-18 17:58:59,397 - DEBUG - https://arbitrum-one.public.blastapi.io:443 "POST / HTTP/1.1" 200 126
+2025-07-18 17:58:59,397 - DEBUG - Getting response HTTP. URI: https://arbitrum-one.public.blastapi.io, Method: eth_call, Response: {'jsonrpc': '2.0', 'id': 8, 'result': '0x000000000000000000000000000000000000000000000000000000046d09c19800000000000000000000000000000000000000000000000000000000d106c52e000000000000000000000000000000000000000000000000000000027296d3320000000000000000000000000000000000000000000000000000000000001eb80000000000000000000000000000000000000000000000000000000000001ccf0000000000000000000000000000000000000000000000003b2839117b572e8a'}
+✅ LIVE AAVE DATA RETRIEVED:
+   Health Factor: 4.2627
+   Collateral: $190.09
+   Debt: $35.07
+   Available Borrows: $105.12
+   Data Source: LIVE_AAVE_CONTRACT
+   Data Quality: ✅ VALIDATED
+✅ Unified data validated: Data validated successfully
+📊 Using LIVE AAVE CONTRACT data: HF 4.2627
+🤖 Initializing Arbitrum Testnet Agent...
+DEBUG: WALLET_PRIVATE_KEY loaded from environment: [REDACTED]
+🔍 DEBUG: Starting RPC manager initialization...
+🔍 DEBUG: Network mode: mainnet
+DEBUG: ALCHEMY_RPC_URL loaded from environment: https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-bM9XgIIU
+🔍 DEBUG: ALCHEMY_RPC_URL from env: https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-bM9XgIIU
+🔗 DEBUG: Added Alchemy RPC to endpoints list: https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-...
+🔍 DEBUG: Total RPC endpoints to test: 5
+   1. https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-bM9XgIIU...
+   2. https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f93...
+   3. https://arb1.arbitrum.io/rpc...
+   4. https://arbitrum-one.public.blastapi.io...
+   5. https://arbitrum-one.publicnode.com...
+🔍 Testing RPC: https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-bM9XgIIU
+2025-07-18 17:58:59,399 - DEBUG - Making request HTTP. URI: https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-bM9XgIIU, Method: web3_clientVersion
+2025-07-18 17:58:59,438 - DEBUG - https://arb-mainnet.g.alchemy.com:443 "POST /v2/6ZvYzOV1E80R-bM9XgIIU HTTP/1.1" 200 None
+2025-07-18 17:58:59,439 - DEBUG - Getting response HTTP. URI: https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-bM9XgIIU, Method: web3_clientVersion, Response: {'jsonrpc': '2.0', 'id': 0, 'result': 'nitro/v3.6.5-89cef87/linux-amd64/go1.23.1'}
+2025-07-18 17:58:59,439 - DEBUG - Making request. Method: eth_chainId
+2025-07-18 17:58:59,439 - DEBUG - Making request HTTP. URI: https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-bM9XgIIU, Method: eth_chainId
+2025-07-18 17:58:59,491 - DEBUG - https://arb-mainnet.g.alchemy.com:443 "POST /v2/6ZvYzOV1E80R-bM9XgIIU HTTP/1.1" 200 None
+2025-07-18 17:58:59,492 - DEBUG - Getting response HTTP. URI: https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-bM9XgIIU, Method: eth_chainId, Response: {'jsonrpc': '2.0', 'id': 1, 'result': '0xa4b1'}
+2025-07-18 17:58:59,492 - DEBUG - Making request. Method: eth_getBlockByNumber
+2025-07-18 17:58:59,492 - DEBUG - Making request HTTP. URI: https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-bM9XgIIU, Method: eth_getBlockByNumber
+2025-07-18 17:58:59,546 - DEBUG - https://arb-mainnet.g.alchemy.com:443 "POST /v2/6ZvYzOV1E80R-bM9XgIIU HTTP/1.1" 200 None
+2025-07-18 17:58:59,547 - DEBUG - Getting response HTTP. URI: https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-bM9XgIIU, Method: eth_getBlockByNumber, Response: {'jsonrpc': '2.0', 'id': 2, 'result': {'baseFeePerGas': '0x12b4160', 'difficulty': '0x1', 'extraData': '0x4866c2214f5d92b5b052933387f432534d9c921bc0f987c6d1f42cc5a068203a', 'gasLimit': '0x4000000000000', 'gasUsed': '0xc61e9', 'hash': '0xd2d3b1ae4e1ebddc5181fc859f060fbd0b4c25823cb713fac39ecf71f8265ba1', 'l1BlockNumber': '0x15e2795', 'logsBloom': '0x00200800000000000000000080000001000000000000001000000000010000000000000000000000000002000000000000004001080020000040000040000000000000050000040800000008400024200000000400000000000000000000000000000008000000000000002420000000000000000000000000000010004800000000000000004000000000000000000000010000000000080000004400000000000000002000000000000020000000000000400008001800000000000000000000002002000000000000000000000000000000200000001000040000108000000000000000000000004000000800200004000080000002000000000000000000', 'miner': '0xa4b000000000000000000073657175656e636572', 'mixHash': '0x00000000000244d900000000015e279500000000000000280000000000000000', 'nonce': '0x00000000001f37e9', 'number': '0x1567039a', 'parentHash': '0x1a6bce3ae74a147aca8c872312869640c1691703a701572b9da7ec2de0de999a', 'receiptsRoot': '0x88921e04f9c62f464eaf7226464b2586962d969e1d9aa7dc958b4f5285161422', 'sendCount': '0x244d9', 'sendRoot': '0x4866c2214f5d92b5b052933387f432534d9c921bc0f987c6d1f42cc5a068203a', 'sha3Uncles': '0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347', 'size': '0x81b', 'stateRoot': '0xf3b3dfdc88d375d8c96c240c11c38c9935791816c9862e8a90abea261dda7498', 'timestamp': '0x687a8b63', 'transactions': ['0x3634624aadf8f638f150d1be7101d64702cbd29098ac66ea8693a8f2f9440089', '0x2f1b9cfabc74a524265ea1d6d68a036174faed7d182817088fde14725d2b4de3', '0x245b01748398167353fe28ca748fd48f600e839c1978a967a498cfc4db5c2cdb'], 'transactionsRoot': '0x26c042b628d51e09da97f4d40ce5b86920375179a1d532e1d7d14f79dc852077', 'uncles': []}}
+2025-07-18 17:58:59,547 - DEBUG - Making request. Method: eth_gasPrice
+2025-07-18 17:58:59,548 - DEBUG - Making request HTTP. URI: https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-bM9XgIIU, Method: eth_gasPrice
+2025-07-18 17:58:59,592 - DEBUG - https://arb-mainnet.g.alchemy.com:443 "POST /v2/6ZvYzOV1E80R-bM9XgIIU HTTP/1.1" 200 None
+2025-07-18 17:58:59,593 - DEBUG - Getting response HTTP. URI: https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-bM9XgIIU, Method: eth_gasPrice, Response: {'jsonrpc': '2.0', 'id': 3, 'result': '0x12b4160'}
+✅ RPC passed tests: https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-bM9XgIIU (0.19s)
+🔍 Testing RPC: https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f938ff891c141
+2025-07-18 17:58:59,594 - DEBUG - Making request HTTP. URI: https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f938ff891c141, Method: web3_clientVersion
+2025-07-18 17:58:59,666 - DEBUG - https://arbitrum-mainnet.infura.io:443 "POST /v3/5d36f0061cbc4dda980f938ff891c141 HTTP/1.1" 200 78
+2025-07-18 17:58:59,667 - DEBUG - Getting response HTTP. URI: https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f938ff891c141, Method: web3_clientVersion, Response: {'jsonrpc': '2.0', 'id': 0, 'result': 'nitro/v3.6.7-a7c9f1e/linux-arm64/go1.23.1'}
+2025-07-18 17:58:59,667 - DEBUG - Making request. Method: eth_chainId
+2025-07-18 17:58:59,667 - DEBUG - Making request HTTP. URI: https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f938ff891c141, Method: eth_chainId
+2025-07-18 17:58:59,739 - DEBUG - https://arbitrum-mainnet.infura.io:443 "POST /v3/5d36f0061cbc4dda980f938ff891c141 HTTP/1.1" 200 42
+2025-07-18 17:58:59,739 - DEBUG - Getting response HTTP. URI: https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f938ff891c141, Method: eth_chainId, Response: {'jsonrpc': '2.0', 'id': 1, 'result': '0xa4b1'}
+2025-07-18 17:58:59,739 - DEBUG - Making request. Method: eth_getBlockByNumber
+2025-07-18 17:58:59,739 - DEBUG - Making request HTTP. URI: https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f938ff891c141, Method: eth_getBlockByNumber
+2025-07-18 17:58:59,815 - DEBUG - https://arbitrum-mainnet.infura.io:443 "POST /v3/5d36f0061cbc4dda980f938ff891c141 HTTP/1.1" 200 889
+2025-07-18 17:58:59,815 - DEBUG - Getting response HTTP. URI: https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f938ff891c141, Method: eth_getBlockByNumber, Response: {'jsonrpc': '2.0', 'id': 2, 'result': {'baseFeePerGas': '0x1286300', 'difficulty': '0x1', 'extraData': '0x4866c2214f5d92b5b052933387f432534d9c921bc0f987c6d1f42cc5a068203a', 'gasLimit': '0x4000000000000', 'gasUsed': '0x18c3bb', 'hash': '0x3fc959ce3637f959cf4b5c613c754876a2c848c94f9ce7feb098647c9ee7691c', 'l1BlockNumber': '0x15e2795', 'logsBloom': '0x000400000000001000000020000004000000010000000000000000000100001000000000000000000080000001000000010040010800200008c0000000200000000000010000000800000008000020000000040200000000010000008000000000004008020000000000080400000800000040000000000000000010000800000100000010000000000000100000000000000000000008000001000000000000020000020000200000000022000000000800200800000000004000000000000000082002020000000800000000400000000400000000200000000000100028000090000000000000000800000000200000000000000000000800000000000002', 'miner': '0xa4b000000000000000000073657175656e636572', 'mixHash': '0x00000000000244d900000000015e279500000000000000280000000000000000', 'nonce': '0x00000000001f37e9', 'number': '0x1567039b', 'parentHash': '0xd2d3b1ae4e1ebddc5181fc859f060fbd0b4c25823cb713fac39ecf71f8265ba1', 'receiptsRoot': '0x85f1ef4e3f89d4a46361233e0fa5db1ef5ac62a8c248ad8d7862613ab795ac47', 'sendCount': '0x244d9', 'sendRoot': '0x4866c2214f5d92b5b052933387f432534d9c921bc0f987c6d1f42cc5a068203a', 'sha3Uncles': '0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347', 'size': '0x1493', 'stateRoot': '0xb85b2c4f031aa2f076a74e1a6e469575fd4c288a49f50361bf444e2917cb0c28', 'timestamp': '0x687a8b63', 'transactions': ['0x0a6b285e92f9e98dce9802494d1e662403e9df11247ec64b744a2d90a380e112', '0x02ebe563ac221d8347b274df9ae442116e2ac6eddf387618ed826d514f4e0bff', '0xc2c4acb912cfb98d660ad3210c96469db81090e6cb78c2839cfe6b8f8fb68b2a', '0x7120b63c10ba864a38ebeffc627b0f961a78e55a32e2584c47e7ebe73343a5ae'], 'transactionsRoot': '0x2b03a8113b17e2775bfb553ec22cc0f067c7bf221f79bae53d8f8084fd831c5b', 'uncles': []}}
+2025-07-18 17:58:59,816 - DEBUG - Making request. Method: eth_gasPrice
+2025-07-18 17:58:59,816 - DEBUG - Making request HTTP. URI: https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f938ff891c141, Method: eth_gasPrice
+2025-07-18 17:58:59,905 - DEBUG - https://arbitrum-mainnet.infura.io:443 "POST /v3/5d36f0061cbc4dda980f938ff891c141 HTTP/1.1" 200 46
+2025-07-18 17:58:59,905 - DEBUG - Getting response HTTP. URI: https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f938ff891c141, Method: eth_gasPrice, Response: {'jsonrpc': '2.0', 'id': 3, 'result': '0x128b508'}
+✅ RPC passed tests: https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f938ff891c141 (0.31s)
+🔍 Testing RPC: https://arb1.arbitrum.io/rpc
+2025-07-18 17:58:59,906 - DEBUG - Making request HTTP. URI: https://arb1.arbitrum.io/rpc, Method: web3_clientVersion
+2025-07-18 17:58:59,992 - DEBUG - https://arb1.arbitrum.io:443 "POST /rpc HTTP/1.1" 200 104
+2025-07-18 17:58:59,993 - DEBUG - Getting response HTTP. URI: https://arb1.arbitrum.io/rpc, Method: web3_clientVersion, Response: {'jsonrpc': '2.0', 'id': 0, 'result': 'nitro/v3.6.8-rc.1-d6c96a5/linux-amd64/go1.23.1'}
+2025-07-18 17:58:59,993 - DEBUG - Making request. Method: eth_chainId
+2025-07-18 17:58:59,993 - DEBUG - Making request HTTP. URI: https://arb1.arbitrum.io/rpc, Method: eth_chainId
+2025-07-18 17:59:00,084 - DEBUG - https://arb1.arbitrum.io:443 "POST /rpc HTTP/1.1" 200 67
+2025-07-18 17:59:00,085 - DEBUG - Getting response HTTP. URI: https://arb1.arbitrum.io/rpc, Method: eth_chainId, Response: {'jsonrpc': '2.0', 'id': 1, 'result': '0xa4b1'}
+2025-07-18 17:59:00,085 - DEBUG - Making request. Method: eth_getBlockByNumber
+2025-07-18 17:59:00,085 - DEBUG - Making request HTTP. URI: https://arb1.arbitrum.io/rpc, Method: eth_getBlockByNumber
+2025-07-18 17:59:00,166 - DEBUG - https://arb1.arbitrum.io:443 "POST /rpc HTTP/1.1" 200 822
+2025-07-18 17:59:00,166 - DEBUG - Getting response HTTP. URI: https://arb1.arbitrum.io/rpc, Method: eth_getBlockByNumber, Response: {'jsonrpc': '2.0', 'id': 2, 'result': {'baseFeePerGas': '0x12b4160', 'difficulty': '0x1', 'extraData': '0x4866c2214f5d92b5b052933387f432534d9c921bc0f987c6d1f42cc5a068203a', 'gasLimit': '0x4000000000000', 'gasUsed': '0xc61e9', 'hash': '0xd2d3b1ae4e1ebddc5181fc859f060fbd0b4c25823cb713fac39ecf71f8265ba1', 'l1BlockNumber': '0x15e2795', 'logsBloom': '0x00200800000000000000000080000001000000000000001000000000010000000000000000000000000002000000000000004001080020000040000040000000000000050000040800000008400024200000000400000000000000000000000000000008000000000000002420000000000000000000000000000010004800000000000000004000000000000000000000010000000000080000004400000000000000002000000000000020000000000000400008001800000000000000000000002002000000000000000000000000000000200000001000040000108000000000000000000000004000000800200004000080000002000000000000000000', 'miner': '0xa4b000000000000000000073657175656e636572', 'mixHash': '0x00000000000244d900000000015e279500000000000000280000000000000000', 'nonce': '0x00000000001f37e9', 'number': '0x1567039a', 'parentHash': '0x1a6bce3ae74a147aca8c872312869640c1691703a701572b9da7ec2de0de999a', 'receiptsRoot': '0x88921e04f9c62f464eaf7226464b2586962d969e1d9aa7dc958b4f5285161422', 'sendCount': '0x244d9', 'sendRoot': '0x4866c2214f5d92b5b052933387f432534d9c921bc0f987c6d1f42cc5a068203a', 'sha3Uncles': '0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347', 'size': '0x81b', 'stateRoot': '0xf3b3dfdc88d375d8c96c240c11c38c9935791816c9862e8a90abea261dda7498', 'timestamp': '0x687a8b63', 'transactions': ['0x3634624aadf8f638f150d1be7101d64702cbd29098ac66ea8693a8f2f9440089', '0x2f1b9cfabc74a524265ea1d6d68a036174faed7d182817088fde14725d2b4de3', '0x245b01748398167353fe28ca748fd48f600e839c1978a967a498cfc4db5c2cdb'], 'transactionsRoot': '0x26c042b628d51e09da97f4d40ce5b86920375179a1d532e1d7d14f79dc852077', 'uncles': []}}
+2025-07-18 17:59:00,167 - DEBUG - Making request. Method: eth_gasPrice
+2025-07-18 17:59:00,167 - DEBUG - Making request HTTP. URI: https://arb1.arbitrum.io/rpc, Method: eth_gasPrice
+2025-07-18 17:59:00,275 - DEBUG - https://arb1.arbitrum.io:443 "POST /rpc HTTP/1.1" 200 70
+2025-07-18 17:59:00,276 - DEBUG - Getting response HTTP. URI: https://arb1.arbitrum.io/rpc, Method: eth_gasPrice, Response: {'jsonrpc': '2.0', 'id': 3, 'result': '0x128b508'}
+✅ RPC passed tests: https://arb1.arbitrum.io/rpc (0.37s)
+🔍 Testing RPC: https://arbitrum-one.public.blastapi.io
+2025-07-18 17:59:00,277 - DEBUG - Making request HTTP. URI: https://arbitrum-one.public.blastapi.io, Method: web3_clientVersion
+2025-07-18 17:59:00,306 - DEBUG - https://arbitrum-one.public.blastapi.io:443 "POST / HTTP/1.1" 200 102
+2025-07-18 17:59:00,306 - DEBUG - Getting response HTTP. URI: https://arbitrum-one.public.blastapi.io, Method: web3_clientVersion, Response: {'jsonrpc': '2.0', 'id': 0, 'result': 'nitro/v3.6.5-89cef87/linux-amd64/go1.23.1'}
+2025-07-18 17:59:00,307 - DEBUG - Making request. Method: eth_chainId
+2025-07-18 17:59:00,307 - DEBUG - Making request HTTP. URI: https://arbitrum-one.public.blastapi.io, Method: eth_chainId
+2025-07-18 17:59:00,334 - DEBUG - https://arbitrum-one.public.blastapi.io:443 "POST / HTTP/1.1" 200 67
+2025-07-18 17:59:00,335 - DEBUG - Getting response HTTP. URI: https://arbitrum-one.public.blastapi.io, Method: eth_chainId, Response: {'jsonrpc': '2.0', 'id': 1, 'result': '0xa4b1'}
+2025-07-18 17:59:00,335 - DEBUG - Making request. Method: eth_getBlockByNumber
+2025-07-18 17:59:00,335 - DEBUG - Making request HTTP. URI: https://arbitrum-one.public.blastapi.io, Method: eth_getBlockByNumber
+2025-07-18 17:59:00,362 - DEBUG - https://arbitrum-one.public.blastapi.io:443 "POST / HTTP/1.1" 200 883
+2025-07-18 17:59:00,363 - DEBUG - Getting response HTTP. URI: https://arbitrum-one.public.blastapi.io, Method: eth_getBlockByNumber, Response: {'jsonrpc': '2.0', 'id': 2, 'result': {'baseFeePerGas': '0x1295530', 'difficulty': '0x1', 'extraData': '0x4866c2214f5d92b5b052933387f432534d9c921bc0f987c6d1f42cc5a068203a', 'gasLimit': '0x4000000000000', 'gasUsed': '0xd952e', 'hash': '0x832947087bff37eff46fa85b6f387e654653a374eee295f80ed8d03d6c6bf6da', 'l1BlockNumber': '0x15e2795', 'logsBloom': '0x000000000000000000000000080000000000000080000020000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000080000000004000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000c0000000000000000000000000000000000000000000000000040000000000000000000000000000002000000000800000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000', 'miner': '0xa4b000000000000000000073657175656e636572', 'mixHash': '0x00000000000244d900000000015e279500000000000000280000000000000000', 'nonce': '0x00000000001f37e9', 'number': '0x1567039d', 'parentHash': '0x6151b24edd9a14e75b08a9b42cc587f84259c3605a8219f232d0714a959888b6', 'receiptsRoot': '0x2ae5b7dad7084fb02c219bc200ce4031babe4684a5023f342577e789855985da', 'sendCount': '0x244d9', 'sendRoot': '0x4866c2214f5d92b5b052933387f432534d9c921bc0f987c6d1f42cc5a068203a', 'sha3Uncles': '0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347', 'size': '0xcb5', 'stateRoot': '0x5ec4b087ca587bdb13e02905867bb33c68497aa9a4ff0db564c1a54a93e5ae1a', 'timestamp': '0x687a8b63', 'transactions': ['0x6c733efd06dcb81f309573ec174c18d16d1885799f97ad6833bc37a6d211ab58', '0x4a7ab3eecf8adbcb0016f3730292e8b120c0b12dec0eded536206abee00200fb', '0xef91fa5bfabb490ef95ca51516fa31c4fc9fad0420f98a0e4631d0427322c363', '0x69d807776251e8f910718fefd624d3758aefdf30d1d9db1b9cc1023733707ffb', '0x34d15720e588d51c22c7368efd00d73ac744e1c8c97b6454547e2827beb337b9', '0xdfe550e0c141d85fab34bfca427b3f1fbd83b2e6b2b9d11cebde7e2610c53a0b'], 'transactionsRoot': '0x30d86059fb61addf2ef9f6a62ee026a3bada5e5451009430afa0d8376ef6da5a', 'uncles': []}}
+2025-07-18 17:59:00,363 - DEBUG - Making request. Method: eth_gasPrice
+2025-07-18 17:59:00,363 - DEBUG - Making request HTTP. URI: https://arbitrum-one.public.blastapi.io, Method: eth_gasPrice
+2025-07-18 17:59:00,388 - DEBUG - https://arbitrum-one.public.blastapi.io:443 "POST / HTTP/1.1" 200 70
+2025-07-18 17:59:00,388 - DEBUG - Getting response HTTP. URI: https://arbitrum-one.public.blastapi.io, Method: eth_gasPrice, Response: {'jsonrpc': '2.0', 'id': 3, 'result': '0x1295530'}
+✅ RPC passed tests: https://arbitrum-one.public.blastapi.io (0.11s)
+🔍 Testing RPC: https://arbitrum-one.publicnode.com
+2025-07-18 17:59:00,390 - DEBUG - Making request HTTP. URI: https://arbitrum-one.publicnode.com, Method: web3_clientVersion
+2025-07-18 17:59:00,629 - DEBUG - https://arbitrum-one.publicnode.com:443 "POST / HTTP/1.1" 200 None
+2025-07-18 17:59:00,630 - DEBUG - Getting response HTTP. URI: https://arbitrum-one.publicnode.com, Method: web3_clientVersion, Response: {'jsonrpc': '2.0', 'id': 0, 'result': 'nitro/vd6c96a5-modified/linux-amd64/go1.23.10'}
+2025-07-18 17:59:00,630 - DEBUG - Making request. Method: eth_chainId
+2025-07-18 17:59:00,630 - DEBUG - Making request HTTP. URI: https://arbitrum-one.publicnode.com, Method: eth_chainId
+2025-07-18 17:59:00,849 - DEBUG - https://arbitrum-one.publicnode.com:443 "POST / HTTP/1.1" 200 None
+2025-07-18 17:59:00,849 - DEBUG - Getting response HTTP. URI: https://arbitrum-one.publicnode.com, Method: eth_chainId, Response: {'jsonrpc': '2.0', 'result': '0xa4b1', 'id': 1}
+2025-07-18 17:59:00,849 - DEBUG - Making request. Method: eth_getBlockByNumber
+2025-07-18 17:59:00,849 - DEBUG - Making request HTTP. URI: https://arbitrum-one.publicnode.com, Method: eth_getBlockByNumber
+2025-07-18 17:59:01,079 - DEBUG - https://arbitrum-one.publicnode.com:443 "POST / HTTP/1.1" 200 None
+2025-07-18 17:59:01,080 - DEBUG - Getting response HTTP. URI: https://arbitrum-one.publicnode.com, Method: eth_getBlockByNumber, Response: {'jsonrpc': '2.0', 'id': 2, 'result': {'baseFeePerGas': '0x1275578', 'difficulty': '0x1', 'extraData': '0x4866c2214f5d92b5b052933387f432534d9c921bc0f987c6d1f42cc5a068203a', 'gasLimit': '0x4000000000000', 'gasUsed': '0x7be09', 'hash': '0xfd7b9c92b03ef6c17298389b4a418d7ee190f28cd31ebf1e388a0dc37b0e7998', 'l1BlockNumber': '0x15e2795', 'logsBloom': '0x0000000000000000000000000000000000000000000000000000200000000000000000020000000000000000000000040000000100000020000000000000040001001000000000000000000800000000100000000000000000000000000000000000000000000000000000000000000000000000000000000000001000010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000080000000000020000000000000000000000000a002000010000000000000000000000000000000000000000020000000000000000000000000000000000000200010000000000000000000000000000000', 'miner': '0xa4b000000000000000000073657175656e636572', 'mixHash': '0x00000000000244d900000000015e279500000000000000280000000000000000', 'nonce': '0x00000000001f37e9', 'number': '0x156703a0', 'parentHash': '0x5e31ab451050f0fd9e87f945ef8aa086804d636fc3e143ab66741810e2b90c0a', 'receiptsRoot': '0x11ec079a0b506581921990e1195e83a9b923de027283dc7233a958dc990716a7', 'sendCount': '0x244d9', 'sendRoot': '0x4866c2214f5d92b5b052933387f432534d9c921bc0f987c6d1f42cc5a068203a', 'sha3Uncles': '0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347', 'size': '0x83a', 'stateRoot': '0x9d6e1a461d18e1e3672594e204d7d74ca964fd7d6d99778f7ff6dadcb715c6d3', 'timestamp': '0x687a8b64', 'transactions': ['0x46bca586569685f485940f679ad4257c4db3aa61b98774fe689d8ed90a663e4f', '0x3315084c47e7052ef2946e2322c869ab0faa8bbbfca3f8562a35a2421497cb10', '0xd57c0b4aefc2f0e089299b60f106d009da3a8eac0dd26c222e7b7530db7b4aa5', '0x6e09e1211d8e92784d47258159f80da2ff2c38e3e04dcc013380e0940f104840'], 'transactionsRoot': '0x04f65dadae5b98552f10f0c9addadc0fdf85a39a5f0572b9cf266b19d0a4103a', 'uncles': []}}
+2025-07-18 17:59:01,080 - DEBUG - Making request. Method: eth_gasPrice
+2025-07-18 17:59:01,080 - DEBUG - Making request HTTP. URI: https://arbitrum-one.publicnode.com, Method: eth_gasPrice
+2025-07-18 17:59:01,305 - DEBUG - https://arbitrum-one.publicnode.com:443 "POST / HTTP/1.1" 200 None
+2025-07-18 17:59:01,306 - DEBUG - Getting response HTTP. URI: https://arbitrum-one.publicnode.com, Method: eth_gasPrice, Response: {'jsonrpc': '2.0', 'id': 3, 'result': '0x1278070'}
+✅ RPC passed tests: https://arbitrum-one.publicnode.com (0.92s)
+📊 RPC Test Results: 5/5 endpoints working
+🌐 Operating on Arbitrum Mainnet
+🔍 DEBUG: Final RPC selection results:
+   Primary RPC: https://arbitrum-one.public.blastapi.io
+   Fallback RPCs: 4 available
+🚨 NETWORK_MODE from environment: 'mainnet'
+🔗 Primary RPC: https://arbitrum-one.public.blastapi.io
+🔄 Fallback RPCs: 4 available
+🔍 DEBUG: Attempting to create Web3 connection with primary RPC: https://arbitrum-one.public.blastapi.io
+2025-07-18 17:59:01,307 - DEBUG - Making request HTTP. URI: https://arbitrum-one.public.blastapi.io, Method: web3_clientVersion
+2025-07-18 17:59:01,333 - DEBUG - https://arbitrum-one.public.blastapi.io:443 "POST / HTTP/1.1" 200 102
+2025-07-18 17:59:01,333 - DEBUG - Getting response HTTP. URI: https://arbitrum-one.public.blastapi.io, Method: web3_clientVersion, Response: {'jsonrpc': '2.0', 'id': 0, 'result': 'nitro/v3.6.5-89cef87/linux-amd64/go1.23.1'}
+✅ Successfully connected to primary RPC: https://arbitrum-one.public.blastapi.io
+2025-07-18 17:59:01,333 - DEBUG - Making request. Method: eth_chainId
+2025-07-18 17:59:01,333 - DEBUG - Making request HTTP. URI: https://arbitrum-one.public.blastapi.io, Method: eth_chainId
+2025-07-18 17:59:01,362 - DEBUG - https://arbitrum-one.public.blastapi.io:443 "POST / HTTP/1.1" 200 67
+2025-07-18 17:59:01,363 - DEBUG - Getting response HTTP. URI: https://arbitrum-one.public.blastapi.io, Method: eth_chainId, Response: {'jsonrpc': '2.0', 'id': 1, 'result': '0xa4b1'}
+2025-07-18 17:59:01,363 - DEBUG - Making request. Method: eth_blockNumber
+2025-07-18 17:59:01,363 - DEBUG - Making request HTTP. URI: https://arbitrum-one.public.blastapi.io, Method: eth_blockNumber
+2025-07-18 17:59:01,393 - DEBUG - https://arbitrum-one.public.blastapi.io:443 "POST / HTTP/1.1" 200 71
+2025-07-18 17:59:01,394 - DEBUG - Getting response HTTP. URI: https://arbitrum-one.public.blastapi.io, Method: eth_blockNumber, Response: {'jsonrpc': '2.0', 'id': 2, 'result': '0x156703a1'}
+🔍 DEBUG: Web3 connection verified - Chain ID: 42161, Latest Block: 359072673
+🔑 Wallet Address: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+💰 AGENT INITIALIZED WITH WALLET: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+✅ Private key format validated and normalized
+📋 Mainnet Token addresses verified:
+   USDC: 0xAf88D065e77C8cF0EAEfF3e253e648A15CEe23dC
+   WBTC: 0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f
+   WETH: 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1
+   DAI: 0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1
+   Aave Pool: 0x794a61358D6845594F94dc1DB02A252b5b4814aD
+📋 Token addresses verified:
+   USDC: 0xAf88D065e77C8cF0EAEfF3e253e648A15CEe23dC
+   WBTC: 0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f
+   WETH: 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1
+   DAI: 0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1
+   Aave Pool: 0x794a61358D6845594F94dc1DB02A252b5b4814aD
+💰 Initialized last_collateral_value_usd to 0.0 (will sync with actual position)
+📊 Initialized last_collateral_value_usd to: 0.0
+🔍 LIVE AAVE FETCH Attempt 1: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+2025-07-18 17:59:01,398 - DEBUG - Making request. Method: eth_call
+2025-07-18 17:59:01,399 - DEBUG - Making request. Method: eth_chainId
+2025-07-18 17:59:01,399 - DEBUG - Making request HTTP. URI: https://arbitrum-one.public.blastapi.io, Method: eth_chainId
+2025-07-18 17:59:01,432 - DEBUG - https://arbitrum-one.public.blastapi.io:443 "POST / HTTP/1.1" 200 67
+2025-07-18 17:59:01,433 - DEBUG - Getting response HTTP. URI: https://arbitrum-one.public.blastapi.io, Method: eth_chainId, Response: {'jsonrpc': '2.0', 'id': 9, 'result': '0xa4b1'}
+2025-07-18 17:59:01,434 - DEBUG - Making request HTTP. URI: https://arbitrum-one.public.blastapi.io, Method: eth_call
+2025-07-18 17:59:01,464 - DEBUG - https://arbitrum-one.public.blastapi.io:443 "POST / HTTP/1.1" 200 125
+2025-07-18 17:59:01,464 - DEBUG - Getting response HTTP. URI: https://arbitrum-one.public.blastapi.io, Method: eth_call, Response: {'jsonrpc': '2.0', 'id': 10, 'result': '0x000000000000000000000000000000000000000000000000000000046d09c19a00000000000000000000000000000000000000000000000000000000d106c52e000000000000000000000000000000000000000000000000000000027296d3340000000000000000000000000000000000000000000000000000000000001eb80000000000000000000000000000000000000000000000000000000000001ccf0000000000000000000000000000000000000000000000003b2839119d556115'}
+✅ LIVE AAVE DATA RETRIEVED:
+   Health Factor: 4.2627
+   Collateral: $190.09
+   Debt: $35.07
+   Available Borrows: $105.12
+   Data Source: LIVE_AAVE_CONTRACT
+   Data Quality: ✅ VALIDATED
+✅ Unified data validated: Data validated successfully
+📊 Using LIVE AAVE CONTRACT data: HF 4.2627
+✅ Dashboard method successful with validated data!
+   Health Factor: 4.2627
+   Collateral: $190.09
+   Debt: $35.07
+   Available Borrows: $105.12
+   Data Source: LIVE_AAVE_CONTRACT
+   Data Quality: ✅ VALIDATED
+2025-07-18 17:59:01,467 - DEBUG - Starting new HTTPS connection (1): pro-api.coinmarketcap.com:443
+2025-07-18 17:59:01,729 - DEBUG - https://pro-api.coinmarketcap.com:443 "GET /v1/cryptocurrency/quotes/latest?symbol=ETH&convert=USD HTTP/1.1" 200 None
+   Live ETH price: $3599.71
+   Testing borrow of $1.00 USDC...
+   Enhanced Borrow Manager: ✅ Available
+2025-07-18 17:59:01,737 - DEBUG - Making request. Method: eth_estimateGas
+2025-07-18 17:59:01,737 - DEBUG - Making request. Method: eth_chainId
+2025-07-18 17:59:01,737 - DEBUG - Making request HTTP. URI: https://arbitrum-one.public.blastapi.io, Method: eth_chainId
+2025-07-18 17:59:01,779 - DEBUG - https://arbitrum-one.public.blastapi.io:443 "POST / HTTP/1.1" 200 68
+2025-07-18 17:59:01,779 - DEBUG - Getting response HTTP. URI: https://arbitrum-one.public.blastapi.io, Method: eth_chainId, Response: {'jsonrpc': '2.0', 'id': 87, 'result': '0xa4b1'}
+2025-07-18 17:59:01,780 - DEBUG - Making request HTTP. URI: https://arbitrum-one.public.blastapi.io, Method: eth_estimateGas
+2025-07-18 17:59:01,809 - DEBUG - https://arbitrum-one.public.blastapi.io:443 "POST / HTTP/1.1" 200 100
+2025-07-18 17:59:01,809 - DEBUG - Getting response HTTP. URI: https://arbitrum-one.public.blastapi.io, Method: eth_estimateGas, Response: {'jsonrpc': '2.0', 'id': 88, 'error': {'code': -32000, 'message': 'execution reverted'}}
+❌ Borrow simulation failed: execution reverted
+
+📊 COMPREHENSIVE DIAGNOSTIC REPORT
+============================================================
+2025-07-18 17:59:01,810 - DEBUG - Making request. Method: eth_chainId
+2025-07-18 17:59:01,810 - DEBUG - Making request HTTP. URI: https://arbitrum-one.public.blastapi.io, Method: eth_chainId
+2025-07-18 17:59:01,835 - DEBUG - https://arbitrum-one.public.blastapi.io:443 "POST / HTTP/1.1" 200 68
+2025-07-18 17:59:01,836 - DEBUG - Getting response HTTP. URI: https://arbitrum-one.public.blastapi.io, Method: eth_chainId, Response: {'jsonrpc': '2.0', 'id': 89, 'result': '0xa4b1'}
+📄 Report saved: borrow_diagnostic_20250718_175901.json
+❌ ISSUES FOUND - SYSTEM NEEDS FIXES:
+   1. Gas price too low: 43544600 wei
+   2. Insufficient collateral value: $0.00 (minimum: $50)
+   3. Borrow simulation: execution reverted
+
+🔧 PLEASE FIX THE IDENTIFIED ISSUES BEFORE PROCEEDING
