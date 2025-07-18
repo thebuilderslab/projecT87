@@ -1513,11 +1513,8 @@ class ArbitrumTestnetAgent:
                 # Enhanced gas estimation
                 gas_params = self.get_optimized_gas_params('aave_borrow', 'market')
 
-                # Use the Aave integration's borrow_from_aave method with gas optimization
-                borrow_result = self.aave.borrow_from_aave(
-                    usdc_amount_wei,      # amount
-                    self.usdc_address     # asset_address
-                )
+                # Use the Aave integration's borrow method with proper signature
+                borrow_result = self.aave.borrow(safe_borrow_amount, self.usdc_address)
 
                 if borrow_result:
                     print(f"✅ Enhanced borrow successful: {borrow_result}")
@@ -1542,33 +1539,37 @@ class ArbitrumTestnetAgent:
                 print(f"❌ Enhanced borrow attempt {attempt + 1} error: {e}")
 
                 # Enhanced error analysis
-                error_details = {
-                    'timestamp': time.time(),
-                    'error': str(e),
-                    'error_type': type(e).__name__,
-                    'attempts': attempt + 1,
-                    'rpc_used': self.rpc_url,
-                    'health_factor': current_health_factor,
-                    'available_borrows': available_borrows_usd,
-                    'requested_amount': safe_borrow_amount,
-                    'gas_params': gas_params
-                }
-
-                # Check if it's a gas-related error
-                if 'gas' in str(e).lower() or 'out of gas' in str(e).lower():
-                    print(f"⚠️ Gas-related error detected - adjusting for next attempt")
-
-                # Check if it's an RPC error
-                if 'rpc' in str(e).lower() or 'connection' in str(e).lower():
-                    print(f"⚠️ RPC error detected - switching endpoint")
-                    self.switch_to_fallback_rpc()
-
                 try:
-                    with open('borrow_failure_analysis.json', 'w') as f:
-                        import json
-                        json.dump(error_details, f, indent=2)
-                except Exception as json_error:
-                    print(f"⚠️ Could not save error log: {json_error}")
+                    error_details = {
+                        'timestamp': time.time(),
+                        'error': str(e),
+                        'error_type': type(e).__name__,
+                        'attempts': attempt + 1,
+                        'rpc_used': self.rpc_url,
+                        'health_factor': current_health_factor,
+                        'available_borrows': available_borrows_usd,
+                        'requested_amount': safe_borrow_amount,
+                        'gas_params': gas_params if 'gas_params' in locals() else {}
+                    }
+
+                    # Check if it's a gas-related error
+                    if 'gas' in str(e).lower() or 'out of gas' in str(e).lower():
+                        print(f"⚠️ Gas-related error detected - adjusting for next attempt")
+
+                    # Check if it's an RPC error
+                    if 'rpc' in str(e).lower() or 'connection' in str(e).lower():
+                        print(f"⚠️ RPC error detected - switching endpoint")
+                        self.switch_to_fallback_rpc()
+
+                    try:
+                        with open('borrow_failure_analysis.json', 'w') as f:
+                            import json
+                            json.dump(error_details, f, indent=2)
+                    except Exception as json_error:
+                        print(f"⚠️ Could not save error log: {json_error}")
+
+                except Exception as analysis_error:
+                    print(f"⚠️ Error analysis failed: {analysis_error}")
 
                 if attempt < max_attempts - 1:
                     wait_time = 2 ** attempt  # Exponential backoff

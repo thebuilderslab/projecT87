@@ -531,9 +531,7 @@ class EnhancedBorrowManager:
         return False
 
     def calculate_safe_borrow_amount(self, growth_amount, available_borrows_usd):
-        """
-        Calculate safe borrow amount with proper fallbacks and manual override detection
-        """
+        """Calculate safe borrow amount with proper fallbacks and manual override detection"""
         print(f"🧮 Calculating safe borrow amount:")
         print(f"   Growth amount: ${growth_amount:.2f}")
         print(f"   Available capacity: ${available_borrows_usd:.2f}")
