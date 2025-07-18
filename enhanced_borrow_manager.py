@@ -294,7 +294,7 @@ class EnhancedBorrowManager:
 
         return None
 
-    def _try_alternative_parameter_order(self, self, amount_usd, token_address):
+    def _try_alternative_parameter_order(self, amount_usd, token_address):
         """Try with different parameter arrangements"""
         try:
             print("🔄 Mechanism 2: Alternative parameter order")
