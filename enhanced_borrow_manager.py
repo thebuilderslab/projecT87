@@ -20,7 +20,7 @@ class EnhancedBorrowManager:
         Execute borrowing with multiple fallback mechanisms and cooldown management
         """
         print(f"🏦 Enhanced Borrow Manager: Borrowing ${amount_usd:.2f}")
-        
+
         # Enhanced input validation with override support
         if amount_usd <= 0:
             # Check if manual override is active and we can use fallback amount
@@ -42,26 +42,26 @@ class EnhancedBorrowManager:
                         "stateMutability": "view",
                         "type": "function"
                     }]
-                    
+
                     pool_contract = self.agent.w3.eth.contract(address=self.agent.aave_pool_address, abi=pool_abi)
                     account_data = pool_contract.functions.getUserAccountData(self.agent.address).call()
                     available_borrows_usd = account_data[2] / (10**8)
-                    
+
                     # Use the agent's calculation logic
                     amount_usd = self.agent.calculate_safe_borrow_amount(0.0, available_borrows_usd)
                     print(f"🔧 Override borrow amount: ${amount_usd:.2f}")
-                    
+
                     if amount_usd <= 0:
                         print(f"❌ Even override calculation resulted in invalid amount: ${amount_usd}")
                         return None
-                        
+
                 except Exception as e:
                     print(f"❌ Failed to calculate override amount: {e}")
                     return None
             else:
                 print(f"⚠️ Invalid borrow amount: ${amount_usd}, operation cancelled")
                 return None
-            
+
         # Check cooldown first
         if hasattr(self.agent, 'is_operation_in_cooldown'):
             try:
@@ -110,7 +110,7 @@ class EnhancedBorrowManager:
 
         print("❌ All borrowing mechanisms failed")
         return None
-    
+
     def _record_success(self, result):
         """Record successful operation and return result"""
         if result and hasattr(self.agent, 'record_successful_operation'):
@@ -417,3 +417,4 @@ class EnhancedBorrowManager:
             "stateMutability": "nonpayable",
             "type": "function"
         }]
+```

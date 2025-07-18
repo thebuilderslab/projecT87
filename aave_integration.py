@@ -333,8 +333,7 @@ class AaveArbitrumIntegration:
                 self.usdc_address.lower(): 0.0,
                 self.wbtc_address.lower(): 0.0002,
                 self.weth_address.lower(): 0.00193518
-            }
-
+            }```python
             return known_balances.get(token_address.lower(), -1)
 
         except Exception as e:
@@ -1343,37 +1342,96 @@ class AaveArbitrumIntegration:
             user_address = self.w3.to_checksum_address(self.address)
             nonce = self.w3.eth.get_transaction_count(user_address, 'pending')
 
-            # Build borrow transaction
-            transaction = self.pool_contract.functions.borrow(
-                self.w3.to_checksum_address(token_address),
-                amount_wei,
-                2,  # Variable interest rate mode
-                0,  # referralCode
-                user_address
-            ).build_transaction({
-                'chainId': self.w3.eth.chain_id,
-                'gas': gas_params.get('gas', 300000),
-                'gasPrice': gas_params.get('gasPrice', self.w3.eth.gas_price),
-                'nonce': nonce,
-                'from': user_address
-            })
+            # Convert amount to proper integer before transaction
+            amount_wei_final = int(amount_wei)
 
-            # Sign and send transaction
-            signed_txn = self.w3.eth.account.sign_transaction(transaction, self.account.key)
-            tx_hash = self.w3.eth.send_raw_transaction(signed_txn.rawTransaction)
+            # Robust transaction execution with dynamic gas pricing
+            max_retries = 3
+            for attempt in range(max_retries):
+                try:
+                    print(f"🔄 Borrow attempt {attempt + 1}/{max_retries}")
 
-            tx_hash_hex = tx_hash.hex()
-            print(f"✅ Borrow transaction sent: {tx_hash_hex}")
+                    # Get fresh nonce and gas data for each attempt
+                    current_nonce = self.w3.eth.get_transaction_count(user_address, 'pending')
+                    current_base_fee = self.w3.eth.get_block('latest')['baseFeePerGas']
 
-            # Wait for confirmation
-            receipt = self.w3.eth.wait_for_transaction_receipt(tx_hash, timeout=300)
+                    # Increase gas price with each attempt
+                    gas_multiplier = 1.2 + (attempt * 0.2)  # 1.2x, 1.4x, 1.6x
+                    dynamic_gas_price = max(
+                        int(self.w3.eth.gas_price * gas_multiplier),
+                        int(current_base_fee * (1.5 + attempt * 0.3))
+                    )
 
-            if receipt.status == 1:
-                print(f"✅ Borrow successful! Transaction: {tx_hash_hex}")
-                return tx_hash_hex
-            else:
-                print(f"❌ Borrow transaction failed: {tx_hash_hex}")
-                return None
+                    print(f"🔧 Attempt {attempt + 1}: nonce={current_nonce}, gas_price={dynamic_gas_price}")
+
+                    transaction = self.pool_contract.functions.borrow(
+                        self.w3.to_checksum_address(token_address),  # asset
+                        amount_wei_final,   # amount
+                        2, # interestRateMode (1 = stable, 2 = variable)
+                        0,                 # referralCode
+                        user_address       # onBehalfOf
+                    ).build_transaction({
+                        'chainId': self.w3.eth.chain_id,
+                        'gas': 180000,
+                        'gasPrice': dynamic_gas_price,
+                        'nonce': current_nonce,
+                        'from': user_address
+                    })
+
+                    # Sign and send
+                    signed_txn = self.w3.eth.account.sign_transaction(transaction, self.account.key)
+                    tx_hash = self.w3.eth.send_raw_transaction(signed_txn.rawTransaction)
+
+                    print(f"✅ Borrow successful: {tx_hash.hex()}")
+
+                    # Wait for confirmation
+                    receipt = self.w3.eth.wait_for_transaction_receipt(tx_hash, timeout=120)
+                    if receipt.status == 1:
+                        print(f"✅ Borrow confirmed: {tx_hash.hex()}")
+                        return receipt
+                    else:
+                        print(f"❌ Borrow reverted: {tx_hash.hex()}")
+                        continue
+
+                except Exception as retry_e:
+                    error_msg = str(retry_e).lower()
+                    print(f"❌ Borrow attempt {attempt + 1} failed: {retry_e}")
+
+                    if "base fee" in error_msg and attempt < max_retries - 1:
+                        print(f"🔄 Gas fee issue, retrying with higher gas...")
+                        import time
+                        time.sleep(2)
+                        continue
+                    elif "nonce too low" in error_msg and attempt < max_retries - 1:
+                        print(f"🔄 Nonce conflict, retrying...")
+                        import time
+                        time.sleep(1)
+                        continue
+                    else:
+                        if attempt == max_retries - 1:
+                            print(f"❌ All borrow attempts failed")
+                            # Log failure for analysis
+                            import json
+                            import time
+                            failure_data = {
+                                "timestamp": time.time(),
+                                "error": str(retry_e),
+                                "error_type": type(retry_e).__name__,
+                                "attempts": max_retries,
+                                "rpc_used": self.w3.provider.endpoint_uri if hasattr(self.w3.provider, 'endpoint_uri') else "unknown",
+                                "gas_params": {
+                                    "gas": 180000,
+                                    "gasPrice": dynamic_gas_price
+                                }
+                            }
+
+                            # Save failure log
+                            timestamp = time.strftime("%Y%m%d_%H%M%S")
+                            with open(f"borrow_failure_analysis.json", "w") as f:
+                                json.dump(failure_data, f, indent=2)
+
+                            return None
+                        continue
 
         except Exception as e:
             print(f"❌ Borrow failed: {e}")
