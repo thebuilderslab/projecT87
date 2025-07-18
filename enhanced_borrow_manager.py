@@ -412,7 +412,7 @@ class EnhancedBorrowManager:
                             print(f"🎉 BORROW CONFIRMED: {tx_hash_hex}")
                             return tx_hash_hex
                         else:
-                            print(f"❌ Borrow reverted: {tx_hash_hex}")
+                            print(f"❌ Transaction reverted: {tx_hash_hex}")
 
                             # Enhanced revert reason analysis
                             revert_analysis = self._analyze_transaction_revert(tx_hash_hex, transaction, receipt)
@@ -761,7 +761,8 @@ class EnhancedBorrowManager:
                         print(f"🎉 BORROW SUCCESS! Transaction confirmed: {tx_hash_hex}")
                         explorer_url = f"https://arbiscan.io/tx/{tx_hash_hex}"
                         print(f"📊 View on Arbiscan: {explorer_url}")
-                        return tx_hash_hex                    else:
+                        return tx_hash_hex
+                    else:
                         print(f"❌ Transaction reverted (status=0): {tx_hash_hex}")
 
                         # Enhanced revert reason analysis
@@ -780,16 +781,17 @@ class EnhancedBorrowManager:
                         else:
                             print(f"   ❌ No retry recommended: {revert_analysis['reason']}")
                             return None
-                    except Exception as get_tx_e:
-                        print(f"    Could not fetch transaction details: {get_tx_e}")
-                        raise Exception(f"Transaction {tx_hash_hex} reverted with status 0.")
 
-                except Exception as retry_error:
-                    print(f"❌ Enhanced attempt {attempt + 1} failed: {retry_error}")
-                    if attempt == len(gas_multipliers) - 1:
-                        print(f"🚨 All enhanced attempts failed")
-                        break
-                    continue
+                except Exception as wait_error:
+                    print(f"⏳ Confirmation timeout: {wait_error}")
+                    return tx_hash_hex  # Return hash even if confirmation times out
+
+            except Exception as retry_error:
+                print(f"❌ Enhanced attempt {attempt + 1} failed: {retry_error}")
+                if attempt == len(gas_multipliers) - 1:
+                    print(f"🚨 All enhanced attempts failed")
+                    break
+                continue
 
         return None
 
