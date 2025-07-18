@@ -1697,29 +1697,16 @@ class AaveArbitrumIntegration:
             return None
 
     def _get_token_decimals(self, token_address):
-        """Get token decimals with fallbacks"""
+        """Get token decimals from contract or fallback mapping"""
         try:
-            # Try direct contract call first
             token_contract = self.w3.eth.contract(
                 address=Web3.to_checksum_address(token_address),
-                abi=[{
-                    "inputs": [],
-                    "name": "decimals",
-                    "outputs": [{"name": "", "type": "uint8"}],
-                    "stateMutability": "view",
-                    "type": "function"
-                }]
+                abi=self.erc20_abi
             )
             return token_contract.functions.decimals().call()
         except:
-            # Use known decimals as fallback
-            known_decimals = {
-                self.usdc_address.lower(): 6,
-                self.wbtc_address.lower(): 8,
-                self.weth_address.lower(): 18,
-                self.dai_address.lower(): 18
-            }
-            return known_decimals.get(token_address.lower(), 18)
+            # Fallback to known decimals
+            return self._get_known_decimals(token_address)
 
     def _convert_usd_to_wei(self, amount_usd, token_address):
         """Convert USD amount to wei with proper decimals"""
