@@ -726,3 +726,11 @@ Converted balance: 0.0
 2025-07-18 14:52:18,337 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_call, Response: {'jsonrpc': '2.0', 'id': 76, 'result': '0x0000000000000000000000000000000000000000000000000000000000000006'}
 2025-07-18 14:52:18,338 - DEBUG - DEBUG: Decimals: 6
 2025-07-18 14:52:18,338 - DEBUG - DEBUG: Method 2 result: 0.0
+2025-07-18 15:17:41,903 - ERROR - ERROR: Standalone diagnostic failed: invalid syntax (arbitrum_testnet_agent.py, line 1341)
+Traceback (most recent call last):
+  File "/home/runner/workspace/standalone_balance_debug.py", line 27, in debug_token_balances
+    from arbitrum_testnet_agent import ArbitrumTestnetAgent
+  File "/home/runner/workspace/arbitrum_testnet_agent.py", line 1341
+    ```python
+    ^
+SyntaxError: invalid syntax
