@@ -763,7 +763,7 @@ class EnhancedBorrowManager:
                         print(f"📊 View on Arbiscan: {explorer_url}")
                         return tx_hash_hex
                     else:
-                        print(f"❌ Transaction reverted (status=0): {tx_hash_hex}")
+                        print(f"❌ Transactionreverted (status=0): {tx_hash_hex}")
 
                         # Enhanced revert reason analysis
                         revert_analysis = self._analyze_transaction_revert(tx_hash_hex, transaction, receipt)
@@ -813,66 +813,43 @@ class EnhancedBorrowManager:
                 'revert_data': revert_data,
                 'retry_recommended': False,
                 'suggested_action': None,
-                'summary': 'Unknown revert reason',
-                'reason': 'Transaction failed without clear reason'
+                'summary': 'Transaction reverted',
+                'reason': 'Unknown revert reason'
             }
 
             if revert_data:
-                error_lower = revert_data.lower()
+                revert_lower = revert_data.lower()
 
-                if "health factor" in error_lower or "liquidation" in error_lower:
+                # Common Aave revert patterns
+                if 'insufficient' in revert_lower and 'collateral' in revert_lower:
                     analysis.update({
-                        'summary': 'Health factor would drop below liquidation threshold',
                         'retry_recommended': True,
                         'suggested_action': 'reduce_amount',
-                        'reason': 'Borrow amount too large for current collateral'
+                        'summary': 'Insufficient collateral',
+                        'reason': 'Not enough collateral to support this borrow'
                     })
-
-                elif "borrowing not enabled" in error_lower:
+                elif 'health' in revert_lower and 'factor' in revert_lower:
                     analysis.update({
-                        'summary': 'Borrowing disabled for this asset',
                         'retry_recommended': False,
-                        'reason': 'Asset borrowing is disabled by protocol'
+                        'suggested_action': None,
+                        'summary': 'Health factor too low',
+                        'reason': 'Would put account below liquidation threshold'
                     })
-
-                elif "collateral balance" in error_lower or "no collateral" in error_lower:
+                elif 'gas' in revert_lower:
                     analysis.update({
-                        'summary': 'Insufficient or no collateral',
-                        'retry_recommended': False,
-                        'reason': 'Need to supply collateral before borrowing'
-                    })
-
-                elif "gas" in error_lower and ("low" in error_lower or "insufficient" in error_lower):
-                    analysis.update({
-                        'summary': 'Insufficient gas for transaction',
                         'retry_recommended': True,
                         'suggested_action': 'increase_gas',
-                        'reason': 'Transaction ran out of gas'
+                        'summary': 'Gas-related failure',
+                        'reason': 'Transaction failed due to gas issues'
                     })
-
-                elif "allowance" in error_lower:
+                elif 'borrow' in revert_lower and 'cap' in revert_lower:
                     analysis.update({
-                        'summary': 'Token allowance issue',
-                        'retry_recommended': True,
-                        'suggested_action': 'check_allowance',
-                        'reason': 'Need to approve token spending'
-                    })
-
-                elif "paused" in error_lower:
-                    analysis.update({
-                        'summary': 'Protocol is paused',
                         'retry_recommended': False,
-                        'reason': 'Aave protocol temporarily paused'
+                        'suggested_action': None,
+                        'summary': 'Borrow cap reached',
+                        'reason': 'Protocol borrow limit reached for this asset'
                     })
 
-                else:
-                    analysis.update({
-                        'summary': f'Unknown error: {revert_data[:100]}...',
-                        'retry_recommended': False,
-                        'reason': 'Unrecognized error pattern'
-                    })
-
-            # Log analysis for debugging
             print(f"   Revert analysis: {analysis['summary']}")
             if analysis['retry_recommended']:
                 print(f"   Suggested action: {analysis['suggested_action']}")
