@@ -218,32 +218,53 @@ class EnhancedBorrowManager:
             return None
 
     def _try_direct_aave_borrow(self, amount_usd, token_address):
-        """Try the standard Aave integration borrow method"""
+        """Try the standard Aave integration borrow method with proper USD to wei conversion"""
         try:
-            print("🔄 Mechanism 1: Direct Aave integration")
+            print("🔄 Mechanism 1: Direct Aave integration with enhanced conversion")
 
-            # Get optimized gas parameters with proper method signature
+            # Convert USD to wei amount first
+            decimals = self._get_token_decimals(token_address)
+            if token_address.lower() == self.agent.usdc_address.lower():
+                # For USDC, 1 USD = 1 USDC
+                amount_wei = int(amount_usd * (10 ** decimals))
+            else:
+                print(f"❌ Unsupported token for borrowing: {token_address}")
+                return None
+
+            print(f"💱 Converted ${amount_usd} to {amount_wei} wei (decimals: {decimals})")
+
+            # Get optimized gas parameters
             try:
-                gas_params = self.agent.get_optimized_gas_params('aave_borrow', 'market')
-                print(f"✅ Got gas parameters: {gas_params}")
-            except TypeError:
-                # Fallback for method signature mismatch
                 if hasattr(self.agent.aave, 'get_optimized_gas_params'):
                     gas_params = self.agent.aave.get_optimized_gas_params('aave_borrow', 'market')
                 else:
-                    gas_params = {'gas': 300000, 'gasPrice': 100000000}
-                print(f"✅ Got fallback gas parameters: {gas_params}")
+                    gas_params = self.agent.get_optimized_gas_params('aave_borrow', 'market')
+                print(f"✅ Got gas parameters: {gas_params}")
+            except Exception as gas_error:
+                print(f"⚠️ Gas parameter error: {gas_error}")
+                gas_params = {'gas': 400000, 'gasPrice': self.agent.w3.to_wei(1, 'gwei')}
 
-            # Try multiple borrow method signatures with correct parameter order
+            # Use the borrow method with wei amount
             if hasattr(self.agent.aave, 'borrow'):
-                # Use the standard borrow method that expects USD amount
-                borrow_result = self.agent.aave.borrow(amount_usd, token_address)
+                # Try with wei amount first
+                try:
+                    borrow_result = self.agent.aave.borrow_from_aave(amount_wei, token_address)
+                    if borrow_result:
+                        print(f"✅ Mechanism 1 success with wei: {borrow_result}")
+                        return borrow_result
+                except Exception as wei_error:
+                    print(f"⚠️ Wei borrow failed: {wei_error}")
+                    
+                # Fallback to USD amount
+                try:
+                    borrow_result = self.agent.aave.borrow(amount_usd, token_address)
+                    if borrow_result:
+                        print(f"✅ Mechanism 1 success with USD: {borrow_result}")
+                        return borrow_result
+                except Exception as usd_error:
+                    print(f"❌ USD borrow failed: {usd_error}")
             else:
                 raise Exception("No borrow method found in Aave integration")
-
-            if borrow_result:
-                print(f"✅ Mechanism 1 success: {borrow_result}")
-                return borrow_result
 
         except Exception as e:
             print(f"❌ Mechanism 1 failed: {e}")
@@ -268,44 +289,102 @@ class EnhancedBorrowManager:
         return None
 
     def _try_manual_step_borrow(self, amount_usd, token_address):
-        """Manual step-by-step borrowing process"""
+        """Manual step-by-step borrowing with enhanced retry logic"""
         try:
-            print("🔄 Mechanism 3: Manual step-by-step borrow")
+            print("🔄 Mechanism 3: Manual step-by-step borrow with retry logic")
 
-            # Get token decimals
+            # Get token decimals and convert amount
             decimals = self._get_token_decimals(token_address)
-            amount_wei = int(amount_usd * (10 ** decimals))
+            if token_address.lower() == self.agent.usdc_address.lower():
+                amount_wei = int(amount_usd * (10 ** decimals))
+            else:
+                print(f"❌ Unsupported token: {token_address}")
+                return None
 
-            # Build transaction manually
-            user_address = self.agent.address
+            user_address = Web3.to_checksum_address(self.agent.address)
+            
+            print(f"💱 Amount: ${amount_usd} = {amount_wei} wei")
+            print(f"👤 User: {user_address}")
 
-            # Get fresh nonce
-            nonce = self.agent.w3.eth.get_transaction_count(user_address, 'pending')
+            # Progressive retry with increasing gas prices
+            gas_multipliers = [1.2, 1.5, 1.8, 2.0, 2.5]
+            
+            for attempt, multiplier in enumerate(gas_multipliers):
+                try:
+                    print(f"🔄 Attempt {attempt + 1}/5 with gas multiplier {multiplier}")
+                    
+                    # Get fresh nonce for each attempt
+                    nonce = self.agent.w3.eth.get_transaction_count(user_address, 'pending')
+                    
+                    # Get optimized gas parameters
+                    gas_params = self.agent.aave.get_optimized_gas_params('aave_borrow', 'urgent' if attempt > 2 else 'market')
+                    
+                    # Apply progressive multiplier
+                    if 'gasPrice' in gas_params:
+                        gas_params['gasPrice'] = int(gas_params['gasPrice'] * multiplier)
+                    elif 'maxFeePerGas' in gas_params:
+                        gas_params['maxFeePerGas'] = int(gas_params['maxFeePerGas'] * multiplier)
+                        gas_params['maxPriorityFeePerGas'] = int(gas_params['maxPriorityFeePerGas'] * multiplier)
 
-            # Build borrow transaction
-            transaction = self.agent.aave.pool_contract.functions.borrow(
-                Web3.to_checksum_address(token_address),
-                amount_wei,
-                2,  # Variable interest rate mode
-                0,  # referralCode
-                user_address
-            ).build_transaction({
-                'chainId': self.agent.w3.eth.chain_id,
-                'gas': 300000,
-                'gasPrice': int(self.agent.w3.eth.gas_price * 1.2),
-                'nonce': nonce,
-                'from': user_address
-            })
+                    print(f"⛽ Gas params for attempt {attempt + 1}: {gas_params}")
 
-            # Sign and send
-            signed_txn = self.agent.w3.eth.account.sign_transaction(
-                transaction, self.agent.account.key
-            )
-            tx_hash = self.agent.w3.eth.send_raw_transaction(signed_txn.rawTransaction)
+                    # Build transaction
+                    transaction = self.agent.aave.pool_contract.functions.borrow(
+                        Web3.to_checksum_address(token_address),
+                        amount_wei,
+                        2,  # Variable interest rate mode
+                        0,  # referralCode
+                        user_address
+                    ).build_transaction({
+                        'chainId': self.agent.w3.eth.chain_id,
+                        'gas': gas_params.get('gas', 400000),
+                        'nonce': nonce,
+                        'from': user_address,
+                        **{k: v for k, v in gas_params.items() if k in ['gasPrice', 'maxFeePerGas', 'maxPriorityFeePerGas']}
+                    })
 
-            tx_hash_hex = tx_hash.hex()
-            print(f"✅ Mechanism 3 success: {tx_hash_hex}")
-            return tx_hash_hex
+                    # Sign and send
+                    signed_txn = self.agent.w3.eth.account.sign_transaction(
+                        transaction, self.agent.account.key
+                    )
+                    tx_hash = self.agent.w3.eth.send_raw_transaction(signed_txn.rawTransaction)
+
+                    tx_hash_hex = tx_hash.hex()
+                    print(f"✅ Mechanism 3 success on attempt {attempt + 1}: {tx_hash_hex}")
+                    
+                    # Wait for confirmation
+                    try:
+                        receipt = self.agent.w3.eth.wait_for_transaction_receipt(tx_hash, timeout=120)
+                        if receipt.status == 1:
+                            print(f"✅ Transaction confirmed: {tx_hash_hex}")
+                            return tx_hash_hex
+                        else:
+                            print(f"❌ Transaction reverted: {tx_hash_hex}")
+                            continue
+                    except Exception as wait_error:
+                        print(f"⚠️ Confirmation timeout: {wait_error}")
+                        return tx_hash_hex  # Return hash even if confirmation times out
+
+                except Exception as attempt_error:
+                    error_msg = str(attempt_error).lower()
+                    print(f"❌ Attempt {attempt + 1} failed: {attempt_error}")
+                    
+                    # Specific error handling
+                    if "nonce too low" in error_msg:
+                        print(f"🔄 Nonce conflict, will retry with fresh nonce")
+                        time.sleep(1)
+                        continue
+                    elif "gas" in error_msg and "low" in error_msg:
+                        print(f"⛽ Gas too low, increasing multiplier")
+                        continue
+                    elif "insufficient funds" in error_msg:
+                        print(f"💰 Insufficient ETH for gas fees")
+                        break
+                    else:
+                        if attempt == len(gas_multipliers) - 1:
+                            print(f"🚨 All retry attempts failed")
+                            break
+                        continue
 
         except Exception as e:
             print(f"❌ Mechanism 3 failed: {e}")
