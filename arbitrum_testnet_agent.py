@@ -59,14 +59,24 @@ class ArbitrumTestnetAgent:
     def _initialize_enhanced_rpc_manager(self):
         """Initialize enhanced RPC management with only working endpoints"""
         if self.network_mode == 'mainnet':
-            # Multiple RPC endpoints for reliability - prioritizing most stable
-            self.rpc_endpoints = [
+            # Get Alchemy RPC URL from Replit secrets first
+            alchemy_rpc_url = os.getenv('ALCHEMY_RPC_URL')
+            
+            # Multiple RPC endpoints for reliability - prioritizing Alchemy if available
+            self.rpc_endpoints = []
+            
+            if alchemy_rpc_url:
+                self.rpc_endpoints.append(alchemy_rpc_url)
+                print(f"🔗 Using Alchemy RPC from secrets: {alchemy_rpc_url[:50]}...")
+            
+            # Add fallback endpoints
+            self.rpc_endpoints.extend([
                 "https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f938ff891c141",
                 "https://arb1.arbitrum.io/rpc", 
                 "https://arbitrum-one.public.blastapi.io",
                 "https://rpc.ankr.com/arbitrum",
                 "https://arbitrum-one.publicnode.com"
-            ]
+            ])
 
             # Test and rank only the working RPCs for performance
             tested_rpcs = self._test_and_rank_rpcs(self.rpc_endpoints, 42161)
