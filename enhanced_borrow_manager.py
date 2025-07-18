@@ -222,31 +222,37 @@ class EnhancedBorrowManager:
         try:
             print("🔄 Mechanism 1: Direct Aave integration with enhanced conversion")
 
-            # Convert USD to wei amount first
-            decimals = self._get_token_decimals(token_address)
-            if token_address.lower() == self.agent.usdc_address.lower():
-                # For USDC, 1 USD = 1 USDC
-                amount_wei = int(amount_usd * (10 ** decimals))
+            # Use the Aave integration's conversion method
+            if hasattr(self.agent.aave, '_convert_usd_to_wei'):
+                amount_wei = self.agent.aave._convert_usd_to_wei(amount_usd, token_address)
             else:
-                print(f"❌ Unsupported token for borrowing: {token_address}")
+                # Fallback conversion
+                decimals = self._get_token_decimals(token_address)
+                if token_address.lower() == self.agent.usdc_address.lower():
+                    amount_wei = int(amount_usd * (10 ** decimals))
+                else:
+                    print(f"❌ Unsupported token for borrowing: {token_address}")
+                    return None
+
+            if amount_wei <= 0:
+                print(f"❌ Invalid wei amount: {amount_wei}")
                 return None
 
-            print(f"💱 Converted ${amount_usd} to {amount_wei} wei (decimals: {decimals})")
+            print(f"💱 Converted ${amount_usd} to {amount_wei} wei")
 
             # Get optimized gas parameters
             try:
                 if hasattr(self.agent.aave, 'get_optimized_gas_params'):
                     gas_params = self.agent.aave.get_optimized_gas_params('aave_borrow', 'market')
                 else:
-                    gas_params = self.agent.get_optimized_gas_params('aave_borrow', 'market')
+                    gas_params = {'gas': 400000, 'gasPrice': self.agent.w3.to_wei(1, 'gwei')}
                 print(f"✅ Got gas parameters: {gas_params}")
             except Exception as gas_error:
                 print(f"⚠️ Gas parameter error: {gas_error}")
                 gas_params = {'gas': 400000, 'gasPrice': self.agent.w3.to_wei(1, 'gwei')}
 
             # Use the borrow method with wei amount
-            if hasattr(self.agent.aave, 'borrow'):
-                # Try with wei amount first
+            if hasattr(self.agent.aave, 'borrow_from_aave'):
                 try:
                     borrow_result = self.agent.aave.borrow_from_aave(amount_wei, token_address)
                     if borrow_result:
@@ -255,7 +261,8 @@ class EnhancedBorrowManager:
                 except Exception as wei_error:
                     print(f"⚠️ Wei borrow failed: {wei_error}")
                     
-                # Fallback to USD amount
+            # Fallback to USD amount if available
+            if hasattr(self.agent.aave, 'borrow'):
                 try:
                     borrow_result = self.agent.aave.borrow(amount_usd, token_address)
                     if borrow_result:
@@ -263,8 +270,8 @@ class EnhancedBorrowManager:
                         return borrow_result
                 except Exception as usd_error:
                     print(f"❌ USD borrow failed: {usd_error}")
-            else:
-                raise Exception("No borrow method found in Aave integration")
+
+            raise Exception("No working borrow method found in Aave integration")
 
         except Exception as e:
             print(f"❌ Mechanism 1 failed: {e}")

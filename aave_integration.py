@@ -297,7 +297,7 @@ class AaveArbitrumIntegration:
             atoken_addresses = {
                 "0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f": "0x6533afac2E7BCCB20dca161449A13A2D2d5B739A",  # WBTC -> aWBTC
                 "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1": "0xe50fA9b4c56454E2edF6BFf7c81b50c5F05aBE61",  # WETH -> aWETH
-                "0xaf88d065e77c8cF0eAEFf3e253e648a15cEe23dC": "0x724dc807b04555b71ed48a6896b6F41593b8C637",  # USDC -> aUSDC
+                "0xaf88d065e77c8cF0eAEFf3e253e648A15CEe23dC": "0x724dc807b04555b71ed48a6896b6F41593b8C637",  # USDC -> aUSDC
             }
 
             atoken_address = atoken_addresses.get(token_address)
@@ -334,6 +334,7 @@ class AaveArbitrumIntegration:
                 self.wbtc_address.lower(): 0.0002,
                 self.weth_address.lower(): 0.00193518
             }```python
+```python
             return known_balances.get(token_address.lower(), -1)
 
         except Exception as e:
@@ -999,12 +1000,12 @@ class AaveArbitrumIntegration:
         """Get optimized gas parameters with real-time network conditions and dynamic pricing"""
         try:
             print(f"🔧 Getting optimized gas for {operation_type} in {market_condition} conditions")
-            
+
             # Get real-time network conditions
             current_gas_price = self.w3.eth.gas_price
             current_block = self.w3.eth.get_block('latest')
             base_fee = current_block.get('baseFeePerGas', current_gas_price)
-            
+
             print(f"⛽ Network gas conditions:")
             print(f"   Current gas price: {current_gas_price / 1e9:.2f} gwei")
             print(f"   Base fee: {base_fee / 1e9:.2f} gwei")
@@ -1021,7 +1022,7 @@ class AaveArbitrumIntegration:
 
             # Dynamic gas price multipliers based on network congestion
             network_congestion = current_gas_price / base_fee if base_fee > 0 else 1.0
-            
+
             if network_congestion > 2.0:
                 base_multiplier = 1.8  # High congestion
             elif network_congestion > 1.5:
@@ -1032,6 +1033,7 @@ class AaveArbitrumIntegration:
             # Additional multipliers based on market conditions
             condition_multipliers = {
                 'low': 1.0,
+```text
                 'normal': 1.1,
                 'high': 1.4,
                 'urgent': 1.8,
@@ -1055,7 +1057,7 @@ class AaveArbitrumIntegration:
 
                     # Ensure we're always above base fee
                     max_fee = int((base_fee * total_multiplier) + priority_fee)
-                    
+
                     # Safety minimum - never go below 0.1 gwei
                     min_fee = self.w3.to_wei(0.1, 'gwei')
                     max_fee = max(max_fee, min_fee)
@@ -1065,12 +1067,12 @@ class AaveArbitrumIntegration:
                         'maxFeePerGas': max_fee,
                         'maxPriorityFeePerGas': priority_fee
                     }
-                    
+
                     print(f"✅ EIP-1559 gas params:")
                     print(f"   Gas limit: {gas_limit:,}")
                     print(f"   Max fee: {max_fee / 1e9:.2f} gwei")
                     print(f"   Priority fee: {priority_fee / 1e9:.2f} gwei")
-                    
+
                     return gas_params
 
             except Exception as eip1559_error:
@@ -1078,7 +1080,7 @@ class AaveArbitrumIntegration:
 
             # Fallback to legacy gas pricing
             legacy_gas_price = int(current_gas_price * total_multiplier)
-            
+
             # Ensure minimum gas price
             min_gas_price = self.w3.to_wei(0.1, 'gwei')
             legacy_gas_price = max(legacy_gas_price, min_gas_price)
@@ -1087,7 +1089,7 @@ class AaveArbitrumIntegration:
                 'gas': gas_limit,
                 'gasPrice': legacy_gas_price
             }
-            
+
             print(f"✅ Legacy gas params:")
             print(f"   Gas limit: {gas_limit:,}")
             print(f"   Gas price: {legacy_gas_price / 1e9:.2f} gwei")
@@ -1497,14 +1499,14 @@ class AaveArbitrumIntegration:
             return None
 
     def _get_token_decimals(self, token_address):
-        """Get token decimals with fallback to known values"""
+        """Get token decimals with fallbacks"""
         try:
             # Try direct contract call first
             token_contract = self.w3.eth.contract(
-                address=self.w3.to_checksum_address(token_address),
+                address=Web3.to_checksum_address(token_address),
                 abi=[{
                     "inputs": [],
-                    "name": "decimals", 
+                    "name": "decimals",
                     "outputs": [{"name": "", "type": "uint8"}],
                     "stateMutability": "view",
                     "type": "function"
@@ -1520,6 +1522,22 @@ class AaveArbitrumIntegration:
                 self.dai_address.lower(): 18
             }
             return known_decimals.get(token_address.lower(), 18)
+
+    def _convert_usd_to_wei(self, amount_usd, token_address):
+        """Convert USD amount to wei with proper decimals"""
+        try:
+            decimals = self._get_token_decimals(token_address)
+            if token_address.lower() == self.usdc_address.lower():
+                # For USDC: 1 USD = 1 USDC
+                return int(amount_usd * (10 ** decimals))
+            else:
+                # For other tokens, would need price conversion
+                # For now, return 0 for unsupported tokens
+                print(f"⚠️ USD to wei conversion not supported for {token_address}")
+                return 0
+        except Exception as e:
+            print(f"❌ USD to wei conversion failed: {e}")
+            return 0
 
     def check_supply_caps(self):
         """
