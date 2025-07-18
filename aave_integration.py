@@ -334,7 +334,7 @@ class AaveArbitrumIntegration:
                 self.wbtc_address.lower(): 0.0002,
                 self.weth_address.lower(): 0.00193518
             }
-            
+```
             return known_balances.get(token_address.lower(), -1)
 
         except Exception as e:
@@ -1033,8 +1033,7 @@ class AaveArbitrumIntegration:
             # Additional multipliers based on market conditions
             condition_multipliers = {
                 'low': 1.0,
-```text
-                'normal': 1.1,
+'normal': 1.1,
                 'high': 1.4,
                 'urgent': 1.8,
                 'market': 1.3
