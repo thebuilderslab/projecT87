@@ -1,0 +1,15 @@
+{
+  "timestamp": "2025-07-18 05:40:10 UTC",
+  "wallet_address": "0x5B823270e3719CDe8669e5e5326B455EaA8a350b",
+  "network_mode": "mainnet",
+  "chain_id": 42161,
+  "issues_found": [
+    "Gas price too low: 58359400 wei",
+    "Insufficient ETH for gas: 0.000544 (minimum: 0.001)",
+    "Insufficient collateral value: $0.00 (minimum: $50)",
+    "Aave pool contract not responsive",
+    "Borrow simulation: execution reverted"
+  ],
+  "fixes_applied": [],
+  "status": "NEEDS_FIXES"
+}
