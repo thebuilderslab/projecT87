@@ -1,14 +1,11 @@
 {
-  "timestamp": 1752782041.310819,
-  "error": "AaveArbitrumIntegration.borrow_from_aave() takes 3 positional arguments but 4 were given",
-  "error_type": "TypeError",
+  "timestamp": 1752849357.7685318,
+  "error": "{'code': -32000, 'message': 'insufficient funds for gas * price + value: address 0x5B823270e3719CDe8669e5e5326B455EaA8a350b have 111003161978199 want 197398782000000'}",
+  "error_type": "ValueError",
   "attempts": 3,
-  "rpc_used": "https://arbitrum-one.public.blastapi.io",
-  "health_factor": 3.9605389369984882,
-  "available_borrows": 95.31683371,
-  "requested_amount": 7.600000344609726e-08,
+  "rpc_used": "https://1rpc.io/arb",
   "gas_params": {
     "gas": 180000,
-    "gasPrice": 11239800
+    "gasPrice": 1096659900
   }
 }
