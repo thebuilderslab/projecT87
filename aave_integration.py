@@ -1504,6 +1504,17 @@ class AaveArbitrumIntegration:
                 "aUSDC": "0x724dc807b04555b71ed48a6896b6F41593b8C637"   # aUSDC
             }
 
+            # Define aToken ABI for balance checks
+            atoken_abi = [
+                {
+                    "inputs": [{"internalType": "address", "name": "account", "type": "address"}],
+                    "name": "balanceOf",
+                    "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
+                    "stateMutability": "view",
+                    "type": "function"
+                }
+            ]
+
             for asset_name, atoken_address in assets.items():
                 try:
                     # Direct contract call with better error handling
