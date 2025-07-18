@@ -1017,6 +1017,55 @@ args = "echo \"Phase 3: Run diagnostic tool...\""
 task = "shell.exec"
 args = "python borrow_diagnostic_tool.py"
 
+[[workflows.workflow]]
+name = "🔧 TEST CRITICAL FIXES"
+author = 39391053
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"🔧 TESTING CRITICAL ENHANCED BORROW MANAGER FIXES\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"================================================\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"Phase 1: Testing Enhanced Borrow Manager fixes...\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python test_enhanced_borrow_manager_fixes.py"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"Phase 2: Testing Aave integration fixes...\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python fix_aave_integration.py"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"Phase 3: Running comprehensive diagnostic...\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python borrow_diagnostic_tool.py"
+
 [[ports]]
 localPort = 5000
 externalPort = 80
