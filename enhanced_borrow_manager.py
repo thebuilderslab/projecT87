@@ -408,30 +408,22 @@ class EnhancedBorrowManager:
                         else:
                             print(f"❌ Borrow reverted: {tx_hash_hex}")
 
-                            # Try to get revert reason
-                            try:
-                                # Replay transaction to get revert reason
-                                self.agent.w3.eth.call(transaction, receipt.blockNumber)
-                            except Exception as revert_error:
-                                error_msg = str(revert_error)
-                                print(f"   🔍 Revert reason: {error_msg}")
+                            # Enhanced revert reason analysis
+                            revert_analysis = self._analyze_transaction_revert(tx_hash_hex, transaction, receipt)
+                            print(f"   🔍 Detailed revert analysis: {revert_analysis['summary']}")
 
-                                # Check for specific Aave errors
-                                if "HEALTH_FACTOR_LOWER_THAN_LIQUIDATION_THRESHOLD" in error_msg:
-                                    print(f"   💡 Solution: Reduce borrow amount or add more collateral")
-                                    # Try with smaller amount
-                                    if amount_usd > 5.0:
-                                        print(f"   🔄 Retrying with smaller amount...")
-                                        smaller_amount = amount_usd * 0.5
-                                        return self._try_manual_step_borrow(smaller_amount, token_address)
-                                elif "COLLATERAL_BALANCE_IS_ZERO" in error_msg:
-                                    print(f"   💡 Solution: Add collateral before borrowing")
-                                    return None
-                                elif "BORROWING_NOT_ENABLED" in error_msg:
-                                    print(f"   💡 Solution: Asset borrowing is disabled")
-                                    return None
-
-                            continue
+                            # Handle specific revert reasons
+                            if revert_analysis['retry_recommended']:
+                                if revert_analysis['suggested_action'] == 'reduce_amount':
+                                    smaller_amount = amount_usd * 0.6
+                                    print(f"   🔄 Retrying with reduced amount: ${smaller_amount:.2f}")
+                                    return self._try_manual_step_borrow(smaller_amount, token_address)
+                                elif revert_analysis['suggested_action'] == 'increase_gas':
+                                    print(f"   🔄 Retrying with higher gas...")
+                                    continue
+                            else:
+                                print(f"   ❌ No retry recommended: {revert_analysis['reason']}")
+                                return None
                     except Exception as wait_error:
                         print(f"⚠️ Confirmation timeout: {wait_error}")
                         return tx_hash_hex  # Return hash even if confirmation times out
@@ -766,4 +758,130 @@ class EnhancedBorrowManager:
                         return tx_hash_hex
                     else:
                         print(f"❌ Transaction reverted (status=0): {tx_hash_hex}")
-                        # Try to get revert reason
+
+                        # Enhanced revert reason analysis
+                        revert_analysis = self._analyze_transaction_revert(tx_hash_hex, transaction, receipt)
+                        print(f"   🔍 Detailed revert analysis: {revert_analysis['summary']}")
+
+                        # Handle specific revert reasons
+                        if revert_analysis['retry_recommended']:
+                            if revert_analysis['suggested_action'] == 'reduce_amount':
+                                smaller_amount = amount_usd * 0.6
+                                print(f"   🔄 Retrying with reduced amount: ${smaller_amount:.2f}")
+                                return self._try_manual_step_borrow(smaller_amount, token_address)
+                            elif revert_analysis['suggested_action'] == 'increase_gas':
+                                print(f"   🔄 Retrying with higher gas...")
+                                continue
+                        else:
+                            print(f"   ❌ No retry recommended: {revert_analysis['reason']}")
+                            return None
+                except Exception as get_tx_e:
+                            print(f"    Could not fetch transaction details: {get_tx_e}")
+                        raise Exception(f"Transaction {tx_hash_hex} reverted with status 0.")
+
+                except Exception as retry_error:
+                    print(f"❌ Enhanced attempt {attempt + 1} failed: {retry_error}")
+                    if attempt == len(gas_multipliers) - 1:
+                        print(f"🚨 All enhanced attempts failed")
+                        break
+                    continue
+
+            return None
+
+        except Exception as e:
+            print(f"❌ Enhanced borrow transaction failed: {e}")
+            return None
+
+    def _analyze_transaction_revert(self, tx_hash, transaction, receipt):
+        """Analyze why a transaction reverted and suggest actions"""
+        try:
+            print(f"🔍 Analyzing transaction revert: {tx_hash}")
+
+            # Try to get detailed revert reason
+            revert_data = None
+            try:
+                # Replay the transaction to get revert reason
+                self.agent.w3.eth.call(transaction, receipt.blockNumber)
+            except Exception as revert_error:
+                revert_data = str(revert_error)
+
+            # Analyze common Aave revert reasons
+            analysis = {
+                'revert_data': revert_data,
+                'retry_recommended': False,
+                'suggested_action': None,
+                'summary': 'Unknown revert reason',
+                'reason': 'Transaction failed without clear reason'
+            }
+
+            if revert_data:
+                error_lower = revert_data.lower()
+
+                if "health factor" in error_lower or "liquidation" in error_lower:
+                    analysis.update({
+                        'summary': 'Health factor would drop below liquidation threshold',
+                        'retry_recommended': True,
+                        'suggested_action': 'reduce_amount',
+                        'reason': 'Borrow amount too large for current collateral'
+                    })
+
+                elif "borrowing not enabled" in error_lower:
+                    analysis.update({
+                        'summary': 'Borrowing disabled for this asset',
+                        'retry_recommended': False,
+                        'reason': 'Asset borrowing is disabled by protocol'
+                    })
+
+                elif "collateral balance" in error_lower or "no collateral" in error_lower:
+                    analysis.update({
+                        'summary': 'Insufficient or no collateral',
+                        'retry_recommended': False,
+                        'reason': 'Need to supply collateral before borrowing'
+                    })
+
+                elif "gas" in error_lower and ("low" in error_lower or "insufficient" in error_lower):
+                    analysis.update({
+                        'summary': 'Insufficient gas for transaction',
+                        'retry_recommended': True,
+                        'suggested_action': 'increase_gas',
+                        'reason': 'Transaction ran out of gas'
+                    })
+
+                elif "allowance" in error_lower:
+                    analysis.update({
+                        'summary': 'Token allowance issue',
+                        'retry_recommended': True,
+                        'suggested_action': 'check_allowance',
+                        'reason': 'Need to approve token spending'
+                    })
+
+                elif "paused" in error_lower:
+                    analysis.update({
+                        'summary': 'Protocol is paused',
+                        'retry_recommended': False,
+                        'reason': 'Aave protocol temporarily paused'
+                    })
+
+                else:
+                    analysis.update({
+                        'summary': f'Unknown error: {revert_data[:100]}...',
+                        'retry_recommended': False,
+                        'reason': 'Unrecognized error pattern'
+                    })
+
+            # Log analysis for debugging
+            print(f"   Revert analysis: {analysis['summary']}")
+            if analysis['retry_recommended']:
+                print(f"   Suggested action: {analysis['suggested_action']}")
+            else:
+                print(f"   No retry: {analysis['reason']}")
+
+            return analysis
+
+        except Exception as e:
+            print(f"⚠️ Revert analysis failed: {e}")
+            return {
+                'summary': 'Analysis failed',
+                'retry_recommended': False,
+                'reason': 'Could not analyze revert reason'
+            }
