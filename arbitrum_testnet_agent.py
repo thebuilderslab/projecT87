@@ -79,6 +79,7 @@ class ArbitrumTestnetAgent:
         if self.network_mode == 'mainnet':
             # Get Alchemy RPC URL from Replit secrets first
             alchemy_rpc_url = os.getenv('ALCHEMY_RPC_URL')
+            print(f"DEBUG: ALCHEMY_RPC_URL loaded from environment: {alchemy_rpc_url}")
             print(f"🔍 DEBUG: ALCHEMY_RPC_URL from env: {alchemy_rpc_url}")
 
             # Multiple RPC endpoints for reliability - prioritizing Alchemy if available
