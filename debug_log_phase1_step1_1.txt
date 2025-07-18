@@ -1,0 +1,1345 @@
+
+💰 STANDALONE TOKEN BALANCE DIAGNOSTIC
+==================================================
+2025-07-18 14:47:43,163 - DEBUG - Consider installing rusty-rlp to improve pyrlp performance with a rust basedbackend. Not currently functional for Python 3.11
+2025-07-18 14:47:43,719 - DEBUG - DEBUG: Initializing ArbitrumTestnetAgent
+🤖 Initializing Arbitrum Testnet Agent...
+🔍 Testing RPC: https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f938ff891c141
+2025-07-18 14:47:43,721 - DEBUG - Making request HTTP. URI: https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f938ff891c141, Method: web3_clientVersion
+2025-07-18 14:47:43,721 - DEBUG - Session cached: https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f938ff891c141, <requests.sessions.Session object at 0x7efd58c40cd0>
+2025-07-18 14:47:43,723 - DEBUG - Starting new HTTPS connection (1): arbitrum-mainnet.infura.io:443
+2025-07-18 14:47:43,994 - DEBUG - https://arbitrum-mainnet.infura.io:443 "POST /v3/5d36f0061cbc4dda980f938ff891c141 HTTP/1.1" 200 78
+2025-07-18 14:47:43,995 - DEBUG - Getting response HTTP. URI: https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f938ff891c141, Method: web3_clientVersion, Response: {'jsonrpc': '2.0', 'id': 0, 'result': 'nitro/v3.6.7-a7c9f1e/linux-arm64/go1.23.1'}
+2025-07-18 14:47:43,995 - DEBUG - Making request. Method: eth_chainId
+2025-07-18 14:47:43,995 - DEBUG - Making request HTTP. URI: https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f938ff891c141, Method: eth_chainId
+2025-07-18 14:47:44,070 - DEBUG - https://arbitrum-mainnet.infura.io:443 "POST /v3/5d36f0061cbc4dda980f938ff891c141 HTTP/1.1" 200 42
+2025-07-18 14:47:44,071 - DEBUG - Getting response HTTP. URI: https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f938ff891c141, Method: eth_chainId, Response: {'jsonrpc': '2.0', 'id': 1, 'result': '0xa4b1'}
+2025-07-18 14:47:44,071 - DEBUG - Making request. Method: eth_getBlockByNumber
+2025-07-18 14:47:44,071 - DEBUG - Making request HTTP. URI: https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f938ff891c141, Method: eth_getBlockByNumber
+2025-07-18 14:47:44,150 - DEBUG - https://arbitrum-mainnet.infura.io:443 "POST /v3/5d36f0061cbc4dda980f938ff891c141 HTTP/1.1" 200 1110
+2025-07-18 14:47:44,150 - DEBUG - Getting response HTTP. URI: https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f938ff891c141, Method: eth_getBlockByNumber, Response: {'jsonrpc': '2.0', 'id': 2, 'result': {'baseFeePerGas': '0x12403dc0', 'difficulty': '0x1', 'extraData': '0x27dbd6c37b5364b7789d3bc2d07f8a8036692984f605fc1ef5689e0e159686b6', 'gasLimit': '0x4000000000000', 'gasUsed': '0xca2a2', 'hash': '0x365d25b60f3f2c4b2c23daeeff454b7d82e05ab96e7b05cb35bae6eeb1587d4d', 'l1BlockNumber': '0x15e23d9', 'logsBloom': '0x00810000001400000000001048000004000010000000800000000a0210100000000000000800000010000000080400100000c0018600000000002020002c000000040a010200000001004008000120041000100000040a200000000000000000000000040200000220060004040008000000000000004000000000100104000000200401000020000000004000404000000000000c000000000000000000000202000010000010080000000000008000000000000300000000000008040000000002200220000000040000100100002000000400800000c040000800000070300018200000a00000004040000002201000000000002000002000000000080408', 'miner': '0xa4b000000000000000000073657175656e636572', 'mixHash': '0x00000000000244d500000000015e23d900000000000000280000000000000000', 'nonce': '0x00000000001f3726', 'number': '0x15664ff2', 'parentHash': '0xf563817f4649971e983b0191c01f245ce00f68de8e5084b90b2be7784a5ce090', 'receiptsRoot': '0x9616c9179296f1c7d0d5ed84be64eba88df43fdb68d482730e82f509af14e3a5', 'sendCount': '0x244d5', 'sendRoot': '0x27dbd6c37b5364b7789d3bc2d07f8a8036692984f605fc1ef5689e0e159686b6', 'sha3Uncles': '0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347', 'size': '0xc10', 'stateRoot': '0xa729edfa8f130e448bf520454bd68a2449a2dea7e6b949a885b523cf9a16167a', 'timestamp': '0x687a5e8f', 'transactions': ['0x4b0c4998fa0fde21645034102cf0330f1fafe732276746154d6ebafaa7c207a5', '0x236a57718afb377f8daaea45212f456c7e77b9fd1031c7927d5a64cc908de34b', '0xca505570df24965045f6c61d5e4ec1619f97cb31186fa3b94d55ff918f25024c', '0x55432579133057fe0b1a9a04425f9ae4d7c584f628e8ec0b59a4d07590b00423', '0x131994a348fa521095749b48d03292e17c65b4ec600eae91d5b8de367e6c7bf4', '0xc06de2f1d9a2b3c488c7e0a636df5e457d88c41779c78156e703c50ee7b5a7d0', '0xacd2688cbe3cafa5ac51e363cf42a4f513431366196b5de4a6c6d1e608f633e4', '0xd17a3074e8034d0c1343d7430fc68befa1be1ab3aec7e287698bcc63f6fbc175', '0x2ab0e59d6aee20376d536a577856bea9dd4dace4c5a9e4dd6e4b8fe764d7a419'], 'transactionsRoot': '0x57a54f297d6ca4e590c4704fe1cd15bf2e73f0c184a0fce79674eef0411c6987', 'uncles': []}}
+2025-07-18 14:47:44,153 - DEBUG - Making request. Method: eth_gasPrice
+2025-07-18 14:47:44,153 - DEBUG - Making request HTTP. URI: https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f938ff891c141, Method: eth_gasPrice
+2025-07-18 14:47:44,233 - DEBUG - https://arbitrum-mainnet.infura.io:443 "POST /v3/5d36f0061cbc4dda980f938ff891c141 HTTP/1.1" 200 47
+2025-07-18 14:47:44,233 - DEBUG - Getting response HTTP. URI: https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f938ff891c141, Method: eth_gasPrice, Response: {'jsonrpc': '2.0', 'id': 3, 'result': '0x1244e140'}
+✅ RPC passed tests: https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f938ff891c141 (0.51s)
+🔍 Testing RPC: https://arb1.arbitrum.io/rpc
+2025-07-18 14:47:44,235 - DEBUG - Making request HTTP. URI: https://arb1.arbitrum.io/rpc, Method: web3_clientVersion
+2025-07-18 14:47:44,235 - DEBUG - Session cached: https://arb1.arbitrum.io/rpc, <requests.sessions.Session object at 0x7efd58a192d0>
+2025-07-18 14:47:44,236 - DEBUG - Starting new HTTPS connection (1): arb1.arbitrum.io:443
+2025-07-18 14:47:44,349 - DEBUG - https://arb1.arbitrum.io:443 "POST /rpc HTTP/1.1" 200 104
+2025-07-18 14:47:44,350 - DEBUG - Getting response HTTP. URI: https://arb1.arbitrum.io/rpc, Method: web3_clientVersion, Response: {'jsonrpc': '2.0', 'id': 0, 'result': 'nitro/v3.6.8-rc.1-d6c96a5/linux-arm64/go1.23.1'}
+2025-07-18 14:47:44,350 - DEBUG - Making request. Method: eth_chainId
+2025-07-18 14:47:44,350 - DEBUG - Making request HTTP. URI: https://arb1.arbitrum.io/rpc, Method: eth_chainId
+2025-07-18 14:47:44,429 - DEBUG - https://arb1.arbitrum.io:443 "POST /rpc HTTP/1.1" 200 67
+2025-07-18 14:47:44,430 - DEBUG - Getting response HTTP. URI: https://arb1.arbitrum.io/rpc, Method: eth_chainId, Response: {'jsonrpc': '2.0', 'id': 1, 'result': '0xa4b1'}
+2025-07-18 14:47:44,430 - DEBUG - Making request. Method: eth_getBlockByNumber
+2025-07-18 14:47:44,430 - DEBUG - Making request HTTP. URI: https://arb1.arbitrum.io/rpc, Method: eth_getBlockByNumber
+2025-07-18 14:47:44,511 - DEBUG - https://arb1.arbitrum.io:443 "POST /rpc HTTP/1.1" 200 1131
+2025-07-18 14:47:44,512 - DEBUG - Getting response HTTP. URI: https://arb1.arbitrum.io/rpc, Method: eth_getBlockByNumber, Response: {'jsonrpc': '2.0', 'id': 2, 'result': {'baseFeePerGas': '0x1235aea0', 'difficulty': '0x1', 'extraData': '0x27dbd6c37b5364b7789d3bc2d07f8a8036692984f605fc1ef5689e0e159686b6', 'gasLimit': '0x4000000000000', 'gasUsed': '0xf1f7e', 'hash': '0xea7ae2657429b6fb91fae766ebd521770673a176645f03efbe96aa6ad938edf6', 'l1BlockNumber': '0x15e23d9', 'logsBloom': '0x000000800000000000008000000200004000001000000010800000120000000000000000000000000000000000110000000040012a002000002020008024000000000a05020004080001800800002400424040000004800000000000000080000600002802000000000080b421400810000000000000004000020050004800000000000000102000000000800000000000000000000000000000000400000000020004002002000000001002000001000090040008000800002240000000000000042002000000400001000000002018000000200000044100000000908070004010001004040000104001000000202104000080000002000000000000000000', 'miner': '0xa4b000000000000000000073657175656e636572', 'mixHash': '0x00000000000244d500000000015e23d900000000000000280000000000000000', 'nonce': '0x00000000001f3726', 'number': '0x15664ff0', 'parentHash': '0xe1436cef5bab4a34ddc73d4dfd8ff5c7b4a9c279421743e0e3cb2ab665330e03', 'receiptsRoot': '0x3b935101132b46ca2eaada2037cbceecb94f66bb357df24927174d67022aad2d', 'sendCount': '0x244d5', 'sendRoot': '0x27dbd6c37b5364b7789d3bc2d07f8a8036692984f605fc1ef5689e0e159686b6', 'sha3Uncles': '0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347', 'size': '0xe61', 'stateRoot': '0xa43cea3188e7065feda567d42829b2c0b3ad942510c2787c0de252919b7859f2', 'timestamp': '0x687a5e8f', 'transactions': ['0x0a3eb0bb4f1b1e1784554958df6a9ae925b7fabc212e92bb44ad2e7073367679', '0x1bd9dbf3e0b22e45e10115ef1a3e2db1393975ddc8ec9f5d521a8b8322757638', '0x41c1bdfb07e1c69a16c68d5bd7c7c2bff339735d269bf22f37601bb2713afa9d', '0x62b25266164604efe7f5332f196ab3756451f927ea81509878a8927f6b4939a3', '0x982a052344d7e001a568dbc35d6429ee1c6b83d778303dfdfec4b0369a554706', '0x873f44cee411d89f42f056d66923c4f15fd1148305411ba00800de875179b7a3', '0xdf33f60415b5ddb4011183f5ae5ea131a533e3036750ac4c95517a95ec7056c9', '0x4933573f4425a7dec58c1e5873e07720f40f742612eec3a69ff8194cad4ae470', '0xa6ce30ce9a13edb7a7274cd87e77278f3bbc0ae417b0bd3643ed2016085143aa', '0x299e271036bf79f49d887042f35605674b011076befa91714054d9d4615fcc88'], 'transactionsRoot': '0x1cf8d806f5934f75c253240535d76807dc136830e174dc266d9c7cc747625567', 'uncles': []}}
+2025-07-18 14:47:44,513 - DEBUG - Making request. Method: eth_gasPrice
+2025-07-18 14:47:44,513 - DEBUG - Making request HTTP. URI: https://arb1.arbitrum.io/rpc, Method: eth_gasPrice
+2025-07-18 14:47:44,590 - DEBUG - https://arb1.arbitrum.io:443 "POST /rpc HTTP/1.1" 200 71
+2025-07-18 14:47:44,591 - DEBUG - Getting response HTTP. URI: https://arb1.arbitrum.io/rpc, Method: eth_gasPrice, Response: {'jsonrpc': '2.0', 'id': 3, 'result': '0x12283950'}
+✅ RPC passed tests: https://arb1.arbitrum.io/rpc (0.36s)
+🔍 Testing RPC: https://arbitrum-one.publicnode.com
+2025-07-18 14:47:44,592 - DEBUG - Making request HTTP. URI: https://arbitrum-one.publicnode.com, Method: web3_clientVersion
+2025-07-18 14:47:44,593 - DEBUG - Session cached: https://arbitrum-one.publicnode.com, <requests.sessions.Session object at 0x7efd58a1cf50>
+2025-07-18 14:47:44,594 - DEBUG - Starting new HTTPS connection (1): arbitrum-one.publicnode.com:443
+2025-07-18 14:47:44,860 - DEBUG - https://arbitrum-one.publicnode.com:443 "POST / HTTP/1.1" 200 None
+2025-07-18 14:47:44,861 - DEBUG - Getting response HTTP. URI: https://arbitrum-one.publicnode.com, Method: web3_clientVersion, Response: {'jsonrpc': '2.0', 'id': 0, 'result': 'nitro/vd6c96a5-modified/linux-amd64/go1.23.10'}
+2025-07-18 14:47:44,861 - DEBUG - Making request. Method: eth_chainId
+2025-07-18 14:47:44,861 - DEBUG - Making request HTTP. URI: https://arbitrum-one.publicnode.com, Method: eth_chainId
+2025-07-18 14:47:45,131 - DEBUG - https://arbitrum-one.publicnode.com:443 "POST / HTTP/1.1" 200 None
+2025-07-18 14:47:45,132 - DEBUG - Getting response HTTP. URI: https://arbitrum-one.publicnode.com, Method: eth_chainId, Response: {'jsonrpc': '2.0', 'result': '0xa4b1', 'id': 1}
+2025-07-18 14:47:45,132 - DEBUG - Making request. Method: eth_getBlockByNumber
+2025-07-18 14:47:45,132 - DEBUG - Making request HTTP. URI: https://arbitrum-one.publicnode.com, Method: eth_getBlockByNumber
+2025-07-18 14:47:45,369 - DEBUG - https://arbitrum-one.publicnode.com:443 "POST / HTTP/1.1" 200 None
+2025-07-18 14:47:45,369 - DEBUG - Getting response HTTP. URI: https://arbitrum-one.publicnode.com, Method: eth_getBlockByNumber, Response: {'jsonrpc': '2.0', 'id': 2, 'result': {'baseFeePerGas': '0x12330ec0', 'difficulty': '0x1', 'extraData': '0x27dbd6c37b5364b7789d3bc2d07f8a8036692984f605fc1ef5689e0e159686b6', 'gasLimit': '0x4000000000000', 'gasUsed': '0x4a10e', 'hash': '0x34089c5990fc0081e874f4e2e7b415266d11bc748d4d565bcada3e8105803a2e', 'l1BlockNumber': '0x15e23d9', 'logsBloom': '0x0000000800001000000000000000000000000010000000040008000000100004000000000000000000000000001600000000000102000000000020008024010000000a400200000000008008000100000000400000040000000000000000000002000000000000008000008000000000000000000000400000000010000000002000000000100000000000000000000000000000000000000000000000000010020000000000000000000000000001000010040000000000020040000000000000000002000000000001000200000000008020010000048180000000000040004010020000000000100000000000002000000000000000000000020000000100', 'miner': '0xa4b000000000000000000073657175656e636572', 'mixHash': '0x00000000000244d500000000015e23d900000000000000280000000000000000', 'nonce': '0x00000000001f3726', 'number': '0x15664ff7', 'parentHash': '0xab3d446abd159df2395005d6a5af9494464c029bb5c3a589ebd4943b4cbf747d', 'receiptsRoot': '0x500edf3e27e09d3131d98603ed05a8b68258dddaf11e8f367a0b4e2a840ad762', 'sendCount': '0x244d5', 'sendRoot': '0x27dbd6c37b5364b7789d3bc2d07f8a8036692984f605fc1ef5689e0e159686b6', 'sha3Uncles': '0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347', 'size': '0x9f6', 'stateRoot': '0x676baaf3fa84a6ec814ec487ba3a488bb4a522d3974642e12230798997ad0f87', 'timestamp': '0x687a5e91', 'transactions': ['0x9ab4300ee7b3d1999ed2626ffb31e1fd891f403c96e41393448edcdbca966db8', '0xec2bcf13fef87ed53c813c51f04f3eb5a4d83a69d3d39134a799a0e467fa0eab', '0x3a399657a1e3742f3822697ebe66d84d9f19501290ded889d4ddcf14615e7e9b', '0x9d67e66c2e544ceb553a5f37928353f2db53be7cdcd25374f73170e8a6d3526e', '0xdc63705123b5059417af3744b014b35a823b96b2b509e4f904b0438a436c41a7', '0x8fe64281fe0cf6c99637f0193c47c145a3d11ac2e40e755d5407a7bf11027df8', '0xdd754c8890c80a1e5990af4fc88d627bec95a0e5cfd66e1899547bc97d4a47f6'], 'transactionsRoot': '0x7ba30d7586a9d7f4dd577cb804c67a4e2fa508333d6fb15468b4455ca3b06ec9', 'uncles': []}}
+2025-07-18 14:47:45,370 - DEBUG - Making request. Method: eth_gasPrice
+2025-07-18 14:47:45,370 - DEBUG - Making request HTTP. URI: https://arbitrum-one.publicnode.com, Method: eth_gasPrice
+2025-07-18 14:47:45,617 - DEBUG - https://arbitrum-one.publicnode.com:443 "POST / HTTP/1.1" 200 None
+2025-07-18 14:47:45,617 - DEBUG - Getting response HTTP. URI: https://arbitrum-one.publicnode.com, Method: eth_gasPrice, Response: {'jsonrpc': '2.0', 'id': 3, 'result': '0x1217e5a0'}
+✅ RPC passed tests: https://arbitrum-one.publicnode.com (1.03s)
+🔍 Testing RPC: https://arbitrum-one.public.blastapi.io
+2025-07-18 14:47:45,619 - DEBUG - Making request HTTP. URI: https://arbitrum-one.public.blastapi.io, Method: web3_clientVersion
+2025-07-18 14:47:45,619 - DEBUG - Session cached: https://arbitrum-one.public.blastapi.io, <requests.sessions.Session object at 0x7efd58829610>
+2025-07-18 14:47:45,621 - DEBUG - Starting new HTTPS connection (1): arbitrum-one.public.blastapi.io:443
+2025-07-18 14:47:45,706 - DEBUG - https://arbitrum-one.public.blastapi.io:443 "POST / HTTP/1.1" 200 102
+2025-07-18 14:47:45,707 - DEBUG - Getting response HTTP. URI: https://arbitrum-one.public.blastapi.io, Method: web3_clientVersion, Response: {'jsonrpc': '2.0', 'id': 0, 'result': 'nitro/v3.6.5-89cef87/linux-amd64/go1.23.1'}
+2025-07-18 14:47:45,707 - DEBUG - Making request. Method: eth_chainId
+2025-07-18 14:47:45,707 - DEBUG - Making request HTTP. URI: https://arbitrum-one.public.blastapi.io, Method: eth_chainId
+2025-07-18 14:47:45,731 - DEBUG - https://arbitrum-one.public.blastapi.io:443 "POST / HTTP/1.1" 200 67
+2025-07-18 14:47:45,732 - DEBUG - Getting response HTTP. URI: https://arbitrum-one.public.blastapi.io, Method: eth_chainId, Response: {'jsonrpc': '2.0', 'id': 1, 'result': '0xa4b1'}
+2025-07-18 14:47:45,732 - DEBUG - Making request. Method: eth_getBlockByNumber
+2025-07-18 14:47:45,732 - DEBUG - Making request HTTP. URI: https://arbitrum-one.public.blastapi.io, Method: eth_getBlockByNumber
+2025-07-18 14:47:45,759 - DEBUG - https://arbitrum-one.public.blastapi.io:443 "POST / HTTP/1.1" 200 1011
+2025-07-18 14:47:45,759 - DEBUG - Getting response HTTP. URI: https://arbitrum-one.public.blastapi.io, Method: eth_getBlockByNumber, Response: {'jsonrpc': '2.0', 'id': 2, 'result': {'baseFeePerGas': '0x1217e5a0', 'difficulty': '0x1', 'extraData': '0x27dbd6c37b5364b7789d3bc2d07f8a8036692984f605fc1ef5689e0e159686b6', 'gasLimit': '0x4000000000000', 'gasUsed': '0xb45b7', 'hash': '0xefce4ea4ed63014615776feaeb413c3ede113be7ad046c552782108eab18c8ab', 'l1BlockNumber': '0x15e23d9', 'logsBloom': '0x8000000000000000000000000001000000000000000000000000000000040000000000000000000000004000000001000000000004000000400020000020000000000200020002010000000800000100000000000000004000000100008000000800000002008000001000000000080020000004000000000000001000000000204000000000204000000000000000000000000000008100000000000000000002000002000004000000000000000800000000000000100000000001000000000000000210000000400000000000000000000002000500c010000000000030000030000880000100005000000000000000000000040010000000000000100000', 'miner': '0xa4b000000000000000000073657175656e636572', 'mixHash': '0x00000000000244d500000000015e23d900000000000000280000000000000000', 'nonce': '0x00000000001f3726', 'number': '0x15664ff8', 'parentHash': '0x34089c5990fc0081e874f4e2e7b415266d11bc748d4d565bcada3e8105803a2e', 'receiptsRoot': '0xbfbdde5caa3e11baf95c41695f1a7a1da7bd41ec347b04c07e6c1d788e75b52c', 'sendCount': '0x244d5', 'sendRoot': '0x27dbd6c37b5364b7789d3bc2d07f8a8036692984f605fc1ef5689e0e159686b6', 'sha3Uncles': '0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347', 'size': '0x8bb', 'stateRoot': '0xc0dce9cccb4c41c69e6c7cd5473764b707de6b66c147478cfbe29b4abda4d21e', 'timestamp': '0x687a5e91', 'transactions': ['0xfc0bd76863817c28efedbf06949e4196fd8a84dc0c892bdb12d5ca32f9b9b626', '0x4aeed3475b62f978cb6285b56164bfb66df0f410e42bc0c5711bb955c10c8018', '0x08715c15d4e4af34f7b586fb77396552cacbbdcefc95068f17a69674c0c40b3a', '0x9e2d6e133bc8641fad30b2015f04f2622565508cce19d39de40414c91d5c5f0b', '0x97df03b106a1eaee1c4cdcf7421db98dde1254f9754778479e87483a23db2542', '0xb027afecefe04993dbe379b80b38741b876cb348caedceb2317099ef56305824', '0x1e70f0892c5368cef409cb76c6f09fc27f33547f72a753a193290e71307ef460', '0x90874d292c5b4e7545171b721f3d3e0d01693c3abd87aa04ac70e3f2887c13df'], 'transactionsRoot': '0x7a2fe4791bc91b30fbfc63dc22bc7446188d1a7c30f2410f9603180d013d1d22', 'uncles': []}}
+2025-07-18 14:47:45,760 - DEBUG - Making request. Method: eth_gasPrice
+2025-07-18 14:47:45,760 - DEBUG - Making request HTTP. URI: https://arbitrum-one.public.blastapi.io, Method: eth_gasPrice
+2025-07-18 14:47:45,787 - DEBUG - https://arbitrum-one.public.blastapi.io:443 "POST / HTTP/1.1" 200 71
+2025-07-18 14:47:45,787 - DEBUG - Getting response HTTP. URI: https://arbitrum-one.public.blastapi.io, Method: eth_gasPrice, Response: {'jsonrpc': '2.0', 'id': 3, 'result': '0x1217e5a0'}
+✅ RPC passed tests: https://arbitrum-one.public.blastapi.io (0.17s)
+🔍 Testing RPC: https://1rpc.io/arb
+2025-07-18 14:47:45,790 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: web3_clientVersion
+2025-07-18 14:47:45,791 - DEBUG - Session cached: https://1rpc.io/arb, <requests.sessions.Session object at 0x7efd58a18ed0>
+2025-07-18 14:47:45,792 - DEBUG - Starting new HTTPS connection (1): 1rpc.io:443
+2025-07-18 14:47:45,872 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 None
+2025-07-18 14:47:45,872 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: web3_clientVersion, Response: {'jsonrpc': '2.0', 'id': 0, 'result': 'nitro/v3.6.7-a7c9f1e/linux-arm64/go1.23.1'}
+2025-07-18 14:47:45,872 - DEBUG - Making request. Method: eth_chainId
+2025-07-18 14:47:45,873 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_chainId
+2025-07-18 14:47:45,886 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 42
+2025-07-18 14:47:45,886 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_chainId, Response: {'jsonrpc': '2.0', 'result': '0xa4b1', 'id': 1}
+2025-07-18 14:47:45,886 - DEBUG - Making request. Method: eth_getBlockByNumber
+2025-07-18 14:47:45,887 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_getBlockByNumber
+2025-07-18 14:47:45,901 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 2447
+2025-07-18 14:47:45,902 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_getBlockByNumber, Response: {'jsonrpc': '2.0', 'result': {'baseFeePerGas': '0x124d1ab8', 'difficulty': '0x1', 'extraData': '0x27dbd6c37b5364b7789d3bc2d07f8a8036692984f605fc1ef5689e0e159686b6', 'gasLimit': '0x4000000000000', 'gasUsed': '0x14d400', 'hash': '0xe1436cef5bab4a34ddc73d4dfd8ff5c7b4a9c279421743e0e3cb2ab665330e03', 'l1BlockNumber': '0x15e23d9', 'logsBloom': '0x00100000000000008100000000420020000000008000001000081000011000010000100000000000000000000083004001004001084020010040200000000000040082010241040800000208100324000001020000000002200000000000000004004028020000000200009400000800000004804004430020400010004800000048208000002000002080000000000400000000080000002000088000000400020000002000000000000020000000000500000048000000000080000000800004002002000000c00000000000000000000000000201004000000000108030000000000001000000000000000000210204000082000000004000020000000000', 'miner': '0xa4b000000000000000000073657175656e636572', 'mixHash': '0x00000000000244d500000000015e23d900000000000000280000000000000000', 'nonce': '0x00000000001f3726', 'number': '0x15664fef', 'parentHash': '0x991d16e5a6209d6c8ed29fe46d48e9e9d8b683471c8bb66fc2f3a05ebe877926', 'receiptsRoot': '0x051749b8f31764a96350af56ea715c5c117a2ad895ecaf0e187e1b14e973fb77', 'sendCount': '0x244d5', 'sendRoot': '0x27dbd6c37b5364b7789d3bc2d07f8a8036692984f605fc1ef5689e0e159686b6', 'sha3Uncles': '0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347', 'size': '0x1046', 'stateRoot': '0x7d40d3ae6044e8fbe359c11d01521ab365a30be264eb3d250cf2983ddc80b2f7', 'timestamp': '0x687a5e8f', 'transactions': ['0xd5e17a569be26b8a2c3836a9388b7bea90a32182ad3c9ac423c21d66b5238634', '0x536e14ed7eb6cac738df8edd64460623787b13618a4983a27fadb0b90d87a40c', '0xd245b31c75726d86d8b2483ea3faccd2e317461f1f76cae6b0db6a97b4e71ff8', '0x855bbdc0d60f6d13dd2b990566ce4f9a5f1851a9b52e53ee5c0aee7d84eacb48', '0x0e2e94f7d568248e57cd578f54515d5a81bb2fffd8836be7906c426a56f6371b', '0x86990863f3e367d61b34b772cd56ebc63666a382fcbb7161a5b361d0ad43e138', '0x74499be67583afeb53592423a41368752e460e61c4bf0ed80d1b978c31717eac', '0x930e1aa591040b8369ba98eaa50e7a192e9eafba5a63798eba1f7988fd633a9d', '0x53486a137942f29f24794db51019b77690beb2d304cd03350a1cd3ca6046d96f', '0xb7f1fc27522543e6de6f4b84e3c223739198c3b50a9702f5c70ba98a50a0e9f5', '0x0114f6e43f0cd5e38d41967b9d663e5d04d99d965a16e3b1e037ea1ca507dfa3', '0x4134ad80c82804f04c9066d0c65e8581e103a7a93d11a89c98031d4815699031'], 'transactionsRoot': '0x00f948020ea84ce875e523789bc617ac7f2e3a3f37e3e508b67eaa276bfee748', 'uncles': []}, 'id': 2}
+2025-07-18 14:47:45,903 - DEBUG - Making request. Method: eth_gasPrice
+2025-07-18 14:47:45,903 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_gasPrice
+2025-07-18 14:47:45,935 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 None
+2025-07-18 14:47:45,936 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_gasPrice, Response: {'jsonrpc': '2.0', 'id': 3, 'result': '0x121c65f8'}
+✅ RPC passed tests: https://1rpc.io/arb (0.15s)
+📊 RPC Test Results: 5/5 endpoints working
+🌐 Operating on Arbitrum Mainnet
+🚨 NETWORK_MODE from environment: 'mainnet'
+🔗 Primary RPC: https://1rpc.io/arb
+🔄 Fallback RPCs: 4 available
+2025-07-18 14:47:45,938 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: web3_clientVersion
+2025-07-18 14:47:45,975 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 None
+2025-07-18 14:47:45,976 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: web3_clientVersion, Response: {'jsonrpc': '2.0', 'id': 0, 'result': 'nitro/v3.6.7-a7c9f1e/linux-arm64/go1.23.1'}
+🔑 Wallet Address: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+💰 AGENT INITIALIZED WITH WALLET: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+✅ Private key format validated and normalized
+📋 Mainnet Token addresses verified:
+   USDC: 0xAf88D065e77C8cF0EAEfF3e253e648A15CEe23dC
+   WBTC: 0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f
+   WETH: 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1
+   DAI: 0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1
+   Aave Pool: 0x794a61358D6845594F94dc1DB02A252b5b4814aD
+📋 Token addresses verified:
+   USDC: 0xAf88D065e77C8cF0EAEfF3e253e648A15CEe23dC
+   WBTC: 0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f
+   WETH: 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1
+   DAI: 0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1
+   Aave Pool: 0x794a61358D6845594F94dc1DB02A252b5b4814aD
+💰 Initialized last_collateral_value_usd to 0.0 (will sync with actual position)
+📊 Initialized last_collateral_value_usd to: 0.0
+2025-07-18 14:47:45,980 - DEBUG - DEBUG: Agent initialized with address: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+2025-07-18 14:47:45,980 - DEBUG - DEBUG: Initializing DeFi integrations
+🚀 Initializing Real DeFi Integrations...
+2025-07-18 14:47:45,981 - DEBUG - Making request. Method: eth_chainId
+2025-07-18 14:47:45,981 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_chainId
+2025-07-18 14:47:45,995 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 42
+2025-07-18 14:47:45,996 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_chainId, Response: {'jsonrpc': '2.0', 'result': '0xa4b1', 'id': 1}
+🌐 Initializing for Arbitrum Mainnet (Chain ID: 42161)
+🪙 ARB Token Address (checksummed): 0x912CE59144191C1204E64559FE8253a0e49E6548
+🏦 Aave Integration - Contract Address Verification (Arbitrum Mainnet):
+   Pool: 0x794a61358D6845594F94dc1DB02A252b5b4814aD
+   Data Provider: 0x69FA688f1Dc47d4B5d8029D5a35FB7a548310654
+   WETH: 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1
+   WBTC: 0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f
+   DAI: 0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1
+   USDC: 0xAf88D065e77C8cF0EAEfF3e253e648A15CEe23dC
+   ARB: 0x912CE59144191C1204E64559FE8253a0e49E6548
+✅ Pool address properly checksummed
+✅ WETH address properly checksummed
+✅ WBTC address properly checksummed
+✅ DAI address properly checksummed
+✅ USDC address properly checksummed
+✅ ARB address properly checksummed
+✅ All contract addresses validated successfully for Arbitrum Mainnet
+🏦 Aave integration initialized for 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+🔄 Uniswap V3 integration initialized
+2025-07-18 14:47:46,013 - DEBUG - Making request. Method: eth_chainId
+2025-07-18 14:47:46,014 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_chainId
+2025-07-18 14:47:46,027 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 42
+2025-07-18 14:47:46,027 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_chainId, Response: {'jsonrpc': '2.0', 'result': '0xa4b1', 'id': 2}
+🪙 ARB Address (Arbitrum Sepolia): 0x912CE59144191C1204E64559FE8253a0e49E6548
+📊 Health Monitor Addresses:
+   User: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+   Data Provider: 0x69FA688f1Dc47d4B5d8029D5a35FB7a548310654
+   ARB Token: 0x912CE59144191C1204E64559FE8253a0e49E6548
+📊 Enhanced Aave Health Monitor initialized for 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+✅ Initialized Real Aave, Uniswap, and Health Monitor Integrations.
+⛽ Gas Calculator: Arbitrum Mainnet
+⛽ Initialized Gas Calculator.
+🏦 Initialized Enhanced Borrow Manager.
+🚀 Approving USDC for Aave Pool...
+🔍 Contract function validation:
+   Token contract: 0xAf88D065e77C8cF0EAEfF3e253e648A15CEe23dC
+   Approve function found: ✅
+   Function object: <Function approve>
+2025-07-18 14:47:46,050 - DEBUG - Making request. Method: eth_call
+2025-07-18 14:47:46,051 - DEBUG - Making request. Method: eth_chainId
+2025-07-18 14:47:46,051 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_chainId
+2025-07-18 14:47:46,067 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 42
+2025-07-18 14:47:46,068 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_chainId, Response: {'jsonrpc': '2.0', 'result': '0xa4b1', 'id': 3}
+2025-07-18 14:47:46,069 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_call
+2025-07-18 14:47:46,106 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 None
+2025-07-18 14:47:46,106 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_call, Response: {'jsonrpc': '2.0', 'id': 4, 'result': '0x'}
+2025-07-18 14:47:46,108 - DEBUG - Making request. Method: eth_getCode
+2025-07-18 14:47:46,108 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_getCode
+2025-07-18 14:47:46,146 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 None
+2025-07-18 14:47:46,149 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_getCode, Response: {'jsonrpc': '2.0', 'id': 5, 'result': '0x'}
+🔧 Using reduced approval for zero balance: 1000000000000
+🔓 Approving 1000000000000 wei for token 0xAf88D065e77C8cF0EAEfF3e253e648A15CEe23dC
+2025-07-18 14:47:46,150 - DEBUG - Making request. Method: eth_getTransactionCount
+2025-07-18 14:47:46,151 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_getTransactionCount
+2025-07-18 14:47:46,183 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 None
+2025-07-18 14:47:46,184 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_getTransactionCount, Response: {'jsonrpc': '2.0', 'id': 6, 'result': '0x6fe'}
+🔢 Using pending nonce: 1790 for approval
+2025-07-18 14:47:46,184 - DEBUG - Making request. Method: eth_getTransactionCount
+2025-07-18 14:47:46,185 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_getTransactionCount
+2025-07-18 14:47:46,220 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 None
+2025-07-18 14:47:46,221 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_getTransactionCount, Response: {'jsonrpc': '2.0', 'id': 7, 'result': '0x6fe'}
+🔢 Attempt 1: Using fresh pending nonce 1790
+🔍 Approve parameters validation:
+   Spender: 0x794a61358D6845594F94dc1DB02A252b5b4814aD (type: <class 'str'>)
+   Amount: 1000000000000 (type: <class 'int'>)
+🔍 COMPREHENSIVE Pre-transaction validation:
+2025-07-18 14:47:46,223 - DEBUG - Making request. Method: eth_call
+2025-07-18 14:47:46,223 - DEBUG - Making request. Method: eth_chainId
+2025-07-18 14:47:46,223 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_chainId
+2025-07-18 14:47:46,236 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 42
+2025-07-18 14:47:46,236 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_chainId, Response: {'jsonrpc': '2.0', 'result': '0xa4b1', 'id': 8}
+2025-07-18 14:47:46,237 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_call
+2025-07-18 14:47:46,324 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 None
+2025-07-18 14:47:46,325 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_call, Response: {'jsonrpc': '2.0', 'id': 9, 'result': '0x'}
+2025-07-18 14:47:46,325 - DEBUG - Making request. Method: eth_getCode
+2025-07-18 14:47:46,326 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_getCode
+2025-07-18 14:47:46,361 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 None
+2025-07-18 14:47:46,361 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_getCode, Response: {'jsonrpc': '2.0', 'id': 10, 'result': '0x'}
+   ⚠️ Balance check failed: Could not transact with/call contract function, is contract deployed correctly and chain synced?
+   🔧 Proceeding with transaction anyway - this might be an RPC issue
+2025-07-18 14:47:46,362 - DEBUG - Making request. Method: eth_chainId
+2025-07-18 14:47:46,362 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_chainId
+2025-07-18 14:47:46,376 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 43
+2025-07-18 14:47:46,376 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_chainId, Response: {'jsonrpc': '2.0', 'result': '0xa4b1', 'id': 11}
+2025-07-18 14:47:46,376 - DEBUG - Making request. Method: eth_gasPrice
+2025-07-18 14:47:46,376 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_gasPrice
+2025-07-18 14:47:46,416 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 None
+2025-07-18 14:47:46,418 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_gasPrice, Response: {'jsonrpc': '2.0', 'id': 12, 'result': '0x12206180'}
+2025-07-18 14:47:46,425 - DEBUG - Making request. Method: eth_estimateGas
+2025-07-18 14:47:46,426 - DEBUG - Making request. Method: eth_chainId
+2025-07-18 14:47:46,426 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_chainId
+2025-07-18 14:47:46,440 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 43
+2025-07-18 14:47:46,442 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_chainId, Response: {'jsonrpc': '2.0', 'result': '0xa4b1', 'id': 13}
+2025-07-18 14:47:46,443 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_estimateGas
+2025-07-18 14:47:46,479 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 None
+2025-07-18 14:47:46,480 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_estimateGas, Response: {'jsonrpc': '2.0', 'id': 14, 'result': '0x5fd1'}
+   ✅ Contract compatibility validated, estimated gas: 24529
+2025-07-18 14:47:46,480 - DEBUG - Making request. Method: eth_chainId
+2025-07-18 14:47:46,480 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_chainId
+2025-07-18 14:47:46,494 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 43
+2025-07-18 14:47:46,494 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_chainId, Response: {'jsonrpc': '2.0', 'result': '0xa4b1', 'id': 15}
+2025-07-18 14:47:46,494 - DEBUG - Making request. Method: eth_gasPrice
+2025-07-18 14:47:46,494 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_gasPrice
+2025-07-18 14:47:46,529 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 None
+2025-07-18 14:47:46,531 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_gasPrice, Response: {'jsonrpc': '2.0', 'id': 16, 'result': '0x120140c0'}
+2025-07-18 14:47:46,539 - DEBUG - Making request. Method: eth_sendRawTransaction
+2025-07-18 14:47:46,539 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_sendRawTransaction
+2025-07-18 14:47:46,865 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 None
+2025-07-18 14:47:46,866 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_sendRawTransaction, Response: {'jsonrpc': '2.0', 'id': 17, 'result': '0xef2b3b815099d9c02de7d3d8e1faa6f25ff7054ef770f2e730471cf89c2596be'}
+✅ Token approval transaction sent to network: 0xef2b3b815099d9c02de7d3d8e1faa6f25ff7054ef770f2e730471cf89c2596be
+⏳ Waiting for transaction receipt for 0xef2b3b815099d9c02de7d3d8e1faa6f25ff7054ef770f2e730471cf89c2596be (timeout: 300s)...
+2025-07-18 14:47:46,867 - DEBUG - Making request. Method: eth_getTransactionReceipt
+2025-07-18 14:47:46,867 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_getTransactionReceipt
+2025-07-18 14:47:46,907 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 None
+2025-07-18 14:47:46,909 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_getTransactionReceipt, Response: {'jsonrpc': '2.0', 'id': 18, 'result': None}
+2025-07-18 14:47:47,009 - DEBUG - Making request. Method: eth_getTransactionReceipt
+2025-07-18 14:47:47,010 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_getTransactionReceipt
+2025-07-18 14:47:47,047 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 None
+2025-07-18 14:47:47,048 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_getTransactionReceipt, Response: {'jsonrpc': '2.0', 'id': 19, 'result': {'blockHash': '0xb0376b7cbbf311961e1c782f65fcb2c79403ddb1966ac886f5f036727e269a03', 'blockNumber': '0x15664ffe', 'contractAddress': None, 'cumulativeGasUsed': '0x4f2add', 'effectiveGasPrice': '0x12097a38', 'from': '0x5b823270e3719cde8669e5e5326b455eaa8a350b', 'gasUsed': '0x5b23', 'gasUsedForL1': '0x6bb', 'l1BlockNumber': '0x15e23d9', 'logs': [], 'logsBloom': '0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000', 'status': '0x1', 'timeboosted': False, 'to': '0xaf88d065e77c8cf0eaeff3e253e648a15cee23dc', 'transactionHash': '0xef2b3b815099d9c02de7d3d8e1faa6f25ff7054ef770f2e730471cf89c2596be', 'transactionIndex': '0xa', 'type': '0x0'}}
+✅ Token approval successful: 0xef2b3b815099d9c02de7d3d8e1faa6f25ff7054ef770f2e730471cf89c2596be
+✅ USDC approved for Aave with optimized gas
+🚀 Approving WBTC for Aave Pool...
+🔍 Contract function validation:
+   Token contract: 0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f
+   Approve function found: ✅
+   Function object: <Function approve>
+2025-07-18 14:47:49,061 - DEBUG - Making request. Method: eth_call
+2025-07-18 14:47:49,062 - DEBUG - Making request. Method: eth_chainId
+2025-07-18 14:47:49,062 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_chainId
+2025-07-18 14:47:49,075 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 43
+2025-07-18 14:47:49,076 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_chainId, Response: {'jsonrpc': '2.0', 'result': '0xa4b1', 'id': 20}
+2025-07-18 14:47:49,077 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_call
+2025-07-18 14:47:49,112 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 None
+2025-07-18 14:47:49,112 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_call, Response: {'jsonrpc': '2.0', 'id': 21, 'result': '0x0000000000000000000000000000000000000000000000000000000000000000'}
+2025-07-18 14:47:49,114 - DEBUG - Making request. Method: eth_call
+2025-07-18 14:47:49,114 - DEBUG - Making request. Method: eth_chainId
+2025-07-18 14:47:49,114 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_chainId
+2025-07-18 14:47:49,127 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 43
+2025-07-18 14:47:49,127 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_chainId, Response: {'jsonrpc': '2.0', 'result': '0xa4b1', 'id': 22}
+2025-07-18 14:47:49,129 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_call
+2025-07-18 14:47:49,164 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 None
+2025-07-18 14:47:49,165 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_call, Response: {'jsonrpc': '2.0', 'id': 23, 'result': '0x0000000000000000000000000000000000000000000000000000000000000008'}
+🔧 Using reduced approval for zero balance: 100000000000000
+🔓 Approving 100000000000000 wei for token 0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f
+2025-07-18 14:47:49,166 - DEBUG - Making request. Method: eth_getTransactionCount
+2025-07-18 14:47:49,167 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_getTransactionCount
+2025-07-18 14:47:49,201 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 None
+2025-07-18 14:47:49,201 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_getTransactionCount, Response: {'jsonrpc': '2.0', 'id': 24, 'result': '0x6ff'}
+🔢 Using pending nonce: 1791 for approval
+2025-07-18 14:47:49,202 - DEBUG - Making request. Method: eth_getTransactionCount
+2025-07-18 14:47:49,203 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_getTransactionCount
+2025-07-18 14:47:49,243 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 None
+2025-07-18 14:47:49,244 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_getTransactionCount, Response: {'jsonrpc': '2.0', 'id': 25, 'result': '0x6ff'}
+🔢 Attempt 1: Using fresh pending nonce 1791
+🔍 Approve parameters validation:
+   Spender: 0x794a61358D6845594F94dc1DB02A252b5b4814aD (type: <class 'str'>)
+   Amount: 100000000000000 (type: <class 'int'>)
+🔍 COMPREHENSIVE Pre-transaction validation:
+2025-07-18 14:47:49,246 - DEBUG - Making request. Method: eth_call
+2025-07-18 14:47:49,246 - DEBUG - Making request. Method: eth_chainId
+2025-07-18 14:47:49,246 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_chainId
+2025-07-18 14:47:49,260 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 43
+2025-07-18 14:47:49,260 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_chainId, Response: {'jsonrpc': '2.0', 'result': '0xa4b1', 'id': 26}
+2025-07-18 14:47:49,261 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_call
+2025-07-18 14:47:49,294 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 None
+2025-07-18 14:47:49,301 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_call, Response: {'jsonrpc': '2.0', 'id': 27, 'result': '0x0000000000000000000000000000000000000000000000000000000000000000'}
+2025-07-18 14:47:49,311 - DEBUG - Making request. Method: eth_call
+2025-07-18 14:47:49,312 - DEBUG - Making request. Method: eth_chainId
+2025-07-18 14:47:49,312 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_chainId
+2025-07-18 14:47:49,326 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 43
+2025-07-18 14:47:49,326 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_chainId, Response: {'jsonrpc': '2.0', 'result': '0xa4b1', 'id': 28}
+2025-07-18 14:47:49,327 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_call
+2025-07-18 14:47:49,360 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 None
+2025-07-18 14:47:49,361 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_call, Response: {'jsonrpc': '2.0', 'id': 29, 'result': '0x0000000000000000000000000000000000000000000000000000000000000008'}
+   💰 Current token balance: 0.00000000
+   ❌ CRITICAL: Zero token balance detected
+   💡 SOLUTION: This is the likely cause of approval failures
+   🔧 RECOMMENDATION: Fund wallet with this token first
+   ⚠️ Proceeding with minimal approval amount for future funding
+2025-07-18 14:47:49,363 - DEBUG - Making request. Method: eth_call
+2025-07-18 14:47:49,363 - DEBUG - Making request. Method: eth_chainId
+2025-07-18 14:47:49,363 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_chainId
+2025-07-18 14:47:49,377 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 43
+2025-07-18 14:47:49,377 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_chainId, Response: {'jsonrpc': '2.0', 'result': '0xa4b1', 'id': 30}
+2025-07-18 14:47:49,378 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_call
+2025-07-18 14:47:49,414 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 None
+2025-07-18 14:47:49,414 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_call, Response: {'jsonrpc': '2.0', 'id': 31, 'result': '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffad9f'}
+   🔐 Current allowance: 115792089237316195423570985008687907853269984665640564039457584007913129618847
+   ✅ Sufficient allowance already exists (115792089237316195423570985008687907853269984665640564039457584007913129618847 >= 100000000000)
+   ⚡ Skipping unnecessary approval transaction
+✅ WBTC approved for Aave with optimized gas
+🚀 Approving WETH for Aave Pool...
+🔍 Contract function validation:
+   Token contract: 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1
+   Approve function found: ✅
+   Function object: <Function approve>
+2025-07-18 14:47:51,431 - DEBUG - Making request. Method: eth_call
+2025-07-18 14:47:51,431 - DEBUG - Making request. Method: eth_chainId
+2025-07-18 14:47:51,431 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_chainId
+2025-07-18 14:47:51,445 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 43
+2025-07-18 14:47:51,445 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_chainId, Response: {'jsonrpc': '2.0', 'result': '0xa4b1', 'id': 32}
+2025-07-18 14:47:51,446 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_call
+2025-07-18 14:47:51,484 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 None
+2025-07-18 14:47:51,484 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_call, Response: {'jsonrpc': '2.0', 'id': 33, 'result': '0x0000000000000000000000000000000000000000000000000000000000000000'}
+2025-07-18 14:47:51,486 - DEBUG - Making request. Method: eth_call
+2025-07-18 14:47:51,486 - DEBUG - Making request. Method: eth_chainId
+2025-07-18 14:47:51,486 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_chainId
+2025-07-18 14:47:51,499 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 43
+2025-07-18 14:47:51,500 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_chainId, Response: {'jsonrpc': '2.0', 'result': '0xa4b1', 'id': 34}
+2025-07-18 14:47:51,500 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_call
+2025-07-18 14:47:51,536 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 None
+2025-07-18 14:47:51,537 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_call, Response: {'jsonrpc': '2.0', 'id': 35, 'result': '0x0000000000000000000000000000000000000000000000000000000000000012'}
+🔧 Using reduced approval for zero balance: 1000000000000000000000000
+🔓 Approving 1000000000000000000000000 wei for token 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1
+2025-07-18 14:47:51,538 - DEBUG - Making request. Method: eth_getTransactionCount
+2025-07-18 14:47:51,539 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_getTransactionCount
+2025-07-18 14:47:51,582 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 None
+2025-07-18 14:47:51,583 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_getTransactionCount, Response: {'jsonrpc': '2.0', 'id': 36, 'result': '0x6ff'}
+🔢 Using pending nonce: 1791 for approval
+2025-07-18 14:47:51,584 - DEBUG - Making request. Method: eth_getTransactionCount
+2025-07-18 14:47:51,585 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_getTransactionCount
+2025-07-18 14:47:51,623 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 None
+2025-07-18 14:47:51,624 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_getTransactionCount, Response: {'jsonrpc': '2.0', 'id': 37, 'result': '0x6ff'}
+🔢 Attempt 1: Using fresh pending nonce 1791
+🔍 Approve parameters validation:
+   Spender: 0x794a61358D6845594F94dc1DB02A252b5b4814aD (type: <class 'str'>)
+   Amount: 1000000000000000000000000 (type: <class 'int'>)
+🔍 COMPREHENSIVE Pre-transaction validation:
+2025-07-18 14:47:51,625 - DEBUG - Making request. Method: eth_call
+2025-07-18 14:47:51,626 - DEBUG - Making request. Method: eth_chainId
+2025-07-18 14:47:51,626 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_chainId
+2025-07-18 14:47:51,641 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 43
+2025-07-18 14:47:51,641 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_chainId, Response: {'jsonrpc': '2.0', 'result': '0xa4b1', 'id': 38}
+2025-07-18 14:47:51,643 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_call
+2025-07-18 14:47:51,676 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 None
+2025-07-18 14:47:51,677 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_call, Response: {'jsonrpc': '2.0', 'id': 39, 'result': '0x0000000000000000000000000000000000000000000000000000000000000000'}
+2025-07-18 14:47:51,678 - DEBUG - Making request. Method: eth_call
+2025-07-18 14:47:51,679 - DEBUG - Making request. Method: eth_chainId
+2025-07-18 14:47:51,679 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_chainId
+2025-07-18 14:47:51,692 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 43
+2025-07-18 14:47:51,693 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_chainId, Response: {'jsonrpc': '2.0', 'result': '0xa4b1', 'id': 40}
+2025-07-18 14:47:51,694 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_call
+2025-07-18 14:47:51,730 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 None
+2025-07-18 14:47:51,731 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_call, Response: {'jsonrpc': '2.0', 'id': 41, 'result': '0x0000000000000000000000000000000000000000000000000000000000000012'}
+   💰 Current token balance: 0.00000000
+   ❌ CRITICAL: Zero token balance detected
+   💡 SOLUTION: This is the likely cause of approval failures
+   🔧 RECOMMENDATION: Fund wallet with this token first
+   ⚠️ Proceeding with minimal approval amount for future funding
+2025-07-18 14:47:51,733 - DEBUG - Making request. Method: eth_call
+2025-07-18 14:47:51,734 - DEBUG - Making request. Method: eth_chainId
+2025-07-18 14:47:51,734 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_chainId
+2025-07-18 14:47:51,748 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 43
+2025-07-18 14:47:51,748 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_chainId, Response: {'jsonrpc': '2.0', 'result': '0xa4b1', 'id': 42}
+2025-07-18 14:47:51,749 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_call
+2025-07-18 14:47:51,786 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 None
+2025-07-18 14:47:51,787 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_call, Response: {'jsonrpc': '2.0', 'id': 43, 'result': '0xfffffffffffffffffffffffffffffffffffffffffffffffffff174e1200d514a'}
+   🔐 Current allowance: 115792089237316195423570985008687907853269984665640564039457579914298733187402
+   ✅ Sufficient allowance already exists (115792089237316195423570985008687907853269984665640564039457579914298733187402 >= 1000000000000000000000)
+   ⚡ Skipping unnecessary approval transaction
+✅ WETH approved for Aave with optimized gas
+🚀 Approving DAI for Aave Pool...
+🔍 Contract function validation:
+   Token contract: 0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1
+   Approve function found: ✅
+   Function object: <Function approve>
+2025-07-18 14:47:53,805 - DEBUG - Making request. Method: eth_call
+2025-07-18 14:47:53,805 - DEBUG - Making request. Method: eth_chainId
+2025-07-18 14:47:53,805 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_chainId
+2025-07-18 14:47:53,819 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 43
+2025-07-18 14:47:53,819 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_chainId, Response: {'jsonrpc': '2.0', 'result': '0xa4b1', 'id': 44}
+2025-07-18 14:47:53,820 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_call
+2025-07-18 14:47:53,854 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 None
+2025-07-18 14:47:53,855 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_call, Response: {'jsonrpc': '2.0', 'id': 45, 'result': '0x0000000000000000000000000000000000000000000000000000000000000000'}
+2025-07-18 14:47:53,856 - DEBUG - Making request. Method: eth_call
+2025-07-18 14:47:53,857 - DEBUG - Making request. Method: eth_chainId
+2025-07-18 14:47:53,857 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_chainId
+2025-07-18 14:47:53,871 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 43
+2025-07-18 14:47:53,872 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_chainId, Response: {'jsonrpc': '2.0', 'result': '0xa4b1', 'id': 46}
+2025-07-18 14:47:53,873 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_call
+2025-07-18 14:47:53,909 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 None
+2025-07-18 14:47:53,910 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_call, Response: {'jsonrpc': '2.0', 'id': 47, 'result': '0x0000000000000000000000000000000000000000000000000000000000000012'}
+🔧 Using reduced approval for zero balance: 1000000000000000000000000
+🔓 Approving 1000000000000000000000000 wei for token 0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1
+2025-07-18 14:47:53,911 - DEBUG - Making request. Method: eth_getTransactionCount
+2025-07-18 14:47:53,911 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_getTransactionCount
+2025-07-18 14:47:53,947 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 None
+2025-07-18 14:47:53,947 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_getTransactionCount, Response: {'jsonrpc': '2.0', 'id': 48, 'result': '0x6ff'}
+🔢 Using pending nonce: 1791 for approval
+2025-07-18 14:47:53,948 - DEBUG - Making request. Method: eth_getTransactionCount
+2025-07-18 14:47:53,949 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_getTransactionCount
+2025-07-18 14:47:53,985 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 None
+2025-07-18 14:47:53,985 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_getTransactionCount, Response: {'jsonrpc': '2.0', 'id': 49, 'result': '0x6ff'}
+🔢 Attempt 1: Using fresh pending nonce 1791
+🔍 Approve parameters validation:
+   Spender: 0x794a61358D6845594F94dc1DB02A252b5b4814aD (type: <class 'str'>)
+   Amount: 1000000000000000000000000 (type: <class 'int'>)
+🔍 COMPREHENSIVE Pre-transaction validation:
+2025-07-18 14:47:53,987 - DEBUG - Making request. Method: eth_call
+2025-07-18 14:47:53,987 - DEBUG - Making request. Method: eth_chainId
+2025-07-18 14:47:53,987 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_chainId
+2025-07-18 14:47:54,005 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 43
+2025-07-18 14:47:54,005 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_chainId, Response: {'jsonrpc': '2.0', 'result': '0xa4b1', 'id': 50}
+2025-07-18 14:47:54,006 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_call
+2025-07-18 14:47:54,041 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 None
+2025-07-18 14:47:54,042 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_call, Response: {'jsonrpc': '2.0', 'id': 51, 'result': '0x0000000000000000000000000000000000000000000000000000000000000000'}
+2025-07-18 14:47:54,044 - DEBUG - Making request. Method: eth_call
+2025-07-18 14:47:54,044 - DEBUG - Making request. Method: eth_chainId
+2025-07-18 14:47:54,044 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_chainId
+2025-07-18 14:47:54,059 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 43
+2025-07-18 14:47:54,060 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_chainId, Response: {'jsonrpc': '2.0', 'result': '0xa4b1', 'id': 52}
+2025-07-18 14:47:54,061 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_call
+2025-07-18 14:47:54,098 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 None
+2025-07-18 14:47:54,099 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_call, Response: {'jsonrpc': '2.0', 'id': 53, 'result': '0x0000000000000000000000000000000000000000000000000000000000000012'}
+   💰 Current token balance: 0.00000000
+   ❌ CRITICAL: Zero token balance detected
+   💡 SOLUTION: This is the likely cause of approval failures
+   🔧 RECOMMENDATION: Fund wallet with this token first
+   ⚠️ Proceeding with minimal approval amount for future funding
+2025-07-18 14:47:54,101 - DEBUG - Making request. Method: eth_call
+2025-07-18 14:47:54,101 - DEBUG - Making request. Method: eth_chainId
+2025-07-18 14:47:54,101 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_chainId
+2025-07-18 14:47:54,115 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 43
+2025-07-18 14:47:54,116 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_chainId, Response: {'jsonrpc': '2.0', 'result': '0xa4b1', 'id': 54}
+2025-07-18 14:47:54,117 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_call
+2025-07-18 14:47:54,151 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 None
+2025-07-18 14:47:54,152 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_call, Response: {'jsonrpc': '2.0', 'id': 55, 'result': '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff'}
+   🔐 Current allowance: 115792089237316195423570985008687907853269984665640564039457584007913129639935
+   ✅ Sufficient allowance already exists (115792089237316195423570985008687907853269984665640564039457584007913129639935 >= 1000000000000000000000)
+   ⚡ Skipping unnecessary approval transaction
+✅ DAI approved for Aave with optimized gas
+✅ All DeFi integrations initialized successfully!
+2025-07-18 14:47:56,153 - DEBUG - DEBUG: DeFi integrations initialized: True
+2025-07-18 14:47:56,153 - DEBUG - DEBUG: Checking ETH balance for wallet 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+2025-07-18 14:47:56,154 - DEBUG - Making request. Method: eth_getBalance
+2025-07-18 14:47:56,154 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_getBalance
+2025-07-18 14:47:56,199 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 None
+2025-07-18 14:47:56,200 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_getBalance, Response: {'jsonrpc': '2.0', 'id': 56, 'result': '0x2298c0fb68bf'}
+2025-07-18 14:47:56,200 - DEBUG - DEBUG: Raw ETH balance: 0.0000380395 ETH
+   ETH Balance: 0.000038 ETH
+2025-07-18 14:47:56,200 - DEBUG - DEBUG: aToken addresses: {'WBTC': '0x6533afac2E7BCCB20dca161449A13A2D2d5B739A', 'WETH': '0xe50fA9b4c56454E2edF6BFf7c81b50c5F05aBE61', 'USDC': '0x724dc807b04555b71ed48a6896b6F41593b8C637'}
+2025-07-18 14:47:56,200 - DEBUG - DEBUG: ===== Checking WBTC =====
+2025-07-18 14:47:56,200 - DEBUG - DEBUG: Underlying token address: 0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f
+2025-07-18 14:47:56,201 - DEBUG - DEBUG: Expected aToken address: 0x6533afac2E7BCCB20dca161449A13A2D2d5B739A
+2025-07-18 14:47:56,201 - DEBUG - DEBUG: Method 1 - Using agent.aave.get_supplied_balance
+2025-07-18 14:47:56,201 - DEBUG - DEBUG: get_supplied_balance called with token_address: 0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f
+2025-07-18 14:47:56,201 - DEBUG - DEBUG: Available aToken mappings: {'0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f': '0x6533afac2E7BCCB20dca161449A13A2D2d5B739A', '0x82aF49447D8a07e3bd95BD0d56f35241523fBab1': '0xe50fA9b4c56454E2edF6BFf7c81b50c5F05aBE61', '0xAf88D065e77C8cF0EAEfF3e253e648A15CEe23dC': '0x724dc807b04555b71ed48a6896b6F41593b8C637'}
+2025-07-18 14:47:56,201 - DEBUG - DEBUG: Normalized token address: 0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f
+2025-07-18 14:47:56,201 - DEBUG - DEBUG: Found aToken address: 0x6533afac2E7BCCB20dca161449A13A2D2d5B739A
+2025-07-18 14:47:56,201 - DEBUG - DEBUG: Checksummed aToken address: 0x6533afac2E7bCcb20DcA161449a13a2D2D5B739A
+2025-07-18 14:47:56,201 - DEBUG - DEBUG: Wallet address for balance check: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+2025-07-18 14:47:56,210 - DEBUG - DEBUG: aToken contract created successfully
+2025-07-18 14:47:56,210 - DEBUG - DEBUG: Calling balanceOf(0x5B823270e3719CDe8669e5e5326B455EaA8a350b) on aToken contract
+2025-07-18 14:47:56,211 - DEBUG - Making request. Method: eth_call
+2025-07-18 14:47:56,211 - DEBUG - Making request. Method: eth_chainId
+2025-07-18 14:47:56,212 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_chainId
+2025-07-18 14:47:56,225 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 43
+2025-07-18 14:47:56,225 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_chainId, Response: {'jsonrpc': '2.0', 'result': '0xa4b1', 'id': 57}
+2025-07-18 14:47:56,227 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_call
+2025-07-18 14:47:56,275 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 None
+2025-07-18 14:47:56,276 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_call, Response: {'jsonrpc': '2.0', 'id': 58, 'result': '0x'}
+2025-07-18 14:47:56,277 - DEBUG - Making request. Method: eth_getCode
+2025-07-18 14:47:56,277 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_getCode
+2025-07-18 14:47:56,316 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 None
+2025-07-18 14:47:56,317 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_getCode, Response: {'jsonrpc': '2.0', 'id': 59, 'result': '0x'}
+2025-07-18 14:47:56,317 - ERROR - ERROR: get_supplied_balance failed for 0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f: Could not transact with/call contract function, is contract deployed correctly and chain synced?
+Traceback (most recent call last):
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/web3/contract/utils.py", line 111, in call_contract_function
+    output_data = w3.codec.decode(output_types, return_data)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/eth_abi/codec.py", line 162, in decode
+    return cast(Tuple[Any, ...], decoder(stream))
+                                 ^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/eth_abi/decoding.py", line 131, in __call__
+    return self.decode(stream)
+           ^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/eth_utils/functional.py", line 47, in inner
+    return callback(fn(*args, **kwargs))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/eth_abi/decoding.py", line 224, in decode
+    self.validate_pointers(stream)
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/eth_abi/decoding.py", line 218, in validate_pointers
+    decoder(stream)
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/eth_abi/decoding.py", line 131, in __call__
+    return self.decode(stream)
+           ^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/eth_abi/decoding.py", line 250, in decode
+    raw_data = self.read_data_from_stream(stream)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/eth_abi/decoding.py", line 389, in read_data_from_stream
+    raise InsufficientDataBytes(
+eth_abi.exceptions.InsufficientDataBytes: Tried to read 32 bytes, only got 0 bytes.
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/runner/workspace/aave_integration.py", line 335, in get_supplied_balance
+    balance_wei = atoken_contract.functions.balanceOf(self.account.address).call()
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/web3/contract/contract.py", line 305, in call
+    return call_contract_function(
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/web3/contract/utils.py", line 129, in call_contract_function
+    raise BadFunctionCallOutput(msg) from e
+web3.exceptions.BadFunctionCallOutput: Could not transact with/call contract function, is contract deployed correctly and chain synced?
+❌ Error getting supplied balance for 0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f: Could not transact with/call contract function, is contract deployed correctly and chain synced?
+2025-07-18 14:47:56,320 - DEBUG - DEBUG: Method 1 result: 0.0
+   WBTC Supplied (Method 1): 0.000000
+2025-07-18 14:47:56,320 - DEBUG - DEBUG: Method 2 - Direct aToken contract call
+2025-07-18 14:47:56,320 - DEBUG - DEBUG: Creating contract for aToken: 0x6533afac2E7BCCB20dca161449A13A2D2d5B739A
+2025-07-18 14:47:56,329 - DEBUG - DEBUG: Calling balanceOf(0x5B823270e3719CDe8669e5e5326B455EaA8a350b)
+2025-07-18 14:47:56,330 - DEBUG - Making request. Method: eth_call
+2025-07-18 14:47:56,330 - DEBUG - Making request. Method: eth_chainId
+2025-07-18 14:47:56,330 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_chainId
+2025-07-18 14:47:56,344 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 43
+2025-07-18 14:47:56,345 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_chainId, Response: {'jsonrpc': '2.0', 'result': '0xa4b1', 'id': 60}
+2025-07-18 14:47:56,346 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_call
+2025-07-18 14:47:56,390 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 None
+2025-07-18 14:47:56,391 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_call, Response: {'jsonrpc': '2.0', 'id': 61, 'result': '0x'}
+2025-07-18 14:47:56,391 - DEBUG - Making request. Method: eth_getCode
+2025-07-18 14:47:56,392 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_getCode
+2025-07-18 14:47:56,428 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 None
+2025-07-18 14:47:56,429 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_getCode, Response: {'jsonrpc': '2.0', 'id': 62, 'result': '0x'}
+2025-07-18 14:47:56,429 - ERROR - ERROR: Method 2 failed for WBTC: Could not transact with/call contract function, is contract deployed correctly and chain synced?
+   WBTC Supplied (Method 2): ERROR
+2025-07-18 14:47:56,429 - DEBUG - DEBUG: ===== Checking WETH =====
+2025-07-18 14:47:56,429 - DEBUG - DEBUG: Underlying token address: 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1
+2025-07-18 14:47:56,429 - DEBUG - DEBUG: Expected aToken address: 0xe50fA9b4c56454E2edF6BFf7c81b50c5F05aBE61
+2025-07-18 14:47:56,430 - DEBUG - DEBUG: Method 1 - Using agent.aave.get_supplied_balance
+2025-07-18 14:47:56,430 - DEBUG - DEBUG: get_supplied_balance called with token_address: 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1
+2025-07-18 14:47:56,430 - DEBUG - DEBUG: Available aToken mappings: {'0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f': '0x6533afac2E7BCCB20dca161449A13A2D2d5B739A', '0x82aF49447D8a07e3bd95BD0d56f35241523fBab1': '0xe50fA9b4c56454E2edF6BFf7c81b50c5F05aBE61', '0xAf88D065e77C8cF0EAEfF3e253e648A15CEe23dC': '0x724dc807b04555b71ed48a6896b6F41593b8C637'}
+2025-07-18 14:47:56,430 - DEBUG - DEBUG: Normalized token address: 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1
+2025-07-18 14:47:56,430 - DEBUG - DEBUG: Found aToken address: 0xe50fA9b4c56454E2edF6BFf7c81b50c5F05aBE61
+2025-07-18 14:47:56,430 - DEBUG - DEBUG: Checksummed aToken address: 0xE50Fa9B4C56454E2edF6bFF7C81B50c5F05abe61
+2025-07-18 14:47:56,430 - DEBUG - DEBUG: Wallet address for balance check: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+2025-07-18 14:47:56,437 - DEBUG - DEBUG: aToken contract created successfully
+2025-07-18 14:47:56,438 - DEBUG - DEBUG: Calling balanceOf(0x5B823270e3719CDe8669e5e5326B455EaA8a350b) on aToken contract
+2025-07-18 14:47:56,439 - DEBUG - Making request. Method: eth_call
+2025-07-18 14:47:56,439 - DEBUG - Making request. Method: eth_chainId
+2025-07-18 14:47:56,439 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_chainId
+2025-07-18 14:47:56,454 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 43
+2025-07-18 14:47:56,455 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_chainId, Response: {'jsonrpc': '2.0', 'result': '0xa4b1', 'id': 63}
+2025-07-18 14:47:56,457 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_call
+2025-07-18 14:47:56,492 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 None
+2025-07-18 14:47:56,492 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_call, Response: {'jsonrpc': '2.0', 'id': 64, 'result': '0x'}
+2025-07-18 14:47:56,493 - DEBUG - Making request. Method: eth_getCode
+2025-07-18 14:47:56,494 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_getCode
+2025-07-18 14:47:56,526 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 None
+2025-07-18 14:47:56,527 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_getCode, Response: {'jsonrpc': '2.0', 'id': 65, 'result': '0x'}
+2025-07-18 14:47:56,527 - ERROR - ERROR: get_supplied_balance failed for 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1: Could not transact with/call contract function, is contract deployed correctly and chain synced?
+Traceback (most recent call last):
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/web3/contract/utils.py", line 111, in call_contract_function
+    output_data = w3.codec.decode(output_types, return_data)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/eth_abi/codec.py", line 162, in decode
+    return cast(Tuple[Any, ...], decoder(stream))
+                                 ^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/eth_abi/decoding.py", line 131, in __call__
+    return self.decode(stream)
+           ^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/eth_utils/functional.py", line 47, in inner
+    return callback(fn(*args, **kwargs))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/eth_abi/decoding.py", line 224, in decode
+    self.validate_pointers(stream)
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/eth_abi/decoding.py", line 218, in validate_pointers
+    decoder(stream)
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/eth_abi/decoding.py", line 131, in __call__
+    return self.decode(stream)
+           ^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/eth_abi/decoding.py", line 250, in decode
+    raw_data = self.read_data_from_stream(stream)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/eth_abi/decoding.py", line 389, in read_data_from_stream
+    raise InsufficientDataBytes(
+eth_abi.exceptions.InsufficientDataBytes: Tried to read 32 bytes, only got 0 bytes.
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/runner/workspace/aave_integration.py", line 335, in get_supplied_balance
+    balance_wei = atoken_contract.functions.balanceOf(self.account.address).call()
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/web3/contract/contract.py", line 305, in call
+    return call_contract_function(
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/web3/contract/utils.py", line 129, in call_contract_function
+    raise BadFunctionCallOutput(msg) from e
+web3.exceptions.BadFunctionCallOutput: Could not transact with/call contract function, is contract deployed correctly and chain synced?
+❌ Error getting supplied balance for 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1: Could not transact with/call contract function, is contract deployed correctly and chain synced?
+2025-07-18 14:47:56,528 - DEBUG - DEBUG: Method 1 result: 0.0
+   WETH Supplied (Method 1): 0.000000
+2025-07-18 14:47:56,528 - DEBUG - DEBUG: Method 2 - Direct aToken contract call
+2025-07-18 14:47:56,528 - DEBUG - DEBUG: Creating contract for aToken: 0xe50fA9b4c56454E2edF6BFf7c81b50c5F05aBE61
+2025-07-18 14:47:56,535 - DEBUG - DEBUG: Calling balanceOf(0x5B823270e3719CDe8669e5e5326B455EaA8a350b)
+2025-07-18 14:47:56,536 - DEBUG - Making request. Method: eth_call
+2025-07-18 14:47:56,536 - DEBUG - Making request. Method: eth_chainId
+2025-07-18 14:47:56,536 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_chainId
+2025-07-18 14:47:56,549 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 43
+2025-07-18 14:47:56,550 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_chainId, Response: {'jsonrpc': '2.0', 'result': '0xa4b1', 'id': 66}
+2025-07-18 14:47:56,551 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_call
+2025-07-18 14:47:56,585 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 None
+2025-07-18 14:47:56,588 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_call, Response: {'jsonrpc': '2.0', 'id': 67, 'result': '0x'}
+2025-07-18 14:47:56,588 - DEBUG - Making request. Method: eth_getCode
+2025-07-18 14:47:56,589 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_getCode
+2025-07-18 14:47:56,624 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 None
+2025-07-18 14:47:56,625 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_getCode, Response: {'jsonrpc': '2.0', 'id': 68, 'result': '0x'}
+2025-07-18 14:47:56,626 - ERROR - ERROR: Method 2 failed for WETH: Could not transact with/call contract function, is contract deployed correctly and chain synced?
+   WETH Supplied (Method 2): ERROR
+2025-07-18 14:47:56,626 - DEBUG - DEBUG: ===== Checking USDC =====
+2025-07-18 14:47:56,626 - DEBUG - DEBUG: Underlying token address: 0xAf88D065e77C8cF0EAEfF3e253e648A15CEe23dC
+2025-07-18 14:47:56,626 - DEBUG - DEBUG: Expected aToken address: 0x724dc807b04555b71ed48a6896b6F41593b8C637
+2025-07-18 14:47:56,627 - DEBUG - DEBUG: Method 1 - Using agent.aave.get_supplied_balance
+2025-07-18 14:47:56,627 - DEBUG - DEBUG: get_supplied_balance called with token_address: 0xAf88D065e77C8cF0EAEfF3e253e648A15CEe23dC
+2025-07-18 14:47:56,627 - DEBUG - DEBUG: Available aToken mappings: {'0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f': '0x6533afac2E7BCCB20dca161449A13A2D2d5B739A', '0x82aF49447D8a07e3bd95BD0d56f35241523fBab1': '0xe50fA9b4c56454E2edF6BFf7c81b50c5F05aBE61', '0xAf88D065e77C8cF0EAEfF3e253e648A15CEe23dC': '0x724dc807b04555b71ed48a6896b6F41593b8C637'}
+2025-07-18 14:47:56,627 - DEBUG - DEBUG: Normalized token address: 0xAf88D065e77C8cF0EAEfF3e253e648A15CEe23dC
+2025-07-18 14:47:56,628 - DEBUG - DEBUG: Found aToken address: 0x724dc807b04555b71ed48a6896b6F41593b8C637
+2025-07-18 14:47:56,628 - DEBUG - DEBUG: Checksummed aToken address: 0x724dc807b04555b71ed48a6896b6F41593b8C637
+2025-07-18 14:47:56,628 - DEBUG - DEBUG: Wallet address for balance check: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+2025-07-18 14:47:56,641 - DEBUG - DEBUG: aToken contract created successfully
+2025-07-18 14:47:56,641 - DEBUG - DEBUG: Calling balanceOf(0x5B823270e3719CDe8669e5e5326B455EaA8a350b) on aToken contract
+2025-07-18 14:47:56,643 - DEBUG - Making request. Method: eth_call
+2025-07-18 14:47:56,643 - DEBUG - Making request. Method: eth_chainId
+2025-07-18 14:47:56,643 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_chainId
+2025-07-18 14:47:56,657 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 43
+2025-07-18 14:47:56,658 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_chainId, Response: {'jsonrpc': '2.0', 'result': '0xa4b1', 'id': 69}
+2025-07-18 14:47:56,659 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_call
+2025-07-18 14:47:56,697 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 None
+2025-07-18 14:47:56,697 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_call, Response: {'jsonrpc': '2.0', 'id': 70, 'result': '0x0000000000000000000000000000000000000000000000000000000000000000'}
+2025-07-18 14:47:56,698 - DEBUG - DEBUG: Raw balance_wei returned: 0
+2025-07-18 14:47:56,698 - DEBUG - DEBUG: Calling decimals() on aToken contract
+2025-07-18 14:47:56,699 - DEBUG - Making request. Method: eth_call
+2025-07-18 14:47:56,699 - DEBUG - Making request. Method: eth_chainId
+2025-07-18 14:47:56,699 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_chainId
+2025-07-18 14:47:56,712 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 43
+2025-07-18 14:47:56,713 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_chainId, Response: {'jsonrpc': '2.0', 'result': '0xa4b1', 'id': 71}
+2025-07-18 14:47:56,714 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_call
+2025-07-18 14:47:56,753 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 None
+2025-07-18 14:47:56,753 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_call, Response: {'jsonrpc': '2.0', 'id': 72, 'result': '0x0000000000000000000000000000000000000000000000000000000000000006'}
+2025-07-18 14:47:56,754 - DEBUG - DEBUG: Decimals returned: 6
+2025-07-18 14:47:56,754 - DEBUG - DEBUG: Converted balance: 0.0
+✅ Supplied 0.00000000 of token 0xAf88D065e77C8cF0EAEfF3e253e648A15CEe23dC (aToken: 0x724dc807b04555b71ed48a6896b6F41593b8C637)
+2025-07-18 14:47:56,754 - DEBUG - DEBUG: Method 1 result: 0.0
+   USDC Supplied (Method 1): 0.000000
+2025-07-18 14:47:56,754 - DEBUG - DEBUG: Method 2 - Direct aToken contract call
+2025-07-18 14:47:56,754 - DEBUG - DEBUG: Creating contract for aToken: 0x724dc807b04555b71ed48a6896b6F41593b8C637
+2025-07-18 14:47:56,763 - DEBUG - DEBUG: Calling balanceOf(0x5B823270e3719CDe8669e5e5326B455EaA8a350b)
+2025-07-18 14:47:56,765 - DEBUG - Making request. Method: eth_call
+2025-07-18 14:47:56,765 - DEBUG - Making request. Method: eth_chainId
+2025-07-18 14:47:56,765 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_chainId
+2025-07-18 14:47:56,780 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 43
+2025-07-18 14:47:56,780 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_chainId, Response: {'jsonrpc': '2.0', 'result': '0xa4b1', 'id': 73}
+2025-07-18 14:47:56,782 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_call
+2025-07-18 14:47:56,818 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 None
+2025-07-18 14:47:56,819 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_call, Response: {'jsonrpc': '2.0', 'id': 74, 'result': '0x0000000000000000000000000000000000000000000000000000000000000000'}
+2025-07-18 14:47:56,820 - DEBUG - DEBUG: Raw balance_wei: 0
+2025-07-18 14:47:56,820 - DEBUG - DEBUG: Calling decimals()
+2025-07-18 14:47:56,822 - DEBUG - Making request. Method: eth_call
+2025-07-18 14:47:56,822 - DEBUG - Making request. Method: eth_chainId
+2025-07-18 14:47:56,822 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_chainId
+2025-07-18 14:47:56,836 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 43
+2025-07-18 14:47:56,837 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_chainId, Response: {'jsonrpc': '2.0', 'result': '0xa4b1', 'id': 75}
+2025-07-18 14:47:56,838 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_call
+2025-07-18 14:47:56,881 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 None
+2025-07-18 14:47:56,882 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_call, Response: {'jsonrpc': '2.0', 'id': 76, 'result': '0x0000000000000000000000000000000000000000000000000000000000000006'}
+2025-07-18 14:47:56,883 - DEBUG - DEBUG: Decimals: 6
+2025-07-18 14:47:56,883 - DEBUG - DEBUG: Method 2 result: 0.0
+   USDC Supplied (Method 2): 0.000000
+
+✅ Standalone diagnostic completed
+000000000000000000000000000000000000000000000000000000000000000'}
+2025-07-18 14:47:46,909 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_getTransactionReceipt, Response: {'jsonrpc': '2.0', 'id': 18, 'result': None}
+2025-07-18 14:47:46,910 - DEBUG - Making request. Method: eth_call
+2025-07-18 14:47:46,910 - DEBUG - Making request. Method: eth_chainId
+2025-07-18 14:47:46,910 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_chainId
+2025-07-18 14:47:46,922 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 43
+2025-07-18 14:47:46,922 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_chainId, Response: {'jsonrpc': '2.0', 'result': '0xa4b1', 'id': 46}
+2025-07-18 14:47:46,923 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_call
+2025-07-18 14:47:46,957 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 None
+2025-07-18 14:47:46,958 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_call, Response: {'jsonrpc': '2.0', 'id': 47, 'result': '0x0000000000000000000000000000000000000000000000000000000000000012'}
+2025-07-18 14:47:46,959 - DEBUG - Making request. Method: eth_getTransactionCount
+2025-07-18 14:47:46,960 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_getTransactionCount
+2025-07-18 14:47:46,991 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 None
+2025-07-18 14:47:46,992 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_getTransactionCount, Response: {'jsonrpc': '2.0', 'id': 48, 'result': '0x6ff'}
+2025-07-18 14:47:46,993 - DEBUG - Making request. Method: eth_getTransactionCount
+2025-07-18 14:47:46,993 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_getTransactionCount
+2025-07-18 14:47:47,009 - DEBUG - Making request. Method: eth_getTransactionReceipt
+2025-07-18 14:47:47,010 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_getTransactionReceipt
+2025-07-18 14:47:47,026 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 None
+2025-07-18 14:47:47,027 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_getTransactionCount, Response: {'jsonrpc': '2.0', 'id': 49, 'result': '0x6ff'}
+2025-07-18 14:47:47,028 - DEBUG - Making request. Method: eth_call
+2025-07-18 14:47:47,029 - DEBUG - Making request. Method: eth_chainId
+2025-07-18 14:47:47,029 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_chainId
+2025-07-18 14:47:47,040 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 43
+2025-07-18 14:47:47,041 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_chainId, Response: {'jsonrpc': '2.0', 'result': '0xa4b1', 'id': 50}
+2025-07-18 14:47:47,042 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_call
+2025-07-18 14:47:47,047 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 None
+2025-07-18 14:47:47,048 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_getTransactionReceipt, Response: {'jsonrpc': '2.0', 'id': 19, 'result': {'blockHash': '0xb0376b7cbbf311961e1c782f65fcb2c79403ddb1966ac886f5f036727e269a03', 'blockNumber': '0x15664ffe', 'contractAddress': None, 'cumulativeGasUsed': '0x4f2add', 'effectiveGasPrice': '0x12097a38', 'from': '0x5b823270e3719cde8669e5e5326b455eaa8a350b', 'gasUsed': '0x5b23', 'gasUsedForL1': '0x6bb', 'l1BlockNumber': '0x15e23d9', 'logs': [], 'logsBloom': '0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000', 'status': '0x1', 'timeboosted': False, 'to': '0xaf88d065e77c8cf0eaeff3e253e648a15cee23dc', 'transactionHash': '0xef2b3b815099d9c02de7d3d8e1faa6f25ff7054ef770f2e730471cf89c2596be', 'transactionIndex': '0xa', 'type': '0x0'}}
+2025-07-18 14:47:47,079 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 None
+2025-07-18 14:47:47,080 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_call, Response: {'jsonrpc': '2.0', 'id': 51, 'result': '0x0000000000000000000000000000000000000000000000000000000000000000'}
+2025-07-18 14:47:47,081 - DEBUG - Making request. Method: eth_call
+2025-07-18 14:47:47,081 - DEBUG - Making request. Method: eth_chainId
+2025-07-18 14:47:47,081 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_chainId
+2025-07-18 14:47:47,093 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 43
+2025-07-18 14:47:47,093 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_chainId, Response: {'jsonrpc': '2.0', 'result': '0xa4b1', 'id': 52}
+2025-07-18 14:47:47,094 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_call
+2025-07-18 14:47:47,126 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 None
+2025-07-18 14:47:47,127 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_call, Response: {'jsonrpc': '2.0', 'id': 53, 'result': '0x0000000000000000000000000000000000000000000000000000000000000012'}
+2025-07-18 14:47:47,128 - DEBUG - Making request. Method: eth_call
+2025-07-18 14:47:47,129 - DEBUG - Making request. Method: eth_chainId
+2025-07-18 14:47:47,129 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_chainId
+2025-07-18 14:47:47,141 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 43
+2025-07-18 14:47:47,142 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_chainId, Response: {'jsonrpc': '2.0', 'result': '0xa4b1', 'id': 54}
+2025-07-18 14:47:47,143 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_call
+2025-07-18 14:47:47,177 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 None
+2025-07-18 14:47:47,178 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_call, Response: {'jsonrpc': '2.0', 'id': 55, 'result': '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff'}
+2025-07-18 14:47:49,061 - DEBUG - Making request. Method: eth_call
+2025-07-18 14:47:49,062 - DEBUG - Making request. Method: eth_chainId
+2025-07-18 14:47:49,062 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_chainId
+2025-07-18 14:47:49,075 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 43
+2025-07-18 14:47:49,076 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_chainId, Response: {'jsonrpc': '2.0', 'result': '0xa4b1', 'id': 20}
+2025-07-18 14:47:49,077 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_call
+2025-07-18 14:47:49,112 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 None
+2025-07-18 14:47:49,112 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_call, Response: {'jsonrpc': '2.0', 'id': 21, 'result': '0x0000000000000000000000000000000000000000000000000000000000000000'}
+2025-07-18 14:47:49,114 - DEBUG - Making request. Method: eth_call
+2025-07-18 14:47:49,114 - DEBUG - Making request. Method: eth_chainId
+2025-07-18 14:47:49,114 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_chainId
+2025-07-18 14:47:49,127 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 43
+2025-07-18 14:47:49,127 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_chainId, Response: {'jsonrpc': '2.0', 'result': '0xa4b1', 'id': 22}
+2025-07-18 14:47:49,129 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_call
+2025-07-18 14:47:49,164 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 None
+2025-07-18 14:47:49,165 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_call, Response: {'jsonrpc': '2.0', 'id': 23, 'result': '0x0000000000000000000000000000000000000000000000000000000000000008'}
+2025-07-18 14:47:49,166 - DEBUG - Making request. Method: eth_getTransactionCount
+2025-07-18 14:47:49,167 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_getTransactionCount
+2025-07-18 14:47:49,186 - DEBUG - DEBUG: DeFi integrations initialized: True
+2025-07-18 14:47:49,186 - DEBUG - DEBUG: Checking ETH balance for wallet 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+2025-07-18 14:47:49,187 - DEBUG - Making request. Method: eth_getBalance
+2025-07-18 14:47:49,187 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_getBalance
+2025-07-18 14:47:49,201 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 None
+2025-07-18 14:47:49,201 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_getTransactionCount, Response: {'jsonrpc': '2.0', 'id': 24, 'result': '0x6ff'}
+2025-07-18 14:47:49,202 - DEBUG - Making request. Method: eth_getTransactionCount
+2025-07-18 14:47:49,203 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_getTransactionCount
+2025-07-18 14:47:49,225 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 None
+2025-07-18 14:47:49,226 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_getBalance, Response: {'jsonrpc': '2.0', 'id': 56, 'result': '0x2298c0fb68bf'}
+2025-07-18 14:47:49,226 - DEBUG - DEBUG: Raw ETH balance: 0.0000380395 ETH
+2025-07-18 14:47:49,226 - DEBUG - DEBUG: aToken addresses: {'WBTC': '0x6533afac2E7BCCB20dca161449A13A2D2d5B739A', 'WETH': '0xe50fA9b4c56454E2edF6BFf7c81b50c5F05aBE61', 'USDC': '0x724dc807b04555b71ed48a6896b6F41593b8C637'}
+2025-07-18 14:47:49,226 - DEBUG - DEBUG: ===== Checking WBTC =====
+2025-07-18 14:47:49,226 - DEBUG - DEBUG: Underlying token address: 0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f
+2025-07-18 14:47:49,227 - DEBUG - DEBUG: Expected aToken address: 0x6533afac2E7BCCB20dca161449A13A2D2d5B739A
+2025-07-18 14:47:49,227 - DEBUG - DEBUG: Method 1 - Using agent.aave.get_supplied_balance
+2025-07-18 14:47:49,227 - DEBUG - DEBUG: get_supplied_balance called with token_address: 0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f
+2025-07-18 14:47:49,227 - DEBUG - DEBUG: Available aToken mappings: {'0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f': '0x6533afac2E7BCCB20dca161449A13A2D2d5B739A', '0x82aF49447D8a07e3bd95BD0d56f35241523fBab1': '0xe50fA9b4c56454E2edF6BFf7c81b50c5F05aBE61', '0xAf88D065e77C8cF0EAEfF3e253e648A15CEe23dC': '0x724dc807b04555b71ed48a6896b6F41593b8C637'}
+2025-07-18 14:47:49,227 - DEBUG - DEBUG: Normalized token address: 0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f
+2025-07-18 14:47:49,227 - DEBUG - DEBUG: Found aToken address: 0x6533afac2E7BCCB20dca161449A13A2D2d5B739A
+2025-07-18 14:47:49,227 - DEBUG - DEBUG: Checksummed aToken address: 0x6533afac2E7bCcb20DcA161449a13a2D2D5B739A
+2025-07-18 14:47:49,227 - DEBUG - DEBUG: Wallet address for balance check: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+2025-07-18 14:47:49,238 - DEBUG - DEBUG: aToken contract created successfully
+2025-07-18 14:47:49,238 - DEBUG - DEBUG: Calling balanceOf(0x5B823270e3719CDe8669e5e5326B455EaA8a350b) on aToken contract
+2025-07-18 14:47:49,239 - DEBUG - Making request. Method: eth_call
+2025-07-18 14:47:49,239 - DEBUG - Making request. Method: eth_chainId
+2025-07-18 14:47:49,240 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_chainId
+2025-07-18 14:47:49,243 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 None
+2025-07-18 14:47:49,244 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_getTransactionCount, Response: {'jsonrpc': '2.0', 'id': 25, 'result': '0x6ff'}
+2025-07-18 14:47:49,246 - DEBUG - Making request. Method: eth_call
+2025-07-18 14:47:49,246 - DEBUG - Making request. Method: eth_chainId
+2025-07-18 14:47:49,246 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_chainId
+2025-07-18 14:47:49,251 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 43
+2025-07-18 14:47:49,252 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_chainId, Response: {'jsonrpc': '2.0', 'result': '0xa4b1', 'id': 57}
+2025-07-18 14:47:49,253 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_call
+2025-07-18 14:47:49,260 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 43
+2025-07-18 14:47:49,260 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_chainId, Response: {'jsonrpc': '2.0', 'result': '0xa4b1', 'id': 26}
+2025-07-18 14:47:49,261 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_call
+2025-07-18 14:47:49,288 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 None
+2025-07-18 14:47:49,288 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_call, Response: {'jsonrpc': '2.0', 'id': 58, 'result': '0x'}
+2025-07-18 14:47:49,290 - DEBUG - Making request. Method: eth_getCode
+2025-07-18 14:47:49,294 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 None
+2025-07-18 14:47:49,301 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_call, Response: {'jsonrpc': '2.0', 'id': 27, 'result': '0x0000000000000000000000000000000000000000000000000000000000000000'}
+2025-07-18 14:47:49,300 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_getCode
+2025-07-18 14:47:49,311 - DEBUG - Making request. Method: eth_call
+2025-07-18 14:47:49,312 - DEBUG - Making request. Method: eth_chainId
+2025-07-18 14:47:49,312 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_chainId
+2025-07-18 14:47:49,326 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 43
+2025-07-18 14:47:49,326 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_chainId, Response: {'jsonrpc': '2.0', 'result': '0xa4b1', 'id': 28}
+2025-07-18 14:47:49,327 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_call
+2025-07-18 14:47:49,342 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 None
+2025-07-18 14:47:49,342 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_getCode, Response: {'jsonrpc': '2.0', 'id': 59, 'result': '0x'}
+2025-07-18 14:47:49,342 - ERROR - ERROR: get_supplied_balance failed for 0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f: Could not transact with/call contract function, is contract deployed correctly and chain synced?
+Traceback (most recent call last):
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/web3/contract/utils.py", line 111, in call_contract_function
+    output_data = w3.codec.decode(output_types, return_data)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/eth_abi/codec.py", line 162, in decode
+    return cast(Tuple[Any, ...], decoder(stream))
+                                 ^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/eth_abi/decoding.py", line 131, in __call__
+    return self.decode(stream)
+           ^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/eth_utils/functional.py", line 47, in inner
+    return callback(fn(*args, **kwargs))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/eth_abi/decoding.py", line 224, in decode
+    self.validate_pointers(stream)
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/eth_abi/decoding.py", line 218, in validate_pointers
+    decoder(stream)
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/eth_abi/decoding.py", line 131, in __call__
+    return self.decode(stream)
+           ^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/eth_abi/decoding.py", line 250, in decode
+    raw_data = self.read_data_from_stream(stream)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/eth_abi/decoding.py", line 389, in read_data_from_stream
+    raise InsufficientDataBytes(
+eth_abi.exceptions.InsufficientDataBytes: Tried to read 32 bytes, only got 0 bytes.
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/runner/workspace/aave_integration.py", line 335, in get_supplied_balance
+    balance_wei = atoken_contract.functions.balanceOf(self.account.address).call()
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/web3/contract/contract.py", line 305, in call
+    return call_contract_function(
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/web3/contract/utils.py", line 129, in call_contract_function
+    raise BadFunctionCallOutput(msg) from e
+web3.exceptions.BadFunctionCallOutput: Could not transact with/call contract function, is contract deployed correctly and chain synced?
+2025-07-18 14:47:49,345 - DEBUG - DEBUG: Method 1 result: 0.0
+2025-07-18 14:47:49,345 - DEBUG - DEBUG: Method 2 - Direct aToken contract call
+2025-07-18 14:47:49,345 - DEBUG - DEBUG: Creating contract for aToken: 0x6533afac2E7BCCB20dca161449A13A2D2d5B739A
+2025-07-18 14:47:49,353 - DEBUG - DEBUG: Calling balanceOf(0x5B823270e3719CDe8669e5e5326B455EaA8a350b)
+2025-07-18 14:47:49,355 - DEBUG - Making request. Method: eth_call
+2025-07-18 14:47:49,355 - DEBUG - Making request. Method: eth_chainId
+2025-07-18 14:47:49,355 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_chainId
+2025-07-18 14:47:49,360 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 None
+2025-07-18 14:47:49,361 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_call, Response: {'jsonrpc': '2.0', 'id': 29, 'result': '0x0000000000000000000000000000000000000000000000000000000000000008'}
+2025-07-18 14:47:49,363 - DEBUG - Making request. Method: eth_call
+2025-07-18 14:47:49,363 - DEBUG - Making request. Method: eth_chainId
+2025-07-18 14:47:49,363 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_chainId
+2025-07-18 14:47:49,367 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 43
+2025-07-18 14:47:49,368 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_chainId, Response: {'jsonrpc': '2.0', 'result': '0xa4b1', 'id': 60}
+2025-07-18 14:47:49,368 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_call
+2025-07-18 14:47:49,377 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 43
+2025-07-18 14:47:49,377 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_chainId, Response: {'jsonrpc': '2.0', 'result': '0xa4b1', 'id': 30}
+2025-07-18 14:47:49,378 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_call
+2025-07-18 14:47:49,400 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 None
+2025-07-18 14:47:49,401 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_call, Response: {'jsonrpc': '2.0', 'id': 61, 'result': '0x'}
+2025-07-18 14:47:49,402 - DEBUG - Making request. Method: eth_getCode
+2025-07-18 14:47:49,403 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_getCode
+2025-07-18 14:47:49,414 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 None
+2025-07-18 14:47:49,414 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_call, Response: {'jsonrpc': '2.0', 'id': 31, 'result': '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffad9f'}
+2025-07-18 14:47:49,436 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 None
+2025-07-18 14:47:49,437 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_getCode, Response: {'jsonrpc': '2.0', 'id': 62, 'result': '0x'}
+2025-07-18 14:47:49,437 - ERROR - ERROR: Method 2 failed for WBTC: Could not transact with/call contract function, is contract deployed correctly and chain synced?
+2025-07-18 14:47:49,437 - DEBUG - DEBUG: ===== Checking WETH =====
+2025-07-18 14:47:49,437 - DEBUG - DEBUG: Underlying token address: 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1
+2025-07-18 14:47:49,438 - DEBUG - DEBUG: Expected aToken address: 0xe50fA9b4c56454E2edF6BFf7c81b50c5F05aBE61
+2025-07-18 14:47:49,438 - DEBUG - DEBUG: Method 1 - Using agent.aave.get_supplied_balance
+2025-07-18 14:47:49,438 - DEBUG - DEBUG: get_supplied_balance called with token_address: 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1
+2025-07-18 14:47:49,438 - DEBUG - DEBUG: Available aToken mappings: {'0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f': '0x6533afac2E7BCCB20dca161449A13A2D2d5B739A', '0x82aF49447D8a07e3bd95BD0d56f35241523fBab1': '0xe50fA9b4c56454E2edF6BFf7c81b50c5F05aBE61', '0xAf88D065e77C8cF0EAEfF3e253e648A15CEe23dC': '0x724dc807b04555b71ed48a6896b6F41593b8C637'}
+2025-07-18 14:47:49,438 - DEBUG - DEBUG: Normalized token address: 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1
+2025-07-18 14:47:49,438 - DEBUG - DEBUG: Found aToken address: 0xe50fA9b4c56454E2edF6BFf7c81b50c5F05aBE61
+2025-07-18 14:47:49,439 - DEBUG - DEBUG: Checksummed aToken address: 0xE50Fa9B4C56454E2edF6bFF7C81B50c5F05abe61
+2025-07-18 14:47:49,439 - DEBUG - DEBUG: Wallet address for balance check: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+2025-07-18 14:47:49,450 - DEBUG - DEBUG: aToken contract created successfully
+2025-07-18 14:47:49,450 - DEBUG - DEBUG: Calling balanceOf(0x5B823270e3719CDe8669e5e5326B455EaA8a350b) on aToken contract
+2025-07-18 14:47:49,451 - DEBUG - Making request. Method: eth_call
+2025-07-18 14:47:49,452 - DEBUG - Making request. Method: eth_chainId
+2025-07-18 14:47:49,452 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_chainId
+2025-07-18 14:47:49,463 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 43
+2025-07-18 14:47:49,464 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_chainId, Response: {'jsonrpc': '2.0', 'result': '0xa4b1', 'id': 63}
+2025-07-18 14:47:49,465 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_call
+2025-07-18 14:47:49,501 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 None
+2025-07-18 14:47:49,501 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_call, Response: {'jsonrpc': '2.0', 'id': 64, 'result': '0x'}
+2025-07-18 14:47:49,502 - DEBUG - Making request. Method: eth_getCode
+2025-07-18 14:47:49,503 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_getCode
+2025-07-18 14:47:49,534 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 None
+2025-07-18 14:47:49,535 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_getCode, Response: {'jsonrpc': '2.0', 'id': 65, 'result': '0x'}
+2025-07-18 14:47:49,535 - ERROR - ERROR: get_supplied_balance failed for 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1: Could not transact with/call contract function, is contract deployed correctly and chain synced?
+Traceback (most recent call last):
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/web3/contract/utils.py", line 111, in call_contract_function
+    output_data = w3.codec.decode(output_types, return_data)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/eth_abi/codec.py", line 162, in decode
+    return cast(Tuple[Any, ...], decoder(stream))
+                                 ^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/eth_abi/decoding.py", line 131, in __call__
+    return self.decode(stream)
+           ^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/eth_utils/functional.py", line 47, in inner
+    return callback(fn(*args, **kwargs))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/eth_abi/decoding.py", line 224, in decode
+    self.validate_pointers(stream)
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/eth_abi/decoding.py", line 218, in validate_pointers
+    decoder(stream)
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/eth_abi/decoding.py", line 131, in __call__
+    return self.decode(stream)
+           ^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/eth_abi/decoding.py", line 250, in decode
+    raw_data = self.read_data_from_stream(stream)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/eth_abi/decoding.py", line 389, in read_data_from_stream
+    raise InsufficientDataBytes(
+eth_abi.exceptions.InsufficientDataBytes: Tried to read 32 bytes, only got 0 bytes.
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/runner/workspace/aave_integration.py", line 335, in get_supplied_balance
+    balance_wei = atoken_contract.functions.balanceOf(self.account.address).call()
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/web3/contract/contract.py", line 305, in call
+    return call_contract_function(
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/web3/contract/utils.py", line 129, in call_contract_function
+    raise BadFunctionCallOutput(msg) from e
+web3.exceptions.BadFunctionCallOutput: Could not transact with/call contract function, is contract deployed correctly and chain synced?
+2025-07-18 14:47:49,536 - DEBUG - DEBUG: Method 1 result: 0.0
+2025-07-18 14:47:49,536 - DEBUG - DEBUG: Method 2 - Direct aToken contract call
+2025-07-18 14:47:49,536 - DEBUG - DEBUG: Creating contract for aToken: 0xe50fA9b4c56454E2edF6BFf7c81b50c5F05aBE61
+2025-07-18 14:47:49,545 - DEBUG - DEBUG: Calling balanceOf(0x5B823270e3719CDe8669e5e5326B455EaA8a350b)
+2025-07-18 14:47:49,546 - DEBUG - Making request. Method: eth_call
+2025-07-18 14:47:49,546 - DEBUG - Making request. Method: eth_chainId
+2025-07-18 14:47:49,546 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_chainId
+2025-07-18 14:47:49,558 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 43
+2025-07-18 14:47:49,558 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_chainId, Response: {'jsonrpc': '2.0', 'result': '0xa4b1', 'id': 66}
+2025-07-18 14:47:49,559 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_call
+2025-07-18 14:47:49,604 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 None
+2025-07-18 14:47:49,605 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_call, Response: {'jsonrpc': '2.0', 'id': 67, 'result': '0x'}
+2025-07-18 14:47:49,606 - DEBUG - Making request. Method: eth_getCode
+2025-07-18 14:47:49,607 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_getCode
+2025-07-18 14:47:49,642 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 None
+2025-07-18 14:47:49,643 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_getCode, Response: {'jsonrpc': '2.0', 'id': 68, 'result': '0x'}
+2025-07-18 14:47:49,643 - ERROR - ERROR: Method 2 failed for WETH: Could not transact with/call contract function, is contract deployed correctly and chain synced?
+2025-07-18 14:47:49,643 - DEBUG - DEBUG: ===== Checking USDC =====
+2025-07-18 14:47:49,643 - DEBUG - DEBUG: Underlying token address: 0xAf88D065e77C8cF0EAEfF3e253e648A15CEe23dC
+2025-07-18 14:47:49,643 - DEBUG - DEBUG: Expected aToken address: 0x724dc807b04555b71ed48a6896b6F41593b8C637
+2025-07-18 14:47:49,643 - DEBUG - DEBUG: Method 1 - Using agent.aave.get_supplied_balance
+2025-07-18 14:47:49,644 - DEBUG - DEBUG: get_supplied_balance called with token_address: 0xAf88D065e77C8cF0EAEfF3e253e648A15CEe23dC
+2025-07-18 14:47:49,644 - DEBUG - DEBUG: Available aToken mappings: {'0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f': '0x6533afac2E7BCCB20dca161449A13A2D2d5B739A', '0x82aF49447D8a07e3bd95BD0d56f35241523fBab1': '0xe50fA9b4c56454E2edF6BFf7c81b50c5F05aBE61', '0xAf88D065e77C8cF0EAEfF3e253e648A15CEe23dC': '0x724dc807b04555b71ed48a6896b6F41593b8C637'}
+2025-07-18 14:47:49,644 - DEBUG - DEBUG: Normalized token address: 0xAf88D065e77C8cF0EAEfF3e253e648A15CEe23dC
+2025-07-18 14:47:49,644 - DEBUG - DEBUG: Found aToken address: 0x724dc807b04555b71ed48a6896b6F41593b8C637
+2025-07-18 14:47:49,644 - DEBUG - DEBUG: Checksummed aToken address: 0x724dc807b04555b71ed48a6896b6F41593b8C637
+2025-07-18 14:47:49,644 - DEBUG - DEBUG: Wallet address for balance check: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+2025-07-18 14:47:49,654 - DEBUG - DEBUG: aToken contract created successfully
+2025-07-18 14:47:49,654 - DEBUG - DEBUG: Calling balanceOf(0x5B823270e3719CDe8669e5e5326B455EaA8a350b) on aToken contract
+2025-07-18 14:47:49,655 - DEBUG - Making request. Method: eth_call
+2025-07-18 14:47:49,655 - DEBUG - Making request. Method: eth_chainId
+2025-07-18 14:47:49,655 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_chainId
+2025-07-18 14:47:49,667 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 43
+2025-07-18 14:47:49,668 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_chainId, Response: {'jsonrpc': '2.0', 'result': '0xa4b1', 'id': 69}
+2025-07-18 14:47:49,669 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_call
+2025-07-18 14:47:49,704 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 None
+2025-07-18 14:47:49,705 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_call, Response: {'jsonrpc': '2.0', 'id': 70, 'result': '0x0000000000000000000000000000000000000000000000000000000000000000'}
+2025-07-18 14:47:49,705 - DEBUG - DEBUG: Raw balance_wei returned: 0
+2025-07-18 14:47:49,705 - DEBUG - DEBUG: Calling decimals() on aToken contract
+2025-07-18 14:47:49,706 - DEBUG - Making request. Method: eth_call
+2025-07-18 14:47:49,707 - DEBUG - Making request. Method: eth_chainId
+2025-07-18 14:47:49,707 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_chainId
+2025-07-18 14:47:49,719 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 43
+2025-07-18 14:47:49,719 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_chainId, Response: {'jsonrpc': '2.0', 'result': '0xa4b1', 'id': 71}
+2025-07-18 14:47:49,720 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_call
+2025-07-18 14:47:49,753 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 None
+2025-07-18 14:47:49,754 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_call, Response: {'jsonrpc': '2.0', 'id': 72, 'result': '0x0000000000000000000000000000000000000000000000000000000000000006'}
+2025-07-18 14:47:49,754 - DEBUG - DEBUG: Decimals returned: 6
+2025-07-18 14:47:49,755 - DEBUG - DEBUG: Converted balance: 0.0
+2025-07-18 14:47:49,755 - DEBUG - DEBUG: Method 1 result: 0.0
+2025-07-18 14:47:49,755 - DEBUG - DEBUG: Method 2 - Direct aToken contract call
+2025-07-18 14:47:49,755 - DEBUG - DEBUG: Creating contract for aToken: 0x724dc807b04555b71ed48a6896b6F41593b8C637
+2025-07-18 14:47:49,764 - DEBUG - DEBUG: Calling balanceOf(0x5B823270e3719CDe8669e5e5326B455EaA8a350b)
+2025-07-18 14:47:49,765 - DEBUG - Making request. Method: eth_call
+2025-07-18 14:47:49,765 - DEBUG - Making request. Method: eth_chainId
+2025-07-18 14:47:49,765 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_chainId
+2025-07-18 14:47:49,777 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 43
+2025-07-18 14:47:49,778 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_chainId, Response: {'jsonrpc': '2.0', 'result': '0xa4b1', 'id': 73}
+2025-07-18 14:47:49,779 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_call
+2025-07-18 14:47:49,816 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 None
+2025-07-18 14:47:49,817 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_call, Response: {'jsonrpc': '2.0', 'id': 74, 'result': '0x0000000000000000000000000000000000000000000000000000000000000000'}
+2025-07-18 14:47:49,817 - DEBUG - DEBUG: Raw balance_wei: 0
+2025-07-18 14:47:49,817 - DEBUG - DEBUG: Calling decimals()
+2025-07-18 14:47:49,818 - DEBUG - Making request. Method: eth_call
+2025-07-18 14:47:49,818 - DEBUG - Making request. Method: eth_chainId
+2025-07-18 14:47:49,818 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_chainId
+2025-07-18 14:47:49,831 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 43
+2025-07-18 14:47:49,831 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_chainId, Response: {'jsonrpc': '2.0', 'result': '0xa4b1', 'id': 75}
+2025-07-18 14:47:49,833 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_call
+2025-07-18 14:47:49,900 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 None
+2025-07-18 14:47:49,901 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_call, Response: {'jsonrpc': '2.0', 'id': 76, 'result': '0x0000000000000000000000000000000000000000000000000000000000000006'}
+2025-07-18 14:47:49,901 - DEBUG - DEBUG: Decimals: 6
+2025-07-18 14:47:49,901 - DEBUG - DEBUG: Method 2 result: 0.0
+2025-07-18 14:47:51,431 - DEBUG - Making request. Method: eth_call
+2025-07-18 14:47:51,431 - DEBUG - Making request. Method: eth_chainId
+2025-07-18 14:47:51,431 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_chainId
+2025-07-18 14:47:51,445 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 43
+2025-07-18 14:47:51,445 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_chainId, Response: {'jsonrpc': '2.0', 'result': '0xa4b1', 'id': 32}
+2025-07-18 14:47:51,446 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_call
+2025-07-18 14:47:51,484 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 None
+2025-07-18 14:47:51,484 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_call, Response: {'jsonrpc': '2.0', 'id': 33, 'result': '0x0000000000000000000000000000000000000000000000000000000000000000'}
+2025-07-18 14:47:51,486 - DEBUG - Making request. Method: eth_call
+2025-07-18 14:47:51,486 - DEBUG - Making request. Method: eth_chainId
+2025-07-18 14:47:51,486 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_chainId
+2025-07-18 14:47:51,499 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 43
+2025-07-18 14:47:51,500 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_chainId, Response: {'jsonrpc': '2.0', 'result': '0xa4b1', 'id': 34}
+2025-07-18 14:47:51,500 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_call
+2025-07-18 14:47:51,536 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 None
+2025-07-18 14:47:51,537 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_call, Response: {'jsonrpc': '2.0', 'id': 35, 'result': '0x0000000000000000000000000000000000000000000000000000000000000012'}
+2025-07-18 14:47:51,538 - DEBUG - Making request. Method: eth_getTransactionCount
+2025-07-18 14:47:51,539 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_getTransactionCount
+2025-07-18 14:47:51,582 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 None
+2025-07-18 14:47:51,583 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_getTransactionCount, Response: {'jsonrpc': '2.0', 'id': 36, 'result': '0x6ff'}
+2025-07-18 14:47:51,584 - DEBUG - Making request. Method: eth_getTransactionCount
+2025-07-18 14:47:51,585 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_getTransactionCount
+2025-07-18 14:47:51,623 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 None
+2025-07-18 14:47:51,624 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_getTransactionCount, Response: {'jsonrpc': '2.0', 'id': 37, 'result': '0x6ff'}
+2025-07-18 14:47:51,625 - DEBUG - Making request. Method: eth_call
+2025-07-18 14:47:51,626 - DEBUG - Making request. Method: eth_chainId
+2025-07-18 14:47:51,626 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_chainId
+2025-07-18 14:47:51,641 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 43
+2025-07-18 14:47:51,641 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_chainId, Response: {'jsonrpc': '2.0', 'result': '0xa4b1', 'id': 38}
+2025-07-18 14:47:51,643 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_call
+2025-07-18 14:47:51,676 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 None
+2025-07-18 14:47:51,677 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_call, Response: {'jsonrpc': '2.0', 'id': 39, 'result': '0x0000000000000000000000000000000000000000000000000000000000000000'}
+2025-07-18 14:47:51,678 - DEBUG - Making request. Method: eth_call
+2025-07-18 14:47:51,679 - DEBUG - Making request. Method: eth_chainId
+2025-07-18 14:47:51,679 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_chainId
+2025-07-18 14:47:51,692 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 43
+2025-07-18 14:47:51,693 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_chainId, Response: {'jsonrpc': '2.0', 'result': '0xa4b1', 'id': 40}
+2025-07-18 14:47:51,694 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_call
+2025-07-18 14:47:51,730 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 None
+2025-07-18 14:47:51,731 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_call, Response: {'jsonrpc': '2.0', 'id': 41, 'result': '0x0000000000000000000000000000000000000000000000000000000000000012'}
+2025-07-18 14:47:51,733 - DEBUG - Making request. Method: eth_call
+2025-07-18 14:47:51,734 - DEBUG - Making request. Method: eth_chainId
+2025-07-18 14:47:51,734 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_chainId
+2025-07-18 14:47:51,748 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 43
+2025-07-18 14:47:51,748 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_chainId, Response: {'jsonrpc': '2.0', 'result': '0xa4b1', 'id': 42}
+2025-07-18 14:47:51,749 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_call
+2025-07-18 14:47:51,786 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 None
+2025-07-18 14:47:51,787 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_call, Response: {'jsonrpc': '2.0', 'id': 43, 'result': '0xfffffffffffffffffffffffffffffffffffffffffffffffffff174e1200d514a'}
+2025-07-18 14:47:53,805 - DEBUG - Making request. Method: eth_call
+2025-07-18 14:47:53,805 - DEBUG - Making request. Method: eth_chainId
+2025-07-18 14:47:53,805 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_chainId
+2025-07-18 14:47:53,819 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 43
+2025-07-18 14:47:53,819 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_chainId, Response: {'jsonrpc': '2.0', 'result': '0xa4b1', 'id': 44}
+2025-07-18 14:47:53,820 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_call
+2025-07-18 14:47:53,854 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 None
+2025-07-18 14:47:53,855 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_call, Response: {'jsonrpc': '2.0', 'id': 45, 'result': '0x0000000000000000000000000000000000000000000000000000000000000000'}
+2025-07-18 14:47:53,856 - DEBUG - Making request. Method: eth_call
+2025-07-18 14:47:53,857 - DEBUG - Making request. Method: eth_chainId
+2025-07-18 14:47:53,857 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_chainId
+2025-07-18 14:47:53,871 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 43
+2025-07-18 14:47:53,872 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_chainId, Response: {'jsonrpc': '2.0', 'result': '0xa4b1', 'id': 46}
+2025-07-18 14:47:53,873 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_call
+2025-07-18 14:47:53,909 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 None
+2025-07-18 14:47:53,910 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_call, Response: {'jsonrpc': '2.0', 'id': 47, 'result': '0x0000000000000000000000000000000000000000000000000000000000000012'}
+2025-07-18 14:47:53,911 - DEBUG - Making request. Method: eth_getTransactionCount
+2025-07-18 14:47:53,911 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_getTransactionCount
+2025-07-18 14:47:53,947 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 None
+2025-07-18 14:47:53,947 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_getTransactionCount, Response: {'jsonrpc': '2.0', 'id': 48, 'result': '0x6ff'}
+2025-07-18 14:47:53,948 - DEBUG - Making request. Method: eth_getTransactionCount
+2025-07-18 14:47:53,949 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_getTransactionCount
+2025-07-18 14:47:53,985 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 None
+2025-07-18 14:47:53,985 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_getTransactionCount, Response: {'jsonrpc': '2.0', 'id': 49, 'result': '0x6ff'}
+2025-07-18 14:47:53,987 - DEBUG - Making request. Method: eth_call
+2025-07-18 14:47:53,987 - DEBUG - Making request. Method: eth_chainId
+2025-07-18 14:47:53,987 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_chainId
+2025-07-18 14:47:54,005 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 43
+2025-07-18 14:47:54,005 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_chainId, Response: {'jsonrpc': '2.0', 'result': '0xa4b1', 'id': 50}
+2025-07-18 14:47:54,006 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_call
+2025-07-18 14:47:54,041 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 None
+2025-07-18 14:47:54,042 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_call, Response: {'jsonrpc': '2.0', 'id': 51, 'result': '0x0000000000000000000000000000000000000000000000000000000000000000'}
+2025-07-18 14:47:54,044 - DEBUG - Making request. Method: eth_call
+2025-07-18 14:47:54,044 - DEBUG - Making request. Method: eth_chainId
+2025-07-18 14:47:54,044 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_chainId
+2025-07-18 14:47:54,059 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 43
+2025-07-18 14:47:54,060 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_chainId, Response: {'jsonrpc': '2.0', 'result': '0xa4b1', 'id': 52}
+2025-07-18 14:47:54,061 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_call
+2025-07-18 14:47:54,098 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 None
+2025-07-18 14:47:54,099 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_call, Response: {'jsonrpc': '2.0', 'id': 53, 'result': '0x0000000000000000000000000000000000000000000000000000000000000012'}
+2025-07-18 14:47:54,101 - DEBUG - Making request. Method: eth_call
+2025-07-18 14:47:54,101 - DEBUG - Making request. Method: eth_chainId
+2025-07-18 14:47:54,101 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_chainId
+2025-07-18 14:47:54,115 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 43
+2025-07-18 14:47:54,116 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_chainId, Response: {'jsonrpc': '2.0', 'result': '0xa4b1', 'id': 54}
+2025-07-18 14:47:54,117 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_call
+2025-07-18 14:47:54,151 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 None
+2025-07-18 14:47:54,152 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_call, Response: {'jsonrpc': '2.0', 'id': 55, 'result': '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff'}
+2025-07-18 14:47:56,153 - DEBUG - DEBUG: DeFi integrations initialized: True
+2025-07-18 14:47:56,153 - DEBUG - DEBUG: Checking ETH balance for wallet 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+2025-07-18 14:47:56,154 - DEBUG - Making request. Method: eth_getBalance
+2025-07-18 14:47:56,154 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_getBalance
+2025-07-18 14:47:56,199 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 None
+2025-07-18 14:47:56,200 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_getBalance, Response: {'jsonrpc': '2.0', 'id': 56, 'result': '0x2298c0fb68bf'}
+2025-07-18 14:47:56,200 - DEBUG - DEBUG: Raw ETH balance: 0.0000380395 ETH
+2025-07-18 14:47:56,200 - DEBUG - DEBUG: aToken addresses: {'WBTC': '0x6533afac2E7BCCB20dca161449A13A2D2d5B739A', 'WETH': '0xe50fA9b4c56454E2edF6BFf7c81b50c5F05aBE61', 'USDC': '0x724dc807b04555b71ed48a6896b6F41593b8C637'}
+2025-07-18 14:47:56,200 - DEBUG - DEBUG: ===== Checking WBTC =====
+2025-07-18 14:47:56,200 - DEBUG - DEBUG: Underlying token address: 0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f
+2025-07-18 14:47:56,201 - DEBUG - DEBUG: Expected aToken address: 0x6533afac2E7BCCB20dca161449A13A2D2d5B739A
+2025-07-18 14:47:56,201 - DEBUG - DEBUG: Method 1 - Using agent.aave.get_supplied_balance
+2025-07-18 14:47:56,201 - DEBUG - DEBUG: get_supplied_balance called with token_address: 0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f
+2025-07-18 14:47:56,201 - DEBUG - DEBUG: Available aToken mappings: {'0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f': '0x6533afac2E7BCCB20dca161449A13A2D2d5B739A', '0x82aF49447D8a07e3bd95BD0d56f35241523fBab1': '0xe50fA9b4c56454E2edF6BFf7c81b50c5F05aBE61', '0xAf88D065e77C8cF0EAEfF3e253e648A15CEe23dC': '0x724dc807b04555b71ed48a6896b6F41593b8C637'}
+2025-07-18 14:47:56,201 - DEBUG - DEBUG: Normalized token address: 0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f
+2025-07-18 14:47:56,201 - DEBUG - DEBUG: Found aToken address: 0x6533afac2E7BCCB20dca161449A13A2D2d5B739A
+2025-07-18 14:47:56,201 - DEBUG - DEBUG: Checksummed aToken address: 0x6533afac2E7bCcb20DcA161449a13a2D2D5B739A
+2025-07-18 14:47:56,201 - DEBUG - DEBUG: Wallet address for balance check: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+2025-07-18 14:47:56,210 - DEBUG - DEBUG: aToken contract created successfully
+2025-07-18 14:47:56,210 - DEBUG - DEBUG: Calling balanceOf(0x5B823270e3719CDe8669e5e5326B455EaA8a350b) on aToken contract
+2025-07-18 14:47:56,211 - DEBUG - Making request. Method: eth_call
+2025-07-18 14:47:56,211 - DEBUG - Making request. Method: eth_chainId
+2025-07-18 14:47:56,212 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_chainId
+2025-07-18 14:47:56,225 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 43
+2025-07-18 14:47:56,225 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_chainId, Response: {'jsonrpc': '2.0', 'result': '0xa4b1', 'id': 57}
+2025-07-18 14:47:56,227 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_call
+2025-07-18 14:47:56,275 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 None
+2025-07-18 14:47:56,276 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_call, Response: {'jsonrpc': '2.0', 'id': 58, 'result': '0x'}
+2025-07-18 14:47:56,277 - DEBUG - Making request. Method: eth_getCode
+2025-07-18 14:47:56,277 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_getCode
+2025-07-18 14:47:56,316 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 None
+2025-07-18 14:47:56,317 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_getCode, Response: {'jsonrpc': '2.0', 'id': 59, 'result': '0x'}
+2025-07-18 14:47:56,317 - ERROR - ERROR: get_supplied_balance failed for 0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f: Could not transact with/call contract function, is contract deployed correctly and chain synced?
+Traceback (most recent call last):
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/web3/contract/utils.py", line 111, in call_contract_function
+    output_data = w3.codec.decode(output_types, return_data)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/eth_abi/codec.py", line 162, in decode
+    return cast(Tuple[Any, ...], decoder(stream))
+                                 ^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/eth_abi/decoding.py", line 131, in __call__
+    return self.decode(stream)
+           ^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/eth_utils/functional.py", line 47, in inner
+    return callback(fn(*args, **kwargs))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/eth_abi/decoding.py", line 224, in decode
+    self.validate_pointers(stream)
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/eth_abi/decoding.py", line 218, in validate_pointers
+    decoder(stream)
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/eth_abi/decoding.py", line 131, in __call__
+    return self.decode(stream)
+           ^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/eth_abi/decoding.py", line 250, in decode
+    raw_data = self.read_data_from_stream(stream)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/eth_abi/decoding.py", line 389, in read_data_from_stream
+    raise InsufficientDataBytes(
+eth_abi.exceptions.InsufficientDataBytes: Tried to read 32 bytes, only got 0 bytes.
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/runner/workspace/aave_integration.py", line 335, in get_supplied_balance
+    balance_wei = atoken_contract.functions.balanceOf(self.account.address).call()
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/web3/contract/contract.py", line 305, in call
+    return call_contract_function(
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/web3/contract/utils.py", line 129, in call_contract_function
+    raise BadFunctionCallOutput(msg) from e
+web3.exceptions.BadFunctionCallOutput: Could not transact with/call contract function, is contract deployed correctly and chain synced?
+2025-07-18 14:47:56,320 - DEBUG - DEBUG: Method 1 result: 0.0
+2025-07-18 14:47:56,320 - DEBUG - DEBUG: Method 2 - Direct aToken contract call
+2025-07-18 14:47:56,320 - DEBUG - DEBUG: Creating contract for aToken: 0x6533afac2E7BCCB20dca161449A13A2D2d5B739A
+2025-07-18 14:47:56,329 - DEBUG - DEBUG: Calling balanceOf(0x5B823270e3719CDe8669e5e5326B455EaA8a350b)
+2025-07-18 14:47:56,330 - DEBUG - Making request. Method: eth_call
+2025-07-18 14:47:56,330 - DEBUG - Making request. Method: eth_chainId
+2025-07-18 14:47:56,330 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_chainId
+2025-07-18 14:47:56,344 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 43
+2025-07-18 14:47:56,345 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_chainId, Response: {'jsonrpc': '2.0', 'result': '0xa4b1', 'id': 60}
+2025-07-18 14:47:56,346 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_call
+2025-07-18 14:47:56,390 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 None
+2025-07-18 14:47:56,391 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_call, Response: {'jsonrpc': '2.0', 'id': 61, 'result': '0x'}
+2025-07-18 14:47:56,391 - DEBUG - Making request. Method: eth_getCode
+2025-07-18 14:47:56,392 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_getCode
+2025-07-18 14:47:56,428 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 None
+2025-07-18 14:47:56,429 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_getCode, Response: {'jsonrpc': '2.0', 'id': 62, 'result': '0x'}
+2025-07-18 14:47:56,429 - ERROR - ERROR: Method 2 failed for WBTC: Could not transact with/call contract function, is contract deployed correctly and chain synced?
+2025-07-18 14:47:56,429 - DEBUG - DEBUG: ===== Checking WETH =====
+2025-07-18 14:47:56,429 - DEBUG - DEBUG: Underlying token address: 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1
+2025-07-18 14:47:56,429 - DEBUG - DEBUG: Expected aToken address: 0xe50fA9b4c56454E2edF6BFf7c81b50c5F05aBE61
+2025-07-18 14:47:56,430 - DEBUG - DEBUG: Method 1 - Using agent.aave.get_supplied_balance
+2025-07-18 14:47:56,430 - DEBUG - DEBUG: get_supplied_balance called with token_address: 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1
+2025-07-18 14:47:56,430 - DEBUG - DEBUG: Available aToken mappings: {'0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f': '0x6533afac2E7BCCB20dca161449A13A2D2d5B739A', '0x82aF49447D8a07e3bd95BD0d56f35241523fBab1': '0xe50fA9b4c56454E2edF6BFf7c81b50c5F05aBE61', '0xAf88D065e77C8cF0EAEfF3e253e648A15CEe23dC': '0x724dc807b04555b71ed48a6896b6F41593b8C637'}
+2025-07-18 14:47:56,430 - DEBUG - DEBUG: Normalized token address: 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1
+2025-07-18 14:47:56,430 - DEBUG - DEBUG: Found aToken address: 0xe50fA9b4c56454E2edF6BFf7c81b50c5F05aBE61
+2025-07-18 14:47:56,430 - DEBUG - DEBUG: Checksummed aToken address: 0xE50Fa9B4C56454E2edF6bFF7C81B50c5F05abe61
+2025-07-18 14:47:56,430 - DEBUG - DEBUG: Wallet address for balance check: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+2025-07-18 14:47:56,437 - DEBUG - DEBUG: aToken contract created successfully
+2025-07-18 14:47:56,438 - DEBUG - DEBUG: Calling balanceOf(0x5B823270e3719CDe8669e5e5326B455EaA8a350b) on aToken contract
+2025-07-18 14:47:56,439 - DEBUG - Making request. Method: eth_call
+2025-07-18 14:47:56,439 - DEBUG - Making request. Method: eth_chainId
+2025-07-18 14:47:56,439 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_chainId
+2025-07-18 14:47:56,454 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 43
+2025-07-18 14:47:56,455 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_chainId, Response: {'jsonrpc': '2.0', 'result': '0xa4b1', 'id': 63}
+2025-07-18 14:47:56,457 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_call
+2025-07-18 14:47:56,492 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 None
+2025-07-18 14:47:56,492 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_call, Response: {'jsonrpc': '2.0', 'id': 64, 'result': '0x'}
+2025-07-18 14:47:56,493 - DEBUG - Making request. Method: eth_getCode
+2025-07-18 14:47:56,494 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_getCode
+2025-07-18 14:47:56,526 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 None
+2025-07-18 14:47:56,527 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_getCode, Response: {'jsonrpc': '2.0', 'id': 65, 'result': '0x'}
+2025-07-18 14:47:56,527 - ERROR - ERROR: get_supplied_balance failed for 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1: Could not transact with/call contract function, is contract deployed correctly and chain synced?
+Traceback (most recent call last):
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/web3/contract/utils.py", line 111, in call_contract_function
+    output_data = w3.codec.decode(output_types, return_data)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/eth_abi/codec.py", line 162, in decode
+    return cast(Tuple[Any, ...], decoder(stream))
+                                 ^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/eth_abi/decoding.py", line 131, in __call__
+    return self.decode(stream)
+           ^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/eth_utils/functional.py", line 47, in inner
+    return callback(fn(*args, **kwargs))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/eth_abi/decoding.py", line 224, in decode
+    self.validate_pointers(stream)
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/eth_abi/decoding.py", line 218, in validate_pointers
+    decoder(stream)
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/eth_abi/decoding.py", line 131, in __call__
+    return self.decode(stream)
+           ^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/eth_abi/decoding.py", line 250, in decode
+    raw_data = self.read_data_from_stream(stream)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/eth_abi/decoding.py", line 389, in read_data_from_stream
+    raise InsufficientDataBytes(
+eth_abi.exceptions.InsufficientDataBytes: Tried to read 32 bytes, only got 0 bytes.
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/runner/workspace/aave_integration.py", line 335, in get_supplied_balance
+    balance_wei = atoken_contract.functions.balanceOf(self.account.address).call()
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/web3/contract/contract.py", line 305, in call
+    return call_contract_function(
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/web3/contract/utils.py", line 129, in call_contract_function
+    raise BadFunctionCallOutput(msg) from e
+web3.exceptions.BadFunctionCallOutput: Could not transact with/call contract function, is contract deployed correctly and chain synced?
+2025-07-18 14:47:56,528 - DEBUG - DEBUG: Method 1 result: 0.0
+2025-07-18 14:47:56,528 - DEBUG - DEBUG: Method 2 - Direct aToken contract call
+2025-07-18 14:47:56,528 - DEBUG - DEBUG: Creating contract for aToken: 0xe50fA9b4c56454E2edF6BFf7c81b50c5F05aBE61
+2025-07-18 14:47:56,535 - DEBUG - DEBUG: Calling balanceOf(0x5B823270e3719CDe8669e5e5326B455EaA8a350b)
+2025-07-18 14:47:56,536 - DEBUG - Making request. Method: eth_call
+2025-07-18 14:47:56,536 - DEBUG - Making request. Method: eth_chainId
+2025-07-18 14:47:56,536 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_chainId
+2025-07-18 14:47:56,549 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 43
+2025-07-18 14:47:56,550 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_chainId, Response: {'jsonrpc': '2.0', 'result': '0xa4b1', 'id': 66}
+2025-07-18 14:47:56,551 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_call
+2025-07-18 14:47:56,585 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 None
+2025-07-18 14:47:56,588 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_call, Response: {'jsonrpc': '2.0', 'id': 67, 'result': '0x'}
+2025-07-18 14:47:56,588 - DEBUG - Making request. Method: eth_getCode
+2025-07-18 14:47:56,589 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_getCode
+2025-07-18 14:47:56,624 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 None
+2025-07-18 14:47:56,625 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_getCode, Response: {'jsonrpc': '2.0', 'id': 68, 'result': '0x'}
+2025-07-18 14:47:56,626 - ERROR - ERROR: Method 2 failed for WETH: Could not transact with/call contract function, is contract deployed correctly and chain synced?
+2025-07-18 14:47:56,626 - DEBUG - DEBUG: ===== Checking USDC =====
+2025-07-18 14:47:56,626 - DEBUG - DEBUG: Underlying token address: 0xAf88D065e77C8cF0EAEfF3e253e648A15CEe23dC
+2025-07-18 14:47:56,626 - DEBUG - DEBUG: Expected aToken address: 0x724dc807b04555b71ed48a6896b6F41593b8C637
+2025-07-18 14:47:56,627 - DEBUG - DEBUG: Method 1 - Using agent.aave.get_supplied_balance
+2025-07-18 14:47:56,627 - DEBUG - DEBUG: get_supplied_balance called with token_address: 0xAf88D065e77C8cF0EAEfF3e253e648A15CEe23dC
+2025-07-18 14:47:56,627 - DEBUG - DEBUG: Available aToken mappings: {'0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f': '0x6533afac2E7BCCB20dca161449A13A2D2d5B739A', '0x82aF49447D8a07e3bd95BD0d56f35241523fBab1': '0xe50fA9b4c56454E2edF6BFf7c81b50c5F05aBE61', '0xAf88D065e77C8cF0EAEfF3e253e648A15CEe23dC': '0x724dc807b04555b71ed48a6896b6F41593b8C637'}
+2025-07-18 14:47:56,627 - DEBUG - DEBUG: Normalized token address: 0xAf88D065e77C8cF0EAEfF3e253e648A15CEe23dC
+2025-07-18 14:47:56,628 - DEBUG - DEBUG: Found aToken address: 0x724dc807b04555b71ed48a6896b6F41593b8C637
+2025-07-18 14:47:56,628 - DEBUG - DEBUG: Checksummed aToken address: 0x724dc807b04555b71ed48a6896b6F41593b8C637
+2025-07-18 14:47:56,628 - DEBUG - DEBUG: Wallet address for balance check: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+2025-07-18 14:47:56,641 - DEBUG - DEBUG: aToken contract created successfully
+2025-07-18 14:47:56,641 - DEBUG - DEBUG: Calling balanceOf(0x5B823270e3719CDe8669e5e5326B455EaA8a350b) on aToken contract
+2025-07-18 14:47:56,643 - DEBUG - Making request. Method: eth_call
+2025-07-18 14:47:56,643 - DEBUG - Making request. Method: eth_chainId
+2025-07-18 14:47:56,643 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_chainId
+2025-07-18 14:47:56,657 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 43
+2025-07-18 14:47:56,658 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_chainId, Response: {'jsonrpc': '2.0', 'result': '0xa4b1', 'id': 69}
+2025-07-18 14:47:56,659 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_call
+2025-07-18 14:47:56,697 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 None
+2025-07-18 14:47:56,697 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_call, Response: {'jsonrpc': '2.0', 'id': 70, 'result': '0x0000000000000000000000000000000000000000000000000000000000000000'}
+2025-07-18 14:47:56,698 - DEBUG - DEBUG: Raw balance_wei returned: 0
+2025-07-18 14:47:56,698 - DEBUG - DEBUG: Calling decimals() on aToken contract
+2025-07-18 14:47:56,699 - DEBUG - Making request. Method: eth_call
+2025-07-18 14:47:56,699 - DEBUG - Making request. Method: eth_chainId
+2025-07-18 14:47:56,699 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_chainId
+2025-07-18 14:47:56,712 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 43
+2025-07-18 14:47:56,713 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_chainId, Response: {'jsonrpc': '2.0', 'result': '0xa4b1', 'id': 71}
+2025-07-18 14:47:56,714 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_call
+2025-07-18 14:47:56,753 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 None
+2025-07-18 14:47:56,753 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_call, Response: {'jsonrpc': '2.0', 'id': 72, 'result': '0x0000000000000000000000000000000000000000000000000000000000000006'}
+2025-07-18 14:47:56,754 - DEBUG - DEBUG: Decimals returned: 6
+2025-07-18 14:47:56,754 - DEBUG - DEBUG: Converted balance: 0.0
+2025-07-18 14:47:56,754 - DEBUG - DEBUG: Method 1 result: 0.0
+2025-07-18 14:47:56,754 - DEBUG - DEBUG: Method 2 - Direct aToken contract call
+2025-07-18 14:47:56,754 - DEBUG - DEBUG: Creating contract for aToken: 0x724dc807b04555b71ed48a6896b6F41593b8C637
+2025-07-18 14:47:56,763 - DEBUG - DEBUG: Calling balanceOf(0x5B823270e3719CDe8669e5e5326B455EaA8a350b)
+2025-07-18 14:47:56,765 - DEBUG - Making request. Method: eth_call
+2025-07-18 14:47:56,765 - DEBUG - Making request. Method: eth_chainId
+2025-07-18 14:47:56,765 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_chainId
+2025-07-18 14:47:56,780 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 43
+2025-07-18 14:47:56,780 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_chainId, Response: {'jsonrpc': '2.0', 'result': '0xa4b1', 'id': 73}
+2025-07-18 14:47:56,782 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_call
+2025-07-18 14:47:56,818 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 None
+2025-07-18 14:47:56,819 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_call, Response: {'jsonrpc': '2.0', 'id': 74, 'result': '0x0000000000000000000000000000000000000000000000000000000000000000'}
+2025-07-18 14:47:56,820 - DEBUG - DEBUG: Raw balance_wei: 0
+2025-07-18 14:47:56,820 - DEBUG - DEBUG: Calling decimals()
+2025-07-18 14:47:56,822 - DEBUG - Making request. Method: eth_call
+2025-07-18 14:47:56,822 - DEBUG - Making request. Method: eth_chainId
+2025-07-18 14:47:56,822 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_chainId
+2025-07-18 14:47:56,836 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 43
+2025-07-18 14:47:56,837 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_chainId, Response: {'jsonrpc': '2.0', 'result': '0xa4b1', 'id': 75}
+2025-07-18 14:47:56,838 - DEBUG - Making request HTTP. URI: https://1rpc.io/arb, Method: eth_call
+2025-07-18 14:47:56,881 - DEBUG - https://1rpc.io:443 "POST /arb HTTP/1.1" 200 None
+2025-07-18 14:47:56,882 - DEBUG - Getting response HTTP. URI: https://1rpc.io/arb, Method: eth_call, Response: {'jsonrpc': '2.0', 'id': 76, 'result': '0x0000000000000000000000000000000000000000000000000000000000000006'}
+2025-07-18 14:47:56,883 - DEBUG - DEBUG: Decimals: 6
+2025-07-18 14:47:56,883 - DEBUG - DEBUG: Method 2 result: 0.0
