@@ -1442,6 +1442,267 @@ args = "echo \"\""
 task = "shell.exec"
 args = "echo \"✅ Enhanced diagnostic system ready for testing!\""
 
+[[workflows.workflow]]
+name = "🔧 TEST FIXED SYSTEM"
+author = 39391053
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"🔧 TESTING COMPREHENSIVE SYSTEM FIXES\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"====================================\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"Phase 1: Validating Enhanced Borrow Manager...\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python -c \""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "from enhanced_borrow_manager import EnhancedBorrowManager"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "from arbitrum_testnet_agent import ArbitrumTestnetAgent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "print('✅ Testing fixed Enhanced Borrow Manager...')"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "try:"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "    agent = ArbitrumTestnetAgent()"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "    ebm = EnhancedBorrowManager(agent)"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "    print('✅ Enhanced Borrow Manager initialized successfully')"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "    "
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "    # Test the fixed validation method"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "    validation = ebm._validate_prerequisites(1.0, agent.usdc_address)"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = '''    print(f'✅ Prerequisites validation working: {validation[\"success\"]}')'''
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "    "
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "    if validation['data']:"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "        data = validation['data']"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = '''        print(f'📊 Validation data: ETH={data.get(\"eth_balance\", 0):.6f}, HF={data.get(\"health_factor\", 0):.2f}')'''
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "    "
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "except Exception as e:"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "    print(f'❌ System test failed: {e}')"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"Phase 2: Testing Dashboard + Autonomous Integration...\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python -c \""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "import threading"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "import time"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "import subprocess"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "import signal"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "import os"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = ""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "def test_dashboard():"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "    print('🌐 Starting dashboard test...')"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "    try:"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "        # Start dashboard in background"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "        proc = subprocess.Popen(['python', 'web_dashboard.py'], "
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "                               stdout=subprocess.DEVNULL, "
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "                               stderr=subprocess.DEVNULL)"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "        "
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "        # Wait for startup"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "        time.sleep(5)"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "        "
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "        # Test if dashboard is responsive"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "        import requests"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "        response = requests.get('http://localhost:5000/api/test', timeout=10)"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "        if response.status_code == 200:"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "            print('✅ Dashboard API responsive')"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "        else:"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "            print('❌ Dashboard API not responding')"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "            "
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "        # Cleanup"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "        proc.terminate()"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "        proc.wait(timeout=5)"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "        "
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "    except Exception as e:"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "        print(f'❌ Dashboard test failed: {e}')"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = ""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "# Run dashboard test"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "test_dashboard()"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"✅ COMPREHENSIVE SYSTEM TEST COMPLETE!\""
+
 [[ports]]
 localPort = 5000
 externalPort = 80
