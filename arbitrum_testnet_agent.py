@@ -415,6 +415,49 @@ class ArbitrumTestnetAgent:
             print(f"❌ Safe borrow calculation failed: {e}")
             return 0.0
 
+    def detect_manual_override(self):
+        """
+        Detect when manual override is active through multiple indicators
+        """
+        import os
+        
+        # Check for manual trigger files
+        manual_files = ['trigger_test.flag', 'manual_override.flag', 'force_borrow.flag']
+        for file_path in manual_files:
+            if os.path.exists(file_path):
+                print(f"🔧 Manual override detected: {file_path} exists")
+                return True
+
+        # Check if manual_override_active attribute is set
+        if hasattr(self, 'manual_override_active') and self.manual_override_active:
+            print(f"🔧 Manual override detected: manual_override_active = True")
+            return True
+
+        # Check for test mode
+        if os.path.exists('test_mode.flag'):
+            print(f"🧪 Test mode detected - treating as manual override")
+            return True
+
+        # Check environment variable
+        if os.getenv('MANUAL_OVERRIDE', '').lower() in ['true', '1', 'yes']:
+            print(f"🔧 Manual override detected: MANUAL_OVERRIDE environment variable")
+            return True
+
+        return False
+
+    def is_operation_on_cooldown(self):
+        """Check if any operation is in cooldown period"""
+        import time
+        current_time = time.time()
+        time_since_last = current_time - self.last_successful_operation_time
+        
+        if time_since_last < self.operation_cooldown_seconds:
+            remaining_time = self.operation_cooldown_seconds - time_since_last
+            print(f"⏰ Operation in cooldown. {remaining_time:.0f}s remaining")
+            return True
+        
+        return False
+
     def is_operation_in_cooldown(self, operation_type="general"):
         """Check if operation is in cooldown period"""
         import time

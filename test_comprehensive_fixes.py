@@ -1,15 +1,5 @@
 
-<old_str>#!/usr/bin/env python3
-"""
-Comprehensive System Test for All Fixes
-Tests the enhanced borrow manager, gas optimization, and prerequisite validation
-"""
-
-import os
-import time
-from arbitrum_testnet_agent import ArbitrumTestnetAgent
-from enhanced_borrow_manager import EnhancedBorrowManager</old_str>
-<new_str>#!/usr/bin/env python3
+#!/usr/bin/env python3
 """
 Comprehensive System Test for All Fixes
 Tests the enhanced borrow manager, gas optimization, and prerequisite validation
@@ -194,4 +184,4 @@ def main():
 
 if __name__ == "__main__":
     success = main()
-    exit(0 if success else 1)</new_str>
+    exit(0 if success else 1)
