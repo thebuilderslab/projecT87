@@ -84,11 +84,11 @@ class EnhancedBorrowManager:
         if not validation['success']:
             print(f"❌ Prerequisites validation failed: {validation['error']}")
             return None
-        
+
         # Show warnings if any
         for warning in validation.get('warnings', []):
             print(f"⚠️ Warning: {warning}")
-        
+
         print(f"✅ Prerequisites validation passed - proceeding with borrow")
 
         # Mechanism 1: Direct Aave integration
@@ -583,7 +583,7 @@ class EnhancedBorrowManager:
         Detect when manual override is active through multiple indicators
         """
         import os
-        
+
         # Check for manual trigger files
         manual_files = ['trigger_test.flag', 'manual_override.flag', 'force_borrow.flag']
         for file_path in manual_files:
@@ -810,234 +810,156 @@ class EnhancedBorrowManager:
         return None
 
     def _validate_prerequisites(self, amount_usd, token_address):
-        """Validate prerequisites for borrowing operation with enhanced live data support"""
-        validation_result = {
-            'success': False,
-            'error': None,
-            'warnings': [],
-            'data': {}
-        }
-        
+        """Comprehensive validation before borrowing"""
         try:
-            print(f"🔍 Validating borrow prerequisites for ${amount_usd:.2f}")
-            
-            # Check network connectivity
-            if not self.agent.w3.is_connected():
-                validation_result['error'] = "Network connection lost"
-                return validation_result
-            
-            # Check ETH balance for gas - use reduced requirement if diagnostic shows live position
-            eth_balance = self.agent.get_eth_balance()
-            min_eth_required = 0.0005  # Reduced from 0.001 for existing positions
-            
-            if eth_balance < min_eth_required:
-                # If we have a live position but low ETH, warn but don't block
-                try:
-                    # Use the unified fetcher to get live data like the diagnostic shows
-                    from accurate_debank_fetcher import AccurateWalletDataFetcher
-                    fetcher = AccurateWalletDataFetcher(self.agent.w3, self.agent.address)
-                    dashboard_data = fetcher.get_comprehensive_wallet_data()
-                    
-                    if dashboard_data and dashboard_data.get('success') and dashboard_data.get('total_collateral_usdc', 0) > 50:
-                        validation_result['warnings'].append(f"Low ETH for gas: {eth_balance:.6f} ETH - consider adding more")
-                        print(f"⚠️ Low ETH but live position detected, proceeding with caution")
-                    else:
-                        validation_result['error'] = f"Insufficient ETH for gas: {eth_balance:.6f} (minimum: {min_eth_required})"
-                        return validation_result
-                except:
-                    validation_result['error'] = f"Insufficient ETH for gas: {eth_balance:.6f} (minimum: {min_eth_required})"
-                    return validation_result
-            
-            # Check if amount is positive
+            warnings = []
+
+            # Check if manual override is active
+            if self.detect_manual_override():
+                print(f"🔧 Manual override active - relaxing validation")
+
+            # Basic amount validation
             if amount_usd <= 0:
-                validation_result['error'] = f"Invalid borrow amount: ${amount_usd:.2f}"
-                return validation_result
-            
-            # Get current Aave position data using live fetcher (like diagnostic)
+                return {'success': False, 'error': f'Invalid amount: ${amount_usd}'}
+
+            # Check ETH balance for gas (increased minimum)
+            eth_balance = self.agent.get_eth_balance()
+            min_eth_needed = 0.0005  # Increased minimum
+            if eth_balance < min_eth_needed:
+                return {'success': False, 'error': f'Insufficient ETH for gas: {eth_balance:.6f} (minimum: {min_eth_needed})'}
+
+            # Check health factor
             try:
-                # Use the same method as the diagnostic that shows $201 collateral
-                from accurate_debank_fetcher import AccurateWalletDataFetcher
-                fetcher = AccurateWalletDataFetcher(self.agent.w3, self.agent.address)
-                dashboard_data = fetcher.get_comprehensive_wallet_data()
-                
-                if dashboard_data and dashboard_data.get('success'):
-                    total_collateral_usd = dashboard_data['total_collateral_usdc']
-                    total_debt_usd = dashboard_data['total_debt_usdc']
-                    available_borrows_usd = dashboard_data['available_borrows_usdc']
-                    health_factor = dashboard_data['health_factor']
-                    
-                    print(f"✅ Using live data - Collateral: ${total_collateral_usd:.2f}, HF: {health_factor:.4f}")
-                    
-                    validation_result['data'] = {
-                        'total_collateral_usd': total_collateral_usd,
-                        'total_debt_usd': total_debt_usd,
-                        'available_borrows_usd': available_borrows_usd,
-                        'health_factor': health_factor,
-                        'eth_balance': eth_balance,
-                        'data_source': 'live_fetcher'
-                    }
-                    
-                    # Use live data for validation - diagnostic shows $201 collateral, so this should pass
-                    if total_collateral_usd < 50.0:
-                        validation_result['error'] = f"Insufficient collateral value: ${total_collateral_usd:.2f} (minimum: $50)"
-                        return validation_result
-                    
-                    # Check available borrows
-                    if available_borrows_usd < amount_usd:
-                        validation_result['error'] = f"Insufficient borrowing capacity: ${available_borrows_usd:.2f} < ${amount_usd:.2f}"
-                        return validation_result
-                    
-                    # Check health factor
-                    if health_factor < 1.5:
-                        validation_result['error'] = f"Health factor too low: {health_factor:.3f} (minimum: 1.5)"
-                        return validation_result
-                    
-                    # Add warnings for borderline conditions
-                    if health_factor < 2.0:
-                        validation_result['warnings'].append(f"Health factor relatively low: {health_factor:.3f}")
-                    
-                    if available_borrows_usd < amount_usd * 2:
-                        validation_result['warnings'].append(f"Limited borrowing headroom: ${available_borrows_usd:.2f}")
-                    
-                    print(f"✅ Prerequisites validation passed with live data")
-                    validation_result['success'] = True
-                    return validation_result
-                else:
-                    # Fallback to direct contract call
-                    pool_abi = [{
-                        "inputs": [{"name": "user", "type": "address"}],
-                        "name": "getUserAccountData",
-                        "outputs": [
-                            {"name": "totalCollateralBase", "type": "uint256"},
-                            {"name": "totalDebtBase", "type": "uint256"},
-                            {"name": "availableBorrowsBase", "type": "uint256"},
-                            {"name": "currentLiquidationThreshold", "type": "uint256"},
-                            {"name": "ltv", "type": "uint256"},
-                            {"name": "healthFactor", "type": "uint256"}
-                        ],
-                        "stateMutability": "view",
-                        "type": "function"
-                    }]
-                    
-                    pool_contract = self.agent.w3.eth.contract(
-                        address=self.agent.aave_pool_address,
-                        abi=pool_abi
-                    )
-                    
-                    account_data = pool_contract.functions.getUserAccountData(self.agent.address).call()
-                    
-                    total_collateral_usd = account_data[0] / (10**8)
-                    total_debt_usd = account_data[1] / (10**8)
-                    available_borrows_usd = account_data[2] / (10**8)
-                    health_factor = account_data[5] / (10**18) if account_data[5] > 0 else float('inf')
-                    
-                    validation_result['data'] = {
-                        'total_collateral_usd': total_collateral_usd,
-                        'total_debt_usd': total_debt_usd,
-                        'available_borrows_usd': available_borrows_usd,
-                        'health_factor': health_factor,
-                        'eth_balance': eth_balance,
-                        'data_source': 'direct_contract'
-                    }
-                    
-                    # Validation checks remain the same
-                    if total_collateral_usd < 50.0:
-                        validation_result['error'] = f"Insufficient collateral value: ${total_collateral_usd:.2f} (minimum: $50)"
-                        return validation_result
-                    
-                    if available_borrows_usd < amount_usd:
-                        validation_result['error'] = f"Insufficient borrowing capacity: ${available_borrows_usd:.2f} < ${amount_usd:.2f}"
-                        return validation_result
-                    
-                    if health_factor < 1.5:
-                        validation_result['error'] = f"Health factor too low: {health_factor:.3f} (minimum: 1.5)"
-                        return validation_result
-                    
-                    if health_factor < 2.0:
-                        validation_result['warnings'].append(f"Health factor relatively low: {health_factor:.3f}")
-                    
-                    if available_borrows_usd < amount_usd * 2:
-                        validation_result['warnings'].append(f"Limited borrowing headroom: ${available_borrows_usd:.2f}")
-                    
-                    print(f"✅ Prerequisites validation passed with direct contract")
-                    validation_result['success'] = True
-                    return validation_result
-                
-            except Exception as aave_error:
-                validation_result['error'] = f"Aave pool contract not responsive: {aave_error}"
-                return validation_result
-                
+                health_data = self.agent.health_monitor.get_current_health_factor()
+                if health_data and health_data.get('health_factor', 0) < 1.1:
+                    return {'success': False, 'error': f'Health factor too low: {health_data["health_factor"]:.2f}'}
+            except Exception as hf_error:
+                warnings.append(f"Health factor check failed: {hf_error}")
+
+            # Check available borrowing capacity
+            try:
+                pool_abi = [{
+                    "inputs": [{"name": "user", "type": "address"}],
+                    "name": "getUserAccountData",
+                    "outputs": [
+                        {"name": "totalCollateralBase", "type": "uint256"},
+                        {"name": "totalDebtBase", "type": "uint256"},
+                        {"name": "availableBorrowsBase", "type": "uint256"},
+                        {"name": "currentLiquidationThreshold", "type": "uint256"},
+                        {"name": "ltv", "type": "uint256"},
+                        {"name": "healthFactor", "type": "uint256"}
+                    ],
+                    "stateMutability": "view",
+                    "type": "function"
+                }]
+
+                pool_contract = self.agent.w3.eth.contract(
+                    address=self.agent.aave_pool_address,
+                    abi=pool_abi
+                )
+
+                account_data = pool_contract.functions.getUserAccountData(self.agent.address).call()
+                available_borrows_usd = account_data[2] / (10**8)
+
+                if amount_usd > available_borrows_usd * 0.9:  # Use 90% of available
+                    return {'success': False, 'error': f'Insufficient borrow capacity: ${amount_usd:.2f} > ${available_borrows_usd * 0.9:.2f}'}
+
+            except Exception as capacity_error:
+                warnings.append(f"Borrow capacity check failed: {capacity_error}")
+
+            # Check RPC connectivity
+            try:
+                latest_block = self.agent.w3.eth.block_number
+                if latest_block < 1000000:  # Sanity check
+                    warnings.append("RPC may not be fully synced")
+            except Exception as rpc_error:
+                return {'success': False, 'error': f'RPC connectivity issue: {rpc_error}'}
+
+            return {'success': True, 'warnings': warnings}
+
         except Exception as e:
-            validation_result['error'] = f"Validation failed: {e}"
-            return validation_result
+            return {'success': False, 'error': f'Validation error: {e}'}
 
-    def _analyze_transaction_revert(self, tx_hash, transaction, receipt):
-        """Analyze why a transaction reverted and suggest actions"""
+    def _analyze_transaction_revert(self, tx_hash_hex, transaction, receipt):
+        """Comprehensive transaction revert analysis"""
         try:
-            print(f"🔍 Analyzing transaction revert: {tx_hash}")
-
-            # Try to get detailed revert reason
-            revert_data = None
-            try:
-                # Replay the transaction to get revert reason
-                self.agent.w3.eth.call(transaction, receipt.blockNumber)
-            except Exception as revert_error:
-                revert_data = str(revert_error)
-
-            # Analyze common Aave revert reasons
             analysis = {
-                'revert_data': revert_data,
+                'summary': 'Transaction reverted',
                 'retry_recommended': False,
                 'suggested_action': None,
-                'summary': 'Transaction reverted',
                 'reason': 'Unknown revert reason'
             }
 
-            if revert_data:
-                revert_lower = revert_data.lower()
+            # Get detailed revert reason
+            try:
+                # Try to get revert reason from receipt
+                if hasattr(receipt, 'logs') and receipt.logs:
+                    analysis['reason'] = f"Transaction reverted with {len(receipt.logs)} logs"
 
-                # Common Aave revert patterns
-                if 'insufficient' in revert_lower and 'collateral' in revert_lower:
-                    analysis.update({
-                        'retry_recommended': True,
-                        'suggested_action': 'reduce_amount',
-                        'summary': 'Insufficient collateral',
-                        'reason': 'Not enough collateral to support this borrow'
-                    })
-                elif 'health' in revert_lower and 'factor' in revert_lower:
-                    analysis.update({
-                        'retry_recommended': False,
-                        'suggested_action': None,
-                        'summary': 'Health factor too low',
-                        'reason': 'Would put account below liquidation threshold'
-                    })
-                elif 'gas' in revert_lower:
-                    analysis.update({
-                        'retry_recommended': True,
-                        'suggested_action': 'increase_gas',
-                        'summary': 'Gas-related failure',
-                        'reason': 'Transaction failed due to gas issues'
-                    })
-                elif 'borrow' in revert_lower and 'cap' in revert_lower:
-                    analysis.update({
-                        'retry_recommended': False,
-                        'suggested_action': None,
-                        'summary': 'Borrow cap reached',
-                        'reason': 'Protocol borrow limit reached for this asset'
-                    })
+                # Common revert patterns
+                revert_patterns = {
+                    'insufficient funds': {
+                        'retry': False,
+                        'action': 'fund_wallet',
+                        'reason': 'Insufficient ETH for gas fees'
+                    },
+                    'gas': {
+                        'retry': True,
+                        'action': 'increase_gas',
+                        'reason': 'Gas limit or price too low'
+                    },
+                    'nonce': {
+                        'retry': True,
+                        'action': 'refresh_nonce',
+                        'reason': 'Nonce conflict'
+                    },
+                    'allowance': {
+                        'retry': False,
+                        'action': 'approve_token',
+                        'reason': 'Insufficient token allowance'
+                    },
+                    'health factor': {
+                        'retry': False,
+                        'action': 'add_collateral',
+                        'reason': 'Health factor too low'
+                    },
+                    'borrow cap': {
+                        'retry': True,
+                        'action': 'reduce_amount',
+                        'reason': 'Borrow amount exceeds capacity'
+                    }
+                }
 
-            print(f"   Revert analysis: {analysis['summary']}")
-            if analysis['retry_recommended']:
-                print(f"   Suggested action: {analysis['suggested_action']}")
+                # Analyze transaction data for patterns
+                tx_data = transaction.get('data', '')
+                if tx_data:
+                    for pattern, details in revert_patterns.items():
+                        if pattern in analysis['reason'].lower():
+                            analysis['retry_recommended'] = details['retry']
+                            analysis['suggested_action'] = details['action']
+                            analysis['reason'] = details['reason']
+                            break
+
+                # Check gas usage vs limit
+                gas_used = receipt.get('gasUsed', 0)
+                gas_limit = transaction.get('gas', 0)
+
+                if gas_used >= gas_limit * 0.98:  # Used >98% of gas limit
+                    analysis['retry_recommended'] = True
+                    analysis['suggested_action'] = 'increase_gas'
+                    analysis['reason'] = 'Out of gas - increase gas limit'
+
+                analysis['summary'] = f"Revert: {analysis['reason']}"
+
+            except Exception as detail_error:
+                analysis['reason'] = f"Detailed analysis failed: {detail_error}"
 
             return analysis
 
-        except Exception as analysis_error:
-            print(f"❌ Transaction revert analysis failed: {analysis_error}")
+        except Exception as e:
             return {
-                'revert_data': None,
+                'summary': f'Analysis failed: {e}',
                 'retry_recommended': False,
                 'suggested_action': None,
-                'summary': 'Analysis failed',
-                'reason': 'Unable to analyze transaction failure'
+                'reason': str(e)
             }
