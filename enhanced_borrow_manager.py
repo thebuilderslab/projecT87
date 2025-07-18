@@ -16,7 +16,7 @@ class EnhancedBorrowManager:
         self.max_retries = 5
         self.retry_delay = 2
 
-    def execute_enhanced_borrow_with_retry(self, amount_usd):
+    def execute_enhanced_borrow_with_retry(self, self, amount_usd):
         """Execute enhanced borrow with comprehensive retry mechanisms"""
         # Default to USDC for borrowing
         token_address = self.agent.usdc_address
@@ -717,7 +717,7 @@ class EnhancedBorrowManager:
             gas_price = int(1.0 * 1e9)  # 1.0 gwei fallback (higher)
 
         print(f"⛽ Gas price: {gas_price} wei ({gas_price / 1e9:.2f} gwei)")
-        
+
         # Calculate total transaction cost
         max_gas_cost_wei = gas_limit * gas_price
         max_gas_cost_eth = w3_instance.from_wei(max_gas_cost_wei, 'ether')
@@ -778,7 +778,7 @@ class EnhancedBorrowManager:
                 })
 
                 print(f"🔍 DEBUG: Transaction dictionary to be sent: {transaction}")
-                
+
                 # Verify transaction cost vs balance
                 total_cost = transaction['gas'] * transaction['gasPrice']
                 print(f"🔍 DEBUG: Total transaction cost: {w3_instance.from_wei(total_cost, 'ether'):.6f} ETH")
@@ -916,3 +916,203 @@ class EnhancedBorrowManager:
                 'suggested_action': None,
                 'reason': str(e)
             }
+
+    def _validate_prerequisites(self, amount_usd, token_address):
+        """
+        Comprehensive validation of prerequisites before borrowing operations
+        Returns structured data that calling code expects
+        """
+        print(f"🔍 DEBUG: Starting _validate_prerequisites validation for ${amount_usd:.2f}")
+
+        validation_result = {
+            'success': False,
+            'error': None,
+            'warnings': [],
+            'data': {}
+        }
+
+        try:
+            # Step 1: Validate input parameters
+            print(f"🔍 DEBUG: Validating input parameters...")
+            if amount_usd <= 0:
+                validation_result['error'] = f"Invalid borrow amount: ${amount_usd:.2f}"
+                return validation_result
+
+            if not token_address or not isinstance(token_address, str):
+                validation_result['error'] = f"Invalid token address: {token_address}"
+                return validation_result
+
+            print(f"✅ DEBUG: Input parameters valid")
+
+            # Step 2: Check ETH balance for gas fees
+            print(f"🔍 DEBUG: Checking ETH balance for gas fees...")
+            try:
+                eth_balance_wei = self.agent.w3.eth.get_balance(self.agent.address)
+                eth_balance = self.agent.w3.from_wei(eth_balance_wei, 'ether')
+                validation_result['data']['eth_balance'] = float(eth_balance)
+
+                print(f"💰 DEBUG: ETH balance: {eth_balance:.6f} ETH")
+
+                min_eth_required = 0.0005  # 0.0005 ETH minimum for gas
+                if eth_balance < min_eth_required:
+                    validation_result['error'] = f"Insufficient ETH for gas: {eth_balance:.6f} (minimum: {min_eth_required})"
+                    return validation_result
+
+                if eth_balance < 0.001:  # Warning threshold
+                    validation_result['warnings'].append(f"Low ETH balance: {eth_balance:.6f} ETH")
+
+                print(f"✅ DEBUG: ETH balance sufficient for gas fees")
+
+            except Exception as eth_error:
+                validation_result['error'] = f"Could not check ETH balance: {eth_error}"
+                return validation_result
+
+            # Step 3: Get current Aave position data
+            print(f"🔍 DEBUG: Fetching current Aave position data...")
+            try:
+                # Use the agent's unified fetcher if available
+                if hasattr(self.agent, 'get_enhanced_aave_data'):
+                    aave_data = self.agent.get_enhanced_aave_data()
+                    if aave_data and aave_data.get('success'):
+                        health_factor = aave_data.get('health_factor', 0)
+                        total_collateral_usd = aave_data.get('total_collateral_usdc', 0)
+                        total_debt_usd = aave_data.get('total_debt_usdc', 0)
+                        available_borrows_usd = aave_data.get('available_borrows_usdc', 0)
+                        validation_result['data']['data_source'] = aave_data.get('data_source', 'enhanced_aave_data')
+                    else:
+                        raise Exception("Enhanced Aave data fetch failed")
+                else:
+                    # Fallback to direct contract call
+                    pool_abi = [{
+                        "inputs": [{"name": "user", "type": "address"}],
+                        "name": "getUserAccountData",
+                        "outputs": [
+                            {"name": "totalCollateralBase", "type": "uint256"},
+                            {"name": "totalDebtBase", "type": "uint256"},
+                            {"name": "availableBorrowsBase", "type": "uint256"},
+                            {"name": "currentLiquidationThreshold", "type": "uint256"},
+                            {"name": "ltv", "type": "uint256"},
+                            {"name": "healthFactor", "type": "uint256"}
+                        ],
+                        "stateMutability": "view",
+                        "type": "function"
+                    }]
+
+                    pool_contract = self.agent.w3.eth.contract(
+                        address=self.agent.aave_pool_address,
+                        abi=pool_abi
+                    )
+
+                    account_data = pool_contract.functions.getUserAccountData(self.agent.address).call()
+
+                    total_collateral_usd = account_data[0] / (10**8)
+                    total_debt_usd = account_data[1] / (10**8)
+                    available_borrows_usd = account_data[2] / (10**8)
+                    health_factor = account_data[5] / (10**18) if account_data[5] > 0 else float('inf')
+                    validation_result['data']['data_source'] = 'direct_aave_contract'
+
+                # Store position data
+                validation_result['data']['health_factor'] = float(health_factor)
+                validation_result['data']['total_collateral_usd'] = float(total_collateral_usd)
+                validation_result['data']['total_debt_usd'] = float(total_debt_usd)
+                validation_result['data']['available_borrows_usd'] = float(available_borrows_usd)
+
+                print(f"📊 DEBUG: Aave position data retrieved:")
+                print(f"   Health Factor: {health_factor:.4f}")
+                print(f"   Collateral: ${total_collateral_usd:.2f}")
+                print(f"   Debt: ${total_debt_usd:.2f}")
+                print(f"   Available Borrows: ${available_borrows_usd:.2f}")
+
+            except Exception as aave_error:
+                validation_result['error'] = f"Could not fetch Aave position data: {aave_error}"
+                return validation_result
+
+            # Step 4: Validate health factor
+            print(f"🔍 DEBUG: Validating health factor...")
+            min_health_factor = 1.5  # Conservative minimum
+            if health_factor < min_health_factor:
+                validation_result['error'] = f"Health factor too low for borrowing: {health_factor:.4f} < {min_health_factor}"
+                return validation_result
+
+            if health_factor < 2.0:  # Warning threshold
+                validation_result['warnings'].append(f"Low health factor: {health_factor:.4f}")
+
+            print(f"✅ DEBUG: Health factor adequate: {health_factor:.4f}")
+
+            # Step 5: Validate borrowing capacity
+            print(f"🔍 DEBUG: Validating borrowing capacity...")
+            if available_borrows_usd <= 0:
+                validation_result['error'] = f"No borrowing capacity available: ${available_borrows_usd:.2f}"
+                return validation_result
+
+            # Check if requested amount exceeds available capacity (with safety margin)
+            safe_borrow_limit = available_borrows_usd * 0.8  # Use 80% of available
+            if amount_usd > safe_borrow_limit:
+                validation_result['warnings'].append(
+                    f"Requested amount ${amount_usd:.2f} exceeds safe limit ${safe_borrow_limit:.2f}"
+                )
+
+            if amount_usd > available_borrows_usd:
+                validation_result['error'] = f"Insufficient borrowing capacity: ${amount_usd:.2f} > ${available_borrows_usd:.2f}"
+                return validation_result
+
+            print(f"✅ DEBUG: Borrowing capacity sufficient: ${available_borrows_usd:.2f}")
+
+            # Step 6: Validate token address
+            print(f"🔍 DEBUG: Validating token address...")
+            try:
+                # Normalize and validate token address
+                token_address_normalized = self.agent.w3.to_checksum_address(token_address)
+                validation_result['data']['token_address'] = token_address_normalized
+
+                # Check if it's a supported token
+                supported_tokens = {
+                    self.agent.usdc_address.lower(): 'USDC',
+                    self.agent.wbtc_address.lower(): 'WBTC',
+                    self.agent.weth_address.lower(): 'WETH',
+                    self.agent.dai_address.lower(): 'DAI'
+                }
+
+                token_name = supported_tokens.get(token_address.lower())
+                if not token_name:
+                    validation_result['warnings'].append(f"Unsupported token address: {token_address}")
+                else:
+                    validation_result['data']['token_name'] = token_name
+                    print(f"✅ DEBUG: Token validated: {token_name}")
+
+            except Exception as token_error:
+                validation_result['error'] = f"Invalid token address: {token_error}"
+                return validation_result
+
+            # Step 7: Check network conditions
+            print(f"🔍 DEBUG: Checking network conditions...")
+            try:
+                latest_block = self.agent.w3.eth.get_block('latest')
+                current_gas_price = self.agent.w3.eth.gas_price
+                validation_result['data']['latest_block'] = latest_block.number
+                validation_result['data']['gas_price_gwei'] = float(self.agent.w3.from_wei(current_gas_price, 'gwei'))
+
+                print(f"🌐 DEBUG: Network status: Block {latest_block.number}, Gas {validation_result['data']['gas_price_gwei']:.3f} Gwei")
+
+            except Exception as network_error:
+                validation_result['warnings'].append(f"Could not check network conditions: {network_error}")
+
+            # Step 8: Final validation success
+            validation_result['success'] = True
+            print(f"✅ DEBUG: All prerequisites validation passed successfully")
+
+            # Add summary to data
+            validation_result['data']['validation_summary'] = {
+                'eth_balance_ok': eth_balance >= min_eth_required,
+                'health_factor_ok': health_factor >= min_health_factor,
+                'borrowing_capacity_ok': available_borrows_usd >= amount_usd,
+                'token_supported': token_name is not None if 'token_name' in validation_result['data'] else False,
+                'total_warnings': len(validation_result['warnings'])
+            }
+
+            return validation_result
+
+        except Exception as e:
+            print(f"❌ DEBUG: Prerequisites validation failed with exception: {e}")
+            validation_result['error'] = f"Validation failed: {str(e)}"
+            return validation_result
