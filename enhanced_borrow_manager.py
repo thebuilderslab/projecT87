@@ -934,7 +934,7 @@ class EnhancedBorrowManager:
                 eth_balance = self.agent.w3.eth.get_balance(self.agent.address) / 1e18
                 validation_result['data']['eth_balance'] = eth_balance
 
-                if eth_balance < 0.001:  # Minimum 0.001 ETH for gas
+                if eth_balance < 0.00083545:  # Minimum 0.00083545 ETH for gas
                     validation_result['error'] = f"Insufficient ETH for gas: {eth_balance:.6f} ETH"
                     return validation_result
                 elif eth_balance < 0.005:
