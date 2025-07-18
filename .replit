@@ -1066,6 +1066,15 @@ args = "echo \"Phase 3: Running comprehensive diagnostic...\""
 task = "shell.exec"
 args = "python borrow_diagnostic_tool.py"
 
+[[workflows.workflow]]
+name = "🚀 MANUAL TRIGGER OVERRIDE"
+author = 39391053
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python trigger_manual_override.py"
+
 [[ports]]
 localPort = 5000
 externalPort = 80
