@@ -9,6 +9,7 @@ import sys
 import time
 from datetime import datetime
 from arbitrum_testnet_agent import ArbitrumTestnetAgent
+from config_constants import MIN_ETH_FOR_OPERATIONS
 
 def print_section(title):
     """Print a formatted section header"""
@@ -79,7 +80,7 @@ def test_agent_initialization():
         eth_balance = agent.get_eth_balance()
         print(f"✅ ETH Balance: {eth_balance:.6f} ETH")
 
-        if eth_balance < 0.001:
+        if eth_balance < MIN_ETH_FOR_OPERATIONS:
             print(f"⚠️ WARNING: Low ETH balance for gas fees")
 
         return agent

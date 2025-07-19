@@ -6,6 +6,7 @@ Quick readiness verification for the DeFi agent
 
 import os
 from arbitrum_testnet_agent import ArbitrumTestnetAgent
+from config_constants import MIN_ETH_FOR_OPERATIONS
 
 def verify_system_readiness():
     """Comprehensive readiness check"""
@@ -25,7 +26,7 @@ def verify_system_readiness():
         eth_balance = agent.get_eth_balance()
         print(f"⚡ ETH Balance: {eth_balance:.6f} ETH")
         
-        if eth_balance < 0.001:
+        if eth_balance < MIN_ETH_FOR_OPERATIONS:
             issues.append("Low ETH balance - may not cover gas fees")
         
         # Initialize integrations

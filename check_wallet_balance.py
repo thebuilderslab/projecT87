@@ -6,6 +6,7 @@ Check wallet balance and provide funding guidance
 
 import os
 from arbitrum_testnet_agent import ArbitrumTestnetAgent
+from config_constants import MIN_ETH_FOR_OPERATIONS
 
 def main():
     """Check current wallet balances and provide funding guidance"""
@@ -25,9 +26,9 @@ def main():
             eth_balance = agent.get_eth_balance()
             print(f"⚡ ETH Balance: {eth_balance:.6f} ETH")
             
-            if eth_balance < 0.01:
+            if eth_balance < MIN_ETH_FOR_OPERATIONS:
                 print("⚠️ Low ETH balance - you need ETH for gas fees")
-                print("💡 Recommended: At least 0.1 ETH for multiple transactions")
+                print(f"💡 Recommended: At least {MIN_ETH_FOR_OPERATIONS:.8f} ETH for gas operations")
             
             # Check token balances
             if hasattr(agent, 'aave') and agent.aave:

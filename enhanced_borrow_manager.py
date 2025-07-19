@@ -10,6 +10,10 @@ import os
 from decimal import Decimal
 from web3 import Web3
 
+# Assuming a config file or similar is used to define constants
+from config import MIN_ETH_FOR_OPERATIONS
+
+
 class EnhancedBorrowManager:
     def __init__(self, agent):
         self.agent = agent
@@ -934,10 +938,10 @@ class EnhancedBorrowManager:
                 eth_balance = self.agent.w3.eth.get_balance(self.agent.address) / 1e18
                 validation_result['data']['eth_balance'] = eth_balance
 
-                if eth_balance < 0.00083545:  # Minimum 0.00083545 ETH for gas
+                if eth_balance < MIN_ETH_FOR_OPERATIONS:  # Minimum 0.00083545 ETH for gas
                     validation_result['error'] = f"Insufficient ETH for gas: {eth_balance:.6f} ETH"
                     return validation_result
-                elif eth_balance < 0.00083545:
+                elif eth_balance < MIN_ETH_FOR_OPERATIONS:
                     validation_result['warnings'].append(f"Low ETH balance: {eth_balance:.6f} ETH")
 
                 print(f"✅ ETH balance check: {eth_balance:.6f} ETH")

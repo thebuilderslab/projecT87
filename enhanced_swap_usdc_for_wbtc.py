@@ -9,6 +9,7 @@ import os
 import time
 import traceback
 from arbitrum_testnet_agent import ArbitrumTestnetAgent
+from config_constants import MIN_ETH_FOR_OPERATIONS
 
 def check_prerequisites(agent):
     """Comprehensive prerequisite checks before attempting swap"""
@@ -37,7 +38,7 @@ def check_prerequisites(agent):
     # 3. Check ETH balance for gas
     eth_balance = agent.get_eth_balance()
     print(f"⚡ ETH balance: {eth_balance:.6f} ETH")
-    if eth_balance < 0.01:
+    if eth_balance < MIN_ETH_FOR_OPERATIONS:
         issues.append(f"Low ETH balance ({eth_balance:.6f}) - may not cover gas fees")
     
     # 4. Check integrations

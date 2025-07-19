@@ -8,6 +8,7 @@ import json
 import time
 from datetime import datetime
 from arbitrum_testnet_agent import ArbitrumTestnetAgent
+from config_constants import MIN_ETH_FOR_OPERATIONS
 from web3 import Web3
 
 class BorrowDiagnosticTool:
@@ -125,8 +126,8 @@ class BorrowDiagnosticTool:
             logging.debug(f"DEBUG: Raw ETH balance: {eth_balance:.10f} ETH")
             print(f"   ETH Balance: {eth_balance:.6f} ETH")
 
-            if eth_balance < 0.001:
-                self.issues.append(f"Insufficient ETH for gas: {eth_balance:.6f} (minimum: 0.001)")
+            if eth_balance < MIN_ETH_FOR_OPERATIONS:
+                self.issues.append(f"Insufficient ETH for gas: {eth_balance:.6f} (minimum: {MIN_ETH_FOR_OPERATIONS:.8f})")
 
             # Check supplied balances on Aave
             tokens_to_check = [

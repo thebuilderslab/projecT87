@@ -7,6 +7,7 @@ Provides detailed analysis of wallet state and readiness for DeFi operations
 
 import os
 from arbitrum_testnet_agent import ArbitrumTestnetAgent
+from config_constants import MIN_ETH_FOR_OPERATIONS
 from dotenv import load_dotenv
 
 def run_wallet_diagnostics():
@@ -26,7 +27,7 @@ def run_wallet_diagnostics():
         print(f"💰 ETH Balance: {eth_balance:.6f} ETH")
         
         # Check if wallet has enough for gas
-        if eth_balance < 0.001:
+        if eth_balance < MIN_ETH_FOR_OPERATIONS:
             print("⚠️ WARNING: Low ETH balance - may not be enough for transactions")
         else:
             print("✅ Sufficient ETH for gas fees")

@@ -8,6 +8,7 @@ Handles efficient execution of autonomous DeFi operations with enhanced error re
 import time
 import json
 from datetime import datetime
+from config_constants import MIN_ETH_FOR_OPERATIONS
 
 class OptimizedSequenceManager:
     def __init__(self, agent):
@@ -126,7 +127,7 @@ class OptimizedSequenceManager:
             
             # Check ETH balance for gas
             eth_balance = self.agent.get_eth_balance()
-            if eth_balance < 0.001:
+            if eth_balance < MIN_ETH_FOR_OPERATIONS:
                 return {
                     'success': False,
                     'reason': f"Insufficient ETH for gas: {eth_balance:.6f} ETH"

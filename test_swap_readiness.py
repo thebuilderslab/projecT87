@@ -6,6 +6,7 @@ Test readiness for USDC → WBTC swap
 
 import os
 from arbitrum_testnet_agent import ArbitrumTestnetAgent
+from config_constants import MIN_ETH_FOR_OPERATIONS
 
 def test_swap_readiness():
     """Test all components needed for successful swap"""
@@ -47,7 +48,7 @@ def test_swap_readiness():
         print("\n3️⃣ Testing ETH balance...")
         eth_balance = agent.get_eth_balance()
         print(f"   ETH Balance: {eth_balance:.6f} ETH")
-        if eth_balance < 0.01:
+        if eth_balance < MIN_ETH_FOR_OPERATIONS:
             print("   ❌ Insufficient ETH for gas fees")
             issues_found.append("Insufficient ETH balance")
         else:

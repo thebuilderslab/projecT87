@@ -1,14 +1,13 @@
-import time
-import json
 import os
-import random
-from datetime import datetime
+import json
+import math
 from web3 import Web3
 from eth_account import Account
 from aave_integration import AaveArbitrumIntegration
 from uniswap_integration import UniswapArbitrumIntegration as UniswapIntegration
 from aave_health_monitor import AaveHealthMonitor as HealthMonitor
 from gas_fee_calculator import ArbitrumGasCalculator
+from config_constants import MIN_ETH_FOR_OPERATIONS, MIN_ETH_FOR_GAS_BUFFER
 import requests
 import sys
 
@@ -674,7 +673,8 @@ class ArbitrumTestnetAgent:
         # Pre-validation: Ensure borrow amount is safe
         try:
             pool_abi = [{
-                "inputs": [{"name": "user", "type": "address"}],
+                "inputs":```text
+        {"name": "user", "type": "address"}],
                 "name": "getUserAccountData",
                 "outputs": [
                     {"name": "totalCollateralBase", "type": "uint256"},
@@ -721,18 +721,18 @@ class ArbitrumTestnetAgent:
         # Step 1: Borrow USDC using enhanced borrow manager
         print("🏦 Attempting to borrow USDC...")
         print(f"🔍 DEBUG: Attempting to borrow USDC with amount: ${usdc_borrow_amount:.2f}")
-        
+
         # Check ETH balance before borrowing
         eth_balance = self.get_eth_balance()
         print(f"🔍 DEBUG: Current ETH balance before borrow: {eth_balance:.6f} ETH")
-        
+
         try:
             if hasattr(self, 'enhanced_borrow_manager') and self.enhanced_borrow_manager:
                 borrow_result = self.enhanced_borrow_manager.safe_borrow_with_fallbacks(usdc_borrow_amount, self.usdc_address)
             else:
                 # Fallback to direct Aave borrow if enhanced manager not available
                 borrow_result = self.aave.borrow(usdc_borrow_amount, self.usdc_address)
-            
+
             if not borrow_result:
                 print("❌ Failed to borrow USDC")
                 return False
@@ -759,7 +759,7 @@ class ArbitrumTestnetAgent:
         try:
             current_usdc_balance = self.aave.get_token_balance(self.usdc_address)
             print(f"💰 Current USDC balance after borrow: {current_usdc_balance:.6f}")
-            
+
             if current_usdc_balance < 1.0:
                 print("❌ Insufficient USDC balance for swaps")
                 return False
@@ -769,7 +769,7 @@ class ArbitrumTestnetAgent:
 
         # Step 4: Execute swaps with proper error handling
         swap_results = {}
-        
+
         # Swap to WBTC
         wbtc_amount_to_swap = current_usdc_balance * WBTC_PERCENT
         if wbtc_amount_to_swap > 0.1:
@@ -839,7 +839,7 @@ class ArbitrumTestnetAgent:
             current_wbtc_balance = self.aave.get_token_balance(self.wbtc_address)
             current_weth_balance = self.aave.get_token_balance(self.weth_address)
             current_dai_balance = self.aave.get_token_balance(self.dai_address)
-            
+
             print(f"   WBTC balance: {current_wbtc_balance:.8f}")
             print(f"   WETH balance: {current_weth_balance:.8f}")
             print(f"   DAI balance: {current_dai_balance:.6f}")
@@ -859,7 +859,7 @@ class ArbitrumTestnetAgent:
                 if not self.aave.approve_token(self.wbtc_address, current_wbtc_balance):
                     print("❌ Failed to approve WBTC")
                     return False
-                
+
                 print("🏦 Supplying WBTC to Aave...")
                 print(f"🔍 DEBUG: Attempting to supply {current_wbtc_balance:.8f} WBTC to Aave.")
                 supply_result = self.aave.supply_to_aave(self.wbtc_address, current_wbtc_balance)
@@ -884,7 +884,7 @@ class ArbitrumTestnetAgent:
                 if not self.aave.approve_token(self.weth_address, current_weth_balance):
                     print("❌ Failed to approve WETH")
                     return False
-                
+
                 print("🏦 Supplying WETH to Aave...")
                 supply_result = self.aave.supply_to_aave(self.weth_address, current_weth_balance)
                 if not supply_result:
@@ -904,7 +904,7 @@ class ArbitrumTestnetAgent:
                 if not self.aave.approve_token(self.dai_address, current_dai_balance):
                     print("❌ Failed to approve DAI")
                     return False
-                
+
                 print("🏦 Supplying DAI to Aave...")
                 supply_result = self.aave.supply_to_aave(self.dai_address, current_dai_balance)
                 if not supply_result:
@@ -924,7 +924,7 @@ class ArbitrumTestnetAgent:
                 health_data = self.health_monitor.get_monitoring_summary()
                 if health_data and 'total_collateral_usd' in health_data:
                     self.update_baseline_after_success(health_data['total_collateral_usd'])
-            
+
             # Record successful operation
             self.record_successful_operation('leveraged_supply')
         except Exception as e:
@@ -934,7 +934,7 @@ class ArbitrumTestnetAgent:
         print(f"📊 Summary:")
         print(f"   Swap Results: {len(swap_results)} successful swaps")
         print(f"   Supply Results: {len(supply_results)} successful supplies")
-        
+
         return True
 
     def get_optimized_gas_params(self, operation_type, speed='market'):
@@ -1015,7 +1015,7 @@ class ArbitrumTestnetAgent:
                 'gas': safe_gas_limit,
                 'gasPrice': safe_gas_price
             }
-            
+
             print(f"🔍 DEBUG: Optimized gas parameters calculated: {final_gas_params}")
             print(f"🔍 DEBUG: Gas limit: {safe_gas_limit:,}, Gas price: {safe_gas_price:,} wei ({self.w3.from_wei(safe_gas_price, 'gwei'):.3f} gwei)")
             print(f"✅ Gas params for {operation_type}: limit={safe_gas_limit:,}, price={safe_gas_price:,} wei ({self.w3.from_wei(safe_gas_price, 'gwei'):.3f} gwei)")
@@ -1587,7 +1587,7 @@ class ArbitrumTestnetAgent:
             print(f"   Aave Position: ${current_collateral_value_usd:.2f} collateral")
 
             # Check minimum requirements - we have substantial Aave position already
-            min_eth_for_gas = 0.001  # Minimum ETH for gas fees
+            min_eth_for_gas = MIN_ETH_FOR_OPERATIONS  # Minimum ETH for gas fees
 
             ready = eth_balance >= min_eth_for_gas and current_collateral_value_usd > 50
 
@@ -1712,23 +1712,23 @@ class ArbitrumTestnetAgent:
         try:
             # Use the comprehensive leveraged supply strategy
             print(f"🚀 Executing comprehensive leveraged supply strategy...")
-            
+
             # Execute the complete strategy using the existing method
             strategy_success = self.execute_leveraged_supply_strategy(safe_borrow_amount)
-            
+
             if strategy_success:
                 print(f"✅ Leveraged supply strategy completed successfully!")
                 sequence_results['total_performance'] = 1.0
-                
+
                 # Update baseline after successful operation
                 self.update_baseline_after_success()
-                
+
                 # Record successful operation for cooldown
                 self.record_successful_operation('leveraged_supply')
             else:
                 print(f"❌ Leveraged supply strategy failed")
                 sequence_results['total_performance'] = 0.3
-                
+
                 # Analyze failure
                 self.analyze_borrow_failure()
 
@@ -2028,8 +2028,7 @@ class ArbitrumTestnetAgent:
             # Swap 4: USDC → WETH (for wallet)
             if wallet_weth_amount > 0.1:
                 print(f"🔄 Swapping {wallet_weth_amount:.2f} USDC → WETH (wallet)...")
-                try:
-                    wallet_weth_result = self.uniswap.swap_tokens(
+                try:                    wallet_weth_result = self.uniswap.swap_tokens(
                         self.usdc_address, self.weth_address, wallet_weth_amount, 500
                     )
                     swap_results.append(wallet_weth_result)
@@ -2263,7 +2262,6 @@ class ArbitrumTestnetAgent:
             account_data = pool_contract.functions.getUserAccountData(self.address).call()
             new_collateral_usd = account_data[0] / (10**8)
 
-            # Update baseline to new collateral value
             old_baseline = self.last_collateral_value_usd
             self.last_collateral_value_usd = new_collateral_usd
 
