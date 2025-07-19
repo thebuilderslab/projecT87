@@ -1,6 +1,8 @@
 import os
 import json
 import math
+import time
+from datetime import datetime
 from web3 import Web3
 from eth_account import Account
 from aave_integration import AaveArbitrumIntegration
@@ -1386,7 +1388,7 @@ class ArbitrumTestnetAgent:
                 fetcher = AccurateWalletDataFetcher(self.w3, self.address)
                 dashboard_data = fetcher.get_comprehensive_wallet_data()
 
-                if dashboard_data and dashboard_data.get('success')):
+                if dashboard_data and dashboard_data.get('success'):
                     real_collateral = dashboard_data['total_collateral_usdc']
                     print(f"🔍 DEBUG - REAL DATA FETCHER RESULT:")
                     print(f"   AccurateWalletDataFetcher collateral: ${real_collateral:,.2f}")
@@ -1944,7 +1946,7 @@ class ArbitrumTestnetAgent:
             from unified_aave_data_fetcher import get_unified_aave_data
             live_aave_data = get_unified_aave_data(self)  # Get live Aave data directly
 
-            if live_aave_data and live_aave_data.get('success')):
+            if live_aave_data and live_aave_data.get('success'):
                 print(f"✅ Enhanced Data Fetch: Live Aave data retrieved successfully.")
                 return live_aave_data  # Return the live data
             else:
@@ -2520,7 +2522,7 @@ class ArbitrumTestnetAgent:
                     "type": "function"
                 }]
 
-                pool_contract = self.w3.eth.contract(address=self.aave_pool_address, abi=pool_contract)
+                pool_contract = self.w3.eth.contract(address=self.aave_pool_address, abi=pool_abi)
                 account_data = pool_contract.functions.getUserAccountData(self.address).call()
                 failure_log['aave_collateral'] = account_data[0]
                 failure_log['aave_debt'] = account_data[1]
