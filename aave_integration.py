@@ -27,7 +27,7 @@ class AaveArbitrumIntegration:
             self.weth_address = self.w3.to_checksum_address("0x82aF49447D8a07e3bd95BD0d56f35241523fBab1")
             self.wbtc_address = self.w3.to_checksum_address("0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f")
             self.dai_address = self.w3.to_checksum_address("0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1")
-            self.usdc_address = self.w3.to_checksum_address("0xAf88D065e77C8cF0EAEfF3e253e648A15CEe23dC")
+            self.usdc_address = self.w3.to_checksum_address("0xFF970A61A04b1cA14834A651bAb06d67307796618")
             self.arb_address = self.w3.to_checksum_address("0x912CE59144191C1204E64559FE8253a0e49E6548")
         else:  # Arbitrum Sepolia Testnet (Chain ID: 421614)
             print(f"🧪 Initializing for Arbitrum Sepolia Testnet (Chain ID: {chain_id})")
@@ -298,7 +298,7 @@ class AaveArbitrumIntegration:
 
             # Comprehensive aToken mapping for Arbitrum Mainnet
             atoken_mapping = {
-                self.usdc_address.lower(): "0x724dc807b04555b71ed48a6896b6F41593b8C637",  # aArbUSDC
+                self.usdc_address.lower(): "0x625E7708f30cA75bfd92586e17077590C60eb4cD",  # aUSDC.e for 0xFF970A61A04b1cA14834A651bAb06d67307796618
                 self.wbtc_address.lower(): "0x6533afac2E7BCCB20dca161449A13A2D2d5B739A",  # aArbWBTC  
                 self.weth_address.lower(): "0xe50fA9b4c56454E2edF6BFf7c81b50c5F05aBE61",  # aArbWETH
                 self.dai_address.lower(): "0x82E64f49Ed5EC1bC6e43DAD4FC8Af9bb3A2312EE"   # aArbDAI
