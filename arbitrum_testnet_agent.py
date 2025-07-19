@@ -673,8 +673,7 @@ class ArbitrumTestnetAgent:
         # Pre-validation: Ensure borrow amount is safe
         try:
             pool_abi = [{
-                "inputs":```text
-        {"name": "user", "type": "address"}],
+                "inputs": [{"name": "user", "type": "address"}],
                 "name": "getUserAccountData",
                 "outputs": [
                     {"name": "totalCollateralBase", "type": "uint256"},
