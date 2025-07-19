@@ -12695,3 +12695,10 @@
 {"run_id": 1, "iteration": 97, "performance_metric": 0.9199999999999999, "timestamp": 1751209099.2348206, "metadata": {}}
 {"run_id": 1, "iteration": 98, "performance_metric": 0.9299999999999999, "timestamp": 1751209101.185036, "metadata": {}}
 {"run_id": 1, "iteration": 99, "performance_metric": 0.94, "timestamp": 1751209103.1259918, "metadata": {}}
+{"run_id": 1, "iteration": 0, "performance_metric": 0.8, "timestamp": 1752957815.4389832, "metadata": {}}
+{"run_id": 1, "iteration": 1, "performance_metric": 0.3, "timestamp": 1752957817.4103265, "metadata": {}}
+{"run_id": 1, "iteration": 2, "performance_metric": 0.3, "timestamp": 1752957832.964933, "metadata": {}}
+{"run_id": 1, "iteration": 3, "performance_metric": 0.3, "timestamp": 1752957847.0046852, "metadata": {}}
+{"run_id": 1, "iteration": 4, "performance_metric": 0.3, "timestamp": 1752957861.3646638, "metadata": {}}
+{"run_id": 1, "iteration": 5, "performance_metric": 0.3, "timestamp": 1752957876.039201, "metadata": {}}
+{"run_id": 1, "iteration": 6, "performance_metric": 0.3, "timestamp": 1752957889.8137233, "metadata": {}}
