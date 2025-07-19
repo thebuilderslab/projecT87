@@ -675,7 +675,7 @@ class ArbitrumTestnetAgent:
         # Pre-validation: Ensure borrow amount is safe
         try:
             pool_abi = [{
-                "inputs": [{"name":"user", "type": "address"}],
+                "inputs": [{"name": "user", "type": "address"}],
                 "name": "getUserAccountData",
                 "outputs": [
                     {"name": "totalCollateralBase", "type": "uint256"},
@@ -2034,14 +2034,6 @@ class ArbitrumTestnetAgent:
                         self.usdc_address, self.weth_address, wallet_weth_amount, 500
                     )
                     swap_results.append(wallet_weth_result)
-                    if wallet_weth_result:
-                        print(f"✅ Wallet WETH swap successful")
-                    else:
-                        print(f"❌ Wallet WETH swap failed")
-                except Exception as e:
-                    print(f"❌ Wallet WETH swap error: {e}")
-                    swap_results.append(False)
-                time.sleep(2)
                     if wallet_weth_result:
                         print(f"✅ Wallet WETH swap successful")
                     else:
