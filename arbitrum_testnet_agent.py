@@ -673,6 +673,7 @@ class ArbitrumTestnetAgent:
         print(f"⚙️ Executing Leveraged Supply Strategy with {usdc_borrow_amount:.2f} USDC...")
 
         # Pre-validation: Ensure borrow amount is safe
+        ```python
         try:
             pool_abi = [{
                 "inputs": [{"name": "user", "type": "address"}],
@@ -1323,7 +1324,7 @@ class ArbitrumTestnetAgent:
                 # Get current prices and calculate USD values
                 try:
                     import requests
-                    url = "https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest"
+                    url = "https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest```python
                     headers = {'X-CMC_PRO_API_KEY': self.coinmarketcap_api_key}
                     params = {'symbol': 'BTC,ETH,USDC', 'convert': 'USD'}
 
@@ -1746,7 +1747,6 @@ class ArbitrumTestnetAgent:
 
         # Pre-validation checks
         try:
-            # Verify current health factor is safe
             pool_abi = [{
                 "inputs": [{"name": "user", "type": "address"}],
                 "name": "getUserAccountData",
