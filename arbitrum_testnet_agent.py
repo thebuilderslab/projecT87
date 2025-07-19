@@ -2029,10 +2029,19 @@ class ArbitrumTestnetAgent:
             # Swap 4: USDC → WETH (for wallet)
             if wallet_weth_amount > 0.1:
                 print(f"🔄 Swapping {wallet_weth_amount:.2f} USDC → WETH (wallet)...")
-                try:                    wallet_weth_result = self.uniswap.swap_tokens(
+                try:
+                    wallet_weth_result = self.uniswap.swap_tokens(
                         self.usdc_address, self.weth_address, wallet_weth_amount, 500
                     )
                     swap_results.append(wallet_weth_result)
+                    if wallet_weth_result:
+                        print(f"✅ Wallet WETH swap successful")
+                    else:
+                        print(f"❌ Wallet WETH swap failed")
+                except Exception as e:
+                    print(f"❌ Wallet WETH swap error: {e}")
+                    swap_results.append(False)
+                time.sleep(2)
                     if wallet_weth_result:
                         print(f"✅ Wallet WETH swap successful")
                     else:
