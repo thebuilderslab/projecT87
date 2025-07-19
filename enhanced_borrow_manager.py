@@ -937,7 +937,7 @@ class EnhancedBorrowManager:
                 if eth_balance < 0.00083545:  # Minimum 0.00083545 ETH for gas
                     validation_result['error'] = f"Insufficient ETH for gas: {eth_balance:.6f} ETH"
                     return validation_result
-                elif eth_balance < 0.005:
+                elif eth_balance < 0.00083545:
                     validation_result['warnings'].append(f"Low ETH balance: {eth_balance:.6f} ETH")
 
                 print(f"✅ ETH balance check: {eth_balance:.6f} ETH")
