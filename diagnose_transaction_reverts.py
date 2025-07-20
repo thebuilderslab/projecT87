@@ -108,37 +108,87 @@ def diagnose_recent_reverts():
 
         # Check current Aave position
         print(f"\n📊 CURRENT AAVE POSITION:")
-        pool_abi = [{
-            "inputs": [{
-                "name": "user",
-                "type": "address"
-            }],
-            "name":
-            "getUserAccountData",
-            "outputs": [{
-                "name": "totalCollateralBase",
-                "type": "uint256"
-            }, {
-                "name": "totalDebtBase",
-                "type": "uint256"
-            }, {
-                "name": "availableBorrowsBase",
-                "type": "uint256"
-            }, {
-                "name": "currentLiquidationThreshold",
-                "type": "uint256"
-            }, {
-                "name": "ltv",
-                "type": "uint256"
-            }, {
-                "name": "healthFactor",
-                "type": "uint256"
-            }],
-            "stateMutability":
-            "view",
-            "type":
-            "function"
-        }]
+        pool_abi = [
+            {
+                "inputs": [
+                    {"internalType": "address", "name": "asset", "type": "address"},
+                    {"internalType": "uint256", "name": "amount", "type": "uint256"},
+                    {"internalType": "address", "name": "onBehalfOf", "type": "address"},
+                    {"internalType": "uint16", "name": "referralCode", "type": "uint16"}
+                ],
+                "name": "supply",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {"internalType": "address", "name": "asset", "type": "address"},
+                    {"internalType": "uint256", "name": "amount", "type": "uint256"},
+                    {"internalType": "uint256", "name": "interestRateMode", "type": "uint256"},
+                    {"internalType": "uint16", "name": "referralCode", "type": "uint16"},
+                    {"internalType": "address", "name": "onBehalfOf", "type": "address"}
+                ],
+                "name": "borrow",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {"internalType": "address", "name": "asset", "type": "address"},
+                    {"internalType": "uint256", "name": "amount", "type": "uint256"},
+                    {"internalType": "uint256", "name": "interestRateMode", "type": "uint256"},
+                    {"internalType": "address", "name": "onBehalfOf", "type": "address"}
+                ],
+                "name": "repay",
+                "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {"internalType": "address", "name": "asset", "type": "address"},
+                    {"internalType": "uint256", "name": "amount", "type": "uint256"},
+                    {"internalType": "address", "name": "to", "type": "address"}
+                ],
+                "name": "withdraw",
+                "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [{"internalType": "address", "name": "user", "type": "address"}],
+                "name": "getUserAccountData",
+                "outputs": [
+                    {"internalType": "uint256", "name": "totalCollateralBase", "type": "uint256"},
+                    {"internalType": "uint256", "name": "totalDebtBase", "type": "uint256"},
+                    {"internalType": "uint256", "name": "availableBorrowsBase", "type": "uint256"},
+                    {"internalType": "uint256", "name": "currentLiquidationThreshold", "type": "uint256"},
+                    {"internalType": "uint256", "name": "ltv", "type": "uint256"},
+                    {"internalType": "uint256", "name": "healthFactor", "type": "uint256"}
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {"internalType": "address", "name": "asset", "type": "address"},
+                    {"internalType": "bool", "name": "useAsCollateral", "type": "bool"}
+                ],
+                "name": "setUserUseReserveAsCollateral",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [{"internalType": "uint256", "name": "categoryId", "type": "uint256"}],
+                "name": "setUserEMode",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            }
+        ]
 
         pool_contract = agent.w3.eth.contract(address=agent.aave_pool_address,
                                               abi=pool_abi)
