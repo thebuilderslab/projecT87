@@ -336,17 +336,17 @@ class ArbitrumTestnetAgent:
         # Contract addresses based on network
         if self.network_mode == 'mainnet':
             # Arbitrum Mainnet addresses (verified from CoinGecko and Aave documentation)
-            self.usdc_address = Web3.to_checksum_address("0xff970a61a04b1ca14834a651bab06d67307796618")
-            self.wbtc_address = Web3.to_checksum_address("0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f")
-            self.weth_address = Web3.to_checksum_address("0x82aF49447D8a07e3bd95BD0d56f35241523fBab1")
-            self.dai_address = Web3.to_checksum_address("0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1")
-            self.arb_address = Web3.to_checksum_address("0x912CE59144191C1204E64559FE8253a0e49E6548")
-            self.aave_pool_address = Web3.to_checksum_address("0x794a61358D6845594F94dc1DB02A252b5b4814aD")
+            self.usdc_address = self.w3.to_checksum_address("0xaf88d065e8c38FAd0aEfF3e253E648a15cEE23DC")
+            self.wbtc_address = self.w3.to_checksum_address("0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f")
+            self.weth_address = self.w3.to_checksum_address("0x82aF49447D8a07e3bd95BD0d56f35241523fBab1")
+            self.dai_address = self.w3.to_checksum_address("0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1")
+            self.arb_address = self.w3.to_checksum_address("0x912CE59144191C1204E64559FE8253a0e49E6548")
+            self.aave_pool_address = self.w3.to_checksum_address("0x794a61358D6845594F94dc1DB02A252b5b4814aD")
 
             # Mainnet aToken addresses (properly checksummed)
-            self.aWBTC_address = Web3.to_checksum_address("0x6533afac2E7BCCB20dca161449A13A2D2d5B739A")
-            self.aWETH_address = Web3.to_checksum_address("0xe50fA9b4c56454E2edF6BFf7c81b50c5F05aBE61")
-            self.aUSDC_address = Web3.to_checksum_address("0x724dc807b04555b71ed48a6896b6F41593b8C637")
+            self.aWBTC_address = self.w3.to_checksum_address("0x6533afac2E7BCCB20dca161449A13A2D2d5B739A")
+            self.aWETH_address = self.w3.to_checksum_address("0xe50fA9b4c56454E2edF6BFf7c81b50c5F05aBE61")
+            self.aUSDC_address = self.w3.to_checksum_address("0x724dc807b04555b71ed48a6896b6F41593b8C637")
 
             print(f"📋 Mainnet Token addresses verified:")
             print(f"   USDC: {self.usdc_address}")
@@ -361,12 +361,12 @@ class ArbitrumTestnetAgent:
             print("🧪 Initializing for Arbitrum Sepolia Testnet")
 
             # Testnet token addresses (properly checksummed)
-            self.usdc_address = Web3.to_checksum_address("0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d")
-            self.wbtc_address = Web3.to_checksum_address("0xA2d460Bc966F6C4D5527a6ba35C6cB57c15c8F96")
-            self.weth_address = Web3.to_checksum_address("0x980B62Da83eFf3D4576C647993b0c1D7faf17c73")
-            self.dai_address = Web3.to_checksum_address("0x5f6bB460B6d0bdA2CCaDdd7A19B5F6E7b5b8E1DB")
-            self.arb_address = Web3.to_checksum_address("0x1b20e6a3B2a86618C32A37ffcD5E98C0d20a6E42")
-            self.aave_pool_address = Web3.to_checksum_address("0x18cd499E3d7ed42FebA981ac9236A278E4Cdc2ee")
+            self.usdc_address = self.w3.to_checksum_address("0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d")
+            self.wbtc_address = self.w3.to_checksum_address("0xA2d460Bc966F6C4D5527a6ba35C6cB57c15c8F96")
+            self.weth_address = self.w3.to_checksum_address("0x980B62Da83eFf3D4576C647993b0c1D7faf17c73")
+            self.dai_address = self.w3.to_checksum_address("0x5f6bB460B6d0bdA2CCaDdd7A19B5F6E7b5b8E1DB")
+            self.arb_address = self.w3.to_checksum_address("0x1b20e6a3B2a86618C32A37ffcD5E98C0d20a6E42")
+            self.aave_pool_address = self.w3.to_checksum_address("0x18cd499E3d7ed42FebA981ac9236A278E4Cdc2ee")
 
         # Initialize real blockchain integrations
         self.aave = None
