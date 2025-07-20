@@ -14,14 +14,39 @@ def test_usdc_address_fix():
     """Test USDC address configuration"""
     print("🏦 Testing USDC Address Fix...")
     try:
-        # First check syntax
+        # First check syntax with better error reporting
         import py_compile
         try:
             py_compile.compile('arbitrum_testnet_agent.py', doraise=True)
             print("   ✅ Syntax check passed")
         except py_compile.PyCompileError as syntax_error:
             print(f"   ❌ Syntax error detected: {syntax_error}")
-            print("   🔧 Attempting to auto-fix common syntax issues...")
+            
+            # Try to identify the specific line and issue
+            error_str = str(syntax_error)
+            if "line" in error_str:
+                import re
+                line_match = re.search(r'line (\d+)', error_str)
+                if line_match:
+                    line_num = int(line_match.group(1))
+                    print(f"   🎯 Error at line {line_num}")
+                    
+                    # Show context around the error
+                    try:
+                        with open('arbitrum_testnet_agent.py', 'r') as f:
+                            lines = f.readlines()
+                        
+                        start = max(0, line_num - 3)
+                        end = min(len(lines), line_num + 2)
+                        
+                        print(f"   📋 Context around line {line_num}:")
+                        for i in range(start, end):
+                            marker = ">>> " if i + 1 == line_num else "    "
+                            print(f"   {marker}{i+1:3d}: {lines[i].rstrip()}")
+                    except Exception:
+                        pass
+            
+            print("   🔧 Syntax error needs manual fixing")
             return False
 
         try:

@@ -243,3 +243,67 @@ if __name__ == "__main__":
             
     except Exception as e:
         print(f"❌ Test error: {e}")
+"""
+Unified Aave Data Fetcher for reliable position data
+"""
+
+from web3 import Web3
+import time
+
+def get_unified_aave_data(agent):
+    """Get unified Aave data from multiple sources"""
+    try:
+        # Standard Aave Pool ABI for getUserAccountData
+        pool_abi = [{
+            "inputs": [{"name": "user", "type": "address"}],
+            "name": "getUserAccountData",
+            "outputs": [
+                {"name": "totalCollateralBase", "type": "uint256"},
+                {"name": "totalDebtBase", "type": "uint256"},
+                {"name": "availableBorrowsBase", "type": "uint256"},
+                {"name": "currentLiquidationThreshold", "type": "uint256"},
+                {"name": "ltv", "type": "uint256"},
+                {"name": "healthFactor", "type": "uint256"}
+            ],
+            "stateMutability": "view",
+            "type": "function"
+        }]
+
+        pool_contract = agent.w3.eth.contract(
+            address=agent.aave_pool_address,
+            abi=pool_abi
+        )
+
+        account_data = pool_contract.functions.getUserAccountData(agent.address).call()
+
+        # Aave V3 uses 8 decimal places for USD values
+        total_collateral_usd = account_data[0] / (10**8)
+        total_debt_usd = account_data[1] / (10**8)
+        available_borrows_usd = account_data[2] / (10**8)
+        health_factor = account_data[5] / (10**18) if account_data[5] > 0 else float('inf')
+
+        return {
+            'success': True,
+            'total_collateral_usdc': total_collateral_usd,
+            'total_debt_usdc': total_debt_usd,
+            'available_borrows_usdc': available_borrows_usd,
+            'health_factor': health_factor,
+            'timestamp': time.time(),
+            'source': 'aave_contract_direct'
+        }
+
+    except Exception as e:
+        print(f"❌ Unified Aave data fetch failed: {e}")
+        return {
+            'success': False,
+            'error': str(e),
+            'timestamp': time.time()
+        }
+
+class UnifiedAaveDataFetcher:
+    def __init__(self, agent):
+        self.agent = agent
+        
+    def get_position_data(self):
+        """Get current Aave position data"""
+        return get_unified_aave_data(self.agent)

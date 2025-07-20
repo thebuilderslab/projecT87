@@ -98,6 +98,4 @@ class EnhancedBorrowManager:
             print(f"❌ Validation failed: {e}")
             return False
 
-    def execute_enhanced_borrow_with_retry(self, amount_usd):
-        """Legacy method for compatibility"""
-        return self.safe_borrow_with_fallbacks(amount_usd, self.agent.usdc_address)
+    
