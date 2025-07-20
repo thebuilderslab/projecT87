@@ -29,6 +29,7 @@ class EnhancedBorrowManager:
             # Convert USD to DAI wei (DAI has 18 decimals, 1 USD ≈ 1 DAI)
             amount_wei = int(amount_usd * (10 ** 18))
             print(f"💱 Converted ${amount_usd:.2f} to {amount_wei} DAI wei")
+            print(f"🎯 DAI Strategy: Primary borrowing asset confirmed as DAI")
 
             # Execute DAI borrow with enhanced retry logic
             result = self.aave.borrow_from_aave(amount_wei, token_address)
