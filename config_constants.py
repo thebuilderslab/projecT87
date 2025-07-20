@@ -57,3 +57,35 @@ DEFAULT_TIMEOUT = 30  # Default timeout for API calls
 MAX_RETRIES = 3  # Maximum retries for API calls
 
 print("✅ Config constants loaded successfully")
+"""
+Configuration Constants for Arbitrum Agent
+"""
+
+# Gas and ETH requirements
+MIN_ETH_FOR_OPERATIONS = 0.005  # Minimum ETH needed for operations (0.005 ETH)
+MIN_ETH_FOR_GAS_BUFFER = 0.002  # Additional ETH buffer for gas (0.002 ETH)
+
+# Trading parameters
+DEFAULT_SLIPPAGE_TOLERANCE = 0.005  # 0.5% slippage tolerance
+MAX_GAS_PRICE_GWEI = 50  # Maximum gas price in Gwei
+
+# Health factor thresholds
+MIN_HEALTH_FACTOR = 1.1  # Minimum health factor before liquidation risk
+TARGET_HEALTH_FACTOR = 2.0  # Target health factor for safe operations
+EMERGENCY_HEALTH_FACTOR = 1.05  # Emergency threshold for immediate action
+
+# Protocol addresses and constants
+ARBITRUM_MAINNET_CHAIN_ID = 42161
+ARBITRUM_SEPOLIA_CHAIN_ID = 421614
+
+# Operation cooldowns (in seconds)
+DEFAULT_OPERATION_COOLDOWN = 60  # 1 minute between operations
+EMERGENCY_COOLDOWN = 30  # 30 seconds for emergency operations
+
+# Retry settings
+MAX_RETRY_ATTEMPTS = 3
+RETRY_DELAY_SECONDS = 2
+
+# Validation thresholds
+MIN_USD_AMOUNT = 0.01  # Minimum USD amount for operations
+MAX_USD_AMOUNT = 10000  # Maximum USD amount for single operation

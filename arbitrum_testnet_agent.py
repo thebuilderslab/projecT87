@@ -561,9 +561,13 @@ class ArbitrumTestnetAgent:
             print("⛽ Initialized Gas Calculator.")
 
             # Initialize Enhanced Borrow Manager
-            from enhanced_borrow_manager import EnhancedBorrowManager
-            self.enhanced_borrow_manager = EnhancedBorrowManager(self)
-            print("🏦 Initialized Enhanced Borrow Manager.")
+            try:
+                from enhanced_borrow_manager import EnhancedBorrowManager
+                self.enhanced_borrow_manager = EnhancedBorrowManager(self)
+                print("🏦 Initialized Enhanced Borrow Manager.")
+            except ImportError as e:
+                print(f"⚠️ Enhanced Borrow Manager not available: {e}")
+                self.enhanced_borrow_manager = None
 
             # Token approvals with gas optimization
             tokens_to_approve = [
@@ -674,7 +678,7 @@ class ArbitrumTestnetAgent:
 
         # Pre-validation: Ensure borrow amount is safe
         try:
-            pool_abi = [{```python
+            pool_abi = [{
                 "inputs": [{"name": "user", "type": "address"}],
                 "name": "getUserAccountData",
                 "outputs": [
@@ -1322,6 +1326,7 @@ class ArbitrumTestnetAgent:
 
                 # Get current prices and calculate USD values
                 try:
+                    ```python
                     import requests
                     url = "https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest"
                     headers = {'X-CMC_PRO_API_KEY': self.coinmarketcap_api_key}
@@ -2024,7 +2029,7 @@ class ArbitrumTestnetAgent:
                 time.sleep(2)
 
             # Swap 4: USDC → WETH (for wallet)
-            if wallet_weth_amount > 0.1:
+            if wallet_weth_amount > 0.1:```python
                 print(f"🔄 Swapping {wallet_weth_amount:.2f} USDC → WETH (wallet)...")
                 try:
                     wallet_weth_result = self.uniswap.swap_tokens(
@@ -2201,11 +2206,11 @@ class ArbitrumTestnetAgent:
         print(f"   No manual override detected")
         return False
 
-    def calculate_safe_borrow_amount(self, growth_amount, available_borrows_usd):
+    def calculate_safe_borrow_amount(self, collateral_growth, available_borrows):
         """Calculate safe borrow amount with proper fallbacks"""
         print(f"🧮 Calculating safe borrow amount:")
-        print(f"   Growth amount: ${growth_amount:.2f}")
-        print(f"   Available capacity: ${available_borrows_usd:.2f}")
+        print(f"   Growth amount: ${collateral_growth:.2f}")
+        print(f"   Available capacity: ${available_borrows:.2f}")
 
         # Check for manual override first
         manual_override_active = self.detect_manual_override()
@@ -2213,27 +2218,27 @@ class ArbitrumTestnetAgent:
         if manual_override_active:
             print(f"🔧 Manual override active - using percentage-based calculation")
             # Use 20% of available borrowing capacity for manual override
-            safe_amount = available_borrows_usd * 0.20
-            safe_amount = max(1.0, min(safe_amount, available_borrows_usd * 0.80))  # Between $1 and 80% of capacity
+            safe_amount = available_borrows * 0.20
+            safe_amount = max(1.0, min(safe_amount, available_borrows * 0.80))  # Between $1 and 80% of capacity
             print(f"💰 Manual override borrow amount: ${safe_amount:.2f}")
             return safe_amount
 
         # Normal growth-based calculation
-        if growth_amount > 0:
+        if collateral_growth > 0:
             # Use 40% of the growth amount, but cap at 60% of available capacity
-            growth_based_amount = growth_amount * 0.40
-            capacity_limit = available_borrows_usd * 0.60
+            growth_based_amount = collateral_growth * 0.40
+            capacity_limit = available_borrows * 0.60
             safe_amount = min(growth_based_amount, capacity_limit)
         else:
-            print(f"⚠️ Negative growth detected: ${growth_amount:.2f}")
+            print(f"⚠️ Negative growth detected: ${collateral_growth:.2f}")
             # For negative growth, use small percentage of available capacity
-            safe_amount = available_borrows_usd * 0.10  # Use 10% of available capacity
+            safe_amount = available_borrows * 0.10  # Use 10% of available capacity
 
         # Ensure minimum viable amount
         safe_amount = max(1.0, safe_amount)
 
         # Ensure we don't exceed available capacity
-        safe_amount = min(safe_amount, available_borrows_usd * 0.80)
+        safe_amount = min(safe_amount, available_borrows * 0.80)
 
         print(f"💰 Calculated safe borrow amount: ${safe_amount:.2f}")
         return safe_amount
