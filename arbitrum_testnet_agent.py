@@ -1324,12 +1324,10 @@ class ArbitrumTestnetAgent:
                 print(f"   WETH supplied: {weth_balance:.8f}")
                 print(f"   USDC supplied: {usdc_balance:.8f}")
 
-            # Assuming this is now line 1327
+            # Enhanced price lookup for accurate collateral calculation
                 if self.coinmarketcap_api_key:
-                    # This try: should be properly indented, let's assume it's line 1328
                     try:
                         import requests
-                        # This url = "..." line should be further indented, now on line 1330
                         url = "https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest"
                         headers = {'X-CMC_PRO_API_KEY': self.coinmarketcap_api_key}
                         params = {'symbol': 'BTC,ETH,USDC', 'convert': 'USD'}
@@ -1337,46 +1335,32 @@ class ArbitrumTestnetAgent:
                         response = requests.get(url, headers=headers, params=params, timeout=10)
                         if response.status_code == 200:
                             data = response.json()
-                            return data
+                            btc_price = data['data']['BTC']['quote']['USD']['price']
+                            eth_price = data['data']['ETH']['quote']['USD']['price']
+                            usdc_price = data['data']['USDC']['quote']['USD']['price']
+
+                            enhanced_collateral_usd = (
+                                (wbtc_balance * btc_price) +
+                                (weth_balance * eth_price) +
+                                (usdc_balance * usdc_price)
+                            )
+
+                            print(f"   Enhanced calculation:")
+                            print(f"   BTC price: ${btc_price:,.2f}")
+                            print(f"   ETH price: ${eth_price:,.2f}")
+                            print(f"   USDC price: ${usdc_price:.4f}")
+                            print(f"   Enhanced collateral USD: ${enhanced_collateral_usd:,.2f}")
+
+                            if enhanced_collateral_usd > 50:  # If we get meaningful data
+                                current_collateral_value_usd = enhanced_collateral_usd
+                                print(f"✅ Using enhanced collateral calculation: ${current_collateral_value_usd:,.2f}")
+                            else:
+                                print(f"🔍 DEBUG: Enhanced collateral calculation still shows low value")
                         else:
-                            print(f"CoinMarketCap API error: {response.status_code}")
-                            return None
+                            print(f"⚠️ Price fetch failed: {response.status_code}")
 
-                    # Add an except block (or finally) with correct indentation
-                    except Exception as e: # You can use a more specific Exception type if known
-                        print(f"An error occurred fetching CoinMarketCap data: {e}")
-                        # Add appropriate error handling or logging here
-                        # For example, return None or raise the exception
-                        return None # Or some other fallback/error value
-                    headers = {'X-CMC_PRO_API_KEY': self.coinmarketcap_api_key}
-                    params = {'symbol': 'BTC,ETH,USDC', 'convert': 'USD'}
-
-                    response = requests.get(url, headers=headers, params=params, timeout=10)
-                    if response.status_code == 200:
-                        data = response.json()
-                        btc_price = data['data']['BTC']['quote']['USD']['price']
-                        eth_price = data['data']['ETH']['quote']['USD']['price']
-                        usdc_price = data['data']['USDC']['quote']['USD']['price']
-
-                        enhanced_collateral_usd = (
-                            (wbtc_balance * btc_price) +
-                            (weth_balance * eth_price) +
-                            (usdc_balance * usdc_price)
-                        )
-
-                        print(f"   Enhanced calculation:")
-                        print(f"   BTC price: ${btc_price:,.2f}")
-                        print(f"   ETH price: ${eth_price:,.2f}")
-                        print(f"   USDC price: ${usdc_price:.4f}")
-                        print(f"   Enhanced collateral USD: ${enhanced_collateral_usd:,.2f}")
-
-                        if enhanced_collateral_usd > 50:  # If we get meaningful data
-                            current_collateral_value_usd = enhanced_collateral_usd
-                            print(f"✅ Using enhanced collateral calculation: ${current_collateral_value_usd:,.2f}")
-                        else:
-                            print(f"🔍 DEBUG: Enhanced collateral calculation still shows low value")
-                    else:
-                        print(f"⚠️ Price fetch failed: {response.status_code}")
+                    except Exception as e:
+                        print(f"⚠️ An error occurred fetching CoinMarketCap data: {e}")
 
                 except Exception as price_error:
                     print(f"⚠️ Price lookup error: {price_error}")
