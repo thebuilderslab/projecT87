@@ -124,7 +124,7 @@ class EnhancedBorrowManager:
                 return False
 
             if health_factor < min_health_factor:
-                print(f"❌ Health factor too low: {health_factor:.4f} < {min_health_factor}")
+                print(f"❌ Health factor too low: {health_factor:.4f} < ${min_health_factor}")
                 return False
 
             if available_borrows < amount_usd:
@@ -332,7 +332,7 @@ class EnhancedBorrowManager:
                 return False
 
             if health_factor < min_health_factor:
-                print(f"❌ Health factor too low: {health_factor:.4f} < {min_health_factor}")
+                print(f"❌ Health factor too low: {health_factor:.4f} < ${min_health_factor}")
                 return False
 
             if available_borrows < amount_usd:
