@@ -1365,7 +1365,7 @@ class ArbitrumTestnetAgent:
 
                     except Exception as e:
                         print(f"⚠️ An error occurred fetching CoinMarketCap data: {e}")
-                        pass # Example: This was likely your line 1366
+                        pass  # Handle CoinMarketCap API error gracefully
 
 
             except Exception as price_error:
