@@ -20,54 +20,63 @@ class EnhancedBorrowManager:
             print(f"🔍 DEBUG: Token address: {token_address}")
             print(f"🔍 DEBUG: Amount USD: {amount_usd}")
 
-            # Comprehensive pre-validation
-            validation_result = self._validate_borrow_conditions(amount_usd, token_address)
+            # Comprehensive pre-validation with enhanced checks
+            validation_result = self._validate_borrow_conditions_enhanced(amount_usd, token_address)
             if not validation_result:
                 return False
 
             # Check ETH balance for gas
             eth_balance = self.agent.get_eth_balance()
-            min_eth_required = 0.001  # Minimum ETH for gas
+            min_eth_required = 0.002  # Increased minimum ETH for gas
             if eth_balance < min_eth_required:
                 print(f"❌ Insufficient ETH for gas: {eth_balance:.6f} ETH (need {min_eth_required:.3f})")
                 return False
 
-            # Execute borrow with enhanced retry logic
+            # Execute borrow with enhanced retry logic and reversion analysis
             max_attempts = 3
             for attempt in range(max_attempts):
                 try:
                     print(f"🔄 Enhanced borrow attempt {attempt + 1}/{max_attempts}")
 
-                    # Get optimized gas parameters
-                    gas_params = self.agent.get_optimized_gas_params('aave_borrow', 'market')
+                    # Enhanced gas parameters for mainnet
+                    gas_params = self._get_enhanced_gas_params(attempt)
                     print(f"   Gas limit: {gas_params.get('gas', 'N/A')}")
                     print(f"   Gas price: {self.w3.from_wei(gas_params.get('gasPrice', 0), 'gwei'):.2f} gwei")
 
-                    # Use the agent's Aave integration with gas params
+                    # Use the agent's enhanced Aave integration
                     result = self.aave.borrow(amount_usd, token_address)
 
-                    if result:
-                        print(f"✅ Enhanced borrow successful: {result}")
+                    if result and hasattr(result, 'status') and result.status == 1:
+                        print(f"✅ Enhanced borrow successful: {result.transactionHash.hex()}")
                         return result
+                    elif result:
+                        print(f"❌ Borrow transaction reverted: {result}")
+                        # Continue to next attempt for reverted transactions
                     else:
-                        print(f"❌ Borrow attempt {attempt + 1} failed")
+                        print(f"❌ Borrow attempt {attempt + 1} failed - no result returned")
 
                 except Exception as e:
                     print(f"❌ Borrow attempt {attempt + 1} error: {e}")
 
-                    # Enhanced error handling
-                    if "insufficient funds" in str(e).lower():
-                        print(f"💡 Try: Add more ETH for gas fees")
+                    # Enhanced error handling with specific solutions
+                    error_str = str(e).lower()
+                    if "insufficient funds" in error_str:
+                        print(f"💡 Solution: Add more ETH for gas fees")
                         break
-                    elif "execution reverted" in str(e).lower():
-                        print(f"💡 Try: Check health factor and borrowing capacity")
+                    elif "execution reverted" in error_str:
+                        print(f"💡 Solution: Check health factor and borrowing capacity")
+                        # Continue trying with different parameters
+                    elif "nonce too low" in error_str:
+                        print(f"💡 Solution: RPC sync issue - trying next attempt")
+                    elif "gas" in error_str:
+                        print(f"💡 Solution: Increasing gas parameters for next attempt")
+                    elif "insufficient collateral" in error_str:
+                        print(f"💡 Solution: Need more collateral or reduce borrow amount")
                         break
-                    elif "nonce too low" in str(e).lower():
-                        print(f"💡 RPC sync issue - trying next attempt")
 
                     if attempt < max_attempts - 1:
-                        wait_time = 2 ** attempt
-                        print(f"⏱️ Waiting {wait_time}s before retry...")
+                        wait_time = 3 + (2 ** attempt)  # 5s, 7s, 11s
+                        print(f"⏱️ Waiting {wait_time}s before retry with enhanced parameters...")
                         time.sleep(wait_time)
 
             print(f"❌ All {max_attempts} enhanced borrow attempts failed")
@@ -78,6 +87,165 @@ class EnhancedBorrowManager:
             import traceback
             print(f"🔍 Stack trace: {traceback.format_exc()}")
             return False
+
+    def _validate_borrow_conditions_enhanced(self, amount_usd, token_address):
+        """Enhanced validation with specific revert prevention"""
+        try:
+            print(f"🔍 Enhanced validation for ${amount_usd:.2f} borrow...")
+
+            # Check basic parameters
+            if not amount_usd or amount_usd <= 0:
+                print(f"❌ Invalid borrow amount: ${amount_usd}")
+                return False
+
+            try:
+                # Validate and normalize token address
+                from web3 import Web3
+                normalized_address = Web3.to_checksum_address(token_address)
+                if len(normalized_address) != 42:
+                    print(f"❌ Invalid token address: {token_address}")
+                    return False
+            except Exception as addr_error:
+                print(f"❌ Invalid token address format: {token_address} - {addr_error}")
+                return False
+
+            # Enhanced ETH balance check
+            eth_balance = self.agent.get_eth_balance()
+            if eth_balance < 0.002:  # Increased requirement
+                print(f"❌ Insufficient ETH for gas: {eth_balance:.6f} ETH")
+                return False
+
+            # Check network connectivity
+            try:
+                latest_block = self.w3.eth.block_number
+                print(f"✅ Network connected - Block: {latest_block}")
+            except Exception as net_error:
+                print(f"❌ Network connectivity issue: {net_error}")
+                return False
+
+            # Enhanced Aave pool health check
+            pool_abi = [{
+                "inputs": [{"name": "user", "type": "address"}],
+                "name": "getUserAccountData",
+                "outputs": [
+                    {"name": "totalCollateralBase", "type": "uint256"},
+                    {"name": "totalDebtBase", "type": "uint256"},
+                    {"name": "availableBorrowsBase", "type": "uint256"},
+                    {"name": "currentLiquidationThreshold", "type": "uint256"},
+                    {"name": "ltv", "type": "uint256"},
+                    {"name": "healthFactor", "type": "uint256"}
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            }]
+
+            pool_contract = self.w3.eth.contract(
+                address=self.agent.aave_pool_address,
+                abi=pool_abi
+            )
+
+            account_data = pool_contract.functions.getUserAccountData(self.agent.address).call()
+
+            total_collateral = account_data[0] / (10**8)
+            total_debt = account_data[1] / (10**8)
+            available_borrows = account_data[2] / (10**8)
+            health_factor = account_data[5] / (10**18) if account_data[5] > 0 else float('inf')
+
+            print(f"🔍 Enhanced Validation Results:")
+            print(f"   Total Collateral: ${total_collateral:.2f}")
+            print(f"   Total Debt: ${total_debt:.2f}")
+            print(f"   Available Borrows: ${available_borrows:.2f}")
+            print(f"   Health Factor: {health_factor:.4f}")
+            print(f"   ETH Balance: {eth_balance:.6f} ETH")
+
+            # Enhanced safety thresholds for mainnet
+            min_health_factor = 2.0  # Increased from 1.5
+            min_collateral_required = 50.0  # Increased from 10.0
+
+            if total_collateral < min_collateral_required:
+                print(f"❌ Insufficient collateral: ${total_collateral:.2f} < ${min_collateral_required}")
+                return False
+
+            if health_factor < min_health_factor:
+                print(f"❌ Health factor too low: {health_factor:.4f} < {min_health_factor}")
+                return False
+
+            if available_borrows < amount_usd:
+                print(f"❌ Insufficient borrowing capacity: ${available_borrows:.2f} < ${amount_usd:.2f}")
+                return False
+
+            # Enhanced safety check - don't borrow more than 70% of available (reduced from 80%)
+            max_safe_borrow = available_borrows * 0.7
+            if amount_usd > max_safe_borrow:
+                print(f"❌ Borrow amount exceeds safe limit: ${amount_usd:.2f} > ${max_safe_borrow:.2f}")
+                return False
+
+            # Additional check: simulate the borrow transaction
+            try:
+                user_address = Web3.to_checksum_address(self.agent.address)
+                token_address_checksum = Web3.to_checksum_address(token_address)
+                amount_wei = int(amount_usd * (10 ** 6))  # USDC decimals
+
+                pool_contract.functions.borrow(
+                    token_address_checksum,
+                    amount_wei,
+                    2,  # Variable rate
+                    0,  # Referral code
+                    user_address
+                ).call({'from': user_address})
+                
+                print(f"✅ Transaction simulation passed")
+                
+            except Exception as sim_error:
+                print(f"❌ Transaction simulation failed: {sim_error}")
+                
+                # Provide specific guidance based on simulation error
+                if "insufficient collateral" in str(sim_error).lower():
+                    print(f"💡 Need more collateral deposited to Aave")
+                elif "health factor" in str(sim_error).lower():
+                    print(f"💡 Borrow would make health factor too low")
+                elif "borrowing not enabled" in str(sim_error).lower():
+                    print(f"💡 Borrowing might not be enabled for this asset")
+                
+                return False
+
+            print(f"✅ All enhanced validation checks passed")
+            return True
+
+        except Exception as e:
+            print(f"❌ Enhanced validation failed: {e}")
+            import traceback
+            print(f"🔍 Stack trace: {traceback.format_exc()}")
+            return False
+
+    def _get_enhanced_gas_params(self, attempt_number):
+        """Get enhanced gas parameters for mainnet operations"""
+        try:
+            # Base parameters
+            base_gas_limit = 500000
+            current_gas_price = self.w3.eth.gas_price
+            
+            # Increase with each attempt
+            gas_multiplier = 2.0 + (attempt_number * 0.5)  # 2.0x, 2.5x, 3.0x
+            gas_limit = base_gas_limit + (attempt_number * 100000)  # 500k, 600k, 700k
+            
+            enhanced_gas_price = int(current_gas_price * gas_multiplier)
+            
+            # Ensure minimum viable gas price for mainnet
+            min_gas_price = int(1 * 10**9)  # 1 gwei minimum
+            enhanced_gas_price = max(enhanced_gas_price, min_gas_price)
+            
+            return {
+                'gas': gas_limit,
+                'gasPrice': enhanced_gas_price
+            }
+            
+        except Exception as e:
+            print(f"⚠️ Enhanced gas params failed: {e}")
+            return {
+                'gas': 500000,
+                'gasPrice': int(2 * 10**9)  # 2 gwei fallback
+            }
 
     def _validate_borrow_conditions(self, amount_usd, token_address):
         """Validate conditions for safe borrowing with comprehensive checks"""

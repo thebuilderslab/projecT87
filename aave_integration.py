@@ -1576,10 +1576,14 @@ class AaveArbitrumIntegration:
 
     def borrow(self, amount_usd, token_address):
         """
-        Borrow tokens from Aave with enhanced error handling and cooldown management
+        Enhanced borrow with comprehensive validation and reversion analysis
         """
         try:
-            print(f"🏦 Borrowing ${amount_usd:.2f} worth of {token_address}")
+            print(f"🏦 ENHANCED BORROW: ${amount_usd:.2f} worth of {token_address}")
+
+            # Pre-flight validation
+            if not self._comprehensive_pre_borrow_validation(amount_usd, token_address):
+                return None
 
             # Get token decimals
             decimals = self._get_token_decimals(token_address)
@@ -1587,8 +1591,7 @@ class AaveArbitrumIntegration:
                 print(f"❌ Could not determine decimals for token {token_address}")
                 return None
 
-            # Convert USD to token amount (simplified conversion)
-            # In production, you'd want to get current token price
+            # Convert USD to token amount
             if token_address.lower() == self.usdc_address.lower():
                 amount_wei = int(amount_usd * (10 ** decimals))  # 1 USDC = 1 USD
             else:
@@ -1597,126 +1600,261 @@ class AaveArbitrumIntegration:
 
             print(f"🔢 Borrowing {amount_wei} wei ({amount_usd} USD)")
 
-            # Get optimized gas parameters
-            gas_params = self.get_optimized_gas_params('aave_borrow')
-
-            # Build transaction
-            user_address = self.w3.to_checksum_address(self.address)
-            nonce = self.w3.eth.get_transaction_count(user_address, 'pending')
-
-            # Convert amount to proper integer before transaction
-            amount_wei_final = int(amount_wei)
-
-            # Robust transaction execution with dynamic gas pricing
-            max_retries = 3
-            for attempt in range(max_retries):
-                try:
-                    print(f"🔄 Borrow attempt {attempt + 1}/{max_retries}")
-
-                    # Get fresh nonce and gas data for each attempt
-                    current_nonce = self.w3.eth.get_transaction_count(user_address, 'pending')
-                    current_base_fee = self.w3.eth.get_block('latest')['baseFeePerGas']
-
-                    # Increase gas price with each attempt
-                    gas_multiplier = 1.2 + (attempt * 0.2)  # 1.2x, 1.4x, 1.6x
-                    dynamic_gas_price = max(
-                        int(self.w3.eth.gas_price * gas_multiplier),
-                        int(current_base_fee * (1.5 + attempt * 0.3))
-                    )
-
-                    print(f"🔧 Attempt {attempt + 1}: nonce={current_nonce}, gas_price={dynamic_gas_price}")
-
-                    transaction = self.pool_contract.functions.borrow(
-                        self.w3.to_checksum_address(token_address),  # asset
-                        amount_wei_final,   # amount
-                        2, # interestRateMode (1 = stable, 2 = variable)
-                        0,                 # referralCode
-                        user_address       # onBehalfOf
-                    ).build_transaction({
-                        'chainId': self.w3.eth.chain_id,
-                        'gas': 180000,
-                        'gasPrice': dynamic_gas_price,
-                        'nonce': current_nonce,
-                        'from': user_address
-                    })
-
-                    # Sign and send
-                    signed_txn = self.w3.eth.account.sign_transaction(transaction, self.account.key)
-                    tx_hash = self.w3.eth.send_raw_transaction(signed_txn.rawTransaction)
-
-                    print(f"✅ Borrow successful: {tx_hash.hex()}")
-
-                    # Wait for confirmation
-                    receipt = self.w3.eth.wait_for_transaction_receipt(tx_hash, timeout=120)
-                    if receipt.status == 1:
-                        print(f"✅ Borrow confirmed: {tx_hash.hex()}")
-                        return receipt
-                    else:
-                        print(f"❌ Borrow reverted: {tx_hash.hex()}")
-                        continue
-
-                except Exception as retry_e:
-                    error_msg = str(retry_e).lower()
-                    print(f"❌ Borrow attempt {attempt + 1} failed: {retry_e}")
-
-                    if "base fee" in error_msg and attempt < max_retries - 1:
-                        print(f"🔄 Gas fee issue, retrying with higher gas...")
-                        import time
-                        time.sleep(2)
-                        continue
-                    elif "nonce too low" in error_msg and attempt < max_retries - 1:
-                        print(f"🔄 Nonce conflict, retrying...")
-                        import time
-                        time.sleep(1)
-                        continue
-                    else:
-                        if attempt == max_retries - 1:
-                            print(f"❌ All borrow attempts failed")
-                            # Log failure for analysis
-                            import json
-                            import time
-                            failure_data = {
-                                "timestamp": time.time(),
-                                "error": str(retry_e),
-                                "error_type": type(retry_e).__name__,
-                                "attempts": max_retries,
-                                "rpc_used": self.w3.provider.endpoint_uri if hasattr(self.w3.provider, 'endpoint_uri') else "unknown",
-                                "gas_params": {
-                                    "gas": 180000,
-                                    "gasPrice": dynamic_gas_price
-                                }
-                            }
-
-                            # Save failure log
-                            timestamp = time.strftime("%Y%m%d_%H%M%S")
-                            with open(f"borrow_failure_analysis.json", "w") as f:
-                                json.dump(failure_data, f, indent=2)
-
-                            return None
-                        continue
+            # Enhanced transaction execution with reversion analysis
+            return self._execute_borrow_with_reversion_analysis(
+                token_address, amount_wei, amount_usd
+            )
 
         except Exception as e:
-            print(f"❌ Borrow failed: {e}")
-            # Log detailed error for analysis
-            error_details = {
-                'error': str(e),
-                'error_type': type(e).__name__,
-                'amount_usd': amount_usd,
-                'token_address': token_address,
-                'timestamp': time.time()
-            }
-
-            # Save error to file for analysis
-            import json
-            error_filename = f"borrow_failure_{time.strftime('%Y%m%d_%H%M%S')}.json"
-            try:
-                with open(error_filename, 'w') as f:
-                    json.dump(error_details, f, indent=2)
-                print(f"📝 Error details saved to {error_filename}")
-            except:
-                pass
-
+            print(f"❌ Enhanced borrow failed: {e}")
+            self._log_borrow_failure(e, amount_usd, token_address)
             return None
+
+    def _comprehensive_pre_borrow_validation(self, amount_usd, token_address):
+        """Comprehensive validation before attempting borrow"""
+        try:
+            print(f"🔍 COMPREHENSIVE PRE-BORROW VALIDATION")
+            
+            # 1. Check current position
+            user_data = self.pool_contract.functions.getUserAccountData(self.address).call()
+            available_borrows = user_data[2] / 1e8
+            health_factor = user_data[5] / 1e18 if user_data[5] > 0 else float('inf')
+            
+            print(f"   Available borrows: ${available_borrows:.2f}")
+            print(f"   Health factor: {health_factor:.4f}")
+            
+            if health_factor < 1.5:
+                print(f"❌ Health factor too low: {health_factor:.4f} < 1.5")
+                return False
+                
+            if available_borrows < amount_usd:
+                print(f"❌ Insufficient borrowing capacity: ${available_borrows:.2f} < ${amount_usd:.2f}")
+                return False
+            
+            # 2. Check ETH balance for gas
+            eth_balance = self.w3.eth.get_balance(self.address)
+            eth_balance_eth = self.w3.from_wei(eth_balance, 'ether')
+            
+            if eth_balance_eth < 0.001:
+                print(f"❌ Insufficient ETH for gas: {eth_balance_eth:.6f} ETH")
+                return False
+            
+            # 3. Test contract call simulation
+            try:
+                user_address = self.w3.to_checksum_address(self.address)
+                token_address_checksum = self.w3.to_checksum_address(token_address)
+                amount_wei = int(amount_usd * (10 ** 6))  # USDC decimals
+                
+                # Simulate the transaction
+                self.pool_contract.functions.borrow(
+                    token_address_checksum,
+                    amount_wei,
+                    2,  # Variable rate
+                    0,  # Referral code
+                    user_address
+                ).call({'from': user_address})
+                
+                print(f"✅ Transaction simulation successful")
+                return True
+                
+            except Exception as sim_error:
+                print(f"❌ Transaction simulation failed: {sim_error}")
+                
+                # Analyze simulation failure
+                if "insufficient collateral" in str(sim_error).lower():
+                    print(f"💡 Issue: Insufficient collateral for this borrow amount")
+                elif "borrowing not enabled" in str(sim_error).lower():
+                    print(f"💡 Issue: Borrowing not enabled for this asset")
+                elif "health factor" in str(sim_error).lower():
+                    print(f"💡 Issue: Health factor would be too low after borrow")
+                else:
+                    print(f"💡 Issue: Unknown simulation failure - {sim_error}")
+                
+                return False
+                
+        except Exception as e:
+            print(f"❌ Pre-borrow validation failed: {e}")
+            return False
+
+    def _execute_borrow_with_reversion_analysis(self, token_address, amount_wei, amount_usd):
+        """Execute borrow with enhanced reversion analysis"""
+        user_address = self.w3.to_checksum_address(self.address)
+        token_address = self.w3.to_checksum_address(token_address)
+        
+        max_retries = 3
+        for attempt in range(max_retries):
+            try:
+                print(f"🔄 Enhanced borrow attempt {attempt + 1}/{max_retries}")
+
+                # Get fresh network data
+                current_nonce = self.w3.eth.get_transaction_count(user_address, 'pending')
+                current_block = self.w3.eth.get_block('latest')
+                current_gas_price = self.w3.eth.gas_price
+                
+                # Enhanced gas calculation
+                base_fee = current_block.get('baseFeePerGas', current_gas_price)
+                
+                # Significantly higher gas price for mainnet
+                gas_multiplier = 2.0 + (attempt * 0.5)  # 2.0x, 2.5x, 3.0x
+                enhanced_gas_price = int(max(
+                    current_gas_price * gas_multiplier,
+                    base_fee * (2.0 + attempt * 0.5)
+                ))
+                
+                # Higher gas limit for complex operations
+                gas_limit = 500000 + (attempt * 100000)  # 500k, 600k, 700k
+                
+                print(f"🔧 Enhanced attempt {attempt + 1}:")
+                print(f"   Nonce: {current_nonce}")
+                print(f"   Gas limit: {gas_limit:,}")
+                print(f"   Gas price: {enhanced_gas_price:,} wei ({self.w3.from_wei(enhanced_gas_price, 'gwei'):.2f} gwei)")
+
+                # Build transaction with enhanced parameters
+                transaction = self.pool_contract.functions.borrow(
+                    token_address,     # asset (checksummed)
+                    int(amount_wei),   # amount (ensure integer)
+                    2,                 # interestRateMode (variable)
+                    0,                 # referralCode
+                    user_address       # onBehalfOf (checksummed)
+                ).build_transaction({
+                    'chainId': self.w3.eth.chain_id,
+                    'gas': gas_limit,
+                    'gasPrice': enhanced_gas_price,
+                    'nonce': current_nonce,
+                    'from': user_address
+                })
+
+                # Sign and send
+                signed_txn = self.w3.eth.account.sign_transaction(transaction, self.account.key)
+                tx_hash = self.w3.eth.send_raw_transaction(signed_txn.rawTransaction)
+
+                tx_hash_hex = tx_hash.hex()
+                print(f"✅ Transaction submitted: {tx_hash_hex}")
+
+                # Wait for confirmation with longer timeout
+                try:
+                    receipt = self.w3.eth.wait_for_transaction_receipt(tx_hash, timeout=180)
+                    
+                    if receipt.status == 1:
+                        print(f"🎉 BORROW SUCCESS: {tx_hash_hex}")
+                        print(f"   Gas used: {receipt.gasUsed:,}")
+                        print(f"   Block: {receipt.blockNumber}")
+                        return receipt
+                    else:
+                        print(f"❌ BORROW REVERTED: {tx_hash_hex}")
+                        
+                        # Enhanced reversion analysis
+                        self._analyze_transaction_reversion(tx_hash_hex, receipt, attempt + 1)
+                        
+                        if attempt < max_retries - 1:
+                            print(f"🔄 Retrying with different parameters...")
+                            import time
+                            time.sleep(5)  # Wait before retry
+                            continue
+                        else:
+                            return None
+                            
+                except Exception as receipt_error:
+                    print(f"❌ Receipt error: {receipt_error}")
+                    if attempt < max_retries - 1:
+                        continue
+                    return None
+
+            except Exception as attempt_error:
+                print(f"❌ Attempt {attempt + 1} failed: {attempt_error}")
+                
+                if "nonce too low" in str(attempt_error).lower() and attempt < max_retries - 1:
+                    print(f"🔄 Nonce issue, retrying...")
+                    import time
+                    time.sleep(2)
+                    continue
+                elif "insufficient funds" in str(attempt_error).lower():
+                    print(f"❌ Insufficient ETH for gas fees")
+                    return None
+                elif attempt == max_retries - 1:
+                    print(f"❌ All enhanced attempts failed")
+                    return None
+        
+        return None
+
+    def _analyze_transaction_reversion(self, tx_hash, receipt, attempt_num):
+        """Analyze why transaction reverted"""
+        try:
+            print(f"🔍 REVERSION ANALYSIS for attempt {attempt_num}:")
+            print(f"   Transaction: {tx_hash}")
+            print(f"   Block: {receipt.blockNumber}")
+            print(f"   Gas used: {receipt.gasUsed:,}")
+            print(f"   Gas limit: {receipt.get('gasLimit', 'Unknown')}")
+            
+            # Try to get revert reason
+            try:
+                tx_data = self.w3.eth.get_transaction(tx_hash)
+                
+                # Replay transaction to get revert reason
+                try:
+                    self.w3.eth.call({
+                        'to': tx_data['to'],
+                        'data': tx_data['input'],
+                        'from': tx_data['from'],
+                        'value': tx_data.get('value', 0),
+                        'gas': tx_data['gas']
+                    }, tx_data['blockNumber'])
+                except Exception as call_error:
+                    revert_reason = str(call_error)
+                    print(f"🎯 REVERT REASON: {revert_reason}")
+                    
+                    # Specific revert analysis
+                    if "insufficient collateral" in revert_reason.lower():
+                        print(f"💡 SOLUTION: Need more collateral or reduce borrow amount")
+                    elif "health factor" in revert_reason.lower():
+                        print(f"💡 SOLUTION: Health factor would be too low - reduce borrow")
+                    elif "borrowing not enabled" in revert_reason.lower():
+                        print(f"💡 SOLUTION: Check if borrowing is enabled for this asset")
+                    elif "market not active" in revert_reason.lower():
+                        print(f"💡 SOLUTION: Market might be paused or inactive")
+                    else:
+                        print(f"💡 SOLUTION: Unknown revert - check Aave protocol status")
+                        
+            except Exception as analysis_error:
+                print(f"⚠️ Could not analyze revert reason: {analysis_error}")
+                
+        except Exception as e:
+            print(f"⚠️ Reversion analysis failed: {e}")
+
+    def _log_borrow_failure(self, error, amount_usd, token_address):
+        """Enhanced failure logging"""
+        try:
+            import json
+            import time
+            
+            failure_data = {
+                "timestamp": time.time(),
+                "amount_usd": amount_usd,
+                "token_address": token_address,
+                "error": str(error),
+                "error_type": type(error).__name__,
+                "network": {
+                    "chain_id": self.w3.eth.chain_id,
+                    "latest_block": self.w3.eth.block_number,
+                    "gas_price": self.w3.eth.gas_price
+                },
+                "account": {
+                    "address": self.address,
+                    "eth_balance": self.w3.eth.get_balance(self.address),
+                    "nonce": self.w3.eth.get_transaction_count(self.address)
+                }
+            }
+            
+            timestamp = time.strftime("%Y%m%d_%H%M%S")
+            filename = f"enhanced_borrow_failure_{timestamp}.json"
+            
+            with open(filename, "w") as f:
+                json.dump(failure_data, f, indent=2)
+                
+            print(f"📝 Enhanced failure log saved: {filename}")
+            
+        except Exception as log_error:
+            print(f"⚠️ Could not save failure log: {log_error}")
 
     def _get_token_decimals(self, token_address):
         """Get token decimals from contract or fallback mapping"""
