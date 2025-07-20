@@ -1,0 +1,403 @@
+🎯 Autonomous Run 1, Iteration 19
+
+🔍 AGENT WALLET & AAVE DIAGNOSTIC:
+   Agent Wallet Address: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+   Network: mainnet (Chain ID: 42161)
+   RPC Endpoint: https://arbitrum-one.public.blastapi.io
+   Aave Pool Address: 0x794a61358D6845594F94dc1DB02A252b5b4814aD
+🔍 USING FRESH AAVE CONTRACT DATA (RELIABLE SOURCE):
+   📊 Getting fresh data from Aave Pool: 0x794a61358D6845594F94dc1DB02A252b5b4814aD
+   ✅ FRESH AAVE CONTRACT DATA:
+      Total Collateral USD: $184.93
+      Total Debt USD: $35.08
+      Available Borrows USD: $100.88
+      Health Factor: 4.1358
+      Data Source: LIVE_AAVE_CONTRACT
+   🔍 CHECKING INDIVIDUAL AAVE ASSET BALANCES:
+      aWBTC: Balance check failed - Could not transact with/call contract function, is contract deployed correctly and chain synced?
+      aWETH: Balance check failed - Could not transact with/call contract function, is contract deployed correctly and chain synced?
+      aUSDC: 0.00000000
+📊 Current Health Factor: 4.1358
+✅ Real ARB price fetched: $0.4946
+💰 ARB Price: $0.4946
+🌐 Network Congestion Analysis:
+   Base Fee: 0.02 gwei
+   Current Gas: 0.02 gwei
+   Congestion Ratio: 1.00x
+🌐 Network Connected: Block 359731923, Gas Price: 0.02419 Gwei
+🔗 RPC Endpoint: https://arbitrum-one.public.blastapi.io
+⛓️ Chain ID: 42161 (Expected: 42161)
+✅ Aave Pool accessible: Revision 8
+
+🔍 DIAGNOSTIC: Checking Wallet Balances...
+    DIAGNOSTIC - Wallet ETH Balance (raw): 0.0039014916 ETH
+    DIAGNOSTIC - Using Aave position data instead of individual token balances
+    DIAGNOSTIC - Wallet USDC Balance (via direct contract): 0.000000 USDC
+🔍 DIAGNOSTIC: Wallet Balance Check Complete.
+🔍 WALLET READINESS CHECK:
+   ETH Balance: 0.003901 ETH
+   Aave Position: $184.93 collateral
+✅ Wallet ready for DeFi operations!
+   Sufficient ETH for gas: 0.003901 ETH
+   Active Aave position: $184.93
+🔍 MONITORING: Health factor 4.1358
+🔍 DEBUG - RAW HEALTH DATA FROM DIRECT AAVE:
+   Raw collateral_usd from Aave contract: $184.93081543
+   Raw debt_usd from Aave contract: $35.07895634
+   Raw health_factor from Aave contract: 4.13576229
+🔍 ENHANCED COLLATERAL CALCULATION:
+   Using successful Aave contract data: $184.93
+   WBTC supplied: 0.00000000
+   WETH supplied: 0.00000000
+   USDC supplied: 0.00000000
+   Enhanced calculation:
+   BTC price: $118,659.12
+   ETH price: $3,772.51
+   USDC price: $0.9997
+   Enhanced collateral USD: $0.00
+🔍 DEBUG: Enhanced collateral calculation still shows low value
+✅ Using direct Aave contract data as primary source
+🔍 DEBUG - BASELINE TRACKING:
+   self.last_collateral_value_usd (baseline): $184.91
+   current_collateral_value_usd (now): $184.93
+   self.baseline_initialized: True
+🔍 DEBUG - TRIGGER CHECK:
+   current_collateral_value_usd: $184.93
+   baseline (last_collateral): $184.91
+   collateral_growth: $0.02
+   main_trigger_threshold: $12.00
+   trigger condition met: False
+⚠️ Real data fetch failed, using forced dashboard values: Unknown format '0xFF970A61A04b1cA14834A651bAb06d67307796618', attempted to normalize to '0xff970a61a04b1ca14834a651bab06d67307796618'
+✅ Using verified contract addresses (skipping normalization)
+🔍 ENHANCED POSITION DETECTION:
+   🔄 FRESH AAVE CONTRACT DATA:
+      Fresh Collateral: $184.93
+      Fresh Debt: $35.08
+      Fresh Health Factor: 4.1358
+   ✅ USING FRESH DATA AS PRIMARY SOURCE: $184.93
+   📊 UPDATED VALUES:
+      Current Collateral: $184.93
+      Current Health Factor: 4.1358
+      Current Debt: $35.08
+🔍 DEBUG - BASELINE INITIALIZATION CHECK:
+   self.baseline_initialized: True
+   current_collateral_value_usd (ENHANCED): $184.93
+   current baseline: $184.91
+🔧 Manual override detected: trigger_test.flag exists
+🚀 MANUAL OVERRIDE DETECTED: Bypassing growth requirement
+
+            🎯 AUTONOMOUS TRIGGER CHECK:
+               Current Collateral: $184.93
+               Baseline: $184.91
+               Target for Trigger: $196.91
+               Actual Growth: $0.02
+               Growth Needed: $12.00
+               Manual Override: True
+               ✅ TRIGGER READY: True
+🚀 Executing autonomous sequence (cooldown clear)
+🚀 TRIGGER ACTIVATED: Collateral grew by $0.02 (≥ $12 threshold)
+⚡ EXECUTING AUTONOMOUS SEQUENCE...
+📝 Sequence: Borrow USDC → Swap →WBTC, WETH, DAI → Supply to Aave
+🔍 Validating integrations...
+🔍 Enhanced dashboard data fetching with validation...
+🤖 Initializing Arbitrum Testnet Agent...
+DEBUG: WALLET_PRIVATE_KEY loaded from environment: [REDACTED]
+🔍 DEBUG: Starting RPC manager initialization...
+🔍 DEBUG: Network mode: mainnet
+DEBUG: ALCHEMY_RPC_URL loaded from environment: https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-bM9XgIIU
+🔍 DEBUG: ALCHEMY_RPC_URL from env: https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-bM9XgIIU
+🔗 DEBUG: Added Alchemy RPC to endpoints list: https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-...
+🔍 DEBUG: Total RPC endpoints to test: 5
+   1. https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-bM9XgIIU...
+   2. https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f93...
+   3. https://arb1.arbitrum.io/rpc...
+   4. https://arbitrum-one.public.blastapi.io...
+   5. https://arbitrum-one.publicnode.com...
+🔍 Testing RPC: https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-bM9XgIIU
+✅ RPC passed tests: https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-bM9XgIIU (0.20s)
+🔍 Testing RPC: https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f938ff891c141
+✅ RPC passed tests: https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f938ff891c141 (0.30s)
+🔍 Testing RPC: https://arb1.arbitrum.io/rpc
+✅ RPC passed tests: https://arb1.arbitrum.io/rpc (0.37s)
+🔍 Testing RPC: https://arbitrum-one.public.blastapi.io
+✅ RPC passed tests: https://arbitrum-one.public.blastapi.io (0.11s)
+🔍 Testing RPC: https://arbitrum-one.publicnode.com
+✅ RPC passed tests: https://arbitrum-one.publicnode.com (0.81s)
+📊 RPC Test Results: 5/5 endpoints working
+🌐 Operating on Arbitrum Mainnet
+🔍 DEBUG: Final RPC selection results:
+   Primary RPC: https://arbitrum-one.public.blastapi.io
+   Fallback RPCs: 4 available
+🚨 NETWORK_MODE from environment: 'mainnet'
+🔗 Primary RPC: https://arbitrum-one.public.blastapi.io
+🔄 Fallback RPCs: 4 available
+🔍 DEBUG: Attempting to create Web3 connection with primary RPC: https://arbitrum-one.public.blastapi.io
+✅ Successfully connected to primary RPC: https://arbitrum-one.public.blastapi.io
+🔍 DEBUG: Web3 connection verified - Chain ID: 42161, Latest Block: 359731933
+🔑 Wallet Address: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+💰 AGENT INITIALIZED WITH WALLET: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+✅ Private key format validated and normalized
+📋 Mainnet Token addresses verified:
+   USDC: 0xAF88D065e8c38FAD0AEff3E253e648A15ceE23DC
+   WBTC: 0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f
+   WETH: 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1
+   DAI: 0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1
+   Aave Pool: 0x794a61358D6845594F94dc1DB02A252b5b4814aD
+💰 Initialized last_collateral_value_usd to 0.0 (will sync with actual position)
+📊 Initialized last_collateral_value_usd to: 0.0
+🔍 Fetching unified Aave data...
+✅ Unified Aave data retrieved successfully:
+   Collateral: $184.93
+   Debt: $35.08
+   Health Factor: 4.1358
+📊 Using LIVE AAVE CONTRACT data: HF 4.1358
+🤖 Initializing Arbitrum Testnet Agent...
+DEBUG: WALLET_PRIVATE_KEY loaded from environment: [REDACTED]
+🔍 DEBUG: Starting RPC manager initialization...
+🔍 DEBUG: Network mode: mainnet
+DEBUG: ALCHEMY_RPC_URL loaded from environment: https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-bM9XgIIU
+🔍 DEBUG: ALCHEMY_RPC_URL from env: https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-bM9XgIIU
+🔗 DEBUG: Added Alchemy RPC to endpoints list: https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-...
+🔍 DEBUG: Total RPC endpoints to test: 5
+   1. https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-bM9XgIIU...
+   2. https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f93...
+   3. https://arb1.arbitrum.io/rpc...
+   4. https://arbitrum-one.public.blastapi.io...
+   5. https://arbitrum-one.publicnode.com...
+🔍 Testing RPC: https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-bM9XgIIU
+✅ RPC passed tests: https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-bM9XgIIU (0.22s)
+🔍 Testing RPC: https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f938ff891c141
+✅ RPC passed tests: https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f938ff891c141 (0.29s)
+🔍 Testing RPC: https://arb1.arbitrum.io/rpc
+✅ RPC passed tests: https://arb1.arbitrum.io/rpc (0.35s)
+🔍 Testing RPC: https://arbitrum-one.public.blastapi.io
+✅ RPC passed tests: https://arbitrum-one.public.blastapi.io (0.11s)
+🔍 Testing RPC: https://arbitrum-one.publicnode.com
+✅ RPC passed tests: https://arbitrum-one.publicnode.com (0.76s)
+📊 RPC Test Results: 5/5 endpoints working
+🌐 Operating on Arbitrum Mainnet
+🔍 DEBUG: Final RPC selection results:
+   Primary RPC: https://arbitrum-one.public.blastapi.io
+   Fallback RPCs: 4 available
+🚨 NETWORK_MODE from environment: 'mainnet'
+🔗 Primary RPC: https://arbitrum-one.public.blastapi.io
+🔄 Fallback RPCs: 4 available
+🔍 DEBUG: Attempting to create Web3 connection with primary RPC: https://arbitrum-one.public.blastapi.io
+✅ Successfully connected to primary RPC: https://arbitrum-one.public.blastapi.io
+🔍 DEBUG: Web3 connection verified - Chain ID: 42161, Latest Block: 359731939
+🔑 Wallet Address: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+💰 AGENT INITIALIZED WITH WALLET: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+✅ Private key format validated and normalized
+📋 Mainnet Token addresses verified:
+   USDC: 0xAF88D065e8c38FAD0AEff3E253e648A15ceE23DC
+   WBTC: 0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f
+   WETH: 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1
+   DAI: 0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1
+   Aave Pool: 0x794a61358D6845594F94dc1DB02A252b5b4814aD
+💰 Initialized last_collateral_value_usd to 0.0 (will sync with actual position)
+📊 Initialized last_collateral_value_usd to: 0.0
+🔍 Fetching unified Aave data...
+✅ Unified Aave data retrieved successfully:
+   Collateral: $184.93
+   Debt: $35.08
+   Health Factor: 4.1358
+📊 Using LIVE AAVE CONTRACT data: HF 4.1358
+✅ Dashboard method successful with validated data!
+   Health Factor: 4.1358
+   Collateral: $184.93
+   Debt: $35.08
+   Available Borrows: $100.88
+   Data Source: direct_aave_contract
+   Data Quality: ✅ VALIDATED
+   Live ETH price: $3772.51
+✅ All integrations validated successfully
+💰 Available borrowing capacity: $100.88
+🔍 Calculating safe borrow amount:
+   Growth amount: $0.02
+   Available borrows: $100.88
+🔧 Manual override detected: trigger_test.flag exists
+🔧 Manual override detected - using capacity-based calculation
+🔧 Manual override calculation: $10.00 (15% of capacity)
+💰 Calculated safe borrow: $10.00 USDC
+🚀 Executing comprehensive leveraged supply strategy...
+⚙️ Executing Leveraged Supply Strategy with 10.00 USDC...
+🔍 Pre-validation:
+   Health Factor: 4.1358
+   Available Borrows: $100.88
+   Requested Amount: $10.00
+🏦 Attempting to borrow USDC...
+🔍 DEBUG: Attempting to borrow USDC with amount: $10.00
+🔍 DEBUG: Current ETH balance before borrow: 0.003901 ETH
+🏦 Enhanced Borrow Manager: Attempting to borrow $10.00
+🔍 DEBUG: Token address: 0xAF88D065e8c38FAD0AEff3E253e648A15ceE23DC
+🔍 DEBUG: Amount USD: 10.0
+🕐 Network Timing Check:
+   Time since last block: 1.2s
+   Pending transactions: <method-wrapper '__len__' of list object at 0x7f6c515c6880>
+🔍 Enhanced validation for $10.00 borrow...
+✅ Network connected - Block: 359731942
+🔍 Enhanced Validation Results:
+   Total Collateral: $184.93
+   Total Debt: $35.08
+   Available Borrows: $100.88
+   Health Factor: 4.1358
+   ETH Balance: 0.003901 ETH
+⚠️ Aave simulation failed, skipping validation: execution reverted
+💡 Proceeding with actual transaction despite simulation failure
+✅ All enhanced validation checks passed
+🔄 Enhanced borrow attempt 1/3
+🔍 Network Gas Analysis:
+   Current network gas price: 0.0243 gwei
+   🟢 CHEAPEST MODE: Using 0.0550 gwei
+   Gas limit: 500000
+   Gas price: 0.06 gwei
+🏦 ENHANCED BORROW: $10.00 worth of 0xAF88D065e8c38FAD0AEff3E253e648A15ceE23DC
+🔍 COMPREHENSIVE PRE-BORROW VALIDATION
+   Available borrows: $100.88
+   Health factor: 4.1358
+❌ Transaction simulation failed: execution reverted
+💡 Issue: Unknown simulation failure - execution reverted
+❌ Borrow attempt 1 failed - no result returned
+🔄 Enhanced borrow attempt 2/3
+🔍 Network Gas Analysis:
+   Current network gas price: 0.0243 gwei
+   🟡 STANDARD MODE: Using 0.0292 gwei
+   Gas limit: 600000
+   Gas price: 0.03 gwei
+🏦 ENHANCED BORROW: $10.00 worth of 0xAF88D065e8c38FAD0AEff3E253e648A15ceE23DC
+🔍 COMPREHENSIVE PRE-BORROW VALIDATION
+   Available borrows: $100.88
+   Health factor: 4.1358
+❌ Transaction simulation failed: execution reverted
+💡 Issue: Unknown simulation failure - execution reverted
+❌ Borrow attempt 2 failed - no result returned
+🔄 Enhanced borrow attempt 3/3
+🔍 Network Gas Analysis:
+   Current network gas price: 0.0241 gwei
+   🔴 PRIORITY MODE: Using 0.0506 gwei
+   Gas limit: 700000
+   Gas price: 0.05 gwei
+🏦 ENHANCED BORROW: $10.00 worth of 0xAF88D065e8c38FAD0AEff3E253e648A15ceE23DC
+🔍 COMPREHENSIVE PRE-BORROW VALIDATION
+   Available borrows: $100.88
+   Health factor: 4.1358
+❌ Transaction simulation failed: execution reverted
+💡 Issue: Unknown simulation failure - execution reverted
+❌ Borrow attempt 3 failed - no result returned
+❌ All 3 enhanced borrow attempts failed
+❌ Failed to borrow USDC
+❌ Leveraged supply strategy failed
+📊 Performing detailed analysis of borrow failure...
+🔍 Enhanced dashboard data fetching with validation...
+🤖 Initializing Arbitrum Testnet Agent...
+DEBUG: WALLET_PRIVATE_KEY loaded from environment: [REDACTED]
+🔍 DEBUG: Starting RPC manager initialization...
+🔍 DEBUG: Network mode: mainnet
+DEBUG: ALCHEMY_RPC_URL loaded from environment: https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-bM9XgIIU
+🔍 DEBUG: ALCHEMY_RPC_URL from env: https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-bM9XgIIU
+🔗 DEBUG: Added Alchemy RPC to endpoints list: https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-...
+🔍 DEBUG: Total RPC endpoints to test: 5
+   1. https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-bM9XgIIU...
+   2. https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f93...
+   3. https://arb1.arbitrum.io/rpc...
+   4. https://arbitrum-one.public.blastapi.io...
+   5. https://arbitrum-one.publicnode.com...
+🔍 Testing RPC: https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-bM9XgIIU
+✅ RPC passed tests: https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-bM9XgIIU (0.17s)
+🔍 Testing RPC: https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f938ff891c141
+✅ RPC passed tests: https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f938ff891c141 (0.31s)
+🔍 Testing RPC: https://arb1.arbitrum.io/rpc
+✅ RPC passed tests: https://arb1.arbitrum.io/rpc (0.36s)
+🔍 Testing RPC: https://arbitrum-one.public.blastapi.io
+✅ RPC passed tests: https://arbitrum-one.public.blastapi.io (0.10s)
+🔍 Testing RPC: https://arbitrum-one.publicnode.com
+✅ RPC passed tests: https://arbitrum-one.publicnode.com (0.86s)
+📊 RPC Test Results: 5/5 endpoints working
+🌐 Operating on Arbitrum Mainnet
+🔍 DEBUG: Final RPC selection results:
+   Primary RPC: https://arbitrum-one.public.blastapi.io
+   Fallback RPCs: 4 available
+🚨 NETWORK_MODE from environment: 'mainnet'
+🔗 Primary RPC: https://arbitrum-one.public.blastapi.io
+🔄 Fallback RPCs: 4 available
+🔍 DEBUG: Attempting to create Web3 connection with primary RPC: https://arbitrum-one.public.blastapi.io
+✅ Successfully connected to primary RPC: https://arbitrum-one.public.blastapi.io
+🔍 DEBUG: Web3 connection verified - Chain ID: 42161, Latest Block: 359731952
+🔑 Wallet Address: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+💰 AGENT INITIALIZED WITH WALLET: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+✅ Private key format validated and normalized
+📋 Mainnet Token addresses verified:
+   USDC: 0xAF88D065e8c38FAD0AEff3E253e648A15ceE23DC
+   WBTC: 0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f
+   WETH: 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1
+   DAI: 0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1
+   Aave Pool: 0x794a61358D6845594F94dc1DB02A252b5b4814aD
+💰 Initialized last_collateral_value_usd to 0.0 (will sync with actual position)
+📊 Initialized last_collateral_value_usd to: 0.0
+🔍 Fetching unified Aave data...
+✅ Unified Aave data retrieved successfully:
+   Collateral: $184.93
+   Debt: $35.08
+   Health Factor: 4.1358
+📊 Using LIVE AAVE CONTRACT data: HF 4.1358
+🤖 Initializing Arbitrum Testnet Agent...
+DEBUG: WALLET_PRIVATE_KEY loaded from environment: [REDACTED]
+🔍 DEBUG: Starting RPC manager initialization...
+🔍 DEBUG: Network mode: mainnet
+DEBUG: ALCHEMY_RPC_URL loaded from environment: https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-bM9XgIIU
+🔍 DEBUG: ALCHEMY_RPC_URL from env: https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-bM9XgIIU
+🔗 DEBUG: Added Alchemy RPC to endpoints list: https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-...
+🔍 DEBUG: Total RPC endpoints to test: 5
+   1. https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-bM9XgIIU...
+   2. https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f93...
+   3. https://arb1.arbitrum.io/rpc...
+   4. https://arbitrum-one.public.blastapi.io...
+   5. https://arbitrum-one.publicnode.com...
+🔍 Testing RPC: https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-bM9XgIIU
+✅ RPC passed tests: https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-bM9XgIIU (0.19s)
+🔍 Testing RPC: https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f938ff891c141
+✅ RPC passed tests: https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f938ff891c141 (0.30s)
+🔍 Testing RPC: https://arb1.arbitrum.io/rpc
+✅ RPC passed tests: https://arb1.arbitrum.io/rpc (0.36s)
+🔍 Testing RPC: https://arbitrum-one.public.blastapi.io
+✅ RPC passed tests: https://arbitrum-one.public.blastapi.io (0.10s)
+🔍 Testing RPC: https://arbitrum-one.publicnode.com
+✅ RPC passed tests: https://arbitrum-one.publicnode.com (0.68s)
+📊 RPC Test Results: 5/5 endpoints working
+🌐 Operating on Arbitrum Mainnet
+🔍 DEBUG: Final RPC selection results:
+   Primary RPC: https://arbitrum-one.public.blastapi.io
+   Fallback RPCs: 4 available
+🚨 NETWORK_MODE from environment: 'mainnet'
+🔗 Primary RPC: https://arbitrum-one.public.blastapi.io
+🔄 Fallback RPCs: 4 available
+🔍 DEBUG: Attempting to create Web3 connection with primary RPC: https://arbitrum-one.public.blastapi.io
+✅ Successfully connected to primary RPC: https://arbitrum-one.public.blastapi.io
+🔍 DEBUG: Web3 connection verified - Chain ID: 42161, Latest Block: 359731959
+🔑 Wallet Address: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+💰 AGENT INITIALIZED WITH WALLET: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+✅ Private key format validated and normalized
+📋 Mainnet Token addresses verified:
+   USDC: 0xAF88D065e8c38FAD0AEff3E253e648A15ceE23DC
+   WBTC: 0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f
+   WETH: 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1
+   DAI: 0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1
+   Aave Pool: 0x794a61358D6845594F94dc1DB02A252b5b4814aD
+💰 Initialized last_collateral_value_usd to 0.0 (will sync with actual position)
+📊 Initialized last_collateral_value_usd to: 0.0
+🔍 Fetching unified Aave data...
+✅ Unified Aave data retrieved successfully:
+   Collateral: $184.93
+   Debt: $35.08
+   Health Factor: 4.1358
+📊 Using LIVE AAVE CONTRACT data: HF 4.1358
+✅ Dashboard method successful with validated data!
+   Health Factor: 4.1358
+   Collateral: $184.93
+   Debt: $35.08
+   Available Borrows: $100.88
+   Data Source: direct_aave_contract
+   Data Quality: ✅ VALIDATED
+   Live ETH price: $3772.51
+❌ Could not save borrow failure analysis: Object of type Decimal is not JSON serializable
+Logged performance: Run 1, Iteration 19, Metric: 0.3
