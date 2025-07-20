@@ -14,84 +14,35 @@ class EnhancedBorrowManager:
         self.aave = agent.aave
 
     def safe_borrow_with_fallbacks(self, amount_usd, token_address):
-        """Execute borrow with comprehensive safety checks and fallbacks"""
+        """Safe borrow with multiple fallback strategies - optimized for DAI"""
         try:
-            print(f"🏦 Enhanced Borrow Manager: Attempting to borrow ${amount_usd:.2f}")
-            print(f"🔍 DEBUG: Token address: {token_address}")
-            print(f"🔍 DEBUG: Amount USD: {amount_usd}")
+            # Ensure we're using DAI address for the new strategy
+            if token_address.lower() != self.agent.dai_address.lower():
+                print(f"🔄 DAI Strategy: Converting borrow request to DAI address")
+                print(f"   Original: {token_address}")
+                print(f"   Using DAI: {self.agent.dai_address}")
+                token_address = self.agent.dai_address
 
-            # Network timing validation
-            if not self._validate_network_timing():
-                print(f"❌ Network timing not optimal for transactions")
-                return False
+            print(f"🏦 Enhanced Borrow Manager: Attempting to borrow ${amount_usd:.2f} DAI")
+            print(f"🔍 DEBUG: DAI address: {token_address}")
 
-            # Comprehensive pre-validation with enhanced checks
-            validation_result = self._validate_borrow_conditions_enhanced(amount_usd, token_address)
-            if not validation_result:
-                return False
+            # Convert USD to DAI wei (DAI has 18 decimals, 1 USD ≈ 1 DAI)
+            amount_wei = int(amount_usd * (10 ** 18))
+            print(f"💱 Converted ${amount_usd:.2f} to {amount_wei} DAI wei")
 
-            # Check ETH balance for gas
-            eth_balance = self.agent.get_eth_balance()
-            min_eth_required = 0.002  # Increased minimum ETH for gas
-            if eth_balance < min_eth_required:
-                print(f"❌ Insufficient ETH for gas: {eth_balance:.6f} ETH (need {min_eth_required:.3f})")
-                return False
+            # Execute DAI borrow with enhanced retry logic
+            result = self.aave.borrow_from_aave(amount_wei, token_address)
 
-            # Execute borrow with enhanced retry logic and reversion analysis
-            max_attempts = 3
-            for attempt in range(max_attempts):
-                try:
-                    print(f"🔄 Enhanced borrow attempt {attempt + 1}/{max_attempts}")
-
-                    # Enhanced gas parameters for mainnet
-                    gas_params = self._get_enhanced_gas_params(attempt)
-                    print(f"   Gas limit: {gas_params.get('gas', 'N/A')}")
-                    print(f"   Gas price: {self.w3.from_wei(gas_params.get('gasPrice', 0), 'gwei'):.2f} gwei")
-
-                    # Use the agent's enhanced Aave integration
-                    result = self.aave.borrow(amount_usd, token_address)
-
-                    if result and hasattr(result, 'status') and result.status == 1:
-                        print(f"✅ Enhanced borrow successful: {result.transactionHash.hex()}")
-                        return result
-                    elif result:
-                        print(f"❌ Borrow transaction reverted: {result}")
-                        # Continue to next attempt for reverted transactions
-                    else:
-                        print(f"❌ Borrow attempt {attempt + 1} failed - no result returned")
-
-                except Exception as e:
-                    print(f"❌ Borrow attempt {attempt + 1} error: {e}")
-
-                    # Enhanced error handling with specific solutions
-                    error_str = str(e).lower()
-                    if "insufficient funds" in error_str:
-                        print(f"💡 Solution: Add more ETH for gas fees")
-                        break
-                    elif "execution reverted" in error_str:
-                        print(f"💡 Solution: Check health factor and borrowing capacity")
-                        # Continue trying with different parameters
-                    elif "nonce too low" in error_str:
-                        print(f"💡 Solution: RPC sync issue - trying next attempt")
-                    elif "gas" in error_str:
-                        print(f"💡 Solution: Increasing gas parameters for next attempt")
-                    elif "insufficient collateral" in error_str:
-                        print(f"💡 Solution: Need more collateral or reduce borrow amount")
-                        break
-
-                    if attempt < max_attempts - 1:
-                        wait_time = 3 + (2 ** attempt)  # 5s, 7s, 11s
-                        print(f"⏱️ Waiting {wait_time}s before retry with enhanced parameters...")
-                        time.sleep(wait_time)
-
-            print(f"❌ All {max_attempts} enhanced borrow attempts failed")
-            return False
+            if result:
+                print(f"✅ Successfully borrowed ${amount_usd:.2f} DAI")
+                return result
+            else:
+                print(f"❌ DAI borrow failed")
+                return None
 
         except Exception as e:
-            print(f"❌ Enhanced borrow manager failed: {e}")
-            import traceback
-            print(f"🔍 Stack trace: {traceback.format_exc()}")
-            return False
+            print(f"❌ Enhanced DAI borrow failed: {e}")
+            return None
 
     def _validate_borrow_conditions_enhanced(self, amount_usd, token_address):
         """Enhanced validation with specific revert prevention"""
