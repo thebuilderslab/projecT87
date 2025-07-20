@@ -674,9 +674,7 @@ class ArbitrumTestnetAgent:
 
     def execute_leveraged_supply_strategy(self, usdc_borrow_amount):
         """Execute leveraged supply strategy: borrow →swap → supply"""
-        print(f"⚙️ Executing Leveraged Supply Strategy with {usdc_borrow_The model removes a stray markdown code block delimiter.
-```python
-_amount:.2f} USDC...")
+        print(f"⚙️ Executing Leveraged Supply Strategy with {usdc_borrow_amount:.2f} USDC...")
 
         # Pre-validation: Ensure borrow amount is safe
         try:
@@ -2032,7 +2030,6 @@ _amount:.2f} USDC...")
                         print(f"✅ DAI swap successful")
                     else:
                         print(f"❌ DAI swap failed")
-```python
                 except Exception as e:
                     print(f"❌ DAI swap error: {e}")
                     swap_results.append(False)
