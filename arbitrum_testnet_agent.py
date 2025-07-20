@@ -1328,9 +1328,19 @@ class ArbitrumTestnetAgent:
                 if self.coinmarketcap_api_key:
                     # This try: should be properly indented, let's assume it's line 1328
                     try:
+                        import requests
                         # This url = "..." line should be further indented, now on line 1330
                         url = "https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest"
-                        # ... other lines of code that belong in the try block ...
+                        headers = {'X-CMC_PRO_API_KEY': self.coinmarketcap_api_key}
+                        params = {'symbol': 'BTC,ETH,USDC', 'convert': 'USD'}
+
+                        response = requests.get(url, headers=headers, params=params, timeout=10)
+                        if response.status_code == 200:
+                            data = response.json()
+                            return data
+                        else:
+                            print(f"CoinMarketCap API error: {response.status_code}")
+                            return None
 
                     # Add an except block (or finally) with correct indentation
                     except Exception as e: # You can use a more specific Exception type if known
@@ -1338,13 +1348,6 @@ class ArbitrumTestnetAgent:
                         # Add appropriate error handling or logging here
                         # For example, return None or raise the exception
                         return None # Or some other fallback/error value
-
-                    # You could also add a finally block if needed for cleanup:
-                    # finally:
-                    #     print("Finished CoinMarketCap API attempt.")
-                    try:
-                        import requests
-                    url = "https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest"
                     headers = {'X-CMC_PRO_API_KEY': self.coinmarketcap_api_key}
                     params = {'symbol': 'BTC,ETH,USDC', 'convert': 'USD'}
 
