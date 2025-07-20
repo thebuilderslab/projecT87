@@ -1,0 +1,47 @@
+ Autonomous Run 1, Iteration 30
+
+🔍 AGENT WALLET & AAVE DIAGNOSTIC:
+   Agent Wallet Address: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+   Network: mainnet (Chain ID: 42161)
+   RPC Endpoint: https://arbitrum-one.public.blastapi.io
+   Aave Pool Address: 0x794a61358D6845594F94dc1DB02A252b5b4814aD
+🔍 USING FRESH AAVE CONTRACT DATA (RELIABLE SOURCE):
+   📊 Getting fresh data from Aave Pool: 0x794a61358D6845594F94dc1DB02A252b5b4814aD
+   ✅ FRESH AAVE CONTRACT DATA:
+      Total Collateral USD: $185.20
+      Total Debt USD: $35.08
+      Available Borrows USD: $101.10
+      Health Factor: 4.1417
+      Data Source: LIVE_AAVE_CONTRACT
+   🔍 CHECKING INDIVIDUAL AAVE ASSET BALANCES:
+      aWBTC: Balance check failed - Could not transact with/call contract function, is contract deployed correctly and chain synced?
+      aWETH: Balance check failed - Could not transact with/call contract function, is contract deployed correctly and chain synced?
+      aUSDC: 0.00000000
+📊 Current Health Factor: 4.1417
+❌ CRITICAL: Failed to fetch real ARB price: CoinMarketCap API error: 429
+Could not fetch ARB price
+Logged performance: Run 1, Iteration 30, Metric: 0.1
+
+🎯 Autonomous Run 1, Iteration 31
+
+🔍 AGENT WALLET & AAVE DIAGNOSTIC:
+   Agent Wallet Address: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+   Network: mainnet (Chain ID: 42161)
+   RPC Endpoint: https://arbitrum-one.public.blastapi.io
+   Aave Pool Address: 0x794a61358D6845594F94dc1DB02A252b5b4814aD
+🔍 USING FRESH AAVE CONTRACT DATA (RELIABLE SOURCE):
+   📊 Getting fresh data from Aave Pool: 0x794a61358D6845594F94dc1DB02A252b5b4814aD
+   ✅ FRESH AAVE CONTRACT DATA:
+      Total Collateral USD: $185.20
+      Total Debt USD: $35.08
+      Available Borrows USD: $101.10
+      Health Factor: 4.1417
+      Data Source: LIVE_AAVE_CONTRACT
+   🔍 CHECKING INDIVIDUAL AAVE ASSET BALANCES:
+      aWBTC: Balance check failed - Could not transact with/call contract function, is contract deployed correctly and chain synced?
+      aWETH: Balance check failed - Could not transact with/call contract function, is contract deployed correctly and chain synced?
+      aUSDC: 0.00000000
+📊 Current Health Factor: 4.1417
+❌ CRITICAL: Failed to fetch real ARB price: CoinMarketCap API error: 429
+Could not fetch ARB price
+Logged performance: Run 1, Iteration 31, Metric: 0.1
