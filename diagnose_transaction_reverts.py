@@ -224,13 +224,15 @@ def diagnose_recent_reverts():
         # Test transaction simulation
         print(f"\n🧪 TRANSACTION SIMULATION TEST:")
         try:
-            usdc_address = agent.usdc_address
+            dai_address = agent.dai_address  # Use the DAI address from your agent
             user_address = agent.address
-            amount_wei = 10 * (10**6)  # $10 in USDC wei
+            amount_wei = 10 * (10**18)  # $10 in DAI wei (DAI has 18 decimals)
+            # Be sure to use agent.dai_address which should be correctly defined in your ArbitrumTestnetAgent
+            asset_to_borrow_address = dai_address
 
             # Use .call() for simulation
             pool_contract.functions.borrow(
-                Web3.to_checksum_address(usdc_address),
+                Web3.to_checksum_address(asset_to_borrow_address),  # Updated to use the new variable
                 amount_wei,
                 2,  # Variable rate
                 0,  # Referral code
