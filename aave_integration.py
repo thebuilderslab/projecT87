@@ -30,7 +30,7 @@ class AaveArbitrumIntegration:
             # Arbitrum Mainnet token addresses - Use USDC.e for Aave V3
             self.usdc_address = self.w3.to_checksum_address("0xFF970A61A04b1cA14834A651bAb06d67307796618")  # USDC.e (Aave-supported)
             self.usdc_native_address = self.w3.to_checksum_address("0xAF88D065e8c38FAD0AEff3E253e648A15ceE23DC")  # Native USDC
-            self.arb_address = self.w3.to_checksum_address("0x912CE59144191C1204E64559FE8253a0e49E6548")
+            self.arb_address = "0x912CE59144191C1204E64559FE8253a0e49E6548"
         else:  # Arbitrum Sepolia Testnet (Chain ID: 421614)
             print(f"🧪 Initializing for Arbitrum Sepolia Testnet (Chain ID: {chain_id})")
             # Aave V3 Arbitrum SEPOLIA TESTNET Contract Addresses
@@ -42,7 +42,7 @@ class AaveArbitrumIntegration:
             self.wbtc_address = self.w3.to_checksum_address("0x078f358208685046a11C85e8ad32895DED33A249")
             self.dai_address = self.w3.to_checksum_address("0x82E64f49Ed5EC1bC6e43DAD4FC8Af9bb3A2312EE")
             self.usdc_address = self.w3.to_checksum_address("0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d")
-            self.arb_address = self.w3.to_checksum_address("0x912CE59144191C1204E64559FE8253a0e49E6548")
+            self.arb_address = "0x912CE59144191C1204E64559FE8253a0e49E6548"
         print(f"🪙 ARB Token Address (checksummed): {self.arb_address}")
 
         # Load ABIs
@@ -320,7 +320,8 @@ class AaveArbitrumIntegration:
                     "name": "balanceOf", 
                     "outputs": [{"name": "", "type": "uint256"}],
                     "stateMutability": "view",
-                    "type": "function"
+                    "type":```python
+ "function"
                 },
                 {
                     "inputs": [],
@@ -1788,7 +1789,7 @@ class AaveArbitrumIntegration:
             # Get balances for key assets
             weth_balance = self.get_token_balance(self.weth_address)
             wbtc_balance = self.get_token_balance(self.wbtc_address)
-            usdc_balance = self.get_token_balance(self.usdc_address)
+            usdc_balance =self.get_token_balance(self.usdc_address)
 
             # Get supplied balances on Aave
             weth_supplied = self.get_supplied_balance(self.weth_address)
