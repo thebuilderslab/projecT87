@@ -1324,8 +1324,8 @@ class ArbitrumTestnetAgent:
                 print(f"   WETH supplied: {weth_balance:.8f}")
                 print(f"   USDC supplied: {usdc_balance:.8f}")
 
-                ```python
-                # Get current prices and calculate USD values
+                if wallet_weth_amount > 0.1:
+                    # Get current prices and calculate USD values
                 try:
                     import requests
                     url = "https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest"
@@ -2281,14 +2281,14 @@ class ArbitrumTestnetAgent:
                 'baseline_initialized': True,
                 'timestamp': time.time(),
                 'wallet_address': self.address,
-                'update_reason': 'successful_operation'
+                'update_source': 'successful_operation'
             }
             safe_json_dump(baseline_data, 'agent_baseline.json')
 
             return True
 
         except Exception as e:
-            print(f"❌ Baseline update failed: {e}")
+            print(f"⚠️ Baseline update failed: {e}")
             return False
 
     def save_baseline_data(self, baseline_data):
