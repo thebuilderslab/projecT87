@@ -673,8 +673,9 @@ class ArbitrumTestnetAgent:
         print(f"⚙️ Executing Leveraged Supply Strategy with {usdc_borrow_amount:.2f} USDC...")
 
         # Pre-validation: Ensure borrow amount is safe
+        ```python
         try:
-            pool abi = [{
+            pool_abi = [{
                 "inputs": [{"name": "user", "type": "address"}],
                 "name": "getUserAccountData",
                 "outputs": [
@@ -1323,7 +1324,8 @@ class ArbitrumTestnetAgent:
                 # Get current prices and calculate USD values
                 try:
                     import requests
-                    url = "https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest"
+                    url = "https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest```python
+"
                     headers = {'X-CMC_PRO_API_KEY': self.coinmarketcap_api_key}
                     params = {'symbol': 'BTC,ETH,USDC', 'convert': 'USD'}
 
@@ -1511,9 +1513,8 @@ class ArbitrumTestnetAgent:
                     'wallet_address': self.address,
                     'detection_method': 'forced_arbitrum_market_data'
                 }
-                with open('agent_baseline.json', 'w') as f:
-                    import json
-                    json.dump(baseline_data, f)
+                from fix_json_serialization import safe_json_dump
+                safe_json_dump(baseline_data, 'agent_baseline.json')
 
                 return 0.8
 
@@ -2027,9 +2028,8 @@ class ArbitrumTestnetAgent:
             # Swap 4: USDC → WETH (for wallet)
             if wallet_weth_amount > 0.1:
                 print(f"🔄 Swapping {wallet_weth_amount:.2f} USDC → WETH (wallet)...")
-                try:
-                    wallet_weth_result = self.uniswap```python
-.swap_tokens(
+                try:```python
+                    wallet_weth_result = self.uniswap.swap_tokens(
                         self.usdc_address, self.weth_address, wallet_weth_amount, 500
                     )
                     swap_results.append(wallet_weth_result)
@@ -2272,7 +2272,7 @@ class ArbitrumTestnetAgent:
             print(f"   Next trigger at: ${new_collateral_usd + 12:.2f}")
 
             # Save updated baseline
-            import json
+            from fix_json_serialization import safe_json_dump
             baseline_data = {
                 'last_collateral_value_usd': self.last_collateral_value_usd,
                 'baseline_initialized': True,
@@ -2280,9 +2280,9 @@ class ArbitrumTestnetAgent:
                 'wallet_address': self.address,
                 'update_reason': 'successful_operation'
             }
+            safe_json_dump(baseline_data, 'agent_baseline.json')
 
-            # Save baseline data to file
-            return self.save_baseline_data(baseline_data)
+            return True
 
         except Exception as e:
             print(f"❌ Baseline update failed: {e}")
@@ -2291,9 +2291,8 @@ class ArbitrumTestnetAgent:
     def save_baseline_data(self, baseline_data):
         """Save baseline data to file with proper error handling"""
         try:
-            with open('agent_baseline.json', 'w') as f:
-                import json
-                json.dump(baseline_data, f, indent=2)
+            from fix_json_serialization import safe_json_dump
+            safe_json_dump(baseline_data, 'agent_baseline.json')
             print(f"✅ Baseline data saved successfully")
             return True
         except Exception as e:
@@ -2605,7 +2604,7 @@ class ArbitrumTestnetAgent:
             print(f"🎯 Next trigger at: ${new_collateral_value + 12:.2f}")
 
             # Save baseline to file for persistence
-            import json
+            from fix_json_serialization import safe_json_dump
             baseline_data = {
                 'last_collateral_value_usd': self.last_collateral_value_usd,
                 'baseline_initialized': True,
@@ -2613,9 +2612,7 @@ class ArbitrumTestnetAgent:
                 'wallet_address': self.address,
                 'update_source': 'successful_operation'
             }
-
-            with open('agent_baseline.json', 'w') as f:
-                json.dump(baseline_data, f)
+            safe_json_dump(baseline_data, 'agent_baseline.json')
 
             return True
 

@@ -1,6 +1,5 @@
 
-<old_str>FILE_NOT_EXISTS</old_str>
-<new_str>#!/usr/bin/env python3
+#!/usr/bin/env python3
 """
 Comprehensive Contract Validator
 Validates that contract addresses exist and are accessible
@@ -167,4 +166,4 @@ def test_contract_validator():
 
 
 if __name__ == "__main__":
-    test_contract_validator()</new_str>
+    test_contract_validator()

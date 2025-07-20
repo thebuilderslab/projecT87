@@ -22,8 +22,12 @@ def test_usdc_address_fix():
         # Check USDC address
         expected_usdc = "0xFF970A61A04b1cA14834A651bAb06d67307796618"
         # Normalize both addresses for comparison
-        agent_usdc_normalized = Web3.to_checksum_address(agent.usdc_address)
-        expected_usdc_normalized = Web3.to_checksum_address(expected_usdc)
+        try:
+            agent_usdc_normalized = Web3.to_checksum_address(agent.usdc_address)
+            expected_usdc_normalized = Web3.to_checksum_address(expected_usdc)
+        except Exception as e:
+            print(f"❌ Address normalization failed: {e}")
+            return False
         
         if agent_usdc_normalized == expected_usdc_normalized:
             print("✅ USDC address correctly set to USDC.e")
