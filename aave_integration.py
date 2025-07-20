@@ -323,7 +323,7 @@ class AaveArbitrumIntegration:
                     "type":
  "function"
                 },
-                {
+                {```python
                     "inputs": [],
                     "name": "decimals",
                     "outputs": [{"name": "", "type": "uint8"}],
@@ -1614,37 +1614,37 @@ class AaveArbitrumIntegration:
         """Comprehensive validation before attempting borrow"""
         try:
             print(f"🔍 COMPREHENSIVE PRE-BORROW VALIDATION")
-            
+
             # 1. Check current position
             user_data = self.pool_contract.functions.getUserAccountData(self.address).call()
             available_borrows = user_data[2] / 1e8
             health_factor = user_data[5] / 1e18 if user_data[5] > 0 else float('inf')
-            
+
             print(f"   Available borrows: ${available_borrows:.2f}")
             print(f"   Health factor: {health_factor:.4f}")
-            
+
             if health_factor < 1.5:
                 print(f"❌ Health factor too low: {health_factor:.4f} < 1.5")
                 return False
-                
+
             if available_borrows < amount_usd:
                 print(f"❌ Insufficient borrowing capacity: ${available_borrows:.2f} < ${amount_usd:.2f}")
                 return False
-            
+
             # 2. Check ETH balance for gas
             eth_balance = self.w3.eth.get_balance(self.address)
             eth_balance_eth = self.w3.from_wei(eth_balance, 'ether')
-            
+
             if eth_balance_eth < 0.001:
                 print(f"❌ Insufficient ETH for gas: {eth_balance_eth:.6f} ETH")
                 return False
-            
+
             # 3. Test contract call simulation
             try:
                 user_address = self.w3.to_checksum_address(self.address)
                 token_address_checksum = self.w3.to_checksum_address(token_address)
                 amount_wei = int(amount_usd * (10 ** 6))  # USDC decimals
-                
+
                 # Simulate the transaction
                 self.pool_contract.functions.borrow(
                     token_address_checksum,
@@ -1653,13 +1653,13 @@ class AaveArbitrumIntegration:
                     0,  # Referral code
                     user_address
                 ).call({'from': user_address})
-                
+
                 print(f"✅ Transaction simulation successful")
                 return True
-                
+
             except Exception as sim_error:
                 print(f"❌ Transaction simulation failed: {sim_error}")
-                
+
                 # Analyze simulation failure
                 if "insufficient collateral" in str(sim_error).lower():
                     print(f"💡 Issue: Insufficient collateral for this borrow amount")
@@ -1669,9 +1669,9 @@ class AaveArbitrumIntegration:
                     print(f"💡 Issue: Health factor would be too low after borrow")
                 else:
                     print(f"💡 Issue: Unknown simulation failure - {sim_error}")
-                
+
                 return False
-                
+
         except Exception as e:
             print(f"❌ Pre-borrow validation failed: {e}")
             return False
@@ -1680,7 +1680,7 @@ class AaveArbitrumIntegration:
         """Execute borrow with enhanced reversion analysis"""
         user_address = self.w3.to_checksum_address(self.address)
         token_address = self.w3.to_checksum_address(token_address)
-        
+
         max_retries = 3
         for attempt in range(max_retries):
             try:
@@ -1690,20 +1690,20 @@ class AaveArbitrumIntegration:
                 current_nonce = self.w3.eth.get_transaction_count(user_address, 'pending')
                 current_block = self.w3.eth.get_block('latest')
                 current_gas_price = self.w3.eth.gas_price
-                
+
                 # Enhanced gas calculation
                 base_fee = current_block.get('baseFeePerGas', current_gas_price)
-                
+
                 # Significantly higher gas price for mainnet
                 gas_multiplier = 2.0 + (attempt * 0.5)  # 2.0x, 2.5x, 3.0x
                 enhanced_gas_price = int(max(
                     current_gas_price * gas_multiplier,
                     base_fee * (2.0 + attempt * 0.5)
                 ))
-                
+
                 # Higher gas limit for complex operations
                 gas_limit = 500000 + (attempt * 100000)  # 500k, 600k, 700k
-                
+
                 print(f"🔧 Enhanced attempt {attempt + 1}:")
                 print(f"   Nonce: {current_nonce}")
                 print(f"   Gas limit: {gas_limit:,}")
@@ -1734,7 +1734,7 @@ class AaveArbitrumIntegration:
                 # Wait for confirmation with longer timeout
                 try:
                     receipt = self.w3.eth.wait_for_transaction_receipt(tx_hash, timeout=180)
-                    
+
                     if receipt.status == 1:
                         print(f"🎉 BORROW SUCCESS: {tx_hash_hex}")
                         print(f"   Gas used: {receipt.gasUsed:,}")
@@ -1742,10 +1742,10 @@ class AaveArbitrumIntegration:
                         return receipt
                     else:
                         print(f"❌ BORROW REVERTED: {tx_hash_hex}")
-                        
+
                         # Enhanced reversion analysis
                         self._analyze_transaction_reversion(tx_hash_hex, receipt, attempt + 1)
-                        
+
                         if attempt < max_retries - 1:
                             print(f"🔄 Retrying with different parameters...")
                             import time
@@ -1753,7 +1753,7 @@ class AaveArbitrumIntegration:
                             continue
                         else:
                             return None
-                            
+
                 except Exception as receipt_error:
                     print(f"❌ Receipt error: {receipt_error}")
                     if attempt < max_retries - 1:
@@ -1762,7 +1762,7 @@ class AaveArbitrumIntegration:
 
             except Exception as attempt_error:
                 print(f"❌ Attempt {attempt + 1} failed: {attempt_error}")
-                
+
                 if "nonce too low" in str(attempt_error).lower() and attempt < max_retries - 1:
                     print(f"🔄 Nonce issue, retrying...")
                     import time
@@ -1774,7 +1774,7 @@ class AaveArbitrumIntegration:
                 elif attempt == max_retries - 1:
                     print(f"❌ All enhanced attempts failed")
                     return None
-        
+
         return None
 
     def _analyze_transaction_reversion(self, tx_hash, receipt, attempt_num):
@@ -1785,11 +1785,11 @@ class AaveArbitrumIntegration:
             print(f"   Block: {receipt.blockNumber}")
             print(f"   Gas used: {receipt.gasUsed:,}")
             print(f"   Gas limit: {receipt.get('gasLimit', 'Unknown')}")
-            
+
             # Try to get revert reason
             try:
                 tx_data = self.w3.eth.get_transaction(tx_hash)
-                
+
                 # Replay transaction to get revert reason
                 try:
                     self.w3.eth.call({
@@ -1802,7 +1802,7 @@ class AaveArbitrumIntegration:
                 except Exception as call_error:
                     revert_reason = str(call_error)
                     print(f"🎯 REVERT REASON: {revert_reason}")
-                    
+
                     # Specific revert analysis
                     if "insufficient collateral" in revert_reason.lower():
                         print(f"💡 SOLUTION: Need more collateral or reduce borrow amount")
@@ -1814,10 +1814,10 @@ class AaveArbitrumIntegration:
                         print(f"💡 SOLUTION: Market might be paused or inactive")
                     else:
                         print(f"💡 SOLUTION: Unknown revert - check Aave protocol status")
-                        
+
             except Exception as analysis_error:
                 print(f"⚠️ Could not analyze revert reason: {analysis_error}")
-                
+
         except Exception as e:
             print(f"⚠️ Reversion analysis failed: {e}")
 
@@ -1826,7 +1826,7 @@ class AaveArbitrumIntegration:
         try:
             import json
             import time
-            
+
             failure_data = {
                 "timestamp": time.time(),
                 "amount_usd": amount_usd,
@@ -1844,15 +1844,15 @@ class AaveArbitrumIntegration:
                     "nonce": self.w3.eth.get_transaction_count(self.address)
                 }
             }
-            
+
             timestamp = time.strftime("%Y%m%d_%H%M%S")
             filename = f"enhanced_borrow_failure_{timestamp}.json"
-            
+
             with open(filename, "w") as f:
                 json.dump(failure_data, f, indent=2)
-                
+
             print(f"📝 Enhanced failure log saved: {filename}")
-            
+
         except Exception as log_error:
             print(f"⚠️ Could not save failure log: {log_error}")
 

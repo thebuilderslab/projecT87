@@ -609,6 +609,20 @@ class ArbitrumTestnetAgent:
             latest_block = self.w3.eth.block_number
             gas_price = self.w3.eth.gas_price
             actual_chain_id = self.w3.eth.chain_id
+            
+            # Enhanced network congestion detection
+            base_fee = self.w3.eth.get_block('latest').get('baseFeePerGas', gas_price)
+            congestion_ratio = gas_price / base_fee if base_fee > 0 else 1.0
+            
+            print(f"🌐 Network Congestion Analysis:")
+            print(f"   Base Fee: {self.w3.from_wei(base_fee, 'gwei'):.2f} gwei")
+            print(f"   Current Gas: {self.w3.from_wei(gas_price, 'gwei'):.2f} gwei") 
+            print(f"   Congestion Ratio: {congestion_ratio:.2f}x")
+            
+            # Warn if network is congested (>3x base fee)
+            if congestion_ratio > 3.0:
+                print(f"⚠️ HIGH NETWORK CONGESTION - Transactions may be rejected or delayed")
+                print(f"💡 Consider waiting for lower congestion or using higher gas prices")
 
             print(f"🌐 Network Connected: Block {latest_block}, Gas Price: {Web3.from_wei(gas_price, 'gwei')} Gwei")
             print(f"🔗 RPC Endpoint: {self.rpc_url}")

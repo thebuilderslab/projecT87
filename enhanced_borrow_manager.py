@@ -20,6 +20,11 @@ class EnhancedBorrowManager:
             print(f"🔍 DEBUG: Token address: {token_address}")
             print(f"🔍 DEBUG: Amount USD: {amount_usd}")
 
+            # Network timing validation
+            if not self._validate_network_timing():
+                print(f"❌ Network timing not optimal for transactions")
+                return False
+
             # Comprehensive pre-validation with enhanced checks
             validation_result = self._validate_borrow_conditions_enhanced(amount_usd, token_address)
             if not validation_result:
@@ -356,3 +361,30 @@ class EnhancedBorrowManager:
         except Exception as e:
             print(f"❌ Enhanced borrow execution failed: {e}")
             return False
+    def _validate_network_timing(self):
+        """Validate network conditions for optimal transaction timing"""
+        try:
+            current_block = self.w3.eth.get_block('latest')
+            current_time = time.time()
+            block_time = current_block.timestamp
+            
+            # Check if we're close to block time (avoid mempool congestion)
+            time_since_block = current_time - block_time
+            
+            print(f"🕐 Network Timing Check:")
+            print(f"   Time since last block: {time_since_block:.1f}s")
+            
+            # Arbitrum blocks are ~0.25s, warn if we're too close to next expected block
+            if time_since_block > 10:  # More than 10s since last block might indicate issues
+                print(f"⚠️ Long time since last block - network may be congested")
+                return False
+                
+            # Check pending transaction count in mempool
+            pending_tx_count = self.w3.eth.get_block('pending').transactions.__len__ if hasattr(self.w3.eth.get_block('pending'), 'transactions') else 0
+            print(f"   Pending transactions: {pending_tx_count}")
+            
+            return True
+            
+        except Exception as e:
+            print(f"⚠️ Network timing validation failed: {e}")
+            return True  # Don't block if we can't check timing
