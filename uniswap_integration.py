@@ -15,7 +15,8 @@ class UniswapArbitrumIntegration:
 
         # Token addresses
         self.weth_address = self.w3.to_checksum_address("0x980B62Da83eFf3D4576C647993b0c1D7faf17c73")
-        self.usdc_address = self.w3.to_checksum_address("0x179522635726710Dd7D2035a81d856de4Aa7836c")
+        # Arbitrum Mainnet token addresses
+        self.usdc_address = "0xAF88D065e8c38FAD0AEff3E253e648A15ceE23DC"
 
         self.router_abi = self._get_router_abi()
         self.erc20_abi = self._get_erc20_abi()
@@ -135,11 +136,11 @@ class UniswapArbitrumIntegration:
 
             # Build swap transaction with enhanced gas optimization
             nonce = self.w3.eth.get_transaction_count(self.address)
-            
+
             # Enhanced gas calculation for swap
             base_gas_price = self.w3.eth.gas_price
             swap_gas_price = int(base_gas_price * 1.3)  # 30% higher for swap operations
-            
+
             swap_tx = self.router_contract.functions.exactInputSingle(
                 swap_params
             ).build_transaction({

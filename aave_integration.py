@@ -27,7 +27,8 @@ class AaveArbitrumIntegration:
             self.weth_address = self.w3.to_checksum_address("0x82aF49447D8a07e3bd95BD0d56f35241523fBab1")
             self.wbtc_address = self.w3.to_checksum_address("0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f")
             self.dai_address = self.w3.to_checksum_address("0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1")
-            self.usdc_address = self.w3.to_checksum_address("0xFF970A61A04b1cA14834A651bAb06d67307796618")
+            # Arbitrum Mainnet token addresses
+            self.usdc_address = self.w3.to_checksum_address("0xAF88D065e8c38FAD0AEff3E253e648A15ceE23DC")
             self.arb_address = self.w3.to_checksum_address("0x912CE59144191C1204E64559FE8253a0e49E6548")
         else:  # Arbitrum Sepolia Testnet (Chain ID: 421614)
             print(f"🧪 Initializing for Arbitrum Sepolia Testnet (Chain ID: {chain_id})")
@@ -1044,7 +1045,7 @@ class AaveArbitrumIntegration:
         # Enhanced gas price with network conditions
         try:
             current_gas_price = w3_instance.eth.gas_price
-            gas_price = int(current_gas_price * 1.15)  # 15% premium for faster inclusion
+            gas_price= int(current_gas_price * 1.15)  # 15% premium for faster inclusion
         except:
             gas_price = int(0.1 * 1e9)  # 0.1 gwei fallback
 
@@ -1053,7 +1054,7 @@ class AaveArbitrumIntegration:
         # Multiple transaction attempts with increasing gas
         gas_multipliers = [1.0, 1.3, 1.6]  # Progressive gas increases
 
-        for attempt, multiplier in enumerate(gasmultipliers):
+        for attempt, multiplier in enumerate(gas_multipliers):
             try:
                 adjusted_gas_price = int(gas_price * multiplier)
                 current_nonce = nonce + attempt
