@@ -336,7 +336,7 @@ class ArbitrumTestnetAgent:
         # Contract addresses based on network
         if self.network_mode == 'mainnet':
             # Arbitrum Mainnet addresses - Use properly checksummed addresses
-            self.usdc_address = "0xFF970A61A04b1cA14834A651bAb06d67307796618"  # USDC.e (Aave-supported)
+            self.usdc_address = "0xAF88D065e8c38FAD0AEff3E253e648A15ceE23DC"  # Native USDC (Aave V3 supported)
             self.usdc_native_address = "0xAF88D065e8c38FAD0AEff3E253e648A15ceE23DC"  # Native USDC
             self.wbtc_address = "0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f"
             self.weth_address = "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1"

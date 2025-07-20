@@ -89,8 +89,15 @@ class EnhancedBorrowManager:
                 print(f"❌ Invalid borrow amount: ${amount_usd}")
                 return False
 
-            if not token_address or len(token_address) != 42:
-                print(f"❌ Invalid token address: {token_address}")
+            try:
+                # Validate and normalize token address
+                from web3 import Web3
+                normalized_address = Web3.to_checksum_address(token_address)
+                if len(normalized_address) != 42:
+                    print(f"❌ Invalid token address: {token_address}")
+                    return False
+            except Exception as addr_error:
+                print(f"❌ Invalid token address format: {token_address} - {addr_error}")
                 return False
 
             # Check ETH balance for gas

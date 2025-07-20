@@ -27,8 +27,8 @@ class AaveArbitrumIntegration:
             self.weth_address = self.w3.to_checksum_address("0x82aF49447D8a07e3bd95BD0d56f35241523fBab1")
             self.wbtc_address = self.w3.to_checksum_address("0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f")
             self.dai_address = self.w3.to_checksum_address("0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1")
-            # Arbitrum Mainnet token addresses - Use USDC.e for Aave V3
-            self.usdc_address = self.w3.to_checksum_address("0xFF970A61A04b1cA14834A651bAb06d67307796618")  # USDC.e (Aave-supported)
+            # Arbitrum Mainnet token addresses - Use Native USDC for Aave V3
+            self.usdc_address = self.w3.to_checksum_address("0xAF88D065e8c38FAD0AEff3E253e648A15ceE23DC")  # Native USDC (Aave V3 supported)
             self.usdc_native_address = self.w3.to_checksum_address("0xAF88D065e8c38FAD0AEff3E253e648A15ceE23DC")  # Native USDC
             self.arb_address = "0x912CE59144191C1204E64559FE8253a0e49E6548"
         else:  # Arbitrum Sepolia Testnet (Chain ID: 421614)
@@ -300,7 +300,7 @@ class AaveArbitrumIntegration:
 
             # Comprehensive aToken mapping for Arbitrum Mainnet
             atoken_mapping = {
-                self.usdc_address.lower(): "0x625E7708f30cA75bfd92586e17077590C60eb4cD",  # aUSDC.e for 0xFF970A61A04b1cA14834A651bAb06d67307796618
+                self.usdc_address.lower(): "0x724dc807b04555b71ed48a6896b6F41593b8C637",  # aUSDC for Native USDC 0xAF88D065e8c38FAD0AEff3E253e648A15ceE23DC
                 self.wbtc_address.lower(): "0x6533afac2E7BCCB20dca161449A13A2D2d5B739A",  # aArbWBTC  
                 self.weth_address.lower(): "0xe50fA9b4c56454E2edF6BFf7c81b50c5F05aBE61",  # aArbWETH
                 self.dai_address.lower(): "0x82E64f49Ed5EC1bC6e43DAD4FC8Af9bb3A2312EE"   # aArbDAI
@@ -1033,14 +1033,27 @@ class AaveArbitrumIntegration:
             checksum_token = Web3.to_checksum_address(token_address)
             checksum_user = Web3.to_checksum_address(user_address)
 
+            # Pre-validate the transaction will succeed
+            try:
+                pool_contract.functions.borrow(
+                    checksum_token, int(amount_wei), int(interest_rate_mode), 0, checksum_user
+                ).call({'from': checksum_user})
+                print(f"✅ Transaction simulation successful")
+            except Exception as sim_error:
+                print(f"❌ Transaction simulation failed: {sim_error}")
+                raise Exception(f"Borrow transaction would revert: {sim_error}")
+
             estimated_gas = pool_contract.functions.borrow(
                 checksum_token, int(amount_wei), int(interest_rate_mode), 0, checksum_user
             ).estimate_gas({'from': checksum_user})
 
-            gas_limit = int(estimated_gas * 1.2)  # 20% buffer
+            gas_limit = int(estimated_gas * 1.5)  # 50% buffer for safety
             print(f"⛽ Estimated gas: {estimated_gas}, using: {gas_limit}")
         except Exception as gas_err:
             print(f"⚠️ Gas estimation failed: {gas_err}")
+            # Don't proceed if simulation failed
+            if "would revert" in str(gas_err):
+                raise gas_err
             gas_limit = 500000  # Conservative fallback
             print(f"⚠️ Using fallback gas limit: {gas_limit}")
 
