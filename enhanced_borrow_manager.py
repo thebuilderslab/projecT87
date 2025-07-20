@@ -1,4 +1,3 @@
-"""Fix gas multipliers variable name"""
 """
 Enhanced Borrow Manager
 Provides robust borrowing functionality with fallbacks and validation

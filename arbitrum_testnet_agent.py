@@ -2,6 +2,7 @@ import os
 import json
 import math
 import time
+import logging
 from datetime import datetime
 from web3 import Web3
 from eth_account import Account
@@ -348,13 +349,6 @@ class ArbitrumTestnetAgent:
             self.aUSDC_address = Web3.to_checksum_address("0x724dc807b04555b71ed48a6896b6F41593b8C637")
 
             print(f"📋 Mainnet Token addresses verified:")
-            print(f"   USDC: {self.usdc_address}")
-            print(f"   WBTC: {self.wbtc_address}")
-            print(f"   WETH: {self.weth_address}")
-            print(f"   DAI: {self.dai_address}")
-            print(f"   Aave Pool: {self.aave_pool_address}")
-
-            print(f"📋 Token addresses verified:")
             print(f"   USDC: {self.usdc_address}")
             print(f"   WBTC: {self.wbtc_address}")
             print(f"   WETH: {self.weth_address}")
