@@ -16,7 +16,6 @@ run = ["sh", "-c", "python mainnet_launcher.py"]
 deploymentTarget = "cloudrun"
 
 [workflows]
-runButton = "🔍 Test Enhanced Diagnostics Fixed"
 
 [[workflows.workflow]]
 name = "🔍 Test Enhanced Diagnostics Fixed"
