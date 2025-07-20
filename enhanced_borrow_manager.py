@@ -352,10 +352,10 @@ class EnhancedBorrowManager:
             return False
 
     def execute_enhanced_borrow_with_retry(self, safe_borrow_amount):
-        """Execute borrow with enhanced retry mechanism - corrected signature"""
+        """Execute borrow with enhanced retry mechanism - corrected for DAI"""
         try:
-            # Use the safe_borrow_with_fallbacks method which exists
-            return self.safe_borrow_with_fallbacks(safe_borrow_amount, self.agent.usdc_address)
+            # Use the safe_borrow_with_fallbacks method with DAI address
+            return self.safe_borrow_with_fallbacks(safe_borrow_amount, self.agent.dai_address)
         except Exception as e:
             print(f"❌ Enhanced borrow execution failed: {e}")
             return False

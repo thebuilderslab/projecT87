@@ -681,9 +681,9 @@ class ArbitrumTestnetAgent:
         #    return 0.0 # Return 0 if unable to retrieve # Original Code
         return 0.0 # Returning 0.0 directly because the function is not being used.
 
-    def execute_leveraged_supply_strategy(self, usdc_borrow_amount):
-        """Execute leveraged supply strategy: borrow →swap → supply"""
-        print(f"⚙️ Executing Leveraged Supply Strategy with {usdc_borrow_amount:.2f} USDC...")
+    def execute_leveraged_supply_strategy(self, dai_borrow_amount):
+        """Execute NEW DAI-based leveraged supply strategy: borrow DAI → swap → supply (50% WBTC, 30% WETH, 10% DAI reserve, 10% ETH)"""
+        print(f"⚙️ Executing NEW DAI-Based Leveraged Supply Strategy with ${dai_borrow_amount:.2f} DAI...")
 
         # Pre-validation: Ensure borrow amount is safe
         try:
@@ -711,30 +711,30 @@ class ArbitrumTestnetAgent:
             print(f"🔍 Pre-validation:")
             print(f"   Health Factor: {current_health_factor:.4f}")
             print(f"   Available Borrows: ${available_borrows_usd:.2f}")
-            print(f"   Requested Amount: ${usdc_borrow_amount:.2f}")
+            print(f"   Requested Amount: ${dai_borrow_amount:.2f}")
 
             # Safety checks
             if current_health_factor < 2.0:
                 print(f"❌ Health factor too low for borrowing: {current_health_factor:.4f}")
                 return False
 
-            if available_borrows_usd < usdc_borrow_amount:
+            if available_borrows_usd < dai_borrow_amount:
                 print(f"❌ Insufficient borrowing capacity")
                 return False
 
             # Adjust borrow amount if too large (use max 80% of available)
             max_safe_borrow = available_borrows_usd * 0.8
-            if usdc_borrow_amount > max_safe_borrow:
-                usdc_borrow_amount = max_safe_borrow
-                print(f"⚠️ Adjusted borrow amount to ${usdc_borrow_amount:.2f} for safety")
+            if dai_borrow_amount > max_safe_borrow:
+                dai_borrow_amount = max_safe_borrow
+                print(f"⚠️ Adjusted borrow amount to ${dai_borrow_amount:.2f} for safety")
 
         except Exception as validation_error:
             print(f"❌ Pre-validation failed: {validation_error}")
             return False
 
-        # Step 1: Borrow USDC using enhanced borrow manager
-        print("🏦 Attempting to borrow USDC...")
-        print(f"🔍 DEBUG: Attempting to borrow USDC with amount: ${usdc_borrow_amount:.2f}")
+        # Step 1: Borrow DAI using enhanced borrow manager
+        print("🏦 Attempting to borrow DAI...")
+        print(f"🔍 DEBUG: Attempting to borrow DAI with amount: ${dai_borrow_amount:.2f}")
 
         # Check ETH balance before borrowing
         eth_balance = self.get_eth_balance()
@@ -742,17 +742,17 @@ class ArbitrumTestnetAgent:
 
         try:
             if hasattr(self, 'enhanced_borrow_manager') and self.enhanced_borrow_manager:
-                borrow_result = self.enhanced_borrow_manager.safe_borrow_with_fallbacks(usdc_borrow_amount, self.usdc_address)
+                borrow_result = self.enhanced_borrow_manager.safe_borrow_with_fallbacks(dai_borrow_amount, self.dai_address)
             else:
                 # Fallback to direct Aave borrow if enhanced manager not available
-                borrow_result = self.aave.borrow(usdc_borrow_amount, self.usdc_address)
+                borrow_result = self.aave.borrow(dai_borrow_amount, self.dai_address)
 
             if not borrow_result:
-                print("❌ Failed to borrow USDC")
+                print("❌ Failed to borrow DAI")
                 return False
-            print(f"✅ Successfully borrowed USDC. Result: {borrow_result}")
+            print(f"✅ Successfully borrowed DAI. Result: {borrow_result}")
         except Exception as e:
-            print(f"❌ ERROR: Borrow transaction failed. Details: {e}")
+            print(f"❌ ERROR: DAI borrow transaction failed. Details: {e}")
             if "insufficient funds for gas * price + value" in str(e).lower():
                 print("🚨 CRITICAL: This is likely due to insufficient ETH for gas.")
                 print(f"   Current ETH balance: {eth_balance:.6f} ETH")
@@ -763,38 +763,38 @@ class ArbitrumTestnetAgent:
         # Brief pause for transaction confirmation
         time.sleep(3)
 
-        # Step 2: Define asset allocation
-        WBTC_PERCENT = 0.30  # 30% to WBTC
-        WETH_PERCENT = 0.20  # 20% to WETH
-        DAI_PERCENT = 0.10   # 10% to DAI
-        # Remaining 40% stays as USDC for gas and reserves
+        # Step 2: Define NEW asset allocation
+        WBTC_PERCENT = 0.50    # 50% to WBTC (supplied to Aave)
+        WETH_PERCENT = 0.30    # 30% to WETH (supplied to Aave)
+        DAI_RESERVE_PERCENT = 0.10   # 10% DAI reserve (supplied to Aave)
+        ETH_WALLET_PERCENT = 0.10    # 10% swap to ETH (kept in wallet for gas)
 
-        # Step 3: Get current USDC balance after borrowing
+        # Step 3: Get current DAI balance after borrowing
         try:
-            current_usdc_balance = self.aave.get_token_balance(self.usdc_address)
-            print(f"💰 Current USDC balance after borrow: {current_usdc_balance:.6f}")
+            current_dai_balance = self.aave.get_token_balance(self.dai_address)
+            print(f"💰 Current DAI balance after borrow: {current_dai_balance:.6f}")
 
-            if current_usdc_balance < 1.0:
-                print("❌ Insufficient USDC balance for swaps")
+            if current_dai_balance < 1.0:
+                print("❌ Insufficient DAI balance for swaps")
                 return False
         except Exception as e:
-            print(f"❌ Failed to get USDC balance: {e}")
+            print(f"❌ Failed to get DAI balance: {e}")
             return False
 
-        # Step 4: Execute swaps with proper error handling
+        # Step 4: Execute swaps with NEW allocation strategy
         swap_results = {}
 
-        # Swap to WBTC
-        wbtc_amount_to_swap = current_usdc_balance * WBTC_PERCENT
+        # Swap 50% DAI to WBTC
+        wbtc_amount_to_swap = current_dai_balance * WBTC_PERCENT
         if wbtc_amount_to_swap > 0.1:
-            print(f"🔄 Swapping {wbtc_amount_to_swap:.6f} USDC to WBTC...")
-            print(f"🔍 DEBUG: Attempting to swap {wbtc_amount_to_swap:.6f} USDC for WBTC.")
+            print(f"🔄 Swapping {wbtc_amount_to_swap:.6f} DAI to WBTC (50%)...")
+            print(f"🔍 DEBUG: Attempting to swap {wbtc_amount_to_swap:.6f} DAI for WBTC.")
             try:
-                wbtc_tx_hash = self.uniswap.swap_tokens(self.usdc_address, self.wbtc_address, wbtc_amount_to_swap, 500)
+                wbtc_tx_hash = self.uniswap.swap_tokens(self.dai_address, self.wbtc_address, wbtc_amount_to_swap, 500)
                 if not wbtc_tx_hash:
-                    print("❌ Failed to swap to WBTC")
+                    print("❌ Failed to swap DAI to WBTC")
                     return False
-                print(f"✅ Swapped to WBTC. Tx Hash: {wbtc_tx_hash}")
+                print(f"✅ Swapped DAI to WBTC. Tx Hash: {wbtc_tx_hash}")
                 swap_results['wbtc'] = wbtc_tx_hash
                 time.sleep(3)
             except Exception as e:
@@ -805,17 +805,17 @@ class ArbitrumTestnetAgent:
                     print("🚨 CRITICAL: Transaction likely ran out of gas. Consider increasing gas limit estimate.")
                 return False
 
-        # Swap to WETH
-        weth_amount_to_swap = current_usdc_balance * WETH_PERCENT
+        # Swap 30% DAI to WETH
+        weth_amount_to_swap = current_dai_balance * WETH_PERCENT
         if weth_amount_to_swap > 0.1:
-            print(f"🔄 Swapping {weth_amount_to_swap:.6f} USDC to WETH...")
-            print(f"🔍 DEBUG: Attempting to swap {weth_amount_to_swap:.6f} USDC for WETH.")
+            print(f"🔄 Swapping {weth_amount_to_swap:.6f} DAI to WETH (30%)...")
+            print(f"🔍 DEBUG: Attempting to swap {weth_amount_to_swap:.6f} DAI for WETH.")
             try:
-                weth_tx_hash = self.uniswap.swap_tokens(self.usdc_address, self.weth_address, weth_amount_to_swap, 500)
+                weth_tx_hash = self.uniswap.swap_tokens(self.dai_address, self.weth_address, weth_amount_to_swap, 500)
                 if not weth_tx_hash:
-                    print("❌ Failed to swap to WETH")
+                    print("❌ Failed to swap DAI to WETH")
                     return False
-                print(f"✅ Swapped to WETH. Tx Hash: {weth_tx_hash}")
+                print(f"✅ Swapped DAI to WETH. Tx Hash: {weth_tx_hash}")
                 swap_results['weth'] = weth_tx_hash
                 time.sleep(3)
             except Exception as e:
@@ -826,56 +826,58 @@ class ArbitrumTestnetAgent:
                     print("🚨 CRITICAL: Transaction likely ran out of gas. Consider increasing gas limit estimate.")
                 return False
 
-        # Swap to DAI
-        dai_amount_to_swap = current_usdc_balance * DAI_PERCENT
-        if dai_amount_to_swap > 0.1:
-            print(f"🔄 Swapping {dai_amount_to_swap:.6f} USDC to DAI...")
-            print(f"🔍 DEBUG: Attempting to swap {dai_amount_to_swap:.6f} USDC for DAI.")
+        # Swap 10% DAI to ETH (kept in wallet for gas)
+        eth_amount_to_swap = current_dai_balance * ETH_WALLET_PERCENT
+        if eth_amount_to_swap > 0.1:
+            print(f"🔄 Swapping {eth_amount_to_swap:.6f} DAI to ETH (10% for wallet)...")
+            print(f"🔍 DEBUG: Attempting to swap {eth_amount_to_swap:.6f} DAI for ETH.")
             try:
-                dai_tx_hash = self.uniswap.swap_tokens(self.usdc_address, self.dai_address, dai_amount_to_swap, 500)
-                if not dai_tx_hash:
-                    print("❌ Failed to swap to DAI")
+                eth_tx_hash = self.uniswap.swap_tokens(self.dai_address, self.weth_address, eth_amount_to_swap, 500)
+                if not eth_tx_hash:
+                    print("❌ Failed to swap DAI to ETH")
                     return False
-                print(f"✅ Swapped to DAI. Tx Hash: {dai_tx_hash}")
-                swap_results['dai'] = dai_tx_hash
+                print(f"✅ Swapped DAI to ETH for wallet. Tx Hash: {eth_tx_hash}")
+                swap_results['eth_wallet'] = eth_tx_hash
                 time.sleep(3)
             except Exception as e:
-                print(f"❌ ERROR: DAI swap transaction failed. Details: {e}")
+                print(f"❌ ERROR: ETH swap transaction failed. Details: {e}")
                 if "insufficient funds for gas * price + value" in str(e).lower():
                     print("🚨 CRITICAL: This is likely due to insufficient ETH for gas.")
                 elif "gas required exceeds allowance" in str(e).lower() or "out of gas" in str(e).lower():
                     print("🚨 CRITICAL: Transaction likely ran out of gas. Consider increasing gas limit estimate.")
                 return False
 
+        # Calculate remaining DAI reserve (10%)
+        dai_reserve_amount = current_dai_balance * DAI_RESERVE_PERCENT
+        print(f"💰 DAI Reserve: {dai_reserve_amount:.6f} DAI (10% kept for Aave supply)")
+
         # Step 5: Get updated balances after swaps
         print("📊 Checking updated balances after swaps...")
         try:
             current_wbtc_balance = self.aave.get_token_balance(self.wbtc_address)
             current_weth_balance = self.aave.get_token_balance(self.weth_address)
-            current_dai_balance = self.aave.get_token_balance(self.dai_address)
-
+            remaining_dai_balance = self.aave.get_token_balance(self.dai_address)
+            
             print(f"   WBTC balance: {current_wbtc_balance:.8f}")
             print(f"   WETH balance: {current_weth_balance:.8f}")
-            print(f"   DAI balance: {current_dai_balance:.6f}")
+            print(f"   DAI balance (remaining): {remaining_dai_balance:.6f}")
         except Exception as e:
             print(f"❌ Failed to get token balances: {e}")
             return False
 
-        # Step 6: Supply newly acquired assets as collateral
-        print("🏦 Supplying newly acquired assets as collateral...")
+        # Step 6: Supply assets to Aave (WBTC, WETH, and DAI reserve only)
+        print("🏦 Supplying assets as collateral (WBTC, WETH, DAI reserve only)...")
         supply_results = {}
 
-        # Supply WBTC
+        # Supply WBTC (from 50% swap)
         if current_wbtc_balance > 0:
             print(f"🔓 Approving WBTC for Aave supply ({current_wbtc_balance:.8f})...")
-            print(f"🔍 DEBUG: Attempting to approve {current_wbtc_balance:.8f} WBTC for supply.")
             try:
                 if not self.aave.approve_token(self.wbtc_address, current_wbtc_balance):
                     print("❌ Failed to approve WBTC")
                     return False
 
                 print("🏦 Supplying WBTC to Aave...")
-                print(f"🔍 DEBUG: Attempting to supply {current_wbtc_balance:.8f} WBTC to Aave.")
                 supply_result = self.aave.supply_to_aave(self.wbtc_address, current_wbtc_balance)
                 if not supply_result:
                     print("❌ Failed to supply WBTC")
@@ -891,7 +893,7 @@ class ArbitrumTestnetAgent:
                     print("🚨 CRITICAL: Transaction likely ran out of gas. Consider increasing gas limit estimate.")
                 return False
 
-        # Supply WETH
+        # Supply WETH (from 30% swap)
         if current_weth_balance > 0:
             print(f"🔓 Approving WETH for Aave supply ({current_weth_balance:.8f})...")
             try:
@@ -911,25 +913,28 @@ class ArbitrumTestnetAgent:
                 print(f"❌ WETH supply error: {e}")
                 return False
 
-        # Supply DAI
-        if current_dai_balance > 0:
-            print(f"🔓 Approving DAI for Aave supply ({current_dai_balance:.6f})...")
+        # Supply DAI Reserve (10% of original DAI)
+        if remaining_dai_balance > 0:
+            print(f"🔓 Approving DAI reserve for Aave supply ({remaining_dai_balance:.6f})...")
             try:
-                if not self.aave.approve_token(self.dai_address, current_dai_balance):
-                    print("❌ Failed to approve DAI")
+                if not self.aave.approve_token(self.dai_address, remaining_dai_balance):
+                    print("❌ Failed to approve DAI reserve")
                     return False
 
-                print("🏦 Supplying DAI to Aave...")
-                supply_result = self.aave.supply_to_aave(self.dai_address, current_dai_balance)
+                print("🏦 Supplying DAI reserve to Aave...")
+                supply_result = self.aave.supply_to_aave(self.dai_address, remaining_dai_balance)
                 if not supply_result:
-                    print("❌ Failed to supply DAI")
+                    print("❌ Failed to supply DAI reserve")
                     return False
-                print(f"✅ Successfully supplied {current_dai_balance:.6f} DAI")
-                supply_results['dai'] = supply_result
+                print(f"✅ Successfully supplied {remaining_dai_balance:.6f} DAI reserve")
+                supply_results['dai_reserve'] = supply_result
                 time.sleep(3)
             except Exception as e:
-                print(f"❌ DAI supply error: {e}")
+                print(f"❌ DAI reserve supply error: {e}")
                 return False
+
+        # Note: ETH from 10% swap stays in wallet for gas and flexibility
+        print(f"💰 ETH from 10% swap remains in wallet for gas and flexibility")
 
         # Step 7: Update baseline and record success
         try:
@@ -944,10 +949,16 @@ class ArbitrumTestnetAgent:
         except Exception as e:
             print(f"⚠️ Warning: Failed to update baseline: {e}")
 
-        print("🎉 Leveraged Supply Strategy Completed Successfully!")
+        print("🎉 NEW DAI-Based Leveraged Supply Strategy Completed Successfully!")
         print(f"📊 Summary:")
-        print(f"   Swap Results: {len(swap_results)} successful swaps")
-        print(f"   Supply Results: {len(supply_results)} successful supplies")
+        print(f"   ✅ Borrowed: ${dai_borrow_amount:.2f} DAI")
+        print(f"   ✅ Swapped 50% DAI → WBTC → Supplied to Aave")
+        print(f"   ✅ Swapped 30% DAI → WETH → Supplied to Aave") 
+        print(f"   ✅ Supplied 10% DAI reserve → Aave")
+        print(f"   ✅ Swapped 10% DAI → ETH (kept in wallet)")
+        print(f"   📈 Swap Results: {len(swap_results)} successful swaps")
+        print(f"   🏦 Supply Results: {len(supply_results)} successful supplies")
+        print(f"   💡 Strategy: Optimized for gas efficiency and flexibility")
 
         return True
 
