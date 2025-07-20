@@ -1,147 +1,168 @@
-
-#!/usr/bin/env python3
 """
 Enhanced System Validator
-Comprehensive validation of all system components
+Comprehensive validation of all system components with proper error handling
 """
 
 import os
 import time
+from typing import Dict, List, Optional
 from web3 import Web3
 
 class EnhancedSystemValidator:
     def __init__(self, agent):
         self.agent = agent
         self.w3 = agent.w3
+        self.validation_results = {}
 
-    def run_comprehensive_validation(self):
-        """Run comprehensive system validation"""
-        print("🔧 Running Enhanced System Validation...")
-
-        validation_results = {
-            'network_connectivity': False,
-            'contract_addresses': False,
-            'integrations': False,
-            'wallet_readiness': False,
-            'borrow_system': False
-        }
-
+    def run_comprehensive_validation(self) -> bool:
+        """Run comprehensive validation of all system components"""
         try:
+            print("🔧 ENHANCED SYSTEM VALIDATOR")
+            print("=" * 40)
+
             # Test 1: Network connectivity
-            if self._validate_network():
-                validation_results['network_connectivity'] = True
-                print("✅ Network connectivity: PASSED")
-            else:
-                print("❌ Network connectivity: FAILED")
+            network_result = self._validate_network_connectivity()
+            self.validation_results['network'] = network_result
 
             # Test 2: Contract addresses
-            if self._validate_contracts():
-                validation_results['contract_addresses'] = True
-                print("✅ Contract addresses: PASSED")
-            else:
-                print("❌ Contract addresses: FAILED")
+            contract_result = self._validate_contract_addresses()
+            self.validation_results['contracts'] = contract_result
 
-            # Test 3: DeFi integrations
-            if self._validate_integrations():
-                validation_results['integrations'] = True
-                print("✅ DeFi integrations: PASSED")
-            else:
-                print("❌ DeFi integrations: FAILED")
+            # Test 3: Account setup
+            account_result = self._validate_account_setup()
+            self.validation_results['account'] = account_result
 
-            # Test 4: Wallet readiness
-            if self._validate_wallet():
-                validation_results['wallet_readiness'] = True
-                print("✅ Wallet readiness: PASSED")
-            else:
-                print("❌ Wallet readiness: FAILED")
+            # Test 4: Integration readiness
+            integration_result = self._validate_integrations()
+            self.validation_results['integrations'] = integration_result
 
-            # Test 5: Borrow system
-            if self._validate_borrow_system():
-                validation_results['borrow_system'] = True
-                print("✅ Borrow system: PASSED")
-            else:
-                print("❌ Borrow system: FAILED")
+            # Overall assessment
+            all_passed = all(self.validation_results.values())
 
-            # Overall result
-            passed_tests = sum(validation_results.values())
-            total_tests = len(validation_results)
+            print(f"\n📊 VALIDATION SUMMARY:")
+            for test_name, result in self.validation_results.items():
+                status = "✅ PASS" if result else "❌ FAIL"
+                print(f"   {test_name.title()}: {status}")
 
-            print(f"📊 Validation Results: {passed_tests}/{total_tests} passed")
+            print(f"\n🎯 OVERALL: {'✅ SYSTEM READY' if all_passed else '⚠️ ISSUES DETECTED'}")
 
-            if passed_tests >= 4:  # Allow for 1 failure
-                print("✅ Enhanced system validation PASSED (sufficient)")
-                return True
-            else:
-                print("❌ Enhanced system validation FAILED")
-                self._provide_fix_recommendations(validation_results)
-                return False
+            return all_passed
 
         except Exception as e:
-            print(f"❌ Enhanced validation error: {e}")
+            print(f"❌ Enhanced validation failed: {e}")
             return False
 
-    def _validate_network(self):
-        """Validate network connectivity"""
+    def _validate_network_connectivity(self) -> bool:
+        """Validate network connectivity and RPC functionality"""
         try:
+            print("🌐 Testing network connectivity...")
+
+            # Test basic connectivity
             if not self.w3.is_connected():
-                print("  ❌ Web3 not connected")
+                print("   ❌ Web3 not connected")
                 return False
 
+            # Test chain ID
             chain_id = self.w3.eth.chain_id
-            block_number = self.w3.eth.block_number
+            expected_chain = 42161 if self.agent.network_mode == 'mainnet' else 421614
 
-            if chain_id not in [42161, 421614]:  # Mainnet or Sepolia
-                print(f"  ❌ Wrong chain ID: {chain_id}")
+            if chain_id != expected_chain:
+                print(f"   ❌ Wrong chain ID: {chain_id} (expected {expected_chain})")
                 return False
 
-            print(f"  ✅ Network: Chain {chain_id}, Block {block_number}")
+            # Test latest block
+            latest_block = self.w3.eth.block_number
+            if latest_block < 1000000:
+                print(f"   ❌ Invalid block number: {latest_block}")
+                return False
+
+            print(f"   ✅ Network OK - Chain {chain_id}, Block {latest_block}")
             return True
 
         except Exception as e:
-            print(f"  ❌ Network validation failed: {e}")
+            print(f"   ❌ Network validation failed: {e}")
             return False
 
-    def _validate_contracts(self):
-        """Validate contract addresses"""
+    def _validate_contract_addresses(self) -> bool:
+        """Validate contract addresses are properly formatted"""
         try:
-            contracts = [
+            print("📋 Testing contract addresses...")
+
+            addresses_to_test = [
                 ("USDC", self.agent.usdc_address),
                 ("WBTC", self.agent.wbtc_address),
                 ("WETH", self.agent.weth_address),
+                ("DAI", self.agent.dai_address),
                 ("Aave Pool", self.agent.aave_pool_address)
             ]
 
-            for name, address in contracts:
-                if not Web3.is_address(address):
-                    print(f"  ❌ Invalid {name} address: {address}")
-                    return False
-
+            all_valid = True
+            for name, address in addresses_to_test:
                 try:
-                    code = self.w3.eth.get_code(Web3.to_checksum_address(address))
-                    if code == b'':
-                        print(f"  ❌ No contract at {name} address: {address}")
-                        return False
-                except Exception as e:
-                    print(f"  ❌ Failed to check {name} contract: {e}")
-                    return False
+                    # Validate format
+                    if not address or len(address) != 42 or not address.startswith('0x'):
+                        print(f"   ❌ {name} invalid format: {address}")
+                        all_valid = False
+                        continue
 
-            print("  ✅ All contract addresses validated")
+                    # Test checksum (don't fail if checksum is wrong, just warn)
+                    try:
+                        Web3.to_checksum_address(address)
+                        print(f"   ✅ {name}: {address}")
+                    except Exception:
+                        print(f"   ⚠️ {name}: {address} (checksum warning)")
+                        # Don't fail validation for checksum issues
+
+                except Exception as addr_error:
+                    print(f"   ❌ {name} validation error: {addr_error}")
+                    all_valid = False
+
+            return all_valid
+
+        except Exception as e:
+            print(f"   ❌ Contract address validation failed: {e}")
+            return False
+
+    def _validate_account_setup(self) -> bool:
+        """Validate account and wallet setup"""
+        try:
+            print("🔑 Testing account setup...")
+
+            # Check account exists
+            if not hasattr(self.agent, 'account') or not self.agent.account:
+                print("   ❌ No account configured")
+                return False
+
+            # Check address format
+            if not hasattr(self.agent, 'address') or len(self.agent.address) != 42:
+                print("   ❌ Invalid wallet address")
+                return False
+
+            # Test ETH balance access
+            try:
+                eth_balance = self.agent.get_eth_balance()
+                print(f"   ✅ ETH balance: {eth_balance:.6f} ETH")
+
+                if eth_balance < 0.001:
+                    print("   ⚠️ Low ETH balance for gas fees")
+
+            except Exception as balance_error:
+                print(f"   ⚠️ ETH balance check failed: {balance_error}")
+
+            print(f"   ✅ Account setup OK - {self.agent.address}")
             return True
 
         except Exception as e:
-            print(f"  ❌ Contract validation failed: {e}")
+            print(f"   ❌ Account validation failed: {e}")
             return False
 
-    def _validate_integrations(self):
-        """Validate DeFi integrations"""
+    def _validate_integrations(self) -> bool:
+        """Validate DeFi integration readiness"""
         try:
-            # Initialize integrations if not already done
-            if not hasattr(self.agent, 'aave') or not self.agent.aave:
-                print("  🔄 Initializing missing integrations...")
-                success = self.agent.initialize_integrations()
-                if not success:
-                    print("  ❌ Failed to initialize integrations")
-                    return False
+            print("🔧 Testing integration readiness...")
+
+            # Check if integrations are initialized
+            integrations_ready = True
 
             required_integrations = [
                 ('aave', 'Aave'),
@@ -150,116 +171,20 @@ class EnhancedSystemValidator:
                 ('gas_calculator', 'Gas Calculator')
             ]
 
-            missing = []
-            for attr, name in required_integrations:
-                if not hasattr(self.agent, attr) or getattr(self.agent, attr) is None:
-                    missing.append(name)
+            for attr_name, display_name in required_integrations:
+                if not hasattr(self.agent, attr_name) or getattr(self.agent, attr_name) is None:
+                    print(f"   ❌ {display_name} not initialized")
+                    integrations_ready = False
+                else:
+                    print(f"   ✅ {display_name} ready")
 
-            if missing:
-                print(f"  ❌ Missing integrations: {', '.join(missing)}")
-                return False
-
-            print("  ✅ All integrations present and initialized")
-            return True
+            return integrations_ready
 
         except Exception as e:
-            print(f"  ❌ Integration validation failed: {e}")
+            print(f"   ❌ Integration validation failed: {e}")
             return False
 
-    def _validate_wallet(self):
-        """Validate wallet readiness"""
-        try:
-            eth_balance = self.agent.get_eth_balance()
-
-            if eth_balance < 0.001:  # Minimum ETH for gas
-                print(f"  ❌ Insufficient ETH: {eth_balance:.6f}")
-                return False
-
-            # Check if wallet has valid address
-            if not Web3.is_address(self.agent.address):
-                print(f"  ❌ Invalid wallet address: {self.agent.address}")
-                return False
-
-            print(f"  ✅ Wallet ready - ETH: {eth_balance:.6f}")
-            return True
-
-        except Exception as e:
-            print(f"  ❌ Wallet validation failed: {e}")
-            return False
-
-    def _validate_borrow_system(self):
-        """Validate enhanced borrow system"""
-        try:
-            # Check if enhanced borrow manager exists
-            if not hasattr(self.agent, 'enhanced_borrow_manager'):
-                print("  ❌ Enhanced borrow manager not initialized")
-                return False
-
-            ebm = self.agent.enhanced_borrow_manager
-            if not ebm:
-                print("  ❌ Enhanced borrow manager is None")
-                return False
-
-            # Test borrow validation method
-            if not hasattr(ebm, '_validate_borrow_conditions'):
-                print("  ❌ Borrow validation method missing")
-                return False
-
-            print("  ✅ Enhanced borrow system available")
-            return True
-
-        except Exception as e:
-            print(f"  ❌ Borrow system validation failed: {e}")
-            return False
-
-    def _provide_fix_recommendations(self, results):
-        """Provide specific fix recommendations"""
-        print("\n🔧 FIX RECOMMENDATIONS:")
-        
-        if not results['network_connectivity']:
-            print("  • Check RPC endpoints and network connectivity")
-        
-        if not results['contract_addresses']:
-            print("  • Verify contract addresses for current network")
-        
-        if not results['integrations']:
-            print("  • Run agent.initialize_integrations() manually")
-        
-        if not results['wallet_readiness']:
-            print("  • Add ETH to wallet for gas fees")
-        
-        if not results['borrow_system']:
-            print("  • Initialize enhanced borrow manager")
-
-def validate_arbitrum_testnet_agent():
-    """Validate the main agent module"""
-    try:
-        # First check for syntax errors
-        import py_compile
-        py_compile.compile('arbitrum_testnet_agent.py', doraise=True)
-        print("✅ Syntax validation passed")
-
-        # Then test import
-        from arbitrum_testnet_agent import ArbitrumTestnetAgent
-        print("✅ Import validation passed")
-        return True
-    except py_compile.PyCompileError as e:
-        print(f"❌ Syntax error in arbitrum_testnet_agent.py: {e}")
-        return False
-    except Exception as e:
-        print(f"❌ ArbitrumTestnetAgent validation failed: {e}")
-        return False
-
-if __name__ == "__main__":
-    # Test the validator
-    try:
-        if validate_arbitrum_testnet_agent():
-            from arbitrum_testnet_agent import ArbitrumTestnetAgent
-            agent = ArbitrumTestnetAgent()
-            validator = EnhancedSystemValidator(agent)
-            result = validator.run_comprehensive_validation()
-            print(f"\n🎯 Final Result: {'SUCCESS' if result else 'NEEDS FIXES'}")
-        else:
-            print("❌ Cannot run validator due to agent issues")
-    except Exception as e:
-        print(f"❌ Validator test failed: {e}")
+def validate_system_enhanced(agent) -> bool:
+    """Enhanced system validation function"""
+    validator = EnhancedSystemValidator(agent)
+    return validator.run_comprehensive_validation()

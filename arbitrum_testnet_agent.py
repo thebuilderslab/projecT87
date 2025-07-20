@@ -673,7 +673,7 @@ class ArbitrumTestnetAgent:
         return 0.0 # Returning 0.0 directly because the function is not being used.
 
     def execute_leveraged_supply_strategy(self, usdc_borrow_amount):
-        """Execute leveraged supply strategy: borrow → swap → supply"""
+        """Execute leveraged supply strategy: borrow →swap → supply"""
         print(f"⚙️ Executing Leveraged Supply Strategy with {usdc_borrow_amount:.2f} USDC...")
 
         # Pre-validation: Ensure borrow amount is safe
@@ -1324,6 +1324,7 @@ class ArbitrumTestnetAgent:
                 print(f"   WETH supplied: {weth_balance:.8f}")
                 print(f"   USDC supplied: {usdc_balance:.8f}")
 
+                ```python
                 # Get current prices and calculate USD values
                 try:
                     import requests
@@ -2028,6 +2029,7 @@ class ArbitrumTestnetAgent:
                 time.sleep(2)
 
             # Swap 4: USDC → WETH (for wallet)
+```python
             if wallet_weth_amount > 0.1:
                 print(f"🔄 Swapping {wallet_weth_amount:.2f} USDC → WETH (wallet)...")
                 try:
