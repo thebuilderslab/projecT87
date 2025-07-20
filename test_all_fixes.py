@@ -1,13 +1,22 @@
-
 #!/usr/bin/env python3
 """
-Comprehensive Test Script for All System Fixes
+Test All Fixes - Comprehensive validation of all applied fixes
 """
 
 import os
 import sys
-import time
 import traceback
+import subprocess
+from typing import Dict, List
+
+# Import dependency validator
+try:
+    from dependency_validator import DependencyValidator
+    DEPENDENCY_VALIDATOR_AVAILABLE = True
+except ImportError:
+    DEPENDENCY_VALIDATOR_AVAILABLE = False
+    print("⚠️ Dependency validator not available")
+import time
 from web3 import Web3
 
 def test_usdc_address_fix():
@@ -21,7 +30,7 @@ def test_usdc_address_fix():
             print("   ✅ Syntax check passed")
         except py_compile.PyCompileError as syntax_error:
             print(f"   ❌ Syntax error detected: {syntax_error}")
-            
+
             # Try to identify the specific line and issue
             error_str = str(syntax_error)
             if "line" in error_str:
@@ -30,22 +39,22 @@ def test_usdc_address_fix():
                 if line_match:
                     line_num = int(line_match.group(1))
                     print(f"   🎯 Error at line {line_num}")
-                    
+
                     # Show context around the error
                     try:
                         with open('arbitrum_testnet_agent.py', 'r') as f:
                             lines = f.readlines()
-                        
+
                         start = max(0, line_num - 3)
                         end = min(len(lines), line_num + 2)
-                        
+
                         print(f"   📋 Context around line {line_num}:")
                         for i in range(start, end):
                             marker = ">>> " if i + 1 == line_num else "    "
                             print(f"   {marker}{i+1:3d}: {lines[i].rstrip()}")
                     except Exception:
                         pass
-            
+
             print("   🔧 Syntax error needs manual fixing")
             return False
 
@@ -66,7 +75,7 @@ def test_usdc_address_fix():
 
         # Check USDC address
         expected_usdc = "0xFF970A61A04b1cA14834A651bAb06d67307796618"
-        
+
         # Normalize both addresses for comparison
         try:
             agent_usdc_normalized = Web3.to_checksum_address(agent.usdc_address)
@@ -120,7 +129,7 @@ def test_json_serialization_fix():
             import json
             with open('test_decimal_serialization.json', 'r') as f:
                 loaded_data = json.load(f)
-            
+
             # Check if Decimals were converted to floats
             if isinstance(loaded_data['health_factor'], (int, float)):
                 print("   ✅ Decimal serialization working correctly")
@@ -278,12 +287,12 @@ def run_all_tests():
         try:
             result = test_func()
             results.append((test_name, result))
-            
+
             if result:
                 print(f"   🎯 {test_name}: SUCCESS")
             else:
                 print(f"   ⚠️ {test_name}: NEEDS ATTENTION")
-                
+
         except Exception as e:
             print(f"   ❌ {test_name} threw exception: {e}")
             print(f"   📋 Traceback: {traceback.format_exc()}")
@@ -313,19 +322,106 @@ def run_all_tests():
         print("❌ CRITICAL ISSUES - Major fixes needed")
         return False
 
+def run_all_validation_tests():
+    """Run comprehensive validation of all fixes"""
+    print("🚀 RUNNING ALL FIX VALIDATION TESTS")
+    print("=" * 50)
+
+    test_results = {}
+
+    # Test 0: Dependency Validation (NEW)
+    test_results['dependency_validation'] = test_dependency_validation()
+
+    # Test 1: USDC Address Fix
+    test_results['usdc_fix'] = test_usdc_address_fix()
+
+    # Test 2: JSON Serialization Fix  
+    test_results['json_fix'] = test_json_serialization_fix()
+
+    # Test 3: Contract Validation
+    test_results['contract_validation'] = test_contract_validation()
+
+    # Test 4: Enhanced System Validator
+    test_results['enhanced_validator'] = test_enhanced_system_validator()
+
+    # Test 5: Borrow Diagnostic Tool
+    test_results['borrow_diagnostic'] = test_borrow_diagnostic_tool()
+
+    # Test 6: Gas Estimation (NEW)
+    test_results['gas_estimation'] = test_gas_estimation()
+
+    return test_results
+
+def test_dependency_validation():
+    """Test comprehensive dependency validation"""
+    print("\n🧪 DEPENDENCY VALIDATION")
+    print("-" * 30)
+
+    if not DEPENDENCY_VALIDATOR_AVAILABLE:
+        print("   ❌ Dependency validator module not available")
+        return False
+
+    try:
+        validator = DependencyValidator()
+        results = validator.run_comprehensive_validation()
+
+        if results['overall_success']:
+            print("   ✅ All dependencies validated successfully")
+            return True
+        else:
+            print("   ❌ Dependency validation failed")
+            if results['critical_failures']:
+                for failure in results['critical_failures']:
+                    print(f"      - {failure}")
+            return False
+
+    except Exception as e:
+        print(f"   ❌ Dependency validation error: {e}")
+        return False
+
+def test_gas_estimation():
+    """Test gas estimation functionality"""
+    print("\n🧪 GAS ESTIMATION")
+    print("-" * 30)
+
+    try:
+        print("⛽ Testing gas estimation functionality...")
+
+        # Test basic gas parameter generation
+        from arbitrum_testnet_agent import ArbitrumTestnetAgent
+
+        # Initialize agent with error handling
+        agent = ArbitrumTestnetAgent()
+
+        # Test gas parameter methods
+        gas_params = agent.get_optimized_gas_params('aave_borrow', 'market')
+
+        if gas_params and 'gas' in gas_params and 'gasPrice' in gas_params:
+            print("   ✅ Gas parameter generation working")
+            print(f"      Gas limit: {gas_params['gas']}")
+            print(f"      Gas price: {gas_params['gasPrice']} wei")
+            return True
+        else:
+            print("   ❌ Gas parameter generation failed")
+            return False
+
+    except Exception as e:
+        print(f"   ❌ Gas estimation test error: {e}")
+        return False
+
 if __name__ == "__main__":
     try:
         success = run_all_tests()
-        
+
         if success:
             print("\n🚀 SYSTEM READY FOR WORKFLOW EXECUTION")
             print("   Run the '🔍 Test Enhanced Diagnostics Fixed' workflow")
         else:
             print("\n🔧 SYSTEM NEEDS MORE FIXES")
             print("   Review failed tests and apply fixes")
-            
+
         sys.exit(0 if success else 1)
-        
+
     except Exception as e:
         print(f"❌ Test runner failed: {e}")
         print(f"📋 Traceback: {traceback.format_exc()}")
