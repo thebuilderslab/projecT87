@@ -171,4 +171,12 @@ class EnhancedBorrowManager:
             import traceback
             print(f"🔍 Stack trace: {traceback.format_exc()}")
             return False
-`
+
+    def execute_enhanced_borrow_with_retry(self, safe_borrow_amount):
+        """Execute borrow with enhanced retry mechanism - corrected signature"""
+        try:
+            # Use the safe_borrow_with_fallbacks method which exists
+            return self.safe_borrow_with_fallbacks(safe_borrow_amount, self.agent.usdc_address)
+        except Exception as e:
+            print(f"❌ Enhanced borrow execution failed: {e}")
+            return False
