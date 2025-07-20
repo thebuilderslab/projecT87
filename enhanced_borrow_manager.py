@@ -147,11 +147,15 @@ class EnhancedBorrowManager:
                 if hasattr(self.agent, 'aave') and self.agent.aave:
                     # Simulate the transaction with proper gas context
                     try:
-                        # CRITICAL FIX: Use DAI decimals (18) not USDC decimals (6)
-                        dai_amount_wei = int(amount_usd * (10 ** 18))  # DAI has 18 decimals
+                        # CORRECTED: Use DAI decimals (18) for DAI token
+                        if token_address_checksum.lower() == self.agent.dai_address.lower():
+                            amount_wei = int(amount_usd * (10 ** 18))  # DAI has 18 decimals
+                        else:
+                            amount_wei = int(amount_usd * (10 ** 6))   # USDC has 6 decimals
+                        
                         self.agent.aave.pool_contract.functions.borrow(
                             token_address_checksum,
-                            dai_amount_wei,  # Use correct DAI amount
+                            amount_wei,  # Use token-specific amount
                             2,  # Variable rate
                             0,  # Referral code
                             user_address
