@@ -1326,8 +1326,8 @@ class ArbitrumTestnetAgent:
 
                 if wallet_weth_amount > 0.1:
                     # Get current prices and calculate USD values
-                try:
-                    import requests
+                    try:
+                        import requests
                     url = "https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest"
                     headers = {'X-CMC_PRO_API_KEY': self.coinmarketcap_api_key}
                     params = {'symbol': 'BTC,ETH,USDC', 'convert': 'USD'}
