@@ -6,6 +6,7 @@ Analyzes specific reasons why borrow transactions are reverting
 
 from arbitrum_testnet_agent import ArbitrumTestnetAgent
 from web3 import Web3
+from web3.exceptions import ContractLogicError
 import json
 
 
@@ -227,30 +228,45 @@ def diagnose_recent_reverts():
             user_address = agent.address
             amount_wei = 10 * (10**6)  # $10 in USDC wei
 
+            # Use .call() for simulation
             pool_contract.functions.borrow(
                 Web3.to_checksum_address(usdc_address),
                 amount_wei,
                 2,  # Variable rate
                 0,  # Referral code
-                Web3.to_checksum_address(user_address)).call(
-                    {'from': Web3.to_checksum_address(user_address)})
+                Web3.to_checksum_address(user_address)
+            ).call({'from': Web3.to_checksum_address(user_address)})
 
             print(f"✅ Simulation SUCCESS - $10 borrow should work!")
 
-        except Exception as sim_error:
-            print(f"❌ Simulation FAILED: {sim_error}")
-
-            # Provide specific guidance
-            if "insufficient collateral" in str(sim_error).lower():
-                print(
-                    f"💡 SOLUTION: Need more collateral - current ${collateral_usd:.2f}"
-                )
-            elif "health factor" in str(sim_error).lower():
-                print(
-                    f"💡 SOLUTION: Borrow amount too large for HF {health_factor:.4f}"
-                )
-            elif "borrowing not enabled" in str(sim_error).lower():
-                print(f"💡 SOLUTION: Check if USDC borrowing is enabled")
+        except ContractLogicError as e:
+            revert_reason = str(e)
+            print(f"❌ Simulation FAILED: Contract Reverted!")
+            print(f"🎯 REVERT REASON: {revert_reason}")
+            if "Aave/unavailable-liquidity" in revert_reason:
+                print("💡 ISSUE: Insufficient liquidity in the Aave pool for the requested asset.")
+                print("SOLUTION: Try borrowing a different asset or a smaller amount.")
+            elif "Aave/health-factor-not-improved" in revert_reason:
+                print("💡 ISSUE: Health factor would not improve or would fall below liquidation threshold.")
+                print("SOLUTION: Provide more collateral or reduce the borrow amount.")
+            elif "Aave/too-small-borrow" in revert_reason:
+                print("💡 ISSUE: Attempted to borrow an amount smaller than the protocol's minimum.")
+                print("SOLUTION: Increase the borrow amount.")
+            elif "Aave/" in revert_reason: # Catch other Aave-specific reverts
+                # This attempts to parse the Aave error code if present
+                try:
+                    aave_error_code = revert_reason.split('Aave/')[1].split(':')[0].strip()
+                    print(f"💡 ISSUE: Aave Protocol specific error: {aave_error_code}")
+                except IndexError:
+                    print("💡 ISSUE: Generic Aave Protocol error (could not parse specific code).")
+                print("SOLUTION: Consult Aave documentation for this specific error or condition.")
+            else:
+                print("💡 ISSUE: Generic contract execution reverted.")
+                print("SOLUTION: Review contract state, Aave documentation, or debug further.")
+        except Exception as e:
+            print(f"❌ Simulation FAILED: {e}")
+            print("💡 ISSUE: Unexpected error during simulation.")
+            print("SOLUTION: Check environment or RPC connection.")
 
     except Exception as e:
         print(f"❌ Diagnostic failed: {e}")
