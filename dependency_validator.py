@@ -199,3 +199,119 @@ def validate_system_dependencies():
 if __name__ == "__main__":
     success = validate_system_dependencies()
     sys.exit(0 if success else 1)
+import os
+import sys
+import importlib
+from typing import Dict, List
+
+class DependencyValidator:
+    def __init__(self):
+        self.validation_results = {}
+        self.critical_failures = []
+        self.warnings = []
+
+    def run_comprehensive_validation(self) -> Dict:
+        """Run comprehensive dependency validation"""
+        print("🔧 COMPREHENSIVE DEPENDENCY VALIDATION")
+        print("=" * 50)
+
+        # Check critical Python modules
+        self._check_core_dependencies()
+        
+        # Check custom modules
+        self._check_custom_modules()
+        
+        # Check configuration files
+        self._check_config_files()
+        
+        # Overall assessment
+        overall_success = len(self.critical_failures) == 0
+        
+        return {
+            'overall_success': overall_success,
+            'validation_results': self.validation_results,
+            'critical_failures': self.critical_failures,
+            'warnings': self.warnings
+        }
+
+    def _check_core_dependencies(self):
+        """Check core Python dependencies"""
+        core_deps = [
+            'web3', 'eth_account', 'requests', 'json', 'time', 'os', 'sys', 'math'
+        ]
+        
+        print("📦 Checking core dependencies...")
+        for dep in core_deps:
+            try:
+                importlib.import_module(dep)
+                self.validation_results[f'core_{dep}'] = True
+                print(f"   ✅ {dep}")
+            except ImportError as e:
+                self.validation_results[f'core_{dep}'] = False
+                self.critical_failures.append(f"Missing core dependency: {dep}")
+                print(f"   ❌ {dep} - {e}")
+
+    def _check_custom_modules(self):
+        """Check custom application modules"""
+        custom_modules = [
+            'arbitrum_testnet_agent',
+            'aave_integration',
+            'uniswap_integration', 
+            'aave_health_monitor',
+            'gas_fee_calculator',
+            'enhanced_borrow_manager'
+        ]
+        
+        print("\n🔧 Checking custom modules...")
+        for module in custom_modules:
+            try:
+                # Check if file exists
+                if os.path.exists(f"{module}.py"):
+                    # Try to compile
+                    import py_compile
+                    py_compile.compile(f"{module}.py", doraise=True)
+                    
+                    # Try to import
+                    importlib.import_module(module)
+                    self.validation_results[f'custom_{module}'] = True
+                    print(f"   ✅ {module}")
+                else:
+                    self.validation_results[f'custom_{module}'] = False
+                    self.warnings.append(f"Module file not found: {module}.py")
+                    print(f"   ⚠️ {module} - File not found")
+                    
+            except (ImportError, py_compile.PyCompileError, SyntaxError) as e:
+                self.validation_results[f'custom_{module}'] = False
+                if module == 'arbitrum_testnet_agent':
+                    self.critical_failures.append(f"Critical module failed: {module} - {e}")
+                else:
+                    self.warnings.append(f"Module issue: {module} - {e}")
+                print(f"   ❌ {module} - {e}")
+
+    def _check_config_files(self):
+        """Check configuration files"""
+        config_files = [
+            'agent_baseline.json',
+            'agent_config.json'
+        ]
+        
+        print("\n📄 Checking configuration files...")
+        for config_file in config_files:
+            if os.path.exists(config_file):
+                self.validation_results[f'config_{config_file}'] = True
+                print(f"   ✅ {config_file}")
+            else:
+                self.validation_results[f'config_{config_file}'] = False
+                self.warnings.append(f"Config file missing: {config_file}")
+                print(f"   ⚠️ {config_file} - Not found")
+
+if __name__ == "__main__":
+    validator = DependencyValidator()
+    results = validator.run_comprehensive_validation()
+    
+    if results['overall_success']:
+        print("\n🎉 ALL CRITICAL DEPENDENCIES VALIDATED")
+    else:
+        print("\n❌ CRITICAL DEPENDENCY ISSUES DETECTED")
+        for failure in results['critical_failures']:
+            print(f"   • {failure}")

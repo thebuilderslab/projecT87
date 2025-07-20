@@ -388,6 +388,15 @@ def test_gas_estimation():
     try:
         print("⛽ Testing gas estimation functionality...")
 
+        # Check if the critical syntax error is fixed first
+        import py_compile
+        try:
+            py_compile.compile('arbitrum_testnet_agent.py', doraise=True)
+            print("   ✅ Agent syntax validation passed")
+        except py_compile.PyCompileError as syntax_error:
+            print(f"   ❌ Syntax error still present: {syntax_error}")
+            return False
+
         # Test basic gas parameter generation
         from arbitrum_testnet_agent import ArbitrumTestnetAgent
 

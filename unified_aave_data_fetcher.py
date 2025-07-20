@@ -307,3 +307,72 @@ class UnifiedAaveDataFetcher:
     def get_position_data(self):
         """Get current Aave position data"""
         return get_unified_aave_data(self.agent)
+"""
+Unified Aave Data Fetcher
+Centralized system for fetching Aave protocol data with fallbacks
+"""
+
+from web3 import Web3
+import time
+
+def get_unified_aave_data(agent):
+    """Get unified Aave data with error handling"""
+    try:
+        print("🔍 Fetching unified Aave data...")
+        
+        # Standard Aave Pool ABI for getUserAccountData
+        pool_abi = [{
+            "inputs": [{"name": "user", "type": "address"}],
+            "name": "getUserAccountData",
+            "outputs": [
+                {"name": "totalCollateralBase", "type": "uint256"},
+                {"name": "totalDebtBase", "type": "uint256"},
+                {"name": "availableBorrowsBase", "type": "uint256"},
+                {"name": "currentLiquidationThreshold", "type": "uint256"},
+                {"name": "ltv", "type": "uint256"},
+                {"name": "healthFactor", "type": "uint256"}
+            ],
+            "stateMutability": "view",
+            "type": "function"
+        }]
+
+        pool_contract = agent.w3.eth.contract(
+            address=agent.aave_pool_address,
+            abi=pool_abi
+        )
+
+        # Get fresh account data
+        account_data = pool_contract.functions.getUserAccountData(agent.address).call()
+
+        # Parse data (Aave V3 uses 8 decimals for USD values)
+        total_collateral_usd = account_data[0] / (10**8)
+        total_debt_usd = account_data[1] / (10**8)
+        available_borrows_usd = account_data[2] / (10**8)
+        health_factor = account_data[5] / (10**18) if account_data[5] > 0 else float('inf')
+
+        unified_data = {
+            'success': True,
+            'timestamp': time.time(),
+            'total_collateral_usdc': total_collateral_usd,
+            'total_debt_usdc': total_debt_usd,
+            'available_borrows_usdc': available_borrows_usd,
+            'health_factor': health_factor,
+            'data_source': 'direct_aave_contract'
+        }
+
+        print(f"✅ Unified Aave data retrieved successfully:")
+        print(f"   Collateral: ${total_collateral_usd:.2f}")
+        print(f"   Debt: ${total_debt_usd:.2f}")
+        print(f"   Health Factor: {health_factor:.4f}")
+
+        return unified_data
+
+    except Exception as e:
+        print(f"❌ Unified Aave data fetch failed: {e}")
+        return {
+            'success': False,
+            'error': str(e),
+            'timestamp': time.time()
+        }
+
+print("✅ Unified Aave Data Fetcher loaded")

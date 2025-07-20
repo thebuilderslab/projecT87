@@ -2029,7 +2029,6 @@ class ArbitrumTestnetAgent:
                 time.sleep(2)
 
             # Swap 4: USDC → WETH (for wallet)
-```python
             if wallet_weth_amount > 0.1:
                 print(f"🔄 Swapping {wallet_weth_amount:.2f} USDC → WETH (wallet)...")
                 try:

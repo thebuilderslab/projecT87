@@ -83,3 +83,40 @@ def test_serialization():
 
 if __name__ == "__main__":
     test_serialization()
+"""
+JSON Serialization Fix
+Handles Decimal and other non-serializable types for JSON output
+"""
+
+import json
+import decimal
+from typing import Any, Dict
+
+class DecimalEncoder(json.JSONEncoder):
+    """Custom JSON encoder for Decimal types"""
+    
+    def default(self, obj):
+        if isinstance(obj, decimal.Decimal):
+            return float(obj)
+        return super(DecimalEncoder, self).default(obj)
+
+def safe_json_dump(data: Dict[str, Any], filename: str) -> bool:
+    """Safely dump data to JSON file with Decimal handling"""
+    try:
+        with open(filename, 'w') as f:
+            json.dump(data, f, cls=DecimalEncoder, indent=2)
+        return True
+    except Exception as e:
+        print(f"❌ JSON serialization failed: {e}")
+        return False
+
+def safe_json_loads(filename: str) -> Dict[str, Any]:
+    """Safely load JSON data from file"""
+    try:
+        with open(filename, 'r') as f:
+            return json.load(f)
+    except Exception as e:
+        print(f"❌ JSON deserialization failed: {e}")
+        return {}
+
+print("✅ JSON serialization fix loaded")
