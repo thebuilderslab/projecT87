@@ -1169,14 +1169,14 @@ class AaveArbitrumIntegration:
             print(f"   Current gas price: {current_gas_price / 1e9:.2f} gwei")
             print(f"   Base fee: {base_fee / 1e9:.2f} gwei")
 
-            # Enhanced gas limits for different operations
+            # SIGNIFICANTLY INCREASED gas limits for mainnet reliability
             gas_limits = {
-                'aave_borrow': 400000,  # Increased for reliability
-                'aave_supply': 300000,
-                'aave_repay': 250000,
-                'token_approval': 150000,
-                'uniswap_swap': 500000,
-                'default': 300000
+                'aave_borrow': 600000,  # Increased from 400k to 600k
+                'aave_supply': 400000,  # Increased from 300k to 400k
+                'aave_repay': 350000,   # Increased from 250k to 350k
+                'token_approval': 200000,  # Increased from 150k to 200k
+                'uniswap_swap': 700000,    # Increased from 500k to 700k
+                'default': 500000       # Increased from 300k to 500k
             }
 
             # Dynamic gas price multipliers based on network congestion

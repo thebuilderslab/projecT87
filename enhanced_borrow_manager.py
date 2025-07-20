@@ -198,12 +198,12 @@ class EnhancedBorrowManager:
                     0,  # Referral code
                     user_address
                 ).call({'from': user_address})
-                
+
                 print(f"✅ Transaction simulation passed")
-                
+
             except Exception as sim_error:
                 print(f"❌ Transaction simulation failed: {sim_error}")
-                
+
                 # Provide specific guidance based on simulation error
                 if "insufficient collateral" in str(sim_error).lower():
                     print(f"💡 Need more collateral deposited to Aave")
@@ -211,7 +211,7 @@ class EnhancedBorrowManager:
                     print(f"💡 Borrow would make health factor too low")
                 elif "borrowing not enabled" in str(sim_error).lower():
                     print(f"💡 Borrowing might not be enabled for this asset")
-                
+
                 return False
 
             print(f"✅ All enhanced validation checks passed")
@@ -229,22 +229,22 @@ class EnhancedBorrowManager:
             # Base parameters
             base_gas_limit = 500000
             current_gas_price = self.w3.eth.gas_price
-            
+
             # Increase with each attempt
             gas_multiplier = 2.0 + (attempt_number * 0.5)  # 2.0x, 2.5x, 3.0x
             gas_limit = base_gas_limit + (attempt_number * 100000)  # 500k, 600k, 700k
-            
+
             enhanced_gas_price = int(current_gas_price * gas_multiplier)
-            
-            # Ensure minimum viable gas price for mainnet
-            min_gas_price = int(1 * 10**9)  # 1 gwei minimum
+
+            # CRITICAL: Never go below 2 gwei to prevent network rejection
+            min_gas_price = int(2 * 10**9)  # 2 gwei minimum
             enhanced_gas_price = max(enhanced_gas_price, min_gas_price)
-            
+
             return {
                 'gas': gas_limit,
                 'gasPrice': enhanced_gas_price
             }
-            
+
         except Exception as e:
             print(f"⚠️ Enhanced gas params failed: {e}")
             return {
@@ -367,24 +367,24 @@ class EnhancedBorrowManager:
             current_block = self.w3.eth.get_block('latest')
             current_time = time.time()
             block_time = current_block.timestamp
-            
+
             # Check if we're close to block time (avoid mempool congestion)
             time_since_block = current_time - block_time
-            
+
             print(f"🕐 Network Timing Check:")
             print(f"   Time since last block: {time_since_block:.1f}s")
-            
+
             # Arbitrum blocks are ~0.25s, warn if we're too close to next expected block
             if time_since_block > 10:  # More than 10s since last block might indicate issues
                 print(f"⚠️ Long time since last block - network may be congested")
                 return False
-                
+
             # Check pending transaction count in mempool
             pending_tx_count = self.w3.eth.get_block('pending').transactions.__len__ if hasattr(self.w3.eth.get_block('pending'), 'transactions') else 0
             print(f"   Pending transactions: {pending_tx_count}")
-            
+
             return True
-            
+
         except Exception as e:
             print(f"⚠️ Network timing validation failed: {e}")
             return True  # Don't block if we can't check timing
