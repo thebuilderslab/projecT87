@@ -235,7 +235,10 @@ def diagnose_recent_reverts():
                 2,  # Variable rate
                 0,  # Referral code
                 Web3.to_checksum_address(user_address)
-            ).call({'from': Web3.to_checksum_address(user_address)})
+            ).call({
+                'from': Web3.to_checksum_address(user_address),
+                'gas': 700000  # Increased gas limit for simulation
+            })
 
             print(f"✅ Simulation SUCCESS - $10 borrow should work!")
 
