@@ -1324,24 +1324,24 @@ class ArbitrumTestnetAgent:
                 print(f"   WETH supplied: {weth_balance:.8f}")
                 print(f"   USDC supplied: {usdc_balance:.8f}")
 
-                    # Assuming this is now line 1327
-                    if self.coinmarketcap_api_key:
-                        # This try: should be properly indented, let's assume it's line 1328
-                        try:
-                            # This url = "..." line should be further indented, now on line 1330
-                            url = "[https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest](https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest)"
-                            # ... other lines of code that belong in the try block ...
+            # Assuming this is now line 1327
+                if self.coinmarketcap_api_key:
+                    # This try: should be properly indented, let's assume it's line 1328
+                    try:
+                        # This url = "..." line should be further indented, now on line 1330
+                        url = "https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest"
+                        # ... other lines of code that belong in the try block ...
 
-                        # Add an except block (or finally) with correct indentation
-                        except Exception as e: # You can use a more specific Exception type if known
-                            print(f"An error occurred fetching CoinMarketCap data: {e}")
-                            # Add appropriate error handling or logging here
-                            # For example, return None or raise the exception
-                            return None # Or some other fallback/error value
+                    # Add an except block (or finally) with correct indentation
+                    except Exception as e: # You can use a more specific Exception type if known
+                        print(f"An error occurred fetching CoinMarketCap data: {e}")
+                        # Add appropriate error handling or logging here
+                        # For example, return None or raise the exception
+                        return None # Or some other fallback/error value
 
-                        # You could also add a finally block if needed for cleanup:
-                        # finally:
-                        #     print("Finished CoinMarketCap API attempt.")
+                    # You could also add a finally block if needed for cleanup:
+                    # finally:
+                    #     print("Finished CoinMarketCap API attempt.")
                     try:
                         import requests
                     url = "https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest"
@@ -2024,7 +2024,8 @@ class ArbitrumTestnetAgent:
                         print(f"❌ WETH swap failed")
                 except Exception as e:
                     print(f"❌ WETH swap error: {e}")
-                    swap_results.append(False)
+                    swap```python
+_results.append(False)
                 time.sleep(2)
 
             # Swap 3: USDC → DAI
