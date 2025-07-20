@@ -335,7 +335,7 @@ class ArbitrumTestnetAgent:
         # Contract addresses based on network
         if self.network_mode == 'mainnet':
             # Arbitrum Mainnet addresses (verified from CoinGecko and Aave documentation)
-            self.usdc_address = Web3.to_checksum_address("0xFF970A61A04b1cA14834A651bAb06d67307796618")  # Correct USDC.e address
+            self.usdc_address = Web3.to_checksum_address("0xff970a61a04b1ca14834a651bab06d67307796618")
             self.wbtc_address = Web3.to_checksum_address("0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f")
             self.weth_address = Web3.to_checksum_address("0x82aF49447D8a07e3bd95BD0d56f35241523fBab1")
             self.dai_address = Web3.to_checksum_address("0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1")
@@ -1365,9 +1365,12 @@ class ArbitrumTestnetAgent:
 
                     except Exception as e:
                         print(f"⚠️ An error occurred fetching CoinMarketCap data: {e}")
+                        pass # Example: This was likely your line 1366
 
-                except Exception as price_error:
-                    print(f"⚠️ Price lookup error: {price_error}")
+
+            except Exception as price_error:
+                logging.error(f"Error fetching token prices: {price_error}")
+                return {}
 
             except Exception as enhanced_error:
                 print(f"⚠️ Enhanced collateral calculation failed: {enhanced_error}")

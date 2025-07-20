@@ -330,7 +330,6 @@ class AaveArbitrumIntegration:
                 {
                     "inputs": [],
                     "name": "symbol",
-```python
                     "outputs": [{"name": "", "type": "string"}],
                     "stateMutability": "view",
                     "type": "function"
@@ -1794,8 +1793,7 @@ class AaveArbitrumIntegration:
             wbtc_supplied = self.get_supplied_balance(self.wbtc_address)
             usdc_suppliedsupplied = self.get_supplied_balance(self.usdc_address)
 
-            ```python
-            # Output balancesprint(f"   Wallet WETH balance:   {weth_balance:.8f}")
+                     # Output balancesprint(f"   Wallet WETH balance:   {weth_balance:.8f}")
             print(f"   Wallet WBTC balance:   {wbtc_balance:.8f}")
             print(f"   Wallet USDC balance:   {usdc_balance:.8f}")
 
