@@ -1362,8 +1362,8 @@ class ArbitrumTestnetAgent:
                     except Exception as e:
                         print(f"⚠️ An error occurred fetching CoinMarketCap data: {e}")
 
-                except Exception as price_error:
-                    print(f"⚠️ Price lookup error: {price_error}")
+            except Exception as enhanced_error:
+                print(f"⚠️ Enhanced collateral calculation failed: {enhanced_error}")
 
             except Exception as enhanced_error:
                 print(f"⚠️ Enhanced collateral calculation failed: {enhanced_error}")
