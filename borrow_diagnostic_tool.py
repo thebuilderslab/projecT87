@@ -1,21 +1,25 @@
 #!/usr/bin/env python3
 """
-Comprehensive Borrowing Diagnostic Tool
-Analyzes and fixes all borrowing-related issues
+Comprehensive Borrowing Diagnostic Tool with Enhanced Validation
 """
 
+import os
 import json
 import time
 from datetime import datetime
+from web3 import Web3
+from enhanced_system_validator import EnhancedSystemValidator
+from fix_json_serialization import safe_json_dump
 from arbitrum_testnet_agent import ArbitrumTestnetAgent
 from config_constants import MIN_ETH_FOR_OPERATIONS
-from web3 import Web3
+
 
 class BorrowDiagnosticTool:
     def __init__(self):
         self.agent = None
         self.issues = []
         self.fixes_applied = []
+        self.validator = None
 
     def initialize_agent(self):
         """Initialize agent with error handling"""
@@ -27,6 +31,9 @@ class BorrowDiagnosticTool:
             if not self.agent.initialize_integrations():
                 self.issues.append("DeFi integrations failed to initialize")
                 return False
+
+            # Initialize the system validator
+            self.validator = EnhancedSystemValidator(self.agent)
 
             print("✅ Agent initialized successfully")
             return True
@@ -333,7 +340,7 @@ class BorrowDiagnosticTool:
         report_filename = f"borrow_diagnostic_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
 
         with open(report_filename, 'w') as f:
-            json.dump(report, f, indent=2)
+            safe_json_dump(report, f, indent=2)
 
         print(f"📄 Report saved: {report_filename}")
 
@@ -370,7 +377,16 @@ class BorrowDiagnosticTool:
         # Step 6: Test small borrow
         self.test_small_borrow()
 
-        # Step 7: Generate report
+        # Step 7: Enhanced System Validation
+        validation_results = self.validator.run_all_checks()  # Execute all validation checks
+
+        if validation_results:
+            print("\n🛠️  Validation Issues Found:")
+            for issue in validation_results:
+                print(f"   - {issue}")
+                self.issues.append(issue)
+
+        # Step 8: Generate report
         return self.generate_report()
 
 def main():

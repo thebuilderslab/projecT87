@@ -24,7 +24,7 @@ mode = "sequential"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "echo \"🔍 Testing Enhanced Diagnostics with Centralized Constants\""
+args = "echo \"🔍 Testing Enhanced Diagnostics with All Fixes Applied\""
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
@@ -32,7 +32,7 @@ args = "echo \"==================================================\""
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "python borrow_diagnostic_tool.py"
+args = "python test_all_fixes.py"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
