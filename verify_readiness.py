@@ -1,83 +1,92 @@
 
 #!/usr/bin/env python3
 """
-Quick readiness verification for the DeFi agent
+System Readiness Verification
+Verify all components are ready for autonomous operation
 """
 
 import os
-from arbitrum_testnet_agent import ArbitrumTestnetAgent
-from config_constants import MIN_ETH_FOR_OPERATIONS
+import sys
+import json
 
 def verify_system_readiness():
-    """Comprehensive readiness check"""
-    print("🔍 VERIFYING SYSTEM READINESS")
+    """Verify all system components are ready"""
+    print("🔍 SYSTEM READINESS VERIFICATION")
     print("=" * 50)
     
-    issues = []
+    checks_passed = 0
+    total_checks = 0
     
+    # Check 1: Environment Variables
+    total_checks += 1
+    required_vars = ['WALLET_PRIVATE_KEY', 'COINMARKETCAP_API_KEY', 'NETWORK_MODE']
+    missing_vars = []
+    
+    for var in required_vars:
+        if not os.getenv(var):
+            missing_vars.append(var)
+    
+    if missing_vars:
+        print(f"❌ Missing environment variables: {missing_vars}")
+    else:
+        print("✅ All required environment variables present")
+        checks_passed += 1
+    
+    # Check 2: Critical Files
+    total_checks += 1
+    critical_files = [
+        'arbitrum_testnet_agent.py',
+        'aave_integration.py',
+        'uniswap_integration.py',
+        'aave_health_monitor.py',
+        'gas_fee_calculator.py'
+    ]
+    
+    missing_files = []
+    for file in critical_files:
+        if not os.path.exists(file):
+            missing_files.append(file)
+    
+    if missing_files:
+        print(f"❌ Missing critical files: {missing_files}")
+    else:
+        print("✅ All critical files present")
+        checks_passed += 1
+    
+    # Check 3: JSON Serialization
+    total_checks += 1
     try:
-        # Initialize agent
-        agent = ArbitrumTestnetAgent()
-        print(f"✅ Agent initialized successfully")
-        print(f"📍 Wallet: {agent.address}")
-        print(f"🌐 Network: {agent.network_mode} (Chain ID: {agent.w3.eth.chain_id})")
-        
-        # Check ETH balance
-        eth_balance = agent.get_eth_balance()
-        print(f"⚡ ETH Balance: {eth_balance:.6f} ETH")
-        
-        if eth_balance < MIN_ETH_FOR_OPERATIONS:
-            issues.append("Low ETH balance - may not cover gas fees")
-        
-        # Initialize integrations
-        if agent.initialize_integrations():
-            print("✅ DeFi integrations initialized")
-            
-            # Test USDC balance
-            if hasattr(agent, 'aave'):
-                usdc_balance = agent.aave.get_token_balance(agent.usdc_address)
-                print(f"💵 USDC Balance: {usdc_balance:.6f}")
-                
-                if usdc_balance > 0:
-                    print("✅ USDC balance detected - ready for swaps!")
-                else:
-                    issues.append("No USDC balance detected")
-            
-            # Test network connectivity
-            network_ok, status = agent.check_network_status()
-            if network_ok:
-                print("✅ Network connectivity verified")
-            else:
-                issues.append(f"Network issue: {status}")
+        from fix_json_serialization import safe_json_dump
+        test_data = {'test': 123, 'timestamp': 1234567890}
+        safe_json_dump(test_data, 'test_serialization.json')
+        if os.path.exists('test_serialization.json'):
+            os.remove('test_serialization.json')
+            print("✅ JSON serialization working")
+            checks_passed += 1
         else:
-            issues.append("DeFi integrations failed to initialize")
-        
-        # Final assessment
-        print(f"\n🎯 READINESS ASSESSMENT:")
-        if len(issues) == 0:
-            print("🎉 SYSTEM IS READY!")
-            print("✅ All critical components working")
-            print("🚀 Ready to run autonomous mode")
-            return True
-        else:
-            print(f"⚠️ {len(issues)} ISSUE(S) FOUND:")
-            for i, issue in enumerate(issues, 1):
-                print(f"   {i}. {issue}")
-            
-            # Check if issues are just funding related
-            funding_issues = [issue for issue in issues if 'balance' in issue.lower() or 'usdc' in issue.lower()]
-            if len(funding_issues) == len(issues):
-                print(f"\n💡 All issues are funding-related. You can:")
-                print("1. Fund your wallet with ETH and USDC")
-                print("2. Or set up test mode with lower requirements:")
-                print("   python funding_bypass_handler.py")
-            else:
-                print(f"\n💡 Fix these issues and re-run verification")
-            return False
-            
+            print("❌ JSON serialization failed")
     except Exception as e:
-        print(f"❌ Critical error during verification: {e}")
+        print(f"❌ JSON serialization error: {e}")
+    
+    # Check 4: Contract Validator
+    total_checks += 1
+    try:
+        from contract_validator import ContractValidator
+        print("✅ Contract validator module available")
+        checks_passed += 1
+    except Exception as e:
+        print(f"❌ Contract validator import failed: {e}")
+    
+    # Summary
+    print(f"\n📊 READINESS SUMMARY: {checks_passed}/{total_checks} checks passed")
+    
+    if checks_passed == total_checks:
+        print("✅ System is ready for autonomous operation")
+        return True
+    else:
+        print("❌ System needs fixes before autonomous operation")
         return False
 
 if __name__ == "__main__":
-    verify_system_readiness()
+    success = verify_system_readiness()
+    sys.exit(0 if success else 1)

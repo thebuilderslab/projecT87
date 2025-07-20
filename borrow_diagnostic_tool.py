@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 """
-Comprehensive Borrowing Diagnostic Tool with Enhanced Validation
+Enhanced Borrow Diagnostic Tool
+Comprehensive analysis of borrowing capabilities and issues
 """
 
 import os
+import sys
 import json
 import time
 from datetime import datetime

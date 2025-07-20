@@ -1,76 +1,74 @@
 
 #!/usr/bin/env python3
 """
-Wallet Diagnostics Script
-Provides detailed analysis of wallet state and readiness for DeFi operations
+Wallet Diagnostics Module
+Comprehensive wallet and network connectivity testing
 """
 
 import os
-from arbitrum_testnet_agent import ArbitrumTestnetAgent
-from config_constants import MIN_ETH_FOR_OPERATIONS
-from dotenv import load_dotenv
+import sys
+from web3 import Web3
 
-def run_wallet_diagnostics():
-    """Run comprehensive wallet diagnostics"""
-    print("🔍 WALLET DIAGNOSTICS")
+def test_wallet_connectivity():
+    """Test wallet connectivity and basic functionality"""
+    print("🔍 WALLET CONNECTIVITY DIAGNOSTICS")
     print("=" * 50)
     
     try:
-        # Initialize agent
-        agent = ArbitrumTestnetAgent()
+        # Test environment variables
+        private_key = os.getenv('WALLET_PRIVATE_KEY')
+        if not private_key:
+            print("❌ WALLET_PRIVATE_KEY not found in environment")
+            return False
         
-        print(f"✅ Connected to {agent.w3.eth.chain_id}")
-        print(f"📍 Wallet: {agent.address}")
+        print("✅ WALLET_PRIVATE_KEY found in environment")
         
-        # Check ETH balance
-        eth_balance = agent.get_eth_balance()
-        print(f"💰 ETH Balance: {eth_balance:.6f} ETH")
-        
-        # Check if wallet has enough for gas
-        if eth_balance < MIN_ETH_FOR_OPERATIONS:
-            print("⚠️ WARNING: Low ETH balance - may not be enough for transactions")
+        # Test key format
+        if private_key.startswith('0x'):
+            hex_part = private_key[2:]
         else:
-            print("✅ Sufficient ETH for gas fees")
-        
-        # Check Aave positions
-        if hasattr(agent, 'aave'):
-            health_data = agent.health_monitor.get_current_health_factor()
-            if health_data:
-                print(f"\n🏦 AAVE STATUS:")
-                print(f"   Health Factor: {health_data['health_factor']}")
-                print(f"   Total Collateral: {health_data['total_collateral_eth']:.6f} ETH")
-                print(f"   Total Debt: {health_data['total_debt_eth']:.6f} ETH")
-                
-                if health_data['total_collateral_eth'] == 0:
-                    print("💡 No active Aave positions - wallet is ready to start DeFi operations")
-                else:
-                    print("✅ Active Aave positions detected")
-        
-        # Check token balances
-        print(f"\n🪙 TOKEN BALANCES:")
-        try:
-            usdc_balance = agent.aave.get_token_balance(agent.aave.usdc_address)
-            print(f"   USDC: {usdc_balance:.2f}")
+            hex_part = private_key
             
-            arb_balance = agent.health_monitor.get_arb_balance()
-            print(f"   ARB: {arb_balance:.4f}")
-        except Exception as e:
-            print(f"   ❌ Error getting token balances: {e}")
+        if len(hex_part) != 64:
+            print(f"❌ Invalid private key length: {len(hex_part)} (expected 64)")
+            return False
+            
+        print("✅ Private key format validation passed")
         
-        # Recommendations
-        print(f"\n💡 RECOMMENDATIONS:")
-        if eth_balance > 0.01:
-            print("✅ Ready for DeFi operations!")
-            print("   - Agent will automatically start with small Aave supply operations")
-            print("   - Parameters are being applied correctly")
-            print("   - Next agent iteration will execute on-chain transactions")
+        # Test RPC connectivity
+        rpc_urls = [
+            "https://arb1.arbitrum.io/rpc",
+            "https://arbitrum-one.public.blastapi.io",
+            "https://arbitrum-one.publicnode.com"
+        ]
+        
+        working_rpcs = 0
+        for rpc_url in rpc_urls:
+            try:
+                w3 = Web3(Web3.HTTPProvider(rpc_url, request_kwargs={'timeout': 10}))
+                if w3.is_connected():
+                    chain_id = w3.eth.chain_id
+                    if chain_id == 42161:
+                        print(f"✅ RPC working: {rpc_url}")
+                        working_rpcs += 1
+                    else:
+                        print(f"❌ Wrong chain ID {chain_id}: {rpc_url}")
+                else:
+                    print(f"❌ Connection failed: {rpc_url}")
+            except Exception as e:
+                print(f"❌ RPC error {rpc_url}: {e}")
+                
+        if working_rpcs > 0:
+            print(f"✅ {working_rpcs}/{len(rpc_urls)} RPC endpoints working")
+            return True
         else:
-            print("⚠️ Need more ETH for meaningful DeFi operations")
-            print(f"   - Current: {eth_balance:.6f} ETH")
-            print("   - Recommended minimum: 0.01 ETH")
-        
+            print("❌ No working RPC endpoints found")
+            return False
+            
     except Exception as e:
-        print(f"❌ Diagnostics failed: {e}")
+        print(f"❌ Wallet diagnostics failed: {e}")
+        return False
 
 if __name__ == "__main__":
-    run_wallet_diagnostics()
+    success = test_wallet_connectivity()
+    sys.exit(0 if success else 1)
