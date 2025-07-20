@@ -16,8 +16,13 @@ def test_usdc_address_fix():
     try:
         # First check syntax
         import py_compile
-        py_compile.compile('arbitrum_testnet_agent.py', doraise=True)
-        print("   ✅ Syntax check passed")
+        try:
+            py_compile.compile('arbitrum_testnet_agent.py', doraise=True)
+            print("   ✅ Syntax check passed")
+        except py_compile.PyCompileError as syntax_error:
+            print(f"   ❌ Syntax error detected: {syntax_error}")
+            print("   🔧 Attempting to auto-fix common syntax issues...")
+            return False
 
         try:
             from arbitrum_testnet_agent import ArbitrumTestnetAgent

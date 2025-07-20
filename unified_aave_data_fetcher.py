@@ -1,4 +1,3 @@
-
 #!/usr/bin/env python3
 """
 Unified Aave Data Fetcher - Single Source of Truth
@@ -144,6 +143,49 @@ class UnifiedAaveDataFetcher:
             return False, f"Debt too high relative to collateral"
         
         return True, "Data validated successfully"
+
+def get_unified_aave_data(agent):
+    """Get unified Aave data from agent"""
+    try:
+        if not agent or not hasattr(agent, 'w3'):
+            return {'success': False, 'error': 'Invalid agent'}
+
+        # Use agent's Aave pool contract
+        pool_abi = [{
+            "inputs": [{"name": "user", "type": "address"}],
+            "name": "getUserAccountData",
+            "outputs": [
+                {"name": "totalCollateralBase", "type": "uint256"},
+                {"name": "totalDebtBase", "type": "uint256"},
+                {"name": "availableBorrowsBase", "type": "uint256"},
+                {"name": "currentLiquidationThreshold", "type": "uint256"},
+                {"name": "ltv", "type": "uint256"},
+                {"name": "healthFactor", "type": "uint256"}
+            ],
+            "stateMutability": "view",
+            "type": "function"
+        }]
+
+        pool_contract = agent.w3.eth.contract(
+            address=agent.aave_pool_address,
+            abi=pool_abi
+        )
+
+        account_data = pool_contract.functions.getUserAccountData(agent.address).call()
+
+        return {
+            'success': True,
+            'total_collateral_usdc': account_data[0] / (10**8),
+            'total_debt_usdc': account_data[1] / (10**8),
+            'available_borrows_usdc': account_data[2] / (10**8),
+            'health_factor': account_data[5] / (10**18) if account_data[5] > 0 else float('inf')
+        }
+
+    except Exception as e:
+        return {
+            'success': False,
+            'error': str(e)
+        }
 
 # Global instance for unified access
 _unified_fetcher = None
