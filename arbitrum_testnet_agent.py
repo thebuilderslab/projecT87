@@ -406,17 +406,17 @@ class ArbitrumTestnetAgent:
         self.last_operation_type = None  # Track type of last operation
         return True
 
-    def update_baseline_after_success(self, new_collateral_value_usd=None):
+    def update_baseline_after_success(self, new_collateral_value=None):
         """Update baseline collateral value after successful operation"""
         try:
-            if new_collateral_value_usd is not None:
-                self.last_collateral_value_usd = new_collateral_value_usd
-                print(f"✅ Updated baseline collateral: ${new_collateral_value_usd:.2f}")
+            if new_collateral_value is not None:
+                self.last_collateral_value_usd = new_collateral_value
+                print(f"✅ Updated baseline collateral: ${new_collateral_value:.2f}")
 
                 # Save to agent baseline file
                 baseline_data = {
                     'timestamp': time.time(),
-                    'collateral_value_usd': new_collateral_value_usd,
+                    'collateral_value_usd': new_collateral_value,
                     'updated_by': 'successful_operation'
                 }
 
@@ -674,7 +674,7 @@ class ArbitrumTestnetAgent:
 
         # Pre-validation: Ensure borrow amount is safe
         try:
-            pool_abi = [{
+            pool_abi = [{```python
                 "inputs": [{"name": "user", "type": "address"}],
                 "name": "getUserAccountData",
                 "outputs": [
@@ -1350,7 +1350,7 @@ class ArbitrumTestnetAgent:
                             current_collateral_value_usd = enhanced_collateral_usd
                             print(f"✅ Using enhanced collateral calculation: ${current_collateral_value_usd:,.2f}")
                         else:
-                            print(f"⚠️ Enhanced calculation still shows low value")
+                            print(f"🔍 DEBUG: Enhanced collateral calculation still shows low value")
                     else:
                         print(f"⚠️ Price fetch failed: {response.status_code}")
 

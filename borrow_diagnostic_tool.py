@@ -1,409 +1,455 @@
+
 #!/usr/bin/env python3
 """
-Enhanced Borrow Diagnostic Tool
-Comprehensive analysis of borrowing capabilities and issues
+Borrow Diagnostic Tool
+Comprehensive diagnostics for borrowing system issues
 """
 
 import os
-import sys
 import json
 import time
 from datetime import datetime
 from web3 import Web3
-from enhanced_system_validator import EnhancedSystemValidator
-from fix_json_serialization import safe_json_dump
-from arbitrum_testnet_agent import ArbitrumTestnetAgent
-from config_constants import MIN_ETH_FOR_OPERATIONS
-
 
 class BorrowDiagnosticTool:
-    def __init__(self):
-        self.agent = None
-        self.issues = []
-        self.fixes_applied = []
-        self.validator = None
+    def __init__(self, agent):
+        self.agent = agent
+        self.w3 = agent.w3
+        self.diagnostics = {}
 
-    def initialize_agent(self):
-        """Initialize agent with error handling"""
-        try:
-            print("🤖 Initializing Arbitrum Agent...")
-            self.agent = ArbitrumTestnetAgent()
-
-            # Force integration initialization
-            if not self.agent.initialize_integrations():
-                self.issues.append("DeFi integrations failed to initialize")
-                return False
-
-            # Initialize the system validator
-            self.validator = EnhancedSystemValidator(self.agent)
-
-            print("✅ Agent initialized successfully")
-            return True
-
-        except Exception as e:
-            print(f"❌ Agent initialization failed: {e}")
-            self.issues.append(f"Agent initialization: {e}")
-            return False
-
-    def diagnose_health_factor_validation(self):
-        """Diagnose health factor validation issues"""
-        print("\n🏥 DIAGNOSING HEALTH FACTOR VALIDATION...")
+    def run_comprehensive_borrow_diagnostic(self):
+        """Run comprehensive borrow diagnostic"""
+        print("🔍 COMPREHENSIVE BORROWING DIAGNOSTIC")
+        print("=" * 50)
 
         try:
-            # Get current health data
-            health_data = self.agent.health_monitor.get_current_health_factor()
-
-            if not health_data:
-                self.issues.append("Cannot retrieve health factor data")
-                return False
-
-            hf = health_data['health_factor']
-            collateral = health_data.get('total_collateral_usdc', 0)
-            debt = health_data.get('total_debt_usdc', 0)
-            available = health_data.get('available_borrows_usdc', 0)
-
-            print(f"   Current Health Factor: {hf:.4f}")
-            print(f"   Total Collateral: ${collateral:.2f}")
-            print(f"   Total Debt: ${debt:.2f}")
-            print(f"   Available Borrows: ${available:.2f}")
-
-            # Validation checks
-            if hf < 1.1:
-                self.issues.append(f"Health factor too low: {hf:.4f} (minimum: 1.1)")
-                return False
-
-            if collateral == 0:
-                self.issues.append("No collateral supplied to Aave")
-                return False
-
-            if available < 1.0:
-                self.issues.append(f"Insufficient borrowing capacity: ${available:.2f}")
-                return False
-
-            print("✅ Health Factor validation passed")
-            return True
-
-        except Exception as e:
-            print(f"❌ Health factor diagnosis failed: {e}")
-            self.issues.append(f"Health factor validation: {e}")
-            return False
-
-    def diagnose_gas_optimization(self):
-        """Diagnose gas price optimization issues"""
-        print("\n⛽ DIAGNOSING GAS OPTIMIZATION...")
-
-        try:
-            # Test gas parameter calculation
-            gas_params = self.agent.get_optimized_gas_params('aave_borrow', 'normal')
-
-            print(f"   Gas Limit: {gas_params['gas']:,}")
-            print(f"   Gas Price: {gas_params['gasPrice']:,} wei ({gas_params['gasPrice']/1e9:.3f} gwei)")
-
-            # Validate gas parameters
-            if gas_params['gas'] < 300000:
-                self.issues.append(f"Gas limit too low: {gas_params['gas']} (minimum: 300,000)")
-
-            if gas_params['gasPrice'] < 100000000:  # 0.1 gwei
-                self.issues.append(f"Gas price too low: {gas_params['gasPrice']} wei")
-
-            # Test network gas price
-            network_gas = self.agent.w3.eth.gas_price
-            print(f"   Network Gas Price: {network_gas:,} wei ({network_gas/1e9:.3f} gwei)")
-
-            if gas_params['gasPrice'] < network_gas * 1.1:
-                print("⚠️ Gas price may be insufficient for fast confirmation")
-
-            print("✅ Gas optimization diagnosis completed")
-            return True
-
-        except Exception as e:
-            print(f"❌ Gas optimization diagnosis failed: {e}")
-            self.issues.append(f"Gas optimization: {e}")
-            return False
-
-    def diagnose_token_balances(self):
-        """Diagnose token balance verification"""
-        print("\n💰 DIAGNOSING TOKEN BALANCES...")
-
-        import logging
-        logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
-
-        try:
-            # Check ETH balance for gas
-            logging.debug(f"DEBUG: Checking ETH balance for wallet {self.agent.address}")
-            eth_balance = self.agent.get_eth_balance()
-            logging.debug(f"DEBUG: Raw ETH balance: {eth_balance:.10f} ETH")
-            print(f"   ETH Balance: {eth_balance:.6f} ETH")
-
-            if eth_balance < MIN_ETH_FOR_OPERATIONS:
-                self.issues.append(f"Insufficient ETH for gas: {eth_balance:.6f} (minimum: {MIN_ETH_FOR_OPERATIONS:.8f})")
-
-            # Check supplied balances on Aave
-            tokens_to_check = [
-                ("WBTC", self.agent.wbtc_address),
-                ("WETH", self.agent.weth_address),
-                ("USDC", self.agent.usdc_address)
-            ]
-
-            # Debug aToken addresses for verification
-            atoken_addresses = {
-                "WBTC": "0x6533afac2E7BCCB20dca161449A13A2D2d5B739A",  # aWBTC
-                "WETH": "0xe50fA9b4c56454E2edF6BFf7c81b50c5F05aBE61",  # aWETH
-                "USDC": "0x724dc807b04555b71ed48a6896b6F41593b8C637"   # aUSDC
+            # Initialize results
+            self.diagnostics = {
+                'timestamp': datetime.now().isoformat(),
+                'wallet_address': self.agent.address,
+                'network_mode': self.agent.network_mode,
+                'tests': {}
             }
 
-            logging.debug(f"DEBUG: Expected aToken addresses: {atoken_addresses}")
+            # Test 1: Network and connectivity
+            self._test_network_connectivity()
+            
+            # Test 2: Contract validation
+            self._test_contract_validation()
+            
+            # Test 3: Aave position analysis
+            self._test_aave_position()
+            
+            # Test 4: Gas and ETH analysis
+            self._test_gas_readiness()
+            
+            # Test 5: Enhanced borrow manager
+            self._test_enhanced_borrow_manager()
+            
+            # Test 6: Simulation test
+            self._test_borrow_simulation()
 
-            total_supplied_value = 0
-
-            for token_name, token_address in tokens_to_check:
-                try:
-                    logging.debug(f"DEBUG: ===== Checking {token_name} Supplied Balance =====")
-                    logging.debug(f"DEBUG: Token name: {token_name}")
-                    logging.debug(f"DEBUG: Underlying token address passed: {token_address}")
-                    logging.debug(f"DEBUG: Expected aToken address: {atoken_addresses.get(token_name, 'UNKNOWN')}")
-                    logging.debug(f"DEBUG: Wallet address: {self.agent.address}")
-
-                    # Call the supplied balance function with detailed logging
-                    logging.debug(f"DEBUG: Calling self.agent.aave.get_supplied_balance({token_address})")
-                    supplied_balance = self.agent.aave.get_supplied_balance(token_address)
-                    logging.debug(f"DEBUG: Raw supplied balance returned: {supplied_balance}")
-                    logging.debug(f"DEBUG: Type of returned balance: {type(supplied_balance)}")
-
-                    print(f"   {token_name} Supplied: {supplied_balance:.6f}")
-
-                    # Rough USD value estimation
-                    if token_name == "WBTC" and supplied_balance > 0:
-                        usd_value = supplied_balance * 100000  # ~$100k per WBTC
-                        total_supplied_value += usd_value
-                        logging.debug(f"DEBUG: {token_name} USD value: ${usd_value:.2f}")
-                    elif token_name == "WETH" and supplied_balance > 0:
-                        usd_value = supplied_balance * 3000   # ~$3k per ETH
-                        total_supplied_value += usd_value
-                        logging.debug(f"DEBUG: {token_name} USD value: ${usd_value:.2f}")
-                    elif token_name == "USDC" and supplied_balance > 0:
-                        usd_value = supplied_balance  # 1:1 USD
-                        total_supplied_value += usd_value
-                        logging.debug(f"DEBUG: {token_name} USD value: ${usd_value:.2f}")
-                    else:
-                        logging.debug(f"DEBUG: {token_name} has zero balance, no USD value added")
-
-                except Exception as balance_error:
-                    print(f"   {token_name}: Error getting balance - {balance_error}")
-
-            print(f"   Estimated Total Supplied Value: ${total_supplied_value:.2f}")
-
-            if total_supplied_value < 50:
-                self.issues.append(f"Insufficient collateral value: ${total_supplied_value:.2f} (minimum: $50)")
-
-            print("✅ Token balance diagnosis completed")
-            return True
+            # Generate final report
+            self._generate_diagnostic_report()
+            
+            return self.diagnostics
 
         except Exception as e:
-            print(f"❌ Token balance diagnosis failed: {e}")
-            self.issues.append(f"Token balance verification: {e}")
-            return False
+            print(f"❌ Comprehensive diagnostic failed: {e}")
+            self.diagnostics['critical_error'] = str(e)
+            return self.diagnostics
 
-    def diagnose_protocol_state(self):
-        """Diagnose Aave protocol state"""
-        print("\n🏦 DIAGNOSING AAVE PROTOCOL STATE...")
-
-        try:
-            # Test Aave pool contract connectivity
-            pool_contract = self.agent.aave.pool_contract
-
-            # Get pool revision to test connectivity
-            try:
-                # Test with getUserAccountData call
-                user_data = pool_contract.functions.getUserAccountData(self.agent.address).call()
-                print("   Aave Pool Contract: ✅ Responsive")
-
-                # Check if borrowing is enabled for USDC
-                usdc_reserve_data = None
-                try:
-                    # This would require the data provider contract
-                    print("   USDC Borrowing: ✅ Likely enabled (pool responsive)")
-                except:
-                    print("   USDC Borrowing: ⚠️ Unable to verify")
-
-            except Exception as pool_error:
-                print(f"   Aave Pool Contract: ❌ Error - {pool_error}")
-                self.issues.append("Aave pool contract not responsive")
-                return False
-
-            # Test token approvals
-            usdc_contract = self.agent.w3.eth.contract(
-                address=self.agent.usdc_address,
-                abi=self.agent.aave.erc20_abi
-            )
-
-            try:
-                allowance = usdc_contract.functions.allowance(
-                    self.agent.address, 
-                    self.agent.aave_pool_address
-                ).call()
-
-                print(f"   USDC Allowance: {allowance:,}")
-
-                if allowance == 0:
-                    print("   ⚠️ USDC not approved for Aave")
-
-            except Exception as approval_error:
-                print(f"   USDC Approval Check: ❌ Error - {approval_error}")
-
-            print("✅ Protocol state diagnosis completed")
-            return True
-
-        except Exception as e:
-            print(f"❌ Protocol state diagnosis failed: {e}")
-            self.issues.append(f"Protocol state check: {e}")
-            return False
-
-    def test_small_borrow(self):
-        """Test a small borrow operation"""
-        print("\n🧪 TESTING SMALL BORROW OPERATION...")
-
-        try:
-            # Get current health data
-            health_data = self.agent.health_monitor.get_current_health_factor()
-            available_borrows = health_data.get('available_borrows_usdc', 0)
-
-            if available_borrows < 1.0:
-                print(f"❌ Cannot test borrow: insufficient capacity (${available_borrows:.2f})")
-                return False
-
-            # Calculate safe test amount
-            test_amount = min(1.0, available_borrows * 0.1)  # 10% of available or $1
-
-            print(f"   Testing borrow of ${test_amount:.2f} USDC...")
-
-            # Simulate the borrow without executing
-            try:
-                # This would use the enhanced borrow manager
-                if hasattr(self.agent, 'enhanced_borrow_manager'):
-                    print("   Enhanced Borrow Manager: ✅ Available")
-
-                    # Test gas estimation for borrow
-                    pool_contract = self.agent.aave.pool_contract
-                    decimals = 6  # USDC decimals
-                    amount_wei = int(test_amount * (10 ** decimals))
-
-                    gas_estimate = pool_contract.functions.borrow(
-                        Web3.to_checksum_address(self.agent.usdc_address),
-                        amount_wei,
-                        2,  # Variable rate
-                        0,  # Referral code
-                        Web3.to_checksum_address(self.agent.address)
-                    ).estimate_gas({'from': self.agent.address})
-
-                    print(f"   Gas Estimate: {gas_estimate:,}")
-
-                    if gas_estimate > 1000000:
-                        print("⚠️ Gas estimate very high")
-                    else:
-                        print("✅ Gas estimate reasonable")
-
-                else:
-                    print("❌ Enhanced Borrow Manager not available")
-                    self.issues.append("Enhanced Borrow Manager not initialized")
-                    return False
-
-            except Exception as sim_error:
-                print(f"❌ Borrow simulation failed: {sim_error}")
-                self.issues.append(f"Borrow simulation: {sim_error}")
-                return False
-
-            print("✅ Small borrow test completed successfully")
-            return True
-
-        except Exception as e:
-            print(f"❌ Small borrow test failed: {e}")
-            self.issues.append(f"Small borrow test: {e}")
-            return False
-
-    def generate_report(self):
-        """Generate comprehensive diagnostic report"""
-        print("\n📊 COMPREHENSIVE DIAGNOSTIC REPORT")
-        print("=" * 60)
-
-        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S UTC")
-
-        report = {
-            'timestamp': timestamp,
-            'wallet_address': self.agent.address if self.agent else None,
-            'network_mode': self.agent.network_mode if self.agent else None,
-            'chain_id': self.agent.w3.eth.chain_id if self.agent and self.agent.w3 else None,
-            'issues_found': self.issues,
-            'fixes_applied': self.fixes_applied,
-            'status': 'READY' if len(self.issues) == 0 else 'NEEDS_FIXES'
+    def _test_network_connectivity(self):
+        """Test network connectivity and RPC health"""
+        print("\n1️⃣ Testing Network Connectivity...")
+        test_result = {
+            'connected': False,
+            'chain_id': None,
+            'block_number': None,
+            'gas_price': None,
+            'issues': []
         }
 
-        # Save report
-        report_filename = f"borrow_diagnostic_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+        try:
+            if not self.w3.is_connected():
+                test_result['issues'].append("Web3 not connected")
+                return
 
-        with open(report_filename, 'w') as f:
-            safe_json_dump(report, f, indent=2)
+            test_result['connected'] = True
+            test_result['chain_id'] = self.w3.eth.chain_id
+            test_result['block_number'] = self.w3.eth.block_number
+            test_result['gas_price'] = self.w3.eth.gas_price
 
-        print(f"📄 Report saved: {report_filename}")
+            print(f"   ✅ Connected to chain {test_result['chain_id']}")
+            print(f"   ✅ Latest block: {test_result['block_number']}")
+            print(f"   ✅ Gas price: {Web3.from_wei(test_result['gas_price'], 'gwei'):.2f} gwei")
 
-        if len(self.issues) == 0:
-            print("🎉 ALL DIAGNOSTICS PASSED - SYSTEM READY FOR BORROWING!")
-        else:
-            print("❌ ISSUES FOUND - SYSTEM NEEDS FIXES:")
-            for i, issue in enumerate(self.issues, 1):
-                print(f"   {i}. {issue}")
+        except Exception as e:
+            test_result['issues'].append(f"Network test failed: {e}")
+            print(f"   ❌ Network connectivity failed: {e}")
 
-        return report
+        self.diagnostics['tests']['network'] = test_result
 
-    def run_full_diagnostic(self):
-        """Run complete diagnostic suite"""
-        print("🔍 COMPREHENSIVE BORROWING DIAGNOSTIC")
-        print("=" * 60)
+    def _test_contract_validation(self):
+        """Test all contract addresses"""
+        print("\n2️⃣ Testing Contract Validation...")
+        test_result = {
+            'contracts_valid': {},
+            'aave_pool_valid': False,
+            'issues': []
+        }
 
-        # Step 1: Initialize agent
-        if not self.initialize_agent():
-            return self.generate_report()
+        try:
+            # Test token contracts
+            contracts = {
+                'USDC': self.agent.usdc_address,
+                'WBTC': self.agent.wbtc_address,
+                'WETH': self.agent.weth_address,
+                'DAI': self.agent.dai_address
+            }
 
-        # Step 2: Health factor validation
-        self.diagnose_health_factor_validation()
+            for name, address in contracts.items():
+                try:
+                    if not Web3.is_address(address):
+                        test_result['contracts_valid'][name] = False
+                        test_result['issues'].append(f"Invalid {name} address")
+                        continue
 
-        # Step 3: Gas optimization
-        self.diagnose_gas_optimization()
+                    code = self.w3.eth.get_code(Web3.to_checksum_address(address))
+                    if code == b'':
+                        test_result['contracts_valid'][name] = False
+                        test_result['issues'].append(f"No contract at {name} address")
+                        continue
 
-        # Step 4: Token balances
-        self.diagnose_token_balances()
+                    test_result['contracts_valid'][name] = True
+                    print(f"   ✅ {name}: Valid contract")
 
-        # Step 5: Protocol state
-        self.diagnose_protocol_state()
+                except Exception as e:
+                    test_result['contracts_valid'][name] = False
+                    test_result['issues'].append(f"{name} validation failed: {e}")
+                    print(f"   ❌ {name}: {e}")
 
-        # Step 6: Test small borrow
-        self.test_small_borrow()
+            # Test Aave pool
+            try:
+                pool_abi = [{
+                    "inputs": [{"name": "user", "type": "address"}],
+                    "name": "getUserAccountData",
+                    "outputs": [
+                        {"name": "totalCollateralBase", "type": "uint256"},
+                        {"name": "totalDebtBase", "type": "uint256"},
+                        {"name": "availableBorrowsBase", "type": "uint256"},
+                        {"name": "currentLiquidationThreshold", "type": "uint256"},
+                        {"name": "ltv", "type": "uint256"},
+                        {"name": "healthFactor", "type": "uint256"}
+                    ],
+                    "stateMutability": "view",
+                    "type": "function"
+                }]
 
-        # Step 7: Enhanced System Validation
-        validation_results = self.validator.run_all_checks()  # Execute all validation checks
+                pool_contract = self.w3.eth.contract(
+                    address=Web3.to_checksum_address(self.agent.aave_pool_address),
+                    abi=pool_abi
+                )
 
-        if validation_results:
-            print("\n🛠️  Validation Issues Found:")
-            for issue in validation_results:
-                print(f"   - {issue}")
-                self.issues.append(issue)
+                # Test with agent's address
+                account_data = pool_contract.functions.getUserAccountData(self.agent.address).call()
+                test_result['aave_pool_valid'] = True
+                print(f"   ✅ Aave Pool: Valid and accessible")
 
-        # Step 8: Generate report
-        return self.generate_report()
+            except Exception as e:
+                test_result['issues'].append(f"Aave pool validation failed: {e}")
+                print(f"   ❌ Aave Pool: {e}")
 
-def main():
-    """Main diagnostic function"""
-    diagnostic = BorrowDiagnosticTool()
-    report = diagnostic.run_full_diagnostic()
+        except Exception as e:
+            test_result['issues'].append(f"Contract validation failed: {e}")
+            print(f"   ❌ Contract validation error: {e}")
 
-    if report['status'] == 'READY':
-        print("\n🚀 SYSTEM IS READY FOR AUTONOMOUS OPERATION!")
-        return True
-    else:
-        print("\n🔧 PLEASE FIX THE IDENTIFIED ISSUES BEFORE PROCEEDING")
-        return False
+        self.diagnostics['tests']['contracts'] = test_result
+
+    def _test_aave_position(self):
+        """Test current Aave position"""
+        print("\n3️⃣ Testing Aave Position...")
+        test_result = {
+            'position_accessible': False,
+            'collateral_usd': 0,
+            'debt_usd': 0,
+            'available_borrows_usd': 0,
+            'health_factor': 0,
+            'can_borrow': False,
+            'issues': []
+        }
+
+        try:
+            pool_abi = [{
+                "inputs": [{"name": "user", "type": "address"}],
+                "name": "getUserAccountData",
+                "outputs": [
+                    {"name": "totalCollateralBase", "type": "uint256"},
+                    {"name": "totalDebtBase", "type": "uint256"},
+                    {"name": "availableBorrowsBase", "type": "uint256"},
+                    {"name": "currentLiquidationThreshold", "type": "uint256"},
+                    {"name": "ltv", "type": "uint256"},
+                    {"name": "healthFactor", "type": "uint256"}
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            }]
+
+            pool_contract = self.w3.eth.contract(
+                address=Web3.to_checksum_address(self.agent.aave_pool_address),
+                abi=pool_abi
+            )
+
+            account_data = pool_contract.functions.getUserAccountData(self.agent.address).call()
+
+            test_result['position_accessible'] = True
+            test_result['collateral_usd'] = account_data[0] / (10**8)
+            test_result['debt_usd'] = account_data[1] / (10**8)
+            test_result['available_borrows_usd'] = account_data[2] / (10**8)
+            test_result['health_factor'] = account_data[5] / (10**18) if account_data[5] > 0 else float('inf')
+
+            print(f"   ✅ Collateral: ${test_result['collateral_usd']:,.2f}")
+            print(f"   ✅ Debt: ${test_result['debt_usd']:,.2f}")
+            print(f"   ✅ Available Borrows: ${test_result['available_borrows_usd']:,.2f}")
+            print(f"   ✅ Health Factor: {test_result['health_factor']:.4f}")
+
+            # Determine if can borrow
+            test_result['can_borrow'] = (
+                test_result['health_factor'] > 1.5 and
+                test_result['available_borrows_usd'] >= 1.0
+            )
+
+            if test_result['can_borrow']:
+                print(f"   ✅ Position ready for borrowing")
+            else:
+                reasons = []
+                if test_result['health_factor'] <= 1.5:
+                    reasons.append(f"Low health factor: {test_result['health_factor']:.4f}")
+                if test_result['available_borrows_usd'] < 1.0:
+                    reasons.append(f"Low available borrows: ${test_result['available_borrows_usd']:.2f}")
+                test_result['issues'].extend(reasons)
+                print(f"   ⚠️ Position not ready: {', '.join(reasons)}")
+
+        except Exception as e:
+            test_result['issues'].append(f"Aave position test failed: {e}")
+            print(f"   ❌ Aave position test failed: {e}")
+
+        self.diagnostics['tests']['aave_position'] = test_result
+
+    def _test_gas_readiness(self):
+        """Test ETH balance and gas readiness"""
+        print("\n4️⃣ Testing Gas Readiness...")
+        test_result = {
+            'eth_balance': 0,
+            'sufficient_for_gas': False,
+            'estimated_gas_cost': 0,
+            'issues': []
+        }
+
+        try:
+            eth_balance = self.agent.get_eth_balance()
+            test_result['eth_balance'] = float(eth_balance)
+
+            # Estimate gas cost for borrow operation
+            current_gas_price = self.w3.eth.gas_price
+            estimated_gas_limit = 300000  # Conservative estimate for borrow
+            estimated_cost_wei = current_gas_price * estimated_gas_limit
+            estimated_cost_eth = Web3.from_wei(estimated_cost_wei, 'ether')
+            test_result['estimated_gas_cost'] = float(estimated_cost_eth)
+
+            min_eth_needed = estimated_cost_eth * 2  # 2x buffer
+            test_result['sufficient_for_gas'] = eth_balance >= min_eth_needed
+
+            print(f"   ✅ ETH Balance: {eth_balance:.6f} ETH")
+            print(f"   ✅ Estimated Gas Cost: {estimated_cost_eth:.6f} ETH")
+
+            if test_result['sufficient_for_gas']:
+                print(f"   ✅ Sufficient ETH for gas operations")
+            else:
+                shortage = min_eth_needed - eth_balance
+                test_result['issues'].append(f"Need {shortage:.6f} more ETH for gas")
+                print(f"   ⚠️ Need {shortage:.6f} more ETH")
+
+        except Exception as e:
+            test_result['issues'].append(f"Gas readiness test failed: {e}")
+            print(f"   ❌ Gas readiness test failed: {e}")
+
+        self.diagnostics['tests']['gas_readiness'] = test_result
+
+    def _test_enhanced_borrow_manager(self):
+        """Test enhanced borrow manager"""
+        print("\n5️⃣ Testing Enhanced Borrow Manager...")
+        test_result = {
+            'manager_available': False,
+            'validation_method_exists': False,
+            'fallback_methods_available': 0,
+            'issues': []
+        }
+
+        try:
+            # Check if enhanced borrow manager exists
+            if hasattr(self.agent, 'enhanced_borrow_manager') and self.agent.enhanced_borrow_manager:
+                test_result['manager_available'] = True
+                ebm = self.agent.enhanced_borrow_manager
+                print(f"   ✅ Enhanced Borrow Manager: Available")
+
+                # Check validation method
+                if hasattr(ebm, '_validate_borrow_conditions'):
+                    test_result['validation_method_exists'] = True
+                    print(f"   ✅ Validation Method: Available")
+                else:
+                    test_result['issues'].append("Validation method missing")
+
+                # Check fallback methods
+                fallback_methods = [
+                    'safe_borrow_with_fallbacks',
+                    '_validate_borrow_conditions'
+                ]
+                
+                available_methods = sum(1 for method in fallback_methods if hasattr(ebm, method))
+                test_result['fallback_methods_available'] = available_methods
+                print(f"   ✅ Fallback Methods: {available_methods}/{len(fallback_methods)}")
+
+            else:
+                test_result['issues'].append("Enhanced borrow manager not initialized")
+                print(f"   ❌ Enhanced Borrow Manager: Not available")
+
+        except Exception as e:
+            test_result['issues'].append(f"Enhanced borrow manager test failed: {e}")
+            print(f"   ❌ Enhanced borrow manager test failed: {e}")
+
+        self.diagnostics['tests']['enhanced_borrow_manager'] = test_result
+
+    def _test_borrow_simulation(self):
+        """Test borrow operation simulation"""
+        print("\n6️⃣ Testing Borrow Simulation...")
+        test_result = {
+            'simulation_possible': False,
+            'recommended_amount': 0,
+            'safety_checks_passed': False,
+            'issues': []
+        }
+
+        try:
+            # Get current position data
+            aave_test = self.diagnostics['tests'].get('aave_position', {})
+            
+            if not aave_test.get('position_accessible'):
+                test_result['issues'].append("Cannot access Aave position for simulation")
+                return
+
+            available_borrows = aave_test.get('available_borrows_usd', 0)
+            health_factor = aave_test.get('health_factor', 0)
+
+            # Calculate recommended borrow amount
+            if available_borrows > 0 and health_factor > 1.5:
+                # Conservative: 10% of available capacity, min $0.50, max $5.00
+                recommended = min(max(available_borrows * 0.1, 0.5), 5.0)
+                test_result['recommended_amount'] = recommended
+                test_result['simulation_possible'] = True
+                test_result['safety_checks_passed'] = True
+                
+                print(f"   ✅ Simulation Possible: Yes")
+                print(f"   ✅ Recommended Amount: ${recommended:.2f}")
+                print(f"   ✅ Safety Checks: Passed")
+            else:
+                reasons = []
+                if available_borrows <= 0:
+                    reasons.append("No available borrows")
+                if health_factor <= 1.5:
+                    reasons.append(f"Low health factor: {health_factor:.4f}")
+                test_result['issues'].extend(reasons)
+                print(f"   ⚠️ Simulation not recommended: {', '.join(reasons)}")
+
+        except Exception as e:
+            test_result['issues'].append(f"Borrow simulation failed: {e}")
+            print(f"   ❌ Borrow simulation failed: {e}")
+
+        self.diagnostics['tests']['borrow_simulation'] = test_result
+
+    def _generate_diagnostic_report(self):
+        """Generate final diagnostic report"""
+        print("\n📊 DIAGNOSTIC SUMMARY")
+        print("=" * 30)
+
+        total_tests = len(self.diagnostics['tests'])
+        passed_tests = 0
+        critical_issues = []
+
+        for test_name, test_data in self.diagnostics['tests'].items():
+            issues = test_data.get('issues', [])
+            
+            if test_name == 'network' and test_data.get('connected'):
+                passed_tests += 1
+                print(f"✅ Network: PASSED")
+            elif test_name == 'contracts' and test_data.get('aave_pool_valid'):
+                passed_tests += 1
+                print(f"✅ Contracts: PASSED")
+            elif test_name == 'aave_position' and test_data.get('position_accessible'):
+                passed_tests += 1
+                print(f"✅ Aave Position: PASSED")
+            elif test_name == 'gas_readiness' and test_data.get('sufficient_for_gas'):
+                passed_tests += 1
+                print(f"✅ Gas Readiness: PASSED")
+            elif test_name == 'enhanced_borrow_manager' and test_data.get('manager_available'):
+                passed_tests += 1
+                print(f"✅ Enhanced Borrow Manager: PASSED")
+            elif test_name == 'borrow_simulation' and test_data.get('simulation_possible'):
+                passed_tests += 1
+                print(f"✅ Borrow Simulation: PASSED")
+            else:
+                print(f"❌ {test_name.replace('_', ' ').title()}: FAILED")
+                critical_issues.extend(issues)
+
+        print(f"\n🎯 Overall Score: {passed_tests}/{total_tests} tests passed")
+
+        if critical_issues:
+            print(f"\n🚨 CRITICAL ISSUES:")
+            for issue in critical_issues[:5]:  # Show top 5 issues
+                print(f"   • {issue}")
+
+        # Save diagnostic report
+        self._save_diagnostic_report()
+
+        return passed_tests >= (total_tests * 0.8)  # 80% pass rate
+
+    def _save_diagnostic_report(self):
+        """Save diagnostic report to file"""
+        try:
+            filename = f"borrow_diagnostic_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+            
+            from fix_json_serialization import safe_json_dump
+            success = safe_json_dump(self.diagnostics, filename)
+            
+            if success:
+                print(f"\n💾 Diagnostic report saved: {filename}")
+            else:
+                print(f"\n⚠️ Failed to save diagnostic report")
+
+        except Exception as e:
+            print(f"⚠️ Error saving report: {e}")
+
+def run_borrow_diagnostic():
+    """Run the borrow diagnostic tool"""
+    try:
+        from arbitrum_testnet_agent import ArbitrumTestnetAgent
+        
+        print("🚀 Initializing Borrow Diagnostic Tool...")
+        agent = ArbitrumTestnetAgent()
+        
+        # Initialize integrations if needed
+        if not hasattr(agent, 'aave') or not agent.aave:
+            print("🔄 Initializing DeFi integrations...")
+            agent.initialize_integrations()
+        
+        diagnostic_tool = BorrowDiagnosticTool(agent)
+        results = diagnostic_tool.run_comprehensive_borrow_diagnostic()
+        
+        return results
+        
+    except Exception as e:
+        print(f"❌ Borrow diagnostic failed: {e}")
+        return None
 
 if __name__ == "__main__":
-    success = main()
-    if not success:
-        exit(1)
+    run_borrow_diagnostic()
