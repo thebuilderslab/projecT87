@@ -1,3 +1,4 @@
+"""Fix gas multipliers variable name"""
 """
 Enhanced Borrow Manager
 Provides robust borrowing functionality with fallbacks and validation
@@ -52,7 +53,7 @@ class EnhancedBorrowManager:
 
                 except Exception as e:
                     print(f"❌ Borrow attempt {attempt + 1} error: {e}")
-                    
+
                     # Enhanced error handling
                     if "insufficient funds" in str(e).lower():
                         print(f"💡 Try: Add more ETH for gas fees")
@@ -170,5 +171,4 @@ class EnhancedBorrowManager:
             import traceback
             print(f"🔍 Stack trace: {traceback.format_exc()}")
             return False
-
-    
+`

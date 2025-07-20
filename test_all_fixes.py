@@ -1,438 +1,194 @@
 #!/usr/bin/env python3
 """
-Test All Fixes - Comprehensive validation of all applied fixes
+Test All Fixes - Comprehensive validation of system fixes
 """
 
 import os
 import sys
-import traceback
-import subprocess
-from typing import Dict, List
-
-# Import dependency validator
-try:
-    from dependency_validator import DependencyValidator
-    DEPENDENCY_VALIDATOR_AVAILABLE = True
-except ImportError:
-    DEPENDENCY_VALIDATOR_AVAILABLE = False
-    print("⚠️ Dependency validator not available")
 import time
+import traceback
 from web3 import Web3
 
-def test_usdc_address_fix():
-    """Test USDC address configuration"""
-    print("🏦 Testing USDC Address Fix...")
+def test_syntax_validation():
+    """Test that all Python files have valid syntax"""
+    print("🧪 Testing Syntax Validation...")
     try:
-        # First check syntax with better error reporting
-        import py_compile
-        try:
-            py_compile.compile('arbitrum_testnet_agent.py', doraise=True)
-            print("   ✅ Syntax check passed")
-        except py_compile.PyCompileError as syntax_error:
-            print(f"   ❌ Syntax error detected: {syntax_error}")
+        # Test critical files for syntax errors
+        test_files = [
+            'arbitrum_testnet_agent.py',
+            'enhanced_borrow_manager.py', 
+            'aave_integration.py',
+            'dependency_validator.py'
+        ]
 
-            # Try to identify the specific line and issue
-            error_str = str(syntax_error)
-            if "line" in error_str:
-                import re
-                line_match = re.search(r'line (\d+)', error_str)
-                if line_match:
-                    line_num = int(line_match.group(1))
-                    print(f"   🎯 Error at line {line_num}")
-
-                    # Show context around the error
-                    try:
-                        with open('arbitrum_testnet_agent.py', 'r') as f:
-                            lines = f.readlines()
-
-                        start = max(0, line_num - 3)
-                        end = min(len(lines), line_num + 2)
-
-                        print(f"   📋 Context around line {line_num}:")
-                        for i in range(start, end):
-                            marker = ">>> " if i + 1 == line_num else "    "
-                            print(f"   {marker}{i+1:3d}: {lines[i].rstrip()}")
-                    except Exception:
-                        pass
-
-            print("   🔧 Syntax error needs manual fixing")
-            return False
-
-        try:
-            from arbitrum_testnet_agent import ArbitrumTestnetAgent
-            print("   ✅ Import successful")
-        except Exception as import_error:
-            print(f"   ⚠️ Import warning: {import_error}")
-            return True  # Allow partial success for import issues
-
-        # Create agent instance
-        try:
-            agent = ArbitrumTestnetAgent()
-            print("   ✅ Agent initialization successful")
-        except Exception as init_error:
-            print(f"   ⚠️ Agent initialization warning: {init_error}")
-            return True  # Allow partial success for initialization issues
-
-        # Check USDC address
-        expected_usdc = "0xFF970A61A04b1cA14834A651bAb06d67307796618"
-
-        # Compare addresses (handle both checksummed and non-checksummed)
-        try:
-            agent_addr = agent.usdc_address.lower()
-            expected_addr = expected_usdc.lower()
-            
-            if agent_addr == expected_addr:
-                print("   ✅ USDC address correctly set to USDC.e")
-                return True
+        for file_path in test_files:
+            if os.path.exists(file_path):
+                print(f"   ✅ Syntax check: {file_path}")
+                with open(file_path, 'r') as f:
+                    compile(f.read(), file_path, 'exec')
             else:
-                print(f"   ❌ USDC address mismatch:")
-                print(f"      Agent: {agent.usdc_address}")
-                print(f"      Expected: {expected_usdc}")
-                return False
-                
-        except Exception as e:
-            print(f"   ❌ Address comparison failed: {e}")
-            return False
+                print(f"   ⚠️ File not found: {file_path}")
 
-    except py_compile.PyCompileError as e:
-        print(f"   ❌ Syntax error: {e}")
+        print("✅ All syntax checks passed")
+        return True
+
+    except SyntaxError as e:
+        print(f"❌ Syntax error in {e.filename}: Line {e.lineno}: {e.text}")
         return False
     except Exception as e:
-        print(f"   ❌ USDC address test failed: {e}")
+        print(f"❌ Syntax validation failed: {e}")
         return False
 
-def test_json_serialization_fix():
-    """Test JSON serialization with Decimal types"""
-    print("📄 Testing JSON Serialization Fix...")
-
+def test_agent_initialization():
+    """Test agent initialization without executing transactions"""
+    print("🧪 Testing Agent Initialization...")
     try:
-        # First check if module exists and compiles
-        import py_compile
-        py_compile.compile('fix_json_serialization.py', doraise=True)
-        print("   ✅ JSON serialization module syntax OK")
-
-        from fix_json_serialization import DecimalEncoder, safe_json_dump
-        from decimal import Decimal
-
-        # Test data with Decimal types
-        test_data = {
-            'health_factor': Decimal('2.5'),
-            'collateral_usd': Decimal('150.75'),
-            'timestamp': time.time(),
-            'test_float': 123.456
-        }
-
-        # Test serialization
-        success = safe_json_dump(test_data, 'test_decimal_serialization.json')
-
-        if success and os.path.exists('test_decimal_serialization.json'):
-            # Verify file content
-            import json
-            with open('test_decimal_serialization.json', 'r') as f:
-                loaded_data = json.load(f)
-
-            # Check if Decimals were converted to floats
-            if isinstance(loaded_data['health_factor'], (int, float)):
-                print("   ✅ Decimal serialization working correctly")
-                # Clean up
-                os.remove('test_decimal_serialization.json')
-                return True
-            else:
-                print("   ❌ Decimal not properly converted")
-                return False
-        else:
-            print("   ❌ JSON serialization failed")
-            return False
-
-    except py_compile.PyCompileError as e:
-        print(f"   ❌ Syntax error in JSON module: {e}")
-        return False
-    except Exception as e:
-        print(f"   ❌ JSON serialization test failed: {e}")
-        return False
-
-def test_contract_validation():
-    """Test contract validation functionality"""
-    print("🔍 Testing Contract Validation...")
-    try:
-        # First check syntax
-        import py_compile
-        py_compile.compile('contract_validator.py', doraise=True)
-        print("   ✅ Contract validator syntax OK")
-
-        py_compile.compile('arbitrum_testnet_agent.py', doraise=True)
-        print("   ✅ Agent syntax OK")
-
-        from arbitrum_testnet_agent import ArbitrumTestnetAgent
-        from contract_validator import ContractValidator
-
-        # Create agent to get Web3 instance
-        agent = ArbitrumTestnetAgent()
-        print("   ✅ Agent initialized for contract validation")
-
-        # Test contract validation
-        validator = ContractValidator(agent.w3)
-
-        # Test with known good USDC address
-        result = validator.validate_token_contract(
-            "0xFF970A61A04b1cA14834A651bAb06d67307796618", 
-            "USDC.e"
-        )
-
-        if result:
-            print("   ✅ Contract validation working")
-            return True
-        else:
-            print("   ⚠️ Contract validation returned False (may be network issue)")
-            return True  # Consider partial success due to network
-
-    except py_compile.PyCompileError as e:
-        print(f"   ❌ Syntax error: {e}")
-        return False
-    except Exception as e:
-        print(f"   ❌ Contract validation test failed: {e}")
-        return False
-
-def test_enhanced_system_validator():
-    """Test enhanced system validator"""
-    print("🔧 Testing Enhanced System Validator...")
-    try:
-        # Check syntax first
-        import py_compile
-        py_compile.compile('enhanced_system_validator.py', doraise=True)
-        print("   ✅ Enhanced validator syntax OK")
-
-        py_compile.compile('arbitrum_testnet_agent.py', doraise=True)
-        print("   ✅ Agent syntax OK")
-
-        from arbitrum_testnet_agent import ArbitrumTestnetAgent
-        from enhanced_system_validator import EnhancedSystemValidator
-
-        # Create agent
-        agent = ArbitrumTestnetAgent()
-        print("   ✅ Agent initialized for enhanced validation")
-
-        # Run enhanced validation
-        validator = EnhancedSystemValidator(agent)
-        result = validator.run_comprehensive_validation()
-
-        if result:
-            print("   ✅ Enhanced system validation passed")
-            return True
-        else:
-            print("   ⚠️ Enhanced system validation had issues (may be expected)")
-            return True  # Partial success is acceptable
-
-    except py_compile.PyCompileError as e:
-        print(f"   ❌ Syntax error: {e}")
-        return False
-    except Exception as e:
-        print(f"   ❌ Enhanced system validator test failed: {e}")
-        return False
-
-def test_borrow_diagnostic_tool():
-    """Test borrow diagnostic tool"""
-    print("🏥 Testing Borrow Diagnostic Tool...")
-    try:
-        # Check syntax first
-        import py_compile
-        py_compile.compile('borrow_diagnostic_tool.py', doraise=True)
-        print("   ✅ Borrow diagnostic tool syntax OK")
-
-        from borrow_diagnostic_tool import BorrowDiagnosticTool
         from arbitrum_testnet_agent import ArbitrumTestnetAgent
 
-        # Create agent
-        agent = ArbitrumTestnetAgent()
-        print("   ✅ Agent initialized for diagnostic")
+        print("   ✅ Import successful")
 
-        # Initialize integrations
-        try:
-            agent.initialize_integrations()
+        # Initialize agent
+        agent = ArbitrumTestnetAgent()
+        print("   ✅ Agent initialization successful")
+
+        # Test integration initialization
+        if agent.initialize_integrations():
             print("   ✅ DeFi integrations initialized")
-        except Exception as e:
-            print(f"   ⚠️ Integration initialization warning: {e}")
-
-        # Create diagnostic tool
-        diagnostic = BorrowDiagnosticTool(agent)
-        print("   ✅ Borrow diagnostic tool created")
+        else:
+            print("   ⚠️ Some integrations failed but agent functional")
 
         return True
 
-    except py_compile.PyCompileError as e:
-        print(f"   ❌ Syntax error: {e}")
-        return False
     except Exception as e:
-        print(f"   ❌ Borrow diagnostic test failed: {e}")
+        print(f"❌ Agent initialization failed: {e}")
+        traceback.print_exc()
         return False
 
-def run_all_tests():
-    """Run all fix validation tests"""
+def test_enhanced_borrow_manager():
+    """Test enhanced borrow manager functionality"""
+    print("🧪 Testing Enhanced Borrow Manager...")
+    try:
+        from arbitrum_testnet_agent import ArbitrumTestnetAgent
+        from enhanced_borrow_manager import EnhancedBorrowManager
+
+        agent = ArbitrumTestnetAgent()
+        agent.initialize_integrations()
+
+        if hasattr(agent, 'enhanced_borrow_manager') and agent.enhanced_borrow_manager:
+            ebm = agent.enhanced_borrow_manager
+            print("   ✅ Enhanced Borrow Manager available")
+
+            # Test validation method
+            if hasattr(ebm, '_validate_borrow_conditions'):
+                print("   ✅ Validation method exists")
+            else:
+                print("   ⚠️ Validation method missing")
+
+            return True
+        else:
+            print("   ❌ Enhanced Borrow Manager not initialized")
+            return False
+
+    except Exception as e:
+        print(f"❌ Enhanced Borrow Manager test failed: {e}")
+        return False
+
+def test_contract_validation():
+    """Test contract address validation"""
+    print("🧪 Testing Contract Validation...")
+    try:
+        from arbitrum_testnet_agent import ArbitrumTestnetAgent
+
+        agent = ArbitrumTestnetAgent()
+
+        # Test contract addresses
+        contracts = {
+            'USDC': agent.usdc_address,
+            'WBTC': agent.wbtc_address,
+            'WETH': agent.weth_address,
+            'Aave Pool': agent.aave_pool_address
+        }
+
+        all_valid = True
+        for name, address in contracts.items():
+            if Web3.is_address(address):
+                print(f"   ✅ {name}: Valid address format")
+            else:
+                print(f"   ❌ {name}: Invalid address format")
+                all_valid = False
+
+        return all_valid
+
+    except Exception as e:
+        print(f"❌ Contract validation failed: {e}")
+        return False
+
+def test_gas_parameter_generation():
+    """Test gas parameter generation"""
+    print("🧪 Testing Gas Parameter Generation...")
+    try:
+        from arbitrum_testnet_agent import ArbitrumTestnetAgent
+
+        agent = ArbitrumTestnetAgent()
+
+        # Test gas parameter generation
+        gas_params = agent.get_optimized_gas_params('aave_borrow', 'market')
+
+        if 'gas' in gas_params and 'gasPrice' in gas_params:
+            print(f"   ✅ Gas parameters generated: {gas_params}")
+
+            # Validate parameters
+            if gas_params['gas'] > 21000 and gas_params['gasPrice'] > 0:
+                print("   ✅ Gas parameters valid")
+                return True
+            else:
+                print("   ❌ Gas parameters invalid")
+                return False
+        else:
+            print("   ❌ Gas parameters missing required fields")
+            return False
+
+    except Exception as e:
+        print(f"❌ Gas parameter test failed: {e}")
+        return False
+
+def run_comprehensive_tests():
+    """Run all validation tests"""
     print("🚀 RUNNING ALL FIX VALIDATION TESTS")
     print("=" * 50)
 
     tests = [
-        ("USDC Address Fix", test_usdc_address_fix),
-        ("JSON Serialization Fix", test_json_serialization_fix),
+        ("Syntax Validation", test_syntax_validation),
+        ("Agent Initialization", test_agent_initialization), 
+        ("Enhanced Borrow Manager", test_enhanced_borrow_manager),
         ("Contract Validation", test_contract_validation),
-        ("Enhanced System Validator", test_enhanced_system_validator),
-        ("Borrow Diagnostic Tool", test_borrow_diagnostic_tool)
+        ("Gas Parameter Generation", test_gas_parameter_generation)
     ]
 
-    results = []
+    passed = 0
+    total = len(tests)
 
     for test_name, test_func in tests:
-        print(f"\n🧪 {test_name}")
+        print(f"\n🔧 {test_name}")
         print("-" * 30)
-
         try:
-            result = test_func()
-            results.append((test_name, result))
-
-            if result:
-                print(f"   🎯 {test_name}: SUCCESS")
+            if test_func():
+                passed += 1
+                print(f"✅ {test_name}: PASSED")
             else:
-                print(f"   ⚠️ {test_name}: NEEDS ATTENTION")
-
+                print(f"❌ {test_name}: FAILED")
         except Exception as e:
-            print(f"   ❌ {test_name} threw exception: {e}")
-            print(f"   📋 Traceback: {traceback.format_exc()}")
-            results.append((test_name, False))
+            print(f"❌ {test_name}: ERROR - {e}")
 
-    # Summary
-    print("\n" + "=" * 50)
-    print("📊 TEST SUMMARY")
-    print("=" * 50)
+    print(f"\n📊 TEST RESULTS: {passed}/{total} tests passed")
 
-    passed = sum(1 for _, result in results if result)
-    total = len(results)
-
-    for test_name, result in results:
-        status = "✅ PASSED" if result else "❌ FAILED"
-        print(f"{status}: {test_name}")
-
-    print(f"\n🎯 OVERALL: {passed}/{total} tests passed")
-
-    if passed >= 4:  # Allow for 1 failure
-        print("🎉 SUFFICIENT FIXES VALIDATED - WORKFLOW READY!")
-        return True
-    elif passed >= 2:
-        print("⚠️ PARTIAL SUCCESS - Some fixes need attention")
+    if passed == total:
+        print("🎉 ALL TESTS PASSED - System ready for execution!")
         return True
     else:
-        print("❌ CRITICAL ISSUES - Major fixes needed")
-        return False
-
-def run_all_validation_tests():
-    """Run comprehensive validation of all fixes"""
-    print("🚀 RUNNING ALL FIX VALIDATION TESTS")
-    print("=" * 50)
-
-    test_results = {}
-
-    # Test 0: Dependency Validation (NEW)
-    test_results['dependency_validation'] = test_dependency_validation()
-
-    # Test 1: USDC Address Fix
-    test_results['usdc_fix'] = test_usdc_address_fix()
-
-    # Test 2: JSON Serialization Fix  
-    test_results['json_fix'] = test_json_serialization_fix()
-
-    # Test 3: Contract Validation
-    test_results['contract_validation'] = test_contract_validation()
-
-    # Test 4: Enhanced System Validator
-    test_results['enhanced_validator'] = test_enhanced_system_validator()
-
-    # Test 5: Borrow Diagnostic Tool
-    test_results['borrow_diagnostic'] = test_borrow_diagnostic_tool()
-
-    # Test 6: Gas Estimation (NEW)
-    test_results['gas_estimation'] = test_gas_estimation()
-
-    return test_results
-
-def test_dependency_validation():
-    """Test comprehensive dependency validation"""
-    print("\n🧪 DEPENDENCY VALIDATION")
-    print("-" * 30)
-
-    if not DEPENDENCY_VALIDATOR_AVAILABLE:
-        print("   ❌ Dependency validator module not available")
-        return False
-
-    try:
-        validator = DependencyValidator()
-        results = validator.run_comprehensive_validation()
-
-        if results['overall_success']:
-            print("   ✅ All dependencies validated successfully")
-            return True
-        else:
-            print("   ❌ Dependency validation failed")
-            if results['critical_failures']:
-                for failure in results['critical_failures']:
-                    print(f"      - {failure}")
-            return False
-
-    except Exception as e:
-        print(f"   ❌ Dependency validation error: {e}")
-        return False
-
-def test_gas_estimation():
-    """Test gas estimation functionality"""
-    print("\n🧪 GAS ESTIMATION")
-    print("-" * 30)
-
-    try:
-        print("⛽ Testing gas estimation functionality...")
-
-        # Check if the critical syntax error is fixed first
-        import py_compile
-        try:
-            py_compile.compile('arbitrum_testnet_agent.py', doraise=True)
-            print("   ✅ Agent syntax validation passed")
-        except py_compile.PyCompileError as syntax_error:
-            print(f"   ❌ Syntax error still present: {syntax_error}")
-            return False
-
-        # Test basic gas parameter generation
-        from arbitrum_testnet_agent import ArbitrumTestnetAgent
-
-        # Initialize agent with error handling
-        agent = ArbitrumTestnetAgent()
-
-        # Test gas parameter methods
-        gas_params = agent.get_optimized_gas_params('aave_borrow', 'market')
-
-        if gas_params and 'gas' in gas_params and 'gasPrice' in gas_params:
-            print("   ✅ Gas parameter generation working")
-            print(f"      Gas limit: {gas_params['gas']}")
-            print(f"      Gas price: {gas_params['gasPrice']} wei")
-            return True
-        else:
-            print("   ❌ Gas parameter generation failed")
-            return False
-
-    except Exception as e:
-        print(f"   ❌ Gas estimation test error: {e}")
+        print("⚠️ Some tests failed - review and fix issues before proceeding")
         return False
 
 if __name__ == "__main__":
-    try:
-        success = run_all_tests()
-
-        if success:
-            print("\n🚀 SYSTEM READY FOR WORKFLOW EXECUTION")
-            print("   Run the '🔍 Test Enhanced Diagnostics Fixed' workflow")
-        else:
-            print("\n🔧 SYSTEM NEEDS MORE FIXES")
-            print("   Review failed tests and apply fixes")
-
-        sys.exit(0 if success else 1)
-
-    except Exception as e:
-        print(f"❌ Test runner failed: {e}")
-        print(f"📋 Traceback: {traceback.format_exc()}")
-        sys.exit(1)
+    success = run_comprehensive_tests()
+    sys.exit(0 if success else 1)

@@ -330,6 +330,7 @@ class AaveArbitrumIntegration:
                 {
                     "inputs": [],
                     "name": "symbol",
+```python
                     "outputs": [{"name": "", "type": "string"}],
                     "stateMutability": "view",
                     "type": "function"
@@ -1026,15 +1027,20 @@ class AaveArbitrumIntegration:
 
         # Enhanced gas estimation with fallbacks
         try:
+            # Validate parameters before gas estimation
+            checksum_token = Web3.to_checksum_address(token_address)
+            checksum_user = Web3.to_checksum_address(user_address)
+
             estimated_gas = pool_contract.functions.borrow(
-                token_address, amount_wei, interest_rate_mode, 0, user_address
-            ).estimate_gas({'from': user_address})
+                checksum_token, int(amount_wei), int(interest_rate_mode), 0, checksum_user
+            ).estimate_gas({'from': checksum_user})
 
             gas_limit = int(estimated_gas * 1.2)  # 20% buffer
             print(f"⛽ Estimated gas: {estimated_gas}, using: {gas_limit}")
-        except:
+        except Exception as gas_err:
+            print(f"⚠️ Gas estimation failed: {gas_err}")
             gas_limit = 500000  # Conservative fallback
-            print(f"⚠️ Gas estimation failed, using fallback: {gas_limit}")
+            print(f"⚠️ Using fallback gas limit: {gas_limit}")
 
         # Enhanced gas price with network conditions
         try:
@@ -1788,6 +1794,7 @@ class AaveArbitrumIntegration:
             wbtc_supplied = self.get_supplied_balance(self.wbtc_address)
             usdc_suppliedsupplied = self.get_supplied_balance(self.usdc_address)
 
+            ```python
             # Output balancesprint(f"   Wallet WETH balance:   {weth_balance:.8f}")
             print(f"   Wallet WBTC balance:   {wbtc_balance:.8f}")
             print(f"   Wallet USDC balance:   {usdc_balance:.8f}")
