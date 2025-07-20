@@ -673,7 +673,6 @@ class ArbitrumTestnetAgent:
         print(f"⚙️ Executing Leveraged Supply Strategy with {usdc_borrow_amount:.2f} USDC...")
 
         # Pre-validation: Ensure borrow amount is safe
-        ```python
         try:
             pool_abi = [{
                 "inputs": [{"name": "user", "type": "address"}],
@@ -2027,7 +2026,7 @@ class ArbitrumTestnetAgent:
             # Swap 4: USDC → WETH (for wallet)
             if wallet_weth_amount > 0.1:
                 print(f"🔄 Swapping {wallet_weth_amount:.2f} USDC → WETH (wallet)...")
-                try:```python
+                try:
                     wallet_weth_result = self.uniswap.swap_tokens(
                         self.usdc_address, self.weth_address, wallet_weth_amount, 500
                     )

@@ -82,6 +82,7 @@ def test_contract_validation():
         py_compile.compile('arbitrum_testnet_agent.py', doraise=True)
 
         from arbitrum_testnet_agent import ArbitrumTestnetAgent
+        from contract_validator import ContractValidator
 
         # Create agent to get Web3 instance
         agent = ArbitrumTestnetAgent()
