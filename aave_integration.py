@@ -27,8 +27,9 @@ class AaveArbitrumIntegration:
             self.weth_address = self.w3.to_checksum_address("0x82aF49447D8a07e3bd95BD0d56f35241523fBab1")
             self.wbtc_address = self.w3.to_checksum_address("0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f")
             self.dai_address = self.w3.to_checksum_address("0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1")
-            # Arbitrum Mainnet token addresses
-            self.usdc_address = self.w3.to_checksum_address("0xAF88D065e8c38FAD0AEff3E253e648A15ceE23DC")
+            # Arbitrum Mainnet token addresses - Use USDC.e for Aave V3
+            self.usdc_address = self.w3.to_checksum_address("0xFF970A61A04b1cA14834A651bAb06d67307796618")  # USDC.e (Aave-supported)
+            self.usdc_native_address = self.w3.to_checksum_address("0xAF88D065e8c38FAD0AEff3E253e648A15ceE23DC")  # Native USDC
             self.arb_address = self.w3.to_checksum_address("0x912CE59144191C1204E64559FE8253a0e49E6548")
         else:  # Arbitrum Sepolia Testnet (Chain ID: 421614)
             print(f"🧪 Initializing for Arbitrum Sepolia Testnet (Chain ID: {chain_id})")
@@ -1064,11 +1065,11 @@ class AaveArbitrumIntegration:
                 print(f"   Gas limit: {gas_limit}")
                 print(f"   Gas price: {adjusted_gas_price} wei")
 
-                # Build borrow transaction with correct parameter types
+                # Build borrow transaction with correct parameter types for Aave V3
                 transaction = pool_contract.functions.borrow(
-                    Web3.to_checksum_address(token_address),  # address
-                    int(amount_wei),                          # uint256
-                    int(interest_rate_mode),                  # uint256 
+                    Web3.to_checksum_address(token_address),  # address asset
+                    int(amount_wei),                          # uint256 amount
+                    int(interest_rate_mode),                  # uint256 interestRateMode (2 = variable)
                     int(0),                                   # uint16 referralCode
                     Web3.to_checksum_address(user_address)    # address onBehalfOf
                 ).build_transaction({

@@ -17,6 +17,8 @@ class EnhancedBorrowManager:
         """Execute borrow with comprehensive safety checks and fallbacks"""
         try:
             print(f"🏦 Enhanced Borrow Manager: Attempting to borrow ${amount_usd:.2f}")
+            print(f"🔍 DEBUG: Token address: {token_address}")
+            print(f"🔍 DEBUG: Amount USD: {amount_usd}")
 
             # Comprehensive pre-validation
             validation_result = self._validate_borrow_conditions(amount_usd, token_address)

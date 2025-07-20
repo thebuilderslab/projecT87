@@ -335,8 +335,9 @@ class ArbitrumTestnetAgent:
 
         # Contract addresses based on network
         if self.network_mode == 'mainnet':
-            # Arbitrum Mainnet addresses (verified from CoinGecko and Aave documentation)
-            self.usdc_address = self.w3.to_checksum_address("0xaf88d065e8c38FAd0aEfF3e253E648a15cEE23DC")
+            # Arbitrum Mainnet addresses - Use USDC.e for Aave V3 compatibility
+            self.usdc_address = self.w3.to_checksum_address("0xFF970A61A04b1cA14834A651bAb06d67307796618")  # USDC.e (Aave-supported)
+            self.usdc_native_address = self.w3.to_checksum_address("0xaf88d065e8c38FAd0aEfF3e253E648a15cEE23DC")  # Native USDC
             self.wbtc_address = self.w3.to_checksum_address("0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f")
             self.weth_address = self.w3.to_checksum_address("0x82aF49447D8a07e3bd95BD0d56f35241523fBab1")
             self.dai_address = self.w3.to_checksum_address("0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1")
