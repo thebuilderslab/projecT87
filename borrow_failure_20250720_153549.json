@@ -1,0 +1,13 @@
+{
+  "timestamp": 1753025745.1392574,
+  "rpc_used": "https://arbitrum-one.public.blastapi.io",
+  "wallet_address": "0x5B823270e3719CDe8669e5e5326B455EaA8a350b",
+  "network_mode": "mainnet",
+  "chain_id": 42161,
+  "usdc_address": "0xAF88D065e8c38FAD0AEff3E253e648A15ceE23DC",
+  "aave_pool_address": "0x794a61358D6845594F94dc1DB02A252b5b4814aD",
+  "health_factor": 4.139098634174859,
+  "available_borrows_usdc": 100.99178509,
+  "total_collateral_usdc": 185.07986322,
+  "total_debt_usdc": 35.07893035,
+  "eth_balance": 
