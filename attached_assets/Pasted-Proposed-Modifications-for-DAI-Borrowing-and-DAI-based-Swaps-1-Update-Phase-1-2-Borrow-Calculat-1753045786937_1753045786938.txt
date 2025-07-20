@@ -1,0 +1,72 @@
+Proposed Modifications for DAI Borrowing and DAI-based Swaps:
+1. Update Phase 1 & 2: Borrow Calculation and Execution
+
+Change: Ensure safe_borrow_amount is used to calculate amount_wei for DAI (18 decimals). The borrow function should use dai_address.
+
+Current code from diagnose_transaction_reverts.py (which you just modified):
+
+Python
+
+dai_address = agent.dai_address # This is correct
+user_address = agent.address
+amount_wei = 10 * (10**18)  # $10 in DAI wei (DAI has 18 decimals) # This is correct for $10 DAI
+asset_to_borrow_address = dai_address # This is correct
+
+# ... later in the borrow call ...
+pool_contract.functions.borrow(
+    Web3.to_checksum_address(asset_to_borrow_address), # This is correct
+    amount_wei,
+    2,  # Variable rate
+    0,  # Referral code
+    Web3.to_checksum_address(user_address)
+).call({
+    'from': Web3.to_checksum_address(user_address),
+    'gas': 700000
+})
+This part is already correctly implemented in your diagnose_transaction_reverts.py based on our previous steps, which is why the DAI simulation succeeded.
+
+2. Update Phase 3 & 4: Asset Allocation and Swapping (This is where the main change is needed in your system's logic, not just the diagnostic script)
+
+Change: The borrowed asset is now DAI. Therefore, all swaps should originate from DAI.
+
+Remove: The "USDC → DAI" swap, as you already have DAI.
+
+Adjust: The percentages for WBTC and WETH to account for the total borrowed DAI. You'll also need to decide what percentage of the borrowed DAI you want to keep as DAI for reserves/gas.
+
+Revised Swap Breakdown (Conceptual - you'll need to apply this to your UniswapArbitrumIntegration or agent logic):
+
+Borrowed Asset: DAI (e.g., $10.00 DAI)
+
+DAI → WBTC: e.g., $5.00 DAI (50% of borrowed DAI)
+
+DAI → WETH: e.g., $3.00 DAI (30% of borrowed DAI)
+
+Reserve DAI: e.g., $2.00 DAI (20% of borrowed DAI, for gas/reserves)
+
+Example swap_tokens calls:
+
+Python
+
+# Assuming you have a `uniswap` object and DAI/WBTC/WETH addresses
+# WBTC Swap Example
+wbtc_amount_to_swap_dai = 5.0  # $5.00 DAI
+wbtc_tx_hash = uniswap.swap_tokens(
+    dai_address,         # From: DAI
+    wbtc_address,        # To: WBTC
+    wbtc_amount_to_swap_dai * (10**18), # Convert to DAI wei
+    500                  # 0.05% fee tier
+)
+
+# WETH Swap Example
+weth_amount_to_swap_dai = 3.0  # $3.00 DAI
+weth_tx_hash = uniswap.swap_tokens(
+    dai_address,         # From: DAI
+    weth_address,        # To: WETH
+    weth_amount_to_swap_dai * (10**18), # Convert to DAI wei
+    500                  # 0.05% fee tier
+)
+In summary, your diagnose_transaction_reverts.py script (which you just ran successfully) already performs the DAI borrow correctly for the simulation.
+
+The current task is to ensure that your main "borrow-swap-supply" logic (likely in enhanced_borrow_manager.py or arbitrum_testnet_agent.py) reflects this change from USDC to DAI as the source for the subsequent swaps.
+
+Please confirm: Are you ready to proceed with modifying the core borrow-swap-supply loop in your agent's main logic to reflect borrowing DAI and then swapping from DAI?
