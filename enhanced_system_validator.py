@@ -6,6 +6,7 @@ Enhanced System Validator - Comprehensive pre-execution validation
 
 import os
 import json
+import time
 from web3 import Web3
 from contract_validator import ContractValidator
 from fix_json_serialization import DecimalEncoder, safe_json_dump
@@ -14,6 +15,27 @@ class EnhancedSystemValidator:
     def __init__(self, agent):
         self.agent = agent
         self.validation_results = {}
+        
+    def run_all_checks(self):
+        """Run all validation checks and return issues list"""
+        issues = []
+        
+        try:
+            # Run comprehensive validation
+            all_passed = self.run_comprehensive_validation()
+            
+            if not all_passed:
+                # Extract issues from validation results
+                for check_name, result in self.validation_results.items():
+                    if not result.get('passed', False):
+                        error_msg = result.get('error', f"{check_name} failed")
+                        issues.append(f"{check_name}: {error_msg}")
+            
+            return issues
+            
+        except Exception as e:
+            issues.append(f"System validation error: {e}")
+            return issues
         
     def run_comprehensive_validation(self):
         """Run all validation checks before system execution"""

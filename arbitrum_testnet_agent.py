@@ -420,8 +420,8 @@ class ArbitrumTestnetAgent:
                     'updated_by': 'successful_operation'
                 }
 
-                with open('agent_baseline.json', 'w') as f:
-                    json.dump(baseline_data, f, indent=2)
+                from fix_json_serialization import safe_json_dump
+                safe_json_dump(baseline_data, 'agent_baseline.json')
 
                 return True
             else:
@@ -674,7 +674,7 @@ class ArbitrumTestnetAgent:
 
         # Pre-validation: Ensure borrow amount is safe
         try:
-            pool_abi = [{
+            pool abi = [{
                 "inputs": [{"name": "user", "type": "address"}],
                 "name": "getUserAccountData",
                 "outputs": [
@@ -1483,9 +1483,8 @@ class ArbitrumTestnetAgent:
                     'wallet_address': self.address,
                     'data_source': 'initial_baseline_setup'
                 }
-                with open('agent_baseline.json', 'w') as f:
-                    import json
-                    json.dump(baseline_data, f, indent=2)
+                from fix_json_serialization import safe_json_dump
+                safe_json_dump(baseline_data, 'agent_baseline.json')
 
                 print(f"📈 Next trigger will activate when collateral reaches: ${self.last_collateral_value_usd + 12:,.2f}")
                 print(f"💡 Add $12+ worth of collateral to activate autonomous sequence")
@@ -1514,7 +1513,7 @@ class ArbitrumTestnetAgent:
                 }
                 with open('agent_baseline.json', 'w') as f:
                     import json
-                    json.dump(baseline_data, f, indent=2)
+                    json.dump(baseline_data, f)
 
                 return 0.8
 
@@ -2029,7 +2028,8 @@ class ArbitrumTestnetAgent:
             if wallet_weth_amount > 0.1:
                 print(f"🔄 Swapping {wallet_weth_amount:.2f} USDC → WETH (wallet)...")
                 try:
-                    wallet_weth_result = self.uniswap.swap_tokens(
+                    wallet_weth_result = self.uniswap```python
+.swap_tokens(
                         self.usdc_address, self.weth_address, wallet_weth_amount, 500
                     )
                     swap_results.append(wallet_weth_result)
@@ -2393,8 +2393,8 @@ class ArbitrumTestnetAgent:
                     'timestamp': time.time(),
                     'updated_by': 'update_baseline_after_success'
                 }
-                with open('agent_baseline.json', 'w') as f:
-                    json.dump(baseline_data, f, indent=2)
+                from fix_json_serialization import safe_json_dump
+                safe_json_dump(baseline_data, 'agent_baseline.json')
 
                 print(f"✅ Baseline updated to ${new_collateral_value:.2f}")
                 return True

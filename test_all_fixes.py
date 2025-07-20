@@ -21,11 +21,15 @@ def test_usdc_address_fix():
         
         # Check USDC address
         expected_usdc = "0xFF970A61A04b1cA14834A651bAb06d67307796618"
-        if agent.usdc_address.lower() == expected_usdc.lower():
+        # Normalize both addresses for comparison
+        agent_usdc_normalized = Web3.to_checksum_address(agent.usdc_address)
+        expected_usdc_normalized = Web3.to_checksum_address(expected_usdc)
+        
+        if agent_usdc_normalized == expected_usdc_normalized:
             print("✅ USDC address correctly set to USDC.e")
             return True
         else:
-            print(f"❌ USDC address mismatch: {agent.usdc_address} vs {expected_usdc}")
+            print(f"❌ USDC address mismatch: {agent_usdc_normalized} vs {expected_usdc_normalized}")
             return False
             
     except Exception as e:
