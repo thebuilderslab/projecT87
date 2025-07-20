@@ -193,7 +193,7 @@ class EnhancedBorrowManager:
 
                 # Use the agent's Aave integration which has the correct ABI
                 if hasattr(self.agent, 'aave') and self.agent.aave:
-                    # Direct contract call through aave integration
+                    # Simulate the transaction with proper gas context
                     try:
                         self.agent.aave.pool_contract.functions.borrow(
                             token_address_checksum,
@@ -201,12 +201,29 @@ class EnhancedBorrowManager:
                             2,  # Variable rate
                             0,  # Referral code
                             user_address
-                        ).call({'from': user_address})
+                        ).call({
+                            'from': user_address,
+                            'gas': 500000,
+                            'gasPrice': int(2 * 10**9)  # 2 gwei minimum for simulation
+                        })
                         print(f"✅ Transaction simulation passed")
                     except Exception as aave_sim_error:
-                        print(f"⚠️ Aave simulation failed, skipping validation: {aave_sim_error}")
-                        # Don't fail validation for simulation issues - continue with transaction
-                        print(f"💡 Proceeding with actual transaction despite simulation failure")
+                        print(f"❌ CRITICAL: Transaction simulation failed: {aave_sim_error}")
+
+                        # Check for specific Aave protocol errors
+                        error_str = str(aave_sim_error).lower()
+                        if "insufficient collateral" in error_str:
+                            print(f"💡 SOLUTION: Increase collateral or reduce borrow amount")
+                            return False
+                        elif "borrowing not enabled" in error_str:
+                            print(f"💡 SOLUTION: USDC borrowing may be disabled")
+                            return False
+                        elif "health factor" in error_str:
+                            print(f"💡 SOLUTION: Health factor would be too low")
+                            return False
+                        else:
+                            print(f"💡 Proceeding cautiously despite simulation failure")
+                            # Continue but flag as risky
                 else:
                     print(f"⚠️ Aave integration not available for simulation")
 
@@ -240,25 +257,25 @@ class EnhancedBorrowManager:
             # Base parameters
             base_gas_limit = 500000
             current_gas_price = self.w3.eth.gas_price
-            
+
             print(f"🔍 Network Gas Analysis:")
             print(f"   Current network gas price: {self.w3.from_wei(current_gas_price, 'gwei'):.4f} gwei")
 
             # Dynamic gas pricing based on network conditions
             if attempt_number == 0:
-                # First attempt: Use minimum viable gas price
-                # Check if network gas is very low (< 0.1 gwei), use slightly above that
-                min_viable_gas = max(current_gas_price, int(0.05 * 10**9))  # 0.05 gwei minimum
-                enhanced_gas_price = int(min_viable_gas * 1.1)  # 10% above minimum
+                # First attempt: Use network-acceptable gas price (increased for mainnet)
+                # Arbitrum mainnet requires higher gas for reliable execution
+                min_viable_gas = max(current_gas_price, int(0.5 * 10**9))  # 0.5 gwei minimum (increased)
+                enhanced_gas_price = int(min_viable_gas * 1.5)  # 50% above minimum for reliability
                 gas_limit = base_gas_limit
                 print(f"   🟢 CHEAPEST MODE: Using {self.w3.from_wei(enhanced_gas_price, 'gwei'):.4f} gwei")
-                
+
             elif attempt_number == 1:
                 # Second attempt: Use network standard
                 enhanced_gas_price = int(current_gas_price * 1.2)  # 20% above network
                 gas_limit = base_gas_limit + 100000
                 print(f"   🟡 STANDARD MODE: Using {self.w3.from_wei(enhanced_gas_price, 'gwei'):.4f} gwei")
-                
+
             else:
                 # Higher attempts: Progressive increase
                 multiplier = 1.5 + (attempt_number * 0.3)  # 1.5x, 1.8x, 2.1x, etc.
