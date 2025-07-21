@@ -58,10 +58,9 @@ def test_direct_usdc_borrow():
         print(f"💱 Amount: {usdc_amount_wei} USDC wei")
         
         # Try direct borrow
-        result = agent.aave.borrow_from_aave(
-            usdc_amount_wei, 
-            agent.usdc_address, 
-            2  # Variable rate
+        result = agent.aave.borrow(
+            test_amount,  # Use USD amount, not wei
+            agent.usdc_address
         )
         
         if result:
