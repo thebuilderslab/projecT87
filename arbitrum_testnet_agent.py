@@ -1351,24 +1351,13 @@ class ArbitrumTestnetAgent:
             print(f"📋 DAI Allocation:")
             print(f"   WBTC Swap: ${allocation['wbtc_swap']:.2f}")
             print(f"   WETH Swap: ${allocation['weth_swap']:.2f}")
-            print(f"   Direct Supply: ${allocation['direct_```python
-supply']:.2f}")
+            print(f"   Direct Supply: ${allocation['direct_supply']:.2f}")
 
             return allocation
 
         except Exception as e:
             print(f"❌ Allocation calculation failed: {e}")
             return {'wbtc_swap': 0, 'weth_swap': 0, 'direct_supply': total_dai}
-
-        # Enhanced gas calculation for swap with fallback
-            try:
-                base_gas_price = self.w3.eth.gas_price
-                if base_gas_price <= 0:
-                    base_gas_price = self.w3.to_wei(0.1, 'gwei')  # Fallback
-                swap_gas_price = int(base_gas_price * 1.3)  # 30% higher for swap operations
-            except Exception as gas_error:
-                print(f"⚠️ Gas price fetch failed: {gas_error}")
-                swap_gas_price = self.w3.to_wei(0.2, 'gwei')  # Conservative fallback
 
     def _calculate_growth_triggered_amount(self, growth_amount, available_borrows):
         """
