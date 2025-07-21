@@ -2061,8 +2061,7 @@ class ArbitrumTestnetAgent:
 
             # Check overall success
             successful_swaps = sum(1 for result in swap_results if result)
-            total_swaps = len```text
-(swap_results)
+            total_swaps = len(swap_results)
 
             print(f"✅ Swap sequence complete: {successful_swaps}/{total_swaps} successful")
             return successful_swaps >= (total_swaps * 0.5)  # 50% success threshold
