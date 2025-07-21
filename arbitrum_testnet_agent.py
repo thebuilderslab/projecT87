@@ -1035,15 +1035,29 @@ class ArbitrumTestnetAgent:
                         print(f"   Growth: ${collateral_growth:.2f}")
                         print(f"   Threshold: ${growth_threshold:.2f}")
                         
-                        # Only proceed if we have sufficient collateral growth OR manual override
+                        # HYBRID APPROACH: Growth-triggered OR capacity optimization
                         manual_override = self.detect_manual_override()
                         growth_triggered = collateral_growth >= growth_threshold
                         
-                        if growth_triggered or manual_override:
+                        # New: Capacity optimization trigger
+                        capacity_utilization = available_borrows / max(total_collateral * 0.8, 1)  # 80% max LTV assumption
+                        capacity_optimization_enabled = self._should_optimize_capacity(available_borrows, capacity_utilization)
+                        
+                        print(f"🎯 Trigger Analysis:")
+                        print(f"   Growth triggered: {growth_triggered} (${collateral_growth:.2f} >= ${growth_threshold:.2f})")
+                        print(f"   Capacity optimization: {capacity_optimization_enabled} ({capacity_utilization:.1%} utilization)")
+                        print(f"   Manual override: {manual_override}")
+                        
+                        if growth_triggered or capacity_optimization_enabled or manual_override:
+                            trigger_reason = []
                             if growth_triggered:
-                                print(f"🚀 GROWTH TRIGGERED: ${collateral_growth:.2f} >= ${growth_threshold:.2f}")
+                                trigger_reason.append(f"🚀 GROWTH TRIGGERED: ${collateral_growth:.2f}")
+                            if capacity_optimization_enabled:
+                                trigger_reason.append(f"⚡ CAPACITY OPTIMIZATION: {capacity_utilization:.1%} utilization")
                             if manual_override:
-                                print(f"🔧 MANUAL OVERRIDE: Bypassing growth requirements")
+                                trigger_reason.append(f"🔧 MANUAL OVERRIDE")
+                            
+                            print(" | ".join(trigger_reason))
                             
                             # Predict success rate
                             predicted_success = self.get_success_rate_prediction()
@@ -1054,12 +1068,16 @@ class ArbitrumTestnetAgent:
                                 print("⏰ Operations in cooldown period")
                                 performance_score += 0.1
                             else:
-                                # Calculate safe borrow amount using actual growth
-                                safe_amount = self.calculate_safe_borrow_amount(collateral_growth, available_borrows)
+                                # Calculate safe borrow amount using hybrid logic
+                                if growth_triggered:
+                                    safe_amount = self.calculate_safe_borrow_amount(collateral_growth, available_borrows)
+                                else:
+                                    # Capacity-based: smaller, more frequent amounts
+                                    safe_amount = self._calculate_capacity_optimized_amount(available_borrows, capacity_utilization)
                         else:
-                            print(f"⏸️ GROWTH REQUIREMENT NOT MET")
-                            print(f"   Need ${growth_threshold - collateral_growth:.2f} more collateral growth")
-                            print(f"   Or create manual override file to bypass")
+                            print(f"⏸️ NO TRIGGERS ACTIVATED")
+                            print(f"   Growth needed: ${max(0, growth_threshold - collateral_growth):.2f}")
+                            print(f"   Capacity utilization: {capacity_utilization:.1%} (threshold: 20%)")
                             performance_score += 0.2
                             safe_amount = 0
                             
@@ -1262,3 +1280,100 @@ class ArbitrumTestnetAgent:
             print(f"❌ Allocation calculation failed: {e}")
             return {'wbtc_swap': 0, 'weth_swap': 0, 'direct_supply': total_dai}
 
+import os
+import json
+import math
+import time
+import logging
+from datetime import datetime
+from web3 import Web3
+from eth_account import Account
+from aave_integration import AaveArbitrumIntegration
+from uniswap_integration import UniswapArbitrumIntegration as UniswapIntegration
+from aave_health_monitor import AaveHealthMonitor as HealthMonitor
+from gas_fee_calculator import ArbitrumGasCalculator
+from config_constants import MIN_ETH_FOR_OPERATIONS, MIN_ETH_FOR_GAS_BUFFER
+import requests
+import sys
+
+class ArbitrumTestnetAgent:
+    def __init__(self):
+        # ... existing initialization code ...
+        
+        # Hybrid system configuration
+        self.capacity_optimization_threshold = float(os.getenv('CAPACITY_OPTIMIZATION_THRESHOLD', '0.20'))  # 20% utilization threshold
+        self.capacity_optimization_cooldown = 300  # 5 minutes between capacity optimizations
+        self.last_capacity_optimization = 0
+        
+    def _should_optimize_capacity(self, available_borrows, capacity_utilization):
+        """Determine if capacity optimization should trigger"""
+        try:
+            # Conditions for capacity optimization:
+            # 1. Available borrows > $10 (meaningful amount)
+            # 2. Capacity utilization < 20% (underutilized)
+            # 3. Not in capacity optimization cooldown
+            # 4. Market conditions favorable
+            
+            current_time = time.time()
+            
+            # Check basic thresholds
+            if available_borrows < 10.0:
+                return False
+                
+            if capacity_utilization >= self.capacity_optimization_threshold:
+                return False
+                
+            # Check cooldown for capacity optimizations
+            if current_time - self.last_capacity_optimization < self.capacity_optimization_cooldown:
+                return False
+                
+            # Check market conditions (gas prices, network congestion)
+            gas_price = self.w3.eth.gas_price
+            base_fee = self.w3.eth.get_block('latest').get('baseFeePerGas', gas_price)
+            network_congestion = gas_price / base_fee if base_fee > 0 else 1.0
+            
+            # Skip capacity optimization during high network congestion
+            if network_congestion > 2.0:
+                print(f"⏸️ Skipping capacity optimization due to network congestion: {network_congestion:.2f}x")
+                return False
+                
+            print(f"✅ Capacity optimization conditions met:")
+            print(f"   Available: ${available_borrows:.2f} > $10")
+            print(f"   Utilization: {capacity_utilization:.1%} < {self.capacity_optimization_threshold:.1%}")
+            print(f"   Network congestion: {network_congestion:.2f}x < 2.0x")
+            
+            return True
+            
+        except Exception as e:
+            print(f"❌ Capacity optimization check failed: {e}")
+            return False
+            
+    def _calculate_capacity_optimized_amount(self, available_borrows, capacity_utilization):
+        """Calculate optimal borrow amount for capacity optimization"""
+        try:
+            # For capacity optimization, use smaller amounts more frequently
+            # This reduces risk while maintaining capital efficiency
+            
+            # Base amount: 5-15% of available capacity
+            base_percentage = 0.05 + (0.10 * (1 - capacity_utilization))  # 5-15% based on current utilization
+            base_amount = available_borrows * base_percentage
+            
+            # Apply constraints
+            min_amount = 1.0   # Minimum $1
+            max_amount = 25.0  # Maximum $25 for capacity optimization
+            
+            optimal_amount = max(min_amount, min(base_amount, max_amount))
+            
+            print(f"💡 Capacity optimization calculation:")
+            print(f"   Base percentage: {base_percentage:.1%}")
+            print(f"   Base amount: ${base_amount:.2f}")
+            print(f"   Constrained amount: ${optimal_amount:.2f}")
+            
+            # Update last optimization time
+            self.last_capacity_optimization = time.time()
+            
+            return optimal_amount
+            
+        except Exception as e:
+            print(f"❌ Capacity optimization calculation failed: {e}")
+            return 0.0
