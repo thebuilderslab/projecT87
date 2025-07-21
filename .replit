@@ -16,6 +16,7 @@ run = ["sh", "-c", "python mainnet_launcher.py"]
 deploymentTarget = "cloudrun"
 
 [workflows]
+runButton = "🤖 Hybrid Autonomous System"
 
 [[workflows.workflow]]
 name = "🔍 Test Enhanced Diagnostics Fixed"
@@ -89,6 +90,15 @@ args = "echo \"\""
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "echo \"🔍 All Enhanced Diagnostics Complete\""
+
+[[workflows.workflow]]
+name = "🤖 Hybrid Autonomous System"
+author = 39391053
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python main.py"
 
 [[ports]]
 localPort = 5000

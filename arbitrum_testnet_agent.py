@@ -1142,6 +1142,7 @@ class ArbitrumTestnetAgent:
                                 safe_amount = self.calculate_safe_borrow_amount(collateral_growth, available_borrows)
                                 print(f"💰 Using Manual Override calculation: ${safe_amount:.2f}")
                         else:
+                        else:
                         print(f"⏸️ HYBRID SYSTEM - NO TRIGGERS ACTIVATED")
                         print(f"   GROWTH-TRIGGERED Requirements:")
                         if collateral_growth < self.growth_trigger_threshold:
@@ -1159,47 +1160,47 @@ class ArbitrumTestnetAgent:
                         performance_score += 0.2
                         safe_amount = 0
                         
-                        # Track this attempt
-                        self.track_operation_attempt()
-                            
-                            if safe_amount > 0:
-                                print(f"🎯 Attempting safe DAI borrow: ${safe_amount:.2f}")
+                    # Track this attempt
+                    self.track_operation_attempt()
+                        
+                    if safe_amount > 0:
+                        print(f"🎯 Attempting safe DAI borrow: ${safe_amount:.2f}")
+                        
+                        # Execute enhanced DAI-only borrow
+                        if hasattr(self, 'enhanced_borrow_manager') and self.enhanced_borrow_manager:
+                            borrow_success = self.enhanced_borrow_manager.execute_enhanced_borrow_with_retry(safe_amount)
+                            if borrow_success:
+                                print(f"✅ DAI borrow successful!")
+                                self.record_successful_operation('borrow')
                                 
-                                # Execute enhanced DAI-only borrow
-                                if hasattr(self, 'enhanced_borrow_manager') and self.enhanced_borrow_manager:
-                                    borrow_success = self.enhanced_borrow_manager.execute_enhanced_borrow_with_retry(safe_amount)
-                                    if borrow_success:
-                                        print(f"✅ DAI borrow successful!")
-                                        self.record_successful_operation('borrow')
-                                        
-                                        # Update baseline collateral after successful operation
-                                        self.update_baseline_after_success(current_collateral)
-                                        
-                                        performance_score += 0.4
-                                        operations_completed += 2
-                                        
-                                        # Execute swap and supply sequence after successful borrow
-                                        self._execute_post_borrow_operations(safe_amount)
-                                        
-                                    else:
-                                        print(f"❌ DAI borrow failed")
-                                        performance_score += 0.1
-                                else:
-                                    # Fallback to direct DAI borrow
-                                    borrow_success = self.aave.borrow(safe_amount, self.dai_address)
-                                    if borrow_success:
-                                        print(f"✅ Direct DAI borrow successful!")
-                                        self.record_successful_operation('borrow')
-                                        performance_score += 0.3
-                                        operations_completed += 2
-                                        
-                                        # Execute swap and supply sequence after successful borrow
-                                        self._execute_post_borrow_operations(safe_amount)
-                                        
-                                    else:
-                                        print(f"❌ Direct DAI borrow failed")
-                                        self.analyze_borrow_failure()
-                                        performance_score += 0.1
+                                # Update baseline collateral after successful operation
+                                self.update_baseline_after_success(current_collateral)
+                                
+                                performance_score += 0.4
+                                operations_completed += 2
+                                
+                                # Execute swap and supply sequence after successful borrow
+                                self._execute_post_borrow_operations(safe_amount)
+                                
+                            else:
+                                print(f"❌ DAI borrow failed")
+                                performance_score += 0.1
+                        else:
+                            # Fallback to direct DAI borrow
+                            borrow_success = self.aave.borrow(safe_amount, self.dai_address)
+                            if borrow_success:
+                                print(f"✅ Direct DAI borrow successful!")
+                                self.record_successful_operation('borrow')
+                                performance_score += 0.3
+                                operations_completed += 2
+                                
+                                # Execute swap and supply sequence after successful borrow
+                                self._execute_post_borrow_operations(safe_amount)
+                                
+                            else:
+                                print(f"❌ Direct DAI borrow failed")
+                                self.analyze_borrow_failure()
+                                performance_score += 0.1
                     else:
                         print(f"⚠️ Conditions not favorable for borrowing:")
                         print(f"   Health Factor: {health_factor:.4f} (need > 1.5)")
