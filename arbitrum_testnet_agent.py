@@ -681,53 +681,53 @@ class ArbitrumTestnetAgent:
         #    return 0.0 # Return 0 if unable toretrieve # Original Code
         return 0.0  # Returning 0.0 directly because the function is not being used.
 
-    def execute_leveraged_supply_strategy(self, amount_to_borrow_dai=10):
-        """Execute REVISED DAI-based leveraged supply strategy with conditional ETH acquisition and dedicated WBTC allocation"""
-        print("\n🚀 Starting REVISED DAI-BASED LEVERAGED SUPPLY STRATEGY...")
+    def execute_leveraged_supply_strategy(self, amount_to_borrow_usdc=10):
+        """Execute REVISED USDC-based leveraged supply strategy with conditional ETH acquisition and dedicated WBTC allocation"""
+        print("\n🚀 Starting REVISED USDC-BASED LEVERAGED SUPPLY STRATEGY...")
 
         # Import MIN_ETH_GAS_THRESHOLD from config
         from config import MIN_ETH_GAS_THRESHOLD
         import traceback
 
-        # --- Phase 1: Borrow DAI ---
-        print(f"Step 1: Attempting to borrow {amount_to_borrow_dai} DAI...")
+        # --- Phase 1: Borrow USDC ---
+        print(f"Step 1: Attempting to borrow {amount_to_borrow_usdc} USDC...")
         try:
             # Use the existing borrow method from aave integration
-            success_borrow = self.aave.borrow(amount_to_borrow_dai, self.dai_address)
+            success_borrow = self.aave.borrow(amount_to_borrow_usdc, self.usdc_address)
             if not success_borrow:
-                print("❌ Failed to borrow DAI. Aborting strategy.")
+                print("❌ Failed to borrow USDC. Aborting strategy.")
                 return False
-            print(f"✅ Borrowed {amount_to_borrow_dai} DAI successfully.")
+            print(f"✅ Borrowed {amount_to_borrow_usdc} USDC successfully.")
         except Exception as e:
-            print(f"❌ Error during DAI borrow: {e}")
+            print(f"❌ Error during USDC borrow: {e}")
             traceback.print_exc()
             return False
 
         # Brief pause for transaction confirmation
         time.sleep(3)
 
-        # --- Phase 2: Conditional ETH for Gas (1 DAI allocation) ---
+        # --- Phase 2: Conditional ETH for Gas (1 USDC allocation) ---
         print("\nStep 2: Managing ETH for gas (conditional)...")
         try:
             current_eth_balance = self.get_eth_balance()
             print(f"  Current Wallet ETH: {current_eth_balance:.6f} ETH (Threshold: {MIN_ETH_GAS_THRESHOLD} ETH)")
 
             if current_eth_balance < MIN_ETH_GAS_THRESHOLD:
-                print(f"  Wallet ETH is below threshold. Swapping 1 DAI for ETH.")
-                # Swap 1 DAI for WETH (then unwrap to ETH)
-                success_eth_swap = self.uniswap.swap_tokens(self.dai_address, self.weth_address, 1, 500)
+                print(f"  Wallet ETH is below threshold. Swapping 1 USDC for ETH.")
+                # Swap 1 USDC for WETH (then unwrap to ETH)
+                success_eth_swap = self.uniswap.swap_tokens(self.usdc_address, self.weth_address, 1, 500)
                 if not success_eth_swap:
-                    print("  ⚠️ Failed to swap 1 DAI for ETH. This might impact future transactions if gas runs out.")
+                    print("  ⚠️ Failed to swap 1 USDC for ETH. This might impact future transactions if gas runs out.")
                 else:
-                    print("  ✅ Successfully swapped 1 DAI for ETH to maintain gas buffer.")
+                    print("  ✅ Successfully swapped 1 USDC for ETH to maintain gas buffer.")
             else:
-                print(f"  Wallet ETH is sufficient. Supplying 1 DAI to Aave as collateral instead of swapping for ETH.")
-                # Supply the 1 DAI directly to Aave
-                success_supply_eth_dai_yield = self.aave.supply_to_aave(self.dai_address, 1)
-                if not success_supply_eth_dai_yield:
-                    print("  ⚠️ Failed to supply 1 DAI (intended for ETH) to Aave. This portion is not supplied.")
+                print(f"  Wallet ETH is sufficient. Supplying 1 USDC to Aave as collateral instead of swapping for ETH.")
+                # Supply the 1 USDC directly to Aave
+                success_supply_eth_usdc_yield = self.aave.supply_to_aave(self.usdc_address, 1)
+                if not success_supply_eth_usdc_yield:
+                    print("  ⚠️ Failed to supply 1 USDC (intended for ETH) to Aave. This portion is not supplied.")
                 else:
-                    print("  ✅ Successfully supplied 1 DAI to Aave as additional collateral.")
+                    print("  ✅ Successfully supplied 1 USDC to Aave as additional collateral.")
         except Exception as e:
             print(f"❌ Error during ETH gas management: {e}")
             traceback.print_exc()
@@ -736,13 +736,13 @@ class ArbitrumTestnetAgent:
         time.sleep(2)
 
         # --- Phase 3: Core Collateral Building (WBTC, WETH, DAI) ---
-        print("\nStep 3: Building core collateral in Aave (7 DAI equivalent)...")
+        print("\nStep 3: Building core collateral in Aave (7 USDC equivalent)...")
 
-        # Swap 3 DAI for WBTC and supply
+        # Swap 3 USDC for WBTC and supply
         try:
-            print("  Swapping 3 DAI for WBTC and supplying to Aave...")
-            # First swap DAI to WBTC
-            wbtc_swap_success = self.uniswap.swap_tokens(self.dai_address, self.wbtc_address, 3, 500)
+            print("  Swapping 3 USDC for WBTC and supplying to Aave...")
+            # First swap USDC to WBTC
+            wbtc_swap_success = self.uniswap.swap_tokens(self.usdc_address, self.wbtc_address, 3, 500)
             if wbtc_swap_success:
                 time.sleep(2)
                 # Get WBTC balance and supply to Aave
@@ -760,18 +760,18 @@ class ArbitrumTestnetAgent:
                 else:
                     print("  ❌ No WBTC balance found after swap.")
             else:
-                print("  ❌ Failed to swap 3 DAI for WBTC. This portion is not in collateral.")
+                print("  ❌ Failed to swap 3 USDC for WBTC. This portion is not in collateral.")
         except Exception as e:
             print(f"❌ Error during WBTC supply swap: {e}")
             traceback.print_exc()
 
         time.sleep(2)
 
-        # Swap 2 DAI for WETH and supply
+        # Swap 2 USDC for WETH and supply
         try:
-            print("  Swapping 2 DAI for WETH and supplying to Aave...")
-            # First swap DAI to WETH
-            weth_swap_success = self.uniswap.swap_tokens(self.dai_address, self.weth_address, 2, 500)
+            print("  Swapping 2 USDC for WETH and supplying to Aave...")
+            # First swap USDC to WETH
+            weth_swap_success = self.uniswap.swap_tokens(self.usdc_address, self.weth_address, 2, 500)
             if weth_swap_success:
                 time.sleep(2)
                 # Get WETH balance and supply to Aave
@@ -789,57 +789,37 @@ class ArbitrumTestnetAgent:
                 else:
                     print("  ❌ No WETH balance found after swap.")
             else:
-                print("  ❌ Failed to swap 2 DAI for WETH. This portion is not in collateral.")
+                print("  ❌ Failed to swap 2 USDC for WETH. This portion is not in collateral.")
         except Exception as e:
             print(f"❌ Error during WETH supply swap: {e}")
             traceback.print_exc()
 
         time.sleep(2)
 
-        # Supply 2 DAI directly
+        # Supply remaining 4 USDC directly (2 + 2 allocation)
         try:
-            print("  Supplying 2 DAI directly to Aave...")
-            # Check current DAI balance
-            dai_balance = self.aave.get_token_balance(self.dai_address)
-            supply_amount = min(2, dai_balance)  # Supply up to 2 DAI or available balance
+            print("  Supplying remaining 4 USDC directly to Aave...")
+            # Check current USDC balance
+            usdc_balance = self.aave.get_token_balance(self.usdc_address)
+            supply_amount = min(4, usdc_balance)  # Supply up to 4 USDC or available balance
 
             if supply_amount > 0:
-                # Approve and supply DAI
-                if self.aave.approve_token(self.dai_address, supply_amount):
-                    success_dai_supply = self.aave.supply_to_aave(self.dai_address, supply_amount)
-                    if success_dai_supply:
-                        print(f"  ✅ Successfully supplied {supply_amount:.6f} DAI directly to Aave.")
+                # Approve and supply USDC
+                if self.aave.approve_token(self.usdc_address, supply_amount):
+                    success_usdc_supply = self.aave.supply_to_aave(self.usdc_address, supply_amount)
+                    if success_usdc_supply:
+                        print(f"  ✅ Successfully supplied {supply_amount:.6f} USDC directly to Aave.")
                     else:
-                        print("  ❌ Failed to supply DAI directly to Aave.")
+                        print("  ❌ Failed to supply USDC directly to Aave.")
                 else:
-                    print("  ❌ Failed to approve DAI for Aave.")
+                    print("  ❌ Failed to approve USDC for Aave.")
             else:
-                print("  ❌ No DAI balance available for direct supply.")
+                print("  ❌ No USDC balance available for direct supply.")
         except Exception as e:
-            print(f"❌ Error during direct DAI supply: {e}")
+            print(f"❌ Error during direct USDC supply: {e}")
             traceback.print_exc()
 
         time.sleep(2)
-
-        # --- Phase 4: WBTC to Wallet (2 DAI allocation) ---
-        print("\nStep 4: Swapping 2 DAI for WBTC to leave in wallet...")
-        try:
-            # Check remaining DAI balance
-            remaining_dai = self.aave.get_token_balance(self.dai_address)
-            swap_amount = min(2, remaining_dai)  # Swap up to 2 DAI or available balance
-
-            if swap_amount > 0:
-                # Swap DAI to WBTC for wallet
-                success_wbtc_wallet_swap = self.uniswap.swap_tokens(self.dai_address, self.wbtc_address, swap_amount, 500)
-                if success_wbtc_wallet_swap:
-                    print(f"  ✅ {swap_amount:.6f} DAI worth of WBTC successfully acquired and left in wallet.")
-                else:
-                    print(f"  ⚠️ Failed to swap {swap_amount:.6f} DAI for WBTC for wallet.")
-            else:
-                print("  ⚠️ No DAI balance remaining for WBTC wallet swap.")
-        except Exception as e:
-            print(f"❌ Error during WBTC wallet swap: {e}")
-            traceback.print_exc()
 
         # Update baseline and record success
         try:
@@ -850,13 +830,12 @@ class ArbitrumTestnetAgent:
         except Exception as e:
             print(f"⚠️ Warning: Failed to update baseline: {e}")
 
-        print("\n🎉 REVISED DAI-BASED LEVERAGED SUPPLY STRATEGY SEQUENCE COMPLETED.")
+        print("\n🎉 REVISED USDC-BASED LEVERAGED SUPPLY STRATEGY SEQUENCE COMPLETED.")
         print("📊 Strategy Summary:")
-        print("   ✅ Phase 1: Borrowed DAI from Aave")
+        print("   ✅ Phase 1: Borrowed USDC from Aave")
         print("   ✅ Phase 2: Conditional ETH management for gas")
-        print("   ✅ Phase 3: Core collateral building (WBTC, WETH, DAI)")
-        print("   ✅ Phase 4: WBTC allocation to wallet")
-        print("   💡 Strategy optimized for gas efficiency and asset diversification")
+        print("   ✅ Phase 3: Core collateral building (WBTC, WETH, remaining USDC)")
+        print("   💡 Strategy optimized for gas efficiency and supported tokens only")
 
         return True
 
@@ -1711,6 +1690,71 @@ class ArbitrumTestnetAgent:
         except Exception as e:
             print(f"❌ Autonomous sequence failed: {e}")
             return 0.0
+
+    def analyze_borrow_failure(self):
+        """Analyze and log borrow failure details for debugging"""
+        try:
+            print(f"\n🔍 BORROW FAILURE ANALYSIS:")
+            
+            # Get current Aave account data
+            pool_abi = [{
+                "inputs": [{"name": "user", "type": "address"}],
+                "name": "getUserAccountData",
+                "outputs": [
+                    {"name": "totalCollateralBase", "type": "uint256"},
+                    {"name": "totalDebtBase", "type": "uint256"},
+                    {"name": "availableBorrowsBase", "type": "uint256"},
+                    {"name": "currentLiquidationThreshold", "type": "uint256"},
+                    {"name": "ltv", "type": "uint256"},
+                    {"name": "healthFactor", "type": "uint256"}
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            }]
+            
+            pool_contract = self.w3.eth.contract(address=self.aave_pool_address, abi=pool_abi)
+            account_data = pool_contract.functions.getUserAccountData(self.address).call()
+            
+            collateral_usd = account_data[0] / (10**8)
+            debt_usd = account_data[1] / (10**8)
+            available_borrows_usd = account_data[2] / (10**8)
+            health_factor = account_data[5] / (10**18) if account_data[5] > 0 else float('inf')
+            
+            print(f"   💰 Collateral: ${collateral_usd:.2f}")
+            print(f"   💳 Debt: ${debt_usd:.2f}")
+            print(f"   📊 Available Borrows: ${available_borrows_usd:.2f}")
+            print(f"   ❤️ Health Factor: {health_factor:.4f}")
+            
+            # Analysis
+            if health_factor < 1.5:
+                print(f"   ⚠️ ISSUE: Health factor too low for borrowing")
+            elif available_borrows_usd < 1.0:
+                print(f"   ⚠️ ISSUE: Insufficient borrowing capacity")
+            else:
+                print(f"   ⚠️ ISSUE: Likely token not supported for borrowing (DAI)")
+                print(f"   💡 SUGGESTION: Switch to USDC borrowing instead")
+            
+            # Log failure details
+            failure_data = {
+                'timestamp': time.time(),
+                'collateral_usd': collateral_usd,
+                'debt_usd': debt_usd,
+                'available_borrows_usd': available_borrows_usd,
+                'health_factor': health_factor,
+                'wallet_address': self.address,
+                'network': self.network_mode,
+                'analysis': 'borrow_failure_investigation'
+            }
+            
+            try:
+                from fix_json_serialization import safe_json_dump
+                safe_json_dump(failure_data, 'borrow_failure_analysis.json')
+                print(f"   📝 Analysis saved to borrow_failure_analysis.json")
+            except Exception as save_error:
+                print(f"   ⚠️ Could not save analysis: {save_error}")
+                
+        except Exception as e:
+            print(f"   ❌ Borrow failure analysis error: {e}")
 
     #Corrected the borrow method signature in execute_enhanced_borrow_with_retry to resolve the "takes 3positional arguments but 4 were given" error.
     def execute_enhanced_borrow_with_retry(self, safe_borrow_amount):
