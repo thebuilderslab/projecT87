@@ -1,0 +1,66 @@
+   Health Factor: 4.4103
+📊 Using LIVE AAVE CONTRACT data: HF 4.4103
+✅ Dashboard method successful with validated data!
+   Health Factor: 4.4103
+   Collateral: $198.22
+   Debt: $35.22
+   Available Borrows: $109.07
+   Data Source: direct_aave_contract
+   Data Quality: ✅ VALIDATED
+   Using fallback ETH price: $2980.00
+✅ All integrations validated successfully
+💰 Available borrowing capacity: $109.07
+💰 Safe borrow calculation:
+   Available: $109.07
+   Safe amount (15%): $10.00
+💰 Calculated safe borrow: $10.00 USDC
+🚀 Executing comprehensive leveraged supply strategy...
+
+🚀 Starting REVISED DAI-BASED LEVERAGED SUPPLY STRATEGY...
+Step 1: Attempting to borrow 10.0 DAI...
+🏦 ENHANCED BORROW: $10.00 worth of 0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1
+🔍 COMPREHENSIVE PRE-BORROW VALIDATION
+   Available borrows: $109.07
+   Health factor: 4.4103
+✅ Transaction simulation successful
+❌ Unsupported token for borrowing: 0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1
+❌ Failed to borrow DAI. Aborting strategy.
+❌ Leveraged supply strategy failed
+❌ Autonomous sequence failed: 'ArbitrumTestnetAgent' object has no attribute 'analyze_borrow_failure'
+Logged performance: Run 1, Iteration 8, Metric: 0.0
+
+🤝 COLLABORATIVE STRATEGY ANALYSIS:
+📊 Calculated average performance: 0.498 from 50 data points
+🚀 AGENT STRATEGY PROPOSAL:
+   📝 Type: risk_reduction
+   📊 Impact: Medium-High (Stability)
+   ⚠️ Risk: Low
+   🆔 ID: risk_reduction_1753074279
+
+🔍 REVIEWING 1 PENDING PROPOSALS:
+==================================================
+
+📋 Proposal ID: risk_reduction_1753074279
+🔹 Type: risk_reduction
+🔹 Source: agent
+🔹 Impact: Medium-High (Stability)
+🔹 Risk: Low
+🔹 Details: {
+  "action": "reduce_risk",
+  "parameters": {
+    "max_borrow_ratio": 0.6,
+    "health_factor_target": 1.25,
+    "monitoring_frequency": "increased"
+  },
+  "reasoning": "Performance at 0.498 suggests risk reduction needed"
+}
+------------------------------
+🟢 Auto-implementing low-risk proposal: risk_reduction_1753074279
+🔧 IMPLEMENTING STRATEGY: risk_reduction
+🔧 Implementing risk reduction strategy...
+   Target health factor: 1.25
+   Max borrow ratio: 0.6
+   Monitoring frequency: increased
+✅ Risk reduction strategy implemented successfully
+✅ Iteration 8 completed successfully. Waiting for next cycle.
+💤 Sleeping for 45 seconds before next iteration...
