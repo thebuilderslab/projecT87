@@ -3,6 +3,7 @@ from collaborative_strategy_manager import CollaborativeStrategyManager
 import time
 import json
 import os
+import traceback
 
 # --- Configuration ---
 CONFIG_FILE = 'agent_config.json'
@@ -121,7 +122,10 @@ def autonomous_agent_loop():
     """Main loop that runs the AI agent autonomously with real Arbitrum interactions."""
     load_config()
 
-    # Initialize Arbitrum testnet agent
+    # Initialize Arbitrum testnet agent and strategy manager once
+    arbitrum_agent = None
+    strategy_manager = None
+    
     try:
         arbitrum_agent = ArbitrumTestnetAgent()
         # --- IMPORTANT ADDITION: Initialize DeFi integrations ---
@@ -137,41 +141,67 @@ def autonomous_agent_loop():
         print("💡 Please ensure your .env file is correctly set up and dependencies are installed.")
         return
 
+    # --- CONTINUOUS OPERATION LOOP ---
+    iteration = 0
     run_id_counter = 0
+    
+    while True:  # This ensures the loop runs continuously
+        iteration += 1
+        print(f"\n--- Autonomous Agent Loop: Iteration {iteration} ---")
 
-    while True:
-        run_id_counter += 1
-        print(f"\n--- Starting New Autonomous Run: {run_id_counter} ---")
+        try:
+            # Start a new run every 10 iterations or on first run
+            if iteration == 1 or (iteration - 1) % 10 == 0:
+                run_id_counter += 1
+                print(f"\n--- Starting New Autonomous Run: {run_id_counter} ---")
 
-        for iteration in range(agent_config['max_iterations_per_run']):
+            # Main agent logic
             timestamp = time.time()
-
+            
             # Use real DeFi operations instead of simulation
             performance = arbitrum_agent.run_real_defi_task(run_id_counter, iteration, agent_config)
             log_performance(run_id_counter, iteration, performance, timestamp)
 
-            if performance >= 0.99 and iteration > 5:
-                print(f"Achieved high performance ({performance:.2f}), breaking current run early.")
-                break
+            # Analyze and improve periodically
+            if iteration % 5 == 0:
+                analyze_and_improve()
 
-            time.sleep(1)
+            # Collaborative strategy analysis - this was the line causing issues
+            print("\n🤝 COLLABORATIVE STRATEGY ANALYSIS:")
+            strategy_manager.agent_analyze_and_propose()
+            pending_proposals = strategy_manager.get_user_input_on_proposals()
 
-        analyze_and_improve()
+            # Check for any auto-approved low-risk improvements
+            if pending_proposals:
+                for proposal in pending_proposals:
+                    if proposal['risk_level'] == 'Low' and proposal['source'] == 'agent':
+                        print(f"🟢 Auto-implementing low-risk proposal: {proposal['id']}")
+                        strategy_manager.implement_approved_strategy(proposal['id'])
 
-        # Collaborative strategy analysis
-        print("\n🤝 COLLABORATIVE STRATEGY ANALYSIS:")
-        strategy_manager.agent_analyze_and_propose()
-        pending_proposals = strategy_manager.get_user_input_on_proposals()
+            print(f"✅ Iteration {iteration} completed successfully. Waiting for next cycle.")
 
-        # Check for any auto-approved low-risk improvements
-        if pending_proposals:
-            for proposal in pending_proposals:
-                if proposal['risk_level'] == 'Low' and proposal['source'] == 'agent':
-                    print(f"🟢 Auto-implementing low-risk proposal: {proposal['id']}")
-                    strategy_manager.implement_approved_strategy(proposal['id'])
+        except Exception as e:
+            # Catch any unexpected errors during an iteration
+            print(f"❌ Error in autonomous agent loop during iteration {iteration}: {e}")
+            traceback.print_exc()  # Print the full traceback for debugging
+            print("❗ Attempting to continue after error...")
+            
+            # Try to reinitialize connections if needed
+            if "connection" in str(e).lower() or "rpc" in str(e).lower():
+                try:
+                    print("🔄 Attempting to reinitialize agent connections...")
+                    if arbitrum_agent:
+                        arbitrum_agent.initialize_integrations()
+                    print("✅ Connections reinitialized successfully")
+                except Exception as reinit_error:
+                    print(f"⚠️ Failed to reinitialize connections: {reinit_error}")
 
-        print(f"\n--- Autonomous Run {run_id_counter} Completed. Waiting for next run... ---")
-        time.sleep(5)
+        finally:
+            # This block will always execute, whether there was an error or not.
+            # It's important for controlling the loop's frequency.
+            sleep_duration_seconds = 300  # Sleep for 5 minutes (300 seconds)
+            print(f"💤 Sleeping for {sleep_duration_seconds} seconds before next iteration...")
+            time.sleep(sleep_duration_seconds)
 
 if __name__ == "__main__":
     print("🤖 Starting Real Arbitrum DeFi Agent")
