@@ -375,8 +375,11 @@ class EnhancedBorrowManager:
                 print(f"❌ DAI borrow validation failed")
                 return None
 
+            # Convert amount_usd to amount_wei
+            amount_wei = int(amount_usd * (10 ** 18))
+
             # Execute DAI borrow with direct method call - simplified approach
-            result = self.aave.borrow(amount_usd, dai_address)
+            result = self.aave.borrow(amount_wei, dai_address)
 
             if result:
                 print(f"✅ SUCCESS: Borrowed ${amount_usd:.2f} DAI")
