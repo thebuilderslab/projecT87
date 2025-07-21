@@ -368,29 +368,89 @@ class EnhancedBorrowManager:
             return False
 
     def execute_enhanced_borrow_with_retry(self, amount_usd):
-        """Execute enhanced borrow with DAI only - no fallbacks"""
+        """Execute enhanced borrow with DAI ONLY - absolutely no fallbacks"""
         try:
-            print(f"🏦 Enhanced Borrow Manager: Attempting to borrow ${amount_usd:.2f} DAI ONLY")
-            print(f"🔍 DEBUG: DAI address: {self.agent.dai_address}")
+            print(f"🏦 Enhanced Borrow Manager: STRICT DAI-ONLY BORROWING")
+            print(f"💰 Target amount: ${amount_usd:.2f} DAI")
+            print(f"🎯 DAI address: {self.agent.dai_address}")
+            print(f"❌ USDC fallback: DISABLED")
+
+            # Validate we're using DAI address
+            dai_address = self.agent.dai_address
+            print(f"✅ Confirmed DAI address: {dai_address}")
 
             # Convert USD to DAI wei (DAI has 18 decimals, 1 USD ≈ 1 DAI)
             amount_wei = int(amount_usd * (10 ** 18))
-            print(f"💱 Converted ${amount_usd:.2f} to {amount_wei} DAI wei")
-            print(f"🎯 DAI Strategy: ONLY borrowing DAI - no fallbacks")
+            print(f"💱 USD to DAI conversion: ${amount_usd:.2f} = {amount_wei} DAI wei")
 
-            # Execute DAI borrow with enhanced retry logic
-            result = self.aave.borrow_from_aave(amount_wei, self.agent.dai_address)
+            # Enhanced validation for DAI borrowing
+            if not self._validate_dai_borrow_conditions(amount_usd):
+                print(f"❌ DAI borrow validation failed")
+                return None
+
+            # Execute DAI borrow with retry logic
+            result = self._execute_dai_borrow_with_retries(amount_wei, dai_address)
 
             if result:
-                print(f"✅ Successfully borrowed ${amount_usd:.2f} DAI")
+                print(f"✅ SUCCESS: Borrowed ${amount_usd:.2f} DAI")
+                print(f"🔗 Transaction hash: {result}")
                 return result
             else:
-                print(f"❌ DAI borrow failed - NO FALLBACKS ATTEMPTED")
+                print(f"❌ FAILED: DAI borrow unsuccessful")
+                print(f"🚫 NO FALLBACK TO USDC - DAI-ONLY STRATEGY")
                 return None
 
         except Exception as e:
             print(f"❌ Enhanced DAI borrow failed: {e}")
+            print(f"🚫 NO FALLBACK ATTEMPTED - STRICT DAI-ONLY MODE")
             return None
+    def _validate_dai_borrow_conditions(self, amount_usd):
+        """Validate conditions specifically for DAI borrowing"""
+        try:
+            print(f"🔍 DAI-specific borrow validation for ${amount_usd:.2f}")
+            
+            # Check DAI is available for borrowing on Aave
+            dai_address = self.agent.dai_address
+            print(f"✅ DAI address confirmed: {dai_address}")
+            
+            # Standard validation checks
+            return self._validate_borrow_conditions(amount_usd, dai_address)
+            
+        except Exception as e:
+            print(f"❌ DAI borrow validation failed: {e}")
+            return False
+
+    def _execute_dai_borrow_with_retries(self, amount_wei, dai_address):
+        """Execute DAI borrow with retries - no other tokens"""
+        max_retries = 3
+        
+        for attempt in range(max_retries):
+            try:
+                print(f"🔄 DAI borrow attempt {attempt + 1}/{max_retries}")
+                print(f"🎯 Only borrowing DAI: {dai_address}")
+                
+                # Execute borrow using Aave integration
+                result = self.aave.borrow_from_aave(amount_wei, dai_address)
+                
+                if result:
+                    print(f"✅ DAI borrow successful on attempt {attempt + 1}")
+                    return result
+                else:
+                    print(f"❌ DAI borrow failed on attempt {attempt + 1}")
+                    
+                    if attempt < max_retries - 1:
+                        wait_time = (attempt + 1) * 2  # 2, 4, 6 seconds
+                        print(f"⏰ Waiting {wait_time}s before retry...")
+                        import time
+                        time.sleep(wait_time)
+                        
+            except Exception as e:
+                print(f"❌ DAI borrow attempt {attempt + 1} error: {e}")
+                if attempt == max_retries - 1:
+                    print(f"🚫 All DAI borrow attempts failed")
+                    
+        return None
+
     def _validate_network_timing(self):
         """Validate network conditions for optimal transaction timing"""
         try:

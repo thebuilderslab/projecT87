@@ -864,25 +864,29 @@ class AaveArbitrumIntegration:
             return None
 
     def borrow(self, amount_usd, asset_address, interest_rate_mode=2):
-        """Borrow assets from Aave with USD amount conversion"""
+        """Borrow assets from Aave with USD amount conversion - DAI PREFERRED"""
         try:
             print(f"🏦 Aave borrow: ${amount_usd:.2f} worth of {asset_address}")
             
-            # Convert USD amount to wei based on token
-            if asset_address.lower() == self.usdc_address.lower():
-                amount_wei = int(amount_usd * (10 ** 6))  # USDC has 6 decimals
-                print(f"✅ USDC conversion: ${amount_usd} = {amount_wei} USDC wei")
-            elif asset_address.lower() == self.dai_address.lower():
+            # Force DAI borrowing if not already specified
+            if asset_address.lower() != self.dai_address.lower():
+                print(f"🔄 REDIRECTING to DAI borrowing instead of {asset_address}")
+                asset_address = self.dai_address
+            
+            # Convert USD amount to wei - DAI only
+            if asset_address.lower() == self.dai_address.lower():
                 amount_wei = int(amount_usd * (10 ** 18))  # DAI has 18 decimals
-                print(f"✅ DAI conversion: ${amount_usd} = {amount_wei} DAI wei")
+                print(f"✅ DAI-ONLY conversion: ${amount_usd} = {amount_wei} DAI wei")
+                print(f"🎯 Confirmed DAI borrowing: {asset_address}")
             else:
-                print(f"❌ Unsupported token for USD conversion: {asset_address}")
+                print(f"❌ NON-DAI token rejected: {asset_address}")
+                print(f"💡 Agent configured for DAI-ONLY borrowing")
                 return None
                 
             return self.borrow_from_aave(amount_wei, asset_address, interest_rate_mode)
             
         except Exception as e:
-            print(f"❌ Borrow conversion failed: {e}")
+            print(f"❌ DAI borrow conversion failed: {e}")
             return None
 
     def borrow_from_aave(self, amount_wei, token_address, interest_rate_mode=2):

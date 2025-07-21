@@ -679,8 +679,10 @@ class ArbitrumTestnetAgent:
         # else: # Original Code
         #    print("❌ Could not get total collateral USD value from health monitor.") # Original Code
         #    return 0.0 # Return 0 if unable toretrieve # Original Code
-        return 0.0  # Returning aare position.
-        """
+        return 0.0  # Returning 0.0 directly because the function is not being used.
+
+    def analyze_borrow_failure(self):
+        """Analyze borrow failure and provide diagnostics"""
         try:
             print(f"\n🔍 BORROW FAILURE ANALYSIS:")
 
@@ -733,101 +735,8 @@ class ArbitrumTestnetAgent:
             import traceback
             print(f"   🔍 Traceback: {traceback.format_exc()}")
 
-        """
-        Borrow a specified amount of a token from Aave.
-
-        Args:
-            amount_usd (float): The amount to borrow in USD.
-            token_address (str): The address of the token to borrow.
-
-        Returns:
-            str: The transaction hash if successful, None otherwise.
-        """
-        try:
-            print(f"Attempting to borrow {amount_usd} USD worth of {token_address} from Aave...")
-
-            # Validate inputs
-            if not amount_usd > 0:
-                print("Borrow amount must be greater than zero.")
-                return None
-
-            if not Web3.is_address(token_address):
-                print(f"Invalid token address: {token_address}")
-                return None
-
-            # Get token decimals
-            decimals = 6  # Default decimals for USDC
-
-            if token_address.lower() == self.weth_address.lower():
-                decimals = 18  # WETH has 18 decimals
-            elif token_address.lower() == self.wbtc_address.lower():
-                decimals = 8  # WBTC has 8 decimals
-            elif token_address.lower() == self.dai_address.lower():
-                decimals = 18 # DAI has 18 decimals
-
-            # Convert USD to token amount
-            if token_address.lower() == self.usdc_address.lower():
-                amount_wei = int(amount_usd * (10 ** decimals))  # 1 USDC = 1 USD
-            elif token_address.lower() == self.dai_address.lower():
-                amount_wei = int(amount_usd * (10 ** decimals))  # 1 DAI ≈ 1 USD
-                print(f"✅ DAI borrowing enabled: ${amount_usd} = {amount_wei} DAI wei")
-            else:
-                print(f"❌ Unsupported token for borrowing: {token_address}")
-                return None
-
-            # Get optimized gas parameters
-            gas_params = self.get_optimized_gas_params('aave_borrow', 'market')
-
-            # Encode the borrow function call
-            borrow_function = self.pool_contract.functions.borrow(
-                token_address,
-                amount_wei,
-                1,  # Interest rate mode: 1 for stable, 2 for variable
-                0,  # Referral code (can be zero)
-                self.address  # The address receiving the borrowed tokens
-            )
-
-            # Build the transaction
-            transaction = borrow_function.build_transaction({
-                'from': self.address,
-                'gas': gas_params['gas'],
-                'gasPrice': gas_params['gasPrice'],
-                'nonce': self.w3.eth.get_transaction_count(self.address)
-            })
-
-            # Sign the transaction
-            signed_transaction = self.w3.eth.account.sign_transaction(transaction, self.account.key)
-
-            # Send the transaction
-            transaction_hash = self.w3.eth.send_raw_transaction(signed_transaction.rawTransaction)
-            print(f"Borrow transaction submitted. Hash: {transaction_hash.hex()}")
-
-            # Wait for transaction receipt
-            transaction_receipt = self.w3.eth.wait_for_transaction_receipt(transaction_hash)
-            if transaction_receipt and transaction_receipt['status'] == 1:
-                print(f"Borrow transaction successful.")
-                return transaction_hash.hex()
-            else:
-                print(f"Borrow transaction failed.")
-                return None
-
-        except Exception as e:
-            print(f"An error occurred during the borrow operation: {e}")
-            return None
-
-analyze_borrow_failure function improved for better debugging and suggestions.
-
-    def execute_leveraged_supply_strategy(self):
-        """
-        Executes a leveraged supply strategy on Aave.
-
-        This strategy involves the following steps:
-        1. Borrow USDC.
-        2. Swap USDC for WBTC.
-        3. Supply WBTC to Aave as collateral.
-        4. Swap USDC for WETH.
-        5. Supply WETH to Aave as collateral.
-        """
+    def execute_leveraged_supply_strategy(self, amount_to_borrow_usdc=10):
+        """Execute REVISED DAI-based leveraged supply strategy with conditional ETH acquisition and dedicated WBTC allocation"""
         # This strategy is extremely sensitive to gas costs and slippage.
 
         # STEP 1: Determine borrow amount based on available capacity
@@ -866,6 +775,7 @@ analyze_borrow_failure function improved for better debugging and suggestions.
             print(f"✅ Borrowed {amount_to_borrow_usdc} DAI successfully.")
         except Exception as e:
             print(f"❌ Error during DAI borrow: {e}")
+            import traceback
             traceback.print_exc()
             return False
 
