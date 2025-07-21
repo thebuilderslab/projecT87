@@ -1022,19 +1022,46 @@ class ArbitrumTestnetAgent:
                     
                     # Step 5: Safe operation execution based on conditions
                     if health_factor > 1.5 and available_borrows > 1.0:
-                        print("✅ Conditions favorable for DAI borrowing operations")
+                        print("✅ Health and capacity conditions met for DAI borrowing")
                         
-                        # Predict success rate
-                        predicted_success = self.get_success_rate_prediction()
-                        print(f"📊 Predicted success rate: {predicted_success:.1f}%")
+                        # Check for collateral growth trigger
+                        current_collateral = total_collateral
+                        collateral_growth = current_collateral - self.last_collateral_value_usd
+                        growth_threshold = self.growth_trigger_threshold  # Default $40 from config
                         
-                        # Check cooldown
-                        if self.is_operation_on_cooldown():
-                            print("⏰ Operations in cooldown period")
-                            performance_score += 0.1
+                        print(f"📊 Collateral Growth Analysis:")
+                        print(f"   Current: ${current_collateral:.2f}")
+                        print(f"   Baseline: ${self.last_collateral_value_usd:.2f}")
+                        print(f"   Growth: ${collateral_growth:.2f}")
+                        print(f"   Threshold: ${growth_threshold:.2f}")
+                        
+                        # Only proceed if we have sufficient collateral growth OR manual override
+                        manual_override = self.detect_manual_override()
+                        growth_triggered = collateral_growth >= growth_threshold
+                        
+                        if growth_triggered or manual_override:
+                            if growth_triggered:
+                                print(f"🚀 GROWTH TRIGGERED: ${collateral_growth:.2f} >= ${growth_threshold:.2f}")
+                            if manual_override:
+                                print(f"🔧 MANUAL OVERRIDE: Bypassing growth requirements")
+                            
+                            # Predict success rate
+                            predicted_success = self.get_success_rate_prediction()
+                            print(f"📊 Predicted success rate: {predicted_success:.1f}%")
+                            
+                            # Check cooldown
+                            if self.is_operation_on_cooldown():
+                                print("⏰ Operations in cooldown period")
+                                performance_score += 0.1
+                            else:
+                                # Calculate safe borrow amount using actual growth
+                                safe_amount = self.calculate_safe_borrow_amount(collateral_growth, available_borrows)
                         else:
-                            # Calculate safe borrow amount (DAI only)
-                            safe_amount = self.calculate_safe_borrow_amount(0, available_borrows)
+                            print(f"⏸️ GROWTH REQUIREMENT NOT MET")
+                            print(f"   Need ${growth_threshold - collateral_growth:.2f} more collateral growth")
+                            print(f"   Or create manual override file to bypass")
+                            performance_score += 0.2
+                            safe_amount = 0
                             
                             # Track this attempt
                             self.track_operation_attempt()
@@ -1048,6 +1075,10 @@ class ArbitrumTestnetAgent:
                                     if borrow_success:
                                         print(f"✅ DAI borrow successful!")
                                         self.record_successful_operation('borrow')
+                                        
+                                        # Update baseline collateral after successful operation
+                                        self.update_baseline_after_success(current_collateral)
+                                        
                                         performance_score += 0.4
                                         operations_completed += 2
                                         
