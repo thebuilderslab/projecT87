@@ -1235,10 +1235,14 @@ class ArbitrumTestnetAgent:
 
 
     def _execute_post_borrow_operations(self, borrowed_amount):
-        """Execute swap and supply operations after successful DAI borrow"""
+        """Execute swap and supply operations after successful DAI borrow with validation"""
         try:
             print(f"\n🔄 EXECUTING POST-BORROW OPERATIONS")
             print(f"💰 Borrowed amount: ${borrowed_amount:.2f} DAI")
+
+            # Initialize transaction validator
+            from transaction_validator import TransactionValidator
+            validator = TransactionValidator(self)
 
             # Wait for borrow confirmation
             print("⏳ Waiting for DAI borrow confirmation...")
@@ -1256,57 +1260,67 @@ class ArbitrumTestnetAgent:
             # Allocate DAI for different operations
             allocation = self._calculate_dai_allocation(dai_balance)
 
-            # Step 1: Swap DAI for WBTC and supply
+            # Step 1: Validate and swap DAI for WBTC
             if allocation['wbtc_swap'] > 0:
                 print(f"\n🔄 Step 1: Swapping ${allocation['wbtc_swap']:.2f} DAI for WBTC...")
-                wbtc_swap_result = self.uniswap.swap_tokens(
-                    self.dai_address, 
-                    self.wbtc_address, 
-                    allocation['wbtc_swap'], 
-                    500
-                )
+                
+                # Validate swap before execution
+                if validator.validate_swap_transaction(self.dai_address, self.wbtc_address, allocation['wbtc_swap']):
+                    wbtc_swap_result = self.uniswap.swap_tokens(
+                        self.dai_address, 
+                        self.wbtc_address, 
+                        allocation['wbtc_swap'], 
+                        500
+                    )
 
-                if wbtc_swap_result:
-                    print("✅ DAI → WBTC swap successful!")
-                    time.sleep(10)  # Wait for swap confirmation
+                    if wbtc_swap_result:
+                        print("✅ DAI → WBTC swap successful!")
+                        time.sleep(10)  # Wait for swap confirmation
 
-                    # Supply WBTC to Aave
-                    wbtc_balance = self.aave.get_token_balance(self.wbtc_address)
-                    if wbtc_balance > 0:
-                        supply_result = self.aave.supply_wbtc_to_aave(wbtc_balance)
-                        if supply_result:
-                            print("✅ WBTC supplied to Aave!")
-                        else:
-                            print("❌ WBTC supply failed")
+                        # Supply WBTC to Aave
+                        wbtc_balance = self.aave.get_token_balance(self.wbtc_address)
+                        if wbtc_balance > 0:
+                            supply_result = self.aave.supply_wbtc_to_aave(wbtc_balance)
+                            if supply_result:
+                                print("✅ WBTC supplied to Aave!")
+                            else:
+                                print("❌ WBTC supply failed")
+                    else:
+                        print("❌ DAI → WBTC swap failed")
                 else:
-                    print("❌ DAI → WBTC swap failed")
+                    print("❌ WBTC swap validation failed - skipping")
 
-            # Step 2: Swap DAI for WETH and supply
+            # Step 2: Validate and swap DAI for WETH
             if allocation['weth_swap'] > 0:
                 print(f"\n🔄 Step 2: Swapping ${allocation['weth_swap']:.2f} DAI for WETH...")
-                weth_swap_result = self.uniswap.swap_tokens(
-                    self.dai_address, 
-                    self.weth_address, 
-                    allocation['weth_swap'], 
-                    500
-                )
+                
+                # Validate swap before execution
+                if validator.validate_swap_transaction(self.dai_address, self.weth_address, allocation['weth_swap']):
+                    weth_swap_result = self.uniswap.swap_tokens(
+                        self.dai_address, 
+                        self.weth_address, 
+                        allocation['weth_swap'], 
+                        500
+                    )
 
-                if weth_swap_result:
-                    print("✅ DAI → WETH swap successful!")
-                    time.sleep(10)  # Wait for swap confirmation
+                    if weth_swap_result:
+                        print("✅ DAI → WETH swap successful!")
+                        time.sleep(10)  # Wait for swap confirmation
 
-                    # Supply WETH to Aave
-                    weth_balance = self.aave.get_token_balance(self.weth_address)
-                    if weth_balance > 0:
-                        supply_result = self.aave.supply_to_aave(self.weth_address, weth_balance)
-                        if supply_result:
-                            print("✅ WETH supplied to Aave!")
-                        else:
-                            print("❌ WETH supply failed")
+                        # Supply WETH to Aave
+                        weth_balance = self.aave.get_token_balance(self.weth_address)
+                        if weth_balance > 0:
+                            supply_result = self.aave.supply_to_aave(self.weth_address, weth_balance)
+                            if supply_result:
+                                print("✅ WETH supplied to Aave!")
+                            else:
+                                print("❌ WETH supply failed")
+                    else:
+                        print("❌ DAI → WETH swap failed")
                 else:
-                    print("❌ DAI → WETH swap failed")
+                    print("❌ WETH swap validation failed - skipping")
 
-            # Step 3: Supply remaining DAI directly
+            # Step 3: Supply remaining DAI directly (this should always work)
             if allocation['direct_supply'] > 0:
                 print(f"\n🔄 Step 3: Supplying ${allocation['direct_supply']:.2f} DAI directly to Aave...")
                 dai_supply_result = self.aave.supply_to_aave(self.dai_address, allocation['direct_supply'])

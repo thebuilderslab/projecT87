@@ -233,7 +233,7 @@ class AaveArbitrumIntegration:
             }
 
     def approve_token(self, token_address, amount):
-        """Approve token spending for Aave"""
+        """Approve token spending for Aave with enhanced error handling"""
         try:
             # Ensure all addresses are properly checksummed
             token_address = self.w3.to_checksum_address(token_address)
@@ -243,30 +243,51 @@ class AaveArbitrumIntegration:
             else:
                 user_address = self.w3.to_checksum_address(self.address)
 
+            # Check if contract exists first
+            contract_code = self.w3.eth.get_code(token_address)
+            if contract_code == b'':
+                print(f"❌ No contract found at {token_address}")
+                return None
+
             token_contract = self.w3.eth.contract(address=token_address, abi=self.erc20_abi)
 
-            # Validate that the approve function exists in the contract
-            if not hasattr(token_contract.functions, 'approve'):
-                raise ValueError(f"Token contract at {token_address} does not have approve function")
-
-            # Get current allowance
-            current_allowance = token_contract.functions.allowance(user_address, self.pool_address).call()
+            # Get current allowance with error handling
+            try:
+                current_allowance = token_contract.functions.allowance(user_address, self.pool_address).call()
+                print(f"📊 Current allowance: {current_allowance}")
+            except Exception as allowance_error:
+                print(f"⚠️ Could not check allowance: {allowance_error}")
+                current_allowance = 0
 
             # If already approved for requested amount or more, skip
             if current_allowance >= amount:
                 print(f"✅ Token already approved: {current_allowance} >= {amount}")
                 return True
 
-            # Build approval transaction
+            # Enhanced gas settings for approval
+            current_gas_price = self.w3.eth.gas_price
+            chain_id = self.w3.eth.chain_id
+            
+            if chain_id == 42161:  # Arbitrum Mainnet
+                gas_price = max(current_gas_price, int(0.02 * 10**9))  # Min 0.02 gwei
+                gas_limit = 80000  # Higher gas limit for mainnet
+            else:  # Testnet
+                gas_price = max(current_gas_price, int(0.1 * 10**9))  # Min 0.1 gwei
+                gas_limit = 100000
+
+            # Build approval transaction with enhanced settings
             approve_txn = token_contract.functions.approve(
                 self.pool_address,
                 amount
             ).build_transaction({
                 'from': user_address,
-                'gas': 60000,
-                'gasPrice': self.w3.eth.gas_price,
-                'nonce': self.w3.eth.get_transaction_count(user_address)
+                'gas': gas_limit,
+                'gasPrice': gas_price,
+                'nonce': self.w3.eth.get_transaction_count(user_address),
+                'chainId': chain_id
             })
+
+            print(f"⛽ Approval gas: {self.w3.from_wei(gas_price, 'gwei'):.4f} gwei, limit: {gas_limit}")
 
             # Sign and send transaction
             signed_txn = self.account.sign_transaction(approve_txn)
@@ -277,6 +298,10 @@ class AaveArbitrumIntegration:
 
         except Exception as e:
             print(f"❌ Token approval failed: {e}")
+            print(f"   Token: {token_address}")
+            print(f"   Amount: {amount}")
+            import traceback
+            print(f"   Error details: {traceback.format_exc()}")
             return None
 
     def supply_to_aave(self, token_address, amount):
