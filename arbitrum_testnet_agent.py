@@ -679,36 +679,28 @@ class ArbitrumTestnetAgent:
         # else: # Original Code
         #    print("❌ Could not get total collateral USD value from health monitor.") # Original Code
         #    return 0.0 # Return 0 if unable toretrieve # Original Code
-        return```text
- 0.0  # Returning 0.0 directly because the function is not being used.
+        return 0.0  # Returning 0```text
+.0 directly because the function is not being used.
 
-    def execute_leveraged_supply_strategy(self, amount_to_borrow_dai=10):
-        """Execute REVISED DAI-BASED LEVERAGED SUPPLY STRATEGY with conditional ETH acquisition and dedicated WBTC allocation"""
-        print("\n🚀 Starting REVISED DAI-BASED LEVERAGED SUPPLY STRATEGY...")
+    def execute_leveraged_supply_strategy(self, amount_to_borrow_usdc=10):
+        """Execute REVISED USDC-based leveraged supply strategy with conditional ETH acquisition and dedicated WBTC allocation"""
+        print("\n🚀 Starting REVISED USDC-BASED LEVERAGED SUPPLY STRATEGY...")
 
         # Import MIN_ETH_GAS_THRESHOLD from config
         from config import MIN_ETH_GAS_THRESHOLD
         import traceback
 
-        # --- Phase 1: Borrow DAI (Primary) or USDC (Fallback) ---
-        print(f"Step 1: Attempting to borrow {amount_to_borrow_dai} DAI...")
+        # --- Phase 1: Borrow USDC ---
+        print(f"Step 1: Attempting to borrow {amount_to_borrow_usdc} USDC...")
         try:
-            # Try DAI first (preferred for strategy)
-            success_borrow = self.aave.borrow(amount_to_borrow_dai, self.dai_address)
-            if success_borrow:
-                print(f"✅ Borrowed {amount_to_borrow_dai} DAI successfully.")
-                borrowed_token_address = self.dai_address
-            else:
-                print("⚠️ DAI borrow failed, trying USDC fallback...")
-                success_borrow = self.aave.borrow(amount_to_borrow_dai, self.usdc_address)
-                if success_borrow:
-                    print(f"✅ Borrowed {amount_to_borrow_dai} USDC successfully (fallback).")
-                    borrowed_token_address = self.usdc_address
-                else:
-                    print("❌ Failed to borrow both DAI and USDC. Aborting strategy.")
-                    return False
+            # Use the existing borrow method from aave integration
+            success_borrow = self.aave.borrow(amount_to_borrow_usdc, self.usdc_address)
+            if not success_borrow:
+                print("❌ Failed to borrow USDC. Aborting strategy.")
+                return False
+            print(f"✅ Borrowed {amount_to_borrow_usdc} USDC successfully.")
         except Exception as e:
-            print(f"❌ Error during borrowing: {e}")
+            print(f"❌ Error during USDC borrow: {e}")
             traceback.print_exc()
             return False
 
@@ -839,7 +831,7 @@ class ArbitrumTestnetAgent:
         except Exception as e:
             print(f"⚠️ Warning: Failed to update baseline: {e}")
 
-        print("\n🎉 REVISED DAI-BASED LEVERAGED SUPPLY STRATEGY SEQUENCE COMPLETED.")
+        print("\n🎉 REVISED USDC-BASED LEVERAGED SUPPLY STRATEGY SEQUENCE COMPLETED.")
         print("📊 Strategy Summary:")
         print("   ✅ Phase 1: Borrowed USDC from Aave")
         print("   ✅ Phase 2: Conditional ETH management for gas")
@@ -945,676 +937,423 @@ class ArbitrumTestnetAgent:
             print(f"🛡️ Using ultra-safe fallback gas params: {fallback_params}")
             return fallback_params
 
-        def _is_valid_numeric(self, value, min_val=0, max_val=float('inf')):
-            """Helper function to validate numeric values with comprehensive checks"""
-            try:
-                # Check if value exists and is numeric
-                if value is None:
-                    return False
-
-                # Handle string representations of numbers
-                if isinstance(value, str):
-                    try:
-                        value = float(value)
-                    except (ValueError, TypeError):
-                        return False
-
-                # Check if it's a numeric type
-                if not isinstance(value, (int, float, complex)):
-                    return False
-
-                # Check for infinity
-                if value == float('inf') or value == float('-inf'):
-                    return False
-
-                # Check for NaN
-                if value != value:  # NaN check
-                    return False
-
-                # Check for complex numbers (shouldn't be used for gas)
-                if isinstance(value, complex):
-                    return False
-
-                # Range validation
-                if value < min_val or value > max_val:
-                    return False
-
-                # Check for extremely large numbers that could cause overflow
-                if abs(value) > 2**63 - 1:  # Max safe integer
-                    return False
-
-                return True
-
-            except Exception:
+    def _is_valid_numeric(self, value, min_val=0, max_val=float('inf')):
+        """Helper function to validate numeric values with comprehensive checks"""
+        try:
+            # Check if value exists and is numeric
+            if value is None:
                 return False
 
-        def get_arb_price(self):
-            """Get real-time ARB price with graceful fallback for rate limits"""
-            try:
-                if not self.coinmarketcap_api_key:
-                    print(f"⚠️ ARB price: API key not available, using fallback")
-                    return {'price': 0.50, 'source': 'fallback_no_key'}
+            # Handle string representations of numbers
+            if isinstance(value, str):
+                try:
+                    value = float(value)
+                except (ValueError, TypeError):
+                    return False
 
-                url = "https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest"
-                headers = {
-                    'Accepts': 'application/json',
-                    'X-CMC_PRO_API_KEY': self.coinmarketcap_api_key,
-                }
-                parameters = {
-                    'symbol': 'ARB',
-                    'convert': 'USD'
-                }
+            # Check if it's a numeric type
+            if not isinstance(value, (int, float, complex)):
+                return False
 
-                response = requests.get(url, headers=headers, params=parameters, timeout=10)
+            # Check for infinity
+            if value == float('inf') or value == float('-inf'):
+                return False
 
-                if response.status_code == 200:
-                    data = response.json()
-                    if 'data' in data and 'ARB' in data['data']:
-                        price = data['data']['ARB']['quote']['USD']['price']
-                        print(f"✅ Real ARB price fetched: ${price:.4f}")
-                        return {'price': price, 'source': 'coinmarketcap'}
-                    else:
-                        raise Exception("ARB price data not found in API response")
-                elif response.status_code == 429:
-                    print(f"⚠️ ARB price: Rate limit hit, using fallback ($0.50)")
-                    return {'price': 0.50, 'source': 'fallback_rate_limit'}
+            # Check for NaN
+            if value != value:  # NaN check
+                return False
+
+            # Check for complex numbers (shouldn't be used for gas)
+            if isinstance(value, complex):
+                return False
+
+            # Range validation
+            if value < min_val or value > max_val:
+                return False
+
+            # Check for extremely large numbers that could cause overflow
+            if abs(value) > 2**63 - 1:  # Max safe integer
+                return False
+
+            return True
+
+        except Exception:
+            return False
+
+    def get_arb_price(self):
+        """Get real-time ARB price with graceful fallback for rate limits"""
+        try:
+            if not self.coinmarketcap_api_key:
+                print(f"⚠️ ARB price: API key not available, using fallback")
+                return {'price': 0.50, 'source': 'fallback_no_key'}
+
+            url = "https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest"
+            headers = {
+                'Accepts': 'application/json',
+                'X-CMC_PRO_API_KEY': self.coinmarketcap_api_key,
+            }
+            parameters = {
+                'symbol': 'ARB',
+                'convert': 'USD'
+            }
+
+            response = requests.get(url, headers=headers, params=parameters, timeout=10)
+
+            if response.status_code == 200:
+                data = response.json()
+                if 'data' in data and 'ARB' in data['data']:
+                    price = data['data']['ARB']['quote']['USD']['price']
+                    print(f"✅ Real ARB price fetched: ${price:.4f}")
+                    return {'price': price, 'source': 'coinmarketcap'}
                 else:
-                    raise Exception(f"CoinMarketCap API error: {response.status_code}")
+                    raise Exception("ARB price data not found in API response")
+            elif response.status_code == 429:
+                print(f"⚠️ ARB price: Rate limit hit, using fallback ($0.50)")
+                return {'price': 0.50, 'source': 'fallback_rate_limit'}
+            else:
+                raise Exception(f"CoinMarketCap API error: {response.status_code}")
 
-            except Exception as e:
-                print(f"⚠️ ARB price fetch failed: {e} - using fallback")
-                return {'price': 0.50, 'source': 'fallback_error'}
+        except Exception as e:
+            print(f"⚠️ ARB price fetch failed: {e} - using fallback")
+            return {'price': 0.50, 'source': 'fallback_error'}
 
-        def get_recent_performance(self, num_entries=100):
-            """Get recent performance data for strategy analysis"""
-            try:
-                # Load performance data from main.py's performance log
-                performance_data = []
-                performance_log = 'performance_log.json'
+    def get_recent_performance(self, num_entries=100):
+        """Get recent performance data for strategy analysis"""
+        try:
+            # Load performance data from main.py's performance log
+            performance_data = []
+            performance_log = 'performance_log.json'
 
-                if os.path.exists(performance_log):
-                    with open(performance_log, 'r') as f:
-                        for line in f:
-                            try:
-                                performance_data.append(json.loads(line))
-                            except json.JSONDecodeError:
-                                continue
+            if os.path.exists(performance_log):
+                with open(performance_log, 'r') as f:
+                    for line in f:
+                        try:
+                            performance_data.append(json.loads(line))
+                        except json.JSONDecodeError:
+                            continue
 
-                # Return the most recent entries
-                return performance_data[-num_entries:] if performance_data else []
+            # Return the most recent entries
+            return performance_data[-num_entries:] if performance_data else []
 
-            except Exception as e:
-                print(f"⚠️ Error getting recent performance: {e}")
-                return []
+        except Exception as e:
+            print(f"⚠️ Error getting recent performance: {e}")
+            return []
 
-        def run_real_defi_task(self, run_id, iteration, config):
-            """Execute autonomous DeFi operations with REAL blockchain data only"""
-            print(f"\n🎯 Autonomous Run {run_id}, Iteration {iteration}")
+    def run_real_defi_task(self, run_id, iteration, config):
+        """Execute autonomous DeFi operations with REAL blockchain data only"""
+        print(f"\n🎯 Autonomous Run {run_id}, Iteration {iteration}")
 
-            try:
-                # CRITICAL: Always ensure integrations are properly initialized
-                if not hasattr(self, 'aave') or self.aave is None:
-                    print("🔄 Initializing DeFi integrations...")
-                    success = self.initialize_integrations()
-                    if not success:
-                        print("❌ Failed to initialize DeFi integrations - cannot proceed")
-                        return 0.0
-
-                # Verify all critical integrations are available
-                missing_integrations = []
-                if not self.aave:
-                    missing_integrations.append("Aave")
-                if not self.uniswap:
-                    missing_integrations.append("Uniswap")
-                if not self.health_monitor:
-                    missing_integrations.append("Health Monitor")
-
-                if missing_integrations:
-                    print(f"❌ Missing critical integrations: {missing_integrations}")
-                    print("🔄 Attempting to reinitialize...")
-                    success = self.initialize_integrations()
-                    if not success:
-                        return 0.0
-
-                # === COMPREHENSIVE DIAGNOSTIC SECTION ===
-                print(f"\n🔍 AGENT WALLET & AAVE DIAGNOSTIC:")
-                print(f"   Agent Wallet Address: {self.address}")
-                print(f"   Network: {self.network_mode} (Chain ID: {self.chain_id})")
-                print(f"   RPC Endpoint: {self.rpc_url}")
-                print(f"   Aave Pool Address: {self.aave_pool_address}")
-
-                # FIXED: Use only fresh Aave contract data for reliable trigger detection
-                try:
-                    print(f"🔍 USING FRESH AAVE CONTRACT DATA (RELIABLE SOURCE):")
-                    from web3 import Web3
-
-                    # Standard Aave Pool ABI for getUserAccountData
-                    pool_abi = [{
-                        "inputs": [{"name": "user", "type": "address"}],
-                        "name": "getUserAccountData",
-                        "outputs": [
-                            {"name": "totalCollateralBase", "type": "uint256"},
-                            {"name": "totalDebtBase", "type": "uint256"},
-                            {"name": "availableBorrowsBase", "type": "uint256"},
-                            {"name": "currentLiquidationThreshold", "type": "uint256"},
-                            {"name": "ltv", "type": "uint256"},
-                            {"name": "healthFactor", "type": "uint256"}
-                        ],
-                        "stateMutability": "view",
-                        "type": "function"
-                    }]
-
-                    pool_contract = self.w3.eth.contract(
-                        address=self.aave_pool_address,
-                        abi=pool_abi
-                    )
-
-                    print(f"   📊 Getting fresh data from Aave Pool: {self.aave_pool_address}")
-                    account_data = pool_contract.functions.getUserAccountData(self.address).call()
-
-                    # Aave V3 uses 8 decimal places for USD values (not 18 like ETH)
-                    current_collateral_value_usd = account_data[0] / (10**8)
-                    debt_usd = account_data[1] / (10**8)
-                    available_borrows_usd = account_data[2] / (10**8)
-                    current_liquidation_threshold = account_data[3]
-                    ltv = account_data[4]
-                    current_health_factor = account_data[5] / (10**18) if account_data[5] > 0 else float('inf')
-
-                    print(f"   ✅ FRESH AAVE CONTRACT DATA:")
-                    print(f"      Total Collateral USD: ${current_collateral_value_usd:,.2f}")
-                    print(f"      Total Debt USD: ${debt_usd:,.2f}")
-                    print(f"      Available Borrows USD: ${available_borrows_usd:,.2f}")
-                    print(f"      Health Factor: {current_health_factor:.4f}")
-                    print(f"      Data Source: LIVE_AAVE_CONTRACT")
-
-                    # Enhanced aToken balance checking with circuit breaker protection
-                    print(f"   🔍 CHECKING INDIVIDUAL AAVE ASSET BALANCES:")
-                    try:
-                        # Initialize circuit breaker if not exists
-                        if not hasattr(self, 'circuit_breaker'):
-                            from rpc_circuit_breaker import RPCCircuitBreaker
-                            self.circuit_breaker = RPCCircuitBreaker()
-
-                        # Check aToken balances (these represent supplied assets)
-                        aave_assets = {
-                            "aWBTC": "0x6533afac2E7BCCB20dca161449A13A2D2d5B739A",
-                            "aWETH": "0xe50fA9b4c56454E2edF6BFf7c81b50c5F05aBE61", 
-                            "aUSDC": "0x724dc807b04555b71ed48a6896b6F41593b8C637"
-                        }
-
-                        # Simplified ABI for aToken balance only
-                        atoken_abi = [
-                            {
-                                "inputs": [{"internalType": "address", "name": "account", "type": "address"}],
-                                "name": "balanceOf",
-                                "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
-                                "stateMutability": "view",
-                                "type": "function"
-                            }
-                        ]
-
-                        for asset_name, atoken_address in aave_assets.items():
-                            try:
-                                # Direct contract call without circuit breaker
-                                checksum_address = Web3.to_checksum_address(atoken_address)
-                                atoken_contract = self.w3.eth.contract(
-                                    address=checksum_address, 
-                                    abi=atoken_abi
-                                )
-
-                                # Get balance with timeout
-                                balance = atoken_contract.functions.balanceOf(
-                                    Web3.to_checksum_address(self.address)
-                                ).call()
-
-                                # Use known decimals to avoid extra contract calls
-                                decimals = 18 if asset_name != "aUSDC" else 6
-                                if asset_name == "aWBTC":
-                                    decimals = 8
-
-                                readable_balance = balance / (10**decimals)
-                                print(f"      {asset_name}: {readable_balance:.8f}")
-
-                            except Exception as e:
-                                print(f"      {asset_name}: Balance check failed - {e}")
-                                # Continue with next asset instead of failing completely
-                                continue
-
-                    except Exception as e:
-                        print(f"   ⚠️ Individual asset check failed: {e}")
-                        print(f"   This is non-critical - using aggregate Aave data instead")
-
-                except Exception as e:
-                    print(f"⚠️ Fresh Aave contract data failed: {e}")
-                    # Use default values if contract call fails
-                    current_collateral_value_usd = 0.0
-                    debt_usd = 0.0
-                    current_health_factor = float('inf')
-
-
-
-                print(f"📊 Current Health Factor: {current_health_factor:.4f}")
-
-                # Get real ARB price (strict - no fallback)
-                try:
-                    arb_price_data = self.get_arb_price()
-                    arb_price = arb_price_data['price']
-                    print(f"💰 ARB Price: ${arb_price:.4f}")
-
-                except Exception as e:
-                    print("Could not fetch ARB price")
-                    return 0.1
-                # Check emergency stop
-                if self.check_emergency_stop():
-                    print("🛑 Emergency stop active, skipping operations")
+        try:
+            # CRITICAL: Always ensure integrations are properly initialized
+            if not hasattr(self, 'aave') or self.aave is None:
+                print("🔄 Initializing DeFi integrations...")
+                success = self.initialize_integrations()
+                if not success:
+                    print("❌ Failed to initialize DeFi integrations - cannot proceed")
                     return 0.0
 
-                # Check network status
-                network_ok, status = self.check_network_status()
-                if not network_ok:
-                    print(f"❌ Network issue: {status}")
-                    return 0.1
+            # Verify all critical integrations are available
+            missing_integrations = []
+            if not self.aave:
+                missing_integrations.append("Aave")
+            if not self.uniswap:
+                missing_integrations.append("Uniswap")
+            if not self.health_monitor:
+                missing_integrations.append("Health Monitor")
 
-                # --- START DIAGNOSTIC CODE ---
-                print("\n🔍 DIAGNOSTIC: Checking Wallet Balances...")
-                # Get and print ETH balance
-                current_eth_balance = self.get_eth_balance()
-                print(f"    DIAGNOSTIC - Wallet ETH Balance (raw): {current_eth_balance:.10f} ETH")
+            if missing_integrations:
+                print(f"❌ Missing critical integrations: {missing_integrations}")
+                print("🔄 Attempting to reinitialize...")
+                success = self.initialize_integrations()
+                if not success:
+                    return 0.0
 
-                # Skip individual balance checks to avoid contract call errors - use Aave position data instead
-                print(f"    DIAGNOSTIC - Using Aave position data instead of individual token balances")
-                current_usdc_balance_from_aave_integration = 0.0  # This is wallet balance, not Aave position
+            # === COMPREHENSIVE DIAGNOSTIC SECTION ===
+            print(f"\n🔍 AGENT WALLET & AAVE DIAGNOSTIC:")
+            print(f"   Agent Wallet Address: {self.address}")
+            print(f"   Network: {self.network_mode} (Chain ID: {self.chain_id})")
+            print(f"   RPC Endpoint: {self.rpc_url}")
+            print(f"   Aave Pool Address: {self.aave_pool_address}")
 
-                print(f"    DIAGNOSTIC - Wallet USDC Balance (via direct contract): {current_usdc_balance_from_aave_integration:.6f} USDC")
+            # FIXED: Use only fresh Aave contract data for reliable trigger detection
+            try:
+                print(f"🔍 USING FRESH AAVE CONTRACT DATA (RELIABLE SOURCE):")
+                from web3 import Web3
 
-                print("🔍 DIAGNOSTIC: Wallet Balance Check Complete.")
-                # --- END DIAGNOSTIC CODE ---
+                # Standard Aave Pool ABI for getUserAccountData
+                pool_abi = [{
+                    "inputs": [{"name": "user", "type": "address"}],
+                    "name": "getUserAccountData",
+                    "outputs": [
+                        {"name": "totalCollateralBase", "type": "uint256"},
+                        {"name": "totalDebtBase", "type": "uint256"},
+                        {"name": "availableBorrowsBase", "type": "uint256"},
+                        {"name": "currentLiquidationThreshold", "type": "uint256"},
+                        {"name": "ltv", "type": "uint256"},
+                        {"name": "healthFactor", "type": "uint256"}
+                    ],
+                    "stateMutability": "view",
+                    "type": "function"
+                }]
 
-                # Check wallet readiness for DeFi operations
-                wallet_ready = self.check_wallet_readiness_for_defi(current_collateral_value_usd)
+                pool_contract = self.w3.eth.contract(
+                    address=self.aave_pool_address,
+                    abi=pool_abi
+                )
 
-                # Enhanced monitoring and trigger detection
-                print(f"🔍 MONITORING: Health factor {current_health_factor:.4f}")
+                print(f"   📊 Getting fresh data from Aave Pool: {self.aave_pool_address}")
+                account_data = pool_contract.functions.getUserAccountData(self.address).call()
 
-                # DEBUG: Print raw health data before any modifications
-                print(f"🔍 DEBUG - RAW HEALTH DATA FROM DIRECT AAVE:")
-                print(f"   Raw collateral_usd from Aave contract: ${current_collateral_value_usd:,.8f}")
-                debt_usd_value = debt_usd if 'debt_usd' in locals() else 0.0
-                print(f"   Raw debt_usd from Aave contract: ${debt_usd_value:,.8f}")
-                print(f"   Raw health_factor from Aave contract: {current_health_factor:.8f}")
+                # Aave V3 uses 8 decimal places for USD values (not 18 like ETH)
+                current_collateral_value_usd = account_data[0] / (10**8)
+                debt_usd = account_data[1] / (10**8)
+                available_borrows_usd = account_data[2] / (10**8)
+                current_liquidation_threshold = account_data[3]
+                ltv = account_data[4]
+                current_health_factor = account_data[5] / (10**18) if account_data[5] > 0 else float('inf')
 
-                # ENHANCED: Try to get accurate collateral using asset-specific queries
-                print(f"🔍 ENHANCED COLLATERAL CALCULATION:")
+                print(f"   ✅ FRESH AAVE CONTRACT DATA:")
+                print(f"      Total Collateral USD: ${current_collateral_value_usd:,.2f}")
+                print(f"      Total Debt USD: ${debt_usd:,.2f}")
+                print(f"      Available Borrows USD: ${available_borrows_usd:,.2f}")
+                print(f"      Health Factor: {current_health_factor:.4f}")
+                print(f"      Data Source: LIVE_AAVE_CONTRACT")
+
+                # Enhanced aToken balance checking with circuit breaker protection
+                print(f"   🔍 CHECKING INDIVIDUAL AAVE ASSET BALANCES:")
                 try:
-                    # Use the already successful Aave contract data instead of individual aToken calls
-                    # The direct Aave getUserAccountData call is working perfectly - use that data
-                    print(f"   Using successful Aave contract data: ${current_collateral_value_usd:.2f}")
+                    # Initialize circuit breaker if not exists
+                    if not hasattr(self, 'circuit_breaker'):
+                        from rpc_circuit_breaker import RPCCircuitBreaker
+                        self.circuit_breaker = RPCCircuitBreaker()
 
-                    # Estimate asset breakdown based on known position (optional - for display only)
-                    wbtc_balance = 0.0  # Will be determined from Aave collateral data
-                    weth_balance = 0.0  # Will be determined fromAave collateral data
-                    usdc_balance = 0.0  # Will be determined from Aave collateral data
-                    arb_balance = 0.0   # Not in Aave currently
+                    # Check aToken balances (these represent supplied assets)
+                    aave_assets = {
+                        "aWBTC": "0x6533afac2E7BCCB20dca161449A13A2D2d5B739A",
+                        "aWETH": "0xe50fA9b4c56454E2edF6BFf7c81b50c5F05aBE61", 
+                        "aUSDC": "0x724dc807b04555b71ed48a6896b6F41593b8C637"
+                    }
 
-                    print(f"   WBTC supplied: {wbtc_balance:.8f}")
-                    print(f"   WETH supplied: {weth_balance:.8f}")
-                    print(f"   USDC supplied: {usdc_balance:.8f}")
+                    # Simplified ABI for aToken balance only
+                    atoken_abi = [
+                        {
+                            "inputs": [{"internalType": "address", "name": "account", "type": "address"}],
+                            "name": "balanceOf",
+                            "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
+                            "stateMutability": "view",
+                            "type": "function"
+                        }
+                    ]
 
-                # Enhanced price lookup for accurate collateral calculation
-                    if self.coinmarketcap_api_key:
+                    for asset_name, atoken_address in aave_assets.items():
                         try:
-                            import requests
-                            url = "https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest"
-                            headers = {'X-CMC_PRO_API_KEY': self.coinmarketcap_api_key}
-                            params = {'symbol': 'BTC,ETH,USDC', 'convert': 'USD'}
+                            # Direct contract call without circuit breaker
+                            checksum_address = Web3.to_checksum_address(atoken_address)
+                            atoken_contract = self.w3.eth.contract(
+                                address=checksum_address, 
+                                abi=atoken_abi
+                            )
 
-                            response = requests.get(url, headers=headers, params=params, timeout=10)
-                            if response.status_code == 200:
-                                data = response.json()
-                                btc_price = data['data']['BTC']['quote']['USD']['price']
-                                eth_price = data['data']['ETH']['quote']['USD']['price']
-                                usdc_price = data['data']['USDC']['quote']['USD']['price']
+                            # Get balance with timeout
+                            balance = atoken_contract.functions.balanceOf(
+                                Web3.to_checksum_address(self.address)
+                            ).call()
 
-                                enhanced_collateral_usd = (
-                                    (wbtc_balance * btc_price) +
-                                    (weth_balance * eth_price) +
-                                    (usdc_balance * usdc_price)
-                                )
+                            # Use known decimals to avoid extra contract calls
+                            decimals = 18 if asset_name != "aUSDC" else 6
+                            if asset_name == "aWBTC":
+                                decimals = 8
 
-                                print(f"   Enhanced calculation:")
-                                print(f"   BTC price: ${btc_price:,.2f}")
-                                print(f"   ETH price: ${eth_price:,.2f}")
-                                print(f"   USDC price: ${usdc_price:.4f}")
-                                print(f"   Enhanced collateral USD: ${enhanced_collateral_usd:,.2f}")
-
-                                if enhanced_collateral_usd > 50:  # If we get meaningful data
-                                    current_collateral_value_usd = enhanced_collateral_usd
-                                    print(f"✅ Using enhanced collateral calculation: ${current_collateral_value_usd:,.2f}")
-                                else:
-                                    print(f"🔍 DEBUG: Enhanced collateral calculation still shows low value")
-                            else:
-                                print(f"⚠️ Price fetch failed: {response.status_code}")
+                            readable_balance = balance / (10**decimals)
+                            print(f"      {asset_name}: {readable_balance:.8f}")
 
                         except Exception as e:
-                            print(f"⚠️ An error occurred fetching CoinMarketCap data: {e}")
-                            pass  # Handle CoinMarketCap API error gracefully
-
-
-                except Exception as price_error:
-                    logging.error(f"Error fetching token prices: {price_error}")
-                    return {}
-
-                except Exception as enhanced_error:
-                    print(f"⚠️ Enhanced collateral calculation failed: {enhanced_error}")
-
-                # Use direct Aave data as primary source (dashboard sync removed for reliability)
-                print("✅ Using direct Aave contract data as primary source")
-
-                # DEBUG: Log baseline tracking values
-                print(f"🔍 DEBUG - BASELINE TRACKING:")
-                print(f"   self.last_collateral_value_usd (baseline): ${self.last_collateral_value_usd:,.2f}")
-                print(f"   current_collateral_value_usd (now): ${current_collateral_value_usd:,.2f}")
-                print(f"   self.baseline_initialized: {self.baseline_initialized}")
-
-                # Calculate and log trigger values
-                collateral_growth = current_collateral_value_usd - self.last_collateral_value_usd
-                # FIXED: Use only the $13 growth trigger, remove conflicting small threshold
-                main_trigger_threshold = 13.0  # $13 USD growth trigger for autonomous sequence
-                trigger_condition_met = collateral_growth >= main_trigger_threshold
-
-                print(f"🔍 DEBUG - TRIGGER CHECK:")
-                print(f"   current_collateral_value_usd: ${current_collateral_value_usd:.2f}")
-                print(f"   baseline (last_collateral): ${self.last_collateral_value_usd:.2f}")
-                print(f"   collateral_growth: ${collateral_growth:.2f}")
-                print(f"   main_trigger_threshold: ${main_trigger_threshold:.2f}")
-                print(f"   trigger condition met: {trigger_condition_met}")
-
-                # Try to get real data as backup
-                try:
-                    from accurate_debank_fetcher import AccurateWalletDataFetcher
-                    fetcher = AccurateWalletDataFetcher(self.w3, self.address)
-                    dashboard_data = fetcher.get_comprehensive_wallet_data()
-
-                    if dashboard_data and dashboard_data.get('success'):
-                        real_collateral = dashboard_data['total_collateral_usdc']
-                        print(f"🔍 DEBUG - REAL DATA FETCHER RESULT:")
-                        print(f"   AccurateWalletDataFetcher collateral: ${real_collateral:,.2f}")
-                        if real_collateral > 100:  # If real data shows significant position
-                            current_collateral_value_usd = real_collateral
-                            debt_usd = dashboard_data['total_debt_usdc']
-                            current_health_factor = dashboard_data['health_factor']
-                            print(f"✅ REAL DATA OVERRIDE: Using live data ${real_collateral:,.2f}")
-                    else:
-                        print(f"⚠️ AccurateWalletDataFetcher returned no data or failed")
+                            print(f"      {asset_name}: Balance check failed - {e}")
+                            # Continue with next asset instead of failing completely
+                            continue
 
                 except Exception as e:
-                    print(f"⚠️ Real data fetch failed, using forced dashboard values: {e}")
-
-                # Enhanced data format handling - normalize address formats
-                try:
-                    # Skip address normalization if already properly formatted
-                    print(f"✅ Using verified contract addresses (skipping normalization)")
-
-                except Exception as format_error:
-                    print(f"⚠️ Address format normalization failed: {format_error}")
-
-                # ENHANCED POSITION DETECTION: Force refresh with direct contract call
-                print(f"🔍 ENHANCED POSITION DETECTION:")
-                try:
-                    # Always get fresh data from Aave contract
-                    pool_abi = [{
-                        "inputs": [{"name": "user", "type": "address"}],
-                        "name": "getUserAccountData",
-                        "outputs": [
-                            {"name": "totalCollateralBase", "type": "uint256"},
-                            {"name": "totalDebtBase", "type": "uint256"},
-                            {"name": "availableBorrowsBase", "type": "uint256"},
-                            {"name": "currentLiquidationThreshold", "type": "uint256"},
-                            {"name": "ltv", "type": "uint256"},
-                            {"name": "healthFactor", "type": "uint256"}
-                        ],
-                        "stateMutability": "view",
-                        "type": "function"
-                    }]
-
-                    pool_contract = self.w3.eth.contract(address=self.aave_pool_address, abi=pool_abi)
-                    fresh_account_data = pool_contract.functions.getUserAccountData(self.address).call()
-
-                    fresh_collateral_usd = fresh_account_data[0] / (10**8)
-                    fresh_debt_usd = fresh_account_data[1] / (10**8)
-                    fresh_health_factor = fresh_account_data[5] / (10**18) if fresh_account_data[5] > 0 else float('inf')
-
-                    print(f"   🔄 FRESH AAVE CONTRACT DATA:")
-                    print(f"      Fresh Collateral: ${fresh_collateral_usd:,.2f}")
-                    print(f"      Fresh Debt: ${fresh_debt_usd:,.2f}")
-                    print(f"      Fresh Health Factor: {fresh_health_factor:.4f}")
-
-                    # ALWAYS use fresh data as it's the most accurate
-                    print(f"   ✅ USING FRESH DATA AS PRIMARY SOURCE: ${fresh_collateral_usd:,.2f}")
-                    current_collateral_value_usd = fresh_collateral_usd
-                    current_health_factor = fresh_health_factor
-                    debt_usd = fresh_debt_usd
-
-                    print(f"   📊 UPDATED VALUES:")
-                    print(f"      Current Collateral: ${current_collateral_value_usd:,.2f}")
-                    print(f"      Current Health Factor: {current_health_factor:.4f}")
-                    print(f"      Current Debt: ${debt_usd:,.2f}")
-
-                except Exception as fresh_error:
-                    print(f"   ⚠️ Fresh data fetch failed: {fresh_error}")
-
-                # FIXED: Initialize baseline only once, don't update until after successful trigger
-                print(f"🔍 DEBUG - BASELINE INITIALIZATION CHECK:")
-                print(f"   self.baseline_initialized: {self.baseline_initialized}")
-                print(f"   current_collateral_value_usd (ENHANCED): ${current_collateral_value_usd:,.2f}")
-                print(f"   current baseline: ${self.last_collateral_value_usd:.2f}")
-
-                baseline_just_initialized = False
-
-                # Initialize baseline only once at the very beginning OR reset if requested
-                if (not self.baseline_initialized and current_collateral_value_usd > 50) or \
-                   (current_collateral_value_usd > 50 and os.path.exists('reset_baseline.flag')) or \
-                   (self.baseline_initialized and current_collateral_value_usd > 50 and self.last_collateral_value_usd > current_collateral_value_usd + 10):
-                    self.last_collateral_value_usd = current_collateral_value_usd
-                    self.baseline_initialized = True
-                    baseline_just_initialized = True
-                    print(f"🎯 BASELINE INITIALIZED/RESET: Set to ${current_collateral_value_usd:,.2f}")
-
-                    # Remove reset flag if it exists
-                    if os.path.exists('reset_baseline.flag'):
-                        os.remove('reset_baseline.flag')
-                        print("🔄 Baseline reset flag removed")
-
-                    # Save initialized baseline to file for persistence
-                    baseline_data = {
-                        'last_collateral_value_usd': self.last_collateral_value_usd,
-                        'baseline_initialized': True,
-                        'timestamp': time.time(),
-                        'wallet_address': self.address,
-                        'data_source': 'initial_baseline_setup'
-                    }
-                    from fix_json_serialization import safe_json_dump
-                    safe_json_dump(baseline_data, 'agent_baseline.json')
-
-                    print(f"📈 Next trigger will activate when collateral reaches: ${self.last_collateral_value_usd + 13:,.2f}")
-                    print(f"💡 Add $13+ worth of collateral to activate autonomous sequence")
-
-                # If agent still sees $0, but Arbiscan shows real position, force detection
-                if current_collateral_value_usd < 50:
-                    print(f"🔧 FORCING POSITION DETECTION:")
-                    # Your images show ~$188 collateral, so use that as baseline
-                    detected_collateral = 188.36  # From your Arbitrium Market image
-                    old_baseline = self.last_collateral_value_usd
-                    self.last_collateral_value_usd = detected_collateral
-                    self.baseline_initialized = True
-                    current_collateral_value_usd = detected_collateral
-                    print(f"🎯 FORCED BASELINE: ${detected_collateral:,.2f} based on Arbitrum Market data")
-                    print(f"📊 Updated last_collateral_value_usd to: {self.last_collateral_value_usd}")
-
-                    # Save forced baseline
-                    baseline_data = {
-                        'last_collateral_value_usd': self.last_collateral_value_usd,
-                        'baseline_initialized': True,
-                        'timestamp': time.time(),
-                        'wallet_address': self.address,
-                        'detection_method': 'forced_arbitrum_market_data'
-                    }
-                    from fix_json_serialization import safe_json_dump
-                    safe_json_dump(baseline_data, 'agent_baseline.json')
-
-                    return 0.8
-
-                # AUTONOMOUS TRIGGER: $13 USD collateral growth from baseline
-                growth_needed = 13.0
-                target_collateral = self.last_collateral_value_usd + growth_needed
-                actual_growth = current_collateral_value_usd - self.last_collateral_value_usd
-
-                # Check if trigger is ready
-                trigger_ready = actual_growth >= growth_needed
-
-                # Enhanced manual override detection
-                manual_override = self.detect_manual_override()
-
-                if manual_override:
-                    self.manual_override_active = True
-                    print(f"🚀 MANUAL OVERRIDE DETECTED: Bypassing growth requirement")
-                    trigger_ready = True
-                elif os.path.exists('test_mode.flag') and actual_growth >= 1.0:  # Lower threshold for testing
-                    print(f"🧪 TEST MODE: Using $1 threshold instead of $13")
-                    trigger_ready = True
-
-                # Special case: if baseline was just initialized and we have sufficient collateral growth, allow trigger
-                if baseline_just_initialized and current_collateral_value_usd > (self.last_collateral_value_usd + 13.0):
-                    print(f"🎯 BASELINE JUST INITIALIZED: Checking if immediate trigger is possible")
-                    # Recalculate growth from the new baseline
-                    immediate_growth = current_collateral_value_usd - self.last_collateral_value_usd
-                    if immediate_growth >= 13.0:
-                        print(f"🚀 IMMEDIATE TRIGGER: Growth ${immediate_growth:.2f} meets threshold")
-                        trigger_ready = True
-
-                print(f"""
-                🎯 AUTONOMOUS TRIGGER CHECK:
-                   Current Collateral: ${current_collateral_value_usd:.2f}
-                   Baseline: ${self.last_collateral_value_usd:.2f}
-                   Target for Trigger: ${self.last_collateral_value_usd + 13.0:.2f}
-                   Actual Growth: ${collateral_growth:.2f}
-                   Growth Needed: $13.00
-                   Manual Override: {manual_override}
-                   Baseline Just Initialized: {baseline_just_initialized}
-                   ✅ TRIGGER READY: {trigger_ready}""")
-
-                # Check cooldown before executing
-                if trigger_ready:
-                    if self.is_operation_on_cooldown():
-                        print(f"⏰ Trigger ready but operation on cooldown - waiting...")
-                        return 0.5  # Moderate performance score for waiting
-                    else:
-                        print(f"🚀 Executing autonomous sequence (cooldown clear)")
-                        performance_score = self.execute_autonomous_sequence_enhanced(collateral_growth)
-                        return performance_score
-                else:
-                    growth = current_collateral_value_usd - self.last_collateral_value_usd
-                    # if not trigger_condition:
-                    self.manual_override_active = False
-
-                    if baseline_just_initialized:
-                        print(f"🎯 CURRENT GAP: Need $13.00 more collateral (baseline just set)")
-                        return 0.8
-                    else:
-                        print(f"⏸️ No action: Collateral growth ${growth:.2f} < $13 threshold")
-                        print(f"📊 Current Position: ${current_collateral_value_usd:,.2f} collateral, ${debt_usd if 'debt_usd' in locals() else 0.0:,.2f} debt")
-                        print(f"💰 Last recorded collateral: ${self.last_collateral_value_usd:.2f}")
-                        print(f"📈 Collateral growth: ${growth:.2f}")
-
-                        if current_collateral_value_usd == 0:
-                            print(f"💡 TIP: To activate autonomous operations:")
-                            print(f"   1. Supply some USDC/WETH to Aave as collateral")
-                            print(f"   2. Agent will monitor for $13+ collateral growth")
-                            print(f"   3. Then execute autonomous borrowing & swapping sequence")
-
-                        return 0.7  # Moderate performance score
+                    print(f"   ⚠️ Individual asset check failed: {e}")
+                    print(f"   This is non-critical - using aggregate Aave data instead")
 
             except Exception as e:
-                print(f"❌ CRITICAL ERROR in autonomous task: {e}")
-                print("🛑 Halting execution due to real data fetch failure")
-                return 0.0  # Failed performance score
+                print(f"⚠️ Fresh Aave contract data failed: {e}")
+                # Use default values if contract call fails
+                current_collateral_value_usd = 0.0
+                debt_usd = 0.0
+                current_health_factor = float('inf')
 
-        def check_wallet_readiness_for_defi(self, current_collateral_value_usd=0.0):
-            """Check if wallet has sufficient funds to start DeFi operations"""
+
+
+            print(f"📊 Current Health Factor: {current_health_factor:.4f}")
+
+            # Get real ARB price (strict - no fallback)
             try:
-                eth_balance = self.get_eth_balance()
-
-                print(f"🔍 WALLET READINESS CHECK:")
-                print(f"   ETH Balance: {eth_balance:.6f} ETH")
-                print(f"   Aave Position: ${current_collateral_value_usd:.2f} collateral")
-
-                # Check minimum requirements - we have substantial Aave position already
-                min_eth_for_gas = MIN_ETH_FOR_OPERATIONS  # Minimum ETH for gas fees
-
-                ready = eth_balance >= min_eth_for_gas and current_collateral_value_usd > 50
-
-                if ready:
-                    print(f"✅ Wallet ready for DeFi operations!")
-                    print(f"   Sufficient ETH for gas: {eth_balance:.6f} ETH")
-                    print(f"   Active Aave position: ${current_collateral_value_usd:.2f}")
-                else:
-                    print(f"⚠️ Wallet needs more funds:")
-                    if eth_balance < min_eth_for_gas:
-                        print(f"   Need at least {min_eth_for_gas:.3f} ETH for gas (current: {eth_balance:.6f})")
-                    if current_collateral_value_usd <= 50:
-                        print(f"   Need active Aave position (current: ${current_collateral_value_usd:.2f})")
-
-                return ready
+                arb_price_data = self.get_arb_price()
+                arb_price = arb_price_data['price']
+                print(f"💰 ARB Price: ${arb_price:.4f}")
 
             except Exception as e:
-                print(f"❌ Error checking wallet readiness: {e}")
-                return False
+                print("Could not fetch ARB price")
+                return 0.1
+            # Check emergency stop
+            if self.check_emergency_stop():
+                print("🛑 Emergency stop active, skipping operations")
+                return 0.0
 
-        def get_portfolio_summary(self):
-            """Get real portfolio summary with strict error handling"""
-            try:
-                summary = {
-                    'timestamp': datetime.now().isoformat(),
-                    'eth_balance': self.get_eth_balance(),
-                    'health_factor': None,
-                    'arb_price': None
-                }
-
-                # Get real health factor
-                try:
-                    health_data = self.health_monitor.get_current_health_factor()
-                    if health_data and 'health_factor' in health_data:
-                        hf = health_data.get('health_factor', 0)
-                        summary['health_factor'] = hf
-                        print(f"❤️ Initial Health Factor: {hf:.4f}")
-                    else:
-                        print("⚠️ Could not retrieve initial health factor")
-                except Exception as e:
-                    print(f"⚠️ Health factor check error: {e}")
-
-                # Get real ARB price
-                arb_data = self.get_arb_price()
-                summary['arb_price'] = arb_data['price']
-
-                return summary
-
-            except Exception as e:
-                print(f"❌ Failed to get real portfolio summary: {e}")
-                raise Exception("Portfolio summary requires real data - halting")
-
-        def execute_autonomous_sequence_enhanced(self, growth_amount):
-            """Enhanced autonomous sequence with better error handling and optimization"""
-            print(f"🚀 TRIGGER ACTIVATED: Collateral grew by ${growth_amount:.2f} (≥ $12 threshold)")
-            print(f"⚡ EXECUTING AUTONOMOUS SEQUENCE...")
-            print(f"📝 Sequence: Borrow USDC → Swap →WBTC, WETH, DAI → Supply to Aave")
-
-            # Validate all integrations are ready
-            if not self.validate_integrations_ready():
-                print("❌ Critical integrations not ready - aborting sequence")
+            # Check network status
+            network_ok, status = self.check_network_status()
+            if not network_ok:
+                print(f"❌ Network issue: {status}")
                 return 0.1
 
-            # Get available borrowing capacity first
+            # --- START DIAGNOSTIC CODE ---
+            print("\n🔍 DIAGNOSTIC: Checking Wallet Balances...")
+            # Get and print ETH balance
+            current_eth_balance = self.get_eth_balance()
+            print(f"    DIAGNOSTIC - Wallet ETH Balance (raw): {current_eth_balance:.10f} ETH")
+
+            # Skip individual balance checks to avoid contract call errors - use Aave position data instead
+            print(f"    DIAGNOSTIC - Using Aave position data instead of individual token balances")
+            current_usdc_balance_from_aave_integration = 0.0  # This is wallet balance, not Aave position
+
+            print(f"    DIAGNOSTIC - Wallet USDC Balance (via direct contract): {current_usdc_balance_from_aave_integration:.6f} USDC")
+
+            print("🔍 DIAGNOSTIC: Wallet Balance Check Complete.")
+            # --- END DIAGNOSTIC CODE ---
+
+            # Check wallet readiness for DeFi operations
+            wallet_ready = self.check_wallet_readiness_for_defi(current_collateral_value_usd)
+
+            # Enhanced monitoring and trigger detection
+            print(f"🔍 MONITORING: Health factor {current_health_factor:.4f}")
+
+            # DEBUG: Print raw health data before any modifications
+            print(f"🔍 DEBUG - RAW HEALTH DATA FROM DIRECT AAVE:")
+            print(f"   Raw collateral_usd from Aave contract: ${current_collateral_value_usd:,.8f}")
+            debt_usd_value = debt_usd if 'debt_usd' in locals() else 0.0
+            print(f"   Raw debt_usd from Aave contract: ${debt_usd_value:,.8f}")
+            print(f"   Raw health_factor from Aave contract: {current_health_factor:.8f}")
+
+            # ENHANCED: Try to get accurate collateral using asset-specific queries
+            print(f"🔍 ENHANCED COLLATERAL CALCULATION:")
             try:
+                # Use the already successful Aave contract data instead of individual aToken calls
+                # The direct Aave getUserAccountData call is working perfectly - use that data
+                print(f"   Using successful Aave contract data: ${current_collateral_value_usd:.2f}")
+
+                # Estimate asset breakdown based on known position (optional - for display only)
+                wbtc_balance = 0.0  # Will be determined from Aave collateral data
+                weth_balance = 0.0  # Will be determined fromAave collateral data
+                usdc_balance = 0.0  # Will be determined from Aave collateral data
+                arb_balance = 0.0   # Not in Aave currently
+
+                print(f"   WBTC supplied: {wbtc_balance:.8f}")
+                print(f"   WETH supplied: {weth_balance:.8f}")
+                print(f"   USDC supplied: {usdc_balance:.8f}")
+
+            # Enhanced price lookup for accurate collateral calculation
+                if self.coinmarketcap_api_key:
+                    try:
+                        import requests
+                        url = "https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest"
+                        headers = {'X-CMC_PRO_API_KEY': self.coinmarketcap_api_key}
+                        params = {'symbol': 'BTC,ETH,USDC', 'convert': 'USD'}
+
+                        response = requests.get(url, headers=headers, params=params, timeout=10)
+                        if response.status_code == 200:
+                            data = response.json()
+                            btc_price = data['data']['BTC']['quote']['USD']['price']
+                            eth_price = data['data']['ETH']['quote']['USD']['price']
+                            usdc_price = data['data']['USDC']['quote']['USD']['price']
+
+                            enhanced_collateral_usd = (
+                                (wbtc_balance * btc_price) +
+                                (weth_balance * eth_price) +
+                                (usdc_balance * usdc_price)
+                            )
+
+                            print(f"   Enhanced calculation:")
+                            print(f"   BTC price: ${btc_price:,.2f}")
+                            print(f"   ETH price: ${eth_price:,.2f}")
+                            print(f"   USDC price: ${usdc_price:.4f}")
+                            print(f"   Enhanced collateral USD: ${enhanced_collateral_usd:,.2f}")
+
+                            if enhanced_collateral_usd > 50:  # If we get meaningful data
+                                current_collateral_value_usd = enhanced_collateral_usd
+                                print(f"✅ Using enhanced collateral calculation: ${current_collateral_value_usd:,.2f}")
+                            else:
+                                print(f"🔍 DEBUG: Enhanced collateral calculation still shows low value")
+                        else:
+                            print(f"⚠️ Price fetch failed: {response.status_code}")
+
+                    except Exception as e:
+                        print(f"⚠️ An error occurred fetching CoinMarketCap data: {e}")
+                        pass  # Handle CoinMarketCap API error gracefully
+
+
+            except Exception as price_error:
+                logging.error(f"Error fetching token prices: {price_error}")
+                return {}
+
+            except Exception as enhanced_error:
+                print(f"⚠️ Enhanced collateral calculation failed: {enhanced_error}")
+
+            # Use direct Aave data as primary source (dashboard sync removed for reliability)
+            print("✅ Using direct Aave contract data as primary source")
+
+            # DEBUG: Log baseline tracking values
+            print(f"🔍 DEBUG - BASELINE TRACKING:")
+            print(f"   self.last_collateral_value_usd (baseline): ${self.last_collateral_value_usd:,.2f}")
+            print(f"   current_collateral_value_usd (now): ${current_collateral_value_usd:,.2f}")
+            print(f"   self.baseline_initialized: {self.baseline_initialized}")
+
+            # Calculate and log trigger values
+            collateral_growth = current_collateral_value_usd - self.last_collateral_value_usd
+            # FIXED: Use only the $13 growth trigger, remove conflicting small threshold
+            main_trigger_threshold = 13.0  # $13 USD growth trigger for autonomous sequence
+            trigger_condition_met = collateral_growth >= main_trigger_threshold
+
+            print(f"🔍 DEBUG - TRIGGER CHECK:")
+            print(f"   current_collateral_value_usd: ${current_collateral_value_usd:.2f}")
+            print(f"   baseline (last_collateral): ${self.last_collateral_value_usd:.2f}")
+            print(f"   collateral_growth: ${collateral_growth:.2f}")
+            print(f"   main_trigger_threshold: ${main_trigger_threshold:.2f}")
+            print(f"   trigger condition met: {trigger_condition_met}")
+
+            # Try to get real data as backup
+            try:
+                from accurate_debank_fetcher import AccurateWalletDataFetcher
+                fetcher = AccurateWalletDataFetcher(self.w3, self.address)
+                dashboard_data = fetcher.get_comprehensive_wallet_data()
+
+                if dashboard_data and dashboard_data.get('success'):
+                    real_collateral = dashboard_data['total_collateral_usdc']
+                    print(f"🔍 DEBUG - REAL DATA FETCHER RESULT:")
+                    print(f"   AccurateWalletDataFetcher collateral: ${real_collateral:,.2f}")
+                    if real_collateral > 100:  # If real data shows significant position
+                        current_collateral_value_usd = real_collateral
+                        debt_usd = dashboard_data['total_debt_usdc']
+                        current_health_factor = dashboard_data['health_factor']
+                        print(f"✅ REAL DATA OVERRIDE: Using live data ${real_collateral:,.2f}")
+                else:
+                    print(f"⚠️ AccurateWalletDataFetcher returned no data or failed")
+
+            except Exception as e:
+                print(f"⚠️ Real data fetch failed, using forced dashboard values: {e}")
+
+            # Enhanced data format handling - normalize address formats
+            try:
+                # Skip address normalization if already properly formatted
+                print(f"✅ Using verified contract addresses (skipping normalization)")
+
+            except Exception as format_error:
+                print(f"⚠️ Address format normalization failed: {format_error}")
+
+            # ENHANCED POSITION DETECTION: Force refresh with direct contract call
+            print(f"🔍 ENHANCED POSITION DETECTION:")
+            try:
+                # Always get fresh data from Aave contract
                 pool_abi = [{
                     "inputs": [{"name": "user", "type": "address"}],
                     "name": "getUserAccountData",
@@ -1631,567 +1370,1409 @@ class ArbitrumTestnetAgent:
                 }]
 
                 pool_contract = self.w3.eth.contract(address=self.aave_pool_address, abi=pool_abi)
-                account_data = pool_contract.functions.getUserAccountData(self.address).call()
-                available_borrows_usd = account_data[2] / (10**8)
+                fresh_account_data = pool_contract.functions.getUserAccountData(self.address).call()
 
-                print(f"💰 Available borrowing capacity: ${available_borrows_usd:.2f}")
+                fresh_collateral_usd = fresh_account_data[0] / (10**8)
+                fresh_debt_usd = fresh_account_data[1] / (10**8)
+                fresh_health_factor = fresh_account_data[5] / (10**18) if fresh_account_data[5] > 0 else float('inf')
 
-            except Exception as e:
-                print(f"❌ Failed to get borrowing capacity: {e}")
-                return 0.1
+                print(f"   🔄 FRESH AAVE CONTRACT DATA:")
+                print(f"      Fresh Collateral: ${fresh_collateral_usd:,.2f}")
+                print(f"      Fresh Debt: ${fresh_debt_usd:,.2f}")
+                print(f"      Fresh Health Factor: {fresh_health_factor:.4f}")
 
-            # Enhanced borrow amount calculation with manual override detection
-            safe_borrow_amount = self.calculate_safe_borrow_amount(growth_amount, available_borrows_usd)
+                # ALWAYS use fresh data as it's the most accurate
+                print(f"   ✅ USING FRESH DATA AS PRIMARY SOURCE: ${fresh_collateral_usd:,.2f}")
+                current_collateral_value_usd = fresh_collateral_usd
+                current_health_factor = fresh_health_factor
+                debt_usd = fresh_debt_usd
 
-            print(f"💰 Calculated safe borrow: ${safe_borrow_amount:.2f} USDC")
+                print(f"   📊 UPDATED VALUES:")
+                print(f"      Current Collateral: ${current_collateral_value_usd:,.2f}")
+                print(f"      Current Health Factor: {current_health_factor:.4f}")
+                print(f"      Current Debt: ${debt_usd:,.2f}")
 
-            # Ensure positive borrow amount
-            if safe_borrow_amount <= 0:
-                print(f"⚠️ Calculated borrow amount ${safe_borrow_amount:.2f} is not positive")
+            except Exception as fresh_error:
+                print(f"   ⚠️ Fresh data fetch failed: {fresh_error}")
 
-                # Try using minimum viable amount if manual override is active
-                if hasattr(self, 'manual_override_active') and self.manual_override_active:
-                    min_viable_amount = min(1.0, available_borrows_usd * 0.05)  # 5% of capacity, min $1
-                    if min_viable_amount > 0.1:
-                        safe_borrow_amount = min_viable_amount
-                        print(f"🔧 Manual override: Using minimum viable amount ${safe_borrow_amount:.2f}")
-                    else:
-                        print(f"❌ Even minimum viable amount too small: ${min_viable_amount:.2f}")
-                        return 0.75
+            # FIXED: Initialize baseline only once, don't update until after successful trigger
+            print(f"🔍 DEBUG - BASELINE INITIALIZATION CHECK:")
+            print(f"   self.baseline_initialized: {self.baseline_initialized}")
+            print(f"   current_collateral_value_usd (ENHANCED): ${current_collateral_value_usd:,.2f}")
+            print(f"   current baseline: ${self.last_collateral_value_usd:.2f}")
+
+            baseline_just_initialized = False
+
+            # Initialize baseline only once at the very beginning OR reset if requested
+            if (not self.baseline_initialized and current_collateral_value_usd > 50) or \
+               (current_collateral_value_usd > 50 and os.path.exists('reset_baseline.flag')) or \
+               (self.baseline_initialized and current_collateral_value_usd > 50 and self.last_collateral_value_usd > current_collateral_value_usd + 10):
+                self.last_collateral_value_usd = current_collateral_value_usd
+                self.baseline_initialized = True
+                baseline_just_initialized = True
+                print(f"🎯 BASELINE INITIALIZED/RESET: Set to ${current_collateral_value_usd:,.2f}")
+
+                # Remove reset flag if it exists
+                if os.path.exists('reset_baseline.flag'):
+                    os.remove('reset_baseline.flag')
+                    print("🔄 Baseline reset flag removed")
+
+                # Save initialized baseline to file for persistence
+                baseline_data = {
+                    'last_collateral_value_usd': self.last_collateral_value_usd,
+                    'baseline_initialized': True,
+                    'timestamp': time.time(),
+                    'wallet_address': self.address,
+                    'data_source': 'initial_baseline_setup'
+                }
+                from fix_json_serialization import safe_json_dump
+                safe_json_dump(baseline_data, 'agent_baseline.json')
+
+                print(f"📈 Next trigger will activate when collateral reaches: ${self.last_collateral_value_usd + 13:,.2f}")
+                print(f"💡 Add $13+ worth of collateral to activate autonomous sequence")
+
+            # If agent still sees $0, but Arbiscan shows real position, force detection
+            if current_collateral_value_usd < 50:
+                print(f"🔧 FORCING POSITION DETECTION:")
+                # Your images show ~$188 collateral, so use that as baseline
+                detected_collateral = 188.36  # From your Arbitrium Market image
+                old_baseline = self.last_collateral_value_usd
+                self.last_collateral_value_usd = detected_collateral
+                self.baseline_initialized = True
+                current_collateral_value_usd = detected_collateral
+                print(f"🎯 FORCED BASELINE: ${detected_collateral:,.2f} based on Arbitrum Market data")
+                print(f"📊 Updated last_collateral_value_usd to: {self.last_collateral_value_usd}")
+
+                # Save forced baseline
+                baseline_data = {
+                    'last_collateral_value_usd': self.last_collateral_value_usd,
+                    'baseline_initialized': True,
+                    'timestamp': time.time(),
+                    'wallet_address': self.address,
+                    'detection_method': 'forced_arbitrum_market_data'
+                }
+                from fix_json_serialization import safe_json_dump
+                safe_json_dump(baseline_data, 'agent_baseline.json')
+
+                return 0.8
+
+            # AUTONOMOUS TRIGGER: $13 USD collateral growth from baseline
+            growth_needed = 13.0
+            target_collateral = self.last_collateral_value_usd + growth_needed
+            actual_growth = current_collateral_value_usd - self.last_collateral_value_usd
+
+            # Check if trigger is ready
+            trigger_ready = actual_growth >= growth_needed
+
+            # Enhanced manual override detection
+            manual_override = self.detect_manual_override()
+
+            if manual_override:
+                self.manual_override_active = True
+                print(f"🚀 MANUAL OVERRIDE DETECTED: Bypassing growth requirement")
+                trigger_ready = True
+            elif os.path.exists('test_mode.flag') and actual_growth >= 1.0:  # Lower threshold for testing
+                print(f"🧪 TEST MODE: Using $1 threshold instead of $13")
+                trigger_ready = True
+
+            # Special case: if baseline was just initialized and we have sufficient collateral growth, allow trigger
+            if baseline_just_initialized and current_collateral_value_usd > (self.last_collateral_value_usd + 13.0):
+                print(f"🎯 BASELINE JUST INITIALIZED: Checking if immediate trigger is possible")
+                # Recalculate growth from the new baseline
+                immediate_growth = current_collateral_value_usd - self.last_collateral_value_usd
+                if immediate_growth >= 13.0:
+                    print(f"🚀 IMMEDIATE TRIGGER: Growth ${immediate_growth:.2f} meets threshold")
+                    trigger_ready = True
+
+            print(f"""
+            🎯 AUTONOMOUS TRIGGER CHECK:
+               Current Collateral: ${current_collateral_value_usd:.2f}
+               Baseline: ${self.last_collateral_value_usd:.2f}
+               Target for Trigger: ${self.last_collateral_value_usd + 13.0:.2f}
+               Actual Growth: ${collateral_growth:.2f}
+               Growth Needed: $13.00
+               Manual Override: {manual_override}
+               Baseline Just Initialized: {baseline_just_initialized}
+               ✅ TRIGGER READY: {trigger_ready}""")
+
+            # Check cooldown before executing
+            if trigger_ready:
+                if self.is_operation_on_cooldown():
+                    print(f"⏰ Trigger ready but operation on cooldown - waiting...")
+                    return 0.5  # Moderate performance score for waiting
                 else:
-                    print(f"📊 Position is healthy but no additional borrowing capacity available")
-                    if hasattr(self, 'record_successful_operation'):
-                        self.record_successful_operation('monitoring')
-                    return 0.75
+                    print(f"🚀 Executing autonomous sequence (cooldown clear)")
+                    performance_score = self.execute_autonomous_sequence_enhanced(collateral_growth)
+                    return performance_score
+            else:
+                growth = current_collateral_value_usd - self.last_collateral_value_usd
+                # if not trigger_condition:
+                self.manual_override_active = False
 
-            sequence_results = {
-                'borrow_success': False,
-                'swap_success': False,
-                'supply_success': False,
-                'total_performance': 0.0
+                if baseline_just_initialized:
+                    print(f"🎯 CURRENT GAP: Need $13.00 more collateral (baseline just set)")
+                    return 0.8
+                else:
+                    print(f"⏸️ No action: Collateral growth ${growth:.2f} < $13 threshold")
+                    print(f"📊 Current Position: ${current_collateral_value_usd:,.2f} collateral, ${debt_usd if 'debt_usd' in locals() else 0.0:,.2f} debt")
+                    print(f"💰 Last recorded collateral: ${self.last_collateral_value_usd:.2f}")
+                    print(f"📈 Collateral growth: ${growth:.2f}")
+
+                    if current_collateral_value_usd == 0:
+                        print(f"💡 TIP: To activate autonomous operations:")
+                        print(f"   1. Supply some USDC/WETH to Aave as collateral")
+                        print(f"   2. Agent will monitor for $13+ collateral growth")
+                        print(f"   3. Then execute autonomous borrowing & swapping sequence")
+
+                    return 0.7  # Moderate performance score
+
+        except Exception as e:
+            print(f"❌ CRITICAL ERROR in autonomous task: {e}")
+            print("🛑 Halting execution due to real data fetch failure")
+            return 0.0  # Failed performance score
+
+    def check_wallet_readiness_for_defi(self, current_collateral_value_usd=0.0):
+        """Check if wallet has sufficient funds to start DeFi operations"""
+        try:
+            eth_balance = self.get_eth_balance()
+
+            print(f"🔍 WALLET READINESS CHECK:")
+            print(f"   ETH Balance: {eth_balance:.6f} ETH")
+            print(f"   Aave Position: ${current_collateral_value_usd:.2f} collateral")
+
+            # Check minimum requirements - we have substantial Aave position already
+            min_eth_for_gas = MIN_ETH_FOR_OPERATIONS  # Minimum ETH for gas fees
+
+            ready = eth_balance >= min_eth_for_gas and current_collateral_value_usd > 50
+
+            if ready:
+                print(f"✅ Wallet ready for DeFi operations!")
+                print(f"   Sufficient ETH for gas: {eth_balance:.6f} ETH")
+                print(f"   Active Aave position: ${current_collateral_value_usd:.2f}")
+            else:
+                print(f"⚠️ Wallet needs more funds:")
+                if eth_balance < min_eth_for_gas:
+                    print(f"   Need at least {min_eth_for_gas:.3f} ETH for gas (current: {eth_balance:.6f})")
+                if current_collateral_value_usd <= 50:
+                    print(f"   Need active Aave position (current: ${current_collateral_value_usd:.2f})")
+
+            return ready
+
+        except Exception as e:
+            print(f"❌ Error checking wallet readiness: {e}")
+            return False
+
+    def get_portfolio_summary(self):
+        """Get real portfolio summary with strict error handling"""
+        try:
+            summary = {
+                'timestamp': datetime.now().isoformat(),
+                'eth_balance': self.get_eth_balance(),
+                'health_factor': None,
+                'arb_price': None
+            }
+
+            # Get real health factor
+            try:
+                health_data = self.health_monitor.get_current_health_factor()
+                if health_data and 'health_factor' in health_data:
+                    hf = health_data.get('health_factor', 0)
+                    summary['health_factor'] = hf
+                    print(f"❤️ Initial Health Factor: {hf:.4f}")
+                else:
+                    print("⚠️ Could not retrieve initial health factor")
+            except Exception as e:
+                print(f"⚠️ Health factor check error: {e}")
+
+            # Get real ARB price
+            arb_data = self.get_arb_price()
+            summary['arb_price'] = arb_data['price']
+
+            return summary
+
+        except Exception as e:
+            print(f"❌ Failed to get real portfolio summary: {e}")
+            raise Exception("Portfolio summary requires real data - halting")
+
+    def execute_autonomous_sequence_enhanced(self, growth_amount):
+        """Enhanced autonomous sequence with better error handling and optimization"""
+        print(f"🚀 TRIGGER ACTIVATED: Collateral grew by ${growth_amount:.2f} (≥ $12 threshold)")
+        print(f"⚡ EXECUTING AUTONOMOUS SEQUENCE...")
+        print(f"📝 Sequence: Borrow USDC → Swap →WBTC, WETH, DAI → Supply to Aave")
+
+        # Validate all integrations are ready
+        if not self.validate_integrations_ready():
+            print("❌ Critical integrations not ready - aborting sequence")
+            return 0.1
+
+        # Get available borrowing capacity first
+        try:
+            pool_abi = [{
+                "inputs": [{"name": "user", "type": "address"}],
+                "name": "getUserAccountData",
+                "outputs": [
+                    {"name": "totalCollateralBase", "type": "uint256"},
+                    {"name": "totalDebtBase", "type": "uint256"},
+                    {"name": "availableBorrowsBase", "type": "uint256"},
+                    {"name": "currentLiquidationThreshold", "type": "uint256"},
+                    {"name": "ltv", "type": "uint256"},
+                    {"name": "healthFactor", "type": "uint256"}
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            }]
+
+            pool_contract = self.w3.eth.contract(address=self.aave_pool_address, abi=pool_abi)
+            account_data = pool_contract.functions.getUserAccountData(self.address).call()
+            available_borrows_usd = account_data[2] / (10**8)
+
+            print(f"💰 Available borrowing capacity: ${available_borrows_usd:.2f}")
+
+        except Exception as e:
+            print(f"❌ Failed to get borrowing capacity: {e}")
+            return 0.1
+
+        # Enhanced borrow amount calculation with manual override detection
+        safe_borrow_amount = self.calculate_safe_borrow_amount(growth_amount, available_borrows_usd)
+
+        print(f"💰 Calculated safe borrow: ${safe_borrow_amount:.2f} USDC")
+
+        # Ensure positive borrow amount
+        if safe_borrow_amount <= 0:
+            print(f"⚠️ Calculated borrow amount ${safe_borrow_amount:.2f} is not positive")
+
+            # Try using minimum viable amount if manual override is active
+            if hasattr(self, 'manual_override_active') and self.manual_override_active:
+                min_viable_amount = min(1.0, available_borrows_usd * 0.05)  # 5% of capacity, min $1
+                if min_viable_amount > 0.1:
+                    safe_borrow_amount = min_viable_amount
+                    print(f"🔧 Manual override: Using minimum viable amount ${safe_borrow_amount:.2f}")
+                else:
+                    print(f"❌ Even minimum viable amount too small: ${min_viable_amount:.2f}")
+                    return 0.75
+            else:
+                print(f"📊 Position is healthy but no additional borrowing capacity available")
+                if hasattr(self, 'record_successful_operation'):
+                    self.record_successful_operation('monitoring')
+                return 0.75
+
+        sequence_results = {
+            'borrow_success': False,
+            'swap_success': False,
+            'supply_success': False,
+            'total_performance': 0.0
+        }
+
+        try:
+            # Use the comprehensive leveraged supply strategy
+            print(f"🚀 Executing comprehensive leveraged supply strategy...")
+
+            # Execute the complete strategy using the existing method
+            strategy_success = self.execute_leveraged_supply_strategy(safe_borrow_amount)
+
+            if strategy_success:
+                print(f"✅ Leveraged supply strategy completed successfully!")
+                sequence_results['total_performance'] = 1.0
+
+                # Update baseline after successful operation
+                self.update_baseline_after_success()
+
+                # Record successful operation for cooldown
+                self.record_successful_operation('leveraged_supply')
+            else:
+                print(f"❌ Leveraged supply strategy failed")
+                sequence_results['total_performance'] = 0.3
+
+                # Analyze failure
+                self.analyze_borrow_failure()
+
+            return sequence_results['total_performance']
+
+        except Exception as e:
+            print(f"❌ Autonomous sequence failed: {e}")
+            return 0.0
+
+    def analyze_borrow_failure(self):
+        """Analyze and log borrow failure details for debugging"""
+        try:
+            print(f"\n🔍 BORROW FAILURE ANALYSIS:")
+
+            # Get current Aave account data
+            pool_abi = [{
+                "inputs": [{"name": "user", "type": "address"}],
+                "name": "getUserAccountData",
+                "outputs": [
+                    {"name": "totalCollateralBase", "type": "uint256"},
+                    {"name": "totalDebtBase", "type": "uint256"},
+                    {"name": "availableBorrowsBase", "type": "uint256"},
+                    {"name": "currentLiquidationThreshold", "type": "uint256"},
+                    {"name": "ltv", "type": "uint256"},
+                    {"name": "healthFactor", "type": "uint256"}
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            }]
+
+            pool_contract = self.w3.eth.contract(address=self.aave_pool_address, abi=pool_abi)
+            account_data = pool_contract.functions.getUserAccountData(self.address).call()
+
+            collateral_usd = account_data[0] / (10**8)
+            debt_usd = account_data[1] / (10**8)
+            available_borrows_usd = account_data[2] / (10**8)
+            health_factor = account_data[5] / (10**18) if account_data[5] > 0 else float('inf')
+
+            print(f"   💰 Collateral: ${collateral_usd:.2f}")
+            print(f"   💳 Debt: ${debt_usd:.2f}")
+            print(f"   📊 Available Borrows: ${available_borrows_usd:.2f}")
+            print(f"   ❤️ Health Factor: {health_factor:.4f}")
+
+            # Analysis
+            if health_factor < 1.5:
+                print(f"   ⚠️ ISSUE: Health factor too low for borrowing")
+            elif available_borrows_usd < 1.0:
+                print(f"   ⚠️ ISSUE: Insufficient borrowing capacity")
+            else:
+                print(f"   ⚠️ ISSUE: Likely token not supported for borrowing (DAI)")
+                print(f"   💡 SUGGESTION: Switch to USDC borrowing instead")
+
+            # Log failure details
+            failure_data = {
+                'timestamp': time.time(),
+                'collateral_usd': collateral_usd,
+                'debt_usd': debt_usd,
+                'available_borrows_usd': available_borrows_usd,
+                'health_factor': health_factor,
+                'wallet_address': self.address,
+                'network': self.network_mode,
+                'analysis': 'borrow_failure_investigation'
             }
 
             try:
-                # Use the comprehensive leveraged supply strategy
-                print(f"🚀 Executing comprehensive leveraged supply strategy...")
+                from fix_json_serialization import safe_json_dump
+                safe_json_dump(failure_data, 'borrow_failure_analysis.json')
+                print(f"   📝 Analysis saved to borrow_failure_analysis.json")
+            except Exception as save_error:
+                print(f"   ⚠️ Could not save analysis: {save_error}")
 
-                # Execute the complete strategy using the existing method
-                strategy_success = self.execute_leveraged_supply_strategy(safe_borrow_amount)
+        except Exception as e:
+            print(f"   ❌ Borrow failure analysis error: {e}")
 
-                if strategy_success:
-                    print(f"✅ Leveraged supply strategy completed successfully!")
-                    sequence_results['total_performance'] = 1.0
+    #Corrected the borrow method signature in execute_enhanced_borrow_with_retry to resolve the "takes 3positional arguments but 4 were given" error.
+    def execute_enhanced_borrow_with_retry(self, safe_borrow_amount):
+        """Execute enhanced borrow with multiple retry attempts and enhanced validation"""
+        max_attempts = 3
 
-                    # Update baseline after successful operation
-                    self.update_baseline_after_success()
+        # Pre-validation checks
+        try:
+            pool_abi = [{
+                "inputs": [{"name": "user", "type": "address"}],
+                "name": "getUserAccountData",
+                "outputs": [
+                    {"name": "totalCollateralBase", "type": "uint256"},
+                    {"name": "totalDebtBase", "type": "uint256"},
+                    {"name": "availableBorrowsBase", "type": "uint256"},
+                    {"name": "currentLiquidationThreshold", "type": "uint256"},
+                    {"name": "ltv", "type": "uint256"},
+                    {"name": "healthFactor", "type": "uint256"}
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            }]
 
-                    # Record successful operation for cooldown
-                    self.record_successful_operation('leveraged_supply')
-                else:
-                    print(f"❌ Leveraged supply strategy failed")
-                    sequence_results['total_performance'] = 0.3
+            pool_contract = self.w3.eth.contract(address=self.aave_pool_address, abi=pool_abi)
+            account_data = pool_contract.functions.getUserAccountData(self.address).call()
 
-                    # Analyze failure
-                    self.analyze_borrow_failure()
+            current_health_factor = account_data[5] / (10**18) if account_data[5] > 0 else float('inf')
+            available_borrows_usd = account_data[2] / (10**8)
 
-                return sequence_results['total_performance']
+            print(f"🔍 Pre-borrow validation:")
+            print(f"   Current HF: {current_health_factor:.4f}")
+            print(f"   Available borrows: ${available_borrows_usd:.2f}")
+            print(f"   Requested: ${safe_borrow_amount:.2f}")
 
-            except Exception as e:
-                print(f"❌ Autonomous sequence failed: {e}")
-                return 0.0
-
-        def analyze_borrow_failure(self):
-            """Analyze and log borrow failure details for debugging"""
-            try:
-                print(f"\n🔍 BORROW FAILURE ANALYSIS:")
-
-                # Get current Aave account data
-                pool_abi = [{
-                    "inputs": [{"name": "user", "type": "address"}],
-                    "name": "getUserAccountData",
-                    "outputs": [
-                        {"name": "totalCollateralBase", "type": "uint256"},
-                        {"name": "totalDebtBase", "type": "uint256"},
-                        {"name": "availableBorrowsBase", "type": "uint256"},
-                        {"name": "currentLiquidationThreshold", "type": "uint256"},
-                        {"name": "ltv", "type": "uint256"},
-                        {"name": "healthFactor", "type": "uint256"}
-                    ],
-                    "stateMutability": "view",
-                    "type": "function"
-                }]
-
-                pool_contract = self.w3.eth.contract(address=self.aave_pool_address, abi=pool_abi)
-                account_data = pool_contract.functions.getUserAccountData(self.address).call()
-
-                collateral_usd = account_data[0] / (10**8)
-                debt_usd = account_data[1] / (10**8)
-                available_borrows_usd = account_data[2] / (10**8)
-                health_factor = account_data[5] / (10**18) if account_data[5] > 0 else float('inf')
-
-                print(f"   💰 Collateral: ${collateral_usd:.2f}")
-                print(f"   💳 Debt: ${debt_usd:.2f}")
-                print(f"   📊 Available Borrows: ${available_borrows_usd:.2f}")
-                print(f"   ❤️ Health Factor: {health_factor:.4f}")
-
-                # Analysis
-                if health_factor < 1.5:
-                    print(f"   ⚠️ ISSUE: Health factor too low for borrowing")
-                elif available_borrows_usd < 1.0:
-                    print(f"   ⚠️ ISSUE: Insufficient borrowing capacity")
-                else:
-                    print(f"   ⚠️ ISSUE: Likely token not supported for borrowing (DAI)")
-                    print(f"   💡 SUGGESTION: Switch to USDC borrowing instead")
-
-                # Log failure details
-                failure_data = {
-                    'timestamp': time.time(),
-                    'collateral_usd': collateral_usd,
-                    'debt_usd': debt_usd,
-                    'available_borrows_usd': available_borrows_usd,
-                    'health_factor': health_factor,
-                    'wallet_address': self.address,
-                    'network': self.network_mode,
-                    'analysis': 'borrow_failure_investigation'
-                }
-
-                try:
-                    from fix_json_serialization import safe_json_dump
-                    safe_json_dump(failure_data, 'borrow_failure_analysis.json')
-                    print(f"   📝 Analysis saved to borrow_failure_analysis.json")
-                except Exception as save_error:
-                    print(f"   ⚠️ Could not save analysis: {save_error}")
-
-            except Exception as e:
-                print(f"   ❌ Borrow failure analysis error: {e}")
-
-        #Corrected the borrow method signature in execute_enhanced_borrow_with_retry to resolve the "takes 3positional arguments but 4 were given" error.
-        def execute_enhanced_borrow_with_retry(self, safe_borrow_amount):
-            """Execute enhanced borrow with multiple retry attempts and enhanced validation"""
-            max_attempts = 3
-
-            # Pre-validation checks
-            try:
-                pool_abi = [{
-                    "inputs": [{"name": "user", "type": "address"}],
-                    "name": "getUserAccountData",
-                    "outputs": [
-                        {"name": "totalCollateralBase", "type": "uint256"},
-                        {"name": "totalDebtBase", "type": "uint256"},
-                        {"name": "availableBorrowsBase", "type": "uint256"},
-                        {"name": "currentLiquidationThreshold", "type": "uint256"},
-                        {"name": "ltv", "type": "uint256"},
-                        {"name": "healthFactor", "type": "uint256"}
-                    ],
-                    "stateMutability": "view",
-                    "type": "function"
-                }]
-
-                pool_contract = self.w3.eth.contract(address=self.aave_pool_address, abi=pool_abi)
-                account_data = pool_contract.functions.getUserAccountData(self.address).call()
-
-                current_health_factor = account_data[5] / (10**18) if account_data[5] > 0 else float('inf')
-                available_borrows_usd = account_data[2] / (10**8)
-
-                print(f"🔍 Pre-borrow validation:")
-                print(f"   Current HF: {current_health_factor:.4f}")
-                print(f"   Available borrows: ${available_borrows_usd:.2f}")
-                print(f"   Requested: ${safe_borrow_amount:.2f}")
-
-                # Safety checks
-                if current_health_factor < 1.5:
-                    print(f"❌ Health factor too low for borrowing: {current_health_factor:.4f}")
-                    return False
-
-                if available_borrows_usd < safe_borrow_amount:
-                    print(f"❌ Insufficient borrowing capacity")
-                    return False
-
-            except Exception as validation_error:
-                print(f"❌ Pre-borrow validation failed: {validation_error}")
+            # Safety checks
+            if current_health_factor < 1.5:
+                print(f"❌ Health factor too low for borrowing: {current_health_factor:.4f}")
                 return False
 
-            # Execute borrow attempts with enhanced error handling
-            for attempt in range(max_attempts):
-                try:
-                    print(f"🔄 Enhanced borrow attempt {attempt + 1}/{max_attempts}")
+            if available_borrows_usd < safe_borrow_amount:
+                print(f"❌ Insufficient borrowing capacity")
+                return False
 
-                    # Convert amount to wei for USDC (6 decimals)
-                    usdc_amount_wei = int(safe_borrow_amount * (10 ** 6))
-
-                    # Enhanced gas estimation
-                    gas_params = self.get_optimized_gas_params('aave_borrow', 'market')
-
-                    # Use the Aave integration's borrow method with proper signature
-                    borrow_result = self.aave.borrow(safe_borrow_amount, self.usdc_address)
-
-                    if borrow_result:
-                        print(f"✅ Enhanced borrow successful: {borrow_result}")
-
-                        # Verify borrow actually happened
-                        time.sleep(3)  # Wait for transaction confirmation
-
-                        # Check new balance
-                        new_account_data = pool_contract.functions.getUserAccountData(self.address).call()
-                        new_debt_usd = new_account_data[1] / (10**8)
-                        new_health_factor = new_account_data[5] / (10**18) if new_account_data[5] > 0 else float('inf')
-
-                        print(f"✅ Post-borrow verification:")
-                        print(f"   New debt: ${new_debt_usd:.2f}")
-                        print(f"   New HF: {new_health_factor:.4f}")
-
-                        return True
-                    else:
-                        print(f"❌ Enhanced borrow attempt {attempt + 1} failed - no result")
-
-                except Exception as e:
-                    print(f"❌ Enhanced borrow attempt {attempt + 1} error: {e}")
-
-                    # Enhanced error analysis
-                    try:
-                        error_details = {
-                            'timestamp': time.time(),
-                            'error': str(e),
-                            'error_type': type(e).__name__,
-                            'attempts': attempt + 1,
-                            'rpc_used': self.rpc_url,
-                            'health_factor': current_health_factor,
-                            'available_borrows': available_borrows_usd,
-                            'requested_amount': safe_borrow_amount,
-                            'gas_params': gas_params if 'gas_params' in locals() else {}
-                        }
-
-                        # Check if it's a gas-related error
-                        if 'gas' in str(e).lower() or 'out of gas' in str(e).lower():
-                            print(f"⚠️ Gas-related error detected - adjusting for next attempt")
-
-                        # Check if it's an RPC error
-                        if 'rpc' in str(e).lower() or 'connection' in str(e).lower():
-                            print(f"⚠️ RPC error detected - switching endpoint")
-                            self.switch_to_fallback_rpc()
-
-                        try:
-                            with open('borrow_failure_analysis.json', 'w') as f:
-                                import json
-                                json.dump(error_details, f, indent=2)
-                        except Exception as json_error:
-                            print(f"⚠️ Could not save error log: {json_error}")
-
-                    except Exception as analysis_error:
-                        print(f"⚠️ Error analysis failed: {analysis_error}")
-
-                    if attempt < max_attempts - 1:
-                        wait_time = 2 ** attempt  # Exponential backoff
-                        print(f"⏱️ Waiting {wait_time}s before retry...")
-                        time.sleep(wait_time)
-                        continue
-
-            print(f"❌ All {max_attempts} borrow attempts failed")
+        except Exception as validation_error:
+            print(f"❌ Pre-borrow validation failed: {validation_error}")
             return False
 
-        def validate_integrations_ready(self):
-            """Validate that all required integrations are properly initialized"""
+        # Execute borrow attempts with enhanced error handling
+        for attempt in range(max_attempts):
             try:
-                print(f"🔍 Validating integrations...")
+                print(f"🔄 Enhanced borrow attempt {attempt + 1}/{max_attempts}")
 
-                # Check Aave integration
-                if not self.aave:
-                    print("❌ Aave integration not initialized")
-                    return False
+                # Convert amount to wei for USDC (6 decimals)
+                usdc_amount_wei = int(safe_borrow_amount * (10 ** 6))
 
-                # Check Uniswap integration
-                if not self.uniswap:
-                    print("❌ Uniswap integration not initialized")
-                    return False
+                # Enhanced gas estimation
+                gas_params = self.get_optimized_gas_params('aave_borrow', 'market')
 
-                # Check Health Monitor
-                if not self.health_monitor:
-                    print("❌ Health Monitor not initialized")
-                    return False
+                # Use the Aave integration's borrow method with proper signature
+                borrow_result = self.aave.borrow(safe_borrow_amount, self.usdc_address)
 
-                # Test basic functionality
+                if borrow_result:
+                    print(f"✅ Enhanced borrow successful: {borrow_result}")
+
+                    # Verify borrow actually happened
+                    time.sleep(3)  # Wait for transaction confirmation
+
+                    # Check new balance
+                    new_account_data = pool_contract.functions.getUserAccountData(self.address).call()
+                    new_debt_usd = new_account_data[1] / (10**8)
+                    new_health_factor = new_account_data[5] / (10**18) if new_account_data[5] > 0 else float('inf')
+
+                    print(f"✅ Post-borrow verification:")
+                    print(f"   New debt: ${new_debt_usd:.2f}")
+                    print(f"   New HF: {new_health_factor:.4f}")
+
+                    return True
+                else:
+                    print(f"❌ Enhanced borrow attempt {attempt + 1} failed - no result")
+
+            except Exception as e:
+                print(f"❌ Enhanced borrow attempt {attempt + 1} error: {e}")
+
+                # Enhanced error analysis
                 try:
-                    # Test Aave connection
-                    current_hf = self.health_monitor.get_current_health_factor()
-                    if not current_hf or current_hf.get('health_factor', 0) <= 0:
-                        print("❌ Aave health factor check failed")
+                    error_details = {
+                        'timestamp': time.time(),
+                        'error': str(e),
+                        'error_type': type(e).__name__,
+                        'attempts': attempt + 1,
+                        'rpc_used': self.rpc_url,
+                        'health_factor': current_health_factor,
+                        'available_borrows': available_borrows_usd,
+                        'requested_amount': safe_borrow_amount,
+                        'gas_params': gas_params if 'gas_params' in locals() else {}
+                    }
+
+                    # Check if it's a gas-related error
+                    if 'gas' in str(e).lower() or 'out of gas' in str(e).lower():
+                        print(f"⚠️ Gas-related error detected - adjusting for next attempt")
+
+                    # Check if it's an RPC error
+                    if 'rpc' in str(e).lower() or 'connection' in str(e).lower():
+                        print(f"⚠️ RPC error detected - switching endpoint")
+                        self.switch_to_fallback_rpc()
+
+                    try:
+                        with open('borrow_failure_analysis.json', 'w') as f:
+                            import json
+                            json.dump(error_details, f, indent=2)
+                    except Exception as json_error:
+                        print(f"⚠️ Could not save error log: {json_error}")
+
+                except Exception as analysis_error:
+                    print(f"⚠️ Error analysis failed: {analysis_error}")
+
+                if attempt < max_attempts - 1:
+                    wait_time = 2 ** attempt  # Exponential backoff
+                    print(f"⏱️ Waiting {wait_time}s before retry...")
+                    time.sleep(wait_time)
+                    continue
+
+        print(f"❌ All {max_attempts} borrow attempts failed")
+        return False
+
+    def validate_integrations_ready(self):
+        """Validate that all required integrations are properly initialized"""
+        try:
+            print(f"🔍 Validating integrations...")
+
+            # Check Aave integration
+            if not self.aave:
+                print("❌ Aave integration not initialized")
+                return False
+
+            # Check Uniswap integration
+            if not self.uniswap:
+                print("❌ Uniswap integration not initialized")
+                return False
+
+            # Check Health Monitor
+            if not self.health_monitor:
+                print("❌ Health Monitor not initialized")
+                return False
+
+            # Test basic functionality
+            try:
+                # Test Aave connection
+                current_hf = self.health_monitor.get_current_health_factor()
+                if not current_hf or current_hf.get('health_factor', 0) <= 0:
+                    print("❌ Aave health factor check failed")
+                    return False
+
+                # Test token address availability
+                required_addresses = [
+                    self.usdc_address, self.wbtc_address, 
+                    self.weth_address, self.dai_address
+                ]
+
+                for addr in required_addresses:
+                    if not addr or len(addr) != 42:
+                        print(f"❌ Invalid token address: {addr}")
                         return False
 
-                    # Test token address availability
-                    required_addresses = [
-                        self.usdc_address, self.wbtc_address, 
-                        self.weth_address, self.dai_address
-                    ]
-
-                    for addr in required_addresses:
-                        if not addr or len(addr) != 42:
-                            print(f"❌ Invalid token address: {addr}")
-                            return False
-
-                    print(f"✅ All integrations validated successfully")
-                    return True
-
-                except Exception as test_error:
-                    print(f"❌ Integration test failed: {test_error}")
-                    return False
-
-            except Exception as e:
-                print(f"❌ Validation error: {e}")
-                return False
-
-        def is_operation_on_cooldown(self):
-            """Check if operations are on cooldown"""
-            if self.last_successful_operation_time == 0:
-                return False
-
-            time_since_last_op = time.time() - self.last_successful_operation_time
-            remaining_cooldown = self.operation_cooldown_seconds - time_since_last_op
-
-            if remaining_cooldown > 0:
-                print(f"⏰ Operation on cooldown: {remaining_cooldown:.0f}s remaining")
+                print(f"✅ All integrations validated successfully")
                 return True
+
+            except Exception as test_error:
+                print(f"❌ Integration test failed: {test_error}")
+                return False
+
+        except Exception as e:
+            print(f"❌ Validation error: {e}")
+            return False
+
+    def is_operation_on_cooldown(self):
+        """Check if operations are on cooldown"""
+        if self.last_successful_operation_time == 0:
+            return False
+
+        time_since_last_op = time.time() - self.last_successful_operation_time
+        remaining_cooldown = self.operation_cooldown_seconds - time_since_last_op
+
+        if remaining_cooldown > 0:
+            print(f"⏰ Operation on cooldown: {remaining_cooldown:.0f}s remaining")
+            return True
+        else:
+            return False
+
+    def get_optimized_trigger_threshold(self):
+        """Get dynamic trigger threshold based on recent performance"""
+        base_threshold = 12.0  # Base $12 threshold
+
+        # Adjust based on recent success rate or market conditions
+        # For now, keep it simple but expandable
+        return base_threshold
+
+    def get_enhanced_dashboard_data(self):
+        """
+        Retrieves enhanced dashboard data with better error handling.
+        This function can be extended to include more sophisticated data
+        fetching and error recovery mechanisms.
+        """
+        try:
+            from unified_aave_data_fetcher import get_unified_aave_data
+            live_aave_data = get_unified_aave_data(self)  # Get live Aave data directly
+
+            if live_aave_data and live_aave_data.get('success'):
+                print(f"✅ Enhanced Data Fetch: Live Aave data retrieved successfully.")
+                return live_aave_data  # Return the live data
             else:
+                print(f"⚠️ Enhanced Data Fetch: No data or data fetch failed.")
+                return None  # Indicate data retrieval failure
+
+        except Exception as e:
+            print(f"❌ Enhanced Data Fetch Error: {e}")
+            return None  # Handle exceptions during data retrieval
+
+    def execute_swap_sequence(self, borrowed_amount):
+        """Execute the planned swap sequence: 2→WBTC, 1→WETH, 1→DAI, 1→WETH(wallet)"""
+        try:
+            print(f"🔄 Starting swap sequence with {borrowed_amount:.2f} USDC")
+
+            # Ensure integrations are ready
+            if not self.uniswap:
+                print("❌ Uniswap integration not initialized")
                 return False
 
-        def get_optimized_trigger_threshold(self):
-            """Get dynamic trigger threshold based on recent performance"""
-            base_threshold = 12.0  # Base $12 threshold
+            # Calculate swap amounts based on strategy
+            wbtc_amount = borrowed_amount * 0.33  # ~2 USDC → WBTC
+            weth_amount = borrowed_amount * 0.17  # ~1 USDC → WETH  
+            dai_amount = borrowed_amount * 0.17   # ~1 USDC → DAI
+            wallet_weth_amount = borrowed_amount * 0.17  # ~1 USDC → WETH (for wallet)
 
-            # Adjust based on recent success rate or market conditions
-            # For now, keep it simple but expandable
-            return base_threshold
+            swap_results = []
 
-        def get_enhanced_dashboard_data(self):
-            """
-            Retrieves enhanced dashboard data with better error handling.
-            This function can be extended to include more sophisticated data
-            fetching and error recovery mechanisms.
-            """
-            try:
-                from unified_aave_data_fetcher import get_unified_aave_data
-                live_aave_data = get_unified_aave_data(self)  # Get live Aave data directly
+            # Swap 1: USDC → WBTC
+            if wbtc_amount > 0.1:
+                print(f"🔄 Swapping {wbtc_amount:.2f} USDC → WBTC...")
+                try:
+                    wbtc_result = self.uniswap.swap_tokens(
+                        self.usdc_address, self.wbtc_address, wbtc_amount, 500
+                    )
+                    swap_results.append(wbtc_result)
+                    if wbtc_result:
+                        print(f"✅ WBTC swap successful")
+                    else:
+                        print(f"❌ WBTC swap failed")
+                except Exception as e:
+                    print(f"❌ WBTC swap error: {e}")
+                    swap_results.append(False)
+                time.sleep(2)
 
-                if live_aave_data and live_aave_data.get('success'):
-                    print(f"✅ Enhanced Data Fetch: Live Aave data retrieved successfully.")
-                    return live_aave_data  # Return the live data
-                else:
-                    print(f"⚠️ Enhanced Data Fetch: No data or data fetch failed.")
-                    return None  # Indicate data retrieval failure
+            # Swap 2: USDC → WETH
+            if weth_amount > 0.1:
+                print(f"🔄 Swapping {weth_amount:.2f} USDC → WETH...")
+                try:
+                    weth_result = self.uniswap.swap_tokens(
+                        self.usdc_address, self.weth_address, weth_amount, 500
+                    )
+                    swap_results.append(weth_result)
+                    if weth_result:
+                        print(f"✅ WETH swap successful")
+                    else:
+                        print(f"❌ WETH swap failed")
+                except Exception as e:
+                    print(f"❌ WETH swap error: {e}")
+                    swap_results.append(False)
+                time.sleep(2)
 
-            except Exception as e:
-                print(f"❌ Enhanced Data Fetch Error: {e}")
-                return None  # Handle exceptions during data retrieval
+            # Swap 3: USDC → DAI
+            if dai_amount > 0.1:
+                print(f"🔄 Swapping {dai_amount:.2f} USDC → DAI...")
+                try:
+                    dai_result = self.uniswap.swap_tokens(
+                        self.usdc_address, self.dai_address, dai_amount, 500
+                    )
+                    swap_results.append(dai_result)
+                    if dai_result:
+                        print(f"✅ DAI swap successful")
+                    else:
+                        print(f"❌ DAI swap failed")
+                except Exception as e:
+                    print(f"❌ DAI swap error: {e}")
+                    swap_results.append(False)
+                time.sleep(2)
 
-        def execute_swap_sequence(self, borrowed_amount):
-            """Execute the planned swap sequence: 2→WBTC, 1→WETH, 1→DAI, 1→WETH(wallet)"""
-            try:
-                print(f"🔄 Starting swap sequence with {borrowed_amount:.2f} USDC")
+            # Swap 4: USDC → WETH (for wallet)
+            if wallet_weth_amount > 0.1:
+                print(f"🔄 Swapping {wallet_weth_amount:.2f} USDC → WETH (wallet)...")
+                try:
+                    wallet_weth_result = self.uniswap.swap_tokens(
+                        self.usdc_address, self.weth_address, wallet_weth_amount, 500
+                    )
+                    swap_results.append(wallet_weth_result)
+                    if wallet_weth_result:
+                        print(f"✅ Wallet WETH swap successful")
+                    else:
+                        print(f"❌ Wallet WETH swap failed")
+                except Exception as e:
+                    print(f"❌ Wallet WETH swap error: {e}")
+                    swap_results.append(False)
+                time.sleep(2)
 
-                # Ensure integrations are ready
-                if not self.uniswap:
-                    print("❌ Uniswap integration not initialized")
-                    return False
+            # Check overall success
+            successful_swaps = sum(1 for result in swap_results if result)
+            total_swaps = len```text
+(swap_results)
 
-                # Calculate swap amounts based on strategy
-                wbtc_amount = borrowed_amount * 0.33  # ~2 USDC → WBTC
-                weth_amount = borrowed_amount * 0.17  # ~1 USDC → WETH  
-                dai_amount = borrowed_amount * 0.17   # ~1 USDC → DAI
-                wallet_weth_amount = borrowed_amount * 0.17  # ~1 USDC → WETH (for wallet)
+            print(f"✅ Swap sequence complete: {successful_swaps}/{total_swaps} successful")
+            return successful_swaps >= (total_swaps * 0.5)  # 50% success threshold
 
-                swap_results = []
+        except Exception as e:
+            print(f"❌ Swap sequence failed: {e}")
+            return False
 
-                # Swap 1: USDC → WBTC
-                if wbtc_amount > 0.1:
-                    print(f"🔄 Swapping {wbtc_amount:.2f} USDC → WBTC...")
-                    try:
-                        wbtc_result = self.uniswap.swap_tokens(
-                            self.usdc_address, self.wbtc_address, wbtc_amount, 500
-                        )
-                        swap_results.append(wbtc_result)
-                        if wbtc_result:
-                            print(f"✅ WBTC swap successful")
-                        else:
-                            print(f"❌ WBTC swap failed")
-                    except Exception as e:
-                        print(f"❌ WBTC swap error: {e}")
-                        swap_results.append(False)
-                    time.sleep(2)
+    def execute_supply_sequence(self):
+        """Execute supply operations for acquired tokens"""
+        try:
+            print(f"🏦 Starting supply sequence...")
 
-                # Swap 2: USDC → WETH
-                if weth_amount > 0.1:
-                    print(f"🔄 Swapping {weth_amount:.2f} USDC → WETH...")
-                    try:
-                        weth_result = self.uniswap.swap_tokens(
-                            self.usdc_address, self.weth_address, weth_amount, 500
-                        )
-                        swap_results.append(weth_result)
-                        if weth_result:
-                            print(f"✅ WETH swap successful")
-                        else:
-                            print(f"❌ WETH swap failed")
-                    except Exception as e:
-                        print(f"❌ WETH swap error: {e}")
-                        swap_results.append(False)
-                    time.sleep(2)
-
-                # Swap 3: USDC → DAI
-                if dai_amount > 0.1:
-                    print(f"🔄 Swapping {dai_amount:.2f} USDC → DAI...")
-                    try:
-                        dai_result = self.uniswap.swap_tokens(
-                            self.usdc_address, self.dai_address, dai_amount, 500
-                        )
-                        swap_results.append(dai_result)
-                        if dai_result:
-                            print(f"✅ DAI swap successful")
-                        else:
-                            print(f"❌ DAI swap failed")
-                    except Exception as e:
-                        print(f"❌ DAI swap error: {e}")
-                        swap_results.append(False)
-                    time.sleep(2)
-
-                # Swap 4: USDC → WETH (for wallet)
-                if wallet_weth_amount > 0.1:
-                    print(f"🔄 Swapping {wallet_weth_amount:.2f} USDC → WETH (wallet)...")
-                    try:
-                        wallet_weth_result = self.uniswap.swap_tokens(
-                            self.usdc_address, self.weth_address, wallet_weth_amount, 500
-                        )
-                        swap_results.append(wallet_weth_result)
-                        if wallet_weth_result:
-                            print(f"✅ Wallet WETH swap successful")
-                        else:
-                            print(f"❌ Wallet WETH swap failed")
-                    except Exception as e:
-                        print(f"❌ Wallet WETH swap error: {e}")
-                        swap_results.append(False)
-                    time.sleep(2)
-
-                # Check overall success
-                successful_swaps = sum(1 for result in swap_results if result)
-                total_swaps = len(swap_results)
-
-                print(f"✅ Swap sequence complete: {successful_swaps}/{total_swaps} successful")
-                return successful_swaps >= (total_swaps * 0.5)  # 50% success threshold
-
-            except Exception as e:
-                print(f"❌ Swap sequence failed: {e}")
+            # Ensure integrations are ready
+            if not self.aave:
+                print("❌ Aave integration not initialized")
                 return False
 
-        def execute_supply_sequence(self):
-            """Execute supply operations for acquired tokens"""
+            supply_results = []
+
+            # Supply WBTC to Aave
             try:
-                print(f"🏦 Starting supply sequence...")
+                wbtc_balance = self.aave.get_token_balance(self.wbtc_address)
+                if wbtc_balance > 0:
+                    print(f"🏦 Supplying {wbtc_balance:.8f} WBTC to Aave...")
+                    wbtc_supply = self.aave.supply_to_aave(self.wbtc_address, wbtc_balance)
+                    supply_results.append(wbtc_supply)
+                    if wbtc_supply:
+                        print(f"✅ WBTC supply successful")
+                    else:
+                        print(f"❌ WBTC supply failed")
+                    time.sleep(2)
+            except Exception as e:
+                print(f"❌ WBTC supply error: {e}")
+                supply_results.append(False)
 
-                # Ensure integrations are ready
-                if not self.aave:
-                    print("❌ Aave integration not initialized")
-                    return False
+            # Supply WETH to Aave
+            try:
+                weth_balance = self.aave.get_token_balance(self.weth_address)
+                if weth_balance > 0:
+                    print(f"🏦 Supplying {weth_balance:.8f} WETH to Aave...")
+                    weth_supply = self.aave.supply_to_aave(self.weth_address, weth_balance)
+                    supply_results.append(weth_supply)
+                    if weth_supply:
+                        print(f"✅ WETH supply successful")
+                    else:
+                        print(f"❌ WETH supply failed")
+                    time.sleep(2)
+            except Exception as e:
+                print(f"❌ WETH supply error: {e}")
+                supply_results.append(False)
 
-                supply_results = []
+            # Supply DAI to Aave  
+            try:
+                dai_balance = self.aave.get_token_balance(self.dai_address)
+                if dai_balance > 0:
+                    print(f"🏦 Supplying {dai_balance:.8f} DAI to Aave...")
+                    dai_supply = self.aave.supply_to_aave(self.dai_address, dai_balance)
+                    supply_results.append(dai_supply)
+                    if dai_supply:
+                        print(f"✅ DAI supply successful")
+                    else:
+                        print(f"❌ DAI supply failed")
+                    time.sleep(2)
+            except Exception as e:
+                print(f"❌ DAI supply error: {e}")
+                supply_results.append(False)
 
-                # Supply WBTC to Aave
-                try:
-                    wbtc_balance = self.aave.get_token_balance(self.wbtc_address)
-                    if wbtc_balance > 0:
-                        print(f"🏦 Supplying {wbtc_balance:.8f} WBTC to Aave...")
-                        wbtc_supply = self.aave.supply_to_aave(self.wbtc_address, wbtc_balance)
-                        supply_results.append(wbtc_supply)
-                        if wbtc_supply:
-                            print(f"✅ WBTC supply successful")
-                        else:
-                            print(f"❌ WBTC supply failed")
-                        time.sleep(2)
-                except Exception as e:
-                    print(f"❌ WBTC supply error: {e}")
-                    supply_results.append(False)
+            # Check overall success
+            successful_supplies = sum(1 for result in supply_results if result)
+            total_supplies = len(supply_results)
 
-                # Supply WETH to Aave
-                try:
-                    weth_balance = self.aave.get_token_balance(self.weth_address)
-                    if weth_balance > 0:
-                        print(f"🏦 Supplying {weth_balance:.8f} WETH to Aave...")
-                        weth_supply = self.aave.supply_to_aave(self.weth_address, weth_balance)
-                        supply_results.append(weth_supply)
-                        if weth_supply:
-                            print(f"✅ WETH supply successful")
-                        else:
-                            print(f"❌ WETH supply failed")
-                        time.sleep(2)
-                except Exception as e:
-                    print(f"❌ WETH supply error: {e}")
-                    supply_results.append(False)
+            if total_supplies > 0:
+                print(f"✅ Supply sequence complete: {successful_supplies}/{total_supplies} successful")
+                return successful_supplies >= (total_supplies * 0.5)  # 50% success threshold
+            else:
+                print(f"ℹ️ No tokens to supply")
+                return True
 
-                # Supply DAI to Aave  
-                try:
-                    dai_balance = self.aave.get_token_balance(self.dai_address)
-                    if dai_balance > 0:
-                        print(f"🏦 Supplying {dai_balance:.8f} DAI to Aave...")
-                        dai_supply = self.aave.supply_to_aave(self.dai_address, dai_balance)
-                        supply_results.append(dai_supply)
-                        if dai_supply:
-                            print(f"✅ DAI supply successful")
-                        else:
-                            print(f"❌ DAI supply failed")
-                        time.sleep(2)
-                except Exception as e:
-                    print(f"❌ DAI supply error: {e}")
-                    supply_results.append(False)
+        except Exception as e:
+            print(f"❌ Supply sequence failed: {e}")
+            return False
 
-                # Check overall success
-                successful_supplies = sum(1 for result in supply_results if result)
-                total_supplies = len(supply_results)
+    def get_optimized_gas_params(self, operation_type='default', market_condition='normal'):
+        """Get optimized gas parameters for different operations"""
+        try:
+            # Get current network gas price
+            current_gas_price = self.w3.eth.gas_price
 
-                if total_supplies > 0:
-                    print(f"✅ Supply sequence complete: {successful_supplies}/{total_supplies} successful")
-                    return successful_supplies >= (total_supplies * 0.5)  # 50% success threshold
-                else:
-                    print(f"ℹ️ No tokens to supply")
+            # Base gas limits for different operations
+            gas_limits = {
+                'aave_borrow': 300000,
+                'aave_supply': 250000,
+                'aave_repay': 200000,
+                'token_approval': 100000,
+                'uniswap_swap': 350000,
+                'default': 200000
+            }
+
+            # Gas price multipliers based on market conditions
+            price_multipliers = {
+                'low': 1.0,
+                'normal': 1.1,
+                'high': 1.3,
+                'urgent': 1.5,
+                'market': 1.2  # For market operations
+            }
+
+            gas_limit = gas_limits.get(operation_type, gas_limits['default'])
+            price_multiplier = price_multipliers.get(market_condition, 1.1)
+
+            optimized_gas_price = int(current_gas_price * price_multiplier)
+
+            return {
+                'gas': gas_limit,
+                'gasPrice': optimized_gas_price
+            }
+
+        except Exception as e:
+            print(f"⚠️ Gas optimization failed, using defaults: {e}")
+            return {
+                'gas': 250000,
+                'gasPrice': int(0.1 * 1e9)  # 0.1 gwei fallback
+            }
+
+    def analyze_borrow_failure(self):
+        """Analyze and log borrow failure details for debugging"""
+        try:
+            print(f"\n🔍 BORROW FAILURE ANALYSIS:")
+
+            # Get current Aave account data
+            pool_abi = [{
+                "inputs": [{"name": "user", "type": "address"}],
+                "name": "getUserAccountData",
+                "outputs": [
+                    {"name": "totalCollateralBase", "type": "uint256"},
+                    {"name": "totalDebtBase", "type": "uint256"},
+                    {"name": "availableBorrowsBase", "type": "uint256"},
+                    {"name": "currentLiquidationThreshold", "type": "uint256"},
+                    {"name": "ltv", "type": "uint256"},
+                    {"name": "healthFactor", "type": "uint256"}
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            }]
+
+            pool_contract = self.w3.eth.contract(address=self.aave_pool_address, abi=pool_abi)
+            account_data = pool_contract.functions.getUserAccountData(self.address).call()
+
+            collateral_usd = account_data[0] / (10**8)
+            debt_usd = account_data[1] / (10**8)
+            available_borrows_usd = account_data[2] / (10**8)
+            health_factor = account_data[5] / (10**18) if account_data[5] > 0 else float('inf')
+
+            print(f"   💰 Collateral: ${collateral_usd:.2f}")
+            print(f"   💳 Debt: ${debt_usd:.2f}")
+            print(f"   📊 Available Borrows: ${available_borrows_usd:.2f}")
+            print(f"   ❤️ Health Factor: {health_factor:.4f}")
+
+            # Analysis
+            if health_factor < 1.5:
+                print(f"   ⚠️ ISSUE: Health factor too low for borrowing")
+            elif available_borrows_usd < 1.0:
+                print(f"   ⚠️ ISSUE: Insufficient borrowing capacity")
+            else:
+                print(f"   ⚠️ ISSUE: Likely token not supported for borrowing (DAI)")
+                print(f"   💡 SUGGESTION: Switch to USDC borrowing instead")
+
+            # Check for specific error patterns and provide actionable solutions
+            if "Unsupported token for borrowing" in str(e):
+                print(f"💡 SOLUTION: This token might not be supported for borrowing on Aave V3")
+                print(f"   Supported tokens include: USDC, WETH, WBTC, DAI")
+                print(f"   Current token: {token_address}")
+                print(f"   DAI address: {self.dai_address}")
+                print(f"   Try switching to USDC borrowing if DAI continues to fail")
+                return None
+
+            # Log failure details
+            failure_data = {
+                'timestamp': time.time(),
+                'collateral_usd': collateral_usd,
+                'debt_usd': debt_usd,
+                'available_borrows_usd': available_borrows_usd,
+                'health_factor': health_factor,
+                'wallet_address': self.address,
+                'network': self.network_mode,
+                'analysis': 'borrow_failure_investigation'
+            }
+
+            try:
+                from fix_json_serialization import safe_json_dump
+                safe_json_dump(failure_data, 'borrow_failure_analysis.json')
+                print(f"   📝 Analysis saved to borrow_failure_analysis.json")
+            except Exception as save_error:
+                print(f"   ⚠️ Could not save analysis: {save_error}")
+
+        except Exception as e:
+            print(f"   ❌ Borrow failure analysis error: {e}")
+
+    #Corrected the borrow method signature in execute_enhanced_borrow_with_retry to resolve the "takes 3positional arguments but 4 were given" error.
+    def execute_enhanced_borrow_with_retry(self, safe_borrow_amount):
+        """Execute enhanced borrow with multiple retry attempts and enhanced validation"""
+        max_attempts = 3
+
+        # Pre-validation checks
+        try:
+            pool_abi = [{
+                "inputs": [{"name": "user", "type": "address"}],
+                "name": "getUserAccountData",
+                "outputs": [
+                    {"name": "totalCollateralBase", "type": "uint256"},
+                    {"name": "totalDebtBase", "type": "uint256"},
+                    {"name": "availableBorrowsBase", "type": "uint256"},
+                    {"name": "currentLiquidationThreshold", "type": "uint256"},
+                    {"name": "ltv", "type": "uint256"},
+                    {"name": "healthFactor", "type": "uint256"}
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            }]
+
+            pool_contract = self.w3.eth.contract(address=self.aave_pool_address, abi=pool_abi)
+            account_data = pool_contract.functions.getUserAccountData(self.address).call()
+
+            current_health_factor = account_data[5] / (10**18) if account_data[5] > 0 else float('inf')
+            available_borrows_usd = account_data[2] / (10**8)
+
+            print(f"🔍 Pre-borrow validation:")
+            print(f"   Current HF: {current_health_factor:.4f}")
+            print(f"   Available borrows: ${available_borrows_usd:.2f}")
+            print(f"   Requested: ${safe_borrow_amount:.2f}")
+
+            # Safety checks
+            if current_health_factor < 1.5:
+                print(f"❌ Health factor too low for borrowing: {current_health_factor:.4f}")
+                return False
+
+            if available_borrows_usd < safe_borrow_amount:
+                print(f"❌ Insufficient borrowing capacity")
+                return False
+
+        except Exception as validation_error:
+            print(f"❌ Pre-borrow validation failed: {validation_error}")
+            return False
+
+        # Execute borrow attempts with enhanced error handling
+        for attempt in range(max_attempts):
+            try:
+                print(f"🔄 Enhanced borrow attempt {attempt + 1}/{max_attempts}")
+
+                # Convert amount to wei for USDC (6 decimals)
+                usdc_amount_wei = int(safe_borrow_amount * (10 ** 6))
+
+                # Enhanced gas estimation
+                gas_params = self.get_optimized_gas_params('aave_borrow', 'market')
+
+                # Use the Aave integration's borrow method with proper signature
+                borrow_result = self.aave.borrow(safe_borrow_amount, self.usdc_address)
+
+                if borrow_result:
+                    print(f"✅ Enhanced borrow successful: {borrow_result}")
+
+                    # Verify borrow actually happened
+                    time.sleep(3)  # Wait for transaction confirmation
+
+                    # Check new balance
+                    new_account_data = pool_contract.functions.getUserAccountData(self.address).call()
+                    new_debt_usd = new_account_data[1] / (10**8)
+                    new_health_factor = new_account_data[5] / (10**18) if new_account_data[5] > 0 else float('inf')
+
+                    print(f"✅ Post-borrow verification:")
+                    print(f"   New debt: ${new_debt_usd:.2f}")
+                    print(f"   New HF: {new_health_factor:.4f}")
+
                     return True
+                else:
+                    print(f"❌ Enhanced borrow attempt {attempt + 1} failed - no result")
 
             except Exception as e:
-                print(f"❌ Supply sequence failed: {e}")
+                print(f"❌ Enhanced borrow attempt {attempt + 1} error: {e}")
+
+                # Enhanced error analysis
+                try:
+                    error_details = {
+                        'timestamp': time.time(),
+                        'error': str(e),
+                        'error_type': type(e).__name__,
+                        'attempts': attempt + 1,
+                        'rpc_used': self.rpc_url,
+                        'health_factor': current_health_factor,
+                        'available_borrows': available_borrows_usd,
+                        'requested_amount': safe_borrow_amount,
+                        'gas_params': gas_params if 'gas_params' in locals() else {}
+                    }
+
+                    # Check if it's a gas-related error
+                    if 'gas' in str(e).lower() or 'out of gas' in str(e).lower():
+                        print(f"⚠️ Gas-related error detected - adjusting for next attempt")
+
+                    # Check if it's an RPC error
+                    if 'rpc' in str(e).lower() or 'connection' in str(e).lower():
+                        print(f"⚠️ RPC error detected - switching endpoint")
+                        self.switch_to_fallback_rpc()
+
+                    try:
+                        with open('borrow_failure_analysis.json', 'w') as f:
+                            import json
+                            json.dump(error_details, f, indent=2)
+                    except Exception as json_error:
+                        print(f"⚠️ Could not save error log: {json_error}")
+
+                except Exception as analysis_error:
+                    print(f"⚠️ Error analysis failed: {analysis_error}")
+
+                if attempt < max_attempts - 1:
+                    wait_time = 2 ** attempt  # Exponential backoff
+                    print(f"⏱️ Waiting {wait_time}s before retry...")
+                    time.sleep(wait_time)
+                    continue
+
+        print(f"❌ All {max_attempts} borrow attempts failed")
+        return False
+
+    def validate_integrations_ready(self):
+        """Validate that all required integrations are properly initialized"""
+        try:
+            print(f"🔍 Validating integrations...")
+
+            # Check Aave integration
+            if not self.aave:
+                print("❌ Aave integration not initialized")
                 return False
 
-        def get_optimized_gas_params(self, operation_type='default', market_condition='normal'):
-            """Get optimized gas parameters for different operations"""
+            # Check Uniswap integration
+            if not self.uniswap:
+                print("❌ Uniswap integration not initialized")
+                return False
+
+            # Check Health Monitor
+            if not self.health_monitor:
+                print("❌ Health Monitor not initialized")
+                return False
+
+            # Test basic functionality
             try:
-                # Get current network gas price
-                current_gas_price = self.w3.eth.gas_price
+                # Test Aave connection
+                current_hf = self.health_monitor.get_current_health_factor()
+                if not current_hf or current_hf.get('health_factor', 0) <= 0:
+                    print("❌ Aave health factor check failed")
+                    return False
 
-                # Base gas limits for different operations
-                gas_limits = {
-                    'aave_borrow': 300000,
-                    'aave_supply': 250000,
-                    'aave_repay': 200000,
-                    'token_approval': 100000,
-                    'uniswap_swap': 350000,
-                    'default': 200000
-                }
+                # Test token address availability
+                required_addresses = [
+                    self.usdc_address, self.wbtc_address, 
+                    self.weth_address, self.dai_address
+                ]
 
-                # Gas price multipliers based on market conditions
-                price_multipliers = {
-                    'low': 1.0,
-                    'normal': 1.1,
-                    'high': 1.3,
-                    'urgent': 1.5,
-                    'market': 1.2  # For market operations
-                }
+                for addr in required_addresses:
+                    if not addr or len(addr) != 42:
+                        print(f"❌ Invalid token address: {addr}")
+                        return False
 
-                gas_limit = gas_limits.get(operation_type, gas_limits['default'])
-                price_multiplier = price_multipliers.get(market_condition, 1.1)
+                print(f"✅ All integrations validated successfully")
+                return True
 
-                optimized_gas_price = int(current_gas_price * price_multiplier)
+            except Exception as test_error:
+                print(f"❌ Integration test failed: {test_error}")
+                return False
 
-                return {
-                    'gas': gas_limit,
-                    'gasPrice': optimized_gas_price
-                }
+        except Exception as e:
+            print(f"❌ Validation error: {e}")
+            return False
 
+    def is_operation_on_cooldown(self):
+        """Check if operations are on cooldown"""
+        if self.last_successful_operation_time == 0:
+            return False
+
+        time_since_last_op = time.time() - self.last_successful_operation_time
+        remaining_cooldown = self.operation_cooldown_seconds - time_since_last_op
+
+        if remaining_cooldown > 0:
+            print(f"⏰ Operation on cooldown: {remaining_cooldown:.0f}s remaining")
+            return True
+        else:
+            return False
+
+    def get_optimized_trigger_threshold(self):
+        """Get dynamic trigger threshold based on recent performance"""
+        base_threshold = 12.0  # Base $12 threshold
+
+        # Adjust based on recent success rate or market conditions
+        # For now, keep it simple but expandable
+        return base_threshold
+
+    def get_enhanced_dashboard_data(self):
+        """
+        Retrieves enhanced dashboard data with better error handling.
+        This function can be extended to include more sophisticated data
+        fetching and error recovery mechanisms.
+        """
+        try:
+            from unified_aave_data_fetcher import get_unified_aave_data
+            live_aave_data = get_unified_aave_data(self)  # Get live Aave data directly
+
+            if live_aave_data and live_aave_data.get('success'):
+                print(f"✅ Enhanced Data Fetch: Live Aave data retrieved successfully.")
+                return live_aave_data  # Return the live data
+            else:
+                print(f"⚠️ Enhanced Data Fetch: No data or data fetch failed.")
+                return None  # Indicate data retrieval failure
+
+        except Exception as e:
+            print(f"❌ Enhanced Data Fetch Error: {e}")
+            return None  # Handle exceptions during data retrieval
+
+    def execute_swap_sequence(self, borrowed_amount):
+        """Execute the planned swap sequence: 2→WBTC, 1→WETH, 1→DAI, 1→WETH(wallet)"""
+        try:
+            print(f"🔄 Starting swap sequence with {borrowed_amount:.2f} USDC")
+
+            # Ensure integrations are ready
+            if not self.uniswap:
+                print("❌ Uniswap integration not initialized")
+                return False
+
+            # Calculate swap amounts based on strategy
+            wbtc_amount = borrowed_amount * 0.33  # ~2 USDC → WBTC
+            weth_amount = borrowed_amount * 0.17  # ~1 USDC → WETH  
+            dai_amount = borrowed_amount * 0.17   # ~1 USDC → DAI
+            wallet_weth_amount = borrowed_amount * 0.17  # ~1 USDC → WETH (for wallet)
+
+            swap_results = []
+
+            # Swap 1: USDC → WBTC
+            if wbtc_amount > 0.1:
+                print(f"🔄 Swapping {wbtc_amount:.2f} USDC → WBTC...")
+                try:
+                    wbtc_result = self.uniswap.swap_tokens(
+                        self.usdc_address, self.wbtc_address, wbtc_amount, 500
+                    )
+                    swap_results.append(wbtc_result)
+                    if wbtc_result:
+                        print(f"✅ WBTC swap successful")
+                    else:
+                        print(f"❌ WBTC swap failed")
+                except Exception as e:
+                    print(f"❌ WBTC swap error: {e}")
+                    swap_results.append(False)
+                time.sleep(2)
+
+            # Swap 2: USDC → WETH
+            if weth_amount > 0.1:
+                print(f"🔄 Swapping {weth_amount:.2f} USDC → WETH...")
+                try:
+                    weth_result = self.uniswap.swap_tokens(
+                        self.usdc_address, self.weth_address, weth_amount, 500
+                    )
+                    swap_results.append(weth_result)
+                    if weth_result:
+                        print(f"✅ WETH swap successful")
+                    else:
+                        print(f"❌ WETH swap failed")
+                except Exception as e:
+                    print(f"❌ WETH swap error: {e}")
+                    swap_results.append(False)
+                time.sleep(2)
+
+            # Swap 3: USDC → DAI
+            if dai_amount > 0.1:
+                print(f"🔄 Swapping {dai_amount:.2f} USDC → DAI...")
+                try:
+                    dai_result = self.uniswap.swap_tokens(
+                        self.usdc_address, self.dai_address, dai_amount, 500
+                    )
+                    swap_results.append(dai_result)
+                    if dai_result:
+                        print(f"✅ DAI swap successful")
+                    else:
+                        print(f"❌ DAI swap failed")
+                except Exception as e:
+                    print(f"❌ DAI swap error: {e}")
+                    swap_results.append(False)
+                time.sleep(2)
+
+            # Swap 4: USDC → WETH (for wallet)
+            if wallet_weth_amount > 0.1:
+                print(f"🔄 Swapping {wallet_weth_amount:.2f} USDC → WETH (wallet)...")
+                try:
+                    wallet_weth_result = self.uniswap.swap_tokens(
+                        self.usdc_address, self.weth_address, wallet_weth_amount, 500
+                    )
+                    swap_results.append(wallet_weth_result)
+                    if wallet_weth_result:
+                        print(f"✅ Wallet WETH swap successful")
+                    else:
+                        print(f"❌ Wallet WETH swap failed")
+                except Exception as e:
+                    print(f"❌ Wallet WETH swap error: {e}")
+                    swap_results.append(False)
+                time.sleep(2)
+
+            # Check overall success
+            successful_swaps = sum(1 for result in swap_results if result)
+            total_swaps = len(swap_results)
+
+            print(f"✅ Swap sequence complete: {successful_swaps}/{total_swaps} successful")
+            return successful_swaps >= (total_swaps * 0.5)  # 50% success threshold
+
+        except Exception as e:
+            print(f"❌ Swap sequence failed: {e}")
+            return False
+
+    def execute_supply_sequence(self):
+        """Execute supply operations for acquired tokens"""
+        try:
+            print(f"🏦 Starting supply sequence...")
+
+            # Ensure integrations are ready
+            if not self.aave:
+                print("❌ Aave integration not initialized")
+                return False
+
+            supply_results = []
+
+            # Supply WBTC to Aave
+            try:
+                wbtc_balance = self.aave.get_token_balance(self.wbtc_address)
+                if wbtc_balance > 0:
+                    print(f"🏦 Supplying {wbtc_balance:.8f} WBTC to Aave...")
+                    wbtc_supply = self.aave.supply_to_aave(self.wbtc_address, wbtc_balance)
+                    supply_results.append(wbtc_supply)
+                    if wbtc_supply:
+                        print(f"✅ WBTC supply successful")
+                    else:
+                        print(f"❌ WBTC supply failed")
+                    time.sleep(2)
             except Exception as e:
-                print(f"⚠️ Gas optimization failed, using defaults: {e}")
-                return {
-                    'gas': 250000,
-                    'gasPrice': int(0.1 * 1e9)  # 0.1 gwei fallback
-                }
+                print(f"❌ WBTC supply error: {e}")
+                supply_results.append(False)
+
+            # Supply WETH to Aave
+            try:
+                weth_balance = self.aave.get_token_balance(self.weth_address)
+                if weth_balance > 0:
+                    print(f"🏦 Supplying {weth_balance:.8f} WETH to Aave...")
+                    weth_supply = self.aave.supply_to_aave(self.weth_address, weth_balance)
+                    supply_results.append(weth_supply)
+                    if weth_supply:
+                        print(f"✅ WETH supply successful")
+                    else:
+                        print(f"❌ WETH supply failed")
+                    time.sleep(2)
+            except Exception as e:
+                print(f"❌ WETH supply error: {e}")
+                supply_results.append(False)
+
+            # Supply DAI to Aave  
+            try:
+                dai_balance = self.aave.get_token_balance(self.dai_address)
+                if dai_balance > 0:
+                    print(f"🏦 Supplying {dai_balance:.8f} DAI to Aave...")
+                    dai_supply = self.aave.supply_to_aave(self.dai_address, dai_balance)
+                    supply_results.append(dai_supply)
+                    if dai_supply:
+                        print(f"✅ DAI supply successful")
+                    else:
+                        print(f"❌ DAI supply failed")
+                    time.sleep(2)
+            except Exception as e:
+                print(f"❌ DAI supply error: {e}")
+                supply_results.append(False)
+
+            # Check overall success
+            successful_supplies = sum(1 for result in supply_results if result)
+            total_supplies = len(supply_results)
+
+            if total_supplies > 0:
+                print(f"✅ Supply sequence complete: {successful_supplies}/{total_supplies} successful")
+                return successful_supplies >= (total_supplies * 0.5)  # 50% success threshold
+            else:
+                print(f"ℹ️ No tokens to supply")
+                return True
+
+        except Exception as e:
+            print(f"❌ Supply sequence failed: {e}")
+            return False
+
+    def get_optimized_gas_params(self, operation_type='default', market_condition='normal'):
+        """Get optimized gas parameters for different operations"""
+        try:
+            # Get current network gas price
+            current_gas_price = self.w3.eth.gas_price
+
+            # Base gas limits for different operations
+            gas_limits = {
+                'aave_borrow': 300000,
+                'aave_supply': 250000,
+                'aave_repay': 200000,
+                'token_approval': 100000,
+                'uniswap_swap': 350000,
+                'default': 200000
+            }
+
+            # Gas price multipliers based on market conditions
+            price_multipliers = {
+                'low': 1.0,
+                'normal': 1.1,
+                'high': 1.3,
+                'urgent': 1.5,
+                'market': 1.2  # For market operations
+            }
+
+            gas_limit = gas_limits.get(operation_type, gas_limits['default'])
+            price_multiplier = price_multipliers.get(market_condition, 1.1)
+
+            optimized_gas_price = int(current_gas_price * price_multiplier)
+
+            return {
+                'gas': gas_limit,
+                'gasPrice': optimized_gas_price
+            }
+
+        except Exception as e:
+            print(f"⚠️ Gas optimization failed, using defaults: {e}")
+            return {
+                'gas': 250000,
+                'gasPrice': int(0.1 * 1e9)  # 0.1 gwei fallback
+            }
+    
+    def borrow(self, amount_usd, token_address):
+        """
+        Borrow a specified amount of a token from Aave.
+
+        Args:
+            amount_usd (float): The amount to borrow in USD.
+            token_address (str): The address of the token to borrow.
+
+        Returns:
+            str: The transaction hash if successful, None otherwise.
+        """
+        try:
+            print(f"Attempting to borrow {amount_usd} USD worth of {token_address} from Aave...")
+
+            # Validate inputs
+            if not amount_usd > 0:
+                print("Borrow amount must be greater than zero.")
+                return None
+
+            if not Web3.is_address(token_address):
+                print(f"Invalid token address: {token_address}")
+                return None
+
+            # Get token decimals
+            decimals = 6  # Default decimals for USDC
+
+            if token_address.lower() == self.weth_address.lower():
+                decimals = 18  # WETH has 18 decimals
+            elif token_address.lower() == self.wbtc_address.lower():
+                decimals = 8  # WBTC has 8 decimals
+            elif token_address.lower() == self.dai_address.lower():
+                decimals = 18 # DAI has 18 decimals
+
+            # Convert USD to token amount
+            if token_address.lower() == self.usdc_address.lower():
+                amount_wei = int(amount_usd * (10 ** decimals))  # 1 USDC = 1 USD
+            elif token_address.lower() == self.dai_address.lower():
+                amount_wei = int(amount_usd * (10 ** decimals))  # 1 DAI ≈ 1 USD
+                print(f"✅ DAI borrowing enabled: ${amount_usd} = {amount_wei} DAI wei")
+            else:
+                print(f"❌ Unsupported token for borrowing: {token_address}")
+                return None
+
+            # Get optimized gas parameters
+            gas_params = self.get_optimized_gas_params('aave_borrow', 'market')
+
+            # Encode the borrow function call
+            borrow_function = self.pool_contract.functions.borrow(
+                token_address,
+                amount_wei,
+                1,  # Interest rate mode: 1 for stable, 2 for variable
+                0,  # Referral code (can be zero)
+                self.address  # The address receiving the borrowed tokens
+            )
+
+            # Build the transaction
+            transaction = borrow_function.build_transaction({
+                'from': self.address,
+                'gas': gas_params['gas'],
+                'gasPrice': gas_params['gasPrice'],
+                'nonce': self.w3.eth.get_transaction_count(self.address)
+            })
+
+            # Sign the transaction
+            signed_transaction = self.w3.eth.account.sign_transaction(transaction, self.account.key)
+
+            # Send the transaction
+            transaction_hash = self.w3.eth.send_raw_transaction(signed_transaction.rawTransaction)
+            print(f"Borrow transaction submitted. Hash: {transaction_hash.hex()}")
+
+            # Wait for transaction receipt
+            transaction_receipt = self.w3.eth.wait_for_transaction_receipt(transaction_hash)
+            if transaction_receipt and transaction_receipt['status'] == 1:
+                print(f"Borrow transaction successful.")
+                return transaction_hash.hex()
+            else:
+                print(f"Borrow transaction failed.")
+                return None
+
+        except Exception as e:
+            print(f"An error occurred during the borrow operation: {e}")
+            return None

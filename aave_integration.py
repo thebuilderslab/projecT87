@@ -541,10 +541,16 @@ class AaveArbitrumIntegration:
             if token_address.lower() == self.usdc_address.lower():
                 amount_wei = int(amount_usd * (10 ** decimals))
                 return amount_wei
+            # For DAI, 1 USD ≈ 1 DAI (stablecoin peg)
+            elif token_address.lower() == self.dai_address.lower():
+                amount_wei = int(amount_usd * (10 ** decimals))
+                print(f"✅ DAI conversion: ${amount_usd} = {amount_wei} wei")
+                return amount_wei
             else:
                 # For other tokens, would need price conversion
-                # For now, only support USDC borrowing
-                raise ValueError(f"USD to wei conversion not supported for token: {token_address}")
+                print(f"⚠️ USD to wei conversion not implemented for token: {token_address}")
+                # Return 0 instead of raising error to allow fallback
+                return 0
 
         except Exception as e:
             print(f"❌ USD to wei conversion failed: {e}")
@@ -1593,12 +1599,8 @@ class AaveArbitrumIntegration:
             # Convert USD to token amount
             if token_address.lower() == self.usdc_address.lower():
                 amount_wei = int(amount_usd * (10 ** decimals))  # 1 USDC = 1 USD
-            elif token_address.lower() == self.dai_address.lower():
-                amount_wei = int(amount_usd * (10 ** decimals))  # 1 DAI ≈ 1 USD
-                print(f"💰 DAI Borrowing: Converting ${amount_usd:.2f} to {amount_wei} DAI wei")
             else:
                 print(f"❌ Unsupported token for borrowing: {token_address}")
-                print(f"💡 Supported tokens: USDC ({self.usdc_address}) and DAI ({self.dai_address})")
                 return None
 
             print(f"🔢 Borrowing {amount_wei} wei ({amount_usd} USD)")
