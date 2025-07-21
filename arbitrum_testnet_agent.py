@@ -679,8 +679,7 @@ class ArbitrumTestnetAgent:
         # else: # Original Code
         #    print("❌ Could not get total collateral USD value from health monitor.") # Original Code
         #    return 0.0 # Return 0 if unable toretrieve # Original Code
-        return 0.0  # Returning 0```text
-.0 directly because the function is not being used.
+        return 0.0  # Returning 0.0 directly because the function is not being used.
 
     def execute_leveraged_supply_strategy(self, amount_to_borrow_usdc=10):
         """Execute REVISED USDC-based leveraged supply strategy with conditional ETH acquisition and dedicated WBTC allocation"""
