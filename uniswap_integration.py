@@ -92,20 +92,20 @@ class UniswapArbitrumIntegration:
         try:
             import time
 
-            # CRITICAL: Validate token balance first
-            if token_in != "0x0000000000000000000000000000000000000000":  # Not ETH
+            # ENHANCED: Validate token balance before swap
+            if token_in != "0x0000000000000000000000000000000000000000":
                 token_contract = self.w3.eth.contract(address=token_in, abi=self.erc20_abi)
                 try:
                     current_balance = token_contract.functions.balanceOf(self.address).call()
                     decimals = token_contract.functions.decimals().call()
                     readable_balance = current_balance / (10 ** decimals)
-                    
+
                     if readable_balance < amount_in:
                         print(f"❌ Insufficient balance: {readable_balance:.6f} < {amount_in:.6f}")
                         return None
                     print(f"✅ Balance check passed: {readable_balance:.6f} >= {amount_in:.6f}")
                 except Exception as balance_error:
-                    print(f"⚠️ Balance check failed: {balance_error}")
+                    print(f"⚠️ Balance check failed, proceeding with swap: {balance_error}")
 
             # Convert amount_in to wei FIRST
             amount_in_wei = self._convert_to_wei(token_in, amount_in)

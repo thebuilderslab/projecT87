@@ -1,4 +1,3 @@
-python
 import os
 import json
 import math
@@ -666,7 +665,7 @@ class ArbitrumTestnetAgent:
             # Initialize Real Aave, Uniswap, and Health Monitor Integrations
             self.aave = AaveArbitrumIntegration(self.w3, self.account)
             self.uniswap = UniswapIntegration(self.w3, self.account)
-            self.health_monitor = HealthMonitor(self.w3, self.account, self.aave)
+            self.health_monitor = HealthMonitor(self.w3,self.account, self.aave)
             print("✅ Initialized Real Aave, Uniswap, and Health Monitor Integrations.")
 
             # Initialize Gas Calculator
@@ -1090,6 +1089,8 @@ class ArbitrumTestnetAgent:
                     print(f"   Capacity Utilization: {capacity_utilization:.1%}")
                     print(f"   Capacity Threshold: {self.capacity_optimization_threshold:.1%}")
                     print(f"   Available vs Threshold: ${available_borrows:.2f} >= ${self.capacity_available_threshold:.0f}")
+                    print(f"   Utilization: {capacity_utilization:.1%} < {self.capacity_optimization_threshold:.1%} = {capacity_utilization < self.capacity_optimization_threshold}")
+                    print(f"   Manual Override: {manual_override}")
 
                     print(f"🎯 HYBRID SYSTEM TRIGGERS:")
                     print(f"   Growth-Triggered: {growth_conditions_met}")
@@ -1099,7 +1100,6 @@ class ArbitrumTestnetAgent:
                     print(f"     • Health Factor: {health_factor:.4f} > {self.capacity_health_factor_threshold:.1f} = {health_factor > self.capacity_health_factor_threshold}")
                     print(f"     • Available: ${available_borrows:.2f} >= ${self.capacity_available_threshold:.0f} = {available_borrows >= self.capacity_available_threshold}")
                     print(f"     • Utilization: {capacity_utilization:.1%} < {self.capacity_optimization_threshold:.1%} = {capacity_utilization < self.capacity_optimization_threshold}")
-                    print(f"   Manual Override: {manual_override}")
 
                     if growth_conditions_met or capacity_conditions_met or manual_override:
                             # Determine which system triggered and set trigger reasons
@@ -1355,7 +1355,7 @@ class ArbitrumTestnetAgent:
 
             return allocation
 
-        except Exception as e:
+Fixing the syntax error at the beginning of the file by removing the extraneous text.        except Exception as e:
             print(f"❌ Allocation calculation failed: {e}")
             return {'wbtc_swap': 0, 'weth_swap': 0, 'direct_supply': total_dai}
 
