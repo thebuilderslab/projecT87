@@ -45,7 +45,7 @@ def check_trigger_status():
             baseline_data = json.load(f)
             baseline_collateral = baseline_data.get('last_collateral_value_usd', 0)
             print(f"   Current baseline: ${baseline_collateral:.2f}")
-            print(f"   Target for natural trigger: ${baseline_collateral + 12:.2f}")
+            print(f"   Target for natural trigger: ${baseline_collateral + 13:.2f}")
     
     print(f"   Commands:")
     print(f"     Activate test: python trigger_test.py create")

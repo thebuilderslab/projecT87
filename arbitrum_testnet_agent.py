@@ -1423,9 +1423,9 @@ class ArbitrumTestnetAgent:
                 from fix_json_serialization import safe_json_dump
                 safe_json_dump(baseline_data, 'agent_baseline.json')
 
-                print(f"📈 Next trigger will activate when collateral reaches: ${self.last_collateral_value_usd + 12:,.2f}")
-                print(f"💡 Add $12+ worth of collateral to activate autonomous sequence")
-                print(f"🎯 CURRENT GAP: Need $12.00 more collateral")
+                print(f"📈 Next trigger will activate when collateral reaches: ${self.last_collateral_value_usd + 13:,.2f}")
+                print(f"💡 Add $13+ worth of collateral to activate autonomous sequence")
+                print(f"🎯 CURRENT GAP: Need $13.00 more collateral")
                 return 0.8
 
             # If agent still sees $0, but Arbiscan shows real position, force detection
@@ -1469,7 +1469,7 @@ class ArbitrumTestnetAgent:
                 print(f"🚀 MANUAL OVERRIDE DETECTED: Bypassing growth requirement")
                 trigger_ready = True
             elif os.path.exists('test_mode.flag') and actual_growth >= 1.0:  # Lower threshold for testing
-                print(f"🧪 TEST MODE: Using $1 threshold instead of $12")
+                print(f"🧪 TEST MODE: Using $1 threshold instead of $13")
                 trigger_ready = True
 
             print(f"""
@@ -1503,7 +1503,7 @@ class ArbitrumTestnetAgent:
                 if current_collateral_value_usd == 0:
                     print(f"💡 TIP: To activate autonomous operations:")
                     print(f"   1. Supply some USDC/WETH to Aave as collateral")
-                    print(f"   2. Agent will monitor for $12+ collateral growth")
+                    print(f"   2. Agent will monitor for $13+ collateral growth")
                     print(f"   3. Then execute autonomous borrowing & swapping sequence")
 
                 return 0.7  # Moderate performance score
