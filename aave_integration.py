@@ -1488,9 +1488,19 @@ class AaveArbitrumIntegration:
         try:
             print(f"🪙 Supplying {wbtc_amount} WBTC to Aave V3...")
 
-            # Check WBTC balance first
+            # ENHANCED: Multiple balance check methods
             wbtc_balance = self.get_token_balance(self.wbtc_address)
             print(f"💰 Current WBTC balance: {wbtc_balance:.8f}")
+
+            # Fallback balance check if primary fails
+            if wbtc_balance <= 0:
+                try:
+                    wbtc_contract = self.w3.eth.contract(address=self.wbtc_address, abi=self.erc20_abi)
+                    balance_wei = wbtc_contract.functions.balanceOf(self.address).call()
+                    wbtc_balance = balance_wei / (10 ** 8)  # WBTC has 8 decimals
+                    print(f"💰 Fallback balance check: {wbtc_balance:.8f} WBTC")
+                except Exception as fallback_error:
+                    print(f"⚠️ Fallback balance check failed: {fallback_error}")
 
             if wbtc_balance < wbtc_amount:
                 print(f"❌ Insufficient WBTC balance. Need {wbtc_amount:.8f}, have {wbtc_balance:.8f}")

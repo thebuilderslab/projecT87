@@ -1,7 +1,4 @@
-Fixing the duplicate else statement in the hybrid system evaluation logic.
-```
-
-```python
+python
 import os
 import json
 import math
@@ -670,8 +667,6 @@ class ArbitrumTestnetAgent:
             self.aave = AaveArbitrumIntegration(self.w3, self.account)
             self.uniswap = UniswapIntegration(self.w3, self.account)
             self.health_monitor = HealthMonitor(self.w3, self.account, self.aave)
-Corrected the syntax error in the hybrid system evaluation and implemented capacity optimization cooldown.
-``````python
             print("✅ Initialized Real Aave, Uniswap, and Health Monitor Integrations.")
 
             # Initialize Gas Calculator
@@ -1363,3 +1358,13 @@ Corrected the syntax error in the hybrid system evaluation and implemented capac
         except Exception as e:
             print(f"❌ Allocation calculation failed: {e}")
             return {'wbtc_swap': 0, 'weth_swap': 0, 'direct_supply': total_dai}
+
+        # Enhanced gas calculation for swap with fallback
+            try:
+                base_gas_price = self.w3.eth.gas_price
+                if base_gas_price <= 0:
+                    base_gas_price = self.w3.to_wei(0.1, 'gwei')  # Fallback
+                swap_gas_price = int(base_gas_price * 1.3)  # 30% higher for swap operations
+            except Exception as gas_error:
+                print(f"⚠️ Gas price fetch failed: {gas_error}")
+                swap_gas_price = self.w3.to_wei(0.2, 'gwei')  # Conservative fallback
