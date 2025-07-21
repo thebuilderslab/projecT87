@@ -125,7 +125,7 @@ def autonomous_agent_loop():
     # Initialize Arbitrum testnet agent and strategy manager once
     arbitrum_agent = None
     strategy_manager = None
-    
+
     try:
         arbitrum_agent = ArbitrumTestnetAgent()
         # --- IMPORTANT ADDITION: Initialize DeFi integrations ---
@@ -144,7 +144,7 @@ def autonomous_agent_loop():
     # --- CONTINUOUS OPERATION LOOP ---
     iteration = 0
     run_id_counter = 0
-    
+
     while True:  # This ensures the loop runs continuously
         iteration += 1
         print(f"\n--- Autonomous Agent Loop: Iteration {iteration} ---")
@@ -157,7 +157,7 @@ def autonomous_agent_loop():
 
             # Main agent logic
             timestamp = time.time()
-            
+
             # Use real DeFi operations instead of simulation
             performance = arbitrum_agent.run_real_defi_task(run_id_counter, iteration, agent_config)
             log_performance(run_id_counter, iteration, performance, timestamp)
@@ -185,7 +185,7 @@ def autonomous_agent_loop():
             print(f"❌ Error in autonomous agent loop during iteration {iteration}: {e}")
             traceback.print_exc()  # Print the full traceback for debugging
             print("❗ Attempting to continue after error...")
-            
+
             # Try to reinitialize connections if needed
             if "connection" in str(e).lower() or "rpc" in str(e).lower():
                 try:
@@ -224,7 +224,7 @@ if __name__ == "__main__":
 
     # Check for auto mode environment variable
     auto_mode = os.getenv('AUTO_MODE')
-    
+
     if auto_mode:
         choice = "1"
         print("🤖 AUTO MODE DETECTED - Starting autonomous mode...")
