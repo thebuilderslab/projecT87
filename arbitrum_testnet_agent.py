@@ -1088,7 +1088,7 @@ class ArbitrumTestnetAgent:
                     print(f"📊 CAPACITY-BASED SYSTEM Analysis:")
                     print(f"   Capacity Utilization: {capacity_utilization:.1%}")
                     print(f"   Capacity Threshold: {self.capacity_optimization_threshold:.1%}")
-                    print(f"   Available vs Threshold: ${available_borrows:.2f} >= ${self.capacity_available_threshold:.0f}")
+                    print(f"   Available vs Threshold: ${available_borrows:.2f} >= ${self.capacity_available_threshold:.0f} = {available_borrows >= self.capacity_available_threshold}")
                     print(f"   Utilization: {capacity_utilization:.1%} < {self.capacity_optimization_threshold:.1%} = {capacity_utilization < self.capacity_optimization_threshold}")
                     print(f"   Manual Override: {manual_override}")
 
@@ -1351,11 +1351,12 @@ class ArbitrumTestnetAgent:
             print(f"📋 DAI Allocation:")
             print(f"   WBTC Swap: ${allocation['wbtc_swap']:.2f}")
             print(f"   WETH Swap: ${allocation['weth_swap']:.2f}")
-            print(f"   Direct Supply: ${allocation['direct_supply']:.2f}")
+            print(f"   Direct Supply: ${allocation['direct_```python
+supply']:.2f}")
 
             return allocation
 
-Fixing the syntax error at the beginning of the file by removing the extraneous text.        except Exception as e:
+        except Exception as e:
             print(f"❌ Allocation calculation failed: {e}")
             return {'wbtc_swap': 0, 'weth_swap': 0, 'direct_supply': total_dai}
 
@@ -1368,3 +1369,77 @@ Fixing the syntax error at the beginning of the file by removing the extraneous 
             except Exception as gas_error:
                 print(f"⚠️ Gas price fetch failed: {gas_error}")
                 swap_gas_price = self.w3.to_wei(0.2, 'gwei')  # Conservative fallback
+
+    def _calculate_growth_triggered_amount(self, growth_amount, available_borrows):
+        """
+        Calculates borrow amount based on growth trigger, subject to available capacity limits.
+        Leverages a smaller re-leverage percentage and caps borrow amount with multiple constraints.
+        """
+        try:
+            print("\n💰 Growth-Triggered Borrow Calculation:")
+            print(f"   Growth: ${growth_amount:.2f}, Available Borrows: ${available_borrows:.2f}")
+
+            # 1. Initial Borrow Amount (based on re-leverage percentage)
+            initial_borrow = growth_amount * self.re_leverage_percentage
+            print(f"   Initial Borrow (Re-leverage %): ${initial_borrow:.2f}")
+
+            # 2. Apply Min/Max Constraints (borrow amount limits)
+            constrained_borrow = max(self.min_borrow_releverage, min(initial_borrow, self.max_borrow_releverage))
+            print(f"   Borrow after Min/Max constraints: ${constrained_borrow:.2f}")
+
+            # 3. Further Constraint (limit to 20% of available borrows)
+            # Only borrow if less than 20% of capacity is used
+            safe_borrow = min(constrained_borrow, available_borrows * 0.20)
+            print(f"   Borrow after 20% capacity limit: ${safe_borrow:.2f}")
+
+            # 4. Final Sanity Check (do not borrow if below $0.5)
+            if safe_borrow < 0.5:
+                print(f"   Borrow amount too low (${safe_borrow:.2f} < $0.5) - NOT BORROWING")
+                return 0.0  # Prevent very small, potentially failing borrows
+
+            print(f"   Final Growth-Triggered Borrow Amount: ${safe_borrow:.2f}")
+            return safe_borrow
+
+        except Exception as e:
+            print(f"❌ Growth-triggered calculation failed: {e}")
+            return 0.0
+
+    def _calculate_capacity_optimized_amount(self, available_borrows, utilization_ratio):
+        """
+        Calculate borrow amount based on available capacity and utilization,
+        trying to optimize within set boundaries.
+
+        This revised version adds conservative limits and checks to ensure safe
+        operation within the utilization targets.
+        """
+        try:
+            print("\n💰 Capacity-Based Borrow Calculation:")
+            print(f"   Available Borrows: ${available_borrows:.2f}")
+            print(f"   Utilization: {utilization_ratio:.2%}")
+
+            # 1. Target Utilization (aiming for 50% utilization as goal)
+            target_utilization = 0.50
+
+            # 2. Calculate amount needed to reach target
+            borrow_to_target = available_borrows * (target_utilization - utilization_ratio)
+            print(f"   Borrow to reach {target_utilization:.0%} utilization: ${borrow_to_target:.2f}")
+
+            # 3. Apply Safety Cap (do not try to borrow more than 10% of available)
+            safe_borrow = min(borrow_to_target, available_borrows * 0.10)
+            print(f"   After 10% safety cap: ${safe_borrow:.2f}")
+
+            # 4. Impose Min/Max Constraints (as in growth system)
+            constrained_borrow = max(self.min_borrow_releverage, min(safe_borrow, self.max_borrow_releverage))
+            print(f"   After Min/Max constraints: ${constrained_borrow:.2f}")
+
+            # 5. Final Check (prevent tiny borrows that may waste gas)
+            if constrained_borrow < 0.5:
+                print(f"   Borrow amount too low (${constrained_borrow:.2f} < $0.5) - NOT BORROWING")
+                return 0.0
+
+            print(f"   Final Capacity-Optimized Borrow Amount: ${constrained_borrow:.2f}")
+            return constrained_borrow
+
+        except Exception as e:
+            print(f"❌ Capacity-optimized calculation failed: {e}")
+            return 0.0

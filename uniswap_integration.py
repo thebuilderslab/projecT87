@@ -105,11 +105,16 @@ class UniswapArbitrumIntegration:
                         return None
                     print(f"✅ Balance check passed: {readable_balance:.6f} >= {amount_in:.6f}")
                 except Exception as balance_error:
-                    print(f"⚠️ Balance check failed, proceeding with swap: {balance_error}")
+                    print(f"⚠️ Balance check failed: {balance_error}")
+                    return None  # Don't proceed if balance check fails
 
             # Convert amount_in to wei FIRST
             amount_in_wei = self._convert_to_wei(token_in, amount_in)
             print(f"🔄 Converting {amount_in} to {amount_in_wei} wei for {token_in}")
+            
+            if amount_in_wei <= 0:
+                print(f"❌ Invalid wei conversion result: {amount_in_wei}")
+                return None
 
             # Approve token spending
             if token_in != "0x0000000000000000000000000000000000000000":  # Not ETH
