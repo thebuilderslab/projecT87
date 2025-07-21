@@ -1399,12 +1399,15 @@ class ArbitrumTestnetAgent:
             print(f"   current_collateral_value_usd (ENHANCED): ${current_collateral_value_usd:,.2f}")
             print(f"   current baseline: ${self.last_collateral_value_usd:.2f}")
 
+            baseline_just_initialized = False
+
             # Initialize baseline only once at the very beginning OR reset if requested
             if (not self.baseline_initialized and current_collateral_value_usd > 50) or \
                (current_collateral_value_usd > 50 and os.path.exists('reset_baseline.flag')) or \
                (self.baseline_initialized and current_collateral_value_usd > 50 and self.last_collateral_value_usd > current_collateral_value_usd + 10):
                 self.last_collateral_value_usd = current_collateral_value_usd
                 self.baseline_initialized = True
+                baseline_just_initialized = True
                 print(f"🎯 BASELINE INITIALIZED/RESET: Set to ${current_collateral_value_usd:,.2f}")
 
                 # Remove reset flag if it exists
@@ -1425,8 +1428,6 @@ class ArbitrumTestnetAgent:
 
                 print(f"📈 Next trigger will activate when collateral reaches: ${self.last_collateral_value_usd + 13:,.2f}")
                 print(f"💡 Add $13+ worth of collateral to activate autonomous sequence")
-                print(f"🎯 CURRENT GAP: Need $13.00 more collateral")
-                return 0.8
 
             # If agent still sees $0, but Arbiscan shows real position, force detection
             if current_collateral_value_usd < 50:
@@ -1472,6 +1473,15 @@ class ArbitrumTestnetAgent:
                 print(f"🧪 TEST MODE: Using $1 threshold instead of $13")
                 trigger_ready = True
 
+            # Special case: if baseline was just initialized and we have sufficient collateral growth, allow trigger
+            if baseline_just_initialized and current_collateral_value_usd > (self.last_collateral_value_usd + 13.0):
+                print(f"🎯 BASELINE JUST INITIALIZED: Checking if immediate trigger is possible")
+                # Recalculate growth from the new baseline
+                immediate_growth = current_collateral_value_usd - self.last_collateral_value_usd
+                if immediate_growth >= 13.0:
+                    print(f"🚀 IMMEDIATE TRIGGER: Growth ${immediate_growth:.2f} meets threshold")
+                    trigger_ready = True
+
             print(f"""
             🎯 AUTONOMOUS TRIGGER CHECK:
                Current Collateral: ${current_collateral_value_usd:.2f}
@@ -1480,6 +1490,7 @@ class ArbitrumTestnetAgent:
                Actual Growth: ${collateral_growth:.2f}
                Growth Needed: $13.00
                Manual Override: {manual_override}
+               Baseline Just Initialized: {baseline_just_initialized}
                ✅ TRIGGER READY: {trigger_ready}""")
 
             # Check cooldown before executing
@@ -1495,18 +1506,23 @@ class ArbitrumTestnetAgent:
                 growth = current_collateral_value_usd - self.last_collateral_value_usd
                 # if not trigger_condition:
                 self.manual_override_active = False
-                print(f"⏸️ No action: Collateral growth ${growth:.2f} < $13 threshold")
-                print(f"📊 Current Position: ${current_collateral_value_usd:,.2f} collateral, ${debt_usd if 'debt_usd' in locals() else 0.0:,.2f} debt")
-                print(f"💰 Last recorded collateral: ${self.last_collateral_value_usd:.2f}")
-                print(f"📈 Collateral growth: ${growth:.2f}")
+                
+                if baseline_just_initialized:
+                    print(f"🎯 CURRENT GAP: Need $13.00 more collateral (baseline just set)")
+                    return 0.8
+                else:
+                    print(f"⏸️ No action: Collateral growth ${growth:.2f} < $13 threshold")
+                    print(f"📊 Current Position: ${current_collateral_value_usd:,.2f} collateral, ${debt_usd if 'debt_usd' in locals() else 0.0:,.2f} debt")
+                    print(f"💰 Last recorded collateral: ${self.last_collateral_value_usd:.2f}")
+                    print(f"📈 Collateral growth: ${growth:.2f}")
 
-                if current_collateral_value_usd == 0:
-                    print(f"💡 TIP: To activate autonomous operations:")
-                    print(f"   1. Supply some USDC/WETH to Aave as collateral")
-                    print(f"   2. Agent will monitor for $13+ collateral growth")
-                    print(f"   3. Then execute autonomous borrowing & swapping sequence")
+                    if current_collateral_value_usd == 0:
+                        print(f"💡 TIP: To activate autonomous operations:")
+                        print(f"   1. Supply some USDC/WETH to Aave as collateral")
+                        print(f"   2. Agent will monitor for $13+ collateral growth")
+                        print(f"   3. Then execute autonomous borrowing & swapping sequence")
 
-                return 0.7  # Moderate performance score
+                    return 0.7  # Moderate performance score
 
         except Exception as e:
             print(f"❌ CRITICAL ERROR in autonomous task: {e}")
@@ -1543,6 +1559,18 @@ class ArbitrumTestnetAgent:
         except Exception as e:
             print(f"❌ Error checking wallet readiness: {e}")
             return False
+
+    def get_recent_performance(self, num_entries=100):
+        """Get recent performance entries from the log for collaborative strategy manager"""
+        try:
+            from main import get_recent_performance
+            return get_recent_performance(num_entries)
+        except ImportError:
+            print("⚠️ Performance log functions not available")
+            return []
+        except Exception as e:
+            print(f"⚠️ Error getting recent performance: {e}")
+            return []
 
     def get_portfolio_summary(self):
         """Get real portfolio summary with strict error handling"""
