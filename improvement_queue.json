@@ -492,5 +492,26 @@
     "estimated_impact": "Medium-High (Stability)",
     "risk_level": "Low",
     "implementation_time": 1753124220.4334257
+  },
+  {
+    "id": "yield_optimization_1753124575",
+    "type": "yield_optimization",
+    "source": "agent",
+    "timestamp": 1753124575.4209468,
+    "data": {
+      "action": "optimize_yield",
+      "parameters": {
+        "leverage_increase": 0.1,
+        "new_asset_targets": [
+          "USDT",
+          "FRAX"
+        ],
+        "arbitrage_opportunities": true
+      },
+      "reasoning": "Strong performance at 1.000 allows for optimization"
+    },
+    "status": "pending",
+    "estimated_impact": "High (Profit)",
+    "risk_level": "Low-Medium"
   }
 ]
