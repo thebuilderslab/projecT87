@@ -679,6 +679,7 @@ class ArbitrumTestnetAgent:
         # else: # Original Code
         #    print("❌ Could not get total collateral USD value from health monitor.") # Original Code
         #    return 0.0 # Return 0 if unable to retrieve # Original Code
+        ```text
         return 0.0  # Returning 0.0 directly because the function is not being used.
 
     def execute_leveraged_supply_strategy(self, amount_to_borrow_dai=10):
@@ -1037,6 +1038,28 @@ class ArbitrumTestnetAgent:
             print(f"⚠️ ARB price fetch failed: {e} - using fallback")
             return {'price': 0.50, 'source': 'fallback_error'}
 
+    def get_recent_performance(self, num_entries=100):
+        """Get recent performance data for strategy analysis"""
+        try:
+            # Load performance data from main.py's performance log
+            performance_data = []
+            performance_log = 'performance_log.json'
+
+            if os.path.exists(performance_log):
+                with open(performance_log, 'r') as f:
+                    for line in f:
+                        try:
+                            performance_data.append(json.loads(line))
+                        except json.JSONDecodeError:
+                            continue
+
+            # Return the most recent entries
+            return performance_data[-num_entries:] if performance_data else []
+
+        except Exception as e:
+            print(f"⚠️ Error getting recent performance: {e}")
+            return []
+
     def run_real_defi_task(self, run_id, iteration, config):
         """Execute autonomous DeFi operations with REAL blockchain data only"""
         print(f"\n🎯 Autonomous Run {run_id}, Iteration {iteration}")
@@ -1323,7 +1346,8 @@ class ArbitrumTestnetAgent:
             try:
                 from accurate_debank_fetcher import AccurateWalletDataFetcher
                 fetcher = AccurateWalletDataFetcher(self.w3, self.address)
-                dashboard_data = fetcher.get_comprehensive_wallet_data()
+                dashboard_data = fetcher.get_comprehensive```text
+_wallet_data()
 
                 if dashboard_data and dashboard_data.get('success'):
                     real_collateral = dashboard_data['total_collateral_usdc']
@@ -1506,7 +1530,7 @@ class ArbitrumTestnetAgent:
                 growth = current_collateral_value_usd - self.last_collateral_value_usd
                 # if not trigger_condition:
                 self.manual_override_active = False
-                
+
                 if baseline_just_initialized:
                     print(f"🎯 CURRENT GAP: Need $13.00 more collateral (baseline just set)")
                     return 0.8
@@ -1559,18 +1583,6 @@ class ArbitrumTestnetAgent:
         except Exception as e:
             print(f"❌ Error checking wallet readiness: {e}")
             return False
-
-    def get_recent_performance(self, num_entries=100):
-        """Get recent performance entries from the log for collaborative strategy manager"""
-        try:
-            from main import get_recent_performance
-            return get_recent_performance(num_entries)
-        except ImportError:
-            print("⚠️ Performance log functions not available")
-            return []
-        except Exception as e:
-            print(f"⚠️ Error getting recent performance: {e}")
-            return []
 
     def get_portfolio_summary(self):
         """Get real portfolio summary with strict error handling"""

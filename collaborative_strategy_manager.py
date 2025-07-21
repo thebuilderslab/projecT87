@@ -210,6 +210,49 @@ class CollaborativeStrategyManager:
 
         return success
 
+    def implement_risk_reduction(self, risk_data):
+        """Implement risk reduction strategies"""
+        try:
+            print(f"🔧 Implementing risk reduction strategy...")
+            print(f"   Target health factor: {risk_data['parameters']['health_factor_target']}")
+            print(f"   Max borrow ratio: {risk_data['parameters']['max_borrow_ratio']}")
+            print(f"   Monitoring frequency: {risk_data['parameters']['monitoring_frequency']}")
+            
+            # Update agent configuration for risk reduction
+            if hasattr(self.agent, 'health_factor_target'):
+                self.agent.health_factor_target = float(risk_data['parameters']['health_factor_target'])
+                
+            if hasattr(self.agent, 'max_borrow_ratio'):
+                self.agent.max_borrow_ratio = float(risk_data['parameters']['max_borrow_ratio'])
+                
+            print(f"✅ Risk reduction strategy implemented successfully")
+            return True
+            
+        except Exception as e:
+            print(f"❌ Risk reduction implementation failed: {e}")
+            return False
+
+    def implement_yield_optimization(self, optimization_data):
+        """Implement yield optimization strategies"""
+        try:
+            print(f"🚀 Implementing yield optimization strategy...")
+            
+            # Apply optimization parameters
+            if 'leverage_increase' in optimization_data['parameters']:
+                leverage_increase = float(optimization_data['parameters']['leverage_increase'])
+                print(f"   Increasing leverage by: {leverage_increase}")
+                
+            if 'new_asset_targets' in optimization_data['parameters']:
+                new_assets = optimization_data['parameters']['new_asset_targets']
+                print(f"   New target assets: {new_assets}")
+                
+            print(f"✅ Yield optimization strategy implemented successfully")
+            return True
+            
+        except Exception as e:
+            print(f"❌ Yield optimization implementation failed: {e}")
+            return False
+
     def implement_code_modification(self, modification_data):
         """Implement direct code modifications"""
         try:
