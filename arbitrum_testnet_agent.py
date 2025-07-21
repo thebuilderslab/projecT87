@@ -1142,7 +1142,18 @@ class ArbitrumTestnetAgent:
                                 safe_amount = self.calculate_safe_borrow_amount(collateral_growth, available_borrows)
                                 print(f"💰 Using Manual Override calculation: ${safe_amount:.2f}")
                         else:
-                        else:
+                            # Calculate safe borrow amount using HYBRID logic
+                            if trigger_type == "growth":
+                                safe_amount = self._calculate_growth_triggered_amount(collateral_growth, available_borrows)
+                                print(f"💰 Using Growth-Triggered calculation: ${safe_amount:.2f}")
+                            elif trigger_type == "capacity":
+                                safe_amount = self._calculate_capacity_optimized_amount(available_borrows, capacity_utilization)
+                                print(f"💰 Using Capacity-Based calculation: ${safe_amount:.2f}")
+                            else:
+                                # Manual override - use conservative approach
+                                safe_amount = self.calculate_safe_borrow_amount(collateral_growth, available_borrows)
+                                print(f"💰 Using Manual Override calculation: ${safe_amount:.2f}")
+                    else:
                         print(f"⏸️ HYBRID SYSTEM - NO TRIGGERS ACTIVATED")
                         print(f"   GROWTH-TRIGGERED Requirements:")
                         if collateral_growth < self.growth_trigger_threshold:
