@@ -38,7 +38,16 @@ class EnhancedBorrowManager:
                 print(f"✅ Successfully borrowed ${amount_usd:.2f} DAI")
                 return result
             else:
-                print(f"❌ DAI borrow failed")
+                print(f"❌ DAI borrow failed - checking if USDC fallback is available")
+                # Try USDC as fallback if DAI fails
+                print(f"🔄 Attempting USDC fallback for ${amount_usd:.2f}")
+                usdc_amount_wei = int(amount_usd * (10 ** 6))  # USDC has 6 decimals
+                usdc_result = self.aave.borrow_from_aave(usdc_amount_wei, self.agent.usdc_address)
+                if usdc_result:
+                    print(f"✅ Successfully borrowed ${amount_usd:.2f} USDC as DAI fallback")
+                    return usdc_result
+                else:
+                    print(f"❌ Both DAI and USDC borrow attempts failed")
                 return None
 
         except Exception as e:

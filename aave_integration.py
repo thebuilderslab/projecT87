@@ -1139,6 +1139,11 @@ class AaveArbitrumIntegration:
                 elif "insufficient funds" in error_str:
                     raise Exception("Insufficient ETH for gas fees")
                 elif "execution reverted" in error_str:
+                    # Check if this is a DAI borrowing issue
+                    if token_address.lower() == self.dai_address.lower():
+                        print(f"🔍 DAI borrowing revertion detected - this may be a liquidity or rate mode issue")
+                        print(f"   DAI address: {self.dai_address}")
+                        print(f"   Token address: {token_address}")
                     raise Exception("Transaction reverted - check Aave position and borrowing capacity")
                 elif "could not transact" in error_str:
                     print(f"🔍 Contract interaction failed - checking RPC connection")
