@@ -492,6 +492,47 @@ class AaveArbitrumIntegration:
         }
         return token_decimals.get(token_address.lower(), 18)
 
+    def get_user_account_data(self):
+        """Get user account data from Aave with error handling"""
+        try:
+            # Call getUserAccountData directly
+            account_data = self.pool_contract.functions.getUserAccountData(self.address).call()
+            
+            # Parse the returned data (Aave V3 format)
+            total_collateral_usd = account_data[0] / (10**8)  # Convert from 8 decimals
+            total_debt_usd = account_data[1] / (10**8)
+            available_borrows_usd = account_data[2] / (10**8)
+            liquidation_threshold = account_data[3] / 10000  # Convert from basis points
+            ltv = account_data[4] / 10000
+            health_factor_raw = account_data[5]
+            
+            # Handle health factor (infinity if no debt)
+            if health_factor_raw >= 2**256 - 1:
+                health_factor = float('inf')
+            else:
+                health_factor = health_factor_raw / (10**18)
+            
+            return {
+                'totalCollateralUSD': total_collateral_usd,
+                'totalDebtUSD': total_debt_usd,
+                'availableBorrowsUSD': available_borrows_usd,
+                'currentLiquidationThreshold': liquidation_threshold,
+                'ltv': ltv,
+                'healthFactor': health_factor,
+                'success': True
+            }
+            
+        except Exception as e:
+            print(f"❌ Failed to get user account data: {e}")
+            return {
+                'totalCollateralUSD': 0,
+                'totalDebtUSD': 0,
+                'availableBorrowsUSD': 0,
+                'healthFactor': float('inf'),
+                'success': False,
+                'error': str(e)
+            }
+
     def get_optimized_gas_params(self, operation_type='default', market_condition='normal'):
         """Get optimized gas parameters for transactions"""
         try:
