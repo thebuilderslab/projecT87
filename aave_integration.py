@@ -540,11 +540,12 @@ class AaveArbitrumIntegration:
             # For USDC, 1 USD = 1 USDC (approximately)
             if token_address.lower() == self.usdc_address.lower():
                 amount_wei = int(amount_usd * (10 ** decimals))
+                print(f"✅ USDC conversion: ${amount_usd} = {amount_wei} wei")
                 return amount_wei
             # For DAI, 1 USD ≈ 1 DAI (stablecoin peg)
             elif token_address.lower() == self.dai_address.lower():
                 amount_wei = int(amount_usd * (10 ** decimals))
-                print(f"✅ DAI conversion: ${amount_usd} = {amount_wei} wei")
+                print(f"✅ DAI borrowing enabled: ${amount_usd} = {amount_wei} DAI wei")
                 return amount_wei
             else:
                 # For other tokens, would need price conversion

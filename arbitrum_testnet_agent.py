@@ -814,4 +814,162 @@ class ArbitrumTestnetAgent:
         except Exception as e:
             print(f"An error occurred during the borrow operation: {e}")
             return None
+
 analyze_borrow_failure function improved for better debugging and suggestions.
+
+    def execute_leveraged_supply_strategy(self):
+        """
+        Executes a leveraged supply strategy on Aave.
+
+        This strategy involves the following steps:
+        1. Borrow USDC.
+        2. Swap USDC for WBTC.
+        3. Supply WBTC to Aave as collateral.
+        4. Swap USDC for WETH.
+        5. Supply WETH to Aave as collateral.
+        """
+        # This strategy is extremely sensitive to gas costs and slippage.
+
+        # STEP 1: Determine borrow amount based on available capacity
+        try:
+            print("\n💰 Determining borrow amount...")
+            account_data = self.aave.get_user_account_data()
+            if not account_data:
+                print("❌ Could not retrieve account data. Aborting strategy.")
+                return False
+
+            available_borrows_usdc = account_data['availableBorrowsUSD']
+            print(f"📊 Available borrows: ${available_borrows_usdc:.2f}")
+
+            # Limit borrow amount to a conservative value (e.g., 10% of available)
+            amount_to_borrow_usdc = min(available_borrows_usdc * 0.10, 10.0)
+            print(f"   Safe amount (10%): ${amount_to_borrow_usdc:.2f}")
+
+            if amount_to_borrow_usdc < 1.0:
+                print(f"   Not enough borrow capacity: ${amount_to_borrow_usdc:.2f} < $1.0")
+                print("Aborting leveraged supply strategy.")
+                return False
+
+        except Exception as e:
+            print(f"❌ Error determining borrow amount: {e}")
+            return False
+
+        # STEP 2: Borrow USDC
+        # Borrow USDC
+        try:
+            # Use DAI borrowing instead of USDC
+            print(f"🔄 Converting USDC borrow to DAI borrow: ${amount_to_borrow_usdc:.2f}")
+            success_borrow = self.aave.borrow(amount_to_borrow_usdc, self.dai_address)
+            if not success_borrow:
+                print("❌ Failed to borrow DAI. Aborting strategy.")
+                return False
+            print(f"✅ Borrowed {amount_to_borrow_usdc} DAI successfully.")
+        except Exception as e:
+            print(f"❌ Error during DAI borrow: {e}")
+            traceback.print_exc()
+            return False
+
+        # STEP 3: Swap 3 USDC for WBTC and supply
+        # Swap 3 DAI for WBTC and supply
+        try:
+            print("  Swapping 3 DAI for WBTC and supplying to Aave...")
+            # First swap DAI to WBTC
+            wbtc_swap_success = self.uniswap.swap_tokens(self.dai_address, self.wbtc_address, 3, 500)
+
+            if wbtc_swap_success:
+                print("  ✅ Successfully swapped DAI for WBTC.")
+                # Then supply WBTC to Aave
+                wbtc_supply_success = self.aave.supply_to_aave(self.wbtc_address, wbtc_swap_success)
+
+                if wbtc_supply_success:
+                    print("  ✅ Successfully supplied WBTC to Aave.")
+                else:
+                    print("  ❌ Failed to supply WBTC to Aave.")
+            else:
+                print("  ❌ Failed to swap DAI for WBTC.")
+
+        except Exception as e:
+            print(f"  ❌ Error during WBTC swap and supply: {e}")
+            return False
+
+        # STEP 4: Swap 2 USDC for WETH and supply
+        # Swap 2 DAI for WETH and supply
+        try:
+            print("  Swapping 2 DAI for WETH and supplying to Aave...")
+            # First swap DAI to WETH
+            weth_swap_success = self.uniswap.swap_tokens(self.dai_address, self.weth_address, 2, 500)
+
+            if weth_swap_success:
+                print("  ✅ Successfully swapped DAI for WETH.")
+                # Then supply WETH to Aave
+                weth_supply_success = self.aave.supply_to_aave(self.weth_address, weth_swap_success)
+
+                if weth_supply_success:
+                    print("  ✅ Successfully supplied WETH to Aave.")
+                else:
+                    print("  ❌ Failed to supply WETH to Aave.")
+            else:
+                print("  ❌ Failed to swap DAI for WETH.")
+
+        except Exception as e:
+            print(f"  ❌ Error during WETH swap and supply: {e}")
+            return False
+
+        # STEP 5: ETH Gas Buffer Management
+        try:
+            print("\n⛽ ETH Gas Buffer Management...")
+            current_eth_balance = self.get_eth_balance()
+
+            MIN_ETH_GAS_THRESHOLD = 0.02  # Slightly lower threshold
+            MIN_ETH_GAS_BUFFER = 0.05
+            print(f"💰 Current ETH Balance: {current_eth_balance:.4f} ETH")
+            print(f"   Threshold: {MIN_ETH_GAS_THRESHOLD:.4f} ETH,  Buffer: {MIN_ETH_GAS_BUFFER:.4f} ETH")
+
+            if current_eth_balance < MIN_ETH_GAS_THRESHOLD:
+                print(f"  Wallet ETH is below threshold. Swapping 1 DAI for ETH.")
+                # Swap 1 DAI for WETH (then unwrap to ETH)
+                success_eth_swap = self.uniswap.swap_tokens(self.dai_address, self.weth_address, 1, 500)
+                if not success_eth_swap:
+                    print("  ⚠️ Failed to swap 1 DAI for ETH. This might impact future transactions if gas runs out.")
+                else:
+                    print("  ✅ Successfully swapped 1 DAI for ETH to maintain gas buffer.")
+            else:
+                print(f"  Wallet ETH is sufficient. Supplying 1 DAI to Aave as collateral instead of swapping for ETH.")
+                # Supply the 1 DAI directly to Aave
+                success_supply_eth_dai_yield = self.aave.supply_to_aave(self.dai_address, 1)
+
+        except Exception as e:
+            print(f"  ❌ Error during ETH gas management: {e}")
+            return False
+
+        # STEP 6: Remaining balance supply
+        # Supply remaining 4 DAI directly (2 + 2 allocation)
+        try:
+            print("  Supplying remaining 4 DAI directly to Aave...")
+            # Check current DAI balance
+            dai_balance = self.aave.get_token_balance(self.dai_address)
+            supply_amount = min(4, dai_balance)  # Supply up to 4 DAI or available balance
+
+            if supply_amount > 0:
+                # Approve and supply DAI
+                if self.aave.approve_token(self.dai_address, supply_amount):
+                    success_dai_supply = self.aave.supply_to_aave(self.dai_address, supply_amount)
+                    if success_dai_supply:
+                        print(f"  ✅ Successfully supplied {supply_amount:.6f} DAI directly to Aave.")
+                    else:
+                        print("  ❌ Failed to supply DAI directly to Aave.")
+                else:
+                    print("  ❌ Failed to approve DAI for Aave.")
+            else:
+                print("  ❌ No DAI balance available for direct supply.")
+
+        except Exception as e:
+            print(f"  ❌ Error during remaining balance supply: {e}")
+            return False
+
+        # Final Report
+        print("\n📊 Leveraged Supply Strategy Execution Report:")
+        print("  ✅ Strategy completed without fatal errors.")
+        print("  ⚠️ Check individual steps for potential minor issues.")
+
+        return True

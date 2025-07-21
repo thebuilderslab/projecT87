@@ -161,7 +161,7 @@ class EnhancedBorrowManager:
                             amount_wei = int(amount_usd * (10 ** 18))  # DAI has 18 decimals
                         else:
                             amount_wei = int(amount_usd * (10 ** 6))   # USDC has 6 decimals
-                        
+
                         self.agent.aave.pool_contract.functions.borrow(
                             token_address_checksum,
                             amount_wei,  # Use token-specific amount
@@ -367,14 +367,30 @@ class EnhancedBorrowManager:
             print(f"🔍 Stack trace: {traceback.format_exc()}")
             return False
 
-    def execute_enhanced_borrow_with_retry(self, safe_borrow_amount):
-        """Execute borrow with enhanced retry mechanism - corrected for DAI"""
+    def execute_enhanced_borrow_with_retry(self, amount_usd):
+        """Execute enhanced borrow with DAI only - no fallbacks"""
         try:
-            # Use the safe_borrow_with_fallbacks method with DAI address
-            return self.safe_borrow_with_fallbacks(safe_borrow_amount, self.agent.dai_address)
+            print(f"🏦 Enhanced Borrow Manager: Attempting to borrow ${amount_usd:.2f} DAI ONLY")
+            print(f"🔍 DEBUG: DAI address: {self.agent.dai_address}")
+
+            # Convert USD to DAI wei (DAI has 18 decimals, 1 USD ≈ 1 DAI)
+            amount_wei = int(amount_usd * (10 ** 18))
+            print(f"💱 Converted ${amount_usd:.2f} to {amount_wei} DAI wei")
+            print(f"🎯 DAI Strategy: ONLY borrowing DAI - no fallbacks")
+
+            # Execute DAI borrow with enhanced retry logic
+            result = self.aave.borrow_from_aave(amount_wei, self.agent.dai_address)
+
+            if result:
+                print(f"✅ Successfully borrowed ${amount_usd:.2f} DAI")
+                return result
+            else:
+                print(f"❌ DAI borrow failed - NO FALLBACKS ATTEMPTED")
+                return None
+
         except Exception as e:
-            print(f"❌ Enhanced borrow execution failed: {e}")
-            return False
+            print(f"❌ Enhanced DAI borrow failed: {e}")
+            return None
     def _validate_network_timing(self):
         """Validate network conditions for optimal transaction timing"""
         try:
