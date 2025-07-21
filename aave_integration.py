@@ -1,6 +1,3 @@
-` tag within the Python code. The task is to remove this tag to fix the error and generate the complete corrected code.
-
-<replit_final_file>
 import os
 import json
 import math
@@ -179,108 +176,6 @@ class AaveArbitrumIntegration:
             [{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"owner","type":"address"},{"indexed":true,"internalType":"address","name":"spender","type":"address"},{"indexed":false,"internalType":"uint256","name":"value","type":"uint256"}],"name":"Approval","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"authorizer","type":"address"},{"indexed":true,"internalType":"bytes32","name":"nonce","type":"bytes32"}],"name":"AuthorizationCanceled","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"authorizer","type":"address"},{"indexed":true,"internalType":"bytes32","name":"nonce","type":"bytes32"}],"name":"AuthorizationUsed","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"_account","type":"address"}],"name":"Blacklisted","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"newBlacklister","type":"address"}],"name":"BlacklisterChanged","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"burner","type":"address"},{"indexed":false,"internalType":"uint256","name":"amount","type":"uint256"}],"name":"Burn","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"newMasterMinter","type":"address"}],"name":"MasterMinterChanged","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"minter","type":"address"},{"indexed":true,"internalType":"address","name":"to","type":"address"},{"indexed":false,"internalType":"uint256","name":"amount","type":"uint256"}],"name":"Mint","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"minter","type":"address"},{"indexed":false,"internalType":"uint256","name":"minterAllowedAmount","type":"uint256"}],"name":"MinterConfigured","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"oldMinter","type":"address"}],"name":"MinterRemoved","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"address","name":"previousOwner","type":"address"},{"indexed":false,"internalType":"address","name":"newOwner","type":"address"}],"name":"OwnershipTransferred","type":"event"},{"anonymous":false,"inputs":[],"name":"Pause","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"newAddress","type":"address"}],"name":"PauserChanged","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"newRescuer","type":"address"}],"name":"RescuerChanged","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"from","type":"address"},{"indexed":true,"internalType":"address","name":"to","type":"address"},{"indexed":false,"internalType":"uint256","name":"value","type":"uint256"}],"name":"Transfer","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"_account","type":"address"}],"name":"UnBlacklisted","type":"event"},{"anonymous":false,"inputs":[],"name":"Unpause","type":"event"},{"inputs":[],"name":"CANCEL_AUTHORIZATION_TYPEHASH","outputs":[{"internalType":"bytes32","name":"","type":"bytes32"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"DOMAIN_SEPARATOR","outputs":[{"internalType":"bytes32","name":"","type":"bytes32"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"PERMIT_TYPEHASH","outputs":[{"internalType":"bytes32","name":"","type":"bytes32"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"RECEIVE_WITH_AUTHORIZATION_TYPEHASH","outputs":[{"internalType":"bytes32","name":"","type":"bytes32"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"TRANSFER_WITH_AUTHORIZATION_TYPEHASH","outputs":[{"internalType":"bytes32","name":"","type":"bytes32"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"owner","type":"address"},{"internalType":"address","name":"spender","type":"address"}],"name":"allowance","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"spender","type":"address"},{"internalType":"uint256","name":"value","type":"uint256"}],"name":"approve","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"authorizer","type":"address"},{"internalType":"bytes32","name":"nonce","type":"bytes32"}],"name":"authorizationState","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"account","type":"address"}],"name":"balanceOf","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"_account","type":"address"}],"name":"blacklist","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"blacklister","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"_amount","type":"uint256"}],"name":"burn","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"authorizer","type":"address"},{"internalType":"bytes32","name":"nonce","type":"bytes32"},{"internalType":"uint8","name":"v","type":"uint8"},{"internalType":"bytes32","name":"r","type":"bytes32"},{"internalType":"bytes32","name":"s","type":"bytes32"}],"name":"cancelAuthorization","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"authorizer","type":"address"},{"internalType":"bytes32","name":"nonce","type":"bytes32"},{"internalType":"bytes","name":"signature","type":"bytes"}],"name":"cancelAuthorization","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"minter","type":"address"},{"internalType":"uint256","name":"minterAllowedAmount","type":"uint256"}],"name":"configureMinter","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"currency","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"decimals","outputs":[{"internalType":"uint8","name":"","type":"uint8"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"spender","type":"address"},{"internalType":"uint256","name":"decrement","type":"uint256"}],"name":"decreaseAllowance","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"spender","type":"address"},{"internalType":"uint256","name":"increment","type":"uint256"}],"name":"increaseAllowance","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"string","name":"tokenName","type":"string"},{"internalType":"string","name":"tokenSymbol","type":"string"},{"internalType":"string","name":"tokenCurrency","type":"string"},{"internalType":"uint8","name":"tokenDecimals","type":"uint8"},{"internalType":"address","name":"newMasterMinter","type":"address"},{"internalType":"address","name":"newPauser","type":"address"},{"internalType":"address","name":"newBlacklister","type":"address"},{"internalType":"address","name":"newOwner","type":"address"}],"name":"initialize","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"string","name":"newName","type":"string"}],"name":"initializeV2","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"lostAndFound","type":"address"}],"name":"initializeV2_1","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address[]","name":"accountsToBlacklist","type":"address[]"},{"internalType":"string","name":"newSymbol","type":"string"}],"name":"initializeV2_2","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"_account","type":"address"}],"name":"isBlacklisted","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"account","type":"address"}],"name":"isMinter","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"masterMinter","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"_to","type":"address"},{"internalType":"uint256","name":"_amount","type":"uint256"}],"name":"mint","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"minter","type":"address"}],"name":"minterAllowance","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"name","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"owner","type":"address"}],"name":"nonces","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"owner","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"pause","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"paused","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"pauser","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"owner","type":"address"},{"internalType":"address","name":"spender","type":"address"},{"internalType":"uint256","name":"value","type":"uint256"},{"internalType":"uint256","name":"deadline","type":"uint256"},{"internalType":"bytes","name":"signature","type":"bytes"}],"name":"permit","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"owner","type":"address"},{"internalType":"address","name":"spender","type":"address"},{"internalType":"uint256","name":"value","type":"uint256"},{"internalType":"uint256","name":"deadline","type":"uint256"},{"internalType":"uint8","name":"v","type":"uint8"},{"internalType":"bytes32","name":"r","type":"bytes32"},{"internalType":"bytes32","name":"s","type":"bytes32"}],"name":"permit","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"from","type":"address"},{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"value","type":"uint256"},{"internalType":"uint256","name":"validAfter","type":"uint256"},{"internalType":"uint256","name":"validBefore","type":"uint256"},{"internalType":"bytes32","name":"nonce","type":"bytes32"},{"internalType":"bytes","name":"signature","type":"bytes"}],"name":"receiveWithAuthorization","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"from","type":"address"},{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"value","type":"uint256"},{"internalType":"uint256","name":"validAfter","type":"uint256"},{"internalType":"uint256","name":"validBefore","type":"uint256"},{"internalType":"bytes32","name":"nonce","type":"bytes32"},{"internalType":"uint8","name":"v","type":"uint8"},{"internalType":"bytes32","name":"r","type":"bytes32"},{"internalType":"bytes32","name":"s","type":"bytes32"}],"name":"receiveWithAuthorization","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"minter","type":"address"}],"name":"removeMinter","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"contract IERC20","name":"tokenContract","type":"address"},{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"rescueERC20","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"rescuer","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"symbol","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"totalSupply","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"value","type":"uint256"}],"name":"transfer","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"from","type":"address"},{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"value","type":"uint256"}],"name":"transferFrom","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"newOwner","type":"address"}],"name":"transferOwnership","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"from","type":"address"},{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"value","type":"uint256"},{"internalType":"uint256","name":"validAfter","type":"uint256"},{"internalType":"uint256","name":"validBefore","type":"uint256"},{"internalType":"bytes32","name":"nonce","type":"bytes32"},{"internalType":"bytes","name":"signature","type":"bytes"}],"name":"transferWithAuthorization","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"from","type":"address"},{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"value","type":"uint256"},{"internalType":"uint256","name":"validAfter","type":"uint256"},{"internalType":"uint256","name":"validBefore","type":"uint256"},{"internalType":"bytes32","name":"nonce","type":"bytes32"},{"internalType":"uint8","name":"v","type":"uint8"},{"internalType":"bytes32","name":"r","type":"bytes32"},{"internalType":"bytes32","name":"s","type":"bytes32"}],"name":"transferWithAuthorization","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"_account","type":"address"}],"name":"unBlackList","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"unpause","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"_newBlacklister","type":"address"}],"name":"updateBlacklister","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"_newMasterMinter","type":"address"}],"name":"updateMasterMinter","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"_newPauser","type":"address"}],"name":"updatePauser","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"newRescuer","type":"address"}],"name":"updateRescuer","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"version","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"pure","type":"function"}]
         ''')
 
-    def get_arbiscan_token_balance(self, token_address: str) -> float:
-        """Get token balance via Arbiscan API with fallback to screenshot data"""
-        try:
-            print(f"🔄 Trying Arbiscan API for token {token_address}")
-
-            url = "https://api.arbiscan.io/api"
-            params = {
-                'module': 'account',
-                'action': 'tokenbalance',
-                'contractaddress': token_address,
-                'address': self.address,
-                'tag': 'latest'
-            }
-
-            # Add API key if available
-            if self.arbiscan_api_key:
-                params['apikey'] = self.arbiscan_api_key
-
-            response = requests.get(url, params=params, timeout=15)
-            if response.status_code == 200:
-                data = response.json()
-                if data.get('status') == '1' and data.get('result'):
-                    balance_wei = int(data.get('result', '0'))
-
-                    # Get decimals for this token
-                    decimals = 18  # Default
-                    if token_address.lower() == self.usdc_address.lower():
-                        decimals = 6
-                    elif token_address.lower() == self.wbtc_address.lower():
-                        decimals = 8
-
-                    balance = balance_wei / (10 ** decimals)
-                    print(f"✅ Arbiscan balance: {balance:.6f}")
-                    return balance
-                else:
-                    print(f"⚠️ Arbiscan API response: {data}")
-            else:
-                print(f"❌ Arbiscan HTTP error: {response.status_code}")
-
-        except Exception as e:
-            print(f"❌ Arbiscan balance failed: {e}")
-
-        # Fallback to known wallet data from screenshot
-        known_balances = {
-            self.wbtc_address.lower(): 0.0002,
-            self.weth_address.lower(): 0.00193518,
-            self.usdc_address.lower(): 0.0
-        }
-
-        fallback_balance = known_balances.get(token_address.lower(), 0.0)
-        if fallback_balance > 0:
-            print(f"📸 Using screenshot data for {token_address}: {fallback_balance}")
-            return fallback_balance
-
-        return -1
-
-    def get_token_balance_with_alternative_rpc(self, token_address: str) -> float:
-        """Try alternative RPC endpoints for token balance"""
-        for rpc_url in self.alternative_rpcs:
-            try:
-                print(f"🔄 Trying alternative RPC: {rpc_url}")
-
-                temp_w3 = Web3(Web3.HTTPProvider(rpc_url, request_kwargs={'timeout': 10}))
-                if not temp_w3.is_connected():
-                    print(f"❌ RPC not connected: {rpc_url}")
-                    continue
-
-                if temp_w3.eth.chain_id != 42161:
-                    print(f"❌ Wrong chain ID for {rpc_url}")
-                    continue
-
-                # Create contract with alternative RPC
-                token_contract = temp_w3.eth.contract(
-                    address=Web3.to_checksum_address(token_address),
-                    abi=self.erc20_abi
-                )
-
-                # Get balance
-                balance_wei = token_contract.functions.balanceOf(self.address).call()
-
-                # Get decimals
-                try:
-                    decimals = token_contract.functions.decimals().call()
-                except:
-                    # Use known decimals
-                    if token_address.lower() == self.usdc_address.lower():
-                        decimals = 6
-                    elif token_address.lower() == self.wbtc_address.lower():
-                        decimals = 8
-                    else:
-                        decimals = 18
-
-                balance = balance_wei / (10 ** decimals)
-                print(f"✅ Alternative RPC success: {balance:.6f}")
-                return balance
-
-            except Exception as e:
-                print(f"❌ Alternative RPC {rpc_url} failed: {e}")
-                continue
-
-        return -1
-
     def get_token_balance(self, token_address):
         """Get token balance for the user's address"""
         try:
@@ -295,205 +190,6 @@ class AaveArbitrumIntegration:
         except Exception as e:
             print(f"❌ Error getting token balance for {token_address}: {e}")
             return 0.0
-
-    def get_supplied_balance(self, token_address):
-        """Get the amount of tokens supplied to Aave for this asset with enhanced error handling"""
-        try:
-            print(f"🔍 Getting supplied balance for token: {token_address}")
-
-            # Comprehensive aToken mapping for Arbitrum Mainnet
-            atoken_mapping = {
-                self.usdc_address.lower(): "0x724dc807b04555b71ed48a6896b6F41593b8C637",  # aUSDC for Native USDC 0xAF88D065e8c38FAD0AEff3E253e648A15ceE23DC
-                self.wbtc_address.lower(): "0x6533afac2E7BCCB20dca161449A13A2D2d5B739A",  # aArbWBTC  
-                self.weth_address.lower(): "0xe50fA9b4c56454E2edF6BFf7c81b50c5F05aBE61",  # aArbWETH
-                self.dai_address.lower(): "0x82E64f49Ed5EC1bC6e43DAD4FC8Af9bb3A2312EE"   # aArbDAI
-            }
-
-            atoken_address = atoken_mapping.get(token_address.lower())
-            if not atoken_address:
-                print(f"⚠️ No aToken mapping found for {token_address}")
-                return 0.0
-
-            print(f"📍 Using aToken address: {atoken_address}")
-
-            # Enhanced aToken ABI with multiple function signatures
-            enhanced_atoken_abi = [
-                {
-                    "inputs": [{"name": "account", "type": "address"}],
-                    "name": "balanceOf", 
-                    "outputs": [{"name": "", "type": "uint256"}],
-                    "stateMutability": "view",
-                    "type": "function"
-                },
-                {
-                    "inputs": [],
-                    "name": "decimals",
-                    "outputs": [{"name": "", "type": "uint8"}],
-                    "stateMutability": "view", 
-                    "type": "function"
-                },
-                {
-                    "inputs": [],
-                    "name": "symbol",
-                    "outputs": [{"name": "", "type": "string"}],
-                    "stateMutability": "view",
-                    "type": "function"
-                }
-            ]
-
-            # Multiple RPC attempt strategy
-            rpcs_to_try = [
-                self.w3,  # Current primary
-                *[Web3(Web3.HTTPProvider(rpc)) for rpc in self.alternative_rpcs[:2]]  # Top 2 fallbacks
-            ]
-
-            for attempt, w3_instance in enumerate(rpcs_to_try):
-                try:
-                    if not w3_instance.is_connected():
-                        continue
-
-                    print(f"🔄 Attempt {attempt + 1}: Using RPC endpoint")
-
-                    # Create contract with enhanced error checking
-                    atoken_contract = w3_instance.eth.contract(
-                        address=w3_instance.to_checksum_address(atoken_address),
-                        abi=enhanced_atoken_abi
-                    )
-
-                    # Verify contract exists
-                    try:
-                        symbol = atoken_contract.functions.symbol().call()
-                        print(f"✅ Contract verified: {symbol}")
-                    except:
-                        print(f"⚠️ Contract verification failed, proceeding anyway")
-
-                    # Get balance with timeout
-                    user_address = w3_instance.to_checksum_address(self.address)
-                    balance_wei = atoken_contract.functions.balanceOf(user_address).call()
-
-                    # Get decimals from aToken contract directly
-                    try:
-                        decimals = atoken_contract.functions.decimals().call()
-                    except:
-                        # Fallback to underlying token decimals
-                        decimals = self._get_token_decimals(token_address)
-
-                    balance = balance_wei / (10 ** decimals)
-
-                    print(f"✅ Successfully retrieved balance: {balance:.8f}")
-                    return balance
-
-                except Exception as rpc_error:
-                    print(f"❌ RPC attempt {attempt + 1} failed: {rpc_error}")
-                    continue
-
-            # If all RPC attempts fail, return 0 but don't crash
-            print(f"⚠️ All RPC attempts failed for {token_address}, returning 0")
-            return 0.0
-
-        except Exception as e:
-            print(f"❌ Critical error in get_supplied_balance for {token_address}: {e}")
-            return 0.0
-
-    def get_zapper_fallback_balance(self, token_address: str) -> float:
-        """Zapper API fallback using known wallet data"""
-        try:
-            # Known current balances from DeBank
-            known_balances = {
-                self.usdc_address.lower(): 0.0,
-                self.wbtc_address.lower(): 0.0002,
-                self.weth_address.lower(): 0.00193518
-            }
-            return known_balances.get(token_address.lower(), -1)
-
-        except Exception as e:
-            print(f"❌ Zapper fallback failed: {e}")
-            return -1
-
-    def _get_balance_current_rpc_enhanced(self, token_address):
-        """Enhanced balance retrieval with current RPC"""
-        try:
-            token_address = Web3.to_checksum_address(token_address)
-            user_address = Web3.to_checksum_address(self.address)
-
-            # Multiple retry strategies
-            strategies = [
-                lambda: self._direct_contract_call(token_address, user_address),
-                lambda: self._low_level_call(token_address, user_address),
-                lambda: self._batch_call(token_address, user_address)
-            ]
-
-            for i, strategy in enumerate(strategies):
-                try:
-                    print(f"🔄 Strategy {i+1} for token balance...")
-                    balance = strategy()
-                    if balance >= 0:
-                        return balance
-                except Exception as e:
-                    print(f"❌ Strategy {i+1} failed: {e}")
-                    continue
-
-            return -1
-
-        except Exception as e:
-            print(f"❌ Enhanced RPC balance failed: {e}")
-            return -1
-
-    def _direct_contract_call(self, token_address, user_address):
-        """Direct contract call method"""
-        token_contract = self.w3.eth.contract(
-            address=token_address,
-            abi=self.erc20_abi
-        )
-
-        # Get decimals with fallback
-        try:
-            decimals = token_contract.functions.decimals().call()
-        except:
-            decimals = self._get_known_decimals(token_address)
-
-        # Get balance with timeout
-        balance_wei = token_contract.functions.balanceOf(user_address).call()
-        balance = float(balance_wei) / float(10 ** decimals)
-
-        print(f"✅ Direct contract call successful: {balance:.6f}")
-        return balance
-
-    def _low_level_call(self, token_address, user_address):
-        """Low-level call method"""
-        # balanceOf function selector: 0x70a08231
-        function_selector = "0x70a08231"
-        padded_address = user_address[2:].zfill(64)
-        data = function_selector + padded_address
-
-        result = self.w3.eth.call({
-            'to': token_address,
-            'data': data
-        })
-
-        balance_wei = int(result.hex(), 16)
-        decimals = self._get_known_decimals(token_address)
-        balance = float(balance_wei) / float(10 ** decimals)
-
-        print(f"✅ Low-level call successful: {balance:.6f}")
-        return balance
-
-    def _batch_call(self, token_address, user_address):
-        """Batch call method (if supported)"""
-        # This is a placeholder for batch call implementation
-        # For now, fall back to direct call
-        return self._direct_contract_call(token_address, user_address)
-
-    def _get_known_decimals(self, token_address):
-        """Get known decimals for common tokens"""
-        token_decimals = {
-            self.usdc_address.lower(): 6,
-            self.wbtc_address.lower(): 8,
-            self.weth_address.lower(): 18,
-            self.dai_address.lower(): 18,
-            self.arb_address.lower(): 18
-        }
-        return token_decimals.get(token_address.lower(), 18)
 
     def get_user_account_data(self):
         """Get user account data from Aave with error handling"""
@@ -536,71 +232,6 @@ class AaveArbitrumIntegration:
                 'error': str(e)
             }
 
-    def get_optimized_gas_params(self, operation_type='default', market_condition='normal'):
-        """Get optimized gas parameters for transactions"""
-        try:
-            # Base gas price from network
-            base_gas_price = self.w3.eth.gas_price
-
-            # Gas limits for different operations
-            gas_limits = {
-                'approve_token': 60000,
-                'aave_supply': 150000,
-                'aave_borrow': 180000,
-                'aave_repay': 160000,
-                'uniswap_swap': 120000,
-                'default': 200000
-            }
-
-            # Market condition multipliers
-            multipliers = {
-                'normal': 1.2,
-                'volatile': 1.5,
-                'urgent': 2.0,
-                'market': 1.3
-            }
-
-            gas_limit = gas_limits.get(operation_type, gas_limits['default'])
-            multiplier = multipliers.get(market_condition, 1.2)
-
-            return {
-                'gas': gas_limit,
-                'gasPrice': int(base_gas_price * multiplier)
-            }
-
-        except Exception as e:
-            print(f"⚠️ Gas parameter calculation failed: {e}")
-            return {
-                'gas': 200000,
-                'gasPrice': 100000000  # 0.1 gwei fallback
-            }
-
-    def _convert_usd_to_wei(self, amount_usd, token_address):
-        """Convert USD amount to wei for the specified token"""
-        try:
-            # Get token decimals
-            decimals = self._get_known_decimals(token_address)
-
-            # For USDC, 1 USD = 1 USDC (approximately)
-            if token_address.lower() == self.usdc_address.lower():
-                amount_wei = int(amount_usd * (10 ** decimals))
-                print(f"✅ USDC conversion: ${amount_usd} = {amount_wei} wei")
-                return amount_wei
-            # For DAI, 1 USD ≈ 1 DAI (stablecoin peg)
-            elif token_address.lower() == self.dai_address.lower():
-                amount_wei = int(amount_usd * (10 ** decimals))
-                print(f"✅ DAI borrowing enabled: ${amount_usd} = {amount_wei} DAI wei")
-                return amount_wei
-            else:
-                # For other tokens, would need price conversion
-                print(f"⚠️ USD to wei conversion not implemented for token: {token_address}")
-                # Return 0 instead of raising error to allow fallback
-                return 0
-
-        except Exception as e:
-            print(f"❌ USD to wei conversion failed: {e}")
-            return 0
-
     def approve_token(self, token_address, amount):
         """Approve token spending for Aave"""
         try:
@@ -618,31 +249,111 @@ class AaveArbitrumIntegration:
             if not hasattr(token_contract.functions, 'approve'):
                 raise ValueError(f"Token contract at {token_address} does not have approve function")
 
-            # Get the approve function to validate its signature
-            approve_function = token_contract.functions.approve
-            print(f"🔍 Contract function validation:")
-            print(f"   Token contract: {token_address}")
-            print(f"   Approve function found: ✅")
-            print(f"   Function object: {approve_function}")
+            # Get current allowance
+            current_allowance = token_contract.functions.allowance(user_address, self.pool_address).call()
 
-            # SMART approval amount based on token balance and use case
-            try:
-                # Get current token balance
-                current_balance = token_contract.functions.balanceOf(user_address).call()
-                decimals = token_contract.functions.decimals().call()
-            except:
-                # Fallback decimals based on known tokens
-                if token_address.lower() == self.usdc_address.lower():
-                    decimals = 6
-                elif token_address.lower() == self.wbtc_address.lower():
-                    decimals = 8
-                else:
-                    decimals = 18
-                current_balance = 0
+            # If already approved for requested amount or more, skip
+            if current_allowance >= amount:
+                print(f"✅ Token already approved: {current_allowance} >= {amount}")
+                return True
 
-            if amount >= 2**255:  # Very large amount requested
-        
-            
+            # Build approval transaction
+            approve_txn = token_contract.functions.approve(
+                self.pool_address,
+                amount
+            ).build_transaction({
+                'from': user_address,
+                'gas': 60000,
+                'gasPrice': self.w3.eth.gas_price,
+                'nonce': self.w3.eth.get_transaction_count(user_address)
+            })
+
+            # Sign and send transaction
+            signed_txn = self.account.sign_transaction(approve_txn)
+            tx_hash = self.w3.eth.send_raw_transaction(signed_txn.rawTransaction)
+
+            print(f"✅ Approval transaction sent: {tx_hash.hex()}")
+            return tx_hash.hex()
+
+        except Exception as e:
+            print(f"❌ Token approval failed: {e}")
+            return None
+
+    def supply_to_aave(self, token_address, amount):
+        """Supply tokens to Aave"""
+        try:
+            # Approve token first
+            approval_result = self.approve_token(token_address, int(amount * (10 ** self._get_token_decimals(token_address))))
+            if not approval_result:
+                print(f"❌ Token approval failed for supply")
+                return None
+
+            # Convert amount to wei
+            decimals = self._get_token_decimals(token_address)
+            amount_wei = int(amount * (10 ** decimals))
+
+            # Build supply transaction
+            supply_txn = self.pool_contract.functions.supply(
+                token_address,
+                amount_wei,
+                self.address,
+                0  # referral code
+            ).build_transaction({
+                'from': self.address,
+                'gas': 150000,
+                'gasPrice': self.w3.eth.gas_price,
+                'nonce': self.w3.eth.get_transaction_count(self.address)
+            })
+
+            # Sign and send transaction
+            signed_txn = self.account.sign_transaction(supply_txn)
+            tx_hash = self.w3.eth.send_raw_transaction(signed_txn.rawTransaction)
+
+            print(f"✅ Supply transaction sent: {tx_hash.hex()}")
+            return tx_hash.hex()
+
+        except Exception as e:
+            print(f"❌ Supply failed: {e}")
+            return None
+
+    def borrow(self, amount_usd, token_address):
+        """Borrow tokens from Aave"""
+        try:
+            # Convert USD amount to token amount
+            amount_wei = self._convert_usd_to_wei(amount_usd, token_address)
+            if amount_wei == 0:
+                print(f"❌ Invalid borrow amount: {amount_usd} USD")
+                return None
+
+            # Build borrow transaction
+            borrow_txn = self.pool_contract.functions.borrow(
+                token_address,
+                amount_wei,
+                2,  # Variable interest rate mode
+                0,  # referral code
+                self.address
+            ).build_transaction({
+                'from': self.address,
+                'gas': 180000,
+                'gasPrice': self.w3.eth.gas_price,
+                'nonce': self.w3.eth.get_transaction_count(self.address)
+            })
+
+            # Sign and send transaction
+            signed_txn = self.account.sign_transaction(borrow_txn)
+            tx_hash = self.w3.eth.send_raw_transaction(signed_txn.rawTransaction)
+
+            print(f"✅ Borrow transaction sent: {tx_hash.hex()}")
+            return tx_hash.hex()
+
+        except Exception as e:
+            print(f"❌ Borrow failed: {e}")
+            return None
+
+    def supply_wbtc_to_aave(self, wbtc_amount):
+        """Supply WBTC to Aave with enhanced validation"""
+        try:
+            print(f"🏦 Supplying WBTC to Aave: {wbtc_amount:.8f} WBTC")
 
             # First approve WBTC spending for Aave pool
             print(f"🔓 Approving WBTC for Aave pool...")
@@ -690,3 +401,29 @@ class AaveArbitrumIntegration:
                 self.dai_address.lower(): 18
             }
             return known_decimals.get(token_address.lower(), 18)
+
+    def _convert_usd_to_wei(self, amount_usd, token_address):
+        """Convert USD amount to wei for the specified token"""
+        try:
+            # Get token decimals
+            decimals = self._get_token_decimals(token_address)
+
+            # For USDC, 1 USD = 1 USDC (approximately)
+            if token_address.lower() == self.usdc_address.lower():
+                amount_wei = int(amount_usd * (10 ** decimals))
+                print(f"✅ USDC conversion: ${amount_usd} = {amount_wei} wei")
+                return amount_wei
+            # For DAI, 1 USD ≈ 1 DAI (stablecoin peg)
+            elif token_address.lower() == self.dai_address.lower():
+                amount_wei = int(amount_usd * (10 ** decimals))
+                print(f"✅ DAI borrowing enabled: ${amount_usd} = {amount_wei} DAI wei")
+                return amount_wei
+            else:
+                # For other tokens, would need price conversion
+                print(f"⚠️ USD to wei conversion not implemented for token: {token_address}")
+                # Return 0 instead of raising error to allow fallback
+                return 0
+
+        except Exception as e:
+            print(f"❌ USD to wei conversion failed: {e}")
+            return 0
