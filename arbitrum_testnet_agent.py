@@ -883,3 +883,122 @@ class ArbitrumTestnetAgent:
         print("  ⚠️ Check individual steps for potential minor issues.")
 
         return True
+
+    def run_real_defi_task(self, run_id, iteration, config):
+        """Main DeFi task execution method for autonomous operation"""
+        try:
+            print(f"\n🚀 STARTING AUTONOMOUS RUN: {run_id}, ITERATION: {iteration}")
+            print("=" * 60)
+
+            # Performance tracking
+            performance_score = 0.0
+            operations_completed = 0
+            
+            # Step 1: Network and wallet validation
+            print("📋 Step 1: Network and wallet validation...")
+            network_ok, network_msg = self.check_network_status()
+            if not network_ok:
+                print(f"❌ Network validation failed: {network_msg}")
+                return 0.1
+            
+            print(f"✅ Network validation passed: {network_msg}")
+            operations_completed += 1
+
+            # Step 2: Check emergency stop
+            if self.check_emergency_stop():
+                print("🛑 Emergency stop activated - halting operations")
+                return 0.0
+
+            # Step 3: Wallet readiness check
+            eth_balance = self.get_eth_balance()
+            print(f"💰 Current ETH balance: {eth_balance:.6f} ETH")
+            
+            if eth_balance < MIN_ETH_FOR_OPERATIONS:
+                print(f"❌ Insufficient ETH for operations: {eth_balance:.6f} < {MIN_ETH_FOR_OPERATIONS}")
+                return 0.2
+            
+            operations_completed += 1
+
+            # Step 4: Get Aave account data and health factor
+            print("📊 Step 4: Checking Aave account status...")
+            try:
+                account_data = self.aave.get_user_account_data()
+                if account_data:
+                    health_factor = account_data.get('healthFactor', 0)
+                    available_borrows = account_data.get('availableBorrowsUSD', 0)
+                    total_collateral = account_data.get('totalCollateralUSD', 0)
+                    
+                    print(f"   Health Factor: {health_factor:.4f}")
+                    print(f"   Collateral: ${total_collateral:.2f}")
+                    print(f"   Available Borrows: ${available_borrows:.2f}")
+                    
+                    operations_completed += 1
+                    performance_score += 0.2
+                    
+                    # Step 5: Safe operation execution based on conditions
+                    if health_factor > 1.5 and available_borrows > 1.0:
+                        print("✅ Conditions favorable for DAI borrowing operations")
+                        
+                        # Check cooldown
+                        if self.is_operation_on_cooldown():
+                            print("⏰ Operations in cooldown period")
+                            performance_score += 0.1
+                        else:
+                            # Calculate safe borrow amount (DAI only)
+                            safe_amount = self.calculate_safe_borrow_amount(0, available_borrows)
+                            
+                            if safe_amount > 0:
+                                print(f"🎯 Attempting safe DAI borrow: ${safe_amount:.2f}")
+                                
+                                # Execute enhanced DAI-only borrow
+                                if hasattr(self, 'enhanced_borrow_manager') and self.enhanced_borrow_manager:
+                                    borrow_success = self.enhanced_borrow_manager.execute_enhanced_borrow_with_retry(safe_amount)
+                                    if borrow_success:
+                                        print(f"✅ DAI borrow successful!")
+                                        self.record_successful_operation('borrow')
+                                        performance_score += 0.4
+                                        operations_completed += 2
+                                    else:
+                                        print(f"❌ DAI borrow failed")
+                                        performance_score += 0.1
+                                else:
+                                    # Fallback to direct DAI borrow
+                                    borrow_success = self.aave.borrow(safe_amount, self.dai_address)
+                                    if borrow_success:
+                                        print(f"✅ Direct DAI borrow successful!")
+                                        self.record_successful_operation('borrow')
+                                        performance_score += 0.3
+                                        operations_completed += 2
+                                    else:
+                                        print(f"❌ Direct DAI borrow failed")
+                                        self.analyze_borrow_failure()
+                                        performance_score += 0.1
+                    else:
+                        print(f"⚠️ Conditions not favorable for borrowing:")
+                        print(f"   Health Factor: {health_factor:.4f} (need > 1.5)")
+                        print(f"   Available Borrows: ${available_borrows:.2f} (need > $1.0)")
+                        performance_score += 0.2
+                else:
+                    print("❌ Could not retrieve Aave account data")
+                    performance_score += 0.1
+                    
+            except Exception as aave_error:
+                print(f"❌ Aave interaction error: {aave_error}")
+                performance_score += 0.1
+
+            # Step 6: Final status report
+            print(f"\n📊 AUTONOMOUS TASK SUMMARY:")
+            print(f"   Operations completed: {operations_completed}")
+            print(f"   Performance score: {performance_score:.3f}")
+            print(f"   Run: {run_id}, Iteration: {iteration}")
+            
+            # Ensure minimum performance score
+            performance_score = max(performance_score, 0.1)
+            
+            return performance_score
+
+        except Exception as e:
+            print(f"❌ Critical error in autonomous task: {e}")
+            import traceback
+            print(f"🔍 Traceback: {traceback.format_exc()}")
+            return 0.1
