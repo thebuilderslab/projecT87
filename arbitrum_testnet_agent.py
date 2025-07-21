@@ -1050,6 +1050,10 @@ class ArbitrumTestnetAgent:
                                         self.record_successful_operation('borrow')
                                         performance_score += 0.4
                                         operations_completed += 2
+                                        
+                                        # Execute swap and supply sequence after successful borrow
+                                        self._execute_post_borrow_operations(safe_amount)
+                                        
                                     else:
                                         print(f"❌ DAI borrow failed")
                                         performance_score += 0.1
@@ -1061,6 +1065,10 @@ class ArbitrumTestnetAgent:
                                         self.record_successful_operation('borrow')
                                         performance_score += 0.3
                                         operations_completed += 2
+                                        
+                                        # Execute swap and supply sequence after successful borrow
+                                        self._execute_post_borrow_operations(safe_amount)
+                                        
                                     else:
                                         print(f"❌ Direct DAI borrow failed")
                                         self.analyze_borrow_failure()
@@ -1094,3 +1102,132 @@ class ArbitrumTestnetAgent:
             import traceback
             print(f"🔍 Traceback: {traceback.format_exc()}")
             return 0.1
+
+
+    def _execute_post_borrow_operations(self, borrowed_amount):
+        """Execute swap and supply operations after successful DAI borrow"""
+        try:
+            print(f"\n🔄 EXECUTING POST-BORROW OPERATIONS")
+            print(f"💰 Borrowed amount: ${borrowed_amount:.2f} DAI")
+            
+            # Wait for borrow confirmation
+            print("⏳ Waiting for DAI borrow confirmation...")
+            import time
+            time.sleep(10)
+            
+            # Get current DAI balance
+            dai_balance = self.aave.get_token_balance(self.dai_address)
+            print(f"💰 Current DAI balance: {dai_balance:.6f} DAI")
+            
+            if dai_balance < 1.0:
+                print("⚠️ Insufficient DAI balance for swaps and supplies")
+                return False
+            
+            # Allocate DAI for different operations
+            allocation = self._calculate_dai_allocation(dai_balance)
+            
+            # Step 1: Swap DAI for WBTC and supply
+            if allocation['wbtc_swap'] > 0:
+                print(f"\n🔄 Step 1: Swapping ${allocation['wbtc_swap']:.2f} DAI for WBTC...")
+                wbtc_swap_result = self.uniswap.swap_tokens(
+                    self.dai_address, 
+                    self.wbtc_address, 
+                    allocation['wbtc_swap'], 
+                    500
+                )
+                
+                if wbtc_swap_result:
+                    print("✅ DAI → WBTC swap successful!")
+                    time.sleep(10)  # Wait for swap confirmation
+                    
+                    # Supply WBTC to Aave
+                    wbtc_balance = self.aave.get_token_balance(self.wbtc_address)
+                    if wbtc_balance > 0:
+                        supply_result = self.aave.supply_wbtc_to_aave(wbtc_balance)
+                        if supply_result:
+                            print("✅ WBTC supplied to Aave!")
+                        else:
+                            print("❌ WBTC supply failed")
+                else:
+                    print("❌ DAI → WBTC swap failed")
+            
+            # Step 2: Swap DAI for WETH and supply
+            if allocation['weth_swap'] > 0:
+                print(f"\n🔄 Step 2: Swapping ${allocation['weth_swap']:.2f} DAI for WETH...")
+                weth_swap_result = self.uniswap.swap_tokens(
+                    self.dai_address, 
+                    self.weth_address, 
+                    allocation['weth_swap'], 
+                    500
+                )
+                
+                if weth_swap_result:
+                    print("✅ DAI → WETH swap successful!")
+                    time.sleep(10)  # Wait for swap confirmation
+                    
+                    # Supply WETH to Aave
+                    weth_balance = self.aave.get_token_balance(self.weth_address)
+                    if weth_balance > 0:
+                        supply_result = self.aave.supply_to_aave(self.weth_address, weth_balance)
+                        if supply_result:
+                            print("✅ WETH supplied to Aave!")
+                        else:
+                            print("❌ WETH supply failed")
+                else:
+                    print("❌ DAI → WETH swap failed")
+            
+            # Step 3: Supply remaining DAI directly
+            if allocation['direct_supply'] > 0:
+                print(f"\n🔄 Step 3: Supplying ${allocation['direct_supply']:.2f} DAI directly to Aave...")
+                dai_supply_result = self.aave.supply_to_aave(self.dai_address, allocation['direct_supply'])
+                if dai_supply_result:
+                    print("✅ DAI supplied to Aave!")
+                else:
+                    print("❌ DAI supply failed")
+            
+            print("\n✅ Post-borrow operations completed!")
+            return True
+            
+        except Exception as e:
+            print(f"❌ Post-borrow operations failed: {e}")
+            import traceback
+            print(f"🔍 Traceback: {traceback.format_exc()}")
+            return False
+
+    def _calculate_dai_allocation(self, total_dai):
+        """Calculate DAI allocation for different operations"""
+        try:
+            print(f"📊 Calculating DAI allocation for {total_dai:.6f} DAI")
+            
+            # Conservative allocation strategy
+            allocation = {
+                'wbtc_swap': 0,
+                'weth_swap': 0, 
+                'direct_supply': 0
+            }
+            
+            if total_dai >= 8.0:
+                # If we have enough DAI, allocate for swaps and supply
+                allocation['wbtc_swap'] = 3.0  # $3 for WBTC
+                allocation['weth_swap'] = 2.0  # $2 for WETH
+                allocation['direct_supply'] = total_dai - 5.0  # Rest for direct supply
+            elif total_dai >= 5.0:
+                # Medium allocation
+                allocation['wbtc_swap'] = 2.0
+                allocation['weth_swap'] = 1.0
+                allocation['direct_supply'] = total_dai - 3.0
+            else:
+                # Small allocation - just supply directly
+                allocation['direct_supply'] = total_dai
+            
+            print(f"📋 DAI Allocation:")
+            print(f"   WBTC Swap: ${allocation['wbtc_swap']:.2f}")
+            print(f"   WETH Swap: ${allocation['weth_swap']:.2f}")
+            print(f"   Direct Supply: ${allocation['direct_supply']:.2f}")
+            
+            return allocation
+            
+        except Exception as e:
+            print(f"❌ Allocation calculation failed: {e}")
+            return {'wbtc_swap': 0, 'weth_swap': 0, 'direct_supply': total_dai}
+
