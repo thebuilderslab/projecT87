@@ -598,6 +598,28 @@ class ArbitrumTestnetAgent:
             print(f"⚠️ Success rate prediction failed: {e}")
             return 60  # Conservative default
 
+    def get_recent_performance(self, num_entries=20):
+        """Get recent performance data for analysis"""
+        try:
+            if not hasattr(self, 'operation_stats'):
+                return []
+            
+            # Return basic performance metrics
+            recent_data = []
+            if self.operation_stats.get('attempts', 0) > 0:
+                success_rate = (self.operation_stats['successes'] / self.operation_stats['attempts']) * 100
+                recent_data.append({
+                    'performance_metric': success_rate / 100,
+                    'timestamp': time.time(),
+                    'operation_type': 'recent_operations'
+                })
+            
+            return recent_data[-num_entries:]
+            
+        except Exception as e:
+            print(f"⚠️ Failed to get recent performance: {e}")
+            return []
+
     def initialize_integrations(self):
         """Initialize all real DeFi integrations with strict error handling"""
         try:
