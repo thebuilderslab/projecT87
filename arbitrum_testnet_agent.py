@@ -1308,8 +1308,8 @@ class ArbitrumTestnetAgent:
 
             # Calculate and log trigger values
             collateral_growth = current_collateral_value_usd - self.last_collateral_value_usd
-            # FIXED: Use only the $12 growth trigger, remove conflicting small threshold
-            main_trigger_threshold = 12.0  # $12 USD growth trigger for autonomous sequence
+            # FIXED: Use only the $13 growth trigger, remove conflicting small threshold
+            main_trigger_threshold = 13.0  # $13 USD growth trigger for autonomous sequence
             trigger_condition_met = collateral_growth >= main_trigger_threshold
 
             print(f"🔍 DEBUG - TRIGGER CHECK:")
@@ -1453,8 +1453,8 @@ class ArbitrumTestnetAgent:
 
                 return 0.8
 
-            # AUTONOMOUS TRIGGER: $12 USD collateral growth from baseline
-            growth_needed = 12.0
+            # AUTONOMOUS TRIGGER: $13 USD collateral growth from baseline
+            growth_needed = 13.0
             target_collateral = self.last_collateral_value_usd + growth_needed
             actual_growth = current_collateral_value_usd - self.last_collateral_value_usd
 
@@ -1476,9 +1476,9 @@ class ArbitrumTestnetAgent:
             🎯 AUTONOMOUS TRIGGER CHECK:
                Current Collateral: ${current_collateral_value_usd:.2f}
                Baseline: ${self.last_collateral_value_usd:.2f}
-               Target for Trigger: ${self.last_collateral_value_usd + 12.0:.2f}
+               Target for Trigger: ${self.last_collateral_value_usd + 13.0:.2f}
                Actual Growth: ${collateral_growth:.2f}
-               Growth Needed: $12.00
+               Growth Needed: $13.00
                Manual Override: {manual_override}
                ✅ TRIGGER READY: {trigger_ready}""")
 
@@ -1495,7 +1495,7 @@ class ArbitrumTestnetAgent:
                 growth = current_collateral_value_usd - self.last_collateral_value_usd
                 # if not trigger_condition:
                 self.manual_override_active = False
-                print(f"⏸️ No action: Collateral growth ${growth:.2f} < $12 threshold")
+                print(f"⏸️ No action: Collateral growth ${growth:.2f} < $13 threshold")
                 print(f"📊 Current Position: ${current_collateral_value_usd:,.2f} collateral, ${debt_usd if 'debt_usd' in locals() else 0.0:,.2f} debt")
                 print(f"💰 Last recorded collateral: ${self.last_collateral_value_usd:.2f}")
                 print(f"📈 Collateral growth: ${growth:.2f}")
