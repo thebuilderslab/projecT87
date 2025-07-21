@@ -19,6 +19,10 @@ MAX_RETRY_ATTEMPTS = 3  # Maximum retry attempts for failed operations
 DEFAULT_GAS_PRICE_GWEI = 0.1  # Default gas price in gwei
 GAS_PRICE_MULTIPLIER = 1.2  # Multiplier for gas price to ensure inclusion
 
+# ETH balance thresholds for strategy execution
+MIN_ETH_GAS_THRESHOLD = 0.005  # Minimum ETH balance required for gas operations
+                               # This covers multiple transactions to prevent running out of gas
+
 # Cooldown periods (in seconds)
 OPERATION_COOLDOWN = 60  # Cooldown between operations
 EMERGENCY_COOLDOWN = 300  # Extended cooldown after emergencies
