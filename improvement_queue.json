@@ -302,5 +302,24 @@
     "estimated_impact": "Medium-High (Stability)",
     "risk_level": "Low",
     "implementation_time": 1753075315.4897318
+  },
+  {
+    "id": "risk_reduction_1753075366",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753075366.3009675,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.122 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753075366.302769
   }
 ]
