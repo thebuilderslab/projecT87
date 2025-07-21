@@ -11,6 +11,10 @@ MIN_HEALTH_FACTOR = 1.1  # Minimum safe health factor
 TARGET_HEALTH_FACTOR = 1.5  # Target health factor for operations
 EMERGENCY_HEALTH_FACTOR = 1.05  # Emergency threshold
 
+# Autonomous trigger thresholds
+COLLATERAL_GROWTH_TRIGGER_USD = 13.0  # USD growth trigger for autonomous sequence
+MAIN_TRIGGER_THRESHOLD = 13.0  # Main trigger threshold (same as above for compatibility)
+
 # Operation limits
 MAX_BORROW_PERCENTAGE = 0.8  # Maximum percentage of available borrows to use
 MAX_RETRY_ATTEMPTS = 3  # Maximum retry attempts for failed operations

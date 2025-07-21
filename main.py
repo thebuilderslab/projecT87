@@ -4,6 +4,7 @@ import time
 import json
 import os
 import traceback
+from config import MIN_ETH_FOR_OPERATIONS, MIN_ETH_FOR_GAS_BUFFER
 
 # --- Configuration ---
 CONFIG_FILE = 'agent_config.json'
