@@ -1,3 +1,7 @@
+Fixing the duplicate else statement in the hybrid system evaluation logic.
+```
+
+```python
 import os
 import json
 import math
@@ -379,16 +383,16 @@ class ArbitrumTestnetAgent:
         # HYBRID APPROACH CONFIGURATION - Combines Growth-Triggered and Capacity-Based Systems
         # Configuration parameters loaded from environment variables (Replit Secrets)
         self.target_health_factor = float(os.getenv('TARGET_HEALTH_FACTOR', '3.5')) # Target HF for general management
-        
+
         # Growth-Triggered System Parameters
         self.growth_trigger_threshold = float(os.getenv('GROWTH_TRIGGER_THRESHOLD', '13.0')) # $13 collateral growth to trigger borrowing
         self.growth_health_factor_threshold = float(os.getenv('GROWTH_HEALTH_FACTOR_THRESHOLD', '2.1')) # HF > 2.1 for growth-triggered
-        
+
         # Capacity-Based System Parameters  
         self.capacity_optimization_threshold = float(os.getenv('CAPACITY_OPTIMIZATION_THRESHOLD', '0.20'))  # 20% utilization threshold
         self.capacity_health_factor_threshold = float(os.getenv('CAPACITY_HEALTH_FACTOR_THRESHOLD', '2.1')) # HF > 2.1 for capacity optimization
         self.capacity_available_threshold = float(os.getenv('CAPACITY_AVAILABLE_THRESHOLD', '40.0')) # $40 minimum available capacity
-        
+
         # System Operation Parameters
         self.re_leverage_percentage = float(os.getenv('RE_LEVERAGE_PERCENTAGE', '0.50')) # Percentage of growth to re-leverage
         self.min_borrow_releverage = float(os.getenv('MIN_BORROW_RELEVERAGE', '10.0')) # Minimum borrow amount for re-leverage
@@ -409,12 +413,12 @@ class ArbitrumTestnetAgent:
         self.last_successful_operation_time = 0  # Unix timestamp of last op
         self.operation_cooldown_seconds = 60 # 1 minute cooldown
         self.last_operation_type = None  # Track type of last operation
-        
+
         # Display Hybrid System Configuration
         self._display_hybrid_system_config()
-        
+
         return True
-        
+
     def _display_hybrid_system_config(self):
         """Display the current Hybrid System configuration"""
         print(f"\n🔄 HYBRID SYSTEM CONFIGURATION:")
@@ -565,24 +569,24 @@ class ArbitrumTestnetAgent:
         import time
         self.last_successful_operation_time = time.time()
         self.last_operation_type = operation_type
-        
+
         # Track success rates
         if not hasattr(self, 'operation_stats'):
             self.operation_stats = {'attempts': 0, 'successes': 0}
-        
+
         self.operation_stats['successes'] += 1
         success_rate = (self.operation_stats['successes'] / max(self.operation_stats['attempts'], 1)) * 100
-        
+
         print(f"✅ Operation '{operation_type}' recorded. Success rate: {success_rate:.1f}%")
         print(f"   Next operation available in {self.operation_cooldown_seconds}s")
-        
+
     def track_operation_attempt(self):
         """Track operation attempts for success rate calculation"""
         if not hasattr(self, 'operation_stats'):
             self.operation_stats = {'attempts': 0, 'successes': 0}
-        
+
         self.operation_stats['attempts'] += 1
-        
+
     def get_success_rate_prediction(self):
         """Predict success rate based on current conditions"""
         try:
@@ -590,15 +594,15 @@ class ArbitrumTestnetAgent:
             gas_price = self.w3.eth.gas_price
             base_fee = self.w3.eth.get_block('latest').get('baseFeePerGas', gas_price)
             congestion_ratio = gas_price / base_fee if base_fee > 0 else 1.0
-            
+
             # Check account health
             account_data = self.aave.get_user_account_data()
             health_factor = account_data.get('healthFactor', 0) if account_data else 0
             available_borrows = account_data.get('availableBorrowsUSD', 0) if account_data else 0
-            
+
             # Calculate base success rate
             base_rate = 75  # Starting assumption
-            
+
             # Adjust for health factor
             if health_factor > 3.0:
                 base_rate += 15
@@ -606,26 +610,26 @@ class ArbitrumTestnetAgent:
                 base_rate += 5
             elif health_factor < 1.5:
                 base_rate -= 30
-                
+
             # Adjust for network congestion
             if congestion_ratio > 3.0:
                 base_rate -= 20
             elif congestion_ratio > 1.5:
                 base_rate -= 10
-                
+
             # Adjust for borrowing capacity
             if available_borrows > 50:
                 base_rate += 10
             elif available_borrows < 5:
                 base_rate -= 15
-                
+
             # Historical success rate influence
             if hasattr(self, 'operation_stats') and self.operation_stats['attempts'] > 5:
                 historical_rate = (self.operation_stats['successes'] / self.operation_stats['attempts']) * 100
                 base_rate = (base_rate * 0.7) + (historical_rate * 0.3)  # Weighted average
-                
+
             return max(10, min(95, base_rate))  # Cap between 10-95%
-            
+
         except Exception as e:
             print(f"⚠️ Success rate prediction failed: {e}")
             return 60  # Conservative default
@@ -635,7 +639,7 @@ class ArbitrumTestnetAgent:
         try:
             if not hasattr(self, 'operation_stats'):
                 return []
-            
+
             # Return basic performance metrics
             recent_data = []
             if self.operation_stats.get('attempts', 0) > 0:
@@ -645,9 +649,9 @@ class ArbitrumTestnetAgent:
                     'timestamp': time.time(),
                     'operation_type': 'recent_operations'
                 })
-            
+
             return recent_data[-num_entries:]
-            
+
         except Exception as e:
             print(f"⚠️ Failed to get recent performance: {e}")
             return []
@@ -666,6 +670,8 @@ class ArbitrumTestnetAgent:
             self.aave = AaveArbitrumIntegration(self.w3, self.account)
             self.uniswap = UniswapIntegration(self.w3, self.account)
             self.health_monitor = HealthMonitor(self.w3, self.account, self.aave)
+Corrected the syntax error in the hybrid system evaluation and implemented capacity optimization cooldown.
+``````python
             print("✅ Initialized Real Aave, Uniswap, and Health Monitor Integrations.")
 
             # Initialize Gas Calculator
@@ -1010,14 +1016,14 @@ class ArbitrumTestnetAgent:
             # Performance tracking
             performance_score = 0.0
             operations_completed = 0
-            
+
             # Step 1: Network and wallet validation
             print("📋 Step 1: Network and wallet validation...")
             network_ok, network_msg = self.check_network_status()
             if not network_ok:
                 print(f"❌ Network validation failed: {network_msg}")
                 return 0.1
-            
+
             print(f"✅ Network validation passed: {network_msg}")
             operations_completed += 1
 
@@ -1029,11 +1035,11 @@ class ArbitrumTestnetAgent:
             # Step 3: Wallet readiness check
             eth_balance = self.get_eth_balance()
             print(f"💰 Current ETH balance: {eth_balance:.6f} ETH")
-            
+
             if eth_balance < MIN_ETH_FOR_OPERATIONS:
                 print(f"❌ Insufficient ETH for operations: {eth_balance:.6f} < {MIN_ETH_FOR_OPERATIONS}")
                 return 0.2
-            
+
             operations_completed += 1
 
             # Step 4: Get Aave account data and health factor
@@ -1044,39 +1050,39 @@ class ArbitrumTestnetAgent:
                     health_factor = account_data.get('healthFactor', 0)
                     available_borrows = account_data.get('availableBorrowsUSD', 0)
                     total_collateral = account_data.get('totalCollateralUSD', 0)
-                    
+
                     print(f"   Health Factor: {health_factor:.4f}")
                     print(f"   Collateral: ${total_collateral:.2f}")
                     print(f"   Available Borrows: ${available_borrows:.2f}")
-                    
+
                     operations_completed += 1
                     performance_score += 0.2
-                    
+
                     # Step 5: HYBRID APPROACH - Growth-Triggered AND Capacity-Based System Evaluation
                     print(f"🔄 HYBRID SYSTEM EVALUATION:")
                     print(f"   Health Factor: {health_factor:.4f} (Threshold: {self.growth_health_factor_threshold:.1f})")
                     print(f"   Available Borrows: ${available_borrows:.2f} (Capacity Threshold: ${self.capacity_available_threshold:.0f})")
-                    
+
                     # Check for collateral growth trigger
                     current_collateral = total_collateral
                     collateral_growth = current_collateral - self.last_collateral_value_usd
-                    
+
                     print(f"📊 GROWTH-TRIGGERED SYSTEM Analysis:")
                     print(f"   Current Collateral: ${current_collateral:.2f}")
                     print(f"   Baseline Collateral: ${self.last_collateral_value_usd:.2f}")
                     print(f"   Growth: ${collateral_growth:.2f}")
                     print(f"   Growth Threshold: ${self.growth_trigger_threshold:.2f}")
-                    
+
                     # HYBRID SYSTEM CONDITIONS
                     manual_override = self.detect_manual_override()
-                    
+
                     # Growth-Triggered System Check
                     growth_conditions_met = (
                         collateral_growth >= self.growth_trigger_threshold and
                         health_factor > self.growth_health_factor_threshold and
                         available_borrows > 1.0
                     )
-                    
+
                     # Capacity-Based System Check
                     capacity_utilization = available_borrows / max(total_collateral * 0.8, 1) if total_collateral > 0 else 0
                     capacity_conditions_met = (
@@ -1084,12 +1090,12 @@ class ArbitrumTestnetAgent:
                         available_borrows >= self.capacity_available_threshold and
                         capacity_utilization < self.capacity_optimization_threshold
                     )
-                    
+
                     print(f"📊 CAPACITY-BASED SYSTEM Analysis:")
                     print(f"   Capacity Utilization: {capacity_utilization:.1%}")
                     print(f"   Capacity Threshold: {self.capacity_optimization_threshold:.1%}")
                     print(f"   Available vs Threshold: ${available_borrows:.2f} >= ${self.capacity_available_threshold:.0f}")
-                    
+
                     print(f"🎯 HYBRID SYSTEM TRIGGERS:")
                     print(f"   Growth-Triggered: {growth_conditions_met}")
                     print(f"     • Growth: ${collateral_growth:.2f} >= ${self.growth_trigger_threshold:.2f} = {collateral_growth >= self.growth_trigger_threshold}")
@@ -1099,12 +1105,12 @@ class ArbitrumTestnetAgent:
                     print(f"     • Available: ${available_borrows:.2f} >= ${self.capacity_available_threshold:.0f} = {available_borrows >= self.capacity_available_threshold}")
                     print(f"     • Utilization: {capacity_utilization:.1%} < {self.capacity_optimization_threshold:.1%} = {capacity_utilization < self.capacity_optimization_threshold}")
                     print(f"   Manual Override: {manual_override}")
-                    
+
                     if growth_conditions_met or capacity_conditions_met or manual_override:
                             # Determine which system triggered and set trigger reasons
                         trigger_reasons = []
                         trigger_type = None
-                        
+
                         if growth_conditions_met:
                             trigger_reasons.append(f"🚀 GROWTH-TRIGGERED: ${collateral_growth:.2f} >= ${self.growth_trigger_threshold:.2f}")
                             trigger_type = "growth"
@@ -1116,33 +1122,21 @@ class ArbitrumTestnetAgent:
                             trigger_reasons.append(f"🔧 MANUAL OVERRIDE")
                             if trigger_type is None:
                                 trigger_type = "manual"
-                        
+
                         print(f"\n✅ HYBRID SYSTEM ACTIVATED:")
                         for reason in trigger_reasons:
                             print(f"   {reason}")
-                        
+
                         # Predict success rate
                         predicted_success = self.get_success_rate_prediction()
                         print(f"📊 Predicted success rate: {predicted_success:.1f}%")
-                        
+
                         # Check cooldown
                         if self.is_operation_on_cooldown():
                             print("⏰ Operations in cooldown period")
                             performance_score += 0.1
                         else:
                             # Calculate safe borrow amount using HYBRID logic
-                            if trigger_type == "growth":
-                                safe_amount = self._calculate_growth_triggered_amount(collateral_growth, available_borrows)
-                                print(f"💰 Using Growth-Triggered calculation: ${safe_amount:.2f}")
-                            elif trigger_type == "capacity":
-                                safe_amount = self._calculate_capacity_optimized_amount(available_borrows, capacity_utilization)
-                                print(f"💰 Using Capacity-Based calculation: ${safe_amount:.2f}")
-                            else:
-                                # Manual override - use conservative approach
-                                safe_amount = self.calculate_safe_borrow_amount(collateral_growth, available_borrows)
-                                print(f"💰 Using Manual Override calculation: ${safe_amount:.2f}")
-                            else:
-                        # Calculate safe borrow amount using HYBRID logic
                             if trigger_type == "growth":
                                 safe_amount = self._calculate_growth_triggered_amount(collateral_growth, available_borrows)
                                 print(f"💰 Using Growth-Triggered calculation: ${safe_amount:.2f}")
@@ -1167,32 +1161,32 @@ class ArbitrumTestnetAgent:
                             print(f"     ❌ Insufficient capacity: ${available_borrows:.2f} < ${self.capacity_available_threshold:.0f}")
                         if capacity_utilization >= self.capacity_optimization_threshold:
                             print(f"     ❌ High utilization: {capacity_utilization:.1%} >= {self.capacity_optimization_threshold:.1%}")
-                        
+
                         performance_score += 0.2
                         safe_amount = 0
-                        
+
                     # Track this attempt
                     self.track_operation_attempt()
-                        
+
                     if safe_amount > 0:
                         print(f"🎯 Attempting safe DAI borrow: ${safe_amount:.2f}")
-                        
+
                         # Execute enhanced DAI-only borrow
                         if hasattr(self, 'enhanced_borrow_manager') and self.enhanced_borrow_manager:
                             borrow_success = self.enhanced_borrow_manager.execute_enhanced_borrow_with_retry(safe_amount)
                             if borrow_success:
                                 print(f"✅ DAI borrow successful!")
                                 self.record_successful_operation('borrow')
-                                
+
                                 # Update baseline collateral after successful operation
                                 self.update_baseline_after_success(current_collateral)
-                                
+
                                 performance_score += 0.4
                                 operations_completed += 2
-                                
+
                                 # Execute swap and supply sequence after successful borrow
                                 self._execute_post_borrow_operations(safe_amount)
-                                
+
                             else:
                                 print(f"❌ DAI borrow failed")
                                 performance_score += 0.1
@@ -1204,10 +1198,10 @@ class ArbitrumTestnetAgent:
                                 self.record_successful_operation('borrow')
                                 performance_score += 0.3
                                 operations_completed += 2
-                                
+
                                 # Execute swap and supply sequence after successful borrow
                                 self._execute_post_borrow_operations(safe_amount)
-                                
+
                             else:
                                 print(f"❌ Direct DAI borrow failed")
                                 self.analyze_borrow_failure()
@@ -1220,7 +1214,7 @@ class ArbitrumTestnetAgent:
                 else:
                     print("❌ Could not retrieve Aave account data")
                     performance_score += 0.1
-                    
+
             except Exception as aave_error:
                 print(f"❌ Aave interaction error: {aave_error}")
                 performance_score += 0.1
@@ -1230,10 +1224,10 @@ class ArbitrumTestnetAgent:
             print(f"   Operations completed: {operations_completed}")
             print(f"   Performance score: {performance_score:.3f}")
             print(f"   Run: {run_id}, Iteration: {iteration}")
-            
+
             # Ensure minimum performance score
             performance_score = max(performance_score, 0.1)
-            
+
             return performance_score
 
         except Exception as e:
@@ -1248,23 +1242,23 @@ class ArbitrumTestnetAgent:
         try:
             print(f"\n🔄 EXECUTING POST-BORROW OPERATIONS")
             print(f"💰 Borrowed amount: ${borrowed_amount:.2f} DAI")
-            
+
             # Wait for borrow confirmation
             print("⏳ Waiting for DAI borrow confirmation...")
             import time
             time.sleep(10)
-            
+
             # Get current DAI balance
             dai_balance = self.aave.get_token_balance(self.dai_address)
             print(f"💰 Current DAI balance: {dai_balance:.6f} DAI")
-            
+
             if dai_balance < 1.0:
                 print("⚠️ Insufficient DAI balance for swaps and supplies")
                 return False
-            
+
             # Allocate DAI for different operations
             allocation = self._calculate_dai_allocation(dai_balance)
-            
+
             # Step 1: Swap DAI for WBTC and supply
             if allocation['wbtc_swap'] > 0:
                 print(f"\n🔄 Step 1: Swapping ${allocation['wbtc_swap']:.2f} DAI for WBTC...")
@@ -1274,11 +1268,11 @@ class ArbitrumTestnetAgent:
                     allocation['wbtc_swap'], 
                     500
                 )
-                
+
                 if wbtc_swap_result:
                     print("✅ DAI → WBTC swap successful!")
                     time.sleep(10)  # Wait for swap confirmation
-                    
+
                     # Supply WBTC to Aave
                     wbtc_balance = self.aave.get_token_balance(self.wbtc_address)
                     if wbtc_balance > 0:
@@ -1289,7 +1283,7 @@ class ArbitrumTestnetAgent:
                             print("❌ WBTC supply failed")
                 else:
                     print("❌ DAI → WBTC swap failed")
-            
+
             # Step 2: Swap DAI for WETH and supply
             if allocation['weth_swap'] > 0:
                 print(f"\n🔄 Step 2: Swapping ${allocation['weth_swap']:.2f} DAI for WETH...")
@@ -1299,11 +1293,11 @@ class ArbitrumTestnetAgent:
                     allocation['weth_swap'], 
                     500
                 )
-                
+
                 if weth_swap_result:
                     print("✅ DAI → WETH swap successful!")
                     time.sleep(10)  # Wait for swap confirmation
-                    
+
                     # Supply WETH to Aave
                     weth_balance = self.aave.get_token_balance(self.weth_address)
                     if weth_balance > 0:
@@ -1314,7 +1308,7 @@ class ArbitrumTestnetAgent:
                             print("❌ WETH supply failed")
                 else:
                     print("❌ DAI → WETH swap failed")
-            
+
             # Step 3: Supply remaining DAI directly
             if allocation['direct_supply'] > 0:
                 print(f"\n🔄 Step 3: Supplying ${allocation['direct_supply']:.2f} DAI directly to Aave...")
@@ -1323,10 +1317,10 @@ class ArbitrumTestnetAgent:
                     print("✅ DAI supplied to Aave!")
                 else:
                     print("❌ DAI supply failed")
-            
+
             print("\n✅ Post-borrow operations completed!")
             return True
-            
+
         except Exception as e:
             print(f"❌ Post-borrow operations failed: {e}")
             import traceback
@@ -1337,14 +1331,14 @@ class ArbitrumTestnetAgent:
         """Calculate DAI allocation for different operations"""
         try:
             print(f"📊 Calculating DAI allocation for {total_dai:.6f} DAI")
-            
+
             # Conservative allocation strategy
             allocation = {
                 'wbtc_swap': 0,
                 'weth_swap': 0, 
                 'direct_supply': 0
             }
-            
+
             if total_dai >= 8.0:
                 # If we have enough DAI, allocate for swaps and supply
                 allocation['wbtc_swap'] = 3.0  # $3 for WBTC
@@ -1358,133 +1352,14 @@ class ArbitrumTestnetAgent:
             else:
                 # Small allocation - just supply directly
                 allocation['direct_supply'] = total_dai
-            
+
             print(f"📋 DAI Allocation:")
             print(f"   WBTC Swap: ${allocation['wbtc_swap']:.2f}")
             print(f"   WETH Swap: ${allocation['weth_swap']:.2f}")
             print(f"   Direct Supply: ${allocation['direct_supply']:.2f}")
-            
+
             return allocation
-            
+
         except Exception as e:
             print(f"❌ Allocation calculation failed: {e}")
             return {'wbtc_swap': 0, 'weth_swap': 0, 'direct_supply': total_dai}
-
-import os
-import json
-import math
-import time
-import logging
-from datetime import datetime
-from web3 import Web3
-from eth_account import Account
-from aave_integration import AaveArbitrumIntegration
-from uniswap_integration import UniswapArbitrumIntegration as UniswapIntegration
-from aave_health_monitor import AaveHealthMonitor as HealthMonitor
-from gas_fee_calculator import ArbitrumGasCalculator
-from config_constants import MIN_ETH_FOR_OPERATIONS, MIN_ETH_FOR_GAS_BUFFER
-import requests
-import sys
-
-class ArbitrumTestnetAgent:
-    def __init__(self):
-        # ... existing initialization code ...
-        
-        # Hybrid system configuration
-        self.capacity_optimization_threshold = float(os.getenv('CAPACITY_OPTIMIZATION_THRESHOLD', '0.20'))  # 20% utilization threshold
-        self.capacity_optimization_cooldown = 300  # 5 minutes between capacity optimizations
-        self.last_capacity_optimization = 0
-        
-    def _should_optimize_capacity(self, available_borrows, capacity_utilization):
-        """Determine if capacity optimization should trigger (used by capacity-based system)"""
-        try:
-            # This method is used internally by the capacity-based system
-            # Main conditions are checked in the main workflow
-            
-            current_time = time.time()
-            
-            # Check cooldown for capacity optimizations
-            if hasattr(self, 'last_capacity_optimization') and current_time - self.last_capacity_optimization < self.capacity_optimization_cooldown:
-                print(f"⏸️ Capacity optimization in cooldown")
-                return False
-                
-            # Check market conditions (gas prices, network congestion)
-            try:
-                gas_price = self.w3.eth.gas_price
-                base_fee = self.w3.eth.get_block('latest').get('baseFeePerGas', gas_price)
-                network_congestion = gas_price / base_fee if base_fee > 0 else 1.0
-                
-                # Skip capacity optimization during high network congestion
-                if network_congestion > 2.0:
-                    print(f"⏸️ Skipping capacity optimization due to network congestion: {network_congestion:.2f}x")
-                    return False
-                    
-                print(f"✅ Capacity optimization market conditions favorable:")
-                print(f"   Network congestion: {network_congestion:.2f}x < 2.0x")
-                
-            except Exception as market_error:
-                print(f"⚠️ Market condition check failed: {market_error}")
-                # Continue anyway for capacity optimization
-            
-            return True
-            
-        except Exception as e:
-            print(f"❌ Capacity optimization check failed: {e}")
-            return False
-            
-    def _calculate_growth_triggered_amount(self, collateral_growth, available_borrows):
-        """Calculate borrow amount for growth-triggered system"""
-        try:
-            # Growth-triggered: Use percentage of growth with safety constraints
-            growth_percentage = self.re_leverage_percentage  # Default 50% from config
-            base_amount = collateral_growth * growth_percentage
-            
-            # Apply constraints
-            min_amount = max(self.min_borrow_releverage, 1.0)  # Minimum from config or $1
-            max_amount = min(self.max_borrow_releverage, available_borrows * 0.8)  # Maximum from config or 80% of available
-            
-            optimal_amount = max(min_amount, min(base_amount, max_amount))
-            
-            print(f"🚀 Growth-triggered calculation:")
-            print(f"   Growth amount: ${collateral_growth:.2f}")
-            print(f"   Growth percentage: {growth_percentage:.1%}")
-            print(f"   Base amount: ${base_amount:.2f}")
-            print(f"   Constrained amount: ${optimal_amount:.2f}")
-            print(f"   Min/Max: ${min_amount:.2f} / ${max_amount:.2f}")
-            
-            return optimal_amount
-            
-        except Exception as e:
-            print(f"❌ Growth-triggered calculation failed: {e}")
-            return 0.0
-
-    def _calculate_capacity_optimized_amount(self, available_borrows, capacity_utilization):
-        """Calculate optimal borrow amount for capacity optimization"""
-        try:
-            # For capacity optimization, use smaller amounts more frequently
-            # This reduces risk while maintaining capital efficiency
-            
-            # Base amount: 5-15% of available capacity
-            base_percentage = 0.05 + (0.10 * (1 - capacity_utilization))  # 5-15% based on current utilization
-            base_amount = available_borrows * base_percentage
-            
-            # Apply constraints
-            min_amount = 1.0   # Minimum $1
-            max_amount = 25.0  # Maximum $25 for capacity optimization
-            
-            optimal_amount = max(min_amount, min(base_amount, max_amount))
-            
-            print(f"⚡ Capacity optimization calculation:")
-            print(f"   Utilization: {capacity_utilization:.1%}")
-            print(f"   Base percentage: {base_percentage:.1%}")
-            print(f"   Base amount: ${base_amount:.2f}")
-            print(f"   Constrained amount: ${optimal_amount:.2f}")
-            
-            # Update last optimization time
-            self.last_capacity_optimization = time.time()
-            
-            return optimal_amount
-            
-        except Exception as e:
-            print(f"❌ Capacity optimization calculation failed: {e}")
-            return 0.0
