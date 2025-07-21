@@ -199,7 +199,7 @@ def autonomous_agent_loop():
         finally:
             # This block will always execute, whether there was an error or not.
             # It's important for controlling the loop's frequency.
-            sleep_duration_seconds = 300  # Sleep for 5 minutes (300 seconds)
+            sleep_duration_seconds = 45  # Sleep for 45 seconds
             print(f"💤 Sleeping for {sleep_duration_seconds} seconds before next iteration...")
             time.sleep(sleep_duration_seconds)
 
