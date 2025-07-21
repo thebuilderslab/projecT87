@@ -25,71 +25,158 @@ class CollaborativeStrategyManager:
     
     def propose_strategy_improvement(self, strategy_type, improvement_data, source="agent"):
         """Propose a new strategy improvement"""
-        proposal = {
-            "id": f"{strategy_type}_{int(time.time())}",
-            "type": strategy_type,
-            "source": source,  # "agent" or "user"
-            "timestamp": time.time(),
-            "data": improvement_data,
-            "status": "pending",
-            "estimated_impact": self.estimate_impact(improvement_data),
-            "risk_level": self.assess_risk(improvement_data)
-        }
-        
-        # Load existing queue
-        queue = []
-        if os.path.exists(self.improvements_queue):
-            with open(self.improvements_queue, 'r') as f:
-                queue = json.load(f)
-        
-        queue.append(proposal)
-        
-        # Save updated queue
-        with open(self.improvements_queue, 'w') as f:
-            json.dump(queue, f, indent=2)
+        try:
+            # Validate inputs
+            if not strategy_type or not isinstance(strategy_type, str):
+                print(f"⚠️ Invalid strategy_type: {strategy_type}")
+                return None
+                
+            if not improvement_data or not isinstance(improvement_data, dict):
+                print(f"⚠️ Invalid improvement_data: {improvement_data}")
+                return None
             
-        print(f"🚀 {source.upper()} STRATEGY PROPOSAL:")
-        print(f"   📝 Type: {strategy_type}")
-        print(f"   📊 Impact: {proposal['estimated_impact']}")
-        print(f"   ⚠️ Risk: {proposal['risk_level']}")
-        print(f"   🆔 ID: {proposal['id']}")
-        
-        return proposal['id']
+            # Create proposal with error handling
+            try:
+                proposal = {
+                    "id": f"{strategy_type}_{int(time.time())}",
+                    "type": strategy_type,
+                    "source": source,  # "agent" or "user"
+                    "timestamp": time.time(),
+                    "data": improvement_data,
+                    "status": "pending",
+                    "estimated_impact": self.estimate_impact(improvement_data),
+                    "risk_level": self.assess_risk(improvement_data)
+                }
+            except Exception as proposal_error:
+                print(f"⚠️ Error creating proposal object: {proposal_error}")
+                return None
+            
+            # Load existing queue with error handling
+            queue = []
+            try:
+                if os.path.exists(self.improvements_queue):
+                    with open(self.improvements_queue, 'r') as f:
+                        queue = json.load(f)
+            except (json.JSONDecodeError, IOError) as load_error:
+                print(f"⚠️ Error loading improvements queue: {load_error}")
+                print("🔧 Starting with empty queue")
+                queue = []
+            
+            # Add proposal to queue
+            try:
+                queue.append(proposal)
+            except Exception as append_error:
+                print(f"⚠️ Error appending to queue: {append_error}")
+                return None
+            
+            # Save updated queue with error handling
+            try:
+                with open(self.improvements_queue, 'w') as f:
+                    json.dump(queue, f, indent=2)
+            except (IOError, json.JSONEncoder) as save_error:
+                print(f"⚠️ Error saving improvements queue: {save_error}")
+                return None
+                
+            print(f"🚀 {source.upper()} STRATEGY PROPOSAL:")
+            print(f"   📝 Type: {strategy_type}")
+            print(f"   📊 Impact: {proposal['estimated_impact']}")
+            print(f"   ⚠️ Risk: {proposal['risk_level']}")
+            print(f"   🆔 ID: {proposal['id']}")
+            
+            return proposal['id']
+            
+        except Exception as e:
+            print(f"❌ Critical error in propose_strategy_improvement: {e}")
+            import traceback
+            print(f"🔍 Proposal error traceback: {traceback.format_exc()}")
+            return None
     
     def agent_analyze_and_propose(self):
         """Agent analyzes performance and proposes improvements"""
-        recent_performance = self.agent.get_recent_performance(50)
-        if not recent_performance:
-            return
+        try:
+            # Check if agent object is properly initialized
+            if not hasattr(self, 'agent') or self.agent is None:
+                print("⚠️ Agent object not properly initialized in strategy manager")
+                return
             
-        avg_performance = sum(p['performance_metric'] for p in recent_performance) / len(recent_performance)
-        
-        # Agent proposes different improvements based on performance patterns
-        if avg_performance < 0.75:
-            # Poor performance - suggest conservative changes
-            improvement = {
-                "action": "reduce_risk",
-                "parameters": {
-                    "max_borrow_ratio": 0.6,
-                    "health_factor_target": 1.25,
-                    "monitoring_frequency": "increased"
-                },
-                "reasoning": f"Performance at {avg_performance:.3f} suggests risk reduction needed"
-            }
-            self.propose_strategy_improvement("risk_reduction", improvement, "agent")
+            # Attempt to get recent performance data
+            try:
+                recent_performance = self.agent.get_recent_performance(50)
+            except AttributeError as attr_error:
+                print(f"⚠️ Agent missing get_recent_performance method: {attr_error}")
+                return
+            except Exception as perf_error:
+                print(f"⚠️ Error getting recent performance: {perf_error}")
+                return
             
-        elif avg_performance > 0.85:
-            # Good performance - suggest optimization
-            improvement = {
-                "action": "optimize_yield",
-                "parameters": {
-                    "leverage_increase": 0.1,
-                    "new_asset_targets": ["USDT", "FRAX"],
-                    "arbitrage_opportunities": True
-                },
-                "reasoning": f"Strong performance at {avg_performance:.3f} allows for optimization"
-            }
-            self.propose_strategy_improvement("yield_optimization", improvement, "agent")
+            # Validate performance data
+            if not recent_performance:
+                print("📊 No recent performance data available - skipping analysis")
+                return
+            
+            if not isinstance(recent_performance, list) or len(recent_performance) == 0:
+                print("📊 Invalid performance data format - skipping analysis")
+                return
+            
+            # Calculate average performance with error handling
+            try:
+                valid_performances = []
+                for p in recent_performance:
+                    if isinstance(p, dict) and 'performance_metric' in p:
+                        metric = p['performance_metric']
+                        if isinstance(metric, (int, float)) and not (metric != metric):  # Check for NaN
+                            valid_performances.append(metric)
+                
+                if not valid_performances:
+                    print("📊 No valid performance metrics found - skipping analysis")
+                    return
+                
+                avg_performance = sum(valid_performances) / len(valid_performances)
+                print(f"📊 Calculated average performance: {avg_performance:.3f} from {len(valid_performances)} data points")
+                
+            except (TypeError, ValueError, ZeroDivisionError) as calc_error:
+                print(f"⚠️ Error calculating performance average: {calc_error}")
+                return
+            
+            # Agent proposes different improvements based on performance patterns
+            try:
+                if avg_performance < 0.75:
+                    # Poor performance - suggest conservative changes
+                    improvement = {
+                        "action": "reduce_risk",
+                        "parameters": {
+                            "max_borrow_ratio": 0.6,
+                            "health_factor_target": 1.25,
+                            "monitoring_frequency": "increased"
+                        },
+                        "reasoning": f"Performance at {avg_performance:.3f} suggests risk reduction needed"
+                    }
+                    self.propose_strategy_improvement("risk_reduction", improvement, "agent")
+                    
+                elif avg_performance > 0.85:
+                    # Good performance - suggest optimization
+                    improvement = {
+                        "action": "optimize_yield",
+                        "parameters": {
+                            "leverage_increase": 0.1,
+                            "new_asset_targets": ["USDT", "FRAX"],
+                            "arbitrage_opportunities": True
+                        },
+                        "reasoning": f"Strong performance at {avg_performance:.3f} allows for optimization"
+                    }
+                    self.propose_strategy_improvement("yield_optimization", improvement, "agent")
+                else:
+                    print(f"📊 Performance at {avg_performance:.3f} is stable - no immediate changes proposed")
+                    
+            except Exception as proposal_error:
+                print(f"⚠️ Error creating strategy proposal: {proposal_error}")
+                return
+                
+        except Exception as e:
+            print(f"❌ Critical error in agent_analyze_and_propose: {e}")
+            import traceback
+            print(f"🔍 Strategy manager error traceback: {traceback.format_exc()}")
+            # Don't re-raise - let the main loop continue
     
     def implement_approved_strategy(self, proposal_id):
         """Implement an approved strategy improvement"""
