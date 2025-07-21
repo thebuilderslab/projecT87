@@ -256,9 +256,28 @@ if __name__ == "__main__":
         print("2. 🎛️ Manual mode (you control each action)")
         print("3. 🌐 Web dashboard (browser interface)")
 
-        choice = input("Enter choice (1-3): ").strip()
+        # Get user choice
+        try:
+            choice = input("Enter choice (1-3): ").strip()
+
+            # Auto-select autonomous mode if no input (for immediate testing)
+            if not choice:
+                choice = '1'
+                print("🤖 Auto-selecting Autonomous Mode for testing...")
+
+        except (EOFError, KeyboardInterrupt):
+            print("\n👋 Goodbye!")
+            exit(0) # or sys.exit(0)
 
     if choice == "1":
+        # Autonomous mode - Enhanced with capacity-based system
+        print("🚀 Starting Autonomous Mode with Capacity-Based System...")
+        # Assuming AutonomousLauncher is defined elsewhere and properly initialized
+        # You may need to import it or define it within this script.
+        # Example: from your_module import AutonomousLauncher
+        # agent = ...  # Assuming your agent is initialized somewhere
+        # launcher = AutonomousLauncher(agent)
+        # launcher.run_autonomous_mode()
         autonomous_agent_loop()
     elif choice == "2":
         print("🎛️ Starting manual controls...")
