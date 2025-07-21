@@ -1,0 +1,20 @@
+[
+  {
+    "id": "risk_reduction_1753073302",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753073302.2327943,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.646 suggests risk reduction needed"
+    },
+    "status": "pending",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low"
+  }
+]
