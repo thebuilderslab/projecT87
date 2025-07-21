@@ -319,25 +319,33 @@ class AaveArbitrumIntegration:
     def borrow(self, amount_usd, token_address):
         """Borrow tokens from Aave"""
         try:
+            print(f"🏦 Aave borrow: ${amount_usd:.2f} from {token_address}")
+            
             # Convert USD amount to token amount
             amount_wei = self._convert_usd_to_wei(amount_usd, token_address)
             if amount_wei == 0:
                 print(f"❌ Invalid borrow amount: {amount_usd} USD")
                 return None
 
-            # Build borrow transaction
+            print(f"💱 Converted ${amount_usd:.2f} to {amount_wei} wei")
+
+            # Build borrow transaction with enhanced gas settings
+            gas_price = max(self.w3.eth.gas_price, int(0.1 * 10**9))  # Minimum 0.1 gwei
+            
             borrow_txn = self.pool_contract.functions.borrow(
-                token_address,
+                self.w3.to_checksum_address(token_address),
                 amount_wei,
                 2,  # Variable interest rate mode
                 0,  # referral code
-                self.address
+                self.w3.to_checksum_address(self.address)
             ).build_transaction({
-                'from': self.address,
-                'gas': 180000,
-                'gasPrice': self.w3.eth.gas_price,
+                'from': self.w3.to_checksum_address(self.address),
+                'gas': 250000,  # Increased gas limit
+                'gasPrice': gas_price,
                 'nonce': self.w3.eth.get_transaction_count(self.address)
             })
+
+            print(f"⛽ Gas settings: {gas_price / 10**9:.4f} gwei, limit: 250000")
 
             # Sign and send transaction
             signed_txn = self.account.sign_transaction(borrow_txn)
@@ -348,6 +356,8 @@ class AaveArbitrumIntegration:
 
         except Exception as e:
             print(f"❌ Borrow failed: {e}")
+            import traceback
+            print(f"🔍 Full error: {traceback.format_exc()}")
             return None
 
     def supply_wbtc_to_aave(self, wbtc_amount):

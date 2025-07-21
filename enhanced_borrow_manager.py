@@ -14,7 +14,7 @@ class EnhancedBorrowManager:
         self.aave = agent.aave
 
     def safe_borrow_with_fallbacks(self, amount_usd, token_address):
-        """Safe borrow with multiple fallback strategies - optimized for DAI"""
+        """DAI-only borrowing - no fallbacks"""
         try:
             # Ensure we're using DAI address for the new strategy
             if token_address.lower() != self.agent.dai_address.lower():
@@ -23,7 +23,7 @@ class EnhancedBorrowManager:
                 print(f"   Using DAI: {self.agent.dai_address}")
                 token_address = self.agent.dai_address
 
-            print(f"🏦 Enhanced Borrow Manager: Attempting to borrow ${amount_usd:.2f} DAI")
+            print(f"🏦 Enhanced Borrow Manager: Attempting to borrow ${amount_usd:.2f} DAI ONLY")
             print(f"🔍 DEBUG: DAI address: {token_address}")
 
             # Convert USD to DAI wei (DAI has 18 decimals, 1 USD ≈ 1 DAI)
@@ -31,24 +31,14 @@ class EnhancedBorrowManager:
             print(f"💱 Converted ${amount_usd:.2f} to {amount_wei} DAI wei")
             print(f"🎯 DAI Strategy: Primary borrowing asset confirmed as DAI")
 
-            # Execute DAI borrow with enhanced retry logic
-            result = self.aave.borrow_from_aave(amount_wei, token_address)
+            # Execute DAI borrow with correct method name
+            result = self.aave.borrow(amount_wei, token_address)
 
             if result:
                 print(f"✅ Successfully borrowed ${amount_usd:.2f} DAI")
                 return result
             else:
-                print(f"❌ DAI borrow failed - checking if USDC fallback is available")
-                # Try USDC as fallback if DAI fails
-                print(f"🔄 Attempting USDC fallback for ${amount_usd:.2f}")
-                usdc_amount_wei = int(amount_usd * (10 ** 6))  # USDC has 6 decimals
-                # Try USDC as fallback
-                usdc_result = self.aave.borrow(usdc_amount_wei, self.agent.usdc_address)
-                if usdc_result:
-                    print(f"✅ Successfully borrowed ${amount_usd:.2f} USDC as DAI fallback")
-                    return usdc_result
-                else:
-                    print(f"❌ Both DAI and USDC borrow attempts failed")
+                print(f"❌ DAI borrow failed - NO FALLBACKS")
                 return None
 
         except Exception as e:
@@ -380,17 +370,13 @@ class EnhancedBorrowManager:
             dai_address = self.agent.dai_address
             print(f"✅ Confirmed DAI address: {dai_address}")
 
-            # Convert USD to DAI wei (DAI has 18 decimals, 1 USD ≈ 1 DAI)
-            amount_wei = int(amount_usd * (10 ** 18))
-            print(f"💱 USD to DAI conversion: ${amount_usd:.2f} = {amount_wei} DAI wei")
-
             # Enhanced validation for DAI borrowing
             if not self._validate_dai_borrow_conditions(amount_usd):
                 print(f"❌ DAI borrow validation failed")
                 return None
 
-            # Execute DAI borrow with retry logic
-            result = self._execute_dai_borrow_with_retries(amount_wei, dai_address)
+            # Execute DAI borrow with direct method call - simplified approach
+            result = self.aave.borrow(amount_usd, dai_address)
 
             if result:
                 print(f"✅ SUCCESS: Borrowed ${amount_usd:.2f} DAI")
@@ -398,7 +384,7 @@ class EnhancedBorrowManager:
                 return result
             else:
                 print(f"❌ FAILED: DAI borrow unsuccessful")
-                print(f"🚫 NO FALLBACK TO USDC - DAI-ONLY STRATEGY")
+                print(f"🚫 NO FALLBACK - DAI-ONLY STRATEGY")
                 return None
 
         except Exception as e:
@@ -430,8 +416,8 @@ class EnhancedBorrowManager:
                 print(f"🔄 DAI borrow attempt {attempt + 1}/{max_retries}")
                 print(f"🎯 Only borrowing DAI: {dai_address}")
 
-                # Execute borrow using Aave integration
-                result = self.aave.borrow_from_aave(amount_wei, dai_address)
+                # Execute borrow using Aave integration - FIXED METHOD NAME
+                result = self.aave.borrow(amount_wei, dai_address)
 
                 if result:
                     print(f"✅ DAI borrow successful on attempt {attempt + 1}")
