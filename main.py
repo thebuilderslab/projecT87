@@ -131,16 +131,18 @@ def autonomous_agent_loop():
         arbitrum_agent = ArbitrumTestnetAgent()
         # --- IMPORTANT ADDITION: Initialize DeFi integrations ---
         if not arbitrum_agent.initialize_integrations():
-            print("❌ DeFi integrations failed to initialize. Cannot proceed with autonomous loop.")
-            return # Exit if integrations fail
-
-        strategy_manager = CollaborativeStrategyManager(arbitrum_agent)
-        print("🚀 Arbitrum agent initialized successfully!")
-        print("🤝 Collaborative strategy manager ready!")
+            print("❌ DeFi integrations failed to initialize. Retrying in 30 seconds...")
+            time.sleep(30)
+            # Don't return here - let it continue and retry in the main loop
+        else:
+            strategy_manager = CollaborativeStrategyManager(arbitrum_agent)
+            print("🚀 Arbitrum agent initialized successfully!")
+            print("🤝 Collaborative strategy manager ready!")
     except Exception as e:
         print(f"❌ Failed to initialize Arbitrum agent or its integrations: {e}")
         print("💡 Please ensure your .env file is correctly set up and dependencies are installed.")
-        return
+        print("🔄 Will retry initialization in the main loop...")
+        # Don't return here - let the main loop handle retries
 
     # --- CONTINUOUS OPERATION LOOP ---
     iteration = 0
@@ -151,6 +153,23 @@ def autonomous_agent_loop():
         print(f"\n--- Autonomous Agent Loop: Iteration {iteration} ---")
 
         try:
+            # Check if agent needs initialization or reinitialization
+            if arbitrum_agent is None or not hasattr(arbitrum_agent, 'aave') or arbitrum_agent.aave is None:
+                print("🔄 Agent not initialized or missing integrations, attempting to initialize...")
+                try:
+                    arbitrum_agent = ArbitrumTestnetAgent()
+                    if arbitrum_agent.initialize_integrations():
+                        strategy_manager = CollaborativeStrategyManager(arbitrum_agent)
+                        print("✅ Agent successfully initialized!")
+                    else:
+                        print("⚠️ Integration initialization failed, will retry next iteration")
+                        time.sleep(45)
+                        continue
+                except Exception as init_error:
+                    print(f"⚠️ Agent initialization error: {init_error}")
+                    time.sleep(45)
+                    continue
+
             # Start a new run every 10 iterations or on first run
             if iteration == 1 or (iteration - 1) % 10 == 0:
                 run_id_counter += 1
@@ -167,17 +186,18 @@ def autonomous_agent_loop():
             if iteration % 5 == 0:
                 analyze_and_improve()
 
-            # Collaborative strategy analysis - this was the line causing issues
-            print("\n🤝 COLLABORATIVE STRATEGY ANALYSIS:")
-            strategy_manager.agent_analyze_and_propose()
-            pending_proposals = strategy_manager.get_user_input_on_proposals()
+            # Collaborative strategy analysis (only if strategy_manager is available)
+            if strategy_manager:
+                print("\n🤝 COLLABORATIVE STRATEGY ANALYSIS:")
+                strategy_manager.agent_analyze_and_propose()
+                pending_proposals = strategy_manager.get_user_input_on_proposals()
 
-            # Check for any auto-approved low-risk improvements
-            if pending_proposals:
-                for proposal in pending_proposals:
-                    if proposal['risk_level'] == 'Low' and proposal['source'] == 'agent':
-                        print(f"🟢 Auto-implementing low-risk proposal: {proposal['id']}")
-                        strategy_manager.implement_approved_strategy(proposal['id'])
+                # Check for any auto-approved low-risk improvements
+                if pending_proposals:
+                    for proposal in pending_proposals:
+                        if proposal['risk_level'] == 'Low' and proposal['source'] == 'agent':
+                            print(f"🟢 Auto-implementing low-risk proposal: {proposal['id']}")
+                            strategy_manager.implement_approved_strategy(proposal['id'])
 
             print(f"✅ Iteration {iteration} completed successfully. Waiting for next cycle.")
 
