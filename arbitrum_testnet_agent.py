@@ -533,7 +533,70 @@ class ArbitrumTestnetAgent:
         import time
         self.last_successful_operation_time = time.time()
         self.last_operation_type = operation_type
-        print(f"✅ Operation '{operation_type}' recorded. Next operation available in {self.operation_cooldown_seconds}s")
+        
+        # Track success rates
+        if not hasattr(self, 'operation_stats'):
+            self.operation_stats = {'attempts': 0, 'successes': 0}
+        
+        self.operation_stats['successes'] += 1
+        success_rate = (self.operation_stats['successes'] / max(self.operation_stats['attempts'], 1)) * 100
+        
+        print(f"✅ Operation '{operation_type}' recorded. Success rate: {success_rate:.1f}%")
+        print(f"   Next operation available in {self.operation_cooldown_seconds}s")
+        
+    def track_operation_attempt(self):
+        """Track operation attempts for success rate calculation"""
+        if not hasattr(self, 'operation_stats'):
+            self.operation_stats = {'attempts': 0, 'successes': 0}
+        
+        self.operation_stats['attempts'] += 1
+        
+    def get_success_rate_prediction(self):
+        """Predict success rate based on current conditions"""
+        try:
+            # Check network conditions
+            gas_price = self.w3.eth.gas_price
+            base_fee = self.w3.eth.get_block('latest').get('baseFeePerGas', gas_price)
+            congestion_ratio = gas_price / base_fee if base_fee > 0 else 1.0
+            
+            # Check account health
+            account_data = self.aave.get_user_account_data()
+            health_factor = account_data.get('healthFactor', 0) if account_data else 0
+            available_borrows = account_data.get('availableBorrowsUSD', 0) if account_data else 0
+            
+            # Calculate base success rate
+            base_rate = 75  # Starting assumption
+            
+            # Adjust for health factor
+            if health_factor > 3.0:
+                base_rate += 15
+            elif health_factor > 2.0:
+                base_rate += 5
+            elif health_factor < 1.5:
+                base_rate -= 30
+                
+            # Adjust for network congestion
+            if congestion_ratio > 3.0:
+                base_rate -= 20
+            elif congestion_ratio > 1.5:
+                base_rate -= 10
+                
+            # Adjust for borrowing capacity
+            if available_borrows > 50:
+                base_rate += 10
+            elif available_borrows < 5:
+                base_rate -= 15
+                
+            # Historical success rate influence
+            if hasattr(self, 'operation_stats') and self.operation_stats['attempts'] > 5:
+                historical_rate = (self.operation_stats['successes'] / self.operation_stats['attempts']) * 100
+                base_rate = (base_rate * 0.7) + (historical_rate * 0.3)  # Weighted average
+                
+            return max(10, min(95, base_rate))  # Cap between 10-95%
+            
+        except Exception as e:
+            print(f"⚠️ Success rate prediction failed: {e}")
+            return 60  # Conservative default
 
     def initialize_integrations(self):
         """Initialize all real DeFi integrations with strict error handling"""
@@ -939,6 +1002,10 @@ class ArbitrumTestnetAgent:
                     if health_factor > 1.5 and available_borrows > 1.0:
                         print("✅ Conditions favorable for DAI borrowing operations")
                         
+                        # Predict success rate
+                        predicted_success = self.get_success_rate_prediction()
+                        print(f"📊 Predicted success rate: {predicted_success:.1f}%")
+                        
                         # Check cooldown
                         if self.is_operation_on_cooldown():
                             print("⏰ Operations in cooldown period")
@@ -946,6 +1013,9 @@ class ArbitrumTestnetAgent:
                         else:
                             # Calculate safe borrow amount (DAI only)
                             safe_amount = self.calculate_safe_borrow_amount(0, available_borrows)
+                            
+                            # Track this attempt
+                            self.track_operation_attempt()
                             
                             if safe_amount > 0:
                                 print(f"🎯 Attempting safe DAI borrow: ${safe_amount:.2f}")
