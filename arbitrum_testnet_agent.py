@@ -679,7 +679,6 @@ class ArbitrumTestnetAgent:
         # else: # Original Code
         #    print("❌ Could not get total collateral USD value from health monitor.") # Original Code
         #    return 0.0 # Return 0 if unable to retrieve # Original Code
-        ```text
         return 0.0  # Returning 0.0 directly because the function is not being used.
 
     def execute_leveraged_supply_strategy(self, amount_to_borrow_dai=10):
@@ -1346,7 +1345,7 @@ class ArbitrumTestnetAgent:
             try:
                 from accurate_debank_fetcher import AccurateWalletDataFetcher
                 fetcher = AccurateWalletDataFetcher(self.w3, self.address)
-                dashboard_data = fetcher.get_comprehensive```text
+                dashboard_data = fetcher.get_comprehensive
 _wallet_data()
 
                 if dashboard_data and dashboard_data.get('success'):
