@@ -376,14 +376,24 @@ class ArbitrumTestnetAgent:
         self.gas_calculator = None
         self.enhanced_borrow_manager = None
 
+        # HYBRID APPROACH CONFIGURATION - Combines Growth-Triggered and Capacity-Based Systems
         # Configuration parameters loaded from environment variables (Replit Secrets)
-        # Defaults are provided if the environment variable is not set
         self.target_health_factor = float(os.getenv('TARGET_HEALTH_FACTOR', '3.5')) # Target HF for general management
-        self.growth_trigger_threshold = float(os.getenv('GROWTH_TRIGGER_THRESHOLD', '40.0')) # USDC growth to trigger re-leverage
+        
+        # Growth-Triggered System Parameters
+        self.growth_trigger_threshold = float(os.getenv('GROWTH_TRIGGER_THRESHOLD', '13.0')) # $13 collateral growth to trigger borrowing
+        self.growth_health_factor_threshold = float(os.getenv('GROWTH_HEALTH_FACTOR_THRESHOLD', '2.1')) # HF > 2.1 for growth-triggered
+        
+        # Capacity-Based System Parameters  
+        self.capacity_optimization_threshold = float(os.getenv('CAPACITY_OPTIMIZATION_THRESHOLD', '0.20'))  # 20% utilization threshold
+        self.capacity_health_factor_threshold = float(os.getenv('CAPACITY_HEALTH_FACTOR_THRESHOLD', '2.1')) # HF > 2.1 for capacity optimization
+        self.capacity_available_threshold = float(os.getenv('CAPACITY_AVAILABLE_THRESHOLD', '40.0')) # $40 minimum available capacity
+        
+        # System Operation Parameters
         self.re_leverage_percentage = float(os.getenv('RE_LEVERAGE_PERCENTAGE', '0.50')) # Percentage of growth to re-leverage
         self.min_borrow_releverage = float(os.getenv('MIN_BORROW_RELEVERAGE', '10.0')) # Minimum borrow amount for re-leverage
         self.max_borrow_releverage = float(os.getenv('MAX_BORROW_RELEVERAGE', '200.0')) # Maximum borrow amount for re-leverage
-        self.safe_releverage_hf_threshold = float(os.getenv('SAFE_RELEVERAGE_HF_THRESHOLD', '2.5')) # Minimum HF to safely re-leverage
+        self.safe_releverage_hf_threshold = float(os.getenv('SAFE_RELEVERAGE_HF_THRESHOLD', '2.1')) # Minimum HF to safely re-leverage
 
         self.previous_leveraged_value_usd = None # Initialize for tracking growth
 
@@ -399,7 +409,29 @@ class ArbitrumTestnetAgent:
         self.last_successful_operation_time = 0  # Unix timestamp of last op
         self.operation_cooldown_seconds = 60 # 1 minute cooldown
         self.last_operation_type = None  # Track type of last operation
+        
+        # Display Hybrid System Configuration
+        self._display_hybrid_system_config()
+        
         return True
+        
+    def _display_hybrid_system_config(self):
+        """Display the current Hybrid System configuration"""
+        print(f"\n🔄 HYBRID SYSTEM CONFIGURATION:")
+        print(f"═══════════════════════════════════════════")
+        print(f"🚀 GROWTH-TRIGGERED SYSTEM:")
+        print(f"   • Growth Threshold: ${self.growth_trigger_threshold:.0f}")
+        print(f"   • Health Factor: > {self.growth_health_factor_threshold:.1f}")
+        print(f"   • Re-leverage %: {self.re_leverage_percentage:.1%}")
+        print(f"   • Min/Max Borrow: ${self.min_borrow_releverage:.0f} - ${self.max_borrow_releverage:.0f}")
+        print(f"⚡ CAPACITY-BASED SYSTEM:")
+        print(f"   • Available Capacity: > ${self.capacity_available_threshold:.0f}")
+        print(f"   • Health Factor: > {self.capacity_health_factor_threshold:.1f}")
+        print(f"   • Max Utilization: < {self.capacity_optimization_threshold:.0%}")
+        print(f"🔧 SYSTEM SETTINGS:")
+        print(f"   • Operation Cooldown: {self.operation_cooldown_seconds}s")
+        print(f"   • Target Health Factor: {self.target_health_factor:.1f}")
+        print(f"═══════════════════════════════════════════\n")
 
     def update_baseline_after_success(self, new_collateral_value=None):
         """Update baseline collateral value after successful operation"""
@@ -1020,69 +1052,115 @@ class ArbitrumTestnetAgent:
                     operations_completed += 1
                     performance_score += 0.2
                     
-                    # Step 5: Safe operation execution based on conditions
-                    if health_factor > 1.5 and available_borrows > 1.0:
-                        print("✅ Health and capacity conditions met for DAI borrowing")
+                    # Step 5: HYBRID APPROACH - Growth-Triggered AND Capacity-Based System Evaluation
+                    print(f"🔄 HYBRID SYSTEM EVALUATION:")
+                    print(f"   Health Factor: {health_factor:.4f} (Threshold: {self.growth_health_factor_threshold:.1f})")
+                    print(f"   Available Borrows: ${available_borrows:.2f} (Capacity Threshold: ${self.capacity_available_threshold:.0f})")
+                    
+                    # Check for collateral growth trigger
+                    current_collateral = total_collateral
+                    collateral_growth = current_collateral - self.last_collateral_value_usd
+                    
+                    print(f"📊 GROWTH-TRIGGERED SYSTEM Analysis:")
+                    print(f"   Current Collateral: ${current_collateral:.2f}")
+                    print(f"   Baseline Collateral: ${self.last_collateral_value_usd:.2f}")
+                    print(f"   Growth: ${collateral_growth:.2f}")
+                    print(f"   Growth Threshold: ${self.growth_trigger_threshold:.2f}")
+                    
+                    # HYBRID SYSTEM CONDITIONS
+                    manual_override = self.detect_manual_override()
+                    
+                    # Growth-Triggered System Check
+                    growth_conditions_met = (
+                        collateral_growth >= self.growth_trigger_threshold and
+                        health_factor > self.growth_health_factor_threshold and
+                        available_borrows > 1.0
+                    )
+                    
+                    # Capacity-Based System Check
+                    capacity_utilization = available_borrows / max(total_collateral * 0.8, 1) if total_collateral > 0 else 0
+                    capacity_conditions_met = (
+                        health_factor > self.capacity_health_factor_threshold and
+                        available_borrows >= self.capacity_available_threshold and
+                        capacity_utilization < self.capacity_optimization_threshold
+                    )
+                    
+                    print(f"📊 CAPACITY-BASED SYSTEM Analysis:")
+                    print(f"   Capacity Utilization: {capacity_utilization:.1%}")
+                    print(f"   Capacity Threshold: {self.capacity_optimization_threshold:.1%}")
+                    print(f"   Available vs Threshold: ${available_borrows:.2f} >= ${self.capacity_available_threshold:.0f}")
+                    
+                    print(f"🎯 HYBRID SYSTEM TRIGGERS:")
+                    print(f"   Growth-Triggered: {growth_conditions_met}")
+                    print(f"     • Growth: ${collateral_growth:.2f} >= ${self.growth_trigger_threshold:.2f} = {collateral_growth >= self.growth_trigger_threshold}")
+                    print(f"     • Health Factor: {health_factor:.4f} > {self.growth_health_factor_threshold:.1f} = {health_factor > self.growth_health_factor_threshold}")
+                    print(f"   Capacity-Based: {capacity_conditions_met}")
+                    print(f"     • Health Factor: {health_factor:.4f} > {self.capacity_health_factor_threshold:.1f} = {health_factor > self.capacity_health_factor_threshold}")
+                    print(f"     • Available: ${available_borrows:.2f} >= ${self.capacity_available_threshold:.0f} = {available_borrows >= self.capacity_available_threshold}")
+                    print(f"     • Utilization: {capacity_utilization:.1%} < {self.capacity_optimization_threshold:.1%} = {capacity_utilization < self.capacity_optimization_threshold}")
+                    print(f"   Manual Override: {manual_override}")
+                    
+                    if growth_conditions_met or capacity_conditions_met or manual_override:
+                            # Determine which system triggered and set trigger reasons
+                        trigger_reasons = []
+                        trigger_type = None
                         
-                        # Check for collateral growth trigger
-                        current_collateral = total_collateral
-                        collateral_growth = current_collateral - self.last_collateral_value_usd
-                        growth_threshold = self.growth_trigger_threshold  # Default $40 from config
+                        if growth_conditions_met:
+                            trigger_reasons.append(f"🚀 GROWTH-TRIGGERED: ${collateral_growth:.2f} >= ${self.growth_trigger_threshold:.2f}")
+                            trigger_type = "growth"
+                        if capacity_conditions_met:
+                            trigger_reasons.append(f"⚡ CAPACITY-BASED: {capacity_utilization:.1%} utilization, ${available_borrows:.2f} available")
+                            if trigger_type != "growth":  # Prioritize growth-triggered
+                                trigger_type = "capacity"
+                        if manual_override:
+                            trigger_reasons.append(f"🔧 MANUAL OVERRIDE")
+                            if trigger_type is None:
+                                trigger_type = "manual"
                         
-                        print(f"📊 Collateral Growth Analysis:")
-                        print(f"   Current: ${current_collateral:.2f}")
-                        print(f"   Baseline: ${self.last_collateral_value_usd:.2f}")
-                        print(f"   Growth: ${collateral_growth:.2f}")
-                        print(f"   Threshold: ${growth_threshold:.2f}")
+                        print(f"\n✅ HYBRID SYSTEM ACTIVATED:")
+                        for reason in trigger_reasons:
+                            print(f"   {reason}")
                         
-                        # HYBRID APPROACH: Growth-triggered OR capacity optimization
-                        manual_override = self.detect_manual_override()
-                        growth_triggered = collateral_growth >= growth_threshold
+                        # Predict success rate
+                        predicted_success = self.get_success_rate_prediction()
+                        print(f"📊 Predicted success rate: {predicted_success:.1f}%")
                         
-                        # New: Capacity optimization trigger
-                        capacity_utilization = available_borrows / max(total_collateral * 0.8, 1)  # 80% max LTV assumption
-                        capacity_optimization_enabled = self._should_optimize_capacity(available_borrows, capacity_utilization)
-                        
-                        print(f"🎯 Trigger Analysis:")
-                        print(f"   Growth triggered: {growth_triggered} (${collateral_growth:.2f} >= ${growth_threshold:.2f})")
-                        print(f"   Capacity optimization: {capacity_optimization_enabled} ({capacity_utilization:.1%} utilization)")
-                        print(f"   Manual override: {manual_override}")
-                        
-                        if growth_triggered or capacity_optimization_enabled or manual_override:
-                            trigger_reason = []
-                            if growth_triggered:
-                                trigger_reason.append(f"🚀 GROWTH TRIGGERED: ${collateral_growth:.2f}")
-                            if capacity_optimization_enabled:
-                                trigger_reason.append(f"⚡ CAPACITY OPTIMIZATION: {capacity_utilization:.1%} utilization")
-                            if manual_override:
-                                trigger_reason.append(f"🔧 MANUAL OVERRIDE")
-                            
-                            print(" | ".join(trigger_reason))
-                            
-                            # Predict success rate
-                            predicted_success = self.get_success_rate_prediction()
-                            print(f"📊 Predicted success rate: {predicted_success:.1f}%")
-                            
-                            # Check cooldown
-                            if self.is_operation_on_cooldown():
-                                print("⏰ Operations in cooldown period")
-                                performance_score += 0.1
-                            else:
-                                # Calculate safe borrow amount using hybrid logic
-                                if growth_triggered:
-                                    safe_amount = self.calculate_safe_borrow_amount(collateral_growth, available_borrows)
-                                else:
-                                    # Capacity-based: smaller, more frequent amounts
-                                    safe_amount = self._calculate_capacity_optimized_amount(available_borrows, capacity_utilization)
+                        # Check cooldown
+                        if self.is_operation_on_cooldown():
+                            print("⏰ Operations in cooldown period")
+                            performance_score += 0.1
                         else:
-                            print(f"⏸️ NO TRIGGERS ACTIVATED")
-                            print(f"   Growth needed: ${max(0, growth_threshold - collateral_growth):.2f}")
-                            print(f"   Capacity utilization: {capacity_utilization:.1%} (threshold: 20%)")
-                            performance_score += 0.2
-                            safe_amount = 0
-                            
-                            # Track this attempt
-                            self.track_operation_attempt()
+                            # Calculate safe borrow amount using HYBRID logic
+                            if trigger_type == "growth":
+                                safe_amount = self._calculate_growth_triggered_amount(collateral_growth, available_borrows)
+                                print(f"💰 Using Growth-Triggered calculation: ${safe_amount:.2f}")
+                            elif trigger_type == "capacity":
+                                safe_amount = self._calculate_capacity_optimized_amount(available_borrows, capacity_utilization)
+                                print(f"💰 Using Capacity-Based calculation: ${safe_amount:.2f}")
+                            else:
+                                # Manual override - use conservative approach
+                                safe_amount = self.calculate_safe_borrow_amount(collateral_growth, available_borrows)
+                                print(f"💰 Using Manual Override calculation: ${safe_amount:.2f}")
+                        else:
+                        print(f"⏸️ HYBRID SYSTEM - NO TRIGGERS ACTIVATED")
+                        print(f"   GROWTH-TRIGGERED Requirements:")
+                        if collateral_growth < self.growth_trigger_threshold:
+                            print(f"     ❌ Growth needed: ${max(0, self.growth_trigger_threshold - collateral_growth):.2f} more")
+                        if health_factor <= self.growth_health_factor_threshold:
+                            print(f"     ❌ Health factor too low: {health_factor:.4f} <= {self.growth_health_factor_threshold:.1f}")
+                        print(f"   CAPACITY-BASED Requirements:")
+                        if health_factor <= self.capacity_health_factor_threshold:
+                            print(f"     ❌ Health factor too low: {health_factor:.4f} <= {self.capacity_health_factor_threshold:.1f}")
+                        if available_borrows < self.capacity_available_threshold:
+                            print(f"     ❌ Insufficient capacity: ${available_borrows:.2f} < ${self.capacity_available_threshold:.0f}")
+                        if capacity_utilization >= self.capacity_optimization_threshold:
+                            print(f"     ❌ High utilization: {capacity_utilization:.1%} >= {self.capacity_optimization_threshold:.1%}")
+                        
+                        performance_score += 0.2
+                        safe_amount = 0
+                        
+                        # Track this attempt
+                        self.track_operation_attempt()
                             
                             if safe_amount > 0:
                                 print(f"🎯 Attempting safe DAI borrow: ${safe_amount:.2f}")
@@ -1306,41 +1384,35 @@ class ArbitrumTestnetAgent:
         self.last_capacity_optimization = 0
         
     def _should_optimize_capacity(self, available_borrows, capacity_utilization):
-        """Determine if capacity optimization should trigger"""
+        """Determine if capacity optimization should trigger (used by capacity-based system)"""
         try:
-            # Conditions for capacity optimization:
-            # 1. Available borrows > $10 (meaningful amount)
-            # 2. Capacity utilization < 20% (underutilized)
-            # 3. Not in capacity optimization cooldown
-            # 4. Market conditions favorable
+            # This method is used internally by the capacity-based system
+            # Main conditions are checked in the main workflow
             
             current_time = time.time()
             
-            # Check basic thresholds
-            if available_borrows < 10.0:
-                return False
-                
-            if capacity_utilization >= self.capacity_optimization_threshold:
-                return False
-                
             # Check cooldown for capacity optimizations
-            if current_time - self.last_capacity_optimization < self.capacity_optimization_cooldown:
+            if hasattr(self, 'last_capacity_optimization') and current_time - self.last_capacity_optimization < self.capacity_optimization_cooldown:
+                print(f"⏸️ Capacity optimization in cooldown")
                 return False
                 
             # Check market conditions (gas prices, network congestion)
-            gas_price = self.w3.eth.gas_price
-            base_fee = self.w3.eth.get_block('latest').get('baseFeePerGas', gas_price)
-            network_congestion = gas_price / base_fee if base_fee > 0 else 1.0
-            
-            # Skip capacity optimization during high network congestion
-            if network_congestion > 2.0:
-                print(f"⏸️ Skipping capacity optimization due to network congestion: {network_congestion:.2f}x")
-                return False
+            try:
+                gas_price = self.w3.eth.gas_price
+                base_fee = self.w3.eth.get_block('latest').get('baseFeePerGas', gas_price)
+                network_congestion = gas_price / base_fee if base_fee > 0 else 1.0
                 
-            print(f"✅ Capacity optimization conditions met:")
-            print(f"   Available: ${available_borrows:.2f} > $10")
-            print(f"   Utilization: {capacity_utilization:.1%} < {self.capacity_optimization_threshold:.1%}")
-            print(f"   Network congestion: {network_congestion:.2f}x < 2.0x")
+                # Skip capacity optimization during high network congestion
+                if network_congestion > 2.0:
+                    print(f"⏸️ Skipping capacity optimization due to network congestion: {network_congestion:.2f}x")
+                    return False
+                    
+                print(f"✅ Capacity optimization market conditions favorable:")
+                print(f"   Network congestion: {network_congestion:.2f}x < 2.0x")
+                
+            except Exception as market_error:
+                print(f"⚠️ Market condition check failed: {market_error}")
+                # Continue anyway for capacity optimization
             
             return True
             
@@ -1348,6 +1420,32 @@ class ArbitrumTestnetAgent:
             print(f"❌ Capacity optimization check failed: {e}")
             return False
             
+    def _calculate_growth_triggered_amount(self, collateral_growth, available_borrows):
+        """Calculate borrow amount for growth-triggered system"""
+        try:
+            # Growth-triggered: Use percentage of growth with safety constraints
+            growth_percentage = self.re_leverage_percentage  # Default 50% from config
+            base_amount = collateral_growth * growth_percentage
+            
+            # Apply constraints
+            min_amount = max(self.min_borrow_releverage, 1.0)  # Minimum from config or $1
+            max_amount = min(self.max_borrow_releverage, available_borrows * 0.8)  # Maximum from config or 80% of available
+            
+            optimal_amount = max(min_amount, min(base_amount, max_amount))
+            
+            print(f"🚀 Growth-triggered calculation:")
+            print(f"   Growth amount: ${collateral_growth:.2f}")
+            print(f"   Growth percentage: {growth_percentage:.1%}")
+            print(f"   Base amount: ${base_amount:.2f}")
+            print(f"   Constrained amount: ${optimal_amount:.2f}")
+            print(f"   Min/Max: ${min_amount:.2f} / ${max_amount:.2f}")
+            
+            return optimal_amount
+            
+        except Exception as e:
+            print(f"❌ Growth-triggered calculation failed: {e}")
+            return 0.0
+
     def _calculate_capacity_optimized_amount(self, available_borrows, capacity_utilization):
         """Calculate optimal borrow amount for capacity optimization"""
         try:
@@ -1364,7 +1462,8 @@ class ArbitrumTestnetAgent:
             
             optimal_amount = max(min_amount, min(base_amount, max_amount))
             
-            print(f"💡 Capacity optimization calculation:")
+            print(f"⚡ Capacity optimization calculation:")
+            print(f"   Utilization: {capacity_utilization:.1%}")
             print(f"   Base percentage: {base_percentage:.1%}")
             print(f"   Base amount: ${base_amount:.2f}")
             print(f"   Constrained amount: ${optimal_amount:.2f}")
