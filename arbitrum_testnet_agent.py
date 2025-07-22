@@ -675,4 +675,9 @@ class ArbitrumTestnetAgent:
                 from enhanced_borrow_manager import EnhancedBorrowManager
                 self.enhanced_borrow_manager = EnhancedBorrowManager(self)
                 print("🏦 Initialized Enhanced Borrow Manager.")
-            except
+            except Exception as e:
+                print(f"❌ Enhanced borrow manager initialization failed: {e}")
+
+        except Exception as e:
+            print(f"❌ Integration initialization failed: {e}")
+            return False
