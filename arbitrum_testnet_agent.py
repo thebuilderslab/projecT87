@@ -666,8 +666,7 @@ class ArbitrumTestnetAgent:
             # Initialize Real Aave, Uniswap, and Health Monitor Integrations
             self.aave = AaveArbitrumIntegration(self.w3, self.account)
             self.uniswap = UniswapIntegration(self.w3, self.account)
-            self.health_```text
-monitor = HealthMonitor(self.w3,self.account, self.aave)
+            self.health_monitor = HealthMonitor(self.w3, self.account, self.aave)
             print("✅ Initialized Real Aave, Uniswap, and Health Monitor Integrations.")
 
             # Initialize Gas Calculator
