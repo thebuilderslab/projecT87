@@ -151,16 +151,52 @@ class UniswapArbitrumIntegration:
 
 
     def swap_tokens(self, token_in, token_out, amount_in, fee=3000):
-        """Execute token swap on Uniswap V3 with enhanced validation and error handling"""
+        """Execute token swap on Uniswap V3 with enhanced validation and error handling - DAI-ONLY ENFORCEMENT"""
         try:
             import time
 
-            # Pre-validation: Check token contracts exist
+            # CRITICAL: Enforce DAI-only swap policy
+            dai_address_lower = self.dai_address.lower()
+            wbtc_address_lower = self.wbtc_address.lower()
+            weth_address_lower = self.weth_address.lower()
+            
+            token_in_lower = token_in.lower()
+            token_out_lower = token_out.lower()
+            
+            # Validate only allowed swap combinations
+            allowed_swaps = [
+                (dai_address_lower, wbtc_address_lower),  # DAI → WBTC
+                (dai_address_lower, weth_address_lower),  # DAI → WETH
+            ]
+            
+            current_swap = (token_in_lower, token_out_lower)
+            if current_swap not in allowed_swaps:
+                print(f"❌ FORBIDDEN SWAP: {token_in} → {token_out}")
+                print(f"🚫 Only DAI → WBTC and DAI → WETH swaps are allowed")
+                print(f"🎯 Current swap pair not in allowlist: {current_swap}")
+                return None
+            
+            print(f"✅ APPROVED SWAP: DAI → {'WBTC' if token_out_lower == wbtc_address_lower else 'WETH'}")
+
+            # Enhanced contract validation
             for token_addr in [token_in, token_out]:
                 if token_addr != "0x0000000000000000000000000000000000000000":
-                    code = self.w3.eth.get_code(self.w3.to_checksum_address(token_addr))
-                    if code == b'':
-                        print(f"❌ No contract found at {token_addr}")
+                    try:
+                        checksummed_addr = self.w3.to_checksum_address(token_addr)
+                        code = self.w3.eth.get_code(checksummed_addr)
+                        if code == b'':
+                            print(f"❌ No contract found at {token_addr}")
+                            return None
+                        
+                        # Verify it's a valid ERC20 token
+                        token_contract = self.w3.eth.contract(address=checksummed_addr, abi=self.erc20_abi)
+                        symbol = token_contract.functions.symbol().call()
+                        decimals = token_contract.functions.decimals().call()
+                        
+                        print(f"✅ Token validated: {symbol} (decimals: {decimals}) at {checksummed_addr}")
+                        
+                    except Exception as contract_error:
+                        print(f"❌ Token contract validation failed for {token_addr}: {contract_error}")
                         return None
 
             # ENHANCED: Validate token balance before swap
@@ -303,9 +339,15 @@ class UniswapArbitrumIntegration:
             return None
 
     def optimize_collateral_via_swap(self, aave_integration, current_collateral_amount):
-        """Swap borrowed DAI assets to optimize collateral position"""
+        """Swap borrowed DAI assets to optimize collateral position - STRICT DAI-ONLY OPERATIONS"""
         try:
             print("🔄 Optimizing collateral through strategic DAI swapping...")
+            print("🎯 STRICT MODE: Only DAI → WBTC and DAI → WETH swaps allowed")
+
+            # Enforce DAI-only policy - reject any USDC operations
+            if hasattr(aave_integration, 'usdc_address'):
+                print("⚠️ USDC contract detected but will NOT be used in swaps")
+                print("🚫 System configured for DAI-only swap operations")
 
             # Check DAI balance instead of USDC
             dai_balance = aave_integration.get_token_balance(aave_integration.dai_address)
