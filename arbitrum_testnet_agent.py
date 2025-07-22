@@ -1,4 +1,4 @@
-# Applying DAI compliance by replacing USDC references and updating token validation.
+# Applying DAI compliance by removing USDC references and updating token validation.
 import os
 import json
 import math
@@ -337,17 +337,15 @@ class ArbitrumTestnetAgent:
         # Contract addresses based on network
         if self.network_mode == 'mainnet':
             # Token addresses for Arbitrum Mainnet - DAI COMPLIANCE ENFORCED
-            self.dai_address = "0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1"  # Primary token for all operations
-            self.usdc_native_address = "0xAF88D065e8c38FAD0AEff3E253e648A15ceE23DC"  # Native USDC
-            self.wbtc_address = "0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f"
-            self.weth_address = "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1"
+            self.weth_address = self.w3.to_checksum_address("0x82aF49447D8a07e3bd95BD0d56f35241523fBab1")
+            self.wbtc_address = self.w3.to_checksum_address("0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f")
+            self.dai_address = self.w3.to_checksum_address("0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1")  # Primary token for all operations
             self.arb_address = "0x912CE59144191C1204E64559FE8253a0e49E6548"
             self.aave_pool_address = "0x794a61358D6845594F94dc1DB02A252b5b4814aD"
 
-            # Mainnet aToken addresses (properly checksummed)
+            # Mainnet aToken addresses (properly checksummed) - DAI-only operations
             self.aWBTC_address = "0x6533afac2E7BCCB20dca161449A13A2D2d5B739A"
             self.aWETH_address = "0xe50fA9b4c56454E2edF6BFf7c81b50c5F05aBE61"
-            self.aUSDC_address = "0x724dc807b04555b71ed48a6896b6F41593b8C637"
 
             print(f"📋 Mainnet Token addresses verified (DAI-ONLY COMPLIANCE):")
             print(f"   DAI: {self.dai_address}")  # Primary token for all operations
@@ -360,8 +358,7 @@ class ArbitrumTestnetAgent:
             self.rpc_url = "https://sepolia-rollup.arbitrum.io/rpc"
             print("🧪 Initializing for Arbitrum Sepolia Testnet")
 
-            # Testnet token addresses (properly checksummed)
-            self.usdc_address = "0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d"
+            # Testnet token addresses (properly checksummed) - DAI-only operations
             self.wbtc_address = "0xA2d460Bc966F6C4D5527a6ba35C6cB57c15c8F96"
             self.weth_address = "0x980B62Da83eFf3D4576C647993b0c1D7faf17c73"
             self.dai_address = "0x5f6bB460B6d0bdA2CCaDdd7A19B5F6E7b5b8E1DB"
@@ -678,13 +675,13 @@ class ArbitrumTestnetAgent:
                 from enhanced_borrow_manager import EnhancedBorrowManager
                 self.enhanced_borrow_manager = EnhancedBorrowManager(self)
                 print("🏦 Initialized Enhanced Borrow Manager.")
-            except ImportError as e:
+            except```python
+ImportError as e:
                 print(f"⚠️ Enhanced Borrow Manager not available: {e}")
                 self.enhanced_borrow_manager = None
 
             # Token approvals with gas optimization
             tokens_to_approve = [
-                ("USDC", self.usdc_address),
                 ("WBTC", self.wbtc_address),
                 ("WETH", self.weth_address),
                 ("DAI", self.dai_address)
@@ -843,7 +840,6 @@ class ArbitrumTestnetAgent:
             else:
                 print(f"   ⚠️ ISSUE: Transaction simulation failed - likely gas or contract interaction issue")
                 print(f"   💡 SUGGESTIONS:")
-                print(f"      - Check if USDC borrowing is enabled on this market")
                 print(f"      - Verify gas settings and network connectivity")
                 print(f"      - Try smaller borrow amount ($1-5 USDC)")
                 print(f"      - Check for any Aave protocol restrictions")
@@ -1366,87 +1362,4 @@ class ArbitrumTestnetAgent:
                 allocation['direct_supply'] = total_dai
 
             print(f"📋 DAI Allocation:")
-            print(f"   WBTC swap: ${allocation['wbtc_swap']:.2f}")
-            print(f"   WETH swap: ${allocation['weth_swap']:.2f}")
-            print(f"   Direct supply: ${allocation['direct_supply']:.2f}")
-
-            return allocation
-
-        except Exception as e:
-            print(f"❌ DAI allocation calculation failed: {e}")
-            # Fallback: supply all DAI directly
-            return {
-                'wbtc_swap': 0,
-                'weth_swap': 0,
-                'direct_supply': total_dai
-            }
-
-    def _calculate_growth_triggered_amount(self, collateral_growth, available_borrows):
-        """Calculate borrow amount for growth-triggered system using proven methodology"""
-        try:
-            print(f"💰 Growth-Triggered Calculation:")
-            print(f"   Collateral growth: ${collateral_growth:.2f}")
-            print(f"   Available borrows: ${available_borrows:.2f}")
-            
-            # Based on successful logs: use conservative 15-20% of available capacity
-            # Cap at $10 maximum for safety, minimum $1 for functionality
-            base_percentage = 0.15  # 15% of available capacity (proven successful)
-            calculated_amount = available_borrows * base_percentage
-            
-            # Growth factor influence (but cap the influence)
-            if collateral_growth >= self.growth_trigger_threshold:
-                growth_multiplier = min(1.5, collateral_growth / self.growth_trigger_threshold)  # Cap at 1.5x
-                calculated_amount *= growth_multiplier
-            
-            # Apply proven constraints from successful logs
-            safe_amount = max(1.0, min(calculated_amount, 10.0))  # Between $1-$10
-            
-            # Final safety check - don't exceed 20% of available
-            safe_amount = min(safe_amount, available_borrows * 0.20)
-            
-            print(f"   Base calculation (15%): ${available_borrows * base_percentage:.2f}")
-            print(f"   Growth-adjusted: ${calculated_amount:.2f}")
-            print(f"   Final safe amount: ${safe_amount:.2f}")
-            
-            return safe_amount
-            
-        except Exception as e:
-            print(f"❌ Growth-triggered calculation failed: {e}")
-            return min(5.0, available_borrows * 0.10)  # Conservative fallback
-
-    def _calculate_capacity_optimized_amount(self, available_borrows, capacity_utilization):
-        """Calculate borrow amount for capacity-based system using proven methodology"""
-        try:
-            print(f"⚡ Capacity-Based Calculation:")
-            print(f"   Available borrows: ${available_borrows:.2f}")
-            print(f"   Current utilization: {capacity_utilization:.1%}")
-            
-            # Based on successful logs: conservative approach with proven limits
-            base_percentage = 0.10  # Start with 10% (more conservative for capacity-based)
-            
-            # Adjust percentage based on utilization (proven from logs)
-            if capacity_utilization < 0.15:  # Low utilization
-                adjusted_percentage = 0.15  # Can be slightly more aggressive
-            elif capacity_utilization < 0.25:  # Medium utilization
-                adjusted_percentage = 0.12
-            else:  # High utilization
-                adjusted_percentage = 0.08  # Very conservative
-            
-            calculated_amount = available_borrows * adjusted_percentage
-            
-            # Apply proven limits from successful execution logs
-            safe_amount = max(1.0, min(calculated_amount, 8.0))  # Between $1-$8 for capacity-based
-            
-            # Final safety - ensure we don't exceed the threshold that worked
-            if available_borrows < self.capacity_available_threshold:
-                safe_amount = min(safe_amount, 2.0)  # Very conservative if below threshold
-            
-            print(f"   Utilization-adjusted percentage: {adjusted_percentage:.1%}")
-            print(f"   Calculated amount: ${calculated_amount:.2f}")
-            print(f"   Final safe amount: ${safe_amount:.2f}")
-            
-            return safe_amount
-            
-        except Exception as e:
-            print(f"❌ Capacity-based calculation failed: {e}")
-            return min(3.0, available_borrows * 0.05)  # Very conservative fallback
+            print(f"   WBTC swap

@@ -229,6 +229,40 @@ class EnhancedBorrowManager:
             print(f"❌ Collateral supply failed: {e}")
             return False
             
+    def execute_enhanced_borrow_with_retry(self, amount_usd):
+        """Execute enhanced borrow with retry mechanism - DAI only"""
+        try:
+            print(f"🚀 Enhanced Borrow with Retry: ${amount_usd:.2f} DAI")
+            
+            max_retries = 3
+            for attempt in range(max_retries):
+                try:
+                    print(f"🔄 Borrow attempt {attempt + 1}/{max_retries}")
+                    
+                    # Use direct DAI borrow
+                    success = self.aave.borrow(amount_usd, self.dai_address)
+                    
+                    if success:
+                        print(f"✅ DAI borrow successful on attempt {attempt + 1}")
+                        self.last_operation_time = time.time()
+                        return True
+                    else:
+                        print(f"❌ DAI borrow failed on attempt {attempt + 1}")
+                        if attempt < max_retries - 1:
+                            time.sleep(2)  # Wait before retry
+                            
+                except Exception as e:
+                    print(f"❌ Borrow attempt {attempt + 1} error: {e}")
+                    if attempt < max_retries - 1:
+                        time.sleep(3)  # Wait longer on exception
+                        
+            print(f"❌ All {max_retries} borrow attempts failed")
+            return False
+            
+        except Exception as e:
+            print(f"❌ Enhanced borrow with retry failed: {e}")
+            return False
+
     def get_operation_status(self):
         """Get current operation status"""
         try:
