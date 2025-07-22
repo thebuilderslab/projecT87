@@ -14083,3 +14083,16 @@
 {"run_id": 1, "iteration": 9, "performance_metric": 0.6000000000000001, "timestamp": 1753157934.0239425, "metadata": {}}
 {"run_id": 1, "iteration": 10, "performance_metric": 0.6000000000000001, "timestamp": 1753157979.319368, "metadata": {}}
 {"run_id": 2, "iteration": 11, "performance_metric": 0.6000000000000001, "timestamp": 1753158024.6491601, "metadata": {}}
+{"run_id": 1, "iteration": 1, "performance_metric": 0.30000000000000004, "timestamp": 1753160346.8263614, "metadata": {}}
+{"run_id": 1, "iteration": 2, "performance_metric": 0.30000000000000004, "timestamp": 1753160392.356878, "metadata": {}}
+{"run_id": 1, "iteration": 3, "performance_metric": 0.30000000000000004, "timestamp": 1753160437.824994, "metadata": {}}
+{"run_id": 1, "iteration": 4, "performance_metric": 0.30000000000000004, "timestamp": 1753160483.2461627, "metadata": {}}
+{"run_id": 1, "iteration": 5, "performance_metric": 0.30000000000000004, "timestamp": 1753160528.6987953, "metadata": {}}
+{"run_id": 1, "iteration": 6, "performance_metric": 0.30000000000000004, "timestamp": 1753160574.2553842, "metadata": {}}
+{"run_id": 1, "iteration": 7, "performance_metric": 0.30000000000000004, "timestamp": 1753160619.7220426, "metadata": {}}
+{"run_id": 1, "iteration": 8, "performance_metric": 0.30000000000000004, "timestamp": 1753160665.1802835, "metadata": {}}
+{"run_id": 1, "iteration": 9, "performance_metric": 0.30000000000000004, "timestamp": 1753160710.6187828, "metadata": {}}
+{"run_id": 1, "iteration": 10, "performance_metric": 0.30000000000000004, "timestamp": 1753160756.0841782, "metadata": {}}
+{"run_id": 2, "iteration": 11, "performance_metric": 0.30000000000000004, "timestamp": 1753160801.6384695, "metadata": {}}
+{"run_id": 2, "iteration": 12, "performance_metric": 0.30000000000000004, "timestamp": 1753160847.0634265, "metadata": {}}
+{"run_id": 2, "iteration": 13, "performance_metric": 0.30000000000000004, "timestamp": 1753160892.5455127, "metadata": {}}

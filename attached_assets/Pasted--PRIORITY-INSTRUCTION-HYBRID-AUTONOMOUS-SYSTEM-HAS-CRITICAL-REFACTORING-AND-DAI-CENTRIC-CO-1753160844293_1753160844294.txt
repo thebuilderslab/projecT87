@@ -1,0 +1,97 @@
+````
+**PRIORITY INSTRUCTION: HYBRID AUTONOMOUS SYSTEM (HAS) CRITICAL REFACTORING AND DAI-CENTRIC COMPLIANCE ENFORCEMENT**
+
+**OBJECTIVE:** Achieve robust execution, full DAI-centric compliance, and a high likelihood of network approval for the Hybrid Autonomous System. This mandates the **complete elimination of all USDC fetching, usage, and related references** from the system's operational sequence, alongside resolving all known and potential code inconsistencies.
+
+---
+
+**PHASE 1: CRITICAL ERROR RESOLUTION & IMMEDIATE REFACTORING**
+
+**TASK 1.1: VERIFY/FIX `enhanced_borrow_manager.py` SYNTAX**
+A persistent "invalid syntax" error was reported in `enhanced_borrow_manager.py` at line 469. While recent logs suggest progress, confirm this fundamental issue is resolved.
+
+* **ACTION:**
+    * Access `/home/runner/workspace/enhanced_borrow_manager.py`.
+    * Locate line 469.
+    * **Verify** correct Python syntax around this line. If any syntax error exists, **implement the precise code correction**.
+    * Ensure the class `EnhancedBorrowManager` properly defines and exposes the method `execute_enhanced_borrow_with_retry`. If this method is missing or misspelled, **implement it correctly** within the class to provide the intended borrow-with-retry functionality.
+
+**TASK 1.2: RESOLVE `ArbitrumTestnetAgent` USDC ATTRIBUTE ERROR & ENSURE USDC EXCLUSION**
+The error `'ArbitrumTestnetAgent' object has no attribute 'usdc_address'` occurred. This directly conflicts with the directive: **"USDC should not be used, fetched or in the sequence."**
+
+* **ACTION:**
+    * Access `/home/runner/workspace/arbitrum_testnet_agent.py`.
+    * **Systematically remove all references to `usdc_address`** within the `ArbitrumTestnetAgent` class:
+        * Remove `usdc_address` from the `__init__` method's parameters.
+        * Delete any line `self.usdc_address = usdc_address` or similar assignment.
+        * Remove any code block attempting to use `self.usdc_address` for any purpose (e.g., fetching balance, checking contracts).
+    * **Trace and Modify Instantiations:** Navigate to any file (e.g., `main.py`) where `ArbitrumTestnetAgent` is instantiated. Remove the `usdc_address` argument from its constructor call.
+    * **USDC Token Address Removal:** Ensure that the USDC token address (`0xAF88D065e8c38FAD0AEff3E253e648A15ceE23DC` or similar) is **completely removed** from any centralized token address configurations (e.g., `constants.py`, `config.py`) or token lists that are processed for initialization or validation.
+
+---
+
+**PHASE 2: COMPREHENSIVE CODEBASE AUDIT FOR COMPLIANCE & CONSISTENCY**
+
+**TASK 2.1: FULL CODEBASE SCAN FOR USDC REFERENCES**
+A thorough scan is required to ensure no residual USDC references exist anywhere within the HAS workflow.
+
+* **ACTION:**
+    * Perform a **full-text search across ALL `.py` files** within the `/home/runner/workspace/` directory and its subdirectories (excluding standard library/pandas test files if clearly distinguishable from your project's logic, as seen in previous logs).
+    * **Search for:**
+        * The string "USDC" (case-insensitive).
+        * The USDC contract address: `0xAF88D065e8c38FAD0AEff3E253e648A15ceE23DC` (case-insensitive, including variations without checksum).
+        * Variable names like `usdc_address`, `USDC_TOKEN`, `aUSDC`, etc.
+    * **For every detected reference:**
+        * **If it's operational code:** **Remove or refactor** the code block entirely to ensure USDC is not used for any operation (borrow, swap, supply, balance fetch, approval).
+        * **If it's a test file:** **Modify or remove** the test case if it specifically tests USDC operations. If it's a general test, ensure it doesn't implicitly rely on or introduce USDC.
+        * **If it's documentation or comments:** Remove or update to reflect the DAI-only policy.
+
+**TASK 2.2: ENFORCE STRICT DAI-ONLY SWAP CONFORMANCE**
+Previous diagnostics indicated "SYSTEM NOT COMPLIANT - Swap compliance: Violations found" with many files showing "No DAI references found".
+
+* **ACTION:**
+    * **Verify DAI-Only Enforcement:** Re-confirm that `uniswap_integration.py` rigorously enforces DAI → WBTC and DAI → WETH swaps exclusively. Ensure no other swap paths are possible.
+    * **Audit All Swap/Borrow Related Files:** For every `.py` file involved in swap, borrow, or supply operations (including those previously flagged like `debug_swap_system.py`, `swap_usdc_for_wbtc.py`, `force_swap_with_approval.py`, etc.):
+        * **Explicitly implement DAI logic:** Ensure these files explicitly reference and interact with DAI (token address, ABI calls, symbol) for all relevant operations.
+        * **Remove non-DAI logic:** Any code blocks that enable or suggest the use of non-DAI tokens (especially USDC) for core operations must be removed or refactored.
+    * **Refine Compliance Checker:** Review `system_compliance_checker.py`. If it's incorrectly flagging general utility or test files that genuinely do not need DAI references, adjust its logic to be more precise about what constitutes a "compliance violation" in the context of DAI-only operations.
+
+---
+
+**PHASE 3: ROBUST VERIFICATION AND SYSTEM READINESS CONFIRMATION**
+
+**TASK 3.1: RE-RUN COMPLIANCE AND INTEGRATION CHECKS**
+
+* **ACTION:**
+    * Execute the DAI compliance checker:
+        ```bash
+        python system_compliance_checker.py
+        ```
+        * **EXPECTATION:** The output MUST confirm "SYSTEM COMPLIANT" for swap operations, with no "Violations found" messages related to DAI references.
+    * Execute the full system integration validator:
+        ```bash
+        python validate_system_integration.py
+        ```
+        * **EXPECTATION:** All modules (including `enhanced_borrow_manager` and `arbitrum_testnet_agent`) MUST import and initialize successfully. All DeFi integrations (Aave, Uniswap V3, Health Monitor) should initialize without errors, and no `usdc_address` attribute errors should appear.
+
+**TASK 3.2: END-TO-END OPERATIONAL TEST & NETWORK APPROVAL VALIDATION**
+
+* **ACTION:**
+    * Launch the main autonomous system in a live environment:
+        ```bash
+        python main.py
+        ```
+    * **OBSERVATION & VERIFICATION (Continuous Monitoring):**
+        * **Replit Console:** Monitor live output for *zero* runtime errors, warnings (unless informational), or unexpected messages.
+        * **Internal Logs:** Thoroughly check any generated log files for `ERROR`, `WARNING`, or `CRITICAL` entries.
+        * **Blockchain Explorer (e.g., Arbiscan):**
+            * **Crucially verify ALL on-chain transactions:**
+                * Confirm successful **DAI borrow transactions**.
+                * Confirm successful **DAI to WBTC and DAI to WETH swap transactions**, verifying correct token amounts are moved.
+                * Confirm successful **supply transactions** to Aave.
+            * **ZERO Reverted Transactions:** There should be NO reverted transactions for any intended operation. Any revert indicates a critical flaw.
+            * **Gas Efficiency:** Examine gas usage for each transaction, ensuring it remains within expected, optimized ranges, contributing to economic viability.
+
+**FINAL CONFIRMATION:**
+Upon successful completion of all tasks in Phases 1, 2, and 3, confirm that the Hybrid Autonomous System is now operating robustly, is fully compliant with the DAI-centric strategy, has no USDC references, and demonstrates a high likelihood of consistent network approval through successful on-chain operations.
+````
