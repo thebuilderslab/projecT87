@@ -380,7 +380,7 @@ class ArbitrumTestnetAgent:
         self.target_health_factor = float(os.getenv('TARGET_HEALTH_FACTOR', '3.5')) # Target HF for general management
 
         # Growth-Triggered System Parameters - Fixed to match capacity-based documentation
-        self.growth_trigger_threshold = float(os.getenv('GROWTH_TRIGGER_THRESHOLD', '13.0')) # $13 collateral growth to trigger borrowing
+        self.growth_trigger_threshold = float(os.getenv('GROWTH_TRIGGER_THRESHOLD', '40.0')) # $40 collateral growth to trigger borrowing
         self.growth_health_factor_threshold = float(os.getenv('GROWTH_HEALTH_FACTOR_THRESHOLD', '2.1')) # HF > 2.1 for growth-triggered
 
         # Capacity-Based System Parameters  
@@ -1378,3 +1378,63 @@ class ArbitrumTestnetAgent:
                 'weth_swap': 0,
                 'direct_supply': total_dai
             }
+
+    def _calculate_growth_triggered_amount(self, collateral_growth, available_borrows):
+        """Calculate borrow amount for growth-triggered system"""
+        try:
+            print(f"💰 Growth-Triggered Calculation:")
+            print(f"   Collateral growth: ${collateral_growth:.2f}")
+            print(f"   Available borrows: ${available_borrows:.2f}")
+            
+            # Growth-triggered system: borrow percentage of growth with limits
+            growth_percentage = self.re_leverage_percentage  # 50% default
+            calculated_amount = collateral_growth * growth_percentage
+            
+            # Apply min/max constraints
+            safe_amount = max(self.min_borrow_releverage, min(calculated_amount, self.max_borrow_releverage))
+            
+            # Don't exceed available capacity
+            safe_amount = min(safe_amount, available_borrows * 0.8)
+            
+            print(f"   Growth calculation: ${collateral_growth:.2f} × {growth_percentage:.1%} = ${calculated_amount:.2f}")
+            print(f"   After constraints: ${safe_amount:.2f}")
+            
+            return safe_amount
+            
+        except Exception as e:
+            print(f"❌ Growth-triggered calculation failed: {e}")
+            return self.calculate_safe_borrow_amount(collateral_growth, available_borrows)
+
+    def _calculate_capacity_optimized_amount(self, available_borrows, capacity_utilization):
+        """Calculate borrow amount for capacity-based system"""
+        try:
+            print(f"⚡ Capacity-Based Calculation:")
+            print(f"   Available borrows: ${available_borrows:.2f}")
+            print(f"   Current utilization: {capacity_utilization:.1%}")
+            
+            # Capacity-based system: optimize to target utilization
+            target_utilization = self.capacity_optimization_threshold * 0.8  # 80% of threshold
+            
+            # Calculate safe amount based on available capacity
+            base_amount = available_borrows * 0.15  # Conservative 15%
+            
+            # Adjust based on current utilization
+            if capacity_utilization < target_utilization:
+                utilization_factor = 1.2  # Can be more aggressive
+            else:
+                utilization_factor = 0.8  # Be more conservative
+            
+            safe_amount = base_amount * utilization_factor
+            
+            # Apply absolute limits
+            safe_amount = max(1.0, min(safe_amount, 50.0))  # Between $1-50
+            
+            print(f"   Base amount (15%): ${base_amount:.2f}")
+            print(f"   Utilization factor: {utilization_factor:.1f}")
+            print(f"   Final amount: ${safe_amount:.2f}")
+            
+            return safe_amount
+            
+        except Exception as e:
+            print(f"❌ Capacity-based calculation failed: {e}")
+            return self.calculate_safe_borrow_amount(0, available_borrows)

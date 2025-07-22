@@ -19,7 +19,7 @@ class EnhancedBorrowManager:
         """DAI-only borrowing - no fallbacks"""
         try:
             # Ensure we're using DAI address for the new strategy
-                        if token_address.lower() != self.agent.dai_address.lower():
+            if token_address.lower() != self.agent.dai_address.lower():
                 print(f"🔄 DAI Strategy: Converting borrow request to DAI address")
                 print(f"   Original: {token_address}")
                 print(f"   Using DAI: {self.agent.dai_address}")
