@@ -1102,8 +1102,11 @@ class ArbitrumTestnetAgent:
                     print(f"     • Available: ${available_borrows:.2f} >= ${self.capacity_available_threshold:.0f} = {available_borrows >= self.capacity_available_threshold}")
                     print(f"     • Utilization: {capacity_utilization:.1%} < {self.capacity_optimization_threshold:.1%} = {capacity_utilization < self.capacity_optimization_threshold}")
 
+                    # Initialize safe_amount to 0 by default
+                    safe_amount = 0
+
                     if growth_conditions_met or capacity_conditions_met or manual_override:
-                            # Determine which system triggered and set trigger reasons
+                        # Determine which system triggered and set trigger reasons
                         trigger_reasons = []
                         trigger_type = None
 
@@ -1159,7 +1162,6 @@ class ArbitrumTestnetAgent:
                             print(f"     ❌ High utilization: {capacity_utilization:.1%} >= {self.capacity_optimization_threshold:.1%}")
 
                         performance_score += 0.2
-                        safe_amount = 0
 
                     # Track this attempt
                     self.track_operation_attempt()

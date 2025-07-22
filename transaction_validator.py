@@ -55,7 +55,7 @@ class TransactionValidator:
                 return False
 
             # Validate gas requirements
-            if not self._validate_gas_requirements():
+            if not self._validate_gas_requirements(amount_in):
                 print(f"❌ Insufficient gas for swap")
                 return False
 
@@ -229,4 +229,31 @@ class TransactionValidator:
             symbol = contract.functions.symbol().call()
             return len(symbol) > 0
         except Exception:
+            return False
+
+    def _validate_gas_requirements(self, amount):
+        """Validate gas requirements for transaction"""
+        try:
+            # Check ETH balance for gas
+            eth_balance = self.agent.get_eth_balance()
+            min_eth_required = 0.001  # Minimum ETH required for transaction
+
+            if eth_balance < min_eth_required:
+                print(f"❌ Insufficient ETH for gas: {eth_balance:.6f} < {min_eth_required:.6f}")
+                return False
+
+            # Check current gas price
+            gas_price = self.w3.eth.gas_price
+            estimated_gas_cost = gas_price * 200000  # Estimate 200k gas
+            estimated_cost_eth = self.w3.from_wei(estimated_gas_cost, 'ether')
+
+            if eth_balance < estimated_cost_eth * 2:  # 2x safety margin
+                print(f"❌ Low ETH for transaction: {eth_balance:.6f} < {estimated_cost_eth * 2:.6f}")
+                return False
+
+            print(f"✅ Gas validation passed: {eth_balance:.6f} ETH available")
+            return True
+
+        except Exception as e:
+            print(f"❌ Gas validation error: {e}")
             return False
