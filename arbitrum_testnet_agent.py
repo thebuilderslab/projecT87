@@ -1354,3 +1354,27 @@ class ArbitrumTestnetAgent:
                 allocation['wbtc_swap'] = 3.0  # $3 for WBTC
                 allocation['weth_swap'] = 2.0  # $2 for WETH
                 allocation['direct_supply'] = total_dai - 5.0  # Rest for direct
+            elif total_dai >= 3.0:
+                # If we have moderate DAI, allocate smaller amounts
+                allocation['wbtc_swap'] = 1.5  # $1.5 for WBTC
+                allocation['weth_swap'] = 1.0  # $1.0 for WETH
+                allocation['direct_supply'] = total_dai - 2.5  # Rest for direct
+            else:
+                # If we have minimal DAI, supply directly
+                allocation['direct_supply'] = total_dai
+
+            print(f"📋 DAI Allocation:")
+            print(f"   WBTC swap: ${allocation['wbtc_swap']:.2f}")
+            print(f"   WETH swap: ${allocation['weth_swap']:.2f}")
+            print(f"   Direct supply: ${allocation['direct_supply']:.2f}")
+
+            return allocation
+
+        except Exception as e:
+            print(f"❌ DAI allocation calculation failed: {e}")
+            # Fallback: supply all DAI directly
+            return {
+                'wbtc_swap': 0,
+                'weth_swap': 0,
+                'direct_supply': total_dai
+            }
