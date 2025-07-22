@@ -1,0 +1,53 @@
+````
+**PRIORITY INSTRUCTION: HYBRID AUTONOMOUS SYSTEM (HAS) CRITICAL REFACTORING AND DAI-CENTRIC COMPLIANCE ENFORCEMENT - COMPLETE PHASE 2**
+
+**OBJECTIVE:** Achieve robust execution, full DAI-centric compliance, and a high likelihood of network approval for the Hybrid Autonomous System. Our aim is to consistently enable successful DAI-based operations, similar to past successful leveraged supply strategies (as observed in logs like "dai swap.pdf" showing "NEW DAI-Based Leveraged Supply Strategy Completed Successfully!"). This mandates the **complete elimination of all USDC fetching, usage, and related references** from the system's operational sequence, alongside resolving all known and potential code inconsistencies that currently prevent stable execution.
+
+---
+
+**ACTION REQUIRED: COMPLETE REMAINING PHASE 2 TASKS**
+
+Your previous analysis correctly identified the outstanding issues. Now, please execute the necessary code modifications to address these points definitively:
+
+**TASK 2.1: RESOLVE SYNTAX ERROR IN `arbitrum_testnet_agent.py`**
+* **ACTION:** Fix the syntax error in `arbitrum_testnet_agent.py` at line 675. This is critical for the main workflow's functionality.
+
+**TASK 2.2: COMPLETE ELIMINATION OF ALL REMAINING USDC REFERENCES**
+* **ACTION:** Perform a granular scan and **systematically remove ALL remaining USDC references** from the codebase. Your previous `grep` output (`4 baby.txt`) indicated that `usdc_address` variable references and `borrow.*usdc` (or similar borrowing-related USDC mentions) still exist in files like:
+    * `create_position.py`
+    * `wallet_funding_validator.py`
+    * `fix_current_issues.py`
+    * `dai_compliance_enforcer.py`
+    * `arbitrum_testnet_agent.py`
+* **For each identified reference:**
+    * **Remove** any code that directly uses or references `usdc_address`.
+    * **Refactor** any operational logic (e.g., borrowing, swapping, displaying amounts) that still mentions "USDC" or implies its use. Ensure all such operations strictly refer to DAI.
+    * **Remove or update** any print statements, comments, or documentation that still mention USDC.
+
+**TASK 2.3: ENFORCE STRICT DAI-ONLY SWAP CONFORMANCE (Final Audit)**
+* **ACTION:** Re-audit all swap, borrow, and supply-related files to confirm that **only DAI** is utilized for core operations (DAI → WBTC, DAI → WETH). Ensure no other swap paths or token interactions (especially with USDC) are present. This task is intrinsically linked with the full USDC elimination.
+
+---
+
+**CRITICAL VERIFICATION FOR PHASE 2 COMPLETION**
+
+* **ACTION:** After implementing all the above fixes, execute the DAI compliance checker again:
+    ```bash
+    python system_compliance_checker.py
+    ```
+* **EXPECTED OUTCOME (MUST be exact):** The output of `system_compliance_checker.py` MUST contain the following lines, confirming full compliance and absence of violations:
+    ```
+    SYSTEM COMPLIANT
+    ❌ Violations found: 0
+    ✅ Fixes applied: 0
+    ✅ DAI COMPLIANCE FULLY ENFORCED
+    🎉 DAI COMPLIANCE SUCCESSFULLY ENFORCED
+    ```
+* **CONFIRMATION:**
+    * Explicitly confirm that the syntax error in `arbitrum_testnet_agent.py` at line 675 is fixed and no longer causes issues.
+    * Provide a list of **all specific files that you modified** during this round of Phase 2 fixes.
+
+---
+
+**Replit:** Upon successfully completing all remaining Phase 2 tasks as detailed above, and after providing the exact verification output, please confirm that all Phase 2 requirements have been met and explicitly signal when you are ready to move onto Phase 3.
+````
