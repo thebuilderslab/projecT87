@@ -1,54 +1,256 @@
-Remove USDC references and ensure DAI-only operations
-Replacing
-<old_str>
-print(f"💡 RECOMMENDATION: Consider borrowing {health_summary['optimal_usdc_borrow']:.2f} USDC")
-</old_str>
-with
-<new_str>
-print(f"💡 RECOMMENDATION: Consider borrowing {health_summary.get('optimal_dai_borrow', 0):.2f} DAI")
-</new_str>
-Remove USDC references and ensure DAI-only operations
-Replacing
-<old_str>
-print(f"💡 RECOMMENDATION: Consider borrowing {health_summary['optimal_usdc_borrow']:.2f} USDC")
-</old_str>
-with
-<new_str>
-print(f"💡 RECOMMENDATION: Consider borrowing {health_summary.get('optimal_dai_borrow', 0):.2f} DAI")
-</new_str>
-Update strategy description to use DAI
-Replacing
-<old_str>
-2. **Dynamic Borrowing**: When health factor increases by 0.02+, borrow USDC to maintain 1.19 health factor
-</old_str>
-with
-<new_str>
-2. **Dynamic Borrowing**: When health factor increases by 0.02+, borrow DAI to maintain 1.19 health factor
-</new_str>
-Remove USDC references and ensure DAI-only operations
-Replacing
-<old_str>
-print(f"💡 RECOMMENDATION: Consider borrowing {health_summary['optimal_usdc_borrow']:.2f} USDC")
-</old_str>
-with
-<new_str>
-print(f"💡 RECOMMENDATION: Consider borrowing {health_summary.get('optimal_dai_borrow', 0):.2f} DAI")
-</new_str>
-Update strategy description to use DAI
-Replacing
-<old_str>
-2. **Dynamic Borrowing**: When health factor increases by 0.02+, borrow USDC to maintain 1.19 health factor
-</old_str>
-with
-<new_str>
-2. **Dynamic Borrowing**: When health factor increases by 0.02+, borrow DAI to maintain 1.19 health factor
-</new_str>
-Update risk management strategy to use DAI
-Replacing
-<old_str>
-3. **Risk Management**: If health factor declines AND ARB price drops, recommend swapping ARB to USDC
-</old_str>
-with
-<new_str>
-3. **Risk Management**: If health factor declines AND ARB price drops, recommend swapping ARB to DAI
-</new_str>
+
+"""
+DAI COMPLIANCE ENFORCED: This file has been modified to use DAI-only operations.
+All USDC references have been removed and replaced with DAI equivalents.
+Only DAI borrowing, lending, and related operations are permitted.
+"""
+
+import os
+import time
+import json
+from web3 import Web3
+from eth_account import Account
+from decimal import Decimal
+import logging
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+class AaveArbitrumIntegration:
+    def __init__(self, w3, account, network_mode='mainnet'):
+        self.w3 = w3
+        self.account = account
+        self.network_mode = network_mode
+        
+        # DAI-ONLY COMPLIANCE: Only DAI address is configured
+        if network_mode == 'mainnet':
+            self.dai_address = "0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1"
+            self.wbtc_address = "0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f"
+            self.weth_address = "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1"
+            self.pool_address = "0x794a61358D6845594F94dc1DB02A252b5b4814aD"
+        else:
+            # Testnet addresses
+            self.dai_address = "0x5f6bB460B6d0bdA2CCaDdd7A19B5F6E7b5b8E1DB"
+            self.wbtc_address = "0xA2d460Bc966F6C4D5527a6ba35C6cB57c15c8F96"
+            self.weth_address = "0x980B62Da83eFf3D4576C647993b0c1D7faf17c73"
+            self.pool_address = "0x18cd499E3d7ed42FebA981ac9236A278E4Cdc2ee"
+        
+        # Initialize pool contract
+        self._initialize_pool_contract()
+        
+        print(f"✅ Aave integration initialized for {network_mode} with DAI-only compliance")
+
+    def _initialize_pool_contract(self):
+        """Initialize Aave pool contract"""
+        self.pool_abi = [
+            {
+                "inputs": [
+                    {"name": "asset", "type": "address"},
+                    {"name": "amount", "type": "uint256"},
+                    {"name": "onBehalfOf", "type": "address"},
+                    {"name": "referralCode", "type": "uint16"}
+                ],
+                "name": "supply",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {"name": "asset", "type": "address"},
+                    {"name": "amount", "type": "uint256"},
+                    {"name": "interestRateMode", "type": "uint256"},
+                    {"name": "referralCode", "type": "uint16"},
+                    {"name": "onBehalfOf", "type": "address"}
+                ],
+                "name": "borrow",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [{"name": "user", "type": "address"}],
+                "name": "getUserAccountData",
+                "outputs": [
+                    {"name": "totalCollateralBase", "type": "uint256"},
+                    {"name": "totalDebtBase", "type": "uint256"},
+                    {"name": "availableBorrowsBase", "type": "uint256"},
+                    {"name": "currentLiquidationThreshold", "type": "uint256"},
+                    {"name": "ltv", "type": "uint256"},
+                    {"name": "healthFactor", "type": "uint256"}
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            }
+        ]
+        
+        self.pool_contract = self.w3.eth.contract(
+            address=self.pool_address,
+            abi=self.pool_abi
+        )
+
+    def get_user_account_data(self):
+        """Get user account data from Aave - DAI-centric compliance"""
+        try:
+            account_data = self.pool_contract.functions.getUserAccountData(self.account.address).call()
+            
+            return {
+                'totalCollateralUSD': account_data[0] / (10**8),
+                'totalDebtUSD': account_data[1] / (10**8),
+                'availableBorrowsUSD': account_data[2] / (10**8),
+                'healthFactor': account_data[5] / (10**18) if account_data[5] > 0 else float('inf')
+            }
+        except Exception as e:
+            logger.error(f"Failed to get account data: {e}")
+            return None
+
+    def borrow(self, amount_dai, dai_address):
+        """Borrow DAI from Aave - DAI-only compliance enforced"""
+        try:
+            if dai_address != self.dai_address:
+                raise ValueError("DAI COMPLIANCE VIOLATION: Only DAI borrowing is permitted")
+            
+            amount_wei = int(amount_dai * 10**18)  # DAI has 18 decimals
+            
+            # Build transaction
+            tx = self.pool_contract.functions.borrow(
+                dai_address,
+                amount_wei,
+                2,  # Variable interest rate
+                0,  # Referral code
+                self.account.address
+            ).build_transaction({
+                'from': self.account.address,
+                'gas': 300000,
+                'gasPrice': self.w3.eth.gas_price,
+                'nonce': self.w3.eth.get_transaction_count(self.account.address)
+            })
+            
+            # Sign and send
+            signed_tx = self.w3.eth.account.sign_transaction(tx, self.account.key)
+            tx_hash = self.w3.eth.send_raw_transaction(signed_tx.rawTransaction)
+            
+            print(f"✅ DAI borrow successful: ${amount_dai:.2f}")
+            return tx_hash.hex()
+            
+        except Exception as e:
+            logger.error(f"DAI borrow failed: {e}")
+            return False
+
+    def supply_to_aave(self, token_address, amount):
+        """Supply tokens to Aave - DAI-centric operations"""
+        try:
+            if token_address == self.dai_address:
+                amount_wei = int(amount * 10**18)  # DAI has 18 decimals
+            elif token_address == self.wbtc_address:
+                amount_wei = int(amount * 10**8)   # WBTC has 8 decimals
+            elif token_address == self.weth_address:
+                amount_wei = int(amount * 10**18)  # WETH has 18 decimals
+            else:
+                raise ValueError("Unsupported token for supply")
+            
+            # Build transaction
+            tx = self.pool_contract.functions.supply(
+                token_address,
+                amount_wei,
+                self.account.address,
+                0  # Referral code
+            ).build_transaction({
+                'from': self.account.address,
+                'gas': 300000,
+                'gasPrice': self.w3.eth.gas_price,
+                'nonce': self.w3.eth.get_transaction_count(self.account.address)
+            })
+            
+            # Sign and send
+            signed_tx = self.w3.eth.account.sign_transaction(tx, self.account.key)
+            tx_hash = self.w3.eth.send_raw_transaction(signed_tx.rawTransaction)
+            
+            print(f"✅ Token supply successful: {amount:.6f}")
+            return tx_hash.hex()
+            
+        except Exception as e:
+            logger.error(f"Token supply failed: {e}")
+            return False
+
+    def supply_wbtc_to_aave(self, amount):
+        """Supply WBTC to Aave"""
+        return self.supply_to_aave(self.wbtc_address, amount)
+
+    def get_token_balance(self, token_address):
+        """Get token balance - DAI-centric compliance"""
+        try:
+            # Standard ERC20 balance ABI
+            balance_abi = [{
+                "constant": True,
+                "inputs": [{"name": "_owner", "type": "address"}],
+                "name": "balanceOf",
+                "outputs": [{"name": "balance", "type": "uint256"}],
+                "type": "function"
+            }]
+            
+            contract = self.w3.eth.contract(address=token_address, abi=balance_abi)
+            balance_wei = contract.functions.balanceOf(self.account.address).call()
+            
+            # Convert based on token decimals
+            if token_address == self.dai_address:
+                return balance_wei / (10**18)  # DAI has 18 decimals
+            elif token_address == self.wbtc_address:
+                return balance_wei / (10**8)   # WBTC has 8 decimals
+            elif token_address == self.weth_address:
+                return balance_wei / (10**18)  # WETH has 18 decimals
+            else:
+                return balance_wei / (10**18)  # Default to 18 decimals
+                
+        except Exception as e:
+            logger.error(f"Failed to get token balance: {e}")
+            return 0.0
+
+    def approve_token(self, token_address, amount):
+        """Approve token for Aave operations"""
+        try:
+            # Standard ERC20 approve ABI
+            approve_abi = [{
+                "constant": False,
+                "inputs": [
+                    {"name": "_spender", "type": "address"},
+                    {"name": "_value", "type": "uint256"}
+                ],
+                "name": "approve",
+                "outputs": [{"name": "", "type": "bool"}],
+                "type": "function"
+            }]
+            
+            contract = self.w3.eth.contract(address=token_address, abi=approve_abi)
+            
+            # Convert amount to wei based on token decimals
+            if token_address == self.dai_address:
+                amount_wei = int(amount * 10**18)
+            elif token_address == self.wbtc_address:
+                amount_wei = int(amount * 10**8)
+            elif token_address == self.weth_address:
+                amount_wei = int(amount * 10**18)
+            else:
+                amount_wei = int(amount * 10**18)
+            
+            # Build transaction
+            tx = contract.functions.approve(
+                self.pool_address,
+                amount_wei
+            ).build_transaction({
+                'from': self.account.address,
+                'gas': 100000,
+                'gasPrice': self.w3.eth.gas_price,
+                'nonce': self.w3.eth.get_transaction_count(self.account.address)
+            })
+            
+            # Sign and send
+            signed_tx = self.w3.eth.account.sign_transaction(tx, self.account.key)
+            tx_hash = self.w3.eth.send_raw_transaction(signed_tx.rawTransaction)
+            
+            print(f"✅ Token approval successful")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Token approval failed: {e}")
+            return False
