@@ -343,17 +343,29 @@ class AaveArbitrumIntegration:
             return None
 
     def borrow(self, amount_usd, token_address):
-        """Borrow tokens from Aave"""
+        """Borrow tokens from Aave with comprehensive validation"""
         try:
             print(f"🏦 Aave borrow: ${amount_usd:.2f} from {token_address}")
+
+            # Pre-flight validation
+            if amount_usd <= 0 or amount_usd > 100:  # Safety cap
+                print(f"❌ Borrow amount out of safe range: ${amount_usd}")
+                return None
 
             # Convert USD amount to token amount
             amount_wei = self._convert_usd_to_wei(amount_usd, token_address)
             if amount_wei == 0:
-                print(f"❌ Invalid borrow amount: {amount_usd} USD")
+                print(f"❌ Invalid borrow amount conversion: {amount_usd} USD")
                 return None
 
-            print(f"💱 Converted ${amount_usd:.2f} to {amount_wei} wei")
+            # Validate conversion result
+            decimals = self._get_token_decimals(token_address)
+            back_converted = amount_wei / (10 ** decimals)
+            if abs(back_converted - amount_usd) > 0.01:  # Allow 1 cent tolerance
+                print(f"❌ Conversion validation failed: ${amount_usd} != {back_converted}")
+                return None
+
+            print(f"💱 Validated conversion: ${amount_usd:.2f} = {amount_wei} wei ({back_converted:.6f} tokens)")
 
             # Build borrow transaction with enhanced gas settings
             gas_price = max(self.w3.eth.gas_price, int(0.1 * 10**9))  # Minimum 0.1 gwei
@@ -439,25 +451,34 @@ class AaveArbitrumIntegration:
             return known_decimals.get(token_address.lower(), 18)
 
     def _convert_usd_to_wei(self, amount_usd, token_address):
-        """Convert USD amount to wei for the specified token"""
+        """Convert USD amount to wei for the specified token with proper validation"""
         try:
             # Get token decimals
             decimals = self._get_token_decimals(token_address)
+            
+            # Validate input amount
+            if amount_usd <= 0 or amount_usd > 1000:  # Safety cap at $1000
+                print(f"❌ Invalid borrow amount: ${amount_usd}")
+                return 0
 
             # For USDC, 1 USD = 1 USDC (approximately)
             if token_address.lower() == self.usdc_address.lower():
                 amount_wei = int(amount_usd * (10 ** decimals))
-                print(f"✅ USDC conversion: ${amount_usd} = {amount_wei} wei")
+                print(f"✅ USDC conversion: ${amount_usd} = {amount_wei} wei ({amount_usd} USDC)")
                 return amount_wei
             # For DAI, 1 USD ≈ 1 DAI (stablecoin peg)
             elif token_address.lower() == self.dai_address.lower():
                 amount_wei = int(amount_usd * (10 ** decimals))
-                print(f"✅ DAI borrowing enabled: ${amount_usd} = {amount_wei} DAI wei")
+                # Add validation - ensure reasonable DAI amount
+                dai_amount = amount_wei / (10 ** decimals)
+                if dai_amount != amount_usd:
+                    print(f"⚠️ DAI conversion mismatch: ${amount_usd} != {dai_amount} DAI")
+                    return 0
+                print(f"✅ DAI conversion validated: ${amount_usd} = {amount_wei} wei ({dai_amount:.6f} DAI)")
                 return amount_wei
             else:
                 # For other tokens, would need price conversion
                 print(f"⚠️ USD to wei conversion not implemented for token: {token_address}")
-                # Return 0 instead of raising error to allow fallback
                 return 0
 
         except Exception as e:
