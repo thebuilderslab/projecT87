@@ -467,3 +467,180 @@ class EnhancedBorrowManager:
             print(f"⚠️ Network timing validation failed: {e}")
             return True  # Don't block if we can't check timing
 `
+import os
+import time
+import json
+from decimal import Decimal
+from web3 import Web3
+
+class EnhancedBorrowManager:
+    def __init__(self, agent):
+        self.agent = agent
+        self.w3 = agent.w3
+        self.aave = agent.aave
+        self.max_retry_attempts = 3
+        self.retry_delay = 10  # seconds
+        
+    def execute_enhanced_borrow_with_retry(self, amount_usd):
+        """Execute DAI borrow with enhanced retry mechanism and validation"""
+        try:
+            print(f"\n🏦 ENHANCED DAI BORROW MANAGER")
+            print(f"💰 Target borrow amount: ${amount_usd:.2f} DAI")
+            
+            # Pre-borrow validation
+            if not self._validate_borrow_conditions(amount_usd):
+                return False
+            
+            # Execute borrow with retries
+            for attempt in range(1, self.max_retry_attempts + 1):
+                print(f"\n🔄 Borrow attempt {attempt}/{self.max_retry_attempts}")
+                
+                # Execute the borrow
+                borrow_result = self._execute_single_borrow_attempt(amount_usd)
+                
+                if borrow_result:
+                    print(f"✅ Enhanced DAI borrow successful on attempt {attempt}")
+                    self._log_borrow_success(amount_usd, attempt)
+                    return True
+                else:
+                    print(f"❌ Borrow attempt {attempt} failed")
+                    
+                    if attempt < self.max_retry_attempts:
+                        print(f"⏳ Waiting {self.retry_delay}s before retry...")
+                        time.sleep(self.retry_delay)
+                        
+                        # Adjust conditions for retry
+                        amount_usd = self._adjust_amount_for_retry(amount_usd, attempt)
+            
+            print(f"❌ All {self.max_retry_attempts} borrow attempts failed")
+            self._log_borrow_failure(amount_usd)
+            return False
+            
+        except Exception as e:
+            print(f"❌ Enhanced borrow manager error: {e}")
+            return False
+    
+    def _validate_borrow_conditions(self, amount_usd):
+        """Validate conditions before attempting borrow"""
+        try:
+            print("🔍 Validating borrow conditions...")
+            
+            # Check account data
+            account_data = self.aave.get_user_account_data()
+            if not account_data or not account_data.get('success', True):
+                print("❌ Cannot retrieve account data")
+                return False
+            
+            # Check available borrows
+            available_borrows = account_data['availableBorrowsUSD']
+            if available_borrows < amount_usd:
+                print(f"❌ Insufficient borrow capacity: ${available_borrows:.2f} < ${amount_usd:.2f}")
+                return False
+            
+            # Check health factor
+            health_factor = account_data['healthFactor']
+            if health_factor < 2.0:
+                print(f"❌ Health factor too low for safe borrowing: {health_factor:.4f}")
+                return False
+            
+            # Check ETH balance for gas
+            eth_balance = self.agent.get_eth_balance()
+            if eth_balance < 0.001:
+                print(f"❌ Insufficient ETH for gas: {eth_balance:.6f}")
+                return False
+            
+            # Check DAI contract accessibility
+            try:
+                dai_contract = self.w3.eth.contract(
+                    address=self.agent.dai_address, 
+                    abi=self.aave.erc20_abi
+                )
+                dai_symbol = dai_contract.functions.symbol().call()
+                print(f"✅ DAI contract accessible: {dai_symbol}")
+            except Exception as dai_error:
+                print(f"❌ DAI contract not accessible: {dai_error}")
+                return False
+            
+            print("✅ All borrow conditions validated")
+            return True
+            
+        except Exception as e:
+            print(f"❌ Borrow validation failed: {e}")
+            return False
+    
+    def _execute_single_borrow_attempt(self, amount_usd):
+        """Execute a single DAI borrow attempt"""
+        try:
+            print(f"🎯 Executing DAI borrow: ${amount_usd:.2f}")
+            
+            # Use the agent's DAI address
+            dai_address = self.agent.dai_address
+            
+            # Execute borrow through Aave integration
+            borrow_result = self.aave.borrow(amount_usd, dai_address)
+            
+            if borrow_result:
+                # Wait for transaction confirmation
+                time.sleep(15)
+                
+                # Verify borrow by checking DAI balance
+                dai_balance = self.aave.get_token_balance(dai_address)
+                if dai_balance >= (amount_usd * 0.95):  # Allow 5% slippage
+                    print(f"✅ DAI borrow verified: {dai_balance:.6f} DAI received")
+                    return True
+                else:
+                    print(f"⚠️ DAI balance lower than expected: {dai_balance:.6f}")
+                    return False
+            else:
+                print("❌ Borrow transaction failed")
+                return False
+                
+        except Exception as e:
+            print(f"❌ Single borrow attempt failed: {e}")
+            return False
+    
+    def _adjust_amount_for_retry(self, original_amount, attempt):
+        """Adjust borrow amount for retry attempts"""
+        # Reduce amount by 10% each retry
+        reduction_factor = 0.9 ** attempt
+        adjusted_amount = original_amount * reduction_factor
+        
+        print(f"💡 Adjusting borrow amount for retry: ${original_amount:.2f} → ${adjusted_amount:.2f}")
+        return adjusted_amount
+    
+    def _log_borrow_success(self, amount_usd, attempt):
+        """Log successful borrow for analytics"""
+        try:
+            log_data = {
+                'timestamp': time.time(),
+                'amount_usd': float(amount_usd),
+                'attempt': attempt,
+                'status': 'success',
+                'token': 'DAI'
+            }
+            
+            # Save to file for tracking
+            filename = f"borrow_success_{time.strftime('%Y%m%d_%H%M%S')}.json"
+            with open(filename, 'w') as f:
+                json.dump(log_data, f, indent=2, default=str)
+                
+        except Exception as e:
+            print(f"⚠️ Could not save borrow success log: {e}")
+    
+    def _log_borrow_failure(self, amount_usd):
+        """Log failed borrow for debugging"""
+        try:
+            log_data = {
+                'timestamp': time.time(),
+                'amount_usd': float(amount_usd),
+                'status': 'failure',
+                'token': 'DAI',
+                'max_attempts': self.max_retry_attempts
+            }
+            
+            filename = f"borrow_failure_{time.strftime('%Y%m%d_%H%M%S')}.json"
+            with open(filename, 'w') as f:
+                json.dump(log_data, f, indent=2, default=str)
+                
+        except Exception as e:
+            print(f"⚠️ Could not save borrow failure log: {e}")

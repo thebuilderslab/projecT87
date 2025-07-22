@@ -75,7 +75,7 @@ class UniswapArbitrumIntegration:
         ]
 
     def _get_erc20_abi(self):
-        """Complete ERC20 ABI with all required functions"""
+        """Complete ERC20 ABI with all required functions for swap validation"""
         return [
             {
                 "inputs": [
@@ -110,6 +110,27 @@ class UniswapArbitrumIntegration:
                 "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
                 "stateMutability": "view",
                 "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "symbol",
+                "outputs": [{"internalType": "string", "name": "", "type": "string"}],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "name",
+                "outputs": [{"internalType": "string", "name": "", "type": "string"}],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "totalSupply",
+                "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
+                "stateMutability": "view",
+                "type": "function"
             }
         ]
 
@@ -130,9 +151,17 @@ class UniswapArbitrumIntegration:
 
 
     def swap_tokens(self, token_in, token_out, amount_in, fee=3000):
-        """Execute token swap on Uniswap V3"""
+        """Execute token swap on Uniswap V3 with enhanced validation and error handling"""
         try:
             import time
+
+            # Pre-validation: Check token contracts exist
+            for token_addr in [token_in, token_out]:
+                if token_addr != "0x0000000000000000000000000000000000000000":
+                    code = self.w3.eth.get_code(self.w3.to_checksum_address(token_addr))
+                    if code == b'':
+                        print(f"❌ No contract found at {token_addr}")
+                        return None
 
             # ENHANCED: Validate token balance before swap
             if token_in != "0x0000000000000000000000000000000000000000":
@@ -158,42 +187,66 @@ class UniswapArbitrumIntegration:
                 print(f"❌ Invalid wei conversion result: {amount_in_wei}")
                 return None
 
-            # Approve token spending
+            # Check ETH balance for gas
+            eth_balance = self.w3.eth.get_balance(self.address)
+            min_eth_needed = self.w3.to_wei(0.001, 'ether')  # 0.001 ETH minimum
+            if eth_balance < min_eth_needed:
+                print(f"❌ Insufficient ETH for gas: {self.w3.from_wei(eth_balance, 'ether'):.6f} ETH")
+                return None
+
+            # Approve token spending with enhanced validation
             if token_in != "0x0000000000000000000000000000000000000000":  # Not ETH
                 token_contract = self.w3.eth.contract(address=token_in, abi=self.erc20_abi)
-                nonce = self.w3.eth.get_transaction_count(self.address)
+                
+                # Check current allowance first
+                try:
+                    current_allowance = token_contract.functions.allowance(self.address, self.router_address).call()
+                    if current_allowance >= amount_in_wei:
+                        print(f"✅ Token already approved: {current_allowance} >= {amount_in_wei}")
+                    else:
+                        # Need to approve
+                        nonce = self.w3.eth.get_transaction_count(self.address)
 
-                # Enhanced gas price calculation
-                base_gas_price = self.w3.eth.gas_price
-                optimized_gas_price = int(base_gas_price * 1.2)  # 20% higher than base
+                        # Enhanced gas price calculation for mainnet
+                        base_gas_price = self.w3.eth.gas_price
+                        chain_id = self.w3.eth.chain_id
+                        
+                        if chain_id == 42161:  # Arbitrum Mainnet
+                            optimized_gas_price = max(base_gas_price, int(0.01 * 10**9))  # Min 0.01 gwei
+                        else:
+                            optimized_gas_price = int(base_gas_price * 1.2)  # 20% higher for testnet
 
-                approve_tx = token_contract.functions.approve(
-                    self.router_address, 
-                    amount_in_wei  # Use properly converted wei amount
-                ).build_transaction({
-                    'chainId': self.w3.eth.chain_id,
-                    'gas': 100000,
-                    'gasPrice': optimized_gas_price,  # Use optimized gas price
-                    'nonce': nonce,
-                })
+                        approve_tx = token_contract.functions.approve(
+                            self.router_address, 
+                            amount_in_wei * 2  # Approve 2x amount for efficiency
+                        ).build_transaction({
+                            'chainId': chain_id,
+                            'gas': 100000,
+                            'gasPrice': optimized_gas_price,
+                            'nonce': nonce,
+                        })
 
-                signed_approve = self.w3.eth.account.sign_transaction(approve_tx, self.account.key)
-                self.w3.eth.send_raw_transaction(signed_approve.rawTransaction)
-                print(f"✅ Approval transaction sent with gas price: {optimized_gas_price}")
-                time.sleep(5)  # Wait longer for approval confirmation
+                        signed_approve = self.w3.eth.account.sign_transaction(approve_tx, self.account.key)
+                        approve_hash = self.w3.eth.send_raw_transaction(signed_approve.rawTransaction)
+                        print(f"✅ Approval sent: {approve_hash.hex()}")
+                        time.sleep(8)  # Wait for approval confirmation
+                        
+                except Exception as approve_error:
+                    print(f"❌ Approval failed: {approve_error}")
+                    return None
 
             # Build swap parameters with proper wei amounts
-            deadline = int(time.time()) + 300  # 5 minutes from now
+            deadline = int(time.time()) + 600  # 10 minutes from now (more time)
 
             swap_params = {
-                'tokenIn': token_in,
-                'tokenOut': token_out,
+                'tokenIn': self.w3.to_checksum_address(token_in),
+                'tokenOut': self.w3.to_checksum_address(token_out),
                 'fee': fee,
-                'recipient': self.address,
+                'recipient': self.w3.to_checksum_address(self.address),
                 'deadline': deadline,
-                'amountIn': amount_in_wei,  # Use wei amount here
-                'amountOutMinimum': 0,
-                'sqrtPriceLimitX96': 0
+                'amountIn': amount_in_wei,
+                'amountOutMinimum': 0,  # Accept any amount of output
+                'sqrtPriceLimitX96': 0   # No price limit
             }
 
             # Build swap transaction with enhanced gas optimization
@@ -201,56 +254,102 @@ class UniswapArbitrumIntegration:
 
             # Enhanced gas calculation for swap
             base_gas_price = self.w3.eth.gas_price
-            swap_gas_price = int(base_gas_price * 1.3)  # 30% higher for swap operations
+            chain_id = self.w3.eth.chain_id
+            
+            if chain_id == 42161:  # Arbitrum Mainnet
+                swap_gas_price = max(base_gas_price, int(0.01 * 10**9))  # Min 0.01 gwei
+                gas_limit = 400000  # Higher for mainnet complexity
+            else:
+                swap_gas_price = int(base_gas_price * 1.3)  # 30% higher for testnet
+                gas_limit = 350000
 
             swap_tx = self.router_contract.functions.exactInputSingle(
                 swap_params
             ).build_transaction({
-                'chainId': self.w3.eth.chain_id,
-                'gas': 350000,  # Higher gas limit for complex swaps
-                'gasPrice': swap_gas_price,  # Use optimized gas price
+                'chainId': chain_id,
+                'gas': gas_limit,
+                'gasPrice': swap_gas_price,
                 'nonce': nonce,
                 'value': amount_in_wei if token_in == "0x0000000000000000000000000000000000000000" else 0
             })
 
-            print(f"🔄 Swap transaction built with gas price: {swap_gas_price} ({self.w3.from_wei(swap_gas_price, 'gwei'):.2f} gwei)")
+            print(f"🔄 Swap transaction built:")
+            print(f"   Gas Price: {self.w3.from_wei(swap_gas_price, 'gwei'):.4f} gwei")
+            print(f"   Gas Limit: {gas_limit}")
+            print(f"   Amount In: {amount_in_wei} wei ({amount_in} tokens)")
+
+            # Estimate gas to verify transaction will succeed
+            try:
+                estimated_gas = self.w3.eth.estimate_gas(swap_tx)
+                print(f"✅ Gas estimation successful: {estimated_gas}")
+            except Exception as gas_error:
+                print(f"❌ Gas estimation failed: {gas_error}")
+                print(f"💡 Transaction likely to fail - aborting")
+                return None
 
             # Sign and send
             signed_swap = self.w3.eth.account.sign_transaction(swap_tx, self.account.key)
             tx_hash = self.w3.eth.send_raw_transaction(signed_swap.rawTransaction)
 
-            print(f"✅ Swap executed: {tx_hash.hex()}")
+            print(f"✅ Swap executed successfully: {tx_hash.hex()}")
+            
+            # Return transaction hash for tracking
             return tx_hash.hex()
 
         except Exception as e:
-            print(f"❌ Swap failed: {e}")
+            print(f"❌ Swap failed with error: {e}")
+            import traceback
+            print(f"🔍 Full traceback: {traceback.format_exc()}")
             return None
 
     def optimize_collateral_via_swap(self, aave_integration, current_collateral_amount):
-        """Swap borrowed assets to optimize collateral position"""
+        """Swap borrowed DAI assets to optimize collateral position"""
         try:
-            print("🔄 Optimizing collateral through strategic swapping...")
+            print("🔄 Optimizing collateral through strategic DAI swapping...")
 
-            # Example: If we borrowed USDC, swap some to ETH to rebalance
-            usdc_balance = aave_integration.get_token_balance(aave_integration.usdc_address)
+            # Check DAI balance instead of USDC
+            dai_balance = aave_integration.get_token_balance(aave_integration.dai_address)
 
-            if usdc_balance > 100:  # If we have more than $100 USDC
-                # Swap 50% of USDC to ETH for rebalancing
-                swap_amount = int(usdc_balance * 0.5)  # Remove (10 ** 6), handled in swap_tokens
+            if dai_balance > 5.0:  # If we have more than $5 DAI
+                # Swap portion of DAI to WETH for diversification
+                swap_amount = min(dai_balance * 0.4, 20.0)  # Max $20 or 40% of balance
+
+                print(f"🔄 Swapping {swap_amount:.2f} DAI to WETH for collateral optimization")
 
                 swap_tx = self.swap_tokens(
-                    aave_integration.usdc_address,  # USDC in
+                    aave_integration.dai_address,   # DAI in
                     aave_integration.weth_address,  # WETH out
                     swap_amount,
-                    3000  # 0.3% fee
+                    500  # 0.05% fee (lower fee tier for stablecoin->ETH)
                 )
 
                 if swap_tx:
-                    print("✅ Collateral optimization swap completed")
+                    print("✅ DAI → WETH collateral optimization swap completed")
+                    return True
+                else:
+                    print("❌ DAI → WETH swap failed")
+
+            # Also check for WBTC diversification
+            if dai_balance > 10.0:  # If we have substantial DAI
+                wbtc_swap_amount = min(dai_balance * 0.2, 15.0)  # Max $15 or 20% to WBTC
+                
+                print(f"🔄 Swapping {wbtc_swap_amount:.2f} DAI to WBTC for collateral diversification")
+                
+                wbtc_swap_tx = self.swap_tokens(
+                    aave_integration.dai_address,   # DAI in
+                    aave_integration.wbtc_address,  # WBTC out
+                    wbtc_swap_amount,
+                    500  # 0.05% fee
+                )
+
+                if wbtc_swap_tx:
+                    print("✅ DAI → WBTC collateral diversification swap completed")
                     return True
 
             return False
 
         except Exception as e:
             print(f"❌ Collateral optimization failed: {e}")
+            import traceback
+            print(f"🔍 Full error: {traceback.format_exc()}")
             return False
