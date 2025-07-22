@@ -1,0 +1,440 @@
+python system_compliance_checker.py
+~/workspace$ python system_compliance_checker.py
+🔍 CHECKING DAI-ONLY SWAP COMPLIANCE
+==================================================
+
+📄 Checking: debug_swap_system.py
+   ✅ DAI compliance confirmed: 15 references
+
+📄 Checking: swap_usdc_for_wbtc.py
+   ✅ DAI compliance confirmed: 50 references
+
+📄 Checking: force_swap_with_approval.py
+   ✅ DAI compliance confirmed: 27 references
+
+📄 Checking: ultimate_swap_fix.py
+   ✅ DAI compliance confirmed: 61 references
+
+📄 Checking: ultimate_swap_solution.py
+   ✅ DAI compliance confirmed: 66 references
+
+📄 Checking: swap_and_supply_usdc_wbtc.py
+   ✅ DAI compliance confirmed: 74 references
+
+📄 Checking: force_swap_with_manual_amounts.py
+   ✅ DAI compliance confirmed: 41 references
+
+📄 Checking: manual_balance_swap.py
+   ✅ DAI compliance confirmed: 24 references
+
+📄 Checking: test_swap_readiness.py
+   ✅ DAI compliance confirmed: 31 references
+
+📄 Checking: enhanced_swap_usdc_for_wbtc.py
+   ✅ DAI compliance confirmed: 48 references
+
+📄 Checking: uniswap_integration.py
+   ✅ DAI compliance confirmed: 62 references
+
+📄 Checking: enhanced_swap_dai_for_wbtc.py
+   ✅ DAI compliance confirmed: 38 references
+
+📄 Checking: enhanced_swap_dai_for_weth.py
+   ✅ DAI compliance confirmed: 32 references
+
+📄 Checking: debug_swap_system.py
+   ✅ DAI compliance confirmed: 15 references
+
+📄 Checking: swap_usdc_for_wbtc.py
+   ✅ DAI compliance confirmed: 50 references
+
+📄 Checking: force_swap_with_approval.py
+   ✅ DAI compliance confirmed: 27 references
+
+📄 Checking: ultimate_swap_fix.py
+   ✅ DAI compliance confirmed: 61 references
+
+📄 Checking: ultimate_swap_solution.py
+   ✅ DAI compliance confirmed: 66 references
+
+📄 Checking: swap_and_supply_usdc_wbtc.py
+   ✅ DAI compliance confirmed: 74 references
+
+📄 Checking: force_swap_with_manual_amounts.py
+   ✅ DAI compliance confirmed: 41 references
+
+📄 Checking: manual_balance_swap.py
+   ✅ DAI compliance confirmed: 24 references
+
+📄 Checking: test_swap_readiness.py
+   ✅ DAI compliance confirmed: 31 references
+
+📄 Checking: enhanced_swap_usdc_for_wbtc.py
+   ✅ DAI compliance confirmed: 48 references
+
+📄 Checking: uniswap_integration.py
+   ✅ DAI compliance confirmed: 62 references
+
+📄 Checking: enhanced_swap_dai_for_wbtc.py
+   ✅ DAI compliance confirmed: 38 references
+
+📄 Checking: enhanced_swap_dai_for_weth.py
+   ✅ DAI compliance confirmed: 32 references
+
+📄 Checking: .pythonlibs/lib/python3.11/site-packages/pandas/tests/frame/methods/test_swaplevel.py
+   ⚠️ No DAI references found
+
+📄 Checking: .pythonlibs/lib/python3.11/site-packages/pandas/tests/frame/methods/test_swapaxes.py
+   ⚠️ No DAI references found
+
+📄 Checking: .pythonlibs/lib/python3.11/site-packages/pandas/tests/io/sas/test_byteswap.py
+   ⚠️ No DAI references found
+
+📄 Checking: uniswap_integration.py
+   ✅ DAI compliance confirmed: 62 references
+
+📄 Checking: uniswap_integration.py
+   ✅ DAI compliance confirmed: 62 references
+
+📄 Checking: arbitrum_testnet_agent.py
+   ❌ USDC violations found: 36
+   ✅ DAI compliance confirmed: 124 references
+
+📄 Checking: arbitrum_testnet_agent.py
+   ❌ USDC violations found: 36
+   ✅ DAI compliance confirmed: 124 references
+
+📄 Checking: withdraw_and_borrow.py
+   ❌ USDC violations found: 14
+   ⚠️ No DAI references found
+
+📄 Checking: test_safe_borrow_implementation.py
+   ❌ USDC violations found: 3
+   ⚠️ No DAI references found
+
+📄 Checking: test_borrow_now.py
+   ❌ USDC violations found: 5
+   ⚠️ No DAI references found
+
+📄 Checking: test_enhanced_borrowing.py
+   ❌ USDC violations found: 5
+   ⚠️ No DAI references found
+
+📄 Checking: test_manual_borrow.py
+   ❌ USDC violations found: 4
+   ⚠️ No DAI references found
+
+📄 Checking: test_fixed_borrow_logic.py
+   ⚠️ No DAI references found
+
+📄 Checking: fix_borrow_gas.py
+   ❌ USDC violations found: 7
+   ⚠️ No DAI references found
+
+📄 Checking: diagnose_borrow_failures.py
+   ❌ USDC violations found: 1
+   ⚠️ No DAI references found
+
+📄 Checking: safe_borrow_test.py
+   ❌ USDC violations found: 3
+   ⚠️ No DAI references found
+
+📄 Checking: test_borrow_system.py
+   ❌ USDC violations found: 4
+   ⚠️ No DAI references found
+
+📄 Checking: test_borrow_readiness.py
+   ❌ USDC violations found: 3
+   ⚠️ No DAI references found
+
+📄 Checking: test_enhanced_borrow_manager_fixes.py
+   ❌ USDC violations found: 2
+   ⚠️ No DAI references found
+
+📄 Checking: borrow_diagnostic_tool.py
+   ❌ USDC violations found: 3
+   ✅ DAI compliance confirmed: 3 references
+
+📄 Checking: test_dai_borrow.py
+   ✅ DAI compliance confirmed: 21 references
+
+📄 Checking: test_usdc_borrow_direct.py
+   ❌ USDC violations found: 16
+   ⚠️ No DAI references found
+
+📄 Checking: enhanced_borrow_manager.py
+   ❌ USDC violations found: 4
+   ✅ DAI compliance confirmed: 157 references
+
+📄 Checking: withdraw_and_borrow.py
+   ❌ USDC violations found: 14
+   ⚠️ No DAI references found
+
+📄 Checking: test_safe_borrow_implementation.py
+   ❌ USDC violations found: 3
+   ⚠️ No DAI references found
+
+📄 Checking: test_borrow_now.py
+   ❌ USDC violations found: 5
+   ⚠️ No DAI references found
+
+📄 Checking: test_enhanced_borrowing.py
+   ❌ USDC violations found: 5
+   ⚠️ No DAI references found
+
+📄 Checking: test_manual_borrow.py
+   ❌ USDC violations found: 4
+   ⚠️ No DAI references found
+
+📄 Checking: test_fixed_borrow_logic.py
+   ⚠️ No DAI references found
+
+📄 Checking: fix_borrow_gas.py
+   ❌ USDC violations found: 7
+   ⚠️ No DAI references found
+
+📄 Checking: diagnose_borrow_failures.py
+   ❌ USDC violations found: 1
+   ⚠️ No DAI references found
+
+📄 Checking: safe_borrow_test.py
+   ❌ USDC violations found: 3
+   ⚠️ No DAI references found
+
+📄 Checking: test_borrow_system.py
+   ❌ USDC violations found: 4
+   ⚠️ No DAI references found
+
+📄 Checking: test_borrow_readiness.py
+   ❌ USDC violations found: 3
+   ⚠️ No DAI references found
+
+📄 Checking: test_enhanced_borrow_manager_fixes.py
+   ❌ USDC violations found: 2
+   ⚠️ No DAI references found
+
+📄 Checking: borrow_diagnostic_tool.py
+   ❌ USDC violations found: 3
+   ✅ DAI compliance confirmed: 3 references
+
+📄 Checking: test_dai_borrow.py
+   ✅ DAI compliance confirmed: 21 references
+
+📄 Checking: test_usdc_borrow_direct.py
+   ❌ USDC violations found: 16
+   ⚠️ No DAI references found
+
+📄 Checking: enhanced_borrow_manager.py
+   ❌ USDC violations found: 4
+   ✅ DAI compliance confirmed: 157 references
+
+📄 Checking: test_real_defi_integration.py
+   ⚠️ No DAI references found
+
+📄 Checking: check_zapper_integration.py
+   ⚠️ No DAI references found
+
+📄 Checking: check_arbiscan_integration.py
+   ❌ USDC violations found: 21
+   ⚠️ No DAI references found
+
+📄 Checking: third_party_data_integration.py
+   ❌ USDC violations found: 15
+   ⚠️ No DAI references found
+
+📄 Checking: compound_v3_integration.py
+   ❌ USDC violations found: 9
+   ⚠️ No DAI references found
+
+📄 Checking: fix_defi_integration.py
+   ⚠️ No DAI references found
+
+📄 Checking: fix_aave_integration.py
+   ❌ USDC violations found: 2
+   ⚠️ No DAI references found
+
+📄 Checking: aave_integration.py
+   ❌ USDC violations found: 22
+   ✅ DAI compliance confirmed: 18 references
+
+📄 Checking: uniswap_integration.py
+   ✅ DAI compliance confirmed: 62 references
+
+📄 Checking: validate_system_integration.py
+   ✅ DAI compliance confirmed: 2 references
+
+📄 Checking: test_real_defi_integration.py
+   ⚠️ No DAI references found
+
+📄 Checking: check_zapper_integration.py
+   ⚠️ No DAI references found
+
+📄 Checking: check_arbiscan_integration.py
+   ❌ USDC violations found: 21
+   ⚠️ No DAI references found
+
+📄 Checking: third_party_data_integration.py
+   ❌ USDC violations found: 15
+   ⚠️ No DAI references found
+
+📄 Checking: compound_v3_integration.py
+   ❌ USDC violations found: 9
+   ⚠️ No DAI references found
+
+📄 Checking: fix_defi_integration.py
+   ⚠️ No DAI references found
+
+📄 Checking: fix_aave_integration.py
+   ❌ USDC violations found: 2
+   ⚠️ No DAI references found
+
+📄 Checking: aave_integration.py
+   ❌ USDC violations found: 22
+   ✅ DAI compliance confirmed: 18 references
+
+📄 Checking: uniswap_integration.py
+   ✅ DAI compliance confirmed: 62 references
+
+📄 Checking: validate_system_integration.py
+   ✅ DAI compliance confirmed: 2 references
+
+============================================================
+📊 SYSTEM COMPLIANCE REPORT
+============================================================
+✅ Compliant files: 42
+⚠️ Warnings: 43
+❌ Critical issues: 40
+
+🚨 CRITICAL ISSUES:
+   arbitrum_testnet_agent.py: Found USDC references: ['usdc_address', 'USDC_address', 'usdc_address']
+   arbitrum_testnet_agent.py: Found USDC references: ['usdc_address', 'USDC_address', 'usdc_address']
+   withdraw_and_borrow.py: Found USDC references: ['USDC', 'USDC', 'USDC']
+   test_safe_borrow_implementation.py: Found USDC references: ['usdc', 'usdc', 'usdc']
+   test_borrow_now.py: Found USDC references: ['usdc_address', 'USDC', 'USDC']
+   test_enhanced_borrowing.py: Found USDC references: ['usdc_address', 'USDC', 'usdc']
+   test_manual_borrow.py: Found USDC references: ['usdc_address', 'USDC', 'USDC']
+   fix_borrow_gas.py: Found USDC references: ['usdc_address', 'USDC', 'usdc']
+   diagnose_borrow_failures.py: Found USDC references: ['USDC']
+   safe_borrow_test.py: Found USDC references: ['usdc_address', 'USDC', 'usdc']
+   test_borrow_system.py: Found USDC references: ['usdc_address', 'usdc_address', 'usdc']
+   test_borrow_readiness.py: Found USDC references: ['usdc_address', 'usdc', 'USDC']
+   test_enhanced_borrow_manager_fixes.py: Found USDC references: ['usdc_address', 'usdc']
+   borrow_diagnostic_tool.py: Found USDC references: ['usdc_address', 'USDC', 'usdc']
+   test_usdc_borrow_direct.py: Found USDC references: ['usdc_address', 'USDC', 'USDC']
+   enhanced_borrow_manager.py: Found USDC references: ['USDC', 'USDC', 'USDC']
+   withdraw_and_borrow.py: Found USDC references: ['USDC', 'USDC', 'USDC']
+   test_safe_borrow_implementation.py: Found USDC references: ['usdc', 'usdc', 'usdc']
+   test_borrow_now.py: Found USDC references: ['usdc_address', 'USDC', 'USDC']
+   test_enhanced_borrowing.py: Found USDC references: ['usdc_address', 'USDC', 'usdc']
+   test_manual_borrow.py: Found USDC references: ['usdc_address', 'USDC', 'USDC']
+   fix_borrow_gas.py: Found USDC references: ['usdc_address', 'USDC', 'usdc']
+   diagnose_borrow_failures.py: Found USDC references: ['USDC']
+   safe_borrow_test.py: Found USDC references: ['usdc_address', 'USDC', 'usdc']
+   test_borrow_system.py: Found USDC references: ['usdc_address', 'usdc_address', 'usdc']
+   test_borrow_readiness.py: Found USDC references: ['usdc_address', 'usdc', 'USDC']
+   test_enhanced_borrow_manager_fixes.py: Found USDC references: ['usdc_address', 'usdc']
+   borrow_diagnostic_tool.py: Found USDC references: ['usdc_address', 'USDC', 'usdc']
+   test_usdc_borrow_direct.py: Found USDC references: ['usdc_address', 'USDC', 'USDC']
+   enhanced_borrow_manager.py: Found USDC references: ['USDC', 'USDC', 'USDC']
+   check_arbiscan_integration.py: Found USDC references: ['usdc_address', 'usdc_address', 'usdc_address']
+   third_party_data_integration.py: Found USDC references: ['usdc_address', 'usdc_address', 'USDC']
+   compound_v3_integration.py: Found USDC references: ['usdc_address', 'usdc_address', 'USDC']
+   fix_aave_integration.py: Found USDC references: ['usdc_address', 'usdc']
+   aave_integration.py: Found USDC references: ['usdc_address', 'usdc_address', 'usdc_address']
+   check_arbiscan_integration.py: Found USDC references: ['usdc_address', 'usdc_address', 'usdc_address']
+   third_party_data_integration.py: Found USDC references: ['usdc_address', 'usdc_address', 'USDC']
+   compound_v3_integration.py: Found USDC references: ['usdc_address', 'usdc_address', 'USDC']
+   fix_aave_integration.py: Found USDC references: ['usdc_address', 'usdc']
+   aave_integration.py: Found USDC references: ['usdc_address', 'usdc_address', 'usdc_address']
+
+⚠️ WARNINGS:
+   .pythonlibs/lib/python3.11/site-packages/pandas/tests/frame/methods/test_swaplevel.py: No DAI references found - may not be swap-related
+   .pythonlibs/lib/python3.11/site-packages/pandas/tests/frame/methods/test_swapaxes.py: No DAI references found - may not be swap-related
+   .pythonlibs/lib/python3.11/site-packages/pandas/tests/io/sas/test_byteswap.py: No DAI references found - may not be swap-related
+   withdraw_and_borrow.py: No DAI references found - may not be swap-related
+   test_safe_borrow_implementation.py: No DAI references found - may not be swap-related
+   test_borrow_now.py: No DAI references found - may not be swap-related
+   test_enhanced_borrowing.py: No DAI references found - may not be swap-related
+   test_manual_borrow.py: No DAI references found - may not be swap-related
+   test_fixed_borrow_logic.py: No DAI references found - may not be swap-related
+   fix_borrow_gas.py: No DAI references found - may not be swap-related
+   diagnose_borrow_failures.py: No DAI references found - may not be swap-related
+   safe_borrow_test.py: No DAI references found - may not be swap-related
+   test_borrow_system.py: No DAI references found - may not be swap-related
+   test_borrow_readiness.py: No DAI references found - may not be swap-related
+   test_enhanced_borrow_manager_fixes.py: No DAI references found - may not be swap-related
+   test_usdc_borrow_direct.py: No DAI references found - may not be swap-related
+   withdraw_and_borrow.py: No DAI references found - may not be swap-related
+   test_safe_borrow_implementation.py: No DAI references found - may not be swap-related
+   test_borrow_now.py: No DAI references found - may not be swap-related
+   test_enhanced_borrowing.py: No DAI references found - may not be swap-related
+   test_manual_borrow.py: No DAI references found - may not be swap-related
+   test_fixed_borrow_logic.py: No DAI references found - may not be swap-related
+   fix_borrow_gas.py: No DAI references found - may not be swap-related
+   diagnose_borrow_failures.py: No DAI references found - may not be swap-related
+   safe_borrow_test.py: No DAI references found - may not be swap-related
+   test_borrow_system.py: No DAI references found - may not be swap-related
+   test_borrow_readiness.py: No DAI references found - may not be swap-related
+   test_enhanced_borrow_manager_fixes.py: No DAI references found - may not be swap-related
+   test_usdc_borrow_direct.py: No DAI references found - may not be swap-related
+   test_real_defi_integration.py: No DAI references found - may not be swap-related
+   check_zapper_integration.py: No DAI references found - may not be swap-related
+   check_arbiscan_integration.py: No DAI references found - may not be swap-related
+   third_party_data_integration.py: No DAI references found - may not be swap-related
+   compound_v3_integration.py: No DAI references found - may not be swap-related
+   fix_defi_integration.py: No DAI references found - may not be swap-related
+   fix_aave_integration.py: No DAI references found - may not be swap-related
+   test_real_defi_integration.py: No DAI references found - may not be swap-related
+   check_zapper_integration.py: No DAI references found - may not be swap-related
+   check_arbiscan_integration.py: No DAI references found - may not be swap-related
+   third_party_data_integration.py: No DAI references found - may not be swap-related
+   compound_v3_integration.py: No DAI references found - may not be swap-related
+   fix_defi_integration.py: No DAI references found - may not be swap-related
+   fix_aave_integration.py: No DAI references found - may not be swap-related
+
+✅ COMPLIANT FILES:
+   debug_swap_system.py: 15 DAI references
+   swap_usdc_for_wbtc.py: 50 DAI references
+   force_swap_with_approval.py: 27 DAI references
+   ultimate_swap_fix.py: 61 DAI references
+   ultimate_swap_solution.py: 66 DAI references
+   swap_and_supply_usdc_wbtc.py: 74 DAI references
+   force_swap_with_manual_amounts.py: 41 DAI references
+   manual_balance_swap.py: 24 DAI references
+   test_swap_readiness.py: 31 DAI references
+   enhanced_swap_usdc_for_wbtc.py: 48 DAI references
+   uniswap_integration.py: 62 DAI references
+   enhanced_swap_dai_for_wbtc.py: 38 DAI references
+   enhanced_swap_dai_for_weth.py: 32 DAI references
+   debug_swap_system.py: 15 DAI references
+   swap_usdc_for_wbtc.py: 50 DAI references
+   force_swap_with_approval.py: 27 DAI references
+   ultimate_swap_fix.py: 61 DAI references
+   ultimate_swap_solution.py: 66 DAI references
+   swap_and_supply_usdc_wbtc.py: 74 DAI references
+   force_swap_with_manual_amounts.py: 41 DAI references
+   manual_balance_swap.py: 24 DAI references
+   test_swap_readiness.py: 31 DAI references
+   enhanced_swap_usdc_for_wbtc.py: 48 DAI references
+   uniswap_integration.py: 62 DAI references
+   enhanced_swap_dai_for_wbtc.py: 38 DAI references
+   enhanced_swap_dai_for_weth.py: 32 DAI references
+   uniswap_integration.py: 62 DAI references
+   uniswap_integration.py: 62 DAI references
+   arbitrum_testnet_agent.py: 124 DAI references
+   arbitrum_testnet_agent.py: 124 DAI references
+   borrow_diagnostic_tool.py: 3 DAI references
+   test_dai_borrow.py: 21 DAI references
+   enhanced_borrow_manager.py: 157 DAI references
+   borrow_diagnostic_tool.py: 3 DAI references
+   test_dai_borrow.py: 21 DAI references
+   enhanced_borrow_manager.py: 157 DAI references
+   aave_integration.py: 18 DAI references
+   uniswap_integration.py: 62 DAI references
+   validate_system_integration.py: 2 DAI references
+   aave_integration.py: 18 DAI references
+   uniswap_integration.py: 62 DAI references
+   validate_system_integration.py: 2 DAI references
+
+❌ SYSTEM NOT COMPLIANT - Fix critical issues before deployment
+~/workspace$ 

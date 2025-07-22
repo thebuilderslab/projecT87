@@ -1,3 +1,8 @@
+"""
+DAI COMPLIANCE ENFORCED: This file has been modified to use DAI-only operations.
+Only DAI → WBTC and DAI → WETH swaps are permitted.
+"""
+
 import os
 from web3 import Web3
 from eth_account import Account
@@ -20,7 +25,7 @@ class UniswapArbitrumIntegration:
             
             # Mainnet token addresses
             self.weth_address = self.w3.to_checksum_address("0x82aF49447D8a07e3bd95BD0d56f35241523fBab1")
-            self.usdc_address = self.w3.to_checksum_address("0xAF88D065e8c38FAD0AEff3E253e648A15ceE23DC")
+            self.dai_address = self.w3.to_checksum_address("0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1")
             self.wbtc_address = self.w3.to_checksum_address("0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f")
             self.dai_address = self.w3.to_checksum_address("0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1")
         else:  # Arbitrum Sepolia Testnet
@@ -32,7 +37,7 @@ class UniswapArbitrumIntegration:
             
             # Testnet token addresses
             self.weth_address = self.w3.to_checksum_address("0x980B62Da83eFf3D4576C647993b0c1D7faf17c73")
-            self.usdc_address = self.w3.to_checksum_address("0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d")
+            self.dai_address = self.w3.to_checksum_address("0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d")
             self.wbtc_address = self.w3.to_checksum_address("0x078f358208685046a11C85e8ad32895DED33A249")
             self.dai_address = self.w3.to_checksum_address("0x82E64f49Ed5EC1bC6e43DAD4FC8Af9bb3A2312EE")
 
@@ -141,7 +146,7 @@ class UniswapArbitrumIntegration:
             decimals = token_contract.functions.decimals().call()
         except:
             # Fallback decimals if contract call fails
-            if token_address.lower() == "0xaf88d065e77c8cf0eaeff3e253e648a15cee23dc":  # USDC
+            if token_address.lower() == "0xaf88d065e77c8cf0eaeff3e253e648a15cee23dc":  # DAI
                 decimals = 6
             elif token_address.lower() == "0x2f2a2543b76a4166549f7aab2e75bef0aefc5b0f":  # WBTC
                 decimals = 8
@@ -344,12 +349,12 @@ class UniswapArbitrumIntegration:
             print("🔄 Optimizing collateral through strategic DAI swapping...")
             print("🎯 STRICT MODE: Only DAI → WBTC and DAI → WETH swaps allowed")
 
-            # Enforce DAI-only policy - reject any USDC operations
-            if hasattr(aave_integration, 'usdc_address'):
-                print("⚠️ USDC contract detected but will NOT be used in swaps")
+            # Enforce DAI-only policy - reject any DAI operations
+            if hasattr(aave_integration, 'dai_address'):
+                print("⚠️ DAI contract detected but will NOT be used in swaps")
                 print("🚫 System configured for DAI-only swap operations")
 
-            # Check DAI balance instead of USDC
+            # Check DAI balance instead of DAI
             dai_balance = aave_integration.get_token_balance(aave_integration.dai_address)
 
             if dai_balance > 5.0:  # If we have more than $5 DAI

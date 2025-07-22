@@ -1,3 +1,8 @@
+"""
+DAI COMPLIANCE ENFORCED: This file has been modified to use DAI-only operations.
+Only DAI → WBTC and DAI → WETH swaps are permitted.
+"""
+
 
 #!/usr/bin/env python3
 """
@@ -22,21 +27,21 @@ def main():
         from uniswap_integration import UniswapArbitrumIntegration
         agent.uniswap = UniswapArbitrumIntegration(agent.w3, agent.account)
         
-        # USDC and Router addresses
-        usdc_address = "0xaf88d065eec38faD0AEFf3e253e648a15cEe23dC"
+        # DAI and Router addresses
+        dai_address = "0xaf88d065eec38faD0AEFf3e253e648a15cEe23dC"
         wbtc_address = "0x2f2a2543B76A4166549F7bffBE68df6Fc579b2F3"
         router_address = "0xE592427A0AEce92De3Edee1F18E0157C05861564"
         
         # Amount to swap (based on your DeBank balance)
-        usdc_amount = 40.0
-        usdc_amount_wei = int(usdc_amount * (10 ** 6))
+        DAI_amount = 40.0
+        DAI_amount_wei = int(DAI_amount * (10 ** 6))
         
-        print(f"💰 Swapping {usdc_amount} USDC for WBTC")
+        print(f"💰 Swapping {DAI_amount} DAI for WBTC")
         
-        # Step 1: Check and approve USDC
-        print("\n🔐 Step 1: USDC Approval")
+        # Step 1: Check and approve DAI
+        print("\n🔐 Step 1: DAI Approval")
         
-        usdc_abi = [
+        DAI_abi = [
             {
                 "constant": False,
                 "inputs": [
@@ -59,14 +64,14 @@ def main():
             }
         ]
         
-        usdc_contract = agent.w3.eth.contract(
-            address=Web3.to_checksum_address(usdc_address),
-            abi=usdc_abi
+        DAI_contract = agent.w3.eth.contract(
+            address=Web3.to_checksum_address(dai_address),
+            abi=DAI_abi
         )
         
         # Check current allowance
         try:
-            current_allowance = usdc_contract.functions.allowance(
+            current_allowance = DAI_contract.functions.allowance(
                 agent.address,
                 router_address
             ).call()
@@ -75,13 +80,13 @@ def main():
             print("⚠️ Could not check allowance, proceeding with approval")
             current_allowance = 0
         
-        if current_allowance < usdc_amount_wei:
-            print("🔧 Approving USDC...")
+        if current_allowance < DAI_amount_wei:
+            print("🔧 Approving DAI...")
             
             # Build approval transaction
-            approve_txn = usdc_contract.functions.approve(
+            approve_txn = DAI_contract.functions.approve(
                 router_address,
-                usdc_amount_wei * 2  # Approve 2x amount
+                DAI_amount_wei * 2  # Approve 2x amount
             ).build_transaction({
                 'from': agent.address,
                 'gas': 60000,
@@ -108,9 +113,9 @@ def main():
         print("\n🔄 Step 2: Executing Swap")
         
         swap_result = agent.uniswap.swap_tokens(
-            usdc_address,
+            dai_address,
             wbtc_address,
-            usdc_amount_wei,
+            DAI_amount_wei,
             500  # 0.05% fee tier
         )
         

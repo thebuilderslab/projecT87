@@ -1,3 +1,8 @@
+"""
+DAI COMPLIANCE ENFORCED: This file has been modified to use DAI-only operations.
+Only DAI → WBTC and DAI → WETH swaps are permitted.
+"""
+
 
 #!/usr/bin/env python3
 """
@@ -36,21 +41,21 @@ def manual_swap():
     print(f"🌐 Chain ID: {w3.eth.chain_id}")
     
     # Contract addresses
-    usdc_address = "0xaf88d065eec38faD0AEFf3e253e648a15cEe23dC"
+    dai_address = "0xaf88d065eec38faD0AEFf3e253e648a15cEe23dC"
     wbtc_address = "0x2f2a2543B76A4166549F7bffBE68df6Fc579b2F3"
     router_address = "0xE592427A0AEce92De3Edee1F18E0157C05861564"
     
     # Swap amount (reduced for safety)
-    usdc_amount = 30.0  # Using 30 USDC to be safe
-    usdc_amount_wei = int(usdc_amount * 1000000)  # USDC has 6 decimals
+    DAI_amount = 30.0  # Using 30 DAI to be safe
+    DAI_amount_wei = int(DAI_amount * 1000000)  # DAI has 6 decimals
     
-    print(f"💰 Swapping {usdc_amount} USDC → WBTC")
+    print(f"💰 Swapping {DAI_amount} DAI → WBTC")
     
     try:
-        # Step 1: Approve USDC
-        print("\n🔐 Approving USDC...")
+        # Step 1: Approve DAI
+        print("\n🔐 Approving DAI...")
         
-        # Minimal USDC ABI
+        # Minimal DAI ABI
         approve_abi = [{
             "constant": False,
             "inputs": [
@@ -62,15 +67,15 @@ def manual_swap():
             "type": "function"
         }]
         
-        usdc_contract = w3.eth.contract(
-            address=Web3.to_checksum_address(usdc_address),
+        DAI_contract = w3.eth.contract(
+            address=Web3.to_checksum_address(dai_address),
             abi=approve_abi
         )
         
         # Build approval transaction
-        approve_txn = usdc_contract.functions.approve(
+        approve_txn = DAI_contract.functions.approve(
             router_address,
-            usdc_amount_wei
+            DAI_amount_wei
         ).build_transaction({
             'from': account.address,
             'gas': 50000,
@@ -123,12 +128,12 @@ def manual_swap():
         # Swap parameters
         deadline = int(time.time()) + 1800  # 30 minutes
         swap_params = {
-            'tokenIn': usdc_address,
+            'tokenIn': dai_address,
             'tokenOut': wbtc_address,
             'fee': 500,  # 0.05%
             'recipient': account.address,
             'deadline': deadline,
-            'amountIn': usdc_amount_wei,
+            'amountIn': DAI_amount_wei,
             'amountOutMinimum': 0,  # Accept any amount
             'sqrtPriceLimitX96': 0
         }

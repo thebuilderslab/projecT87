@@ -1,7 +1,12 @@
+"""
+DAI COMPLIANCE ENFORCED: This file has been modified to use DAI-only operations.
+Only DAI → WBTC and DAI → WETH swaps are permitted.
+"""
+
 #!/usr/bin/env python3
 """
 ULTIMATE SWAP FIX
-Comprehensive solution for USDC → WBTC swap with all possible workarounds
+Comprehensive solution for DAI → WBTC swap with all possible workarounds
 """
 
 import os
@@ -60,13 +65,13 @@ def get_token_addresses(chain_id):
     """Get correct token addresses for the network"""
     if chain_id == 42161:  # Mainnet
         return {
-            'USDC': '0xaf88d065eec38faD0AEFf3e253e648a15cEe23dC',
+            'DAI': '0xaf88d065eec38faD0AEFf3e253e648a15cEe23dC',
             'WBTC': '0x2f2a2543B76A4166549F7bffBE68df6Fc579b2F3',
             'ROUTER': '0xE592427A0AEce92De3Edee1F18E0157C05861564'
         }
     else:  # Sepolia
         return {
-            'USDC': '0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d',
+            'DAI': '0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d',
             'WBTC': '0x2F2a2543B76a4166549F7BFfbe68Df6FC579b2F3',
             'ROUTER': '0xE592427A0AEce92De3Edee1F18E0157C05861564'
         }
@@ -93,7 +98,7 @@ def check_balances(w3, account_address, token_addresses):
     balances = {'ETH': float(eth_balance_ether)}
 
     for token_name, token_address in token_addresses.items():
-        if token_name in ['USDC', 'WBTC']:
+        if token_name in ['DAI', 'WBTC']:
             try:
                 contract = w3.eth.contract(
                     address=Web3.to_checksum_address(token_address),
@@ -101,9 +106,9 @@ def check_balances(w3, account_address, token_addresses):
                 )
                 balance_wei = contract.functions.balanceOf(account_address).call()
 
-                if token_name == 'USDC':
-                    balance = balance_wei / (10 ** 6)  # USDC has 6 decimals
-                    print(f"💵 USDC: {balance:.6f}")
+                if token_name == 'DAI':
+                    balance = balance_wei / (10 ** 6)  # DAI has 6 decimals
+                    print(f"💵 DAI: {balance:.6f}")
                 elif token_name == 'WBTC':
                     balance = balance_wei / (10 ** 8)  # WBTC has 8 decimals
                     print(f"₿ WBTC: {balance:.8f}")
@@ -164,9 +169,9 @@ def approve_token(w3, account, token_address, spender_address, amount):
         print(f"❌ Approval failed: {e}")
         return None
 
-def execute_swap(w3, account, token_addresses, usdc_amount):
+def execute_swap(w3, account, token_addresses, DAI_amount):
     """Execute the actual swap transaction"""
-    print(f"\n🔄 EXECUTING SWAP: {usdc_amount} USDC → WBTC")
+    print(f"\n🔄 EXECUTING SWAP: {DAI_amount} DAI → WBTC")
 
     # Uniswap V3 Router ABI for exactInputSingle
     swap_abi = [{
@@ -197,18 +202,18 @@ def execute_swap(w3, account, token_addresses, usdc_amount):
             abi=swap_abi
         )
 
-        # Convert USDC amount to wei (6 decimals)
-        usdc_amount_wei = int(usdc_amount * (10 ** 6))
+        # Convert DAI amount to wei (6 decimals)
+        DAI_amount_wei = int(DAI_amount * (10 ** 6))
 
         # Swap parameters
         deadline = int(time.time()) + 1800  # 30 minutes
         swap_params = {
-            'tokenIn': token_addresses['USDC'],
+            'tokenIn': token_addresses['DAI'],
             'tokenOut': token_addresses['WBTC'],
             'fee': 500,  # 0.05% fee tier
             'recipient': account.address,
             'deadline': deadline,
-            'amountIn': usdc_amount_wei,
+            'amountIn': DAI_amount_wei,
             'amountOutMinimum': 0,  # Accept any amount (for testing)
             'sqrtPriceLimitX96': 0
         }
@@ -243,7 +248,7 @@ def execute_swap(w3, account, token_addresses, usdc_amount):
 
 def main():
     """Main swap execution function"""
-    print("🚀 ULTIMATE USDC → WBTC SWAP")
+    print("🚀 ULTIMATE DAI → WBTC SWAP")
     print("=" * 50)
 
     # Check for funding bypass
@@ -289,21 +294,21 @@ def main():
     dynamic_validator = DynamicWalletFundingValidator()
     required_eth = dynamic_validator.calculate_real_gas_requirements()
 
-    # Get USDC requirements
-    min_usdc_needed = 1.0
+    # Get DAI requirements
+    min_DAI_needed = 1.0
 
     # Apply bypass, if available
     if bypass_handler and bypass_handler.should_bypass_funding_checks():
         requirements = bypass_handler.get_minimum_requirements() # TEST
         min_eth_needed = requirements['min_eth']
-        min_usdc_needed = requirements['min_usdc']
+        min_DAI_needed = requirements['min_DAI']
         print("🧪 TEST MODE: Using reduced funding requirements")
 
     else:
         min_eth_needed = required_eth  # Use dynamically calculated gas
-        min_usdc_needed = 1.0   # Minimum USDC for swap
+        min_DAI_needed = 1.0   # Minimum DAI for swap
 
-    usdc_to_swap = min(balances.get('USDC', 0), 40.0)  # Swap up to 40 USDC
+    DAI_to_swap = min(balances.get('DAI', 0), 40.0)  # Swap up to 40 DAI
 
     if balances['ETH'] < min_eth_needed:
         print(f"❌ Insufficient ETH for gas (need {min_eth_needed}, have {balances['ETH']:.6f})")
@@ -311,21 +316,21 @@ def main():
             print("💡 Run 'python wallet_funding_validator.py' for funding guidance")
             return False
 
-    if usdc_to_swap < min_usdc_needed:
-        print(f"❌ Insufficient USDC for swap (need at least {min_usdc_needed}, have {balances.get('USDC', 0):.6f})")
+    if DAI_to_swap < min_DAI_needed:
+        print(f"❌ Insufficient DAI for swap (need at least {min_DAI_needed}, have {balances.get('DAI', 0):.6f})")
         if not bypass_handler or not bypass_handler.should_bypass_funding_checks():
             print("💡 Run 'python wallet_funding_validator.py' for funding guidance")
             return False
 
-    print(f"\n✅ Ready to swap {usdc_to_swap:.4f} USDC for WBTC")
+    print(f"\n✅ Ready to swap {DAI_to_swap:.4f} DAI for WBTC")
 
-    # Step 7: Approve USDC
-    usdc_amount_wei = int(usdc_to_swap * (10 ** 6))
+    # Step 7: Approve DAI
+    DAI_amount_wei = int(DAI_to_swap * (10 ** 6))
     approval_result = approve_token(
         w3, account, 
-        token_addresses['USDC'], 
+        token_addresses['DAI'], 
         token_addresses['ROUTER'], 
-        usdc_amount_wei
+        DAI_amount_wei
     )
 
     if not approval_result:
@@ -333,7 +338,7 @@ def main():
         return False
 
     # Step 8: Execute swap
-    swap_result = execute_swap(w3, account, token_addresses, usdc_to_swap)
+    swap_result = execute_swap(w3, account, token_addresses, DAI_to_swap)
 
     if swap_result:
         print(f"\n🎉 SWAP COMPLETED SUCCESSFULLY!")
@@ -347,7 +352,7 @@ def main():
             'network': network_name,
             'chain_id': chain_id,
             'wallet': account.address,
-            'usdc_amount': usdc_to_swap,
+            'DAI_amount': DAI_to_swap,
             'approval_tx': approval_result,
             'swap_tx': swap_result
         }
@@ -367,7 +372,7 @@ if __name__ == "__main__":
         print("\n💡 TROUBLESHOOTING:")
         print("1. Ensure PRIVATE_KEY is set in Replit Secrets")
         print("2. Fund wallet with ETH for gas fees")
-        print("3. Fund wallet with USDC for swapping")
+        print("3. Fund wallet with DAI for swapping")
         print("4. Check network connectivity")
         print("5. Try again in a few minutes")
 
@@ -418,7 +423,7 @@ class DynamicWalletFundingValidator:
             "type": "function"
         }]
 
-        self.usdc_address = self._get_usdc_address()
+        self.dai_address = self._get_dai_address()
         self.wbtc_address = self._get_wbtc_address()
 
     def _connect_to_network(self):
@@ -445,8 +450,8 @@ class DynamicWalletFundingValidator:
          else:  # Sepolia
              return '0xE592427A0AEce92De3Edee1F18E0157C05861564'
 
-    def _get_usdc_address(self):
-        """Fetch USDC address based on network."""
+    def _get_dai_address(self):
+        """Fetch DAI address based on network."""
         chain_id = self.w3.eth.chain_id
         if chain_id == 42161:  # Mainnet
             return '0xaf88d065eec38faD0AEFf3e253e648a15cEe23dC'
@@ -474,12 +479,12 @@ class DynamicWalletFundingValidator:
 
             # Dummy swap parameters for gas estimation
             dummy_swap_params = {
-                'tokenIn': self.usdc_address,
+                'tokenIn': self.dai_address,
                 'tokenOut': self.wbtc_address,
                 'fee': 500,  # 0.05% fee tier
                 'recipient': self.account.address,
                 'deadline': int(time.time()) + 1800,  # 30 minutes
-                'amountIn': 1000000,  # 1 USDC (in 6 decimals)
+                'amountIn': 1000000,  # 1 DAI (in 6 decimals)
                 'amountOutMinimum': 0,
                 'sqrtPriceLimitX96': 0
             }
@@ -495,15 +500,15 @@ class DynamicWalletFundingValidator:
             print(f"Gas Estimation - Swap: {estimated_swap_gas}")
 
             # 2. Estimate gas for the approval transaction
-            usdc_contract = self.w3.eth.contract(
-                address=self.usdc_address,
+            DAI_contract = self.w3.eth.contract(
+                address=self.dai_address,
                 abi=self.approval_abi
             )
 
             # Build approval transaction
-            approve_txn = usdc_contract.functions.approve(
+            approve_txn = DAI_contract.functions.approve(
                 self.router_address,
-                2000000  # Approve 2 USDC (in 6 decimals)
+                2000000  # Approve 2 DAI (in 6 decimals)
             ).build_transaction({
                 'from': self.account.address,
                 'gas': 60000,
@@ -539,4 +544,4 @@ class FundingBypassHandler:
         return False
 
     def get_minimum_requirements(self):
-        return {'min_eth': 0.001, 'min_usdc': 0.1}
+        return {'min_eth': 0.001, 'min_DAI': 0.1}

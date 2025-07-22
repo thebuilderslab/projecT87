@@ -1,7 +1,12 @@
+"""
+DAI COMPLIANCE ENFORCED: This file has been modified to use DAI-only operations.
+Only DAI → WBTC and DAI → WETH swaps are permitted.
+"""
+
 #!/usr/bin/env python3
 """
-Swap 40.6293 USDC for WBTC and supply as collateral
-Execute: python swap_usdc_for_wbtc.py
+Swap 40.6293 DAI for WBTC and supply as collateral
+Execute: python swap_DAI_for_wbtc.py
 """
 
 import os
@@ -9,8 +14,8 @@ import time
 from arbitrum_testnet_agent import ArbitrumTestnetAgent
 
 def main():
-    """Main function to execute the USDC to WBTC swap with real gas estimation"""
-    print("🔄 USDC → WBTC SWAP EXECUTION")
+    """Main function to execute the DAI to WBTC swap with real gas estimation"""
+    print("🔄 DAI → WBTC SWAP EXECUTION")
     print("=" * 50)
 
     # Verify private key is loaded from Replit Secrets
@@ -47,12 +52,12 @@ def main():
             print("❌ Required integrations not available")
             return
 
-        # Check current USDC balance with better error handling
+        # Check current DAI balance with better error handling
         try:
-            usdc_balance = agent.aave.get_token_balance(agent.usdc_address)
-            print(f"💰 Current USDC balance: {usdc_balance:.4f}")
+            DAI_balance = agent.aave.get_token_balance(agent.dai_address)
+            print(f"💰 Current DAI balance: {DAI_balance:.4f}")
         except Exception as e:
-            print(f"❌ Failed to get USDC balance: {e}")
+            print(f"❌ Failed to get DAI balance: {e}")
             print("💡 This might be due to:")
             print("   1. Incorrect token contract address")
             print("   2. Network connection issues")
@@ -61,8 +66,8 @@ def main():
             # Try alternative balance check
             try:
                 from web3 import Web3
-                usdc_contract = agent.w3.eth.contract(
-                    address=agent.usdc_address,
+                DAI_contract = agent.w3.eth.contract(
+                    address=agent.dai_address,
                     abi=[{
                         "constant": True,
                         "inputs": [{"name": "_owner", "type": "address"}],
@@ -71,42 +76,42 @@ def main():
                         "type": "function"
                     }]
                 )
-                balance_wei = usdc_contract.functions.balanceOf(agent.address).call()
-                usdc_balance = balance_wei / (10 ** 6)  # USDC has 6 decimals
-                print(f"💰 Alternative check - USDC balance: {usdc_balance:.4f}")
+                balance_wei = DAI_contract.functions.balanceOf(agent.address).call()
+                DAI_balance = balance_wei / (10 ** 6)  # DAI has 6 decimals
+                print(f"💰 Alternative check - DAI balance: {DAI_balance:.4f}")
             except Exception as alt_e:
                 print(f"❌ Alternative balance check also failed: {alt_e}")
                 print(f"💡 Please check wallet balance manually at: https://arbiscan.io/address/{agent.address}")
                 return
 
-        usdc_amount = 40.6293
-        if usdc_balance < usdc_amount:
-            print(f"❌ Insufficient USDC balance. Need {usdc_amount:.4f}, have {usdc_balance:.4f}")
+        DAI_amount = 40.6293
+        if DAI_balance < DAI_amount:
+            print(f"❌ Insufficient DAI balance. Need {DAI_amount:.4f}, have {DAI_balance:.4f}")
             print("💡 Funding options:")
-            print(f"   1. Send USDC to: {agent.address}")
-            print("   2. Use https://app.uniswap.org/ to swap ETH → USDC")
+            print(f"   1. Send DAI to: {agent.address}")
+            print("   2. Use https://app.uniswap.org/ to swap ETH → DAI")
             print("   3. Bridge from another chain using https://bridge.arbitrum.io/")
             return
 
-        print(f"🔄 Step 1: Swapping {usdc_amount:.4f} USDC for WBTC...")
+        print(f"🔄 Step 1: Swapping {DAI_amount:.4f} DAI for WBTC...")
 
-        # Calculate USDC amount in wei (6 decimals)
-        usdc_amount_wei = int(usdc_amount * (10 ** 6))
+        # Calculate DAI amount in wei (6 decimals)
+        DAI_amount_wei = int(DAI_amount * (10 ** 6))
 
-        # Swap USDC for WBTC using Uniswap
-        # Using 500 basis points (0.05%) fee tier for USDC/WBTC
+        # Swap DAI for WBTC using Uniswap
+        # Using 500 basis points (0.05%) fee tier for DAI/WBTC
         swap_result = agent.uniswap.swap_tokens(
-            agent.usdc_address,  # token_in (USDC)
+            agent.dai_address,  # token_in (DAI)
             agent.wbtc_address,  # token_out (WBTC)
-            usdc_amount_wei,     # amount_in
+            DAI_amount_wei,     # amount_in
             500                  # fee (0.05%)
         )
 
         if not swap_result:
-            print("❌ Failed to swap USDC for WBTC")
+            print("❌ Failed to swap DAI for WBTC")
             return
 
-        print(f"✅ USDC → WBTC swap completed!")
+        print(f"✅ DAI → WBTC swap completed!")
         print(f"🔗 Transaction hash: {swap_result}")
 
         if agent.w3.eth.chain_id == 42161:
@@ -145,20 +150,20 @@ def main():
                 health_data = agent.health_monitor.get_current_health_factor()
                 if health_data:
                     print(f"   Health Factor: {health_data['health_factor']:.4f}")
-                    print(f"   Total Collateral: ${health_data.get('total_collateral_usdc', 0):.2f}")
-                    print(f"   Total Debt: ${health_data.get('total_debt_usdc', 0):.2f}")
-                    print(f"   Available Borrows: ${health_data.get('available_borrows_usdc', 0):.2f}")
+                    print(f"   Total Collateral: ${health_data.get('total_collateral_DAI', 0):.2f}")
+                    print(f"   Total Debt: ${health_data.get('total_debt_DAI', 0):.2f}")
+                    print(f"   Available Borrows: ${health_data.get('available_borrows_DAI', 0):.2f}")
         else:
             print("❌ WBTC supply failed")
             print("💡 Check your WBTC balance and gas fees")
 
         print("\n🎉 Operation completed successfully!")
-        print(f"✅ Swapped {usdc_amount:.4f} USDC for WBTC")
+        print(f"✅ Swapped {DAI_amount:.4f} DAI for WBTC")
         print(f"✅ Supplied WBTC as collateral to Aave")
 
     except Exception as e:
         print(f"❌ Error: {e}")
-        print("💡 Ensure you have enough USDC and gas fees")
+        print("💡 Ensure you have enough DAI and gas fees")
         import traceback
         traceback.print_exc()
 

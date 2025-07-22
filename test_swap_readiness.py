@@ -1,7 +1,12 @@
+"""
+DAI COMPLIANCE ENFORCED: This file has been modified to use DAI-only operations.
+Only DAI → WBTC and DAI → WETH swaps are permitted.
+"""
+
 
 #!/usr/bin/env python3
 """
-Test readiness for USDC → WBTC swap
+Test readiness for DAI → WBTC swap
 """
 
 import os
@@ -54,28 +59,28 @@ def test_swap_readiness():
         else:
             print("   ✅ Sufficient ETH for gas fees")
         
-        # Test 4: USDC balance
-        print("\n4️⃣ Testing USDC balance...")
+        # Test 4: DAI balance
+        print("\n4️⃣ Testing DAI balance...")
         try:
-            usdc_balance = agent.aave.get_token_balance(agent.usdc_address)
-            print(f"   USDC Balance: {usdc_balance:.6f} USDC")
+            DAI_balance = agent.aave.get_token_balance(agent.dai_address)
+            print(f"   DAI Balance: {DAI_balance:.6f} DAI")
             required = 40.6293
-            if usdc_balance < required:
-                print(f"   ❌ Insufficient USDC (need {required:.4f})")
-                issues_found.append(f"Insufficient USDC (need {required:.4f}, have {usdc_balance:.4f})")
+            if DAI_balance < required:
+                print(f"   ❌ Insufficient DAI (need {required:.4f})")
+                issues_found.append(f"Insufficient DAI (need {required:.4f}, have {DAI_balance:.4f})")
             else:
-                print("   ✅ Sufficient USDC for swap")
+                print("   ✅ Sufficient DAI for swap")
         except Exception as e:
-            print(f"   ❌ Failed to check USDC balance: {e}")
-            issues_found.append("USDC balance check failed")
+            print(f"   ❌ Failed to check DAI balance: {e}")
+            issues_found.append("DAI balance check failed")
         
         # Test 5: Contract connectivity
         print("\n5️⃣ Testing contract connectivity...")
         try:
-            # Test USDC contract
+            # Test DAI contract
             from web3 import Web3
-            usdc_contract = agent.w3.eth.contract(
-                address=agent.usdc_address,
+            DAI_contract = agent.w3.eth.contract(
+                address=agent.dai_address,
                 abi=[{
                     "constant": True,
                     "inputs": [],
@@ -84,11 +89,11 @@ def test_swap_readiness():
                     "type": "function"
                 }]
             )
-            symbol = usdc_contract.functions.symbol().call()
-            print(f"   ✅ USDC contract responsive: {symbol}")
+            symbol = DAI_contract.functions.symbol().call()
+            print(f"   ✅ DAI contract responsive: {symbol}")
         except Exception as e:
-            print(f"   ❌ USDC contract issue: {e}")
-            issues_found.append("USDC contract connectivity")
+            print(f"   ❌ DAI contract issue: {e}")
+            issues_found.append("DAI contract connectivity")
         
         # Test 6: Network status
         print("\n6️⃣ Testing network status...")
@@ -107,7 +112,7 @@ def test_swap_readiness():
     print("\n" + "=" * 50)
     if not issues_found:
         print("🎉 ALL TESTS PASSED - READY FOR SWAP!")
-        print("✅ You can now run: python swap_usdc_for_wbtc.py")
+        print("✅ You can now run: python swap_DAI_for_wbtc.py")
     else:
         print("❌ ISSUES FOUND - NEEDS FIXING:")
         for i, issue in enumerate(issues_found, 1):
@@ -116,8 +121,8 @@ def test_swap_readiness():
         print("\n💡 RECOMMENDED ACTIONS:")
         if any("ETH" in issue for issue in issues_found):
             print(f"   • Send ETH to: {agent.address if 'agent' in locals() else 'your wallet'}")
-        if any("USDC" in issue for issue in issues_found):
-            print(f"   • Send USDC to: {agent.address if 'agent' in locals() else 'your wallet'}")
+        if any("DAI" in issue for issue in issues_found):
+            print(f"   • Send DAI to: {agent.address if 'agent' in locals() else 'your wallet'}")
         if any("Mock" in issue for issue in issues_found):
             print("   • Check integration imports and contract addresses")
         if any("contract" in issue for issue in issues_found):

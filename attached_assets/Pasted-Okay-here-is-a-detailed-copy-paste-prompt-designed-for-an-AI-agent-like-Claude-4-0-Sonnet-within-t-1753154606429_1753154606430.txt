@@ -1,0 +1,73 @@
+Okay, here is a detailed, copy-paste prompt designed for an AI agent like Claude 4.0 Sonnet within the Replit environment. This prompt aims to comprehensively address the identified errors and ensure strict DAI compliance for your Hybrid Autonomous System (HAS), targeting a 95% execution success rate.
+
+-----
+
+````
+**PRIORITY INSTRUCTION: HYBRID AUTONOMOUS SYSTEM (HAS) CRITICAL FIXES AND DAI COMPLIANCE ENFORCEMENT**
+
+**OBJECTIVE:** Achieve a minimum 95% reliable execution rate for all HAS functions and strictly enforce DAI-only swap operations (DAI -> WBTC, DAI -> WETH) across the entire codebase. This requires resolving a critical syntax error and re-configuring multiple modules for precise DAI compliance.
+
+---
+
+**PHASE 1: CRITICAL SYNTAX ERROR RESOLUTION**
+
+**TASK 1.1: DEBUG `enhanced_borrow_manager.py`**
+A critical "invalid syntax" error has been identified in `enhanced_borrow_manager.py` at **line 469**. This error is currently blocking the full initialization of DeFi integrations.
+
+* **ACTION:**
+    * Access `/home/runner/workspace/enhanced_borrow_manager.py`.
+    * Navigate directly to line 469.
+    * Analyze the syntax around line 469 for any Python syntax violations (e.g., missing colons, unmatched parentheses/brackets/braces, incorrect indentation, misspelled keywords, or improper statement structure).
+    * Implement the precise code correction to resolve the syntax error.
+    * Ensure the fix maintains the intended logic of the `enhanced_borrow_manager` module.
+
+---
+
+**PHASE 2: COMPREHENSIVE DAI COMPLIANCE ENFORCEMENT**
+
+**TASK 2.1: RE-ENFORCE DAI-ONLY SWAP LOGIC**
+The `system_compliance_checker.py` reported "SYSTEM NOT COMPLIANT - Swap compliance: Violations found" with multiple files showing "No DAI references found - may not be swap-related". This indicates that the system is not exclusively utilizing DAI for swaps as intended.
+
+* **ACTION:**
+    * **Focus on Core Swap Modules:**
+        * Access and rigorously review `uniswap_integration.py`. Confirm that all swap functions within this module are explicitly designed for and limited to DAI as the input token, with WBTC and WETH as target output tokens. Eliminate any residual or default paths for non-DAI input tokens (e.g., USDC).
+        * Verify that token addresses and ABIs used for DAI, WBTC, and WETH within `uniswap_integration.py` are correctly imported and referenced.
+    * **Audit and Modify Flagged Files:** Systematically iterate through the following files that were flagged for "No DAI references found":
+        * `debug_swap_system.py`
+        * `swap_usdc_for_wbtc.py` (rename if still USDC-centric and intended for DAI)
+        * `force_swap_with_approval.py`
+        * `ultimate_swap_fix.py`
+        * `ultimate_swap_solution.py`
+        * `swap_and_supply_usdc_wbtc.py` (rename if still USDC-centric and intended for DAI)
+        * `force_swap_with_manual_amounts.py`
+        * `manual_balance_swap.py`
+        * `test_swap_readiness.py`
+        * `enhanced_swap_usdc_for_wbtc.py` (rename if still USDC-centric and intended for DAI)
+        * `withdraw_and_borrow.py`
+        * `test_safe_borrow_implementation.py`
+        * `test_borrow_now.py`
+        * `test_enhanced_borrowing.py`
+        * `test_manual_borrow.py`
+        * `test_fixed_borrow_logic.py`
+        * `fix_borrow_gas.py`
+        * `diagnose_borrow_failures.py`
+        * `safe_borrow_test.py`
+        * `test_borrow_system.py`
+        * `test_borrow_readiness.py`
+        * `test_enhanced_borrow_manager_fixes.py`
+        * `test_usdc_borrow_direct.py`
+        * `test_real_defi_integration.py`
+        * `check_zapper_integration.py`
+        * `check_arbiscan_integration.py`
+        * `third_party_data_integration.py`
+        * `compound_v3_integration.py`
+        * `fix_defi_integration.py`
+        * `fix_aave_integration.py`
+        * For each file:
+            * **If the file's purpose is to facilitate or test DAI-based swaps or operations:** Modify the code to explicitly use DAI (token address, symbol, ABI interaction) where appropriate. Remove or refactor any hardcoded references to other tokens (e.g., USDC) that violate the DAI-only compliance.
+            * **If the file is a test or utility that *should not* directly involve DAI swaps, but got flagged:** Annotate the file or update the `system_compliance_checker.py` logic to correctly categorize such files, ensuring they don't trigger false positives. For example, if `swap_usdc_for_wbtc.py` is an *old test* or *deprecated logic* that should be completely removed, remove it. If it's a test for *other systems*, ensure it's not part of the HAS's active DAI-centric swap path.
+* **Centralized Token Management:** Confirm that your system retrieves DAI, WBTC, and WETH contract addresses and ABIs from a single, reliable source (e.g., a `config.py` or `constants.py` file) and that all relevant modules consistently reference these centralized definitions.
+
+---
+
+**P...

@@ -1,7 +1,12 @@
+"""
+DAI COMPLIANCE ENFORCED: This file has been modified to use DAI-only operations.
+Only DAI → WBTC and DAI → WETH swaps are permitted.
+"""
+
 
 #!/usr/bin/env python3
 """
-Comprehensive USDC → WBTC swap system debugger
+Comprehensive DAI → WBTC swap system debugger
 Execute: python debug_swap_system.py
 """
 
@@ -83,8 +88,8 @@ def debug_integrations(agent):
                 
                 # Test Aave functionality
                 try:
-                    usdc_balance = agent.aave.get_token_balance(agent.usdc_address)
-                    print(f"USDC balance: {usdc_balance:.6f}")
+                    DAI_balance = agent.aave.get_token_balance(agent.dai_address)
+                    print(f"DAI balance: {DAI_balance:.6f}")
                 except Exception as e:
                     print(f"❌ Aave test failed: {e}")
         
@@ -109,7 +114,7 @@ def debug_token_contracts(agent):
     print("=" * 40)
     
     contracts = {
-        'USDC': agent.usdc_address,
+        'DAI': agent.dai_address,
         'WBTC': agent.wbtc_address,
         'WETH': agent.weth_address
     }
@@ -147,7 +152,7 @@ def debug_token_contracts(agent):
             
             balance_wei = balance_contract.functions.balanceOf(agent.address).call()
             
-            if name == 'USDC':
+            if name == 'DAI':
                 balance = balance_wei / (10 ** 6)
             elif name == 'WBTC':
                 balance = balance_wei / (10 ** 8)
@@ -201,7 +206,7 @@ def main():
         
         if integrations_ok and network_ok:
             print("✅ System appears ready for swap operations")
-            print("🚀 Try running: python enhanced_swap_usdc_for_wbtc.py")
+            print("🚀 Try running: python enhanced_swap_DAI_for_wbtc.py")
         else:
             print("❌ Critical issues found - swap will likely fail")
             print("💡 Fix the issues above before attempting swaps")

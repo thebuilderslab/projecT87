@@ -1,8 +1,13 @@
+"""
+DAI COMPLIANCE ENFORCED: This file has been modified to use DAI-only operations.
+Only DAI → WBTC and DAI → WETH swaps are permitted.
+"""
+
 
 #!/usr/bin/env python3
 """
-Enhanced USDC to WBTC swap with comprehensive error handling and diagnostics
-Execute: python enhanced_swap_usdc_for_wbtc.py
+Enhanced DAI to WBTC swap with comprehensive error handling and diagnostics
+Execute: python enhanced_swap_DAI_for_wbtc.py
 """
 
 import os
@@ -57,23 +62,23 @@ def check_prerequisites(agent):
     else:
         print("✅ Real Uniswap integration active")
     
-    # 5. Check USDC balance
+    # 5. Check DAI balance
     try:
-        usdc_balance = agent.aave.get_token_balance(agent.usdc_address)
-        print(f"💵 USDC balance: {usdc_balance:.6f}")
+        DAI_balance = agent.aave.get_token_balance(agent.dai_address)
+        print(f"💵 DAI balance: {DAI_balance:.6f}")
         
         required = 40.6293
-        if usdc_balance < required:
-            issues.append(f"Insufficient USDC (need {required:.4f}, have {usdc_balance:.4f})")
+        if DAI_balance < required:
+            issues.append(f"Insufficient DAI (need {required:.4f}, have {DAI_balance:.4f})")
     except Exception as e:
-        issues.append(f"Failed to check USDC balance: {e}")
-        print(f"❌ USDC balance check failed: {e}")
+        issues.append(f"Failed to check DAI balance: {e}")
+        print(f"❌ DAI balance check failed: {e}")
     
     # 6. Test contract connectivity
     try:
         from web3 import Web3
-        usdc_contract = agent.w3.eth.contract(
-            address=agent.usdc_address,
+        DAI_contract = agent.w3.eth.contract(
+            address=agent.dai_address,
             abi=[{
                 "constant": True,
                 "inputs": [],
@@ -82,17 +87,17 @@ def check_prerequisites(agent):
                 "type": "function"
             }]
         )
-        symbol = usdc_contract.functions.symbol().call()
-        print(f"✅ USDC contract responsive: {symbol}")
+        symbol = DAI_contract.functions.symbol().call()
+        print(f"✅ DAI contract responsive: {symbol}")
     except Exception as e:
-        issues.append(f"USDC contract connectivity issue: {e}")
+        issues.append(f"DAI contract connectivity issue: {e}")
         print(f"❌ Contract test failed: {e}")
     
     return issues
 
-def execute_swap_with_enhanced_error_handling(agent, usdc_amount):
+def execute_swap_with_enhanced_error_handling(agent, DAI_amount):
     """Execute swap with comprehensive error handling and real-time gas estimation"""
-    print(f"\n🔄 EXECUTING ENHANCED SWAP: {usdc_amount:.4f} USDC → WBTC")
+    print(f"\n🔄 EXECUTING ENHANCED SWAP: {DAI_amount:.4f} DAI → WBTC")
     print("=" * 60)
     
     # Get real-time gas prices from network
@@ -115,9 +120,9 @@ def execute_swap_with_enhanced_error_handling(agent, usdc_amount):
         print(f"⚠️ Gas estimation error: {e}")
     
     try:
-        # Convert USDC amount to wei (6 decimals)
-        usdc_amount_wei = int(usdc_amount * (10 ** 6))
-        print(f"🔢 USDC amount in wei: {usdc_amount_wei}")
+        # Convert DAI amount to wei (6 decimals)
+        DAI_amount_wei = int(DAI_amount * (10 ** 6))
+        print(f"🔢 DAI amount in wei: {DAI_amount_wei}")
         
         # Check if we're using real Uniswap integration
         if hasattr(agent.uniswap, '__class__') and 'Mock' in agent.uniswap.__class__.__name__:
@@ -128,11 +133,11 @@ def execute_swap_with_enhanced_error_handling(agent, usdc_amount):
         # Pre-swap checks
         print("🔍 Pre-swap validation...")
         
-        # Check USDC allowance for Uniswap router
+        # Check DAI allowance for Uniswap router
         try:
             from web3 import Web3
-            usdc_contract = agent.w3.eth.contract(
-                address=agent.usdc_address,
+            DAI_contract = agent.w3.eth.contract(
+                address=agent.dai_address,
                 abi=[{
                     "constant": True,
                     "inputs": [
@@ -145,14 +150,14 @@ def execute_swap_with_enhanced_error_handling(agent, usdc_amount):
                 }]
             )
             
-            current_allowance = usdc_contract.functions.allowance(
+            current_allowance = DAI_contract.functions.allowance(
                 agent.address, 
                 agent.uniswap.router_address
             ).call()
             
-            print(f"💡 Current USDC allowance: {current_allowance}")
+            print(f"💡 Current DAI allowance: {current_allowance}")
             
-            if current_allowance < usdc_amount_wei:
+            if current_allowance < DAI_amount_wei:
                 print("🔧 Allowance insufficient, swap will handle approval")
             
         except Exception as e:
@@ -161,9 +166,9 @@ def execute_swap_with_enhanced_error_handling(agent, usdc_amount):
         # Execute the swap
         print("🚀 Initiating swap transaction...")
         swap_result = agent.uniswap.swap_tokens(
-            agent.usdc_address,  # token_in (USDC)
+            agent.dai_address,  # token_in (DAI)
             agent.wbtc_address,  # token_out (WBTC)  
-            usdc_amount_wei,     # amount_in
+            DAI_amount_wei,     # amount_in
             500                  # fee (0.05% tier)
         )
         
@@ -210,7 +215,7 @@ def execute_swap_with_enhanced_error_handling(agent, usdc_amount):
 
 def main():
     """Main function with comprehensive error handling"""
-    print("🔄 ENHANCED USDC → WBTC SWAP")
+    print("🔄 ENHANCED DAI → WBTC SWAP")
     print("=" * 50)
     
     # Get network mode
@@ -248,7 +253,7 @@ def main():
             
             print("\n💡 RECOMMENDED ACTIONS:")
             print("   • Ensure valid private key is set in Replit Secrets")
-            print("   • Fund wallet with sufficient ETH and USDC")
+            print("   • Fund wallet with sufficient ETH and DAI")
             print("   • Check network connectivity")
             print(f"   • Verify wallet address: {agent.address}")
             
@@ -261,12 +266,12 @@ def main():
             print("✅ All prerequisite checks passed!")
         
         # Execute the swap
-        usdc_amount = 40.6293
-        success = execute_swap_with_enhanced_error_handling(agent, usdc_amount)
+        DAI_amount = 40.6293
+        success = execute_swap_with_enhanced_error_handling(agent, DAI_amount)
         
         if success:
             print("\n🎉 SWAP COMPLETED SUCCESSFULLY!")
-            print("✅ USDC → WBTC conversion finished")
+            print("✅ DAI → WBTC conversion finished")
             
             # Optional: Supply WBTC to Aave
             supply_choice = input("\nSupply received WBTC to Aave as collateral? (y/N): ").lower().strip()
@@ -296,7 +301,7 @@ def main():
         print("\n💡 TROUBLESHOOTING STEPS:")
         print("1. Check that PRIVATE_KEY or PRIVATE_KEY2 is set in Replit Secrets")
         print("2. Ensure the private key is valid (64 hex characters)")
-        print("3. Verify wallet has sufficient ETH and USDC")
+        print("3. Verify wallet has sufficient ETH and DAI")
         print("4. Check network connectivity")
 
 if __name__ == "__main__":

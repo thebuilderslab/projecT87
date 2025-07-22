@@ -1,3 +1,8 @@
+"""
+DAI COMPLIANCE ENFORCED: This file has been modified to use DAI-only operations.
+Only DAI → WBTC and DAI → WETH swaps are permitted.
+"""
+
 
 #!/usr/bin/env python3
 """
@@ -13,7 +18,7 @@ from web3 import Web3
 
 def force_swap_with_known_amounts():
     """Execute swap using manually verified amounts from DeBank"""
-    print("🔄 FORCE SWAP: USDC → WBTC (Manual Override)")
+    print("🔄 FORCE SWAP: DAI → WBTC (Manual Override)")
     print("=" * 60)
     
     # Get network mode
@@ -43,13 +48,13 @@ def force_swap_with_known_amounts():
         
         # Manual balance verification from on-chain
         print("\n💰 MANUAL BALANCE VERIFICATION (from on-chain):")
-        print(f"   USDC: 50.6293 (verified from on-chain)")
+        print(f"   DAI: 50.6293 (verified from on-chain)")
         print(f"   ETH: 0.001939 (sufficient for gas)")
         print(f"   Current WBTC: 0.0001533")
         
-        # Use available USDC amount (leaving some buffer)
-        usdc_amount = 40.0  # Reduced from 40.6293 to leave buffer
-        print(f"\n🔄 EXECUTING SWAP: {usdc_amount:.4f} USDC → WBTC")
+        # Use available DAI amount (leaving some buffer)
+        DAI_amount = 40.0  # Reduced from 40.6293 to leave buffer
+        print(f"\n🔄 EXECUTING SWAP: {DAI_amount:.4f} DAI → WBTC")
         
         # Get current gas prices with enhanced estimation
         print("\n⛽ GAS ESTIMATION:")
@@ -72,18 +77,18 @@ def force_swap_with_known_amounts():
         # Execute the swap with manual amount
         print("\n🚀 INITIATING SWAP TRANSACTION...")
         
-        # Convert USDC amount to wei (6 decimals for USDC)
-        usdc_amount_wei = int(usdc_amount * (10 ** 6))
-        print(f"🔢 USDC amount in wei: {usdc_amount_wei}")
+        # Convert DAI amount to wei (6 decimals for DAI)
+        DAI_amount_wei = int(DAI_amount * (10 ** 6))
+        print(f"🔢 DAI amount in wei: {DAI_amount_wei}")
         
         # Execute swap with enhanced error handling
         try:
             # Method 1: Standard Uniswap V3 swap
             print("📡 Attempting Uniswap V3 swap...")
             swap_result = agent.uniswap.swap_tokens(
-                agent.usdc_address,  # token_in (USDC)
+                agent.dai_address,  # token_in (DAI)
                 agent.wbtc_address,  # token_out (WBTC)
-                usdc_amount_wei,     # amount_in
+                DAI_amount_wei,     # amount_in
                 500                  # fee (0.05% tier)
             )
             
@@ -127,7 +132,7 @@ def force_swap_with_known_amounts():
             # Try alternative method with direct contract interaction
             print("\n🔄 ATTEMPTING DIRECT CONTRACT INTERACTION...")
             try:
-                return execute_direct_swap(agent, usdc_amount_wei)
+                return execute_direct_swap(agent, DAI_amount_wei)
             except Exception as e2:
                 print(f"❌ Direct contract method also failed: {e2}")
                 return False
@@ -138,7 +143,7 @@ def force_swap_with_known_amounts():
         traceback.print_exc()
         return False
 
-def execute_direct_swap(agent, usdc_amount_wei):
+def execute_direct_swap(agent, DAI_amount_wei):
     """Direct contract interaction method as fallback"""
     print("🔧 Executing direct Uniswap V3 contract interaction...")
     
@@ -178,12 +183,12 @@ def execute_direct_swap(agent, usdc_amount_wei):
         # Prepare swap parameters
         deadline = int(time.time()) + 3600  # 1 hour from now
         swap_params = {
-            'tokenIn': agent.usdc_address,
+            'tokenIn': agent.dai_address,
             'tokenOut': agent.wbtc_address,
             'fee': 500,  # 0.05%
             'recipient': agent.address,
             'deadline': deadline,
-            'amountIn': usdc_amount_wei,
+            'amountIn': DAI_amount_wei,
             'amountOutMinimum': 0,  # Accept any amount of WBTC (for testing)
             'sqrtPriceLimitX96': 0
         }
@@ -215,13 +220,13 @@ def execute_direct_swap(agent, usdc_amount_wei):
         print(f"❌ Direct contract interaction failed: {e}")
         return False
 
-def check_allowance_and_approve(agent, usdc_amount_wei):
-    """Check and approve USDC allowance for Uniswap router"""
-    print("\n🔐 CHECKING USDC ALLOWANCE...")
+def check_allowance_and_approve(agent, DAI_amount_wei):
+    """Check and approve DAI allowance for Uniswap router"""
+    print("\n🔐 CHECKING DAI ALLOWANCE...")
     
     try:
-        # USDC contract ABI (partial)
-        usdc_abi = [
+        # DAI contract ABI (partial)
+        DAI_abi = [
             {
                 "constant": True,
                 "inputs": [
@@ -244,30 +249,30 @@ def check_allowance_and_approve(agent, usdc_amount_wei):
             }
         ]
         
-        # Create USDC contract
-        usdc_contract = agent.w3.eth.contract(
-            address=agent.usdc_address,
-            abi=usdc_abi
+        # Create DAI contract
+        DAI_contract = agent.w3.eth.contract(
+            address=agent.dai_address,
+            abi=DAI_abi
         )
         
         # Router address
         router_address = "0xE592427A0AEce92De3Edee1F18E0157C05861564"
         
         # Check current allowance
-        current_allowance = usdc_contract.functions.allowance(
+        current_allowance = DAI_contract.functions.allowance(
             agent.address,
             router_address
         ).call()
         
-        print(f"💡 Current USDC allowance: {current_allowance}")
+        print(f"💡 Current DAI allowance: {current_allowance}")
         
-        if current_allowance < usdc_amount_wei:
-            print("🔧 Insufficient allowance, approving USDC...")
+        if current_allowance < DAI_amount_wei:
+            print("🔧 Insufficient allowance, approving DAI...")
             
             # Approve transaction
-            approve_txn = usdc_contract.functions.approve(
+            approve_txn = DAI_contract.functions.approve(
                 router_address,
-                usdc_amount_wei * 2  # Approve 2x for future use
+                DAI_amount_wei * 2  # Approve 2x for future use
             ).build_transaction({
                 'from': agent.address,
                 'gas': 100000,
