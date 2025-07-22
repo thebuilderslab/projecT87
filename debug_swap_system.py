@@ -170,6 +170,24 @@ def main():
     print("🔧 SWAP SYSTEM COMPREHENSIVE DEBUGGER")
     print("=" * 50)
     
+    # Search for July 21st diagnostic files
+    print("🔍 Searching for July 21st diagnostic files...")
+    import glob
+    july_21_files = glob.glob("*20250721*") + glob.glob("**/*20250721*", recursive=True)
+    if july_21_files:
+        print(f"📁 Found July 21st files: {july_21_files}")
+        for file in july_21_files[:5]:  # Show first 5
+            try:
+                with open(file, 'r') as f:
+                    content = f.read()[:500]  # First 500 chars
+                    print(f"📄 {file}: {content}...")
+            except:
+                pass
+    else:
+        print("❌ No July 21st diagnostic files found")
+    
+    print("=" * 50)
+    
     # Step 1: Debug private key
     pk_ok = debug_private_key()
     if not pk_ok:

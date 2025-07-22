@@ -14072,3 +14072,8 @@
 {"run_id": 1, "iteration": 6, "performance_metric": 0.6000000000000001, "timestamp": 1753157175.456796, "metadata": {}}
 {"run_id": 1, "iteration": 7, "performance_metric": 0.6000000000000001, "timestamp": 1753157220.7290497, "metadata": {}}
 {"run_id": 1, "iteration": 8, "performance_metric": 0.6000000000000001, "timestamp": 1753157266.0136948, "metadata": {}}
+{"run_id": 1, "iteration": 1, "performance_metric": 0.6000000000000001, "timestamp": 1753157540.8574202, "metadata": {}}
+{"run_id": 1, "iteration": 2, "performance_metric": 0.6000000000000001, "timestamp": 1753157616.775934, "metadata": {}}
+{"run_id": 1, "iteration": 3, "performance_metric": 0.6000000000000001, "timestamp": 1753157662.0437772, "metadata": {}}
+{"run_id": 1, "iteration": 4, "performance_metric": 0.6000000000000001, "timestamp": 1753157707.3103595, "metadata": {}}
+{"run_id": 1, "iteration": 5, "performance_metric": 0.6000000000000001, "timestamp": 1753157752.592082, "metadata": {}}
