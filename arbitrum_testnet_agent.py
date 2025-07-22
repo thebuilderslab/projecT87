@@ -1360,7 +1360,7 @@ class ArbitrumTestnetAgent:
                 # If we have minimal DAI, supply directly
                 allocation['direct_supply'] = total_dai
 
-: {allocation['wbtc_swap']:.2f}")
+print(f"   WBTC swap: ${allocation['wbtc_swap']:.2f}")
             print(f"   WETH swap: {allocation['weth_swap']:.2f}")
             print(f"   Direct supply: {allocation['direct_supply']:.2f}")
 
