@@ -18,10 +18,10 @@ class PositionCreator:
         self.account = Account.from_key(private_key)
         self.address = self.w3.to_checksum_address(self.account.address)
 
-        # Arbitrum mainnet addresses
+        # Arbitrum mainnet addresses - DAI COMPLIANCE ENFORCED
         self.aave_pool = "0x794a61358D6845594F94dc1DB02A252b5b4814aD"
         self.weth_address = "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1"
-        self.usdc_address = "0xaf88d065e77c8cC2239327C5EDb3A432268e5831"
+        self.dai_address = "0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1"
 
         print(f"🤖 Position Creator initialized")
         print(f"Wallet: {self.address}")
@@ -237,8 +237,8 @@ class PositionCreator:
             print(f"❌ Supply ETH error: {e}")
             return False
 
-    def borrow_usdc(self, amount_usdc):
-        """Borrow USDC from Aave with enhanced error handling"""
+    def borrow_dai(self, amount_dai):
+        """Borrow DAI from Aave with enhanced error handling - DAI COMPLIANCE ENFORCED"""
         try:
             # Check current position first
             current_position = self.get_aave_position()
@@ -249,8 +249,8 @@ class PositionCreator:
             available_borrows = current_position['available_borrows']
             print(f"💰 Available to borrow: ${available_borrows:.2f}")
             
-            if amount_usdc > available_borrows:
-                print(f"❌ Requested borrow ${amount_usdc:.2f} exceeds available ${available_borrows:.2f}")
+            if amount_dai > available_borrows:
+                print(f"❌ Requested borrow ${amount_dai:.2f} exceeds available ${available_borrows:.2f}")
                 return False
             
             pool_abi = [
@@ -271,16 +271,16 @@ class PositionCreator:
 
             pool_contract = self.w3.eth.contract(address=self.aave_pool, abi=pool_abi)
 
-            # USDC has 6 decimals
-            amount_wei = int(amount_usdc * (10 ** 6))
+            # DAI has 18 decimals
+            amount_wei = int(amount_dai * (10 ** 18))
 
-            print(f"🔄 Borrowing {amount_usdc:.2f} USDC (amount_wei: {amount_wei})...")
+            print(f"🔄 Borrowing {amount_dai:.2f} DAI (amount_wei: {amount_wei})...")
             nonce = self.w3.eth.get_transaction_count(self.address)
 
             # Estimate gas first
             try:
                 estimated_gas = pool_contract.functions.borrow(
-                    self.usdc_address,
+                    self.dai_address,
                     amount_wei,
                     2,  # Variable interest rate
                     0,  # Referral code
@@ -294,7 +294,7 @@ class PositionCreator:
                 gas_limit = 400000  # Fallback gas limit
             
             borrow_tx = pool_contract.functions.borrow(
-                self.usdc_address,
+                self.dai_address,
                 amount_wei,
                 2,  # Variable interest rate
                 0,  # Referral code
@@ -314,21 +314,21 @@ class PositionCreator:
             receipt = self.w3.eth.wait_for_transaction_receipt(tx_hash, timeout=300)
 
             if receipt.status == 1:
-                print(f"✅ Successfully borrowed {amount_usdc:.2f} USDC")
+                print(f"✅ Successfully borrowed {amount_dai:.2f} DAI")
                 return True
             else:
-                print(f"❌ USDC borrow transaction failed (status: {receipt.status})")
+                print(f"❌ DAI borrow transaction failed (status: {receipt.status})")
                 print(f"🔗 Check transaction: https://arbiscan.io/tx/{tx_hash.hex()}")
                 return False
 
         except Exception as e:
-            print(f"❌ Borrow USDC error: {e}")
+            print(f"❌ Borrow DAI error: {e}")
             if "execution reverted" in str(e):
                 print("💡 This usually means insufficient collateral or health factor too low")
             return False
 
     def create_position_and_maintain_health(self):
-        """Create position with 20 USDC borrow and maintain health factor > 3.5"""
+        """Create position with 20 DAI borrow and maintain health factor > 3.5 - DAI COMPLIANCE ENFORCED"""
         print("🚀 CREATING AAVE POSITION WITH HEALTH FACTOR > 3.5")
         print("=" * 60)
 
@@ -405,7 +405,7 @@ class PositionCreator:
         ltv = 0.8  # Average LTV for WBTC/WETH
         max_safe_borrow = total_collateral_usd * ltv
 
-        borrow_amount = 20.0  # $20 USDC target
+        borrow_amount = 20.0  # $20 DAI target
         estimated_hf = (total_collateral_usd * ltv) / borrow_amount
 
         print(f"📊 Complete Position Analysis:")
@@ -413,7 +413,7 @@ class PositionCreator:
         print(f"   Adding ETH Collateral: {collateral_eth:.6f} ETH (${additional_collateral_usd:.2f})")
         print(f"   Total Collateral: ${total_collateral_usd:.2f}")
         print(f"   Max Safe Borrow (80% LTV): ${max_safe_borrow:.2f}")
-        print(f"   Requested Borrow: ${borrow_amount:.2f} USDC")
+        print(f"   Requested Borrow: ${borrow_amount:.2f} DAI")
         print(f"   Estimated Health Factor: {estimated_hf:.2f}")
 
         if estimated_hf < 3.5:
@@ -428,7 +428,7 @@ class PositionCreator:
                 print(f"\n🔬 MICRO-POSITION OPTION:")
                 print(f"   With current balance, you could create a micro-position:")
                 print(f"   - Collateral: ${total_collateral_usd:.2f}")
-                print(f"   - Safe Borrow: ${safe_borrow:.4f} USDC")
+                print(f"   - Safe Borrow: ${safe_borrow:.4f} DAI")
                 print(f"   - Health Factor: ~3.5")
                 print(f"   - This demonstrates the system without requiring more funds")
                 
@@ -436,17 +436,17 @@ class PositionCreator:
                 import os
                 if os.getenv('AUTO_PROCEED_MICRO', 'false').lower() == 'true':
                     borrow_amount = max(safe_borrow, 0.01)  # Minimum 1 cent
-                    print(f"🤖 Auto-proceeding with micro-position: ${borrow_amount:.4f} USDC")
+                    print(f"🤖 Auto-proceeding with micro-position: ${borrow_amount:.4f} DAI")
                 else:
                     print(f"💡 Set AUTO_PROCEED_MICRO=true in secrets to auto-create micro-positions")
                     # Auto-enable for current session with existing collateral
                     if existing_collateral_usd > 50:  # Lower threshold
                         borrow_amount = max(safe_borrow, 0.01)
-                        print(f"🤖 Auto-enabling micro-position due to existing collateral: ${borrow_amount:.4f} USDC")
+                        print(f"🤖 Auto-enabling micro-position due to existing collateral: ${borrow_amount:.4f} DAI")
                         # Set environment variable for this session
                         os.environ['AUTO_PROCEED_MICRO'] = 'true'
 
-        print(f"🎯 Proceeding with ${borrow_amount:.2f} USDC borrow")
+        print(f"🎯 Proceeding with ${borrow_amount:.2f} DAI borrow")
 
         # Step 1: Supply ETH as collateral (skip if existing collateral is sufficient)
         if existing_collateral_usd < 50:  # Only supply more ETH if we need more collateral
@@ -474,7 +474,7 @@ class PositionCreator:
             print(f"🛡️ Safe Borrow Amount: ${safe_borrow_amount:.2f}")
             
             if safe_borrow_amount >= 1.0:  # Only proceed if we can borrow at least $1
-                if not self.borrow_usdc(safe_borrow_amount):
+                if not self.borrow_dai(safe_borrow_amount):
                     print(f"❌ Borrow failed even with safe amount ${safe_borrow_amount:.2f}")
                     return False
             else:

@@ -50,11 +50,11 @@ def test_rpc_endpoints():
     return working_rpcs
 
 def test_token_balance_retrieval(agent):
-    """Test token balance retrieval with different methods"""
+    """Test token balance retrieval with different methods - DAI COMPLIANCE ENFORCED"""
     print("\n🔍 TESTING TOKEN BALANCE RETRIEVAL")
     print("=" * 50)
     
-    usdc_address = "0xaf88D065eEc38FAD0aEfF3e253e648a15cEE23DC"
+    dai_address = "0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1"
     
     # Method 1: Direct Web3 call
     try:
@@ -76,16 +76,16 @@ def test_token_balance_retrieval(agent):
             }
         ]
         
-        usdc_contract = agent.w3.eth.contract(
-            address=Web3.to_checksum_address(usdc_address),
+        dai_contract = agent.w3.eth.contract(
+            address=Web3.to_checksum_address(dai_address),
             abi=erc20_abi
         )
         
-        balance_wei = usdc_contract.functions.balanceOf(agent.address).call()
-        decimals = usdc_contract.functions.decimals().call()
+        balance_wei = dai_contract.functions.balanceOf(agent.address).call()
+        decimals = dai_contract.functions.decimals().call()
         balance = balance_wei / (10 ** decimals)
         
-        print(f"✅ Direct call successful: {balance:.6f} USDC")
+        print(f"✅ Direct call successful: {balance:.6f} DAI")
         return True
         
     except Exception as e:
@@ -100,14 +100,14 @@ def test_token_balance_retrieval(agent):
             data = function_sig + padded_address
             
             result = agent.w3.eth.call({
-                'to': usdc_address,
+                'to': dai_address,
                 'data': data
             })
             
             balance_wei = int(result.hex(), 16)
-            balance = balance_wei / (10 ** 6)  # USDC has 6 decimals
+            balance = balance_wei / (10 ** 18)  # DAI has 18 decimals
             
-            print(f"✅ Low-level call successful: {balance:.6f} USDC")
+            print(f"✅ Low-level call successful: {balance:.6f} DAI")
             return True
             
         except Exception as e2:

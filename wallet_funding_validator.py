@@ -18,7 +18,7 @@ class DynamicWalletFundingValidator:
         
         # Safety buffer percentages (much more reasonable)
         self.gas_safety_buffer = 1.5  # 50% buffer for gas price fluctuation
-        self.min_usdc_for_meaningful_swap = 1.0  # Minimum for any swap
+        self.min_dai_for_meaningful_swap = 1.0  # Minimum for any swap - DAI COMPLIANCE ENFORCED
         
     def calculate_real_gas_requirements(self):
         """Calculate actual gas requirements based on current network conditions"""
@@ -107,36 +107,36 @@ class DynamicWalletFundingValidator:
                 print(f"   Available: {eth_balance:.8f} ETH")
                 print(f"   Shortfall: {shortfall:.8f} ETH (${shortfall * 2500:.4f})")
             
-            # Check USDC balance
+            # Check DAI balance - DAI COMPLIANCE ENFORCED
             try:
                 if hasattr(agent, 'aave') and agent.aave:
-                    usdc_balance = agent.aave.get_token_balance(agent.usdc_address)
-                    funding_status['usdc_balance'] = usdc_balance
+                    dai_balance = agent.aave.get_token_balance(agent.dai_address)
+                    funding_status['dai_balance'] = dai_balance
                     
-                    print(f"\n💵 Current USDC Balance: {usdc_balance:.6f} USDC")
+                    print(f"\n💵 Current DAI Balance: {dai_balance:.6f} DAI")
                     
-                    if usdc_balance >= self.min_usdc_for_meaningful_swap:
-                        funding_status['usdc_sufficient'] = True
-                        print(f"✅ USDC sufficient for operations")
-                        print(f"   Available: {usdc_balance:.6f} USDC")
-                        print(f"   Minimum: {self.min_usdc_for_meaningful_swap} USDC")
+                    if dai_balance >= self.min_dai_for_meaningful_swap:
+                        funding_status['dai_sufficient'] = True
+                        print(f"✅ DAI sufficient for operations")
+                        print(f"   Available: {dai_balance:.6f} DAI")
+                        print(f"   Minimum: {self.min_dai_for_meaningful_swap} DAI")
                     else:
-                        funding_status['usdc_sufficient'] = False
-                        shortfall = self.min_usdc_for_meaningful_swap - usdc_balance
-                        funding_status['issues'].append(f"USDC shortfall: need {shortfall:.6f} more USDC")
-                        print(f"❌ Insufficient USDC for meaningful operations")
-                        print(f"   Available: {usdc_balance:.6f} USDC")
-                        print(f"   Minimum: {self.min_usdc_for_meaningful_swap} USDC")
+                        funding_status['dai_sufficient'] = False
+                        shortfall = self.min_dai_for_meaningful_swap - dai_balance
+                        funding_status['issues'].append(f"DAI shortfall: need {shortfall:.6f} more DAI")
+                        print(f"❌ Insufficient DAI for meaningful operations")
+                        print(f"   Available: {dai_balance:.6f} DAI")
+                        print(f"   Minimum: {self.min_dai_for_meaningful_swap} DAI")
                 else:
-                    funding_status['issues'].append("Cannot check USDC balance - Aave integration not available")
-                    print("⚠️ Cannot check USDC balance - Aave integration not available")
+                    funding_status['issues'].append("Cannot check DAI balance - Aave integration not available")
+                    print("⚠️ Cannot check DAI balance - Aave integration not available")
             
             except Exception as e:
-                funding_status['issues'].append(f"USDC balance check failed: {str(e)}")
-                print(f"❌ USDC balance check failed: {e}")
+                funding_status['issues'].append(f"DAI balance check failed: {str(e)}")
+                print(f"❌ DAI balance check failed: {e}")
             
-            # Overall readiness
-            funding_status['ready_for_operations'] = funding_status['eth_sufficient'] and funding_status['usdc_sufficient']
+            # Overall readiness - DAI COMPLIANCE ENFORCED
+            funding_status['ready_for_operations'] = funding_status['eth_sufficient'] and funding_status.get('dai_sufficient', False)
             
             if funding_status['ready_for_operations']:
                 print(f"\n🎉 WALLET READY FOR DEFI OPERATIONS!")
