@@ -1,6 +1,4 @@
 # Applying DAI compliance by replacing USDC references and updating token validation.
-```
-```python
 import os
 import json
 import math
