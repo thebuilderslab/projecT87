@@ -7,10 +7,11 @@ Only DAI → WBTC and DAI → WETH swaps are permitted.
 """
 
 import os
+import time
 from web3 import Web3
 from eth_account import Account
 
-class UniswapArbitrumIntegration:
+class UniswapIntegration:
     def __init__(self, w3, account):
         self.w3 = w3
         self.account = account
@@ -375,28 +376,43 @@ class UniswapArbitrumIntegration:
 
                 print(f"✅ Pre-validation passed: balance={current_balance}, allowance={current_allowance}")
 
-                # Now try gas estimation with retries
+                # Enhanced gas estimation with better error handling
                 max_retries = 3
+                estimated_gas = None
+                
                 for attempt in range(max_retries):
                     try:
-                        estimated_gas = self.w3.eth.estimate_gas(swap_tx)
+                        # Try gas estimation with reduced gas limit first
+                        test_tx = swap_tx.copy()
+                        test_tx['gas'] = min(gas_limit, 300000)  # Start with lower gas
+                        
+                        estimated_gas = self.w3.eth.estimate_gas(test_tx)
                         print(f"💰 Gas estimation successful on attempt {attempt + 1}: {estimated_gas}")
 
-                        # Update gas limit if estimation is higher
-                        if estimated_gas > gas_limit:
-                            gas_limit = int(estimated_gas * 1.3)  # 30% buffer
-                            print(f"⛽ Increased gas limit to: {gas_limit}")
+                        # Update gas limit with buffer
+                        if estimated_gas > 0:
+                            gas_limit = int(estimated_gas * 1.5)  # 50% buffer for safety
+                            print(f"⛽ Updated gas limit to: {gas_limit}")
                         break
 
                     except Exception as gas_error:
+                        error_msg = str(gas_error).lower()
                         print(f"⚠️ Gas estimation attempt {attempt + 1} failed: {gas_error}")
-                        if attempt == max_retries - 1:
-                            print(f"❌ All gas estimation attempts failed - using default gas limit")
-                            # Don't abort, use the higher default gas limit instead
+                        
+                        # Check for specific error types
+                        if "execution reverted" in error_msg:
+                            print("❌ Transaction would revert - aborting swap")
+                            return None
+                        elif "insufficient funds" in error_msg:
+                            print("❌ Insufficient funds for transaction")
+                            return None
+                        elif attempt == max_retries - 1:
+                            print(f"⚠️ Gas estimation failed, using conservative gas limit: {gas_limit}")
+                            # Increase gas limit as fallback
+                            gas_limit = 600000  # Higher conservative limit
                             break
                         else:
-                            import time
-                            time.sleep(1)  # Wait 1 second before retry
+                            time.sleep(2)  # Wait before retry
 
             except Exception as validation_error:
                 print(f"❌ Pre-validation failed: {validation_error}")
