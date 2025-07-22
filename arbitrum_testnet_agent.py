@@ -672,7 +672,8 @@ class ArbitrumTestnetAgent:
 
             # Initialize Enhanced Borrow Manager
             try:
-                from enhanced_borrow_manager import EnhancedBorrowManager
+                ```text
+from enhanced_borrow_manager import EnhancedBorrowManager
                 self.enhanced_borrow_manager = EnhancedBorrowManager(self)
                 print("🏦 Initialized Enhanced Borrow Manager.")
             except ImportError as e:
@@ -1357,7 +1358,8 @@ class ArbitrumTestnetAgent:
                 allocation['weth_swap'] = 1.0  # $1.0 for WETH
                 allocation['direct_supply'] = total_dai - 2.5  # Rest for direct
             else:
-                # If we have minimal DAI, supply directly
+                # If```text
+ we have minimal DAI, supply directly
                 allocation['direct_supply'] = total_dai
 
             print(f"   WBTC swap: ${allocation['wbtc_swap']:.2f}")
@@ -1407,7 +1409,7 @@ class ArbitrumTestnetAgent:
 
             # Ensure it meets the minimum borrow for releverage
             safe_amount = max(self.min_borrow_releverage, min(base_amount, self.max_borrow_releverage))
-            
+
             # If minimum not met, return 0
             if safe_amount < self.min_borrow_releverage:
                 return 0.0

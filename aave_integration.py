@@ -38,7 +38,7 @@ class AaveArbitrumIntegration:
         # Initialize pool contract
         self._initialize_pool_contract()
         
-        print(f"✅ Aave integration initialized for {network_mode} with DAI-only compliance")
+        print(f"✅ Aave integration initialized for {network_mode} with DAI-only compliance - USDC operations disabled")
 
     def _initialize_pool_contract(self):
         """Initialize Aave pool contract"""
