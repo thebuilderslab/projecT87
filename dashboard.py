@@ -35,10 +35,10 @@ class AgentDashboard:
             eth_balance = self.agent.get_eth_balance()
             
             if hasattr(self.agent, 'aave'):
-                usdc_balance = self.agent.aave.get_token_balance(self.agent.aave.usdc_address)
-                health_data = self.agent.health_monitor.get_account_data_with_usdc()
+                dai_balance = self.agent.aave.get_token_balance(self.agent.aave.dai_address)
+                health_data = self.agent.health_monitor.get_account_data_with_dai()
             else:
-                usdc_balance = 0
+                dai_balance = 0
                 health_data = None
             
             print("\n" + "="*60)
@@ -48,15 +48,15 @@ class AgentDashboard:
             # Wallet Balances
             print(f"💰 **WALLET BALANCES**")
             print(f"   🔷 ETH Balance: {eth_balance:.6f} ETH")
-            print(f"   💵 USDC Balance: {usdc_balance:.2f} USDC")
+            print(f"   💰 DAI Balance: {dai_balance:.2f} DAI")
             
             if health_data:
                 # Aave Protocol Status
                 print(f"\n🏥 **AAVE PROTOCOL STATUS**")
                 print(f"   ❤️ Health Factor: {health_data['health_factor']:.4f}")
-                print(f"   🔒 Total Collateral: {health_data['total_collateral_eth']:.6f} ETH (${health_data.get('total_collateral_usdc', 0):.2f} USDC)")
-                print(f"   💸 Total Debt: {health_data['total_debt_eth']:.6f} ETH (${health_data.get('total_debt_usdc', 0):.2f} USDC)")
-                print(f"   📈 Available Borrow: {health_data['available_borrows_eth']:.6f} ETH (${health_data.get('available_borrows_usdc', 0):.2f} USDC)")
+                print(f"   🔒 Total Collateral: {health_data['total_collateral_eth']:.6f} ETH (${health_data.get('total_collateral_dai', 0):.2f} DAI)")
+                print(f"   💸 Total Debt: {health_data['total_debt_eth']:.6f} ETH (${health_data.get('total_debt_dai', 0):.2f} DAI)")
+                print(f"   📈 Available Borrow: {health_data['available_borrows_eth']:.6f} ETH (${health_data.get('available_borrows_dai', 0):.2f} DAI)")
                 
                 # Borrow Power Used
                 if health_data['total_collateral_eth'] > 0:

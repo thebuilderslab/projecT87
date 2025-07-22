@@ -13,7 +13,7 @@ class SecurityAuditor:
         contracts = {
             'aave_pool': '0x69FA688f1Dc47d4B5d8029D5a35FB7a548310654',
             'weth': '0x980B62Da83eFf3D4576C647993b0c1D7faf17c73',
-            'usdc': '0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d',
+            'dai': '0x5f6bB460B6d0bdA2CCaDdd7A19B5F6E7b5b8E1DB',
             'arb': '0x912CE59144191C1204E64559FE8253a0e49E6548'
         }
         

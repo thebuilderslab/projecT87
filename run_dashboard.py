@@ -26,7 +26,7 @@ def run_dashboard_preview():
         print(f"💰 Current Balance: {agent.get_eth_balance():.6f} ETH")
         
         print(f"\n🎯 TO FUND YOUR WALLET:")
-        print(f"1. Send 10 ETH and 100 USDC to: {agent.address}")
+        print(f"1. Send 10 ETH and 100 DAI to: {agent.address}")
         print(f"2. Use Arbitrum Sepolia bridge: https://bridge.arbitrum.io/?destinationChain=arbitrum-sepolia")
         print(f"3. Get testnet ETH first from: https://sepoliafaucet.com/")
         

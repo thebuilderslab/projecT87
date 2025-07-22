@@ -5,10 +5,10 @@ class ManualControls:
     def __init__(self):
         self.agent = ArbitrumTestnetAgent()
         
-    def fund_wallet(self, usdc_amount=100, eth_amount=10):
+    def fund_wallet(self, dai_amount=100, eth_amount=10):
         """Instructions for funding wallet"""
         print(f"💰 **FUNDING INSTRUCTIONS**")
-        print(f"Send {usdc_amount} USDC and {eth_amount} ETH to:")
+        print(f"Send {dai_amount} DAI and {eth_amount} ETH to:")
         print(f"📍 Wallet Address: {self.agent.address}")
         print(f"🌐 Network: Arbitrum Sepolia")
         print(f"🔗 Bridge: https://bridge.arbitrum.io/?destinationChain=arbitrum-sepolia")
@@ -17,7 +17,7 @@ class ManualControls:
         """Execute specific strategies manually"""
         strategies = {
             "health_check": "Check current health factor and trigger conditions",
-            "supply_collateral": "Supply ETH/USDC as collateral to Aave",
+            "supply_collateral": "Supply ETH/DAI as collateral to Aave",
             "borrow_usdc": "Borrow USDC when health factor > 1.21",
             "swap_to_arb": "Swap USDC to ARB tokens",
             "risk_mitigation": "Swap ARB back to USDC if declining"

@@ -18,21 +18,21 @@ class MultiWalletAgent:
                 'chain_id': 421614,
                 'aave_pool': '0xE7EC1C9e6D33d2897c97Fd3c9e8b842f5c6Efc57',
                 'weth': '0x980B62Da83eFf3D4576C647993b0c1D7faf17c73',
-                'usdc': '0x179522635726710Dd7D2035a81d856de4Aa7836c'
+                'dai': '0x5f6bB460B6d0bdA2CCaDdd7A19B5F6E7b5b8E1DB'
             },
             'arbitrum_mainnet': {
                 'rpc_url': 'https://arb1.arbitrum.io/rpc',
                 'chain_id': 42161,
                 'aave_pool': '0x794a61358D6845594F94dc1DB02A252b5b4814aD',
                 'weth': '0x82aF49447D8a07e3bd95BD0d56f35241523fBab1',
-                'usdc': '0xaf88d065e77c8cC2239327C5EDb3A432268e5831'
+                'dai': '0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1'
             },
             'ethereum_mainnet': {
                 'rpc_url': 'https://eth.llamarpc.com',
                 'chain_id': 1,
                 'aave_pool': '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2',
                 'weth': '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2',
-                'usdc': '0xA0b86a33E6417b0b7c13C7A6B8C14c4f9d8F6e5A'
+                'dai': '0x6B175474E89094C44Da98b954EedeAC495271d0F'
             }
         }
         
@@ -110,7 +110,7 @@ class MultiWalletAgent:
         # Update contract addresses for the network
         integration.pool_address = w3.to_checksum_address(network_config['aave_pool'])
         integration.weth_address = w3.to_checksum_address(network_config['weth'])
-        integration.usdc_address = w3.to_checksum_address(network_config['usdc'])
+        integration.dai_address = w3.to_checksum_address(network_config['dai'])
         
         return integration
     
@@ -163,7 +163,7 @@ class MultiWalletAgent:
         
         # Log recommendations
         if health_summary['borrow_trigger_active']:
-            print(f"💡 RECOMMENDATION: Consider borrowing {health_summary['optimal_usdc_borrow']:.2f} USDC")
+            print(f"💡 RECOMMENDATION: Consider borrowing {health_summary['optimal_dai_borrow']:.2f} DAI")
         
         if health_summary['risk_trigger_active']:
             print(f"⚠️ RISK ALERT: Consider reducing ARB exposure")
@@ -196,8 +196,8 @@ class MultiWalletAgent:
 Execute the following DeFi strategy on the specified wallet:
 
 1. **Monitor Aave Health Factor** continuously
-2. **Dynamic Borrowing**: When health factor increases by 0.02+, borrow USDC to maintain 1.19 health factor
-3. **Risk Management**: If health factor declines AND ARB price drops, recommend swapping ARB to USDC
+2. **Dynamic Borrowing**: When health factor increases by 0.02+, borrow DAI to maintain 1.19 health factor
+3. **Risk Management**: If health factor declines AND ARB price drops, recommend swapping ARB to DAI
 4. **Yield Optimization**: Automatically supply idle collateral for lending yield
 
 **Safety Features:**
