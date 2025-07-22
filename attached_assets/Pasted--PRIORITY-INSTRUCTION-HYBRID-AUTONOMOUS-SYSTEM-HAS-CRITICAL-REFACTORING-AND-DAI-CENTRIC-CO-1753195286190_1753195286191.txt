@@ -1,0 +1,63 @@
+````
+**PRIORITY INSTRUCTION: HYBRID AUTONOMOUS SYSTEM (HAS) CRITICAL REFACTORING AND DAI-CENTRIC COMPLIANCE ENFORCEMENT - PHASE 2 ONLY**
+
+**OBJECTIVE:** Achieve robust execution, full DAI-centric compliance, and a high likelihood of network approval for the Hybrid Autonomous System. Our aim is to consistently enable successful DAI-based operations, similar to past successful leveraged supply strategies (as observed in logs like "dai swap.pdf" showing "NEW DAI-Based Leveraged Supply Strategy Completed Successfully!"). This mandates the **complete elimination of all USDC fetching, usage, and related references** from the system's operational sequence, alongside resolving all known and potential code inconsistencies that currently prevent stable execution.
+
+---
+
+**PHASE 2: COMPREHENSIVE CODEBASE AUDIT FOR COMPLIANCE & CONSISTENCY**
+
+**TASK 2.1: FULL CODEBASE SCAN AND ELIMINATION OF ALL USDC REFERENCES**
+A thorough, granular scan is required to ensure no residual USDC references exist anywhere within the HAS workflow, as per previous `grep` findings and the DAI-only strategy.
+
+* **ACTION:**
+    * Perform a **full-text search across ALL `.py` files** within the `/home/runner/workspace/` directory and its subdirectories (excluding standard library/pandas test files if clearly distinguishable from your project's logic).
+    * **Search for:**
+        * The string "USDC" (case-insensitive).
+        * The USDC contract address: `0xAF88D065e8c38FAD0AEff3E253e648A15ceE23DC` (case-insensitive, including variations without checksum).
+        * Variable names like `usdc_address`, `USDC_TOKEN`, `aUSDC`, `optimal_usdc_borrow`, `total_collateral_usdc`, `total_debt_usdc`, `available_borrows_usdc`, etc.
+    * **For every detected reference, apply precise actions in accordance with the DAI-only system:**
+        * **`./dai_compliance_enforcer.py`:** **CRITICAL:** Remove any lines containing `r'0xAF88D065e8c38FAD0AEff3E253e648A15ceE23DC'` or `(r'0xAF88D065e8c38FAD0AEff3E253e648A15ceE23DC', self.dai_address)`. This file must *only* enforce DAI compliance, not reference excluded tokens.
+        * **`./multi_wallet_agent.py`:** Remove or refactor all lines referencing `optimal_usdc_borrow`, "borrow USDC", "swap ARB to USDC", and `network_config['usdc']`. This module must no longer suggest or perform USDC operations.
+        * **`./run_dashboard.py`, `./dashboard.py`, `./manual_controls.py`:** Update or remove display/UI elements and options related to USDC balances, debt, available borrows, sending ETH/USDC, supplying ETH/USDC, borrowing USDC, swapping USDC to ARB, or swapping ARB to USDC. All UI/control should reflect DAI-only strategy.
+        * **`./mainnet_launcher.py`:** Remove any print statements or checks for "Sufficient USDC/WETH for Aave operations".
+        * **`./create_and_activate.py`:** **CRITICAL:** Remove or refactor all code related to "Creating Aave position with 20 USDC borrow" and "Position Status: Active with 20 USDC borrowed". Initial Aave positions must be established using DAI or other compliant tokens, not USDC.
+        * **`./test_with_current_balance.py`:** Remove or refactor test cases referencing "Borrow USDC", "Max Safe Borrow: $... USDC", "Requested Borrow: $20.00 USDC". Create equivalent tests for DAI operations if needed.
+        * **`./test_agent.py`:** Remove or refactor `mock_uniswap.swap_arb_to_usdc` mock behaviors.
+        * **`./security_audit.py`:** Remove any hardcoded USDC addresses.
+        * **`./test_dashboard_start.py`, `./quick_launch_dashboard.py`:** Remove or refactor references to `total_collateral_usdc`, `total_debt_usdc`, `available_borrows_usdc`.
+        * **`./aave_integration.py`:** Review and update print statements to use DAI instead of USDC for recommendations and strategy descriptions, ensuring full DAI compliance.
+        * **General Refactoring:** For any other `.py` file not explicitly listed but containing USDC references:
+            * **If operational code:** **Remove or refactor** the code block entirely to ensure USDC is not used for any operation (borrow, swap, supply, balance fetch, approval).
+            * **If it's a test file:** **Modify or remove** the test case if it specifically tests USDC operations. If it's a general test, ensure it doesn't implicitly rely on or introduce USDC.
+            * **If it's documentation or comments:** Remove or update to reflect the DAI-only policy.
+
+**TASK 2.2: ENFORCE STRICT DAI-ONLY SWAP CONFORMANCE**
+Previous diagnostics indicated "SYSTEM NOT COMPLIANT - Swap compliance: Violations found" with many files showing "No DAI references found". This must be resolved in conjunction with USDC removal.
+
+* **ACTION:**
+    * **Verify DAI-Only Enforcement:** Re-confirm that `uniswap_integration.py` rigorously enforces DAI → WBTC and DAI → WETH swaps exclusively. Ensure no other swap paths are possible.
+    * **Audit All Swap/Borrow Related Files:** For every `.py` file involved in swap, borrow, or supply operations (including those previously flagged like `debug_swap_system.py`, `force_swap_with_approval.py`, and any `swap_usdc_for_wbtc.py` which should be removed or renamed and converted to DAI):
+        * **Explicitly implement DAI logic:** Ensure these files explicitly reference and interact with DAI (token address, ABI calls, symbol) for all relevant operations.
+        * **Remove non-DAI logic:** Any code blocks that enable or suggest the use of non-DAI tokens (especially USDC) for core operations must be removed or refactored.
+    * **Refine Compliance Checker:** Review `system_compliance_checker.py`. If it's incorrectly flagging general utility or test files that genuinely do not need DAI references, adjust its logic to be more precise about what constitutes a "compliance violation" in the context of DAI-only operations.
+
+---
+
+**VERIFICATION FOR PHASE 2**
+
+* **ACTION:**
+    * Execute the DAI compliance checker:
+        ```bash
+        python system_compliance_checker.py
+        ```
+* **EXPECTED OUTCOME:**
+    * The output MUST confirm "SYSTEM COMPLIANT" for swap operations.
+    * It should report "❌ Violations found: 0" and "✅ Fixes applied: 0" at the end, meaning the checker found no violations and didn't need to apply any *new* fixes (because the agent already made them during Task 2.1 and 2.2).
+    * The final message should be "✅ DAI COMPLIANCE FULLY ENFORCED" and "🎉 DAI COMPLIANCE SUCCESSFULLY ENFORCED".
+    * **Crucially, Replit must explicitly confirm that it actively scanned and modified files** during Task 2.1 and 2.2, detailing which files were changed, not just verified them with the checker.
+
+---
+
+**Replit:** After completing all Phase 2 tasks and verifying the changes with the `system_compliance_checker.py` script as per the expected outcome, please confirm that all Phase 2 requirements have been met and explicitly signal when you are ready to move onto Phase 3.
+````
