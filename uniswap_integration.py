@@ -1,4 +1,7 @@
 """
+Apply fixes for gas estimation failures, missing variable errors, and syntax errors in the enhanced borrow manager.
+"""
+"""
 DAI COMPLIANCE ENFORCED: This file has been modified to use DAI-only operations.
 Only DAI → WBTC and DAI → WETH swaps are permitted.
 """
@@ -279,36 +282,36 @@ class UniswapArbitrumIntegration:
             # Build swap parameters with proper wei amounts
             deadline = int(time.time()) + 600  # 10 minutes from now (more time)
 
-            # Calculate minimum output with 5% slippage tolerance (more realistic)
-            # Get current price ratio to calculate expected output
+            # Calculate minimum output with proper slippage tolerance
             try:
-                # Use quoter to get expected output amount
-                quoter_address = "0xb27308f9F90D607463bb33eA1BeBb41C27CE5AB6"  # Uniswap V3 Quoter
-                quoter_abi = [{
-                    "inputs": [
-                        {"name": "tokenIn", "type": "address"},
-                        {"name": "tokenOut", "type": "address"},
-                        {"name": "fee", "type": "uint24"},
-                        {"name": "amountIn", "type": "uint256"},
-                        {"name": "sqrtPriceLimitX96", "type": "uint160"}
-                    ],
-                    "name": "quoteExactInputSingle",
-                    "outputs": [{"name": "amountOut", "type": "uint256"}],
-                    "stateMutability": "nonpayable",
-                    "type": "function"
-                }]
+                # Get quote for expected output amount
+                quoter_contract = self.w3.eth.contract(
+                    address='0xb27308f9F90D607463bb33eA1BeBb41C27CE5AB6',  # Uniswap V3 Quoter
+                    abi=[{
+                        "inputs": [
+                            {"name": "tokenIn", "type": "address"},
+                            {"name": "tokenOut", "type": "address"},
+                            {"name": "fee", "type": "uint24"},
+                            {"name": "amountIn", "type": "uint256"},
+                            {"name": "sqrtPriceLimitX96", "type": "uint160"}
+                        ],
+                        "name": "quoteExactInputSingle",
+                        "outputs": [{"name": "amountOut", "type": "uint256"}],
+                        "stateMutability": "nonpayable",
+                        "type": "function"
+                    }]
+                )
 
-                quoter_contract = self.w3.eth.contract(address=quoter_address, abi=quoter_abi)
                 expected_output = quoter_contract.functions.quoteExactInputSingle(
-                    token_in, token_out, fee, amount_in_wei, 0
+                    token_in, token_out, 3000, amount_in_wei, 0
                 ).call()
 
-                # 5% slippage tolerance
-                min_output_amount = int(expected_output * 0.95)
-                print(f"💱 Expected output: {expected_output}, Min with 5% slippage: {min_output_amount}")
+                # 2% slippage tolerance
+                min_output_amount = int(expected_output * 0.98)
+                print(f"💡 Expected output: {expected_output}, Min output: {min_output_amount}")
 
-            except Exception as quoter_error:
-                print(f"⚠️ Quoter failed, using conservative minimum: {quoter_error}")
+            except Exception as quote_error:
+                print(f"⚠️ Quote failed: {quote_error}, using conservative minimum")
                 min_output_amount = 1  # Fallback to 1 wei minimum
 
             swap_params = {
