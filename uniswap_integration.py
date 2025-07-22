@@ -279,6 +279,9 @@ class UniswapArbitrumIntegration:
             # Build swap parameters with proper wei amounts
             deadline = int(time.time()) + 600  # 10 minutes from now (more time)
 
+            # Calculate minimum output with 2% slippage tolerance
+            min_output_amount = 1  # Minimum 1 wei output (very conservative)
+            
             swap_params = {
                 'tokenIn': self.w3.to_checksum_address(token_in),
                 'tokenOut': self.w3.to_checksum_address(token_out),
@@ -286,7 +289,7 @@ class UniswapArbitrumIntegration:
                 'recipient': self.w3.to_checksum_address(self.address),
                 'deadline': deadline,
                 'amountIn': amount_in_wei,
-                'amountOutMinimum': 0,  # Accept any amount of output
+                'amountOutMinimum': min_output_amount,  # Minimum output protection
                 'sqrtPriceLimitX96': 0   # No price limit
             }
 
@@ -298,11 +301,11 @@ class UniswapArbitrumIntegration:
             chain_id = self.w3.eth.chain_id
             
             if chain_id == 42161:  # Arbitrum Mainnet
-                swap_gas_price = max(base_gas_price, int(0.01 * 10**9))  # Min 0.01 gwei
-                gas_limit = 400000  # Higher for mainnet complexity
+                swap_gas_price = max(base_gas_price, int(0.1 * 10**9))  # Min 0.1 gwei (increased)
+                gas_limit = 500000  # Increased gas limit for complex swaps
             else:
-                swap_gas_price = int(base_gas_price * 1.3)  # 30% higher for testnet
-                gas_limit = 350000
+                swap_gas_price = int(base_gas_price * 1.5)  # 50% higher for testnet
+                gas_limit = 450000
 
             swap_tx = self.router_contract.functions.exactInputSingle(
                 swap_params
