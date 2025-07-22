@@ -26,7 +26,8 @@ class AaveArbitrumIntegration:
             # Token addresses for Arbitrum Mainnet (verified from CoinGecko and Aave docs)
             self.weth_address = self.w3.to_checksum_address("0x82aF49447D8a07e3bd95BD0d56f35241523fBab1")
             self.wbtc_address = self.w3.to_checksum_address("0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f")
-            self.dai_address = self.w3.to_checksum_address("0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1")
+            # Token addresses - DAI COMPLIANCE ENFORCED
+            self.dai_address = self.w3.to_checksum_address("0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1")  # Primary token for all operations
             # Arbitrum Mainnet token addresses - Use Native USDC for Aave V3
             self.usdc_address = self.w3.to_checksum_address("0xAF88D065e8c38FAD0AEff3E253e648A15ceE23DC")  # Native USDC (Aave V3 supported)
             self.usdc_native_address = self.w3.to_checksum_address("0xAF88D065e8c38FAD0AEff3E253e648A15ceE23DC")  # Native USDC
@@ -267,7 +268,7 @@ class AaveArbitrumIntegration:
             # Enhanced gas settings for approval
             current_gas_price = self.w3.eth.gas_price
             chain_id = self.w3.eth.chain_id
-            
+
             if chain_id == 42161:  # Arbitrum Mainnet
                 gas_price = max(current_gas_price, int(0.02 * 10**9))  # Min 0.02 gwei
                 gas_limit = 80000  # Higher gas limit for mainnet
@@ -345,7 +346,7 @@ class AaveArbitrumIntegration:
         """Borrow tokens from Aave"""
         try:
             print(f"🏦 Aave borrow: ${amount_usd:.2f} from {token_address}")
-            
+
             # Convert USD amount to token amount
             amount_wei = self._convert_usd_to_wei(amount_usd, token_address)
             if amount_wei == 0:
@@ -356,7 +357,7 @@ class AaveArbitrumIntegration:
 
             # Build borrow transaction with enhanced gas settings
             gas_price = max(self.w3.eth.gas_price, int(0.1 * 10**9))  # Minimum 0.1 gwei
-            
+
             borrow_txn = self.pool_contract.functions.borrow(
                 self.w3.to_checksum_address(token_address),
                 amount_wei,

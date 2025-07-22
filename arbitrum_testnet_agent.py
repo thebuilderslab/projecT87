@@ -1,3 +1,6 @@
+Applying DAI compliance by replacing USDC references and updating token validation.
+```
+```python
 import os
 import json
 import math
@@ -335,12 +338,11 @@ class ArbitrumTestnetAgent:
 
         # Contract addresses based on network
         if self.network_mode == 'mainnet':
-            # Arbitrum Mainnet addresses - Use properly checksummed addresses
-            self.usdc_address = "0xAF88D065e8c38FAD0AEff3E253e648A15ceE23DC"  # Native USDC (Aave V3 supported)
+            # Token addresses for Arbitrum Mainnet - DAI COMPLIANCE ENFORCED
+            self.dai_address = "0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1"  # Primary token for all operations
             self.usdc_native_address = "0xAF88D065e8c38FAD0AEff3E253e648A15ceE23DC"  # Native USDC
             self.wbtc_address = "0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f"
             self.weth_address = "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1"
-            self.dai_address = "0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1"
             self.arb_address = "0x912CE59144191C1204E64559FE8253a0e49E6548"
             self.aave_pool_address = "0x794a61358D6845594F94dc1DB02A252b5b4814aD"
 
@@ -349,11 +351,10 @@ class ArbitrumTestnetAgent:
             self.aWETH_address = "0xe50fA9b4c56454E2edF6BFf7c81b50c5F05aBE61"
             self.aUSDC_address = "0x724dc807b04555b71ed48a6896b6F41593b8C637"
 
-            print(f"📋 Mainnet Token addresses verified:")
-            print(f"   USDC: {self.usdc_address}")
-            print(f"   WBTC: {self.wbtc_address}")
-            print(f"   WETH: {self.weth_address}")
-            print(f"   DAI: {self.dai_address}")
+            print(f"📋 Mainnet Token addresses verified (DAI-ONLY COMPLIANCE):")
+            print(f"   DAI: {self.dai_address}")  # Primary token for all operations
+            print(f"   WBTC: {self.wbtc_address}")  # Target token for swaps
+            print(f"   WETH: {self.weth_address}")  # Target token for swaps
             print(f"   Aave Pool: {self.aave_pool_address}")
         else:
             # Testnet mode (Arbitrum Sepolia)
@@ -667,7 +668,8 @@ class ArbitrumTestnetAgent:
             # Initialize Real Aave, Uniswap, and Health Monitor Integrations
             self.aave = AaveArbitrumIntegration(self.w3, self.account)
             self.uniswap = UniswapIntegration(self.w3, self.account)
-            self.health_monitor = HealthMonitor(self.w3,self.account, self.aave)
+            self.health_```text
+monitor = HealthMonitor(self.w3,self.account, self.aave)
             print("✅ Initialized Real Aave, Uniswap, and Health Monitor Integrations.")
 
             # Initialize Gas Calculator
@@ -1263,7 +1265,7 @@ class ArbitrumTestnetAgent:
             # Step 1: Validate and swap DAI for WBTC
             if allocation['wbtc_swap'] > 0:
                 print(f"\n🔄 Step 1: Swapping ${allocation['wbtc_swap']:.2f} DAI for WBTC...")
-                
+
                 # Validate swap before execution
                 if validator.validate_swap_transaction(self.dai_address, self.wbtc_address, allocation['wbtc_swap']):
                     wbtc_swap_result = self.uniswap.swap_tokens(
@@ -1293,7 +1295,7 @@ class ArbitrumTestnetAgent:
             # Step 2: Validate and swap DAI for WETH
             if allocation['weth_swap'] > 0:
                 print(f"\n🔄 Step 2: Swapping ${allocation['weth_swap']:.2f} DAI for WETH...")
-                
+
                 # Validate swap before execution
                 if validator.validate_swap_transaction(self.dai_address, self.weth_address, allocation['weth_swap']):
                     weth_swap_result = self.uniswap.swap_tokens(
@@ -1354,97 +1356,4 @@ class ArbitrumTestnetAgent:
                 # If we have enough DAI, allocate for swaps and supply
                 allocation['wbtc_swap'] = 3.0  # $3 for WBTC
                 allocation['weth_swap'] = 2.0  # $2 for WETH
-                allocation['direct_supply'] = total_dai - 5.0  # Rest for direct supply
-            elif total_dai >= 5.0:
-                # Medium allocation
-                allocation['wbtc_swap'] = 2.0
-                allocation['weth_swap'] = 1.0
-                allocation['direct_supply'] = total_dai - 3.0
-            else:
-                # Small allocation - just supply directly
-                allocation['direct_supply'] = total_dai
-
-            print(f"📋 DAI Allocation:")
-            print(f"   WBTC Swap: ${allocation['wbtc_swap']:.2f}")
-            print(f"   WETH Swap: ${allocation['weth_swap']:.2f}")
-            print(f"   Direct Supply: ${allocation['direct_supply']:.2f}")
-
-            return allocation
-
-        except Exception as e:
-            print(f"❌ Allocation calculation failed: {e}")
-            return {'wbtc_swap': 0, 'weth_swap': 0, 'direct_supply': total_dai}
-
-    def _calculate_growth_triggered_amount(self, growth_amount, available_borrows):
-        """
-        Calculates borrow amount based on growth trigger, subject to available capacity limits.
-        Leverages a smaller re-leverage percentage and caps borrow amount with multiple constraints.
-        """
-        try:
-            print("\n💰 Growth-Triggered Borrow Calculation:")
-            print(f"   Growth: ${growth_amount:.2f}, Available Borrows: ${available_borrows:.2f}")
-
-            # 1. Initial Borrow Amount (based on re-leverage percentage)
-            initial_borrow = growth_amount * self.re_leverage_percentage
-            print(f"   Initial Borrow (Re-leverage %): ${initial_borrow:.2f}")
-
-            # 2. Apply Min/Max Constraints (borrow amount limits)
-            constrained_borrow = max(self.min_borrow_releverage, min(initial_borrow, self.max_borrow_releverage))
-            print(f"   Borrow after Min/Max constraints: ${constrained_borrow:.2f}")
-
-            # 3. Further Constraint (limit to 20% of available borrows)
-            # Only borrow if less than 20% of capacity is used
-            safe_borrow = min(constrained_borrow, available_borrows * 0.20)
-            print(f"   Borrow after 20% capacity limit: ${safe_borrow:.2f}")
-
-            # 4. Final Sanity Check (do not borrow if below $0.5)
-            if safe_borrow < 0.5:
-                print(f"   Borrow amount too low (${safe_borrow:.2f} < $0.5) - NOT BORROWING")
-                return 0.0  # Prevent very small, potentially failing borrows
-
-            print(f"   Final Growth-Triggered Borrow Amount: ${safe_borrow:.2f}")
-            return safe_borrow
-
-        except Exception as e:
-            print(f"❌ Growth-triggered calculation failed: {e}")
-            return 0.0
-
-    def _calculate_capacity_optimized_amount(self, available_borrows, utilization_ratio):
-        """
-        Calculate borrow amount based on available capacity and utilization,
-        trying to optimize within set boundaries.
-
-        This revised version adds conservative limits and checks to ensure safe
-        operation within the utilization targets.
-        """
-        try:
-            print("\n💰 Capacity-Based Borrow Calculation:")
-            print(f"   Available Borrows: ${available_borrows:.2f}")
-            print(f"   Utilization: {utilization_ratio:.2%}")
-
-            # 1. Target Utilization (aiming for 50% utilization as goal)
-            target_utilization = 0.50
-
-            # 2. Calculate amount needed to reach target
-            borrow_to_target = available_borrows * (target_utilization - utilization_ratio)
-            print(f"   Borrow to reach {target_utilization:.0%} utilization: ${borrow_to_target:.2f}")
-
-            # 3. Apply Safety Cap (do not try to borrow more than 10% of available)
-            safe_borrow = min(borrow_to_target, available_borrows * 0.10)
-            print(f"   After 10% safety cap: ${safe_borrow:.2f}")
-
-            # 4. Impose Min/Max Constraints (as in growth system)
-            constrained_borrow = max(self.min_borrow_releverage, min(safe_borrow, self.max_borrow_releverage))
-            print(f"   After Min/Max constraints: ${constrained_borrow:.2f}")
-
-            # 5. Final Check (prevent tiny borrows that may waste gas)
-            if constrained_borrow < 0.5:
-                print(f"   Borrow amount too low (${constrained_borrow:.2f} < $0.5) - NOT BORROWING")
-                return 0.0
-
-            print(f"   Final Capacity-Optimized Borrow Amount: ${constrained_borrow:.2f}")
-            return constrained_borrow
-
-        except Exception as e:
-            print(f"❌ Capacity-optimized calculation failed: {e}")
-            return 0.0
+                allocation['direct_supply'] = total_dai - 5.0  # Rest for direct

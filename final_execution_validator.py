@@ -33,6 +33,11 @@ def run_final_validation():
             'name': 'Comprehensive System Verification',
             'command': 'python comprehensive_system_verifier.py',
             'critical': True
+        },
+        {
+            'name': 'Final DAI Compliance Validation',
+            'command': 'python dai_compliance_final_validator.py',
+            'critical': True
         }
     ]
     

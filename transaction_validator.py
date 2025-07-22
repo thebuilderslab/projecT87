@@ -212,3 +212,21 @@ class TransactionValidator:
         except Exception as e:
             print(f"❌ DAI balance validation failed: {e}")
             return False
+
+    def _validate_token_contract(self, token_address: str) -> bool:
+        """Validate that token contract exists and is accessible"""
+        try:
+            contract = self.w3.eth.contract(
+                address=token_address,
+                abi=[{
+                    "constant": True,
+                    "inputs": [],
+                    "name": "symbol",
+                    "outputs": [{"name": "", "type": "string"}],
+                    "type": "function"
+                }]
+            )
+            symbol = contract.functions.symbol().call()
+            return len(symbol) > 0
+        except Exception:
+            return False
