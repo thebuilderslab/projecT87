@@ -95,9 +95,7 @@ class DAIComplianceEnforcer:
             r'USDC',
             r'\.usdc',
             r'swap.*usdc',
-            r'usdc.*swap',
-            r'0xAF88D065e8c38FAD0AEff3E253e648A15ceE23DC',  # USDC address
-            r'0xaf88d065e8c38fad0aeeff3e253e648a15cee23dc'   # USDC address lowercase
+            r'usdc.*swap'
         ]
         
         for pattern in usdc_patterns:
@@ -115,8 +113,6 @@ class DAIComplianceEnforcer:
             (r'usdc_address', 'dai_address'),
             (r'USDC', 'DAI'),
             (r'\.usdc\.', '.dai.'),
-            (r'0xAF88D065e8c38FAD0AEff3E253e648A15ceE23DC', self.dai_address),
-            (r'0xaf88d065e8c38fad0aeeff3e253e648a15cee23dc', self.dai_address.lower()),
             (r'swap_usdc_for', 'swap_dai_for'),
             (r'usdc_to_', 'dai_to_'),
             (r'borrow.*usdc', 'borrow DAI'),

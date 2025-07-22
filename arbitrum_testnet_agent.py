@@ -675,8 +675,7 @@ class ArbitrumTestnetAgent:
                 from enhanced_borrow_manager import EnhancedBorrowManager
                 self.enhanced_borrow_manager = EnhancedBorrowManager(self)
                 print("🏦 Initialized Enhanced Borrow Manager.")
-            except```python
-ImportError as e:
+            except ImportError as e:
                 print(f"⚠️ Enhanced Borrow Manager not available: {e}")
                 self.enhanced_borrow_manager = None
 
@@ -1361,5 +1360,98 @@ ImportError as e:
                 # If we have minimal DAI, supply directly
                 allocation['direct_supply'] = total_dai
 
-            print(f"📋 DAI Allocation:")
-            print(f"   WBTC swap
+: {allocation['wbtc_swap']:.2f}")
+            print(f"   WETH swap: {allocation['weth_swap']:.2f}")
+            print(f"   Direct supply: {allocation['direct_supply']:.2f}")
+
+            return allocation
+
+        except Exception as e:
+            print(f"❌ DAI allocation failed: {e}")
+            return {'wbtc_swap': 0, 'weth_swap': 0, 'direct_supply': 0}
+
+    def _calculate_growth_triggered_amount(self, collateral_growth, available_borrows):
+        """Calculate borrow amount triggered by collateral growth"""
+        try:
+            if collateral_growth <= 0:
+                return 0.0
+
+            # Base amount determined by collateral growth and leverage percentage
+            base_amount = collateral_growth * self.re_leverage_percentage
+
+            # Apply minimum and maximum borrow limits
+            safe_amount = max(self.min_borrow_releverage, min(base_amount, self.max_borrow_releverage))
+
+            # Cap by available borrows
+            safe_amount = min(safe_amount, available_borrows)
+
+            print(f"💰 Growth-Triggered Calculation:")
+            print(f"   Growth: ${collateral_growth:.2f}")
+            print(f"   Base amount: ${base_amount:.2f}")
+            print(f"   Safe amount: ${safe_amount:.2f}")
+
+            return safe_amount
+
+        except Exception as e:
+            print(f"❌ Growth-triggered calculation failed: {e}")
+            return 0.0
+
+    def _calculate_capacity_optimized_amount(self, available_borrows, capacity_utilization):
+        """Calculate borrow amount optimized for available capacity"""
+        try:
+            if available_borrows <= self.capacity_available_threshold:
+                return 0.0
+
+            # Base amount based on available capacity, but capped
+            base_amount = available_borrows * (1 - capacity_utilization)
+
+            # Ensure it meets the minimum borrow for releverage
+            safe_amount = max(self.min_borrow_releverage, min(base_amount, self.max_borrow_releverage))
+            
+            # If minimum not met, return 0
+            if safe_amount < self.min_borrow_releverage:
+                return 0.0
+
+            print(f"💰 Capacity-Based Calculation:")
+            print(f"   Available Borrows: ${available_borrows:.2f}")
+            print(f"   Capacity Utilization: {capacity_utilization:.2f}")
+            print(f"   Base Amount: ${base_amount:.2f}")
+            print(f"   Safe Amount: ${safe_amount:.2f}")
+
+            return safe_amount
+
+        except Exception as e:
+            print(f"❌ Capacity-optimized calculation failed: {e}")
+            return 0.0
+
+    def supply_wbtc_to_aave(self, amount):
+        """Supply WBTC to Aave with gas estimation and retry"""
+        try:
+            # Estimate gas limit
+            gas_limit = self.gas_calculator.estimate_gas_limit_for_supply(
+                self.wbtc_address,
+                amount,
+                self.aave.pool_address,
+                self.address
+            )
+
+            # Prepare transaction
+            tx = self.aave.build_supply_transaction(
+                self.wbtc_address,
+                amount,
+                gas_limit=gas_limit
+            )
+
+            # Sign and send transaction with retries
+            tx_hash = self.aave.sign_and_send_transaction(tx)
+
+            if tx_hash:
+                print(f"✅ WBTC supplied to Aave successfully! Tx hash: {tx_hash}")
+                return tx_hash
+            else:
+                print("❌ Failed to supply WBTC to Aave (no tx hash)")
+                return False
+
+        except Exception as e:
+            print(f"❌ WBTC supply failed: {e}")
+            return False
