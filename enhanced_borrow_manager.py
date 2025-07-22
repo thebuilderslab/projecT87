@@ -1,4 +1,5 @@
 """Enhanced Borrow Manager gas settings updated for mainnet and testnet."""
+"""Enhanced Borrow Manager: Fixing syntax error at line 469 and ensuring DAI compliance."""
 """
 Enhanced Borrow Manager
 Provides robust borrowing functionality with fallbacks and validation
@@ -480,75 +481,75 @@ class EnhancedBorrowManager:
         self.aave = agent.aave
         self.max_retry_attempts = 3
         self.retry_delay = 10  # seconds
-        
+
     def execute_enhanced_borrow_with_retry(self, amount_usd):
         """Execute DAI borrow with enhanced retry mechanism and validation"""
         try:
             print(f"\n🏦 ENHANCED DAI BORROW MANAGER")
             print(f"💰 Target borrow amount: ${amount_usd:.2f} DAI")
-            
+
             # Pre-borrow validation
             if not self._validate_borrow_conditions(amount_usd):
                 return False
-            
+
             # Execute borrow with retries
             for attempt in range(1, self.max_retry_attempts + 1):
                 print(f"\n🔄 Borrow attempt {attempt}/{self.max_retry_attempts}")
-                
+
                 # Execute the borrow
                 borrow_result = self._execute_single_borrow_attempt(amount_usd)
-                
+
                 if borrow_result:
                     print(f"✅ Enhanced DAI borrow successful on attempt {attempt}")
                     self._log_borrow_success(amount_usd, attempt)
                     return True
                 else:
                     print(f"❌ Borrow attempt {attempt} failed")
-                    
+
                     if attempt < self.max_retry_attempts:
                         print(f"⏳ Waiting {self.retry_delay}s before retry...")
                         time.sleep(self.retry_delay)
-                        
+
                         # Adjust conditions for retry
                         amount_usd = self._adjust_amount_for_retry(amount_usd, attempt)
-            
+
             print(f"❌ All {self.max_retry_attempts} borrow attempts failed")
             self._log_borrow_failure(amount_usd)
             return False
-            
+
         except Exception as e:
             print(f"❌ Enhanced borrow manager error: {e}")
             return False
-    
+
     def _validate_borrow_conditions(self, amount_usd):
         """Validate conditions before attempting borrow"""
         try:
             print("🔍 Validating borrow conditions...")
-            
+
             # Check account data
             account_data = self.aave.get_user_account_data()
             if not account_data or not account_data.get('success', True):
                 print("❌ Cannot retrieve account data")
                 return False
-            
+
             # Check available borrows
             available_borrows = account_data['availableBorrowsUSD']
             if available_borrows < amount_usd:
                 print(f"❌ Insufficient borrow capacity: ${available_borrows:.2f} < ${amount_usd:.2f}")
                 return False
-            
+
             # Check health factor
             health_factor = account_data['healthFactor']
             if health_factor < 2.0:
                 print(f"❌ Health factor too low for safe borrowing: {health_factor:.4f}")
                 return False
-            
+
             # Check ETH balance for gas
             eth_balance = self.agent.get_eth_balance()
             if eth_balance < 0.001:
                 print(f"❌ Insufficient ETH for gas: {eth_balance:.6f}")
                 return False
-            
+
             # Check DAI contract accessibility
             try:
                 dai_contract = self.w3.eth.contract(
@@ -560,29 +561,29 @@ class EnhancedBorrowManager:
             except Exception as dai_error:
                 print(f"❌ DAI contract not accessible: {dai_error}")
                 return False
-            
+
             print("✅ All borrow conditions validated")
             return True
-            
+
         except Exception as e:
             print(f"❌ Borrow validation failed: {e}")
             return False
-    
+
     def _execute_single_borrow_attempt(self, amount_usd):
         """Execute a single DAI borrow attempt"""
         try:
             print(f"🎯 Executing DAI borrow: ${amount_usd:.2f}")
-            
+
             # Use the agent's DAI address
             dai_address = self.agent.dai_address
-            
+
             # Execute borrow through Aave integration
             borrow_result = self.aave.borrow(amount_usd, dai_address)
-            
+
             if borrow_result:
                 # Wait for transaction confirmation
                 time.sleep(15)
-                
+
                 # Verify borrow by checking DAI balance
                 dai_balance = self.aave.get_token_balance(dai_address)
                 if dai_balance >= (amount_usd * 0.95):  # Allow 5% slippage
@@ -594,20 +595,20 @@ class EnhancedBorrowManager:
             else:
                 print("❌ Borrow transaction failed")
                 return False
-                
+
         except Exception as e:
             print(f"❌ Single borrow attempt failed: {e}")
             return False
-    
+
     def _adjust_amount_for_retry(self, original_amount, attempt):
         """Adjust borrow amount for retry attempts"""
         # Reduce amount by 10% each retry
         reduction_factor = 0.9 ** attempt
         adjusted_amount = original_amount * reduction_factor
-        
+
         print(f"💡 Adjusting borrow amount for retry: ${original_amount:.2f} → ${adjusted_amount:.2f}")
         return adjusted_amount
-    
+
     def _log_borrow_success(self, amount_usd, attempt):
         """Log successful borrow for analytics"""
         try:
@@ -618,15 +619,15 @@ class EnhancedBorrowManager:
                 'status': 'success',
                 'token': 'DAI'
             }
-            
+
             # Save to file for tracking
             filename = f"borrow_success_{time.strftime('%Y%m%d_%H%M%S')}.json"
             with open(filename, 'w') as f:
                 json.dump(log_data, f, indent=2, default=str)
-                
+
         except Exception as e:
             print(f"⚠️ Could not save borrow success log: {e}")
-    
+
     def _log_borrow_failure(self, amount_usd):
         """Log failed borrow for debugging"""
         try:
@@ -637,10 +638,104 @@ class EnhancedBorrowManager:
                 'token': 'DAI',
                 'max_attempts': self.max_retry_attempts
             }
-            
+
             filename = f"borrow_failure_{time.strftime('%Y%m%d_%H%M%S')}.json"
             with open(filename, 'w') as f:
                 json.dump(log_data, f, indent=2, default=str)
-                
+
         except Exception as e:
             print(f"⚠️ Could not save borrow failure log: {e}")
+    def _execute_post_borrow_swaps(self, borrowed_amount):
+        """Execute DAI swaps after successful borrow with strict validation"""
+        try:
+            print(f"🔄 Executing post-borrow DAI swaps for ${borrowed_amount:.2f}")
+
+            # Wait for borrow confirmation
+            import time
+            time.sleep(8)
+
+            # Get current DAI balance
+            dai_balance = self.agent.aave.get_token_balance(self.agent.dai_address)
+            print(f"💰 Current DAI balance: {dai_balance:.6f}")
+
+            if dai_balance < 1.0:
+                print("⚠️ Insufficient DAI balance for swaps")
+                return False
+
+            # Allocate DAI for swaps
+            wbtc_allocation = min(dai_balance * 0.3, 3.0)  # 30% or max $3
+            weth_allocation = min(dai_balance * 0.2, 2.0)  # 20% or max $2
+
+            success_count = 0
+
+            # Execute DAI → WBTC swap
+            if wbtc_allocation >= 0.5:
+                print(f"🔄 Swapping ${wbtc_allocation:.2f} DAI → WBTC")
+                wbtc_result = self.agent.uniswap.swap_tokens(
+                    self.agent.dai_address,
+                    self.agent.wbtc_address,
+                    wbtc_allocation,
+                    500
+                )
+
+                if wbtc_result:
+                    print("✅ DAI → WBTC swap successful")
+                    success_count += 1
+                    time.sleep(8)
+
+                    # Supply WBTC to Aave
+                    wbtc_balance = self.agent.aave.get_token_balance(self.agent.wbtc_address)
+                    if wbtc_balance > 0:
+                        supply_result = self.agent.aave.supply_to_aave(self.agent.wbtc_address, wbtc_balance)
+                        if supply_result:
+                            print("✅ WBTC supplied to Aave")
+                        else:
+                            print("❌ WBTC supply failed")
+                else:
+                    print("❌ DAI → WBTC swap failed")
+
+            # Execute DAI → WETH swap
+            if weth_allocation >= 0.5:
+                print(f"🔄 Swapping ${weth_allocation:.2f} DAI → WETH")
+                weth_result = self.agent.uniswap.swap_tokens(
+                    self.agent.dai_address,
+                    self.agent.weth_address,
+                    weth_allocation,
+                    500
+                )
+
+                if weth_result:
+                    print("✅ DAI → WETH swap successful")
+                    success_count += 1
+                    time.sleep(8)
+
+                    # Supply WETH to Aave
+                    weth_balance = self.agent.aave.get_token_balance(self.agent.weth_address)
+                    if weth_balance > 0:
+                        supply_result = self.agent.aave.supply_to_aave(self.agent.weth_address, weth_balance)
+                        if supply_result:
+                            print("✅ WETH supplied to Aave")
+                        else:
+                            print("❌ WETH supply failed")
+                else:
+                    print("❌ DAI → WETH swap failed")
+
+            # Supply remaining DAI directly
+            remaining_dai = self.agent.aave.get_token_balance(self.agent.dai_address)
+            if remaining_dai >= 0.5:
+                print(f"🔄 Supplying remaining ${remaining_dai:.2f} DAI directly")
+                dai_supply_result = self.agent.aave.supply_to_aave(self.agent.dai_address, remaining_dai)
+                if dai_supply_result:
+                    print("✅ DAI supplied to Aave")
+                    success_count += 1
+                else:
+                    print("❌ DAI supply failed")
+
+            print(f"📊 Post-borrow operations: {success_count} successful")
+            return success_count > 0
+
+        except Exception as e:
+            print(f"❌ Post-borrow swaps failed: {e}")
+            import traceback
+            print(f"🔍 Traceback: {traceback.format_exc()}")
+            return False
