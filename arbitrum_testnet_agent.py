@@ -24,15 +24,9 @@ class ArbitrumTestnetAgent:
         # Ensure the wallet address is derived from the private key or explicitly set
         # This is where your wallet's private key will be loaded from Replit secrets
         wallet_private_key = os.environ.get("WALLET_PRIVATE_KEY")
-        print(f"DEBUG: WALLET_PRIVATE_KEY loaded from environment: {'[REDACTED]' if wallet_private_key else 'None'}") # ADD THIS LINE
+        print(f"DEBUG: WALLET_PRIVATE_KEY loaded from environment: {'[REDACTED]' if wallet_private_key else 'None'}")
         if not wallet_private_key:
             raise ValueError("WALLET_PRIVATE_KEY environment variable not set.")
-            # Ensure the wallet address is derived from the private key or explicitly set
-            # This is where your wallet's private key will be loaded from Replit secrets
-            wallet_private_key = os.environ.get("WALLET_PRIVATE_KEY")
-            print(f"DEBUG: WALLET_PRIVATE_KEY loaded from environment: {'[REDACTED]' if wallet_private_key else 'None'}") # ADD THIS LINE
-            if not wallet_private_key:
-                raise ValueError("WALLET_PRIVATE_KEY environment variable not set.")
         self.coinmarketcap_api_key = os.getenv('COINMARKETCAP_API_KEY')
         self.network_mode = os.getenv('NETWORK_MODE', 'testnet')
 
@@ -653,6 +647,20 @@ class ArbitrumTestnetAgent:
     def initialize_integrations(self):
         """Initialize all real DeFi integrations with strict error handling"""
         try:
+            # Handle system process errors (ptrace/syscall issues)
+            import signal
+            import errno
+            
+            def handle_process_errors():
+                """Handle common process errors like ESRCH, ptrace issues"""
+                try:
+                    # Ignore SIGCHLD to prevent zombie processes
+                    signal.signal(signal.SIGCHLD, signal.SIG_IGN)
+                except (OSError, AttributeError):
+                    pass  # Not all systems support this
+                    
+            handle_process_errors()
+            
             # Check if already initialized to prevent multiple initializations
             if hasattr(self, 'aave') and self.aave is not None:
                 print("✅ DeFi integrations already initialized, skipping...")
@@ -679,5 +687,20 @@ class ArbitrumTestnetAgent:
                 print(f"❌ Enhanced borrow manager initialization failed: {e}")
 
         except Exception as e:
+            error_msg = str(e).lower()
+            if 'esrch' in error_msg or 'no such process' in error_msg:
+                print(f"⚠️ Process error detected, attempting recovery: {e}")
+                # Wait and retry once for process-related errors
+                time.sleep(2)
+                try:
+                    # Retry initialization
+                    self.aave = AaveArbitrumIntegration(self.w3, self.account)
+                    self.uniswap = UniswapIntegration(self.w3, self.account)
+                    self.health_monitor = HealthMonitor(self.w3, self.account, self.aave)
+                    print("✅ Recovery successful after process error")
+                    return True
+                except Exception as retry_e:
+                    print(f"❌ Recovery failed: {retry_e}")
+            
             print(f"❌ Integration initialization failed: {e}")
             return False

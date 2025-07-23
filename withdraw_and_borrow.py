@@ -1,7 +1,10 @@
 
 #!/usr/bin/env python3
 """
-Withdraw 0.006537 WETH from Aave and then use it to borrow 20 USDC
+DAI COMPLIANCE ENFORCED: This file has been modified to use DAI-only operations.
+Only DAI → WBTC and DAI → WETH swaps are permitted.
+
+Withdraw 0.006537 WETH from Aave and then use it to borrow 20 DAI
 """
 
 import os
@@ -9,8 +12,8 @@ import time
 from arbitrum_testnet_agent import ArbitrumTestnetAgent
 
 def main():
-    """Withdraw WETH from Aave and then borrow 20 USDC"""
-    print("💰 WITHDRAW WETH & BORROW 20 USDC")
+    """Withdraw WETH from Aave and then borrow 20 DAI"""
+    print("💰 WITHDRAW WETH & BORROW 20 DAI")
     print("=" * 50)
 
     # Get network mode from environment
@@ -122,8 +125,8 @@ def main():
                 # Wait for state to update
                 time.sleep(10)
                 
-                # Step 2: Check new ETH balance and create 20 USDC borrow position
-                print(f"\n💰 Step 2: Creating 20 USDC borrow position...")
+                # Step 2: Check new ETH balance and create 20 DAI borrow position
+                print(f"\n💰 Step 2: Creating 20 DAI borrow position...")
                 
                 # Get current ETH balance
                 eth_balance = agent.w3.from_wei(agent.w3.eth.get_balance(user_address), 'ether')
@@ -134,18 +137,18 @@ def main():
                 collateral_amount = eth_balance - gas_reserve
                 
                 if collateral_amount > 0.005:  # Minimum viable collateral
-                    print(f"🏦 Using {collateral_amount:.6f} ETH as collateral for 20 USDC borrow...")
+                    print(f"🏦 Using {collateral_amount:.6f} ETH as collateral for 20 DAI borrow...")
                     
                     # Estimate health factor
                     eth_price = 2500  # Approximate ETH price
                     collateral_value = collateral_amount * eth_price
-                    borrow_amount = 20.0  # $20 USDC
+                    borrow_amount = 20.0  # $20 DAI
                     ltv = 0.8  # 80% LTV for ETH
                     estimated_hf = (collateral_value * ltv) / borrow_amount
                     
                     print(f"📊 Estimated Position:")
                     print(f"   Collateral: {collateral_amount:.6f} ETH (${collateral_value:.2f})")
-                    print(f"   Borrow: ${borrow_amount:.2f} USDC")
+                    print(f"   Borrow: ${borrow_amount:.2f} DAI")
                     print(f"   Estimated Health Factor: {estimated_hf:.2f}")
                     
                     if estimated_hf > 3.0:  # Safe health factor
@@ -162,12 +165,12 @@ def main():
                         if supply_success:
                             time.sleep(10)  # Wait for confirmation
                             
-                            # Borrow 20 USDC
-                            print("🔄 Borrowing 20 USDC...")
-                            borrow_success = creator.borrow_usdc(20.0)
+                            # Borrow 20 DAI
+                            print("🔄 Borrowing 20 DAI...")
+                            borrow_success = creator.borrow_dai(20.0)
                             
                             if borrow_success:
-                                print("🎉 SUCCESS: 20 USDC borrowed successfully!")
+                                print("🎉 SUCCESS: 20 DAI borrowed successfully!")
                                 print("🏥 Checking final health factor...")
                                 
                                 # Check final position
@@ -183,12 +186,12 @@ def main():
                                     else:
                                         print("⚠️ Health factor is low")
                             else:
-                                print("❌ USDC borrow failed")
+                                print("❌ DAI borrow failed")
                         else:
                             print("❌ ETH supply failed")
                     else:
                         print("❌ Estimated health factor too low for safe borrowing")
-                        print(f"💡 Need more ETH for safe 20 USDC borrow")
+                        print(f"💡 Need more ETH for safe 20 DAI borrow")
                 else:
                     print("❌ Insufficient ETH balance after withdrawal")
                     
