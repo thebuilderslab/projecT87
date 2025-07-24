@@ -686,6 +686,8 @@ class ArbitrumTestnetAgent:
             except Exception as e:
                 print(f"❌ Enhanced borrow manager initialization failed: {e}")
 
+            return True
+
         except Exception as e:
             error_msg = str(e).lower()
             if 'esrch' in error_msg or 'no such process' in error_msg:
@@ -704,3 +706,212 @@ class ArbitrumTestnetAgent:
             
             print(f"❌ Integration initialization failed: {e}")
             return False
+
+    def run_real_defi_task(self, run_id, iteration, config):
+        """Execute real DeFi operations with DAI-only compliance"""
+        try:
+            print(f"\n🎯 AUTONOMOUS RUN {run_id}, ITERATION {iteration}")
+            print("=" * 60)
+            
+            # Check emergency stop
+            if os.path.exists('EMERGENCY_STOP_ACTIVE.flag'):
+                print("🛑 Emergency stop active - skipping operations")
+                return 0.1
+            
+            # Check cooldown
+            if self.is_operation_on_cooldown():
+                print("⏰ Operations in cooldown period")
+                return 0.2
+            
+            # Track operation attempt
+            self.track_operation_attempt()
+            
+            # Get account status
+            account_data = self.aave.get_user_account_data()
+            if not account_data:
+                print("❌ Unable to get account data")
+                return 0.1
+            
+            health_factor = account_data.get('healthFactor', 0)
+            available_borrows = account_data.get('availableBorrowsUSD', 0)
+            total_collateral = account_data.get('totalCollateralUSD', 0)
+            
+            print(f"📊 Account Status:")
+            print(f"   Health Factor: {health_factor:.3f}")
+            print(f"   Available Borrows: ${available_borrows:.2f}")
+            print(f"   Total Collateral: ${total_collateral:.2f}")
+            
+            # Check if we need to execute any operations
+            performance_score = 0.5  # Base score
+            
+            # DAI-only compliance check
+            if not self._validate_dai_compliance():
+                print("❌ DAI compliance validation failed")
+                return 0.1
+            
+            # Check for growth-triggered operations
+            if self._should_execute_growth_triggered_operation(total_collateral, health_factor, available_borrows):
+                success = self._execute_growth_triggered_operation(available_borrows)
+                if success:
+                    performance_score = 0.8
+                    self.record_successful_operation("growth_triggered")
+                else:
+                    performance_score = 0.3
+            
+            # Check for capacity-based operations
+            elif self._should_execute_capacity_operation(available_borrows, health_factor):
+                success = self._execute_capacity_operation(available_borrows)
+                if success:
+                    performance_score = 0.7
+                    self.record_successful_operation("capacity_based")
+                else:
+                    performance_score = 0.3
+            
+            else:
+                print("✅ No operations needed - system stable")
+                performance_score = 0.6
+            
+            # Update baseline if we have new collateral data
+            if total_collateral > 0:
+                self.update_baseline_after_success(total_collateral)
+            
+            print(f"📈 Task Performance: {performance_score:.2f}")
+            return performance_score
+            
+        except Exception as e:
+            print(f"❌ DeFi task execution failed: {e}")
+            return 0.1
+
+    def _validate_dai_compliance(self):
+        """Validate that system is operating in DAI-only mode"""
+        try:
+            # Check that DAI address is properly set
+            if not hasattr(self, 'dai_address') or not self.dai_address:
+                print("❌ DAI address not configured")
+                return False
+            
+            # Ensure no USDC operations are configured
+            forbidden_tokens = ['usdc', 'USDC']
+            for attr_name in dir(self):
+                attr_value = getattr(self, attr_name, '')
+                if isinstance(attr_value, str) and any(token in attr_value.lower() for token in forbidden_tokens):
+                    print(f"❌ Found USDC reference in {attr_name}: {attr_value}")
+                    return False
+            
+            print("✅ DAI compliance validated")
+            return True
+            
+        except Exception as e:
+            print(f"❌ DAI compliance validation error: {e}")
+            return False
+
+    def _should_execute_growth_triggered_operation(self, current_collateral, health_factor, available_borrows):
+        """Check if growth-triggered operation should execute"""
+        try:
+            # Check health factor threshold
+            if health_factor < self.growth_health_factor_threshold:
+                print(f"⚠️ Health factor {health_factor:.3f} below growth threshold {self.growth_health_factor_threshold}")
+                return False
+            
+            # Check available borrowing capacity
+            if available_borrows < self.capacity_available_threshold:
+                print(f"⚠️ Available borrows ${available_borrows:.2f} below threshold ${self.capacity_available_threshold}")
+                return False
+            
+            # Check growth since last baseline
+            if hasattr(self, 'last_collateral_value_usd') and self.last_collateral_value_usd > 0:
+                growth = current_collateral - self.last_collateral_value_usd
+                if growth >= self.growth_trigger_threshold:
+                    print(f"✅ Growth trigger met: ${growth:.2f} >= ${self.growth_trigger_threshold}")
+                    return True
+            
+            return False
+            
+        except Exception as e:
+            print(f"❌ Growth trigger check failed: {e}")
+            return False
+
+    def _should_execute_capacity_operation(self, available_borrows, health_factor):
+        """Check if capacity-based operation should execute"""
+        try:
+            if health_factor < self.capacity_health_factor_threshold:
+                return False
+            
+            if available_borrows < self.capacity_available_threshold:
+                return False
+            
+            # Simple capacity check - if we have significant unused capacity
+            if available_borrows > 50:  # $50 available capacity
+                print(f"✅ Capacity operation triggered: ${available_borrows:.2f} available")
+                return True
+            
+            return False
+            
+        except Exception as e:
+            print(f"❌ Capacity check failed: {e}")
+            return False
+
+    def _execute_growth_triggered_operation(self, available_borrows):
+        """Execute growth-triggered borrowing operation - DAI only"""
+        try:
+            print("🚀 Executing growth-triggered operation (DAI-only)")
+            
+            # Calculate safe borrow amount
+            borrow_amount = min(available_borrows * 0.15, 10.0)  # 15% of available or $10 max
+            borrow_amount = max(borrow_amount, 2.0)  # Minimum $2
+            
+            if borrow_amount < 1.0:
+                print("⚠️ Borrow amount too small")
+                return False
+            
+            print(f"💰 Borrowing ${borrow_amount:.2f} DAI")
+            
+            # Execute DAI borrow
+            result = self.aave.borrow_dai(borrow_amount)
+            if result:
+                print(f"✅ Successfully borrowed ${borrow_amount:.2f} DAI")
+                return True
+            else:
+                print(f"❌ Failed to borrow DAI")
+                return False
+                
+        except Exception as e:
+            print(f"❌ Growth-triggered operation failed: {e}")
+            return False
+
+    def _execute_capacity_operation(self, available_borrows):
+        """Execute capacity-based operation - DAI only"""
+        try:
+            print("⚡ Executing capacity-based operation (DAI-only)")
+            
+            # Conservative capacity utilization
+            borrow_amount = min(available_borrows * 0.10, 5.0)  # 10% of available or $5 max
+            
+            if borrow_amount < 1.0:
+                print("⚠️ Capacity borrow amount too small")
+                return False
+            
+            print(f"💰 Capacity borrow: ${borrow_amount:.2f} DAI")
+            
+            # Execute DAI borrow
+            result = self.aave.borrow_dai(borrow_amount)
+            if result:
+                print(f"✅ Successfully executed capacity operation: ${borrow_amount:.2f} DAI")
+                return True
+            else:
+                print(f"❌ Failed capacity operation")
+                return False
+                
+        except Exception as e:
+            print(f"❌ Capacity operation failed: {e}")
+            return False
+
+    def get_eth_balance(self):
+        """Get ETH balance for the wallet"""
+        try:
+            balance_wei = self.w3.eth.get_balance(self.address)
+            balance_eth = balance_wei / (10**18)
+            return balance_eth
+        except Exception as e:
+            print(f"❌ Failed to get ETH balance: {e}")
+            return 0.0
