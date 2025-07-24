@@ -3,6 +3,7 @@
 DAI COMPLIANCE ENFORCED: This file has been modified to use DAI-only operations.
 All USDC references have been removed and replaced with DAI equivalents.
 Only DAI borrowing, lending, and related operations are permitted.
+SYSTEM VALIDATION: All swap operations must use DAI as the primary token.
 """
 
 import os
@@ -92,14 +93,25 @@ class AaveArbitrumIntegration:
     def get_user_account_data(self):
         """Get user account data from Aave - DAI-centric compliance"""
         try:
-            account_data = self.pool_contract.functions.getUserAccountData(self.account.address).call()
-            
-            return {
-                'totalCollateralUSD': account_data[0] / (10**8),
-                'totalDebtUSD': account_data[1] / (10**8),
-                'availableBorrowsUSD': account_data[2] / (10**8),
-                'healthFactor': account_data[5] / (10**18) if account_data[5] > 0 else float('inf')
-            }
+            # Add retry mechanism for system call failures
+            max_retries = 3
+            for attempt in range(max_retries):
+                try:
+                    account_data = self.pool_contract.functions.getUserAccountData(self.account.address).call()
+                    
+                    return {
+                        'totalCollateralUSD': account_data[0] / (10**8),
+                        'totalDebtUSD': account_data[1] / (10**8),
+                        'availableBorrowsUSD': account_data[2] / (10**8),
+                        'healthFactor': account_data[5] / (10**18) if account_data[5] > 0 else float('inf')
+                    }
+                except (OSError, ConnectionError, ProcessLookupError) as sys_error:
+                    logger.warning(f"System call error on attempt {attempt + 1}: {sys_error}")
+                    if attempt < max_retries - 1:
+                        time.sleep(1)
+                        continue
+                    raise
+                    
         except Exception as e:
             logger.error(f"Failed to get account data: {e}")
             return None
@@ -112,27 +124,37 @@ class AaveArbitrumIntegration:
             
             amount_wei = int(amount_dai * 10**18)  # DAI has 18 decimals
             
-            # Build transaction
-            tx = self.pool_contract.functions.borrow(
-                dai_address,
-                amount_wei,
-                2,  # Variable interest rate
-                0,  # Referral code
-                self.account.address
-            ).build_transaction({
-                'from': self.account.address,
-                'gas': 300000,
-                'gasPrice': self.w3.eth.gas_price,
-                'nonce': self.w3.eth.get_transaction_count(self.account.address)
-            })
-            
-            # Sign and send
-            signed_tx = self.w3.eth.account.sign_transaction(tx, self.account.key)
-            tx_hash = self.w3.eth.send_raw_transaction(signed_tx.rawTransaction)
-            
-            print(f"✅ DAI borrow successful: ${amount_dai:.2f}")
-            return tx_hash.hex()
-            
+            # Build transaction with system error handling
+            max_retries = 3
+            for attempt in range(max_retries):
+                try:
+                    tx = self.pool_contract.functions.borrow(
+                        dai_address,
+                        amount_wei,
+                        2,  # Variable interest rate
+                        0,  # Referral code
+                        self.account.address
+                    ).build_transaction({
+                        'from': self.account.address,
+                        'gas': 300000,
+                        'gasPrice': self.w3.eth.gas_price,
+                        'nonce': self.w3.eth.get_transaction_count(self.account.address)
+                    })
+                    
+                    # Sign and send
+                    signed_tx = self.w3.eth.account.sign_transaction(tx, self.account.key)
+                    tx_hash = self.w3.eth.send_raw_transaction(signed_tx.rawTransaction)
+                    
+                    print(f"✅ DAI borrow successful: ${amount_dai:.2f}")
+                    return tx_hash.hex()
+                    
+                except (OSError, ConnectionError, ProcessLookupError) as sys_error:
+                    logger.warning(f"System call error on borrow attempt {attempt + 1}: {sys_error}")
+                    if attempt < max_retries - 1:
+                        time.sleep(2)
+                        continue
+                    raise
+                    
         except Exception as e:
             logger.error(f"DAI borrow failed: {e}")
             return False
@@ -189,18 +211,29 @@ class AaveArbitrumIntegration:
                 "type": "function"
             }]
             
-            contract = self.w3.eth.contract(address=token_address, abi=balance_abi)
-            balance_wei = contract.functions.balanceOf(self.account.address).call()
-            
-            # Convert based on token decimals
-            if token_address == self.dai_address:
-                return balance_wei / (10**18)  # DAI has 18 decimals
-            elif token_address == self.wbtc_address:
-                return balance_wei / (10**8)   # WBTC has 8 decimals
-            elif token_address == self.weth_address:
-                return balance_wei / (10**18)  # WETH has 18 decimals
-            else:
-                return balance_wei / (10**18)  # Default to 18 decimals
+            # Retry mechanism for system call errors
+            max_retries = 3
+            for attempt in range(max_retries):
+                try:
+                    contract = self.w3.eth.contract(address=token_address, abi=balance_abi)
+                    balance_wei = contract.functions.balanceOf(self.account.address).call()
+                    
+                    # Convert based on token decimals
+                    if token_address == self.dai_address:
+                        return balance_wei / (10**18)  # DAI has 18 decimals
+                    elif token_address == self.wbtc_address:
+                        return balance_wei / (10**8)   # WBTC has 8 decimals
+                    elif token_address == self.weth_address:
+                        return balance_wei / (10**18)  # WETH has 18 decimals
+                    else:
+                        return balance_wei / (10**18)  # Default to 18 decimals
+                        
+                except (OSError, ConnectionError, ProcessLookupError) as sys_error:
+                    logger.warning(f"System call error on balance check attempt {attempt + 1}: {sys_error}")
+                    if attempt < max_retries - 1:
+                        time.sleep(1)
+                        continue
+                    raise
                 
         except Exception as e:
             logger.error(f"Failed to get token balance: {e}")
