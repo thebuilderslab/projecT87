@@ -39,7 +39,7 @@ class AaveArbitrumIntegration:
         # Initialize pool contract
         self._initialize_pool_contract()
         
-        print(f"✅ Aave integration initialized for {network_mode} with DAI-only compliance - USDC operations disabled")
+        print(f"✅ Aave integration initialized for {network_mode} with DAI-only compliance")
 
     def _initialize_pool_contract(self):
         """Initialize Aave pool contract"""
@@ -66,6 +66,29 @@ class AaveArbitrumIntegration:
                 ],
                 "name": "borrow",
                 "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {"name": "asset", "type": "address"},
+                    {"name": "amount", "type": "uint256"},
+                    {"name": "to", "type": "address"}
+                ],
+                "name": "withdraw",
+                "outputs": [{"name": "", "type": "uint256"}],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {"name": "asset", "type": "address"},
+                    {"name": "amount", "type": "uint256"},
+                    {"name": "interestRateMode", "type": "uint256"},
+                    {"name": "onBehalfOf", "type": "address"}
+                ],
+                "name": "repay",
+                "outputs": [{"name": "", "type": "uint256"}],
                 "stateMutability": "nonpayable",
                 "type": "function"
             },
@@ -116,12 +139,9 @@ class AaveArbitrumIntegration:
             logger.error(f"Failed to get account data: {e}")
             return None
 
-    def borrow(self, amount_dai, dai_address):
+    def borrow_dai(self, amount_dai):
         """Borrow DAI from Aave - DAI-only compliance enforced"""
         try:
-            if dai_address != self.dai_address:
-                raise ValueError("DAI COMPLIANCE VIOLATION: Only DAI borrowing is permitted")
-            
             amount_wei = int(amount_dai * 10**18)  # DAI has 18 decimals
             
             # Build transaction with system error handling
@@ -129,7 +149,7 @@ class AaveArbitrumIntegration:
             for attempt in range(max_retries):
                 try:
                     tx = self.pool_contract.functions.borrow(
-                        dai_address,
+                        self.dai_address,
                         amount_wei,
                         2,  # Variable interest rate
                         0,  # Referral code
@@ -158,6 +178,12 @@ class AaveArbitrumIntegration:
         except Exception as e:
             logger.error(f"DAI borrow failed: {e}")
             return False
+
+    def borrow(self, amount_dai, dai_address):
+        """Legacy method - redirects to borrow_dai for DAI compliance"""
+        if dai_address != self.dai_address:
+            raise ValueError("DAI COMPLIANCE VIOLATION: Only DAI borrowing is permitted")
+        return self.borrow_dai(amount_dai)
 
     def supply_to_aave(self, token_address, amount):
         """Supply tokens to Aave - DAI-centric operations"""
@@ -195,9 +221,17 @@ class AaveArbitrumIntegration:
             logger.error(f"Token supply failed: {e}")
             return False
 
+    def supply_dai_to_aave(self, amount):
+        """Supply DAI to Aave - DAI compliance method"""
+        return self.supply_to_aave(self.dai_address, amount)
+
     def supply_wbtc_to_aave(self, amount):
         """Supply WBTC to Aave"""
         return self.supply_to_aave(self.wbtc_address, amount)
+
+    def supply_weth_to_aave(self, amount):
+        """Supply WETH to Aave"""
+        return self.supply_to_aave(self.weth_address, amount)
 
     def get_token_balance(self, token_address):
         """Get token balance - DAI-centric compliance"""
@@ -238,6 +272,10 @@ class AaveArbitrumIntegration:
         except Exception as e:
             logger.error(f"Failed to get token balance: {e}")
             return 0.0
+
+    def get_dai_balance(self):
+        """Get DAI balance - DAI compliance method"""
+        return self.get_token_balance(self.dai_address)
 
     def approve_token(self, token_address, amount):
         """Approve token for Aave operations"""
@@ -286,4 +324,76 @@ class AaveArbitrumIntegration:
             
         except Exception as e:
             logger.error(f"Token approval failed: {e}")
+            return False
+
+    def approve_dai(self, amount):
+        """Approve DAI for Aave operations - DAI compliance method"""
+        return self.approve_token(self.dai_address, amount)
+
+    def withdraw_from_aave(self, token_address, amount):
+        """Withdraw tokens from Aave"""
+        try:
+            if token_address == self.dai_address:
+                amount_wei = int(amount * 10**18)  # DAI has 18 decimals
+            elif token_address == self.wbtc_address:
+                amount_wei = int(amount * 10**8)   # WBTC has 8 decimals
+            elif token_address == self.weth_address:
+                amount_wei = int(amount * 10**18)  # WETH has 18 decimals
+            else:
+                raise ValueError("Unsupported token for withdrawal")
+            
+            # Build transaction
+            tx = self.pool_contract.functions.withdraw(
+                token_address,
+                amount_wei,
+                self.account.address
+            ).build_transaction({
+                'from': self.account.address,
+                'gas': 300000,
+                'gasPrice': self.w3.eth.gas_price,
+                'nonce': self.w3.eth.get_transaction_count(self.account.address)
+            })
+            
+            # Sign and send
+            signed_tx = self.w3.eth.account.sign_transaction(tx, self.account.key)
+            tx_hash = self.w3.eth.send_raw_transaction(signed_tx.rawTransaction)
+            
+            print(f"✅ Token withdrawal successful: {amount:.6f}")
+            return tx_hash.hex()
+            
+        except Exception as e:
+            logger.error(f"Token withdrawal failed: {e}")
+            return False
+
+    def withdraw_dai_from_aave(self, amount):
+        """Withdraw DAI from Aave - DAI compliance method"""
+        return self.withdraw_from_aave(self.dai_address, amount)
+
+    def repay_dai(self, amount):
+        """Repay DAI debt to Aave"""
+        try:
+            amount_wei = int(amount * 10**18)  # DAI has 18 decimals
+            
+            # Build transaction
+            tx = self.pool_contract.functions.repay(
+                self.dai_address,
+                amount_wei,
+                2,  # Variable interest rate
+                self.account.address
+            ).build_transaction({
+                'from': self.account.address,
+                'gas': 300000,
+                'gasPrice': self.w3.eth.gas_price,
+                'nonce': self.w3.eth.get_transaction_count(self.account.address)
+            })
+            
+            # Sign and send
+            signed_tx = self.w3.eth.account.sign_transaction(tx, self.account.key)
+            tx_hash = self.w3.eth.send_raw_transaction(signed_tx.rawTransaction)
+            
+            print(f"✅ DAI repayment successful: {amount:.6f}")
+            return tx_hash.hex()
+            
+        except Exception as e:
+            logger.error(f"DAI repayment failed: {e}")
             return False
