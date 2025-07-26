@@ -988,5 +988,5624 @@
     "status": "pending",
     "estimated_impact": "High (Profit)",
     "risk_level": "Low-Medium"
+  },
+  {
+    "id": "yield_optimization_1753553601",
+    "type": "yield_optimization",
+    "source": "agent",
+    "timestamp": 1753553601.0861676,
+    "data": {
+      "action": "optimize_yield",
+      "parameters": {
+        "leverage_increase": 0.1,
+        "new_asset_targets": [
+          "USDT",
+          "FRAX"
+        ],
+        "arbitrage_opportunities": true
+      },
+      "reasoning": "Strong performance at 1.000 allows for optimization"
+    },
+    "status": "pending",
+    "estimated_impact": "High (Profit)",
+    "risk_level": "Low-Medium"
+  },
+  {
+    "id": "yield_optimization_1753553646",
+    "type": "yield_optimization",
+    "source": "agent",
+    "timestamp": 1753553646.0958464,
+    "data": {
+      "action": "optimize_yield",
+      "parameters": {
+        "leverage_increase": 0.1,
+        "new_asset_targets": [
+          "USDT",
+          "FRAX"
+        ],
+        "arbitrage_opportunities": true
+      },
+      "reasoning": "Strong performance at 1.000 allows for optimization"
+    },
+    "status": "pending",
+    "estimated_impact": "High (Profit)",
+    "risk_level": "Low-Medium"
+  },
+  {
+    "id": "yield_optimization_1753553724",
+    "type": "yield_optimization",
+    "source": "agent",
+    "timestamp": 1753553724.1118395,
+    "data": {
+      "action": "optimize_yield",
+      "parameters": {
+        "leverage_increase": 0.1,
+        "new_asset_targets": [
+          "USDT",
+          "FRAX"
+        ],
+        "arbitrage_opportunities": true
+      },
+      "reasoning": "Strong performance at 1.000 allows for optimization"
+    },
+    "status": "pending",
+    "estimated_impact": "High (Profit)",
+    "risk_level": "Low-Medium"
+  },
+  {
+    "id": "yield_optimization_1753553769",
+    "type": "yield_optimization",
+    "source": "agent",
+    "timestamp": 1753553769.117093,
+    "data": {
+      "action": "optimize_yield",
+      "parameters": {
+        "leverage_increase": 0.1,
+        "new_asset_targets": [
+          "USDT",
+          "FRAX"
+        ],
+        "arbitrage_opportunities": true
+      },
+      "reasoning": "Strong performance at 1.000 allows for optimization"
+    },
+    "status": "pending",
+    "estimated_impact": "High (Profit)",
+    "risk_level": "Low-Medium"
+  },
+  {
+    "id": "yield_optimization_1753553831",
+    "type": "yield_optimization",
+    "source": "agent",
+    "timestamp": 1753553831.1335373,
+    "data": {
+      "action": "optimize_yield",
+      "parameters": {
+        "leverage_increase": 0.1,
+        "new_asset_targets": [
+          "USDT",
+          "FRAX"
+        ],
+        "arbitrage_opportunities": true
+      },
+      "reasoning": "Strong performance at 1.000 allows for optimization"
+    },
+    "status": "pending",
+    "estimated_impact": "High (Profit)",
+    "risk_level": "Low-Medium"
+  },
+  {
+    "id": "yield_optimization_1753553876",
+    "type": "yield_optimization",
+    "source": "agent",
+    "timestamp": 1753553876.1388316,
+    "data": {
+      "action": "optimize_yield",
+      "parameters": {
+        "leverage_increase": 0.1,
+        "new_asset_targets": [
+          "USDT",
+          "FRAX"
+        ],
+        "arbitrage_opportunities": true
+      },
+      "reasoning": "Strong performance at 1.000 allows for optimization"
+    },
+    "status": "pending",
+    "estimated_impact": "High (Profit)",
+    "risk_level": "Low-Medium"
+  },
+  {
+    "id": "yield_optimization_1753553929",
+    "type": "yield_optimization",
+    "source": "agent",
+    "timestamp": 1753553929.3681943,
+    "data": {
+      "action": "optimize_yield",
+      "parameters": {
+        "leverage_increase": 0.1,
+        "new_asset_targets": [
+          "USDT",
+          "FRAX"
+        ],
+        "arbitrage_opportunities": true
+      },
+      "reasoning": "Strong performance at 1.000 allows for optimization"
+    },
+    "status": "pending",
+    "estimated_impact": "High (Profit)",
+    "risk_level": "Low-Medium"
+  },
+  {
+    "id": "yield_optimization_1753553974",
+    "type": "yield_optimization",
+    "source": "agent",
+    "timestamp": 1753553974.375453,
+    "data": {
+      "action": "optimize_yield",
+      "parameters": {
+        "leverage_increase": 0.1,
+        "new_asset_targets": [
+          "USDT",
+          "FRAX"
+        ],
+        "arbitrage_opportunities": true
+      },
+      "reasoning": "Strong performance at 1.000 allows for optimization"
+    },
+    "status": "pending",
+    "estimated_impact": "High (Profit)",
+    "risk_level": "Low-Medium"
+  },
+  {
+    "id": "yield_optimization_1753554053",
+    "type": "yield_optimization",
+    "source": "agent",
+    "timestamp": 1753554053.0492733,
+    "data": {
+      "action": "optimize_yield",
+      "parameters": {
+        "leverage_increase": 0.1,
+        "new_asset_targets": [
+          "USDT",
+          "FRAX"
+        ],
+        "arbitrage_opportunities": true
+      },
+      "reasoning": "Strong performance at 1.000 allows for optimization"
+    },
+    "status": "pending",
+    "estimated_impact": "High (Profit)",
+    "risk_level": "Low-Medium"
+  },
+  {
+    "id": "yield_optimization_1753554098",
+    "type": "yield_optimization",
+    "source": "agent",
+    "timestamp": 1753554098.1128476,
+    "data": {
+      "action": "optimize_yield",
+      "parameters": {
+        "leverage_increase": 0.1,
+        "new_asset_targets": [
+          "USDT",
+          "FRAX"
+        ],
+        "arbitrage_opportunities": true
+      },
+      "reasoning": "Strong performance at 1.000 allows for optimization"
+    },
+    "status": "pending",
+    "estimated_impact": "High (Profit)",
+    "risk_level": "Low-Medium"
+  },
+  {
+    "id": "yield_optimization_1753554176",
+    "type": "yield_optimization",
+    "source": "agent",
+    "timestamp": 1753554176.3947732,
+    "data": {
+      "action": "optimize_yield",
+      "parameters": {
+        "leverage_increase": 0.1,
+        "new_asset_targets": [
+          "USDT",
+          "FRAX"
+        ],
+        "arbitrage_opportunities": true
+      },
+      "reasoning": "Strong performance at 1.000 allows for optimization"
+    },
+    "status": "pending",
+    "estimated_impact": "High (Profit)",
+    "risk_level": "Low-Medium"
+  },
+  {
+    "id": "yield_optimization_1753554221",
+    "type": "yield_optimization",
+    "source": "agent",
+    "timestamp": 1753554221.4014492,
+    "data": {
+      "action": "optimize_yield",
+      "parameters": {
+        "leverage_increase": 0.1,
+        "new_asset_targets": [
+          "USDT",
+          "FRAX"
+        ],
+        "arbitrage_opportunities": true
+      },
+      "reasoning": "Strong performance at 1.000 allows for optimization"
+    },
+    "status": "pending",
+    "estimated_impact": "High (Profit)",
+    "risk_level": "Low-Medium"
+  },
+  {
+    "id": "yield_optimization_1753554301",
+    "type": "yield_optimization",
+    "source": "agent",
+    "timestamp": 1753554301.419068,
+    "data": {
+      "action": "optimize_yield",
+      "parameters": {
+        "leverage_increase": 0.1,
+        "new_asset_targets": [
+          "USDT",
+          "FRAX"
+        ],
+        "arbitrage_opportunities": true
+      },
+      "reasoning": "Strong performance at 1.000 allows for optimization"
+    },
+    "status": "pending",
+    "estimated_impact": "High (Profit)",
+    "risk_level": "Low-Medium"
+  },
+  {
+    "id": "yield_optimization_1753554346",
+    "type": "yield_optimization",
+    "source": "agent",
+    "timestamp": 1753554346.426709,
+    "data": {
+      "action": "optimize_yield",
+      "parameters": {
+        "leverage_increase": 0.1,
+        "new_asset_targets": [
+          "USDT",
+          "FRAX"
+        ],
+        "arbitrage_opportunities": true
+      },
+      "reasoning": "Strong performance at 1.000 allows for optimization"
+    },
+    "status": "pending",
+    "estimated_impact": "High (Profit)",
+    "risk_level": "Low-Medium"
+  },
+  {
+    "id": "yield_optimization_1753554481",
+    "type": "yield_optimization",
+    "source": "agent",
+    "timestamp": 1753554481.8594198,
+    "data": {
+      "action": "optimize_yield",
+      "parameters": {
+        "leverage_increase": 0.1,
+        "new_asset_targets": [
+          "USDT",
+          "FRAX"
+        ],
+        "arbitrage_opportunities": true
+      },
+      "reasoning": "Strong performance at 1.000 allows for optimization"
+    },
+    "status": "pending",
+    "estimated_impact": "High (Profit)",
+    "risk_level": "Low-Medium"
+  },
+  {
+    "id": "yield_optimization_1753554526",
+    "type": "yield_optimization",
+    "source": "agent",
+    "timestamp": 1753554526.8670547,
+    "data": {
+      "action": "optimize_yield",
+      "parameters": {
+        "leverage_increase": 0.1,
+        "new_asset_targets": [
+          "USDT",
+          "FRAX"
+        ],
+        "arbitrage_opportunities": true
+      },
+      "reasoning": "Strong performance at 1.000 allows for optimization"
+    },
+    "status": "pending",
+    "estimated_impact": "High (Profit)",
+    "risk_level": "Low-Medium"
+  },
+  {
+    "id": "yield_optimization_1753554606",
+    "type": "yield_optimization",
+    "source": "agent",
+    "timestamp": 1753554606.9058657,
+    "data": {
+      "action": "optimize_yield",
+      "parameters": {
+        "leverage_increase": 0.1,
+        "new_asset_targets": [
+          "USDT",
+          "FRAX"
+        ],
+        "arbitrage_opportunities": true
+      },
+      "reasoning": "Strong performance at 1.000 allows for optimization"
+    },
+    "status": "pending",
+    "estimated_impact": "High (Profit)",
+    "risk_level": "Low-Medium"
+  },
+  {
+    "id": "yield_optimization_1753554651",
+    "type": "yield_optimization",
+    "source": "agent",
+    "timestamp": 1753554651.9213457,
+    "data": {
+      "action": "optimize_yield",
+      "parameters": {
+        "leverage_increase": 0.1,
+        "new_asset_targets": [
+          "USDT",
+          "FRAX"
+        ],
+        "arbitrage_opportunities": true
+      },
+      "reasoning": "Strong performance at 1.000 allows for optimization"
+    },
+    "status": "pending",
+    "estimated_impact": "High (Profit)",
+    "risk_level": "Low-Medium"
+  },
+  {
+    "id": "yield_optimization_1753554731",
+    "type": "yield_optimization",
+    "source": "agent",
+    "timestamp": 1753554731.1802151,
+    "data": {
+      "action": "optimize_yield",
+      "parameters": {
+        "leverage_increase": 0.1,
+        "new_asset_targets": [
+          "USDT",
+          "FRAX"
+        ],
+        "arbitrage_opportunities": true
+      },
+      "reasoning": "Strong performance at 1.000 allows for optimization"
+    },
+    "status": "pending",
+    "estimated_impact": "High (Profit)",
+    "risk_level": "Low-Medium"
+  },
+  {
+    "id": "yield_optimization_1753554776",
+    "type": "yield_optimization",
+    "source": "agent",
+    "timestamp": 1753554776.2466981,
+    "data": {
+      "action": "optimize_yield",
+      "parameters": {
+        "leverage_increase": 0.1,
+        "new_asset_targets": [
+          "USDT",
+          "FRAX"
+        ],
+        "arbitrage_opportunities": true
+      },
+      "reasoning": "Strong performance at 1.000 allows for optimization"
+    },
+    "status": "pending",
+    "estimated_impact": "High (Profit)",
+    "risk_level": "Low-Medium"
+  },
+  {
+    "id": "yield_optimization_1753554855",
+    "type": "yield_optimization",
+    "source": "agent",
+    "timestamp": 1753554855.4572046,
+    "data": {
+      "action": "optimize_yield",
+      "parameters": {
+        "leverage_increase": 0.1,
+        "new_asset_targets": [
+          "USDT",
+          "FRAX"
+        ],
+        "arbitrage_opportunities": true
+      },
+      "reasoning": "Strong performance at 1.000 allows for optimization"
+    },
+    "status": "pending",
+    "estimated_impact": "High (Profit)",
+    "risk_level": "Low-Medium"
+  },
+  {
+    "id": "yield_optimization_1753554900",
+    "type": "yield_optimization",
+    "source": "agent",
+    "timestamp": 1753554900.4655478,
+    "data": {
+      "action": "optimize_yield",
+      "parameters": {
+        "leverage_increase": 0.1,
+        "new_asset_targets": [
+          "USDT",
+          "FRAX"
+        ],
+        "arbitrage_opportunities": true
+      },
+      "reasoning": "Strong performance at 1.000 allows for optimization"
+    },
+    "status": "pending",
+    "estimated_impact": "High (Profit)",
+    "risk_level": "Low-Medium"
+  },
+  {
+    "id": "yield_optimization_1753554979",
+    "type": "yield_optimization",
+    "source": "agent",
+    "timestamp": 1753554979.4233003,
+    "data": {
+      "action": "optimize_yield",
+      "parameters": {
+        "leverage_increase": 0.1,
+        "new_asset_targets": [
+          "USDT",
+          "FRAX"
+        ],
+        "arbitrage_opportunities": true
+      },
+      "reasoning": "Strong performance at 1.000 allows for optimization"
+    },
+    "status": "pending",
+    "estimated_impact": "High (Profit)",
+    "risk_level": "Low-Medium"
+  },
+  {
+    "id": "yield_optimization_1753555024",
+    "type": "yield_optimization",
+    "source": "agent",
+    "timestamp": 1753555024.4331095,
+    "data": {
+      "action": "optimize_yield",
+      "parameters": {
+        "leverage_increase": 0.1,
+        "new_asset_targets": [
+          "USDT",
+          "FRAX"
+        ],
+        "arbitrage_opportunities": true
+      },
+      "reasoning": "Strong performance at 1.000 allows for optimization"
+    },
+    "status": "pending",
+    "estimated_impact": "High (Profit)",
+    "risk_level": "Low-Medium"
+  },
+  {
+    "id": "yield_optimization_1753555069",
+    "type": "yield_optimization",
+    "source": "agent",
+    "timestamp": 1753555069.576859,
+    "data": {
+      "action": "optimize_yield",
+      "parameters": {
+        "leverage_increase": 0.1,
+        "new_asset_targets": [
+          "USDT",
+          "FRAX"
+        ],
+        "arbitrage_opportunities": true
+      },
+      "reasoning": "Strong performance at 0.923 allows for optimization"
+    },
+    "status": "pending",
+    "estimated_impact": "High (Profit)",
+    "risk_level": "Low-Medium"
+  },
+  {
+    "id": "yield_optimization_1753555114",
+    "type": "yield_optimization",
+    "source": "agent",
+    "timestamp": 1753555114.774703,
+    "data": {
+      "action": "optimize_yield",
+      "parameters": {
+        "leverage_increase": 0.1,
+        "new_asset_targets": [
+          "USDT",
+          "FRAX"
+        ],
+        "arbitrage_opportunities": true
+      },
+      "reasoning": "Strong performance at 0.857 allows for optimization"
+    },
+    "status": "pending",
+    "estimated_impact": "High (Profit)",
+    "risk_level": "Low-Medium"
+  },
+  {
+    "id": "risk_reduction_1753555250",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753555250.029749,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.706 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753555250.0598173
+  },
+  {
+    "id": "risk_reduction_1753555295",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753555295.2582126,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.667 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753555295.44594
+  },
+  {
+    "id": "risk_reduction_1753555340",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753555340.5384486,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.632 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753555340.553681
+  },
+  {
+    "id": "risk_reduction_1753555385",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753555385.6256695,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.600 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753555385.655173
+  },
+  {
+    "id": "risk_reduction_1753555430",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753555430.7301886,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.571 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753555430.758159
+  },
+  {
+    "id": "risk_reduction_1753555475",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753555475.852206,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.545 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753555475.8691223
+  },
+  {
+    "id": "risk_reduction_1753555521",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753555521.0048637,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.522 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753555521.2095256
+  },
+  {
+    "id": "risk_reduction_1753555566",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753555566.2776136,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.500 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753555566.2958035
+  },
+  {
+    "id": "risk_reduction_1753555611",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753555611.3619275,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.480 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753555611.3762693
+  },
+  {
+    "id": "risk_reduction_1753555656",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753555656.4475477,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.462 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753555656.5015907
+  },
+  {
+    "id": "risk_reduction_1753555701",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753555701.5759943,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.444 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753555701.5857728
+  },
+  {
+    "id": "risk_reduction_1753555746",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753555746.8034446,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.429 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753555747.0490255
+  },
+  {
+    "id": "risk_reduction_1753555792",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753555792.1162114,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.414 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753555792.1250913
+  },
+  {
+    "id": "risk_reduction_1753555837",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753555837.1941974,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.400 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753555837.2197373
+  },
+  {
+    "id": "risk_reduction_1753555918",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753555918.3212452,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.419 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753555918.3354096
+  },
+  {
+    "id": "risk_reduction_1753555963",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753555963.3381677,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.419 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753555963.351792
+  },
+  {
+    "id": "risk_reduction_1753556043",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753556043.4002953,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.438 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753556043.5529377
+  },
+  {
+    "id": "risk_reduction_1753556088",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753556088.5569334,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.438 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753556088.5696309
+  },
+  {
+    "id": "risk_reduction_1753556167",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753556167.0915353,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.455 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753556167.2257135
+  },
+  {
+    "id": "risk_reduction_1753556212",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753556212.2286718,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.455 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753556212.2382493
+  },
+  {
+    "id": "risk_reduction_1753556291",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753556291.4421859,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.471 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753556291.459209
+  },
+  {
+    "id": "risk_reduction_1753556336",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753556336.52896,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.471 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753556336.7362835
+  },
+  {
+    "id": "risk_reduction_1753556415",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753556415.715171,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.486 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753556415.7485335
+  },
+  {
+    "id": "risk_reduction_1753556460",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753556460.7529483,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.486 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753556460.7633932
+  },
+  {
+    "id": "risk_reduction_1753556540",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753556540.141713,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.500 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753556540.1497214
+  },
+  {
+    "id": "risk_reduction_1753556585",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753556585.159505,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.500 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753556585.2315223
+  },
+  {
+    "id": "risk_reduction_1753556664",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753556664.017146,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.514 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753556664.1450882
+  },
+  {
+    "id": "risk_reduction_1753556709",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753556709.1483443,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.514 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753556709.1575425
+  },
+  {
+    "id": "risk_reduction_1753556787",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753556787.8635533,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.526 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753556787.880228
+  },
+  {
+    "id": "risk_reduction_1753556832",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753556832.8838887,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.526 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753556832.899908
+  },
+  {
+    "id": "risk_reduction_1753556911",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753556911.2702656,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.538 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753556911.2900748
+  },
+  {
+    "id": "risk_reduction_1753556956",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753556956.434806,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.538 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753556956.664429
+  },
+  {
+    "id": "risk_reduction_1753557035",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753557035.5001576,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.550 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753557035.63946
+  },
+  {
+    "id": "risk_reduction_1753557080",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753557080.6445224,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.550 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753557080.7203386
+  },
+  {
+    "id": "risk_reduction_1753557159",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753557159.6098833,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.561 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753557159.6276858
+  },
+  {
+    "id": "risk_reduction_1753557204",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753557204.6316059,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.561 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753557204.642304
+  },
+  {
+    "id": "risk_reduction_1753557283",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753557283.9068263,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.571 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753557284.1046543
+  },
+  {
+    "id": "risk_reduction_1753557329",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753557329.1081738,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.571 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753557329.1252933
+  },
+  {
+    "id": "risk_reduction_1753557407",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753557407.2500188,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.581 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753557407.2677326
+  },
+  {
+    "id": "risk_reduction_1753557452",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753557452.2723675,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.581 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753557452.2879183
+  },
+  {
+    "id": "risk_reduction_1753557497",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753557497.360181,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.568 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753557497.5810473
+  },
+  {
+    "id": "risk_reduction_1753557542",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753557542.7718267,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.556 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753557542.9377244
+  },
+  {
+    "id": "risk_reduction_1753557587",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753557587.997649,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.543 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753557588.0153422
+  },
+  {
+    "id": "risk_reduction_1753557633",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753557633.0919473,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.532 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753557633.1070542
+  },
+  {
+    "id": "risk_reduction_1753557678",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753557678.1741784,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.521 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753557678.1841109
+  },
+  {
+    "id": "risk_reduction_1753557723",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753557723.2538974,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.510 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753557723.2778404
+  },
+  {
+    "id": "risk_reduction_1753557768",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753557768.4453564,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.500 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753557768.7477884
+  },
+  {
+    "id": "risk_reduction_1753557813",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753557813.8212295,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.490 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753557814.0427804
+  },
+  {
+    "id": "risk_reduction_1753557859",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753557859.176119,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.481 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753557859.2051592
+  },
+  {
+    "id": "risk_reduction_1753557910",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753557910.434905,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.472 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753557910.4452105
+  },
+  {
+    "id": "risk_reduction_1753557955",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753557955.5300815,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.463 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753557955.693389
+  },
+  {
+    "id": "risk_reduction_1753558000",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753558000.968991,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.455 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753558001.2310786
+  },
+  {
+    "id": "risk_reduction_1753558046",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753558046.3065321,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.446 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753558046.327837
+  },
+  {
+    "id": "risk_reduction_1753558091",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753558091.4097607,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.439 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753558091.4320724
+  },
+  {
+    "id": "risk_reduction_1753558136",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753558136.5002759,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.431 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753558136.5229206
+  },
+  {
+    "id": "risk_reduction_1753558181",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753558181.5888233,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.424 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753558181.6106498
+  },
+  {
+    "id": "risk_reduction_1753558226",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753558226.7395878,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.417 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753558226.909224
+  },
+  {
+    "id": "risk_reduction_1753558271",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753558271.9682665,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.410 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753558272.0103974
+  },
+  {
+    "id": "risk_reduction_1753558317",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753558317.0726113,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.403 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753558317.1066742
+  },
+  {
+    "id": "risk_reduction_1753558362",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753558362.2065952,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.397 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753558362.2446415
+  },
+  {
+    "id": "risk_reduction_1753558407",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753558407.3143814,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.391 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753558407.469487
+  },
+  {
+    "id": "risk_reduction_1753558452",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753558452.606804,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.385 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753558452.8275492
+  },
+  {
+    "id": "risk_reduction_1753558497",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753558497.890253,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.379 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753558497.9120305
+  },
+  {
+    "id": "risk_reduction_1753558542",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753558542.972781,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.373 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753558543.0144904
+  },
+  {
+    "id": "risk_reduction_1753558588",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753558588.0727892,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.368 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753558588.092926
+  },
+  {
+    "id": "risk_reduction_1753558633",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753558633.153663,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.362 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753558633.1781857
+  },
+  {
+    "id": "risk_reduction_1753558678",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753558678.4328606,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.357 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753558678.6735284
+  },
+  {
+    "id": "risk_reduction_1753558723",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753558723.756601,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.352 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753558723.9532545
+  },
+  {
+    "id": "risk_reduction_1753558769",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753558769.015832,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.347 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753558769.0417726
+  },
+  {
+    "id": "risk_reduction_1753558814",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753558814.115786,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.342 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753558814.144795
+  },
+  {
+    "id": "risk_reduction_1753558859",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753558859.210864,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.338 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753558859.2212522
+  },
+  {
+    "id": "risk_reduction_1753558904",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753558904.3574247,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.333 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753558904.569149
+  },
+  {
+    "id": "risk_reduction_1753558949",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753558949.63725,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.329 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753558949.6861248
+  },
+  {
+    "id": "risk_reduction_1753558994",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753558994.7466843,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.325 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753558994.7799056
+  },
+  {
+    "id": "risk_reduction_1753559039",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753559039.8502374,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.321 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753559039.863298
+  },
+  {
+    "id": "risk_reduction_1753559084",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753559084.9313793,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.316 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753559084.9479249
+  },
+  {
+    "id": "risk_reduction_1753559130",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753559130.116172,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.312 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753559130.3860118
+  },
+  {
+    "id": "risk_reduction_1753559175",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753559175.4551058,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.309 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753559175.5034804
+  },
+  {
+    "id": "risk_reduction_1753559220",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753559220.5656743,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.305 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753559220.5863683
+  },
+  {
+    "id": "risk_reduction_1753559265",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753559265.6622772,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.301 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753559265.7055802
+  },
+  {
+    "id": "risk_reduction_1753559310",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753559310.7691905,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.298 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753559310.8208084
+  },
+  {
+    "id": "risk_reduction_1753559355",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753559355.9270048,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.294 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753559356.0896893
+  },
+  {
+    "id": "risk_reduction_1753559401",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753559401.1531215,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.291 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753559401.1772
+  },
+  {
+    "id": "risk_reduction_1753559446",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753559446.2671921,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.287 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753559446.2814424
+  },
+  {
+    "id": "risk_reduction_1753559491",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753559491.3425026,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.284 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753559491.41206
+  },
+  {
+    "id": "risk_reduction_1753559536",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753559536.4843662,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.281 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753559536.5151782
+  },
+  {
+    "id": "risk_reduction_1753559581",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753559581.6529415,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.278 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753559581.922803
+  },
+  {
+    "id": "risk_reduction_1753559626",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753559626.9952822,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.275 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753559627.0918107
+  },
+  {
+    "id": "risk_reduction_1753559672",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753559672.168927,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.272 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753559672.187622
+  },
+  {
+    "id": "risk_reduction_1753559717",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753559717.2638166,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.269 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753559717.286728
+  },
+  {
+    "id": "risk_reduction_1753559762",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753559762.36011,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.266 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753559762.387287
+  },
+  {
+    "id": "risk_reduction_1753559807",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753559807.5420895,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.263 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753559807.7165623
+  },
+  {
+    "id": "risk_reduction_1753559852",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753559852.7798557,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.260 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753559852.9096522
+  },
+  {
+    "id": "risk_reduction_1753559897",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753559897.9803603,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.258 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753559898.0018563
+  },
+  {
+    "id": "risk_reduction_1753559943",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753559943.0681345,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.255 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753559943.1239192
+  },
+  {
+    "id": "risk_reduction_1753559988",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753559988.1873636,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.253 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753559988.2077157
+  },
+  {
+    "id": "risk_reduction_1753560033",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753560033.3254192,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.250 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753560033.497963
+  },
+  {
+    "id": "risk_reduction_1753560078",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753560078.580049,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.248 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753560078.6774704
+  },
+  {
+    "id": "risk_reduction_1753560123",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753560123.752959,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.245 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753560123.7738235
+  },
+  {
+    "id": "risk_reduction_1753560168",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753560168.8357475,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.243 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753560168.8839405
+  },
+  {
+    "id": "risk_reduction_1753560213",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753560213.950998,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.240 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753560213.9849985
+  },
+  {
+    "id": "risk_reduction_1753560259",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753560259.1492145,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.238 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753560259.4676487
+  },
+  {
+    "id": "risk_reduction_1753560304",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753560304.5393627,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.236 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753560304.6900923
+  },
+  {
+    "id": "risk_reduction_1753560349",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753560349.757366,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.234 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753560349.8549047
+  },
+  {
+    "id": "risk_reduction_1753560394",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753560394.9226978,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.231 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753560394.9458013
+  },
+  {
+    "id": "risk_reduction_1753560440",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753560440.0267,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.229 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753560440.0452557
+  },
+  {
+    "id": "risk_reduction_1753560485",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753560485.1991234,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.227 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753560485.5409217
+  },
+  {
+    "id": "risk_reduction_1753560530",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753560530.6150901,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.225 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753560530.6901243
+  },
+  {
+    "id": "risk_reduction_1753560575",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753560575.7575884,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.223 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753560575.7826545
+  },
+  {
+    "id": "risk_reduction_1753560654",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753560654.5330503,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.230 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753560654.5519664
+  },
+  {
+    "id": "risk_reduction_1753560699",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753560699.5574455,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.230 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753560699.5994048
+  },
+  {
+    "id": "risk_reduction_1753560744",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753560744.7735214,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.228 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753560744.9497662
+  },
+  {
+    "id": "risk_reduction_1753560790",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753560790.0248785,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.226 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753560790.0730486
+  },
+  {
+    "id": "risk_reduction_1753560835",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753560835.141336,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.224 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753560835.18533
+  },
+  {
+    "id": "risk_reduction_1753560880",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753560880.248612,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.222 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753560880.2638865
+  },
+  {
+    "id": "risk_reduction_1753560925",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753560925.328074,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.220 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753560925.4380696
+  },
+  {
+    "id": "risk_reduction_1753560970",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753560970.6688492,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.218 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753560970.981282
+  },
+  {
+    "id": "risk_reduction_1753561016",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753561016.0448203,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.217 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753561016.0974095
+  },
+  {
+    "id": "risk_reduction_1753561061",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753561061.173809,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.215 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753561061.1961007
+  },
+  {
+    "id": "risk_reduction_1753561106",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753561106.2637143,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.213 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753561106.2898164
+  },
+  {
+    "id": "risk_reduction_1753561151",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753561151.3566082,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.211 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753561151.401653
+  },
+  {
+    "id": "risk_reduction_1753561196",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753561196.6122708,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.210 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753561196.8875482
+  },
+  {
+    "id": "risk_reduction_1753561241",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753561241.950364,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.208 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753561241.9839065
+  },
+  {
+    "id": "risk_reduction_1753561287",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753561287.0598183,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.206 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753561287.213778
+  },
+  {
+    "id": "risk_reduction_1753561332",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753561332.298521,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.205 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753561332.315149
+  },
+  {
+    "id": "risk_reduction_1753561377",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753561377.3822944,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.203 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753561377.4161887
+  },
+  {
+    "id": "risk_reduction_1753561422",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753561422.5610409,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.202 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753561422.8174205
+  },
+  {
+    "id": "risk_reduction_1753561467",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753561467.8908257,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.200 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753561467.9222736
+  },
+  {
+    "id": "risk_reduction_1753561513",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753561513.0107217,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.198 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753561513.050866
+  },
+  {
+    "id": "risk_reduction_1753561558",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753561558.1245508,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.197 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753561558.1748297
+  },
+  {
+    "id": "risk_reduction_1753561603",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753561603.2421436,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.195 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753561603.2553751
+  },
+  {
+    "id": "risk_reduction_1753561648",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753561648.4059424,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.194 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753561648.7689383
+  },
+  {
+    "id": "risk_reduction_1753561693",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753561693.8390594,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.193 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753561693.8969278
+  },
+  {
+    "id": "risk_reduction_1753561738",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753561738.9611433,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.191 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753561739.0359683
+  },
+  {
+    "id": "risk_reduction_1753561784",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753561784.1025374,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.190 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753561784.1390321
+  },
+  {
+    "id": "risk_reduction_1753561829",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753561829.2078876,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.188 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753561829.2446163
+  },
+  {
+    "id": "risk_reduction_1753561874",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753561874.4223652,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.187 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753561874.6197867
+  },
+  {
+    "id": "risk_reduction_1753561919",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753561919.6867435,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.186 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753561919.7010803
+  },
+  {
+    "id": "risk_reduction_1753561964",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753561964.773339,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.184 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753561964.7921822
+  },
+  {
+    "id": "risk_reduction_1753562009",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753562009.8594236,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.183 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753562009.8838346
+  },
+  {
+    "id": "risk_reduction_1753562054",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753562054.9607334,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.182 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753562055.0011816
+  },
+  {
+    "id": "risk_reduction_1753562100",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753562100.1938488,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.181 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753562100.3808615
+  },
+  {
+    "id": "risk_reduction_1753562145",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753562145.4567752,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.179 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753562145.4881575
+  },
+  {
+    "id": "risk_reduction_1753562190",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753562190.5720117,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.178 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753562190.5862002
+  },
+  {
+    "id": "risk_reduction_1753562235",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753562235.6639853,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.177 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753562235.6919363
+  },
+  {
+    "id": "risk_reduction_1753562280",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753562280.7594504,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.176 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753562280.7842162
+  },
+  {
+    "id": "risk_reduction_1753562326",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753562326.0148342,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.174 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753562326.3205612
+  },
+  {
+    "id": "risk_reduction_1753562371",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753562371.3945239,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.173 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753562371.4446347
+  },
+  {
+    "id": "risk_reduction_1753562416",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753562416.5251958,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.172 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753562416.5600312
+  },
+  {
+    "id": "risk_reduction_1753562461",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753562461.6417544,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.171 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753562461.6886413
+  },
+  {
+    "id": "risk_reduction_1753562506",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753562506.7720323,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.170 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753562506.8579655
+  },
+  {
+    "id": "risk_reduction_1753562552",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753562552.011252,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.169 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753562552.1972966
+  },
+  {
+    "id": "risk_reduction_1753562597",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753562597.26274,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.168 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753562597.2958443
+  },
+  {
+    "id": "risk_reduction_1753562642",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753562642.369748,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.167 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753562642.4135683
+  },
+  {
+    "id": "risk_reduction_1753562687",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753562687.4766161,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.166 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753562687.5037494
+  },
+  {
+    "id": "risk_reduction_1753562732",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753562732.5745842,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.165 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753562732.627594
+  },
+  {
+    "id": "risk_reduction_1753562777",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753562777.7590275,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.164 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753562778.004039
+  },
+  {
+    "id": "risk_reduction_1753562823",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753562823.0698757,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.163 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753562823.1222694
+  },
+  {
+    "id": "risk_reduction_1753562868",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753562868.2027962,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.161 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753562868.2329333
+  },
+  {
+    "id": "risk_reduction_1753562913",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753562913.314905,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.160 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753562913.3516715
+  },
+  {
+    "id": "risk_reduction_1753562958",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753562958.4233997,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.160 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753562958.6252055
+  },
+  {
+    "id": "risk_reduction_1753563003",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753563003.757682,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.159 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753563004.0001202
+  },
+  {
+    "id": "risk_reduction_1753563049",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753563049.0714507,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.158 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753563049.0950997
+  },
+  {
+    "id": "risk_reduction_1753563094",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753563094.1611748,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.157 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753563094.259062
+  },
+  {
+    "id": "risk_reduction_1753563139",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753563139.3266137,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.156 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753563139.4363706
+  },
+  {
+    "id": "risk_reduction_1753563184",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753563184.506021,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.155 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753563184.5340445
+  },
+  {
+    "id": "risk_reduction_1753563229",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753563229.6745613,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.154 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753563230.1053464
+  },
+  {
+    "id": "risk_reduction_1753563275",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753563275.2142768,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.153 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753563275.2271485
+  },
+  {
+    "id": "risk_reduction_1753563320",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753563320.3005838,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.152 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753563320.3259287
+  },
+  {
+    "id": "risk_reduction_1753563365",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753563365.4002607,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.151 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753563365.5400314
+  },
+  {
+    "id": "risk_reduction_1753563410",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753563410.6232445,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.150 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753563410.640356
+  },
+  {
+    "id": "risk_reduction_1753563455",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753563455.8241687,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.149 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753563456.0347192
+  },
+  {
+    "id": "risk_reduction_1753563501",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753563501.1071715,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.149 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753563501.1309888
+  },
+  {
+    "id": "risk_reduction_1753563546",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753563546.213999,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.148 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753563546.2437677
+  },
+  {
+    "id": "risk_reduction_1753563591",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753563591.3105667,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.147 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753563591.3355143
+  },
+  {
+    "id": "risk_reduction_1753563636",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753563636.4119356,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.146 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753563636.4276664
+  },
+  {
+    "id": "risk_reduction_1753563681",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753563681.5587745,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.145 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753563681.7469082
+  },
+  {
+    "id": "risk_reduction_1753563726",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753563726.8288412,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.144 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753563726.8671901
+  },
+  {
+    "id": "risk_reduction_1753563771",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753563771.9536092,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.144 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753563771.9804618
+  },
+  {
+    "id": "risk_reduction_1753563817",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753563817.0464785,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.143 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753563817.0755875
+  },
+  {
+    "id": "risk_reduction_1753563862",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753563862.1413836,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.142 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753563862.169263
+  },
+  {
+    "id": "risk_reduction_1753563907",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753563907.3337972,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.141 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753563907.559596
+  },
+  {
+    "id": "risk_reduction_1753563952",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753563952.6277525,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.141 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753563952.6666842
+  },
+  {
+    "id": "risk_reduction_1753563997",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753563997.7315524,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.140 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753563997.8069956
+  },
+  {
+    "id": "risk_reduction_1753564042",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753564042.8824415,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.139 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753564042.9562733
+  },
+  {
+    "id": "risk_reduction_1753564088",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753564088.0413952,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.138 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753564088.0768528
+  },
+  {
+    "id": "risk_reduction_1753564133",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753564133.2195537,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.138 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753564133.4342208
+  },
+  {
+    "id": "risk_reduction_1753564178",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753564178.501894,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.137 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753564178.5282242
+  },
+  {
+    "id": "risk_reduction_1753564223",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753564223.5947638,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.136 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753564223.662628
+  },
+  {
+    "id": "risk_reduction_1753564268",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753564268.730442,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.135 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753564268.7499356
+  },
+  {
+    "id": "risk_reduction_1753564313",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753564313.8222966,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.135 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753564313.8498182
+  },
+  {
+    "id": "risk_reduction_1753564359",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753564359.0235722,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.134 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753564359.1993382
+  },
+  {
+    "id": "risk_reduction_1753564404",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753564404.264663,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.133 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753564404.2952774
+  },
+  {
+    "id": "risk_reduction_1753564449",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753564449.3628914,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.133 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753564449.4451575
+  },
+  {
+    "id": "risk_reduction_1753564494",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753564494.5191314,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.132 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753564494.5419436
+  },
+  {
+    "id": "risk_reduction_1753564539",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753564539.6149127,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.131 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753564539.641668
+  },
+  {
+    "id": "risk_reduction_1753564584",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753564584.7650323,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.131 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753564584.9379628
+  },
+  {
+    "id": "risk_reduction_1753564630",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753564630.0155597,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.130 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753564630.0416045
+  },
+  {
+    "id": "risk_reduction_1753564675",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753564675.140818,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.129 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753564675.1800358
+  },
+  {
+    "id": "risk_reduction_1753564720",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753564720.2484992,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.129 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753564720.2733572
+  },
+  {
+    "id": "risk_reduction_1753564765",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753564765.3474169,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.128 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753564765.4367137
+  },
+  {
+    "id": "risk_reduction_1753564810",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753564810.6098628,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.127 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753564810.8031826
+  },
+  {
+    "id": "risk_reduction_1753564855",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753564855.9523313,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.127 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753564855.986116
+  },
+  {
+    "id": "risk_reduction_1753564901",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753564901.066227,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.126 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753564901.0835307
+  },
+  {
+    "id": "risk_reduction_1753564946",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753564946.169217,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.126 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753564946.1898062
+  },
+  {
+    "id": "risk_reduction_1753564991",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753564991.292609,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.125 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753564991.3148253
+  },
+  {
+    "id": "risk_reduction_1753565036",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753565036.4971907,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.124 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753565036.6987393
+  },
+  {
+    "id": "risk_reduction_1753565081",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753565081.777473,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.124 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753565081.988736
+  },
+  {
+    "id": "risk_reduction_1753565127",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753565127.0618107,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.123 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753565127.0766468
+  },
+  {
+    "id": "risk_reduction_1753565172",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753565172.1567807,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.123 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753565172.17874
+  },
+  {
+    "id": "risk_reduction_1753565217",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753565217.2557054,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.122 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753565217.2878735
+  },
+  {
+    "id": "risk_reduction_1753565262",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753565262.454358,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.121 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753565262.6493511
+  },
+  {
+    "id": "risk_reduction_1753565307",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753565307.7232537,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.121 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753565307.7534637
+  },
+  {
+    "id": "risk_reduction_1753565352",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753565352.832728,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.120 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753565352.889595
+  },
+  {
+    "id": "risk_reduction_1753565397",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753565397.9799526,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.120 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753565398.0130625
+  },
+  {
+    "id": "risk_reduction_1753565443",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753565443.0956476,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.119 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753565443.1319888
+  },
+  {
+    "id": "risk_reduction_1753565488",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753565488.272231,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.119 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753565488.5129259
+  },
+  {
+    "id": "risk_reduction_1753565533",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753565533.5972836,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.118 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753565533.633526
+  },
+  {
+    "id": "risk_reduction_1753565578",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753565578.7155719,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.118 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753565578.761076
+  },
+  {
+    "id": "risk_reduction_1753565623",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753565623.846562,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.117 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753565623.877476
+  },
+  {
+    "id": "risk_reduction_1753565668",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753565668.9683778,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.117 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753565669.0064402
+  },
+  {
+    "id": "risk_reduction_1753565714",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753565714.20651,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.116 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753565714.4396913
+  },
+  {
+    "id": "risk_reduction_1753565759",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753565759.5159688,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.116 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753565759.5503795
+  },
+  {
+    "id": "risk_reduction_1753565804",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753565804.634575,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.115 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753565804.7397316
+  },
+  {
+    "id": "risk_reduction_1753565849",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753565849.830774,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.115 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753565849.8668547
+  },
+  {
+    "id": "risk_reduction_1753565894",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753565894.941475,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.114 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753565894.9692068
+  },
+  {
+    "id": "risk_reduction_1753565940",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753565940.1110933,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.114 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753565940.3202083
+  },
+  {
+    "id": "risk_reduction_1753565985",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753565985.3978033,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.113 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753565985.428633
+  },
+  {
+    "id": "risk_reduction_1753566030",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753566030.5043836,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.113 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753566030.5755827
+  },
+  {
+    "id": "risk_reduction_1753566075",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753566075.6482513,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.112 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753566075.6849673
+  },
+  {
+    "id": "risk_reduction_1753566120",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753566120.7726827,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.112 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753566120.8391867
+  },
+  {
+    "id": "risk_reduction_1753566166",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753566166.010999,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.111 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753566166.2135592
+  },
+  {
+    "id": "risk_reduction_1753566211",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753566211.2832181,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.111 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753566211.297351
+  },
+  {
+    "id": "risk_reduction_1753566256",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753566256.3855102,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.110 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753566256.5221457
+  },
+  {
+    "id": "risk_reduction_1753566301",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753566301.6007726,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.110 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753566301.6296027
+  },
+  {
+    "id": "risk_reduction_1753566346",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753566346.7030456,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.109 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753566346.7305927
+  },
+  {
+    "id": "risk_reduction_1753566391",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753566391.8670318,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.109 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753566392.167385
+  },
+  {
+    "id": "risk_reduction_1753566437",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753566437.2405076,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.108 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753566437.2921565
+  },
+  {
+    "id": "risk_reduction_1753566482",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753566482.3641648,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.108 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753566482.391913
+  },
+  {
+    "id": "risk_reduction_1753566527",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753566527.462748,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.107 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753566527.4922242
+  },
+  {
+    "id": "risk_reduction_1753566572",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753566572.564947,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.107 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753566572.6220398
+  },
+  {
+    "id": "risk_reduction_1753566617",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753566617.8432505,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.107 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753566618.1699958
+  },
+  {
+    "id": "risk_reduction_1753566663",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753566663.2618508,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.106 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753566663.377812
+  },
+  {
+    "id": "risk_reduction_1753566708",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753566708.4866004,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.106 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753566708.5227387
+  },
+  {
+    "id": "risk_reduction_1753566753",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753566753.5938776,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.105 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753566753.6282408
+  },
+  {
+    "id": "risk_reduction_1753566798",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753566798.7043288,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.105 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753566798.8424525
+  },
+  {
+    "id": "risk_reduction_1753566844",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753566844.001597,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.104 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753566844.1861558
+  },
+  {
+    "id": "risk_reduction_1753566889",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753566889.2697213,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.104 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753566889.3094432
+  },
+  {
+    "id": "risk_reduction_1753566934",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753566934.3922775,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.104 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753566934.4507008
+  },
+  {
+    "id": "risk_reduction_1753566979",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753566979.5367568,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.103 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753566979.5946865
+  },
+  {
+    "id": "risk_reduction_1753567024",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753567024.6749737,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.103 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753567024.8211331
+  },
+  {
+    "id": "risk_reduction_1753567070",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753567070.0584815,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.102 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753567070.596006
+  },
+  {
+    "id": "risk_reduction_1753567115",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753567115.7118044,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.102 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753567115.7742765
+  },
+  {
+    "id": "risk_reduction_1753567160",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753567160.864879,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.102 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753567160.8989372
+  },
+  {
+    "id": "risk_reduction_1753567205",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753567205.9889526,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.101 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753567206.0340624
+  },
+  {
+    "id": "risk_reduction_1753567251",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753567251.124353,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.101 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753567251.160852
+  },
+  {
+    "id": "risk_reduction_1753567296",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753567296.3115091,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.100 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753567296.6127906
+  },
+  {
+    "id": "risk_reduction_1753567341",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753567341.689767,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.100 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753567341.7201488
+  },
+  {
+    "id": "risk_reduction_1753567386",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753567386.8181427,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.100 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753567386.856174
+  },
+  {
+    "id": "risk_reduction_1753567431",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753567431.9561226,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.099 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753567431.993074
+  },
+  {
+    "id": "risk_reduction_1753567477",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753567477.081213,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.099 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753567477.0994856
+  },
+  {
+    "id": "risk_reduction_1753567522",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753567522.2827282,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.098 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753567522.5145574
+  },
+  {
+    "id": "risk_reduction_1753567567",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753567567.5976975,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.098 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753567567.6303911
+  },
+  {
+    "id": "risk_reduction_1753567612",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753567612.7284462,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.098 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753567612.9957707
+  },
+  {
+    "id": "risk_reduction_1753567658",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753567658.0820224,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.097 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753567658.1224098
+  },
+  {
+    "id": "risk_reduction_1753567703",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753567703.196091,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.097 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753567703.2180803
+  },
+  {
+    "id": "risk_reduction_1753567748",
+    "type": "risk_reduction",
+    "source": "agent",
+    "timestamp": 1753567748.3719983,
+    "data": {
+      "action": "reduce_risk",
+      "parameters": {
+        "max_borrow_ratio": 0.6,
+        "health_factor_target": 1.25,
+        "monitoring_frequency": "increased"
+      },
+      "reasoning": "Performance at 0.097 suggests risk reduction needed"
+    },
+    "status": "implemented",
+    "estimated_impact": "Medium-High (Stability)",
+    "risk_level": "Low",
+    "implementation_time": 1753567748.623078
   }
 ]
