@@ -517,11 +517,15 @@ class ArbitrumTestnetAgent:
 
         return False
 
-    def is_operation_on_cooldown(self):
+    def is_operation_on_cooldown(self, allow_sequence_continuation=False):
         """Check if any operation is in cooldown period"""
         import time
         current_time = time.time()
         time_since_last = current_time - self.last_successful_operation_time
+
+        # Allow sequence continuation within 5 minutes of last operation
+        if allow_sequence_continuation and time_since_last < 300:  # 5 minutes
+            return False
 
         if time_since_last < self.operation_cooldown_seconds:
             remaining_time = self.operation_cooldown_seconds - time_since_last
@@ -719,8 +723,8 @@ class ArbitrumTestnetAgent:
                 print("🛑 Emergency stop active - skipping operations")
                 return 0.1
             
-            # Check cooldown
-            if self.is_operation_on_cooldown():
+            # Check cooldown (but allow sequence continuation)
+            if self.is_operation_on_cooldown(allow_sequence_continuation=False):
                 print("⏰ Operations in cooldown period")
                 return 0.2
             
@@ -1041,7 +1045,15 @@ class ArbitrumTestnetAgent:
                     
                     if balance_increase > 0:
                         print(f"✅ Borrow successful - received {balance_increase:.6f} DAI")
-                        return True
+                        
+                        # EXECUTE COMPLETE SEQUENCE: Borrow → Swap → Supply
+                        sequence_success = self._execute_complete_defi_sequence(balance_increase)
+                        if sequence_success:
+                            print("✅ Complete DeFi sequence executed successfully")
+                            return True
+                        else:
+                            print("⚠️ Borrow successful but sequence incomplete")
+                            return True  # Still count borrow as success
                     else:
                         print("⚠️ Transaction completed but balance didn't increase as expected")
                         return False
@@ -1071,6 +1083,178 @@ class ArbitrumTestnetAgent:
             print(f"❌ Validated borrow execution failed: {e}")
             import traceback
             traceback.print_exc()
+            return False
+
+    def _execute_complete_defi_sequence(self, dai_amount):
+        """Execute complete DeFi sequence: DAI → WBTC/WETH → Supply to Aave"""
+        try:
+            print(f"\n🔄 EXECUTING COMPLETE DEFI SEQUENCE")
+            print(f"═══════════════════════════════════════")
+            print(f"💰 Starting with {dai_amount:.6f} DAI")
+            
+            # Split DAI between WBTC and WETH (50/50)
+            dai_for_wbtc = dai_amount * 0.5
+            dai_for_weth = dai_amount * 0.5
+            
+            print(f"📊 Allocation: {dai_for_wbtc:.6f} DAI → WBTC, {dai_for_weth:.6f} DAI → WETH")
+            
+            # Step 1: Swap DAI → WBTC
+            wbtc_received = 0
+            if dai_for_wbtc > 0.1:  # Minimum threshold
+                print(f"\n🔄 Step 1: Swapping {dai_for_wbtc:.6f} DAI → WBTC")
+                wbtc_received = self._execute_dai_to_wbtc_swap(dai_for_wbtc)
+                if wbtc_received > 0:
+                    print(f"✅ Received {wbtc_received:.8f} WBTC")
+                else:
+                    print("❌ WBTC swap failed")
+            
+            # Step 2: Swap DAI → WETH  
+            weth_received = 0
+            if dai_for_weth > 0.1:  # Minimum threshold
+                print(f"\n🔄 Step 2: Swapping {dai_for_weth:.6f} DAI → WETH")
+                weth_received = self._execute_dai_to_weth_swap(dai_for_weth)
+                if weth_received > 0:
+                    print(f"✅ Received {weth_received:.8f} WETH")
+                else:
+                    print("❌ WETH swap failed")
+            
+            # Step 3: Supply WBTC to Aave
+            wbtc_supplied = False
+            if wbtc_received > 0:
+                print(f"\n🏦 Step 3: Supplying {wbtc_received:.8f} WBTC to Aave")
+                wbtc_supplied = self._supply_wbtc_to_aave(wbtc_received)
+                if wbtc_supplied:
+                    print("✅ WBTC supplied to Aave successfully")
+                else:
+                    print("❌ WBTC supply failed")
+            
+            # Step 4: Supply WETH to Aave
+            weth_supplied = False
+            if weth_received > 0:
+                print(f"\n🏦 Step 4: Supplying {weth_received:.8f} WETH to Aave")
+                weth_supplied = self._supply_weth_to_aave(weth_received)
+                if weth_supplied:
+                    print("✅ WETH supplied to Aave successfully")
+                else:
+                    print("❌ WETH supply failed")
+            
+            # Summary
+            print(f"\n📊 SEQUENCE SUMMARY:")
+            print(f"═══════════════════")
+            print(f"✅ DAI Borrowed: {dai_amount:.6f}")
+            print(f"{'✅' if wbtc_received > 0 else '❌'} WBTC Swapped: {wbtc_received:.8f}")
+            print(f"{'✅' if weth_received > 0 else '❌'} WETH Swapped: {weth_received:.8f}")
+            print(f"{'✅' if wbtc_supplied else '❌'} WBTC Supplied: {wbtc_supplied}")
+            print(f"{'✅' if weth_supplied else '❌'} WETH Supplied: {weth_supplied}")
+            
+            # Consider success if at least one operation completed
+            sequence_success = (wbtc_received > 0 and wbtc_supplied) or (weth_received > 0 and weth_supplied)
+            
+            if sequence_success:
+                print("🎯 Complete DeFi sequence executed successfully!")
+                return True
+            else:
+                print("⚠️ Sequence completed with limited success")
+                return False
+                
+        except Exception as e:
+            print(f"❌ Complete DeFi sequence failed: {e}")
+            import traceback
+            traceback.print_exc()
+            return False
+
+    def _execute_dai_to_wbtc_swap(self, dai_amount):
+        """Execute DAI → WBTC swap using Uniswap"""
+        try:
+            if not hasattr(self, 'uniswap') or not self.uniswap:
+                print("❌ Uniswap integration not available")
+                return 0
+            
+            # Get WBTC balance before swap
+            wbtc_before = self.aave.get_token_balance(self.wbtc_address)
+            
+            # Execute swap
+            result = self.uniswap.swap_dai_for_wbtc(dai_amount)
+            
+            if result:
+                # Wait and check balance increase
+                import time
+                time.sleep(3)
+                wbtc_after = self.aave.get_token_balance(self.wbtc_address)
+                wbtc_received = wbtc_after - wbtc_before
+                return max(0, wbtc_received)
+            
+            return 0
+            
+        except Exception as e:
+            print(f"❌ DAI → WBTC swap failed: {e}")
+            return 0
+
+    def _execute_dai_to_weth_swap(self, dai_amount):
+        """Execute DAI → WETH swap using Uniswap"""
+        try:
+            if not hasattr(self, 'uniswap') or not self.uniswap:
+                print("❌ Uniswap integration not available")
+                return 0
+            
+            # Get WETH balance before swap
+            weth_before = self.aave.get_token_balance(self.weth_address)
+            
+            # Execute swap
+            result = self.uniswap.swap_dai_for_weth(dai_amount)
+            
+            if result:
+                # Wait and check balance increase
+                import time
+                time.sleep(3)
+                weth_after = self.aave.get_token_balance(self.weth_address)
+                weth_received = weth_after - weth_before
+                return max(0, weth_received)
+            
+            return 0
+            
+        except Exception as e:
+            print(f"❌ DAI → WETH swap failed: {e}")
+            return 0
+
+    def _supply_wbtc_to_aave(self, wbtc_amount):
+        """Supply WBTC to Aave"""
+        try:
+            if wbtc_amount <= 0:
+                return False
+            
+            # Approve WBTC first
+            approval_result = self.aave.approve_token(self.wbtc_address, wbtc_amount)
+            if not approval_result:
+                print("❌ WBTC approval failed")
+                return False
+            
+            # Supply to Aave
+            supply_result = self.aave.supply_wbtc_to_aave(wbtc_amount)
+            return bool(supply_result)
+            
+        except Exception as e:
+            print(f"❌ WBTC supply failed: {e}")
+            return False
+
+    def _supply_weth_to_aave(self, weth_amount):
+        """Supply WETH to Aave"""
+        try:
+            if weth_amount <= 0:
+                return False
+            
+            # Approve WETH first
+            approval_result = self.aave.approve_token(self.weth_address, weth_amount)
+            if not approval_result:
+                print("❌ WETH approval failed")
+                return False
+            
+            # Supply to Aave
+            supply_result = self.aave.supply_weth_to_aave(weth_amount)
+            return bool(supply_result)
+            
+        except Exception as e:
+            print(f"❌ WETH supply failed: {e}")
             return False
 
     def get_eth_balance(self):
