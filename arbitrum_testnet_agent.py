@@ -1173,8 +1173,13 @@ class ArbitrumTestnetAgent:
             # Get WBTC balance before swap
             wbtc_before = self.aave.get_token_balance(self.wbtc_address)
             
-            # Execute swap
-            result = self.uniswap.swap_dai_for_wbtc(dai_amount)
+            # Execute swap using the correct method
+            result = self.uniswap.swap_tokens(
+                self.dai_address,     # DAI in
+                self.wbtc_address,    # WBTC out
+                dai_amount,           # Amount
+                500                   # 0.05% fee tier
+            )
             
             if result:
                 # Wait and check balance increase
@@ -1200,8 +1205,13 @@ class ArbitrumTestnetAgent:
             # Get WETH balance before swap
             weth_before = self.aave.get_token_balance(self.weth_address)
             
-            # Execute swap
-            result = self.uniswap.swap_dai_for_weth(dai_amount)
+            # Execute swap using the correct method
+            result = self.uniswap.swap_tokens(
+                self.dai_address,     # DAI in
+                self.weth_address,    # WETH out
+                dai_amount,           # Amount
+                500                   # 0.05% fee tier
+            )
             
             if result:
                 # Wait and check balance increase
