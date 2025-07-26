@@ -1280,7 +1280,40 @@ class ArbitrumTestnetAgent:
             print(f"❌ Token approval error: {e}")
             return False
 
-
+    def _execute_dai_to_wbtc_swap(self, dai_amount):
+        """Execute DAI → WBTC swap using Uniswap with enhanced validation"""
+        try:
+            if not hasattr(self, 'uniswap') or not self.uniswap:
+                print("❌ Uniswap integration not available")
+                return 0
+            
+            # Pre-swap validation
+            dai_balance = self.aave.get_dai_balance()
+            if dai_balance < dai_amount:
+                print(f"❌ Insufficient DAI balance: {dai_balance:.6f} < {dai_amount:.6f}")
+                return 0
+                
+            # Ensure DAI approval for Uniswap router
+            print(f"🔄 Ensuring DAI approval for Uniswap...")
+            approval_success = self._ensure_token_approval(self.dai_address, dai_amount, self.uniswap.router_address)
+            if not approval_success:
+                print("❌ Failed to approve DAI for Uniswap")
+                return 0
+            
+            # Get WBTC balance before swap
+            wbtc_before = self.aave.get_token_balance(self.wbtc_address)
+            
+            # Execute swap with multiple fee tier attempts
+            fee_tiers = [500, 3000, 10000]  # Try different fee tiers for best liquidity
+            result = None
+            
+            for fee_tier in fee_tiers:
+                print(f"🔄 Attempting swap with {fee_tier/10000:.2%} fee tier...")
+                result = self.uniswap.swap_tokens(
+                    self.dai_address,     # DAI in
+                    self.wbtc_address,    # WBTC out
+                    dai_amount,           # Amount
+                    fee_tier              # Fee tier
                 )
                 
                 if result:
