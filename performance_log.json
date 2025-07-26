@@ -14097,3 +14097,10 @@
 {"run_id": 2, "iteration": 12, "performance_metric": 0.30000000000000004, "timestamp": 1753160847.0634265, "metadata": {}}
 {"run_id": 2, "iteration": 13, "performance_metric": 0.30000000000000004, "timestamp": 1753160892.5455127, "metadata": {}}
 {"run_id": 2, "iteration": 14, "performance_metric": 0.30000000000000004, "timestamp": 1753160938.0303133, "metadata": {}}
+{"run_id": 1, "iteration": 1, "performance_metric": 0.7, "timestamp": 1753538273.227312, "metadata": {}}
+{"run_id": 1, "iteration": 2, "performance_metric": 0.2, "timestamp": 1753538318.974901, "metadata": {}}
+{"run_id": 1, "iteration": 3, "performance_metric": 0.7, "timestamp": 1753538363.980055, "metadata": {}}
+{"run_id": 1, "iteration": 4, "performance_metric": 0.2, "timestamp": 1753538409.801912, "metadata": {}}
+{"run_id": 1, "iteration": 5, "performance_metric": 0.7, "timestamp": 1753538454.8051276, "metadata": {}}
+{"run_id": 1, "iteration": 6, "performance_metric": 0.2, "timestamp": 1753538500.674367, "metadata": {}}
+{"run_id": 1, "iteration": 7, "performance_metric": 0.7, "timestamp": 1753538545.687873, "metadata": {}}
