@@ -142,12 +142,53 @@ class AaveArbitrumIntegration:
     def borrow_dai(self, amount_dai):
         """Borrow DAI from Aave - DAI-only compliance enforced"""
         try:
+            print(f"🏦 Initiating DAI borrow: ${amount_dai:.2f}")
             amount_wei = int(amount_dai * 10**18)  # DAI has 18 decimals
             
-            # Build transaction with system error handling
+            # Pre-transaction validation
+            account_data = self.get_user_account_data()
+            if not account_data:
+                logger.error("Cannot retrieve account data for validation")
+                return False
+            
+            available_borrows = account_data.get('availableBorrowsUSD', 0)
+            if amount_dai > available_borrows:
+                logger.error(f"Requested amount ${amount_dai:.2f} exceeds available ${available_borrows:.2f}")
+                return False
+            
+            health_factor = account_data.get('healthFactor', 0)
+            if health_factor < 1.5:
+                logger.error(f"Health factor too low for borrowing: {health_factor:.3f}")
+                return False
+            
+            # Build transaction with enhanced error handling
             max_retries = 3
             for attempt in range(max_retries):
                 try:
+                    # Get fresh nonce and gas price
+                    nonce = self.w3.eth.get_transaction_count(self.account.address)
+                    gas_price = self.w3.eth.gas_price
+                    
+                    print(f"📊 Transaction params - Nonce: {nonce}, Gas Price: {gas_price}")
+                    
+                    # Estimate gas first
+                    try:
+                        estimated_gas = self.pool_contract.functions.borrow(
+                            self.dai_address,
+                            amount_wei,
+                            2,  # Variable interest rate
+                            0,  # Referral code
+                            self.account.address
+                        ).estimate_gas({'from': self.account.address})
+                        
+                        # Add 20% buffer to estimated gas
+                        gas_limit = int(estimated_gas * 1.2)
+                        print(f"⛽ Estimated gas: {estimated_gas}, Using: {gas_limit}")
+                        
+                    except Exception as gas_error:
+                        print(f"⚠️ Gas estimation failed: {gas_error}")
+                        gas_limit = 400000  # Fallback gas limit
+                    
                     tx = self.pool_contract.functions.borrow(
                         self.dai_address,
                         amount_wei,
@@ -156,18 +197,40 @@ class AaveArbitrumIntegration:
                         self.account.address
                     ).build_transaction({
                         'from': self.account.address,
-                        'gas': 300000,
-                        'gasPrice': self.w3.eth.gas_price,
-                        'nonce': self.w3.eth.get_transaction_count(self.account.address)
+                        'gas': gas_limit,
+                        'gasPrice': gas_price,
+                        'nonce': nonce
                     })
                     
                     # Sign and send
                     signed_tx = self.w3.eth.account.sign_transaction(tx, self.account.key)
                     tx_hash = self.w3.eth.send_raw_transaction(signed_tx.rawTransaction)
                     
-                    print(f"✅ DAI borrow successful: ${amount_dai:.2f}")
-                    return tx_hash.hex()
+                    print(f"✅ DAI borrow transaction sent: {tx_hash.hex()}")
                     
+                    # Wait for transaction confirmation
+                    receipt = self.w3.eth.wait_for_transaction_receipt(tx_hash, timeout=120)
+                    
+                    if receipt.status == 1:
+                        print(f"✅ DAI borrow confirmed: ${amount_dai:.2f}")
+                        return tx_hash.hex()
+                    else:
+                        print(f"❌ Transaction failed in execution")
+                        return False
+                    
+                except ValueError as ve:
+                    error_msg = str(ve)
+                    if "execution reverted" in error_msg:
+                        logger.error(f"Contract execution reverted: {ve}")
+                        print("💡 Contract rejected the transaction - likely insufficient collateral or limits exceeded")
+                        return False
+                    else:
+                        logger.warning(f"ValueError on borrow attempt {attempt + 1}: {ve}")
+                        if attempt < max_retries - 1:
+                            time.sleep(2)
+                            continue
+                        raise
+                        
                 except (OSError, ConnectionError, ProcessLookupError) as sys_error:
                     logger.warning(f"System call error on borrow attempt {attempt + 1}: {sys_error}")
                     if attempt < max_retries - 1:
@@ -177,6 +240,7 @@ class AaveArbitrumIntegration:
                     
         except Exception as e:
             logger.error(f"DAI borrow failed: {e}")
+            print(f"❌ DAI borrow failed with error: {e}")
             return False
 
     def borrow(self, amount_dai, dai_address):

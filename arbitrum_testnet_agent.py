@@ -856,18 +856,22 @@ class ArbitrumTestnetAgent:
         try:
             print("🚀 Executing growth-triggered operation (DAI-only)")
             
-            # Calculate safe borrow amount
-            borrow_amount = min(available_borrows * 0.15, 10.0)  # 15% of available or $10 max
-            borrow_amount = max(borrow_amount, 2.0)  # Minimum $2
-            
-            if borrow_amount < 1.0:
-                print("⚠️ Borrow amount too small")
+            # Comprehensive pre-transaction validation
+            if not self._validate_transaction_preconditions(available_borrows):
+                print("❌ Transaction preconditions not met")
                 return False
             
-            print(f"💰 Borrowing ${borrow_amount:.2f} DAI")
+            # Calculate safe borrow amount with enhanced validation
+            borrow_amount = self._calculate_validated_borrow_amount(available_borrows, "growth")
             
-            # Execute DAI borrow
-            result = self.aave.borrow_dai(borrow_amount)
+            if borrow_amount < 1.0:
+                print("⚠️ Borrow amount too small after validation")
+                return False
+            
+            print(f"💰 Validated borrow amount: ${borrow_amount:.2f} DAI")
+            
+            # Execute DAI borrow with enhanced error handling
+            result = self._execute_validated_dai_borrow(borrow_amount)
             if result:
                 print(f"✅ Successfully borrowed ${borrow_amount:.2f} DAI")
                 return True
@@ -877,6 +881,8 @@ class ArbitrumTestnetAgent:
                 
         except Exception as e:
             print(f"❌ Growth-triggered operation failed: {e}")
+            import traceback
+            traceback.print_exc()
             return False
 
     def _execute_capacity_operation(self, available_borrows):
@@ -884,17 +890,22 @@ class ArbitrumTestnetAgent:
         try:
             print("⚡ Executing capacity-based operation (DAI-only)")
             
-            # Conservative capacity utilization
-            borrow_amount = min(available_borrows * 0.10, 5.0)  # 10% of available or $5 max
-            
-            if borrow_amount < 1.0:
-                print("⚠️ Capacity borrow amount too small")
+            # Comprehensive pre-transaction validation
+            if not self._validate_transaction_preconditions(available_borrows):
+                print("❌ Transaction preconditions not met")
                 return False
             
-            print(f"💰 Capacity borrow: ${borrow_amount:.2f} DAI")
+            # Calculate safe borrow amount with enhanced validation
+            borrow_amount = self._calculate_validated_borrow_amount(available_borrows, "capacity")
             
-            # Execute DAI borrow
-            result = self.aave.borrow_dai(borrow_amount)
+            if borrow_amount < 0.5:
+                print("⚠️ Capacity borrow amount too small after validation")
+                return False
+            
+            print(f"💰 Validated capacity borrow: ${borrow_amount:.2f} DAI")
+            
+            # Execute DAI borrow with enhanced error handling
+            result = self._execute_validated_dai_borrow(borrow_amount)
             if result:
                 print(f"✅ Successfully executed capacity operation: ${borrow_amount:.2f} DAI")
                 return True
@@ -904,6 +915,162 @@ class ArbitrumTestnetAgent:
                 
         except Exception as e:
             print(f"❌ Capacity operation failed: {e}")
+            import traceback
+            traceback.print_exc()
+            return False
+
+    def _validate_transaction_preconditions(self, available_borrows):
+        """Validate all preconditions before attempting any transaction"""
+        try:
+            print("🔍 Validating transaction preconditions...")
+            
+            # 1. Check ETH balance for gas
+            eth_balance = self.get_eth_balance()
+            if eth_balance < 0.001:  # Minimum 0.001 ETH for gas
+                print(f"❌ Insufficient ETH for gas: {eth_balance:.6f} ETH")
+                return False
+            
+            # 2. Verify Aave integration is functional
+            if not hasattr(self, 'aave') or not self.aave:
+                print("❌ Aave integration not initialized")
+                return False
+            
+            # 3. Get fresh account data
+            account_data = self.aave.get_user_account_data()
+            if not account_data:
+                print("❌ Cannot retrieve account data from Aave")
+                return False
+            
+            # 4. Validate health factor
+            health_factor = account_data.get('healthFactor', 0)
+            if health_factor < 1.5:
+                print(f"❌ Health factor too low: {health_factor:.3f}")
+                return False
+            
+            # 5. Validate available borrows
+            actual_available = account_data.get('availableBorrowsUSD', 0)
+            if actual_available < 1.0:
+                print(f"❌ Insufficient borrowing capacity: ${actual_available:.2f}")
+                return False
+            
+            # 6. Check if borrows match expected
+            if abs(actual_available - available_borrows) > 5.0:  # 5% tolerance
+                print(f"⚠️ Borrow capacity mismatch: expected ${available_borrows:.2f}, actual ${actual_available:.2f}")
+                available_borrows = actual_available  # Use actual value
+            
+            print(f"✅ All preconditions met - ETH: {eth_balance:.6f}, HF: {health_factor:.3f}, Available: ${actual_available:.2f}")
+            return True
+            
+        except Exception as e:
+            print(f"❌ Precondition validation failed: {e}")
+            return False
+    
+    def _calculate_validated_borrow_amount(self, available_borrows, operation_type="general"):
+        """Calculate a validated borrow amount with multiple safety checks"""
+        try:
+            print(f"💰 Calculating safe borrow amount for {operation_type} operation...")
+            
+            # Base calculation based on operation type
+            if operation_type == "growth":
+                base_percentage = 0.10  # Conservative 10% for growth operations
+                max_amount = 8.0
+            elif operation_type == "capacity":
+                base_percentage = 0.08  # Very conservative 8% for capacity operations
+                max_amount = 5.0
+            else:
+                base_percentage = 0.05  # Ultra conservative 5% for general operations
+                max_amount = 3.0
+            
+            # Calculate initial amount
+            calculated_amount = available_borrows * base_percentage
+            
+            # Apply maximum cap
+            safe_amount = min(calculated_amount, max_amount)
+            
+            # Apply minimum threshold
+            if safe_amount < 0.5:
+                print(f"⚠️ Calculated amount ${safe_amount:.2f} below minimum threshold")
+                return 0.0
+            
+            # Additional safety check - ensure we're not borrowing too much relative to collateral
+            account_data = self.aave.get_user_account_data()
+            if account_data:
+                total_collateral = account_data.get('totalCollateralUSD', 0)
+                if total_collateral > 0:
+                    max_safe_borrow = total_collateral * 0.02  # Maximum 2% of collateral per operation
+                    safe_amount = min(safe_amount, max_safe_borrow)
+                    print(f"📊 Collateral-based limit: ${max_safe_borrow:.2f}")
+            
+            print(f"💎 Final validated borrow amount: ${safe_amount:.2f}")
+            return safe_amount
+            
+        except Exception as e:
+            print(f"❌ Borrow amount calculation failed: {e}")
+            return 0.0
+    
+    def _execute_validated_dai_borrow(self, borrow_amount):
+        """Execute DAI borrow with comprehensive validation and error handling"""
+        try:
+            print(f"🏦 Executing validated DAI borrow: ${borrow_amount:.2f}")
+            
+            # Pre-execution validation
+            if borrow_amount <= 0:
+                print("❌ Invalid borrow amount")
+                return False
+            
+            # Check DAI token balance before operation
+            dai_balance_before = self.aave.get_dai_balance()
+            print(f"📊 DAI balance before: {dai_balance_before:.6f}")
+            
+            # Attempt the borrow with detailed error catching
+            try:
+                result = self.aave.borrow_dai(borrow_amount)
+                
+                if result:
+                    print(f"✅ Borrow transaction initiated: {result}")
+                    
+                    # Wait a moment and verify the balance increased
+                    import time
+                    time.sleep(3)
+                    
+                    dai_balance_after = self.aave.get_dai_balance()
+                    balance_increase = dai_balance_after - dai_balance_before
+                    
+                    print(f"📊 DAI balance after: {dai_balance_after:.6f}")
+                    print(f"📈 Balance increase: {balance_increase:.6f}")
+                    
+                    if balance_increase > 0:
+                        print(f"✅ Borrow successful - received {balance_increase:.6f} DAI")
+                        return True
+                    else:
+                        print("⚠️ Transaction completed but balance didn't increase as expected")
+                        return False
+                else:
+                    print("❌ Borrow transaction failed")
+                    return False
+                    
+            except Exception as borrow_error:
+                error_msg = str(borrow_error).lower()
+                if "execution reverted" in error_msg:
+                    print("❌ Transaction reverted by smart contract")
+                    print("💡 Possible causes:")
+                    print("   - Insufficient collateral")
+                    print("   - Health factor too low")
+                    print("   - Borrow cap reached")
+                    print("   - Asset not enabled for borrowing")
+                elif "insufficient funds" in error_msg:
+                    print("❌ Insufficient ETH for gas fees")
+                elif "nonce" in error_msg:
+                    print("❌ Nonce error - transaction ordering issue")
+                else:
+                    print(f"❌ Borrow execution error: {borrow_error}")
+                
+                return False
+                
+        except Exception as e:
+            print(f"❌ Validated borrow execution failed: {e}")
+            import traceback
+            traceback.print_exc()
             return False
 
     def get_eth_balance(self):
