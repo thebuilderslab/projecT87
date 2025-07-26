@@ -460,11 +460,3 @@ class AaveArbitrumIntegration:
         except Exception as e:
             logger.error(f"DAI repayment failed: {e}")
             return False
-balances = {}
-
-        # aToken addresses for Arbitrum Mainnet (DAI-only compliance)
-        atoken_addresses = {
-            'aWBTC': Web3.to_checksum_address('0x078f358208685046a11c85e8ad32895ded33a249'),
-            'aWETH': Web3.to_checksum_address('0xe50fa9b3c56ffb159cb0fca61f5c9d750e8128c8'),
-            'aDAI': Web3.to_checksum_address('0x82E64f49Ed5EC1bC6e43DAD4FC8Af9bb3A2312EE')
-        }
