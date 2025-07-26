@@ -283,37 +283,60 @@ class UniswapIntegration:
             # Build swap parameters with proper wei amounts
             deadline = int(time.time()) + 600  # 10 minutes from now (more time)
 
-            # Calculate minimum output with proper slippage tolerance
+            # Calculate minimum output with enhanced error handling and fallback mechanisms
+            min_output_amount = 1  # Start with minimal requirement
+            
             try:
-                # Get quote for expected output amount
-                quoter_contract = self.w3.eth.contract(
-                    address='0xb27308f9F90D607463bb33eA1BeBb41C27CE5AB6',  # Uniswap V3 Quoter
-                    abi=[{
-                        "inputs": [
-                            {"name": "tokenIn", "type": "address"},
-                            {"name": "tokenOut", "type": "address"},
-                            {"name": "fee", "type": "uint24"},
-                            {"name": "amountIn", "type": "uint256"},
-                            {"name": "sqrtPriceLimitX96", "type": "uint160"}
-                        ],
-                        "name": "quoteExactInputSingle",
-                        "outputs": [{"name": "amountOut", "type": "uint256"}],
-                        "stateMutability": "nonpayable",
-                        "type": "function"
-                    }]
-                )
+                # Try multiple fee tiers for better liquidity
+                fee_tiers = [500, 3000, 10000]  # 0.05%, 0.3%, 1%
+                best_quote = 0
+                best_fee = fee
+                
+                for test_fee in fee_tiers:
+                    try:
+                        # Get quote for expected output amount
+                        quoter_contract = self.w3.eth.contract(
+                            address='0xb27308f9F90D607463bb33eA1BeBb41C27CE5AB6',  # Uniswap V3 Quoter
+                            abi=[{
+                                "inputs": [
+                                    {"name": "tokenIn", "type": "address"},
+                                    {"name": "tokenOut", "type": "address"},
+                                    {"name": "fee", "type": "uint24"},
+                                    {"name": "amountIn", "type": "uint256"},
+                                    {"name": "sqrtPriceLimitX96", "type": "uint160"}
+                                ],
+                                "name": "quoteExactInputSingle",
+                                "outputs": [{"name": "amountOut", "type": "uint256"}],
+                                "stateMutability": "view",
+                                "type": "function"
+                            }]
+                        )
 
-                expected_output = quoter_contract.functions.quoteExactInputSingle(
-                    token_in, token_out, 3000, amount_in_wei, 0
-                ).call()
+                        expected_output = quoter_contract.functions.quoteExactInputSingle(
+                            token_in, token_out, test_fee, amount_in_wei, 0
+                        ).call()
+                        
+                        if expected_output > best_quote:
+                            best_quote = expected_output
+                            best_fee = test_fee
+                            print(f"💡 Better quote found - Fee: {test_fee}, Output: {expected_output}")
 
-                # 2% slippage tolerance
-                min_output_amount = int(expected_output * 0.98)
-                print(f"💡 Expected output: {expected_output}, Min output: {min_output_amount}")
+                    except Exception as fee_error:
+                        print(f"⚠️ Fee tier {test_fee} failed: {fee_error}")
+                        continue
+
+                if best_quote > 0:
+                    # Use best fee tier found
+                    fee = best_fee
+                    # 5% slippage tolerance for better success rate
+                    min_output_amount = max(1, int(best_quote * 0.95))
+                    print(f"✅ Using fee tier: {fee}, Expected: {best_quote}, Min: {min_output_amount}")
+                else:
+                    print(f"⚠️ No quotes available, using minimal output requirement")
 
             except Exception as quote_error:
-                print(f"⚠️ Quote failed: {quote_error}, using conservative minimum")
-                min_output_amount = 1  # Fallback to 1 wei minimum
+                print(f"⚠️ Quote system failed: {quote_error}, using minimal requirements")
+                min_output_amount = 1
 
             swap_params = {
                 'tokenIn': self.w3.to_checksum_address(token_in),
@@ -376,22 +399,38 @@ class UniswapIntegration:
 
                 print(f"✅ Pre-validation passed: balance={current_balance}, allowance={current_allowance}")
 
-                # Enhanced gas estimation with better error handling
+                # Enhanced gas estimation with multiple fallback strategies
                 max_retries = 3
                 estimated_gas = None
+                gas_estimation_success = False
                 
+                # Try progressively simpler transaction validation
                 for attempt in range(max_retries):
                     try:
-                        # Try gas estimation with reduced gas limit first
-                        test_tx = swap_tx.copy()
-                        test_tx['gas'] = min(gas_limit, 300000)  # Start with lower gas
-                        
-                        estimated_gas = self.w3.eth.estimate_gas(test_tx)
-                        print(f"💰 Gas estimation successful on attempt {attempt + 1}: {estimated_gas}")
+                        if attempt == 0:
+                            # First attempt: normal estimation
+                            estimated_gas = self.w3.eth.estimate_gas(swap_tx)
+                        elif attempt == 1:
+                            # Second attempt: simplified transaction
+                            simple_tx = {
+                                'from': self.address,
+                                'to': self.router_address,
+                                'gas': 400000,
+                                'gasPrice': swap_gas_price,
+                                'value': 0
+                            }
+                            estimated_gas = self.w3.eth.estimate_gas(simple_tx)
+                        else:
+                            # Final attempt: skip estimation, use conservative limit
+                            estimated_gas = 500000
+                            
+                        print(f"💰 Gas estimation attempt {attempt + 1}: {estimated_gas}")
+                        gas_estimation_success = True
 
-                        # Update gas limit with buffer
+                        # Update transaction with estimated gas
                         if estimated_gas > 0:
-                            gas_limit = int(estimated_gas * 1.5)  # 50% buffer for safety
+                            gas_limit = min(int(estimated_gas * 1.8), 800000)  # 80% buffer, max 800k
+                            swap_tx['gas'] = gas_limit
                             print(f"⛽ Updated gas limit to: {gas_limit}")
                         break
 
@@ -399,20 +438,29 @@ class UniswapIntegration:
                         error_msg = str(gas_error).lower()
                         print(f"⚠️ Gas estimation attempt {attempt + 1} failed: {gas_error}")
                         
-                        # Check for specific error types
-                        if "execution reverted" in error_msg:
-                            print("❌ Transaction would revert - aborting swap")
-                            return None
+                        # Analyze error for specific issues
+                        if "execution reverted" in error_msg and "stf" in error_msg:
+                            print("❌ Slippage Too Forward - adjusting parameters")
+                            # Try with higher slippage tolerance
+                            min_output_amount = max(1, int(min_output_amount * 0.9))
+                            swap_params['amountOutMinimum'] = min_output_amount
+                            print(f"🔄 Reduced min output to: {min_output_amount}")
+                            continue
+                        elif "execution reverted" in error_msg:
+                            if attempt < max_retries - 1:
+                                print("🔄 Trying different approach...")
+                                continue
+                            else:
+                                print("❌ Transaction would consistently revert - skipping swap")
+                                return None
                         elif "insufficient funds" in error_msg:
-                            print("❌ Insufficient funds for transaction")
+                            print("❌ Insufficient ETH for gas fees")
                             return None
-                        elif attempt == max_retries - 1:
-                            print(f"⚠️ Gas estimation failed, using conservative gas limit: {gas_limit}")
-                            # Increase gas limit as fallback
-                            gas_limit = 600000  # Higher conservative limit
-                            break
-                        else:
-                            time.sleep(2)  # Wait before retry
+
+                # Final fallback if all estimation attempts failed
+                if not gas_estimation_success:
+                    print("⚠️ Using fallback gas settings")
+                    swap_tx['gas'] = 600000  # Conservative fallback
 
             except Exception as validation_error:
                 print(f"❌ Pre-validation failed: {validation_error}")

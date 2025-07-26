@@ -1164,35 +1164,153 @@ class ArbitrumTestnetAgent:
             return False
 
     def _execute_dai_to_wbtc_swap(self, dai_amount):
-        """Execute DAI → WBTC swap using Uniswap"""
+        """Execute DAI → WBTC swap using Uniswap with enhanced validation"""
         try:
             if not hasattr(self, 'uniswap') or not self.uniswap:
                 print("❌ Uniswap integration not available")
                 return 0
             
+            # Pre-swap validation
+            dai_balance = self.aave.get_dai_balance()
+            if dai_balance < dai_amount:
+                print(f"❌ Insufficient DAI balance: {dai_balance:.6f} < {dai_amount:.6f}")
+                return 0
+                
+            # Ensure DAI approval for Uniswap router
+            print(f"🔄 Ensuring DAI approval for Uniswap...")
+            approval_success = self._ensure_token_approval(self.dai_address, dai_amount, self.uniswap.router_address)
+            if not approval_success:
+                print("❌ Failed to approve DAI for Uniswap")
+                return 0
+            
             # Get WBTC balance before swap
             wbtc_before = self.aave.get_token_balance(self.wbtc_address)
             
-            # Execute swap using the correct method
-            result = self.uniswap.swap_tokens(
-                self.dai_address,     # DAI in
-                self.wbtc_address,    # WBTC out
-                dai_amount,           # Amount
-                500                   # 0.05% fee tier
-            )
+            # Execute swap with multiple fee tier attempts
+            fee_tiers = [500, 3000, 10000]  # Try different fee tiers for best liquidity
+            result = None
+            
+            for fee_tier in fee_tiers:
+                print(f"🔄 Attempting swap with {fee_tier/10000:.2%} fee tier...")
+                result = self.uniswap.swap_tokens(
+                    self.dai_address,     # DAI in
+                    self.wbtc_address,    # WBTC out
+                    dai_amount,           # Amount
+                    fee_tier              # Fee tier
+
+    def _ensure_token_approval(self, token_address, amount, spender_address):
+        """Ensure token approval with proper validation and retry logic"""
+        try:
+            # Check current allowance
+            erc20_abi = [{
+                "inputs": [
+                    {"name": "owner", "type": "address"},
+                    {"name": "spender", "type": "address"}
+                ],
+                "name": "allowance",
+                "outputs": [{"name": "", "type": "uint256"}],
+                "stateMutability": "view",
+                "type": "function"
+            }, {
+                "inputs": [
+                    {"name": "spender", "type": "address"},
+                    {"name": "amount", "type": "uint256"}
+                ],
+                "name": "approve",
+                "outputs": [{"name": "", "type": "bool"}],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            }]
+            
+            token_contract = self.w3.eth.contract(address=token_address, abi=erc20_abi)
+            
+            # Convert amount to wei
+            if token_address == self.dai_address:
+                amount_wei = int(amount * 10**18)
+            elif token_address == self.wbtc_address:
+                amount_wei = int(amount * 10**8)
+            elif token_address == self.weth_address:
+                amount_wei = int(amount * 10**18)
+            else:
+                amount_wei = int(amount * 10**18)
+            
+            # Check current allowance
+            current_allowance = token_contract.functions.allowance(
+                self.address, spender_address
+            ).call()
+            
+            if current_allowance >= amount_wei:
+                print(f"✅ Sufficient allowance: {current_allowance} >= {amount_wei}")
+                return True
+            
+            # Need to approve - approve 2x amount for efficiency
+            approve_amount = amount_wei * 2
+            
+            # Build approval transaction
+            nonce = self.w3.eth.get_transaction_count(self.address)
+            gas_price = max(self.w3.eth.gas_price, int(0.01 * 10**9))  # Min 0.01 gwei
+            
+            approve_tx = token_contract.functions.approve(
+                spender_address,
+                approve_amount
+            ).build_transaction({
+                'from': self.address,
+                'gas': 100000,
+                'gasPrice': gas_price,
+                'nonce': nonce
+            })
+            
+            # Sign and send
+            signed_tx = self.w3.eth.account.sign_transaction(approve_tx, self.account.key)
+            tx_hash = self.w3.eth.send_raw_transaction(signed_tx.rawTransaction)
+            
+            print(f"🔄 Approval transaction sent: {tx_hash.hex()}")
+            
+            # Wait for confirmation
+            receipt = self.w3.eth.wait_for_transaction_receipt(tx_hash, timeout=60)
+            
+            if receipt.status == 1:
+                print(f"✅ Token approval confirmed")
+                return True
+            else:
+                print(f"❌ Approval transaction failed")
+                return False
+                
+        except Exception as e:
+            print(f"❌ Token approval error: {e}")
+            return False
+
+
+                )
+                
+                if result:
+                    print(f"✅ Swap successful with {fee_tier/10000:.2%} fee tier")
+                    break
+                else:
+                    print(f"❌ Swap failed with {fee_tier/10000:.2%} fee tier")
             
             if result:
-                # Wait and check balance increase
+                # Wait longer and check balance increase multiple times
                 import time
-                time.sleep(3)
-                wbtc_after = self.aave.get_token_balance(self.wbtc_address)
-                wbtc_received = wbtc_after - wbtc_before
+                for check_attempt in range(3):
+                    time.sleep(5)  # Wait 5 seconds
+                    wbtc_after = self.aave.get_token_balance(self.wbtc_address)
+                    wbtc_received = wbtc_after - wbtc_before
+                    
+                    if wbtc_received > 0:
+                        print(f"✅ WBTC received after {(check_attempt + 1) * 5}s: {wbtc_received:.8f}")
+                        return wbtc_received
+                    elif check_attempt == 2:
+                        print("⚠️ No WBTC balance increase detected after 15s")
+                
                 return max(0, wbtc_received)
             
             return 0
             
         except Exception as e:
             print(f"❌ DAI → WBTC swap failed: {e}")
+            import traceback
+            traceback.print_exc()
             return 0
 
     def _execute_dai_to_weth_swap(self, dai_amount):
