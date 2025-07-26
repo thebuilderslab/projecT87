@@ -377,7 +377,7 @@ class ArbitrumTestnetAgent:
 
         # Capacity-Based System Parameters  
         self.capacity_optimization_threshold = float(os.getenv('CAPACITY_OPTIMIZATION_THRESHOLD', '0.20'))  # 20% utilization threshold
-        self.capacity_health_factor_threshold = float(os.getenv('CAPACITY_HEALTH_FACTOR_THRESHOLD', '2.1')) # HF > 2.1 for capacity optimization
+        self.capacity_health_factor_threshold = float(os.getenv('CAPACITY_HEALTH_FACTOR_THRESHOLD', '2.05')) # HF > 2.05 for capacity optimization (reduced from 2.1)
         self.capacity_available_threshold = float(os.getenv('CAPACITY_AVAILABLE_THRESHOLD', '13.0')) # $13 minimum available capacity
 
         # System Operation Parameters
@@ -396,6 +396,9 @@ class ArbitrumTestnetAgent:
         print("💰 Initialized last_collateral_value_usd to 0.0 (will sync with actual position)")
         print(f"📊 Initialized last_collateral_value_usd to: {self.last_collateral_value_usd}")
 
+        # Auto-initialize baseline if not set
+        self._auto_initialize_baseline()
+
         # Cooldown settings
         self.last_successful_operation_time = 0  # Unix timestamp of last op
         self.operation_cooldown_seconds = 60 # 1 minute cooldown
@@ -405,6 +408,22 @@ class ArbitrumTestnetAgent:
         self._display_hybrid_system_config()
 
         return True
+
+    def _auto_initialize_baseline(self):
+        """Auto-initialize baseline collateral value"""
+        try:
+            if hasattr(self, 'aave') and self.aave:
+                account_data = self.aave.get_user_account_data()
+                if account_data and account_data.get('totalCollateralUSD', 0) > 0:
+                    collateral_value = account_data['totalCollateralUSD']
+                    self.last_collateral_value_usd = collateral_value
+                    self.baseline_initialized = True
+                    print(f"✅ Auto-initialized baseline: ${collateral_value:.2f}")
+                    return True
+            return False
+        except Exception as e:
+            print(f"⚠️ Auto-baseline initialization failed: {e}")
+            return False
 
     def _display_hybrid_system_config(self):
         """Display the current Hybrid System configuration"""
@@ -1244,6 +1263,38 @@ class ArbitrumTestnetAgent:
         except Exception as e:
             print(f"❌ Token approval error: {e}")
             return False
+
+    def _execute_dai_to_wbtc_swap(self, dai_amount):
+        """Execute DAI → WBTC swap using Uniswap"""
+        try:
+            if not hasattr(self, 'uniswap') or not self.uniswap:
+                print("❌ Uniswap integration not available")
+                return 0
+
+            # Get WBTC balance before swap
+            wbtc_before = self.aave.get_token_balance(self.wbtc_address)
+
+            # Execute swap using the correct method
+            result = self.uniswap.swap_tokens(
+                self.dai_address,     # DAI in
+                self.wbtc_address,    # WBTC out
+                dai_amount,           # Amount
+                500                   # 0.05% fee tier
+            )
+
+            if result:
+                # Wait and check balance increase
+                import time
+                time.sleep(3)
+                wbtc_after = self.aave.get_token_balance(self.wbtc_address)
+                wbtc_received = wbtc_after - wbtc_before
+                return max(0, wbtc_received)
+
+            return 0
+
+        except Exception as e:
+            print(f"❌ DAI → WBTC swap failed: {e}")
+            return 0
 
     def _execute_dai_to_weth_swap(self, dai_amount):
         """Execute DAI → WETH swap using Uniswap"""
