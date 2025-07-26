@@ -655,7 +655,7 @@ class ArbitrumTestnetAgent:
             # Handle system process errors (ptrace/syscall issues)
             import signal
             import errno
-            
+
             def handle_process_errors():
                 """Handle common process errors like ESRCH, ptrace issues"""
                 try:
@@ -663,9 +663,9 @@ class ArbitrumTestnetAgent:
                     signal.signal(signal.SIGCHLD, signal.SIG_IGN)
                 except (OSError, AttributeError):
                     pass  # Not all systems support this
-                    
+
             handle_process_errors()
-            
+
             # Check if already initialized to prevent multiple initializations
             if hasattr(self, 'aave') and self.aave is not None:
                 print("✅ DeFi integrations already initialized, skipping...")
@@ -708,7 +708,7 @@ class ArbitrumTestnetAgent:
                     return True
                 except Exception as retry_e:
                     print(f"❌ Recovery failed: {retry_e}")
-            
+
             print(f"❌ Integration initialization failed: {e}")
             return False
 
@@ -717,43 +717,43 @@ class ArbitrumTestnetAgent:
         try:
             print(f"\n🎯 AUTONOMOUS RUN {run_id}, ITERATION {iteration}")
             print("=" * 60)
-            
+
             # Check emergency stop
             if os.path.exists('EMERGENCY_STOP_ACTIVE.flag'):
                 print("🛑 Emergency stop active - skipping operations")
                 return 0.1
-            
+
             # Check cooldown (but allow sequence continuation)
             if self.is_operation_on_cooldown(allow_sequence_continuation=False):
                 print("⏰ Operations in cooldown period")
                 return 0.2
-            
+
             # Track operation attempt
             self.track_operation_attempt()
-            
+
             # Get account status
             account_data = self.aave.get_user_account_data()
             if not account_data:
                 print("❌ Unable to get account data")
                 return 0.1
-            
+
             health_factor = account_data.get('healthFactor', 0)
             available_borrows = account_data.get('availableBorrowsUSD', 0)
             total_collateral = account_data.get('totalCollateralUSD', 0)
-            
+
             print(f"📊 Account Status:")
             print(f"   Health Factor: {health_factor:.3f}")
             print(f"   Available Borrows: ${available_borrows:.2f}")
             print(f"   Total Collateral: ${total_collateral:.2f}")
-            
+
             # Check if we need to execute any operations
             performance_score = 0.5  # Base score
-            
+
             # DAI-only compliance check
             if not self._validate_dai_compliance():
                 print("❌ DAI compliance validation failed")
                 return 0.1
-            
+
             # Check for growth-triggered operations
             if self._should_execute_growth_triggered_operation(total_collateral, health_factor, available_borrows):
                 success = self._execute_growth_triggered_operation(available_borrows)
@@ -762,7 +762,7 @@ class ArbitrumTestnetAgent:
                     self.record_successful_operation("growth_triggered")
                 else:
                     performance_score = 0.3
-            
+
             # Check for capacity-based operations
             elif self._should_execute_capacity_operation(available_borrows, health_factor):
                 success = self._execute_capacity_operation(available_borrows)
@@ -771,18 +771,18 @@ class ArbitrumTestnetAgent:
                     self.record_successful_operation("capacity_based")
                 else:
                     performance_score = 0.3
-            
+
             else:
                 print("✅ No operations needed - system stable")
                 performance_score = 0.6
-            
+
             # Update baseline if we have new collateral data
             if total_collateral > 0:
                 self.update_baseline_after_success(total_collateral)
-            
+
             print(f"📈 Task Performance: {performance_score:.2f}")
             return performance_score
-            
+
         except Exception as e:
             print(f"❌ DeFi task execution failed: {e}")
             return 0.1
@@ -794,17 +794,17 @@ class ArbitrumTestnetAgent:
             if not hasattr(self, 'dai_address') or not self.dai_address:
                 print("❌ DAI address not configured")
                 return False
-            
+
             # Ensure no forbidden token operations are configured
             forbidden_tokens = []  # Empty list - only DAI operations permitted
             # All operations must use DAI as primary token
             if not self.dai_address:
                 print("❌ DAI address not properly configured")
                 return False
-            
+
             print("✅ DAI compliance validated")
             return True
-            
+
         except Exception as e:
             print(f"❌ DAI compliance validation error: {e}")
             return False
@@ -816,21 +816,21 @@ class ArbitrumTestnetAgent:
             if health_factor < self.growth_health_factor_threshold:
                 print(f"⚠️ Health factor {health_factor:.3f} below growth threshold {self.growth_health_factor_threshold}")
                 return False
-            
+
             # Check available borrowing capacity
             if available_borrows < self.capacity_available_threshold:
                 print(f"⚠️ Available borrows ${available_borrows:.2f} below threshold ${self.capacity_available_threshold}")
                 return False
-            
+
             # Check growth since last baseline
             if hasattr(self, 'last_collateral_value_usd') and self.last_collateral_value_usd > 0:
                 growth = current_collateral - self.last_collateral_value_usd
                 if growth >= self.growth_trigger_threshold:
                     print(f"✅ Growth trigger met: ${growth:.2f} >= ${self.growth_trigger_threshold}")
                     return True
-            
+
             return False
-            
+
         except Exception as e:
             print(f"❌ Growth trigger check failed: {e}")
             return False
@@ -840,17 +840,17 @@ class ArbitrumTestnetAgent:
         try:
             if health_factor < self.capacity_health_factor_threshold:
                 return False
-            
+
             if available_borrows < self.capacity_available_threshold:
                 return False
-            
+
             # Simple capacity check - if we have significant unused capacity
             if available_borrows > 50:  # $50 available capacity
                 print(f"✅ Capacity operation triggered: ${available_borrows:.2f} available")
                 return True
-            
+
             return False
-            
+
         except Exception as e:
             print(f"❌ Capacity check failed: {e}")
             return False
@@ -859,21 +859,21 @@ class ArbitrumTestnetAgent:
         """Execute growth-triggered borrowing operation - DAI only"""
         try:
             print("🚀 Executing growth-triggered operation (DAI-only)")
-            
+
             # Comprehensive pre-transaction validation
             if not self._validate_transaction_preconditions(available_borrows):
                 print("❌ Transaction preconditions not met")
                 return False
-            
+
             # Calculate safe borrow amount with enhanced validation
             borrow_amount = self._calculate_validated_borrow_amount(available_borrows, "growth")
-            
+
             if borrow_amount < 1.0:
                 print("⚠️ Borrow amount too small after validation")
                 return False
-            
+
             print(f"💰 Validated borrow amount: ${borrow_amount:.2f} DAI")
-            
+
             # Execute DAI borrow with enhanced error handling
             result = self._execute_validated_dai_borrow(borrow_amount)
             if result:
@@ -882,7 +882,7 @@ class ArbitrumTestnetAgent:
             else:
                 print(f"❌ Failed to borrow DAI")
                 return False
-                
+
         except Exception as e:
             print(f"❌ Growth-triggered operation failed: {e}")
             import traceback
@@ -893,21 +893,21 @@ class ArbitrumTestnetAgent:
         """Execute capacity-based operation - DAI only"""
         try:
             print("⚡ Executing capacity-based operation (DAI-only)")
-            
+
             # Comprehensive pre-transaction validation
             if not self._validate_transaction_preconditions(available_borrows):
                 print("❌ Transaction preconditions not met")
                 return False
-            
+
             # Calculate safe borrow amount with enhanced validation
             borrow_amount = self._calculate_validated_borrow_amount(available_borrows, "capacity")
-            
+
             if borrow_amount < 0.5:
                 print("⚠️ Capacity borrow amount too small after validation")
                 return False
-            
+
             print(f"💰 Validated capacity borrow: ${borrow_amount:.2f} DAI")
-            
+
             # Execute DAI borrow with enhanced error handling
             result = self._execute_validated_dai_borrow(borrow_amount)
             if result:
@@ -916,7 +916,7 @@ class ArbitrumTestnetAgent:
             else:
                 print(f"❌ Failed capacity operation")
                 return False
-                
+
         except Exception as e:
             print(f"❌ Capacity operation failed: {e}")
             import traceback
@@ -927,53 +927,53 @@ class ArbitrumTestnetAgent:
         """Validate all preconditions before attempting any transaction"""
         try:
             print("🔍 Validating transaction preconditions...")
-            
+
             # 1. Check ETH balance for gas
             eth_balance = self.get_eth_balance()
             if eth_balance < 0.001:  # Minimum 0.001 ETH for gas
                 print(f"❌ Insufficient ETH for gas: {eth_balance:.6f} ETH")
                 return False
-            
+
             # 2. Verify Aave integration is functional
             if not hasattr(self, 'aave') or not self.aave:
                 print("❌ Aave integration not initialized")
                 return False
-            
+
             # 3. Get fresh account data
             account_data = self.aave.get_user_account_data()
             if not account_data:
                 print("❌ Cannot retrieve account data from Aave")
                 return False
-            
+
             # 4. Validate health factor
             health_factor = account_data.get('healthFactor', 0)
             if health_factor < 1.5:
                 print(f"❌ Health factor too low: {health_factor:.3f}")
                 return False
-            
+
             # 5. Validate available borrows
             actual_available = account_data.get('availableBorrowsUSD', 0)
             if actual_available < 1.0:
                 print(f"❌ Insufficient borrowing capacity: ${actual_available:.2f}")
                 return False
-            
+
             # 6. Check if borrows match expected
             if abs(actual_available - available_borrows) > 5.0:  # 5% tolerance
                 print(f"⚠️ Borrow capacity mismatch: expected ${available_borrows:.2f}, actual ${actual_available:.2f}")
                 available_borrows = actual_available  # Use actual value
-            
+
             print(f"✅ All preconditions met - ETH: {eth_balance:.6f}, HF: {health_factor:.3f}, Available: ${actual_available:.2f}")
             return True
-            
+
         except Exception as e:
             print(f"❌ Precondition validation failed: {e}")
             return False
-    
+
     def _calculate_validated_borrow_amount(self, available_borrows, operation_type="general"):
         """Calculate a validated borrow amount with multiple safety checks"""
         try:
             print(f"💰 Calculating safe borrow amount for {operation_type} operation...")
-            
+
             # Base calculation based on operation type
             if operation_type == "growth":
                 base_percentage = 0.10  # Conservative 10% for growth operations
@@ -984,18 +984,18 @@ class ArbitrumTestnetAgent:
             else:
                 base_percentage = 0.05  # Ultra conservative 5% for general operations
                 max_amount = 3.0
-            
+
             # Calculate initial amount
             calculated_amount = available_borrows * base_percentage
-            
+
             # Apply maximum cap
             safe_amount = min(calculated_amount, max_amount)
-            
+
             # Apply minimum threshold
             if safe_amount < 0.5:
                 print(f"⚠️ Calculated amount ${safe_amount:.2f} below minimum threshold")
                 return 0.0
-            
+
             # Additional safety check - ensure we're not borrowing too much relative to collateral
             account_data = self.aave.get_user_account_data()
             if account_data:
@@ -1004,48 +1004,48 @@ class ArbitrumTestnetAgent:
                     max_safe_borrow = total_collateral * 0.02  # Maximum 2% of collateral per operation
                     safe_amount = min(safe_amount, max_safe_borrow)
                     print(f"📊 Collateral-based limit: ${max_safe_borrow:.2f}")
-            
+
             print(f"💎 Final validated borrow amount: ${safe_amount:.2f}")
             return safe_amount
-            
+
         except Exception as e:
             print(f"❌ Borrow amount calculation failed: {e}")
             return 0.0
-    
+
     def _execute_validated_dai_borrow(self, borrow_amount):
         """Execute DAI borrow with comprehensive validation and error handling"""
         try:
             print(f"🏦 Executing validated DAI borrow: ${borrow_amount:.2f}")
-            
+
             # Pre-execution validation
             if borrow_amount <= 0:
                 print("❌ Invalid borrow amount")
                 return False
-            
+
             # Check DAI token balance before operation
             dai_balance_before = self.aave.get_dai_balance()
             print(f"📊 DAI balance before: {dai_balance_before:.6f}")
-            
+
             # Attempt the borrow with detailed error catching
             try:
                 result = self.aave.borrow_dai(borrow_amount)
-                
+
                 if result:
                     print(f"✅ Borrow transaction initiated: {result}")
-                    
+
                     # Wait a moment and verify the balance increased
                     import time
                     time.sleep(3)
-                    
+
                     dai_balance_after = self.aave.get_dai_balance()
                     balance_increase = dai_balance_after - dai_balance_before
-                    
+
                     print(f"📊 DAI balance after: {dai_balance_after:.6f}")
                     print(f"📈 Balance increase: {balance_increase:.6f}")
-                    
+
                     if balance_increase > 0:
                         print(f"✅ Borrow successful - received {balance_increase:.6f} DAI")
-                        
+
                         # EXECUTE COMPLETE SEQUENCE: Borrow → Swap → Supply
                         sequence_success = self._execute_complete_defi_sequence(balance_increase)
                         if sequence_success:
@@ -1060,7 +1060,7 @@ class ArbitrumTestnetAgent:
                 else:
                     print("❌ Borrow transaction failed")
                     return False
-                    
+
             except Exception as borrow_error:
                 error_msg = str(borrow_error).lower()
                 if "execution reverted" in error_msg:
@@ -1076,9 +1076,9 @@ class ArbitrumTestnetAgent:
                     print("❌ Nonce error - transaction ordering issue")
                 else:
                     print(f"❌ Borrow execution error: {borrow_error}")
-                
+
                 return False
-                
+
         except Exception as e:
             print(f"❌ Validated borrow execution failed: {e}")
             import traceback
@@ -1091,13 +1091,13 @@ class ArbitrumTestnetAgent:
             print(f"\n🔄 EXECUTING COMPLETE DEFI SEQUENCE")
             print(f"═══════════════════════════════════════")
             print(f"💰 Starting with {dai_amount:.6f} DAI")
-            
+
             # Split DAI between WBTC and WETH (50/50)
             dai_for_wbtc = dai_amount * 0.5
             dai_for_weth = dai_amount * 0.5
-            
+
             print(f"📊 Allocation: {dai_for_wbtc:.6f} DAI → WBTC, {dai_for_weth:.6f} DAI → WETH")
-            
+
             # Step 1: Swap DAI → WBTC
             wbtc_received = 0
             if dai_for_wbtc > 0.1:  # Minimum threshold
@@ -1107,7 +1107,7 @@ class ArbitrumTestnetAgent:
                     print(f"✅ Received {wbtc_received:.8f} WBTC")
                 else:
                     print("❌ WBTC swap failed")
-            
+
             # Step 2: Swap DAI → WETH  
             weth_received = 0
             if dai_for_weth > 0.1:  # Minimum threshold
@@ -1117,7 +1117,7 @@ class ArbitrumTestnetAgent:
                     print(f"✅ Received {weth_received:.8f} WETH")
                 else:
                     print("❌ WETH swap failed")
-            
+
             # Step 3: Supply WBTC to Aave
             wbtc_supplied = False
             if wbtc_received > 0:
@@ -1127,7 +1127,7 @@ class ArbitrumTestnetAgent:
                     print("✅ WBTC supplied to Aave successfully")
                 else:
                     print("❌ WBTC supply failed")
-            
+
             # Step 4: Supply WETH to Aave
             weth_supplied = False
             if weth_received > 0:
@@ -1137,7 +1137,7 @@ class ArbitrumTestnetAgent:
                     print("✅ WETH supplied to Aave successfully")
                 else:
                     print("❌ WETH supply failed")
-            
+
             # Summary
             print(f"\n📊 SEQUENCE SUMMARY:")
             print(f"═══════════════════")
@@ -1146,17 +1146,17 @@ class ArbitrumTestnetAgent:
             print(f"{'✅' if weth_received > 0 else '❌'} WETH Swapped: {weth_received:.8f}")
             print(f"{'✅' if wbtc_supplied else '❌'} WBTC Supplied: {wbtc_supplied}")
             print(f"{'✅' if weth_supplied else '❌'} WETH Supplied: {weth_supplied}")
-            
+
             # Consider success if at least one operation completed
             sequence_success = (wbtc_received > 0 and wbtc_supplied) or (weth_received > 0 and weth_supplied)
-            
+
             if sequence_success:
                 print("🎯 Complete DeFi sequence executed successfully!")
                 return True
             else:
                 print("⚠️ Sequence completed with limited success")
                 return False
-                
+
         except Exception as e:
             print(f"❌ Complete DeFi sequence failed: {e}")
             import traceback
@@ -1169,27 +1169,27 @@ class ArbitrumTestnetAgent:
             if not hasattr(self, 'uniswap') or not self.uniswap:
                 print("❌ Uniswap integration not available")
                 return 0
-            
+
             # Pre-swap validation
             dai_balance = self.aave.get_dai_balance()
             if dai_balance < dai_amount:
                 print(f"❌ Insufficient DAI balance: {dai_balance:.6f} < {dai_amount:.6f}")
                 return 0
-                
+
             # Ensure DAI approval for Uniswap router
             print(f"🔄 Ensuring DAI approval for Uniswap...")
             approval_success = self._ensure_token_approval(self.dai_address, dai_amount, self.uniswap.router_address)
             if not approval_success:
                 print("❌ Failed to approve DAI for Uniswap")
                 return 0
-            
+
             # Get WBTC balance before swap
             wbtc_before = self.aave.get_token_balance(self.wbtc_address)
-            
+
             # Execute swap with multiple fee tier attempts
             fee_tiers = [500, 3000, 10000]  # Try different fee tiers for best liquidity
             result = None
-            
+
             for fee_tier in fee_tiers:
                 print(f"🔄 Attempting swap with {fee_tier/10000:.2%} fee tier...")
                 result = self.uniswap.swap_tokens(
@@ -1197,6 +1197,37 @@ class ArbitrumTestnetAgent:
                     self.wbtc_address,    # WBTC out
                     dai_amount,           # Amount
                     fee_tier              # Fee tier
+                )
+
+                if result:
+                    print(f"✅ Swap successful with {fee_tier/10000:.2%} fee tier")
+                    break
+                else:
+                    print(f"❌ Swap failed with {fee_tier/10000:.2%} fee tier")
+
+            if result:
+                # Wait longer and check balance increase multiple times
+                import time
+                for check_attempt in range(3):
+                    time.sleep(5)  # Wait 5 seconds
+                    wbtc_after = self.aave.get_token_balance(self.wbtc_address)
+                    wbtc_received = wbtc_after - wbtc_before
+
+                    if wbtc_received > 0:
+                        print(f"✅ WBTC received after {(check_attempt + 1) * 5}s: {wbtc_received:.8f}")
+                        return wbtc_received
+                    elif check_attempt == 2:
+                        print("⚠️ No WBTC balance increase detected after 15s")
+
+                return max(0, wbtc_received)
+
+            return 0
+
+        except Exception as e:
+            print(f"❌ DAI → WBTC swap failed: {e}")
+            import traceback
+            traceback.print_exc()
+            return 0
 
     def _ensure_token_approval(self, token_address, amount, spender_address):
         """Ensure token approval with proper validation and retry logic"""
@@ -1221,9 +1252,9 @@ class ArbitrumTestnetAgent:
                 "stateMutability": "nonpayable",
                 "type": "function"
             }]
-            
+
             token_contract = self.w3.eth.contract(address=token_address, abi=erc20_abi)
-            
+
             # Convert amount to wei
             if token_address == self.dai_address:
                 amount_wei = int(amount * 10**18)
@@ -1233,23 +1264,23 @@ class ArbitrumTestnetAgent:
                 amount_wei = int(amount * 10**18)
             else:
                 amount_wei = int(amount * 10**18)
-            
+
             # Check current allowance
             current_allowance = token_contract.functions.allowance(
                 self.address, spender_address
             ).call()
-            
+
             if current_allowance >= amount_wei:
                 print(f"✅ Sufficient allowance: {current_allowance} >= {amount_wei}")
                 return True
-            
+
             # Need to approve - approve 2x amount for efficiency
             approve_amount = amount_wei * 2
-            
+
             # Build approval transaction
             nonce = self.w3.eth.get_transaction_count(self.address)
             gas_price = max(self.w3.eth.gas_price, int(0.01 * 10**9))  # Min 0.01 gwei
-            
+
             approve_tx = token_contract.functions.approve(
                 spender_address,
                 approve_amount
@@ -1259,23 +1290,23 @@ class ArbitrumTestnetAgent:
                 'gasPrice': gas_price,
                 'nonce': nonce
             })
-            
+
             # Sign and send
             signed_tx = self.w3.eth.account.sign_transaction(approve_tx, self.account.key)
             tx_hash = self.w3.eth.send_raw_transaction(signed_tx.rawTransaction)
-            
+
             print(f"🔄 Approval transaction sent: {tx_hash.hex()}")
-            
+
             # Wait for confirmation
             receipt = self.w3.eth.wait_for_transaction_receipt(tx_hash, timeout=60)
-            
+
             if receipt.status == 1:
                 print(f"✅ Token approval confirmed")
                 return True
             else:
                 print(f"❌ Approval transaction failed")
                 return False
-                
+
         except Exception as e:
             print(f"❌ Token approval error: {e}")
             return False
@@ -1286,27 +1317,27 @@ class ArbitrumTestnetAgent:
             if not hasattr(self, 'uniswap') or not self.uniswap:
                 print("❌ Uniswap integration not available")
                 return 0
-            
+
             # Pre-swap validation
             dai_balance = self.aave.get_dai_balance()
             if dai_balance < dai_amount:
                 print(f"❌ Insufficient DAI balance: {dai_balance:.6f} < {dai_amount:.6f}")
                 return 0
-                
+
             # Ensure DAI approval for Uniswap router
             print(f"🔄 Ensuring DAI approval for Uniswap...")
             approval_success = self._ensure_token_approval(self.dai_address, dai_amount, self.uniswap.router_address)
             if not approval_success:
                 print("❌ Failed to approve DAI for Uniswap")
                 return 0
-            
+
             # Get WBTC balance before swap
             wbtc_before = self.aave.get_token_balance(self.wbtc_address)
-            
+
             # Execute swap with multiple fee tier attempts
             fee_tiers = [500, 3000, 10000]  # Try different fee tiers for best liquidity
             result = None
-            
+
             for fee_tier in fee_tiers:
                 print(f"🔄 Attempting swap with {fee_tier/10000:.2%} fee tier...")
                 result = self.uniswap.swap_tokens(
@@ -1315,13 +1346,13 @@ class ArbitrumTestnetAgent:
                     dai_amount,           # Amount
                     fee_tier              # Fee tier
                 )
-                
+
                 if result:
                     print(f"✅ Swap successful with {fee_tier/10000:.2%} fee tier")
                     break
                 else:
                     print(f"❌ Swap failed with {fee_tier/10000:.2%} fee tier")
-            
+
             if result:
                 # Wait longer and check balance increase multiple times
                 import time
@@ -1329,45 +1360,17 @@ class ArbitrumTestnetAgent:
                     time.sleep(5)  # Wait 5 seconds
                     wbtc_after = self.aave.get_token_balance(self.wbtc_address)
                     wbtc_received = wbtc_after - wbtc_before
-                    
+
                     if wbtc_received > 0:
                         print(f"✅ WBTC received after {(check_attempt + 1) * 5}s: {wbtc_received:.8f}")
                         return wbtc_received
                     elif check_attempt == 2:
                         print("⚠️ No WBTC balance increase detected after 15s")
-                
+
                 return max(0, wbtc_received)
-            
+
             return 0
-            
-        except Exception as e:
-            print(f"❌ DAI → WBTC swap failed: {e}")
-            import traceback
-            traceback.print_exc()
-            return 0
-                    print(f"✅ Swap successful with {fee_tier/10000:.2%} fee tier")
-                    break
-                else:
-                    print(f"❌ Swap failed with {fee_tier/10000:.2%} fee tier")
-            
-            if result:
-                # Wait longer and check balance increase multiple times
-                import time
-                for check_attempt in range(3):
-                    time.sleep(5)  # Wait 5 seconds
-                    wbtc_after = self.aave.get_token_balance(self.wbtc_address)
-                    wbtc_received = wbtc_after - wbtc_before
-                    
-                    if wbtc_received > 0:
-                        print(f"✅ WBTC received after {(check_attempt + 1) * 5}s: {wbtc_received:.8f}")
-                        return wbtc_received
-                    elif check_attempt == 2:
-                        print("⚠️ No WBTC balance increase detected after 15s")
-                
-                return max(0, wbtc_received)
-            
-            return 0
-            
+
         except Exception as e:
             print(f"❌ DAI → WBTC swap failed: {e}")
             import traceback
@@ -1380,10 +1383,10 @@ class ArbitrumTestnetAgent:
             if not hasattr(self, 'uniswap') or not self.uniswap:
                 print("❌ Uniswap integration not available")
                 return 0
-            
+
             # Get WETH balance before swap
             weth_before = self.aave.get_token_balance(self.weth_address)
-            
+
             # Execute swap using the correct method
             result = self.uniswap.swap_tokens(
                 self.dai_address,     # DAI in
@@ -1391,7 +1394,7 @@ class ArbitrumTestnetAgent:
                 dai_amount,           # Amount
                 500                   # 0.05% fee tier
             )
-            
+
             if result:
                 # Wait and check balance increase
                 import time
@@ -1399,9 +1402,9 @@ class ArbitrumTestnetAgent:
                 weth_after = self.aave.get_token_balance(self.weth_address)
                 weth_received = weth_after - weth_before
                 return max(0, weth_received)
-            
+
             return 0
-            
+
         except Exception as e:
             print(f"❌ DAI → WETH swap failed: {e}")
             return 0
@@ -1411,17 +1414,17 @@ class ArbitrumTestnetAgent:
         try:
             if wbtc_amount <= 0:
                 return False
-            
+
             # Approve WBTC first
             approval_result = self.aave.approve_token(self.wbtc_address, wbtc_amount)
             if not approval_result:
                 print("❌ WBTC approval failed")
                 return False
-            
+
             # Supply to Aave
             supply_result = self.aave.supply_wbtc_to_aave(wbtc_amount)
             return bool(supply_result)
-            
+
         except Exception as e:
             print(f"❌ WBTC supply failed: {e}")
             return False
@@ -1431,17 +1434,17 @@ class ArbitrumTestnetAgent:
         try:
             if weth_amount <= 0:
                 return False
-            
+
             # Approve WETH first
             approval_result = self.aave.approve_token(self.weth_address, weth_amount)
             if not approval_result:
                 print("❌ WETH approval failed")
                 return False
-            
+
             # Supply to Aave
             supply_result = self.aave.supply_weth_to_aave(weth_amount)
             return bool(supply_result)
-            
+
         except Exception as e:
             print(f"❌ WETH supply failed: {e}")
             return False
