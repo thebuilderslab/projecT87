@@ -679,5 +679,47 @@
     "status": "pending",
     "estimated_impact": "High (Profit)",
     "risk_level": "Low-Medium"
+  },
+  {
+    "id": "yield_optimization_1753539686",
+    "type": "yield_optimization",
+    "source": "agent",
+    "timestamp": 1753539686.6045494,
+    "data": {
+      "action": "optimize_yield",
+      "parameters": {
+        "leverage_increase": 0.1,
+        "new_asset_targets": [
+          "USDT",
+          "FRAX"
+        ],
+        "arbitrage_opportunities": true
+      },
+      "reasoning": "Strong performance at 1.000 allows for optimization"
+    },
+    "status": "pending",
+    "estimated_impact": "High (Profit)",
+    "risk_level": "Low-Medium"
+  },
+  {
+    "id": "yield_optimization_1753539731",
+    "type": "yield_optimization",
+    "source": "agent",
+    "timestamp": 1753539731.6125855,
+    "data": {
+      "action": "optimize_yield",
+      "parameters": {
+        "leverage_increase": 0.1,
+        "new_asset_targets": [
+          "USDT",
+          "FRAX"
+        ],
+        "arbitrage_opportunities": true
+      },
+      "reasoning": "Strong performance at 1.000 allows for optimization"
+    },
+    "status": "pending",
+    "estimated_impact": "High (Profit)",
+    "risk_level": "Low-Medium"
   }
 ]
