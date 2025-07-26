@@ -1345,6 +1345,34 @@ class ArbitrumTestnetAgent:
             import traceback
             traceback.print_exc()
             return 0
+                    print(f"✅ Swap successful with {fee_tier/10000:.2%} fee tier")
+                    break
+                else:
+                    print(f"❌ Swap failed with {fee_tier/10000:.2%} fee tier")
+            
+            if result:
+                # Wait longer and check balance increase multiple times
+                import time
+                for check_attempt in range(3):
+                    time.sleep(5)  # Wait 5 seconds
+                    wbtc_after = self.aave.get_token_balance(self.wbtc_address)
+                    wbtc_received = wbtc_after - wbtc_before
+                    
+                    if wbtc_received > 0:
+                        print(f"✅ WBTC received after {(check_attempt + 1) * 5}s: {wbtc_received:.8f}")
+                        return wbtc_received
+                    elif check_attempt == 2:
+                        print("⚠️ No WBTC balance increase detected after 15s")
+                
+                return max(0, wbtc_received)
+            
+            return 0
+            
+        except Exception as e:
+            print(f"❌ DAI → WBTC swap failed: {e}")
+            import traceback
+            traceback.print_exc()
+            return 0
 
     def _execute_dai_to_weth_swap(self, dai_amount):
         """Execute DAI → WETH swap using Uniswap"""
