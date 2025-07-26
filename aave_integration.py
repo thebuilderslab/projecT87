@@ -1,4 +1,3 @@
-
 """
 DAI COMPLIANCE ENFORCED: This file has been modified to use DAI-only operations.
 All USDC references have been removed and replaced with DAI equivalents.
@@ -22,7 +21,7 @@ class AaveArbitrumIntegration:
         self.w3 = w3
         self.account = account
         self.network_mode = network_mode
-        
+
         # DAI-ONLY COMPLIANCE: Only DAI address is configured
         if network_mode == 'mainnet':
             self.dai_address = "0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1"
@@ -35,10 +34,10 @@ class AaveArbitrumIntegration:
             self.wbtc_address = "0xA2d460Bc966F6C4D5527a6ba35C6cB57c15c8F96"
             self.weth_address = "0x980B62Da83eFf3D4576C647993b0c1D7faf17c73"
             self.pool_address = "0x18cd499E3d7ed42FebA981ac9236A278E4Cdc2ee"
-        
+
         # Initialize pool contract
         self._initialize_pool_contract()
-        
+
         print(f"✅ Aave integration initialized for {network_mode} with DAI-only compliance")
 
     def _initialize_pool_contract(self):
@@ -107,7 +106,7 @@ class AaveArbitrumIntegration:
                 "type": "function"
             }
         ]
-        
+
         self.pool_contract = self.w3.eth.contract(
             address=self.pool_address,
             abi=self.pool_abi
@@ -121,7 +120,7 @@ class AaveArbitrumIntegration:
             for attempt in range(max_retries):
                 try:
                     account_data = self.pool_contract.functions.getUserAccountData(self.account.address).call()
-                    
+
                     return {
                         'totalCollateralUSD': account_data[0] / (10**8),
                         'totalDebtUSD': account_data[1] / (10**8),
@@ -134,7 +133,7 @@ class AaveArbitrumIntegration:
                         time.sleep(1)
                         continue
                     raise
-                    
+
         except Exception as e:
             logger.error(f"Failed to get account data: {e}")
             return None
@@ -144,23 +143,23 @@ class AaveArbitrumIntegration:
         try:
             print(f"🏦 Initiating DAI borrow: ${amount_dai:.2f}")
             amount_wei = int(amount_dai * 10**18)  # DAI has 18 decimals
-            
+
             # Pre-transaction validation
             account_data = self.get_user_account_data()
             if not account_data:
                 logger.error("Cannot retrieve account data for validation")
                 return False
-            
+
             available_borrows = account_data.get('availableBorrowsUSD', 0)
             if amount_dai > available_borrows:
                 logger.error(f"Requested amount ${amount_dai:.2f} exceeds available ${available_borrows:.2f}")
                 return False
-            
+
             health_factor = account_data.get('healthFactor', 0)
             if health_factor < 1.5:
                 logger.error(f"Health factor too low for borrowing: {health_factor:.3f}")
                 return False
-            
+
             # Build transaction with enhanced error handling
             max_retries = 3
             for attempt in range(max_retries):
@@ -168,9 +167,9 @@ class AaveArbitrumIntegration:
                     # Get fresh nonce and gas price
                     nonce = self.w3.eth.get_transaction_count(self.account.address)
                     gas_price = self.w3.eth.gas_price
-                    
+
                     print(f"📊 Transaction params - Nonce: {nonce}, Gas Price: {gas_price}")
-                    
+
                     # Estimate gas first
                     try:
                         estimated_gas = self.pool_contract.functions.borrow(
@@ -180,15 +179,15 @@ class AaveArbitrumIntegration:
                             0,  # Referral code
                             self.account.address
                         ).estimate_gas({'from': self.account.address})
-                        
+
                         # Add 20% buffer to estimated gas
                         gas_limit = int(estimated_gas * 1.2)
                         print(f"⛽ Estimated gas: {estimated_gas}, Using: {gas_limit}")
-                        
+
                     except Exception as gas_error:
                         print(f"⚠️ Gas estimation failed: {gas_error}")
                         gas_limit = 400000  # Fallback gas limit
-                    
+
                     tx = self.pool_contract.functions.borrow(
                         self.dai_address,
                         amount_wei,
@@ -201,23 +200,23 @@ class AaveArbitrumIntegration:
                         'gasPrice': gas_price,
                         'nonce': nonce
                     })
-                    
+
                     # Sign and send
                     signed_tx = self.w3.eth.account.sign_transaction(tx, self.account.key)
                     tx_hash = self.w3.eth.send_raw_transaction(signed_tx.rawTransaction)
-                    
+
                     print(f"✅ DAI borrow transaction sent: {tx_hash.hex()}")
-                    
+
                     # Wait for transaction confirmation
                     receipt = self.w3.eth.wait_for_transaction_receipt(tx_hash, timeout=120)
-                    
+
                     if receipt.status == 1:
                         print(f"✅ DAI borrow confirmed: ${amount_dai:.2f}")
                         return tx_hash.hex()
                     else:
                         print(f"❌ Transaction failed in execution")
                         return False
-                    
+
                 except ValueError as ve:
                     error_msg = str(ve)
                     if "execution reverted" in error_msg:
@@ -230,14 +229,14 @@ class AaveArbitrumIntegration:
                             time.sleep(2)
                             continue
                         raise
-                        
+
                 except (OSError, ConnectionError, ProcessLookupError) as sys_error:
                     logger.warning(f"System call error on borrow attempt {attempt + 1}: {sys_error}")
                     if attempt < max_retries - 1:
                         time.sleep(2)
                         continue
                     raise
-                    
+
         except Exception as e:
             logger.error(f"DAI borrow failed: {e}")
             print(f"❌ DAI borrow failed with error: {e}")
@@ -260,7 +259,7 @@ class AaveArbitrumIntegration:
                 amount_wei = int(amount * 10**18)  # WETH has 18 decimals
             else:
                 raise ValueError("Unsupported token for supply")
-            
+
             # Build transaction
             tx = self.pool_contract.functions.supply(
                 token_address,
@@ -273,14 +272,14 @@ class AaveArbitrumIntegration:
                 'gasPrice': self.w3.eth.gas_price,
                 'nonce': self.w3.eth.get_transaction_count(self.account.address)
             })
-            
+
             # Sign and send
             signed_tx = self.w3.eth.account.sign_transaction(tx, self.account.key)
             tx_hash = self.w3.eth.send_raw_transaction(signed_tx.rawTransaction)
-            
+
             print(f"✅ Token supply successful: {amount:.6f}")
             return tx_hash.hex()
-            
+
         except Exception as e:
             logger.error(f"Token supply failed: {e}")
             return False
@@ -308,14 +307,14 @@ class AaveArbitrumIntegration:
                 "outputs": [{"name": "balance", "type": "uint256"}],
                 "type": "function"
             }]
-            
+
             # Retry mechanism for system call errors
             max_retries = 3
             for attempt in range(max_retries):
                 try:
                     contract = self.w3.eth.contract(address=token_address, abi=balance_abi)
                     balance_wei = contract.functions.balanceOf(self.account.address).call()
-                    
+
                     # Convert based on token decimals
                     if token_address == self.dai_address:
                         return balance_wei / (10**18)  # DAI has 18 decimals
@@ -325,14 +324,14 @@ class AaveArbitrumIntegration:
                         return balance_wei / (10**18)  # WETH has 18 decimals
                     else:
                         return balance_wei / (10**18)  # Default to 18 decimals
-                        
+
                 except (OSError, ConnectionError, ProcessLookupError) as sys_error:
                     logger.warning(f"System call error on balance check attempt {attempt + 1}: {sys_error}")
                     if attempt < max_retries - 1:
                         time.sleep(1)
                         continue
                     raise
-                
+
         except Exception as e:
             logger.error(f"Failed to get token balance: {e}")
             return 0.0
@@ -355,9 +354,9 @@ class AaveArbitrumIntegration:
                 "outputs": [{"name": "", "type": "bool"}],
                 "type": "function"
             }]
-            
+
             contract = self.w3.eth.contract(address=token_address, abi=approve_abi)
-            
+
             # Convert amount to wei based on token decimals
             if token_address == self.dai_address:
                 amount_wei = int(amount * 10**18)
@@ -367,7 +366,7 @@ class AaveArbitrumIntegration:
                 amount_wei = int(amount * 10**18)
             else:
                 amount_wei = int(amount * 10**18)
-            
+
             # Build transaction
             tx = contract.functions.approve(
                 self.pool_address,
@@ -378,14 +377,14 @@ class AaveArbitrumIntegration:
                 'gasPrice': self.w3.eth.gas_price,
                 'nonce': self.w3.eth.get_transaction_count(self.account.address)
             })
-            
+
             # Sign and send
             signed_tx = self.w3.eth.account.sign_transaction(tx, self.account.key)
             tx_hash = self.w3.eth.send_raw_transaction(signed_tx.rawTransaction)
-            
+
             print(f"✅ Token approval successful")
             return True
-            
+
         except Exception as e:
             logger.error(f"Token approval failed: {e}")
             return False
@@ -405,7 +404,7 @@ class AaveArbitrumIntegration:
                 amount_wei = int(amount * 10**18)  # WETH has 18 decimals
             else:
                 raise ValueError("Unsupported token for withdrawal")
-            
+
             # Build transaction
             tx = self.pool_contract.functions.withdraw(
                 token_address,
@@ -417,14 +416,14 @@ class AaveArbitrumIntegration:
                 'gasPrice': self.w3.eth.gas_price,
                 'nonce': self.w3.eth.get_transaction_count(self.account.address)
             })
-            
+
             # Sign and send
             signed_tx = self.w3.eth.account.sign_transaction(tx, self.account.key)
             tx_hash = self.w3.eth.send_raw_transaction(signed_tx.rawTransaction)
-            
+
             print(f"✅ Token withdrawal successful: {amount:.6f}")
             return tx_hash.hex()
-            
+
         except Exception as e:
             logger.error(f"Token withdrawal failed: {e}")
             return False
@@ -437,7 +436,7 @@ class AaveArbitrumIntegration:
         """Repay DAI debt to Aave"""
         try:
             amount_wei = int(amount * 10**18)  # DAI has 18 decimals
-            
+
             # Build transaction
             tx = self.pool_contract.functions.repay(
                 self.dai_address,
@@ -450,14 +449,22 @@ class AaveArbitrumIntegration:
                 'gasPrice': self.w3.eth.gas_price,
                 'nonce': self.w3.eth.get_transaction_count(self.account.address)
             })
-            
+
             # Sign and send
             signed_tx = self.w3.eth.account.sign_transaction(tx, self.account.key)
             tx_hash = self.w3.eth.send_raw_transaction(signed_tx.rawTransaction)
-            
+
             print(f"✅ DAI repayment successful: {amount:.6f}")
             return tx_hash.hex()
-            
+
         except Exception as e:
             logger.error(f"DAI repayment failed: {e}")
             return False
+balances = {}
+
+        # aToken addresses for Arbitrum Mainnet (DAI-only compliance)
+        atoken_addresses = {
+            'aWBTC': Web3.to_checksum_address('0x078f358208685046a11c85e8ad32895ded33a249'),
+            'aWETH': Web3.to_checksum_address('0xe50fa9b3c56ffb159cb0fca61f5c9d750e8128c8'),
+            'aDAI': Web3.to_checksum_address('0x82E64f49Ed5EC1bC6e43DAD4FC8Af9bb3A2312EE')
+        }

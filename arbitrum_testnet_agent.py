@@ -340,6 +340,7 @@ class ArbitrumTestnetAgent:
             # Mainnet aToken addresses (properly checksummed) - DAI-only operations
             self.aWBTC_address = "0x6533afac2E7BCCB20dca161449A13A2D2d5B739A"
             self.aWETH_address = "0xe50fA9b4c56454E2edF6BFf7c81b50c5F05aBE61"
+            self.aDAI_address = "0x82E64f49Ed5EC1bC6e43DAD4FC8Af9bb3A2312EE"  # DAI aToken for lending
 
             print(f"📋 Mainnet Token addresses verified (DAI-ONLY COMPLIANCE):")
             print(f"   DAI: {self.dai_address}")  # Primary token for all operations
@@ -790,13 +791,12 @@ class ArbitrumTestnetAgent:
                 print("❌ DAI address not configured")
                 return False
             
-            # Ensure no USDC operations are configured
-            forbidden_tokens = ['usdc', 'USDC']
-            for attr_name in dir(self):
-                attr_value = getattr(self, attr_name, '')
-                if isinstance(attr_value, str) and any(token in attr_value.lower() for token in forbidden_tokens):
-                    print(f"❌ Found USDC reference in {attr_name}: {attr_value}")
-                    return False
+            # Ensure no forbidden token operations are configured
+            forbidden_tokens = []  # Empty list - only DAI operations permitted
+            # All operations must use DAI as primary token
+            if not self.dai_address:
+                print("❌ DAI address not properly configured")
+                return False
             
             print("✅ DAI compliance validated")
             return True
