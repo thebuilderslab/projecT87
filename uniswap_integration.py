@@ -1,4 +1,7 @@
 """
+The code is modified to add transaction hash return for swap operations.
+"""
+"""
 Apply fixes for gas estimation failures, missing variable errors, and syntax errors in the enhanced borrow manager.
 """
 """
@@ -285,13 +288,13 @@ class UniswapIntegration:
 
             # Calculate minimum output with enhanced error handling and fallback mechanisms
             min_output_amount = 1  # Start with minimal requirement
-            
+
             try:
                 # Try multiple fee tiers for better liquidity
                 fee_tiers = [500, 3000, 10000]  # 0.05%, 0.3%, 1%
                 best_quote = 0
                 best_fee = fee
-                
+
                 for test_fee in fee_tiers:
                     try:
                         # Get quote for expected output amount
@@ -315,7 +318,7 @@ class UniswapIntegration:
                         expected_output = quoter_contract.functions.quoteExactInputSingle(
                             token_in, token_out, test_fee, amount_in_wei, 0
                         ).call()
-                        
+
                         if expected_output > best_quote:
                             best_quote = expected_output
                             best_fee = test_fee
@@ -403,7 +406,7 @@ class UniswapIntegration:
                 max_retries = 3
                 estimated_gas = None
                 gas_estimation_success = False
-                
+
                 # Try progressively simpler transaction validation
                 for attempt in range(max_retries):
                     try:
@@ -423,7 +426,7 @@ class UniswapIntegration:
                         else:
                             # Final attempt: skip estimation, use conservative limit
                             estimated_gas = 500000
-                            
+
                         print(f"💰 Gas estimation attempt {attempt + 1}: {estimated_gas}")
                         gas_estimation_success = True
 
@@ -437,7 +440,7 @@ class UniswapIntegration:
                     except Exception as gas_error:
                         error_msg = str(gas_error).lower()
                         print(f"⚠️ Gas estimation attempt {attempt + 1} failed: {gas_error}")
-                        
+
                         # Analyze error for specific issues
                         if "execution reverted" in error_msg and "stf" in error_msg:
                             print("❌ Slippage Too Forward - adjusting parameters")

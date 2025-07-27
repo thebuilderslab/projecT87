@@ -252,7 +252,7 @@ class AaveArbitrumIntegration:
         """Supply tokens to Aave - DAI-centric operations with proper approval"""
         try:
             print(f"🏦 Initiating supply: {amount:.6f} tokens to Aave")
-            
+
             # Determine decimals and convert amount
             if token_address == self.dai_address:
                 amount_wei = int(amount * 10**18)  # DAI has 18 decimals
@@ -281,16 +281,16 @@ class AaveArbitrumIntegration:
             # Step 3: Approve token spending (critical step that was missing)
             print(f"🔐 Approving {token_name} spending for Aave pool...")
             approval_success = self.approve_token(token_address, amount * 1.1)  # Approve 10% extra for safety
-            
+
             if not approval_success:
                 raise Exception(f"{token_name} approval failed")
 
             print(f"✅ {token_name} approval successful")
-            
+
             # Step 4: Get fresh nonce and gas price
             nonce = self.w3.eth.get_transaction_count(self.account.address)
             gas_price = self.w3.eth.gas_price
-            
+
             # Step 5: Estimate gas for supply transaction
             try:
                 estimated_gas = self.pool_contract.functions.supply(
@@ -299,10 +299,10 @@ class AaveArbitrumIntegration:
                     self.account.address,
                     0  # Referral code
                 ).estimate_gas({'from': self.account.address})
-                
+
                 gas_limit = int(estimated_gas * 1.3)  # Add 30% buffer
                 print(f"⛽ Estimated gas: {estimated_gas}, Using: {gas_limit}")
-                
+
             except Exception as gas_error:
                 print(f"⚠️ Gas estimation failed: {gas_error}")
                 gas_limit = 400000  # Fallback gas limit
@@ -323,8 +323,9 @@ class AaveArbitrumIntegration:
             # Step 7: Sign and send transaction
             signed_tx = self.w3.eth.account.sign_transaction(tx, self.account.key)
             tx_hash = self.w3.eth.send_raw_transaction(signed_tx.rawTransaction)
+            tx_hash_hex = tx_hash.hex()
 
-            print(f"📤 Supply transaction sent: {tx_hash.hex()}")
+            print(f"📤 Supply transaction sent: {tx_hash_hex}")
 
             # Step 8: Wait for confirmation
             receipt = self.w3.eth.wait_for_transaction_receipt(tx_hash, timeout=120)
@@ -406,7 +407,7 @@ class AaveArbitrumIntegration:
         """Approve token for Aave operations with enhanced error handling"""
         try:
             print(f"🔐 Approving token: {token_address} for amount: {amount:.6f}")
-            
+
             # Standard ERC20 approve ABI
             approve_abi = [{
                 "constant": False,
@@ -446,11 +447,11 @@ class AaveArbitrumIntegration:
                     self.account.address, 
                     self.pool_address
                 ).call()
-                
+
                 if current_allowance >= amount_wei:
                     print(f"✅ Sufficient allowance already exists: {current_allowance / (10**18):.6f}")
                     return True
-                    
+
             except Exception as allowance_err:
                 print(f"⚠️ Could not check allowance: {allowance_err}")
 
@@ -464,9 +465,9 @@ class AaveArbitrumIntegration:
                     self.pool_address,
                     amount_wei
                 ).estimate_gas({'from': self.account.address})
-                
+
                 gas_limit = int(estimated_gas * 1.2)  # Add 20% buffer
-                
+
             except Exception as gas_err:
                 print(f"⚠️ Gas estimation failed: {gas_err}")
                 gas_limit = 100000  # Standard approval gas

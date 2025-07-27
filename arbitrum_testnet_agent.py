@@ -1,11 +1,20 @@
-# Applying DAI compliance by removing USDC references and updating token validation.
+#!/usr/bin/env python3
+"""
+Arbitrum Testnet Agent - Main DeFi Operations Agent
+"""
+
 import os
+import sys
 import json
-import math
 import time
-import logging
-from datetime import datetime
+from decimal import Decimal
 from web3 import Web3
+from datetime import datetime
+from typing import Dict, Any, Optional, Tuple
+
+# Applying DAI compliance by removing USDC references and updating token validation.
+import math
+import logging
 from eth_account import Account
 from aave_integration import AaveArbitrumIntegration
 from uniswap_integration import UniswapIntegration
@@ -13,7 +22,7 @@ from aave_health_monitor import AaveHealthMonitor as HealthMonitor
 from gas_fee_calculator import ArbitrumGasCalculator
 from config_constants import MIN_ETH_FOR_OPERATIONS, MIN_ETH_FOR_GAS_BUFFER
 import requests
-import sys
+
 
 class ArbitrumTestnetAgent:
     def __init__(self):
@@ -677,7 +686,168 @@ class ArbitrumTestnetAgent:
                 print("🏦 Initialized Enhanced Borrow Manager.")
             except Exception as e:
                 print(f"❌ Enhanced borrow manager initialization failed: {e}")
-                
+
         except Exception as e:
             print(f"❌ Integration initialization failed: {e}")
             return False
+
+    def execute_dai_leveraged_supply_strategy(self):
+        """Execute the DAI-based leveraged supply strategy with enhanced safety and post-borrow failure recovery"""
+        borrowed_dai_amount = 0  # Track borrowed amount for potential repayment
+        dai_utilized = False  # Track if borrowed DAI was successfully utilized
+
+        try:
+            print(f"\n🎯 EXECUTING DAI LEVERAGED SUPPLY STRATEGY")
+            print(f"════════════════════════════════════════")
+
+            # Step 1: Check prerequisites
+            health_data = self.health_monitor.get_current_health_factor()
+            if not health_data or health_data.get('health_factor', 0) < self.min_health_factor_threshold:
+                return False, "Health factor too low for leveraged operations"
+
+            current_hf = health_data.get('health_factor', 0)
+            initial_hf = current_hf  # Store for recovery comparison
+            print(f"🏥 Current Health Factor: {current_hf:.4f}")
+
+            # Step 2: Calculate optimal DAI borrow amount
+            borrow_amount_dai = self.calculate_optimal_dai_borrow_amount()
+            if borrow_amount_dai <= 0:
+                return False, "No suitable DAI borrow amount calculated"
+
+            print(f"💰 Optimal DAI Borrow Amount: {borrow_amount_dai:.2f} DAI")
+
+            # Step 3: Borrow DAI from Aave
+            borrow_result = self.aave.borrow_dai(borrow_amount_dai)
+            if not borrow_result:
+                return False, "Failed to borrow DAI from Aave"
+
+            borrowed_dai_amount = borrow_amount_dai
+            print(f"✅ Successfully borrowed {borrow_amount_dai:.2f} DAI")
+
+            # Verify DAI is in wallet
+            dai_balance = self.get_token_balance(self.dai_address)
+            print(f"📊 DAI in wallet after borrow: {dai_balance:.2f} DAI")
+
+            # CRITICAL: Post-borrow operations with robust error handling and recovery
+            try:
+                # Step 4: Swap DAI for WETH via Uniswap (with retry mechanism)
+                swap_amount = borrow_amount_dai * 0.95  # 95% to account for slippage
+                swap_success = False
+                swap_tx_hash = None
+
+                for attempt in range(2):  # Try twice
+                    print(f"🔄 Swap attempt {attempt + 1}/2: {swap_amount:.2f} DAI -> WETH")
+                    try:
+                        swap_result = self.uniswap.swap_dai_for_weth(swap_amount)
+                        if isinstance(swap_result, tuple) and len(swap_result) == 2:
+                            swap_success, swap_tx_hash = swap_result
+                        else:
+                            swap_success = swap_result
+
+                        if swap_success:
+                            dai_utilized = True
+                            if swap_tx_hash:
+                                print(f"✅ DAI->WETH swap confirmed! TX: {swap_tx_hash}")
+                                print(f"🔗 Verify on Arbiscan: https://arbiscan.io/tx/{swap_tx_hash}")
+                            else:
+                                print(f"✅ Successfully swapped DAI for WETH")
+                            break
+                        else:
+                            print(f"⚠️ Swap attempt {attempt + 1} failed")
+                            if attempt < 1:  # If not last attempt
+                                time.sleep(2)  # Wait before retry
+                    except Exception as swap_error:
+                        print(f"⚠️ Swap attempt {attempt + 1} error: {swap_error}")
+                        if attempt < 1:  # If not last attempt
+                            time.sleep(2)  # Wait before retry
+
+                if not swap_success:
+                    raise Exception("All swap attempts failed - DAI remains unutilized")
+
+                # Step 5: Supply WETH back to Aave (with retry mechanism)
+                weth_balance = self.get_token_balance(self.weth_address)
+                if weth_balance > 0:
+                    supply_success = False
+                    supply_tx_hash = None
+
+                    for attempt in range(2):  # Try twice
+                        print(f"🔄 Supply attempt {attempt + 1}/2: {weth_balance:.6f} WETH to Aave")
+                        try:
+                            supply_result = self.aave.supply_asset(self.weth_address, weth_balance)
+                            if isinstance(supply_result, tuple) and len(supply_result) == 2:
+                                supply_success, supply_tx_hash = supply_result
+                            else:
+                                supply_success = supply_result
+
+                            if supply_success:
+                                if supply_tx_hash:
+                                    print(f"✅ WETH supply confirmed! TX: {supply_tx_hash}")
+                                    print(f"🔗 Verify on Arbiscan: https://arbiscan.io/tx/{supply_tx_hash}")
+                                else:
+                                    print(f"✅ Successfully supplied {weth_balance:.6f} WETH to Aave")
+                                return True, f"DAI leveraged supply completed: {borrow_amount_dai:.2f} DAI -> WETH"
+                            else:
+                                print(f"⚠️ Supply attempt {attempt + 1} failed")
+                                if attempt < 1:  # If not last attempt
+                                    time.sleep(2)  # Wait before retry
+                        except Exception as supply_error:
+                            print(f"⚠️ Supply attempt {attempt + 1} error: {supply_error}")
+                            if attempt < 1:  # If not last attempt
+                                time.sleep(2)  # Wait before retry
+
+                    if not supply_success:
+                        raise Exception("All supply attempts failed - WETH could not be supplied")
+                else:
+                    raise Exception("No WETH balance available for supply after swap")
+
+            except Exception as post_borrow_error:
+                # CRITICAL RECOVERY: Immediate DAI repayment if post-borrow operations failed
+                print(f"\n🚨 CRITICAL ALERT: POST-BORROW OPERATION FAILED!")
+                print(f"❌ Error: {post_borrow_error}")
+                print(f"💡 Borrowed DAI utilized: {dai_utilized}")
+
+                if not dai_utilized and borrowed_dai_amount > 0:
+                    print(f"\n🔧 INITIATING EMERGENCY DAI REPAYMENT PROTOCOL")
+                    print(f"🎯 Goal: Restore Health Factor to safe level (target: >{initial_hf:.4f})")
+
+                    # Check current DAI balance for repayment
+                    current_dai_balance = self.get_token_balance(self.dai_address)
+                    repayment_amount = min(current_dai_balance, borrowed_dai_amount)
+
+                    if repayment_amount > 0:
+                        print(f"💰 Attempting to repay {repayment_amount:.2f} DAI")
+                        try:
+                            repay_result = self.aave.repay_dai(repayment_amount)
+                            if repay_result:
+                                if isinstance(repay_result, tuple) and len(repay_result) == 2:
+                                    _, repay_tx_hash = repay_result
+                                    if repay_tx_hash:
+                                        print(f"✅ Emergency DAI repayment confirmed! TX: {repay_tx_hash}")
+                                        print(f"🔗 Verify on Arbiscan: https://arbiscan.io/tx/{repay_tx_hash}")
+                                    else:
+                                        print(f"✅ Emergency repayment successful: {repayment_amount:.2f} DAI")
+                                else:
+                                    print(f"✅ Emergency repayment successful: {repayment_amount:.2f} DAI")
+
+                                # Verify health factor recovery
+                                recovery_health = self.health_monitor.get_current_health_factor()
+                                if recovery_health:
+                                    new_hf = recovery_health.get('health_factor', 0)
+                                    print(f"🏥 Health Factor after recovery: {new_hf:.4f}")
+                                    if new_hf >= 2.0:
+                                        print(f"✅ Health Factor successfully restored to safe level")
+                                    else:
+                                        print(f"⚠️ Health Factor still below optimal (target: >2.0)")
+                            else:
+                                print(f"❌ Emergency repayment failed - manual intervention required!")
+                        except Exception as repay_error:
+                            print(f"❌ Emergency repayment error: {repay_error}")
+                            print(f"🚨 CRITICAL: Manual intervention required!")
+                    else:
+                        print(f"❌ No DAI available for repayment - manual intervention required!")
+
+                return False, f"Post-borrow operation failed: {post_borrow_error}"
+
+        except Exception as e:
+            print(f"❌ Error in DAI leveraged supply strategy: {e}")
+            return False, f"Strategy execution error: {e}"
