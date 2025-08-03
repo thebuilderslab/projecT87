@@ -733,6 +733,103 @@ class ArbitrumTestnetAgent:
         print(f"✅ Operation '{operation_type}' recorded. Success rate: {success_rate:.1f}%")
         print(f"   Next operation available in {self.operation_cooldown_seconds}s")
 
+    def _calculate_execution_scaling_factor(self, total_collateral_usd, health_factor, available_borrows_usd):
+        """Calculate dynamic execution scaling factor based on account health and market conditions"""
+        try:
+            base_factor = 1.0
+            
+            # Health Factor Scaling (Conservative approach)
+            if health_factor > 3.0:
+                hf_factor = 1.5  # Very healthy - can scale up operations
+            elif health_factor > 2.5:
+                hf_factor = 1.2  # Healthy - moderate scaling
+            elif health_factor > 2.0:
+                hf_factor = 1.0  # Normal - no scaling adjustment
+            elif health_factor > 1.8:
+                hf_factor = 0.7  # Cautious - scale down operations
+            else:
+                hf_factor = 0.4  # Very cautious - minimal operations
+            
+            # Available Borrowing Capacity Scaling
+            if available_borrows_usd > 100:
+                capacity_factor = 1.3  # High capacity - can scale up
+            elif available_borrows_usd > 50:
+                capacity_factor = 1.1  # Good capacity - slight scale up
+            elif available_borrows_usd > 20:
+                capacity_factor = 1.0  # Normal capacity - no adjustment
+            elif available_borrows_usd > 5:
+                capacity_factor = 0.8  # Low capacity - scale down
+            else:
+                capacity_factor = 0.5  # Very low capacity - minimal operations
+            
+            # Collateral Size Scaling (Larger portfolios can handle larger operations)
+            if total_collateral_usd > 500:
+                size_factor = 1.2
+            elif total_collateral_usd > 250:
+                size_factor = 1.0
+            elif total_collateral_usd > 100:
+                size_factor = 0.9
+            else:
+                size_factor = 0.8
+            
+            # Combine factors with conservative weighting
+            scaling_factor = base_factor * (hf_factor * 0.5 + capacity_factor * 0.3 + size_factor * 0.2)
+            
+            # Apply bounds: minimum 0.3x, maximum 2.0x scaling
+            scaling_factor = max(0.3, min(scaling_factor, 2.0))
+            
+            return scaling_factor
+            
+        except Exception as e:
+            print(f"❌ Scaling factor calculation failed: {e}")
+            return 0.5  # Conservative fallback
+    
+    def _execute_scaled_growth_operation(self, scaled_amount):
+        """Execute growth-triggered operation with scaled amount"""
+        try:
+            print(f"🚀 Executing scaled growth operation: ${scaled_amount:.2f}")
+            
+            # Use existing DAI-compliant execution logic with scaled amount
+            if not self._validate_transaction_preconditions(scaled_amount):
+                print("❌ Transaction preconditions not met for scaled operation")
+                return False
+            
+            # Execute scaled DAI borrow
+            result = self._execute_validated_dai_borrow(scaled_amount)
+            if result:
+                print(f"✅ Scaled growth operation successful: ${scaled_amount:.2f}")
+                return True
+            else:
+                print(f"❌ Scaled growth operation failed")
+                return False
+                
+        except Exception as e:
+            print(f"❌ Scaled growth operation error: {e}")
+            return False
+    
+    def _execute_scaled_capacity_operation(self, scaled_amount):
+        """Execute capacity-based operation with scaled amount"""
+        try:
+            print(f"⚡ Executing scaled capacity operation: ${scaled_amount:.2f}")
+            
+            # Use existing DAI-compliant execution logic with scaled amount
+            if not self._validate_transaction_preconditions(scaled_amount):
+                print("❌ Transaction preconditions not met for scaled operation")
+                return False
+            
+            # Execute scaled DAI borrow
+            result = self._execute_validated_dai_borrow(scaled_amount)
+            if result:
+                print(f"✅ Scaled capacity operation successful: ${scaled_amount:.2f}")
+                return True
+            else:
+                print(f"❌ Scaled capacity operation failed")
+                return False
+                
+        except Exception as e:
+            print(f"❌ Scaled capacity operation error: {e}")
+            return False
+
     def track_operation_attempt(self):
         """Track operation attempts for success rate calculation"""
         if not hasattr(self, 'operation_stats'):
@@ -1812,45 +1909,83 @@ class ArbitrumTestnetAgent:
             print(f"   Health Factor: {health_factor:.4f}")
             print(f"   Growth since baseline: ${growth_amount:.2f}")
 
-            # INTEGRATED TRIGGER SYSTEM: Check all trigger types simultaneously
+            # INTEGRATED TRIGGER SYSTEM WITH EXECUTION SCALING LOGIC
             borrow_success = False
             operation_executed = False
+            execution_priority = "none"
             
-            # Priority 1: Check market signal triggers (debt swap operations)
+            # EXECUTION SCALING LOGIC - Determine operation size based on conditions
+            scaling_factor = self._calculate_execution_scaling_factor(
+                total_collateral_usd, health_factor, available_borrows_usd
+            )
+            
+            print(f"🎯 EXECUTION SCALING: Factor {scaling_factor:.2f}x (Health: {health_factor:.3f}, Available: ${available_borrows_usd:.2f})")
+            
+            # Priority 1: Market Signal Triggers (Highest Priority - Real-time Market Conditions)
             if (self.market_signal_strategy and 
                 self.market_signal_strategy.market_signal_enabled and
                 self.market_signal_strategy.should_execute_trade()):
                 
-                print("🔄 EXECUTING MARKET SIGNAL DEBT SWAP OPERATION")
+                execution_priority = "market_signal"
+                print("🚨 PRIORITY 1: MARKET SIGNAL DEBT SWAP TRIGGER")
+                
                 signal = self.market_signal_strategy.analyze_market_signals()
                 if signal:
                     should_execute, strategy_type = self.market_signal_strategy.should_execute_market_strategy(signal)
                     if should_execute:
-                        # Calculate debt swap amount (conservative)
-                        swap_amount = min(3.0, available_borrows_usd * 0.05)  # 5% of available capacity, max $3
-                        borrow_success = self.market_signal_strategy.execute_market_driven_strategy(strategy_type, swap_amount)
+                        # SCALED EXECUTION: Market signals get conservative scaling
+                        base_amount = min(3.0, available_borrows_usd * 0.05)  # 5% of available capacity, max $3
+                        scaled_amount = base_amount * min(scaling_factor, 0.8)  # Cap market operations at 80% scaling
+                        scaled_amount = max(0.5, min(scaled_amount, 5.0))  # Bounds: $0.5 - $5.0
+                        
+                        print(f"💰 Market Signal Execution: ${scaled_amount:.2f} (base: ${base_amount:.2f}, scale: {scaling_factor:.2f})")
+                        borrow_success = self.market_signal_strategy.execute_market_driven_strategy(strategy_type, scaled_amount)
                         operation_executed = True
-                        print(f"✅ Market signal operation executed: {strategy_type}")
+                        if borrow_success:
+                            self.record_successful_operation("market_signal")
+                            print(f"✅ Market signal operation executed: {strategy_type}")
                     else:
-                        print("⚠️ Market conditions not optimal for debt swap")
+                        print("⚠️ Market signal analysis suggests waiting")
                 else:
-                    print("❌ No market signal generated for debt swap")
+                    print("❌ No market signal generated")
             
-            # Priority 2: Check growth-triggered operations (if no market signal executed)
+            # Priority 2: Growth-Triggered Operations (Medium Priority - Portfolio Growth)
             elif self._should_execute_growth_triggered_operation(total_collateral_usd, health_factor, available_borrows_usd):
-                print("🚀 EXECUTING GROWTH-TRIGGERED OPERATION")
-                borrow_success = self._execute_growth_triggered_operation(available_borrows_usd)
+                execution_priority = "growth_triggered"
+                print("🚀 PRIORITY 2: GROWTH-TRIGGERED OPERATION")
+                
+                # SCALED EXECUTION: Growth operations get full scaling potential
+                base_amount = min(8.0, available_borrows_usd * 0.10)  # 10% of available capacity, max $8
+                scaled_amount = base_amount * scaling_factor
+                scaled_amount = max(1.0, min(scaled_amount, 15.0))  # Bounds: $1.0 - $15.0
+                
+                print(f"💰 Growth-Triggered Execution: ${scaled_amount:.2f} (base: ${base_amount:.2f}, scale: {scaling_factor:.2f})")
+                borrow_success = self._execute_scaled_growth_operation(scaled_amount)
                 operation_executed = True
                 if borrow_success:
                     self.record_successful_operation("growth_triggered")
 
-            # Priority 3: Check capacity-based operations (if no other operations executed)
+            # Priority 3: Capacity-Based Operations (Low Priority - Utilization Optimization)
             elif self._should_execute_capacity_operation(available_borrows_usd, health_factor):
-                print("⚡ EXECUTING CAPACITY-BASED OPERATION")
-                borrow_success = self._execute_capacity_operation(available_borrows_usd)
+                execution_priority = "capacity_based"
+                print("⚡ PRIORITY 3: CAPACITY-BASED OPERATION")
+                
+                # SCALED EXECUTION: Capacity operations get moderate scaling
+                base_amount = min(5.0, available_borrows_usd * 0.08)  # 8% of available capacity, max $5
+                scaled_amount = base_amount * min(scaling_factor, 1.2)  # Cap capacity operations at 120% scaling
+                scaled_amount = max(0.5, min(scaled_amount, 10.0))  # Bounds: $0.5 - $10.0
+                
+                print(f"💰 Capacity-Based Execution: ${scaled_amount:.2f} (base: ${base_amount:.2f}, scale: {scaling_factor:.2f})")
+                borrow_success = self._execute_scaled_capacity_operation(scaled_amount)
                 operation_executed = True
                 if borrow_success:
                     self.record_successful_operation("capacity_based")
+            
+            # Log execution decision
+            if operation_executed:
+                print(f"📊 EXECUTION SUMMARY: Priority={execution_priority}, Success={borrow_success}, Scaling={scaling_factor:.2f}")
+            else:
+                print(f"⏸️ NO EXECUTION: All trigger conditions not met (HF: {health_factor:.3f}, Available: ${available_borrows_usd:.2f})")
 
             # Update baseline if we have new collateral data
             if total_collateral_usd > 0:
