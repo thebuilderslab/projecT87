@@ -1,4 +1,3 @@
-
 """
 Market Signal Strategy Integration for Hybrid Autonomous System
 Integrates Freqtrade-style technical analysis with existing DeFi operations
@@ -33,10 +32,10 @@ class MarketSignalStrategy:
         self.coinmarketcap_api_key = agent.coinmarketcap_api_key
         self.signal_history = []
         self.last_signal_time = 0
-        
+
         # Initialize enhanced market analyzer
         self.enhanced_analyzer = EnhancedMarketAnalyzer(agent)
-        
+
         # Initialize advanced trend analyzer for minute-by-minute analysis
         try:
             from advanced_trend_analyzer import AdvancedTrendAnalyzer
@@ -47,30 +46,30 @@ class MarketSignalStrategy:
             self.trend_analyzer = None
             self.minute_analysis_enabled = False
             logging.warning("Advanced Trend Analyzer not available - using basic analysis")
-        
+
         # Configuration parameters - OPTIMIZED FOR MINUTE-BY-MINUTE ANALYSIS
         self.btc_drop_threshold = float(os.getenv('BTC_DROP_THRESHOLD', '0.002'))  # 0.2% drop (ultra-sensitive)
         self.arb_rsi_oversold = float(os.getenv('ARB_RSI_OVERSOLD', '30'))
         self.arb_rsi_overbought = float(os.getenv('ARB_RSI_OVERBOUGHT', '70'))
         self.signal_cooldown = int(os.getenv('SIGNAL_COOLDOWN', '60'))  # 1 minute cooldown for real-time analysis
-        
+
         # Minute-by-minute analysis parameters
         self.minute_trend_threshold = 0.85  # 85% confidence for minute trends
         self.enable_1h_prediction = True
         self.trend_strength_threshold = 0.7  # 70% trend strength minimum
-        
+
         # Market signal thresholds - OPTIMIZED FOR 1-HOUR DECISION WINDOW
         self.market_signal_enabled = os.getenv('MARKET_SIGNAL_ENABLED', 'true').lower() == 'true'
         self.dai_to_arb_threshold = float(os.getenv('DAI_TO_ARB_THRESHOLD', '0.92'))  # 92% confidence for DAI→ARB (1hr window)
         self.arb_to_dai_threshold = float(os.getenv('ARB_TO_DAI_THRESHOLD', '0.88'))  # 88% confidence for ARB→DAI
         self.high_confidence_threshold = 0.90  # Ultra-high confidence threshold
         self.pattern_confirmation_required = True  # Require pattern confirmation
-        
+
         # 1-Hour specific parameters - ENHANCED SENSITIVITY
         self.one_hour_prediction_window = True
         self.btc_1h_drop_threshold = float(os.getenv('BTC_1H_DROP_THRESHOLD', '0.002'))  # 0.2% in 1 hour (more sensitive)
         self.arb_1h_momentum_threshold = float(os.getenv('ARB_1H_MOMENTUM_THRESHOLD', '0.003'))  # 0.3% momentum (more sensitive)
-        
+
         logging.info(f"Market Signal Strategy initialized - Enabled: {self.market_signal_enabled}")
 
     def get_btc_price_data(self) -> Optional[Dict]:
@@ -79,7 +78,7 @@ class MarketSignalStrategy:
             if not hasattr(self, 'market_data_api'):
                 from market_data_api_fix import MarketDataAPIFix
                 self.market_data_api = MarketDataAPIFix(self.coinmarketcap_api_key)
-            
+
             return self.market_data_api.get_btc_price_data_fixed()
         except Exception as e:
             logging.error(f"BTC price data error: {e}")
@@ -96,7 +95,7 @@ class MarketSignalStrategy:
             if not hasattr(self, 'market_data_api'):
                 from market_data_api_fix import MarketDataAPIFix
                 self.market_data_api = MarketDataAPIFix(self.coinmarketcap_api_key)
-            
+
             return self.market_data_api.get_arb_price_data_fixed()
         except Exception as e:
             logging.error(f"ARB price data error: {e}")
@@ -113,7 +112,7 @@ class MarketSignalStrategy:
             # Simplified RSI calculation based on recent price changes
             price_change_1h = price_data.get('percent_change_1h', 0)
             price_change_24h = price_data.get('percent_change_24h', 0)
-            
+
             # Simple momentum-based RSI approximation
             if price_change_1h > 2:
                 rsi_estimate = 70 + (price_change_1h - 2) * 5  # Trending overbought
@@ -121,19 +120,19 @@ class MarketSignalStrategy:
                 rsi_estimate = 30 + (price_change_1h + 2) * 5  # Trending oversold
             else:
                 rsi_estimate = 50 + price_change_1h * 10  # Neutral with slight bias
-            
+
             rsi_estimate = max(0, min(100, rsi_estimate))  # Clamp to 0-100
-            
+
             # MACD approximation using 1h vs 24h momentum
             macd_signal = "bullish" if price_change_1h > price_change_24h * 0.1 else "bearish"
-            
+
             return {
                 'rsi': rsi_estimate,
                 'macd_signal': macd_signal,
                 'momentum_1h': price_change_1h,
                 'momentum_24h': price_change_24h
             }
-            
+
         except Exception as e:
             logging.error(f"Technical indicator calculation failed: {e}")
             return {'rsi': 50, 'macd_signal': 'neutral', 'momentum_1h': 0, 'momentum_24h': 0}
@@ -144,11 +143,11 @@ class MarketSignalStrategy:
             # Skip if disabled or in cooldown
             if not self.market_signal_enabled:
                 return None
-                
+
             current_time = time.time()
             if current_time - self.last_signal_time < self.signal_cooldown:
                 return None
-            
+
             # Try enhanced analysis first with 90% confidence validation
             enhanced_signal = self.enhanced_analyzer.generate_enhanced_signal()
             if enhanced_signal and enhanced_signal.confidence >= self.high_confidence_threshold:
@@ -156,14 +155,14 @@ class MarketSignalStrategy:
                 pattern_score = enhanced_signal.pattern_analysis.get('count', 0) * 0.1
                 success_bonus = enhanced_signal.success_probability * 0.2
                 gas_bonus = enhanced_signal.gas_efficiency_score * 0.1
-                
+
                 adjusted_confidence = min(0.95, enhanced_signal.confidence + pattern_score + success_bonus + gas_bonus)
-                
+
                 if adjusted_confidence >= self.high_confidence_threshold:
                     logging.info(f"HIGH CONFIDENCE Enhanced signal: {enhanced_signal.signal_type} "
                                f"(confidence: {adjusted_confidence:.2f}, "
                                f"success_prob: {enhanced_signal.success_probability:.2f})")
-                    
+
                     # Convert to standard MarketSignal format
                     return MarketSignal(
                         signal_type=enhanced_signal.signal_type,
@@ -172,31 +171,31 @@ class MarketSignalStrategy:
                         arb_technical_score=enhanced_signal.arb_analysis.get('rsi', 50),
                         timestamp=enhanced_signal.timestamp
                     )
-            
+
             # Get market data
             btc_data = self.get_btc_price_data()
             arb_data = self.get_arb_price_data()
-            
+
             if not btc_data or not arb_data:
                 logging.warning("Insufficient market data for signal analysis")
                 return None
-            
+
             # Calculate technical indicators
             arb_indicators = self.calculate_technical_indicators(arb_data)
-            
+
             # Analyze BTC conditions
             btc_drop_signal = btc_data['percent_change_1h'] <= -self.btc_drop_threshold * 100
             btc_recovery_signal = btc_data['percent_change_1h'] >= self.btc_drop_threshold * 100
-            
+
             # Analyze ARB conditions
             arb_oversold = arb_indicators['rsi'] <= self.arb_rsi_oversold
             arb_overbought = arb_indicators['rsi'] >= self.arb_rsi_overbought
             arb_macd_bullish = arb_indicators['macd_signal'] == 'bullish'
-            
+
             # Generate signal
             signal_type = 'neutral'
             confidence = 0.0
-            
+
             # Bearish signal (DAI → ARB opportunity)
             if btc_drop_signal and arb_oversold:
                 signal_type = 'bearish'
@@ -204,7 +203,7 @@ class MarketSignalStrategy:
             elif btc_drop_signal or arb_oversold:
                 signal_type = 'bearish'
                 confidence = 0.5
-            
+
             # Bullish signal (ARB → DAI opportunity)
             elif btc_recovery_signal and (arb_overbought or arb_macd_bullish):
                 signal_type = 'bullish'
@@ -212,7 +211,7 @@ class MarketSignalStrategy:
             elif arb_overbought or (btc_recovery_signal and arb_macd_bullish):
                 signal_type = 'bullish'
                 confidence = 0.5
-            
+
             signal = MarketSignal(
                 signal_type=signal_type,
                 confidence=confidence,
@@ -220,13 +219,13 @@ class MarketSignalStrategy:
                 arb_technical_score=arb_indicators['rsi'],
                 timestamp=current_time
             )
-            
+
             if signal.confidence > 0.3:  # Only log significant signals
                 logging.info(f"Market signal generated: {signal.signal_type} (confidence: {signal.confidence:.2f})")
                 logging.info(f"BTC 1h change: {signal.btc_price_change:.2f}%, ARB RSI: {signal.arb_technical_score:.1f}")
-            
+
             return signal
-            
+
         except Exception as e:
             logging.error(f"Market signal analysis failed: {e}")
             return None
@@ -240,20 +239,20 @@ class MarketSignalStrategy:
                 btc_1h_decline = abs(signal.btc_price_change) >= (self.btc_1h_drop_threshold * 100)
                 arb_oversold_strong = signal.arb_technical_score <= 25
                 confidence_threshold_met = signal.confidence >= self.dai_to_arb_threshold
-                
+
                 # Require all conditions for 1-hour DAI→ARB swap
                 if confidence_threshold_met and (btc_1h_decline or arb_oversold_strong):
                     logging.info(f"1-HOUR DAI→ARB SIGNAL: Confidence {signal.confidence:.2f}, "
                                f"BTC 1h: {signal.btc_price_change:.2f}%, ARB RSI: {signal.arb_technical_score:.1f}")
                     return True, 'dai_to_arb'
-            
+
             # Check if we should swap ARB → DAI (bullish market, ARB overbought)
             elif (signal.signal_type == 'bullish' and 
                   signal.confidence >= self.arb_to_dai_threshold):
                 return True, 'arb_to_dai'
-            
+
             return False, 'hold'
-            
+
         except Exception as e:
             logging.error(f"Strategy execution check failed: {e}")
             return False, 'hold'
@@ -262,7 +261,7 @@ class MarketSignalStrategy:
         """Execute market-driven debt swapping strategy"""
         try:
             logging.info(f"Executing market strategy: {strategy_type} with {amount_dai:.2f} DAI")
-            
+
             if strategy_type == 'dai_to_arb':
                 # Borrow DAI and swap to ARB
                 success = self._execute_dai_to_arb_swap(amount_dai)
@@ -272,15 +271,15 @@ class MarketSignalStrategy:
             else:
                 logging.warning(f"Unknown strategy type: {strategy_type}")
                 return False
-            
+
             if success:
                 self.last_signal_time = time.time()
                 logging.info(f"Market strategy {strategy_type} executed successfully")
             else:
                 logging.error(f"Market strategy {strategy_type} failed")
-            
+
             return success
-            
+
         except Exception as e:
             logging.error(f"Market strategy execution failed: {e}")
             return False
@@ -289,7 +288,7 @@ class MarketSignalStrategy:
         """Execute DAI → ARB swap strategy - simplified and safe"""
         try:
             print(f"🔄 MARKET SIGNAL DEBT SWAP: {amount_dai:.2f} DAI → ARB")
-            
+
             # Use agent's existing enhanced borrow system
             borrow_success = self.agent.execute_enhanced_borrow_with_retry(amount_dai)
             if borrow_success:
@@ -298,46 +297,62 @@ class MarketSignalStrategy:
             else:
                 print(f"❌ Market-driven debt swap failed")
                 return False
-                
+
         except Exception as e:
             logging.error(f"Market signal DAI → ARB swap failed: {e}")
             return False
 
     def _execute_arb_to_dai_swap(self, target_dai_amount: float) -> bool:
-        """Execute ARB → DAI swap strategy"""
+        """Execute ARB → DAI debt swap completion strategy"""
         try:
+            print(f"🔄 COMPLETING DEBT SWAP: ARB → DAI (target: {target_dai_amount:.2f})")
+
             # Get current ARB balance
             arb_balance = self.agent.aave.get_token_balance(self.agent.arb_address)
-            
+
             if arb_balance <= 0:
-                logging.warning("No ARB balance available for swap")
+                print(f"❌ No ARB balance available for swap")
                 return False
-            
+
+            print(f"💰 Current ARB balance: {arb_balance:.6f} ARB")
+
             # Swap ARB back to DAI
-            if hasattr(self.agent.uniswap, 'swap_tokens'):
+            if hasattr(self.agent, 'uniswap') and self.agent.uniswap:
+                print(f"🔄 Swapping {arb_balance:.6f} ARB → DAI")
+
                 swap_result = self.agent.uniswap.swap_tokens(
-                    self.agent.arb_address,
-                    self.agent.dai_address,
-                    arb_balance,
-                    3000  # 0.3% fee tier
+                    self.agent.arb_address,    # From ARB
+                    self.agent.dai_address,    # To DAI
+                    arb_balance,               # Swap all ARB
+                    3000                       # 0.3% fee tier
                 )
-                
+
                 if swap_result:
-                    # Optionally repay some DAI debt to maintain health factor
-                    dai_balance = self.agent.aave.get_dai_balance()
-                    repay_amount = min(target_dai_amount, dai_balance * 0.5)  # Repay up to 50% of received DAI
-                    
-                    if repay_amount > 1.0:  # Only repay if meaningful amount
-                        repay_success = self.agent.aave.repay_dai(repay_amount)
-                        logging.info(f"Repaid {repay_amount:.2f} DAI to maintain position health")
-                
-                return True
+                    print(f"✅ ARB → DAI swap completed successfully")
+
+                    # Get new DAI balance after swap
+                    new_dai_balance = self.agent.aave.get_dai_balance()
+                    print(f"💰 New DAI balance: {new_dai_balance:.2f}")
+
+                    # Optionally repay some DAI debt to reduce leverage
+                    if new_dai_balance > 5.0:  # Only if we have substantial DAI
+                        repay_amount = min(new_dai_balance * 0.3, target_dai_amount)  # Repay up to 30%
+                        if repay_amount > 1.0:
+                            print(f"💳 Repaying {repay_amount:.2f} DAI to reduce debt")
+                            repay_success = self.agent.aave.repay_dai(repay_amount)
+                            if repay_success:
+                                print(f"✅ DAI debt repayment successful")
+
+                    return True
+                else:
+                    print(f"❌ ARB → DAI swap failed")
+                    return False
             else:
-                logging.error("Uniswap integration not available for ARB trading")
+                print(f"❌ Uniswap integration not available")
                 return False
-                
+
         except Exception as e:
-            logging.errologging.error(f"ARB → DAI swap failed: {e}")
+            logging.error(f"ARB → DAI debt swap completion failed: {e}")
             return False
 
     def should_execute_trade(self) -> bool:
@@ -345,14 +360,14 @@ class MarketSignalStrategy:
         try:
             print(f"\n🔍 CHECKING DEBT SWAP CONDITIONS (MINUTE-BY-MINUTE ANALYSIS):")
             print(f"=" * 60)
-            
+
             # Check if market signal strategy is enabled
             if not self.market_signal_enabled:
                 print(f"❌ Market signal strategy is DISABLED")
                 return False
-            
+
             print(f"✅ Market signal strategy is ENABLED")
-            
+
             # Step 1: Collect real-time trend data
             if self.trend_analyzer and self.minute_analysis_enabled:
                 print(f"📊 Collecting minute-by-minute trend data...")
@@ -361,7 +376,7 @@ class MarketSignalStrategy:
                     print(f"✅ Real-time data collected:")
                     print(f"   BTC: ${trend_point.btc_price:.2f} (1m: {trend_point.btc_change_1m:+.3f}%, 1h: {trend_point.btc_change_1h:+.2f}%)")
                     print(f"   ARB: ${trend_point.arb_price:.4f} (1m: {trend_point.arb_change_1m:+.3f}%, 1h: {trend_point.arb_change_1h:+.2f}%)")
-                
+
                 # Step 2: Analyze minute trends
                 trend_analysis = self.trend_analyzer.analyze_minute_trends()
                 if trend_analysis:
@@ -371,45 +386,45 @@ class MarketSignalStrategy:
                     print(f"   Momentum - 1m: {trend_analysis.momentum_1m:+.3f}%, 5m: {trend_analysis.momentum_5m:+.3f}%, 1h: {trend_analysis.momentum_1h:+.3f}%")
                     print(f"   Volatility: {trend_analysis.volatility_score:.3f}")
                     print(f"   1-Hour Prediction: {trend_analysis.prediction_1h['direction']} ({trend_analysis.prediction_1h['confidence']:.2f} confidence)")
-                    
+
                     if trend_analysis.signals:
                         print(f"   🚨 Active Signals: {', '.join(trend_analysis.signals)}")
-                    
+
                     # Step 3: Check if trends indicate trade opportunity
                     should_trade, trade_type, trade_info = self.trend_analyzer.should_trigger_trade_based_on_trends()
-                    
+
                     if should_trade:
                         print(f"🎯 TREND-BASED TRADE TRIGGER: {trade_type.upper()}")
                         print(f"   Trend Confidence: {trade_info.get('confidence', 0):.2f}")
                         print(f"   Trend Strength: {trade_info.get('strength', 0):.2f}")
                         print(f"   1h Prediction: {trade_info.get('prediction', {}).get('direction', 'unknown')}")
-                        
+
                         # Execute the trade if conditions are met
                         return self._execute_trend_based_trade(trade_type, trade_info)
                     else:
                         print(f"⚠️ Trend analysis: {trade_info.get('reason', 'No strong trend detected')}")
-            
+
             print(f"✅ Minute-by-minute analysis is ENABLED")
-            
+
             # Check cooldown
             current_time = time.time()
             if current_time - self.last_signal_time < self.signal_cooldown:
                 remaining = self.signal_cooldown - (current_time - self.last_signal_time)
                 print(f"⏰ Strategy in cooldown: {remaining:.0f}s remaining")
                 return False
-            
+
             print(f"✅ Cooldown period satisfied")
-            
+
             # Analyze current market signals
             signal = self.analyze_market_signals()
             if not signal:
                 print(f"❌ No market signal generated")
                 return False
-            
+
             print(f"📈 Market Signal Generated:")
             print(f"   Type: {signal.signal_type}")
             print(f"   Confidence: {signal.confidence:.2f}")
-            
+
             # Clear positive/negative indicators for BTC change
             btc_change = signal.btc_price_change
             if btc_change > 0:
@@ -418,9 +433,9 @@ class MarketSignalStrategy:
                 btc_indicator = f"📉 {btc_change:.2f}% (NEGATIVE - Declining)"
             else:
                 btc_indicator = f"➡️ {btc_change:.2f}% (NEUTRAL - Flat)"
-            
+
             print(f"   BTC 1h change: {btc_indicator}")
-            
+
             # Clear RSI indicators
             arb_rsi = signal.arb_technical_score
             if arb_rsi <= 30:
@@ -429,15 +444,15 @@ class MarketSignalStrategy:
                 rsi_indicator = f"🟢 {arb_rsi:.1f} (OVERBOUGHT - Positive sentiment)"
             else:
                 rsi_indicator = f"🟡 {arb_rsi:.1f} (NEUTRAL - Balanced)"
-            
+
             print(f"   ARB RSI: {rsi_indicator}")
-            
+
             # Check if we should execute the strategy
             should_execute, strategy_type = self.should_execute_market_strategy(signal)
-            
+
             if should_execute:
                 print(f"🎯 DEBT SWAP TRIGGER: {strategy_type.upper()}")
-                
+
                 if strategy_type == 'dai_to_arb':
                     print(f"💡 NEGATIVE Market Condition Detected:")
                     print(f"   📉 BTC showing NEGATIVE decline ({signal.btc_price_change:.2f}%)")
@@ -449,14 +464,14 @@ class MarketSignalStrategy:
                     print(f"   🎯 Strategy: Swap ARB → Repay DAI debt (profit taking)")
                 else:
                     print(f"💡 Market condition: Executing debt optimization")
-                
+
                 # Check if agent has available borrow capacity
                 if hasattr(self.agent, 'aave') and self.agent.aave:
                     account_data = self.agent.aave.get_user_account_data()
                     if account_data:
                         available_borrows = account_data.get('availableBorrowsUSD', 0)
                         health_factor = account_data.get('healthFactor', 0)
-                        
+
                         if health_factor >= 1.5 and available_borrows >= 1.0:
                             # Execute the strategy with conservative amount
                             amount_dai = min(3.0, available_borrows * 0.05)  # Use 5% of available capacity
@@ -481,7 +496,7 @@ class MarketSignalStrategy:
                 print(f"      🔴 ARB RSI ≤25 (Severely oversold)")
                 print(f"      🎯 Confidence ≥{self.dai_to_arb_threshold:.0%}")
                 print(f"   📊 CURRENT STATUS:")
-                
+
                 btc_change = signal.btc_price_change if signal else 0
                 if btc_change >= 0:
                     print(f"      ❌ BTC showing POSITIVE/NEUTRAL movement (+{btc_change:.2f}%)")
@@ -492,20 +507,20 @@ class MarketSignalStrategy:
                         print(f"      ✅ BTC NEGATIVE drop sufficient ({btc_change:.2f}%)")
                     else:
                         print(f"      ❌ BTC NEGATIVE drop insufficient ({btc_change:.2f}% < {required_drop:.1f}%)")
-                
+
                 arb_rsi = signal.arb_technical_score if signal else 50
                 if arb_rsi <= 25:
                     print(f"      ✅ ARB severely oversold (RSI: {arb_rsi:.1f})")
                 else:
                     print(f"      ❌ ARB not oversold enough (RSI: {arb_rsi:.1f} > 25)")
-                
+
                 confidence = signal.confidence if signal else 0
                 if confidence >= self.dai_to_arb_threshold:
                     print(f"      ✅ Confidence threshold met ({confidence:.0%})")
                 else:
                     print(f"      ❌ Confidence too low ({confidence:.0%} < {self.dai_to_arb_threshold:.0%})")
                 return False
-                
+
         except Exception as e:
             print(f"❌ Error checking trade conditions: {e}")
             return False
@@ -519,39 +534,39 @@ class MarketSignalStrategy:
                 if not account_data:
                     print(f"❌ Cannot retrieve account data for trend-based trade")
                     return False
-                
+
                 available_borrows = account_data.get('availableBorrowsUSD', 0)
                 health_factor = account_data.get('healthFactor', 0)
-                
+
                 if health_factor < 1.3:  # Conservative health factor for trend trades
                     print(f"❌ Health factor too low for trend trade: {health_factor:.3f}")
                     return False
-                
+
                 if available_borrows < 2.0:
                     print(f"❌ Insufficient borrowing capacity: ${available_borrows:.2f}")
                     return False
-                
+
                 # Calculate trade amount based on trend strength and confidence
                 confidence = trade_info.get('confidence', 0)
                 strength = trade_info.get('strength', 0)
-                
+
                 # More aggressive sizing for high-confidence trend trades
                 base_amount = min(5.0, available_borrows * 0.08)  # Up to 8% of capacity
                 confidence_multiplier = confidence * 1.2  # Bonus for high confidence
                 strength_multiplier = strength * 0.5  # Bonus for trend strength
-                
+
                 trade_amount = base_amount * (1 + confidence_multiplier + strength_multiplier)
                 trade_amount = min(trade_amount, 8.0)  # Cap at $8
-                
+
                 print(f"💰 TREND-BASED TRADE EXECUTION:")
                 print(f"   Type: {trade_type}")
                 print(f"   Amount: ${trade_amount:.2f}")
                 print(f"   Confidence: {confidence:.2f}")
                 print(f"   Trend Strength: {strength:.2f}")
-                
+
                 # Execute the strategy
                 success = self.execute_market_driven_strategy(trade_type, trade_amount)
-                
+
                 if success:
                     print(f"✅ TREND-BASED TRADE EXECUTED SUCCESSFULLY")
                     self.last_signal_time = time.time()
@@ -559,9 +574,9 @@ class MarketSignalStrategy:
                 else:
                     print(f"❌ TREND-BASED TRADE EXECUTION FAILED")
                     return False
-            
+
             return False
-            
+
         except Exception as e:
             logging.error(f"Trend-based trade execution failed: {e}")
             return False
@@ -576,10 +591,10 @@ class MarketSignalStrategy:
             'signal_history_count': len(self.signal_history),
             'minute_analysis_enabled': self.minute_analysis_enabled
         }
-        
+
         # Add trend analyzer status if available
         if self.trend_analyzer:
             trend_summary = self.trend_analyzer.get_current_trend_summary()
             status['trend_analysis'] = trend_summary
-        
+
         return status
