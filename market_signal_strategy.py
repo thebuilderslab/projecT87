@@ -355,15 +355,46 @@ class MarketSignalStrategy:
             print(f"📈 Market Signal Generated:")
             print(f"   Type: {signal.signal_type}")
             print(f"   Confidence: {signal.confidence:.2f}")
-            print(f"   BTC 1h change: {signal.btc_price_change:.2f}%")
-            print(f"   ARB RSI: {signal.arb_technical_score:.1f}")
+            
+            # Clear positive/negative indicators for BTC change
+            btc_change = signal.btc_price_change
+            if btc_change > 0:
+                btc_indicator = f"📈 +{btc_change:.2f}% (POSITIVE - Rising)"
+            elif btc_change < 0:
+                btc_indicator = f"📉 {btc_change:.2f}% (NEGATIVE - Declining)"
+            else:
+                btc_indicator = f"➡️ {btc_change:.2f}% (NEUTRAL - Flat)"
+            
+            print(f"   BTC 1h change: {btc_indicator}")
+            
+            # Clear RSI indicators
+            arb_rsi = signal.arb_technical_score
+            if arb_rsi <= 30:
+                rsi_indicator = f"🔴 {arb_rsi:.1f} (OVERSOLD - Negative sentiment)"
+            elif arb_rsi >= 70:
+                rsi_indicator = f"🟢 {arb_rsi:.1f} (OVERBOUGHT - Positive sentiment)"
+            else:
+                rsi_indicator = f"🟡 {arb_rsi:.1f} (NEUTRAL - Balanced)"
+            
+            print(f"   ARB RSI: {rsi_indicator}")
             
             # Check if we should execute the strategy
             should_execute, strategy_type = self.should_execute_market_strategy(signal)
             
             if should_execute:
                 print(f"🎯 DEBT SWAP TRIGGER: {strategy_type.upper()}")
-                print(f"💡 Condition: Market declining, executing debt optimization")
+                
+                if strategy_type == 'dai_to_arb':
+                    print(f"💡 NEGATIVE Market Condition Detected:")
+                    print(f"   📉 BTC showing NEGATIVE decline ({signal.btc_price_change:.2f}%)")
+                    print(f"   🔴 ARB oversold (RSI: {signal.arb_technical_score:.1f})")
+                    print(f"   🎯 Strategy: Borrow DAI → Swap to ARB (buying opportunity)")
+                elif strategy_type == 'arb_to_dai':
+                    print(f"💡 POSITIVE Market Condition Detected:")
+                    print(f"   📈 ARB showing strength (RSI: {signal.arb_technical_score:.1f})")
+                    print(f"   🎯 Strategy: Swap ARB → Repay DAI debt (profit taking)")
+                else:
+                    print(f"💡 Market condition: Executing debt optimization")
                 
                 # Check if agent has available borrow capacity
                 if hasattr(self.agent, 'aave') and self.agent.aave:
@@ -391,8 +422,34 @@ class MarketSignalStrategy:
                     return False
             else:
                 print(f"⚠️ Market conditions not met for debt swap")
-                print(f"   Required: BTC drop ≥{self.btc_1h_drop_threshold*100:.1f}% OR ARB RSI ≤25")
-                print(f"   Required: Confidence ≥{self.dai_to_arb_threshold:.0%}")
+                print(f"   💡 DEBT SWAP TRIGGERS:")
+                print(f"      🔻 BTC NEGATIVE drop ≥{self.btc_1h_drop_threshold*100:.1f}% (Market declining)")
+                print(f"      🔴 ARB RSI ≤25 (Severely oversold)")
+                print(f"      🎯 Confidence ≥{self.dai_to_arb_threshold:.0%}")
+                print(f"   📊 CURRENT STATUS:")
+                
+                btc_change = signal.btc_price_change if signal else 0
+                if btc_change >= 0:
+                    print(f"      ❌ BTC showing POSITIVE/NEUTRAL movement (+{btc_change:.2f}%)")
+                else:
+                    drop_magnitude = abs(btc_change)
+                    required_drop = self.btc_1h_drop_threshold * 100
+                    if drop_magnitude >= required_drop:
+                        print(f"      ✅ BTC NEGATIVE drop sufficient ({btc_change:.2f}%)")
+                    else:
+                        print(f"      ❌ BTC NEGATIVE drop insufficient ({btc_change:.2f}% < {required_drop:.1f}%)")
+                
+                arb_rsi = signal.arb_technical_score if signal else 50
+                if arb_rsi <= 25:
+                    print(f"      ✅ ARB severely oversold (RSI: {arb_rsi:.1f})")
+                else:
+                    print(f"      ❌ ARB not oversold enough (RSI: {arb_rsi:.1f} > 25)")
+                
+                confidence = signal.confidence if signal else 0
+                if confidence >= self.dai_to_arb_threshold:
+                    print(f"      ✅ Confidence threshold met ({confidence:.0%})")
+                else:
+                    print(f"      ❌ Confidence too low ({confidence:.0%} < {self.dai_to_arb_threshold:.0%})")
                 return False
                 
         except Exception as e:
