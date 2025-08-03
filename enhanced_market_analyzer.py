@@ -77,36 +77,12 @@ class EnhancedMarketAnalyzer:
             }
     
     def get_historical_price_data(self, symbol: str, hours: int = 4) -> List[Dict]:
-        """Get historical price data for pattern analysis"""
-        try:
-            # Using CoinMarketCap historical data endpoint
-            url = "https://pro-api.coinmarketcap.com/v1/cryptocurrency/ohlcv/historical"
-            headers = {
-                'Accepts': 'application/json',
-                'X-CMC_PRO_API_KEY': self.coinmarketcap_api_key,
-            }
-            
-            end_time = datetime.now()
-            start_time = end_time - timedelta(hours=hours)
-            
-            parameters = {
-                'symbol': symbol,
-                'time_start': start_time.isoformat(),
-                'time_end': end_time.isoformat(),
-                'interval': '1h',
-                'convert': 'USD'
-            }
-            
-            response = requests.get(url, headers=headers, params=parameters, timeout=10)
-            data = response.json()
-            
-            if response.status_code == 200:
-                return data['data']['quotes']
-            return []
-            
-        except Exception as e:
-            logging.error(f"Failed to get historical data for {symbol}: {e}")
-            return []
+        """Get historical price data using fixed API with fallbacks"""
+        if not hasattr(self, 'market_data_api'):
+            from market_data_api_fix import MarketDataAPIFix
+            self.market_data_api = MarketDataAPIFix(self.coinmarketcap_api_key)
+        
+        return self.market_data_api.get_historical_data_fixed(symbol, hours)
     
     def calculate_advanced_indicators(self, price_data: List[Dict]) -> Dict:
         """Calculate advanced technical indicators from price history"""

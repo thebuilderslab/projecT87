@@ -53,68 +53,20 @@ class MarketSignalStrategy:
         logging.info(f"Market Signal Strategy initialized - Enabled: {self.market_signal_enabled}")
 
     def get_btc_price_data(self) -> Optional[Dict]:
-        """Get BTC price data from CoinMarketCap API"""
-        try:
-            url = "https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest"
-            headers = {
-                'Accepts': 'application/json',
-                'X-CMC_PRO_API_KEY': self.coinmarketcap_api_key,
-            }
-            parameters = {
-                'symbol': 'BTC',
-                'convert': 'USD'
-            }
-            
-            response = requests.get(url, headers=headers, params=parameters, timeout=10)
-            data = response.json()
-            
-            if response.status_code == 200:
-                btc_data = data['data']['BTC']
-                return {
-                    'price': btc_data['quote']['USD']['price'],
-                    'percent_change_1h': btc_data['quote']['USD']['percent_change_1h'],
-                    'percent_change_24h': btc_data['quote']['USD']['percent_change_24h'],
-                    'market_cap': btc_data['quote']['USD']['market_cap']
-                }
-            else:
-                logging.error(f"CoinMarketCap API error: {data}")
-                return None
-                
-        except Exception as e:
-            logging.error(f"Failed to get BTC price data: {e}")
-            return None
+        """Get BTC price data using fixed API with fallbacks"""
+        if not hasattr(self, 'market_data_api'):
+            from market_data_api_fix import MarketDataAPIFix
+            self.market_data_api = MarketDataAPIFix(self.coinmarketcap_api_key)
+        
+        return self.market_data_api.get_btc_price_data_fixed()
 
     def get_arb_price_data(self) -> Optional[Dict]:
-        """Get ARB price data from CoinMarketCap API"""
-        try:
-            url = "https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest"
-            headers = {
-                'Accepts': 'application/json',
-                'X-CMC_PRO_API_KEY': self.coinmarketcap_api_key,
-            }
-            parameters = {
-                'symbol': 'ARB',
-                'convert': 'USD'
-            }
-            
-            response = requests.get(url, headers=headers, params=parameters, timeout=10)
-            data = response.json()
-            
-            if response.status_code == 200:
-                arb_data = data['data']['ARB']
-                return {
-                    'price': arb_data['quote']['USD']['price'],
-                    'percent_change_1h': arb_data['quote']['USD']['percent_change_1h'],
-                    'percent_change_24h': arb_data['quote']['USD']['percent_change_24h'],
-                    'volume_24h': arb_data['quote']['USD']['volume_24h']
-                }
-            else:
-                logging.error(f"CoinMarketCap API error: {data}")
-                return None
-                
-        except Exception as e:
-            logging.error(f"Failed to get ARB price data: {e}")
-            return None
+        """Get ARB price data using fixed API with fallbacks"""
+        if not hasattr(self, 'market_data_api'):
+            from market_data_api_fix import MarketDataAPIFix
+            self.market_data_api = MarketDataAPIFix(self.coinmarketcap_api_key)
+        
+        return self.market_data_api.get_arb_price_data_fixed()
 
     def calculate_technical_indicators(self, price_data: Dict) -> Dict:
         """Calculate simplified technical indicators for ARB"""
