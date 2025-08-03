@@ -4,6 +4,7 @@ import time
 import json
 import os
 import traceback
+from datetime import datetime
 from config import MIN_ETH_FOR_OPERATIONS, MIN_ETH_FOR_GAS_BUFFER
 
 # --- Configuration ---
@@ -40,16 +41,18 @@ def save_config():
 
 def log_performance(run_id, iteration, performance_metric, timestamp, metadata=None):
     """Logs performance metrics for a given run."""
+    formatted_timestamp = datetime.fromtimestamp(timestamp).strftime('%Y-%m-%d %H:%M:%S UTC')
     log_entry = {
         'run_id': run_id,
         'iteration': iteration,
         'performance_metric': performance_metric,
         'timestamp': timestamp,
+        'formatted_timestamp': formatted_timestamp,
         'metadata': metadata if metadata else {}
     }
     with open(PERFORMANCE_LOG, 'a') as f:
         f.write(json.dumps(log_entry) + '\n')
-    print(f"Logged performance: Run {run_id}, Iteration {iteration}, Metric: {performance_metric}")
+    print(f"📊 [{formatted_timestamp}] Logged performance: Run {run_id}, Iteration {iteration}, Metric: {performance_metric:.3f}")
 
 def get_recent_performance(num_entries=100):
     """Retrieves recent performance entries from the log."""
@@ -153,6 +156,10 @@ def autonomous_agent_loop():
         print(f"\n--- Autonomous Agent Loop: Iteration {iteration} ---")
 
         try:
+            # Add timestamp to iteration start
+            iteration_timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S UTC')
+            print(f"\n⏰ ITERATION {iteration} STARTED AT: {iteration_timestamp}")
+            
             # Check if agent needs initialization or reinitialization
             if arbitrum_agent is None or not hasattr(arbitrum_agent, 'aave') or arbitrum_agent.aave is None:
                 print("🔄 Agent not initialized or missing integrations, attempting to initialize...")
@@ -199,7 +206,8 @@ def autonomous_agent_loop():
                             print(f"🟢 Auto-implementing low-risk proposal: {proposal['id']}")
                             strategy_manager.implement_approved_strategy(proposal['id'])
 
-            print(f"✅ Iteration {iteration} completed successfully. Waiting for next cycle.")
+            completion_timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S UTC')
+            print(f"✅ [{completion_timestamp}] Iteration {iteration} completed successfully. Waiting for next cycle.")
 
         except Exception as e:
             # Catch any unexpected errors during an iteration

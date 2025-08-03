@@ -223,6 +223,28 @@
                     Collateral: -- | Debt: --
                 </div>
             </div>
+
+            <div class="status-card" style="grid-column: 1 / -1;">
+                <div class="card-title">
+                    🎛️ System Mode
+                </div>
+                <div class="card-value" id="system-mode">
+                    <span class="loading"></span> Loading...
+                </div>
+                <div class="card-subtitle">
+                    <button class="btn" onclick="switchMode('autonomous')" id="auto-btn">🤖 Autonomous</button>
+                    <button class="btn" onclick="switchMode('manual')" id="manual-btn">🎛️ Manual</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="status-card" style="margin-bottom: 30px;">
+            <div class="card-title">
+                📟 Live Console Output
+            </div>
+            <div id="console-output" style="background: #1a1a2e; color: #00ff00; font-family: 'Courier New', monospace; padding: 15px; border-radius: 8px; height: 200px; overflow-y: auto; font-size: 0.85rem; line-height: 1.4;">
+                <div>🚀 Initializing console monitor...</div>
+            </div>
         </div>
 
         <div class="controls">
@@ -262,10 +284,74 @@
                 console.log('Received data:', data);
 
                 updateUI(data);
+                
+                // Also fetch console output
+                fetchConsoleOutput();
 
             } catch (error) {
                 console.error('Error fetching data:', error);
                 showError('Connection failed: ' + error.message);
+            }
+        }
+
+        async function fetchConsoleOutput() {
+            try {
+                const response = await fetch('/api/console');
+                const data = await response.json();
+                
+                if (data.success) {
+                    updateConsoleOutput(data.console_lines);
+                    updateSystemMode(data.system_mode);
+                }
+            } catch (error) {
+                console.error('Error fetching console:', error);
+            }
+        }
+
+        function updateConsoleOutput(lines) {
+            const consoleDiv = document.getElementById('console-output');
+            if (lines && lines.length > 0) {
+                consoleDiv.innerHTML = lines.slice(-10).map(line => `<div>${line}</div>`).join('');
+                consoleDiv.scrollTop = consoleDiv.scrollHeight;
+            }
+        }
+
+        function updateSystemMode(mode) {
+            const modeElement = document.getElementById('system-mode');
+            const autoBtn = document.getElementById('auto-btn');
+            const manualBtn = document.getElementById('manual-btn');
+            
+            modeElement.textContent = mode ? mode.toUpperCase() : 'UNKNOWN';
+            
+            // Update button styles
+            if (mode === 'autonomous') {
+                autoBtn.style.background = 'linear-gradient(45deg, #4ecdc4, #44a08d)';
+                manualBtn.style.background = 'linear-gradient(45deg, #666, #888)';
+            } else {
+                autoBtn.style.background = 'linear-gradient(45deg, #666, #888)';
+                manualBtn.style.background = 'linear-gradient(45deg, #4ecdc4, #44a08d)';
+            }
+        }
+
+        async function switchMode(mode) {
+            try {
+                const response = await fetch('/api/system_mode', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ mode: mode })
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    updateSystemMode(mode);
+                    setTimeout(fetchConsoleOutput, 1000); // Refresh console after mode change
+                } else {
+                    alert('Failed to change mode: ' + data.error);
+                }
+            } catch (error) {
+                alert('Error changing mode: ' + error.message);
             }
         }
 
@@ -345,6 +431,9 @@
 
             // Auto-refresh every 30 seconds
             updateInterval = setInterval(fetchData, 30000);
+            
+            // Refresh console more frequently
+            setInterval(fetchConsoleOutput, 5000);
         });
 
         // Test API connectivity

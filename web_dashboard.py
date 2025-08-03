@@ -10,9 +10,13 @@ import json
 import threading
 import subprocess
 from datetime import datetime
+from collections import deque
+import re
 
 app = Flask(__name__)
 agent = None
+console_buffer = deque(maxlen=100)  # Store last 100 console lines
+system_mode = None  # Track current system mode
 
 class WorkingAgent:
     """Working agent with live mainnet data"""
@@ -93,12 +97,56 @@ def check_autonomous_agent_running():
         is_running = ('run_autonomous_mainnet.py' in result.stdout or 
                      'arbitrum_testnet_agent.py' in result.stdout or
                      'ArbitrumTestnetAgent' in result.stdout or
-                     'complete_autonomous_launcher.py' in result.stdout)
+                     'complete_autonomous_launcher.py' in result.stdout or
+                     'main.py' in result.stdout)
         print(f"🔍 Autonomous agent running check: {is_running}")
         return is_running
     except Exception as e:
         print(f"⚠️ Error checking autonomous agent: {e}")
         return False
+
+def monitor_console_output():
+    """Monitor console output from autonomous agent"""
+    global console_buffer
+    
+    while True:
+        try:
+            # Read from performance log for console-like output
+            if os.path.exists('performance_log.json'):
+                with open('performance_log.json', 'r') as f:
+                    lines = f.readlines()
+                    if lines:
+                        latest = json.loads(lines[-1])
+                        timestamp = datetime.fromtimestamp(latest.get('timestamp', time.time()))
+                        console_line = f"[{timestamp.strftime('%H:%M:%S')}] Run {latest.get('run_id', 0)}, Iteration {latest.get('iteration', 0)}, Performance: {latest.get('performance_metric', 0):.3f}"
+                        
+                        # Add to console buffer if it's new
+                        if not console_buffer or console_buffer[-1] != console_line:
+                            console_buffer.append(console_line)
+            
+            # Also monitor system status
+            if check_autonomous_agent_running():
+                status_line = f"[{datetime.now().strftime('%H:%M:%S')}] ✅ Autonomous system operational"
+                if not console_buffer or not any("operational" in line for line in list(console_buffer)[-3:]):
+                    console_buffer.append(status_line)
+            
+            time.sleep(10)  # Check every 10 seconds
+            
+        except Exception as e:
+            error_line = f"[{datetime.now().strftime('%H:%M:%S')}] ⚠️ Console monitor error: {str(e)[:50]}"
+            console_buffer.append(error_line)
+            time.sleep(30)
+
+def get_system_mode():
+    """Determine current system mode"""
+    global system_mode
+    if system_mode:
+        return system_mode
+    
+    if check_autonomous_agent_running():
+        return "autonomous"
+    else:
+        return "manual"
 
 def get_live_agent_data():
     """Get live data from unified Aave fetcher - eliminates cached data issues"""
@@ -201,6 +249,9 @@ def get_live_agent_data():
 
 # Initialize agent in background
 threading.Thread(target=initialize_agent, daemon=True).start()
+
+# Start console monitoring
+threading.Thread(target=monitor_console_output, daemon=True).start()
 
 @app.route('/')
 def dashboard():
@@ -476,6 +527,45 @@ def api_test():
         'timestamp': time.time(),
         'autonomous_agent_running': check_autonomous_agent_running()
     })
+
+@app.route('/api/console')
+def get_console_output():
+    """Get recent console output"""
+    try:
+        return jsonify({
+            'console_lines': list(console_buffer),
+            'system_mode': get_system_mode(),
+            'timestamp': time.time(),
+            'success': True
+        })
+    except Exception as e:
+        return jsonify({
+            'error': str(e),
+            'console_lines': [],
+            'success': False
+        })
+
+@app.route('/api/system_mode', methods=['POST'])
+def set_system_mode():
+    """Set system mode (autonomous/manual)"""
+    global system_mode
+    try:
+        data = request.get_json() or {}
+        mode = data.get('mode', '').lower()
+        
+        if mode not in ['autonomous', 'manual']:
+            return jsonify({'error': 'Invalid mode. Use "autonomous" or "manual"'}), 400
+        
+        system_mode = mode
+        console_buffer.append(f"[{datetime.now().strftime('%H:%M:%S')}] 🔄 System mode changed to: {mode}")
+        
+        return jsonify({
+            'success': True,
+            'mode': mode,
+            'message': f'System mode set to {mode}'
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/api/system_status')
 def system_status():
