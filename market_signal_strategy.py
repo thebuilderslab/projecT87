@@ -278,7 +278,47 @@ class MarketSignalStrategy:
             # Then swap DAI for ARB using Uniswap
             if hasattr(self.agent.uniswap, 'swap_tokens'):
                 print(f"🔄 Step 2: Swapping {amount_dai:.2f} DAI → ARB on Uniswap...")
+                
+                # Ensure proper approvals before swap
+                dai_contract = self.agent.w3.eth.contract(
+                    address=self.agent.dai_address,
+                    abi=self.agent.aave.erc20_abi
+                )
+                
+                # Check and approve DAI for Uniswap if needed
+                current_allowance = dai_contract.functions.allowance(
+                    self.agent.address,
+                    self.agent.uniswap.router_address
+                ).call()
+                
+                dai_amount_wei = int(amount_dai * 10**18)
+                
+                if current_allowance < dai_amount_wei:
+                    print(f"🔓 Approving DAI for Uniswap swap...")
+                    approval_tx = dai_contract.functions.approve(
+                        self.agent.uniswap.router_address,
+                        dai_amount_wei * 2  # Approve 2x for safety
+                    ).build_transaction({
+                        'from': self.agent.address,
+                        'gas': 100000,
+                        'gasPrice': self.agent.w3.eth.gas_price,
+                        'nonce': self.agent.w3.eth.get_transaction_count(self.agent.address)
+                    })
+                    
+                    signed_approval = self.agent.w3.eth.account.sign_transaction(approval_tx, self.agent.private_key)
+                    approval_hash = self.agent.w3.eth.send_raw_transaction(signed_approval.rawTransaction)
+                    print(f"🔗 Approval transaction: {approval_hash.hex()}")
+                    
+                    # Wait for approval confirmation
+                    time.sleep(3)
+                
+                # Execute the swap
                 swap_result = self.agent.uniswap.swap_tokens(
+                    self.agent.dai_address,
+                    self.agent.arb_address,
+                    amount_dai,
+                    3000  # 0.3% fee tier for ARB
+                )
                     self.agent.dai_address,
                     self.agent.arb_address,
                     amount_dai,
@@ -336,7 +376,7 @@ class MarketSignalStrategy:
                 return False
                 
         except Exception as e:
-            logging.error(f"ARB → DAI swap failed: {e}")
+            logging.errologging.error(f"ARB → DAI swap failed: {e}")
             return False
 
     def should_execute_trade(self) -> bool:
@@ -378,7 +418,7 @@ class MarketSignalStrategy:
             
             if should_execute:
                 print(f"🎯 DEBT SWAP TRIGGER: {strategy_type.upper()}")
-                print(f"💡 Condition: ARB declining, opportunity to reduce debt burden")
+                print(f"💡 Condition: Market declining, executing debt optimization")
                 return True
             else:
                 print(f"⚠️ Market conditions not met for debt swap")
@@ -387,6 +427,38 @@ class MarketSignalStrategy:
                 return False
                 
         except Exception as e:
+            print(f"❌ Error checking trade conditions: {e}")
+            return Falsel_score:.1f}")
+            
+            # Check if we should execute the strategy
+            should_execute, strategy_type = self.should_execute_market_strategy(signal)
+            
+            if should_execute:
+                print(f"🎯 DEBT SWAP TRIGGER: {strategy_type.upper()}")
+                print(f"💡 Condition: Market declining, executing debt optimization")
+                
+                # Execute the strategy
+                amount_dai = min(5.0, self.agent.get_available_borrow_amount() * 0.1)
+                if amount_dai >= 1.0:
+                    success = self.execute_market_driven_strategy(strategy_type, amount_dai)
+                    if success:
+                        print(f"✅ DEBT SWAP EXECUTED ON-CHAIN")
+                        return True
+                    else:
+                        print(f"❌ DEBT SWAP EXECUTION FAILED")
+                        return False
+                else:
+                    print(f"⚠️ Insufficient borrowing capacity: ${amount_dai:.2f}")
+                    return False
+            else:
+                print(f"⚠️ Market conditions not met for debt swap")
+                print(f"   Required: BTC drop ≥{self.btc_1h_drop_threshold*100:.1f}% OR ARB RSI ≤25")
+                print(f"   Required: Confidence ≥{self.dai_to_arb_threshold:.0%}")
+                return False
+                
+        except Exception as e:
+            print(f"❌ Error in debt swap execution: {e}")
+            return Falseption as e:
             print(f"❌ Error checking trade conditions: {e}")
             return False
 

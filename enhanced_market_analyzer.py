@@ -1,3 +1,4 @@
+"""Improves declining market detection logic with multiple confirmation conditions."""
 """
 Enhanced Market Analyzer with Advanced Pattern Recognition
 Incorporates multi-timeframe analysis, pattern recognition, and success rate optimization
@@ -337,11 +338,18 @@ class EnhancedMarketAnalyzer:
                 btc_1h_trend = self._calculate_1h_price_trend(btc_1h_data)
                 arb_1h_trend = self._calculate_1h_price_trend(arb_1h_data)
 
-                # Enhanced 1-hour bearish signal detection
-                btc_declining_1h = btc_1h_trend <= -0.003  # 0.3% decline in 1 hour
-                arb_oversold_conditions = arb_indicators['rsi'] <= 25 and arb_1h_trend <= -0.002
+                # Enhanced 1-hour bearish signal detection with multiple confirmations
+                btc_declining_1h = btc_1h_trend <= -0.002  # 0.2% decline in 1 hour (more sensitive)
+                btc_strong_decline = btc_1h_trend <= -0.005  # 0.5% strong decline
+                arb_oversold_conditions = arb_indicators['rsi'] <= 30 and arb_1h_trend <= -0.001
+                arb_strong_oversold = arb_indicators['rsi'] <= 25
 
-                if (high_confidence_bearish or btc_declining_1h) and arb_oversold_conditions:
+                # Multiple trigger conditions for robust detection
+                condition_1 = high_confidence_bearish and arb_oversold_conditions
+                condition_2 = btc_declining_1h and arb_strong_oversold
+                condition_3 = btc_strong_decline and arb_indicators['rsi'] <= 35
+
+                if condition_1 or condition_2 or condition_3:
                     # Multi-factor 1-hour confidence validation
                     volume_confirmation = arb_indicators['volume_trend']['strength'] >= 0.7
                     momentum_confirmation = btc_indicators['price_momentum'] < -1.5
