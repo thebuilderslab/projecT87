@@ -71,6 +71,15 @@ class MarketSignalStrategy:
         self.arb_1h_momentum_threshold = float(os.getenv('ARB_1H_MOMENTUM_THRESHOLD', '0.003'))  # 0.3% momentum (more sensitive)
 
         logging.info(f"Market Signal Strategy initialized - Enabled: {self.market_signal_enabled}")
+        
+        if self.market_signal_enabled:
+            print("🔄 DEBT SWAP SYSTEM READY FOR SIMULTANEOUS OPERATION")
+            print("   • DAI-to-ARB swaps: Enabled")
+            print("   • ARB-to-DAI swaps: Enabled") 
+            print("   • Market monitoring: Active")
+            print("   • Confidence threshold: 92%")
+            print("   • BTC drop sensitivity: 0.2%")
+            print("   • Integration: Hybrid system compatible")
 
     def get_btc_price_data(self) -> Optional[Dict]:
         """Get BTC price data using fixed API with fallbacks"""

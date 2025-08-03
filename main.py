@@ -185,6 +185,14 @@ def autonomous_agent_loop():
             # Main agent logic
             timestamp = time.time()
 
+            # Ensure debt swap system is active if market signals are enabled
+            if (hasattr(arbitrum_agent, 'market_signal_strategy') and 
+                arbitrum_agent.market_signal_strategy and 
+                arbitrum_agent.market_signal_strategy.market_signal_enabled):
+                if not hasattr(arbitrum_agent, 'debt_swap_active') or not arbitrum_agent.debt_swap_active:
+                    arbitrum_agent.debt_swap_active = True
+                    print("🔄 Debt swap system activated for simultaneous operation with hybrid system")
+
             # Use real DeFi operations instead of simulation
             performance = arbitrum_agent.run_real_defi_task(run_id_counter, iteration, agent_config)
             log_performance(run_id_counter, iteration, performance, timestamp)
