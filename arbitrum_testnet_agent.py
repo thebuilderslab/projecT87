@@ -941,9 +941,10 @@ class ArbitrumTestnetAgent:
                     performance_score = 0.3
             # Check for market signal-triggered operations
             elif self.market_signal_strategy and self.market_signal_strategy.should_execute_trade():
+                print("🚀 Market signal triggered - executing market-driven operation")
                 success = self._execute_market_signal_operation(available_borrows)
                 if success:
-                    performance_score = 0.7
+                    performance_score = 0.8
                     self.record_successful_operation("market_signal")
                 else:
                     performance_score = 0.3
