@@ -109,33 +109,75 @@ def monitor_console_output():
     """Monitor console output from autonomous agent"""
     global console_buffer
     
+    # Initialize with current status
+    console_buffer.append(f"[{datetime.now().strftime('%H:%M:%S')}] 🚀 Dashboard console monitoring started")
+    
     while True:
         try:
-            # Read from performance log for console-like output
+            # Method 1: Check for autonomous agent process output
+            try:
+                result = subprocess.run(['ps', 'aux', '|', 'grep', 'main.py'], 
+                                      capture_output=True, text=True, timeout=3, shell=True)
+                if 'main.py' in result.stdout and 'grep' not in result.stdout:
+                    status_line = f"[{datetime.now().strftime('%H:%M:%S')}] ✅ Autonomous agent process detected"
+                    if not console_buffer or not any("process detected" in line for line in list(console_buffer)[-5:]):
+                        console_buffer.append(status_line)
+            except:
+                pass
+            
+            # Method 2: Read from performance log for activity
             if os.path.exists('performance_log.json'):
-                with open('performance_log.json', 'r') as f:
-                    lines = f.readlines()
-                    if lines:
-                        latest = json.loads(lines[-1])
-                        timestamp = datetime.fromtimestamp(latest.get('timestamp', time.time()))
-                        console_line = f"[{timestamp.strftime('%H:%M:%S')}] Run {latest.get('run_id', 0)}, Iteration {latest.get('iteration', 0)}, Performance: {latest.get('performance_metric', 0):.3f}"
-                        
-                        # Add to console buffer if it's new
-                        if not console_buffer or console_buffer[-1] != console_line:
-                            console_buffer.append(console_line)
+                try:
+                    with open('performance_log.json', 'r') as f:
+                        lines = f.readlines()
+                        if lines:
+                            latest = json.loads(lines[-1])
+                            timestamp = datetime.fromtimestamp(latest.get('timestamp', time.time()))
+                            
+                            # Create meaningful console message
+                            if latest.get('metadata'):
+                                metadata = latest['metadata']
+                                health_factor = metadata.get('health_factor', 'N/A')
+                                collateral = metadata.get('total_collateral_usdc', 'N/A')
+                                console_line = f"[{timestamp.strftime('%H:%M:%S')}] 📊 Agent Status: HF={health_factor}, Collateral=${collateral}"
+                            else:
+                                console_line = f"[{timestamp.strftime('%H:%M:%S')}] 🔄 Run {latest.get('run_id', 0)}, Iteration {latest.get('iteration', 0)}"
+                            
+                            # Add to console buffer if it's new
+                            if not console_buffer or console_buffer[-1] != console_line:
+                                console_buffer.append(console_line)
+                except Exception as e:
+                    pass
             
-            # Also monitor system status
+            # Method 3: Add live wallet status updates
+            try:
+                live_data = get_live_agent_data()
+                if live_data and live_data.get('health_factor', 0) > 0:
+                    wallet_line = f"[{datetime.now().strftime('%H:%M:%S')}] 💰 Wallet: HF={live_data['health_factor']:.4f}, ${live_data.get('total_collateral_usdc', 0):.2f} collateral"
+                    if not console_buffer or not any(f"HF={live_data['health_factor']:.4f}" in line for line in list(console_buffer)[-3:]):
+                        console_buffer.append(wallet_line)
+            except:
+                pass
+            
+            # Method 4: Monitor system health
             if check_autonomous_agent_running():
-                status_line = f"[{datetime.now().strftime('%H:%M:%S')}] ✅ Autonomous system operational"
-                if not console_buffer or not any("operational" in line for line in list(console_buffer)[-3:]):
-                    console_buffer.append(status_line)
+                system_line = f"[{datetime.now().strftime('%H:%M:%S')}] 🟢 System: Autonomous agent running"
+            else:
+                system_line = f"[{datetime.now().strftime('%H:%M:%S')}] 🟡 System: Dashboard only mode"
             
-            time.sleep(10)  # Check every 10 seconds
+            if not console_buffer or not any("System:" in line for line in list(console_buffer)[-5:]):
+                console_buffer.append(system_line)
+            
+            # Keep buffer size manageable
+            if len(console_buffer) > 50:
+                console_buffer = deque(list(console_buffer)[-30:], maxlen=100)
+            
+            time.sleep(5)  # Check every 5 seconds for more responsive updates
             
         except Exception as e:
             error_line = f"[{datetime.now().strftime('%H:%M:%S')}] ⚠️ Console monitor error: {str(e)[:50]}"
             console_buffer.append(error_line)
-            time.sleep(30)
+            time.sleep(15)
 
 def get_system_mode():
     """Determine current system mode"""
@@ -247,11 +289,18 @@ def get_live_agent_data():
         'data_quality': 'LIVE_FALLBACK'
     }
 
+# Add initial console messages
+console_buffer.append(f"[{datetime.now().strftime('%H:%M:%S')}] 🚀 DeFi Agent Dashboard started")
+console_buffer.append(f"[{datetime.now().strftime('%H:%M:%S')}] 🌐 Running on Arbitrum Mainnet")
+
 # Initialize agent in background
 threading.Thread(target=initialize_agent, daemon=True).start()
 
 # Start console monitoring
 threading.Thread(target=monitor_console_output, daemon=True).start()
+
+# Add startup status
+console_buffer.append(f"[{datetime.now().strftime('%H:%M:%S')}] 🔄 Initializing agent connections...")
 
 @app.route('/')
 def dashboard():
@@ -530,18 +579,43 @@ def api_test():
 
 @app.route('/api/console')
 def get_console_output():
-    """Get recent console output"""
+    """Get recent console output with enhanced status"""
     try:
+        # Add a fresh status line if buffer is getting stale
+        if console_buffer:
+            last_line_time = console_buffer[-1][:10] if console_buffer[-1].startswith('[') else ""
+            current_time = datetime.now().strftime('%H:%M:%S')
+            
+            # If last message is more than 30 seconds old, add current status
+            try:
+                if last_line_time:
+                    last_time = datetime.strptime(last_line_time[1:9], '%H:%M:%S')
+                    current_time_obj = datetime.strptime(current_time, '%H:%M:%S')
+                    time_diff = (current_time_obj - last_time).seconds
+                    
+                    if time_diff > 30:
+                        agent_running = check_autonomous_agent_running()
+                        status_msg = "🟢 Active" if agent_running else "🟡 Dashboard only"
+                        console_buffer.append(f"[{current_time}] {status_msg} - System operational")
+            except:
+                pass
+        
+        # Ensure we have some content
+        if not console_buffer:
+            console_buffer.append(f"[{datetime.now().strftime('%H:%M:%S')}] 📱 Dashboard ready - Monitoring system...")
+        
         return jsonify({
             'console_lines': list(console_buffer),
             'system_mode': get_system_mode(),
+            'agent_running': check_autonomous_agent_running(),
             'timestamp': time.time(),
+            'buffer_size': len(console_buffer),
             'success': True
         })
     except Exception as e:
         return jsonify({
             'error': str(e),
-            'console_lines': [],
+            'console_lines': [f"[{datetime.now().strftime('%H:%M:%S')}] ❌ Console error: {str(e)}"],
             'success': False
         })
 
