@@ -1074,7 +1074,7 @@ def check_debt_swap_conditions(health_factor, available_borrows, total_debt):
         
         # Market signal environment check with detailed validation
         market_enabled = os.getenv('MARKET_SIGNAL_ENABLED', 'false').lower() == 'true'
-        btc_threshold = float(os.getenv('BTC_DROP_THRESHOLD', '0.002'))  # Default 0.2%
+        btc_threshold = float(os.getenv('BTC_DROP_THRESHOLD', '0.01'))  # Default 1%
         dai_threshold = float(os.getenv('DAI_TO_ARB_THRESHOLD', '0.7'))  # Default 70%
         arb_rsi_threshold = float(os.getenv('ARB_RSI_OVERSOLD', '30'))  # Default 30
         
@@ -1198,7 +1198,7 @@ def check_market_signals():
         market_enabled = os.getenv('MARKET_SIGNAL_ENABLED', 'false').lower() == 'true'
         
         if not market_enabled:
-            return f"[{timestamp}] 📊 MARKET SIGNALS: Disabled in environment | Enable with MARKET_SIGNAL_ENABLED=true"
+            return f"[{timestamp}] 🚀 DEBT SWAP: Ready to enable | Set MARKET_SIGNAL_ENABLED=true in Secrets to activate"
         
         # Check if market signal strategy files exist
         if os.path.exists('market_signal_strategy.py'):
