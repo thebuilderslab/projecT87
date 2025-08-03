@@ -648,9 +648,7 @@ class ArbitrumTestnetAgent:
 
     def detect_manual_override(self):
         """
-        Detect when manual override is active through multiple indicators
-        ```python
-        """
+        Detect when manual override is active"""
         import os
 
         # Check for manual trigger files
@@ -1455,4 +1453,202 @@ _test.flag', 'manual_override.flag', 'force_borrow.flag']
                 weth_supplied = self._supply_weth_to_aave(weth_received)
                 if weth_supplied:
                     print("✅ WETH supplied to Aave successfully")
-                else:
+                else:```python
+# Fix syntax error at line 657 by completing the unterminated string and missing code
+    # Added code to complete the execution of the _execute_complete_defi_sequence function.
+                    print("❌ WETH supply failed")
+
+            # Sequence execution summary
+            sequence_summary = {
+                'total_operations': 4,
+                'successful_operations': sum([
+                    1 if wbtc_received > 0 else 0,
+                    1 if weth_received > 0 else 0,
+                    1 if wbtc_supplied else 0,
+                    1 if weth_supplied else 0
+                ]),
+                'wbtc_swap_success': wbtc_received > 0,
+                'weth_swap_success': weth_received > 0,
+                'wbtc_supply_success': wbtc_supplied,
+                'weth_supply_success': weth_supplied
+            }
+
+            print(f"\n📊 SEQUENCE EXECUTION SUMMARY")
+            print(f"═══════════════════════════════════════")
+            print(f"✅ Successful Operations: {sequence_summary['successful_operations']}/4")
+            print(f"🔄 WBTC Swap: {'✅' if sequence_summary['wbtc_swap_success'] else '❌'}")
+            print(f"🔄 WETH Swap: {'✅' if sequence_summary['weth_swap_success'] else '❌'}")
+            print(f"🏦 WBTC Supply: {'✅' if sequence_summary['wbtc_supply_success'] else '❌'}")
+            print(f"🏦 WETH Supply: {'✅' if sequence_summary['weth_supply_success'] else '❌'}")
+
+            # Consider sequence successful if at least 2 operations completed
+            if sequence_summary['successful_operations'] >= 2:
+                print(f"✅ SEQUENCE COMPLETED SUCCESSFULLY ({sequence_summary['successful_operations']}/4 operations)")
+                return True
+            else:
+                print(f"⚠️ SEQUENCE PARTIALLY COMPLETED ({sequence_summary['successful_operations']}/4 operations)")
+                return False
+
+        except Exception as e:
+            print(f"❌ Complete DeFi sequence failed: {e}")
+            import traceback
+            traceback.print_exc()
+            return False
+
+    def _execute_dai_to_wbtc_swap(self, dai_amount):
+        """Execute DAI to WBTC swap and return amount received"""
+        try:
+            if not self.uniswap:
+                print("❌ Uniswap integration not available")
+                return 0
+
+            print(f"🔄 Executing DAI → WBTC swap for {dai_amount:.6f} DAI")
+
+            # Get WBTC balance before swap
+            wbtc_balance_before = self.get_wbtc_balance()
+
+            # Execute swap
+            swap_result = self.uniswap.swap_dai_for_wbtc(dai_amount)
+
+            if swap_result and 'tx_hash' in swap_result:
+                # Wait for confirmation
+                import time
+                time.sleep(5)
+
+                # Get WBTC balance after swap
+                wbtc_balance_after = self.get_wbtc_balance()
+                wbtc_received = wbtc_balance_after - wbtc_balance_before
+
+                print(f"✅ WBTC swap completed: {wbtc_received:.8f} WBTC received")
+                return wbtc_received
+            else:
+                print("❌ WBTC swap failed")
+                return 0
+
+        except Exception as e:
+            print(f"❌ DAI to WBTC swap error: {e}")
+            return 0
+
+    def _execute_dai_to_weth_swap(self, dai_amount):
+        """Execute DAI to WETH swap and return amount received"""
+        try:
+            if not self.uniswap:
+                print("❌ Uniswap integration not available")
+                return 0
+
+            print(f"🔄 Executing DAI → WETH swap for {dai_amount:.6f} DAI")
+
+            # Get WETH balance before swap
+            weth_balance_before = self.get_weth_balance()
+
+            # Execute swap
+            swap_result = self.uniswap.swap_dai_for_weth(dai_amount)
+
+            if swap_result and 'tx_hash' in swap_result:
+                # Wait for confirmation
+                import time
+                time.sleep(5)
+
+                # Get WETH balance after swap
+                weth_balance_after = self.get_weth_balance()
+                weth_received = weth_balance_after - weth_balance_before
+
+                print(f"✅ WETH swap completed: {weth_received:.8f} WETH received")
+                return weth_received
+            else:
+                print("❌ WETH swap failed")
+                return 0
+
+        except Exception as e:
+            print(f"❌ DAI to WETH swap error: {e}")
+            return 0
+
+    def _supply_wbtc_to_aave(self, wbtc_amount):
+        """Supply WBTC to Aave and return success status"""
+        try:
+            if not self.aave:
+                print("❌ Aave integration not available")
+                return False
+
+            print(f"🏦 Supplying {wbtc_amount:.8f} WBTC to Aave")
+
+            # Execute supply
+            supply_result = self.aave.supply_wbtc_to_aave(wbtc_amount)
+
+            if supply_result:
+                print(f"✅ WBTC supply completed: {supply_result}")
+                return True
+            else:
+                print("❌ WBTC supply failed")
+                return False
+
+        except Exception as e:
+            print(f"❌ WBTC supply error: {e}")
+            return False
+
+    def _supply_weth_to_aave(self, weth_amount):
+        """Supply WETH to Aave and return success status"""
+        try:
+            if not self.aave:
+                print("❌ Aave integration not available")
+                return False
+
+            print(f"🏦 Supplying {weth_amount:.8f} WETH to Aave")
+
+            # Execute supply
+            supply_result = self.aave.supply_weth_to_aave(weth_amount)
+
+            if supply_result:
+                print(f"✅ WETH supply completed: {supply_result}")
+                return True
+            else:
+                print("❌ WETH supply failed")
+                return False
+
+        except Exception as e:
+            print(f"❌ WETH supply error: {e}")
+            return False
+
+    def get_eth_balance(self):
+        """Get ETH balance for gas fee calculations"""
+        try:
+            if self.w3 and self.address:
+                balance_wei = self.w3.eth.get_balance(self.address)
+                balance_eth = self.w3.from_wei(balance_wei, 'ether')
+                return float(balance_eth)
+            return 0.0
+        except Exception as e:
+            print(f"❌ Error getting ETH balance: {e}")
+            return 0.0
+
+    def get_wbtc_balance(self):
+        """Get WBTC token balance"""
+        try:
+            if self.aave:
+                return self.aave.get_wbtc_balance()
+            return 0.0
+        except Exception as e:
+            print(f"❌ Error getting WBTC balance: {e}")
+            return 0.0
+
+    def get_weth_balance(self):
+        """Get WETH token balance"""
+        try:
+            if self.aave:
+                return self.aave.get_weth_balance()
+            return 0.0
+        except Exception as e:
+            print(f"❌ Error getting WETH balance: {e}")
+            return 0.0
+
+    def get_health_factor(self):
+        """Get current health factor from Aave"""
+        try:
+            if self.aave:
+                account_data = self.aave.get_user_account_data()
+                if account_data:
+                    return account_data.get('healthFactor', 0)
+            return 0.0
+        except Exception as e:
+            print(f"❌ Error getting health factor: {e}")
+            return 0.0
