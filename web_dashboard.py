@@ -159,20 +159,30 @@ def monitor_console_output():
             except:
                 pass
             
-            # Method 4: Monitor system health
+            # Method 4: Monitor system health with more detail
             if check_autonomous_agent_running():
-                system_line = f"[{datetime.now().strftime('%H:%M:%S')}] 🟢 System: Autonomous agent running"
+                system_line = f"[{datetime.now().strftime('%H:%M:%S')}] 🟢 System: Autonomous agent active - Monitoring Aave positions"
+                
+                # Add detailed status every few cycles
+                if len(console_buffer) % 3 == 0:
+                    try:
+                        live_data = get_live_agent_data()
+                        if live_data and live_data.get('health_factor', 0) > 0:
+                            detail_line = f"[{datetime.now().strftime('%H:%M:%S')}] 📊 Live Status: HF={live_data['health_factor']:.4f} | Collateral=${live_data.get('total_collateral_usdc', 0):.2f} | Debt=${live_data.get('total_debt_usdc', 0):.2f}"
+                            console_buffer.append(detail_line)
+                    except:
+                        pass
             else:
-                system_line = f"[{datetime.now().strftime('%H:%M:%S')}] 🟡 System: Dashboard only mode"
+                system_line = f"[{datetime.now().strftime('%H:%M:%S')}] 🟡 System: Dashboard only mode - No autonomous agent detected"
             
-            if not console_buffer or not any("System:" in line for line in list(console_buffer)[-5:]):
+            if not console_buffer or not any("System:" in line for line in list(console_buffer)[-3:]):
                 console_buffer.append(system_line)
             
-            # Keep buffer size manageable
-            if len(console_buffer) > 50:
-                console_buffer = deque(list(console_buffer)[-30:], maxlen=100)
+            # Keep buffer size manageable but allow more entries for larger console
+            if len(console_buffer) > 80:
+                console_buffer = deque(list(console_buffer)[-50:], maxlen=100)
             
-            time.sleep(5)  # Check every 5 seconds for more responsive updates
+            time.sleep(3)  # Check every 3 seconds for more responsive updates
             
         except Exception as e:
             error_line = f"[{datetime.now().strftime('%H:%M:%S')}] ⚠️ Console monitor error: {str(e)[:50]}"
