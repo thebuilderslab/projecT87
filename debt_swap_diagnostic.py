@@ -21,6 +21,11 @@ def diagnose_debt_swap_strategy():
         
         # Check 1: Market Signal Strategy Status
         print("\n1️⃣ Market Signal Strategy Status:")
+        print(f"   🔍 Environment Variables:")
+        print(f"      MARKET_SIGNAL_ENABLED: {os.getenv('MARKET_SIGNAL_ENABLED', 'NOT SET')}")
+        print(f"      BTC_DROP_THRESHOLD: {os.getenv('BTC_DROP_THRESHOLD', 'NOT SET')}")
+        print(f"      DAI_TO_ARB_THRESHOLD: {os.getenv('DAI_TO_ARB_THRESHOLD', 'NOT SET')}")
+        
         if hasattr(agent, 'market_signal_strategy') and agent.market_signal_strategy:
             mss = agent.market_signal_strategy
             print(f"   ✅ Market Signal Strategy: Initialized")
