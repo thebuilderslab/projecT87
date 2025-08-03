@@ -1812,26 +1812,45 @@ class ArbitrumTestnetAgent:
             print(f"   Health Factor: {health_factor:.4f}")
             print(f"   Growth since baseline: ${growth_amount:.2f}")
 
-            # Determine operation type and execute
-            if debt_swap_operation:
-                print("🔄 EXECUTING DEBT SWAP OPERATION")
-                # Get market signal and execute appropriate swap
+            # INTEGRATED TRIGGER SYSTEM: Check all trigger types simultaneously
+            borrow_success = False
+            operation_executed = False
+            
+            # Priority 1: Check market signal triggers (debt swap operations)
+            if (self.market_signal_strategy and 
+                self.market_signal_strategy.market_signal_enabled and
+                self.market_signal_strategy.should_execute_trade()):
+                
+                print("🔄 EXECUTING MARKET SIGNAL DEBT SWAP OPERATION")
                 signal = self.market_signal_strategy.analyze_market_signals()
                 if signal:
                     should_execute, strategy_type = self.market_signal_strategy.should_execute_market_strategy(signal)
                     if should_execute:
                         # Calculate debt swap amount (conservative)
-                        swap_amount = min(5.0, available_borrows_usd * 0.05)  # 5% of available capacity, max $5
+                        swap_amount = min(3.0, available_borrows_usd * 0.05)  # 5% of available capacity, max $3
                         borrow_success = self.market_signal_strategy.execute_market_driven_strategy(strategy_type, swap_amount)
+                        operation_executed = True
+                        print(f"✅ Market signal operation executed: {strategy_type}")
                     else:
                         print("⚠️ Market conditions not optimal for debt swap")
-                        borrow_success = False
                 else:
                     print("❌ No market signal generated for debt swap")
-                    borrow_success = False
-            else:
-                # Execute normal enhanced borrow operation with retry mechanism
-                borrow_success = self.execute_enhanced_borrow_with_retry(available_borrows_usd)
+            
+            # Priority 2: Check growth-triggered operations (if no market signal executed)
+            elif self._should_execute_growth_triggered_operation(total_collateral_usd, health_factor, available_borrows_usd):
+                print("🚀 EXECUTING GROWTH-TRIGGERED OPERATION")
+                borrow_success = self._execute_growth_triggered_operation(available_borrows_usd)
+                operation_executed = True
+                if borrow_success:
+                    self.record_successful_operation("growth_triggered")
+
+            # Priority 3: Check capacity-based operations (if no other operations executed)
+            elif self._should_execute_capacity_operation(available_borrows_usd, health_factor):
+                print("⚡ EXECUTING CAPACITY-BASED OPERATION")
+                borrow_success = self._execute_capacity_operation(available_borrows_usd)
+                operation_executed = True
+                if borrow_success:
+                    self.record_successful_operation("capacity_based")
 
             # Update baseline if we have new collateral data
             if total_collateral_usd > 0:
