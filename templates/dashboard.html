@@ -45,15 +45,15 @@
 
         .status-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 15px;
-            margin-bottom: 20px;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+            margin-bottom: 15px;
         }
 
         .status-card {
             background: rgba(255, 255, 255, 0.1);
-            border-radius: 15px;
-            padding: 15px;
+            border-radius: 10px;
+            padding: 10px;
             backdrop-filter: blur(10px);
             border: 1px solid rgba(255, 255, 255, 0.2);
             transition: transform 0.3s ease, box-shadow 0.3s ease;
@@ -65,22 +65,22 @@
         }
 
         .card-title {
-            font-size: 1rem;
-            margin-bottom: 10px;
+            font-size: 0.85rem;
+            margin-bottom: 6px;
             color: #00d4ff;
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 6px;
         }
 
         .card-value {
-            font-size: 1.4rem;
+            font-size: 1.1rem;
             font-weight: bold;
-            margin-bottom: 8px;
+            margin-bottom: 5px;
         }
 
         .card-subtitle {
-            font-size: 0.9rem;
+            font-size: 0.75rem;
             color: rgba(255, 255, 255, 0.7);
         }
 
@@ -238,12 +238,16 @@
             </div>
         </div>
 
-        <div class="status-card" style="margin-bottom: 30px; grid-column: 1 / -1;">
-            <div class="card-title">
-                📟 Live Console Output - Real-time Agent Activity
+        <div class="console-container" style="margin-bottom: 30px;">
+            <div class="console-header">
+                <h2 style="margin: 0; color: #00d4ff; font-size: 1.3rem; display: flex; align-items: center; gap: 10px;">
+                    📟 Live Console Output - Real-time Agent Activity
+                    <span style="font-size: 0.8rem; color: rgba(255,255,255,0.6);" id="console-status">Monitoring...</span>
+                </h2>
             </div>
-            <div id="console-output" style="background: #1a1a2e; color: #00ff00; font-family: 'Courier New', monospace; padding: 20px; border-radius: 8px; height: 400px; overflow-y: auto; font-size: 0.9rem; line-height: 1.5; border: 2px solid #00d4ff;">
-                <div>🚀 Initializing console monitor...</div>
+            <div id="console-output" style="background: #0d1117; color: #58a6ff; font-family: 'Consolas', 'Monaco', 'Courier New', monospace; padding: 25px; border-radius: 12px; height: 600px; overflow-y: auto; font-size: 0.85rem; line-height: 1.6; border: 2px solid #21262d; box-shadow: inset 0 0 20px rgba(0,0,0,0.5); white-space: pre-wrap;">
+                <div style="color: #7c3aed;">🚀 Initializing detailed console monitor...</div>
+                <div style="color: #10b981;">✅ Console ready for real-time agent monitoring</div>
             </div>
         </div>
 
@@ -311,9 +315,29 @@
         function updateConsoleOutput(lines) {
             const consoleDiv = document.getElementById('console-output');
             if (lines && lines.length > 0) {
-                // Show more lines in the larger console window
-                consoleDiv.innerHTML = lines.slice(-20).map(line => `<div style="margin-bottom: 2px;">${line}</div>`).join('');
+                // Show many more lines in the larger console window with color coding
+                const coloredLines = lines.slice(-50).map(line => {
+                    let colorClass = 'color: #58a6ff;'; // Default blue
+                    
+                    if (line.includes('✅') || line.includes('SUCCESS')) colorClass = 'color: #10b981;'; // Green
+                    else if (line.includes('❌') || line.includes('ERROR') || line.includes('FAILED')) colorClass = 'color: #f87171;'; // Red
+                    else if (line.includes('⚠️') || line.includes('WARNING')) colorClass = 'color: #fbbf24;'; // Yellow
+                    else if (line.includes('🔍') || line.includes('DEBUG')) colorClass = 'color: #a78bfa;'; // Purple
+                    else if (line.includes('📊') || line.includes('Data') || line.includes('HF')) colorClass = 'color: #34d399;'; // Cyan
+                    else if (line.includes('🤖') || line.includes('Agent') || line.includes('System')) colorClass = 'color: #60a5fa;'; // Light blue
+                    else if (line.includes('🌐') || line.includes('RPC') || line.includes('Network')) colorClass = 'color: #8b5cf6;'; // Violet
+                    
+                    return `<div style="margin-bottom: 3px; ${colorClass} padding: 2px 0;">${line}</div>`;
+                });
+                
+                consoleDiv.innerHTML = coloredLines.join('');
                 consoleDiv.scrollTop = consoleDiv.scrollHeight;
+                
+                // Update console status
+                const statusEl = document.getElementById('console-status');
+                if (statusEl) {
+                    statusEl.textContent = `${lines.length} lines | Last: ${new Date().toLocaleTimeString()}`;
+                }
             }
         }
 

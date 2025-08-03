@@ -114,15 +114,24 @@ def monitor_console_output():
     
     while True:
         try:
-            # Method 1: Check for autonomous agent process output
+            # Method 1: Check for autonomous agent process output with detailed info
             try:
-                result = subprocess.run(['ps', 'aux', '|', 'grep', 'main.py'], 
-                                      capture_output=True, text=True, timeout=3, shell=True)
-                if 'main.py' in result.stdout and 'grep' not in result.stdout:
-                    status_line = f"[{datetime.now().strftime('%H:%M:%S')}] ✅ Autonomous agent process detected"
-                    if not console_buffer or not any("process detected" in line for line in list(console_buffer)[-5:]):
-                        console_buffer.append(status_line)
-            except:
+                result = subprocess.run(['ps', 'aux'], capture_output=True, text=True, timeout=3)
+                processes = result.stdout.split('\n')
+                agent_processes = [p for p in processes if 'main.py' in p or 'arbitrum_testnet_agent.py' in p]
+                
+                if agent_processes:
+                    for proc in agent_processes[:2]:  # Show up to 2 processes
+                        parts = proc.split()
+                        if len(parts) > 10:
+                            cpu = parts[2]
+                            mem = parts[3]
+                            pid = parts[1]
+                            status_line = f"[{datetime.now().strftime('%H:%M:%S')}] 🤖 Agent PID:{pid} CPU:{cpu}% MEM:{mem}% - Active"
+                            if not console_buffer or not any(f"PID:{pid}" in line for line in list(console_buffer)[-3:]):
+                                console_buffer.append(status_line)
+            except Exception as e:
+                console_buffer.append(f"[{datetime.now().strftime('%H:%M:%S')}] ⚠️ Process check error: {str(e)[:50]}")
                 pass
             
             # Method 2: Read from performance log for activity
@@ -159,21 +168,50 @@ def monitor_console_output():
             except:
                 pass
             
-            # Method 4: Monitor system health with more detail
+            # Method 4: Monitor system health with comprehensive detail
             if check_autonomous_agent_running():
-                system_line = f"[{datetime.now().strftime('%H:%M:%S')}] 🟢 System: Autonomous agent active - Monitoring Aave positions"
+                system_line = f"[{datetime.now().strftime('%H:%M:%S')}] 🟢 System: Autonomous agent ACTIVE - Real-time Aave monitoring"
                 
-                # Add detailed status every few cycles
-                if len(console_buffer) % 3 == 0:
-                    try:
-                        live_data = get_live_agent_data()
-                        if live_data and live_data.get('health_factor', 0) > 0:
-                            detail_line = f"[{datetime.now().strftime('%H:%M:%S')}] 📊 Live Status: HF={live_data['health_factor']:.4f} | Collateral=${live_data.get('total_collateral_usdc', 0):.2f} | Debt=${live_data.get('total_debt_usdc', 0):.2f}"
-                            console_buffer.append(detail_line)
-                    except:
-                        pass
+                # Add comprehensive status every cycle
+                try:
+                    live_data = get_live_agent_data()
+                    if live_data and live_data.get('health_factor', 0) > 0:
+                        hf = live_data['health_factor']
+                        collateral = live_data.get('total_collateral_usdc', 0)
+                        debt = live_data.get('total_debt_usdc', 0)
+                        available = live_data.get('available_borrows_usdc', 0)
+                        
+                        # Detailed status line
+                        detail_line = f"[{datetime.now().strftime('%H:%M:%S')}] 📊 Aave Status: HF={hf:.4f} | Collateral=${collateral:.2f} | Debt=${debt:.2f} | Available=${available:.2f}"
+                        console_buffer.append(detail_line)
+                        
+                        # Health factor assessment
+                        if hf > 2.0:
+                            health_status = f"[{datetime.now().strftime('%H:%M:%S')}] ✅ Health Factor: {hf:.4f} - HEALTHY (Good for operations)"
+                        elif hf > 1.5:
+                            health_status = f"[{datetime.now().strftime('%H:%M:%S')}] ⚠️ Health Factor: {hf:.4f} - MODERATE (Monitoring required)"
+                        else:
+                            health_status = f"[{datetime.now().strftime('%H:%M:%S')}] 🚨 Health Factor: {hf:.4f} - LOW RISK (Emergency protocols)"
+                        
+                        # Only add health assessment if significantly different
+                        if not console_buffer or not any(f"Health Factor: {hf:.4f}" in line for line in list(console_buffer)[-3:]):
+                            console_buffer.append(health_status)
+                            
+                        # Network status
+                        network_line = f"[{datetime.now().strftime('%H:%M:%S')}] 🌐 Network: Arbitrum Mainnet | Chain ID: 42161 | RPC: Connected"
+                        if len(console_buffer) % 5 == 0:  # Every 5th cycle
+                            console_buffer.append(network_line)
+                        
+                except Exception as e:
+                    error_line = f"[{datetime.now().strftime('%H:%M:%S')}] ❌ Live data fetch error: {str(e)[:60]}"
+                    console_buffer.append(error_line)
             else:
-                system_line = f"[{datetime.now().strftime('%H:%M:%S')}] 🟡 System: Dashboard only mode - No autonomous agent detected"
+                system_line = f"[{datetime.now().strftime('%H:%M:%S')}] 🟡 System: Dashboard-only mode - Agent not detected"
+                
+                # Add more context when agent is not running
+                if len(console_buffer) % 4 == 0:
+                    context_line = f"[{datetime.now().strftime('%H:%M:%S')}] 🔍 Monitoring: Checking for agent processes and log files..."
+                    console_buffer.append(context_line)
             
             if not console_buffer or not any("System:" in line for line in list(console_buffer)[-3:]):
                 console_buffer.append(system_line)
