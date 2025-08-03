@@ -654,7 +654,8 @@ class ArbitrumTestnetAgent:
         import os
 
         # Check for manual trigger files
-        manual_files = ['trigger_test.flag', 'manual_override.flag', 'force_borrow.flag']
+        manual_files = ['trigger```python
+_test.flag', 'manual_override.flag', 'force_borrow.flag']
         for file_path in manual_files:
             if os.path.exists(file_path):
                 print(f"🔧 Manual override detected: {file_path} exists")
@@ -737,7 +738,7 @@ class ArbitrumTestnetAgent:
         """Calculate dynamic execution scaling factor based on account health and market conditions"""
         try:
             base_factor = 1.0
-            
+
             # Health Factor Scaling (Conservative approach)
             if health_factor > 3.0:
                 hf_factor = 1.5  # Very healthy - can scale up operations
@@ -749,7 +750,7 @@ class ArbitrumTestnetAgent:
                 hf_factor = 0.7  # Cautious - scale down operations
             else:
                 hf_factor = 0.4  # Very cautious - minimal operations
-            
+
             # Available Borrowing Capacity Scaling
             if available_borrows_usd > 100:
                 capacity_factor = 1.3  # High capacity - can scale up
@@ -761,7 +762,7 @@ class ArbitrumTestnetAgent:
                 capacity_factor = 0.8  # Low capacity - scale down
             else:
                 capacity_factor = 0.5  # Very low capacity - minimal operations
-            
+
             # Collateral Size Scaling (Larger portfolios can handle larger operations)
             if total_collateral_usd > 500:
                 size_factor = 1.2
@@ -771,29 +772,29 @@ class ArbitrumTestnetAgent:
                 size_factor = 0.9
             else:
                 size_factor = 0.8
-            
+
             # Combine factors with conservative weighting
             scaling_factor = base_factor * (hf_factor * 0.5 + capacity_factor * 0.3 + size_factor * 0.2)
-            
+
             # Apply bounds: minimum 0.3x, maximum 2.0x scaling
             scaling_factor = max(0.3, min(scaling_factor, 2.0))
-            
+
             return scaling_factor
-            
+
         except Exception as e:
             print(f"❌ Scaling factor calculation failed: {e}")
             return 0.5  # Conservative fallback
-    
+
     def _execute_scaled_growth_operation(self, scaled_amount):
         """Execute growth-triggered operation with scaled amount"""
         try:
             print(f"🚀 Executing scaled growth operation: ${scaled_amount:.2f}")
-            
+
             # Use existing DAI-compliant execution logic with scaled amount
             if not self._validate_transaction_preconditions(scaled_amount):
                 print("❌ Transaction preconditions not met for scaled operation")
                 return False
-            
+
             # Execute scaled DAI borrow
             result = self._execute_validated_dai_borrow(scaled_amount)
             if result:
@@ -802,21 +803,21 @@ class ArbitrumTestnetAgent:
             else:
                 print(f"❌ Scaled growth operation failed")
                 return False
-                
+
         except Exception as e:
             print(f"❌ Scaled growth operation error: {e}")
             return False
-    
+
     def _execute_scaled_capacity_operation(self, scaled_amount):
         """Execute capacity-based operation with scaled amount"""
         try:
             print(f"⚡ Executing scaled capacity operation: ${scaled_amount:.2f}")
-            
+
             # Use existing DAI-compliant execution logic with scaled amount
             if not self._validate_transaction_preconditions(scaled_amount):
                 print("❌ Transaction preconditions not met for scaled operation")
                 return False
-            
+
             # Execute scaled DAI borrow
             result = self._execute_validated_dai_borrow(scaled_amount)
             if result:
@@ -825,7 +826,7 @@ class ArbitrumTestnetAgent:
             else:
                 print(f"❌ Scaled capacity operation failed")
                 return False
-                
+
         except Exception as e:
             print(f"❌ Scaled capacity operation error: {e}")
             return False
@@ -1455,556 +1456,3 @@ class ArbitrumTestnetAgent:
                 if weth_supplied:
                     print("✅ WETH supplied to Aave successfully")
                 else:
-                    print("❌ WETH supply failed")
-
-            # Summary
-            print(f"\n📊 SEQUENCE SUMMARY:")
-            print(f"═══════════════════")
-            print(f"✅ DAI Borrowed: {dai_amount:.6f}")
-            print(f"{'✅' if wbtc_received > 0 else '❌'} WBTC Swapped: {wbtc_received:.8f}")
-            print(f"{'✅' if weth_received > 0 else '❌'} WETH Swapped: {weth_received:.8f}")
-            print(f"{'✅' if wbtc_supplied else '❌'} WBTC Supplied: {wbtc_supplied}")
-            print(f"{'✅' if weth_supplied else '❌'} WETH Supplied: {weth_supplied}")
-
-            # Consider success if at least one operation completed
-            sequence_success = (wbtc_received > 0 and wbtc_supplied) or (weth_received > 0 and weth_supplied)
-
-            if sequence_success:
-                print("🎯 Complete DeFi sequence executed successfully!")
-                return True
-            else:
-                print("⚠️ Sequence completed with limited success")
-                return False
-
-        except Exception as e:
-            print(f"❌ Complete DeFi sequence failed: {e}")
-            import traceback
-            traceback.print_exc()
-            return False
-
-    def _ensure_token_approval(self, token_address, amount, spender_address):
-        """Ensure token approval with proper validation and retry logic"""
-        try:
-            # Check current allowance
-            erc20_abi = [{
-                "inputs": [
-                    {"name": "owner", "type": "address"},
-                    {"name": "spender", "type": "address"}
-                ],
-                "name": "allowance",
-                "outputs": [{"name": "", "type": "uint256"}],
-                "stateMutability": "view",
-                "type": "function"
-            }, {
-                "inputs": [
-                    {"name": "spender", "type": "address"},
-                    {"name": "amount", "type": "uint256"}
-                ],
-                "name": "approve",
-                "outputs": [{"name": "", "type": "bool"}],
-                "stateMutability": "nonpayable",
-                "type": "function"
-            }]
-
-            token_contract = self.w3.eth.contract(address=token_address, abi=erc20_abi)
-
-            # Convert amount to wei
-            if token_address == self.dai_address:
-                amount_wei = int(amount * 10**18)
-            elif token_address == self.wbtc_address:
-                amount_wei = int(amount * 10**8)
-            elif token_address == self.weth_address:
-                amount_wei = int(amount * 10**18)
-            else:
-                amount_wei = int(amount * 10**18)
-
-            # Check current allowance
-            current_allowance = token_contract.functions.allowance(
-                self.address, spender_address
-            ).call()
-
-            if current_allowance >= amount_wei:
-                print(f"✅ Sufficient allowance: {current_allowance} >= {amount_wei}")
-                return True
-
-            # Need to approve - approve 2x amount for efficiency
-            approve_amount = amount_wei * 2
-
-            # Build approval transaction
-            nonce = self.w3.eth.get_transaction_count(self.address)
-            gas_price = max(self.w3.eth.gas_price, int(0.01 * 10**9))  # Min 0.01 gwei
-
-            approve_tx = token_contract.functions.approve(
-                spender_address,
-                approve_amount
-            ).build_transaction({
-                'from': self.address,
-                'gas': 100000,
-                'gasPrice': gas_price,
-                'nonce': nonce
-            })
-
-            # Sign and send
-            signed_tx = self.w3.eth.account.sign_transaction(approve_tx, self.account.key)
-            tx_hash = self.w3.eth.send_raw_transaction(signed_tx.rawTransaction)
-
-            print(f"🔄 Approval transaction sent: {tx_hash.hex()}")
-
-            # Wait for confirmation
-            receipt = self.w3.eth.wait_for_transaction_receipt(tx_hash, timeout=60)
-
-            if receipt.status == 1:
-                print(f"✅ Token approval confirmed")
-                return True
-            else:
-                print(f"❌ Approval transaction failed")
-                return False
-
-        except Exception as e:
-            print(f"❌ Token approval error: {e}")
-            return False
-
-    def _execute_dai_to_wbtc_swap(self, dai_amount):
-        """Execute DAI → WBTC swap using Uniswap"""
-        try:
-            if not hasattr(self, 'uniswap') or not self.uniswap:
-                print("❌ Uniswap integration not available")
-                return 0
-
-            # Get WBTC balance before swap
-            wbtc_before = self.aave.get_token_balance(self.wbtc_address)
-
-            # Execute swap using the correct method
-            result = self.uniswap.swap_tokens(
-                self.dai_address,     # DAI in
-                self.wbtc_address,    # WBTC out
-                dai_amount,           # Amount
-                500                   # 0.05% fee tier
-            )
-
-            if result:
-                # Wait and check balance increase
-                import time
-                time.sleep(3)
-                wbtc_after = self.aave.get_token_balance(self.wbtc_address)
-                wbtc_received = wbtc_after - wbtc_before
-                return max(0, wbtc_received)
-
-            return 0
-
-        except Exception as e:
-            print(f"❌ DAI → WBTC swap failed: {e}")
-            return 0
-
-    def _execute_dai_to_weth_swap(self, dai_amount):
-        """Execute DAI → WETH swap using Uniswap"""
-        try:
-            if not hasattr(self, 'uniswap') or not self.uniswap:
-                print("❌ Uniswap integration not available")
-                return 0
-
-            # Get WETH balance before swap
-            weth_before = self.aave.get_token_balance(self.weth_address)
-
-            # Execute swap using the correct method
-            result = self.uniswap.swap_tokens(
-                self.dai_address,     # DAI in
-                self.weth_address,    # WETH out
-                dai_amount,           # Amount
-                500                   # 0.05% fee tier
-            )
-
-            if result:
-                # Wait and check balance increase
-                import time
-                time.sleep(3)
-                weth_after = self.aave.get_token_balance(self.weth_address)
-                weth_received = weth_after - weth_before
-                return max(0, weth_received)
-
-            return 0
-
-        except Exception as e:
-            print(f"❌ DAI → WETH swap failed: {e}")
-            return 0
-
-    def _supply_wbtc_to_aave(self, wbtc_amount):
-        """Supply WBTC to Aave"""
-        try:
-            if wbtc_amount <= 0:
-                return False
-
-            # Approve WBTC first
-            approval_result = self.aave.approve_token(self.wbtc_address, wbtc_amount)
-            if not approval_result:
-                print("❌ WBTC approval failed")
-                return False
-
-            # Supply to Aave
-            supply_result = self.aave.supply_wbtc_to_aave(wbtc_amount)
-            return bool(supply_result)
-
-        except Exception as e:
-            print(f"❌ WBTC supply failed: {e}")
-            return False
-
-    def _supply_weth_to_aave(self, weth_amount):
-        """Supply WETH to Aave"""
-        try:
-            if weth_amount <= 0:
-                return False
-
-            # Approve WETH first
-            approval_result = self.aave.approve_token(self.weth_address, weth_amount)
-            if not approval_result:
-                print("❌ WETH approval failed")
-                return False
-
-            # Supply to Aave
-            supply_result = self.aave.supply_weth_to_aave(weth_amount)
-            return bool(supply_result)
-
-        except Exception as e:
-            print(f"❌ WETH supply failed: {e}")
-            return False
-
-    def get_eth_balance(self):
-        """Get ETH balance for the wallet"""
-        try:
-            balance_wei = self.w3.eth.get_balance(self.address)
-            balance_eth = balance_wei / (10**18)
-            return balance_eth
-        except Exception as e:
-            print(f"❌ Failed to get ETH balance: {e}")
-            return 0.0
-
-    def get_health_factor(self):
-        """Helper function to get health factor"""
-        try:
-            account_data = self.aave.get_user_account_data()
-            if account_data:
-                return account_data.get('healthFactor', 0)
-            else:
-                print("❌ Could not retrieve account data to determine health factor")
-                return 0
-        except Exception as e:
-            print(f"❌ Error getting health factor: {e}")
-            return 0
-
-    def get_available_borrow_amount(self):
-        """Get available borrow amount in USD"""
-        try:
-            account_data = self.aave.get_user_account_data()
-            if account_data:
-                return account_data.get('availableBorrowsUSD', 0)
-            else:
-                return 0
-        except Exception as e:
-            print(f"❌ Error getting available borrow amount: {e}")
-            return 0
-
-    def should_execute_trade(self):
-        """Determine whether or not to execute a trade based on market signals"""
-        try:
-            # Check if the market signal strategy is initialized
-            if not self.market_signal_strategy:
-                print("❌ Market signal strategy not initialized")
-                return False
-
-            # Analyze market signals using the market signal strategy
-            signal = self.market_signal_strategy.analyze_market_signals()
-            if not signal:
-                print("❌ No market signal generated")
-                return False
-
-            # Determine whether or not to execute a trade based on the market signal
-            should_execute, strategy_type = self.market_signal_strategy.should_execute_market_strategy(signal)
-            if not should_execute:
-                print("❌ Market conditions not optimal for debt swap")
-                return False
-
-            # Check if a debt swap is already in progress
-            if hasattr(self, 'debt_swap_active') and self.debt_swap_active:
-                print("⚠️ Debt swap already active, skipping this iteration")
-                return False
-
-            # Return whether or not to execute a trade
-            return True
-
-        except Exception as e:
-            print(f"❌ Error determining whether or not to execute a trade: {e}")
-            return False
-
-    def execute_market_driven_strategy(self, strategy_type, amount_usd):
-        """Execute market-driven strategy (debt swap)"""
-        try:
-            print(f"🚀 Executing market-driven strategy: {strategy_type}")
-
-            # Mark that a debt swap is now active
-            self.debt_swap_active = True
-
-            # Execute debt swap operation
-            if strategy_type == "borrow_wbtc":
-                print("💰 Borrowing WBTC...")
-                result = self._borrow_wbtc(amount_usd)
-                if result:
-                    print(f"✅ Successfully borrowed {amount_usd:.2f} WBTC")
-                else:
-                    print(f"❌ Failed to borrow WBTC")
-            elif strategy_type == "borrow_weth":
-                print("💰 Borrowing WETH...")
-                result = self._borrow_weth(amount_usd)
-                if result:
-                    print(f"✅ Successfully borrowed {amount_usd:.2f} WETH")
-                else:
-                    print(f"❌ Failed to borrow WETH")
-            else:
-                print(f"❌ Unknown market-driven strategy: {strategy_type}")
-                result = False
-
-            # Mark that the debt swap is complete, regardless of success
-            self.debt_swap_active = False
-
-            # Return the result of the operation
-            return result
-
-        except Exception as e:
-            print(f"❌ Error executing market-driven strategy: {e}")
-
-            # Mark that the debt swap is complete, regardless of error
-            self.debt_swap_active = False
-
-            return False
-
-    def _borrow_wbtc(self, amount_usd):
-        """Borrow WBTC using Aave"""
-        try:
-            print(f"💰 Borrowing WBTC: {amount_usd:.2f}")
-
-            # Get current health factor
-            health_factor = self.get_health_factor()
-            print(f"📈 Current health factor: {health_factor:.3f}")
-
-            # Check if health factor is above the safe threshold
-            if health_factor < self.safe_releverage_hf_threshold:
-                print(f"❌ Health factor too low to borrow WBTC: {health_factor:.3f}")
-                return False
-
-            # Borrow WBTC
-            result = self.aave.borrow_wbtc(amount_usd)
-            if result:
-                print(f"✅ Successfully borrowed {amount_usd:.2f} WBTC")
-            else:
-                print(f"❌ Failed to borrow WBTC")
-
-            return result
-
-        except Exception as e:
-            print(f"❌ Error borrowing WBTC: {e}")
-            return False
-
-    def _borrow_weth(self, amount_usd):
-        """Borrow WETH using Aave"""
-        try:
-            print(f"💰 Borrowing WETH: {amount_usd:.2f}")
-
-            # Get current health factor
-            health_factor = self.get_health_factor()
-            print(f"📈 Current health factor: {health_factor:.3f}")
-
-            # Check if health factor is above the safe threshold
-            if health_factor < self.safe_releverage_hf_threshold:
-                print(f"❌ Health factor too low to borrow WETH: {health_factor:.3f}")
-                return False
-
-            # Borrow WETH
-            result = self.aave.borrow_weth(amount_usd)
-            if result:
-                print(f"✅ Successfully borrowed {amount_usd:.2f} WETH")
-            else:
-                print(f"❌ Failed to borrow WETH")
-
-            return result
-
-        except Exception as e:
-            print(f"❌ Error borrowing WETH: {e}")
-            return False
-
-        # Check debt swap conditions simultaneously with hybrid triggers
-
-    def run_autonomous_sequence(self, run_id, iteration, config):
-        """Run the main autonomous sequence"""
-        try:
-            print(f"\n🎯 AUTONOMOUS RUN {run_id}, ITERATION {iteration}")
-            print("=" * 60)
-
-            # Check emergency stop
-            if os.path.exists('EMERGENCY_STOP_ACTIVE.flag'):
-                print("🛑 Emergency stop active - skipping operations")
-                return 0.1
-
-            # Check cooldown period
-            is_cooldown, remaining_time = self.is_operation_in_cooldown()
-            if is_cooldown:
-                print(f"⏰ Operations in cooldown period, {remaining_time:.0f}s remaining")
-                return 0.2
-
-            # Check for manual trigger override
-            manual_override = os.path.exists('MANUAL_TRIGGER_OVERRIDE.flag')
-            if manual_override:
-                print("🎯 Manual trigger override activated! This will force the autonomous sequence to execute on next iteration.")
-                os.remove('MANUAL_TRIGGER_OVERRIDE.flag')  # Remove flag after detection
-                return True
-
-            # Check debt swap conditions simultaneously with hybrid triggers
-            if hasattr(self, 'debt_swap_active') and self.debt_swap_active and self.market_signal_strategy:
-                debt_swap_ready = self.market_signal_strategy.should_execute_trade()
-                if debt_swap_ready:
-                    print("🔄 DEBT SWAP TRIGGERED: Executing market-driven debt swap")
-                    return True
-
-            # Initialize Aave position if first run
-            if not self.baseline_initialized and not self.baseline_sync_attempted:
-                print("🔄 Attempting to sync baseline Aave position...")
-                success = self._auto_initialize_baseline()
-                self.baseline_sync_attempted = True
-                if success:
-                    print("✅ Baseline position sync complete")
-                else:
-                    print("⚠️ Baseline position sync failed")
-                    return 0.2
-
-            # Track operation attempt
-            self.track_operation_attempt()
-
-            # Get account status
-            try:
-                account_data = self.aave.get_user_account_data()
-            except Exception as e:
-                print(f"❌ Critical error: Unable to fetch account data - {e}")
-                return 0.1  # Lower score due to critical failure
-
-            if not account_data:
-                print("❌ Unable to get account data")
-                return 0.1
-
-            health_factor = account_data.get('healthFactor', 0)
-            available_borrows_usd = account_data.get('availableBorrowsUSD', 0)
-            total_collateral_usd = account_data.get('totalCollateralUSD', 0)
-            total_debt_usd = account_data.get('totalDebtUSD', 0)
-            collateral_usd = account_data.get('totalCollateralUSD', 0)
-            debt_usd = account_data.get('totalDebtUSD', 0)
-
-            # Calculate growth since last baseline
-            if hasattr(self, 'last_collateral_value_usd') and self.last_collateral_value_usd > 0:
-                growth_amount = collateral_usd - self.last_collateral_value_usd
-            else:
-                growth_amount = 0.0
-                print("⚠️ Initializing growth tracking - no baseline set")
-
-            print(f"💰 Current Position Summary:")
-            print(f"   Collateral: ${collateral_usd:.2f}")
-            print(f"   Debt: ${debt_usd:.2f}")
-            print(f"   Available Borrows: ${available_borrows_usd:.2f}")
-            print(f"   Health Factor: {health_factor:.4f}")
-            print(f"   Growth since baseline: ${growth_amount:.2f}")
-
-            # INTEGRATED TRIGGER SYSTEM WITH EXECUTION SCALING LOGIC
-            borrow_success = False
-            operation_executed = False
-            execution_priority = "none"
-            
-            # EXECUTION SCALING LOGIC - Determine operation size based on conditions
-            scaling_factor = self._calculate_execution_scaling_factor(
-                total_collateral_usd, health_factor, available_borrows_usd
-            )
-            
-            print(f"🎯 EXECUTION SCALING: Factor {scaling_factor:.2f}x (Health: {health_factor:.3f}, Available: ${available_borrows_usd:.2f})")
-            
-            # Priority 1: Market Signal Triggers (Highest Priority - Real-time Market Conditions)
-            if (self.market_signal_strategy and 
-                self.market_signal_strategy.market_signal_enabled and
-                self.market_signal_strategy.should_execute_trade()):
-                
-                execution_priority = "market_signal"
-                print("🚨 PRIORITY 1: MARKET SIGNAL DEBT SWAP TRIGGER")
-                
-                signal = self.market_signal_strategy.analyze_market_signals()
-                if signal:
-                    should_execute, strategy_type = self.market_signal_strategy.should_execute_market_strategy(signal)
-                    if should_execute:
-                        # SCALED EXECUTION: Market signals get conservative scaling
-                        base_amount = min(3.0, available_borrows_usd * 0.05)  # 5% of available capacity, max $3
-                        scaled_amount = base_amount * min(scaling_factor, 0.8)  # Cap market operations at 80% scaling
-                        scaled_amount = max(0.5, min(scaled_amount, 5.0))  # Bounds: $0.5 - $5.0
-                        
-                        print(f"💰 Market Signal Execution: ${scaled_amount:.2f} (base: ${base_amount:.2f}, scale: {scaling_factor:.2f})")
-                        borrow_success = self.market_signal_strategy.execute_market_driven_strategy(strategy_type, scaled_amount)
-                        operation_executed = True
-                        if borrow_success:
-                            self.record_successful_operation("market_signal")
-                            print(f"✅ Market signal operation executed: {strategy_type}")
-                    else:
-                        print("⚠️ Market signal analysis suggests waiting")
-                else:
-                    print("❌ No market signal generated")
-            
-            # Priority 2: Growth-Triggered Operations (Medium Priority - Portfolio Growth)
-            elif self._should_execute_growth_triggered_operation(total_collateral_usd, health_factor, available_borrows_usd):
-                execution_priority = "growth_triggered"
-                print("🚀 PRIORITY 2: GROWTH-TRIGGERED OPERATION")
-                
-                # SCALED EXECUTION: Growth operations get full scaling potential
-                base_amount = min(8.0, available_borrows_usd * 0.10)  # 10% of available capacity, max $8
-                scaled_amount = base_amount * scaling_factor
-                scaled_amount = max(1.0, min(scaled_amount, 15.0))  # Bounds: $1.0 - $15.0
-                
-                print(f"💰 Growth-Triggered Execution: ${scaled_amount:.2f} (base: ${base_amount:.2f}, scale: {scaling_factor:.2f})")
-                borrow_success = self._execute_scaled_growth_operation(scaled_amount)
-                operation_executed = True
-                if borrow_success:
-                    self.record_successful_operation("growth_triggered")
-
-            # Priority 3: Capacity-Based Operations (Low Priority - Utilization Optimization)
-            elif self._should_execute_capacity_operation(available_borrows_usd, health_factor):
-                execution_priority = "capacity_based"
-                print("⚡ PRIORITY 3: CAPACITY-BASED OPERATION")
-                
-                # SCALED EXECUTION: Capacity operations get moderate scaling
-                base_amount = min(5.0, available_borrows_usd * 0.08)  # 8% of available capacity, max $5
-                scaled_amount = base_amount * min(scaling_factor, 1.2)  # Cap capacity operations at 120% scaling
-                scaled_amount = max(0.5, min(scaled_amount, 10.0))  # Bounds: $0.5 - $10.0
-                
-                print(f"💰 Capacity-Based Execution: ${scaled_amount:.2f} (base: ${base_amount:.2f}, scale: {scaling_factor:.2f})")
-                borrow_success = self._execute_scaled_capacity_operation(scaled_amount)
-                operation_executed = True
-                if borrow_success:
-                    self.record_successful_operation("capacity_based")
-            
-            # Log execution decision
-            if operation_executed:
-                print(f"📊 EXECUTION SUMMARY: Priority={execution_priority}, Success={borrow_success}, Scaling={scaling_factor:.2f}")
-            else:
-                print(f"⏸️ NO EXECUTION: All trigger conditions not met (HF: {health_factor:.3f}, Available: ${available_borrows_usd:.2f})")
-
-            # Update baseline if we have new collateral data
-            if total_collateral_usd > 0:
-                self.update_baseline_after_success(total_collateral_usd)
-
-            # Check if operation was successful
-            if borrow_success:
-                print("✅ AUTONOMOUS SEQUENCE COMPLETE - POSITION REBALANCED")
-                performance_score = 0.8  # High score for success
-                self.record_successful_operation()  # General operation
-            else:
-                print("⚠️ AUTONOMOUS SEQUENCE INCOMPLETE - CHECK LOGS FOR ERRORS")
-                performance_score = 0.3  # Lower score for failure
-
-            print(f"📈 Task Performance: {performance_score:.2f}")
-            return performance_score
-
-        except Exception as e:
-            print(f"❌ Autonomous task execution failed: {e}")
-            import traceback
-            traceback.print_exc()
-            return 0.1
