@@ -221,10 +221,17 @@ def monitor_console_output():
                         if not console_buffer or not any(f"Health Factor: {hf:.4f}" in line for line in list(console_buffer)[-3:]):
                             console_buffer.append(health_status)
                             
-                        # Market signal monitoring
+                        # Enhanced market signal monitoring with debt swap focus
                         market_status = check_market_signals()
                         if market_status:
                             console_buffer.append(market_status)
+                            
+                        # Check for debt swap execution logs every few cycles
+                        if len(console_buffer) % 5 == 0:  # Every 5th cycle
+                            debt_swap_logs = check_for_debt_swap_activity()
+                            if debt_swap_logs:
+                                for log in debt_swap_logs:
+                                    console_buffer.append(log)
                             
                         # Network status
                         network_line = f"[{datetime.now().strftime('%H:%M:%S')}] 🌐 Network: Arbitrum Mainnet | Chain ID: 42161 | RPC: Connected"
@@ -1058,57 +1065,190 @@ def save_parameters():
         return jsonify({'error': str(e)}), 500
 
 def check_debt_swap_conditions(health_factor, available_borrows, total_debt):
-    """Check and log debt swap conditions"""
+    """Check and log debt swap conditions with enhanced monitoring"""
     try:
         timestamp = datetime.now().strftime('%H:%M:%S')
         
         # Check debt swap triggers
         debt_ratio = (total_debt / (total_debt + available_borrows)) if (total_debt + available_borrows) > 0 else 0
         
-        # Market signal environment check
+        # Market signal environment check with detailed validation
         market_enabled = os.getenv('MARKET_SIGNAL_ENABLED', 'false').lower() == 'true'
-        btc_threshold = float(os.getenv('BTC_DROP_THRESHOLD', '0.01'))
+        btc_threshold = float(os.getenv('BTC_DROP_THRESHOLD', '0.002'))  # Default 0.2%
+        dai_threshold = float(os.getenv('DAI_TO_ARB_THRESHOLD', '0.7'))  # Default 70%
+        arb_rsi_threshold = float(os.getenv('ARB_RSI_OVERSOLD', '30'))  # Default 30
         
         if market_enabled:
-            status = f"[{timestamp}] 🔄 DEBT SWAP: Market signals ENABLED | BTC threshold: {btc_threshold*100:.1f}% | Debt ratio: {debt_ratio:.1%}"
-        else:
-            status = f"[{timestamp}] ⚠️ DEBT SWAP: Market signals DISABLED | Set MARKET_SIGNAL_ENABLED=true to enable"
+            status = f"[{timestamp}] 🚀 DEBT SWAP: Market signals ENABLED"
+            status += f" | BTC drop ≥{btc_threshold*100:.1f}% triggers swap"
+            status += f" | DAI→ARB confidence ≥{dai_threshold*100:.0f}%"
+            status += f" | ARB RSI ≤{arb_rsi_threshold}"
+            status += f" | Debt ratio: {debt_ratio:.1%}"
             
-        # Additional conditions
-        if health_factor < 2.0:
-            status += f" | HF too low ({health_factor:.3f})"
-        elif available_borrows < 10:
-            status += f" | Low borrow capacity (${available_borrows:.2f})"
+            # Check if agent has market signal strategy initialized
+            try:
+                # Try to import and check if agent is running with market signals
+                if os.path.exists('performance_log.json'):
+                    with open('performance_log.json', 'r') as f:
+                        lines = f.readlines()
+                        if lines:
+                            latest = json.loads(lines[-1])
+                            if 'market_signal' in str(latest).lower():
+                                status += f" | Strategy: ACTIVE"
+                            else:
+                                status += f" | Strategy: INITIALIZING"
+                else:
+                    status += f" | Strategy: WAITING"
+            except:
+                status += f" | Strategy: UNKNOWN"
         else:
-            status += f" | Conditions: READY"
+            status = f"[{timestamp}] ❌ DEBT SWAP: Market signals DISABLED"
+            status += f" | Enable with MARKET_SIGNAL_ENABLED=true in Secrets"
+            
+        # Detailed readiness assessment
+        readiness_issues = []
+        if health_factor < 1.5:
+            readiness_issues.append(f"HF too low ({health_factor:.3f})")
+        if available_borrows < 1.0:
+            readiness_issues.append(f"Low capacity (${available_borrows:.2f})")
+        if debt_ratio > 0.8:
+            readiness_issues.append(f"High debt ratio ({debt_ratio:.1%})")
+            
+        if readiness_issues:
+            status += f" | Issues: {', '.join(readiness_issues)}"
+        else:
+            status += f" | Account: READY for debt swaps"
             
         return status
         
     except Exception as e:
         return f"[{datetime.now().strftime('%H:%M:%S')}] ❌ DEBT SWAP: Condition check failed: {str(e)[:50]}"
 
-def check_market_signals():
-    """Check current market signals for debt swapping"""
+def check_for_debt_swap_activity():
+    """Check for recent debt swap activity and log execution"""
     try:
+        timestamp = datetime.now().strftime('%H:%M:%S')
+        activity_logs = []
+        
+        # Check performance log for debt swap operations
+        if os.path.exists('performance_log.json'):
+            try:
+                with open('performance_log.json', 'r') as f:
+                    lines = f.readlines()
+                    # Check last 3 entries for debt swap activity
+                    for line in lines[-3:]:
+                        entry = json.loads(line)
+                        metadata = entry.get('metadata', {})
+                        
+                        # Look for market signal operations
+                        if (metadata.get('operation_type') == 'market_signal' or
+                            'debt_swap' in str(metadata).lower() or
+                            'market_driven' in str(metadata).lower()):
+                            
+                            log_time = datetime.fromtimestamp(entry.get('timestamp', time.time()))
+                            operation = metadata.get('operation_type', 'debt_swap')
+                            amount = metadata.get('amount', 0)
+                            success = metadata.get('success', False)
+                            
+                            status_icon = "✅" if success else "❌"
+                            activity_logs.append(
+                                f"[{timestamp}] {status_icon} DEBT SWAP EXECUTED: {operation} | ${amount:.2f} | {log_time.strftime('%H:%M:%S')}"
+                            )
+            except:
+                pass
+        
+        # Check for market signal strategy logs
+        market_log_files = ['market_signal_log.json', 'debt_swap_transactions.json']
+        for log_file in market_log_files:
+            if os.path.exists(log_file):
+                try:
+                    with open(log_file, 'r') as f:
+                        content = f.read()
+                        if content.strip():
+                            activity_logs.append(
+                                f"[{timestamp}] 📊 DEBT SWAP LOG: Activity detected in {log_file}"
+                            )
+                except:
+                    pass
+        
+        # Check for transaction hashes in recent operations
+        try:
+            # Look for any recent .json files that might contain transaction data
+            import glob
+            recent_files = glob.glob('*transaction*.json') + glob.glob('*swap*.json')
+            for file in recent_files[-2:]:  # Check last 2 files
+                if os.path.getmtime(file) > (time.time() - 300):  # Modified in last 5 minutes
+                    activity_logs.append(
+                        f"[{timestamp}] 🔗 DEBT SWAP TX: Recent transaction file {file}"
+                    )
+        except:
+            pass
+            
+        return activity_logs[-3:]  # Return last 3 activity logs
+        
+    except Exception as e:
+        return [f"[{datetime.now().strftime('%H:%M:%S')}] ❌ DEBT SWAP: Activity check failed | {str(e)[:40]}"]
+
+def check_market_signals():
+    """Check current market signals for debt swapping with real-time analysis"""
+    try:
+        timestamp = datetime.now().strftime('%H:%M:%S')
+        
+        # Check if market signal strategy is enabled
+        market_enabled = os.getenv('MARKET_SIGNAL_ENABLED', 'false').lower() == 'true'
+        
+        if not market_enabled:
+            return f"[{timestamp}] 📊 MARKET SIGNALS: Disabled in environment | Enable with MARKET_SIGNAL_ENABLED=true"
+        
         # Check if market signal strategy files exist
         if os.path.exists('market_signal_strategy.py'):
-            timestamp = datetime.now().strftime('%H:%M:%S')
-            
-            # Try to get BTC price data (simplified check)
+            # Try to initialize and test market signals
             try:
-                import requests
-                response = requests.get('https://api.coinmarketcap.com/v1/ticker/bitcoin/', timeout=3)
-                if response.status_code == 200:
-                    return f"[{timestamp}] 📈 MARKET SIGNALS: BTC data available | Monitoring for debt swap triggers"
+                from arbitrum_testnet_agent import ArbitrumTestnetAgent
+                agent = ArbitrumTestnetAgent()
+                
+                if hasattr(agent, 'market_signal_strategy') and agent.market_signal_strategy:
+                    # Test if strategy can execute
+                    can_execute = agent.market_signal_strategy.should_execute_trade()
+                    
+                    if can_execute:
+                        return f"[{timestamp}] 🚨 DEBT SWAP TRIGGER: Market conditions met | EXECUTING SWAP"
+                    else:
+                        # Get current market status
+                        signal = agent.market_signal_strategy.analyze_market_signals()
+                        if signal:
+                            btc_change = signal.btc_price_change
+                            arb_rsi = signal.arb_technical_score
+                            confidence = signal.confidence
+                            
+                            status = f"[{timestamp}] 📊 MARKET ANALYSIS: BTC {btc_change:+.2f}% | ARB RSI {arb_rsi:.1f} | Confidence {confidence:.0%}"
+                            
+                            # Check specific triggers
+                            btc_threshold = float(os.getenv('BTC_DROP_THRESHOLD', '0.002')) * 100
+                            if btc_change <= -btc_threshold:
+                                status += f" | ✅ BTC drop trigger met"
+                            else:
+                                status += f" | ❌ BTC needs {-btc_threshold:.1f}% drop"
+                                
+                            if arb_rsi <= 30:
+                                status += f" | ✅ ARB oversold"
+                            else:
+                                status += f" | ❌ ARB not oversold"
+                                
+                            return status
+                        else:
+                            return f"[{timestamp}] 📊 MARKET SIGNALS: No signal data | Waiting for market conditions"
                 else:
-                    return f"[{timestamp}] ⚠️ MARKET SIGNALS: BTC data unavailable | Cannot evaluate swap triggers"
-            except:
-                return f"[{timestamp}] ⚠️ MARKET SIGNALS: API connection failed | Debt swaps depend on market data"
+                    return f"[{timestamp}] ⚠️ MARKET SIGNALS: Strategy not initialized | Checking agent status"
+                    
+            except Exception as agent_error:
+                return f"[{timestamp}] ❌ MARKET SIGNALS: Agent error | {str(agent_error)[:50]}"
+            
         else:
-            return f"[{datetime.now().strftime('%H:%M:%S')}] ❌ MARKET SIGNALS: Strategy file missing | No debt swap capability"
+            return f"[{timestamp}] ❌ MARKET SIGNALS: Strategy file missing | Install market_signal_strategy.py"
             
     except Exception as e:
-        return None
+        return f"[{datetime.now().strftime('%H:%M:%S')}] ❌ MARKET SIGNALS: Check failed | {str(e)[:50]}"
 
 def get_available_port(start_port=5000):
     """Find an available port starting from start_port"""
