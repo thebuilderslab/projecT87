@@ -1,9 +1,4 @@
-"""
-The code is modified to add transaction hash return for swap operations.
-"""
-"""
-Apply fixes for gas estimation failures, missing variable errors, and syntax errors in the enhanced borrow manager.
-"""
+"""Apply fixes for gas estimation failures, missing variable errors, and syntax errors in the enhanced borrow manager."""
 """
 DAI COMPLIANCE ENFORCED: This file has been modified to use DAI-only operations.
 Only DAI → WBTC and DAI → WETH swaps are permitted.
@@ -540,4 +535,71 @@ class UniswapIntegration:
             print(f"❌ Collateral optimization failed: {e}")
             import traceback
             print(f"🔍 Full error: {traceback.format_exc()}")
+            return False
+
+    def swap_dai_for_wbtc(self, dai_amount):
+        """Swap DAI for WBTC on Uniswap V3 - DAI compliance enforced with TX confirmation"""
+        try:
+            print(f"🔄 Swapping {dai_amount:.6f} DAI for WBTC...")
+
+            # DAI compliance check
+            if dai_amount <= 0:
+                print("❌ Invalid DAI amount for swap")
+                return False
+
+            swap_result = self._execute_swap(
+                self.dai_address,
+                self.wbtc_address, 
+                dai_amount,
+                "DAI",
+                "WBTC"
+            )
+
+            if swap_result and isinstance(swap_result, str):
+                # Return transaction hash for verification
+                return {
+                    'success': True,
+                    'tx_hash': swap_result,
+                    'amount_in': dai_amount,
+                    'token_in': 'DAI',
+                    'token_out': 'WBTC'
+                }
+            else:
+                return False
+
+        except Exception as e:
+            print(f"❌ DAI to WBTC swap failed: {e}")
+            return False
+
+    def _execute_swap(self, token_in, token_out, amount, token_in_name, token_out_name):
+        """Executes the token swap on Uniswap V3 and returns transaction hash"""
+        try:
+            # Validate input
+            if amount <= 0:
+                print(f"❌ Invalid amount for {token_in_name} to {token_out_name} swap")
+                return False
+
+            print(f"🔄 Executing swap: {amount:.6f} {token_in_name} -> {token_out_name}")
+            swap_tx = self.swap_tokens(token_in, token_out, amount)
+
+            if not swap_tx:
+                print(f"❌ Swap {token_in_name} to {token_out_name} transaction failed")
+                return False
+
+            tx_hash = self.w3.to_bytes(hexstr=swap_tx)
+
+            # Wait for confirmation
+            receipt = self.w3.eth.wait_for_transaction_receipt(tx_hash, timeout=120)
+
+            if receipt.status == 1:
+                tx_hash_str = tx_hash.hex()
+                print(f"✅ {token_in_name} to {token_out_name} swap successful!")
+                print(f"🔗 Transaction Hash: {tx_hash_str}")
+                return tx_hash_str
+            else:
+                print(f"❌ Swap transaction failed")
+                return False
+
+        except Exception as e:
+            print(f"❌ Error in _execute_swap: {e}")
             return False

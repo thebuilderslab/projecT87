@@ -59,7 +59,7 @@ class PositionCreator:
         try:
             print(f"🔍 Querying Aave position for wallet: {self.address}")
             print(f"🔍 Using Aave pool: {self.aave_pool}")
-            
+
             user_data = pool_contract.functions.getUserAccountData(self.address).call()
             print(f"🔍 Raw Aave data: {user_data}")
 
@@ -82,16 +82,16 @@ class PositionCreator:
                 'liquidation_threshold': liquidation_threshold,
                 'ltv': ltv
             }
-            
+
             print(f"📊 Parsed position data:")
             print(f"   Collateral: ${position['collateral']:.2f}")
             print(f"   Debt: ${position['debt']:.2f}")
             print(f"   Available Borrows: ${position['available_borrows']:.2f}")
             print(f"   Health Factor: {position['health_factor']:.4f}")
             print(f"   LTV: {position['ltv']:.2f}%")
-            
+
             return position
-            
+
         except Exception as e:
             print(f"❌ Error getting Aave position: {e}")
             import traceback
@@ -245,14 +245,14 @@ class PositionCreator:
             if not current_position:
                 print("❌ Cannot get current Aave position")
                 return False
-                
+
             available_borrows = current_position['available_borrows']
             print(f"💰 Available to borrow: ${available_borrows:.2f}")
-            
+
             if amount_dai > available_borrows:
                 print(f"❌ Requested borrow ${amount_dai:.2f} exceeds available ${available_borrows:.2f}")
                 return False
-            
+
             pool_abi = [
                 {
                     "inputs": [
@@ -286,13 +286,13 @@ class PositionCreator:
                     0,  # Referral code
                     self.address
                 ).estimate_gas({'from': self.address})
-                
+
                 gas_limit = int(estimated_gas * 1.2)  # Add 20% buffer
                 print(f"⛽ Estimated gas: {estimated_gas}, using: {gas_limit}")
             except Exception as gas_e:
                 print(f"⚠️ Gas estimation failed: {gas_e}")
                 gas_limit = 400000  # Fallback gas limit
-            
+
             borrow_tx = pool_contract.functions.borrow(
                 self.dai_address,
                 amount_wei,
@@ -310,7 +310,7 @@ class PositionCreator:
             tx_hash = self.w3.eth.send_raw_transaction(signed_tx.rawTransaction)
             print(f"📝 Borrow transaction hash: {tx_hash.hex()}")
             print(f"🔗 View on Arbiscan: https://arbiscan.io/tx/{tx_hash.hex()}")
-            
+
             receipt = self.w3.eth.wait_for_transaction_receipt(tx_hash, timeout=300)
 
             if receipt.status == 1:
@@ -353,14 +353,14 @@ class PositionCreator:
 
         # Dynamic gas calculation based on current network conditions
         from gas_fee_calculator import ArbitrumGasCalculator
-        
+
         gas_calc = ArbitrumGasCalculator()
-        
+
         # Calculate realistic gas costs for all operations
         supply_fee = gas_calc.calculate_transaction_fee('aave_supply', 'market')
         borrow_fee = gas_calc.calculate_transaction_fee('aave_borrow', 'market')
         approve_fee = gas_calc.calculate_transaction_fee('approve_token', 'market')
-        
+
         if not all([supply_fee, borrow_fee, approve_fee]):
             print("❌ Failed to calculate gas fees, using fallback")
             required_gas = 0.0001  # Fallback
@@ -373,7 +373,7 @@ class PositionCreator:
                 0.000002  # Minimal buffer for price fluctuation
             )
             required_gas = total_gas_eth
-            
+
             print(f"⛽ DYNAMIC GAS CALCULATION:")
             print(f"   WETH Deposit: {float(approve_fee['fee_eth']):.8f} ETH")
             print(f"   WETH Approve: {float(approve_fee['fee_eth']):.8f} ETH")
@@ -381,7 +381,7 @@ class PositionCreator:
             print(f"   Aave Borrow: {float(borrow_fee['fee_eth']):.8f} ETH")
             print(f"   Buffer: 0.00001 ETH")
             print(f"   Total Required: {required_gas:.8f} ETH")
-        
+
         if eth_balance < required_gas:
             print(f"❌ Insufficient ETH balance. Need {required_gas:.8f} ETH for gas, have {eth_balance:.8f} ETH")
             shortfall = required_gas - eth_balance
@@ -392,14 +392,14 @@ class PositionCreator:
         # Get existing collateral value (includes WBTC + any existing WETH)
         existing_position = self.get_aave_position()
         existing_collateral_usd = existing_position['collateral'] if existing_position else 0
-        
+
         print(f"💰 Existing Aave Collateral: ${existing_collateral_usd:.2f}")
-        
+
         # Calculate additional ETH collateral we'll add
         collateral_eth = eth_balance - required_gas  # Use almost all ETH, keep minimal for gas
         eth_price = 2500  # Assuming ETH = $2500
         additional_collateral_usd = collateral_eth * eth_price
-        
+
         # Total collateral = existing + new ETH collateral
         total_collateral_usd = existing_collateral_usd + additional_collateral_usd
         ltv = 0.8  # Average LTV for WBTC/WETH
@@ -422,7 +422,7 @@ class PositionCreator:
             safe_borrow = (total_collateral_usd * ltv) / 3.5
             print(f"💡 Safe borrow amount with total collateral: ${safe_borrow:.2f}")
             borrow_amount = min(safe_borrow, 20.0)  # Don't exceed our target
-            
+
             # If even the safe amount is very small, offer micro-position option
             if safe_borrow < 1.0:
                 print(f"\n🔬 MICRO-POSITION OPTION:")
@@ -431,7 +431,7 @@ class PositionCreator:
                 print(f"   - Safe Borrow: ${safe_borrow:.4f} DAI")
                 print(f"   - Health Factor: ~3.5")
                 print(f"   - This demonstrates the system without requiring more funds")
-                
+
                 # Ask if user wants to proceed with micro-position
                 import os
                 if os.getenv('AUTO_PROCEED_MICRO', 'false').lower() == 'true':
@@ -462,17 +462,17 @@ class PositionCreator:
 
         # Step 2: Check actual borrowing capacity before attempting borrow
         time.sleep(10)  # Wait for supply to fully confirm
-        
+
         # Get updated position after supply
         updated_position = self.get_aave_position()
         if updated_position:
             actual_available_borrows = updated_position['available_borrows']
             print(f"💰 Actual Available Borrows: ${actual_available_borrows:.2f}")
-            
+
             # Use 90% of available capacity for safety
             safe_borrow_amount = min(borrow_amount, actual_available_borrows * 0.9)
             print(f"🛡️ Safe Borrow Amount: ${safe_borrow_amount:.2f}")
-            
+
             if safe_borrow_amount >= 1.0:  # Only proceed if we can borrow at least $1
                 if not self.borrow_dai(safe_borrow_amount):
                     print(f"❌ Borrow failed even with safe amount ${safe_borrow_amount:.2f}")
@@ -504,6 +504,29 @@ class PositionCreator:
         else:
             print("❌ Could not verify final position")
             return False
+
+    def create_initial_position(self, eth_amount=0.01, dai_amount=100):
+        """Create initial Aave position with ETH and DAI - DAI compliance enforced"""
+        try:
+            print(f"🏗️ Creating initial Aave position with DAI compliance...")
+            print(f"   ETH to supply: {eth_amount:.4f}")
+            print(f"   DAI to supply: {dai_amount:.2f}")
+
+            results = {'eth_supply': False, 'dai_supply': False}
+
+            # Supply ETH as WETH
+            if eth_amount > 0:
+                results['eth_supply'] = self.agent.aave.supply_weth_to_aave(eth_amount)
+
+            # Supply DAI - DAI compliance enforced
+            if dai_amount > 0:
+                results['dai_supply'] = self.agent.aave.supply_dai_to_aave(dai_amount)
+
+            return results
+
+        except Exception as e:
+            print(f"❌ Failed to create initial position: {e}")
+            return {'eth_supply': False, 'dai_supply': False}
 
 if __name__ == "__main__":
     try:
