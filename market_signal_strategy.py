@@ -43,12 +43,17 @@ class MarketSignalStrategy:
         self.arb_rsi_overbought = float(os.getenv('ARB_RSI_OVERBOUGHT', '70'))
         self.signal_cooldown = int(os.getenv('SIGNAL_COOLDOWN', '1800'))  # 30 minutes
         
-        # Market signal thresholds - OPTIMIZED FOR 90% CONFIDENCE
+        # Market signal thresholds - OPTIMIZED FOR 1-HOUR DECISION WINDOW
         self.market_signal_enabled = os.getenv('MARKET_SIGNAL_ENABLED', 'true').lower() == 'true'
-        self.dai_to_arb_threshold = float(os.getenv('DAI_TO_ARB_THRESHOLD', '0.90'))  # 90% confidence for DAI→ARB
-        self.arb_to_dai_threshold = float(os.getenv('ARB_TO_DAI_THRESHOLD', '0.85'))  # 85% confidence for ARB→DAI
+        self.dai_to_arb_threshold = float(os.getenv('DAI_TO_ARB_THRESHOLD', '0.92'))  # 92% confidence for DAI→ARB (1hr window)
+        self.arb_to_dai_threshold = float(os.getenv('ARB_TO_DAI_THRESHOLD', '0.88'))  # 88% confidence for ARB→DAI
         self.high_confidence_threshold = 0.90  # Ultra-high confidence threshold
         self.pattern_confirmation_required = True  # Require pattern confirmation
+        
+        # 1-Hour specific parameters
+        self.one_hour_prediction_window = True
+        self.btc_1h_drop_threshold = float(os.getenv('BTC_1H_DROP_THRESHOLD', '0.003'))  # 0.3% in 1 hour
+        self.arb_1h_momentum_threshold = float(os.getenv('ARB_1H_MOMENTUM_THRESHOLD', '0.005'))  # 0.5% momentum
         
         logging.info(f"Market Signal Strategy initialized - Enabled: {self.market_signal_enabled}")
 
@@ -193,12 +198,20 @@ class MarketSignalStrategy:
             return None
 
     def should_execute_market_strategy(self, signal: MarketSignal) -> Tuple[bool, str]:
-        """Determine if market strategy should execute based on signal"""
+        """Determine if market strategy should execute based on 1-hour confidence signal"""
         try:
-            # Check if we should swap DAI → ARB (bearish market, ARB oversold)
-            if (signal.signal_type == 'bearish' and 
-                signal.confidence >= self.dai_to_arb_threshold):
-                return True, 'dai_to_arb'
+            # Enhanced 1-hour decision logic for DAI → ARB swaps
+            if signal.signal_type == 'bearish':
+                # Additional 1-hour validation checks
+                btc_1h_decline = abs(signal.btc_price_change) >= (self.btc_1h_drop_threshold * 100)
+                arb_oversold_strong = signal.arb_technical_score <= 25
+                confidence_threshold_met = signal.confidence >= self.dai_to_arb_threshold
+                
+                # Require all conditions for 1-hour DAI→ARB swap
+                if confidence_threshold_met and (btc_1h_decline or arb_oversold_strong):
+                    logging.info(f"1-HOUR DAI→ARB SIGNAL: Confidence {signal.confidence:.2f}, "
+                               f"BTC 1h: {signal.btc_price_change:.2f}%, ARB RSI: {signal.arb_technical_score:.1f}")
+                    return True, 'dai_to_arb'
             
             # Check if we should swap ARB → DAI (bullish market, ARB overbought)
             elif (signal.signal_type == 'bullish' and 

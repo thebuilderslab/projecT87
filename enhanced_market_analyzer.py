@@ -247,6 +247,25 @@ class EnhancedMarketAnalyzer:
         volume_analysis = self._analyze_volume_trend(btc_volumes)
         
         if volume_analysis['trend'] == 'increasing' and btc_decline < -0.005:
+
+
+    def _calculate_1h_price_trend(self, price_data: List[Dict]) -> float:
+        """Calculate 1-hour price trend for immediate decision making"""
+        if len(price_data) < 2:
+            return 0.0
+        
+        try:
+            # Get most recent and previous prices
+            latest_price = float(price_data[-1]['quote']['USD']['close'])
+            previous_price = float(price_data[0]['quote']['USD']['close'])
+            
+            # Calculate 1-hour trend as percentage change
+            trend = (latest_price - previous_price) / previous_price
+            return trend
+            
+        except (KeyError, ValueError, ZeroDivisionError):
+            return 0.0
+
             patterns.append(MarketPattern(
                 pattern_type='volume_spike_pattern',
                 confidence=0.75,
@@ -279,11 +298,15 @@ class EnhancedMarketAnalyzer:
             return 0.5  # Default moderate score
     
     def generate_enhanced_signal(self) -> Optional[EnhancedMarketSignal]:
-        """Generate enhanced market signal with pattern analysis"""
+        """Generate enhanced market signal with 1-hour confidence validation for DAI→ARB decisions"""
         try:
-            # Get 4-hour historical data
+            # Get extended historical data for analysis
             btc_historical = self.get_historical_price_data('BTC', self.analysis_window_hours)
             arb_historical = self.get_historical_price_data('ARB', self.analysis_window_hours)
+            
+            # Get 1-hour data for immediate decision making
+            btc_1h_data = self.get_historical_price_data('BTC', 1)
+            arb_1h_data = self.get_historical_price_data('ARB', 1)
             
             if not btc_historical or not arb_historical:
                 logging.warning("Insufficient historical data for enhanced analysis")
@@ -308,22 +331,37 @@ class EnhancedMarketAnalyzer:
             signal_type = 'neutral'
             confidence = 0.0
             
-            # Check for bearish signal (DAI → ARB opportunity) - 90% CONFIDENCE VALIDATION
+            # Check for bearish signal (DAI → ARB opportunity) - 1-HOUR PREDICTION CONFIDENCE
             bearish_patterns = [p for p in patterns if 'dip' in p.pattern_type or 'oversold' in p.pattern_type]
             high_confidence_bearish = [p for p in bearish_patterns if p.confidence >= 0.90]
             
-            if high_confidence_bearish and arb_indicators['rsi'] <= 25:
-                # Additional validation for 90% confidence
-                volume_confirmation = arb_indicators['volume_trend']['strength'] >= 0.7
-                momentum_confirmation = btc_indicators['price_momentum'] < -1.5
-                macd_confirmation = arb_indicators['macd']['histogram'] < -0.5
+            # 1-Hour Price Decline Prediction Logic
+            if btc_1h_data and arb_1h_data and len(btc_1h_data) >= 2 and len(arb_1h_data) >= 2:
+                btc_1h_trend = self._calculate_1h_price_trend(btc_1h_data)
+                arb_1h_trend = self._calculate_1h_price_trend(arb_1h_data)
                 
-                validation_score = sum([volume_confirmation, momentum_confirmation, macd_confirmation]) / 3
+                # Enhanced 1-hour bearish signal detection
+                btc_declining_1h = btc_1h_trend <= -0.003  # 0.3% decline in 1 hour
+                arb_oversold_conditions = arb_indicators['rsi'] <= 25 and arb_1h_trend <= -0.002
                 
-                if validation_score >= 0.67:  # At least 2/3 validations
-                    signal_type = 'bearish'
-                    base_confidence = max(p.confidence for p in high_confidence_bearish)
-                    confidence = min(0.95, base_confidence * gas_score * (1 + validation_score * 0.1))
+                if (high_confidence_bearish or btc_declining_1h) and arb_oversold_conditions:
+                    # Multi-factor 1-hour confidence validation
+                    volume_confirmation = arb_indicators['volume_trend']['strength'] >= 0.7
+                    momentum_confirmation = btc_indicators['price_momentum'] < -1.5
+                    macd_confirmation = arb_indicators['macd']['histogram'] < -0.5
+                    one_hour_trend_confirmation = btc_1h_trend < -0.002 and arb_1h_trend < 0
+                    
+                    validation_factors = [volume_confirmation, momentum_confirmation, macd_confirmation, one_hour_trend_confirmation]
+                    validation_score = sum(validation_factors) / len(validation_factors)
+                    
+                    # Higher confidence requirement for 1-hour decisions
+                    if validation_score >= 0.75:  # At least 3/4 validations for 1-hour window
+                        signal_type = 'bearish'
+                        base_confidence = max(p.confidence for p in high_confidence_bearish) if high_confidence_bearish else 0.85
+                        
+                        # Boost confidence for strong 1-hour signals
+                        one_hour_bonus = min(0.10, abs(btc_1h_trend) * 10)  # Up to 10% bonus for strong trends
+                        confidence = min(0.96, base_confidence * gas_score + one_hour_bonus + (validation_score * 0.05))
             
             # Check for bullish signal (ARB → DAI opportunity) - 90% CONFIDENCE VALIDATION
             elif arb_indicators['rsi'] >= 75 and btc_indicators['momentum'] > 2.0:
