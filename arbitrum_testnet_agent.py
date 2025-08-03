@@ -366,6 +366,7 @@ class ArbitrumTestnetAgent:
         self.health_monitor = None
         self.gas_calculator = None
         self.enhanced_borrow_manager = None
+        self.market_signal_strategy = None
 
         # HYBRID APPROACH CONFIGURATION - Combines Growth-Triggered and Capacity-Based Systems
         # Configuration parameters loaded from environment variables (Replit Secrets)
@@ -849,6 +850,15 @@ class ArbitrumTestnetAgent:
             except Exception as e:
                 print(f"❌ Enhanced borrow manager initialization failed: {e}")
 
+        # Initialize Market Signal Strategy
+            try:
+                from market_signal_strategy import MarketSignalStrategy
+                self.market_signal_strategy = MarketSignalStrategy(self)
+                print("📈 Initialized Market Signal Strategy.")
+            except Exception as e:
+                print(f"❌ Market signal strategy initialization failed: {e}")
+                self.market_signal_strategy = None
+
             return True
 
         except Exception as e:
@@ -927,6 +937,14 @@ class ArbitrumTestnetAgent:
                 if success:
                     performance_score = 0.7
                     self.record_successful_operation("capacity_based")
+                else:
+                    performance_score = 0.3
+            # Check for market signal-triggered operations
+            elif self.market_signal_strategy and self.market_signal_strategy.should_execute_trade():
+                success = self._execute_market_signal_operation(available_borrows)
+                if success:
+                    performance_score = 0.7
+                    self.record_successful_operation("market_signal")
                 else:
                     performance_score = 0.3
 
@@ -1080,6 +1098,39 @@ class ArbitrumTestnetAgent:
             import traceback
             traceback.print_exc()
             return False
+    def _execute_market_signal_operation(self, available_borrows):
+        """Execute market signal-triggered operation - DAI only"""
+        try:
+            print("🚀 Executing market signal-triggered operation (DAI-only)")
+
+            # Comprehensive pre-transaction validation
+            if not self._validate_transaction_preconditions(available_borrows):
+                print("❌ Transaction preconditions not met")
+                return False
+
+            # Calculate safe borrow amount with enhanced validation
+            borrow_amount = self._calculate_validated_borrow_amount(available_borrows, "market_signal")
+
+            if borrow_amount < 1.0:
+                print("⚠️ Borrow amount too small after validation")
+                return False
+
+            print(f"💰 Validated borrow amount: ${borrow_amount:.2f} DAI")
+
+            # Execute DAI borrow with enhanced error handling
+            result = self._execute_validated_dai_borrow(borrow_amount)
+            if result:
+                print(f"✅ Successfully borrowed ${borrow_amount:.2f} DAI based on market signal")
+                return True
+            else:
+                print(f"❌ Failed to borrow DAI based on market signal")
+                return False
+
+        except Exception as e:
+            print(f"❌ Market signal-triggered operation failed: {e}")
+            import traceback
+            traceback.print_exc()
+            return False
 
     def _validate_transaction_preconditions(self, available_borrows):
         """Validate all preconditions before attempting any transaction"""
@@ -1139,6 +1190,9 @@ class ArbitrumTestnetAgent:
             elif operation_type == "capacity":
                 base_percentage = 0.08  # Very conservative 8% for capacity operations
                 max_amount = 5.0
+            elif operation_type == "market_signal":
+                base_percentage = 0.05  # Ultra conservative 5% for market signal operations
+                max_amount = 3.0
             else:
                 base_percentage = 0.05  # Ultra conservative 5% for general operations
                 max_amount = 3.0

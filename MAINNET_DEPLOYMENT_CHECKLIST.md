@@ -24,6 +24,14 @@ python test_agent.py
 - [x] `COINMARKETCAP_API_KEY`: Valid API key for price data
 - [x] `NETWORK_MODE`: Set to 'mainnet' for production
 
+#### Optional: Market Signal Strategy Configuration
+- [ ] `MARKET_SIGNAL_ENABLED`: Set to 'true' to enable market-driven debt swapping
+- [ ] `BTC_DROP_THRESHOLD`: BTC drop percentage to trigger bearish signal (default: 0.01 = 1%)
+- [ ] `ARB_RSI_OVERSOLD`: RSI level for ARB oversold condition (default: 30)
+- [ ] `ARB_RSI_OVERBOUGHT`: RSI level for ARB overbought condition (default: 70)
+- [ ] `DAI_TO_ARB_THRESHOLD`: Confidence threshold for DAI→ARB swaps (default: 0.7)
+- [ ] `ARB_TO_DAI_THRESHOLD`: Confidence threshold for ARB→DAI swaps (default: 0.6)
+
 ### Wallet Funding Verification  
 - [x] Minimum 0.1 ETH for gas fees
 - [x] Sufficient collateral tokens (USDC/WETH) for Aave operations
