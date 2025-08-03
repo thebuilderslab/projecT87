@@ -1,4 +1,3 @@
-
 #!/usr/bin/env python3
 """
 Market Strategy Configuration
@@ -40,10 +39,9 @@ MARKET_OPERATION_PERCENTAGE = float(os.getenv('MARKET_OPERATION_PERCENTAGE', '0.
 MIN_HEALTH_FACTOR_FOR_MARKET_OPS = float(os.getenv('MIN_HEALTH_FACTOR_FOR_MARKET_OPS', '2.2'))  # Higher safety
 TARGET_HEALTH_FACTOR_POST_OP = float(os.getenv('TARGET_HEALTH_FACTOR_POST_OP', '2.0'))  # Target after operation
 
-# Timing and Cooldown Configuration
-SIGNAL_COOLDOWN = int(os.getenv('SIGNAL_COOLDOWN', '1800'))  # 30 minutes between signals
-MARKET_ANALYSIS_INTERVAL = int(os.getenv('MARKET_ANALYSIS_INTERVAL', '3600'))  # 1 hour analysis cycle
-OPERATION_RETRY_DELAY = int(os.getenv('OPERATION_RETRY_DELAY', '300'))  # 5 minutes retry delay
+# Timing Controls - 5-MINUTE MONITORING
+SIGNAL_COOLDOWN = int(os.getenv('SIGNAL_COOLDOWN', '300'))  # 5 minutes between signals (enhanced frequency)
+MARKET_ANALYSIS_INTERVAL = int(os.getenv('MARKET_ANALYSIS_INTERVAL', '300'))  # 5 minute analysis interval (enhanced frequency)
 
 # API Configuration
 COINMARKETCAP_RATE_LIMIT = int(os.getenv('COINMARKETCAP_RATE_LIMIT', '100'))  # Calls per day
@@ -81,27 +79,27 @@ def get_market_strategy_status():
 def validate_configuration():
     """Validate market strategy configuration"""
     issues = []
-    
+
     # Validate thresholds
     if BTC_DROP_THRESHOLD <= 0 or BTC_DROP_THRESHOLD > 0.2:
         issues.append(f"BTC drop threshold {BTC_DROP_THRESHOLD} outside safe range (0-0.2)")
-    
+
     if ARB_RSI_OVERSOLD < 10 or ARB_RSI_OVERSOLD > 40:
         issues.append(f"ARB RSI oversold {ARB_RSI_OVERSOLD} outside typical range (10-40)")
-    
+
     if DAI_TO_ARB_CONFIDENCE < 0.5 or DAI_TO_ARB_CONFIDENCE > 0.95:
         issues.append(f"DAI→ARB confidence {DAI_TO_ARB_CONFIDENCE} outside safe range (0.5-0.95)")
-    
+
     if MIN_HEALTH_FACTOR_FOR_MARKET_OPS < 1.5:
         issues.append(f"Minimum health factor {MIN_HEALTH_FACTOR_FOR_MARKET_OPS} too low (min 1.5)")
-    
+
     if MAX_MARKET_OPERATION_AMOUNT > 20:
         issues.append(f"Maximum operation amount ${MAX_MARKET_OPERATION_AMOUNT} too high (max $20)")
-    
+
     # Validate timing
     if SIGNAL_COOLDOWN < 600:  # 10 minutes minimum
         issues.append(f"Signal cooldown {SIGNAL_COOLDOWN}s too short (min 600s)")
-    
+
     return issues
 
 def get_optimized_parameters():
@@ -121,12 +119,12 @@ def get_optimized_parameters():
 if __name__ == "__main__":
     print("📊 MARKET STRATEGY CONFIGURATION")
     print("=" * 50)
-    
+
     # Display current configuration
     status = get_market_strategy_status()
     for key, value in status.items():
         print(f"{key}: {value}")
-    
+
     # Validate configuration
     print(f"\n🔍 CONFIGURATION VALIDATION")
     issues = validate_configuration()
@@ -136,7 +134,7 @@ if __name__ == "__main__":
             print(f"   - {issue}")
     else:
         print("✅ Configuration Valid")
-    
+
     # Show optimized parameters
     print(f"\n🎯 OPTIMIZED PARAMETERS")
     optimized = get_optimized_parameters()

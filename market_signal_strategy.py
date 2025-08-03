@@ -37,11 +37,11 @@ class MarketSignalStrategy:
         # Initialize enhanced market analyzer
         self.enhanced_analyzer = EnhancedMarketAnalyzer(agent)
         
-        # Configuration parameters
-        self.btc_drop_threshold = float(os.getenv('BTC_DROP_THRESHOLD', '0.01'))  # 1% drop
+        # Configuration parameters - LOWERED FOR SENSITIVITY
+        self.btc_drop_threshold = float(os.getenv('BTC_DROP_THRESHOLD', '0.003'))  # 0.3% drop (lowered from 1%)
         self.arb_rsi_oversold = float(os.getenv('ARB_RSI_OVERSOLD', '30'))
         self.arb_rsi_overbought = float(os.getenv('ARB_RSI_OVERBOUGHT', '70'))
-        self.signal_cooldown = int(os.getenv('SIGNAL_COOLDOWN', '1800'))  # 30 minutes
+        self.signal_cooldown = int(os.getenv('SIGNAL_COOLDOWN', '300'))  # 5 minutes (lowered from 30 minutes)
         
         # Market signal thresholds - OPTIMIZED FOR 1-HOUR DECISION WINDOW
         self.market_signal_enabled = os.getenv('MARKET_SIGNAL_ENABLED', 'true').lower() == 'true'
@@ -50,10 +50,10 @@ class MarketSignalStrategy:
         self.high_confidence_threshold = 0.90  # Ultra-high confidence threshold
         self.pattern_confirmation_required = True  # Require pattern confirmation
         
-        # 1-Hour specific parameters
+        # 1-Hour specific parameters - ENHANCED SENSITIVITY
         self.one_hour_prediction_window = True
-        self.btc_1h_drop_threshold = float(os.getenv('BTC_1H_DROP_THRESHOLD', '0.003'))  # 0.3% in 1 hour
-        self.arb_1h_momentum_threshold = float(os.getenv('ARB_1H_MOMENTUM_THRESHOLD', '0.005'))  # 0.5% momentum
+        self.btc_1h_drop_threshold = float(os.getenv('BTC_1H_DROP_THRESHOLD', '0.002'))  # 0.2% in 1 hour (more sensitive)
+        self.arb_1h_momentum_threshold = float(os.getenv('ARB_1H_MOMENTUM_THRESHOLD', '0.003'))  # 0.3% momentum (more sensitive)
         
         logging.info(f"Market Signal Strategy initialized - Enabled: {self.market_signal_enabled}")
 
