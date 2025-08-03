@@ -1583,3 +1583,15 @@ class ArbitrumTestnetAgent:
         except Exception as e:
             print(f"❌ Error getting health factor: {e}")
             return 0
+
+    def get_available_borrow_amount(self):
+        """Get available borrow amount in USD"""
+        try:
+            account_data = self.aave.get_user_account_data()
+            if account_data:
+                return account_data.get('availableBorrowsUSD', 0)
+            else:
+                return 0
+        except Exception as e:
+            print(f"❌ Error getting available borrow amount: {e}")
+            return 0

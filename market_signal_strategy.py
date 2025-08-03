@@ -319,11 +319,6 @@ class MarketSignalStrategy:
                     amount_dai,
                     3000  # 0.3% fee tier for ARB
                 )
-                    self.agent.dai_address,
-                    self.agent.arb_address,
-                    amount_dai,
-                    3000  # 0.3% fee tier for ARB
-                )
                 
                 if swap_result:
                     print(f"✅ DEBT SWAP COMPLETE: DAI → ARB executed on-chain")
@@ -419,36 +414,30 @@ class MarketSignalStrategy:
             if should_execute:
                 print(f"🎯 DEBT SWAP TRIGGER: {strategy_type.upper()}")
                 print(f"💡 Condition: Market declining, executing debt optimization")
-                return True
-            else:
-                print(f"⚠️ Market conditions not met for debt swap")
-                print(f"   Required: BTC drop ≥{self.btc_1h_drop_threshold*100:.1f}% OR ARB RSI ≤25")
-                print(f"   Required: Confidence ≥{self.dai_to_arb_threshold:.0%}")
-                return False
                 
-        except Exception as e:
-            print(f"❌ Error checking trade conditions: {e}")
-            return Falsel_score:.1f}")
-            
-            # Check if we should execute the strategy
-            should_execute, strategy_type = self.should_execute_market_strategy(signal)
-            
-            if should_execute:
-                print(f"🎯 DEBT SWAP TRIGGER: {strategy_type.upper()}")
-                print(f"💡 Condition: Market declining, executing debt optimization")
-                
-                # Execute the strategy
-                amount_dai = min(5.0, self.agent.get_available_borrow_amount() * 0.1)
-                if amount_dai >= 1.0:
-                    success = self.execute_market_driven_strategy(strategy_type, amount_dai)
-                    if success:
-                        print(f"✅ DEBT SWAP EXECUTED ON-CHAIN")
-                        return True
-                    else:
-                        print(f"❌ DEBT SWAP EXECUTION FAILED")
-                        return False
+                # Check if agent has available borrow capacity
+                if hasattr(self.agent, 'aave') and self.agent.aave:
+                    account_data = self.agent.aave.get_user_account_data()
+                    if account_data:
+                        available_borrows = account_data.get('availableBorrowsUSD', 0)
+                        health_factor = account_data.get('healthFactor', 0)
+                        
+                        if health_factor >= 1.5 and available_borrows >= 1.0:
+                            # Execute the strategy with conservative amount
+                            amount_dai = min(3.0, available_borrows * 0.05)  # Use 5% of available capacity
+                            success = self.execute_market_driven_strategy(strategy_type, amount_dai)
+                            if success:
+                                print(f"✅ DEBT SWAP EXECUTED ON-CHAIN")
+                                return True
+                            else:
+                                print(f"❌ DEBT SWAP EXECUTION FAILED")
+                                return False
+                        else:
+                            print(f"⚠️ Insufficient borrowing capacity or low health factor")
+                            print(f"   Health Factor: {health_factor:.3f}, Available: ${available_borrows:.2f}")
+                            return False
                 else:
-                    print(f"⚠️ Insufficient borrowing capacity: ${amount_dai:.2f}")
+                    print(f"⚠️ Aave integration not available")
                     return False
             else:
                 print(f"⚠️ Market conditions not met for debt swap")
@@ -457,8 +446,6 @@ class MarketSignalStrategy:
                 return False
                 
         except Exception as e:
-            print(f"❌ Error in debt swap execution: {e}")
-            return Falseption as e:
             print(f"❌ Error checking trade conditions: {e}")
             return False
 

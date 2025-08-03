@@ -61,3 +61,44 @@ def validate_market_signal_environment():
 
 if __name__ == "__main__":
     validate_market_signal_environment()
+import os
+
+def validate_environment_variables():
+    """Validate all required environment variables"""
+    print("🔍 VALIDATING MARKET SIGNAL ENVIRONMENT VARIABLES")
+    print("=" * 55)
+    
+    required_vars = {
+        'MARKET_SIGNAL_ENABLED': 'true',
+        'BTC_DROP_THRESHOLD': '0.003',
+        'DAI_TO_ARB_THRESHOLD': '0.90',
+        'ARB_RSI_OVERSOLD': '25',
+        'SIGNAL_COOLDOWN': '300',
+        'BTC_1H_DROP_THRESHOLD': '0.002',
+        'ARB_1H_MOMENTUM_THRESHOLD': '0.003'
+    }
+    
+    missing_vars = []
+    
+    for var, recommended in required_vars.items():
+        value = os.getenv(var)
+        if value is None:
+            print(f"❌ {var}: NOT SET (recommended: {recommended})")
+            missing_vars.append((var, recommended))
+        else:
+            print(f"✅ {var}: {value}")
+    
+    if missing_vars:
+        print("\n" + "=" * 55)
+        print("⚠️  ENVIRONMENT ISSUES DETECTED:")
+        print("\n🔧 ADD THESE TO REPLIT SECRETS:")
+        for var, recommended in missing_vars:
+            print(f"   {var} = {recommended}")
+        print("\n💡 Go to Replit Secrets tab and add/update these variables")
+        return False
+    else:
+        print("\n✅ All environment variables properly configured")
+        return True
+
+if __name__ == "__main__":
+    validate_environment_variables()
