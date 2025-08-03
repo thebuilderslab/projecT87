@@ -22,8 +22,14 @@ ARB_RSI_OVERBOUGHT = float(os.getenv('ARB_RSI_OVERBOUGHT', '75'))  # More aggres
 ARB_MOMENTUM_THRESHOLD = float(os.getenv('ARB_MOMENTUM_THRESHOLD', '0.03'))  # 3% momentum
 
 # Confidence Thresholds for Strategy Execution
-DAI_TO_ARB_CONFIDENCE = float(os.getenv('DAI_TO_ARB_THRESHOLD', '0.65'))  # 65% confidence for DAI→ARB
-ARB_TO_DAI_CONFIDENCE = float(os.getenv('ARB_TO_DAI_THRESHOLD', '0.60'))  # 60% confidence for ARB→DAI
+DAI_TO_ARB_CONFIDENCE = float(os.getenv('DAI_TO_ARB_THRESHOLD', '0.90'))  # 90% confidence for DAI→ARB
+ARB_TO_DAI_CONFIDENCE = float(os.getenv('ARB_TO_DAI_THRESHOLD', '0.85'))  # 85% confidence for ARB→DAI
+
+# 90% CONFIDENCE MODE SETTINGS
+HIGH_CONFIDENCE_MODE = True
+PATTERN_CONFIRMATION_REQUIRED = True
+MULTI_VALIDATION_REQUIRED = True
+MINIMUM_CONFIDENCE_THRESHOLD = 0.90
 
 # Operation Limits and Safety
 MAX_MARKET_OPERATION_AMOUNT = float(os.getenv('MAX_MARKET_OPERATION_AMOUNT', '8.0'))  # $8 max per operation

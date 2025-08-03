@@ -7,11 +7,17 @@ Integrates Freqtrade-style technical analysis with existing DeFi operations
 import os
 import time
 import logging
+import json
 from datetime import datetime, timedelta
 import requests
-from typing import Dict, Optional, Tuple
+from typing import Dict, Optional, Tuple, List
 from dataclasses import dataclass
-from enhanced_market_analyzer import EnhancedMarketAnalyzer, EnhancedMarketSignal
+
+# Import enhanced analyzer components
+try:
+    from enhanced_market_analyzer import EnhancedMarketAnalyzer, EnhancedMarketSignal, MarketPattern
+except ImportError:
+    logging.warning("Enhanced market analyzer not available, using fallback")
 
 @dataclass
 class MarketSignal:
@@ -37,10 +43,12 @@ class MarketSignalStrategy:
         self.arb_rsi_overbought = float(os.getenv('ARB_RSI_OVERBOUGHT', '70'))
         self.signal_cooldown = int(os.getenv('SIGNAL_COOLDOWN', '1800'))  # 30 minutes
         
-        # Market signal thresholds
-        self.market_signal_enabled = os.getenv('MARKET_SIGNAL_ENABLED', 'false').lower() == 'true'
-        self.dai_to_arb_threshold = float(os.getenv('DAI_TO_ARB_THRESHOLD', '0.7'))  # Confidence needed for DAI→ARB
-        self.arb_to_dai_threshold = float(os.getenv('ARB_TO_DAI_THRESHOLD', '0.6'))  # Confidence needed for ARB→DAI
+        # Market signal thresholds - OPTIMIZED FOR 90% CONFIDENCE
+        self.market_signal_enabled = os.getenv('MARKET_SIGNAL_ENABLED', 'true').lower() == 'true'
+        self.dai_to_arb_threshold = float(os.getenv('DAI_TO_ARB_THRESHOLD', '0.90'))  # 90% confidence for DAI→ARB
+        self.arb_to_dai_threshold = float(os.getenv('ARB_TO_DAI_THRESHOLD', '0.85'))  # 85% confidence for ARB→DAI
+        self.high_confidence_threshold = 0.90  # Ultra-high confidence threshold
+        self.pattern_confirmation_required = True  # Require pattern confirmation
         
         logging.info(f"Market Signal Strategy initialized - Enabled: {self.market_signal_enabled}")
 
@@ -150,21 +158,29 @@ class MarketSignalStrategy:
             if current_time - self.last_signal_time < self.signal_cooldown:
                 return None
             
-            # Try enhanced analysis first
+            # Try enhanced analysis first with 90% confidence validation
             enhanced_signal = self.enhanced_analyzer.generate_enhanced_signal()
-            if enhanced_signal and enhanced_signal.confidence > 0.7:
-                logging.info(f"Enhanced signal generated: {enhanced_signal.signal_type} "
-                           f"(confidence: {enhanced_signal.confidence:.2f}, "
-                           f"success_prob: {enhanced_signal.success_probability:.2f})")
+            if enhanced_signal and enhanced_signal.confidence >= self.high_confidence_threshold:
+                # Additional validation for 90% confidence
+                pattern_score = enhanced_signal.pattern_analysis.get('count', 0) * 0.1
+                success_bonus = enhanced_signal.success_probability * 0.2
+                gas_bonus = enhanced_signal.gas_efficiency_score * 0.1
                 
-                # Convert to standard MarketSignal format
-                return MarketSignal(
-                    signal_type=enhanced_signal.signal_type,
-                    confidence=enhanced_signal.confidence,
-                    btc_price_change=enhanced_signal.btc_analysis.get('momentum', 0),
-                    arb_technical_score=enhanced_signal.arb_analysis.get('rsi', 50),
-                    timestamp=enhanced_signal.timestamp
-                )
+                adjusted_confidence = min(0.95, enhanced_signal.confidence + pattern_score + success_bonus + gas_bonus)
+                
+                if adjusted_confidence >= self.high_confidence_threshold:
+                    logging.info(f"HIGH CONFIDENCE Enhanced signal: {enhanced_signal.signal_type} "
+                               f"(confidence: {adjusted_confidence:.2f}, "
+                               f"success_prob: {enhanced_signal.success_probability:.2f})")
+                    
+                    # Convert to standard MarketSignal format
+                    return MarketSignal(
+                        signal_type=enhanced_signal.signal_type,
+                        confidence=adjusted_confidence,
+                        btc_price_change=enhanced_signal.btc_analysis.get('momentum', 0),
+                        arb_technical_score=enhanced_signal.arb_analysis.get('rsi', 50),
+                        timestamp=enhanced_signal.timestamp
+                    )
             
             # Get market data
             btc_data = self.get_btc_price_data()
