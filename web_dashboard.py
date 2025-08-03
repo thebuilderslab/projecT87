@@ -134,7 +134,7 @@ def monitor_console_output():
                 console_buffer.append(f"[{datetime.now().strftime('%H:%M:%S')}] ⚠️ Process check error: {str(e)[:50]}")
                 pass
             
-            # Method 2: Read from performance log for activity
+            # Method 2: Read from performance log for activity and debt swap operations
             if os.path.exists('performance_log.json'):
                 try:
                     with open('performance_log.json', 'r') as f:
@@ -143,12 +143,19 @@ def monitor_console_output():
                             latest = json.loads(lines[-1])
                             timestamp = datetime.fromtimestamp(latest.get('timestamp', time.time()))
                             
-                            # Create meaningful console message
+                            # Check for debt swap operations in metadata
                             if latest.get('metadata'):
                                 metadata = latest['metadata']
                                 health_factor = metadata.get('health_factor', 'N/A')
                                 collateral = metadata.get('total_collateral_usdc', 'N/A')
-                                console_line = f"[{timestamp.strftime('%H:%M:%S')}] 📊 Agent Status: HF={health_factor}, Collateral=${collateral}"
+                                
+                                # Look for debt swap indicators
+                                if 'debt_swap' in str(metadata).lower() or 'market_signal' in str(metadata).lower():
+                                    console_line = f"[{timestamp.strftime('%H:%M:%S')}] 🔄 DEBT SWAP: Operation detected in logs | HF={health_factor}"
+                                elif metadata.get('operation_type') == 'market_signal':
+                                    console_line = f"[{timestamp.strftime('%H:%M:%S')}] 📈 MARKET SIGNAL: Operation executed | HF={health_factor}"
+                                else:
+                                    console_line = f"[{timestamp.strftime('%H:%M:%S')}] 📊 Agent Status: HF={health_factor}, Collateral=${collateral}"
                             else:
                                 console_line = f"[{timestamp.strftime('%H:%M:%S')}] 🔄 Run {latest.get('run_id', 0)}, Iteration {latest.get('iteration', 0)}"
                             
@@ -157,6 +164,19 @@ def monitor_console_output():
                                 console_buffer.append(console_line)
                 except Exception as e:
                     pass
+            
+            # Method 2.5: Check for debt swap transaction logs
+            try:
+                debt_swap_files = ['debt_swap_log.json', 'market_signal_log.json', 'swap_transactions.json']
+                for file_name in debt_swap_files:
+                    if os.path.exists(file_name):
+                        with open(file_name, 'r') as f:
+                            content = f.read()
+                            if content.strip():
+                                timestamp = datetime.now().strftime('%H:%M:%S')
+                                console_buffer.append(f"[{timestamp}] 🔍 DEBT SWAP: Found activity in {file_name}")
+            except:
+                pass
             
             # Method 3: Add live wallet status updates
             try:
@@ -168,7 +188,7 @@ def monitor_console_output():
             except:
                 pass
             
-            # Method 4: Monitor system health with comprehensive detail
+            # Method 4: Monitor system health with comprehensive detail including debt swap monitoring
             if check_autonomous_agent_running():
                 system_line = f"[{datetime.now().strftime('%H:%M:%S')}] 🟢 System: Autonomous agent ACTIVE - Real-time Aave monitoring"
                 
@@ -185,6 +205,10 @@ def monitor_console_output():
                         detail_line = f"[{datetime.now().strftime('%H:%M:%S')}] 📊 Aave Status: HF={hf:.4f} | Collateral=${collateral:.2f} | Debt=${debt:.2f} | Available=${available:.2f}"
                         console_buffer.append(detail_line)
                         
+                        # DEBT SWAP MONITORING - Check conditions
+                        debt_swap_status = check_debt_swap_conditions(hf, available, debt)
+                        console_buffer.append(debt_swap_status)
+                        
                         # Health factor assessment
                         if hf > 2.0:
                             health_status = f"[{datetime.now().strftime('%H:%M:%S')}] ✅ Health Factor: {hf:.4f} - HEALTHY (Good for operations)"
@@ -197,9 +221,14 @@ def monitor_console_output():
                         if not console_buffer or not any(f"Health Factor: {hf:.4f}" in line for line in list(console_buffer)[-3:]):
                             console_buffer.append(health_status)
                             
+                        # Market signal monitoring
+                        market_status = check_market_signals()
+                        if market_status:
+                            console_buffer.append(market_status)
+                            
                         # Network status
                         network_line = f"[{datetime.now().strftime('%H:%M:%S')}] 🌐 Network: Arbitrum Mainnet | Chain ID: 42161 | RPC: Connected"
-                        if len(console_buffer) % 5 == 0:  # Every 5th cycle
+                        if len(console_buffer) % 8 == 0:  # Every 8th cycle
                             console_buffer.append(network_line)
                         
                 except Exception as e:
@@ -1027,6 +1056,59 @@ def save_parameters():
     except Exception as e:
         print(f"❌ Failed to save parameters: {e}")
         return jsonify({'error': str(e)}), 500
+
+def check_debt_swap_conditions(health_factor, available_borrows, total_debt):
+    """Check and log debt swap conditions"""
+    try:
+        timestamp = datetime.now().strftime('%H:%M:%S')
+        
+        # Check debt swap triggers
+        debt_ratio = (total_debt / (total_debt + available_borrows)) if (total_debt + available_borrows) > 0 else 0
+        
+        # Market signal environment check
+        market_enabled = os.getenv('MARKET_SIGNAL_ENABLED', 'false').lower() == 'true'
+        btc_threshold = float(os.getenv('BTC_DROP_THRESHOLD', '0.01'))
+        
+        if market_enabled:
+            status = f"[{timestamp}] 🔄 DEBT SWAP: Market signals ENABLED | BTC threshold: {btc_threshold*100:.1f}% | Debt ratio: {debt_ratio:.1%}"
+        else:
+            status = f"[{timestamp}] ⚠️ DEBT SWAP: Market signals DISABLED | Set MARKET_SIGNAL_ENABLED=true to enable"
+            
+        # Additional conditions
+        if health_factor < 2.0:
+            status += f" | HF too low ({health_factor:.3f})"
+        elif available_borrows < 10:
+            status += f" | Low borrow capacity (${available_borrows:.2f})"
+        else:
+            status += f" | Conditions: READY"
+            
+        return status
+        
+    except Exception as e:
+        return f"[{datetime.now().strftime('%H:%M:%S')}] ❌ DEBT SWAP: Condition check failed: {str(e)[:50]}"
+
+def check_market_signals():
+    """Check current market signals for debt swapping"""
+    try:
+        # Check if market signal strategy files exist
+        if os.path.exists('market_signal_strategy.py'):
+            timestamp = datetime.now().strftime('%H:%M:%S')
+            
+            # Try to get BTC price data (simplified check)
+            try:
+                import requests
+                response = requests.get('https://api.coinmarketcap.com/v1/ticker/bitcoin/', timeout=3)
+                if response.status_code == 200:
+                    return f"[{timestamp}] 📈 MARKET SIGNALS: BTC data available | Monitoring for debt swap triggers"
+                else:
+                    return f"[{timestamp}] ⚠️ MARKET SIGNALS: BTC data unavailable | Cannot evaluate swap triggers"
+            except:
+                return f"[{timestamp}] ⚠️ MARKET SIGNALS: API connection failed | Debt swaps depend on market data"
+        else:
+            return f"[{datetime.now().strftime('%H:%M:%S')}] ❌ MARKET SIGNALS: Strategy file missing | No debt swap capability"
+            
+    except Exception as e:
+        return None
 
 def get_available_port(start_port=5000):
     """Find an available port starting from start_port"""
