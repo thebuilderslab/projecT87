@@ -53,3 +53,43 @@ if __name__ == "__main__":
         start_dashboard()
     else:
         print("❌ Fix syntax errors before continuing")
+#!/usr/bin/env python3
+"""
+Simple dashboard startup script for preview
+"""
+
+import os
+import sys
+
+def start_dashboard():
+    """Start the web dashboard with proper error handling"""
+    print("🚀 Starting DeFi Agent Dashboard Preview")
+    print("=" * 50)
+    
+    # Set environment for preview
+    os.environ['NETWORK_MODE'] = 'mainnet'
+    os.environ['AUTO_START_DASHBOARD'] = 'true'
+    
+    # Clear any emergency stops
+    if os.path.exists('EMERGENCY_STOP_ACTIVE.flag'):
+        os.remove('EMERGENCY_STOP_ACTIVE.flag')
+        print("✅ Cleared emergency stop for preview")
+    
+    try:
+        # Import and start dashboard
+        import web_dashboard
+        print("✅ Dashboard imported successfully")
+        
+        # Start the Flask app
+        port = 5000
+        print(f"🌐 Starting dashboard on port {port}")
+        print(f"🔗 Preview will be available at your Replit preview URL")
+        
+        web_dashboard.app.run(host='0.0.0.0', port=port, debug=False, threaded=True)
+        
+    except Exception as e:
+        print(f"❌ Error starting dashboard: {e}")
+        sys.exit(1)
+
+if __name__ == "__main__":
+    start_dashboard()

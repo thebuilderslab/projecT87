@@ -159,7 +159,7 @@ def autonomous_agent_loop():
             # Add timestamp to iteration start
             iteration_timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S UTC')
             print(f"\n⏰ ITERATION {iteration} STARTED AT: {iteration_timestamp}")
-            
+
             # Check if agent needs initialization or reinitialization
             if arbitrum_agent is None or not hasattr(arbitrum_agent, 'aave') or arbitrum_agent.aave is None:
                 print("🔄 Agent not initialized or missing integrations, attempting to initialize...")
@@ -264,18 +264,32 @@ if __name__ == "__main__":
         print("2. 🎛️ Manual mode (you control each action)")
         print("3. 🌐 Web dashboard (browser interface)")
 
-        # Get user choice
+        # Get user choice with timeout for preview mode
         try:
-            choice = input("Enter choice (1-3): ").strip()
+            import signal
 
-            # Auto-select autonomous mode if no input (for immediate testing)
+            def timeout_handler(signum, frame):
+                raise TimeoutError("Input timeout")
+
+            signal.signal(signal.SIGALRM, timeout_handler)
+            signal.alarm(5)  # 5 second timeout
+
+            try:
+                choice = input("Enter choice (1-3): ").strip()
+                signal.alarm(0)  # Cancel timeout
+            except (TimeoutError, EOFError):
+                signal.alarm(0)
+                choice = '3'  # Auto-select dashboard for preview
+                print("🌐 Auto-selecting Web Dashboard for preview...")
+
+            # Auto-select dashboard if no input
             if not choice:
-                choice = '1'
-                print("🤖 Auto-selecting Autonomous Mode for testing...")
+                choice = '3'
+                print("🌐 Auto-selecting Web Dashboard...")
 
-        except (EOFError, KeyboardInterrupt):
+        except (KeyboardInterrupt):
             print("\n👋 Goodbye!")
-            exit(0) # or sys.exit(0)
+            exit(0)
 
     if choice == "1":
         # Autonomous mode - Enhanced with capacity-based system

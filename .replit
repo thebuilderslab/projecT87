@@ -11,12 +11,15 @@ language = "python3"
 [gitHubImport]
 requiredFiles = [".replit", "replit.nix"]
 
+[run]
+run = "python web_dashboard.py"
+
 [deployment]
-run = ["sh", "-c", "python mainnet_launcher.py"]
+run = ["sh", "-c", "python web_dashboard.py"]
 deploymentTarget = "cloudrun"
 
 [workflows]
-runButton = "🤖 Hybrid Autonomous System"
+runButton = "🌐 Dashboard Preview"
 
 [[workflows.workflow]]
 name = "🔍 Test Enhanced Diagnostics Fixed"
@@ -108,6 +111,15 @@ mode = "sequential"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "python web_dashboard.py"
+
+[[workflows.workflow]]
+name = "🌐 Dashboard Preview"
+author = 39391053
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python start_dashboard.py"
 
 [[ports]]
 localPort = 5000
