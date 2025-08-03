@@ -252,27 +252,53 @@ class MarketSignalStrategy:
             return False
 
     def _execute_dai_to_arb_swap(self, amount_dai: float) -> bool:
-        """Execute DAI → ARB swap strategy"""
+        """Execute DAI → ARB swap strategy with enhanced logging"""
         try:
+            print(f"🔄 EXECUTING DEBT SWAP SEQUENCE: DAI → ARB")
+            print(f"💰 Amount: {amount_dai:.2f} DAI")
+            print(f"🎯 Strategy: Market-driven debt optimization")
+            
+            # Log current market conditions
+            btc_data = self.get_btc_price_data()
+            arb_data = self.get_arb_price_data()
+            if btc_data and arb_data:
+                print(f"📊 Market Conditions:")
+                print(f"   BTC 1h change: {btc_data.get('percent_change_1h', 0):.2f}%")
+                print(f"   ARB 1h change: {arb_data.get('percent_change_1h', 0):.2f}%")
+            
             # First, borrow DAI using existing system
+            print(f"🏦 Step 1: Borrowing {amount_dai:.2f} DAI from Aave...")
             borrow_success = self.agent.execute_enhanced_borrow_with_retry(amount_dai)
             if not borrow_success:
+                print(f"❌ DAI borrow failed - debt swap sequence aborted")
                 return False
+            
+            print(f"✅ DAI borrow successful - proceeding to ARB swap")
             
             # Then swap DAI for ARB using Uniswap
             if hasattr(self.agent.uniswap, 'swap_tokens'):
+                print(f"🔄 Step 2: Swapping {amount_dai:.2f} DAI → ARB on Uniswap...")
                 swap_result = self.agent.uniswap.swap_tokens(
                     self.agent.dai_address,
                     self.agent.arb_address,
                     amount_dai,
                     3000  # 0.3% fee tier for ARB
                 )
-                return bool(swap_result)
+                
+                if swap_result:
+                    print(f"✅ DEBT SWAP COMPLETE: DAI → ARB executed on-chain")
+                    print(f"🔗 Transaction should appear on Arbiscan within 1-2 minutes")
+                    return True
+                else:
+                    print(f"❌ DAI → ARB swap failed on Uniswap")
+                    return False
             else:
+                print(f"❌ Uniswap integration not available for ARB trading")
                 logging.error("Uniswap integration not available for ARB trading")
                 return False
                 
         except Exception as e:
+            print(f"❌ DEBT SWAP SEQUENCE FAILED: {e}")
             logging.error(f"DAI → ARB swap failed: {e}")
             return False
 
@@ -311,6 +337,57 @@ class MarketSignalStrategy:
                 
         except Exception as e:
             logging.error(f"ARB → DAI swap failed: {e}")
+            return False
+
+    def should_execute_trade(self) -> bool:
+        """Check if debt swap trade should execute based on current market conditions"""
+        try:
+            print(f"\n🔍 CHECKING DEBT SWAP CONDITIONS:")
+            print(f"=" * 45)
+            
+            # Check if market signal strategy is enabled
+            if not self.market_signal_enabled:
+                print(f"❌ Market signal strategy is DISABLED")
+                return False
+            
+            print(f"✅ Market signal strategy is ENABLED")
+            
+            # Check cooldown
+            current_time = time.time()
+            if current_time - self.last_signal_time < self.signal_cooldown:
+                remaining = self.signal_cooldown - (current_time - self.last_signal_time)
+                print(f"⏰ Strategy in cooldown: {remaining:.0f}s remaining")
+                return False
+            
+            print(f"✅ Cooldown period satisfied")
+            
+            # Analyze current market signals
+            signal = self.analyze_market_signals()
+            if not signal:
+                print(f"❌ No market signal generated")
+                return False
+            
+            print(f"📈 Market Signal Generated:")
+            print(f"   Type: {signal.signal_type}")
+            print(f"   Confidence: {signal.confidence:.2f}")
+            print(f"   BTC 1h change: {signal.btc_price_change:.2f}%")
+            print(f"   ARB RSI: {signal.arb_technical_score:.1f}")
+            
+            # Check if we should execute the strategy
+            should_execute, strategy_type = self.should_execute_market_strategy(signal)
+            
+            if should_execute:
+                print(f"🎯 DEBT SWAP TRIGGER: {strategy_type.upper()}")
+                print(f"💡 Condition: ARB declining, opportunity to reduce debt burden")
+                return True
+            else:
+                print(f"⚠️ Market conditions not met for debt swap")
+                print(f"   Required: BTC drop ≥{self.btc_1h_drop_threshold*100:.1f}% OR ARB RSI ≤25")
+                print(f"   Required: Confidence ≥{self.dai_to_arb_threshold:.0%}")
+                return False
+                
+        except Exception as e:
+            print(f"❌ Error checking trade conditions: {e}")
             return False
 
     def get_strategy_status(self) -> Dict:
