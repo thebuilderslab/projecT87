@@ -11,6 +11,7 @@ from datetime import datetime, timedelta
 import requests
 from typing import Dict, Optional, Tuple
 from dataclasses import dataclass
+from enhanced_market_analyzer import EnhancedMarketAnalyzer, EnhancedMarketSignal
 
 @dataclass
 class MarketSignal:
@@ -26,6 +27,9 @@ class MarketSignalStrategy:
         self.coinmarketcap_api_key = agent.coinmarketcap_api_key
         self.signal_history = []
         self.last_signal_time = 0
+        
+        # Initialize enhanced market analyzer
+        self.enhanced_analyzer = EnhancedMarketAnalyzer(agent)
         
         # Configuration parameters
         self.btc_drop_threshold = float(os.getenv('BTC_DROP_THRESHOLD', '0.01'))  # 1% drop
@@ -145,6 +149,22 @@ class MarketSignalStrategy:
             current_time = time.time()
             if current_time - self.last_signal_time < self.signal_cooldown:
                 return None
+            
+            # Try enhanced analysis first
+            enhanced_signal = self.enhanced_analyzer.generate_enhanced_signal()
+            if enhanced_signal and enhanced_signal.confidence > 0.7:
+                logging.info(f"Enhanced signal generated: {enhanced_signal.signal_type} "
+                           f"(confidence: {enhanced_signal.confidence:.2f}, "
+                           f"success_prob: {enhanced_signal.success_probability:.2f})")
+                
+                # Convert to standard MarketSignal format
+                return MarketSignal(
+                    signal_type=enhanced_signal.signal_type,
+                    confidence=enhanced_signal.confidence,
+                    btc_price_change=enhanced_signal.btc_analysis.get('momentum', 0),
+                    arb_technical_score=enhanced_signal.arb_analysis.get('rsi', 50),
+                    timestamp=enhanced_signal.timestamp
+                )
             
             # Get market data
             btc_data = self.get_btc_price_data()
