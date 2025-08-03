@@ -37,11 +37,27 @@ class MarketSignalStrategy:
         # Initialize enhanced market analyzer
         self.enhanced_analyzer = EnhancedMarketAnalyzer(agent)
         
-        # Configuration parameters - LOWERED FOR SENSITIVITY
-        self.btc_drop_threshold = float(os.getenv('BTC_DROP_THRESHOLD', '0.003'))  # 0.3% drop (lowered from 1%)
+        # Initialize advanced trend analyzer for minute-by-minute analysis
+        try:
+            from advanced_trend_analyzer import AdvancedTrendAnalyzer
+            self.trend_analyzer = AdvancedTrendAnalyzer(agent)
+            self.minute_analysis_enabled = True
+            logging.info("✅ Advanced Trend Analyzer initialized - Minute-by-minute analysis enabled")
+        except ImportError:
+            self.trend_analyzer = None
+            self.minute_analysis_enabled = False
+            logging.warning("Advanced Trend Analyzer not available - using basic analysis")
+        
+        # Configuration parameters - OPTIMIZED FOR MINUTE-BY-MINUTE ANALYSIS
+        self.btc_drop_threshold = float(os.getenv('BTC_DROP_THRESHOLD', '0.002'))  # 0.2% drop (ultra-sensitive)
         self.arb_rsi_oversold = float(os.getenv('ARB_RSI_OVERSOLD', '30'))
         self.arb_rsi_overbought = float(os.getenv('ARB_RSI_OVERBOUGHT', '70'))
-        self.signal_cooldown = int(os.getenv('SIGNAL_COOLDOWN', '300'))  # 5 minutes (lowered from 30 minutes)
+        self.signal_cooldown = int(os.getenv('SIGNAL_COOLDOWN', '60'))  # 1 minute cooldown for real-time analysis
+        
+        # Minute-by-minute analysis parameters
+        self.minute_trend_threshold = 0.85  # 85% confidence for minute trends
+        self.enable_1h_prediction = True
+        self.trend_strength_threshold = 0.7  # 70% trend strength minimum
         
         # Market signal thresholds - OPTIMIZED FOR 1-HOUR DECISION WINDOW
         self.market_signal_enabled = os.getenv('MARKET_SIGNAL_ENABLED', 'true').lower() == 'true'
@@ -325,10 +341,10 @@ class MarketSignalStrategy:
             return False
 
     def should_execute_trade(self) -> bool:
-        """Check if debt swap trade should execute based on current market conditions"""
+        """Check if debt swap trade should execute based on current market conditions with minute-by-minute analysis"""
         try:
-            print(f"\n🔍 CHECKING DEBT SWAP CONDITIONS:")
-            print(f"=" * 45)
+            print(f"\n🔍 CHECKING DEBT SWAP CONDITIONS (MINUTE-BY-MINUTE ANALYSIS):")
+            print(f"=" * 60)
             
             # Check if market signal strategy is enabled
             if not self.market_signal_enabled:
@@ -336,6 +352,44 @@ class MarketSignalStrategy:
                 return False
             
             print(f"✅ Market signal strategy is ENABLED")
+            
+            # Step 1: Collect real-time trend data
+            if self.trend_analyzer and self.minute_analysis_enabled:
+                print(f"📊 Collecting minute-by-minute trend data...")
+                trend_point = self.trend_analyzer.collect_real_time_data()
+                if trend_point:
+                    print(f"✅ Real-time data collected:")
+                    print(f"   BTC: ${trend_point.btc_price:.2f} (1m: {trend_point.btc_change_1m:+.3f}%, 1h: {trend_point.btc_change_1h:+.2f}%)")
+                    print(f"   ARB: ${trend_point.arb_price:.4f} (1m: {trend_point.arb_change_1m:+.3f}%, 1h: {trend_point.arb_change_1h:+.2f}%)")
+                
+                # Step 2: Analyze minute trends
+                trend_analysis = self.trend_analyzer.analyze_minute_trends()
+                if trend_analysis:
+                    print(f"📈 MINUTE-BY-MINUTE TREND ANALYSIS:")
+                    print(f"   Direction: {trend_analysis.trend_direction.upper()} (Strength: {trend_analysis.strength:.2f})")
+                    print(f"   Confidence: {trend_analysis.confidence:.2f}")
+                    print(f"   Momentum - 1m: {trend_analysis.momentum_1m:+.3f}%, 5m: {trend_analysis.momentum_5m:+.3f}%, 1h: {trend_analysis.momentum_1h:+.3f}%")
+                    print(f"   Volatility: {trend_analysis.volatility_score:.3f}")
+                    print(f"   1-Hour Prediction: {trend_analysis.prediction_1h['direction']} ({trend_analysis.prediction_1h['confidence']:.2f} confidence)")
+                    
+                    if trend_analysis.signals:
+                        print(f"   🚨 Active Signals: {', '.join(trend_analysis.signals)}")
+                    
+                    # Step 3: Check if trends indicate trade opportunity
+                    should_trade, trade_type, trade_info = self.trend_analyzer.should_trigger_trade_based_on_trends()
+                    
+                    if should_trade:
+                        print(f"🎯 TREND-BASED TRADE TRIGGER: {trade_type.upper()}")
+                        print(f"   Trend Confidence: {trade_info.get('confidence', 0):.2f}")
+                        print(f"   Trend Strength: {trade_info.get('strength', 0):.2f}")
+                        print(f"   1h Prediction: {trade_info.get('prediction', {}).get('direction', 'unknown')}")
+                        
+                        # Execute the trade if conditions are met
+                        return self._execute_trend_based_trade(trade_type, trade_info)
+                    else:
+                        print(f"⚠️ Trend analysis: {trade_info.get('reason', 'No strong trend detected')}")
+            
+            print(f"✅ Minute-by-minute analysis is ENABLED")
             
             # Check cooldown
             current_time = time.time()
@@ -456,12 +510,76 @@ class MarketSignalStrategy:
             print(f"❌ Error checking trade conditions: {e}")
             return False
 
+    def _execute_trend_based_trade(self, trade_type: str, trade_info: Dict) -> bool:
+        """Execute trade based on minute-by-minute trend analysis"""
+        try:
+            # Check account health before executing
+            if hasattr(self.agent, 'aave') and self.agent.aave:
+                account_data = self.agent.aave.get_user_account_data()
+                if not account_data:
+                    print(f"❌ Cannot retrieve account data for trend-based trade")
+                    return False
+                
+                available_borrows = account_data.get('availableBorrowsUSD', 0)
+                health_factor = account_data.get('healthFactor', 0)
+                
+                if health_factor < 1.3:  # Conservative health factor for trend trades
+                    print(f"❌ Health factor too low for trend trade: {health_factor:.3f}")
+                    return False
+                
+                if available_borrows < 2.0:
+                    print(f"❌ Insufficient borrowing capacity: ${available_borrows:.2f}")
+                    return False
+                
+                # Calculate trade amount based on trend strength and confidence
+                confidence = trade_info.get('confidence', 0)
+                strength = trade_info.get('strength', 0)
+                
+                # More aggressive sizing for high-confidence trend trades
+                base_amount = min(5.0, available_borrows * 0.08)  # Up to 8% of capacity
+                confidence_multiplier = confidence * 1.2  # Bonus for high confidence
+                strength_multiplier = strength * 0.5  # Bonus for trend strength
+                
+                trade_amount = base_amount * (1 + confidence_multiplier + strength_multiplier)
+                trade_amount = min(trade_amount, 8.0)  # Cap at $8
+                
+                print(f"💰 TREND-BASED TRADE EXECUTION:")
+                print(f"   Type: {trade_type}")
+                print(f"   Amount: ${trade_amount:.2f}")
+                print(f"   Confidence: {confidence:.2f}")
+                print(f"   Trend Strength: {strength:.2f}")
+                
+                # Execute the strategy
+                success = self.execute_market_driven_strategy(trade_type, trade_amount)
+                
+                if success:
+                    print(f"✅ TREND-BASED TRADE EXECUTED SUCCESSFULLY")
+                    self.last_signal_time = time.time()
+                    return True
+                else:
+                    print(f"❌ TREND-BASED TRADE EXECUTION FAILED")
+                    return False
+            
+            return False
+            
+        except Exception as e:
+            logging.error(f"Trend-based trade execution failed: {e}")
+            return False
+
     def get_strategy_status(self) -> Dict:
-        """Get current market strategy status"""
-        return {
+        """Get current market strategy status including trend analysis"""
+        status = {
             'enabled': self.market_signal_enabled,
             'last_signal_time': self.last_signal_time,
             'cooldown_remaining': max(0, self.signal_cooldown - (time.time() - self.last_signal_time)),
             'btc_threshold': self.btc_drop_threshold,
-            'signal_history_count': len(self.signal_history)
+            'signal_history_count': len(self.signal_history),
+            'minute_analysis_enabled': self.minute_analysis_enabled
         }
+        
+        # Add trend analyzer status if available
+        if self.trend_analyzer:
+            trend_summary = self.trend_analyzer.get_current_trend_summary()
+            status['trend_analysis'] = trend_summary
+        
+        return status
