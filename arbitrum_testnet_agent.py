@@ -36,6 +36,9 @@ class ArbitrumTestnetAgent:
         if not self.coinmarketcap_api_key:
             raise Exception("COINMARKETCAP_API_KEY environment variable not found!")
 
+        # Validate critical environment variables early
+        self._validate_critical_environment()
+
         # Enhanced RPC management with automatic failover
         self.rpc_manager = self._initialize_enhanced_rpc_manager()
         self.rpc_url = self.rpc_manager['primary_rpc']
@@ -841,7 +844,8 @@ _test.flag', 'manual_override.flag', 'force_borrow.flag']
         try:
             # Check network conditions
             gas_price = self.w3.eth.gas_price
-            base_fee = self.w3.eth.get_block('latest').get('baseFeePerGas', gas_price)
+            latest_block = self.w3.eth.get_block('latest')
+            base_fee = latest_block.get('baseFeePerGas', gas_price)
             congestion_ratio = gas_price / base_fee if base_fee > 0 else 1.0
 
             # Check account health
@@ -1453,9 +1457,7 @@ _test.flag', 'manual_override.flag', 'force_borrow.flag']
                 weth_supplied = self._supply_weth_to_aave(weth_received)
                 if weth_supplied:
                     print("✅ WETH supplied to Aave successfully")
-                else:```python
-# Fix syntax error at line 657 by completing the unterminated string and missing code
-    # Added code to complete the execution of the _execute_complete_defi_sequence function.
+                else:
                     print("❌ WETH supply failed")
 
             # Sequence execution summary
@@ -1652,3 +1654,54 @@ _test.flag', 'manual_override.flag', 'force_borrow.flag']
         except Exception as e:
             print(f"❌ Error getting health factor: {e}")
             return 0.0
+
+    def _validate_critical_environment(self):
+        """Validate all critical environment variables"""
+        validation_errors = []
+
+        # Validate PRIVATE_KEY
+        if not self.private_key:
+            validation_errors.append("PRIVATE_KEY is required")
+        elif len(self.private_key.replace('0x', '')) != 64:
+            validation_errors.append(f"PRIVATE_KEY invalid length: {len(self.private_key)}")
+
+        # Validate API keys
+        if not self.coinmarketcap_api_key:
+            validation_errors.append("COINMARKETCAP_API_KEY is required")
+        elif len(self.coinmarketcap_api_key) < 30:
+            validation_errors.append("COINMARKETCAP_API_KEY appears invalid (too short)")
+
+        # Validate network mode
+        if self.network_mode not in ['mainnet', 'testnet']:
+            validation_errors.append(f"NETWORK_MODE must be 'mainnet' or 'testnet', got: {self.network_mode}")
+
+        if validation_errors:
+            error_msg = "❌ CRITICAL ENVIRONMENT VALIDATION FAILED:\n" + "\n".join(f"   • {error}" for error in validation_errors)
+            raise Exception(error_msg)
+
+        print("✅ All critical environment variables validated successfully")
+
+    def _get_dynamic_gas_price(self):
+        """Get dynamic gas price with congestion awareness"""
+        try:
+            base_gas_price = self.w3.eth.gas_price
+            latest_block = self.w3.eth.get_block('latest')
+
+            # Check network congestion
+            gas_used_ratio = latest_block.gasUsed / latest_block.gasLimit
+
+            if gas_used_ratio > 0.9:  # High congestion
+                multiplier = 1.5
+                print(f"⚠️ High network congestion detected ({gas_used_ratio:.1%}), increasing gas price by 50%")
+            elif gas_used_ratio > 0.7:  # Medium congestion
+                multiplier = 1.2
+                print(f"📊 Medium network congestion ({gas_used_ratio:.1%}), increasing gas price by 20%")
+            else:  # Low congestion
+                multiplier = 1.1
+                print(f"✅ Low network congestion ({gas_used_ratio:.1%}), using standard gas price")
+
+            return int(base_gas_price * multiplier)
+
+        except Exception as e:
+            print(f"⚠️ Dynamic gas calculation failed: {e}, using base price")
+            return self.w3.eth.gas_price
