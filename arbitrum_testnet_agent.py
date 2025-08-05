@@ -1705,3 +1705,33 @@ _test.flag', 'manual_override.flag', 'force_borrow.flag']
         except Exception as e:
             print(f"❌ Dynamic gas calculation failed: {e}, using base price")
             return self.w3.eth.gas_price
+
+    def get_wbtc_balance(self):
+        """Get WBTC token balance"""
+        try:
+            if self.aave:
+                return self.aave.get_token_balance(self.wbtc_address)
+            return 0.0
+        except Exception as e:
+            print(f"❌ Error getting WBTC balance: {e}")
+            return 0.0
+
+    def get_weth_balance(self):
+        """Get WETH token balance"""
+        try:
+            if self.aave:
+                return self.aave.get_token_balance(self.weth_address)
+            return 0.0
+        except Exception as e:
+            print(f"❌ Error getting WETH balance: {e}")
+            return 0.0
+
+    def get_dai_balance(self):
+        """Get DAI token balance"""
+        try:
+            if self.aave:
+                return self.aave.get_dai_balance()
+            return 0.0
+        except Exception as e:
+            print(f"❌ Error getting DAI balance: {e}")
+            return 0.0
