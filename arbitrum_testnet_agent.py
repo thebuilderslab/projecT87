@@ -31,7 +31,7 @@ class ArbitrumTestnetAgent:
         self.network_mode = os.getenv('NETWORK_MODE', 'testnet')
 
         if not self.private_key:
-            raise Exception("WALLET_PRIVATE_KEY environment variable not found!")
+            raise Exception("Wallet_PRIVATE_KEY environment variable not found!")
 
         if not self.coinmarketcap_api_key:
             raise Exception("COINMARKETCAP_API_KEY environment variable not found!")
@@ -996,7 +996,7 @@ _test.flag', 'manual_override.flag', 'force_borrow.flag']
             print("=" * 60)
 
             # Check emergency stop
-            if os.path.exists('EMERGENCY_STOP_ACTIVE.flag'):
+            if self.check_emergency_stop():
                 print("🛑 Emergency stop active - skipping operations")
                 return 0.1
 
@@ -1627,7 +1627,7 @@ _test.flag', 'manual_override.flag', 'force_borrow.flag']
         """Get WBTC token balance"""
         try:
             if self.aave:
-                return self.aave.get_wbtc_balance()
+                return self.aave.get_token_balance(self.wbtc_address)
             return 0.0
         except Exception as e:
             print(f"❌ Error getting WBTC balance: {e}")
@@ -1637,7 +1637,7 @@ _test.flag', 'manual_override.flag', 'force_borrow.flag']
         """Get WETH token balance"""
         try:
             if self.aave:
-                return self.aave.get_weth_balance()
+                return self.aave.get_token_balance(self.weth_address)
             return 0.0
         except Exception as e:
             print(f"❌ Error getting WETH balance: {e}")
@@ -1734,4 +1734,34 @@ _test.flag', 'manual_override.flag', 'force_borrow.flag']
             return 0.0
         except Exception as e:
             print(f"❌ Error getting DAI balance: {e}")
+            return 0.0
+
+    def get_arb_balance(self):
+        """Get ARB token balance"""
+        try:
+            if self.aave:
+                return self.aave.get_token_balance(self.arb_address)
+            return 0.0
+        except Exception as e:
+            print(f"❌ Error getting ARB balance: {e}")
+            return 0.0
+
+    def check_emergency_stop(self):
+        """Check if emergency stop is active"""
+        try:
+            return os.path.exists('EMERGENCY_STOP_ACTIVE.flag')
+        except Exception as e:
+            print(f"❌ Error checking emergency stop: {e}")
+            return False
+
+    def get_health_factor(self):
+        """Get current health factor from Aave"""
+        try:
+            if self.aave:
+                account_data = self.aave.get_user_account_data()
+                if account_data:
+                    return account_data.get('healthFactor', 0)
+            return 0.0
+        except Exception as e:
+            print(f"❌ Error getting health factor: {e}")
             return 0.0
