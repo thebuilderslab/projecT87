@@ -106,7 +106,7 @@ class ArbitrumTestnetAgent:
             # Add fallback endpoints (removed unauthorized Ankr endpoint)
             fallback_endpoints = [
                 "https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f938ff891c141",
-                "https://arb1.arbitrum.io/rpc", 
+                "https://arb1.arbitrum.io/rpc",
                 "https://arbitrum-one.public.blastapi.io",
                 "https://arbitrum-one.publicnode.com"
             ]
@@ -379,7 +379,7 @@ class ArbitrumTestnetAgent:
         self.growth_trigger_threshold = float(os.getenv('GROWTH_TRIGGER_THRESHOLD', '13.0')) # $13 collateral growth to trigger borrowing
         self.growth_health_factor_threshold = float(os.getenv('GROWTH_HEALTH_FACTOR_THRESHOLD', '2.1')) # HF > 2.1 for growth-triggered
 
-        # Capacity-Based System Parameters  
+        # Capacity-Based System Parameters
         self.capacity_optimization_threshold = float(os.getenv('CAPACITY_OPTIMIZATION_THRESHOLD', '0.20'))  # 20% utilization threshold
         self.capacity_health_factor_threshold = float(os.getenv('CAPACITY_HEALTH_FACTOR_THRESHOLD', '2.05')) # HF > 2.05 for capacity optimization (reduced from 2.1)
         self.capacity_available_threshold = float(os.getenv('CAPACITY_AVAILABLE_THRESHOLD', '13.0')) # $13 minimum available capacity
@@ -432,7 +432,7 @@ class ArbitrumTestnetAgent:
     def _display_hybrid_system_config(self):
         """Display the current Hybrid System configuration"""
         print(f"\n🔄 HYBRID SYSTEM CONFIGURATION:")
-        print(f"═══════════════════════════════════════════")
+        print(f"═══════════════════════════════════════")
         print(f"🚀 GROWTH-TRIGGERED SYSTEM:")
         print(f"   • Growth Threshold: ${self.growth_trigger_threshold:.0f}")
         print(f"   • Health Factor: > {self.growth_health_factor_threshold:.1f}")
@@ -447,7 +447,7 @@ class ArbitrumTestnetAgent:
         print(f"🔧 SYSTEM SETTINGS:")
         print(f"   • Operation Cooldown: {self.operation_cooldown_seconds}s")
         print(f"   • Target Health Factor: {self.target_health_factor:.1f}")
-        print(f"═══════════════════════════════════════════\n")
+        print(f"═══════════════════════════════════════\n")
 
     def update_baseline_after_success(self, new_collateral_value=None):
         """Update baseline collateral value after successful operation"""
@@ -705,7 +705,7 @@ _test.flag', 'manual_override.flag', 'force_borrow.flag']
         # Different cooldown periods for different operations
         cooldown_periods = {
             'borrow': 60,  # 1 minute for borrow operations
-            'supply': 60,  # 1 minute for supply operations  
+            'supply': 60,  # 1 minute for supply operations
             'swap': 60,    # 1 minute for swap operations
             'general': 60  # 1 minute for general operations
         }
@@ -1430,7 +1430,7 @@ _test.flag', 'manual_override.flag', 'force_borrow.flag']
                 else:
                     print("❌ WBTC swap failed")
 
-            # Step 2: Swap DAI → WETH  
+            # Step 2: Swap DAI → WETH
             weth_received = 0
             if dai_for_weth > 0.1:  # Minimum threshold
                 print(f"\n🔄 Step 2: Swapping {dai_for_weth:.6f} DAI → WETH")
@@ -1703,5 +1703,5 @@ _test.flag', 'manual_override.flag', 'force_borrow.flag']
             return int(base_gas_price * multiplier)
 
         except Exception as e:
-            print(f"⚠️ Dynamic gas calculation failed: {e}, using base price")
+            print(f"❌ Dynamic gas calculation failed: {e}, using base price")
             return self.w3.eth.gas_price
