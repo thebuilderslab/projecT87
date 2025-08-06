@@ -1,0 +1,68 @@
+Your code is currently failing to start due to a SyntaxError: unterminated string literal at line 658.
+This halts all agent operations, DeFi tasks, and the dashboard.
+The main culprit is likely a missing quote or corrupted string (possibly due to a copy-paste or merge issue).
+
+Here’s exactly how to fix it:
+
+1. CHECK FOR BAD STRINGS
+Examine the lines near 658 for any strings (anything with ' or ") that:
+
+Are missing their closing quote
+
+Are accidentally combined with code
+
+Have odd line breaks or indentation
+
+2. REVIEW YOUR 'manual override' FUNCTION
+You posted code like:
+
+python
+manual_files = ['trigger```
+_test.flag', 'manual_override.flag', 'force_borrow.flag']
+Notice how `trigger```
+It should just be:
+
+python
+manual_files = ['trigger_test.flag', 'manual_override.flag', 'force_borrow.flag']
+Remove all backticks and extraneous word fragments from string values.
+
+Each filename should start and end with a single apostrophe '.
+
+3. FIX THE ENTIRE FUNCTION
+Proper version (copy-paste this to REPLACE the broken version):
+
+python
+import os
+
+def is_manual_override_active(self):
+    """Detect when manual override is active."""
+    # Check for manual trigger files
+    manual_files = ['trigger_test.flag', 'manual_override.flag', 'force_borrow.flag']
+    for file_path in manual_files:
+        if os.path.exists(file_path):
+            print(f"🔧 Manual override detected: {file_path} exists")
+            return True
+
+    # Check if manual_override_active attribute is set
+    if hasattr(self, 'manual_override_active') and self.manual_override_active:
+        print(f"🔧 Manual override detected: manual_override_active = True")
+        return True
+
+    return False
+Double-check for matching quotation marks in any code or docstrings.
+
+Watch for any accidental code fragments, stray triple-quotes, or markdown tokens like ```python.
+
+SAVE and RUN to ensure the syntax error is gone.
+
+4. GENERAL SYNTAX TIPS
+Strings should always be like '...' or "...".
+
+Docstrings should always be like """...""".
+
+Avoid copy-pasting code with extraneous markdown, backticks, or triple quotes.
+
+Summary
+Your error stops all agent and trading functions.
+Fix any strings with missing quotes.
+Replace the manual_files list with clean, quoted filenames as shown above.
