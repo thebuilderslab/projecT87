@@ -1643,6 +1643,34 @@ _test.flag', 'manual_override.flag', 'force_borrow.flag']
             print(f"❌ Error getting WETH balance: {e}")
             return 0.0
 
+    def get_dai_balance(self):
+        """Get DAI token balance"""
+        try:
+            if self.aave:
+                return self.aave.get_dai_balance()
+            return 0.0
+        except Exception as e:
+            print(f"❌ Error getting DAI balance: {e}")
+            return 0.0
+
+    def get_arb_balance(self):
+        """Get ARB token balance"""
+        try:
+            if self.aave:
+                return self.aave.get_token_balance(self.arb_address)
+            return 0.0
+        except Exception as e:
+            print(f"❌ Error getting ARB balance: {e}")
+            return 0.0
+
+    def check_emergency_stop(self):
+        """Check if emergency stop is active"""
+        try:
+            return os.path.exists('EMERGENCY_STOP_ACTIVE.flag')
+        except Exception as e:
+            print(f"❌ Error checking emergency stop: {e}")
+            return False
+
     def get_health_factor(self):
         """Get current health factor from Aave"""
         try:
@@ -1654,6 +1682,158 @@ _test.flag', 'manual_override.flag', 'force_borrow.flag']
         except Exception as e:
             print(f"❌ Error getting health factor: {e}")
             return 0.0
+
+    def execute_debt_swap_dai_to_arb(self, dai_amount):
+        """Execute DAI to ARB debt swap for market signal strategy"""
+        try:
+            print(f"🔄 DEBT SWAP: DAI → ARB for {dai_amount:.6f} DAI")
+
+            # Get ARB balance before swap
+            arb_balance_before = self.get_arb_balance()
+
+            # Execute swap via Uniswap
+            if not self.uniswap:
+                print("❌ Uniswap integration not available for debt swap")
+                return False
+
+            swap_result = self.uniswap.swap_dai_for_arb(dai_amount)
+
+            if swap_result and 'tx_hash' in swap_result:
+                print(f"✅ DEBT SWAP CONFIRMED - TX: {swap_result['tx_hash']}")
+
+                # Verify ARB received
+                import time
+                time.sleep(5)
+                arb_balance_after = self.get_arb_balance()
+                arb_received = arb_balance_after - arb_balance_before
+
+                if arb_received > 0:
+                    print(f"✅ Received {arb_received:.6f} ARB from debt swap")
+                    return True
+                else:
+                    print("⚠️ ARB balance did not increase as expected")
+                    return False
+            else:
+                print("❌ Debt swap transaction failed")
+                return False
+
+        except Exception as e:
+            print(f"❌ Debt swap DAI→ARB failed: {e}")
+            return False
+
+    def execute_debt_swap_arb_to_dai(self, arb_amount):
+        """Execute ARB to DAI debt swap for market signal strategy"""
+        try:
+            print(f"🔄 DEBT SWAP: ARB → DAI for {arb_amount:.6f} ARB")
+
+            # Get DAI balance before swap
+            dai_balance_before = self.get_dai_balance()
+
+            # Execute swap via Uniswap
+            if not self.uniswap:
+                print("❌ Uniswap integration not available for debt swap")
+                return False
+
+            swap_result = self.uniswap.swap_arb_for_dai(arb_amount)
+
+            if swap_result and 'tx_hash' in swap_result:
+                print(f"✅ DEBT SWAP CONFIRMED - TX: {swap_result['tx_hash']}")
+
+                # Verify DAI received
+                import time
+                time.sleep(5)
+                dai_balance_after = self.get_dai_balance()
+                dai_received = dai_balance_after - dai_balance_before
+
+                if dai_received > 0:
+                    print(f"✅ Received {dai_received:.6f} DAI from debt swap")
+                    return True
+                else:
+                    print("⚠️ DAI balance did not increase as expected")
+                    return False
+            else:
+                print("❌ Debt swap transaction failed")
+                return False
+
+        except Exception as e:
+            print(f"❌ Debt swap ARB→DAI failed: {e}")
+            return False
+
+    def check_debt_swap_conditions(self):
+        """Check if conditions are favorable for debt swaps"""
+        try:
+            # Basic health check
+            health_factor = self.get_health_factor()
+            if health_factor < 2.0:
+                return False, "Health factor too low for debt swaps"
+
+            # Check available balances
+            dai_balance = self.get_dai_balance()
+            arb_balance = self.get_arb_balance()
+
+            if dai_balance < 0.1 and arb_balance < 0.1:
+                return False, "Insufficient token balances for debt swaps"
+
+            # Check ETH for gas
+            eth_balance = self.get_eth_balance()
+            if eth_balance < 0.001:
+                return False, "Insufficient ETH for gas fees"
+
+            return True, "Debt swap conditions favorable"
+
+        except Exception as e:
+            return False, f"Error checking debt swap conditions: {e}"
+
+    def get_debt_swap_parameters(self):
+        """Get current debt swap parameters from market signal strategy"""
+        try:
+            if not self.market_signal_strategy:
+                return None
+
+            return {
+                'dai_to_arb_threshold': getattr(self.market_signal_strategy, 'dai_to_arb_threshold', 0.7),
+                'arb_to_dai_threshold': getattr(self.market_signal_strategy, 'arb_to_dai_threshold', 0.6),
+                'btc_drop_threshold': getattr(self.market_signal_strategy, 'btc_drop_threshold', 0.01),
+                'arb_rsi_oversold': getattr(self.market_signal_strategy, 'arb_rsi_oversold', 30),
+                'arb_rsi_overbought': getattr(self.market_signal_strategy, 'arb_rsi_overbought', 70),
+                'market_signal_enabled': getattr(self.market_signal_strategy, 'market_signal_enabled', False)
+            }
+
+        except Exception as e:
+            print(f"❌ Error getting debt swap parameters: {e}")
+            return None
+
+    def execute_complete_debt_swap_sequence(self, swap_direction, amount):
+        """Execute complete debt swap sequence with proper validation"""
+        try:
+            print(f"🔄 EXECUTING COMPLETE DEBT SWAP SEQUENCE")
+            print(f"Direction: {swap_direction}, Amount: {amount:.6f}")
+
+            # Pre-swap validation
+            conditions_ok, message = self.check_debt_swap_conditions()
+            if not conditions_ok:
+                print(f"❌ Debt swap conditions not met: {message}")
+                return False
+
+            # Execute based on direction
+            if swap_direction == "DAI_TO_ARB":
+                success = self.execute_debt_swap_dai_to_arb(amount)
+            elif swap_direction == "ARB_TO_DAI":
+                success = self.execute_debt_swap_arb_to_dai(amount)
+            else:
+                print(f"❌ Invalid swap direction: {swap_direction}")
+                return False
+
+            if success:
+                print(f"✅ DEBT SWAP SEQUENCE COMPLETED SUCCESSFULLY")
+                return True
+            else:
+                print(f"❌ DEBT SWAP SEQUENCE FAILED")
+                return False
+
+        except Exception as e:
+            print(f"❌ Complete debt swap sequence failed: {e}")
+            return False
 
     def _validate_critical_environment(self):
         """Validate all critical environment variables"""
