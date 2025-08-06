@@ -662,8 +662,7 @@ class ArbitrumTestnetAgent:
         import os
 
         # Check for manual trigger files
-        manual_files = ['trigger```python
-_test.flag', 'manual_override.flag', 'force_borrow.flag']
+        manual_files = ['trigger_test.flag', 'manual_override.flag', 'force_borrow.flag']
         for file_path in manual_files:
             if os.path.exists(file_path):
                 print(f"🔧 Manual override detected: {file_path} exists")
