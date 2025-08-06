@@ -38,6 +38,7 @@ class ArbitrumTestnetAgent:
 
         # Validate critical environment variables early
         self._validate_critical_environment()
+        self._validate_market_signal_environment()
 
         # Enhanced RPC management with automatic failover
         self.rpc_manager = self._initialize_enhanced_rpc_manager()
@@ -96,6 +97,53 @@ class ArbitrumTestnetAgent:
 
             # Multiple RPC endpoints for reliability - prioritizing Alchemy if available
             self.rpc_endpoints = []
+
+
+    def _validate_market_signal_environment(self):
+        """Validate market signal strategy environment variables"""
+        try:
+            # Check if market signals are enabled
+            market_enabled = os.getenv('MARKET_SIGNAL_ENABLED', 'false').lower()
+            print(f"🔍 Market Signal Enabled: {market_enabled}")
+            
+            if market_enabled == 'true':
+                # Validate market signal thresholds
+                btc_threshold = float(os.getenv('BTC_DROP_THRESHOLD', '0.01'))
+                dai_threshold = float(os.getenv('DAI_TO_ARB_THRESHOLD', '0.7'))
+                arb_threshold = float(os.getenv('ARB_TO_DAI_THRESHOLD', '0.6'))
+                
+                print(f"✅ Market signal thresholds validated:")
+                print(f"   BTC Drop: {btc_threshold:.1%}")
+                print(f"   DAI→ARB: {dai_threshold:.0%}")
+                print(f"   ARB→DAI: {arb_threshold:.0%}")
+            
+            return True
+            
+        except ValueError as e:
+            print(f"❌ Invalid market signal configuration: {e}")
+            return False
+        except Exception as e:
+            print(f"⚠️ Market signal validation warning: {e}")
+            return True  # Non-critical, continue without market signals
+
+    def _validate_critical_environment(self):
+        """Validate critical environment variables"""
+        critical_vars = {
+            'WALLET_PRIVATE_KEY': 'Private key for wallet operations',
+            'COINMARKETCAP_API_KEY': 'API key for price data'
+        }
+        
+        missing_vars = []
+        for var, description in critical_vars.items():
+            if not os.getenv(var):
+                missing_vars.append(f"{var} ({description})")
+        
+        if missing_vars:
+            raise Exception(f"Missing critical environment variables: {', '.join(missing_vars)}")
+        
+        print("✅ All critical environment variables validated successfully")
+        return True
+
 
             if alchemy_rpc_url:
                 self.rpc_endpoints.append(alchemy_rpc_url)
@@ -1105,7 +1153,7 @@ class ArbitrumTestnetAgent:
                     if should_trade:
                         print("🚀 Market signal triggered - executing market-driven operation")
                         self.triggers_activated_count += 1
-                        # Strategy manages its own next trigger logic
+                        # Use standardized method name
                         success = self._execute_market_signal_operation(available_borrows)
                         if success:
                             performance_score = 0.8
@@ -1997,6 +2045,34 @@ class ArbitrumTestnetAgent:
             else:
                 print("❌ Debt swap transaction failed")
                 return False
+
+
+    def _execute_market_signal_operation(self, available_borrows_usd):
+        """Execute market signal-triggered debt swap operation"""
+        try:
+            print(f"🔄 Executing market signal operation with ${available_borrows_usd:.2f} available")
+            
+            # Use conservative amount for market signal operations
+            safe_amount = min(3.0, available_borrows_usd * 0.05)  # 5% of available or $3 max
+            
+            if safe_amount < 0.5:
+                print(f"⚠️ Amount too small for market operation: ${safe_amount:.2f}")
+                return False
+            
+            # Execute enhanced DAI borrow (this already includes post-borrow operations)
+            success = self.execute_enhanced_borrow_with_retry(safe_amount)
+            
+            if success:
+                print(f"✅ Market signal operation completed successfully: ${safe_amount:.2f}")
+                return True
+            else:
+                print(f"❌ Market signal operation failed")
+                return False
+                
+        except Exception as e:
+            print(f"❌ Market signal operation error: {e}")
+            return False
+
 
         except Exception as e:
             print(f"❌ Debt swap DAI→ARB failed: {e}")
