@@ -404,9 +404,6 @@ class ArbitrumTestnetAgent:
         print("💰 Initialized last_collateral_value_usd to 0.0 (will sync with actual position)")
         print(f"📊 Initialized last_collateral_value_usd to: {self.last_collateral_value_usd}")
 
-        # Auto-initialize baseline if not set
-        self._auto_initialize_baseline()
-
         # Cooldown settings
         self.last_successful_operation_time = 0  # Unix timestamp of last op
         self.operation_cooldown_seconds = 60 # 1 minute cooldown
@@ -433,7 +430,7 @@ class ArbitrumTestnetAgent:
                 self.debt_swap_active = True
                 print("🔄 Debt swap system activated for simultaneous operation")
                 logging.info("🔄 Debt swap system activated for simultaneous operation")
-                
+
                 # Validate market signal methods are available
                 if hasattr(self.market_signal_strategy, 'should_execute_trade') and hasattr(self.market_signal_strategy, 'analyze_market_signals'):
                     print("✅ Market signal methods validated")
@@ -888,11 +885,11 @@ class ArbitrumTestnetAgent:
         try:
             print("🔍 CHECKING NETWORK APPROVAL READINESS")
             print("=" * 50)
-            
+
             readiness_score = 0
             max_score = 100
             issues = []
-            
+
             # 1. Environment Variables (25 points)
             try:
                 self._validate_critical_environment()
@@ -901,7 +898,7 @@ class ArbitrumTestnetAgent:
             except Exception as e:
                 issues.append(f"Environment validation failed: {e}")
                 print("❌ Environment variables: FAILED (0)")
-            
+
             # 2. Network Connectivity (25 points)
             if self.w3 and self.w3.is_connected():
                 try:
@@ -919,43 +916,43 @@ class ArbitrumTestnetAgent:
             else:
                 issues.append("Web3 connection not established")
                 print("❌ Network connectivity: FAILED (0)")
-            
+
             # 3. Integration Health (25 points)
             integrations_healthy = 0
             total_integrations = 4
-            
+
             if hasattr(self, 'aave') and self.aave:
                 integrations_healthy += 1
                 print("✅ Aave integration: READY")
             else:
                 issues.append("Aave integration not initialized")
                 print("❌ Aave integration: MISSING")
-                
+
             if hasattr(self, 'uniswap') and self.uniswap:
                 integrations_healthy += 1
                 print("✅ Uniswap integration: READY")
             else:
                 issues.append("Uniswap integration not initialized")
                 print("❌ Uniswap integration: MISSING")
-                
+
             if hasattr(self, 'health_monitor') and self.health_monitor:
                 integrations_healthy += 1
                 print("✅ Health monitor: READY")
             else:
                 issues.append("Health monitor not initialized")
                 print("❌ Health monitor: MISSING")
-                
+
             if hasattr(self, 'gas_calculator') and self.gas_calculator:
                 integrations_healthy += 1
                 print("✅ Gas calculator: READY")
             else:
                 issues.append("Gas calculator not initialized")
                 print("❌ Gas calculator: MISSING")
-            
+
             integration_score = int((integrations_healthy / total_integrations) * 25)
             readiness_score += integration_score
             print(f"📊 Integration health: {integrations_healthy}/{total_integrations} (+{integration_score})")
-            
+
             # 4. Account Health (25 points)
             try:
                 eth_balance = self.get_eth_balance()
@@ -966,7 +963,7 @@ class ArbitrumTestnetAgent:
                     issues.append(f"Low ETH balance: {eth_balance:.6f} ETH")
                     print(f"⚠️ ETH balance low: {eth_balance:.6f} ETH (+5)")
                     readiness_score += 5
-                
+
                 # Check health factor if Aave is available
                 if hasattr(self, 'aave') and self.aave:
                     hf = self.get_health_factor()
@@ -981,15 +978,15 @@ class ArbitrumTestnetAgent:
                         print(f"❌ Health factor dangerous: {hf:.3f} (0)")
                 else:
                     print("⚠️ Cannot check health factor - Aave not available (+0)")
-                    
+
             except Exception as e:
                 issues.append(f"Account health check failed: {e}")
                 print(f"❌ Account health check failed: {e}")
-            
+
             # Final Assessment
             print("\n" + "=" * 50)
             print(f"📊 NETWORK APPROVAL READINESS SCORE: {readiness_score}/{max_score}")
-            
+
             if readiness_score >= 90:
                 status = "EXCELLENT - HIGH APPROVAL PROBABILITY"
                 approval_chance = 95
@@ -1006,12 +1003,12 @@ class ArbitrumTestnetAgent:
                 status = "POOR - VERY LOW APPROVAL PROBABILITY"
                 approval_chance = 30
                 print(f"❌ {status}")
-            
+
             if issues:
                 print(f"\n⚠️ ISSUES TO ADDRESS:")
                 for issue in issues:
                     print(f"   • {issue}")
-            
+
             return {
                 'ready': readiness_score >= 75,
                 'score': readiness_score,
@@ -1020,7 +1017,7 @@ class ArbitrumTestnetAgent:
                 'status': status,
                 'issues': issues
             }
-            
+
         except Exception as e:
             print(f"❌ Network approval readiness check failed: {e}")
             return {
@@ -1427,18 +1424,18 @@ class ArbitrumTestnetAgent:
             import traceback
             traceback.print_exc()
             return False
-    def _execute_market_signal_operation(self, available_borrows):
+    def _execute_market_signal_operation(self, available_borrows_usd):
         """Execute market signal-triggered operation - DAI only"""
         try:
             print("🚀 Executing market signal-triggered operation (DAI-only)")
 
             # Comprehensive pre-transaction validation
-            if not self._validate_transaction_preconditions(available_borrows):
+            if not self._validate_transaction_preconditions(available_borrows_usd):
                 print("❌ Transaction preconditions not met")
                 return False
 
             # Calculate safe borrow amount with enhanced validation
-            borrow_amount = self._calculate_validated_borrow_amount(available_borrows, "market_signal")
+            borrow_amount = self._calculate_validated_borrow_amount(available_borrows_usd, "market_signal")
 
             if borrow_amount < 1.0:
                 print("⚠️ Borrow amount too small after validation")
@@ -2156,49 +2153,45 @@ class ArbitrumTestnetAgent:
         """Execute market signal-triggered debt swap operation"""
         try:
             print(f"🔄 Executing market signal operation with ${available_borrows_usd:.2f} available")
-            
+
             # Validate market signal strategy is available
             if not hasattr(self, 'market_signal_strategy') or not self.market_signal_strategy:
                 print("❌ Market signal strategy not available")
                 return False
-            
+
             # Check if market signal indicates we should trade
             should_trade = self.market_signal_strategy.should_execute_trade()
             if not should_trade:
                 print("⚠️ Market signals do not indicate favorable conditions for trading")
                 return False
-            
+
             # Use conservative amount for market signal operations
             safe_amount = min(3.0, available_borrows_usd * 0.05)  # 5% of available or $3 max
-            
+
             if safe_amount < 0.5:
                 print(f"⚠️ Amount too small for market operation: ${safe_amount:.2f}")
                 return False
-            
+
             # Validate transaction preconditions
             if not self._validate_transaction_preconditions(safe_amount):
                 print("❌ Transaction preconditions not met for market signal operation")
                 return False
-            
+
             # Execute validated DAI borrow
             success = self._execute_validated_dai_borrow(safe_amount)
-            
+
             if success:
                 print(f"✅ Market signal operation completed successfully: ${safe_amount:.2f}")
                 return True
             else:
                 print(f"❌ Market signal operation failed")
                 return False
-                
+
         except Exception as e:
             print(f"❌ Market signal operation error: {e}")
             traceback.print_exc()
             return False
 
-
-        except Exception as e:
-            print(f"❌ Debt swap DAI→ARB failed: {e}")
-            return False
 
     def execute_debt_swap_arb_to_dai(self, arb_amount):
         """Execute ARB to DAI debt swap for market signal strategy"""
@@ -2320,7 +2313,7 @@ class ArbitrumTestnetAgent:
         try:
             print("🔄 VALIDATING DEBT SWAP READINESS")
             print("=" * 40)
-            
+
             validation_results = {
                 'market_signal_enabled': False,
                 'sufficient_balance': False,
@@ -2328,7 +2321,7 @@ class ArbitrumTestnetAgent:
                 'network_connected': False,
                 'integrations_ready': False
             }
-            
+
             # Check if market signal strategy is enabled
             if (hasattr(self, 'market_signal_strategy') and 
                 self.market_signal_strategy and 
@@ -2337,18 +2330,18 @@ class ArbitrumTestnetAgent:
                 print("✅ Market signal strategy enabled")
             else:
                 print("❌ Market signal strategy not enabled")
-            
+
             # Check balances
             dai_balance = self.get_dai_balance()
             arb_balance = self.get_arb_balance()
             eth_balance = self.get_eth_balance()
-            
+
             if dai_balance > 0.1 or arb_balance > 0.1:
                 validation_results['sufficient_balance'] = True
                 print(f"✅ Sufficient token balances - DAI: {dai_balance:.2f}, ARB: {arb_balance:.2f}")
             else:
                 print(f"❌ Insufficient token balances - DAI: {dai_balance:.2f}, ARB: {arb_balance:.2f}")
-            
+
             # Check health factor
             health_factor = self.get_health_factor()
             if health_factor > 2.0:
@@ -2356,14 +2349,14 @@ class ArbitrumTestnetAgent:
                 print(f"✅ Healthy position - HF: {health_factor:.3f}")
             else:
                 print(f"❌ Risky position - HF: {health_factor:.3f}")
-            
+
             # Check network connectivity
             if self.w3 and self.w3.is_connected():
                 validation_results['network_connected'] = True
                 print("✅ Network connected")
             else:
                 print("❌ Network not connected")
-            
+
             # Check integrations
             if (hasattr(self, 'aave') and self.aave and 
                 hasattr(self, 'uniswap') and self.uniswap):
@@ -2371,21 +2364,20 @@ class ArbitrumTestnetAgent:
                 print("✅ DeFi integrations ready")
             else:
                 print("❌ DeFi integrations not ready")
-            
+
             # Overall readiness score
             ready_count = sum(validation_results.values())
             total_checks = len(validation_results)
             readiness_score = (ready_count / total_checks) * 100
-            
+
             print(f"\n📊 DEBT SWAP READINESS: {ready_count}/{total_checks} ({readiness_score:.0f}%)")
-            
+
             return {
                 'ready': ready_count >= 4,  # Need at least 4/5 checks to pass
                 'score': readiness_score,
                 'details': validation_results
             }
-            
+
         except Exception as e:
             print(f"❌ Debt swap readiness validation failed: {e}")
             return {'ready': False, 'score': 0, 'details': {}}
-
