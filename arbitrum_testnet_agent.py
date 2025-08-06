@@ -1430,78 +1430,74 @@ _test.flag', 'manual_override.flag', 'force_borrow.flag']
             dai_for_wbtc = dai_amount * 0.5
             dai_for_weth = dai_amount * 0.5
 
-            print(f"📊 Allocation: {dai_for_wbtc:.6f} DAI → WBTC, {dai_for_weth:.6f} DAI → WETH")
+            sequence_successful = True
 
-            # Step 1: Swap DAI → WBTC
-            wbtc_received = 0
-            if dai_for_wbtc > 0.1:  # Minimum threshold
-                print(f"\n🔄 Step 1: Swapping {dai_for_wbtc:.6f} DAI → WBTC")
-                wbtc_received = self._execute_dai_to_wbtc_swap(dai_for_wbtc)
-                if wbtc_received > 0:
-                    print(f"✅ Received {wbtc_received:.8f} WBTC")
+            # Step 1: Swap DAI for WBTC
+            print(f"📈 Step 1: Swapping {dai_for_wbtc:.6f} DAI for WBTC...")
+            try:
+                wbtc_swap_result = self.uniswap.swap_dai_for_wbtc(dai_for_wbtc)
+                if wbtc_swap_result and 'tx_hash' in wbtc_swap_result:
+                    print(f"✅ WBTC swap successful: {wbtc_swap_result['tx_hash']}")
+                    # Get WBTC received
+                    wbtc_received = self.get_wbtc_balance() - (self.aave.get_token_balance(self.wbtc_address) if self.aave else 0) # Approximate, better to use actual swap output
                 else:
-                    print("❌ WBTC swap failed")
+                    print("⚠️ WBTC swap failed, continuing with remaining operations")
+                    sequence_successful = False
+                    wbtc_received = 0
+            except Exception as e:
+                print(f"❌ WBTC swap error: {e}")
+                sequence_successful = False
+                wbtc_received = 0
 
-            # Step 2: Swap DAI → WETH
-            weth_received = 0
-            if dai_for_weth > 0.1:  # Minimum threshold
-                print(f"\n🔄 Step 2: Swapping {dai_for_weth:.6f} DAI → WETH")
-                weth_received = self._execute_dai_to_weth_swap(dai_for_weth)
-                if weth_received > 0:
-                    print(f"✅ Received {weth_received:.8f} WETH")
+            # Step 2: Swap DAI for WETH
+            print(f"📈 Step 2: Swapping {dai_for_weth:.6f} DAI for WETH...")
+            try:
+                weth_swap_result = self.uniswap.swap_dai_for_weth(dai_for_weth)
+                if weth_swap_result and 'tx_hash' in weth_swap_result:
+                    print(f"✅ WETH swap successful: {weth_swap_result['tx_hash']}")
+                    # Get WETH received
+                    weth_received = self.get_weth_balance() - (self.aave.get_token_balance(self.weth_address) if self.aave else 0) # Approximate
                 else:
-                    print("❌ WETH swap failed")
+                    print("⚠️ WETH swap failed")
+                    sequence_successful = False
+                    weth_received = 0
+            except Exception as e:
+                print(f"❌ WETH swap error: {e}")
+                sequence_successful = False
+                weth_received = 0
 
             # Step 3: Supply WBTC to Aave
             wbtc_supplied = False
             if wbtc_received > 0:
-                print(f"\n🏦 Step 3: Supplying {wbtc_received:.8f} WBTC to Aave")
+                print(f"🏦 Step 3: Supplying {wbtc_received:.8f} WBTC to Aave...")
                 wbtc_supplied = self._supply_wbtc_to_aave(wbtc_received)
                 if wbtc_supplied:
                     print("✅ WBTC supplied to Aave successfully")
                 else:
                     print("❌ WBTC supply failed")
+                    sequence_successful = False
+            else:
+                print("ℹ️ Skipping WBTC supply due to zero WBTC received.")
 
             # Step 4: Supply WETH to Aave
             weth_supplied = False
             if weth_received > 0:
-                print(f"\n🏦 Step 4: Supplying {weth_received:.8f} WETH to Aave")
+                print(f"🏦 Step 4: Supplying {weth_received:.8f} WETH to Aave...")
                 weth_supplied = self._supply_weth_to_aave(weth_received)
                 if weth_supplied:
                     print("✅ WETH supplied to Aave successfully")
                 else:
                     print("❌ WETH supply failed")
-
-            # Sequence execution summary
-            sequence_summary = {
-                'total_operations': 4,
-                'successful_operations': sum([
-                    1 if wbtc_received > 0 else 0,
-                    1 if weth_received > 0 else 0,
-                    1 if wbtc_supplied else 0,
-                    1 if weth_supplied else 0
-                ]),
-                'wbtc_swap_success': wbtc_received > 0,
-                'weth_swap_success': weth_received > 0,
-                'wbtc_supply_success': wbtc_supplied,
-                'weth_supply_success': weth_supplied
-            }
-
-            print(f"\n📊 SEQUENCE EXECUTION SUMMARY")
-            print(f"═══════════════════════════════════════")
-            print(f"✅ Successful Operations: {sequence_summary['successful_operations']}/4")
-            print(f"🔄 WBTC Swap: {'✅' if sequence_summary['wbtc_swap_success'] else '❌'}")
-            print(f"🔄 WETH Swap: {'✅' if sequence_summary['weth_swap_success'] else '❌'}")
-            print(f"🏦 WBTC Supply: {'✅' if sequence_summary['wbtc_supply_success'] else '❌'}")
-            print(f"🏦 WETH Supply: {'✅' if sequence_summary['weth_supply_success'] else '❌'}")
-
-            # Consider sequence successful if at least 2 operations completed
-            if sequence_summary['successful_operations'] >= 2:
-                print(f"✅ SEQUENCE COMPLETED SUCCESSFULLY ({sequence_summary['successful_operations']}/4 operations)")
-                return True
+                    sequence_successful = False
             else:
-                print(f"⚠️ SEQUENCE PARTIALLY COMPLETED ({sequence_summary['successful_operations']}/4 operations)")
-                return False
+                print("ℹ️ Skipping WETH supply due to zero WETH received.")
+
+            if sequence_successful:
+                print("✅ Complete DeFi sequence executed successfully")
+            else:
+                print("⚠️ DeFi sequence completed with some failures")
+
+            return sequence_successful
 
         except Exception as e:
             print(f"❌ Complete DeFi sequence failed: {e}")
