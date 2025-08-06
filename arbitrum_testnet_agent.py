@@ -37,8 +37,13 @@ class ArbitrumTestnetAgent:
             raise Exception("COINMARKETCAP_API_KEY environment variable not found!")
 
         # Validate critical environment variables early
-        self._validate_critical_environment()
-        self._validate_market_signal_environment()
+        try:
+            self._validate_critical_environment()
+            self._validate_market_signal_environment()
+        except Exception as env_error:
+            print(f"❌ Environment validation failed: {env_error}")
+            print("💡 Please check your Replit secrets configuration")
+            raise env_error
 
         # Enhanced RPC management with automatic failover
         self.rpc_manager = self._initialize_enhanced_rpc_manager()
@@ -97,6 +102,56 @@ class ArbitrumTestnetAgent:
 
             # Multiple RPC endpoints for reliability - prioritizing Alchemy if available
             self.rpc_endpoints = []
+
+            if alchemy_rpc_url:
+                self.rpc_endpoints.append(alchemy_rpc_url)
+                print(f"🔗 DEBUG: Added Alchemy RPC to endpoints list: {alchemy_rpc_url[:50]}...")
+            else:
+                print("⚠️ DEBUG: No ALCHEMY_RPC_URL found in environment variables")
+
+            # Add fallback endpoints (removed unauthorized Ankr endpoint)
+            fallback_endpoints = [
+                "https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f938ff891c141",
+                "https://arb1.arbitrum.io/rpc",
+                "https://arbitrum-one.public.blastapi.io",
+                "https://arbitrum-one.publicnode.com"
+            ]
+
+            self.rpc_endpoints.extend(fallback_endpoints)
+            print(f"🔍 DEBUG: Total RPC endpoints to test: {len(self.rpc_endpoints)}")
+            for i, rpc in enumerate(self.rpc_endpoints):
+                print(f"   {i+1}. {rpc[:60]}...")
+
+            # Test and rank only the working RPCs for performance
+            tested_rpcs = self._test_and_rank_rpcs(self.rpc_endpoints, 42161)
+
+            self.chain_id = 42161
+            print("🌐 Operating on Arbitrum Mainnet")
+
+        else:
+            # Testnet RPCs
+            testnet_rpcs = [
+                "https://sepolia-rollup.arbitrum.io/rpc",
+                "https://arbitrum-sepolia.blockpi.network/v1/rpc/public"
+            ]
+
+            tested_rpcs = self._test_and_rank_rpcs(testnet_rpcs, 421614)
+
+            self.chain_id = 421614
+            print("🧪 Operating on Arbitrum Sepolia Testnet")
+
+        if not tested_rpcs:
+            raise Exception("No working RPC endpoints found")
+
+        print(f"🔍 DEBUG: Final RPC selection results:")
+        print(f"   Primary RPC: {tested_rpcs[0]}")
+        print(f"   Fallback RPCs: {len(tested_rpcs[1:])} available")
+
+        return {
+            'primary_rpc': tested_rpcs[0],
+            'fallback_rpcs': tested_rpcs[1:],
+            'total_available': len(tested_rpcs)
+        }
 
 
     def _validate_market_signal_environment(self):
@@ -926,6 +981,155 @@ class ArbitrumTestnetAgent:
             self.operation_stats = {'attempts': 0, 'successes': 0}
 
         self.operation_stats['attempts'] += 1
+
+    def check_network_approval_readiness(self):
+        """Check if system is ready for network approval with high success probability"""
+        try:
+            print("🔍 CHECKING NETWORK APPROVAL READINESS")
+            print("=" * 50)
+            
+            readiness_score = 0
+            max_score = 100
+            issues = []
+            
+            # 1. Environment Variables (25 points)
+            try:
+                self._validate_critical_environment()
+                readiness_score += 25
+                print("✅ Environment variables: VALID (+25)")
+            except Exception as e:
+                issues.append(f"Environment validation failed: {e}")
+                print("❌ Environment variables: FAILED (0)")
+            
+            # 2. Network Connectivity (25 points)
+            if self.w3 and self.w3.is_connected():
+                try:
+                    block_num = self.w3.eth.block_number
+                    if block_num > 0:
+                        readiness_score += 25
+                        print("✅ Network connectivity: ACTIVE (+25)")
+                    else:
+                        issues.append("Network returning invalid block numbers")
+                        print("⚠️ Network connectivity: UNSTABLE (+10)")
+                        readiness_score += 10
+                except Exception as e:
+                    issues.append(f"Network test failed: {e}")
+                    print("❌ Network connectivity: FAILED (0)")
+            else:
+                issues.append("Web3 connection not established")
+                print("❌ Network connectivity: FAILED (0)")
+            
+            # 3. Integration Health (25 points)
+            integrations_healthy = 0
+            total_integrations = 4
+            
+            if hasattr(self, 'aave') and self.aave:
+                integrations_healthy += 1
+                print("✅ Aave integration: READY")
+            else:
+                issues.append("Aave integration not initialized")
+                print("❌ Aave integration: MISSING")
+                
+            if hasattr(self, 'uniswap') and self.uniswap:
+                integrations_healthy += 1
+                print("✅ Uniswap integration: READY")
+            else:
+                issues.append("Uniswap integration not initialized")
+                print("❌ Uniswap integration: MISSING")
+                
+            if hasattr(self, 'health_monitor') and self.health_monitor:
+                integrations_healthy += 1
+                print("✅ Health monitor: READY")
+            else:
+                issues.append("Health monitor not initialized")
+                print("❌ Health monitor: MISSING")
+                
+            if hasattr(self, 'gas_calculator') and self.gas_calculator:
+                integrations_healthy += 1
+                print("✅ Gas calculator: READY")
+            else:
+                issues.append("Gas calculator not initialized")
+                print("❌ Gas calculator: MISSING")
+            
+            integration_score = int((integrations_healthy / total_integrations) * 25)
+            readiness_score += integration_score
+            print(f"📊 Integration health: {integrations_healthy}/{total_integrations} (+{integration_score})")
+            
+            # 4. Account Health (25 points)
+            try:
+                eth_balance = self.get_eth_balance()
+                if eth_balance >= 0.001:
+                    readiness_score += 15
+                    print(f"✅ ETH balance sufficient: {eth_balance:.6f} ETH (+15)")
+                else:
+                    issues.append(f"Low ETH balance: {eth_balance:.6f} ETH")
+                    print(f"⚠️ ETH balance low: {eth_balance:.6f} ETH (+5)")
+                    readiness_score += 5
+                
+                # Check health factor if Aave is available
+                if hasattr(self, 'aave') and self.aave:
+                    hf = self.get_health_factor()
+                    if hf > 2.0:
+                        readiness_score += 10
+                        print(f"✅ Health factor safe: {hf:.3f} (+10)")
+                    elif hf > 1.5:
+                        readiness_score += 5
+                        print(f"⚠️ Health factor moderate: {hf:.3f} (+5)")
+                    else:
+                        issues.append(f"Low health factor: {hf:.3f}")
+                        print(f"❌ Health factor dangerous: {hf:.3f} (0)")
+                else:
+                    print("⚠️ Cannot check health factor - Aave not available (+0)")
+                    
+            except Exception as e:
+                issues.append(f"Account health check failed: {e}")
+                print(f"❌ Account health check failed: {e}")
+            
+            # Final Assessment
+            print("\n" + "=" * 50)
+            print(f"📊 NETWORK APPROVAL READINESS SCORE: {readiness_score}/{max_score}")
+            
+            if readiness_score >= 90:
+                status = "EXCELLENT - HIGH APPROVAL PROBABILITY"
+                approval_chance = 95
+                print(f"✅ {status}")
+            elif readiness_score >= 75:
+                status = "GOOD - MODERATE APPROVAL PROBABILITY"
+                approval_chance = 80
+                print(f"✅ {status}")
+            elif readiness_score >= 60:
+                status = "FAIR - LOW APPROVAL PROBABILITY"
+                approval_chance = 60
+                print(f"⚠️ {status}")
+            else:
+                status = "POOR - VERY LOW APPROVAL PROBABILITY"
+                approval_chance = 30
+                print(f"❌ {status}")
+            
+            if issues:
+                print(f"\n⚠️ ISSUES TO ADDRESS:")
+                for issue in issues:
+                    print(f"   • {issue}")
+            
+            return {
+                'ready': readiness_score >= 75,
+                'score': readiness_score,
+                'max_score': max_score,
+                'approval_probability': approval_chance,
+                'status': status,
+                'issues': issues
+            }
+            
+        except Exception as e:
+            print(f"❌ Network approval readiness check failed: {e}")
+            return {
+                'ready': False,
+                'score': 0,
+                'max_score': 100,
+                'approval_probability': 10,
+                'status': 'ERROR - READINESS CHECK FAILED',
+                'issues': [f"Readiness check error: {e}"]
+            }
 
     def get_success_rate_prediction(self):
         """Predict success rate based on current conditions"""
