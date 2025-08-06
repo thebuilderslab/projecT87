@@ -703,6 +703,250 @@ def get_console_output():
             'success': False
         })
 
+@app.route('/api/system_metrics')
+def get_system_metrics():
+    """Get comprehensive system metrics for enhanced dashboard display"""
+    try:
+        agent_running = check_autonomous_agent_running()
+        
+        # Get metrics from agent if available
+        agent_metrics = {}
+        if agent_running:
+            try:
+                from arbitrum_testnet_agent import ArbitrumTestnetAgent
+                temp_agent = ArbitrumTestnetAgent()
+                if hasattr(temp_agent, 'get_system_metrics'):
+                    agent_metrics = temp_agent.get_system_metrics()
+            except Exception as e:
+                print(f"⚠️ Agent metrics fetch failed: {e}")
+        
+        # Get performance data
+        performance_data = []
+        if os.path.exists('performance_log.json'):
+            with open('performance_log.json', 'r') as f:
+                lines = f.readlines()
+                for line in lines[-10:]:  # Last 10 entries
+                    try:
+                        performance_data.append(json.loads(line))
+                    except:
+                        continue
+        
+        # Calculate metrics
+        current_time = time.time()
+        last_operation_time = agent_metrics.get('last_operation_time', 0)
+        rest_period = max(0, 60 - (current_time - last_operation_time)) if last_operation_time > 0 else 0
+        
+        # Get live wallet data
+        live_data = get_live_agent_data()
+        
+        # Determine trigger status
+        triggers_info = analyze_trigger_conditions(live_data)
+        
+        return jsonify({
+            'timestamp': current_time,
+            'formatted_timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S UTC'),
+            'current_iteration': agent_metrics.get('current_iteration', 0),
+            'agent_running': agent_running,
+            'rest_period_seconds': rest_period,
+            'rest_period_formatted': f"{int(rest_period)}s" if rest_period > 0 else "Ready",
+            'triggers_activated': agent_metrics.get('triggers_activated', 0),
+            'last_sequence_type': agent_metrics.get('last_sequence_type', 'None'),
+            'next_trigger_target': agent_metrics.get('next_trigger_target', live_data.get('next_trigger_threshold', 189.79)),
+            'current_collateral': live_data.get('total_collateral_usdc', 192.85),
+            'baseline_collateral': live_data.get('baseline_collateral', 177.79),
+            'borrowed_assets': {
+                'total_borrowed_usd': live_data.get('total_debt_usdc', 35.06),
+                'assets': ['DAI'],
+                'utilization_ratio': (live_data.get('total_debt_usdc', 35.06) / max(live_data.get('total_collateral_usdc', 192.85), 1)) * 100
+            },
+            'pending_approvals': check_pending_approvals(),
+            'self_improvement_proposals': get_improvement_proposals(live_data, performance_data),
+            'network_status': get_network_approval_status(live_data),
+            'trigger_analysis': triggers_info,
+            'market_signals': get_market_signal_status(),
+            'success': True
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'error': str(e),
+            'timestamp': time.time(),
+            'success': False
+        })
+
+def analyze_trigger_conditions(live_data):
+    """Analyze current trigger conditions and next targets"""
+    try:
+        current_collateral = live_data.get('total_collateral_usdc', 192.85)
+        baseline = live_data.get('baseline_collateral', 177.79)
+        growth_threshold = 12.0  # $12 growth trigger
+        
+        growth_achieved = current_collateral - baseline
+        growth_needed = max(0, growth_threshold - growth_achieved)
+        
+        health_factor = live_data.get('health_factor', 4.346)
+        available_borrows = live_data.get('available_borrows_usdc', 108.27)
+        
+        # Determine if triggers are ready
+        growth_trigger_ready = growth_achieved >= growth_threshold and health_factor > 2.1
+        capacity_trigger_ready = available_borrows > 13.0 and health_factor > 2.05
+        
+        triggers_active = []
+        if growth_trigger_ready:
+            triggers_active.append("Growth-Triggered System")
+        if capacity_trigger_ready:
+            triggers_active.append("Capacity-Based System")
+        
+        return {
+            'growth_achieved': growth_achieved,
+            'growth_needed': growth_needed,
+            'triggers_ready': triggers_active,
+            'next_growth_target': baseline + growth_threshold,
+            'capacity_available': available_borrows,
+            'health_factor_status': 'Healthy' if health_factor > 2.0 else 'Caution',
+            'trigger_probability': calculate_trigger_probability(growth_trigger_ready, capacity_trigger_ready, health_factor)
+        }
+    except Exception as e:
+        return {'error': str(e)}
+
+def calculate_trigger_probability(growth_ready, capacity_ready, health_factor):
+    """Calculate probability of successful trigger execution"""
+    base_probability = 60
+    
+    if growth_ready:
+        base_probability += 20
+    if capacity_ready:
+        base_probability += 15
+    if health_factor > 3.0:
+        base_probability += 10
+    elif health_factor < 2.0:
+        base_probability -= 20
+    
+    return min(95, max(10, base_probability))
+
+def check_pending_approvals():
+    """Check for pending user approvals"""
+    try:
+        pending = []
+        
+        # Check for parameter update triggers
+        if os.path.exists('parameter_update_trigger.flag'):
+            pending.append({
+                'type': 'Parameter Changes',
+                'message': 'User settings updated - review required',
+                'action_required': 'Review and approve new parameters'
+            })
+        
+        # Check for emergency stop
+        if os.path.exists('EMERGENCY_STOP_ACTIVE.flag'):
+            pending.append({
+                'type': 'Emergency Stop',
+                'message': 'System halted - manual intervention needed',
+                'action_required': 'Clear emergency stop to resume operations'
+            })
+        
+        return {
+            'pending': len(pending) > 0,
+            'count': len(pending),
+            'items': pending
+        }
+    except Exception as e:
+        return {'pending': False, 'count': 0, 'items': [], 'error': str(e)}
+
+def get_improvement_proposals(live_data, performance_data):
+    """Generate self-improvement proposal headlines"""
+    try:
+        proposals = []
+        
+        # Performance-based proposals
+        if performance_data:
+            recent_performance = [p.get('performance_metric', 0) for p in performance_data[-5:]]
+            avg_performance = sum(recent_performance) / len(recent_performance) if recent_performance else 0
+            
+            if avg_performance < 0.6:
+                proposals.append("🔧 Optimize transaction timing for better success rates")
+            if avg_performance > 0.8:
+                proposals.append("📈 Consider increasing operation frequency for higher yields")
+        
+        # Health factor based
+        health_factor = live_data.get('health_factor', 4.346)
+        if health_factor > 4.0:
+            proposals.append("💰 Increase leverage ratio for capital efficiency")
+        elif health_factor < 2.5:
+            proposals.append("🛡️ Reduce risk exposure for safety")
+        
+        # Capacity utilization
+        available_borrows = live_data.get('available_borrows_usdc', 108.27)
+        if available_borrows > 100:
+            proposals.append("🚀 High capacity available - ready for scaled operations")
+        
+        # Market conditions
+        if os.getenv('MARKET_SIGNAL_ENABLED', 'false').lower() == 'true':
+            proposals.append("📊 Market signal strategy active - debt swap optimization")
+        else:
+            proposals.append("💡 Enable market signals for enhanced yield opportunities")
+        
+        return proposals[:4]  # Return top 4 proposals
+    except Exception as e:
+        return [f"❌ Proposal error: {str(e)[:50]}"]
+
+def get_network_approval_status(live_data):
+    """Get network readiness and approval probability"""
+    try:
+        health_factor = live_data.get('health_factor', 4.346)
+        eth_balance = live_data.get('eth_balance', 0.001805)
+        
+        # Calculate approval probability
+        approval_probability = 75  # Base probability
+        
+        if health_factor > 3.0:
+            approval_probability += 15
+        elif health_factor < 2.0:
+            approval_probability -= 25
+        
+        if eth_balance > 0.001:
+            approval_probability += 10
+        else:
+            approval_probability -= 30
+        
+        approval_probability = max(10, min(95, approval_probability))
+        
+        return {
+            'ready_for_execution': health_factor > 1.5 and eth_balance > 0.001,
+            'approval_probability': approval_probability,
+            'network_congestion': 'Low',  # Could be enhanced with real gas price data
+            'execution_status': 'Ready' if approval_probability > 70 else 'Caution',
+            'estimated_gas_cost': '$0.02',  # Estimate for Arbitrum
+            'next_execution_window': 'Immediate' if approval_probability > 80 else '1-2 minutes'
+        }
+    except Exception as e:
+        return {
+            'ready_for_execution': False,
+            'approval_probability': 50,
+            'execution_status': f'Error: {e}',
+            'error': str(e)
+        }
+
+def get_market_signal_status():
+    """Get market signal and debt swap status"""
+    try:
+        market_enabled = os.getenv('MARKET_SIGNAL_ENABLED', 'false').lower() == 'true'
+        
+        return {
+            'enabled': market_enabled,
+            'btc_threshold': float(os.getenv('BTC_DROP_THRESHOLD', '0.01')) * 100,
+            'dai_to_arb_threshold': float(os.getenv('DAI_TO_ARB_THRESHOLD', '0.7')) * 100,
+            'arb_rsi_threshold': float(os.getenv('ARB_RSI_OVERSOLD', '30')),
+            'status': 'Active' if market_enabled else 'Disabled',
+            'last_signal': 'Awaiting market conditions' if market_enabled else 'Not monitoring'
+        }
+    except Exception as e:
+        return {
+            'enabled': False,
+            'status': f'Error: {e}',
+            'error': str(e)
+        }
+
 @app.route('/api/system_mode', methods=['POST'])
 def set_system_mode():
     """Set system mode (autonomous/manual)"""

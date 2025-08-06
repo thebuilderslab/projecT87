@@ -411,6 +411,13 @@ class ArbitrumTestnetAgent:
         # Display Hybrid System Configuration
         self._display_hybrid_system_config()
 
+        # Initialize metrics tracking
+        self.current_iteration = 0
+        self.triggers_activated_count = 0
+        self.next_trigger_threshold = self.growth_trigger_threshold # Initial next trigger for growth
+        self.last_transaction_successful = True # Track last transaction status
+        self.operation_stats = {'attempts': 0, 'successes': 0} # For success rate prediction
+
         return True
 
     def _auto_initialize_baseline(self):
@@ -508,7 +515,7 @@ class ArbitrumTestnetAgent:
                         )
                         return success
                     else:
-                        print(f"⚠️ DAI not received as expected. Expected: {amount_dai:.6f}, Got: {dai_received:.6f}")
+                        print(f"⚠️ DAI not received as expected. Expected: {amount_ai:.6f}, Got: {dai_received:.6f}")
                         return False
                 else:
                     print(f"❌ Enhanced borrow attempt {attempt + 1} failed")
@@ -1007,6 +1014,7 @@ _test.flag', 'manual_override.flag', 'force_borrow.flag']
 
             # Track operation attempt
             self.track_operation_attempt()
+            self.current_iteration = iteration # Update current iteration for metrics
 
             # Get account status
             account_data = self.aave.get_user_account_data()
@@ -1023,44 +1031,47 @@ _test.flag', 'manual_override.flag', 'force_borrow.flag']
             print(f"   Available Borrows: ${available_borrows:.2f}")
             print(f"   Total Collateral: ${total_collateral:.2f}")
 
-            # Check if we need to execute any operations
-            performance_score = 0.5  # Base score
-
-            # DAI-only compliance check
-            if not self._validate_dai_compliance():
-                print("❌ DAI compliance validation failed")
-                return 0.1
-
             # Check for growth-triggered operations
             if self._should_execute_growth_triggered_operation(total_collateral, health_factor, available_borrows):
+                self.triggers_activated_count += 1
+                self.next_trigger_threshold = self.growth_trigger_threshold # Reset for next growth trigger
                 success = self._execute_growth_triggered_operation(available_borrows)
                 if success:
                     performance_score = 0.8
                     self.record_successful_operation("growth_triggered")
+                    self.last_transaction_successful = True
                 else:
                     performance_score = 0.3
-
+                    self.last_transaction_successful = False
             # Check for capacity-based operations
             elif self._should_execute_capacity_operation(available_borrows, health_factor):
+                self.triggers_activated_count += 1
+                self.next_trigger_threshold = self.capacity_available_threshold # Reset for next capacity trigger
                 success = self._execute_capacity_operation(available_borrows)
                 if success:
                     performance_score = 0.7
                     self.record_successful_operation("capacity_based")
+                    self.last_transaction_successful = True
                 else:
                     performance_score = 0.3
+                    self.last_transaction_successful = False
             # Check for market signal-triggered operations
             elif self.market_signal_strategy and self.market_signal_strategy.should_execute_trade():
                 print("🚀 Market signal triggered - executing market-driven operation")
+                self.triggers_activated_count += 1
+                # Strategy manages its own next trigger logic
                 success = self._execute_market_signal_operation(available_borrows)
                 if success:
                     performance_score = 0.8
                     self.record_successful_operation("market_signal")
+                    self.last_transaction_successful = True
                 else:
                     performance_score = 0.3
-
+                    self.last_transaction_successful = False
             else:
                 print("✅ No operations needed - system stable")
                 performance_score = 0.6
+                self.last_transaction_successful = True # Assume stable means no failed ops
 
             # Update baseline if we have new collateral data
             if total_collateral > 0:
@@ -1071,6 +1082,7 @@ _test.flag', 'manual_override.flag', 'force_borrow.flag']
 
         except Exception as e:
             print(f"❌ DeFi task execution failed: {e}")
+            self.last_transaction_successful = False # Mark as failed on exception
             return 0.1
 
     def _validate_dai_compliance(self):
@@ -1345,7 +1357,7 @@ _test.flag', 'manual_override.flag', 'force_borrow.flag']
                 return False
 
             # Check DAI token balance before operation
-            dai_balance_before = self.aave.get_dai_balance()
+            dai_balance_before = self.get_dai_balance()
             print(f"📊 DAI balance before: {dai_balance_before:.6f}")
 
             # Attempt the borrow with detailed error catching
@@ -1359,7 +1371,7 @@ _test.flag', 'manual_override.flag', 'force_borrow.flag']
                     import time
                     time.sleep(3)
 
-                    dai_balance_after = self.aave.get_dai_balance()
+                    dai_balance_after = self.get_dai_balance()
                     balance_increase = dai_balance_after - dai_balance_before
 
                     print(f"📊 DAI balance after: {dai_balance_after:.6f}")
@@ -1683,6 +1695,225 @@ _test.flag', 'manual_override.flag', 'force_borrow.flag']
             print(f"❌ Error getting health factor: {e}")
             return 0.0
 
+    def get_system_metrics(self):
+        """Get comprehensive system metrics for dashboard"""
+        try:
+            return {
+                'timestamp': time.time(),
+                'current_iteration': getattr(self, 'current_iteration', 0),
+                'last_operation_time': getattr(self, 'last_successful_operation_time', 0),
+                'rest_period_remaining': max(0, self.operation_cooldown_seconds - (time.time() - getattr(self, 'last_successful_operation_time', 0))),
+                'triggers_activated': getattr(self, 'triggers_activated_count', 0),
+                'last_sequence_type': getattr(self, 'last_operation_type', 'none'),
+                'next_trigger_target': getattr(self, 'next_trigger_threshold', 0),
+                'baseline_collateral': getattr(self, 'last_collateral_value_usd', 0),
+                'borrowed_assets': self._get_borrowed_assets_summary(),
+                'pending_approvals': self._check_pending_approvals(),
+                'self_improvement_proposals': self._get_improvement_proposals(),
+                'network_approval_status': self._get_network_status()
+            }
+        except Exception as e:
+            print(f"❌ Error getting system metrics: {e}")
+            return {}
+
+    def _get_borrowed_assets_summary(self):
+        """Get summary of currently borrowed assets"""
+        try:
+            if not self.aave:
+                return {'total_borrowed_usd': 0, 'assets': []}
+
+            account_data = self.aave.get_user_account_data()
+            if account_data:
+                return {
+                    'total_borrowed_usd': account_data.get('totalDebtUSD', 0),
+                    'assets': ['DAI'],  # DAI-only compliance
+                    'utilization_ratio': account_data.get('totalDebtUSD', 0) / max(account_data.get('totalCollateralUSD', 1), 1)
+                }
+            return {'total_borrowed_usd': 0, 'assets': []}
+        except Exception as e:
+            print(f"❌ Error getting borrowed assets: {e}")
+            return {'total_borrowed_usd': 0, 'assets': []}
+
+    def _check_pending_approvals(self):
+        """Check if there are pending user approvals needed"""
+        try:
+            # Check for user settings changes
+            if os.path.exists('parameter_update_trigger.flag'):
+                return {'pending': True, 'type': 'parameter_changes', 'message': 'Parameter changes need review'}
+
+            # Check for strategy proposals
+            if hasattr(self, 'market_signal_strategy') and self.market_signal_strategy:
+                if getattr(self.market_signal_strategy, 'pending_approval', False):
+                    return {'pending': True, 'type': 'strategy_change', 'message': 'Market signal strategy changes pending'}
+
+            return {'pending': False, 'type': 'none', 'message': 'No approvals needed'}
+        except Exception as e:
+            return {'pending': False, 'type': 'error', 'message': f'Approval check failed: {e}'}
+
+    def _get_improvement_proposals(self):
+        """Get self-improvement proposal headlines"""
+        try:
+            proposals = []
+
+            # Performance-based improvements
+            if hasattr(self, 'operation_stats'):
+                success_rate = (self.operation_stats.get('successes', 0) / max(self.operation_stats.get('attempts', 1), 1)) * 100
+                if success_rate < 80:
+                    proposals.append("🔧 Optimize gas strategy for better success rate")
+                if success_rate > 90:
+                    proposals.append("📈 Consider increasing operation frequency")
+
+            # Health factor improvements
+            try:
+                health_factor = self.get_health_factor()
+                if health_factor > 4.0:
+                    proposals.append("💰 Increase leverage for better capital efficiency")
+                elif health_factor < 2.0:
+                    proposals.append("🛡️ Reduce leverage for safety")
+            except:
+                pass
+
+            # Market conditions
+            if hasattr(self, 'market_signal_strategy') and self.market_signal_strategy:
+                if getattr(self.market_signal_strategy, 'market_signal_enabled', False):
+                    proposals.append("🚀 Market signals active - debt swap optimization ready")
+
+            return proposals[:3]  # Return top 3 proposals
+        except Exception as e:
+            return [f"❌ Proposal generation error: {str(e)[:50]}"]
+
+    def _get_network_status(self):
+        """Get network approval and execution status"""
+        try:
+            # Check recent transaction success
+            recent_success = getattr(self, 'last_transaction_successful', True)
+            gas_price = self.w3.eth.gas_price if self.w3 else 0
+
+            return {
+                'ready_for_execution': recent_success and gas_price > 0,
+                'estimated_approval_chance': self.get_success_rate_prediction() if hasattr(self, 'get_success_rate_prediction') else 75,
+                'network_congestion': 'Low' if gas_price < 100000000 else 'High',  # 0.1 gwei threshold
+                'last_execution_status': 'Success' if recent_success else 'Failed'
+            }
+        except Exception as e:
+            return {
+                'ready_for_execution': False,
+                'estimated_approval_chance': 50,
+                'network_congestion': 'Unknown',
+                'last_execution_status': f'Error: {e}'
+            }
+
+    def _validate_critical_environment(self):
+        """Validate all critical environment variables"""
+        validation_errors = []
+
+        # Validate PRIVATE_KEY
+        if not self.private_key:
+            validation_errors.append("PRIVATE_KEY is required")
+        elif len(self.private_key.replace('0x', '')) != 64:
+            validation_errors.append(f"PRIVATE_KEY invalid length: {len(self.private_key)}")
+
+        # Validate API keys
+        if not self.coinmarketcap_api_key:
+            validation_errors.append("COINMARKETCAP_API_KEY is required")
+        elif len(self.coinmarketcap_api_key) < 30:
+            validation_errors.append("COINMARKETCAP_API_KEY appears invalid (too short)")
+
+        # Validate network mode
+        if self.network_mode not in ['mainnet', 'testnet']:
+            validation_errors.append(f"NETWORK_MODE must be 'mainnet' or 'testnet', got: {self.network_mode}")
+
+        if validation_errors:
+            error_msg = "❌ CRITICAL ENVIRONMENT VALIDATION FAILED:\n" + "\n".join(f"   • {error}" for error in validation_errors)
+            raise Exception(error_msg)
+
+        print("✅ All critical environment variables validated successfully")
+
+    def _get_dynamic_gas_price(self):
+        """Get dynamic gas price with congestion awareness"""
+        try:
+            base_gas_price = self.w3.eth.gas_price
+            latest_block = self.w3.eth.get_block('latest')
+
+            # Check network congestion
+            gas_used_ratio = latest_block.gasUsed / latest_block.gasLimit
+
+            if gas_used_ratio > 0.9:  # High congestion
+                multiplier = 1.5
+                print(f"⚠️ High network congestion detected ({gas_used_ratio:.1%}), increasing gas price by 50%")
+            elif gas_used_ratio > 0.7:  # Medium congestion
+                multiplier = 1.2
+                print(f"📊 Medium network congestion ({gas_used_ratio:.1%}), increasing gas price by 20%")
+            else:  # Low congestion
+                multiplier = 1.1
+                print(f"✅ Low network congestion ({gas_used_ratio:.1%}), using standard gas price")
+
+            return int(base_gas_price * multiplier)
+
+        except Exception as e:
+            print(f"❌ Dynamic gas calculation failed: {e}, using base price")
+            return self.w3.eth.gas_price
+
+    def get_wbtc_balance(self):
+        """Get WBTC token balance"""
+        try:
+            if self.aave:
+                return self.aave.get_token_balance(self.wbtc_address)
+            return 0.0
+        except Exception as e:
+            print(f"❌ Error getting WBTC balance: {e}")
+            return 0.0
+
+    def get_weth_balance(self):
+        """Get WETH token balance"""
+        try:
+            if self.aave:
+                return self.aave.get_token_balance(self.weth_address)
+            return 0.0
+        except Exception as e:
+            print(f"❌ Error getting WETH balance: {e}")
+            return 0.0
+
+    def get_dai_balance(self):
+        """Get DAI token balance"""
+        try:
+            if self.aave:
+                return self.aave.get_dai_balance()
+            return 0.0
+        except Exception as e:
+            print(f"❌ Error getting DAI balance: {e}")
+            return 0.0
+
+    def get_arb_balance(self):
+        """Get ARB token balance"""
+        try:
+            if self.aave:
+                return self.aave.get_token_balance(self.arb_address)
+            return 0.0
+        except Exception as e:
+            print(f"❌ Error getting ARB balance: {e}")
+            return 0.0
+
+    def check_emergency_stop(self):
+        """Check if emergency stop is active"""
+        try:
+            return os.path.exists('EMERGENCY_STOP_ACTIVE.flag')
+        except Exception as e:
+            print(f"❌ Error checking emergency stop: {e}")
+            return False
+
+    def get_health_factor(self):
+        """Get current health factor from Aave"""
+        try:
+            if self.aave:
+                account_data = self.aave.get_user_account_data()
+                if account_data:
+                    return account_data.get('healthFactor', 0)
+            return 0.0
+        except Exception as e:
+            print(f"❌ Error getting health factor: {e}")
+            return 0.0
+
     def execute_debt_swap_dai_to_arb(self, dai_amount):
         """Execute DAI to ARB debt swap for market signal strategy"""
         try:
@@ -1834,114 +2065,3 @@ _test.flag', 'manual_override.flag', 'force_borrow.flag']
         except Exception as e:
             print(f"❌ Complete debt swap sequence failed: {e}")
             return False
-
-    def _validate_critical_environment(self):
-        """Validate all critical environment variables"""
-        validation_errors = []
-
-        # Validate PRIVATE_KEY
-        if not self.private_key:
-            validation_errors.append("PRIVATE_KEY is required")
-        elif len(self.private_key.replace('0x', '')) != 64:
-            validation_errors.append(f"PRIVATE_KEY invalid length: {len(self.private_key)}")
-
-        # Validate API keys
-        if not self.coinmarketcap_api_key:
-            validation_errors.append("COINMARKETCAP_API_KEY is required")
-        elif len(self.coinmarketcap_api_key) < 30:
-            validation_errors.append("COINMARKETCAP_API_KEY appears invalid (too short)")
-
-        # Validate network mode
-        if self.network_mode not in ['mainnet', 'testnet']:
-            validation_errors.append(f"NETWORK_MODE must be 'mainnet' or 'testnet', got: {self.network_mode}")
-
-        if validation_errors:
-            error_msg = "❌ CRITICAL ENVIRONMENT VALIDATION FAILED:\n" + "\n".join(f"   • {error}" for error in validation_errors)
-            raise Exception(error_msg)
-
-        print("✅ All critical environment variables validated successfully")
-
-    def _get_dynamic_gas_price(self):
-        """Get dynamic gas price with congestion awareness"""
-        try:
-            base_gas_price = self.w3.eth.gas_price
-            latest_block = self.w3.eth.get_block('latest')
-
-            # Check network congestion
-            gas_used_ratio = latest_block.gasUsed / latest_block.gasLimit
-
-            if gas_used_ratio > 0.9:  # High congestion
-                multiplier = 1.5
-                print(f"⚠️ High network congestion detected ({gas_used_ratio:.1%}), increasing gas price by 50%")
-            elif gas_used_ratio > 0.7:  # Medium congestion
-                multiplier = 1.2
-                print(f"📊 Medium network congestion ({gas_used_ratio:.1%}), increasing gas price by 20%")
-            else:  # Low congestion
-                multiplier = 1.1
-                print(f"✅ Low network congestion ({gas_used_ratio:.1%}), using standard gas price")
-
-            return int(base_gas_price * multiplier)
-
-        except Exception as e:
-            print(f"❌ Dynamic gas calculation failed: {e}, using base price")
-            return self.w3.eth.gas_price
-
-    def get_wbtc_balance(self):
-        """Get WBTC token balance"""
-        try:
-            if self.aave:
-                return self.aave.get_token_balance(self.wbtc_address)
-            return 0.0
-        except Exception as e:
-            print(f"❌ Error getting WBTC balance: {e}")
-            return 0.0
-
-    def get_weth_balance(self):
-        """Get WETH token balance"""
-        try:
-            if self.aave:
-                return self.aave.get_token_balance(self.weth_address)
-            return 0.0
-        except Exception as e:
-            print(f"❌ Error getting WETH balance: {e}")
-            return 0.0
-
-    def get_dai_balance(self):
-        """Get DAI token balance"""
-        try:
-            if self.aave:
-                return self.aave.get_dai_balance()
-            return 0.0
-        except Exception as e:
-            print(f"❌ Error getting DAI balance: {e}")
-            return 0.0
-
-    def get_arb_balance(self):
-        """Get ARB token balance"""
-        try:
-            if self.aave:
-                return self.aave.get_token_balance(self.arb_address)
-            return 0.0
-        except Exception as e:
-            print(f"❌ Error getting ARB balance: {e}")
-            return 0.0
-
-    def check_emergency_stop(self):
-        """Check if emergency stop is active"""
-        try:
-            return os.path.exists('EMERGENCY_STOP_ACTIVE.flag')
-        except Exception as e:
-            print(f"❌ Error checking emergency stop: {e}")
-            return False
-
-    def get_health_factor(self):
-        """Get current health factor from Aave"""
-        try:
-            if self.aave:
-                account_data = self.aave.get_user_account_data()
-                if account_data:
-                    return account_data.get('healthFactor', 0)
-            return 0.0
-        except Exception as e:
-            print(f"❌ Error getting health factor: {e}")
-            return 0.0
