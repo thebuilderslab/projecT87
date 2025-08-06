@@ -4,6 +4,8 @@ import json
 import math
 import time
 import logging
+import signal
+import errno
 from datetime import datetime
 from web3 import Web3
 from eth_account import Account
@@ -14,6 +16,7 @@ from gas_fee_calculator import ArbitrumGasCalculator
 from config_constants import MIN_ETH_FOR_OPERATIONS, MIN_ETH_FOR_GAS_BUFFER
 import requests
 import sys
+import traceback
 
 class ArbitrumTestnetAgent:
     def __init__(self):
@@ -97,7 +100,6 @@ class ArbitrumTestnetAgent:
         if self.network_mode == 'mainnet':
             # Get Alchemy RPC URL from Replit secrets first
             alchemy_rpc_url = os.getenv('ALCHEMY_RPC_URL')
-            print(f"DEBUG: ALCHEMY_RPC_URL loaded from environment: {alchemy_rpc_url}")
             print(f"🔍 DEBUG: ALCHEMY_RPC_URL from env: {alchemy_rpc_url}")
 
             # Multiple RPC endpoints for reliability - prioritizing Alchemy if available
@@ -109,7 +111,7 @@ class ArbitrumTestnetAgent:
             else:
                 print("⚠️ DEBUG: No ALCHEMY_RPC_URL found in environment variables")
 
-            # Add fallback endpoints (removed unauthorized Ankr endpoint)
+            # Add fallback endpoints
             fallback_endpoints = [
                 "https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f938ff891c141",
                 "https://arb1.arbitrum.io/rpc",
@@ -119,12 +121,9 @@ class ArbitrumTestnetAgent:
 
             self.rpc_endpoints.extend(fallback_endpoints)
             print(f"🔍 DEBUG: Total RPC endpoints to test: {len(self.rpc_endpoints)}")
-            for i, rpc in enumerate(self.rpc_endpoints):
-                print(f"   {i+1}. {rpc[:60]}...")
 
             # Test and rank only the working RPCs for performance
             tested_rpcs = self._test_and_rank_rpcs(self.rpc_endpoints, 42161)
-
             self.chain_id = 42161
             print("🌐 Operating on Arbitrum Mainnet")
 
@@ -136,104 +135,6 @@ class ArbitrumTestnetAgent:
             ]
 
             tested_rpcs = self._test_and_rank_rpcs(testnet_rpcs, 421614)
-
-            self.chain_id = 421614
-            print("🧪 Operating on Arbitrum Sepolia Testnet")
-
-        if not tested_rpcs:
-            raise Exception("No working RPC endpoints found")
-
-        print(f"🔍 DEBUG: Final RPC selection results:")
-        print(f"   Primary RPC: {tested_rpcs[0]}")
-        print(f"   Fallback RPCs: {len(tested_rpcs[1:])} available")
-
-        return {
-            'primary_rpc': tested_rpcs[0],
-            'fallback_rpcs': tested_rpcs[1:],
-            'total_available': len(tested_rpcs)
-        }
-
-
-    def _validate_market_signal_environment(self):
-        """Validate market signal strategy environment variables"""
-        try:
-            # Check if market signals are enabled
-            market_enabled = os.getenv('MARKET_SIGNAL_ENABLED', 'false').lower()
-            print(f"🔍 Market Signal Enabled: {market_enabled}")
-            
-            if market_enabled == 'true':
-                # Validate market signal thresholds
-                btc_threshold = float(os.getenv('BTC_DROP_THRESHOLD', '0.01'))
-                dai_threshold = float(os.getenv('DAI_TO_ARB_THRESHOLD', '0.7'))
-                arb_threshold = float(os.getenv('ARB_TO_DAI_THRESHOLD', '0.6'))
-                
-                print(f"✅ Market signal thresholds validated:")
-                print(f"   BTC Drop: {btc_threshold:.1%}")
-                print(f"   DAI→ARB: {dai_threshold:.0%}")
-                print(f"   ARB→DAI: {arb_threshold:.0%}")
-            
-            return True
-            
-        except ValueError as e:
-            print(f"❌ Invalid market signal configuration: {e}")
-            return False
-        except Exception as e:
-            print(f"⚠️ Market signal validation warning: {e}")
-            return True  # Non-critical, continue without market signals
-
-    def _validate_critical_environment(self):
-        """Validate critical environment variables"""
-        critical_vars = {
-            'WALLET_PRIVATE_KEY': 'Private key for wallet operations',
-            'COINMARKETCAP_API_KEY': 'API key for price data'
-        }
-        
-        missing_vars = []
-        for var, description in critical_vars.items():
-            if not os.getenv(var):
-                missing_vars.append(f"{var} ({description})")
-        
-        if missing_vars:
-            raise Exception(f"Missing critical environment variables: {', '.join(missing_vars)}")
-        
-        print("✅ All critical environment variables validated successfully")
-        return True
-
-
-            if alchemy_rpc_url:
-                self.rpc_endpoints.append(alchemy_rpc_url)
-                print(f"🔗 DEBUG: Added Alchemy RPC to endpoints list: {alchemy_rpc_url[:50]}...")
-            else:
-                print("⚠️ DEBUG: No ALCHEMY_RPC_URL found in environment variables")
-
-            # Add fallback endpoints (removed unauthorized Ankr endpoint)
-            fallback_endpoints = [
-                "https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f938ff891c141",
-                "https://arb1.arbitrum.io/rpc",
-                "https://arbitrum-one.public.blastapi.io",
-                "https://arbitrum-one.publicnode.com"
-            ]
-
-            self.rpc_endpoints.extend(fallback_endpoints)
-            print(f"🔍 DEBUG: Total RPC endpoints to test: {len(self.rpc_endpoints)}")
-            for i, rpc in enumerate(self.rpc_endpoints):
-                print(f"   {i+1}. {rpc[:60]}...")
-
-            # Test and rank only the working RPCs for performance
-            tested_rpcs = self._test_and_rank_rpcs(self.rpc_endpoints, 42161)
-
-            self.chain_id = 42161
-            print("🌐 Operating on Arbitrum Mainnet")
-
-        else:
-            # Testnet RPCs
-            testnet_rpcs = [
-                "https://sepolia-rollup.arbitrum.io/rpc",
-                "https://arbitrum-sepolia.blockpi.network/v1/rpc/public"
-            ]
-
-            tested_rpcs = self._test_and_rank_rpcs(testnet_rpcs, 421614)
-
             self.chain_id = 421614
             print("🧪 Operating on Arbitrum Sepolia Testnet")
 
@@ -2256,6 +2157,17 @@ class ArbitrumTestnetAgent:
         try:
             print(f"🔄 Executing market signal operation with ${available_borrows_usd:.2f} available")
             
+            # Validate market signal strategy is available
+            if not hasattr(self, 'market_signal_strategy') or not self.market_signal_strategy:
+                print("❌ Market signal strategy not available")
+                return False
+            
+            # Check if market signal indicates we should trade
+            should_trade = self.market_signal_strategy.should_execute_trade()
+            if not should_trade:
+                print("⚠️ Market signals do not indicate favorable conditions for trading")
+                return False
+            
             # Use conservative amount for market signal operations
             safe_amount = min(3.0, available_borrows_usd * 0.05)  # 5% of available or $3 max
             
@@ -2263,8 +2175,13 @@ class ArbitrumTestnetAgent:
                 print(f"⚠️ Amount too small for market operation: ${safe_amount:.2f}")
                 return False
             
-            # Execute enhanced DAI borrow (this already includes post-borrow operations)
-            success = self.execute_enhanced_borrow_with_retry(safe_amount)
+            # Validate transaction preconditions
+            if not self._validate_transaction_preconditions(safe_amount):
+                print("❌ Transaction preconditions not met for market signal operation")
+                return False
+            
+            # Execute validated DAI borrow
+            success = self._execute_validated_dai_borrow(safe_amount)
             
             if success:
                 print(f"✅ Market signal operation completed successfully: ${safe_amount:.2f}")
@@ -2275,6 +2192,7 @@ class ArbitrumTestnetAgent:
                 
         except Exception as e:
             print(f"❌ Market signal operation error: {e}")
+            traceback.print_exc()
             return False
 
 
@@ -2395,3 +2313,79 @@ class ArbitrumTestnetAgent:
         except Exception as e:
             print(f"❌ Complete debt swap sequence failed: {e}")
             return False
+
+
+    def validate_debt_swap_readiness(self):
+        """Validate readiness for debt swap operations"""
+        try:
+            print("🔄 VALIDATING DEBT SWAP READINESS")
+            print("=" * 40)
+            
+            validation_results = {
+                'market_signal_enabled': False,
+                'sufficient_balance': False,
+                'healthy_position': False,
+                'network_connected': False,
+                'integrations_ready': False
+            }
+            
+            # Check if market signal strategy is enabled
+            if (hasattr(self, 'market_signal_strategy') and 
+                self.market_signal_strategy and 
+                getattr(self.market_signal_strategy, 'market_signal_enabled', False)):
+                validation_results['market_signal_enabled'] = True
+                print("✅ Market signal strategy enabled")
+            else:
+                print("❌ Market signal strategy not enabled")
+            
+            # Check balances
+            dai_balance = self.get_dai_balance()
+            arb_balance = self.get_arb_balance()
+            eth_balance = self.get_eth_balance()
+            
+            if dai_balance > 0.1 or arb_balance > 0.1:
+                validation_results['sufficient_balance'] = True
+                print(f"✅ Sufficient token balances - DAI: {dai_balance:.2f}, ARB: {arb_balance:.2f}")
+            else:
+                print(f"❌ Insufficient token balances - DAI: {dai_balance:.2f}, ARB: {arb_balance:.2f}")
+            
+            # Check health factor
+            health_factor = self.get_health_factor()
+            if health_factor > 2.0:
+                validation_results['healthy_position'] = True
+                print(f"✅ Healthy position - HF: {health_factor:.3f}")
+            else:
+                print(f"❌ Risky position - HF: {health_factor:.3f}")
+            
+            # Check network connectivity
+            if self.w3 and self.w3.is_connected():
+                validation_results['network_connected'] = True
+                print("✅ Network connected")
+            else:
+                print("❌ Network not connected")
+            
+            # Check integrations
+            if (hasattr(self, 'aave') and self.aave and 
+                hasattr(self, 'uniswap') and self.uniswap):
+                validation_results['integrations_ready'] = True
+                print("✅ DeFi integrations ready")
+            else:
+                print("❌ DeFi integrations not ready")
+            
+            # Overall readiness score
+            ready_count = sum(validation_results.values())
+            total_checks = len(validation_results)
+            readiness_score = (ready_count / total_checks) * 100
+            
+            print(f"\n📊 DEBT SWAP READINESS: {ready_count}/{total_checks} ({readiness_score:.0f}%)")
+            
+            return {
+                'ready': ready_count >= 4,  # Need at least 4/5 checks to pass
+                'score': readiness_score,
+                'details': validation_results
+            }
+            
+        except Exception as e:
+            print(f"❌ Debt swap readiness validation failed: {e}")
+            return {'ready': False, 'score': 0, 'details': {}}
+
