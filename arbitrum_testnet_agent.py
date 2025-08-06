@@ -429,13 +429,21 @@ class ArbitrumTestnetAgent:
                 self.debt_swap_active = True
                 print("🔄 Debt swap system activated for simultaneous operation")
                 logging.info("🔄 Debt swap system activated for simultaneous operation")
+                
+                # Validate market signal methods are available
+                if hasattr(self.market_signal_strategy, 'should_execute_trade') and hasattr(self.market_signal_strategy, 'analyze_market_signals'):
+                    print("✅ Market signal methods validated")
+                else:
+                    print("⚠️ Market signal methods incomplete - using fallback mode")
+                    self.debt_swap_active = False
             else:
                 print("ℹ️ Market Signal Strategy initialized but disabled")
                 logging.info("ℹ️ Market Signal Strategy initialized but disabled")
                 self.debt_swap_active = False
-        except ImportError:
-            print("⚠️ Market Signal Strategy not available - debt swaps disabled")
-            logging.warning("Market Signal Strategy not available")
+        except ImportError as e:
+            print(f"⚠️ Market Signal Strategy import failed: {e}")
+            print("⚠️ Debt swaps disabled - continuing without market signals")
+            logging.warning(f"Market Signal Strategy not available: {e}")
             self.market_signal_strategy = None
             self.debt_swap_active = False
         except Exception as e:
@@ -1091,16 +1099,27 @@ class ArbitrumTestnetAgent:
                     performance_score = 0.3
                     self.last_transaction_successful = False
             # Check for market signal-triggered operations
-            elif self.market_signal_strategy and self.market_signal_strategy.should_execute_trade():
-                print("🚀 Market signal triggered - executing market-driven operation")
-                self.triggers_activated_count += 1
-                # Strategy manages its own next trigger logic
-                success = self._execute_market_signal_operation(available_borrows)
-                if success:
-                    performance_score = 0.8
-                    self.record_successful_operation("market_signal")
-                    self.last_transaction_successful = True
-                else:
+            elif self.market_signal_strategy and hasattr(self.market_signal_strategy, 'should_execute_trade'):
+                try:
+                    should_trade = self.market_signal_strategy.should_execute_trade()
+                    if should_trade:
+                        print("🚀 Market signal triggered - executing market-driven operation")
+                        self.triggers_activated_count += 1
+                        # Strategy manages its own next trigger logic
+                        success = self._execute_market_signal_operation(available_borrows)
+                        if success:
+                            performance_score = 0.8
+                            self.record_successful_operation("market_signal")
+                            self.last_transaction_successful = True
+                        else:
+                            performance_score = 0.3
+                            self.last_transaction_successful = False
+                    else:
+                        print("📊 Market signals checked - no action needed")
+                        performance_score = 0.6
+                        self.last_transaction_successful = True
+                except Exception as e:
+                    print(f"❌ Market signal check failed: {e}")
                     performance_score = 0.3
                     self.last_transaction_successful = False
             else:
