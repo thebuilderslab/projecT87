@@ -418,6 +418,32 @@ class ArbitrumTestnetAgent:
         self.last_transaction_successful = True # Track last transaction status
         self.operation_stats = {'attempts': 0, 'successes': 0} # For success rate prediction
 
+        # Initialize Market Signal Strategy with enhanced console output
+        try:
+            from market_signal_strategy import MarketSignalStrategy
+            self.market_signal_strategy = MarketSignalStrategy(self)
+            if self.market_signal_strategy.market_signal_enabled:
+                print("✅ Market Signal Strategy enabled and ready for debt swaps")
+                logging.info("✅ Market Signal Strategy enabled and ready for debt swaps")
+                # Start debt swap monitoring immediately
+                self.debt_swap_active = True
+                print("🔄 Debt swap system activated for simultaneous operation")
+                logging.info("🔄 Debt swap system activated for simultaneous operation")
+            else:
+                print("ℹ️ Market Signal Strategy initialized but disabled")
+                logging.info("ℹ️ Market Signal Strategy initialized but disabled")
+                self.debt_swap_active = False
+        except ImportError:
+            print("⚠️ Market Signal Strategy not available - debt swaps disabled")
+            logging.warning("Market Signal Strategy not available")
+            self.market_signal_strategy = None
+            self.debt_swap_active = False
+        except Exception as e:
+            print(f"❌ Market Signal Strategy initialization failed: {e}")
+            logging.error(f"Market Signal Strategy initialization failed: {e}")
+            self.market_signal_strategy = None
+            self.debt_swap_active = False
+
         return True
 
     def _auto_initialize_baseline(self):
@@ -962,17 +988,27 @@ class ArbitrumTestnetAgent:
                 from market_signal_strategy import MarketSignalStrategy
                 self.market_signal_strategy = MarketSignalStrategy(self)
                 if self.market_signal_strategy.market_signal_enabled:
+                    print("✅ Market Signal Strategy enabled and ready for debt swaps")
                     logging.info("✅ Market Signal Strategy enabled and ready for debt swaps")
                     # Start debt swap monitoring immediately
                     self.debt_swap_active = True
+                    print("🔄 Debt swap system activated for simultaneous operation")
                     logging.info("🔄 Debt swap system activated for simultaneous operation")
                 else:
+                    print("ℹ️ Market Signal Strategy initialized but disabled")
                     logging.info("ℹ️ Market Signal Strategy initialized but disabled")
                     self.debt_swap_active = False
             except ImportError:
+                print("⚠️ Market Signal Strategy not available - debt swaps disabled")
                 logging.warning("Market Signal Strategy not available")
                 self.market_signal_strategy = None
                 self.debt_swap_active = False
+            except Exception as e:
+                print(f"❌ Market Signal Strategy initialization failed: {e}")
+                logging.error(f"Market Signal Strategy initialization failed: {e}")
+                self.market_signal_strategy = None
+                self.debt_swap_active = False
+
 
             return True
 

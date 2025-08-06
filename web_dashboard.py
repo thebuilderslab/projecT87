@@ -60,7 +60,7 @@ def initialize_agent():
                 'data_source': 'autonomous_mainnet_agent',
                 'agent_status': 'connected_to_running_agent',
                 'health_factor': 4.3460,  # Current live value from autonomous agent
-                'total_collateral_usdc': 192.85,  # Current live value from autonomous agent  
+                'total_collateral_usdc': 192.85,  # Current live value from autonomous agent
                 'total_debt_usdc': 35.06,  # Current live value from autonomous agent
                 'available_borrows_usdc': 108.27,  # Current live value from autonomous agent
                 'eth_balance': 0.001827,  # Current live value from autonomous agent
@@ -94,7 +94,7 @@ def check_autonomous_agent_running():
     try:
         # Check if autonomous agent process is active
         result = subprocess.run(['ps', 'aux'], capture_output=True, text=True, timeout=5)
-        is_running = ('run_autonomous_mainnet.py' in result.stdout or 
+        is_running = ('run_autonomous_mainnet.py' in result.stdout or
                      'arbitrum_testnet_agent.py' in result.stdout or
                      'ArbitrumTestnetAgent' in result.stdout or
                      'complete_autonomous_launcher.py' in result.stdout or
@@ -108,10 +108,10 @@ def check_autonomous_agent_running():
 def monitor_console_output():
     """Monitor console output from autonomous agent"""
     global console_buffer
-    
+
     # Initialize with current status
     console_buffer.append(f"[{datetime.now().strftime('%H:%M:%S')}] 🚀 Dashboard console monitoring started")
-    
+
     while True:
         try:
             # Method 1: Check for autonomous agent process output with detailed info
@@ -119,7 +119,7 @@ def monitor_console_output():
                 result = subprocess.run(['ps', 'aux'], capture_output=True, text=True, timeout=3)
                 processes = result.stdout.split('\n')
                 agent_processes = [p for p in processes if 'main.py' in p or 'arbitrum_testnet_agent.py' in p]
-                
+
                 if agent_processes:
                     for proc in agent_processes[:2]:  # Show up to 2 processes
                         parts = proc.split()
@@ -133,7 +133,7 @@ def monitor_console_output():
             except Exception as e:
                 console_buffer.append(f"[{datetime.now().strftime('%H:%M:%S')}] ⚠️ Process check error: {str(e)[:50]}")
                 pass
-            
+
             # Method 2: Read from performance log for activity and debt swap operations
             if os.path.exists('performance_log.json'):
                 try:
@@ -142,13 +142,13 @@ def monitor_console_output():
                         if lines:
                             latest = json.loads(lines[-1])
                             timestamp = datetime.fromtimestamp(latest.get('timestamp', time.time()))
-                            
+
                             # Check for debt swap operations in metadata
                             if latest.get('metadata'):
                                 metadata = latest['metadata']
                                 health_factor = metadata.get('health_factor', 'N/A')
                                 collateral = metadata.get('total_collateral_usdc', 'N/A')
-                                
+
                                 # Look for debt swap indicators
                                 if 'debt_swap' in str(metadata).lower() or 'market_signal' in str(metadata).lower():
                                     console_line = f"[{timestamp.strftime('%H:%M:%S')}] 🔄 DEBT SWAP: Operation detected in logs | HF={health_factor}"
@@ -158,13 +158,13 @@ def monitor_console_output():
                                     console_line = f"[{timestamp.strftime('%H:%M:%S')}] 📊 Agent Status: HF={health_factor}, Collateral=${collateral}"
                             else:
                                 console_line = f"[{timestamp.strftime('%H:%M:%S')}] 🔄 Run {latest.get('run_id', 0)}, Iteration {latest.get('iteration', 0)}"
-                            
+
                             # Add to console buffer if it's new
                             if not console_buffer or console_buffer[-1] != console_line:
                                 console_buffer.append(console_line)
                 except Exception as e:
                     pass
-            
+
             # Method 2.5: Check for debt swap transaction logs
             try:
                 debt_swap_files = ['debt_swap_log.json', 'market_signal_log.json', 'swap_transactions.json']
@@ -177,7 +177,7 @@ def monitor_console_output():
                                 console_buffer.append(f"[{timestamp}] 🔍 DEBT SWAP: Found activity in {file_name}")
             except:
                 pass
-            
+
             # Method 3: Add live wallet status updates
             try:
                 live_data = get_live_agent_data()
@@ -187,11 +187,11 @@ def monitor_console_output():
                         console_buffer.append(wallet_line)
             except:
                 pass
-            
+
             # Method 4: Monitor system health with comprehensive detail including debt swap monitoring
             if check_autonomous_agent_running():
                 system_line = f"[{datetime.now().strftime('%H:%M:%S')}] 🟢 System: Autonomous agent ACTIVE - Real-time Aave monitoring"
-                
+
                 # Add comprehensive status every cycle
                 try:
                     live_data = get_live_agent_data()
@@ -200,15 +200,15 @@ def monitor_console_output():
                         collateral = live_data.get('total_collateral_usdc', 0)
                         debt = live_data.get('total_debt_usdc', 0)
                         available = live_data.get('available_borrows_usdc', 0)
-                        
+
                         # Detailed status line
                         detail_line = f"[{datetime.now().strftime('%H:%M:%S')}] 📊 Aave Status: HF={hf:.4f} | Collateral=${collateral:.2f} | Debt=${debt:.2f} | Available=${available:.2f}"
                         console_buffer.append(detail_line)
-                        
+
                         # DEBT SWAP MONITORING - Check conditions
                         debt_swap_status = check_debt_swap_conditions(hf, available, debt)
                         console_buffer.append(debt_swap_status)
-                        
+
                         # Health factor assessment
                         if hf > 2.0:
                             health_status = f"[{datetime.now().strftime('%H:%M:%S')}] ✅ Health Factor: {hf:.4f} - HEALTHY (Good for operations)"
@@ -216,48 +216,48 @@ def monitor_console_output():
                             health_status = f"[{datetime.now().strftime('%H:%M:%S')}] ⚠️ Health Factor: {hf:.4f} - MODERATE (Monitoring required)"
                         else:
                             health_status = f"[{datetime.now().strftime('%H:%M:%S')}] 🚨 Health Factor: {hf:.4f} - LOW RISK (Emergency protocols)"
-                        
+
                         # Only add health assessment if significantly different
                         if not console_buffer or not any(f"Health Factor: {hf:.4f}" in line for line in list(console_buffer)[-3:]):
                             console_buffer.append(health_status)
-                            
+
                         # Enhanced market signal monitoring with debt swap focus
                         market_status = check_market_signals()
                         if market_status:
                             console_buffer.append(market_status)
-                            
+
                         # Check for debt swap execution logs every few cycles
                         if len(console_buffer) % 5 == 0:  # Every 5th cycle
                             debt_swap_logs = check_for_debt_swap_activity()
                             if debt_swap_logs:
                                 for log in debt_swap_logs:
                                     console_buffer.append(log)
-                            
+
                         # Network status
                         network_line = f"[{datetime.now().strftime('%H:%M:%S')}] 🌐 Network: Arbitrum Mainnet | Chain ID: 42161 | RPC: Connected"
                         if len(console_buffer) % 8 == 0:  # Every 8th cycle
                             console_buffer.append(network_line)
-                        
+
                 except Exception as e:
                     error_line = f"[{datetime.now().strftime('%H:%M:%S')}] ❌ Live data fetch error: {str(e)[:60]}"
                     console_buffer.append(error_line)
             else:
                 system_line = f"[{datetime.now().strftime('%H:%M:%S')}] 🟡 System: Dashboard-only mode - Agent not detected"
-                
+
                 # Add more context when agent is not running
                 if len(console_buffer) % 4 == 0:
                     context_line = f"[{datetime.now().strftime('%H:%M:%S')}] 🔍 Monitoring: Checking for agent processes and log files..."
                     console_buffer.append(context_line)
-            
+
             if not console_buffer or not any("System:" in line for line in list(console_buffer)[-3:]):
                 console_buffer.append(system_line)
-            
+
             # Keep buffer size manageable but allow more entries for larger console
             if len(console_buffer) > 80:
                 console_buffer = deque(list(console_buffer)[-50:], maxlen=100)
-            
+
             time.sleep(3)  # Check every 3 seconds for more responsive updates
-            
+
         except Exception as e:
             error_line = f"[{datetime.now().strftime('%H:%M:%S')}] ⚠️ Console monitor error: {str(e)[:50]}"
             console_buffer.append(error_line)
@@ -268,7 +268,7 @@ def get_system_mode():
     global system_mode
     if system_mode:
         return system_mode
-    
+
     if check_autonomous_agent_running():
         return "autonomous"
     else:
@@ -279,24 +279,24 @@ def get_live_agent_data():
     try:
         # Use unified fetcher for live Aave data
         from unified_aave_data_fetcher import get_unified_aave_data
-        
+
         # Try to get agent instance for live data
         try:
             from arbitrum_testnet_agent import ArbitrumTestnetAgent
             agent = ArbitrumTestnetAgent()
-            
+
             # Get live Aave data directly from contracts
             live_data = get_unified_aave_data(agent)
-            
+
             if live_data:
                 print(f"📊 Using LIVE AAVE CONTRACT data: HF {live_data['health_factor']:.4f}")
                 return live_data
             else:
                 print(f"⚠️ Live data fetch failed, trying fallback methods...")
-                
+
         except Exception as agent_error:
             print(f"⚠️ Agent initialization failed: {agent_error}")
-        
+
         # Fallback: Try to read from performance log for latest data
         if os.path.exists('performance_log.json'):
             with open('performance_log.json', 'r') as f:
@@ -336,25 +336,7 @@ def get_live_agent_data():
                             'last_update': latest.get('timestamp', time.time()),
                             'data_quality': 'VALIDATED'
                         }
-        
-        # Method 2: Try to read agent baseline file
-        if os.path.exists('agent_baseline.json'):
-            with open('agent_baseline.json', 'r') as f:
-                baseline_data = json.load(f)
-                if baseline_data and baseline_data.get('last_collateral_value_usd', 0) > 0:
-                    print(f"📊 Using agent baseline data: ${baseline_data.get('last_collateral_value_usd', 0):.2f}")
-                    return {
-                        'health_factor': baseline_data.get('health_factor', 4.3460),
-                        'total_collateral_usdc': baseline_data.get('last_collateral_value_usd', 192.85),
-                        'total_debt_usdc': baseline_data.get('total_debt_usd', 35.06),
-                        'available_borrows_usdc': baseline_data.get('available_borrows_usd', 108.27),
-                        'baseline_collateral': baseline_data.get('last_collateral_value_usd', 192.85),
-                        'next_trigger_threshold': baseline_data.get('last_collateral_value_usd', 192.85) + 12.0,
-                        'data_source': 'agent_baseline_file',
-                        'last_update': baseline_data.get('timestamp', time.time()),
-                        'data_quality': 'CACHED'
-                    }
-                    
+
     except Exception as e:
         print(f"⚠️ Error reading autonomous agent data: {e}")
 
@@ -440,17 +422,17 @@ def wallet_status():
                     "stateMutability": "view",
                     "type": "function"
                 }]
-                
+
                 pool_contract = agent.w3.eth.contract(address=agent.aave_pool_address, abi=pool_abi)
                 account_data = pool_contract.functions.getUserAccountData(agent.address).call()
-                
+
                 fresh_collateral_usd = account_data[0] / (10**8)
                 fresh_debt_usd = account_data[1] / (10**8)
                 fresh_available_borrows_usd = account_data[2] / (10**8)
                 fresh_health_factor = account_data[5] / (10**18) if account_data[5] > 0 else float('inf')
-                
+
                 print(f"✅ Fresh Aave data: Collateral ${fresh_collateral_usd:.2f}, HF {fresh_health_factor:.4f}")
-                
+
                 # Use fresh data if available
                 live_agent_data.update({
                     'health_factor': fresh_health_factor,
@@ -669,25 +651,25 @@ def get_console_output():
         if console_buffer:
             last_line_time = console_buffer[-1][:10] if console_buffer[-1].startswith('[') else ""
             current_time = datetime.now().strftime('%H:%M:%S')
-            
+
             # If last message is more than 30 seconds old, add current status
             try:
                 if last_line_time:
                     last_time = datetime.strptime(last_line_time[1:9], '%H:%M:%S')
                     current_time_obj = datetime.strptime(current_time, '%H:%M:%S')
                     time_diff = (current_time_obj - last_time).seconds
-                    
+
                     if time_diff > 30:
                         agent_running = check_autonomous_agent_running()
                         status_msg = "🟢 Active" if agent_running else "🟡 Dashboard only"
                         console_buffer.append(f"[{current_time}] {status_msg} - System operational")
             except:
                 pass
-        
+
         # Ensure we have some content
         if not console_buffer:
             console_buffer.append(f"[{datetime.now().strftime('%H:%M:%S')}] 📱 Dashboard ready - Monitoring system...")
-        
+
         return jsonify({
             'console_lines': list(console_buffer),
             'system_mode': get_system_mode(),
@@ -708,7 +690,7 @@ def get_system_metrics():
     """Get comprehensive system metrics for enhanced dashboard display"""
     try:
         agent_running = check_autonomous_agent_running()
-        
+
         # Get metrics from agent if available
         agent_metrics = {}
         if agent_running:
@@ -719,7 +701,7 @@ def get_system_metrics():
                     agent_metrics = temp_agent.get_system_metrics()
             except Exception as e:
                 print(f"⚠️ Agent metrics fetch failed: {e}")
-        
+
         # Get performance data
         performance_data = []
         if os.path.exists('performance_log.json'):
@@ -730,18 +712,18 @@ def get_system_metrics():
                         performance_data.append(json.loads(line))
                     except:
                         continue
-        
+
         # Calculate metrics
         current_time = time.time()
         last_operation_time = agent_metrics.get('last_operation_time', 0)
         rest_period = max(0, 60 - (current_time - last_operation_time)) if last_operation_time > 0 else 0
-        
+
         # Get live wallet data
         live_data = get_live_agent_data()
-        
+
         # Determine trigger status
         triggers_info = analyze_trigger_conditions(live_data)
-        
+
         return jsonify({
             'timestamp': current_time,
             'formatted_timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S UTC'),
@@ -764,9 +746,10 @@ def get_system_metrics():
             'network_status': get_network_approval_status(live_data),
             'trigger_analysis': triggers_info,
             'market_signals': get_market_signal_status(),
+            'debt_swap_status': _get_debt_swap_status(), # Call the new function
             'success': True
         })
-        
+
     except Exception as e:
         return jsonify({
             'error': str(e),
@@ -774,29 +757,64 @@ def get_system_metrics():
             'success': False
         })
 
+# Helper function for debt_swap_status
+def _get_debt_swap_status():
+    """Get status of debt swap operations."""
+    try:
+        # Check for market signal strategy enabled
+        market_enabled = os.getenv('MARKET_SIGNAL_ENABLED', 'false').lower() == 'true'
+
+        # Check for recent debt swap activity logs
+        recent_activity = check_for_debt_swap_activity()
+        has_recent_activity = len(recent_activity) > 0
+
+        status_message = "Idle"
+        if market_enabled:
+            status_message = "Market signals active"
+            if has_recent_activity:
+                status_message += " - Recent swap activity detected"
+            else:
+                status_message += " - Awaiting market triggers"
+        else:
+            status_message = "Disabled - Enable MARKET_SIGNAL_ENABLED"
+
+        return {
+            'enabled': market_enabled,
+            'status': status_message,
+            'recent_logs': recent_activity,
+            'timestamp': time.time()
+        }
+    except Exception as e:
+        return {
+            'enabled': False,
+            'status': f"Error fetching status: {e}",
+            'timestamp': time.time()
+        }
+
+
 def analyze_trigger_conditions(live_data):
     """Analyze current trigger conditions and next targets"""
     try:
         current_collateral = live_data.get('total_collateral_usdc', 192.85)
         baseline = live_data.get('baseline_collateral', 177.79)
         growth_threshold = 12.0  # $12 growth trigger
-        
+
         growth_achieved = current_collateral - baseline
         growth_needed = max(0, growth_threshold - growth_achieved)
-        
+
         health_factor = live_data.get('health_factor', 4.346)
         available_borrows = live_data.get('available_borrows_usdc', 108.27)
-        
+
         # Determine if triggers are ready
         growth_trigger_ready = growth_achieved >= growth_threshold and health_factor > 2.1
         capacity_trigger_ready = available_borrows > 13.0 and health_factor > 2.05
-        
+
         triggers_active = []
         if growth_trigger_ready:
             triggers_active.append("Growth-Triggered System")
         if capacity_trigger_ready:
             triggers_active.append("Capacity-Based System")
-        
+
         return {
             'growth_achieved': growth_achieved,
             'growth_needed': growth_needed,
@@ -812,7 +830,7 @@ def analyze_trigger_conditions(live_data):
 def calculate_trigger_probability(growth_ready, capacity_ready, health_factor):
     """Calculate probability of successful trigger execution"""
     base_probability = 60
-    
+
     if growth_ready:
         base_probability += 20
     if capacity_ready:
@@ -821,14 +839,14 @@ def calculate_trigger_probability(growth_ready, capacity_ready, health_factor):
         base_probability += 10
     elif health_factor < 2.0:
         base_probability -= 20
-    
+
     return min(95, max(10, base_probability))
 
 def check_pending_approvals():
     """Check for pending user approvals"""
     try:
         pending = []
-        
+
         # Check for parameter update triggers
         if os.path.exists('parameter_update_trigger.flag'):
             pending.append({
@@ -836,7 +854,7 @@ def check_pending_approvals():
                 'message': 'User settings updated - review required',
                 'action_required': 'Review and approve new parameters'
             })
-        
+
         # Check for emergency stop
         if os.path.exists('EMERGENCY_STOP_ACTIVE.flag'):
             pending.append({
@@ -844,7 +862,7 @@ def check_pending_approvals():
                 'message': 'System halted - manual intervention needed',
                 'action_required': 'Clear emergency stop to resume operations'
             })
-        
+
         return {
             'pending': len(pending) > 0,
             'count': len(pending),
@@ -857,35 +875,35 @@ def get_improvement_proposals(live_data, performance_data):
     """Generate self-improvement proposal headlines"""
     try:
         proposals = []
-        
+
         # Performance-based proposals
         if performance_data:
             recent_performance = [p.get('performance_metric', 0) for p in performance_data[-5:]]
             avg_performance = sum(recent_performance) / len(recent_performance) if recent_performance else 0
-            
+
             if avg_performance < 0.6:
                 proposals.append("🔧 Optimize transaction timing for better success rates")
             if avg_performance > 0.8:
                 proposals.append("📈 Consider increasing operation frequency for higher yields")
-        
+
         # Health factor based
         health_factor = live_data.get('health_factor', 4.346)
         if health_factor > 4.0:
             proposals.append("💰 Increase leverage ratio for capital efficiency")
         elif health_factor < 2.5:
             proposals.append("🛡️ Reduce risk exposure for safety")
-        
+
         # Capacity utilization
         available_borrows = live_data.get('available_borrows_usdc', 108.27)
         if available_borrows > 100:
             proposals.append("🚀 High capacity available - ready for scaled operations")
-        
+
         # Market conditions
         if os.getenv('MARKET_SIGNAL_ENABLED', 'false').lower() == 'true':
             proposals.append("📊 Market signal strategy active - debt swap optimization")
         else:
             proposals.append("💡 Enable market signals for enhanced yield opportunities")
-        
+
         return proposals[:4]  # Return top 4 proposals
     except Exception as e:
         return [f"❌ Proposal error: {str(e)[:50]}"]
@@ -895,22 +913,22 @@ def get_network_approval_status(live_data):
     try:
         health_factor = live_data.get('health_factor', 4.346)
         eth_balance = live_data.get('eth_balance', 0.001805)
-        
+
         # Calculate approval probability
         approval_probability = 75  # Base probability
-        
+
         if health_factor > 3.0:
             approval_probability += 15
         elif health_factor < 2.0:
             approval_probability -= 25
-        
+
         if eth_balance > 0.001:
             approval_probability += 10
         else:
             approval_probability -= 30
-        
+
         approval_probability = max(10, min(95, approval_probability))
-        
+
         return {
             'ready_for_execution': health_factor > 1.5 and eth_balance > 0.001,
             'approval_probability': approval_probability,
@@ -931,7 +949,7 @@ def get_market_signal_status():
     """Get market signal and debt swap status"""
     try:
         market_enabled = os.getenv('MARKET_SIGNAL_ENABLED', 'false').lower() == 'true'
-        
+
         return {
             'enabled': market_enabled,
             'btc_threshold': float(os.getenv('BTC_DROP_THRESHOLD', '0.01')) * 100,
@@ -954,13 +972,13 @@ def set_system_mode():
     try:
         data = request.get_json() or {}
         mode = data.get('mode', '').lower()
-        
+
         if mode not in ['autonomous', 'manual']:
             return jsonify({'error': 'Invalid mode. Use "autonomous" or "manual"'}), 400
-        
+
         system_mode = mode
         console_buffer.append(f"[{datetime.now().strftime('%H:%M:%S')}] 🔄 System mode changed to: {mode}")
-        
+
         return jsonify({
             'success': True,
             'mode': mode,
@@ -1312,23 +1330,23 @@ def check_debt_swap_conditions(health_factor, available_borrows, total_debt):
     """Check and log debt swap conditions with enhanced monitoring"""
     try:
         timestamp = datetime.now().strftime('%H:%M:%S')
-        
+
         # Check debt swap triggers
         debt_ratio = (total_debt / (total_debt + available_borrows)) if (total_debt + available_borrows) > 0 else 0
-        
+
         # Market signal environment check with detailed validation
         market_enabled = os.getenv('MARKET_SIGNAL_ENABLED', 'false').lower() == 'true'
         btc_threshold = float(os.getenv('BTC_DROP_THRESHOLD', '0.01'))  # Default 1%
         dai_threshold = float(os.getenv('DAI_TO_ARB_THRESHOLD', '0.7'))  # Default 70%
         arb_rsi_threshold = float(os.getenv('ARB_RSI_OVERSOLD', '30'))  # Default 30
-        
+
         if market_enabled:
             status = f"[{timestamp}] 🚀 DEBT SWAP: Market signals ENABLED"
             status += f" | BTC drop ≥{btc_threshold*100:.1f}% triggers swap"
             status += f" | DAI→ARB confidence ≥{dai_threshold*100:.0f}%"
             status += f" | ARB RSI ≤{arb_rsi_threshold}"
             status += f" | Debt ratio: {debt_ratio:.1%}"
-            
+
             # Check if agent has market signal strategy initialized
             try:
                 # Try to import and check if agent is running with market signals
@@ -1348,7 +1366,7 @@ def check_debt_swap_conditions(health_factor, available_borrows, total_debt):
         else:
             status = f"[{timestamp}] ❌ DEBT SWAP: Market signals DISABLED"
             status += f" | Enable with MARKET_SIGNAL_ENABLED=true in Secrets"
-            
+
         # Detailed readiness assessment
         readiness_issues = []
         if health_factor < 1.5:
@@ -1357,14 +1375,14 @@ def check_debt_swap_conditions(health_factor, available_borrows, total_debt):
             readiness_issues.append(f"Low capacity (${available_borrows:.2f})")
         if debt_ratio > 0.8:
             readiness_issues.append(f"High debt ratio ({debt_ratio:.1%})")
-            
+
         if readiness_issues:
             status += f" | Issues: {', '.join(readiness_issues)}"
         else:
             status += f" | Account: READY for debt swaps"
-            
+
         return status
-        
+
     except Exception as e:
         return f"[{datetime.now().strftime('%H:%M:%S')}] ❌ DEBT SWAP: Condition check failed: {str(e)[:50]}"
 
@@ -1373,7 +1391,7 @@ def check_for_debt_swap_activity():
     try:
         timestamp = datetime.now().strftime('%H:%M:%S')
         activity_logs = []
-        
+
         # Check performance log for debt swap operations
         if os.path.exists('performance_log.json'):
             try:
@@ -1383,24 +1401,24 @@ def check_for_debt_swap_activity():
                     for line in lines[-3:]:
                         entry = json.loads(line)
                         metadata = entry.get('metadata', {})
-                        
+
                         # Look for market signal operations
                         if (metadata.get('operation_type') == 'market_signal' or
                             'debt_swap' in str(metadata).lower() or
                             'market_driven' in str(metadata).lower()):
-                            
+
                             log_time = datetime.fromtimestamp(entry.get('timestamp', time.time()))
                             operation = metadata.get('operation_type', 'debt_swap')
                             amount = metadata.get('amount', 0)
                             success = metadata.get('success', False)
-                            
+
                             status_icon = "✅" if success else "❌"
                             activity_logs.append(
                                 f"[{timestamp}] {status_icon} DEBT SWAP EXECUTED: {operation} | ${amount:.2f} | {log_time.strftime('%H:%M:%S')}"
                             )
             except:
                 pass
-        
+
         # Check for market signal strategy logs
         market_log_files = ['market_signal_log.json', 'debt_swap_transactions.json']
         for log_file in market_log_files:
@@ -1414,7 +1432,7 @@ def check_for_debt_swap_activity():
                             )
                 except:
                     pass
-        
+
         # Check for transaction hashes in recent operations
         try:
             # Look for any recent .json files that might contain transaction data
@@ -1427,9 +1445,9 @@ def check_for_debt_swap_activity():
                     )
         except:
             pass
-            
+
         return activity_logs[-3:]  # Return last 3 activity logs
-        
+
     except Exception as e:
         return [f"[{datetime.now().strftime('%H:%M:%S')}] ❌ DEBT SWAP: Activity check failed | {str(e)[:40]}"]
 
@@ -1437,24 +1455,24 @@ def check_market_signals():
     """Check current market signals for debt swapping with real-time analysis"""
     try:
         timestamp = datetime.now().strftime('%H:%M:%S')
-        
+
         # Check if market signal strategy is enabled
         market_enabled = os.getenv('MARKET_SIGNAL_ENABLED', 'false').lower() == 'true'
-        
+
         if not market_enabled:
             return f"[{timestamp}] 🚀 DEBT SWAP: Ready to enable | Set MARKET_SIGNAL_ENABLED=true in Secrets to activate"
-        
+
         # Check if market signal strategy files exist
         if os.path.exists('market_signal_strategy.py'):
             # Try to initialize and test market signals
             try:
                 from arbitrum_testnet_agent import ArbitrumTestnetAgent
                 agent = ArbitrumTestnetAgent()
-                
+
                 if hasattr(agent, 'market_signal_strategy') and agent.market_signal_strategy:
                     # Test if strategy can execute
                     can_execute = agent.market_signal_strategy.should_execute_trade()
-                    
+
                     if can_execute:
                         return f"[{timestamp}] 🚨 DEBT SWAP TRIGGER: Market conditions met | EXECUTING SWAP"
                     else:
@@ -1464,33 +1482,33 @@ def check_market_signals():
                             btc_change = signal.btc_price_change
                             arb_rsi = signal.arb_technical_score
                             confidence = signal.confidence
-                            
+
                             status = f"[{timestamp}] 📊 MARKET ANALYSIS: BTC {btc_change:+.2f}% | ARB RSI {arb_rsi:.1f} | Confidence {confidence:.0%}"
-                            
+
                             # Check specific triggers
                             btc_threshold = float(os.getenv('BTC_DROP_THRESHOLD', '0.002')) * 100
                             if btc_change <= -btc_threshold:
                                 status += f" | ✅ BTC drop trigger met"
                             else:
                                 status += f" | ❌ BTC needs {-btc_threshold:.1f}% drop"
-                                
+
                             if arb_rsi <= 30:
                                 status += f" | ✅ ARB oversold"
                             else:
                                 status += f" | ❌ ARB not oversold"
-                                
+
                             return status
                         else:
                             return f"[{timestamp}] 📊 MARKET SIGNALS: No signal data | Waiting for market conditions"
                 else:
                     return f"[{timestamp}] ⚠️ MARKET SIGNALS: Strategy not initialized | Checking agent status"
-                    
+
             except Exception as agent_error:
                 return f"[{timestamp}] ❌ MARKET SIGNALS: Agent error | {str(agent_error)[:50]}"
-            
+
         else:
             return f"[{timestamp}] ❌ MARKET SIGNALS: Strategy file missing | Install market_signal_strategy.py"
-            
+
     except Exception as e:
         return f"[{datetime.now().strftime('%H:%M:%S')}] ❌ MARKET SIGNALS: Check failed | {str(e)[:50]}"
 

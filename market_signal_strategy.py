@@ -607,3 +607,141 @@ class MarketSignalStrategy:
             status['trend_analysis'] = trend_summary
 
         return status
+"""
+Market Signal Strategy for Debt Swapping
+Monitors market conditions and executes strategic debt swaps between DAI and ARB
+"""
+
+import os
+import time
+import requests
+import logging
+from datetime import datetime
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+class MarketSignalStrategy:
+    def __init__(self, agent):
+        self.agent = agent
+        
+        # Load configuration from environment variables
+        self.market_signal_enabled = os.getenv('MARKET_SIGNAL_ENABLED', 'false').lower() == 'true'
+        self.btc_drop_threshold = float(os.getenv('BTC_DROP_THRESHOLD', '0.01'))  # 1% BTC drop
+        self.dai_to_arb_threshold = float(os.getenv('DAI_TO_ARB_THRESHOLD', '0.7'))  # 70% confidence
+        self.arb_to_dai_threshold = float(os.getenv('ARB_TO_DAI_THRESHOLD', '0.6'))  # 60% confidence
+        self.arb_rsi_oversold = float(os.getenv('ARB_RSI_OVERSOLD', '30'))
+        self.arb_rsi_overbought = float(os.getenv('ARB_RSI_OVERBOUGHT', '70'))
+        self.signal_cooldown = int(os.getenv('SIGNAL_COOLDOWN', '300'))  # 5 minutes
+        
+        self.last_signal_time = 0
+        self.last_btc_price = None
+        self.pending_approval = False
+        
+        # Print initialization status
+        print(f"🔄 Market Signal Strategy Initialized:")
+        print(f"   • Enabled: {'✅ YES' if self.market_signal_enabled else '❌ NO'}")
+        if self.market_signal_enabled:
+            print(f"   • BTC Drop Threshold: {self.btc_drop_threshold:.1%}")
+            print(f"   • DAI→ARB Confidence: {self.dai_to_arb_threshold:.0%}")
+            print(f"   • ARB→DAI Confidence: {self.arb_to_dai_threshold:.0%}")
+            print(f"   • Signal Cooldown: {self.signal_cooldown}s")
+        
+    def should_execute_trade(self):
+        """Check if market conditions favor a debt swap"""
+        if not self.market_signal_enabled:
+            return False
+            
+        # Check cooldown
+        if time.time() - self.last_signal_time < self.signal_cooldown:
+            return False
+            
+        try:
+            # Get market data
+            btc_signal = self._check_btc_signal()
+            arb_signal = self._check_arb_signal()
+            
+            # Determine if we should execute
+            if btc_signal == "bearish" and arb_signal == "oversold":
+                print("🔄 MARKET SIGNAL: Bearish BTC + Oversold ARB → DAI→ARB swap recommended")
+                return True
+            elif btc_signal == "bullish" and arb_signal == "overbought":
+                print("🔄 MARKET SIGNAL: Bullish BTC + Overbought ARB → ARB→DAI swap recommended")
+                return True
+                
+            return False
+            
+        except Exception as e:
+            print(f"❌ Market signal check failed: {e}")
+            return False
+    
+    def _check_btc_signal(self):
+        """Check BTC price movement for bearish/bullish signals"""
+        try:
+            # Simple price movement check (can be enhanced with more sophisticated analysis)
+            # For demo purposes, return neutral
+            return "neutral"
+        except Exception as e:
+            logger.error(f"BTC signal check failed: {e}")
+            return "neutral"
+    
+    def _check_arb_signal(self):
+        """Check ARB RSI for oversold/overbought conditions"""
+        try:
+            # Simple RSI simulation (can be enhanced with real data)
+            # For demo purposes, return neutral
+            return "neutral"
+        except Exception as e:
+            logger.error(f"ARB signal check failed: {e}")
+            return "neutral"
+    
+    def get_recommended_swap_direction(self):
+        """Get recommended swap direction based on current market signals"""
+        try:
+            btc_signal = self._check_btc_signal()
+            arb_signal = self._check_arb_signal()
+            
+            if btc_signal == "bearish" and arb_signal == "oversold":
+                return "DAI_TO_ARB"
+            elif btc_signal == "bullish" and arb_signal == "overbought":
+                return "ARB_TO_DAI"
+            else:
+                return "HOLD"
+                
+        except Exception as e:
+            logger.error(f"Swap direction analysis failed: {e}")
+            return "HOLD"
+    
+    def calculate_swap_amount(self, available_balance):
+        """Calculate optimal swap amount based on market confidence"""
+        try:
+            direction = self.get_recommended_swap_direction()
+            
+            if direction == "DAI_TO_ARB":
+                confidence_factor = self.dai_to_arb_threshold
+            elif direction == "ARB_TO_DAI":
+                confidence_factor = self.arb_to_dai_threshold
+            else:
+                return 0.0
+            
+            # Conservative approach: use 5-10% of available balance
+            base_percentage = 0.05  # 5% base
+            max_percentage = 0.10   # 10% maximum
+            
+            swap_percentage = base_percentage + (confidence_factor - 0.5) * (max_percentage - base_percentage)
+            swap_amount = available_balance * swap_percentage
+            
+            # Apply minimum and maximum limits
+            min_swap = 1.0   # $1 minimum
+            max_swap = 10.0  # $10 maximum for safety
+            
+            return max(min_swap, min(swap_amount, max_swap))
+            
+        except Exception as e:
+            logger.error(f"Swap amount calculation failed: {e}")
+            return 0.0
+    
+    def record_signal_execution(self):
+        """Record that a signal was executed"""
+        self.last_signal_time = time.time()
+        print(f"📊 Market signal executed at {datetime.now().strftime('%H:%M:%S')}")
