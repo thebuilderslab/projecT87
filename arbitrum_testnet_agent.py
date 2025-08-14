@@ -1156,6 +1156,17 @@ class ArbitrumTestnetAgent:
                     print("ℹ️ Market Signal Strategy initialized but disabled")
                     logging.info("ℹ️ Market Signal Strategy initialized but disabled")
                     self.debt_swap_active = False
+            except ImportError as e:
+                print(f"⚠️ Market Signal Strategy import failed: {e}")
+                print("⚠️ Debt swaps disabled - continuing without market signals")
+                logging.warning(f"Market Signal Strategy not available: {e}")
+                self.market_signal_strategy = None
+                self.debt_swap_active = False
+            except Exception as e:
+                print(f"❌ Market Signal Strategy initialization failed: {e}")
+                logging.error(f"Market Signal Strategy initialization failed: {e}")
+                self.market_signal_strategy = None
+                self.debt_swap_active = False
             except ImportError:
                 print("⚠️ Market Signal Strategy not available - debt swaps disabled")
                 logging.warning("Market Signal Strategy not available")
