@@ -1,0 +1,112 @@
+s
+🔍 Autonomous agent running check: False
+✅ Wallet status retrieved: HF 4.3460, Agent Running: False
+172.31.70.66 - - [14/Aug/2025 20:42:19] "GET /api/wallet_status HTTP/1.1" 200 -
+🔍 Autonomous agent running check: False
+🔍 Autonomous agent running check: False
+172.31.70.66 - - [14/Aug/2025 20:42:19] "GET /api/console HTTP/1.1" 200 -
+🔍 Autonomous agent running check: False
+⚠️ Agent initialization failed: expected 'except' or 'finally' block (arbitrum_testnet_agent.py, line 2154)
+📊 Using latest autonomous agent data from console logs
+172.31.70.66 - - [14/Aug/2025 20:42:19] "GET /api/system_metrics HTTP/1.1" 200 -
+🔍 Autonomous agent running check: False
+⚠️ Agent initialization failed: expected 'except' or 'finally' block (arbitrum_testnet_agent.py, line 2154)
+📊 Using latest autonomous agent data from console logs
+172.31.70.66 - - [14/Aug/2025 20:42:20] "GET /api/system_metrics HTTP/1.1" 200 -
+⚠️ Agent initialization failed: expected 'except' or 'finally' block (arbitrum_testnet_agent.py, line 2154)
+📊 Using latest autonomous agent data from console logs
+🔍 Autonomous agent running check: False
+🔍 Autonomous agent running check: False
+🔍 Autonomous agent running check: False
+172.31.70.66 - - [14/Aug/2025 20:42:20] "GET /api/console HTTP/1.1" 200 -
+🔍 Autonomous agent running check: False
+⚠️ Agent initialization failed: expected 'except' or 'finally' block (arbitrum_testnet_agent.py, line 2154)
+📊 Using latest autonomous agent data from console logs
+172.31.70.66 - - [14/Aug/2025 20:42:21] "GET /api/system_metrics HTTP/1.1" 200 -
+🔍 Autonomous agent running check: False
+🔍 Autonomous agent running check: False
+172.31.70.66 - - [14/Aug/2025 20:42:22] "GET /api/console HTTP/1.1" 200 -
+🔍 Autonomous agent running check: False
+⚠️ Agent initialization failed: expected 'except' or 'finally' block (arbitrum_testnet_agent.py, line 2154)
+📊 Using latest autonomous agent data from console logs
+172.31.70.66 - - [14/Aug/2025 20:42:23] "GET /api/system_metrics HTTP/1.1" 200 -
+⚠️ Agent initialization failed: expected 'except' or 'finally' block (arbitrum_testnet_agent.py, line 2154)
+📊 Using latest autonomous agent data from console logs
+🔍 Autonomous agent running check: False
+🔍 Autonomous agent running check: False
+🔍 Autonomous agent running check: False
+172.31.70.66 - - [14/Aug/2025 20:42:24] "GET /api/console HTTP/1.1" 200 -
+🔍 Autonomous agent running check: False
+⚠️ Agent initialization failed: expected 'except' or 'finally' block (arbitrum_testnet_agent.py, line 2154)
+📊 Using latest autonomous agent data from console logs
+172.31.70.66 - - [14/Aug/2025 20:42:25] "GET /api/system_metrics HTTP/1.1" 200 -
+⚠️ Agent initialization failed: expected 'except' or 'finally' block (arbitrum_testnet_agent.py, line 2154)
+📊 Using latest autonomous agent data from console logs
+🔍 Autonomous agent running check: False
+🔍 Autonomous agent running check: False
+🔍 Autonomous agent running check: False
+🔍 Autonomous agent running check: False
+172.31.70.66 - - [14/Aug/2025 20:42:27] "GET /api/console HTTP/1.1" 200 -
+🔍 Autonomous agent running check: False
+⚠️ Agent initialization failed: expected 'except' or 'finally' block (arbitrum_testnet_agent.py, line 2154)
+📊 Using latest autonomous agent data from console logs
+172.31.70.66 - - [14/Aug/2025 20:42:27] "GET /api/system_metrics HTTP/1.1" 200 -
+🔍 Autonomous agent running check: False
+🔍 Autonomous agent running check: False
+172.31.70.66 - - [14/Aug/2025 20:42:29] "GET /api/console HTTP/1.1" 200 -
+🔍 Autonomous agent running check: False
+⚠️ Agent initialization failed: expected 'except' or 'finally' block (arbitrum_testnet_agent.py, line 2154)
+📊 Using latest autonomous agent data from console logs
+172.31.70.66 - - [14/Aug/2025 20:42:29] "GET /api/system_metrics HTTP/1.1" 200 -
+⚠️ Agent initialization failed: expected 'except' or 'finally' block (arbitrum_testnet_agent.py, line 2154)
+📊 Using latest autonomous agent data from console logs
+🔍 Autonomous agent running check: False
+🔍 Autonomous agent running check: False
+🔍 Autonomous agent running check: False
+172.31.70.66 - - [14/Aug/2025 20:42:31] "GET /api/console HTTP/1.1" 200 -
+🔍 Autonomous agent running check: False
+⚠️ Agent initialization failed: expected 'except' or 'finally' block (arbitrum_testnet_agent.py, line 2154)
+📊 Using latest autonomous agent data from console logs
+172.31.70.66 - - [14/Aug/2025 20:42:31] "GET /api/system_metrics HTTP/1.1" 200 -
+🔍 Autonomous agent running check: False
+🔍 Autonomous agent running check: False
+172.31.70.66 - - [14/Aug/2025 20:42:32] "GET /api/console HTTP/1.1" 200 -
+⚠️ Agent initialization failed: expected 'except' or 'finally' block (arbitrum_testnet_agent.py, line 2154)
+📊 Using latest autonomous agent data from console logs
+🔍 Autonomous agent running check: False
+🔍 Autonomous agent running check: False
+⚠️ Agent initialization failed: expected 'except' or 'finally' block (arbitrum_testnet_agent.py, line 2154)
+📊 Using latest autonomous agent data from console logs
+172.31.70.66 - - [14/Aug/2025 20:42:33] "GET /api/system_metrics HTTP/1.1" 200 -
+🔍 Autonomous agent running check: False
+🔍 Autonomous agent running check: False
+172.31.70.66 - - [14/Aug/2025 20:42:34] "GET /api/console HTTP/1.1" 200 -
+🔍 Autonomous agent running check: False
+⚠️ Agent initialization failed: expected 'except' or 'finally' block (arbitrum_testnet_agent.py, line 2154)
+📊 Using latest autonomous agent data from console logs
+172.31.70.66 - - [14/Aug/2025 20:42:35] "GET /api/system_metrics HTTP/1.1" 200 -
+⚠️ Agent initialization failed: expected 'except' or 'finally' block (arbitrum_testnet_agent.py, line 2154)
+📊 Using latest autonomous agent data from console logs
+🔍 Autonomous agent running check: False
+🔍 Autonomous agent running check: False
+🔍 Autonomous agent running check: False
+172.31.70.66 - - [14/Aug/2025 20:42:36] "GET /api/console HTTP/1.1" 200 -
+🔍 Autonomous agent running check: False
+⚠️ Agent initialization failed: expected 'except' or 'finally' block (arbitrum_testnet_agent.py, line 2154)
+📊 Using latest autonomous agent data from console logs
+172.31.70.66 - - [14/Aug/2025 20:42:37] "GET /api/system_metrics HTTP/1.1" 200 -
+🔍 Autonomous agent running check: False
+🔍 Autonomous agent running check: False
+172.31.70.66 - - [14/Aug/2025 20:42:38] "GET /api/console HTTP/1.1" 200 -
+⚠️ Agent initialization failed: expected 'except' or 'finally' block (arbitrum_testnet_agent.py, line 2154)
+📊 Using latest autonomous agent data from console logs
+🔍 Autonomous agent running check: False
+🔍 Autonomous agent running check: False
+⚠️ Agent initialization failed: expected 'except' or 'finally' block (arbitrum_testnet_agent.py, line 2154)
+📊 Using latest autonomous agent data from console logs
+172.31.70.66 - - [14/Aug/2025 20:42:39] "GET /api/system_metrics HTTP/1.1" 200 -
+🔍 Autonomous agent running check: False
+🔍 Autonomous agent running check: False
+172.31.70.66 - - [14/Aug/2025 20:42:41] "GET /api/console HTTP/1.1" 200 -
+🔍 Autonomous agent running check: False
+⚠️ Agent initialization failed: expected 'except' or 'finally' block (arbitrum_testnet_agent.py, line 2154)
