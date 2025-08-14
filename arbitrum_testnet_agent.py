@@ -23,13 +23,13 @@ class ArbitrumTestnetAgent:
         print("🤖 Initializing Arbitrum Testnet Agent...")
 
         # Load environment variables
-        self.private_key = os.getenv('WALLET_PRIVATE_KEY')
+        self.private_key = os.getenv('Wallet_PRIVATE_KEY')
         # Ensure the wallet address is derived from the private key or explicitly set
         # This is where your wallet's private key will be loaded from Replit secrets
-        wallet_private_key = os.environ.get("WALLET_PRIVATE_KEY")
+        wallet_private_key = os.environ.get("Wallet_PRIVATE_KEY")
         print(f"DEBUG: WALLET_PRIVATE_KEY loaded from environment: {'[REDACTED]' if wallet_private_key else 'None'}")
         if not wallet_private_key:
-            raise ValueError("WALLET_PRIVATE_KEY environment variable not set.")
+            raise ValueError("Wallet_PRIVATE_KEY environment variable not set.")
         self.coinmarketcap_api_key = os.getenv('COINMARKETCAP_API_KEY')
         self.network_mode = os.getenv('NETWORK_MODE', 'testnet')
 
@@ -2185,14 +2185,14 @@ class ArbitrumTestnetAgent:
                 # Verify DAI received
                 import time
                 time.sleep(5)
-                dai_balance_after = self.get_dai_balance()
-                dai_received = dai_balance_after - dai_balance_before
+                arb_balance_after = self.get_arb_balance()
+                arb_received = arb_balance_after - dai_balance_before
 
-                if dai_received > 0:
-                    print(f"✅ Received {dai_received:.6f} DAI from debt swap")
+                if arb_received > 0:
+                    print(f"✅ Received {arb_received:.6f} ARB from debt swap")
                     return True
                 else:
-                    print("⚠️ DAI balance did not increase as expected")
+                    print("⚠️ ARB balance did not increase as expected")
                     return False
             else:
                 print("❌ Debt swap transaction failed")
