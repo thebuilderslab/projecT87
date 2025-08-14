@@ -2119,12 +2119,53 @@ class ArbitrumTestnetAgent:
             else:
                 print("❌ Debt swap transaction failed")
                 return False
+            def _execute_market_signal_operation(self, available_borrows_dai):
+                """Execute market signal-triggered debt swap operation"""
+                try:
+                    print(f"🔄 Executing market signal operation with ${available_borrows_usd:.2f} available")
+                except Exception as e:
+                    print(f"❌ Error during market signal operation: {e}")
+                    return False
+                    
 
+            # Validate market signal strategy is available
+            if not hasattr(self, 'market_signal_strategy') or not self.market_signal_strategy:
+                print("❌ Market signal strategy not available")
+                return False
 
-    def _execute_market_signal_operation(self, available_borrows_usd):
-        """Execute market signal-triggered debt swap operation"""
-        try:
-            print(f"🔄 Executing market signal operation with ${available_borrows_usd:.2f} available")
+            # Check if market signal indicates we should trade
+            should_trade = self.market_signal_strategy.should_execute_trade()
+            if not should_trade:
+                print("⚠️ Market signals do not indicate favorable conditions for trading")
+                return False
+
+            # Use conservative amount for market signal operations
+            safe_amount = min(3.0, available_borrows_usd * 0.05)  # 5% of available or $3 max
+
+            if safe_amount < 0.5:
+                print(f"⚠️ Amount too small for market operation: ${safe_amount:.2f}")
+                return False
+
+            # Validate transaction preconditions
+            if not self._validate_transaction_preconditions(safe_amount):
+                print("❌ Transaction preconditions not met for market signal operation")
+                return False
+
+            # Execute validated DAI borrow
+            success = self._execute_validated_dai_borrow(safe_amount)
+
+            if success:
+                print(f"✅ Market signal operation completed successfully: ${safe_amount:.2f}")
+                return True
+            else:
+                print(f"❌ Market signal operation failed")
+                return False
+
+        except Exception as e:
+            print(f"❌ Market signal operation error: {e}")
+            import traceback
+            traceback.print_exc()
+            return False
 
             # Validate market signal strategy is available
             if not hasattr(self, 'market_signal_strategy') or not self.market_signal_strategy:
