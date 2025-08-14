@@ -1167,9 +1167,6 @@ class ArbitrumTestnetAgent:
                 logging.error(f"Market Signal Strategy initialization failed: {e}")
                 self.market_signal_strategy = None
                 self.debt_swap_active = False
-                print(f"❌ Market Signal Strategy initialization failed: {e}")
-                logging.error(f"Market Signal Strategy initialization failed: {e}")
-                self.market_signal_strategy = None
                 self.debt_swap_active = False
 
 
