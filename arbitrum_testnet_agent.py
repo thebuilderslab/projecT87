@@ -2104,7 +2104,7 @@ class ArbitrumTestnetAgent:
             if swap_result and 'tx_hash' in swap_result:
                 print(f"✅ DEBT SWAP CONFIRMED - TX: {swap_result['tx_hash']}")
 
-                # Verify ARB received
+               # Verify ARB received
                 import time
                 time.sleep(5)
                 arb_balance_after = self.get_arb_balance()
