@@ -2164,7 +2164,6 @@ class ArbitrumTestnetAgent:
             traceback.print_exc()
             return False
 
-
     def execute_debt_swap_arb_to_dai(self, arb_amount):
         """Execute ARB to DAI debt swap for market signal strategy"""
         try:
