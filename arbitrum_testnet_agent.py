@@ -305,7 +305,7 @@ class ArbitrumTestnetAgent:
         return False
 
     def _initialize_account(self):
-        """Initialize account after RPC setup"""
+        """Initialize account after RPC connection"""
         # Validate and clean private key format
         private_key = self.private_key.strip()
 
@@ -366,35 +366,6 @@ class ArbitrumTestnetAgent:
             self.dai_address = "0x5f6bB460B6d0bdA2CCaDdd7A19B5F6E7b5b8E1DB"
             self.arb_address = "0x1b20e6a3B2a86618C32A37ffcD5E98C0d20a6E42"
             self.aave_pool_address = "0x18cd499E3d7ed42FebA981ac9236A278E4Cdc2ee"
-
-        # Initialize real blockchain integrations
-        self.aave = None
-        self.uniswap = None
-        self.health_monitor = None
-        self.gas_calculator = None
-        self.enhanced_borrow_manager = None
-        self.market_signal_strategy = None
-
-        # HYBRID APPROACH CONFIGURATION - Combines Growth-Triggered and Capacity-Based Systems
-        # Configuration parameters loaded from environment variables (Replit Secrets)
-        self.target_health_factor = float(os.getenv('TARGET_HEALTH_FACTOR', '3.5')) # Target HF for general management
-
-        # Growth-Triggered System Parameters - Fixed to match distribution ratio
-        self.growth_trigger_threshold = float(os.getenv('GROWTH_TRIGGER_THRESHOLD', '13.0')) # $13 collateral growth to trigger borrowing
-        self.growth_health_factor_threshold = float(os.getenv('GROWTH_HEALTH_FACTOR_THRESHOLD', '2.1')) # HF > 2.1 for growth-triggered
-
-        # Capacity-Based System Parameters
-        self.capacity_optimization_threshold = float(os.getenv('CAPACITY_OPTIMIZATION_THRESHOLD', '0.20'))  # 20% utilization threshold
-        self.capacity_health_factor_threshold = float(os.getenv('CAPACITY_HEALTH_FACTOR_THRESHOLD', '2.05')) # HF > 2.05 for capacity optimization (reduced from 2.1)
-        self.capacity_available_threshold = float(os.getenv('CAPACITY_AVAILABLE_THRESHOLD', '13.0')) # $13 minimum available capacity
-
-        # System Operation Parameters
-        self.re_leverage_percentage = float(os.getenv('RE_LEVERAGE_PERCENTAGE', '0.50')) # Percentage of growth to re-leverage
-        self.min_borrow_releverage = float(os.getenv('MIN_BORROW_RELEVERAGE', '10.0')) # Minimum borrow amount for re-leverage
-        self.max_borrow_releverage = float(os.getenv('MAX_BORROW_RELEVERAGE', '200.0')) # Maximum borrow amount for re-leverage
-        self.safe_releverage_hf_threshold = float(os.getenv('SAFE_RELEVERAGE_HF_THRESHOLD', '2.1')) # Minimum HF to safely re-leverage
-
-        self.previous_leveraged_value_usd = None # Initialize for tracking growth
 
         # Initialize collateral tracking for autonomous triggers
         # Start with 0.0 but will sync with actual position on first run
@@ -1166,7 +1137,6 @@ class ArbitrumTestnetAgent:
                 print(f"❌ Market Signal Strategy initialization failed: {e}")
                 logging.error(f"Market Signal Strategy initialization failed: {e}")
                 self.market_signal_strategy = None
-                self.debt_swap_active = False
                 self.debt_swap_active = False
 
 
@@ -2325,8 +2295,8 @@ class ArbitrumTestnetAgent:
             }
 
             # Check if market signal strategy is enabled
-            if (hasattr(self, 'market_signal_strategy') and 
-                self.market_signal_strategy and 
+            if (hasattr(self, 'market_signal_strategy') and
+                self.market_signal_strategy and
                 getattr(self.market_signal_strategy, 'market_signal_enabled', False)):
                 validation_results['market_signal_enabled'] = True
                 print("✅ Market signal strategy enabled")
@@ -2360,7 +2330,7 @@ class ArbitrumTestnetAgent:
                 print("❌ Network not connected")
 
             # Check integrations
-            if (hasattr(self, 'aave') and self.aave and 
+            if (hasattr(self, 'aave') and self.aave and
                 hasattr(self, 'uniswap') and self.uniswap):
                 validation_results['integrations_ready'] = True
                 print("✅ DeFi integrations ready")
