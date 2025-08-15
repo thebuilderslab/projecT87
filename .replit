@@ -19,7 +19,7 @@ run = ["sh", "-c", "python web_dashboard.py"]
 deploymentTarget = "cloudrun"
 
 [workflows]
-runButton = "🌐 Dashboard Preview"
+runButton = "🚀 FULL SYSTEM CONTROL"
 
 [[workflows.workflow]]
 name = "🔍 Test Enhanced Diagnostics Fixed"
@@ -123,6 +123,15 @@ args = "python start_dashboard.py"
 
 [[workflows.workflow]]
 name = "🤖 Start Autonomous Agent"
+author = 39391053
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python main.py"
+
+[[workflows.workflow]]
+name = "🚀 FULL SYSTEM CONTROL"
 author = 39391053
 mode = "sequential"
 
