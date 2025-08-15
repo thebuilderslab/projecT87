@@ -1175,20 +1175,42 @@ def monitor_process(process, name):
 # --- Merged from main.py ---
 
 def run_diagnostic():
-    """Run comprehensive system diagnostic"""
-    print("🔍 RUNNING SYSTEM DIAGNOSTIC FIRST...")
+    """Run comprehensive system diagnostic with full audit capabilities"""
+    print("🔍 RUNNING COMPREHENSIVE SYSTEM DIAGNOSTIC...")
     print("=" * 60)
 
     try:
-        result = subprocess.run([sys.executable, 'system_comprehensive_diagnostic.py'], 
-                              capture_output=True, text=True, timeout=60)
+        # Run comprehensive system audit first
+        print("🔍 Phase 1: Comprehensive System Audit...")
+        audit_result = subprocess.run([sys.executable, 'archive_duplicates/comprehensive_system_audit.py'], 
+                                    capture_output=True, text=True, timeout=120)
+        
+        if audit_result.stdout:
+            print(audit_result.stdout)
+        if audit_result.stderr:
+            print("Audit warnings/errors:")
+            print(audit_result.stderr)
+        
+        # Run system diagnostic
+        print("\n🔍 Phase 2: System Component Diagnostic...")
+        diag_result = subprocess.run([sys.executable, 'system_comprehensive_diagnostic.py'], 
+                                   capture_output=True, text=True, timeout=60)
 
-        print(result.stdout)
-        if result.stderr:
+        if diag_result.stdout:
+            print(diag_result.stdout)
+        if diag_result.stderr:
             print("Diagnostic errors:")
-            print(result.stderr)
+            print(diag_result.stderr)
 
-        return result.returncode == 0
+        # Both should pass for full system readiness
+        audit_passed = audit_result.returncode == 0
+        diag_passed = diag_result.returncode == 0
+        
+        print(f"\n📊 AUDIT RESULTS:")
+        print(f"   Comprehensive Audit: {'✅ PASSED' if audit_passed else '❌ FAILED'}")
+        print(f"   System Diagnostic: {'✅ PASSED' if diag_passed else '❌ FAILED'}")
+        
+        return audit_passed and diag_passed
 
     except subprocess.TimeoutExpired:
         print("❌ Diagnostic timed out")
