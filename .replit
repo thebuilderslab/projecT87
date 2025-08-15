@@ -139,6 +139,47 @@ mode = "sequential"
 task = "shell.exec"
 args = "python main.py"
 
+[[workflows.workflow]]
+name = "🔍 Run Comprehensive Audit"
+author = 39391053
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"🔍 Starting Comprehensive System Audit\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"=====================================\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python comprehensive_system_audit.py"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"🔍 Testing Main System Components\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"=================================\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python -c \"from main import run_comprehensive_audit; run_comprehensive_audit()\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"✅ Comprehensive Audit Complete\""
+
 [[ports]]
 localPort = 5000
 externalPort = 80
