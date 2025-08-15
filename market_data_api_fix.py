@@ -2460,10 +2460,10 @@ class FixtureRequest(abc.ABC):
             source_path = absolutepath(frameinfo.filename)
             source_lineno = frameinfo.lineno
             try:
-                source_path_str = str(source_path.relative_to(funcitem.config.rootpath))
+                source_path_str = str(source_path.relative_to(funcitem.main.rootpath))
             except ValueError:
                 source_path_str = str(source_path)
-            location = getlocation(fixturedef.func, funcitem.config.rootpath)
+            location = getlocation(fixturedef.func, funcitem.main.rootpath)
             msg = (
                 "The requested fixture has no parameter defined for test:\n"
                 f"    {funcitem.nodeid}\n\n"
@@ -3233,10 +3233,10 @@ def pytest_addoption(parser: Parser) -> None:
     )
 
 def pytest_cmdline_main(config: Config) -> int | ExitCode | None:
-    if config.option.showfixtures:
+    if main.option.showfixtures:
         showfixtures(config)
         return 0
-    if config.option.show_fixtures_per_test:
+    if main.option.show_fixtures_per_test:
         show_fixtures_per_test(config)
         return 0
     return None
@@ -3306,9 +3306,9 @@ class FixtureManager:
         self._holderobjseen: Final[set[object]] = set()
         # A mapping from a nodeid to a list of autouse fixtures it defines.
         self._nodeid_autousenames: Final[dict[str, list[str]]] = {
-            "": self.config.getini("usefixtures"),
+            "": self.main.getini("usefixtures"),
         }
-        session.config.pluginmanager.register(self, "funcmanage")
+        session.main.pluginmanager.register(self, "funcmanage")
 
     def getfixtureinfo(
         self,
@@ -3358,7 +3358,7 @@ class FixtureManager:
             # (issue #11816).
             conftestpath = absolutepath(plugin_name)
             try:
-                nodeid = str(conftestpath.parent.relative_to(self.config.rootpath))
+                nodeid = str(conftestpath.parent.relative_to(self.main.rootpath))
             except ValueError:
                 nodeid = ""
             if nodeid == ".":
@@ -3661,9 +3661,9 @@ def _show_fixtures_per_test(config: Config, session: Session) -> None:
     import _pytest.config
 
     session.perform_collect()
-    invocation_dir = config.invocation_params.dir
-    tw = _pytest.config.create_terminal_writer(config)
-    verbose = config.get_verbosity()
+    invocation_dir = main.invocation_params.dir
+    tw = _pytest.main.create_terminal_writer(config)
+    verbose = main.get_verbosity()
 
     def get_best_relpath(func) -> str:
         loc = getlocation(func, invocation_dir)
@@ -3718,9 +3718,9 @@ def _showfixtures_main(config: Config, session: Session) -> None:
     import _pytest.config
 
     session.perform_collect()
-    invocation_dir = config.invocation_params.dir
-    tw = _pytest.config.create_terminal_writer(config)
-    verbose = config.get_verbosity()
+    invocation_dir = main.invocation_params.dir
+    tw = _pytest.main.create_terminal_writer(config)
+    verbose = main.get_verbosity()
 
     fm = session._fixturemanager
 
@@ -4038,10 +4038,10 @@ def write_docstring(tw: TerminalWriter, doc: str, indent: str = "    ") -> None:
             source_path = absolutepath(frameinfo.filename)
             source_lineno = frameinfo.lineno
             try:
-                source_path_str = str(source_path.relative_to(funcitem.config.rootpath))
+                source_path_str = str(source_path.relative_to(funcitem.main.rootpath))
             except ValueError:
                 source_path_str = str(source_path)
-            location = getlocation(fixturedef.func, funcitem.config.rootpath)
+            location = getlocation(fixturedef.func, funcitem.main.rootpath)
             msg = (
                 "The requested fixture has no parameter defined for test:\n"
                 f"    {funcitem.nodeid}\n\n"
@@ -4373,7 +4373,7 @@ def write_docstring(tw: TerminalWriter, doc: str, indent: str = "    ") -> None:
             # (issue #11816).
             conftestpath = absolutepath(plugin_name)
             try:
-                nodeid = str(conftestpath.parent.relative_to(self.config.rootpath))
+                nodeid = str(conftestpath.parent.relative_to(self.main.rootpath))
             except ValueError:
                 nodeid = ""
             if nodeid == ".":

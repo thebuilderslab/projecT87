@@ -95,7 +95,7 @@ def check_autonomous_agent_running():
         # Check if autonomous agent process is active
         result = subprocess.run(['ps', 'aux'], capture_output=True, text=True, timeout=5)
         is_running = ('run_autonomous_mainnet.py' in result.stdout or
-                     'arbitrum_testnet_agent.py' in result.stdout or
+                     'main.py' in result.stdout or
                      'ArbitrumTestnetAgent' in result.stdout or
                      'complete_autonomous_launcher.py' in result.stdout or
                      'main.py' in result.stdout)
@@ -118,7 +118,7 @@ def monitor_console_output():
             try:
                 result = subprocess.run(['ps', 'aux'], capture_output=True, text=True, timeout=3)
                 processes = result.stdout.split('\n')
-                agent_processes = [p for p in processes if 'main.py' in p or 'arbitrum_testnet_agent.py' in p]
+                agent_processes = [p for p in processes if 'main.py' in p or 'main.py' in p]
 
                 if agent_processes:
                     for proc in agent_processes[:2]:  # Show up to 2 processes
@@ -282,7 +282,7 @@ def get_live_agent_data():
 
         # Try to get agent instance for live data
         try:
-            from arbitrum_testnet_agent import ArbitrumTestnetAgent
+            from main import ArbitrumTestnetAgent
             agent = ArbitrumTestnetAgent()
 
             # Get live Aave data directly from contracts
@@ -383,7 +383,7 @@ def dashboard():
 
         agent_status = "Connected" if agent else "Initializing..."
 
-        return render_template('dashboard.html',
+        return render_template('web_dashboard.html',
                              emergency_active=emergency_active,
                              agent_status=agent_status,
                              network_info=network_info)
@@ -514,7 +514,7 @@ def get_parameters():
             if os.path.exists('user_settings.json'):
                 with open('user_settings.json', 'r') as f:
                     user_settings = json.load(f)
-                    config.update(user_settings)
+                    main.update(user_settings)
         except:
             pass
 
@@ -695,7 +695,7 @@ def get_system_metrics():
         agent_metrics = {}
         if agent_running:
             try:
-                from arbitrum_testnet_agent import ArbitrumTestnetAgent
+                from main import ArbitrumTestnetAgent
                 temp_agent = ArbitrumTestnetAgent()
                 if hasattr(temp_agent, 'get_system_metrics'):
                     agent_metrics = temp_agent.get_system_metrics()
@@ -1463,21 +1463,21 @@ def check_market_signals():
             return f"[{timestamp}] 🚀 DEBT SWAP: Ready to enable | Set MARKET_SIGNAL_ENABLED=true in Secrets to activate"
 
         # Check if market signal strategy files exist
-        if os.path.exists('market_signal_strategy.py'):
+        if os.path.exists('main.py'):
             # Try to initialize and test market signals
             try:
-                from arbitrum_testnet_agent import ArbitrumTestnetAgent
+                from main import ArbitrumTestnetAgent
                 agent = ArbitrumTestnetAgent()
 
                 if hasattr(agent, 'market_signal_strategy') and agent.market_signal_strategy:
                     # Test if strategy can execute
-                    can_execute = agent.market_signal_strategy.should_execute_trade()
+                    can_execute = agent.main.should_execute_trade()
 
                     if can_execute:
                         return f"[{timestamp}] 🚨 DEBT SWAP TRIGGER: Market conditions met | EXECUTING SWAP"
                     else:
                         # Get current market status
-                        signal = agent.market_signal_strategy.analyze_market_signals()
+                        signal = agent.main.analyze_market_signals()
                         if signal:
                             btc_change = signal.btc_price_change
                             arb_rsi = signal.arb_technical_score
@@ -1507,7 +1507,7 @@ def check_market_signals():
                 return f"[{timestamp}] ❌ MARKET SIGNALS: Agent error | {str(agent_error)[:50]}"
 
         else:
-            return f"[{timestamp}] ❌ MARKET SIGNALS: Strategy file missing | Install market_signal_strategy.py"
+            return f"[{timestamp}] ❌ MARKET SIGNALS: Strategy file missing | Install main.py"
 
     except Exception as e:
         return f"[{datetime.now().strftime('%H:%M:%S')}] ❌ MARKET SIGNALS: Check failed | {str(e)[:50]}"
@@ -1627,7 +1627,7 @@ def test_dashboard_startup():
     # Test agent initialization
     try:
         print("\n🤖 Testing agent initialization...")
-        from arbitrum_testnet_agent import ArbitrumTestnetAgent
+        from main import ArbitrumTestnetAgent
         agent = ArbitrumTestnetAgent()
         print(f"✅ Agent initialized successfully")
         print(f"   Wallet: {agent.address}")
@@ -1684,7 +1684,7 @@ def launch_dashboard():
     """Launch dashboard with error handling"""
     setup_minimal_environment()
     
-    print("🚀 Quick launching dashboard...")
+    print("🚀 Quick launching web_dashboard...")
     print("🔧 Using workarounds for problematic integrations")
     
     # Import and patch problematic functions
@@ -1698,7 +1698,7 @@ def launch_dashboard():
                     return None
                 
                 # Try simple health check first
-                health_data = agent.health_monitor.get_current_health_factor()
+                health_data = agent.aave_integration.get_current_health_factor()
                 if health_data and health_data.get('health_factor', 0) > 0:
                     return {
                         'health_factor': health_data['health_factor'],
@@ -1751,7 +1751,7 @@ def launch_dashboard():
         def status():
             return {"status": "safe_mode", "message": "Dashboard running with basic functionality"}
         
-        print("🌐 Starting fallback dashboard...")
+        print("🌐 Starting fallback web_dashboard...")
         fallback_app.run(host='0.0.0.0', port=5000, debug=False)
 
         def safe_enhanced_aave_data(agent):
@@ -1760,7 +1760,7 @@ def launch_dashboard():
                     return None
                 
                 # Try simple health check first
-                health_data = agent.health_monitor.get_current_health_factor()
+                health_data = agent.aave_integration.get_current_health_factor()
                 if health_data and health_data.get('health_factor', 0) > 0:
                     return {
                         'health_factor': health_data['health_factor'],
@@ -1833,7 +1833,7 @@ def emergency_status():
     """Emergency status endpoint"""
     try:
         # Try to get real status
-        from arbitrum_testnet_agent import ArbitrumTestnetAgent
+        from main import ArbitrumTestnetAgent
         agent = ArbitrumTestnetAgent()
 
         return jsonify({
@@ -1872,7 +1872,7 @@ def emergency_wallet_status():
 
         # Try to initialize agent with improved error handling
         try:
-            from arbitrum_testnet_agent import ArbitrumTestnetAgent
+            from main import ArbitrumTestnetAgent
             agent = ArbitrumTestnetAgent()
             print(f"✅ Emergency agent initialized: {agent.address}")
 
@@ -2058,7 +2058,7 @@ def check_secrets():
 
 def test_agent():
     try:
-        from arbitrum_testnet_agent import ArbitrumTestnetAgent
+        from main import ArbitrumTestnetAgent
         agent = ArbitrumTestnetAgent()
         return jsonify({
             'success': True,
@@ -2124,7 +2124,7 @@ def test_dependencies():
         from web3 import Web3
         print("✅ Web3 available")
         
-        from arbitrum_testnet_agent import ArbitrumTestnetAgent
+        from main import ArbitrumTestnetAgent
         print("✅ Agent available")
         
         return True
@@ -2551,7 +2551,7 @@ def api_clear_emergency_stop():
 
 def setup_app():
     """Set up the Flask app"""
-    print("🔧 Setting up live data dashboard...")
+    print("🔧 Setting up live data web_dashboard...")
     print("🚫 NO HARDCODED DATA - LIVE BLOCKCHAIN DATA ONLY")
 
     # Initialize system
@@ -2605,7 +2605,7 @@ def start_dashboard():
         
         # Try alternative dashboard
         try:
-            print("🔄 Trying alternative dashboard...")
+            print("🔄 Trying alternative web_dashboard...")
             from improved_web_dashboard import app as alt_app, setup_app
             setup_app()
             alt_app.run(host='0.0.0.0', port=5000, debug=False, threaded=True)
@@ -2627,7 +2627,7 @@ def kill_existing_dashboard():
 # --- Merged from working_dashboard.py ---
 
 class AgentDashboard:
-    """Simple dashboard class based on old dashboard.py"""
+    """Simple dashboard class based on old web_dashboard.py"""
     def __init__(self, agent):
         self.agent = agent
         self.adjustable_params = {
@@ -2681,7 +2681,7 @@ class AgentDashboard:
 # --- Merged from start_working_dashboard.py ---
 
 def main():
-    print("🚀 Starting Working Dashboard based on old dashboard.py")
+    print("🚀 Starting Working Dashboard based on old web_dashboard.py")
     print("=" * 50)
     
     # Set environment
@@ -2733,14 +2733,14 @@ def run_dashboard_preview():
         print(f"   Press Ctrl+C to exit anytime")
         
         # Run the dashboard
-        dashboard.run_interactive_dashboard()
+        web_dashboard.run_interactive_dashboard()
         
     except KeyboardInterrupt:
         print(f"\n👋 Dashboard preview stopped. Your wallet is ready for funding!")
     except Exception as e:
         print(f"❌ Error: {e}")
         print(f"💡 Make sure you have PRIVATE_KEY set in your Replit secrets")
-# --- Merged from dashboard.py ---
+# --- Merged from web_dashboard.py ---
 
     def display_wallet_status(self):
         """Display current wallet status with emojis"""
@@ -2750,7 +2750,7 @@ def run_dashboard_preview():
             
             if hasattr(self.agent, 'aave'):
                 dai_balance = self.agent.aave.get_token_balance(self.agent.aave.dai_address)
-                health_data = self.agent.health_monitor.get_account_data_with_dai()
+                health_data = self.agent.aave_integration.get_account_data_with_dai()
             else:
                 dai_balance = 0
                 health_data = None
@@ -2955,7 +2955,7 @@ def run_dashboard_preview():
 
 def check_syntax():
     """Check for syntax errors"""
-    files_to_check = ['arbitrum_testnet_agent.py', 'web_dashboard.py']
+    files_to_check = ['main.py', 'web_dashboard.py']
     
     for file in files_to_check:
         try:
@@ -21606,7 +21606,7 @@ class build_ext (old_build_ext):
             #   2. otherwise prefer C++ over C,
             #   3. Users can force a particular linker by using
             #          `language='c'`  # or 'c++', 'f90', 'f77'
-            #      in their config.add_extension() calls.
+            #      in their main.add_extension() calls.
             if 'c++' in ext_languages:
                 ext_language = 'c++'
             else:

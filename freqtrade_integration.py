@@ -1151,7 +1151,7 @@ def test_enhanced_borrow_manager():
     print("\n🔍 Testing Enhanced Borrow Manager...")
     
     try:
-        from enhanced_borrow_manager import EnhancedBorrowManager
+        from aave_integration import EnhancedBorrowManager
         print("✅ Enhanced Borrow Manager imported successfully")
         
         # Test basic initialization without agent
@@ -1159,7 +1159,7 @@ def test_enhanced_borrow_manager():
         return True
         
     except SyntaxError as e:
-        print(f"❌ Syntax error in enhanced_borrow_manager.py: {e}")
+        print(f"❌ Syntax error in aave_integration.py: {e}")
         print(f"   Line {e.lineno}: {e.text}")
         return False
     except Exception as e:
@@ -1172,7 +1172,7 @@ def test_agent_initialization():
     print("\n🔍 Testing Agent Initialization...")
     
     try:
-        from arbitrum_testnet_agent import ArbitrumTestnetAgent
+        from main import ArbitrumTestnetAgent
         print("✅ Agent module imported successfully")
         
         # Test initialization
@@ -1285,7 +1285,7 @@ class SystemIntegrationValidator:
         print("\n2️⃣ TESTING AGENT INITIALIZATION")
         
         try:
-            from arbitrum_testnet_agent import ArbitrumTestnetAgent
+            from main import ArbitrumTestnetAgent
             agent = ArbitrumTestnetAgent()
             
             self.test_results["agent_init"] = "✅ Success"
@@ -1316,7 +1316,7 @@ class SystemIntegrationValidator:
         print("\n3️⃣ TESTING DEFI INTEGRATIONS")
         
         try:
-            from arbitrum_testnet_agent import ArbitrumTestnetAgent
+            from main import ArbitrumTestnetAgent
             agent = ArbitrumTestnetAgent()
             agent.initialize_integrations()
             
@@ -1375,7 +1375,7 @@ class SystemIntegrationValidator:
         
         try:
             from transaction_validator import TransactionValidator
-            from arbitrum_testnet_agent import ArbitrumTestnetAgent
+            from main import ArbitrumTestnetAgent
             
             agent = ArbitrumTestnetAgent()
             agent.initialize_integrations()
@@ -1496,7 +1496,7 @@ class SystemIntegrationValidator:
         print("\n2️⃣ TESTING AGENT INITIALIZATION")
         
         try:
-            from arbitrum_testnet_agent import ArbitrumTestnetAgent
+            from main import ArbitrumTestnetAgent
             agent = ArbitrumTestnetAgent()
             
             self.test_results["agent_init"] = "✅ Success"
@@ -1527,7 +1527,7 @@ class SystemIntegrationValidator:
         print("\n3️⃣ TESTING DEFI INTEGRATIONS")
         
         try:
-            from arbitrum_testnet_agent import ArbitrumTestnetAgent
+            from main import ArbitrumTestnetAgent
             agent = ArbitrumTestnetAgent()
             agent.initialize_integrations()
             
@@ -1586,7 +1586,7 @@ class SystemIntegrationValidator:
         
         try:
             from transaction_validator import TransactionValidator
-            from arbitrum_testnet_agent import ArbitrumTestnetAgent
+            from main import ArbitrumTestnetAgent
             
             agent = ArbitrumTestnetAgent()
             agent.initialize_integrations()

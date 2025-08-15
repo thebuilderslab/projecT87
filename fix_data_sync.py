@@ -8,7 +8,7 @@ Resolves stale/cached data vs live data mismatches
 import json
 import time
 from web3 import Web3
-from arbitrum_testnet_agent import ArbitrumTestnetAgent
+from main import ArbitrumTestnetAgent
 
 def fix_data_sync():
     """Fix data synchronization issues"""

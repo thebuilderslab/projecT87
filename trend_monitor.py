@@ -9,7 +9,7 @@ import time
 import os
 import json
 from datetime import datetime
-from arbitrum_testnet_agent import ArbitrumTestnetAgent
+from main import ArbitrumTestnetAgent
 
 def display_trend_dashboard():
     """Display real-time trend analysis dashboard"""
@@ -455,7 +455,7 @@ def quick_status_check():
     print(f"🔐 Secrets: {status['secrets']}/3 configured")
     
     # Check critical files
-    files = ['arbitrum_testnet_agent.py', 'web_dashboard.py', 'complete_autonomous_launcher.py']
+    files = ['main.py', 'web_dashboard.py', 'complete_autonomous_launcher.py']
     for file in files:
         if os.path.exists(file):
             status['files'] += 1
@@ -464,8 +464,8 @@ def quick_status_check():
     
     # Quick syntax check on main agent
     try:
-        with open('arbitrum_testnet_agent.py', 'r') as f:
-            compile(f.read(), 'arbitrum_testnet_agent.py', 'exec')
+        with open('main.py', 'r') as f:
+            compile(f.read(), 'main.py', 'exec')
         status['syntax'] = 1
         print(f"✅ Syntax: Main agent file valid")
     except:

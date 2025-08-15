@@ -228,7 +228,7 @@ if __name__ == "__main__":
     
     # Test with agent
     try:
-        from arbitrum_testnet_agent import ArbitrumTestnetAgent
+        from main import ArbitrumTestnetAgent
         agent = ArbitrumTestnetAgent()
         
         # Get live data

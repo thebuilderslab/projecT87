@@ -1052,7 +1052,7 @@ class MLStrategyOptimizer:
         }
         
         return recommendations
-# --- Merged from collaborative_strategy_manager.py ---
+# --- Merged from main.py ---
 
 class CollaborativeStrategyManager:
     def __init__(self, agent):
@@ -1307,9 +1307,9 @@ class CollaborativeStrategyManager:
     def implement_code_modification(self, modification_data):
         """Implement direct code modifications"""
         try:
-            if modification_data['target_file'] == "arbitrum_testnet_agent.py":
+            if modification_data['target_file'] == "main.py":
                 # Read current agent code
-                with open('arbitrum_testnet_agent.py', 'r') as f:
+                with open('main.py', 'r') as f:
                     content = f.read()
 
                 # Apply modifications
@@ -1329,7 +1329,7 @@ class CollaborativeStrategyManager:
                 with open(backup_name, 'w') as f:
                     f.write(content)
 
-                with open('arbitrum_testnet_agent.py', 'w') as f:
+                with open('main.py', 'w') as f:
                     f.write(content)
 
                 print(f"✅ Code modified successfully (backup: {backup_name})")
@@ -1646,9 +1646,9 @@ class CollaborativeStrategyManager:
     def implement_code_modification(self, modification_data):
         """Implement direct code modifications"""
         try:
-            if modification_data['target_file'] == "arbitrum_testnet_agent.py":
+            if modification_data['target_file'] == "main.py":
                 # Read current agent code
-                with open('arbitrum_testnet_agent.py', 'r') as f:
+                with open('main.py', 'r') as f:
                     content = f.read()
 
                 # Apply modifications
@@ -1668,7 +1668,7 @@ class CollaborativeStrategyManager:
                 with open(backup_name, 'w') as f:
                     f.write(content)
 
-                with open('arbitrum_testnet_agent.py', 'w') as f:
+                with open('main.py', 'w') as f:
                     f.write(content)
 
                 print(f"✅ Code modified successfully (backup: {backup_name})")
@@ -1800,8 +1800,8 @@ class StrategyOptimizer:
         """Evaluate current market conditions for strategy selection"""
         try:
             # Get current market volatility
-            btc_data = self.agent.market_signal_strategy.get_btc_price_data()
-            arb_data = self.agent.market_signal_strategy.get_arb_price_data()
+            btc_data = self.agent.main.get_btc_price_data()
+            arb_data = self.agent.main.get_arb_price_data()
             
             if not btc_data or not arb_data:
                 return {'volatility': 0.5, 'gas_cost': 0.5, 'market_trend': 0.5}
@@ -1815,7 +1815,7 @@ class StrategyOptimizer:
             volatility_score = min(1.0, avg_volatility / 5.0)  # Cap at 5% volatility
             
             # Get gas conditions
-            gas_score = self.agent.market_signal_strategy.enhanced_analyzer.calculate_gas_efficiency_score()
+            gas_score = self.agent.main.enhanced_analyzer.calculate_gas_efficiency_score()
             
             # Determine market trend strength
             btc_trend = btc_data.get('percent_change_24h', 0)
@@ -1975,8 +1975,8 @@ class StrategyOptimizer:
         """Evaluate current market conditions for strategy selection"""
         try:
             # Get current market volatility
-            btc_data = self.agent.market_signal_strategy.get_btc_price_data()
-            arb_data = self.agent.market_signal_strategy.get_arb_price_data()
+            btc_data = self.agent.main.get_btc_price_data()
+            arb_data = self.agent.main.get_arb_price_data()
             
             if not btc_data or not arb_data:
                 return {'volatility': 0.5, 'gas_cost': 0.5, 'market_trend': 0.5}
@@ -1990,7 +1990,7 @@ class StrategyOptimizer:
             volatility_score = min(1.0, avg_volatility / 5.0)  # Cap at 5% volatility
             
             # Get gas conditions
-            gas_score = self.agent.market_signal_strategy.enhanced_analyzer.calculate_gas_efficiency_score()
+            gas_score = self.agent.main.enhanced_analyzer.calculate_gas_efficiency_score()
             
             # Determine market trend strength
             btc_trend = btc_data.get('percent_change_24h', 0)

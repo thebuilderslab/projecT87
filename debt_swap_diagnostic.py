@@ -7,7 +7,7 @@ Debt Swap Diagnostic Tool - Debug why debt swaps aren't executing on-chain
 import os
 import time
 from datetime import datetime
-from arbitrum_testnet_agent import ArbitrumTestnetAgent
+from main import ArbitrumTestnetAgent
 
 def diagnose_debt_swap_strategy():
     """Comprehensive diagnosis of debt swap strategy execution"""
@@ -113,7 +113,7 @@ def diagnose_debt_swap_strategy():
             test_amount = min(1.0, account_data.get('availableBorrowsUSD', 0) * 0.1)
             
             # This would execute the actual swap - uncomment to test
-            # success = agent.market_signal_strategy._execute_dai_to_arb_swap(test_amount)
+            # success = agent.main._execute_dai_to_arb_swap(test_amount)
             # print(f"   Result: {'SUCCESS' if success else 'FAILED'}")
             
             print(f"   💡 Test amount would be: ${test_amount:.2f}")
@@ -400,7 +400,7 @@ class ComprehensiveDiagnostic:
         print("📁 Analyzing File System...")
         
         critical_files = [
-            'arbitrum_testnet_agent.py', 'web_dashboard.py', 'mainnet_launcher.py',
+            'main.py', 'web_dashboard.py', 'main.py',
             'aave_integration.py', 'aave_health_monitor.py', 'user_settings.json',
             'agent_config.json', 'EMERGENCY_STOP_ACTIVE.flag', 'performance_log.json',
             '.env', '.replit', 'requirements.txt'
@@ -591,7 +591,7 @@ class ComprehensiveDiagnostic:
         
         # Test agent initialization
         try:
-            from arbitrum_testnet_agent import ArbitrumTestnetAgent
+            from main import ArbitrumTestnetAgent
             agent = ArbitrumTestnetAgent()
             self.report["application"]["agent_initialization"] = {
                 "success": True,
@@ -737,7 +737,7 @@ class ComprehensiveDiagnostic:
         return {
             "web3_available": self.report["dependencies"]["required_modules"].get("web3", {}).get("available"),
             "flask_available": self.report["dependencies"]["required_modules"].get("flask", {}).get("available"),
-            "agent_importable": self.report["dependencies"]["import_tests"].get("arbitrum_testnet_agent.ArbitrumTestnetAgent", {}).get("success"),
+            "agent_importable": self.report["dependencies"]["import_tests"].get("main.ArbitrumTestnetAgent", {}).get("success"),
             "dashboard_importable": self.report["dependencies"]["import_tests"].get("web_dashboard.app", {}).get("success")
         }
 
@@ -912,7 +912,7 @@ def main():
         print("📁 Analyzing File System...")
         
         critical_files = [
-            'arbitrum_testnet_agent.py', 'web_dashboard.py', 'mainnet_launcher.py',
+            'main.py', 'web_dashboard.py', 'main.py',
             'aave_integration.py', 'aave_health_monitor.py', 'user_settings.json',
             'agent_config.json', 'EMERGENCY_STOP_ACTIVE.flag', 'performance_log.json',
             '.env', '.replit', 'requirements.txt'
@@ -1103,7 +1103,7 @@ def main():
         
         # Test agent initialization
         try:
-            from arbitrum_testnet_agent import ArbitrumTestnetAgent
+            from main import ArbitrumTestnetAgent
             agent = ArbitrumTestnetAgent()
             self.report["application"]["agent_initialization"] = {
                 "success": True,
@@ -1249,7 +1249,7 @@ def main():
         return {
             "web3_available": self.report["dependencies"]["required_modules"].get("web3", {}).get("available"),
             "flask_available": self.report["dependencies"]["required_modules"].get("flask", {}).get("available"),
-            "agent_importable": self.report["dependencies"]["import_tests"].get("arbitrum_testnet_agent.ArbitrumTestnetAgent", {}).get("success"),
+            "agent_importable": self.report["dependencies"]["import_tests"].get("main.ArbitrumTestnetAgent", {}).get("success"),
             "dashboard_importable": self.report["dependencies"]["import_tests"].get("web_dashboard.app", {}).get("success")
         }
 
@@ -1405,11 +1405,11 @@ class ComprehensiveSystemDiagnostic:
         print("\n🔍 CHECKING FILE INTEGRITY...")
         
         critical_files = {
-            'arbitrum_testnet_agent.py': 'Main agent implementation',
+            'main.py': 'Main agent implementation',
             'web_dashboard.py': 'Dashboard interface',
             'complete_autonomous_launcher.py': 'System launcher',
             'aave_integration.py': 'Aave DeFi integration',
-            'uniswap_integration.py': 'Uniswap integration',
+            'aave_integration.py': 'Uniswap integration',
             'aave_health_monitor.py': 'Health monitoring',
             'gas_fee_calculator.py': 'Gas optimization'
         }
@@ -1441,7 +1441,7 @@ class ComprehensiveSystemDiagnostic:
         print("\n🔍 CHECKING AGENT INITIALIZATION...")
         
         try:
-            from arbitrum_testnet_agent import ArbitrumTestnetAgent
+            from main import ArbitrumTestnetAgent
             agent = ArbitrumTestnetAgent()
             
             agent_tests = {
@@ -1539,7 +1539,7 @@ class ComprehensiveSystemDiagnostic:
             
         # Test Uniswap integration
         try:
-            from uniswap_integration import UniswapArbitrumIntegration
+            from aave_integration import UniswapArbitrumIntegration
             defi_tests['uniswap_import'] = '✅ Uniswap integration imports'
         except Exception as e:
             defi_tests['uniswap_import'] = f'❌ Uniswap import error: {e}'
@@ -1571,7 +1571,7 @@ class ComprehensiveSystemDiagnostic:
         function_tests = {}
         
         try:
-            from arbitrum_testnet_agent import ArbitrumTestnetAgent
+            from main import ArbitrumTestnetAgent
             agent = ArbitrumTestnetAgent()
             
             # Test critical autonomous functions
@@ -1839,11 +1839,11 @@ class ComprehensiveSystemDiagnostic:
         print("\n🔍 CHECKING FILE INTEGRITY...")
         
         critical_files = {
-            'arbitrum_testnet_agent.py': 'Main agent implementation',
+            'main.py': 'Main agent implementation',
             'web_dashboard.py': 'Dashboard interface',
             'complete_autonomous_launcher.py': 'System launcher',
             'aave_integration.py': 'Aave DeFi integration',
-            'uniswap_integration.py': 'Uniswap integration',
+            'aave_integration.py': 'Uniswap integration',
             'aave_health_monitor.py': 'Health monitoring',
             'gas_fee_calculator.py': 'Gas optimization'
         }
@@ -1875,7 +1875,7 @@ class ComprehensiveSystemDiagnostic:
         print("\n🔍 CHECKING AGENT INITIALIZATION...")
         
         try:
-            from arbitrum_testnet_agent import ArbitrumTestnetAgent
+            from main import ArbitrumTestnetAgent
             agent = ArbitrumTestnetAgent()
             
             agent_tests = {
@@ -1973,7 +1973,7 @@ class ComprehensiveSystemDiagnostic:
             
         # Test Uniswap integration
         try:
-            from uniswap_integration import UniswapArbitrumIntegration
+            from aave_integration import UniswapArbitrumIntegration
             defi_tests['uniswap_import'] = '✅ Uniswap integration imports'
         except Exception as e:
             defi_tests['uniswap_import'] = f'❌ Uniswap import error: {e}'
@@ -2005,7 +2005,7 @@ class ComprehensiveSystemDiagnostic:
         function_tests = {}
         
         try:
-            from arbitrum_testnet_agent import ArbitrumTestnetAgent
+            from main import ArbitrumTestnetAgent
             agent = ArbitrumTestnetAgent()
             
             # Test critical autonomous functions
@@ -2324,9 +2324,9 @@ class SystemDiagnostic:
         print("\n5. 📦 DEPENDENCIES")
         
         required_files = [
-            'enhanced_borrow_manager.py',
             'aave_integration.py',
-            'uniswap_integration.py',
+            'aave_integration.py',
+            'aave_integration.py',
             'aave_health_monitor.py',
             'gas_fee_calculator.py'
         ]
@@ -2594,9 +2594,9 @@ class SystemDiagnostic:
         print("\n5. 📦 DEPENDENCIES")
         
         required_files = [
-            'enhanced_borrow_manager.py',
             'aave_integration.py',
-            'uniswap_integration.py',
+            'aave_integration.py',
+            'aave_integration.py',
             'aave_health_monitor.py',
             'gas_fee_calculator.py'
         ]
@@ -2716,7 +2716,7 @@ class SystemDiagnostic:
         for issue in issues:
             self.issues_found.append(issue)
             print(f"   ⚠️ {issue['issue']}: {issue['details']}")
-# --- Merged from wallet_diagnostics.py ---
+# --- Merged from aave_integration.py ---
 
 def test_wallet_connectivity():
     """Test wallet connectivity and basic functionality"""
@@ -3200,7 +3200,7 @@ class BorrowDiagnosticTool:
 def run_borrow_diagnostic():
     """Run the borrow diagnostic tool"""
     try:
-        from arbitrum_testnet_agent import ArbitrumTestnetAgent
+        from main import ArbitrumTestnetAgent
         
         print("🚀 Initializing Borrow Diagnostic Tool...")
         agent = ArbitrumTestnetAgent()

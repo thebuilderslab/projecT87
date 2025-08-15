@@ -73,7 +73,7 @@ class EnhancedMarketAnalyzer:
         except Exception as e:
             logging.error(f"Enhanced signal generation failed: {e}")
             return None
-# --- Merged from enhanced_contract_manager.py ---
+# --- Merged from aave_integration.py ---
 
 class EnhancedContractManager:
     def __init__(self):

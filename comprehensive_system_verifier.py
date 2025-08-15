@@ -124,7 +124,7 @@ class ComprehensiveSystemVerifier:
         print("-" * 40)
         
         try:
-            from arbitrum_testnet_agent import ArbitrumTestnetAgent
+            from main import ArbitrumTestnetAgent
             agent = ArbitrumTestnetAgent()
             
             # Test agent initialization
@@ -170,7 +170,7 @@ class ComprehensiveSystemVerifier:
         print("-" * 40)
         
         try:
-            from arbitrum_testnet_agent import ArbitrumTestnetAgent
+            from main import ArbitrumTestnetAgent
             agent = ArbitrumTestnetAgent()
             
             # Test network connectivity
@@ -230,7 +230,7 @@ class ComprehensiveSystemVerifier:
         
         try:
             from transaction_validator import TransactionValidator
-            from arbitrum_testnet_agent import ArbitrumTestnetAgent
+            from main import ArbitrumTestnetAgent
             
             agent = ArbitrumTestnetAgent()
             agent.initialize_integrations()
@@ -292,7 +292,7 @@ class ComprehensiveSystemVerifier:
         
         try:
             # Test gas price optimization
-            from arbitrum_testnet_agent import ArbitrumTestnetAgent
+            from main import ArbitrumTestnetAgent
             agent = ArbitrumTestnetAgent()
             
             gas_price = agent.w3.eth.gas_price

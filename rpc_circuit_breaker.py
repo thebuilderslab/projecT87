@@ -179,7 +179,7 @@ rpc_circuit_breaker = RPCCircuitBreaker()
 
 print("✅ RPC Circuit Breaker initialized")
 
-# --- Merged from enhanced_rpc_manager.py ---
+# --- Merged from aave_integration.py ---
 
 class EnhancedRPCManager:
     def __init__(self):

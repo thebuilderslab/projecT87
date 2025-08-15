@@ -264,7 +264,7 @@ class ConfidenceValidator:
             'status': "MEETING_TARGET" if self.historical_accuracy['accuracy_rate'] >= 0.90 else "BELOW_TARGET"
         }
 
-# --- Merged from network_validator.py ---
+# --- Merged from aave_integration.py ---
 
 class ArbitrumNetworkValidator:
     def __init__(self):
@@ -961,7 +961,7 @@ def validate_core_fixes():
     except Exception as e:
         print(f"❌ Validation failed with critical error: {e}")
         return False
-# --- Merged from contract_validator.py ---
+# --- Merged from aave_integration.py ---
 
 class ContractValidator:
     def __init__(self, w3):
@@ -1129,7 +1129,7 @@ class ContractValidator:
 def test_contract_validator():
     """Test the contract validator with known addresses"""
     try:
-        from arbitrum_testnet_agent import ArbitrumTestnetAgent
+        from main import ArbitrumTestnetAgent
         
         agent = ArbitrumTestnetAgent()
         validator = ContractValidator(agent.w3)
@@ -1320,12 +1320,12 @@ class DependencyValidator:
         ]
         
         self.required_files = [
-            'arbitrum_testnet_agent.py',
+            'main.py',
             'aave_integration.py',
-            'uniswap_integration.py', 
+            'aave_integration.py', 
             'aave_health_monitor.py',
             'gas_fee_calculator.py',
-            'enhanced_borrow_manager.py',
+            'aave_integration.py',
             'config_constants.py',
             'rpc_circuit_breaker.py',
             'unified_aave_data_fetcher.py'
@@ -2062,7 +2062,7 @@ def integrate_enhanced_validation():
     """Integrate enhanced validation with existing borrow manager"""
     print("🔧 INTEGRATING ENHANCED VALIDATION")
     
-    # This would be integrated into the enhanced_borrow_manager.py
+    # This would be integrated into the aave_integration.py
     integration_status = {
         'collateral_validation': True,
         'asset_restrictions': True,
@@ -3255,11 +3255,11 @@ def validate_complete_system_readiness():
     # Check 2: Critical Files
     print("\n2️⃣ Critical Files Check:")
     critical_files = [
-        'arbitrum_testnet_agent.py',
-        'market_signal_strategy.py', 
+        'main.py',
+        'main.py', 
         'market_data_api_fix.py',
         'aave_integration.py',
-        'uniswap_integration.py'
+        'aave_integration.py'
     ]
     
     missing_files = []
@@ -3318,8 +3318,8 @@ def validate_complete_system_readiness():
     # Check 7: Import Tests
     print("\n7️⃣ Import Tests:")
     try:
-        from arbitrum_testnet_agent import ArbitrumTestnetAgent
-        from market_signal_strategy import MarketSignalStrategy
+        from main import ArbitrumTestnetAgent
+        from main import MarketSignalStrategy
         from market_data_api_fix import MarketDataAPIFix
         readiness_score += 1
         print("✅ All critical modules can be imported")
@@ -6414,7 +6414,7 @@ def strict_float_validator(v: Any) -> float:
 def float_finite_validator(v: 'Number', field: 'ModelField', config: 'BaseConfig') -> 'Number':
     allow_inf_nan = getattr(field.type_, 'allow_inf_nan', None)
     if allow_inf_nan is None:
-        allow_inf_nan = config.allow_inf_nan
+        allow_inf_nan = main.allow_inf_nan
 
     if allow_inf_nan is False and (math.isnan(v) or math.isinf(v)):
         raise errors.NumberNotFiniteError()
@@ -6457,11 +6457,11 @@ def constant_validator(v: 'Any', field: 'ModelField') -> 'Any':
 def anystr_length_validator(v: 'StrBytes', config: 'BaseConfig') -> 'StrBytes':
     v_len = len(v)
 
-    min_length = config.min_anystr_length
+    min_length = main.min_anystr_length
     if v_len < min_length:
         raise errors.AnyStrMinLengthError(limit_value=min_length)
 
-    max_length = config.max_anystr_length
+    max_length = main.max_anystr_length
     if max_length is not None and v_len > max_length:
         raise errors.AnyStrMaxLengthError(limit_value=max_length)
 
@@ -6540,7 +6540,7 @@ def enum_member_validator(v: Any, field: 'ModelField', config: 'BaseConfig') -> 
     except ValueError:
         # field.type_ should be an enum, so will be iterable
         raise errors.EnumMemberError(enum_values=list(field.type_))
-    return enum_v.value if config.use_enum_values else enum_v
+    return enum_v.value if main.use_enum_values else enum_v
 
 def uuid_validator(v: Any, field: 'ModelField') -> UUID:
     try:
@@ -6712,32 +6712,32 @@ def make_literal_validator(type_: Any) -> Callable[[Any], Any]:
 def constr_length_validator(v: 'StrBytes', field: 'ModelField', config: 'BaseConfig') -> 'StrBytes':
     v_len = len(v)
 
-    min_length = field.type_.min_length if field.type_.min_length is not None else config.min_anystr_length
+    min_length = field.type_.min_length if field.type_.min_length is not None else main.min_anystr_length
     if v_len < min_length:
         raise errors.AnyStrMinLengthError(limit_value=min_length)
 
-    max_length = field.type_.max_length if field.type_.max_length is not None else config.max_anystr_length
+    max_length = field.type_.max_length if field.type_.max_length is not None else main.max_anystr_length
     if max_length is not None and v_len > max_length:
         raise errors.AnyStrMaxLengthError(limit_value=max_length)
 
     return v
 
 def constr_strip_whitespace(v: 'StrBytes', field: 'ModelField', config: 'BaseConfig') -> 'StrBytes':
-    strip_whitespace = field.type_.strip_whitespace or config.anystr_strip_whitespace
+    strip_whitespace = field.type_.strip_whitespace or main.anystr_strip_whitespace
     if strip_whitespace:
         v = v.strip()
 
     return v
 
 def constr_upper(v: 'StrBytes', field: 'ModelField', config: 'BaseConfig') -> 'StrBytes':
-    upper = field.type_.to_upper or config.anystr_upper
+    upper = field.type_.to_upper or main.anystr_upper
     if upper:
         v = v.upper()
 
     return v
 
 def constr_lower(v: 'StrBytes', field: 'ModelField', config: 'BaseConfig') -> 'StrBytes':
-    lower = field.type_.to_lower or config.anystr_lower
+    lower = field.type_.to_lower or main.anystr_lower
     if lower:
         v = v.lower()
     return v
@@ -6747,7 +6747,7 @@ def validate_json(v: Any, config: 'BaseConfig') -> Any:
         # pass None through to other validators
         return v
     try:
-        return config.json_loads(v)  # type: ignore
+        return main.json_loads(v)  # type: ignore
     except ValueError:
         raise errors.JsonError()
     except TypeError:
@@ -6904,7 +6904,7 @@ def find_validators(  # noqa: C901 (ignore complexity)
         except TypeError:
             raise RuntimeError(f'error checking inheritance of {type_!r} (type: {display_as_type(type_)})')
 
-    if config.arbitrary_types_allowed:
+    if main.arbitrary_types_allowed:
         yield make_arbitrary_type_validator(type_)
     else:
         if hasattr(type_, '__pydantic_core_schema__'):

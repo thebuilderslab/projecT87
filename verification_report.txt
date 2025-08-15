@@ -1,12 +1,12 @@
 ✅ Archive dir exists: 199 files archived
 ⚠️ No merge marker in ./.pythonlibs/lib/python3.11/site-packages/scipy/stats/_continuous_distns.py (may not need merge)
-❌ Found 211 imports to archived files:
-   - emergency_funding_manager.py -> emergency_stop
-   - emergency_funding_manager.py -> emergency_launch
-   - emergency_funding_manager.py -> enhanced_rpc_manager
-   - run_autonomous_mainnet.py -> arbitrum_testnet_agent
-   - run_autonomous_mainnet.py -> run_autonomous
-   ... and 206 more
+❌ Found 181 imports to archived files:
+   - rpc_circuit_breaker.py -> working_rpc_manager
+   - unified_aave_data_fetcher.py -> enhanced_balance_fetcher
+   - unified_aave_data_fetcher.py -> accurate_debank_fetcher
+   - unified_aave_data_fetcher.py -> optimized_balance_fetcher
+   - comprehensive_system_verifier.py -> transaction_validator
+   ... and 176 more
 ❌ Syntax error: main.py
 ✅ Syntax OK: web_dashboard.py
 ✅ Syntax OK: aave_integration.py
@@ -14,6 +14,6 @@
 📊 VERIFICATION SUMMARY:
    Archived files: 199
    Canonical files checked: 1
-   Bad imports found: 211
+   Bad imports found: 181
    Syntax errors: 1
 ❌ DEDUPLICATION VERIFICATION: ISSUES FOUND

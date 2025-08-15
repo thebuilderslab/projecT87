@@ -14,10 +14,10 @@ def check_dai_compliance():
     
     # Critical files that must be DAI-only compliant
     critical_files = [
-        'arbitrum_testnet_agent.py',
+        'main.py',
         'aave_integration.py',
-        'enhanced_borrow_manager.py',
-        'uniswap_integration.py'
+        'aave_integration.py',
+        'aave_integration.py'
     ]
     
     all_compliant = True
@@ -63,10 +63,10 @@ class FinalDAIComplianceValidator:
         
         # Core files that must be DAI compliant
         critical_files = [
-            'arbitrum_testnet_agent.py',
-            'enhanced_borrow_manager.py',
+            'main.py',
             'aave_integration.py',
-            'uniswap_integration.py',
+            'aave_integration.py',
+            'aave_integration.py',
             'transaction_validator.py'
         ]
         
@@ -157,10 +157,10 @@ def main():
         
         # Core files that must be DAI compliant
         critical_files = [
-            'arbitrum_testnet_agent.py',
-            'enhanced_borrow_manager.py',
+            'main.py',
             'aave_integration.py',
-            'uniswap_integration.py',
+            'aave_integration.py',
+            'aave_integration.py',
             'transaction_validator.py'
         ]
         

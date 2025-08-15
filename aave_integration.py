@@ -586,7 +586,7 @@ def verify_aave_data_accuracy():
     
     try:
         # Initialize agent
-        from arbitrum_testnet_agent import ArbitrumTestnetAgent
+        from main import ArbitrumTestnetAgent
         agent = ArbitrumTestnetAgent()
         
         print(f"📊 Wallet: {agent.address}")
