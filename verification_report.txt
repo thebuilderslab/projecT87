@@ -1,0 +1,19 @@
+✅ Archive dir exists: 199 files archived
+⚠️ No merge marker in ./.pythonlibs/lib/python3.11/site-packages/scipy/stats/_continuous_distns.py (may not need merge)
+❌ Found 211 imports to archived files:
+   - emergency_funding_manager.py -> emergency_stop
+   - emergency_funding_manager.py -> emergency_launch
+   - emergency_funding_manager.py -> enhanced_rpc_manager
+   - run_autonomous_mainnet.py -> arbitrum_testnet_agent
+   - run_autonomous_mainnet.py -> run_autonomous
+   ... and 206 more
+❌ Syntax error: main.py
+✅ Syntax OK: web_dashboard.py
+✅ Syntax OK: aave_integration.py
+
+📊 VERIFICATION SUMMARY:
+   Archived files: 199
+   Canonical files checked: 1
+   Bad imports found: 211
+   Syntax errors: 1
+❌ DEDUPLICATION VERIFICATION: ISSUES FOUND
