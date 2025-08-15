@@ -1,7 +1,7 @@
 COMPREHENSIVE SYSTEM AUDIT REPORT
 ==================================================
-Generated: 2025-08-15 04:47:17
-Total duplicates processed: 5
+Generated: 2025-08-15 04:57:22
+Total duplicates processed: 0
 
 FEATURE BREAKDOWN:
 ------------------------------
@@ -19,8 +19,7 @@ Feature: FETCHER
   Single file: ./unified_aave_data_fetcher.py
 
 Feature: COMPREHENSIVE
-  Canonical: ./comprehensive_system_verifier.py
-  Archived: ./comprehensive_system_audit.py - ✅ Merged
+  Single file: ./comprehensive_system_verifier.py
 
 Feature: BORROW
   Single file: ./enhanced_borrow_manager.py
@@ -47,8 +46,7 @@ Feature: DIAGNOSTIC
   Single file: ./debt_swap_diagnostic.py
 
 Feature: FIX
-  Canonical: ./market_data_api_fix.py
-  Archived: ./fix_imports.py - ✅ Merged
+  Single file: ./market_data_api_fix.py
 
 Feature: HEALTH_MONITOR
   Single file: ./trend_monitor.py
@@ -57,16 +55,10 @@ Feature: STRATEGY
   Single file: ./market_signal_strategy.py
 
 Feature: DASHBOARD
-  Canonical: ./web_dashboard.py
-  Archived: ./start_dashboard.py - 📋 No unique content
+  Single file: ./web_dashboard.py
 
 Feature: ENHANCED
   Single file: ./enhanced_market_analyzer.py
-
-Feature: MISC
-  Canonical: ./.pythonlibs/lib/python3.11/site-packages/scipy/stats/_continuous_distns.py
-  Archived: ./verify_deduplication.py - ✅ Merged
-  Archived: ./verify_deduplication_complete.py - ✅ Merged
 
 Feature: EMERGENCY
   Single file: ./emergency_funding_manager.py
@@ -80,6 +72,9 @@ Feature: LAUNCHER
 Feature: TEST
   Single file: ./.pythonlibs/lib/python3.11/site-packages/numpy/_core/tests/test_multiarray.py
 
+Feature: MISC
+  Single file: ./.pythonlibs/lib/python3.11/site-packages/scipy/stats/_continuous_distns.py
+
 ERROR SUMMARY:
 ==============================
 Syntax errors: 4
@@ -89,9 +84,9 @@ Test errors: 3
 SYNTAX ERRORS:
 --------------------
   ./confidence_validator.py: Error processing line 1 of /home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/_virtualenv.pth:
-  ./.pythonlibs/lib/python3.11/site-packages/scipy/stats/_continuous_distns.py: Error processing line 1 of /home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/_virtualenv.pth:
   ./main.py: Error processing line 1 of /home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/_virtualenv.pth:
   ./.pythonlibs/lib/python3.11/site-packages/numpy/_core/tests/test_multiarray.py: Error processing line 1 of /home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/_virtualenv.pth:
+  ./.pythonlibs/lib/python3.11/site-packages/scipy/stats/_continuous_distns.py: Error processing line 1 of /home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/_virtualenv.pth:
 
 TEST ERRORS:
 --------------------
