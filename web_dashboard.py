@@ -2612,7 +2612,7 @@ def start_dashboard():
         except Exception as e2:
             print(f"❌ Alternative dashboard failed: {e2}")
             print("💡 Try running: python web_dashboard.py")
-# --- Merged from restart_dashboard.py ---
+# --- Merged from reweb_dashboard.py ---
 
 def kill_existing_dashboard():
     """Kill any existing dashboard processes"""
@@ -2951,7 +2951,7 @@ def run_dashboard_preview():
             except KeyboardInterrupt:
                 print("\n👋 Dashboard stopped.")
                 break
-# --- Merged from start_dashboard.py ---
+# --- Merged from web_dashboard.py ---
 
 def check_syntax():
     """Check for syntax errors"""

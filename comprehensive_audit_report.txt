@@ -1,0 +1,162 @@
+COMPREHENSIVE SYSTEM AUDIT REPORT
+==================================================
+Generated: 2025-08-15 04:47:17
+Total duplicates processed: 5
+
+FEATURE BREAKDOWN:
+------------------------------
+
+Feature: GAS
+  Single file: ./gas_fee_calculator.py
+
+Feature: SYNC
+  Single file: ./fix_data_sync.py
+
+Feature: RPC
+  Single file: ./rpc_circuit_breaker.py
+
+Feature: FETCHER
+  Single file: ./unified_aave_data_fetcher.py
+
+Feature: COMPREHENSIVE
+  Canonical: ./comprehensive_system_verifier.py
+  Archived: ./comprehensive_system_audit.py - ✅ Merged
+
+Feature: BORROW
+  Single file: ./enhanced_borrow_manager.py
+
+Feature: AGENT
+  Single file: ./multi_wallet_agent.py
+
+Feature: COMPLIANCE
+  Single file: ./final_dai_compliance_check.py
+
+Feature: AAVE
+  Single file: ./aave_integration.py
+
+Feature: UNISWAP
+  Single file: ./uniswap_integration.py
+
+Feature: INTEGRATION
+  Single file: ./freqtrade_integration.py
+
+Feature: VALIDATOR
+  Single file: ./confidence_validator.py
+
+Feature: DIAGNOSTIC
+  Single file: ./debt_swap_diagnostic.py
+
+Feature: FIX
+  Canonical: ./market_data_api_fix.py
+  Archived: ./fix_imports.py - ✅ Merged
+
+Feature: HEALTH_MONITOR
+  Single file: ./trend_monitor.py
+
+Feature: STRATEGY
+  Single file: ./market_signal_strategy.py
+
+Feature: DASHBOARD
+  Canonical: ./web_dashboard.py
+  Archived: ./start_dashboard.py - 📋 No unique content
+
+Feature: ENHANCED
+  Single file: ./enhanced_market_analyzer.py
+
+Feature: MISC
+  Canonical: ./.pythonlibs/lib/python3.11/site-packages/scipy/stats/_continuous_distns.py
+  Archived: ./verify_deduplication.py - ✅ Merged
+  Archived: ./verify_deduplication_complete.py - ✅ Merged
+
+Feature: EMERGENCY
+  Single file: ./emergency_funding_manager.py
+
+Feature: AUTONOMOUS
+  Single file: ./run_autonomous_mainnet.py
+
+Feature: LAUNCHER
+  Single file: ./main.py
+
+Feature: TEST
+  Single file: ./.pythonlibs/lib/python3.11/site-packages/numpy/_core/tests/test_multiarray.py
+
+ERROR SUMMARY:
+==============================
+Syntax errors: 4
+Import errors: 0
+Test errors: 3
+
+SYNTAX ERRORS:
+--------------------
+  ./confidence_validator.py: Error processing line 1 of /home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/_virtualenv.pth:
+  ./.pythonlibs/lib/python3.11/site-packages/scipy/stats/_continuous_distns.py: Error processing line 1 of /home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/_virtualenv.pth:
+  ./main.py: Error processing line 1 of /home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/_virtualenv.pth:
+  ./.pythonlibs/lib/python3.11/site-packages/numpy/_core/tests/test_multiarray.py: Error processing line 1 of /home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/_virtualenv.pth:
+
+TEST ERRORS:
+--------------------
+  Import test failed for main.py: Error processing line 1 of /home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/_virtualenv.pth:
+
+  Traceback (most recent call last):
+    File "<frozen site>", line 195, in addpackage
+    File "<string>", line 1, in <module>
+  ModuleNotFoundError: No module named '_virtualenv'
+
+Remainder of file ignored
+Error processing line 1 of /home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/_virtualenv.pth:
+
+  Traceback (most recent call last):
+    File "<frozen site>", line 195, in addpackage
+    File "<string>", line 1, in <module>
+  ModuleNotFoundError: No module named '_virtualenv'
+
+Remainder of file ignored
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+  File "/home/runner/workspace/main.py", line 8924
+    def benchmark(method: Dict[str, Any]) -> None:
+IndentationError: unexpected indent
+  Import test failed for web_dashboard.py: Error processing line 1 of /home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/_virtualenv.pth:
+
+  Traceback (most recent call last):
+    File "<frozen site>", line 195, in addpackage
+    File "<string>", line 1, in <module>
+  ModuleNotFoundError: No module named '_virtualenv'
+
+Remainder of file ignored
+Error processing line 1 of /home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/_virtualenv.pth:
+
+  Traceback (most recent call last):
+    File "<frozen site>", line 195, in addpackage
+    File "<string>", line 1, in <module>
+  ModuleNotFoundError: No module named '_virtualenv'
+
+Remainder of file ignored
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+  File "/home/runner/workspace/web_dashboard.py", line 6, in <module>
+    from flask import Flask, render_template, jsonify, request
+ImportError: cannot import name 'Flask' from 'flask' (unknown location)
+  Import test failed for aave_integration.py: Error processing line 1 of /home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/_virtualenv.pth:
+
+  Traceback (most recent call last):
+    File "<frozen site>", line 195, in addpackage
+    File "<string>", line 1, in <module>
+  ModuleNotFoundError: No module named '_virtualenv'
+
+Remainder of file ignored
+Error processing line 1 of /home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/_virtualenv.pth:
+
+  Traceback (most recent call last):
+    File "<frozen site>", line 195, in addpackage
+    File "<string>", line 1, in <module>
+  ModuleNotFoundError: No module named '_virtualenv'
+
+Remainder of file ignored
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+  File "/home/runner/workspace/aave_integration.py", line 11, in <module>
+    from web3 import Web3
+ImportError: cannot import name 'Web3' from 'web3' (unknown location)
+
+❌ AUDIT STATUS: 7 BLOCKING ERRORS FOUND

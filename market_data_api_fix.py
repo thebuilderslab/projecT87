@@ -5004,3 +5004,76 @@ def _in_unstable_openblas_configuration():
             _sparse_min_or_max(X, axis, np.fmin),
             _sparse_min_or_max(X, axis, np.fmax),
         )
+# --- Merged from market_data_api_fix.py ---
+
+def fix_file_imports(file_path):
+    """Fix imports in a single file"""
+    if not file_path.endswith('.py'):
+        return 0
+    
+    try:
+        with open(file_path, 'r', encoding='utf-8') as f:
+            content = f.read()
+        
+        original_content = content
+        changes_made = 0
+        
+        # Fix import statements
+        for old_module, new_module in IMPORT_MAPPINGS.items():
+            # Pattern 1: from old_module import ...
+            pattern1 = rf'\bfrom\s+{re.escape(old_module)}\s+import\b'
+            replacement1 = f'from {new_module} import'
+            content, count1 = re.subn(pattern1, replacement1, content)
+            changes_made += count1
+            
+            # Pattern 2: import old_module
+            pattern2 = rf'\bimport\s+{re.escape(old_module)}\b'
+            replacement2 = f'import {new_module}'
+            content, count2 = re.subn(pattern2, replacement2, content)
+            changes_made += count2
+            
+            # Pattern 3: old_module.something (be careful not to break variables)
+            pattern3 = rf'\b{re.escape(old_module)}\.'
+            replacement3 = f'{new_module}.'
+            content, count3 = re.subn(pattern3, replacement3, content)
+            changes_made += count3
+        
+        if content != original_content:
+            with open(file_path, 'w', encoding='utf-8') as f:
+                f.write(content)
+            if changes_made > 0:
+                print(f"✅ Fixed {changes_made} imports in {file_path}")
+            return changes_made
+        else:
+            return 0
+            
+    except Exception as e:
+        print(f"❌ Error fixing imports in {file_path}: {e}")
+        return 0
+
+def fix_all_imports():
+    """Fix imports in all Python files"""
+    print("🔧 Fixing imports after deduplication...")
+    
+    files_fixed = 0
+    total_changes = 0
+    
+    # Process all Python files
+    for root, dirs, files in os.walk('.'):
+        # Skip archive directory
+        if 'archive_duplicates' in dirs:
+            dirs.remove('archive_duplicates')
+        
+        for file in files:
+            if file.endswith('.py'):
+                file_path = os.path.join(root, file)
+                changes = fix_file_imports(file_path)
+                if changes > 0:
+                    files_fixed += 1
+                    total_changes += changes
+    
+    print(f"✅ Import fixing complete!")
+    print(f"📁 Files modified: {files_fixed}")
+    print(f"🔄 Total changes made: {total_changes}")
+    
+    return total_changes > 0
