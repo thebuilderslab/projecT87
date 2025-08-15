@@ -14,3 +14,4 @@ numpy
 pandas
 scikit-learn
 urllib3
+virtualenv
