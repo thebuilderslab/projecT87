@@ -1,66 +1,6 @@
 
 #!/usr/bin/env python3
 """
-Fix broken imports after deduplication
-"""
-
-import os
-import re
-
-def fix_broken_imports():
-    """Fix imports that reference archived files"""
-    
-    # Map of old imports to new canonical imports
-    import_fixes = {
-        'from aave_integration import': 'from aave_integration import',
-        '# emergency_stop functionality is integrated': '# emergency_stop functionality is integrated',
-        '# emergency_launch functionality is integrated': '# emergency_launch functionality is integrated',  
-        '# emergency_stop functionality is integrated': '# emergency_stop functionality is integrated',
-        '# emergency_launch functionality is integrated': '# emergency_launch functionality is integrated',
-        '# run_autonomous functionality is integrated': '# run_autonomous functionality is integrated',
-        '# run_autonomous functionality is integrated': '# run_autonomous functionality is integrated'
-    }
-    
-    files_fixed = 0
-    
-    for root, dirs, files in os.walk("."):
-        # Skip archived directory
-        if "archive_duplicates" in dirs:
-            dirs.remove("archive_duplicates")
-        
-        for file in files:
-            if file.endswith(".py"):
-                file_path = os.path.join(root, file)
-                
-                try:
-                    with open(file_path, 'r', encoding='utf-8') as f:
-                        content = f.read()
-                    
-                    original_content = content
-                    
-                    # Apply import fixes
-                    for old_import, new_import in import_fixes.items():
-                        if old_import in content:
-                            content = content.replace(old_import, new_import)
-                    
-                    # Write back if changed
-                    if content != original_content:
-                        with open(file_path, 'w', encoding='utf-8') as f:
-                            f.write(content)
-                        files_fixed += 1
-                        print(f"✅ Fixed imports in {file_path}")
-                
-                except Exception as e:
-                    print(f"⚠️ Error processing {file_path}: {e}")
-    
-    print(f"\n🔧 Fixed imports in {files_fixed} files")
-
-if __name__ == "__main__":
-    print("🔧 Fixing broken imports...")
-    fix_broken_imports()
-    print("✅ Import fixes complete!")
-#!/usr/bin/env python3
-"""
 Fix Imports After Deduplication
 Automatically update import statements to reference canonical files
 """
@@ -68,37 +8,177 @@ Automatically update import statements to reference canonical files
 import os
 import re
 
-# Mapping of archived files to their canonical replacements
+# Comprehensive mapping of archived files to their canonical replacements
 IMPORT_MAPPINGS = {
+    # Core agent files
     'arbitrum_testnet_agent': 'main',
-    'enhanced_rpc_manager': 'aave_integration',
+    'collaborative_strategy_manager': 'main',
+    'autonomous_launcher': 'main',
+    'mainnet_launcher': 'main',
+    'manual_controls': 'main',
+    'strategy_manager': 'main',
+    'config': 'main',
+    
+    # Emergency and safety systems
     'emergency_stop': 'emergency_funding_manager',
     'emergency_launch': 'emergency_funding_manager',
-    'collaborative_strategy_manager': 'main',
+    'emergency_dashboard_launch': 'emergency_funding_manager',
+    
+    # Aave and DeFi integrations
+    'enhanced_rpc_manager': 'aave_integration',
     'enhanced_borrow_manager': 'aave_integration',
+    'enhanced_balance_fetcher': 'aave_integration',
+    'optimized_balance_fetcher': 'aave_integration',
+    'accurate_debank_fetcher': 'aave_integration',
     'health_monitor': 'aave_integration',
-    'web_dashboard': 'web_dashboard',  # Keep as is
-    'config': 'main',
+    'aave_health_monitor': 'aave_integration',
     'enhanced_contract_manager': 'aave_integration',
     'contract_validator': 'aave_integration',
     'network_validator': 'aave_integration',
     'gas_optimizer': 'aave_integration',
-    'manual_controls': 'main',
-    'dashboard': 'web_dashboard',
-    'strategy_manager': 'main',
-    'autonomous_launcher': 'main',
-    'mainnet_launcher': 'main',
-    'system_diagnostic': 'main',
     'wallet_diagnostics': 'aave_integration',
-    'market_signal_strategy': 'main',
     'debt_swap_manager': 'aave_integration',
     'uniswap_integration': 'aave_integration',
+    'enhanced_collateral_validator': 'aave_integration',
+    'enhanced_system_validator': 'aave_integration',
+    'enhanced_web3_provider': 'aave_integration',
+    'working_rpc_manager': 'aave_integration',
+    
+    # Market and trading strategies
+    'market_signal_strategy': 'main',
+    'market_strategy_config': 'main',
+    'ml_strategy_optimizer': 'main',
+    'advanced_trend_analyzer': 'main',
+    
+    # Dashboard and web interface
+    'dashboard': 'web_dashboard',
+    'improved_web_dashboard': 'web_dashboard',
+    'launch_dashboard_clean': 'web_dashboard',
+    'launch_improved_dashboard': 'web_dashboard',
+    'quick_dashboard_fix': 'web_dashboard',
+    
+    # Diagnostic and validation tools
+    'system_diagnostic': 'main',
+    'comprehensive_diagnostic': 'main',
+    'autonomous_system_diagnostic': 'main',
+    'api_diagnostics': 'main',
+    'dependency_validator': 'main',
+    'environment_validator': 'main',
+    'comprehensive_fix_validator': 'main',
+    'contract_validation_tool': 'aave_integration',
+    'borrow_diagnostic_tool': 'aave_integration',
+    
+    # Network and RPC management
+    'enhanced_rpc_manager': 'aave_integration',
+    'network_congestion_handler': 'aave_integration',
+    'network_quality_detector': 'aave_integration',
+    
+    # Swap and transaction management
+    'enhanced_swap_dai_for_wbtc': 'aave_integration',
+    'enhanced_swap_dai_for_weth': 'aave_integration',
+    'enhanced_swap_usdc_for_wbtc': 'aave_integration',
+    'manual_balance_swap': 'aave_integration',
+    'force_swap_with_approval': 'aave_integration',
+    'force_swap_with_manual_amounts': 'aave_integration',
+    
+    # Configuration and utilities
+    'config_constants': 'main',
+    'env_handler': 'main',
+    'prompt_interface': 'main',
+    
+    # Cross-chain and compound integration
+    'cross_chain_manager': 'aave_integration',
+    'compound_v3_integration': 'aave_integration',
+    
+    # Compliance and validation
+    'dai_compliance_enforcer': 'main',
+    'dai_compliance_final_validator': 'main',
+    'final_execution_validator': 'main',
+    
+    # Monitoring and alerts
+    'live_data_monitor': 'main',
+    'alert_system': 'main',
+    
+    # Optimization and sequence management
+    'optimized_sequence_manager': 'aave_integration',
+    'funding_bypass_handler': 'emergency_funding_manager',
+    
+    # Testing and validation
+    'integrated_system_test': 'main',
+    'complete_system_validation': 'main',
+    'comprehensive_api_test': 'main',
+    'comprehensive_debt_swap_test': 'aave_integration',
+    
+    # Launchers and runners
+    'complete_autonomous_launcher': 'main',
+    'parallel_dashboard_launcher': 'web_dashboard',
+    'verified_system_launcher': 'main',
+    'run_autonomous': 'run_autonomous_mainnet',
+    
+    # Collaboration and interface
+    'collaboration_interface': 'main',
+    
+    # Manual triggers and controls
+    'manual_trigger': 'main',
+    'create_and_activate': 'main',
+    'create_position': 'aave_integration',
+    'enable_debt_swaps': 'aave_integration',
+    
+    # Transaction and approval management
+    'execute_debt_swap_network_approval': 'aave_integration',
+    'execute_onetime_debt_swap': 'aave_integration',
+    
+    # Debugging and analysis tools
+    'debug_agent_position': 'main',
+    'debug_borrowing': 'aave_integration',
+    'debug_swap_system': 'aave_integration',
+    'debug_syntax': 'main',
+    'debug_token_balances': 'aave_integration',
+    'diagnose_borrow_failures': 'aave_integration',
+    'diagnose_transaction_reverts': 'aave_integration',
+    
+    # API and function testing
+    'direct_api_function_test': 'aave_integration',
+    'aave_api_fallback': 'aave_integration',
+    
+    # Balance and wallet checking
+    'check_agent_status': 'main',
+    'check_wallet_balance': 'main',
+    'check_wallet_value': 'main',
+    'check_recent_operations': 'main',
+    'check_syntax': 'main',
+    
+    # Integration checking
+    'check_arbiscan_integration': 'aave_integration',
+    'check_zapper_integration': 'aave_integration',
+    
+    # Operational and compliance
+    'operational_checklist': 'main',
+    'one_hour_confidence_validator': 'main',
+    
+    # Fix scripts (map to main for compatibility)
+    'fix_aave_contract_calls': 'aave_integration',
+    'fix_aave_integration': 'aave_integration',
+    'fix_borrow_gas': 'aave_integration',
+    'fix_critical_contract_issues': 'aave_integration',
+    'fix_current_issues': 'main',
+    'fix_defi_integration': 'aave_integration',
+    'fix_json_serialization': 'main',
+    'fix_private_key_issue': 'main',
+    'fix_secrets': 'main',
+    
+    # Syntax and line checking
+    'line_by_line_syntax_checker': 'main',
+    
+    # Deduplication scripts (keep self-referential)
+    'deduplicate_codebase': 'main',
+    'deduplicate_codebase_1': 'main',
 }
 
 def fix_file_imports(file_path):
     """Fix imports in a single file"""
     if not file_path.endswith('.py'):
-        return False
+        return 0
     
     try:
         with open(file_path, 'r', encoding='utf-8') as f:
@@ -121,7 +201,7 @@ def fix_file_imports(file_path):
             content, count2 = re.subn(pattern2, replacement2, content)
             changes_made += count2
             
-            # Pattern 3: old_module.something
+            # Pattern 3: old_module.something (be careful not to break variables)
             pattern3 = rf'\b{re.escape(old_module)}\.'
             replacement3 = f'{new_module}.'
             content, count3 = re.subn(pattern3, replacement3, content)
@@ -130,14 +210,15 @@ def fix_file_imports(file_path):
         if content != original_content:
             with open(file_path, 'w', encoding='utf-8') as f:
                 f.write(content)
-            print(f"✅ Fixed {changes_made} imports in {file_path}")
-            return True
+            if changes_made > 0:
+                print(f"✅ Fixed {changes_made} imports in {file_path}")
+            return changes_made
         else:
-            return False
+            return 0
             
     except Exception as e:
         print(f"❌ Error fixing imports in {file_path}: {e}")
-        return False
+        return 0
 
 def fix_all_imports():
     """Fix imports in all Python files"""
@@ -155,13 +236,16 @@ def fix_all_imports():
         for file in files:
             if file.endswith('.py'):
                 file_path = os.path.join(root, file)
-                if fix_file_imports(file_path):
+                changes = fix_file_imports(file_path)
+                if changes > 0:
                     files_fixed += 1
+                    total_changes += changes
     
     print(f"✅ Import fixing complete!")
     print(f"📁 Files modified: {files_fixed}")
+    print(f"🔄 Total changes made: {total_changes}")
     
-    return files_fixed > 0
+    return total_changes > 0
 
 if __name__ == "__main__":
     success = fix_all_imports()
