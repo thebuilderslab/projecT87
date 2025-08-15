@@ -1,11 +1,11 @@
-from arbitrum_testnet_agent import ArbitrumTestnetAgent # Assuming this is where your agent class is
-from collaborative_strategy_manager import CollaborativeStrategyManager
+from main import ArbitrumTestnetAgent # Assuming this is where your agent class is
+from main import CollaborativeStrategyManager
 import time
 import json
 import os
 import traceback
 from datetime import datetime
-from config import MIN_ETH_FOR_OPERATIONS, MIN_ETH_FOR_GAS_BUFFER
+from main import MIN_ETH_FOR_OPERATIONS, MIN_ETH_FOR_GAS_BUFFER
 
 # --- Configuration ---
 CONFIG_FILE = 'agent_config.json'
@@ -188,7 +188,7 @@ def autonomous_agent_loop():
             # Ensure debt swap system is active if market signals are enabled
             if (hasattr(arbitrum_agent, 'market_signal_strategy') and 
                 arbitrum_agent.market_signal_strategy and 
-                arbitrum_agent.market_signal_strategy.market_signal_enabled):
+                arbitrum_agent.main.market_signal_enabled):
                 arbitrum_agent.debt_swap_active = True
                 print("🔄 INTEGRATED TRIGGER SYSTEM: All triggers active")
                 print("   • Market Signal Triggers: ✅ Active")
@@ -207,15 +207,15 @@ def autonomous_agent_loop():
             # Collaborative strategy analysis (only if strategy_manager is available)
             if strategy_manager:
                 print("\n🤝 COLLABORATIVE STRATEGY ANALYSIS:")
-                strategy_manager.agent_analyze_and_propose()
-                pending_proposals = strategy_manager.get_user_input_on_proposals()
+                main.agent_analyze_and_propose()
+                pending_proposals = main.get_user_input_on_proposals()
 
                 # Check for any auto-approved low-risk improvements
                 if pending_proposals:
                     for proposal in pending_proposals:
                         if proposal['risk_level'] == 'Low' and proposal['source'] == 'agent':
                             print(f"🟢 Auto-implementing low-risk proposal: {proposal['id']}")
-                            strategy_manager.implement_approved_strategy(proposal['id'])
+                            main.implement_approved_strategy(proposal['id'])
 
             completion_timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S UTC')
             print(f"✅ [{completion_timestamp}] Iteration {iteration} completed successfully. Waiting for next cycle.")
@@ -314,9 +314,9 @@ if __name__ == "__main__":
         autonomous_agent_loop()
     elif choice == "2":
         print("🎛️ Starting manual controls...")
-        os.system("python manual_controls.py")
+        os.system("python main.py")
     elif choice == "3":
-        print("🌐 Starting web dashboard...")
+        print("🌐 Starting web web_dashboard...")
         os.system("python web_dashboard.py")
     else:
         print("❌ Invalid choice. Starting autonomous mode by default.")
@@ -529,7 +529,7 @@ def main():
 
     print("=" * 60)
     return all_checks_passed
-# --- Merged from mainnet_launcher.py ---
+# --- Merged from main.py ---
 
 def force_load_secret(var_name, default_value=None):
     """Force load a secret with multiple fallback methods and aggressive reloading"""
@@ -687,7 +687,7 @@ class MainnetSafetyManager:
         print(f"✅ Arbitrum RPC: {arbitrum_rpc}")
 
         # Check emergency stop system
-        if not os.path.exists('emergency_stop.py'):
+        if not os.path.exists('emergency_funding_manager.py'):
             print("❌ Emergency stop system not found")
             return False
         print("✅ Emergency stop system: Ready")
@@ -717,10 +717,9 @@ def start_web_dashboard():
     if app is None:
         print("❌ Web dashboard not available due to import error")
         return
-    print("🌐 Starting web dashboard...")
+    print("🌐 Starting web web_dashboard...")
     
-    # Import the port allocation function from web_dashboard
-    import socket
+    # Import the port allocation function from web_dashboard import socket
     def get_available_port(start_port=5000):
         for port in range(start_port, start_port + 20):
             try:
@@ -838,7 +837,7 @@ def start_web_dashboard():
         print(f"✅ Arbitrum RPC: {arbitrum_rpc}")
 
         # Check emergency stop system
-        if not os.path.exists('emergency_stop.py'):
+        if not os.path.exists('emergency_funding_manager.py'):
             print("❌ Emergency stop system not found")
             return False
         print("✅ Emergency stop system: Ready")
@@ -916,7 +915,7 @@ def patch_imports():
 
     try:
         # Test critical imports
-        from arbitrum_testnet_agent import ArbitrumTestnetAgent
+        from main import ArbitrumTestnetAgent
         print("✅ ArbitrumTestnetAgent import successful")
     except Exception as e:
         print(f"⚠️ ArbitrumTestnetAgent import failed: {e}")
@@ -942,7 +941,7 @@ def patch_imports():
 def start_dashboard():
     """Start dashboard with comprehensive error handling"""
     try:
-        print("🚀 Starting web dashboard...")
+        print("🚀 Starting web web_dashboard...")
 
         # Import Flask app
         from web_dashboard import app
@@ -1207,7 +1206,7 @@ def test_defi_integrations():
     warnings = []
 
     try:
-        from arbitrum_testnet_agent import ArbitrumTestnetAgent
+        from main import ArbitrumTestnetAgent
         agent = ArbitrumTestnetAgent()
 
         # Test DeFi integrations initialization separately
@@ -1223,14 +1222,14 @@ def test_defi_integrations():
             issues.append("DeFi integrations failed to initialize")
 
             # Check if it's the specific enhanced_borrow_manager error
-            if "enhanced_borrow_manager.py" in str(integration_error):
+            if "aave_integration.py" in str(integration_error):
                 issues.append("Enhanced borrow manager has syntax errors")
 
         print("   Agent initialization: ✅ Success")
 
         # Test enhanced borrow manager specifically
         try:
-            from enhanced_borrow_manager import EnhancedBorrowManager
+            from aave_integration import EnhancedBorrowManager
             ebm = EnhancedBorrowManager(agent)
             print("   Enhanced Borrow Manager: ✅ Success")
         except Exception as ebm_error:
@@ -2819,88 +2818,7 @@ class StrictUndefined(Undefined):
             return super().__bool__()  # type: ignore
 # --- Merged from main.py ---
 
-class Keccak256:
-    def __init__(self, backend: BackendAPI) -> None:
-        self._backend = backend
-        self.hasher = self._hasher_first_run
-        self.preimage = self._preimage_first_run
-
-    def _hasher_first_run(self, in_data: Union[bytearray, bytes]) -> bytes:
-        """
-        Validate, on first-run, that the hasher backend is valid.
-
-        After first run, replace this with the new hasher method.
-        This is a bit of a hacky way to minimize overhead on hash calls after
-        this first one.
-        """
-        # Execute directly before saving method,
-        # to let any side-effects settle (see AutoBackend)
-        result = self._backend.keccak256(in_data)
-        new_hasher = self._backend.keccak256
-        assert (
-            new_hasher(b"")
-            == b"\xc5\xd2F\x01\x86\xf7#<\x92~}\xb2\xdc\xc7\x03\xc0\xe5\x00\xb6S\xca\x82';\x7b\xfa\xd8\x04]\x85\xa4p"  # noqa: E501
-        )
-        self.hasher = new_hasher
-        return result
-
-    def _preimage_first_run(self, in_data: Union[bytearray, bytes]) -> PreImageAPI:
-        # Execute directly before saving method,
-        # to let any side-effects settle (see AutoBackend)
-        result = self._backend.preimage(in_data)
-        self.preimage = self._backend.preimage
-        return result
-
-    def __call__(self, preimage: Union[bytearray, bytes]) -> bytes:
-        if not isinstance(preimage, (bytearray, bytes)):
-            raise TypeError(
-                "Can only compute the hash of `bytes` or `bytearray` values, "
-                f"not {repr(preimage)}"
-            )
-
-        return self.hasher(preimage)
-
-    def new(self, preimage: Union[bytearray, bytes]) -> PreImageAPI:
-        if not isinstance(preimage, (bytearray, bytes)):
-            raise TypeError(
-                "Can only compute the hash of `bytes` or `bytearray` values, "
-                f"not {repr(preimage)}"
-            )
-        return self.preimage(preimage)
-
-    def _hasher_first_run(self, in_data: Union[bytearray, bytes]) -> bytes:
-        """
-        Validate, on first-run, that the hasher backend is valid.
-
-        After first run, replace this with the new hasher method.
-        This is a bit of a hacky way to minimize overhead on hash calls after
-        this first one.
-        """
-        # Execute directly before saving method,
-        # to let any side-effects settle (see AutoBackend)
-        result = self._backend.keccak256(in_data)
-        new_hasher = self._backend.keccak256
-        assert (
-            new_hasher(b"")
-            == b"\xc5\xd2F\x01\x86\xf7#<\x92~}\xb2\xdc\xc7\x03\xc0\xe5\x00\xb6S\xca\x82';\x7b\xfa\xd8\x04]\x85\xa4p"  # noqa: E501
-        )
-        self.hasher = new_hasher
-        return result
-
-    def _preimage_first_run(self, in_data: Union[bytearray, bytes]) -> PreImageAPI:
-        # Execute directly before saving method,
-        # to let any side-effects settle (see AutoBackend)
-        result = self._backend.preimage(in_data)
-        self.preimage = self._backend.preimage
-        return result
-
-    def new(self, preimage: Union[bytearray, bytes]) -> PreImageAPI:
-        if not isinstance(preimage, (bytearray, bytes)):
-            raise TypeError(
-                "Can only compute the hash of `bytes` or `bytearray` values, "
-                f"not {repr(preimage)}"
-            )
-        return self.preimage(preimage)
+# Removed duplicate Keccak256 class definition
 # --- Merged from __main__.py ---
 
 def query_yes_no(question: str, default: str = "yes") -> bool:
@@ -3316,7 +3234,7 @@ class BaseModel(metaclass=_model_construction.ModelMetaclass):
         __pydantic_fields__: A dictionary of field names and their corresponding [`FieldInfo`][pydantic.fields.FieldInfo] objects.
         __pydantic_computed_fields__: A dictionary of computed field names and their corresponding [`ComputedFieldInfo`][pydantic.fields.ComputedFieldInfo] objects.
 
-        __pydantic_extra__: A dictionary containing extra values, if [`extra`][pydantic.config.ConfigDict.extra]
+        __pydantic_extra__: A dictionary containing extra values, if [`extra`][pydantic.main.ConfigDict.extra]
             is set to `'allow'`.
         __pydantic_fields_set__: The names of fields explicitly set during instantiation.
         __pydantic_private__: Values of private attributes set on the model instance.
@@ -3326,7 +3244,7 @@ class BaseModel(metaclass=_model_construction.ModelMetaclass):
 
     model_config: ClassVar[ConfigDict] = ConfigDict()
     """
-    Configuration for the model, should be a dictionary conforming to [`ConfigDict`][pydantic.config.ConfigDict].
+    Configuration for the model, should be a dictionary conforming to [`ConfigDict`][pydantic.main.ConfigDict].
     """
 
     __class_vars__: ClassVar[set[str]]
@@ -3383,7 +3301,7 @@ class BaseModel(metaclass=_model_construction.ModelMetaclass):
     """A dictionary of computed field names and their corresponding [`ComputedFieldInfo`][pydantic.fields.ComputedFieldInfo] objects."""
 
     __pydantic_extra__: dict[str, Any] | None = _model_construction.NoInitField(init=False)
-    """A dictionary containing extra values, if [`extra`][pydantic.config.ConfigDict.extra] is set to `'allow'`."""
+    """A dictionary containing extra values, if [`extra`][pydantic.main.ConfigDict.extra] is set to `'allow'`."""
 
     __pydantic_fields_set__: set[str] = _model_construction.NoInitField(init=False)
     """The names of fields explicitly set during instantiation."""
@@ -3460,7 +3378,7 @@ class BaseModel(metaclass=_model_construction.ModelMetaclass):
         """Get extra fields set during validation.
 
         Returns:
-            A dictionary of extra fields, or `None` if `config.extra` is not set to `"allow"`.
+            A dictionary of extra fields, or `None` if `main.extra` is not set to `"allow"`.
         """
         return self.__pydantic_extra__
 
@@ -4954,7 +4872,7 @@ def create_model(  # noqa: C901
         """Get extra fields set during validation.
 
         Returns:
-            A dictionary of extra fields, or `None` if `config.extra` is not set to `"allow"`.
+            A dictionary of extra fields, or `None` if `main.extra` is not set to `"allow"`.
         """
         return self.__pydantic_extra__
 
@@ -6201,10 +6119,10 @@ class ModelMetaclass(ABCMeta):
                         class_validators=vg.get_validators(ann_name),
                         config=config,
                     )
-                elif ann_name not in namespace and config.underscore_attrs_are_private:
+                elif ann_name not in namespace and main.underscore_attrs_are_private:
                     private_attributes[ann_name] = PrivateAttr()
 
-            untouched_types = UNTOUCHED_TYPES + config.keep_untouched
+            untouched_types = UNTOUCHED_TYPES + main.keep_untouched
             for var_name, value in namespace.items():
                 can_be_changed = var_name not in class_vars and not is_untouched(value)
                 if isinstance(value, ModelPrivateAttr):
@@ -6214,7 +6132,7 @@ class ModelMetaclass(ABCMeta):
                             f'Use sunder or dunder names, e. g. "_{var_name}" or "__{var_name}__"'
                         )
                     private_attributes[var_name] = value
-                elif config.underscore_attrs_are_private and is_valid_private_name(var_name) and can_be_changed:
+                elif main.underscore_attrs_are_private and is_valid_private_name(var_name) and can_be_changed:
                     private_attributes[var_name] = PrivateAttr(default=value)
                 elif is_valid_field(var_name) and var_name not in annotations and can_be_changed:
                     validate_field_name(bases, var_name)
@@ -6239,14 +6157,14 @@ class ModelMetaclass(ABCMeta):
         if _custom_root_type:
             validate_custom_root_type(fields)
         vg.check_for_unused()
-        if config.json_encoders:
-            json_encoder = partial(custom_pydantic_encoder, config.json_encoders)
+        if main.json_encoders:
+            json_encoder = partial(custom_pydantic_encoder, main.json_encoders)
         else:
             json_encoder = pydantic_encoder
         pre_rv_new, post_rv_new = extract_root_validators(namespace)
 
         if hash_func is None:
-            hash_func = generate_hash_function(config.frozen)
+            hash_func = generate_hash_function(main.frozen)
 
         exclude_from_namespace = fields | private_attributes.keys() | {'__slots__'}
         new_namespace = {
@@ -6322,7 +6240,7 @@ def validate_model(  # noqa: C901 (ignore complexity)
     # field names, never aliases
     fields_set = set()
     config = model.__config__
-    check_extra = config.extra is not Extra.ignore
+    check_extra = main.extra is not Extra.ignore
     cls_ = cls or model
 
     for validator in model.__pre_root_validators__:
@@ -6334,7 +6252,7 @@ def validate_model(  # noqa: C901 (ignore complexity)
     for name, field in model.__fields__.items():
         value = input_data.get(field.alias, _missing)
         using_name = False
-        if value is _missing and config.allow_population_by_field_name and field.alt_alias:
+        if value is _missing and main.allow_population_by_field_name and field.alt_alias:
             value = input_data.get(field.name, _missing)
             using_name = True
 
@@ -6345,7 +6263,7 @@ def validate_model(  # noqa: C901 (ignore complexity)
 
             value = field.get_default()
 
-            if not config.validate_all and not field.validate_always:
+            if not main.validate_all and not field.validate_always:
                 values[name] = value
                 continue
         else:
@@ -6368,7 +6286,7 @@ def validate_model(  # noqa: C901 (ignore complexity)
             extra = input_data.keys() - names_used
         if extra:
             fields_set |= extra
-            if config.extra is Extra.allow:
+            if main.extra is Extra.allow:
                 for f in extra:
                     values[f] = input_data[f]
             else:
@@ -6472,10 +6390,10 @@ def validate_model(  # noqa: C901 (ignore complexity)
                         class_validators=vg.get_validators(ann_name),
                         config=config,
                     )
-                elif ann_name not in namespace and config.underscore_attrs_are_private:
+                elif ann_name not in namespace and main.underscore_attrs_are_private:
                     private_attributes[ann_name] = PrivateAttr()
 
-            untouched_types = UNTOUCHED_TYPES + config.keep_untouched
+            untouched_types = UNTOUCHED_TYPES + main.keep_untouched
             for var_name, value in namespace.items():
                 can_be_changed = var_name not in class_vars and not is_untouched(value)
                 if isinstance(value, ModelPrivateAttr):
@@ -6485,7 +6403,7 @@ def validate_model(  # noqa: C901 (ignore complexity)
                             f'Use sunder or dunder names, e. g. "_{var_name}" or "__{var_name}__"'
                         )
                     private_attributes[var_name] = value
-                elif config.underscore_attrs_are_private and is_valid_private_name(var_name) and can_be_changed:
+                elif main.underscore_attrs_are_private and is_valid_private_name(var_name) and can_be_changed:
                     private_attributes[var_name] = PrivateAttr(default=value)
                 elif is_valid_field(var_name) and var_name not in annotations and can_be_changed:
                     validate_field_name(bases, var_name)
@@ -6510,14 +6428,14 @@ def validate_model(  # noqa: C901 (ignore complexity)
         if _custom_root_type:
             validate_custom_root_type(fields)
         vg.check_for_unused()
-        if config.json_encoders:
-            json_encoder = partial(custom_pydantic_encoder, config.json_encoders)
+        if main.json_encoders:
+            json_encoder = partial(custom_pydantic_encoder, main.json_encoders)
         else:
             json_encoder = pydantic_encoder
         pre_rv_new, post_rv_new = extract_root_validators(namespace)
 
         if hash_func is None:
-            hash_func = generate_hash_function(config.frozen)
+            hash_func = generate_hash_function(main.frozen)
 
         exclude_from_namespace = fields | private_attributes.keys() | {'__slots__'}
         new_namespace = {
@@ -10911,9 +10829,9 @@ def wrap_session(
     initstate = 0
     try:
         try:
-            config._do_configure()
+            main._do_configure()
             initstate = 1
-            config.hook.pytest_sessionstart(session=session)
+            main.hook.pytest_sessionstart(session=session)
             initstate = 2
             session.exitstatus = doit(config, session) or 0
         except UsageError:
@@ -10929,13 +10847,13 @@ def wrap_session(
                     exitstatus = excinfo.value.returncode
                 if initstate < 2:
                     sys.stderr.write(f"{excinfo.typename}: {excinfo.value.msg}\n")
-            config.hook.pytest_keyboard_interrupt(excinfo=excinfo)
+            main.hook.pytest_keyboard_interrupt(excinfo=excinfo)
             session.exitstatus = exitstatus
         except BaseException:
             session.exitstatus = ExitCode.INTERNAL_ERROR
             excinfo = _pytest._code.ExceptionInfo.from_current()
             try:
-                config.notify_exception(excinfo, config.option)
+                main.notify_exception(excinfo, main.option)
             except exit.Exception as exc:
                 if exc.returncode is not None:
                     session.exitstatus = exc.returncode
@@ -10950,14 +10868,14 @@ def wrap_session(
         os.chdir(session.startpath)
         if initstate >= 2:
             try:
-                config.hook.pytest_sessionfinish(
+                main.hook.pytest_sessionfinish(
                     session=session, exitstatus=session.exitstatus
                 )
             except exit.Exception as exc:
                 if exc.returncode is not None:
                     session.exitstatus = exc.returncode
                 sys.stderr.write(f"{type(exc).__name__}: {exc}\n")
-        config._ensure_unconfigure()
+        main._ensure_unconfigure()
     return session.exitstatus
 
 def pytest_cmdline_main(config: Config) -> int | ExitCode:
@@ -10966,8 +10884,8 @@ def pytest_cmdline_main(config: Config) -> int | ExitCode:
 def _main(config: Config, session: Session) -> int | ExitCode | None:
     """Default command line protocol for initialization, session,
     running tests and reporting."""
-    config.hook.pytest_collection(session=session)
-    config.hook.pytest_runtestloop(session=session)
+    main.hook.pytest_collection(session=session)
+    main.hook.pytest_runtestloop(session=session)
 
     if session.testsfailed:
         return ExitCode.TESTS_FAILED
@@ -10979,17 +10897,17 @@ def pytest_collection(session: Session) -> None:
     session.perform_collect()
 
 def pytest_runtestloop(session: Session) -> bool:
-    if session.testsfailed and not session.config.option.continue_on_collection_errors:
+    if session.testsfailed and not session.main.option.continue_on_collection_errors:
         raise session.Interrupted(
             f"{session.testsfailed} error{'s' if session.testsfailed != 1 else ''} during collection"
         )
 
-    if session.config.option.collectonly:
+    if session.main.option.collectonly:
         return True
 
     for i, item in enumerate(session.items):
         nextitem = session.items[i + 1] if i + 1 < len(session.items) else None
-        item.config.hook.pytest_runtest_protocol(item=item, nextitem=nextitem)
+        item.main.hook.pytest_runtest_protocol(item=item, nextitem=nextitem)
         if session.shouldfail:
             raise session.Failed(session.shouldfail)
         if session.shouldstop:
@@ -11020,34 +10938,34 @@ def pytest_ignore_collect(collection_path: Path, config: Config) -> bool | None:
     if collection_path.name == "__pycache__":
         return True
 
-    ignore_paths = config._getconftest_pathlist(
+    ignore_paths = main._getconftest_pathlist(
         "collect_ignore", path=collection_path.parent
     )
     ignore_paths = ignore_paths or []
-    excludeopt = config.getoption("ignore")
+    excludeopt = main.getoption("ignore")
     if excludeopt:
         ignore_paths.extend(absolutepath(x) for x in excludeopt)
 
     if collection_path in ignore_paths:
         return True
 
-    ignore_globs = config._getconftest_pathlist(
+    ignore_globs = main._getconftest_pathlist(
         "collect_ignore_glob", path=collection_path.parent
     )
     ignore_globs = ignore_globs or []
-    excludeglobopt = config.getoption("ignore_glob")
+    excludeglobopt = main.getoption("ignore_glob")
     if excludeglobopt:
         ignore_globs.extend(absolutepath(x) for x in excludeglobopt)
 
     if any(fnmatch.fnmatch(str(collection_path), str(glob)) for glob in ignore_globs):
         return True
 
-    allow_in_venv = config.getoption("collect_in_virtualenv")
+    allow_in_venv = main.getoption("collect_in_virtualenv")
     if not allow_in_venv and _in_venv(collection_path):
         return True
 
     if collection_path.is_dir():
-        norecursepatterns = config.getini("norecursedirs")
+        norecursepatterns = main.getini("norecursedirs")
         if any(fnmatch_ex(pat, collection_path) for pat in norecursepatterns):
             return True
 
@@ -11059,7 +10977,7 @@ def pytest_collect_directory(
     return Dir.from_parent(parent, path=path)
 
 def pytest_collection_modifyitems(items: list[nodes.Item], config: Config) -> None:
-    deselect_prefixes = tuple(config.getoption("deselect") or [])
+    deselect_prefixes = tuple(main.getoption("deselect") or [])
     if not deselect_prefixes:
         return
 
@@ -11072,7 +10990,7 @@ def pytest_collection_modifyitems(items: list[nodes.Item], config: Config) -> No
             remaining.append(colitem)
 
     if deselected:
-        config.hook.pytest_deselected(items=deselected)
+        main.hook.pytest_deselected(items=deselected)
         items[:] = remaining
 
 class FSHookProxy:
@@ -11174,7 +11092,7 @@ class Session(nodes.Collector):
     def __init__(self, config: Config) -> None:
         super().__init__(
             name="",
-            path=config.rootpath,
+            path=main.rootpath,
             fspath=None,
             parent=None,
             config=config,
@@ -11185,7 +11103,7 @@ class Session(nodes.Collector):
         self.testscollected = 0
         self._shouldstop: bool | str = False
         self._shouldfail: bool | str = False
-        self.trace = config.trace.root.get("collection")
+        self.trace = main.trace.root.get("collection")
         self._initialpaths: frozenset[Path] = frozenset()
         self._initialpaths_with_parents: frozenset[Path] = frozenset()
         self._notfound: list[tuple[str, Sequence[nodes.Collector]]] = []
@@ -11193,9 +11111,9 @@ class Session(nodes.Collector):
         self._collection_cache: dict[nodes.Collector, CollectReport] = {}
         self.items: list[nodes.Item] = []
 
-        self._bestrelpathcache: dict[Path, str] = _bestrelpath_cache(config.rootpath)
+        self._bestrelpathcache: dict[Path, str] = _bestrelpath_cache(main.rootpath)
 
-        self.config.pluginmanager.register(self, name="session")
+        self.main.pluginmanager.register(self, name="session")
 
     @classmethod
     def from_config(cls, config: Config) -> Session:
@@ -11252,7 +11170,7 @@ class Session(nodes.Collector):
 
         .. versionadded:: 7.0.0
         """
-        return self.config.invocation_params.dir
+        return self.main.invocation_params.dir
 
     def _node_location_to_relpath(self, node_path: Path) -> str:
         # bestrelpath is a quite slow function.
@@ -11269,7 +11187,7 @@ class Session(nodes.Collector):
     def pytest_runtest_logreport(self, report: TestReport | CollectReport) -> None:
         if report.failed and not hasattr(report, "wasxfail"):
             self.testsfailed += 1
-            maxfail = self.config.getvalue("maxfail")
+            maxfail = self.main.getvalue("maxfail")
             if maxfail and self.testsfailed >= maxfail:
                 self.shouldfail = f"stopping after {self.testsfailed} failures"
 
@@ -11302,7 +11220,7 @@ class Session(nodes.Collector):
     def gethookproxy(self, fspath: os.PathLike[str]) -> pluggy.HookRelay:
         # Optimization: Path(Path(...)) is much slower than isinstance.
         path = fspath if isinstance(fspath, Path) else Path(fspath)
-        pm = self.config.pluginmanager
+        pm = self.main.pluginmanager
         # Check if we have the common case of running
         # hooks with all conftest.py files.
         my_conftestmodules = pm._getconftestmodules(path)
@@ -11313,7 +11231,7 @@ class Session(nodes.Collector):
             proxy = PathAwareHookProxy(FSHookProxy(pm, remove_mods))  # type: ignore[arg-type,assignment]
         else:
             # All plugins are active for this fspath.
-            proxy = self.config.hook
+            proxy = self.main.hook
         return proxy
 
     def _collect_path(
@@ -11374,12 +11292,12 @@ class Session(nodes.Collector):
         and ``session.items`` is empty.
         """
         if args is None:
-            args = self.config.args
+            args = self.main.args
 
         self.trace("perform_collect", self, args)
         self.trace.root.indent += 1
 
-        hook = self.config.hook
+        hook = self.main.hook
 
         self._notfound = []
         self._initial_parts = []
@@ -11391,9 +11309,9 @@ class Session(nodes.Collector):
             initialpaths_with_parents: list[Path] = []
             for arg in args:
                 collection_argument = resolve_collection_argument(
-                    self.config.invocation_params.dir,
+                    self.main.invocation_params.dir,
                     arg,
-                    as_pypath=self.config.option.pyargs,
+                    as_pypath=self.main.option.pyargs,
                 )
                 self._initial_parts.append(collection_argument)
                 initialpaths.append(collection_argument.path)
@@ -11424,7 +11342,7 @@ class Session(nodes.Collector):
                     for node in rep.result:
                         self.items.extend(self.genitems(node))
 
-            self.config.pluginmanager.check_pending()
+            self.main.pluginmanager.check_pending()
             hook.pytest_collection_modifyitems(
                 session=self, config=self.config, items=items
             )
@@ -11458,7 +11376,7 @@ class Session(nodes.Collector):
         # role as the bootstrapping collector.
         path_cache: dict[Path, Sequence[nodes.Collector]] = {}
 
-        pm = self.config.pluginmanager
+        pm = self.main.pluginmanager
 
         for collection_argument in self._initial_parts:
             self.trace("processing argument", collection_argument)
@@ -11580,7 +11498,7 @@ class Session(nodes.Collector):
             yield node
         else:
             assert isinstance(node, nodes.Collector)
-            keepduplicates = self.config.getoption("keepduplicates")
+            keepduplicates = self.main.getoption("keepduplicates")
             # For backward compat, dedup only applies to files.
             handle_dupes = not (keepduplicates and isinstance(node, nodes.File))
             rep, duplicate = self._collect_one_node(node, handle_dupes)
@@ -11747,7 +11665,7 @@ def resolve_collection_argument(
     def __init__(self, config: Config) -> None:
         super().__init__(
             name="",
-            path=config.rootpath,
+            path=main.rootpath,
             fspath=None,
             parent=None,
             config=config,
@@ -11758,7 +11676,7 @@ def resolve_collection_argument(
         self.testscollected = 0
         self._shouldstop: bool | str = False
         self._shouldfail: bool | str = False
-        self.trace = config.trace.root.get("collection")
+        self.trace = main.trace.root.get("collection")
         self._initialpaths: frozenset[Path] = frozenset()
         self._initialpaths_with_parents: frozenset[Path] = frozenset()
         self._notfound: list[tuple[str, Sequence[nodes.Collector]]] = []
@@ -11766,9 +11684,9 @@ def resolve_collection_argument(
         self._collection_cache: dict[nodes.Collector, CollectReport] = {}
         self.items: list[nodes.Item] = []
 
-        self._bestrelpathcache: dict[Path, str] = _bestrelpath_cache(config.rootpath)
+        self._bestrelpathcache: dict[Path, str] = _bestrelpath_cache(main.rootpath)
 
-        self.config.pluginmanager.register(self, name="session")
+        self.main.pluginmanager.register(self, name="session")
 
     def from_config(cls, config: Config) -> Session:
         session: Session = cls._create(config=config)
@@ -11819,7 +11737,7 @@ def resolve_collection_argument(
 
         .. versionadded:: 7.0.0
         """
-        return self.config.invocation_params.dir
+        return self.main.invocation_params.dir
 
     def _node_location_to_relpath(self, node_path: Path) -> str:
         # bestrelpath is a quite slow function.
@@ -11834,7 +11752,7 @@ def resolve_collection_argument(
     def pytest_runtest_logreport(self, report: TestReport | CollectReport) -> None:
         if report.failed and not hasattr(report, "wasxfail"):
             self.testsfailed += 1
-            maxfail = self.config.getvalue("maxfail")
+            maxfail = self.main.getvalue("maxfail")
             if maxfail and self.testsfailed >= maxfail:
                 self.shouldfail = f"stopping after {self.testsfailed} failures"
 
@@ -11865,7 +11783,7 @@ def resolve_collection_argument(
     def gethookproxy(self, fspath: os.PathLike[str]) -> pluggy.HookRelay:
         # Optimization: Path(Path(...)) is much slower than isinstance.
         path = fspath if isinstance(fspath, Path) else Path(fspath)
-        pm = self.config.pluginmanager
+        pm = self.main.pluginmanager
         # Check if we have the common case of running
         # hooks with all conftest.py files.
         my_conftestmodules = pm._getconftestmodules(path)
@@ -11876,7 +11794,7 @@ def resolve_collection_argument(
             proxy = PathAwareHookProxy(FSHookProxy(pm, remove_mods))  # type: ignore[arg-type,assignment]
         else:
             # All plugins are active for this fspath.
-            proxy = self.config.hook
+            proxy = self.main.hook
         return proxy
 
     def _collect_path(
@@ -11935,12 +11853,12 @@ def resolve_collection_argument(
         and ``session.items`` is empty.
         """
         if args is None:
-            args = self.config.args
+            args = self.main.args
 
         self.trace("perform_collect", self, args)
         self.trace.root.indent += 1
 
-        hook = self.config.hook
+        hook = self.main.hook
 
         self._notfound = []
         self._initial_parts = []
@@ -11952,9 +11870,9 @@ def resolve_collection_argument(
             initialpaths_with_parents: list[Path] = []
             for arg in args:
                 collection_argument = resolve_collection_argument(
-                    self.config.invocation_params.dir,
+                    self.main.invocation_params.dir,
                     arg,
-                    as_pypath=self.config.option.pyargs,
+                    as_pypath=self.main.option.pyargs,
                 )
                 self._initial_parts.append(collection_argument)
                 initialpaths.append(collection_argument.path)
@@ -11985,7 +11903,7 @@ def resolve_collection_argument(
                     for node in rep.result:
                         self.items.extend(self.genitems(node))
 
-            self.config.pluginmanager.check_pending()
+            self.main.pluginmanager.check_pending()
             hook.pytest_collection_modifyitems(
                 session=self, config=self.config, items=items
             )
@@ -12019,7 +11937,7 @@ def resolve_collection_argument(
         # role as the bootstrapping collector.
         path_cache: dict[Path, Sequence[nodes.Collector]] = {}
 
-        pm = self.config.pluginmanager
+        pm = self.main.pluginmanager
 
         for collection_argument in self._initial_parts:
             self.trace("processing argument", collection_argument)
@@ -12141,7 +12059,7 @@ def resolve_collection_argument(
             yield node
         else:
             assert isinstance(node, nodes.Collector)
-            keepduplicates = self.config.getoption("keepduplicates")
+            keepduplicates = self.main.getoption("keepduplicates")
             # For backward compat, dedup only applies to files.
             handle_dupes = not (keepduplicates and isinstance(node, nodes.File))
             rep, duplicate = self._collect_one_node(node, handle_dupes)
@@ -12175,9 +12093,9 @@ def pytest_addoption(parser: Parser) -> None:
     )
 
 def pytest_terminal_summary(terminalreporter: TerminalReporter) -> None:
-    durations = terminalreporter.config.option.durations
-    durations_min = terminalreporter.config.option.durations_min
-    verbose = terminalreporter.config.get_verbosity()
+    durations = terminalreporter.main.option.durations
+    durations_min = terminalreporter.main.option.durations_min
+    verbose = terminalreporter.main.get_verbosity()
     if durations is None:
         return
     if durations_min is None:
@@ -12201,7 +12119,7 @@ def pytest_terminal_summary(terminalreporter: TerminalReporter) -> None:
         if rep.duration < durations_min:
             tr.write_line("")
             message = f"({len(dlist) - i} durations < {durations_min:g}s hidden."
-            if terminalreporter.config.option.durations_min is None:
+            if terminalreporter.main.option.durations_min is None:
                 message += "  Use -vv to show these durations."
             message += ")"
             tr.write_line(message)
@@ -12232,9 +12150,9 @@ def runtestprotocol(
     rep = call_and_report(item, "setup", log)
     reports = [rep]
     if rep.passed:
-        if item.config.getoption("setupshow", False):
+        if item.main.getoption("setupshow", False):
             show_test_item(item)
-        if not item.config.getoption("setuponly", False):
+        if not item.main.getoption("setuponly", False):
             reports.append(call_and_report(item, "call", log))
     # If the session is about to fail or stop, teardown everything - this is
     # necessary to correctly report fixture teardown errors (see #11706)
@@ -12250,7 +12168,7 @@ def runtestprotocol(
 
 def show_test_item(item: Item) -> None:
     """Show test function, parameters and the fixtures of the test item."""
-    tw = item.config.get_terminal_writer()
+    tw = item.main.get_terminal_writer()
     tw.line()
     tw.write(" " * 8)
     tw.write(item.nodeid)
@@ -12331,7 +12249,7 @@ def call_and_report(
     else:
         assert False, f"Unhandled runtest hook case: {when}"
     reraise: tuple[type[BaseException], ...] = (Exit,)
-    if not item.config.getoption("usepdb", False):
+    if not item.main.getoption("usepdb", False):
         reraise += (KeyboardInterrupt,)
     call = CallInfo.from_call(
         lambda: runtest_hook(item=item, **kwds), when=when, reraise=reraise
@@ -12459,11 +12377,11 @@ def pytest_make_collect_report(collector: Collector) -> CollectReport:
         #
         # Note: initial conftests are loaded early, not here.
         if isinstance(collector, Directory):
-            collector.config.pluginmanager._loadconftestmodules(
+            collector.main.pluginmanager._loadconftestmodules(
                 collector.path,
-                collector.config.getoption("importmode"),
-                rootpath=collector.config.rootpath,
-                consider_namespace_packages=collector.config.getini(
+                collector.main.getoption("importmode"),
+                rootpath=collector.main.rootpath,
+                consider_namespace_packages=collector.main.getini(
                     "consider_namespace_packages"
                 ),
             )
@@ -12731,11 +12649,11 @@ def collect_one_node(collector: Collector) -> CollectReport:
         #
         # Note: initial conftests are loaded early, not here.
         if isinstance(collector, Directory):
-            collector.config.pluginmanager._loadconftestmodules(
+            collector.main.pluginmanager._loadconftestmodules(
                 collector.path,
-                collector.config.getoption("importmode"),
-                rootpath=collector.config.rootpath,
-                consider_namespace_packages=collector.config.getini(
+                collector.main.getoption("importmode"),
+                rootpath=collector.main.rootpath,
+                consider_namespace_packages=collector.main.getini(
                     "consider_namespace_packages"
                 ),
             )
@@ -12838,13 +12756,13 @@ def _get_truncation_parameters(item: Item) -> tuple[bool, int, int]:
     # 2. Test is being run in CI environment;
     # 3. Both truncation_limit_lines and truncation_limit_chars
     #    .ini parameters are set to 0 explicitly.
-    max_lines = item.config.getini("truncation_limit_lines")
+    max_lines = item.main.getini("truncation_limit_lines")
     max_lines = int(max_lines if max_lines is not None else DEFAULT_MAX_LINES)
 
-    max_chars = item.config.getini("truncation_limit_chars")
+    max_chars = item.main.getini("truncation_limit_chars")
     max_chars = int(max_chars if max_chars is not None else DEFAULT_MAX_CHARS)
 
-    verbose = item.config.get_verbosity(Config.VERBOSITY_ASSERTIONS)
+    verbose = item.main.get_verbosity(Config.VERBOSITY_ASSERTIONS)
 
     should_truncate = verbose < 2 and not util.running_on_ci()
     should_truncate = should_truncate and (max_lines > 0 or max_chars > 0)

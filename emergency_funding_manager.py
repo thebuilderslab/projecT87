@@ -7,7 +7,7 @@ Handles low ETH balance and gas fee optimization
 
 import os
 from web3 import Web3
-from enhanced_rpc_manager import EnhancedRPCManager
+from aave_integration import EnhancedRPCManager
 
 class EmergencyFundingManager:
     def __init__(self):
@@ -128,7 +128,7 @@ def log_emergency_action(action, reason="Manual trigger"):
     with open(EMERGENCY_LOG_FILE, 'w') as f:
         json.dump(logs, f, indent=2)
 
-def emergency_stop(reason="Manual trigger via emergency_stop.py"):
+def emergency_stop(reason="Manual trigger via emergency_funding_manager.py"):
     """Trigger immediate emergency stop with comprehensive logging"""
     
     emergency_details = {
@@ -160,7 +160,7 @@ def emergency_stop(reason="Manual trigger via emergency_stop.py"):
     print("\n🔧 To resume operations:")
     print("1. Investigate the issue thoroughly")
     print("2. Review emergency report")
-    print("3. Run: python emergency_stop.py clear")
+    print("3. Run: python emergency_funding_manager.py clear")
     print("4. Restart the agent")
 
 def capture_system_state():
@@ -234,7 +234,7 @@ def get_emergency_logs():
             print(f"  {log['datetime']}: {log['action']} - {log['reason']}")
     else:
         print("ℹ️ No emergency stop logs found")
-# --- Merged from emergency_launch.py ---
+# --- Merged from emergency_funding_manager.py ---
 
 def dashboard():
     return render_template_string(TEMPLATE)
