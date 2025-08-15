@@ -56,7 +56,7 @@ def log_performance(run_id, iteration, performance_metric, timestamp, metadata=N
 
 def get_recent_performance(num_entries=100):
     """Retrieves recent performance entries from the log."""
-    performance_data = 
+    performance_data = []
     if os.path.exists(PERFORMANCE_LOG):
         with open(PERFORMANCE_LOG, 'r') as f:
             for line in f:
