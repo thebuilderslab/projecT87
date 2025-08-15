@@ -377,7 +377,7 @@ def get_unified_aave_data(agent):
 
 print("✅ Unified Aave Data Fetcher loaded")
 
-# --- Merged from enhanced_balance_fetcher.py ---
+# --- Merged from aave_integration.py ---
 
 class EnhancedBalanceFetcher:
     def __init__(self, w3: Web3, wallet_address: str):
@@ -1006,7 +1006,7 @@ def test_optimized_sequence():
             print(f"🪙 {token.upper()}: {balance:.6f} (via {source}, {accuracy} accuracy)")
 
         return wallet_data
-# --- Merged from accurate_debank_fetcher.py ---
+# --- Merged from aave_integration.py ---
 
 class AccurateWalletDataFetcher:
     def __init__(self, w3, wallet_address):
@@ -1512,7 +1512,7 @@ class AccurateWalletDataFetcher:
                 'note': 'Live data fetch failed - no hardcoded fallbacks available',
                 'timestamp': time.time()
             }
-# --- Merged from optimized_balance_fetcher.py ---
+# --- Merged from aave_integration.py ---
 
 class OptimizedBalanceFetcher:
     def __init__(self, wallet_address):

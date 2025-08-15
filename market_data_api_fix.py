@@ -595,7 +595,7 @@ class MarketDataAPIFix:
         
         return synthetic_data
 
-# --- Merged from fix_private_key_issue.py ---
+# --- Merged from main.py ---
 
 def check_private_key():
     """Check and validate private key format"""
@@ -673,7 +673,7 @@ def main():
         print("\n❌ Private key validation failed")
         print("💡 Please fix the private key in Replit Secrets")
         print("💡 After fixing, run this script again to verify")
-# --- Merged from fix_secrets.py ---
+# --- Merged from main.py ---
 
 def check_and_fix_secrets():
     """Check and fix Replit Secrets configuration"""
@@ -1272,7 +1272,7 @@ class FundingBypassHandler:
 
     def get_minimum_requirements(self):
         return {'min_eth': 0.001, 'min_DAI': 0.1}
-# --- Merged from fix_critical_contract_issues.py ---
+# --- Merged from aave_integration.py ---
 
 def fix_contract_issues():
     """Fix critical contract call issues"""
@@ -1361,7 +1361,7 @@ def fix_contract_issues():
     except Exception as e:
         print(f"❌ Contract call failed: {e}")
         return False
-# --- Merged from fix_json_serialization.py ---
+# --- Merged from main.py ---
 
 class DecimalEncoder(json.JSONEncoder):
     """Custom JSON encoder that handles Decimal objects"""
@@ -1400,7 +1400,7 @@ def safe_json_dumps(data):
         elif hasattr(obj, '__dict__'):
             return obj.__dict__
         return super(DecimalEncoder, self).default(obj)
-# --- Merged from fix_current_issues.py ---
+# --- Merged from main.py ---
 
 def test_rpc_endpoints():
     """Test all RPC endpoints and find working ones"""

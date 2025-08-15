@@ -284,7 +284,7 @@ class EnhancedBorrowManager:
             print(f"❌ Error getting operation status: {e}")
             return {'error': str(e)}
 
-# --- Merged from fix_borrow_gas.py ---
+# --- Merged from aave_integration.py ---
 
 def test_gas_estimation():
     """Test gas estimation improvements"""
@@ -487,7 +487,7 @@ def main():
         print(f"\n🔧 ISSUES FOUND - REVIEW FAILED TESTS")
     
     return all_passed
-# --- Merged from diagnose_borrow_failures.py ---
+# --- Merged from aave_integration.py ---
 
 def diagnose_borrow_failure():
     print("🔍 BORROW FAILURE DIAGNOSTIC")
@@ -586,7 +586,7 @@ def diagnose_borrow_failure():
     except Exception as e:
         print(f"❌ Diagnostic failed: {e}")
         return False
-# --- Merged from debug_borrowing.py ---
+# --- Merged from aave_integration.py ---
 
 def debug_borrowing_conditions():
     print("🔍 DEBUGGING BORROWING CONDITIONS")

@@ -631,7 +631,7 @@ def verify_aave_data_accuracy():
         print(f"❌ Verification failed: {e}")
         import traceback
         traceback.print_exc()
-# --- Merged from aave_api_fallback.py ---
+# --- Merged from aave_integration.py ---
 
 class AaveAPIFallback:
     def __init__(self, agent):
@@ -907,7 +907,7 @@ class AaveAPIFallback:
             "stateMutability": "nonpayable",
             "type": "function"
         }]
-# --- Merged from fix_aave_integration.py ---
+# --- Merged from aave_integration.py ---
 
 def fix_aave_integration():
     """Fix the Aave integration with proper ABI and gas handling"""
@@ -1026,7 +1026,7 @@ def main():
         print(f"\n⚠️ SOME ISSUES REMAIN")
         print(f"   Review the output above for remaining problems")
         return False
-# --- Merged from fix_aave_contract_calls.py ---
+# --- Merged from aave_integration.py ---
 
 def test_fixed_aave_calls():
     """Test the fixed Aave contract calls"""

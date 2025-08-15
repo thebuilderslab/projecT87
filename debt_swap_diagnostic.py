@@ -145,7 +145,7 @@ def diagnose_debt_swap_strategy():
 if __name__ == "__main__":
     diagnose_debt_swap_strategy()
 
-# --- Merged from api_diagnostics.py ---
+# --- Merged from main.py ---
 
 def full_diagnostic_report():
     """Comprehensive diagnostic report for UI debugging"""
@@ -327,7 +327,7 @@ def quick_health_check():
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500
-# --- Merged from comprehensive_diagnostic.py ---
+# --- Merged from main.py ---
 
 class ComprehensiveDiagnostic:
     def __init__(self):
@@ -401,7 +401,7 @@ class ComprehensiveDiagnostic:
         
         critical_files = [
             'main.py', 'web_dashboard.py', 'main.py',
-            'aave_integration.py', 'aave_health_monitor.py', 'user_settings.json',
+            'aave_integration.py', 'aave_integration.py', 'user_settings.json',
             'agent_config.json', 'EMERGENCY_STOP_ACTIVE.flag', 'performance_log.json',
             '.env', '.replit', 'requirements.txt'
         ]
@@ -913,7 +913,7 @@ def main():
         
         critical_files = [
             'main.py', 'web_dashboard.py', 'main.py',
-            'aave_integration.py', 'aave_health_monitor.py', 'user_settings.json',
+            'aave_integration.py', 'aave_integration.py', 'user_settings.json',
             'agent_config.json', 'EMERGENCY_STOP_ACTIVE.flag', 'performance_log.json',
             '.env', '.replit', 'requirements.txt'
         ]
@@ -1407,10 +1407,10 @@ class ComprehensiveSystemDiagnostic:
         critical_files = {
             'main.py': 'Main agent implementation',
             'web_dashboard.py': 'Dashboard interface',
-            'complete_autonomous_launcher.py': 'System launcher',
+            'main.py': 'System launcher',
             'aave_integration.py': 'Aave DeFi integration',
             'aave_integration.py': 'Uniswap integration',
-            'aave_health_monitor.py': 'Health monitoring',
+            'aave_integration.py': 'Health monitoring',
             'gas_fee_calculator.py': 'Gas optimization'
         }
         
@@ -1547,7 +1547,7 @@ class ComprehensiveSystemDiagnostic:
             
         # Test Health Monitor
         try:
-            from aave_health_monitor import AaveHealthMonitor
+            from aave_integration import AaveHealthMonitor
             defi_tests['health_monitor_import'] = '✅ Health monitor imports'
         except Exception as e:
             defi_tests['health_monitor_import'] = f'❌ Health monitor import error: {e}'
@@ -1790,7 +1790,7 @@ class ComprehensiveSystemDiagnostic:
         # Always provide system readiness guidance
         if self.report['overall_status'] in ['EXCELLENT', 'GOOD']:
             print(f"\n🚀 SYSTEM READY FOR OPERATION:")
-            print("   • Run: python complete_autonomous_launcher.py")
+            print("   • Run: python main.py")
             print("   • Monitor dashboard at: http://localhost:5000")
             print("   • Emergency stop available if needed")
             
@@ -1841,10 +1841,10 @@ class ComprehensiveSystemDiagnostic:
         critical_files = {
             'main.py': 'Main agent implementation',
             'web_dashboard.py': 'Dashboard interface',
-            'complete_autonomous_launcher.py': 'System launcher',
+            'main.py': 'System launcher',
             'aave_integration.py': 'Aave DeFi integration',
             'aave_integration.py': 'Uniswap integration',
-            'aave_health_monitor.py': 'Health monitoring',
+            'aave_integration.py': 'Health monitoring',
             'gas_fee_calculator.py': 'Gas optimization'
         }
         
@@ -1981,7 +1981,7 @@ class ComprehensiveSystemDiagnostic:
             
         # Test Health Monitor
         try:
-            from aave_health_monitor import AaveHealthMonitor
+            from aave_integration import AaveHealthMonitor
             defi_tests['health_monitor_import'] = '✅ Health monitor imports'
         except Exception as e:
             defi_tests['health_monitor_import'] = f'❌ Health monitor import error: {e}'
@@ -2327,7 +2327,7 @@ class SystemDiagnostic:
             'aave_integration.py',
             'aave_integration.py',
             'aave_integration.py',
-            'aave_health_monitor.py',
+            'aave_integration.py',
             'gas_fee_calculator.py'
         ]
         
@@ -2597,7 +2597,7 @@ class SystemDiagnostic:
             'aave_integration.py',
             'aave_integration.py',
             'aave_integration.py',
-            'aave_health_monitor.py',
+            'aave_integration.py',
             'gas_fee_calculator.py'
         ]
         
@@ -2777,7 +2777,7 @@ def test_wallet_connectivity():
     except Exception as e:
         print(f"❌ Wallet diagnostics failed: {e}")
         return False
-# --- Merged from borrow_diagnostic_tool.py ---
+# --- Merged from aave_integration.py ---
 
 class BorrowDiagnosticTool:
     def __init__(self, agent):
@@ -3186,7 +3186,7 @@ class BorrowDiagnosticTool:
         try:
             filename = f"borrow_diagnostic_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
             
-            from fix_json_serialization import safe_json_dump
+            from main import safe_json_dump
             success = safe_json_dump(self.diagnostics, filename)
             
             if success:
@@ -3620,7 +3620,7 @@ def run_borrow_diagnostic():
         try:
             filename = f"borrow_diagnostic_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
             
-            from fix_json_serialization import safe_json_dump
+            from main import safe_json_dump
             success = safe_json_dump(self.diagnostics, filename)
             
             if success:
@@ -3858,7 +3858,7 @@ def diagnose_supply_failure():
     except Exception as e:
         print(f"❌ Diagnostic failed: {e}")
         return False
-# --- Merged from autonomous_system_diagnostic.py ---
+# --- Merged from main.py ---
 
 def check_aave_position(agent):
     """Check current Aave position"""

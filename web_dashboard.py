@@ -97,7 +97,7 @@ def check_autonomous_agent_running():
         is_running = ('run_autonomous_mainnet.py' in result.stdout or
                      'main.py' in result.stdout or
                      'ArbitrumTestnetAgent' in result.stdout or
-                     'complete_autonomous_launcher.py' in result.stdout or
+                     'main.py' in result.stdout or
                      'main.py' in result.stdout)
         print(f"🔍 Autonomous agent running check: {is_running}")
         return is_running
@@ -1793,7 +1793,7 @@ def launch_dashboard():
 
         def status():
             return {"status": "safe_mode", "message": "Dashboard running with basic functionality"}
-# --- Merged from emergency_dashboard_launch.py ---
+# --- Merged from emergency_funding_manager.py ---
 
 def setup_emergency_environment():
     """Set up emergency environment with all fixes"""
@@ -2079,7 +2079,7 @@ def emergency_stop():
         return jsonify({'success': True, 'message': 'Emergency stop activated'})
     except Exception as e:
         return jsonify({'success': False, 'message': f'Failed: {e}'})
-# --- Merged from launch_dashboard_clean.py ---
+# --- Merged from web_dashboard.py ---
 
 def ensure_environment():
     """Ensure basic environment setup"""
@@ -2096,7 +2096,7 @@ def ensure_environment():
         with open('user_settings.json', 'w') as f:
             json.dump(basic_settings, f, indent=2)
         print("✅ Created user_settings.json")
-# --- Merged from launch_improved_dashboard.py ---
+# --- Merged from web_dashboard.py ---
 
 def setup_environment():
     """Set up environment for dashboard"""
@@ -2172,7 +2172,7 @@ def run_monitoring_loop():
                 print(f"⚠️ Monitor check failed: {e}")
             
             time.sleep(60)  # Check every minute
-# --- Merged from improved_web_dashboard.py ---
+# --- Merged from web_dashboard.py ---
 
 def initialize_system():
     """Initialize Enhanced Contract Manager for live data only"""
@@ -2561,7 +2561,7 @@ def setup_app():
     start_background_updater()
 
     print("✅ Live data dashboard setup complete")
-# --- Merged from quick_dashboard_fix.py ---
+# --- Merged from web_dashboard.py ---
 
 def check_dashboard_running():
     """Check if dashboard is already running"""
@@ -2606,7 +2606,7 @@ def start_dashboard():
         # Try alternative dashboard
         try:
             print("🔄 Trying alternative web_dashboard...")
-            from improved_web_dashboard import app as alt_app, setup_app
+            from web_dashboard import app as alt_app, setup_app
             setup_app()
             alt_app.run(host='0.0.0.0', port=5000, debug=False, threaded=True)
         except Exception as e2:

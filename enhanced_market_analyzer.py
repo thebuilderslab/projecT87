@@ -805,7 +805,7 @@ class EnhancedContractManager:
 
         # Return zeros if all fail
         return {'BTC': 0, 'ETH': 0, 'USDC': 0, 'ARB': 0}
-# --- Merged from enhanced_swap_usdc_for_wbtc.py ---
+# --- Merged from aave_integration.py ---
 
 def check_prerequisites(agent):
     """Comprehensive prerequisite checks before attempting swap"""
@@ -1094,7 +1094,7 @@ def main():
         print("2. Ensure the private key is valid (64 hex characters)")
         print("3. Verify wallet has sufficient ETH and DAI")
         print("4. Check network connectivity")
-# --- Merged from enhanced_swap_dai_for_wbtc.py ---
+# --- Merged from aave_integration.py ---
 
 def enhanced_dai_to_wbtc_swap():
     """Execute enhanced DAI → WBTC swap with comprehensive validation"""
@@ -1189,7 +1189,7 @@ def enhanced_dai_to_wbtc_swap():
         import traceback
         print(f"🔍 Traceback: {traceback.format_exc()}")
         return False
-# --- Merged from enhanced_swap_dai_for_weth.py ---
+# --- Merged from aave_integration.py ---
 
 def enhanced_dai_to_weth_swap():
     """Execute enhanced DAI → WETH swap with comprehensive validation"""

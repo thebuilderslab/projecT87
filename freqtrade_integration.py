@@ -154,7 +154,7 @@ def enhance_market_analysis_with_freqtrade(current_analysis: Dict) -> Dict:
     
     return current_analysis
 
-# --- Merged from check_zapper_integration.py ---
+# --- Merged from aave_integration.py ---
 
 def check_zapper_status():
     """Check if Zapper API is properly configured"""
@@ -191,7 +191,7 @@ def check_zapper_status():
         print("   - Rate limiting")
         print("   - No Aave positions found")
         return False
-# --- Merged from check_arbiscan_integration.py ---
+# --- Merged from aave_integration.py ---
 
 def check_arbiscan_status():
     """Check if Arbiscan API is properly configured"""
@@ -981,7 +981,7 @@ def enhance_aave_monitoring():
         
         print("🔄 Using known accurate data as final fallback")
         return zapper_screenshot_data
-# --- Merged from compound_v3_integration.py ---
+# --- Merged from aave_integration.py ---
 
 class CompoundV3Fallback:
     def __init__(self, agent):
@@ -1120,7 +1120,7 @@ class CompoundV3Fallback:
             return True
         except:
             return False
-# --- Merged from fix_defi_integration.py ---
+# --- Merged from aave_integration.py ---
 
 def check_dependencies():
     """Check if all required dependencies are available"""
@@ -1393,7 +1393,7 @@ class SystemIntegrationValidator:
         print("\n6️⃣ TESTING JSON SERIALIZATION")
         
         try:
-            from fix_json_serialization import safe_json_dumps, DecimalEncoder
+            from main import safe_json_dumps, DecimalEncoder
             import decimal
             
             test_data = {
@@ -1604,7 +1604,7 @@ class SystemIntegrationValidator:
         print("\n6️⃣ TESTING JSON SERIALIZATION")
         
         try:
-            from fix_json_serialization import safe_json_dumps, DecimalEncoder
+            from main import safe_json_dumps, DecimalEncoder
             import decimal
             
             test_data = {

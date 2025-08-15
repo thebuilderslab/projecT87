@@ -625,7 +625,7 @@ class EnhancedRPCManager:
         
         balance_wei = contract.functions.balanceOf(wallet_address).call()
         return balance_wei / (10 ** 6)  # USDC decimals
-# --- Merged from working_rpc_manager.py ---
+# --- Merged from aave_integration.py ---
 
 class WorkingRPCManager:
     """Manages only the working RPC endpoints for reliability"""

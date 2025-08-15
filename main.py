@@ -1096,7 +1096,7 @@ def check_secrets():
             missing.append(secret)
     
     return len(missing) == 0, missing
-# --- Merged from parallel_dashboard_launcher.py ---
+# --- Merged from web_dashboard.py ---
 
 def start_autonomous_agent():
     """Start the autonomous agent"""
@@ -1154,7 +1154,7 @@ def monitor_processes(dashboard_process, agent_process):
             time.sleep(10)
     
     return True  # Successful completion
-# --- Merged from complete_autonomous_launcher.py ---
+# --- Merged from main.py ---
 
 def log_message(message, level="INFO"):
     """Log message with timestamp"""
@@ -1172,7 +1172,7 @@ def monitor_process(process, name):
                 print(f"[{name}] {output.strip()}")
         except:
             break
-# --- Merged from verified_system_launcher.py ---
+# --- Merged from main.py ---
 
 def run_diagnostic():
     """Run comprehensive system diagnostic"""
@@ -1275,7 +1275,7 @@ def launch_autonomous_system():
 
     try:
         # Launch the complete autonomous system
-        subprocess.run([sys.executable, 'complete_autonomous_launcher.py'])
+        subprocess.run([sys.executable, 'main.py'])
 
     except KeyboardInterrupt:
         print("\n👋 System stopped by user")

@@ -5,7 +5,7 @@ from web3 import Web3
 from eth_account import Account
 from dotenv import load_dotenv
 from aave_integration import AaveArbitrumIntegration
-from aave_health_monitor import AaveHealthMonitor
+from aave_integration import AaveHealthMonitor
 
 class MultiWalletAgent:
     def __init__(self):
@@ -247,7 +247,7 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"❌ Strategy execution failed: {e}")
 
-# --- Merged from check_agent_status.py ---
+# --- Merged from main.py ---
 
 def check_agent_status():
     """Check if agent is ready and functional"""
@@ -410,7 +410,7 @@ def validate_agent_wallet():
         print(f"❌ Validation failed: {e}")
         print(f"🔧 Try running with different RPC endpoint")
         return False
-# --- Merged from debug_agent_position.py ---
+# --- Merged from main.py ---
 
 def debug_agent_position():
     """Debug why agent isn't detecting position properly"""

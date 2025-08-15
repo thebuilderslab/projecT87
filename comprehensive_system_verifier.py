@@ -90,7 +90,7 @@ class ComprehensiveSystemVerifier:
         
         try:
             # Run DAI compliance enforcer
-            from dai_compliance_enforcer import DAIComplianceEnforcer
+            from main import DAIComplianceEnforcer
             enforcer = DAIComplianceEnforcer()
             compliance_result = enforcer.enforce_dai_compliance()
             

@@ -840,7 +840,7 @@ def run_validation():
             print(f"❌ Significant issues detected")
 
         return success_rate >= 90
-# --- Merged from comprehensive_fix_validator.py ---
+# --- Merged from main.py ---
 
 def validate_core_fixes():
     """Validate all core fixes are working properly"""
@@ -1306,7 +1306,7 @@ def test_contract_validator():
         except Exception as e:
             print(f"❌ Complete contract validation failed: {e}")
             return False
-# --- Merged from dependency_validator.py ---
+# --- Merged from main.py ---
 
 class DependencyValidator:
     def __init__(self):
@@ -1323,10 +1323,10 @@ class DependencyValidator:
             'main.py',
             'aave_integration.py',
             'aave_integration.py', 
-            'aave_health_monitor.py',
+            'aave_integration.py',
             'gas_fee_calculator.py',
             'aave_integration.py',
-            'config_constants.py',
+            'main.py',
             'rpc_circuit_breaker.py',
             'unified_aave_data_fetcher.py'
         ]
@@ -1833,7 +1833,7 @@ class DependencyValidator:
                 self.validation_results[f'config_{config_file}'] = False
                 self.warnings.append(f"Config file missing: {config_file}")
                 print(f"   ⚠️ {config_file} - Not found")
-# --- Merged from enhanced_collateral_validator.py ---
+# --- Merged from aave_integration.py ---
 
 class EnhancedCollateralValidator:
     def __init__(self, agent):
@@ -2288,7 +2288,7 @@ def integrate_enhanced_validation():
             restrictions['warnings'].append(f"Could not check restrictions: {e}")
             
         return restrictions
-# --- Merged from final_execution_validator.py ---
+# --- Merged from main.py ---
 
 def run_final_validation():
     """Run final validation sequence"""
@@ -2298,7 +2298,7 @@ def run_final_validation():
     validation_steps = [
         {
             'name': 'DAI Compliance Enforcement',
-            'command': 'python dai_compliance_enforcer.py',
+            'command': 'python main.py',
             'critical': True
         },
         {
@@ -2318,7 +2318,7 @@ def run_final_validation():
         },
         {
             'name': 'Final DAI Compliance Validation',
-            'command': 'python dai_compliance_final_validator.py',
+            'command': 'python main.py',
             'critical': True
         }
     ]
@@ -2905,7 +2905,7 @@ class TransactionValidator:
         except Exception as e:
             print(f"❌ Gas validation error: {e}")
             return False
-# --- Merged from one_hour_confidence_validator.py ---
+# --- Merged from main.py ---
 
 class OneHourSignal:
     confidence_score: float
@@ -3180,7 +3180,7 @@ class OneHourConfidenceValidator:
         self.prediction_accuracy = max(0.3, min(0.95, self.prediction_accuracy))
         
         logging.info(f"Updated 1-hour prediction accuracy: {self.prediction_accuracy:.1%}")
-# --- Merged from environment_validator.py ---
+# --- Merged from main.py ---
 
 def validate_market_signal_environment():
     """Validate all required environment variables for market signal strategy"""

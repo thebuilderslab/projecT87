@@ -148,7 +148,7 @@ def display_trend_dashboard():
 if __name__ == "__main__":
     display_trend_dashboard()
 
-# --- Merged from live_data_monitor.py ---
+# --- Merged from main.py ---
 
 class LiveDataMonitor:
     def __init__(self):
@@ -455,7 +455,7 @@ def quick_status_check():
     print(f"🔐 Secrets: {status['secrets']}/3 configured")
     
     # Check critical files
-    files = ['main.py', 'web_dashboard.py', 'complete_autonomous_launcher.py']
+    files = ['main.py', 'web_dashboard.py', 'main.py']
     for file in files:
         if os.path.exists(file):
             status['files'] += 1
@@ -475,7 +475,7 @@ def quick_status_check():
     if status['secrets'] == 3 and status['files'] == 3 and status['syntax'] == 1:
         status['ready'] = True
         print(f"\n🎉 STATUS: READY FOR LAUNCH!")
-        print(f"💡 Run: python verified_system_launcher.py")
+        print(f"💡 Run: python main.py")
     else:
         print(f"\n⚠️ STATUS: NEEDS ATTENTION")
         if status['secrets'] < 3:
@@ -487,7 +487,7 @@ def quick_status_check():
     
     print("=" * 40)
     return status['ready']
-# --- Merged from aave_health_monitor.py ---
+# --- Merged from aave_integration.py ---
 
 class AaveHealthMonitor:
     def __init__(self, w3, account, aave_integration):

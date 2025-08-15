@@ -38,7 +38,7 @@ class MarketSignalStrategy:
 
         # Initialize advanced trend analyzer for minute-by-minute analysis
         try:
-            from advanced_trend_analyzer import AdvancedTrendAnalyzer
+            from main import AdvancedTrendAnalyzer
             self.trend_analyzer = AdvancedTrendAnalyzer(agent)
             self.minute_analysis_enabled = True
             logging.info("✅ Advanced Trend Analyzer initialized - Minute-by-minute analysis enabled")
@@ -907,7 +907,7 @@ def continuous_monitoring(wallet_address, network, session_id):
             time.sleep(30)  # Wait before retrying
     
     print(f"🛑 Stopped monitoring for {session_id}")
-# --- Merged from ml_strategy_optimizer.py ---
+# --- Merged from main.py ---
 
 class MLStrategyOptimizer:
     def __init__(self):
@@ -2105,7 +2105,7 @@ class StrategyOptimizer:
             'current_optimal': self.select_optimal_strategy(),
             'market_conditions': self.evaluate_current_conditions()
         }
-# --- Merged from market_strategy_config.py ---
+# --- Merged from main.py ---
 
 def get_market_strategy_status():
     """Get current market strategy configuration status"""

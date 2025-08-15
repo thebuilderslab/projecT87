@@ -49,7 +49,7 @@ def check_dai_compliance():
 if __name__ == "__main__":
     check_dai_compliance()
 
-# --- Merged from dai_compliance_final_validator.py ---
+# --- Merged from main.py ---
 
 class FinalDAIComplianceValidator:
     def __init__(self):
@@ -229,7 +229,7 @@ def main():
             print(f"\n✅ DAI COMPLIANCE: FULLY ENFORCED")
             print(f"🔒 All operations restricted to DAI-only methodology")
             return True
-# --- Merged from dai_compliance_enforcer.py ---
+# --- Merged from main.py ---
 
 class DAIComplianceEnforcer:
     def __init__(self):
