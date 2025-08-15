@@ -52,11 +52,11 @@ def log_performance(run_id, iteration, performance_metric, timestamp, metadata=N
     }
     with open(PERFORMANCE_LOG, 'a') as f:
         f.write(json.dumps(log_entry) + '\n')
-    print(f"📊 [{formatted_timestamp}] Logged performance: Run {run_id}, Iteration {iteration}, Metric: {performance_metric:.3f}")
+    print(f"📊  Logged performance: Run {run_id}, Iteration {iteration}, Metric: {performance_metric:.3f}")
 
 def get_recent_performance(num_entries=100):
     """Retrieves recent performance entries from the log."""
-    performance_data = []
+    performance_data = 
     if os.path.exists(PERFORMANCE_LOG):
         with open(PERFORMANCE_LOG, 'r') as f:
             for line in f:
@@ -65,7 +65,7 @@ def get_recent_performance(num_entries=100):
                 except json.JSONDecodeError:
                     print(f"Warning: Skipping malformed JSON line in {PERFORMANCE_LOG}: {line.strip()}")
                     continue
-    return performance_data[-num_entries:]
+    return performance_data
 
 def log_improvement(timestamp, old_config, new_config, reason, performance_before, performance_after):
     """Logs changes made by the self-improvement mechanism."""
@@ -90,7 +90,7 @@ def analyze_and_improve():
         print("Not enough performance data to analyze yet.")
         return
 
-    total_metric = sum(entry['performance_metric'] for entry in recent_performance)
+    total_metric = sum(entry for entry in recent_performance)
     average_performance = total_metric / len(recent_performance)
     print(f"Average recent performance: {average_performance:.4f}")
 
@@ -98,13 +98,13 @@ def analyze_and_improve():
     reason = "No significant change."
     performance_before_improvement = average_performance
 
-    if average_performance < agent_config['optimization_target_threshold']:
-        if agent_config['exploration_rate'] < 0.5:
-            agent_config['exploration_rate'] += agent_config['learning_rate'] * 0.1
+    if average_performance < agent_config:
+        if agent_config < 0.5:
+            agent_config += agent_config * 0.1
             reason = "Increasing exploration rate due to low performance."
     else:
-        if agent_config['exploration_rate'] > 0.05:
-            agent_config['exploration_rate'] -= agent_config['learning_rate'] * 0.05
+        if agent_config > 0.05:
+            agent_config -= agent_config * 0.05
             reason = "Decreasing exploration rate due to good performance."
 
     performance_after_improvement = average_performance * 1.01
@@ -213,12 +213,12 @@ def autonomous_agent_loop():
                 # Check for any auto-approved low-risk improvements
                 if pending_proposals:
                     for proposal in pending_proposals:
-                        if proposal['risk_level'] == 'Low' and proposal['source'] == 'agent':
-                            print(f"🟢 Auto-implementing low-risk proposal: {proposal['id']}")
-                            main.implement_approved_strategy(proposal['id'])
+                        if proposal == 'Low' and proposal == 'agent':
+                            print(f"🟢 Auto-implementing low-risk proposal: {proposal}")
+                            main.implement_approved_strategy(proposal)
 
             completion_timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S UTC')
-            print(f"✅ [{completion_timestamp}] Iteration {iteration} completed successfully. Waiting for next cycle.")
+            print(f"✅  Iteration {iteration} completed successfully. Waiting for next cycle.")
 
         except Exception as e:
             # Catch any unexpected errors during an iteration
@@ -375,13 +375,13 @@ def verify_private_key():
 
     # Validate format - handle both 0x-prefixed and raw hex keys
     if private_key.startswith('0x'):
-        hex_part = private_key[2:]
+        hex_part = private_key
         expected_length = 66
     else:
         hex_part = private_key
         expected_length = 64
 
-    if len(private_key) not in [64, 66]:
+    if len(private_key) not in :
         print(f"❌ ERROR: Private key should be 64 or 66 characters long, got {len(private_key)}")
         return False
 
@@ -429,7 +429,7 @@ def verify_coinmarketcap_api():
 
         if response.status_code == 200:
             data = response.json()
-            arb_price = data['data']['ARB']['quote']['USD']['price']
+            arb_price = data
             print(f"✅ CoinMarketCap API key is valid")
             print(f"✅ Successfully fetched ARB price: ${arb_price:.4f}")
             return True
@@ -547,10 +547,10 @@ def force_load_secret(var_name, default_value=None):
     # Method 3: Try subprocess printenv
     try:
         import subprocess
-        result = subprocess.run(['printenv', var_name], capture_output=True, text=True, timeout=5)
+        result = subprocess.run(, capture_output=True, text=True, timeout=5)
         if result.returncode == 0 and result.stdout.strip():
             value = result.stdout.strip()
-            os.environ[var_name] = value
+            os.environ = value
             return value
     except:
         pass
@@ -561,9 +561,9 @@ def force_load_secret(var_name, default_value=None):
             env_data = f.read().decode('utf-8', errors='ignore')
             for line in env_data.split('\0'):
                 if line.startswith(f'{var_name}='):
-                    value = line.split('=', 1)[1]
+                    value = line.split('=', 1)
                     if value.strip():
-                        os.environ[var_name] = value.strip()
+                        os.environ = value.strip()
                         return value.strip()
     except:
         pass
@@ -580,16 +580,16 @@ def force_load_secret(var_name, default_value=None):
                 with open(env_path, 'r') as f:
                     for line in f:
                         if line.startswith(f'{var_name}='):
-                            value = line.split('=', 1)[1].strip()
+                            value = line.split('=', 1).strip()
                             if value:
-                                os.environ[var_name] = value
+                                os.environ = value
                                 return value
     except:
         pass
 
     # Method 6: Use default value if provided
     if default_value:
-        os.environ[var_name] = default_value
+        os.environ = default_value
         return default_value
 
     return None
@@ -597,36 +597,36 @@ def force_load_secret(var_name, default_value=None):
 class MainnetSafetyManager:
     """Manages safety features for mainnet deployment"""
 
-    def __init__(self):
+def __init__(self):
         self.emergency_stop = False
         self.emergency_stop_file = 'EMERGENCY_STOP_ACTIVE.flag'
         self.monitoring_active = True
 
-    def check_emergency_stop(self):
+def check_emergency_stop(self):
         """Check if emergency stop has been triggered"""
         return os.path.exists(self.emergency_stop_file) or self.emergency_stop
 
-    def trigger_emergency_stop(self, reason="Manual trigger"):
+def trigger_emergency_stop(self, reason="Manual trigger"):
         """Trigger emergency stop"""
         self.emergency_stop = True
         with open(self.emergency_stop_file, 'w') as f:
             f.write(f"EMERGENCY STOP TRIGGERED\nReason: {reason}\nTimestamp: {time.time()}\n")
         print(f"🚨 EMERGENCY STOP ACTIVATED: {reason}")
 
-    def clear_emergency_stop(self):
+def clear_emergency_stop(self):
         """Clear emergency stop (manual intervention required)"""
         self.emergency_stop = False
         if os.path.exists(self.emergency_stop_file):
             os.remove(self.emergency_stop_file)
         print("✅ Emergency stop cleared")
 
-    def validate_mainnet_readiness(self):
+def validate_mainnet_readiness(self):
         """Validate system is ready for mainnet deployment"""
         print("🔍 MAINNET READINESS VALIDATION")
         print("=" * 50)
 
         # Check critical environment variables
-        critical_vars = ['COINMARKETCAP_API_KEY', 'PROMPT_KEY']
+        critical_vars = 
 
         # Check for private key (try PRIVATE_KEY first, then PRIVATE_KEY2 as fallback)
         private_key = os.getenv('PRIVATE_KEY') or os.getenv('PRIVATE_KEY2')
@@ -637,11 +637,11 @@ class MainnetSafetyManager:
             return False
 
         # Validate private key format
-        if len(private_key) not in [64, 66]:
+        if len(private_key) not in :
             print(f"❌ Invalid private key format (should be 64 or 66 characters)")
             return False
         print("✅ Private key: Configured properly")
-        optional_vars = ['MAINET_ACCOUNT_KEY', 'OPTIMIZER_API_KEY']
+        optional_vars = 
 
         # Validate critical secrets
         for var in critical_vars:
@@ -720,7 +720,7 @@ def start_web_dashboard():
     print("🌐 Starting web web_dashboard...")
     
     # Import the port allocation function from web_dashboard import socket
-    def get_available_port(start_port=5000):
+def get_available_port(start_port=5000):
         for port in range(start_port, start_port + 20):
             try:
                 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -747,36 +747,36 @@ def start_web_dashboard():
         except Exception as e2:
             print(f"❌ Fallback port failed: {e2}")
 
-    def __init__(self):
+def __init__(self):
         self.emergency_stop = False
         self.emergency_stop_file = 'EMERGENCY_STOP_ACTIVE.flag'
         self.monitoring_active = True
 
-    def check_emergency_stop(self):
+def check_emergency_stop(self):
         """Check if emergency stop has been triggered"""
         return os.path.exists(self.emergency_stop_file) or self.emergency_stop
 
-    def trigger_emergency_stop(self, reason="Manual trigger"):
+def trigger_emergency_stop(self, reason="Manual trigger"):
         """Trigger emergency stop"""
         self.emergency_stop = True
         with open(self.emergency_stop_file, 'w') as f:
             f.write(f"EMERGENCY STOP TRIGGERED\nReason: {reason}\nTimestamp: {time.time()}\n")
         print(f"🚨 EMERGENCY STOP ACTIVATED: {reason}")
 
-    def clear_emergency_stop(self):
+def clear_emergency_stop(self):
         """Clear emergency stop (manual intervention required)"""
         self.emergency_stop = False
         if os.path.exists(self.emergency_stop_file):
             os.remove(self.emergency_stop_file)
         print("✅ Emergency stop cleared")
 
-    def validate_mainnet_readiness(self):
+def validate_mainnet_readiness(self):
         """Validate system is ready for mainnet deployment"""
         print("🔍 MAINNET READINESS VALIDATION")
         print("=" * 50)
 
         # Check critical environment variables
-        critical_vars = ['COINMARKETCAP_API_KEY', 'PROMPT_KEY']
+        critical_vars = 
 
         # Check for private key (try PRIVATE_KEY first, then PRIVATE_KEY2 as fallback)
         private_key = os.getenv('PRIVATE_KEY') or os.getenv('PRIVATE_KEY2')
@@ -787,11 +787,11 @@ def start_web_dashboard():
             return False
 
         # Validate private key format
-        if len(private_key) not in [64, 66]:
+        if len(private_key) not in :
             print(f"❌ Invalid private key format (should be 64 or 66 characters)")
             return False
         print("✅ Private key: Configured properly")
-        optional_vars = ['MAINET_ACCOUNT_KEY', 'OPTIMIZER_API_KEY']
+        optional_vars = 
 
         # Validate critical secrets
         for var in critical_vars:
@@ -850,7 +850,7 @@ def start_web_dashboard():
 
         return True
 
-    def get_available_port(start_port=5000):
+def get_available_port(start_port=5000):
         for port in range(start_port, start_port + 20):
             try:
                 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -870,7 +870,7 @@ def setup_safe_environment():
 
     # Set default RPC URL if not set
     if not os.getenv('ARB_RPC_URL'):
-        os.environ['ARB_RPC_URL'] = 'https://arb1.arbitrum.io/rpc'
+        os.environ = 'https://arb1.arbitrum.io/rpc'
         print("✅ Set ARB_RPC_URL to default value")
 
     # Check for private key and provide helpful error message
@@ -883,7 +883,7 @@ def setup_safe_environment():
         # Clean and validate
         private_key = private_key.strip()
         if private_key.startswith('0x'):
-            private_key = private_key[2:]
+            private_key = private_key
 
         # Enhanced private key validation
         if len(private_key) < 8:
@@ -900,7 +900,7 @@ def setup_safe_environment():
                 int(private_key, 16)
                 print("✅ Private key format validated and padded successfully")
                 # Store the fixed private key back to environment
-                os.environ['PRIVATE_KEY'] = '0x' + private_key
+                os.environ = '0x' + private_key
             except ValueError:
                 print("❌ Private key contains invalid hexadecimal characters")
                 print("💡 Please check your PRIVATE_KEY in Replit Secrets")
@@ -936,7 +936,7 @@ def patch_imports():
         import types
         mock_module = types.ModuleType('arbitrum_testnet_agent')
         mock_module.ArbitrumTestnetAgent = MockAgent
-        sys.modules['arbitrum_testnet_agent'] = mock_module
+        sys.modules = mock_module
 
 def start_dashboard():
     """Start dashboard with comprehensive error handling"""
@@ -991,7 +991,7 @@ def start_fallback_server(port=5000):
     fallback_app = Flask(__name__)
 
     @fallback_app.route('/')
-    def status():
+def status():
         return """
         <html>
         <head><title>DeFi Agent Status</title></head>
@@ -1006,7 +1006,7 @@ def start_fallback_server(port=5000):
         """
 
     @fallback_app.route('/api/status')
-    def api_status():
+def api_status():
         return jsonify({
             'status': 'initializing',
             'mode': 'safe_launch',
@@ -1016,7 +1016,7 @@ def start_fallback_server(port=5000):
 
     fallback_app.run(host='0.0.0.0', port=port, debug=False)
 
-    def status():
+def status():
         return """
         <html>
         <head><title>DeFi Agent Status</title></head>
@@ -1030,7 +1030,7 @@ def start_fallback_server(port=5000):
         </html>
         """
 
-    def api_status():
+def api_status():
         return jsonify({
             'status': 'initializing',
             'mode': 'safe_launch',
@@ -1068,14 +1068,14 @@ def start_fallback_server(port=5000):
 def check_autonomous_agent():
     """Check if autonomous agent is running"""
     try:
-        result = subprocess.run(['ps', 'aux'], capture_output=True, text=True, timeout=5)
+        result = subprocess.run(, capture_output=True, text=True, timeout=5)
         return 'run_autonomous_mainnet.py' in result.stdout
     except:
         return False
 
 def check_dashboard_health():
     """Check if dashboard is accessible"""
-    ports_to_check = [5000, 5001, 5002, 8080]
+    ports_to_check = 
     
     for port in ports_to_check:
         try:
@@ -1088,8 +1088,8 @@ def check_dashboard_health():
 
 def check_secrets():
     """Verify critical secrets are available"""
-    required_secrets = ['PRIVATE_KEY', 'COINMARKETCAP_API_KEY', 'NETWORK_MODE']
-    missing = []
+    required_secrets = 
+    missing = 
     
     for secret in required_secrets:
         if not os.getenv(secret):
@@ -1159,7 +1159,7 @@ def monitor_processes(dashboard_process, agent_process):
 def log_message(message, level="INFO"):
     """Log message with timestamp"""
     timestamp = datetime.now().strftime("%H:%M:%S")
-    print(f"[{timestamp}] {level}: {message}")
+    print(f" {level}: {message}")
 
 def monitor_process(process, name):
     """Monitor a process and log its output"""
@@ -1169,7 +1169,7 @@ def monitor_process(process, name):
             if output == '' and process.poll() is not None:
                 break
             if output:
-                print(f"[{name}] {output.strip()}")
+                print(f" {output.strip()}")
         except:
             break
 # --- Merged from main.py ---
@@ -1187,8 +1187,8 @@ def run_comprehensive_audit():
         audit.save_report()
         
         # Return audit results
-        critical_issues = len(report.get('critical_issues', []))
-        warnings = len(report.get('warnings', []))
+        critical_issues = len(report.get('critical_issues', ))
+        warnings = len(report.get('warnings', ))
         overall_status = report.get('overall_status', 'UNKNOWN')
         
         print(f"\n📊 AUDIT SUMMARY:")
@@ -1197,7 +1197,7 @@ def run_comprehensive_audit():
         print(f"   Warnings: {warnings}")
         print(f"   Files Scanned: {report.get('files_scanned', 0)}")
         
-        if overall_status in ['EXCELLENT', 'GOOD']:
+        if overall_status in :
             print(f"✅ System audit passed - Ready for operation")
             return True
         else:
@@ -1243,8 +1243,8 @@ def test_defi_integrations():
     print("\n🔍 TESTING DEFI INTEGRATIONS...")
     print("=" * 60)
 
-    issues = []
-    warnings = []
+    issues = 
+    warnings = 
 
     try:
         from main import ArbitrumTestnetAgent
@@ -1312,11 +1312,11 @@ def launch_autonomous_system():
     print("=" * 60)
 
     # Force mainnet mode
-    os.environ['NETWORK_MODE'] = 'mainnet'
+    os.environ = 'mainnet'
 
     try:
         # Launch the complete autonomous system
-        subprocess.run([sys.executable, 'main.py'])
+        subprocess.run()
 
     except KeyboardInterrupt:
         print("\n👋 System stopped by user")
@@ -1330,9 +1330,9 @@ def identity(x: V) -> V:
     """
     return x
 
-def markup_join(seq: t.Iterable[t.Any]) -> str:
+def markup_join(seq.Any]) -> str:
     """Concatenation that escapes if necessary and converts to string."""
-    buf = []
+    buf = 
     iterator = map(soft_str, seq)
     for arg in iterator:
         buf.append(arg)
@@ -1340,19 +1340,19 @@ def markup_join(seq: t.Iterable[t.Any]) -> str:
             return Markup("").join(chain(buf, iterator))
     return concat(buf)
 
-def str_join(seq: t.Iterable[t.Any]) -> str:
+def str_join(seq.Any]) -> str:
     """Simple args to string conversion and concatenation."""
     return concat(map(str, seq))
 
 def new_context(
     environment: "Environment",
-    template_name: t.Optional[str],
-    blocks: t.Dict[str, t.Callable[["Context"], t.Iterator[str]]],
-    vars: t.Optional[t.Dict[str, t.Any]] = None,
+    template_name
+    blocks.Callable, t.Iterator]],
+    vars.Dict] = None,
     shared: bool = False,
-    globals: t.Optional[t.MutableMapping[str, t.Any]] = None,
-    locals: t.Optional[t.Mapping[str, t.Any]] = None,
-) -> "Context":
+    globals.MutableMapping] = None,
+    locals.Mapping] = None,
+) :
     """Internal helper for context creation."""
     if vars is None:
         vars = {}
@@ -1367,7 +1367,7 @@ def new_context(
             parent = dict(parent)
         for key, value in locals.items():
             if value is not missing:
-                parent[key] = value
+                parent = value
     return environment.context_class(
         environment, parent, template_name, blocks, globals=globals
     )
@@ -1375,19 +1375,19 @@ def new_context(
 class TemplateReference:
     """The `self` in templates."""
 
-    def __init__(self, context: "Context") -> None:
+def __init__(self, context: "Context") -> None:
         self.__context = context
 
-    def __getitem__(self, name: str) -> t.Any:
-        blocks = self.__context.blocks[name]
+def __getitem__(self, name: str) :
+        blocks = self.__context.blocks
         return BlockReference(name, self.__context, blocks, 0)
 
-    def __repr__(self) -> str:
+def __repr__(self) -> str:
         return f"<{type(self).__name__} {self.__context.name!r}>"
 
 def _dict_method_all(dict_method: F) -> F:
     @functools.wraps(dict_method)
-    def f_all(self: "Context") -> t.Any:
+def f_all(self: "Context") :
         return dict_method(self.get_all())
 
     return t.cast(F, f_all)
@@ -1412,42 +1412,42 @@ class Context:
     :class:`Undefined` object for missing variables.
     """
 
-    def __init__(
+def __init__(
         self,
         environment: "Environment",
-        parent: t.Dict[str, t.Any],
-        name: t.Optional[str],
-        blocks: t.Dict[str, t.Callable[["Context"], t.Iterator[str]]],
-        globals: t.Optional[t.MutableMapping[str, t.Any]] = None,
+        parent.Any],
+        name
+        blocks.Callable, t.Iterator]],
+        globals.MutableMapping] = None,
     ):
         self.parent = parent
-        self.vars: t.Dict[str, t.Any] = {}
+        self.vars.Any] = {}
         self.environment: "Environment" = environment
         self.eval_ctx = EvalContext(self.environment, name)
-        self.exported_vars: t.Set[str] = set()
+        self.exported_vars= set()
         self.name = name
         self.globals_keys = set() if globals is None else set(globals)
 
         # create the initial mapping of blocks.  Whenever template inheritance
         # takes place the runtime will update this mapping with the new blocks
         # from the template.
-        self.blocks = {k: [v] for k, v in blocks.items()}
+        self.blocks = {k:  for k, v in blocks.items()}
 
-    def super(
-        self, name: str, current: t.Callable[["Context"], t.Iterator[str]]
-    ) -> t.Union["BlockReference", "Undefined"]:
+def super(
+        self, name: str, current"Context"], t.Iterator]
+    ) "BlockReference", "Undefined"]:
         """Render a parent block."""
         try:
-            blocks = self.blocks[name]
+            blocks = self.blocks
             index = blocks.index(current) + 1
-            blocks[index]
+            blocks
         except LookupError:
             return self.environment.undefined(
                 f"there is no parent block called {name!r}.", name="super"
             )
         return BlockReference(name, self, blocks, index)
 
-    def get(self, key: str, default: t.Any = None) -> t.Any:
+def get(self, key: str, default= None) :
         """Look up a variable by name, or return a default if the key is
         not found.
 
@@ -1455,11 +1455,11 @@ class Context:
         :param default: The value to return if the key is not found.
         """
         try:
-            return self[key]
+            return self
         except KeyError:
             return default
 
-    def resolve(self, key: str) -> t.Union[t.Any, "Undefined"]:
+def resolve(self, key: str) .Any, "Undefined"]:
         """Look up a variable by name, or return an :class:`Undefined`
         object if the key is not found.
 
@@ -1476,7 +1476,7 @@ class Context:
 
         return rv
 
-    def resolve_or_missing(self, key: str) -> t.Any:
+def resolve_or_missing(self, key: str) :
         """Look up a variable by name, or return a ``missing`` sentinel
         if the key is not found.
 
@@ -1487,18 +1487,18 @@ class Context:
         :param key: The variable name to look up.
         """
         if key in self.vars:
-            return self.vars[key]
+            return self.vars
 
         if key in self.parent:
-            return self.parent[key]
+            return self.parent
 
         return missing
 
-    def get_exported(self) -> t.Dict[str, t.Any]:
+def get_exported(self) .Any]:
         """Get a new dict with the exported variables."""
-        return {k: self.vars[k] for k in self.exported_vars}
+        return {k: self.vars for k in self.exported_vars}
 
-    def get_all(self) -> t.Dict[str, t.Any]:
+def get_all(self) .Any]:
         """Return the complete context as dict including the exported
         variables.  For optimizations reasons this might not return an
         actual copy so be careful with using it.
@@ -1510,12 +1510,12 @@ class Context:
         return dict(self.parent, **self.vars)
 
     @internalcode
-    def call(
+def call(
         __self,
-        __obj: t.Callable[..., t.Any],
-        *args: t.Any,
-        **kwargs: t.Any,  # noqa: B902
-    ) -> t.Union[t.Any, "Undefined"]:
+        __obj..., t.Any],
+        *args
+        **kwargs# noqa: B902
+    ) .Any, "Undefined"]:
         """Call the callable with the arguments and keyword arguments
         provided but inject the active context or environment as first
         argument if the callable has :func:`pass_context` or
@@ -1537,9 +1537,9 @@ class Context:
             # the active context should have access to variables set in
             # loops and blocks without mutating the context itself
             if kwargs.get("_loop_vars"):
-                __self = __self.derived(kwargs["_loop_vars"])
+                __self = __self.derived(kwargs)
             if kwargs.get("_block_vars"):
-                __self = __self.derived(kwargs["_block_vars"])
+                __self = __self.derived(kwargs)
             args = (__self,) + args
         elif pass_arg is _PassArg.eval_context:
             args = (__self.eval_ctx,) + args
@@ -1557,7 +1557,7 @@ class Context:
                 " StopIteration exception"
             )
 
-    def derived(self, locals: t.Optional[t.Dict[str, t.Any]] = None) -> "Context":
+def derived(self, locals.Dict] = None) :
         """Internal helper function to create a derived context.  This is
         used in situations where the system needs a new context in the same
         template that is independent.
@@ -1573,11 +1573,11 @@ class Context:
     values = _dict_method_all(dict.values)
     items = _dict_method_all(dict.items)
 
-    def __contains__(self, name: str) -> bool:
+def __contains__(self, name: str) -> bool:
         return name in self.vars or name in self.parent
 
-    def __getitem__(self, key: str) -> t.Any:
-        """Look up a variable by name with ``[]`` syntax, or raise a
+def __getitem__(self, key: str) :
+        """Look up a variable by name with ```` syntax, or raise a
         ``KeyError`` if the key is not found.
         """
         item = self.resolve_or_missing(key)
@@ -1587,17 +1587,17 @@ class Context:
 
         return item
 
-    def __repr__(self) -> str:
+def __repr__(self) -> str:
         return f"<{type(self).__name__} {self.get_all()!r} of {self.name!r}>"
 
 class BlockReference:
     """One block on a template reference."""
 
-    def __init__(
+def __init__(
         self,
         name: str,
         context: "Context",
-        stack: t.List[t.Callable[["Context"], t.Iterator[str]]],
+        stack.Callable, t.Iterator]],
         depth: int,
     ) -> None:
         self.name = name
@@ -1606,7 +1606,7 @@ class BlockReference:
         self._depth = depth
 
     @property
-    def super(self) -> t.Union["BlockReference", "Undefined"]:
+def super(self) "BlockReference", "Undefined"]:
         """Super the block."""
         if self._depth + 1 >= len(self._stack):
             return self._context.environment.undefined(
@@ -1617,7 +1617,7 @@ class BlockReference:
     @internalcode
     async def _async_call(self) -> str:
         rv = concat(
-            [x async for x in self._stack[self._depth](self._context)]  # type: ignore
+            (self._context)]  # type: ignore
         )
 
         if self._context.eval_ctx.autoescape:
@@ -1626,11 +1626,11 @@ class BlockReference:
         return rv
 
     @internalcode
-    def __call__(self) -> str:
+def __call__(self) -> str:
         if self._context.environment.is_async:
             return self._async_call()  # type: ignore
 
-        rv = concat(self._stack[self._depth](self._context))
+        rv = concat(self._stack(self._context))
 
         if self._context.eval_ctx.autoescape:
             return Markup(rv)
@@ -1645,17 +1645,17 @@ class LoopContext:
     #: Current iteration of the loop, starting at 0.
     index0 = -1
 
-    _length: t.Optional[int] = None
-    _after: t.Any = missing
-    _current: t.Any = missing
-    _before: t.Any = missing
-    _last_changed_value: t.Any = missing
+    _length= None
+    _after= missing
+    _current= missing
+    _before= missing
+    _last_changed_value= missing
 
-    def __init__(
+def __init__(
         self,
-        iterable: t.Iterable[V],
-        undefined: t.Type["Undefined"],
-        recurse: t.Optional["LoopRenderFunc"] = None,
+        iterable
+        undefined"Undefined"],
+        recurse"LoopRenderFunc"] = None,
         depth0: int = 0,
     ) -> None:
         """
@@ -1674,11 +1674,11 @@ class LoopContext:
         self.depth0 = depth0
 
     @staticmethod
-    def _to_iterator(iterable: t.Iterable[V]) -> t.Iterator[V]:
+def _to_iterator(iterable) :
         return iter(iterable)
 
     @property
-    def length(self) -> int:
+def length(self) -> int:
         """Length of the iterable.
 
         If the iterable is a generator or otherwise does not have a
@@ -1696,21 +1696,21 @@ class LoopContext:
 
         return self._length
 
-    def __len__(self) -> int:
+def __len__(self) -> int:
         return self.length
 
     @property
-    def depth(self) -> int:
+def depth(self) -> int:
         """How many levels deep a recursive loop currently is, starting at 1."""
         return self.depth0 + 1
 
     @property
-    def index(self) -> int:
+def index(self) -> int:
         """Current iteration of the loop, starting at 1."""
         return self.index0 + 1
 
     @property
-    def revindex0(self) -> int:
+def revindex0(self) -> int:
         """Number of iterations from the end of the loop, ending at 0.
 
         Requires calculating :attr:`length`.
@@ -1718,7 +1718,7 @@ class LoopContext:
         return self.length - self.index
 
     @property
-    def revindex(self) -> int:
+def revindex(self) -> int:
         """Number of iterations from the end of the loop, ending at 1.
 
         Requires calculating :attr:`length`.
@@ -1726,11 +1726,11 @@ class LoopContext:
         return self.length - self.index0
 
     @property
-    def first(self) -> bool:
+def first(self) -> bool:
         """Whether this is the first iteration of the loop."""
         return self.index0 == 0
 
-    def _peek_next(self) -> t.Any:
+def _peek_next(self) :
         """Return the next element in the iterable, or :data:`missing`
         if the iterable is exhausted. Only peeks one item ahead, caching
         the result in :attr:`_last` for use in subsequent checks. The
@@ -1743,7 +1743,7 @@ class LoopContext:
         return self._after
 
     @property
-    def last(self) -> bool:
+def last(self) -> bool:
         """Whether this is the last iteration of the loop.
 
         Causes the iterable to advance early. See
@@ -1753,7 +1753,7 @@ class LoopContext:
         return self._peek_next() is missing
 
     @property
-    def previtem(self) -> t.Union[t.Any, "Undefined"]:
+def previtem(self) .Any, "Undefined"]:
         """The item in the previous iteration. Undefined during the
         first iteration.
         """
@@ -1763,7 +1763,7 @@ class LoopContext:
         return self._before
 
     @property
-    def nextitem(self) -> t.Union[t.Any, "Undefined"]:
+def nextitem(self) .Any, "Undefined"]:
         """The item in the next iteration. Undefined during the last
         iteration.
 
@@ -1778,7 +1778,7 @@ class LoopContext:
 
         return rv
 
-    def cycle(self, *args: V) -> V:
+def cycle(self, *args: V) -> V:
         """Return a value from the given args, cycling through based on
         the current :attr:`index0`.
 
@@ -1787,9 +1787,9 @@ class LoopContext:
         if not args:
             raise TypeError("no items for cycling given")
 
-        return args[self.index0 % len(args)]
+        return args
 
-    def changed(self, *value: t.Any) -> bool:
+def changed(self, *value) -> bool:
         """Return ``True`` if previously called with a different value
         (including when called for the first time).
 
@@ -1801,10 +1801,10 @@ class LoopContext:
 
         return False
 
-    def __iter__(self) -> "LoopContext":
+def __iter__(self) :
         return self
 
-    def __next__(self) -> t.Tuple[t.Any, "LoopContext"]:
+def __next__(self) .Any, "LoopContext"]:
         if self._after is not missing:
             rv = self._after
             self._after = missing
@@ -1817,7 +1817,7 @@ class LoopContext:
         return rv, self
 
     @internalcode
-    def __call__(self, iterable: t.Iterable[V]) -> str:
+def __call__(self, iterable) -> str:
         """When iterating over nested data, render the body of the loop
         recursively with the given inner iterable data.
 
@@ -1830,16 +1830,16 @@ class LoopContext:
 
         return self._recurse(iterable, self._recurse, depth=self.depth)
 
-    def __repr__(self) -> str:
+def __repr__(self) -> str:
         return f"<{type(self).__name__} {self.index}/{self.length}>"
 
 class AsyncLoopContext(LoopContext):
-    _iterator: t.AsyncIterator[t.Any]  # type: ignore
+    _iterator.Any]  # type: ignore
 
     @staticmethod
-    def _to_iterator(  # type: ignore
-        iterable: t.Union[t.Iterable[V], t.AsyncIterable[V]],
-    ) -> t.AsyncIterator[V]:
+def _to_iterator(  # type: ignore
+        iterable.Iterable, t.AsyncIterable],
+    ) :
         return auto_aiter(iterable)
 
     @property
@@ -1850,7 +1850,7 @@ class AsyncLoopContext(LoopContext):
         try:
             self._length = len(self._iterable)  # type: ignore
         except TypeError:
-            iterable = [x async for x in self._iterator]
+            iterable = 
             self._iterator = self._to_iterator(iterable)
             self._length = len(iterable) + self.index + (self._after is not missing)
 
@@ -1864,7 +1864,7 @@ class AsyncLoopContext(LoopContext):
     async def revindex(self) -> int:  # type: ignore
         return await self.length - self.index0
 
-    async def _peek_next(self) -> t.Any:
+    async def _peek_next(self) :
         if self._after is not missing:
             return self._after
 
@@ -1880,7 +1880,7 @@ class AsyncLoopContext(LoopContext):
         return await self._peek_next() is missing
 
     @property
-    async def nextitem(self) -> t.Union[t.Any, "Undefined"]:
+    async def nextitem(self) .Any, "Undefined"]:
         rv = await self._peek_next()
 
         if rv is missing:
@@ -1888,10 +1888,10 @@ class AsyncLoopContext(LoopContext):
 
         return rv
 
-    def __aiter__(self) -> "AsyncLoopContext":
+def __aiter__(self) :
         return self
 
-    async def __anext__(self) -> t.Tuple[t.Any, "AsyncLoopContext"]:
+    async def __anext__(self) .Any, "AsyncLoopContext"]:
         if self._after is not missing:
             rv = self._after
             self._after = missing
@@ -1906,16 +1906,16 @@ class AsyncLoopContext(LoopContext):
 class Macro:
     """Wraps a macro function."""
 
-    def __init__(
+def __init__(
         self,
         environment: "Environment",
-        func: t.Callable[..., str],
+        func..., str],
         name: str,
-        arguments: t.List[str],
+        arguments
         catch_kwargs: bool,
         catch_varargs: bool,
         caller: bool,
-        default_autoescape: t.Optional[bool] = None,
+        default_autoescape= None,
     ):
         self._environment = environment
         self._func = func
@@ -1937,7 +1937,7 @@ class Macro:
 
     @internalcode
     @pass_eval_context
-    def __call__(self, *args: t.Any, **kwargs: t.Any) -> str:
+def __call__(self, *args**kwargs) -> str:
         # This requires a bit of explanation,  In the past we used to
         # decide largely based on compile-time information if a macro is
         # safe or unsafe.  While there was a volatile mode it was largely
@@ -1954,14 +1954,14 @@ class Macro:
         # argument to callables otherwise anyway.  Worst case here is
         # that if no eval context is passed we fall back to the compile
         # time autoescape flag.
-        if args and isinstance(args[0], EvalContext):
-            autoescape = args[0].autoescape
-            args = args[1:]
+        if args and isinstance(args, EvalContext):
+            autoescape = args.autoescape
+            args = args
         else:
             autoescape = self._default_autoescape
 
         # try to consume the positional arguments
-        arguments = list(args[: self._argument_count])
+        arguments = list(args)
         off = len(arguments)
 
         # For information why this is necessary refer to the handling
@@ -1972,7 +1972,7 @@ class Macro:
         # arguments expected we start filling in keyword arguments
         # and defaults.
         if off != self._argument_count:
-            for name in self.arguments[len(arguments) :]:
+            for name in self.arguments:
                 try:
                     value = kwargs.pop(name)
                 except KeyError:
@@ -2004,7 +2004,7 @@ class Macro:
                 f"macro {self.name!r} takes no keyword argument {next(iter(kwargs))!r}"
             )
         if self.catch_varargs:
-            arguments.append(args[self._argument_count :])
+            arguments.append(args)
         elif len(args) > self._argument_count:
             raise TypeError(
                 f"macro {self.name!r} takes not more than"
@@ -2013,7 +2013,7 @@ class Macro:
 
         return self._invoke(arguments, autoescape)
 
-    async def _async_invoke(self, arguments: t.List[t.Any], autoescape: bool) -> str:
+    async def _async_invoke(self, arguments.Any], autoescape: bool) -> str:
         rv = await self._func(*arguments)  # type: ignore
 
         if autoescape:
@@ -2021,7 +2021,7 @@ class Macro:
 
         return rv  # type: ignore
 
-    def _invoke(self, arguments: t.List[t.Any], autoescape: bool) -> str:
+def _invoke(self, arguments.Any], autoescape: bool) -> str:
         if self._environment.is_async:
             return self._async_invoke(arguments, autoescape)  # type: ignore
 
@@ -2032,7 +2032,7 @@ class Macro:
 
         return rv
 
-    def __repr__(self) -> str:
+def __repr__(self) -> str:
         name = "anonymous" if self.name is None else repr(self.name)
         return f"<{type(self).__name__} {name}>"
 
@@ -2058,12 +2058,12 @@ class Undefined:
         "_undefined_exception",
     )
 
-    def __init__(
+def __init__(
         self,
-        hint: t.Optional[str] = None,
-        obj: t.Any = missing,
-        name: t.Optional[str] = None,
-        exc: t.Type[TemplateRuntimeError] = UndefinedError,
+        hint= None,
+        obj= missing,
+        name= None,
+        exc= UndefinedError,
     ) -> None:
         self._undefined_hint = hint
         self._undefined_obj = obj
@@ -2071,7 +2071,7 @@ class Undefined:
         self._undefined_exception = exc
 
     @property
-    def _undefined_message(self) -> str:
+def _undefined_message(self) -> str:
         """Build a message about the undefined value based on how it was
         accessed.
         """
@@ -2093,17 +2093,17 @@ class Undefined:
         )
 
     @internalcode
-    def _fail_with_undefined_error(
-        self, *args: t.Any, **kwargs: t.Any
-    ) -> "te.NoReturn":
+def _fail_with_undefined_error(
+        self, *args**kwargs
+    ) :
         """Raise an :exc:`UndefinedError` when operations are performed
         on the undefined value.
         """
         raise self._undefined_exception(self._undefined_message)
 
     @internalcode
-    def __getattr__(self, name: str) -> t.Any:
-        if name[:2] == "__":
+def __getattr__(self, name: str) :
+        if name == "__":
             raise AttributeError(name)
 
         return self._fail_with_undefined_error()
@@ -2119,37 +2119,37 @@ class Undefined:
     __int__ = __float__ = __complex__ = _fail_with_undefined_error
     __pow__ = __rpow__ = _fail_with_undefined_error
 
-    def __eq__(self, other: t.Any) -> bool:
+def __eq__(self, other) -> bool:
         return type(self) is type(other)
 
-    def __ne__(self, other: t.Any) -> bool:
+def __ne__(self, other) -> bool:
         return not self.__eq__(other)
 
-    def __hash__(self) -> int:
+def __hash__(self) -> int:
         return id(type(self))
 
-    def __str__(self) -> str:
+def __str__(self) -> str:
         return ""
 
-    def __len__(self) -> int:
+def __len__(self) -> int:
         return 0
 
-    def __iter__(self) -> t.Iterator[t.Any]:
+def __iter__(self) .Any]:
         yield from ()
 
-    async def __aiter__(self) -> t.AsyncIterator[t.Any]:
+    async def __aiter__(self) .Any]:
         for _ in ():
             yield
 
-    def __bool__(self) -> bool:
+def __bool__(self) -> bool:
         return False
 
-    def __repr__(self) -> str:
+def __repr__(self) -> str:
         return "Undefined"
 
 def make_logging_undefined(
-    logger: t.Optional["logging.Logger"] = None, base: t.Type[Undefined] = Undefined
-) -> t.Type[Undefined]:
+    logger"logging.Logger"] = None, base= Undefined
+) :
     """Given a logger object this returns a new undefined class that will
     log certain failures.  It will log iterations and printing.  If no
     logger is given a default logger is created.
@@ -2175,15 +2175,15 @@ def make_logging_undefined(
         logger = logging.getLogger(__name__)
         logger.addHandler(logging.StreamHandler(sys.stderr))
 
-    def _log_message(undef: Undefined) -> None:
+def _log_message(undef: Undefined) -> None:
         logger.warning("Template variable warning: %s", undef._undefined_message)
 
-    class LoggingUndefined(base):  # type: ignore
+class LoggingUndefined(base):  # type: ignore
         __slots__ = ()
 
         def _fail_with_undefined_error(  # type: ignore
-            self, *args: t.Any, **kwargs: t.Any
-        ) -> "te.NoReturn":
+            self, *args**kwargs
+        ) :
             try:
                 super()._fail_with_undefined_error(*args, **kwargs)
             except self._undefined_exception as e:
@@ -2194,7 +2194,7 @@ def make_logging_undefined(
             _log_message(self)
             return super().__str__()  # type: ignore
 
-        def __iter__(self) -> t.Iterator[t.Any]:
+        def __iter__(self) .Any]:
             _log_message(self)
             return super().__iter__()  # type: ignore
 
@@ -2210,9 +2210,9 @@ class ChainableUndefined(Undefined):
     :exc:`UndefinedError`.
 
     >>> foo = ChainableUndefined(name='foo')
-    >>> str(foo.bar['baz'])
+    >>> str(foo.bar)
     ''
-    >>> foo.bar['baz'] + 42
+    >>> foo.bar + 42
     Traceback (most recent call last):
       ...
     jinja2.exceptions.UndefinedError: 'foo' is undefined
@@ -2222,10 +2222,10 @@ class ChainableUndefined(Undefined):
 
     __slots__ = ()
 
-    def __html__(self) -> str:
+def __html__(self) -> str:
         return str(self)
 
-    def __getattr__(self, _: str) -> "ChainableUndefined":
+def __getattr__(self, _: str) :
         return self
 
     __getitem__ = __getattr__  # type: ignore
@@ -2246,7 +2246,7 @@ class DebugUndefined(Undefined):
 
     __slots__ = ()
 
-    def __str__(self) -> str:
+def __str__(self) -> str:
         if self._undefined_hint:
             message = f"undefined value printed: {self._undefined_hint}"
 
@@ -2256,7 +2256,7 @@ class DebugUndefined(Undefined):
         else:
             message = (
                 f"no such element: {object_type_repr(self._undefined_obj)}"
-                f"[{self._undefined_name!r}]"
+                f""
             )
 
         return f"{{{{ {message} }}}}"
@@ -2286,39 +2286,39 @@ class StrictUndefined(Undefined):
     __eq__ = __ne__ = __bool__ = __hash__ = Undefined._fail_with_undefined_error
     __contains__ = Undefined._fail_with_undefined_error
 
-    class LoopRenderFunc(te.Protocol):
+class LoopRenderFunc(te.Protocol):
         def __call__(
             self,
-            reciter: t.Iterable[V],
+            reciter
             loop_render_func: "LoopRenderFunc",
             depth: int = 0,
         ) -> str: ...
 
-    def __getitem__(self, name: str) -> t.Any:
-        blocks = self.__context.blocks[name]
+def __getitem__(self, name: str) :
+        blocks = self.__context.blocks
         return BlockReference(name, self.__context, blocks, 0)
 
-    def __repr__(self) -> str:
+def __repr__(self) -> str:
         return f"<{type(self).__name__} {self.__context.name!r}>"
 
-    def f_all(self: "Context") -> t.Any:
+def f_all(self: "Context") :
         return dict_method(self.get_all())
 
-    def super(
-        self, name: str, current: t.Callable[["Context"], t.Iterator[str]]
-    ) -> t.Union["BlockReference", "Undefined"]:
+def super(
+        self, name: str, current"Context"], t.Iterator]
+    ) "BlockReference", "Undefined"]:
         """Render a parent block."""
         try:
-            blocks = self.blocks[name]
+            blocks = self.blocks
             index = blocks.index(current) + 1
-            blocks[index]
+            blocks
         except LookupError:
             return self.environment.undefined(
                 f"there is no parent block called {name!r}.", name="super"
             )
         return BlockReference(name, self, blocks, index)
 
-    def get(self, key: str, default: t.Any = None) -> t.Any:
+def get(self, key: str, default= None) :
         """Look up a variable by name, or return a default if the key is
         not found.
 
@@ -2326,11 +2326,11 @@ class StrictUndefined(Undefined):
         :param default: The value to return if the key is not found.
         """
         try:
-            return self[key]
+            return self
         except KeyError:
             return default
 
-    def resolve(self, key: str) -> t.Union[t.Any, "Undefined"]:
+def resolve(self, key: str) .Any, "Undefined"]:
         """Look up a variable by name, or return an :class:`Undefined`
         object if the key is not found.
 
@@ -2347,7 +2347,7 @@ class StrictUndefined(Undefined):
 
         return rv
 
-    def resolve_or_missing(self, key: str) -> t.Any:
+def resolve_or_missing(self, key: str) :
         """Look up a variable by name, or return a ``missing`` sentinel
         if the key is not found.
 
@@ -2358,18 +2358,18 @@ class StrictUndefined(Undefined):
         :param key: The variable name to look up.
         """
         if key in self.vars:
-            return self.vars[key]
+            return self.vars
 
         if key in self.parent:
-            return self.parent[key]
+            return self.parent
 
         return missing
 
-    def get_exported(self) -> t.Dict[str, t.Any]:
+def get_exported(self) .Any]:
         """Get a new dict with the exported variables."""
-        return {k: self.vars[k] for k in self.exported_vars}
+        return {k: self.vars for k in self.exported_vars}
 
-    def get_all(self) -> t.Dict[str, t.Any]:
+def get_all(self) .Any]:
         """Return the complete context as dict including the exported
         variables.  For optimizations reasons this might not return an
         actual copy so be careful with using it.
@@ -2380,12 +2380,12 @@ class StrictUndefined(Undefined):
             return self.vars
         return dict(self.parent, **self.vars)
 
-    def call(
+def call(
         __self,
-        __obj: t.Callable[..., t.Any],
-        *args: t.Any,
-        **kwargs: t.Any,  # noqa: B902
-    ) -> t.Union[t.Any, "Undefined"]:
+        __obj..., t.Any],
+        *args
+        **kwargs# noqa: B902
+    ) .Any, "Undefined"]:
         """Call the callable with the arguments and keyword arguments
         provided but inject the active context or environment as first
         argument if the callable has :func:`pass_context` or
@@ -2407,9 +2407,9 @@ class StrictUndefined(Undefined):
             # the active context should have access to variables set in
             # loops and blocks without mutating the context itself
             if kwargs.get("_loop_vars"):
-                __self = __self.derived(kwargs["_loop_vars"])
+                __self = __self.derived(kwargs)
             if kwargs.get("_block_vars"):
-                __self = __self.derived(kwargs["_block_vars"])
+                __self = __self.derived(kwargs)
             args = (__self,) + args
         elif pass_arg is _PassArg.eval_context:
             args = (__self.eval_ctx,) + args
@@ -2427,7 +2427,7 @@ class StrictUndefined(Undefined):
                 " StopIteration exception"
             )
 
-    def derived(self, locals: t.Optional[t.Dict[str, t.Any]] = None) -> "Context":
+def derived(self, locals.Dict] = None) :
         """Internal helper function to create a derived context.  This is
         used in situations where the system needs a new context in the same
         template that is independent.
@@ -2439,11 +2439,11 @@ class StrictUndefined(Undefined):
         context.blocks.update((k, list(v)) for k, v in self.blocks.items())
         return context
 
-    def __contains__(self, name: str) -> bool:
+def __contains__(self, name: str) -> bool:
         return name in self.vars or name in self.parent
 
-    def __getitem__(self, key: str) -> t.Any:
-        """Look up a variable by name with ``[]`` syntax, or raise a
+def __getitem__(self, key: str) :
+        """Look up a variable by name with ```` syntax, or raise a
         ``KeyError`` if the key is not found.
         """
         item = self.resolve_or_missing(key)
@@ -2453,10 +2453,10 @@ class StrictUndefined(Undefined):
 
         return item
 
-    def __repr__(self) -> str:
+def __repr__(self) -> str:
         return f"<{type(self).__name__} {self.get_all()!r} of {self.name!r}>"
 
-    def super(self) -> t.Union["BlockReference", "Undefined"]:
+def super(self) "BlockReference", "Undefined"]:
         """Super the block."""
         if self._depth + 1 >= len(self._stack):
             return self._context.environment.undefined(
@@ -2464,21 +2464,21 @@ class StrictUndefined(Undefined):
             )
         return BlockReference(self.name, self._context, self._stack, self._depth + 1)
 
-    def __call__(self) -> str:
+def __call__(self) -> str:
         if self._context.environment.is_async:
             return self._async_call()  # type: ignore
 
-        rv = concat(self._stack[self._depth](self._context))
+        rv = concat(self._stack(self._context))
 
         if self._context.eval_ctx.autoescape:
             return Markup(rv)
 
         return rv
 
-    def _to_iterator(iterable: t.Iterable[V]) -> t.Iterator[V]:
+def _to_iterator(iterable) :
         return iter(iterable)
 
-    def length(self) -> int:
+def length(self) -> int:
         """Length of the iterable.
 
         If the iterable is a generator or otherwise does not have a
@@ -2496,36 +2496,36 @@ class StrictUndefined(Undefined):
 
         return self._length
 
-    def __len__(self) -> int:
+def __len__(self) -> int:
         return self.length
 
-    def depth(self) -> int:
+def depth(self) -> int:
         """How many levels deep a recursive loop currently is, starting at 1."""
         return self.depth0 + 1
 
-    def index(self) -> int:
+def index(self) -> int:
         """Current iteration of the loop, starting at 1."""
         return self.index0 + 1
 
-    def revindex0(self) -> int:
+def revindex0(self) -> int:
         """Number of iterations from the end of the loop, ending at 0.
 
         Requires calculating :attr:`length`.
         """
         return self.length - self.index
 
-    def revindex(self) -> int:
+def revindex(self) -> int:
         """Number of iterations from the end of the loop, ending at 1.
 
         Requires calculating :attr:`length`.
         """
         return self.length - self.index0
 
-    def first(self) -> bool:
+def first(self) -> bool:
         """Whether this is the first iteration of the loop."""
         return self.index0 == 0
 
-    def _peek_next(self) -> t.Any:
+def _peek_next(self) :
         """Return the next element in the iterable, or :data:`missing`
         if the iterable is exhausted. Only peeks one item ahead, caching
         the result in :attr:`_last` for use in subsequent checks. The
@@ -2537,7 +2537,7 @@ class StrictUndefined(Undefined):
         self._after = next(self._iterator, missing)
         return self._after
 
-    def last(self) -> bool:
+def last(self) -> bool:
         """Whether this is the last iteration of the loop.
 
         Causes the iterable to advance early. See
@@ -2546,7 +2546,7 @@ class StrictUndefined(Undefined):
         """
         return self._peek_next() is missing
 
-    def previtem(self) -> t.Union[t.Any, "Undefined"]:
+def previtem(self) .Any, "Undefined"]:
         """The item in the previous iteration. Undefined during the
         first iteration.
         """
@@ -2555,7 +2555,7 @@ class StrictUndefined(Undefined):
 
         return self._before
 
-    def nextitem(self) -> t.Union[t.Any, "Undefined"]:
+def nextitem(self) .Any, "Undefined"]:
         """The item in the next iteration. Undefined during the last
         iteration.
 
@@ -2570,7 +2570,7 @@ class StrictUndefined(Undefined):
 
         return rv
 
-    def cycle(self, *args: V) -> V:
+def cycle(self, *args: V) -> V:
         """Return a value from the given args, cycling through based on
         the current :attr:`index0`.
 
@@ -2579,9 +2579,9 @@ class StrictUndefined(Undefined):
         if not args:
             raise TypeError("no items for cycling given")
 
-        return args[self.index0 % len(args)]
+        return args
 
-    def changed(self, *value: t.Any) -> bool:
+def changed(self, *value) -> bool:
         """Return ``True`` if previously called with a different value
         (including when called for the first time).
 
@@ -2593,10 +2593,10 @@ class StrictUndefined(Undefined):
 
         return False
 
-    def __iter__(self) -> "LoopContext":
+def __iter__(self) :
         return self
 
-    def __next__(self) -> t.Tuple[t.Any, "LoopContext"]:
+def __next__(self) .Any, "LoopContext"]:
         if self._after is not missing:
             rv = self._after
             self._after = missing
@@ -2608,7 +2608,7 @@ class StrictUndefined(Undefined):
         self._current = rv
         return rv, self
 
-    def __call__(self, iterable: t.Iterable[V]) -> str:
+def __call__(self, iterable) -> str:
         """When iterating over nested data, render the body of the loop
         recursively with the given inner iterable data.
 
@@ -2621,18 +2621,18 @@ class StrictUndefined(Undefined):
 
         return self._recurse(iterable, self._recurse, depth=self.depth)
 
-    def __repr__(self) -> str:
+def __repr__(self) -> str:
         return f"<{type(self).__name__} {self.index}/{self.length}>"
 
-    def _to_iterator(  # type: ignore
-        iterable: t.Union[t.Iterable[V], t.AsyncIterable[V]],
-    ) -> t.AsyncIterator[V]:
+def _to_iterator(  # type: ignore
+        iterable.Iterable, t.AsyncIterable],
+    ) :
         return auto_aiter(iterable)
 
-    def __aiter__(self) -> "AsyncLoopContext":
+def __aiter__(self) :
         return self
 
-    def __call__(self, *args: t.Any, **kwargs: t.Any) -> str:
+def __call__(self, *args**kwargs) -> str:
         # This requires a bit of explanation,  In the past we used to
         # decide largely based on compile-time information if a macro is
         # safe or unsafe.  While there was a volatile mode it was largely
@@ -2649,14 +2649,14 @@ class StrictUndefined(Undefined):
         # argument to callables otherwise anyway.  Worst case here is
         # that if no eval context is passed we fall back to the compile
         # time autoescape flag.
-        if args and isinstance(args[0], EvalContext):
-            autoescape = args[0].autoescape
-            args = args[1:]
+        if args and isinstance(args, EvalContext):
+            autoescape = args.autoescape
+            args = args
         else:
             autoescape = self._default_autoescape
 
         # try to consume the positional arguments
-        arguments = list(args[: self._argument_count])
+        arguments = list(args)
         off = len(arguments)
 
         # For information why this is necessary refer to the handling
@@ -2667,7 +2667,7 @@ class StrictUndefined(Undefined):
         # arguments expected we start filling in keyword arguments
         # and defaults.
         if off != self._argument_count:
-            for name in self.arguments[len(arguments) :]:
+            for name in self.arguments:
                 try:
                     value = kwargs.pop(name)
                 except KeyError:
@@ -2699,7 +2699,7 @@ class StrictUndefined(Undefined):
                 f"macro {self.name!r} takes no keyword argument {next(iter(kwargs))!r}"
             )
         if self.catch_varargs:
-            arguments.append(args[self._argument_count :])
+            arguments.append(args)
         elif len(args) > self._argument_count:
             raise TypeError(
                 f"macro {self.name!r} takes not more than"
@@ -2708,7 +2708,7 @@ class StrictUndefined(Undefined):
 
         return self._invoke(arguments, autoescape)
 
-    def _invoke(self, arguments: t.List[t.Any], autoescape: bool) -> str:
+def _invoke(self, arguments.Any], autoescape: bool) -> str:
         if self._environment.is_async:
             return self._async_invoke(arguments, autoescape)  # type: ignore
 
@@ -2719,11 +2719,11 @@ class StrictUndefined(Undefined):
 
         return rv
 
-    def __repr__(self) -> str:
+def __repr__(self) -> str:
         name = "anonymous" if self.name is None else repr(self.name)
         return f"<{type(self).__name__} {name}>"
 
-    def _undefined_message(self) -> str:
+def _undefined_message(self) -> str:
         """Build a message about the undefined value based on how it was
         accessed.
         """
@@ -2744,53 +2744,53 @@ class StrictUndefined(Undefined):
             f" attribute {self._undefined_name!r}"
         )
 
-    def _fail_with_undefined_error(
-        self, *args: t.Any, **kwargs: t.Any
-    ) -> "te.NoReturn":
+def _fail_with_undefined_error(
+        self, *args**kwargs
+    ) :
         """Raise an :exc:`UndefinedError` when operations are performed
         on the undefined value.
         """
         raise self._undefined_exception(self._undefined_message)
 
-    def __getattr__(self, name: str) -> t.Any:
-        if name[:2] == "__":
+def __getattr__(self, name: str) :
+        if name == "__":
             raise AttributeError(name)
 
         return self._fail_with_undefined_error()
 
-    def __eq__(self, other: t.Any) -> bool:
+def __eq__(self, other) -> bool:
         return type(self) is type(other)
 
-    def __ne__(self, other: t.Any) -> bool:
+def __ne__(self, other) -> bool:
         return not self.__eq__(other)
 
-    def __hash__(self) -> int:
+def __hash__(self) -> int:
         return id(type(self))
 
-    def __str__(self) -> str:
+def __str__(self) -> str:
         return ""
 
-    def __len__(self) -> int:
+def __len__(self) -> int:
         return 0
 
-    def __iter__(self) -> t.Iterator[t.Any]:
+def __iter__(self) .Any]:
         yield from ()
 
-    def __bool__(self) -> bool:
+def __bool__(self) -> bool:
         return False
 
-    def __repr__(self) -> str:
+def __repr__(self) -> str:
         return "Undefined"
 
-    def _log_message(undef: Undefined) -> None:
+def _log_message(undef: Undefined) -> None:
         logger.warning("Template variable warning: %s", undef._undefined_message)
 
-    class LoggingUndefined(base):  # type: ignore
+class LoggingUndefined(base):  # type: ignore
         __slots__ = ()
 
         def _fail_with_undefined_error(  # type: ignore
-            self, *args: t.Any, **kwargs: t.Any
-        ) -> "te.NoReturn":
+            self, *args**kwargs
+        ) :
             try:
                 super()._fail_with_undefined_error(*args, **kwargs)
             except self._undefined_exception as e:
@@ -2801,7 +2801,7 @@ class StrictUndefined(Undefined):
             _log_message(self)
             return super().__str__()  # type: ignore
 
-        def __iter__(self) -> t.Iterator[t.Any]:
+        def __iter__(self) .Any]:
             _log_message(self)
             return super().__iter__()  # type: ignore
 
@@ -2809,13 +2809,13 @@ class StrictUndefined(Undefined):
             _log_message(self)
             return super().__bool__()  # type: ignore
 
-    def __html__(self) -> str:
+def __html__(self) -> str:
         return str(self)
 
-    def __getattr__(self, _: str) -> "ChainableUndefined":
+def __getattr__(self, _: str) :
         return self
 
-    def __str__(self) -> str:
+def __str__(self) -> str:
         if self._undefined_hint:
             message = f"undefined value printed: {self._undefined_hint}"
 
@@ -2825,21 +2825,21 @@ class StrictUndefined(Undefined):
         else:
             message = (
                 f"no such element: {object_type_repr(self._undefined_obj)}"
-                f"[{self._undefined_name!r}]"
+                f""
             )
 
         return f"{{{{ {message} }}}}"
 
         def __call__(
             self,
-            reciter: t.Iterable[V],
+            reciter
             loop_render_func: "LoopRenderFunc",
             depth: int = 0,
         ) -> str: ...
 
         def _fail_with_undefined_error(  # type: ignore
-            self, *args: t.Any, **kwargs: t.Any
-        ) -> "te.NoReturn":
+            self, *args**kwargs
+        ) :
             try:
                 super()._fail_with_undefined_error(*args, **kwargs)
             except self._undefined_exception as e:
@@ -2850,7 +2850,7 @@ class StrictUndefined(Undefined):
             _log_message(self)
             return super().__str__()  # type: ignore
 
-        def __iter__(self) -> t.Iterator[t.Any]:
+        def __iter__(self) .Any]:
             _log_message(self)
             return super().__iter__()  # type: ignore
 
@@ -2876,11 +2876,11 @@ def query_yes_no(question: str, default: str = "yes") -> bool:
     """
     valid = {"yes": True, "y": True, "ye": True, "no": False, "n": False}
     if default is None:
-        prompt = " [y/n] "
+        prompt = "  "
     elif default == "yes":
-        prompt = " [Y/n] "
+        prompt = "  "
     elif default == "no":
-        prompt = " [y/N] "
+        prompt = "  "
     else:
         raise ValueError("invalid default answer: '%s'" % default)
 
@@ -2888,9 +2888,9 @@ def query_yes_no(question: str, default: str = "yes") -> bool:
         sys.stdout.write(question + prompt)
         choice = input().lower()
         if default is not None and choice == "":
-            return valid[default]
+            return valid
         elif choice in valid:
-            return valid[choice]
+            return valid
         else:
             sys.stdout.write("Please respond with 'yes' or 'no' (or 'y' or 'n').\n")
 
@@ -2913,7 +2913,7 @@ class FileType:
     Backported from CPython 3.12
     """
 
-    def __init__(
+def __init__(
         self,
         mode: str = "r",
         bufsize: int = -1,
@@ -2925,7 +2925,7 @@ class FileType:
         self._encoding = encoding
         self._errors = errors
 
-    def __call__(self, string: str) -> typing.IO:  # type: ignore[type-arg]
+def __call__(self, string: str) -> typing.IO:  # type: ignore
         # the special argument "-" means sys.std{in,out}
         if string == "-":
             if "r" in self._mode:
@@ -2943,16 +2943,16 @@ class FileType:
             message = f"can't open '{string}': {e}"
             raise argparse.ArgumentTypeError(message)
 
-    def __repr__(self) -> str:
+def __repr__(self) -> str:
         args = self._mode, self._bufsize
-        kwargs = [("encoding", self._encoding), ("errors", self._errors)]
+        kwargs = 
         args_str = ", ".join(
-            [repr(arg) for arg in args if arg != -1]
-            + [f"{kw}={arg!r}" for kw, arg in kwargs if arg is not None]
+            
+            + 
         )
         return f"{type(self).__name__}({args_str})"
 
-def cli_detect(argv: list[str] | None = None) -> int:
+def cli_detect(argv: list | None = None) -> int:
     """
     CLI assistant using ARGV and ArgumentParser
     :param argv:
@@ -3068,7 +3068,7 @@ def cli_detect(argv: list[str] | None = None) -> int:
         print("--threshold VALUE should be between 0. AND 1.", file=sys.stderr)
         return 1
 
-    x_ = []
+    x_ = 
 
     for my_file in args.files:
         matches = from_fp(
@@ -3096,10 +3096,10 @@ def cli_detect(argv: list[str] | None = None) -> int:
                 CliDetectionResult(
                     abspath(my_file.name),
                     None,
-                    [],
-                    [],
+                    ,
+                    ,
                     "Unknown",
-                    [],
+                    ,
                     False,
                     1.0,
                     0.0,
@@ -3166,7 +3166,7 @@ def cli_detect(argv: list[str] | None = None) -> int:
                 dir_path = dirname(realpath(my_file.name))
                 file_name = basename(realpath(my_file.name))
 
-                o_: list[str] = file_name.split(".")
+                o_: list = file_name.split(".")
 
                 if args.replace is False:
                     o_.insert(-1, best_guess.encoding)
@@ -3187,9 +3187,9 @@ def cli_detect(argv: list[str] | None = None) -> int:
                     continue
 
                 try:
-                    x_[0].unicode_path = join(dir_path, ".".join(o_))
+                    x_.unicode_path = join(dir_path, ".".join(o_))
 
-                    with open(x_[0].unicode_path, "wb") as fp:
+                    with open(x_.unicode_path, "wb") as fp:
                         fp.write(best_guess.output())
                 except OSError as e:
                     print(str(e), file=sys.stderr)
@@ -3203,7 +3203,7 @@ def cli_detect(argv: list[str] | None = None) -> int:
     if args.minimal is False:
         print(
             dumps(
-                [el.__dict__ for el in x_] if len(x_) > 1 else x_[0].__dict__,
+                 if len(x_) > 1 else x_.__dict__,
                 ensure_ascii=True,
                 indent=4,
             )
@@ -3223,7 +3223,7 @@ def cli_detect(argv: list[str] | None = None) -> int:
     return 0
 # --- Merged from main.py ---
 
-def _check_frozen(model_cls: type[BaseModel], name: str, value: Any) -> None:
+def _check_frozen(model_cls: type, name: str, value: Any) -> None:
     if model_cls.model_config.get('frozen'):
         error_type = 'frozen_instance'
     elif getattr(model_cls.__pydantic_fields__.get(name), 'frozen', False):
@@ -3232,11 +3232,11 @@ def _check_frozen(model_cls: type[BaseModel], name: str, value: Any) -> None:
         return
 
     raise ValidationError.from_exception_data(
-        model_cls.__name__, [{'type': error_type, 'loc': (name,), 'input': value}]
+        model_cls.__name__, 
     )
 
 def _model_field_setattr_handler(model: BaseModel, name: str, val: Any) -> None:
-    model.__dict__[name] = val
+    model.__dict__ = val
     model.__pydantic_fields_set__.add(name)
 
 def _private_setattr_handler(model: BaseModel, name: str, val: Any) -> None:
@@ -3246,18 +3246,18 @@ def _private_setattr_handler(model: BaseModel, name: str, val: Any) -> None:
         # is initialized, by wrapping the user-defined `model_post_init()`), e.g. if they mock
         # the `model_post_init()` call. Ideally we should find a better way to init private attrs.
         object.__setattr__(model, '__pydantic_private__', {})
-    model.__pydantic_private__[name] = val  # pyright: ignore[reportOptionalSubscript]
+    model.__pydantic_private__ = val  # pyright: ignore
 
 class BaseModel(metaclass=_model_construction.ModelMetaclass):
     """!!! abstract "Usage Documentation"
-        [Models](../concepts/models.md)
+        (../concepts/models.md)
 
     A base class for creating Pydantic models.
 
     Attributes:
         __class_vars__: The names of the class variables defined on the model.
         __private_attributes__: Metadata about the private attributes of the model.
-        __signature__: The synthesized `__init__` [`Signature`][inspect.Signature] of the model.
+        __signature__: The synthesized `__init__`  of the model.
 
         __pydantic_complete__: Whether model building is completed, or if there are still undefined fields.
         __pydantic_core_schema__: The core schema of the model.
@@ -3268,14 +3268,14 @@ class BaseModel(metaclass=_model_construction.ModelMetaclass):
             __args__, __origin__, __parameters__ in typing-module generics. May eventually be replaced by these.
         __pydantic_parent_namespace__: Parent namespace of the model, used for automatic rebuilding of models.
         __pydantic_post_init__: The name of the post-init method for the model, if defined.
-        __pydantic_root_model__: Whether the model is a [`RootModel`][pydantic.root_model.RootModel].
+        __pydantic_root_model__: Whether the model is a .
         __pydantic_serializer__: The `pydantic-core` `SchemaSerializer` used to dump instances of the model.
         __pydantic_validator__: The `pydantic-core` `SchemaValidator` used to validate instances of the model.
 
-        __pydantic_fields__: A dictionary of field names and their corresponding [`FieldInfo`][pydantic.fields.FieldInfo] objects.
-        __pydantic_computed_fields__: A dictionary of computed field names and their corresponding [`ComputedFieldInfo`][pydantic.fields.ComputedFieldInfo] objects.
+        __pydantic_fields__: A dictionary of field names and their corresponding  objects.
+        __pydantic_computed_fields__: A dictionary of computed field names and their corresponding  objects.
 
-        __pydantic_extra__: A dictionary containing extra values, if [`extra`][pydantic.main.ConfigDict.extra]
+        __pydantic_extra__: A dictionary containing extra values, if 
             is set to `'allow'`.
         __pydantic_fields_set__: The names of fields explicitly set during instantiation.
         __pydantic_private__: Values of private attributes set on the model instance.
@@ -3283,71 +3283,71 @@ class BaseModel(metaclass=_model_construction.ModelMetaclass):
 
     # Note: Many of the below class vars are defined in the metaclass, but we define them here for type checking purposes.
 
-    model_config: ClassVar[ConfigDict] = ConfigDict()
+    model_config: ClassVar = ConfigDict()
     """
-    Configuration for the model, should be a dictionary conforming to [`ConfigDict`][pydantic.main.ConfigDict].
+    Configuration for the model, should be a dictionary conforming to .
     """
 
-    __class_vars__: ClassVar[set[str]]
+    __class_vars__: ClassVar]
     """The names of the class variables defined on the model."""
 
-    __private_attributes__: ClassVar[Dict[str, ModelPrivateAttr]]  # noqa: UP006
+    __private_attributes__: ClassVar]  # noqa: UP006
     """Metadata about the private attributes of the model."""
 
-    __signature__: ClassVar[Signature]
-    """The synthesized `__init__` [`Signature`][inspect.Signature] of the model."""
+    __signature__: ClassVar
+    """The synthesized `__init__`  of the model."""
 
-    __pydantic_complete__: ClassVar[bool] = False
+    __pydantic_complete__: ClassVar = False
     """Whether model building is completed, or if there are still undefined fields."""
 
-    __pydantic_core_schema__: ClassVar[CoreSchema]
+    __pydantic_core_schema__: ClassVar
     """The core schema of the model."""
 
-    __pydantic_custom_init__: ClassVar[bool]
+    __pydantic_custom_init__: ClassVar
     """Whether the model has a custom `__init__` method."""
 
     # Must be set for `GenerateSchema.model_schema` to work for a plain `BaseModel` annotation.
-    __pydantic_decorators__: ClassVar[_decorators.DecoratorInfos] = _decorators.DecoratorInfos()
+    __pydantic_decorators__: ClassVar = _decorators.DecoratorInfos()
     """Metadata containing the decorators defined on the model.
     This replaces `Model.__validators__` and `Model.__root_validators__` from Pydantic V1."""
 
-    __pydantic_generic_metadata__: ClassVar[_generics.PydanticGenericMetadata]
+    __pydantic_generic_metadata__: ClassVar
     """Metadata for generic models; contains data used for a similar purpose to
     __args__, __origin__, __parameters__ in typing-module generics. May eventually be replaced by these."""
 
-    __pydantic_parent_namespace__: ClassVar[Dict[str, Any] | None] = None  # noqa: UP006
+    __pydantic_parent_namespace__: ClassVar | None] = None  # noqa: UP006
     """Parent namespace of the model, used for automatic rebuilding of models."""
 
-    __pydantic_post_init__: ClassVar[None | Literal['model_post_init']]
+    __pydantic_post_init__: ClassVar]
     """The name of the post-init method for the model, if defined."""
 
-    __pydantic_root_model__: ClassVar[bool] = False
-    """Whether the model is a [`RootModel`][pydantic.root_model.RootModel]."""
+    __pydantic_root_model__: ClassVar = False
+    """Whether the model is a ."""
 
-    __pydantic_serializer__: ClassVar[SchemaSerializer]
+    __pydantic_serializer__: ClassVar
     """The `pydantic-core` `SchemaSerializer` used to dump instances of the model."""
 
-    __pydantic_validator__: ClassVar[SchemaValidator | PluggableSchemaValidator]
+    __pydantic_validator__: ClassVar
     """The `pydantic-core` `SchemaValidator` used to validate instances of the model."""
 
-    __pydantic_fields__: ClassVar[Dict[str, FieldInfo]]  # noqa: UP006
-    """A dictionary of field names and their corresponding [`FieldInfo`][pydantic.fields.FieldInfo] objects.
+    __pydantic_fields__: ClassVar]  # noqa: UP006
+    """A dictionary of field names and their corresponding  objects.
     This replaces `Model.__fields__` from Pydantic V1.
     """
 
-    __pydantic_setattr_handlers__: ClassVar[Dict[str, Callable[[BaseModel, str, Any], None]]]  # noqa: UP006
+    __pydantic_setattr_handlers__: ClassVar, None]]]  # noqa: UP006
     """`__setattr__` handlers. Memoizing the handlers leads to a dramatic performance improvement in `__setattr__`"""
 
-    __pydantic_computed_fields__: ClassVar[Dict[str, ComputedFieldInfo]]  # noqa: UP006
-    """A dictionary of computed field names and their corresponding [`ComputedFieldInfo`][pydantic.fields.ComputedFieldInfo] objects."""
+    __pydantic_computed_fields__: ClassVar]  # noqa: UP006
+    """A dictionary of computed field names and their corresponding  objects."""
 
-    __pydantic_extra__: dict[str, Any] | None = _model_construction.NoInitField(init=False)
-    """A dictionary containing extra values, if [`extra`][pydantic.main.ConfigDict.extra] is set to `'allow'`."""
+    __pydantic_extra__: dict | None = _model_construction.NoInitField(init=False)
+    """A dictionary containing extra values, if  is set to `'allow'`."""
 
-    __pydantic_fields_set__: set[str] = _model_construction.NoInitField(init=False)
+    __pydantic_fields_set__: set = _model_construction.NoInitField(init=False)
     """The names of fields explicitly set during instantiation."""
 
-    __pydantic_private__: dict[str, Any] | None = _model_construction.NoInitField(init=False)
+    __pydantic_private__: dict | None = _model_construction.NoInitField(init=False)
     """Values of private attributes set on the model instance."""
 
     if not TYPE_CHECKING:
@@ -3370,10 +3370,10 @@ class BaseModel(metaclass=_model_construction.ModelMetaclass):
 
     __slots__ = '__dict__', '__pydantic_fields_set__', '__pydantic_extra__', '__pydantic_private__'
 
-    def __init__(self, /, **data: Any) -> None:
+def __init__(self, /, **data: Any) -> None:
         """Create a new model by parsing and validating input data from keyword arguments.
 
-        Raises [`ValidationError`][pydantic_core.ValidationError] if the input data cannot be
+        Raises  if the input data cannot be
         validated to form a valid model.
 
         `self` is explicitly positional-only to allow `self` as a field name.
@@ -3390,12 +3390,12 @@ class BaseModel(metaclass=_model_construction.ModelMetaclass):
             )
 
     # The following line sets a flag that we use to determine when `__init__` gets overridden by the user
-    __init__.__pydantic_base_init__ = True  # pyright: ignore[reportFunctionMemberAccess]
+    __init__.__pydantic_base_init__ = True  # pyright: ignore
 
     @_utils.deprecated_instance_property
     @classmethod
-    def model_fields(cls) -> dict[str, FieldInfo]:
-        """A mapping of field names to their respective [`FieldInfo`][pydantic.fields.FieldInfo] instances.
+def model_fields(cls) -> dict:
+        """A mapping of field names to their respective  instances.
 
         !!! warning
             Accessing this attribute from a model instance is deprecated, and will not work in Pydantic V3.
@@ -3405,8 +3405,8 @@ class BaseModel(metaclass=_model_construction.ModelMetaclass):
 
     @_utils.deprecated_instance_property
     @classmethod
-    def model_computed_fields(cls) -> dict[str, ComputedFieldInfo]:
-        """A mapping of computed field names to their respective [`ComputedFieldInfo`][pydantic.fields.ComputedFieldInfo] instances.
+def model_computed_fields(cls) -> dict:
+        """A mapping of computed field names to their respective  instances.
 
         !!! warning
             Accessing this attribute from a model instance is deprecated, and will not work in Pydantic V3.
@@ -3415,7 +3415,7 @@ class BaseModel(metaclass=_model_construction.ModelMetaclass):
         return getattr(cls, '__pydantic_computed_fields__', {})
 
     @property
-    def model_extra(self) -> dict[str, Any] | None:
+def model_extra(self) -> dict | None:
         """Get extra fields set during validation.
 
         Returns:
@@ -3424,7 +3424,7 @@ class BaseModel(metaclass=_model_construction.ModelMetaclass):
         return self.__pydantic_extra__
 
     @property
-    def model_fields_set(self) -> set[str]:
+def model_fields_set(self) -> set:
         """Returns the set of fields that have been explicitly set on this model instance.
 
         Returns:
@@ -3434,7 +3434,7 @@ class BaseModel(metaclass=_model_construction.ModelMetaclass):
         return self.__pydantic_fields_set__
 
     @classmethod
-    def model_construct(cls, _fields_set: set[str] | None = None, **values: Any) -> Self:  # noqa: C901
+def model_construct(cls, _fields_set: set | None = None, **values: Any) -> Self:  # noqa: C901
         """Creates a new instance of the `Model` class with validated data.
 
         Creates a new model setting `__dict__` and `__pydantic_fields_set__` from trusted or pre-validated data.
@@ -3449,7 +3449,7 @@ class BaseModel(metaclass=_model_construction.ModelMetaclass):
 
         Args:
             _fields_set: A set of field names that were originally explicitly set during instantiation. If provided,
-                this is directly used for the [`model_fields_set`][pydantic.BaseModel.model_fields_set] attribute.
+                this is directly used for the  attribute.
                 Otherwise, the field names from the `values` argument will be used.
             values: Trusted or pre-validated data dictionary.
 
@@ -3457,43 +3457,43 @@ class BaseModel(metaclass=_model_construction.ModelMetaclass):
             A new instance of the `Model` class with validated data.
         """
         m = cls.__new__(cls)
-        fields_values: dict[str, Any] = {}
+        fields_values: dict = {}
         fields_set = set()
 
         for name, field in cls.__pydantic_fields__.items():
             if field.alias is not None and field.alias in values:
-                fields_values[name] = values.pop(field.alias)
+                fields_values = values.pop(field.alias)
                 fields_set.add(name)
 
             if (name not in fields_set) and (field.validation_alias is not None):
-                validation_aliases: list[str | AliasPath] = (
+                validation_aliases: list = (
                     field.validation_alias.choices
                     if isinstance(field.validation_alias, AliasChoices)
-                    else [field.validation_alias]
+                    else 
                 )
 
                 for alias in validation_aliases:
                     if isinstance(alias, str) and alias in values:
-                        fields_values[name] = values.pop(alias)
+                        fields_values = values.pop(alias)
                         fields_set.add(name)
                         break
                     elif isinstance(alias, AliasPath):
                         value = alias.search_dict_for_path(values)
                         if value is not PydanticUndefined:
-                            fields_values[name] = value
+                            fields_values = value
                             fields_set.add(name)
                             break
 
             if name not in fields_set:
                 if name in values:
-                    fields_values[name] = values.pop(name)
+                    fields_values = values.pop(name)
                     fields_set.add(name)
                 elif not field.is_required():
-                    fields_values[name] = field.get_default(call_default_factory=True, validated_data=fields_values)
+                    fields_values = field.get_default(call_default_factory=True, validated_data=fields_values)
         if _fields_set is None:
             _fields_set = fields_set
 
-        _extra: dict[str, Any] | None = values if cls.model_config.get('extra') == 'allow' else None
+        _extra: dict | None = values if cls.model_config.get('extra') == 'allow' else None
         _object_setattr(m, '__dict__', fields_values)
         _object_setattr(m, '__pydantic_fields_set__', _fields_set)
         if not cls.__pydantic_root_model__:
@@ -3505,7 +3505,7 @@ class BaseModel(metaclass=_model_construction.ModelMetaclass):
             if hasattr(m, '__pydantic_private__') and m.__pydantic_private__ is not None:
                 for k, v in values.items():
                     if k in m.__private_attributes__:
-                        m.__pydantic_private__[k] = v
+                        m.__pydantic_private__ = v
 
         elif not cls.__pydantic_root_model__:
             # Note: if there are any private attributes, cls.__pydantic_post_init__ would exist
@@ -3514,16 +3514,16 @@ class BaseModel(metaclass=_model_construction.ModelMetaclass):
 
         return m
 
-    def model_copy(self, *, update: Mapping[str, Any] | None = None, deep: bool = False) -> Self:
+def model_copy(self, *, update: Mapping | None = None, deep: bool = False) -> Self:
         """!!! abstract "Usage Documentation"
-            [`model_copy`](../concepts/serialization.md#model_copy)
+            (../concepts/serialization.md#model_copy)
 
         Returns a copy of the model.
 
         !!! note
-            The underlying instance's [`__dict__`][object.__dict__] attribute is copied. This
+            The underlying instance's  attribute is copied. This
             might have unexpected side effects if you store anything in it, on top of the model
-            fields (e.g. the value of [cached properties][functools.cached_property]).
+            fields (e.g. the value of ).
 
         Args:
             update: Values to change/add in the new model. Note: the data is not validated
@@ -3538,20 +3538,20 @@ class BaseModel(metaclass=_model_construction.ModelMetaclass):
             if self.model_config.get('extra') == 'allow':
                 for k, v in update.items():
                     if k in self.__pydantic_fields__:
-                        copied.__dict__[k] = v
+                        copied.__dict__ = v
                     else:
                         if copied.__pydantic_extra__ is None:
                             copied.__pydantic_extra__ = {}
-                        copied.__pydantic_extra__[k] = v
+                        copied.__pydantic_extra__ = v
             else:
                 copied.__dict__.update(update)
             copied.__pydantic_fields_set__.update(update.keys())
         return copied
 
-    def model_dump(
+def model_dump(
         self,
         *,
-        mode: Literal['json', 'python'] | str = 'python',
+        mode: Literal | str = 'python',
         include: IncEx | None = None,
         exclude: IncEx | None = None,
         context: Any | None = None,
@@ -3560,12 +3560,12 @@ class BaseModel(metaclass=_model_construction.ModelMetaclass):
         exclude_defaults: bool = False,
         exclude_none: bool = False,
         round_trip: bool = False,
-        warnings: bool | Literal['none', 'warn', 'error'] = True,
-        fallback: Callable[[Any], Any] | None = None,
+        warnings: bool | Literal = True,
+        fallback: Callable, Any] | None = None,
         serialize_as_any: bool = False,
-    ) -> dict[str, Any]:
+    ) -> dict:
         """!!! abstract "Usage Documentation"
-            [`model_dump`](../concepts/serialization.md#modelmodel_dump)
+            (../concepts/serialization.md#modelmodel_dump)
 
         Generate a dictionary representation of the model, optionally specifying which fields to include or exclude.
 
@@ -3580,11 +3580,11 @@ class BaseModel(metaclass=_model_construction.ModelMetaclass):
             exclude_unset: Whether to exclude fields that have not been explicitly set.
             exclude_defaults: Whether to exclude fields that are set to their default value.
             exclude_none: Whether to exclude fields that have a value of `None`.
-            round_trip: If True, dumped values should be valid as input for non-idempotent types such as Json[T].
+            round_trip: If True, dumped values should be valid as input for non-idempotent types such as Json.
             warnings: How to handle serialization errors. False/"none" ignores them, True/"warn" logs errors,
-                "error" raises a [`PydanticSerializationError`][pydantic_core.PydanticSerializationError].
+                "error" raises a .
             fallback: A function to call when an unknown value is encountered. If not provided,
-                a [`PydanticSerializationError`][pydantic_core.PydanticSerializationError] error is raised.
+                a  error is raised.
             serialize_as_any: Whether to serialize fields with duck-typing serialization behavior.
 
         Returns:
@@ -3606,7 +3606,7 @@ class BaseModel(metaclass=_model_construction.ModelMetaclass):
             serialize_as_any=serialize_as_any,
         )
 
-    def model_dump_json(
+def model_dump_json(
         self,
         *,
         indent: int | None = None,
@@ -3618,12 +3618,12 @@ class BaseModel(metaclass=_model_construction.ModelMetaclass):
         exclude_defaults: bool = False,
         exclude_none: bool = False,
         round_trip: bool = False,
-        warnings: bool | Literal['none', 'warn', 'error'] = True,
-        fallback: Callable[[Any], Any] | None = None,
+        warnings: bool | Literal = True,
+        fallback: Callable, Any] | None = None,
         serialize_as_any: bool = False,
     ) -> str:
         """!!! abstract "Usage Documentation"
-            [`model_dump_json`](../concepts/serialization.md#modelmodel_dump_json)
+            (../concepts/serialization.md#modelmodel_dump_json)
 
         Generates a JSON representation of the model using Pydantic's `to_json` method.
 
@@ -3636,11 +3636,11 @@ class BaseModel(metaclass=_model_construction.ModelMetaclass):
             exclude_unset: Whether to exclude fields that have not been explicitly set.
             exclude_defaults: Whether to exclude fields that are set to their default value.
             exclude_none: Whether to exclude fields that have a value of `None`.
-            round_trip: If True, dumped values should be valid as input for non-idempotent types such as Json[T].
+            round_trip: If True, dumped values should be valid as input for non-idempotent types such as Json.
             warnings: How to handle serialization errors. False/"none" ignores them, True/"warn" logs errors,
-                "error" raises a [`PydanticSerializationError`][pydantic_core.PydanticSerializationError].
+                "error" raises a .
             fallback: A function to call when an unknown value is encountered. If not provided,
-                a [`PydanticSerializationError`][pydantic_core.PydanticSerializationError] error is raised.
+                a  error is raised.
             serialize_as_any: Whether to serialize fields with duck-typing serialization behavior.
 
         Returns:
@@ -3663,13 +3663,13 @@ class BaseModel(metaclass=_model_construction.ModelMetaclass):
         ).decode()
 
     @classmethod
-    def model_json_schema(
+def model_json_schema(
         cls,
         by_alias: bool = True,
         ref_template: str = DEFAULT_REF_TEMPLATE,
-        schema_generator: type[GenerateJsonSchema] = GenerateJsonSchema,
+        schema_generator: type = GenerateJsonSchema,
         mode: JsonSchemaMode = 'validation',
-    ) -> dict[str, Any]:
+    ) -> dict:
         """Generates a JSON schema for a model class.
 
         Args:
@@ -3687,14 +3687,14 @@ class BaseModel(metaclass=_model_construction.ModelMetaclass):
         )
 
     @classmethod
-    def model_parametrized_name(cls, params: tuple[type[Any], ...]) -> str:
+def model_parametrized_name(cls, params: tuple, ...]) -> str:
         """Compute the class name for parametrizations of generic classes.
 
         This method can be overridden to achieve a custom naming scheme for generic BaseModels.
 
         Args:
             params: Tuple of types of the class. Given a generic class
-                `Model` with 2 type variables and a concrete model `Model[str, int]`,
+                `Model` with 2 type variables and a concrete model `Model`,
                 the value `(str, int)` would be passed to `params`.
 
         Returns:
@@ -3709,18 +3709,18 @@ class BaseModel(metaclass=_model_construction.ModelMetaclass):
         # Any strings received should represent forward references, so we handle them specially below.
         # If we eventually move toward wrapping them in a ForwardRef in __class_getitem__ in the future,
         # we may be able to remove this special case.
-        param_names = [param if isinstance(param, str) else _repr.display_as_type(param) for param in params]
+        param_names = 
         params_component = ', '.join(param_names)
-        return f'{cls.__name__}[{params_component}]'
+        return f'{cls.__name__}'
 
-    def model_post_init(self, context: Any, /) -> None:
+def model_post_init(self, context: Any, /) -> None:
         """Override this method to perform additional initialization after `__init__` and `model_construct`.
         This is useful if you want to do some validation that requires the entire model to be initialized.
         """
         pass
 
     @classmethod
-    def model_rebuild(
+def model_rebuild(
         cls,
         *,
         force: bool = False,
@@ -3797,7 +3797,7 @@ class BaseModel(metaclass=_model_construction.ModelMetaclass):
         )
 
     @classmethod
-    def model_validate(
+def model_validate(
         cls,
         obj: Any,
         *,
@@ -3837,7 +3837,7 @@ class BaseModel(metaclass=_model_construction.ModelMetaclass):
         )
 
     @classmethod
-    def model_validate_json(
+def model_validate_json(
         cls,
         json_data: str | bytes | bytearray,
         *,
@@ -3847,7 +3847,7 @@ class BaseModel(metaclass=_model_construction.ModelMetaclass):
         by_name: bool | None = None,
     ) -> Self:
         """!!! abstract "Usage Documentation"
-            [JSON Parsing](../concepts/json.md#json-parsing)
+            (../concepts/json.md#json-parsing)
 
         Validate the given JSON data against the Pydantic model.
 
@@ -3878,7 +3878,7 @@ class BaseModel(metaclass=_model_construction.ModelMetaclass):
         )
 
     @classmethod
-    def model_validate_strings(
+def model_validate_strings(
         cls,
         obj: Any,
         *,
@@ -3913,7 +3913,7 @@ class BaseModel(metaclass=_model_construction.ModelMetaclass):
         )
 
     @classmethod
-    def __get_pydantic_core_schema__(cls, source: type[BaseModel], handler: GetCoreSchemaHandler, /) -> CoreSchema:
+def __get_pydantic_core_schema__(cls, source: type, handler: GetCoreSchemaHandler, /) -> CoreSchema:
         # This warning is only emitted when calling `super().__get_pydantic_core_schema__` from a model subclass.
         # In the generate schema logic, this method (`BaseModel.__get_pydantic_core_schema__`) is special cased to
         # *not* be called if not overridden.
@@ -3933,7 +3933,7 @@ class BaseModel(metaclass=_model_construction.ModelMetaclass):
         return handler(source)
 
     @classmethod
-    def __get_pydantic_json_schema__(
+def __get_pydantic_json_schema__(
         cls,
         core_schema: CoreSchema,
         handler: GetJsonSchemaHandler,
@@ -3959,7 +3959,7 @@ class BaseModel(metaclass=_model_construction.ModelMetaclass):
         return handler(core_schema)
 
     @classmethod
-    def __pydantic_init_subclass__(cls, **kwargs: Any) -> None:
+def __pydantic_init_subclass__(cls, **kwargs: Any) -> None:
         """This is intended to behave just like `__init_subclass__`, but is called by `ModelMetaclass`
         only after the class is actually fully initialized. In particular, attributes like `model_fields` will
         be present when this is called.
@@ -3977,9 +3977,9 @@ class BaseModel(metaclass=_model_construction.ModelMetaclass):
         """
         pass
 
-    def __class_getitem__(
-        cls, typevar_values: type[Any] | tuple[type[Any], ...]
-    ) -> type[BaseModel] | _forward_ref.PydanticRecursiveRef:
+def __class_getitem__(
+        cls, typevar_values: type | tuple, ...]
+    ) -> type | _forward_ref.PydanticRecursiveRef:
         cached = _generics.get_cached_generic_type_early(cls, typevar_values)
         if cached is not None:
             return cached
@@ -3988,13 +3988,13 @@ class BaseModel(metaclass=_model_construction.ModelMetaclass):
             raise TypeError('Type parameters should be placed on typing.Generic, not BaseModel')
         if not hasattr(cls, '__parameters__'):
             raise TypeError(f'{cls} cannot be parametrized because it does not inherit from typing.Generic')
-        if not cls.__pydantic_generic_metadata__['parameters'] and typing.Generic not in cls.__bases__:
+        if not cls.__pydantic_generic_metadata__ and typing.Generic not in cls.__bases__:
             raise TypeError(f'{cls} is not a generic class')
 
         if not isinstance(typevar_values, tuple):
             typevar_values = (typevar_values,)
 
-        # For a model `class Model[T, U, V = int](BaseModel): ...` parametrized with `(str, bool)`,
+        # For a model `class Model(BaseModel): ...` parametrized with `(str, bool)`,
         # this gives us `{T: str, U: bool, V: int}`:
         typevars_map = _generics.map_generic_model_arguments(cls, typevar_values)
         # We also update the provided args to use defaults values (`(str, bool)` becomes `(str, bool, int)`):
@@ -4004,13 +4004,13 @@ class BaseModel(metaclass=_model_construction.ModelMetaclass):
             submodel = cls  # if arguments are equal to parameters it's the same object
             _generics.set_cached_generic_type(cls, typevar_values, submodel)
         else:
-            parent_args = cls.__pydantic_generic_metadata__['args']
+            parent_args = cls.__pydantic_generic_metadata__
             if not parent_args:
                 args = typevar_values
             else:
                 args = tuple(_generics.replace_types(arg, typevars_map) for arg in parent_args)
 
-            origin = cls.__pydantic_generic_metadata__['origin'] or cls
+            origin = cls.__pydantic_generic_metadata__ or cls
             model_name = origin.model_parametrized_name(args)
             params = tuple(
                 {param: None for param in _generics.iter_contained_typevars(typevars_map.values())}
@@ -4044,7 +4044,7 @@ class BaseModel(metaclass=_model_construction.ModelMetaclass):
 
         return submodel
 
-    def __copy__(self) -> Self:
+def __copy__(self) -> Self:
         """Returns a shallow copy of the model."""
         cls = type(self)
         m = cls.__new__(cls)
@@ -4063,13 +4063,13 @@ class BaseModel(metaclass=_model_construction.ModelMetaclass):
 
         return m
 
-    def __deepcopy__(self, memo: dict[int, Any] | None = None) -> Self:
+def __deepcopy__(self, memo: dict | None = None) -> Self:
         """Returns a deep copy of the model."""
         cls = type(self)
         m = cls.__new__(cls)
         _object_setattr(m, '__dict__', deepcopy(self.__dict__, memo=memo))
         _object_setattr(m, '__pydantic_extra__', deepcopy(self.__pydantic_extra__, memo=memo))
-        # This next line doesn't need a deepcopy because __pydantic_fields_set__ is a set[str],
+        # This next line doesn't need a deepcopy because __pydantic_fields_set__ is a set,
         # and attempting a deepcopy would be marginally slower.
         _object_setattr(m, '__pydantic_fields_set__', copy(self.__pydantic_fields_set__))
 
@@ -4091,13 +4091,13 @@ class BaseModel(metaclass=_model_construction.ModelMetaclass):
         def __getattr__(self, item: str) -> Any:
             private_attributes = object.__getattribute__(self, '__private_attributes__')
             if item in private_attributes:
-                attribute = private_attributes[item]
+                attribute = private_attributes
                 if hasattr(attribute, '__get__'):
                     return attribute.__get__(self, type(self))  # type: ignore
 
                 try:
                     # Note: self.__pydantic_private__ cannot be None if self.__private_attributes__ has items
-                    return self.__pydantic_private__[item]  # type: ignore
+                    return self.__pydantic_private__  # type: ignore
                 except KeyError as exc:
                     raise AttributeError(f'{type(self).__name__!r} object has no attribute {item!r}') from exc
             else:
@@ -4110,7 +4110,7 @@ class BaseModel(metaclass=_model_construction.ModelMetaclass):
 
                 if pydantic_extra:
                     try:
-                        return pydantic_extra[item]
+                        return pydantic_extra
                     except KeyError as exc:
                         raise AttributeError(f'{type(self).__name__!r} object has no attribute {item!r}') from exc
                 else:
@@ -4126,9 +4126,9 @@ class BaseModel(metaclass=_model_construction.ModelMetaclass):
             # if None is returned from _setattr_handler, the attribute was set directly
             elif (setattr_handler := self._setattr_handler(name, value)) is not None:
                 setattr_handler(self, name, value)  # call here to not memo on possibly unknown fields
-                self.__pydantic_setattr_handlers__[name] = setattr_handler  # memoize the handler for faster access
+                self.__pydantic_setattr_handlers__ = setattr_handler  # memoize the handler for faster access
 
-        def _setattr_handler(self, name: str, value: Any) -> Callable[[BaseModel, str, Any], None] | None:
+        def _setattr_handler(self, name: str, value: Any) -> Callable, None] | None:
             """Get a handler for setting an attribute on the model instance.
 
             Returns:
@@ -4147,7 +4147,7 @@ class BaseModel(metaclass=_model_construction.ModelMetaclass):
                     if hasattr(attribute, '__set__'):
                         return lambda model, _name, val: attribute.__set__(model, val)
                     else:
-                        return _SIMPLE_SETATTR_HANDLERS['private']
+                        return _SIMPLE_SETATTR_HANDLERS
                 else:
                     _object_setattr(self, name, value)
                     return None  # Can not return memoized handler with possibly freeform attr names
@@ -4158,7 +4158,7 @@ class BaseModel(metaclass=_model_construction.ModelMetaclass):
             # (such as `cached_property`), it isn't obvious though. `cached_property` caches the value
             # to the instance's `__dict__`, but other non-data descriptors might do things differently.
             if isinstance(attr, cached_property):
-                return _SIMPLE_SETATTR_HANDLERS['cached_property']
+                return _SIMPLE_SETATTR_HANDLERS
 
             _check_frozen(cls, name, value)
 
@@ -4167,33 +4167,33 @@ class BaseModel(metaclass=_model_construction.ModelMetaclass):
             if isinstance(attr, property):
                 return lambda model, _name, val: attr.__set__(model, val)
             elif cls.model_config.get('validate_assignment'):
-                return _SIMPLE_SETATTR_HANDLERS['validate_assignment']
+                return _SIMPLE_SETATTR_HANDLERS
             elif name not in cls.__pydantic_fields__:
                 if cls.model_config.get('extra') != 'allow':
                     # TODO - matching error
                     raise ValueError(f'"{cls.__name__}" object has no field "{name}"')
                 elif attr is None:
                     # attribute does not exist, so put it in extra
-                    self.__pydantic_extra__[name] = value
+                    self.__pydantic_extra__ = value
                     return None  # Can not return memoized handler with possibly freeform attr names
                 else:
                     # attribute _does_ exist, and was not in extra, so update it
-                    return _SIMPLE_SETATTR_HANDLERS['extra_known']
+                    return _SIMPLE_SETATTR_HANDLERS
             else:
-                return _SIMPLE_SETATTR_HANDLERS['model_field']
+                return _SIMPLE_SETATTR_HANDLERS
 
         def __delattr__(self, item: str) -> Any:
             cls = self.__class__
 
             if item in self.__private_attributes__:
-                attribute = self.__private_attributes__[item]
+                attribute = self.__private_attributes__
                 if hasattr(attribute, '__delete__'):
                     attribute.__delete__(self)  # type: ignore
                     return
 
                 try:
                     # Note: self.__pydantic_private__ cannot be None if self.__private_attributes__ has items
-                    del self.__pydantic_private__[item]  # type: ignore
+                    del self.__pydantic_private__  # type: ignore
                     return
                 except KeyError as exc:
                     raise AttributeError(f'{cls.__name__!r} object has no attribute {item!r}') from exc
@@ -4208,7 +4208,7 @@ class BaseModel(metaclass=_model_construction.ModelMetaclass):
             if item in self.__pydantic_fields__:
                 object.__delattr__(self, item)
             elif self.__pydantic_extra__ is not None and item in self.__pydantic_extra__:
-                del self.__pydantic_extra__[item]
+                del self.__pydantic_extra__
             else:
                 try:
                     object.__delattr__(self, item)
@@ -4220,7 +4220,7 @@ class BaseModel(metaclass=_model_construction.ModelMetaclass):
         def __replace__(self, **changes: Any) -> Self:
             return self.model_copy(update=changes)
 
-    def __getstate__(self) -> dict[Any, Any]:
+def __getstate__(self) -> dict:
         private = self.__pydantic_private__
         if private:
             private = {k: v for k, v in private.items() if v is not PydanticUndefined}
@@ -4231,7 +4231,7 @@ class BaseModel(metaclass=_model_construction.ModelMetaclass):
             '__pydantic_private__': private,
         }
 
-    def __setstate__(self, state: dict[Any, Any]) -> None:
+def __setstate__(self, state: dict) -> None:
         _object_setattr(self, '__pydantic_fields_set__', state.get('__pydantic_fields_set__', {}))
         _object_setattr(self, '__pydantic_extra__', state.get('__pydantic_extra__', {}))
         _object_setattr(self, '__pydantic_private__', state.get('__pydantic_private__', {}))
@@ -4243,9 +4243,9 @@ class BaseModel(metaclass=_model_construction.ModelMetaclass):
             if isinstance(other, BaseModel):
                 # When comparing instances of generic types for equality, as long as all field values are equal,
                 # only require their generic origin types to be equal, rather than exact type equality.
-                # This prevents headaches like MyGeneric(x=1) != MyGeneric[Any](x=1).
-                self_type = self.__pydantic_generic_metadata__['origin'] or self.__class__
-                other_type = other.__pydantic_generic_metadata__['origin'] or other.__class__
+                # This prevents headaches like MyGeneric(x=1) != MyGeneric(x=1).
+                self_type = self.__pydantic_generic_metadata__ or self.__class__
+                other_type = other.__pydantic_generic_metadata__ or other.__class__
 
                 # Perform common checks first
                 if not (
@@ -4299,12 +4299,11 @@ class BaseModel(metaclass=_model_construction.ModelMetaclass):
         # described in the signature of `__init_subclass__` below, we don't want to modify the default behavior of
         # subclass initialization.
 
-        def __init_subclass__(cls, **kwargs: Unpack[ConfigDict]):
+        def __init_subclass__(cls, **kwargs: Unpack):
             """This signature is included purely to help type-checkers check arguments to class declaration, which
             provides a way to conveniently set model_config key/value pairs.
 
             ```python
-            from pydantic import BaseModel
 
             class MyModel(BaseModel, extra='allow'): ...
             ```
@@ -4321,17 +4320,17 @@ class BaseModel(metaclass=_model_construction.ModelMetaclass):
                 *after* the class is fully initialized.
             """
 
-    def __iter__(self) -> TupleGenerator:
+def __iter__(self) -> TupleGenerator:
         """So `dict(model)` works."""
-        yield from [(k, v) for (k, v) in self.__dict__.items() if not k.startswith('_')]
+        yield from 
         extra = self.__pydantic_extra__
         if extra:
             yield from extra.items()
 
-    def __repr__(self) -> str:
+def __repr__(self) -> str:
         return f'{self.__repr_name__()}({self.__repr_str__(", ")})'
 
-    def __repr_args__(self) -> _repr.ReprArgs:
+def __repr_args__(self) -> _repr.ReprArgs:
         # Eagerly create the repr of computed fields, as this may trigger access of cached properties and as such
         # modify the instance's `__dict__`. If we don't do it now, it could happen when iterating over the `__dict__`
         # below if the instance happens to be referenced in a field, and would modify the `__dict__` size *during* iteration.
@@ -4366,7 +4365,7 @@ class BaseModel(metaclass=_model_construction.ModelMetaclass):
     __pretty__ = _repr.Representation.__pretty__
     __rich_repr__ = _repr.Representation.__rich_repr__
 
-    def __str__(self) -> str:
+def __str__(self) -> str:
         return self.__repr_str__(' ')
 
     # ##### Deprecated methods from v1 #####
@@ -4374,7 +4373,7 @@ class BaseModel(metaclass=_model_construction.ModelMetaclass):
     @typing_extensions.deprecated(
         'The `__fields__` attribute is deprecated, use `model_fields` instead.', category=None
     )
-    def __fields__(self) -> dict[str, FieldInfo]:
+def __fields__(self) -> dict:
         warnings.warn(
             'The `__fields__` attribute is deprecated, use `model_fields` instead.',
             category=PydanticDeprecatedSince20,
@@ -4387,7 +4386,7 @@ class BaseModel(metaclass=_model_construction.ModelMetaclass):
         'The `__fields_set__` attribute is deprecated, use `model_fields_set` instead.',
         category=None,
     )
-    def __fields_set__(self) -> set[str]:
+def __fields_set__(self) -> set:
         warnings.warn(
             'The `__fields_set__` attribute is deprecated, use `model_fields_set` instead.',
             category=PydanticDeprecatedSince20,
@@ -4396,7 +4395,7 @@ class BaseModel(metaclass=_model_construction.ModelMetaclass):
         return self.__pydantic_fields_set__
 
     @typing_extensions.deprecated('The `dict` method is deprecated; use `model_dump` instead.', category=None)
-    def dict(  # noqa: D102
+def dict(  # noqa: D102
         self,
         *,
         include: IncEx | None = None,
@@ -4405,7 +4404,7 @@ class BaseModel(metaclass=_model_construction.ModelMetaclass):
         exclude_unset: bool = False,
         exclude_defaults: bool = False,
         exclude_none: bool = False,
-    ) -> Dict[str, Any]:  # noqa UP006
+    ) -> Dict:  # noqa UP006
         warnings.warn(
             'The `dict` method is deprecated; use `model_dump` instead.',
             category=PydanticDeprecatedSince20,
@@ -4421,7 +4420,7 @@ class BaseModel(metaclass=_model_construction.ModelMetaclass):
         )
 
     @typing_extensions.deprecated('The `json` method is deprecated; use `model_dump_json` instead.', category=None)
-    def json(  # noqa: D102
+def json(  # noqa: D102
         self,
         *,
         include: IncEx | None = None,
@@ -4430,8 +4429,8 @@ class BaseModel(metaclass=_model_construction.ModelMetaclass):
         exclude_unset: bool = False,
         exclude_defaults: bool = False,
         exclude_none: bool = False,
-        encoder: Callable[[Any], Any] | None = PydanticUndefined,  # type: ignore[assignment]
-        models_as_dict: bool = PydanticUndefined,  # type: ignore[assignment]
+        encoder: Callable, Any] | None = PydanticUndefined,  # type: ignore
+        models_as_dict: bool = PydanticUndefined,  # type: ignore
         **dumps_kwargs: Any,
     ) -> str:
         warnings.warn(
@@ -4456,7 +4455,7 @@ class BaseModel(metaclass=_model_construction.ModelMetaclass):
 
     @classmethod
     @typing_extensions.deprecated('The `parse_obj` method is deprecated; use `model_validate` instead.', category=None)
-    def parse_obj(cls, obj: Any) -> Self:  # noqa: D102
+def parse_obj(cls, obj: Any) -> Self:  # noqa: D102
         warnings.warn(
             'The `parse_obj` method is deprecated; use `model_validate` instead.',
             category=PydanticDeprecatedSince20,
@@ -4470,7 +4469,7 @@ class BaseModel(metaclass=_model_construction.ModelMetaclass):
         'otherwise load the data then use `model_validate` instead.',
         category=None,
     )
-    def parse_raw(  # noqa: D102
+def parse_raw(  # noqa: D102
         cls,
         b: str | bytes,
         *,
@@ -4515,7 +4514,7 @@ class BaseModel(metaclass=_model_construction.ModelMetaclass):
                 'loc': ('__root__',),
                 'input': b,
             }
-            raise pydantic_core.ValidationError.from_exception_data(cls.__name__, [error])
+            raise pydantic_core.ValidationError.from_exception_data(cls.__name__, )
         return cls.model_validate(obj)
 
     @classmethod
@@ -4524,7 +4523,7 @@ class BaseModel(metaclass=_model_construction.ModelMetaclass):
         'use `model_validate_json`, otherwise `model_validate` instead.',
         category=None,
     )
-    def parse_file(  # noqa: D102
+def parse_file(  # noqa: D102
         cls,
         path: str | Path,
         *,
@@ -4553,13 +4552,13 @@ class BaseModel(metaclass=_model_construction.ModelMetaclass):
     @classmethod
     @typing_extensions.deprecated(
         'The `from_orm` method is deprecated; set '
-        "`model_config['from_attributes']=True` and use `model_validate` instead.",
+        "`model_config=True` and use `model_validate` instead.",
         category=None,
     )
-    def from_orm(cls, obj: Any) -> Self:  # noqa: D102
+def from_orm(cls, obj: Any) -> Self:  # noqa: D102
         warnings.warn(
             'The `from_orm` method is deprecated; set '
-            "`model_config['from_attributes']=True` and use `model_validate` instead.",
+            "`model_config=True` and use `model_validate` instead.",
             category=PydanticDeprecatedSince20,
             stacklevel=2,
         )
@@ -4571,7 +4570,7 @@ class BaseModel(metaclass=_model_construction.ModelMetaclass):
 
     @classmethod
     @typing_extensions.deprecated('The `construct` method is deprecated; use `model_construct` instead.', category=None)
-    def construct(cls, _fields_set: set[str] | None = None, **values: Any) -> Self:  # noqa: D102
+def construct(cls, _fields_set: set | None = None, **values: Any) -> Self:  # noqa: D102
         warnings.warn(
             'The `construct` method is deprecated; use `model_construct` instead.',
             category=PydanticDeprecatedSince20,
@@ -4584,12 +4583,12 @@ class BaseModel(metaclass=_model_construction.ModelMetaclass):
         'See the docstring of `BaseModel.copy` for details about how to handle `include` and `exclude`.',
         category=None,
     )
-    def copy(
+def copy(
         self,
         *,
         include: AbstractSetIntStr | MappingIntStrAny | None = None,
         exclude: AbstractSetIntStr | MappingIntStrAny | None = None,
-        update: Dict[str, Any] | None = None,  # noqa UP006
+        update: Dict | None = None,  # noqa UP006
         deep: bool = False,
     ) -> Self:  # pragma: no cover
         """Returns a copy of the model.
@@ -4634,7 +4633,7 @@ class BaseModel(metaclass=_model_construction.ModelMetaclass):
             private = {k: v for k, v in self.__pydantic_private__.items() if v is not PydanticUndefined}
 
         if self.__pydantic_extra__ is None:
-            extra: dict[str, Any] | None = None
+            extra: dict | None = None
         else:
             extra = self.__pydantic_extra__.copy()
             for k in list(self.__pydantic_extra__):
@@ -4642,7 +4641,7 @@ class BaseModel(metaclass=_model_construction.ModelMetaclass):
                     extra.pop(k)
             for k in list(values):
                 if k in self.__pydantic_extra__:  # k must have come from extra
-                    extra[k] = values.pop(k)
+                    extra = values.pop(k)
 
         # new `__pydantic_fields_set__` can have unset optional fields with a set value in `update` kwarg
         if update:
@@ -4658,9 +4657,9 @@ class BaseModel(metaclass=_model_construction.ModelMetaclass):
 
     @classmethod
     @typing_extensions.deprecated('The `schema` method is deprecated; use `model_json_schema` instead.', category=None)
-    def schema(  # noqa: D102
+def schema(  # noqa: D102
         cls, by_alias: bool = True, ref_template: str = DEFAULT_REF_TEMPLATE
-    ) -> Dict[str, Any]:  # noqa UP006
+    ) -> Dict:  # noqa UP006
         warnings.warn(
             'The `schema` method is deprecated; use `model_json_schema` instead.',
             category=PydanticDeprecatedSince20,
@@ -4673,7 +4672,7 @@ class BaseModel(metaclass=_model_construction.ModelMetaclass):
         'The `schema_json` method is deprecated; use `model_json_schema` and json.dumps instead.',
         category=None,
     )
-    def schema_json(  # noqa: D102
+def schema_json(  # noqa: D102
         cls, *, by_alias: bool = True, ref_template: str = DEFAULT_REF_TEMPLATE, **dumps_kwargs: Any
     ) -> str:  # pragma: no cover
         warnings.warn(
@@ -4693,7 +4692,7 @@ class BaseModel(metaclass=_model_construction.ModelMetaclass):
 
     @classmethod
     @typing_extensions.deprecated('The `validate` method is deprecated; use `model_validate` instead.', category=None)
-    def validate(cls, value: Any) -> Self:  # noqa: D102
+def validate(cls, value: Any) -> Self:  # noqa: D102
         warnings.warn(
             'The `validate` method is deprecated; use `model_validate` instead.',
             category=PydanticDeprecatedSince20,
@@ -4706,7 +4705,7 @@ class BaseModel(metaclass=_model_construction.ModelMetaclass):
         'The `update_forward_refs` method is deprecated; use `model_rebuild` instead.',
         category=None,
     )
-    def update_forward_refs(cls, **localns: Any) -> None:  # noqa: D102
+def update_forward_refs(cls, **localns: Any) -> None:  # noqa: D102
         warnings.warn(
             'The `update_forward_refs` method is deprecated; use `model_rebuild` instead.',
             category=PydanticDeprecatedSince20,
@@ -4719,7 +4718,7 @@ class BaseModel(metaclass=_model_construction.ModelMetaclass):
     @typing_extensions.deprecated(
         'The private method `_iter` will be removed and should no longer be used.', category=None
     )
-    def _iter(self, *args: Any, **kwargs: Any) -> Any:
+def _iter(self, *args: Any, **kwargs: Any) -> Any:
         warnings.warn(
             'The private method `_iter` will be removed and should no longer be used.',
             category=PydanticDeprecatedSince20,
@@ -4733,7 +4732,7 @@ class BaseModel(metaclass=_model_construction.ModelMetaclass):
         'The private method `_copy_and_set_values` will be removed and should no longer be used.',
         category=None,
     )
-    def _copy_and_set_values(self, *args: Any, **kwargs: Any) -> Any:
+def _copy_and_set_values(self, *args: Any, **kwargs: Any) -> Any:
         warnings.warn(
             'The private method `_copy_and_set_values` will be removed and should no longer be used.',
             category=PydanticDeprecatedSince20,
@@ -4748,7 +4747,7 @@ class BaseModel(metaclass=_model_construction.ModelMetaclass):
         'The private method `_get_value` will be removed and should no longer be used.',
         category=None,
     )
-    def _get_value(cls, *args: Any, **kwargs: Any) -> Any:
+def _get_value(cls, *args: Any, **kwargs: Any) -> Any:
         warnings.warn(
             'The private method `_get_value` will be removed and should no longer be used.',
             category=PydanticDeprecatedSince20,
@@ -4762,7 +4761,7 @@ class BaseModel(metaclass=_model_construction.ModelMetaclass):
         'The private method `_calculate_keys` will be removed and should no longer be used.',
         category=None,
     )
-    def _calculate_keys(self, *args: Any, **kwargs: Any) -> Any:
+def _calculate_keys(self, *args: Any, **kwargs: Any) -> Any:
         warnings.warn(
             'The private method `_calculate_keys` will be removed and should no longer be used.',
             category=PydanticDeprecatedSince20,
@@ -4780,10 +4779,10 @@ def create_model(
     __doc__: str | None = None,
     __base__: None = None,
     __module__: str = __name__,
-    __validators__: dict[str, Callable[..., Any]] | None = None,
-    __cls_kwargs__: dict[str, Any] | None = None,
-    **field_definitions: Any | tuple[str, Any],
-) -> type[BaseModel]: ...
+    __validators__: dict] | None = None,
+    __cls_kwargs__: dict | None = None,
+    **field_definitions: Any | tuple,
+) -> type: ...
 
 def create_model(
     model_name: str,
@@ -4791,12 +4790,12 @@ def create_model(
     *,
     __config__: ConfigDict | None = None,
     __doc__: str | None = None,
-    __base__: type[ModelT] | tuple[type[ModelT], ...],
+    __base__: type | tuple, ...],
     __module__: str = __name__,
-    __validators__: dict[str, Callable[..., Any]] | None = None,
-    __cls_kwargs__: dict[str, Any] | None = None,
-    **field_definitions: Any | tuple[str, Any],
-) -> type[ModelT]: ...
+    __validators__: dict] | None = None,
+    __cls_kwargs__: dict | None = None,
+    **field_definitions: Any | tuple,
+) -> type: ...
 
 def create_model(  # noqa: C901
     model_name: str,
@@ -4804,18 +4803,18 @@ def create_model(  # noqa: C901
     *,
     __config__: ConfigDict | None = None,
     __doc__: str | None = None,
-    __base__: type[ModelT] | tuple[type[ModelT], ...] | None = None,
+    __base__: type | tuple, ...] | None = None,
     __module__: str | None = None,
-    __validators__: dict[str, Callable[..., Any]] | None = None,
-    __cls_kwargs__: dict[str, Any] | None = None,
+    __validators__: dict] | None = None,
+    __cls_kwargs__: dict | None = None,
     # TODO PEP 747: replace `Any` by the TypeForm:
-    **field_definitions: Any | tuple[str, Any],
-) -> type[ModelT]:
+    **field_definitions: Any | tuple,
+) -> type:
     """!!! abstract "Usage Documentation"
-        [Dynamic Model Creation](../concepts/models.md#dynamic-model-creation)
+        (../concepts/models.md#dynamic-model-creation)
 
     Dynamically creates and returns a new Pydantic model, in other words, `create_model` dynamically creates a
-    subclass of [`BaseModel`][pydantic.BaseModel].
+    subclass of .
 
     Args:
         model_name: The name of the newly created model.
@@ -4826,29 +4825,29 @@ def create_model(  # noqa: C901
             if `None`, the value is taken from `sys._getframe(1)`
         __validators__: A dictionary of methods that validate fields. The keys are the names of the validation methods to
             be added to the model, and the values are the validation methods themselves. You can read more about functional
-            validators [here](https://docs.pydantic.dev/2.9/concepts/validators/#field-validators).
+            validators (https://docs.pydantic.dev/2.9/concepts/validators/#field-validators).
         __cls_kwargs__: A dictionary of keyword arguments for class creation, such as `metaclass`.
         **field_definitions: Field definitions of the new model. Either:
 
             - a single element, representing the type annotation of the field.
             - a two-tuple, the first element being the type and the second element the assigned value
-              (either a default or the [`Field()`][pydantic.Field] function).
+              (either a default or the  function).
 
     Returns:
-        The new [model][pydantic.BaseModel].
+        The new .
 
     Raises:
         PydanticUserError: If `__base__` and `__config__` are both passed.
     """
     if __base__ is None:
-        __base__ = (cast('type[ModelT]', BaseModel),)
+        __base__ = (cast('type', BaseModel),)
     elif not isinstance(__base__, tuple):
         __base__ = (__base__,)
 
     __cls_kwargs__ = __cls_kwargs__ or {}
 
-    fields: dict[str, Any] = {}
-    annotations: dict[str, Any] = {}
+    fields: dict = {}
+    annotations: dict = {}
 
     for f_name, f_def in field_definitions.items():
         if isinstance(f_def, tuple):
@@ -4859,27 +4858,27 @@ def create_model(  # noqa: C901
                     code='create-model-field-definitions',
                 )
 
-            annotations[f_name] = f_def[0]
-            fields[f_name] = f_def[1]
+            annotations = f_def
+            fields = f_def
         else:
-            annotations[f_name] = f_def
+            annotations = f_def
 
     if __module__ is None:
         f = sys._getframe(1)
-        __module__ = f.f_globals['__name__']
+        __module__ = f.f_globals
 
-    namespace: dict[str, Any] = {'__annotations__': annotations, '__module__': __module__}
+    namespace: dict = {'__annotations__': annotations, '__module__': __module__}
     if __doc__:
         namespace.update({'__doc__': __doc__})
     if __validators__:
         namespace.update(__validators__)
     namespace.update(fields)
     if __config__:
-        namespace['model_config'] = __config__
+        namespace = __config__
     resolved_bases = types.resolve_bases(__base__)
     meta, ns, kwds = types.prepare_class(model_name, resolved_bases, kwds=__cls_kwargs__)
     if resolved_bases is not __base__:
-        ns['__orig_bases__'] = __base__
+        ns = __base__
     namespace.update(ns)
 
     return meta(
@@ -4891,8 +4890,8 @@ def create_model(  # noqa: C901
         **kwds,
     )
 
-    def model_fields(cls) -> dict[str, FieldInfo]:
-        """A mapping of field names to their respective [`FieldInfo`][pydantic.fields.FieldInfo] instances.
+def model_fields(cls) -> dict:
+        """A mapping of field names to their respective  instances.
 
         !!! warning
             Accessing this attribute from a model instance is deprecated, and will not work in Pydantic V3.
@@ -4900,8 +4899,8 @@ def create_model(  # noqa: C901
         """
         return getattr(cls, '__pydantic_fields__', {})
 
-    def model_computed_fields(cls) -> dict[str, ComputedFieldInfo]:
-        """A mapping of computed field names to their respective [`ComputedFieldInfo`][pydantic.fields.ComputedFieldInfo] instances.
+def model_computed_fields(cls) -> dict:
+        """A mapping of computed field names to their respective  instances.
 
         !!! warning
             Accessing this attribute from a model instance is deprecated, and will not work in Pydantic V3.
@@ -4909,7 +4908,7 @@ def create_model(  # noqa: C901
         """
         return getattr(cls, '__pydantic_computed_fields__', {})
 
-    def model_extra(self) -> dict[str, Any] | None:
+def model_extra(self) -> dict | None:
         """Get extra fields set during validation.
 
         Returns:
@@ -4917,7 +4916,7 @@ def create_model(  # noqa: C901
         """
         return self.__pydantic_extra__
 
-    def model_fields_set(self) -> set[str]:
+def model_fields_set(self) -> set:
         """Returns the set of fields that have been explicitly set on this model instance.
 
         Returns:
@@ -4926,7 +4925,7 @@ def create_model(  # noqa: C901
         """
         return self.__pydantic_fields_set__
 
-    def model_construct(cls, _fields_set: set[str] | None = None, **values: Any) -> Self:  # noqa: C901
+def model_construct(cls, _fields_set: set | None = None, **values: Any) -> Self:  # noqa: C901
         """Creates a new instance of the `Model` class with validated data.
 
         Creates a new model setting `__dict__` and `__pydantic_fields_set__` from trusted or pre-validated data.
@@ -4941,7 +4940,7 @@ def create_model(  # noqa: C901
 
         Args:
             _fields_set: A set of field names that were originally explicitly set during instantiation. If provided,
-                this is directly used for the [`model_fields_set`][pydantic.BaseModel.model_fields_set] attribute.
+                this is directly used for the  attribute.
                 Otherwise, the field names from the `values` argument will be used.
             values: Trusted or pre-validated data dictionary.
 
@@ -4949,43 +4948,43 @@ def create_model(  # noqa: C901
             A new instance of the `Model` class with validated data.
         """
         m = cls.__new__(cls)
-        fields_values: dict[str, Any] = {}
+        fields_values: dict = {}
         fields_set = set()
 
         for name, field in cls.__pydantic_fields__.items():
             if field.alias is not None and field.alias in values:
-                fields_values[name] = values.pop(field.alias)
+                fields_values = values.pop(field.alias)
                 fields_set.add(name)
 
             if (name not in fields_set) and (field.validation_alias is not None):
-                validation_aliases: list[str | AliasPath] = (
+                validation_aliases: list = (
                     field.validation_alias.choices
                     if isinstance(field.validation_alias, AliasChoices)
-                    else [field.validation_alias]
+                    else 
                 )
 
                 for alias in validation_aliases:
                     if isinstance(alias, str) and alias in values:
-                        fields_values[name] = values.pop(alias)
+                        fields_values = values.pop(alias)
                         fields_set.add(name)
                         break
                     elif isinstance(alias, AliasPath):
                         value = alias.search_dict_for_path(values)
                         if value is not PydanticUndefined:
-                            fields_values[name] = value
+                            fields_values = value
                             fields_set.add(name)
                             break
 
             if name not in fields_set:
                 if name in values:
-                    fields_values[name] = values.pop(name)
+                    fields_values = values.pop(name)
                     fields_set.add(name)
                 elif not field.is_required():
-                    fields_values[name] = field.get_default(call_default_factory=True, validated_data=fields_values)
+                    fields_values = field.get_default(call_default_factory=True, validated_data=fields_values)
         if _fields_set is None:
             _fields_set = fields_set
 
-        _extra: dict[str, Any] | None = values if cls.model_config.get('extra') == 'allow' else None
+        _extra: dict | None = values if cls.model_config.get('extra') == 'allow' else None
         _object_setattr(m, '__dict__', fields_values)
         _object_setattr(m, '__pydantic_fields_set__', _fields_set)
         if not cls.__pydantic_root_model__:
@@ -4997,7 +4996,7 @@ def create_model(  # noqa: C901
             if hasattr(m, '__pydantic_private__') and m.__pydantic_private__ is not None:
                 for k, v in values.items():
                     if k in m.__private_attributes__:
-                        m.__pydantic_private__[k] = v
+                        m.__pydantic_private__ = v
 
         elif not cls.__pydantic_root_model__:
             # Note: if there are any private attributes, cls.__pydantic_post_init__ would exist
@@ -5006,16 +5005,16 @@ def create_model(  # noqa: C901
 
         return m
 
-    def model_copy(self, *, update: Mapping[str, Any] | None = None, deep: bool = False) -> Self:
+def model_copy(self, *, update: Mapping | None = None, deep: bool = False) -> Self:
         """!!! abstract "Usage Documentation"
-            [`model_copy`](../concepts/serialization.md#model_copy)
+            (../concepts/serialization.md#model_copy)
 
         Returns a copy of the model.
 
         !!! note
-            The underlying instance's [`__dict__`][object.__dict__] attribute is copied. This
+            The underlying instance's  attribute is copied. This
             might have unexpected side effects if you store anything in it, on top of the model
-            fields (e.g. the value of [cached properties][functools.cached_property]).
+            fields (e.g. the value of ).
 
         Args:
             update: Values to change/add in the new model. Note: the data is not validated
@@ -5030,20 +5029,20 @@ def create_model(  # noqa: C901
             if self.model_config.get('extra') == 'allow':
                 for k, v in update.items():
                     if k in self.__pydantic_fields__:
-                        copied.__dict__[k] = v
+                        copied.__dict__ = v
                     else:
                         if copied.__pydantic_extra__ is None:
                             copied.__pydantic_extra__ = {}
-                        copied.__pydantic_extra__[k] = v
+                        copied.__pydantic_extra__ = v
             else:
                 copied.__dict__.update(update)
             copied.__pydantic_fields_set__.update(update.keys())
         return copied
 
-    def model_dump(
+def model_dump(
         self,
         *,
-        mode: Literal['json', 'python'] | str = 'python',
+        mode: Literal | str = 'python',
         include: IncEx | None = None,
         exclude: IncEx | None = None,
         context: Any | None = None,
@@ -5052,12 +5051,12 @@ def create_model(  # noqa: C901
         exclude_defaults: bool = False,
         exclude_none: bool = False,
         round_trip: bool = False,
-        warnings: bool | Literal['none', 'warn', 'error'] = True,
-        fallback: Callable[[Any], Any] | None = None,
+        warnings: bool | Literal = True,
+        fallback: Callable, Any] | None = None,
         serialize_as_any: bool = False,
-    ) -> dict[str, Any]:
+    ) -> dict:
         """!!! abstract "Usage Documentation"
-            [`model_dump`](../concepts/serialization.md#modelmodel_dump)
+            (../concepts/serialization.md#modelmodel_dump)
 
         Generate a dictionary representation of the model, optionally specifying which fields to include or exclude.
 
@@ -5072,11 +5071,11 @@ def create_model(  # noqa: C901
             exclude_unset: Whether to exclude fields that have not been explicitly set.
             exclude_defaults: Whether to exclude fields that are set to their default value.
             exclude_none: Whether to exclude fields that have a value of `None`.
-            round_trip: If True, dumped values should be valid as input for non-idempotent types such as Json[T].
+            round_trip: If True, dumped values should be valid as input for non-idempotent types such as Json.
             warnings: How to handle serialization errors. False/"none" ignores them, True/"warn" logs errors,
-                "error" raises a [`PydanticSerializationError`][pydantic_core.PydanticSerializationError].
+                "error" raises a .
             fallback: A function to call when an unknown value is encountered. If not provided,
-                a [`PydanticSerializationError`][pydantic_core.PydanticSerializationError] error is raised.
+                a  error is raised.
             serialize_as_any: Whether to serialize fields with duck-typing serialization behavior.
 
         Returns:
@@ -5098,7 +5097,7 @@ def create_model(  # noqa: C901
             serialize_as_any=serialize_as_any,
         )
 
-    def model_dump_json(
+def model_dump_json(
         self,
         *,
         indent: int | None = None,
@@ -5110,12 +5109,12 @@ def create_model(  # noqa: C901
         exclude_defaults: bool = False,
         exclude_none: bool = False,
         round_trip: bool = False,
-        warnings: bool | Literal['none', 'warn', 'error'] = True,
-        fallback: Callable[[Any], Any] | None = None,
+        warnings: bool | Literal = True,
+        fallback: Callable, Any] | None = None,
         serialize_as_any: bool = False,
     ) -> str:
         """!!! abstract "Usage Documentation"
-            [`model_dump_json`](../concepts/serialization.md#modelmodel_dump_json)
+            (../concepts/serialization.md#modelmodel_dump_json)
 
         Generates a JSON representation of the model using Pydantic's `to_json` method.
 
@@ -5128,11 +5127,11 @@ def create_model(  # noqa: C901
             exclude_unset: Whether to exclude fields that have not been explicitly set.
             exclude_defaults: Whether to exclude fields that are set to their default value.
             exclude_none: Whether to exclude fields that have a value of `None`.
-            round_trip: If True, dumped values should be valid as input for non-idempotent types such as Json[T].
+            round_trip: If True, dumped values should be valid as input for non-idempotent types such as Json.
             warnings: How to handle serialization errors. False/"none" ignores them, True/"warn" logs errors,
-                "error" raises a [`PydanticSerializationError`][pydantic_core.PydanticSerializationError].
+                "error" raises a .
             fallback: A function to call when an unknown value is encountered. If not provided,
-                a [`PydanticSerializationError`][pydantic_core.PydanticSerializationError] error is raised.
+                a  error is raised.
             serialize_as_any: Whether to serialize fields with duck-typing serialization behavior.
 
         Returns:
@@ -5154,13 +5153,13 @@ def create_model(  # noqa: C901
             serialize_as_any=serialize_as_any,
         ).decode()
 
-    def model_json_schema(
+def model_json_schema(
         cls,
         by_alias: bool = True,
         ref_template: str = DEFAULT_REF_TEMPLATE,
-        schema_generator: type[GenerateJsonSchema] = GenerateJsonSchema,
+        schema_generator: type = GenerateJsonSchema,
         mode: JsonSchemaMode = 'validation',
-    ) -> dict[str, Any]:
+    ) -> dict:
         """Generates a JSON schema for a model class.
 
         Args:
@@ -5177,14 +5176,14 @@ def create_model(  # noqa: C901
             cls, by_alias=by_alias, ref_template=ref_template, schema_generator=schema_generator, mode=mode
         )
 
-    def model_parametrized_name(cls, params: tuple[type[Any], ...]) -> str:
+def model_parametrized_name(cls, params: tuple, ...]) -> str:
         """Compute the class name for parametrizations of generic classes.
 
         This method can be overridden to achieve a custom naming scheme for generic BaseModels.
 
         Args:
             params: Tuple of types of the class. Given a generic class
-                `Model` with 2 type variables and a concrete model `Model[str, int]`,
+                `Model` with 2 type variables and a concrete model `Model`,
                 the value `(str, int)` would be passed to `params`.
 
         Returns:
@@ -5199,17 +5198,17 @@ def create_model(  # noqa: C901
         # Any strings received should represent forward references, so we handle them specially below.
         # If we eventually move toward wrapping them in a ForwardRef in __class_getitem__ in the future,
         # we may be able to remove this special case.
-        param_names = [param if isinstance(param, str) else _repr.display_as_type(param) for param in params]
+        param_names = 
         params_component = ', '.join(param_names)
-        return f'{cls.__name__}[{params_component}]'
+        return f'{cls.__name__}'
 
-    def model_post_init(self, context: Any, /) -> None:
+def model_post_init(self, context: Any, /) -> None:
         """Override this method to perform additional initialization after `__init__` and `model_construct`.
         This is useful if you want to do some validation that requires the entire model to be initialized.
         """
         pass
 
-    def model_rebuild(
+def model_rebuild(
         cls,
         *,
         force: bool = False,
@@ -5285,7 +5284,7 @@ def create_model(  # noqa: C901
             ns_resolver=ns_resolver,
         )
 
-    def model_validate(
+def model_validate(
         cls,
         obj: Any,
         *,
@@ -5324,7 +5323,7 @@ def create_model(  # noqa: C901
             obj, strict=strict, from_attributes=from_attributes, context=context, by_alias=by_alias, by_name=by_name
         )
 
-    def model_validate_json(
+def model_validate_json(
         cls,
         json_data: str | bytes | bytearray,
         *,
@@ -5334,7 +5333,7 @@ def create_model(  # noqa: C901
         by_name: bool | None = None,
     ) -> Self:
         """!!! abstract "Usage Documentation"
-            [JSON Parsing](../concepts/json.md#json-parsing)
+            (../concepts/json.md#json-parsing)
 
         Validate the given JSON data against the Pydantic model.
 
@@ -5364,7 +5363,7 @@ def create_model(  # noqa: C901
             json_data, strict=strict, context=context, by_alias=by_alias, by_name=by_name
         )
 
-    def model_validate_strings(
+def model_validate_strings(
         cls,
         obj: Any,
         *,
@@ -5398,7 +5397,7 @@ def create_model(  # noqa: C901
             obj, strict=strict, context=context, by_alias=by_alias, by_name=by_name
         )
 
-    def __get_pydantic_core_schema__(cls, source: type[BaseModel], handler: GetCoreSchemaHandler, /) -> CoreSchema:
+def __get_pydantic_core_schema__(cls, source: type, handler: GetCoreSchemaHandler, /) -> CoreSchema:
         # This warning is only emitted when calling `super().__get_pydantic_core_schema__` from a model subclass.
         # In the generate schema logic, this method (`BaseModel.__get_pydantic_core_schema__`) is special cased to
         # *not* be called if not overridden.
@@ -5417,7 +5416,7 @@ def create_model(  # noqa: C901
 
         return handler(source)
 
-    def __get_pydantic_json_schema__(
+def __get_pydantic_json_schema__(
         cls,
         core_schema: CoreSchema,
         handler: GetJsonSchemaHandler,
@@ -5442,7 +5441,7 @@ def create_model(  # noqa: C901
         """
         return handler(core_schema)
 
-    def __pydantic_init_subclass__(cls, **kwargs: Any) -> None:
+def __pydantic_init_subclass__(cls, **kwargs: Any) -> None:
         """This is intended to behave just like `__init_subclass__`, but is called by `ModelMetaclass`
         only after the class is actually fully initialized. In particular, attributes like `model_fields` will
         be present when this is called.
@@ -5460,9 +5459,9 @@ def create_model(  # noqa: C901
         """
         pass
 
-    def __class_getitem__(
-        cls, typevar_values: type[Any] | tuple[type[Any], ...]
-    ) -> type[BaseModel] | _forward_ref.PydanticRecursiveRef:
+def __class_getitem__(
+        cls, typevar_values: type | tuple, ...]
+    ) -> type | _forward_ref.PydanticRecursiveRef:
         cached = _generics.get_cached_generic_type_early(cls, typevar_values)
         if cached is not None:
             return cached
@@ -5471,13 +5470,13 @@ def create_model(  # noqa: C901
             raise TypeError('Type parameters should be placed on typing.Generic, not BaseModel')
         if not hasattr(cls, '__parameters__'):
             raise TypeError(f'{cls} cannot be parametrized because it does not inherit from typing.Generic')
-        if not cls.__pydantic_generic_metadata__['parameters'] and typing.Generic not in cls.__bases__:
+        if not cls.__pydantic_generic_metadata__ and typing.Generic not in cls.__bases__:
             raise TypeError(f'{cls} is not a generic class')
 
         if not isinstance(typevar_values, tuple):
             typevar_values = (typevar_values,)
 
-        # For a model `class Model[T, U, V = int](BaseModel): ...` parametrized with `(str, bool)`,
+        # For a model `class Model(BaseModel): ...` parametrized with `(str, bool)`,
         # this gives us `{T: str, U: bool, V: int}`:
         typevars_map = _generics.map_generic_model_arguments(cls, typevar_values)
         # We also update the provided args to use defaults values (`(str, bool)` becomes `(str, bool, int)`):
@@ -5487,13 +5486,13 @@ def create_model(  # noqa: C901
             submodel = cls  # if arguments are equal to parameters it's the same object
             _generics.set_cached_generic_type(cls, typevar_values, submodel)
         else:
-            parent_args = cls.__pydantic_generic_metadata__['args']
+            parent_args = cls.__pydantic_generic_metadata__
             if not parent_args:
                 args = typevar_values
             else:
                 args = tuple(_generics.replace_types(arg, typevars_map) for arg in parent_args)
 
-            origin = cls.__pydantic_generic_metadata__['origin'] or cls
+            origin = cls.__pydantic_generic_metadata__ or cls
             model_name = origin.model_parametrized_name(args)
             params = tuple(
                 {param: None for param in _generics.iter_contained_typevars(typevars_map.values())}
@@ -5527,7 +5526,7 @@ def create_model(  # noqa: C901
 
         return submodel
 
-    def __copy__(self) -> Self:
+def __copy__(self) -> Self:
         """Returns a shallow copy of the model."""
         cls = type(self)
         m = cls.__new__(cls)
@@ -5546,13 +5545,13 @@ def create_model(  # noqa: C901
 
         return m
 
-    def __deepcopy__(self, memo: dict[int, Any] | None = None) -> Self:
+def __deepcopy__(self, memo: dict | None = None) -> Self:
         """Returns a deep copy of the model."""
         cls = type(self)
         m = cls.__new__(cls)
         _object_setattr(m, '__dict__', deepcopy(self.__dict__, memo=memo))
         _object_setattr(m, '__pydantic_extra__', deepcopy(self.__pydantic_extra__, memo=memo))
-        # This next line doesn't need a deepcopy because __pydantic_fields_set__ is a set[str],
+        # This next line doesn't need a deepcopy because __pydantic_fields_set__ is a set,
         # and attempting a deepcopy would be marginally slower.
         _object_setattr(m, '__pydantic_fields_set__', copy(self.__pydantic_fields_set__))
 
@@ -5567,7 +5566,7 @@ def create_model(  # noqa: C901
 
         return m
 
-    def __getstate__(self) -> dict[Any, Any]:
+def __getstate__(self) -> dict:
         private = self.__pydantic_private__
         if private:
             private = {k: v for k, v in private.items() if v is not PydanticUndefined}
@@ -5578,13 +5577,13 @@ def create_model(  # noqa: C901
             '__pydantic_private__': private,
         }
 
-    def __setstate__(self, state: dict[Any, Any]) -> None:
+def __setstate__(self, state: dict) -> None:
         _object_setattr(self, '__pydantic_fields_set__', state.get('__pydantic_fields_set__', {}))
         _object_setattr(self, '__pydantic_extra__', state.get('__pydantic_extra__', {}))
         _object_setattr(self, '__pydantic_private__', state.get('__pydantic_private__', {}))
         _object_setattr(self, '__dict__', state.get('__dict__', {}))
 
-    def __repr_args__(self) -> _repr.ReprArgs:
+def __repr_args__(self) -> _repr.ReprArgs:
         # Eagerly create the repr of computed fields, as this may trigger access of cached properties and as such
         # modify the instance's `__dict__`. If we don't do it now, it could happen when iterating over the `__dict__`
         # below if the instance happens to be referenced in a field, and would modify the `__dict__` size *during* iteration.
@@ -5612,7 +5611,7 @@ def create_model(  # noqa: C901
             yield from ((k, v) for k, v in pydantic_extra.items())
         yield from computed_fields_repr_args
 
-    def __fields__(self) -> dict[str, FieldInfo]:
+def __fields__(self) -> dict:
         warnings.warn(
             'The `__fields__` attribute is deprecated, use `model_fields` instead.',
             category=PydanticDeprecatedSince20,
@@ -5620,7 +5619,7 @@ def create_model(  # noqa: C901
         )
         return getattr(type(self), '__pydantic_fields__', {})
 
-    def __fields_set__(self) -> set[str]:
+def __fields_set__(self) -> set:
         warnings.warn(
             'The `__fields_set__` attribute is deprecated, use `model_fields_set` instead.',
             category=PydanticDeprecatedSince20,
@@ -5628,7 +5627,7 @@ def create_model(  # noqa: C901
         )
         return self.__pydantic_fields_set__
 
-    def dict(  # noqa: D102
+def dict(  # noqa: D102
         self,
         *,
         include: IncEx | None = None,
@@ -5637,7 +5636,7 @@ def create_model(  # noqa: C901
         exclude_unset: bool = False,
         exclude_defaults: bool = False,
         exclude_none: bool = False,
-    ) -> Dict[str, Any]:  # noqa UP006
+    ) -> Dict:  # noqa UP006
         warnings.warn(
             'The `dict` method is deprecated; use `model_dump` instead.',
             category=PydanticDeprecatedSince20,
@@ -5652,7 +5651,7 @@ def create_model(  # noqa: C901
             exclude_none=exclude_none,
         )
 
-    def json(  # noqa: D102
+def json(  # noqa: D102
         self,
         *,
         include: IncEx | None = None,
@@ -5661,8 +5660,8 @@ def create_model(  # noqa: C901
         exclude_unset: bool = False,
         exclude_defaults: bool = False,
         exclude_none: bool = False,
-        encoder: Callable[[Any], Any] | None = PydanticUndefined,  # type: ignore[assignment]
-        models_as_dict: bool = PydanticUndefined,  # type: ignore[assignment]
+        encoder: Callable, Any] | None = PydanticUndefined,  # type: ignore
+        models_as_dict: bool = PydanticUndefined,  # type: ignore
         **dumps_kwargs: Any,
     ) -> str:
         warnings.warn(
@@ -5685,7 +5684,7 @@ def create_model(  # noqa: C901
             exclude_none=exclude_none,
         )
 
-    def parse_obj(cls, obj: Any) -> Self:  # noqa: D102
+def parse_obj(cls, obj: Any) -> Self:  # noqa: D102
         warnings.warn(
             'The `parse_obj` method is deprecated; use `model_validate` instead.',
             category=PydanticDeprecatedSince20,
@@ -5693,7 +5692,7 @@ def create_model(  # noqa: C901
         )
         return cls.model_validate(obj)
 
-    def parse_raw(  # noqa: D102
+def parse_raw(  # noqa: D102
         cls,
         b: str | bytes,
         *,
@@ -5738,10 +5737,10 @@ def create_model(  # noqa: C901
                 'loc': ('__root__',),
                 'input': b,
             }
-            raise pydantic_core.ValidationError.from_exception_data(cls.__name__, [error])
+            raise pydantic_core.ValidationError.from_exception_data(cls.__name__, )
         return cls.model_validate(obj)
 
-    def parse_file(  # noqa: D102
+def parse_file(  # noqa: D102
         cls,
         path: str | Path,
         *,
@@ -5767,10 +5766,10 @@ def create_model(  # noqa: C901
         )
         return cls.parse_obj(obj)
 
-    def from_orm(cls, obj: Any) -> Self:  # noqa: D102
+def from_orm(cls, obj: Any) -> Self:  # noqa: D102
         warnings.warn(
             'The `from_orm` method is deprecated; set '
-            "`model_config['from_attributes']=True` and use `model_validate` instead.",
+            "`model_config=True` and use `model_validate` instead.",
             category=PydanticDeprecatedSince20,
             stacklevel=2,
         )
@@ -5780,7 +5779,7 @@ def create_model(  # noqa: C901
             )
         return cls.model_validate(obj)
 
-    def construct(cls, _fields_set: set[str] | None = None, **values: Any) -> Self:  # noqa: D102
+def construct(cls, _fields_set: set | None = None, **values: Any) -> Self:  # noqa: D102
         warnings.warn(
             'The `construct` method is deprecated; use `model_construct` instead.',
             category=PydanticDeprecatedSince20,
@@ -5788,12 +5787,12 @@ def create_model(  # noqa: C901
         )
         return cls.model_construct(_fields_set=_fields_set, **values)
 
-    def copy(
+def copy(
         self,
         *,
         include: AbstractSetIntStr | MappingIntStrAny | None = None,
         exclude: AbstractSetIntStr | MappingIntStrAny | None = None,
-        update: Dict[str, Any] | None = None,  # noqa UP006
+        update: Dict | None = None,  # noqa UP006
         deep: bool = False,
     ) -> Self:  # pragma: no cover
         """Returns a copy of the model.
@@ -5838,7 +5837,7 @@ def create_model(  # noqa: C901
             private = {k: v for k, v in self.__pydantic_private__.items() if v is not PydanticUndefined}
 
         if self.__pydantic_extra__ is None:
-            extra: dict[str, Any] | None = None
+            extra: dict | None = None
         else:
             extra = self.__pydantic_extra__.copy()
             for k in list(self.__pydantic_extra__):
@@ -5846,7 +5845,7 @@ def create_model(  # noqa: C901
                     extra.pop(k)
             for k in list(values):
                 if k in self.__pydantic_extra__:  # k must have come from extra
-                    extra[k] = values.pop(k)
+                    extra = values.pop(k)
 
         # new `__pydantic_fields_set__` can have unset optional fields with a set value in `update` kwarg
         if update:
@@ -5860,9 +5859,9 @@ def create_model(  # noqa: C901
 
         return copy_internals._copy_and_set_values(self, values, fields_set, extra, private, deep=deep)
 
-    def schema(  # noqa: D102
+def schema(  # noqa: D102
         cls, by_alias: bool = True, ref_template: str = DEFAULT_REF_TEMPLATE
-    ) -> Dict[str, Any]:  # noqa UP006
+    ) -> Dict:  # noqa UP006
         warnings.warn(
             'The `schema` method is deprecated; use `model_json_schema` instead.',
             category=PydanticDeprecatedSince20,
@@ -5870,7 +5869,7 @@ def create_model(  # noqa: C901
         )
         return cls.model_json_schema(by_alias=by_alias, ref_template=ref_template)
 
-    def schema_json(  # noqa: D102
+def schema_json(  # noqa: D102
         cls, *, by_alias: bool = True, ref_template: str = DEFAULT_REF_TEMPLATE, **dumps_kwargs: Any
     ) -> str:  # pragma: no cover
         warnings.warn(
@@ -5888,7 +5887,7 @@ def create_model(  # noqa: C901
             **dumps_kwargs,
         )
 
-    def validate(cls, value: Any) -> Self:  # noqa: D102
+def validate(cls, value: Any) -> Self:  # noqa: D102
         warnings.warn(
             'The `validate` method is deprecated; use `model_validate` instead.',
             category=PydanticDeprecatedSince20,
@@ -5896,7 +5895,7 @@ def create_model(  # noqa: C901
         )
         return cls.model_validate(value)
 
-    def update_forward_refs(cls, **localns: Any) -> None:  # noqa: D102
+def update_forward_refs(cls, **localns: Any) -> None:  # noqa: D102
         warnings.warn(
             'The `update_forward_refs` method is deprecated; use `model_rebuild` instead.',
             category=PydanticDeprecatedSince20,
@@ -5906,7 +5905,7 @@ def create_model(  # noqa: C901
             raise TypeError('`localns` arguments are not longer accepted.')
         cls.model_rebuild(force=True)
 
-    def _iter(self, *args: Any, **kwargs: Any) -> Any:
+def _iter(self, *args: Any, **kwargs: Any) -> Any:
         warnings.warn(
             'The private method `_iter` will be removed and should no longer be used.',
             category=PydanticDeprecatedSince20,
@@ -5916,7 +5915,7 @@ def create_model(  # noqa: C901
 
         return copy_internals._iter(self, *args, **kwargs)
 
-    def _copy_and_set_values(self, *args: Any, **kwargs: Any) -> Any:
+def _copy_and_set_values(self, *args: Any, **kwargs: Any) -> Any:
         warnings.warn(
             'The private method `_copy_and_set_values` will be removed and should no longer be used.',
             category=PydanticDeprecatedSince20,
@@ -5926,7 +5925,7 @@ def create_model(  # noqa: C901
 
         return copy_internals._copy_and_set_values(self, *args, **kwargs)
 
-    def _get_value(cls, *args: Any, **kwargs: Any) -> Any:
+def _get_value(cls, *args: Any, **kwargs: Any) -> Any:
         warnings.warn(
             'The private method `_get_value` will be removed and should no longer be used.',
             category=PydanticDeprecatedSince20,
@@ -5936,7 +5935,7 @@ def create_model(  # noqa: C901
 
         return copy_internals._get_value(cls, *args, **kwargs)
 
-    def _calculate_keys(self, *args: Any, **kwargs: Any) -> Any:
+def _calculate_keys(self, *args: Any, **kwargs: Any) -> Any:
         warnings.warn(
             'The private method `_calculate_keys` will be removed and should no longer be used.',
             category=PydanticDeprecatedSince20,
@@ -5952,9 +5951,9 @@ def create_model(  # noqa: C901
             # if None is returned from _setattr_handler, the attribute was set directly
             elif (setattr_handler := self._setattr_handler(name, value)) is not None:
                 setattr_handler(self, name, value)  # call here to not memo on possibly unknown fields
-                self.__pydantic_setattr_handlers__[name] = setattr_handler  # memoize the handler for faster access
+                self.__pydantic_setattr_handlers__ = setattr_handler  # memoize the handler for faster access
 
-        def _setattr_handler(self, name: str, value: Any) -> Callable[[BaseModel, str, Any], None] | None:
+        def _setattr_handler(self, name: str, value: Any) -> Callable, None] | None:
             """Get a handler for setting an attribute on the model instance.
 
             Returns:
@@ -5973,7 +5972,7 @@ def create_model(  # noqa: C901
                     if hasattr(attribute, '__set__'):
                         return lambda model, _name, val: attribute.__set__(model, val)
                     else:
-                        return _SIMPLE_SETATTR_HANDLERS['private']
+                        return _SIMPLE_SETATTR_HANDLERS
                 else:
                     _object_setattr(self, name, value)
                     return None  # Can not return memoized handler with possibly freeform attr names
@@ -5984,7 +5983,7 @@ def create_model(  # noqa: C901
             # (such as `cached_property`), it isn't obvious though. `cached_property` caches the value
             # to the instance's `__dict__`, but other non-data descriptors might do things differently.
             if isinstance(attr, cached_property):
-                return _SIMPLE_SETATTR_HANDLERS['cached_property']
+                return _SIMPLE_SETATTR_HANDLERS
 
             _check_frozen(cls, name, value)
 
@@ -5993,33 +5992,33 @@ def create_model(  # noqa: C901
             if isinstance(attr, property):
                 return lambda model, _name, val: attr.__set__(model, val)
             elif cls.model_config.get('validate_assignment'):
-                return _SIMPLE_SETATTR_HANDLERS['validate_assignment']
+                return _SIMPLE_SETATTR_HANDLERS
             elif name not in cls.__pydantic_fields__:
                 if cls.model_config.get('extra') != 'allow':
                     # TODO - matching error
                     raise ValueError(f'"{cls.__name__}" object has no field "{name}"')
                 elif attr is None:
                     # attribute does not exist, so put it in extra
-                    self.__pydantic_extra__[name] = value
+                    self.__pydantic_extra__ = value
                     return None  # Can not return memoized handler with possibly freeform attr names
                 else:
                     # attribute _does_ exist, and was not in extra, so update it
-                    return _SIMPLE_SETATTR_HANDLERS['extra_known']
+                    return _SIMPLE_SETATTR_HANDLERS
             else:
-                return _SIMPLE_SETATTR_HANDLERS['model_field']
+                return _SIMPLE_SETATTR_HANDLERS
 
         def __delattr__(self, item: str) -> Any:
             cls = self.__class__
 
             if item in self.__private_attributes__:
-                attribute = self.__private_attributes__[item]
+                attribute = self.__private_attributes__
                 if hasattr(attribute, '__delete__'):
                     attribute.__delete__(self)  # type: ignore
                     return
 
                 try:
                     # Note: self.__pydantic_private__ cannot be None if self.__private_attributes__ has items
-                    del self.__pydantic_private__[item]  # type: ignore
+                    del self.__pydantic_private__  # type: ignore
                     return
                 except KeyError as exc:
                     raise AttributeError(f'{cls.__name__!r} object has no attribute {item!r}') from exc
@@ -6034,7 +6033,7 @@ def create_model(  # noqa: C901
             if item in self.__pydantic_fields__:
                 object.__delattr__(self, item)
             elif self.__pydantic_extra__ is not None and item in self.__pydantic_extra__:
-                del self.__pydantic_extra__[item]
+                del self.__pydantic_extra__
             else:
                 try:
                     object.__delattr__(self, item)
@@ -6044,12 +6043,11 @@ def create_model(  # noqa: C901
         def __replace__(self, **changes: Any) -> Self:
             return self.model_copy(update=changes)
 
-        def __init_subclass__(cls, **kwargs: Unpack[ConfigDict]):
+        def __init_subclass__(cls, **kwargs: Unpack):
             """This signature is included purely to help type-checkers check arguments to class declaration, which
             provides a way to conveniently set model_config key/value pairs.
 
             ```python
-            from pydantic import BaseModel
 
             class MyModel(BaseModel, extra='allow'): ...
             ```
@@ -6067,30 +6065,30 @@ def create_model(  # noqa: C901
             """
 # --- Merged from main.py ---
 
-def validate_custom_root_type(fields: Dict[str, ModelField]) -> None:
+def validate_custom_root_type(fields: Dict) -> None:
     if len(fields) > 1:
         raise ValueError(f'{ROOT_KEY} cannot be mixed with other fields')
 
-def generate_hash_function(frozen: bool) -> Optional[Callable[[Any], int]]:
-    def hash_function(self_: Any) -> int:
+def generate_hash_function(frozen: bool) -> Optional, int]]:
+def hash_function(self_: Any) -> int:
         return hash(self_.__class__) + hash(tuple(self_.__dict__.values()))
 
     return hash_function if frozen else None
 
 class ModelMetaclass(ABCMeta):
     @no_type_check  # noqa C901
-    def __new__(mcs, name, bases, namespace, **kwargs):  # noqa C901
-        fields: Dict[str, ModelField] = {}
+def __new__(mcs, name, bases, namespace, **kwargs):  # noqa C901
+        fields: Dict = {}
         config = BaseConfig
         validators: 'ValidatorListDict' = {}
 
-        pre_root_validators, post_root_validators = [], []
-        private_attributes: Dict[str, ModelPrivateAttr] = {}
-        base_private_attributes: Dict[str, ModelPrivateAttr] = {}
+        pre_root_validators, post_root_validators = , 
+        private_attributes: Dict = {}
+        base_private_attributes: Dict = {}
         slots: SetStr = namespace.get('__slots__', ())
         slots = {slots} if isinstance(slots, str) else set(slots)
         class_vars: SetStr = set()
-        hash_func: Optional[Callable[[Any], int]] = None
+        hash_func: Optional, int]] = None
 
         for base in reversed(bases):
             if _is_base_model_class_defined and issubclass(base, BaseModel) and base != BaseModel:
@@ -6153,7 +6151,7 @@ class ModelMetaclass(ABCMeta):
                         )
                     ):
                         continue
-                    fields[ann_name] = ModelField.infer(
+                    fields = ModelField.infer(
                         name=ann_name,
                         value=value,
                         annotation=ann_type,
@@ -6161,7 +6159,7 @@ class ModelMetaclass(ABCMeta):
                         config=config,
                     )
                 elif ann_name not in namespace and main.underscore_attrs_are_private:
-                    private_attributes[ann_name] = PrivateAttr()
+                    private_attributes = PrivateAttr()
 
             untouched_types = UNTOUCHED_TYPES + main.keep_untouched
             for var_name, value in namespace.items():
@@ -6172,9 +6170,9 @@ class ModelMetaclass(ABCMeta):
                             f'Private attributes "{var_name}" must not be a valid field name; '
                             f'Use sunder or dunder names, e. g. "_{var_name}" or "__{var_name}__"'
                         )
-                    private_attributes[var_name] = value
+                    private_attributes = value
                 elif main.underscore_attrs_are_private and is_valid_private_name(var_name) and can_be_changed:
-                    private_attributes[var_name] = PrivateAttr(default=value)
+                    private_attributes = PrivateAttr(default=value)
                 elif is_valid_field(var_name) and var_name not in annotations and can_be_changed:
                     validate_field_name(bases, var_name)
                     inferred = ModelField.infer(
@@ -6185,14 +6183,14 @@ class ModelMetaclass(ABCMeta):
                         config=config,
                     )
                     if var_name in fields:
-                        if lenient_issubclass(inferred.type_, fields[var_name].type_):
-                            inferred.type_ = fields[var_name].type_
+                        if lenient_issubclass(inferred.type_, fields.type_):
+                            inferred.type_ = fields.type_
                         else:
                             raise TypeError(
                                 f'The type of {name}.{var_name} differs from the new default value; '
                                 f'if you wish to change the type of this field, please use a type annotation'
                             )
-                    fields[var_name] = inferred
+                    fields = inferred
 
         _custom_root_type = ROOT_KEY in fields
         if _custom_root_type:
@@ -6226,7 +6224,7 @@ class ModelMetaclass(ABCMeta):
             ),
             '__post_root_validators__': unique_list(
                 post_root_validators + post_rv_new,
-                name_factory=lambda skip_on_failure_and_v: skip_on_failure_and_v[1].__name__,
+                name_factory=lambda skip_on_failure_and_v: skip_on_failure_and_v.__name__,
             ),
             '__schema_cache__': {},
             '__json_encoder__': staticmethod(json_encoder),
@@ -6260,7 +6258,7 @@ class ModelMetaclass(ABCMeta):
 
         return cls
 
-    def __instancecheck__(self, instance: Any) -> bool:
+def __instancecheck__(self, instance: Any) -> bool:
         """
         Avoid calling ABC _abc_subclasscheck unless we're pretty sure.
 
@@ -6269,13 +6267,13 @@ class ModelMetaclass(ABCMeta):
         return hasattr(instance, '__post_root_validators__') and super().__instancecheck__(instance)
 
 def validate_model(  # noqa: C901 (ignore complexity)
-    model: Type[BaseModel], input_data: 'DictStrAny', cls: 'ModelOrDc' = None
-) -> Tuple['DictStrAny', 'SetStr', Optional[ValidationError]]:
+    model: Type, input_data: 'DictStrAny', cls: 'ModelOrDc' = None
+) -> Tuple]:
     """
     validate data against a model.
     """
     values = {}
-    errors = []
+    errors = 
     # input_data names, possibly alias
     names_used = set()
     # field names, never aliases
@@ -6288,7 +6286,7 @@ def validate_model(  # noqa: C901 (ignore complexity)
         try:
             input_data = validator(cls_, input_data)
         except (ValueError, TypeError, AssertionError) as exc:
-            return {}, set(), ValidationError([ErrorWrapper(exc, loc=ROOT_KEY)], cls_)
+            return {}, set(), ValidationError(, cls_)
 
     for name, field in model.__fields__.items():
         value = input_data.get(field.alias, _missing)
@@ -6305,7 +6303,7 @@ def validate_model(  # noqa: C901 (ignore complexity)
             value = field.get_default()
 
             if not main.validate_all and not field.validate_always:
-                values[name] = value
+                values = value
                 continue
         else:
             fields_set.add(name)
@@ -6318,7 +6316,7 @@ def validate_model(  # noqa: C901 (ignore complexity)
         elif isinstance(errors_, list):
             errors.extend(errors_)
         else:
-            values[name] = v_
+            values = v_
 
     if check_extra:
         if isinstance(input_data, GetterDict):
@@ -6329,7 +6327,7 @@ def validate_model(  # noqa: C901 (ignore complexity)
             fields_set |= extra
             if main.extra is Extra.allow:
                 for f in extra:
-                    values[f] = input_data[f]
+                    values = input_data
             else:
                 for f in sorted(extra):
                     errors.append(ErrorWrapper(ExtraError(), loc=f))
@@ -6347,21 +6345,21 @@ def validate_model(  # noqa: C901 (ignore complexity)
     else:
         return values, fields_set, None
 
-    def hash_function(self_: Any) -> int:
+def hash_function(self_: Any) -> int:
         return hash(self_.__class__) + hash(tuple(self_.__dict__.values()))
 
-    def __new__(mcs, name, bases, namespace, **kwargs):  # noqa C901
-        fields: Dict[str, ModelField] = {}
+def __new__(mcs, name, bases, namespace, **kwargs):  # noqa C901
+        fields: Dict = {}
         config = BaseConfig
         validators: 'ValidatorListDict' = {}
 
-        pre_root_validators, post_root_validators = [], []
-        private_attributes: Dict[str, ModelPrivateAttr] = {}
-        base_private_attributes: Dict[str, ModelPrivateAttr] = {}
+        pre_root_validators, post_root_validators = , 
+        private_attributes: Dict = {}
+        base_private_attributes: Dict = {}
         slots: SetStr = namespace.get('__slots__', ())
         slots = {slots} if isinstance(slots, str) else set(slots)
         class_vars: SetStr = set()
-        hash_func: Optional[Callable[[Any], int]] = None
+        hash_func: Optional, int]] = None
 
         for base in reversed(bases):
             if _is_base_model_class_defined and issubclass(base, BaseModel) and base != BaseModel:
@@ -6424,7 +6422,7 @@ def validate_model(  # noqa: C901 (ignore complexity)
                         )
                     ):
                         continue
-                    fields[ann_name] = ModelField.infer(
+                    fields = ModelField.infer(
                         name=ann_name,
                         value=value,
                         annotation=ann_type,
@@ -6432,7 +6430,7 @@ def validate_model(  # noqa: C901 (ignore complexity)
                         config=config,
                     )
                 elif ann_name not in namespace and main.underscore_attrs_are_private:
-                    private_attributes[ann_name] = PrivateAttr()
+                    private_attributes = PrivateAttr()
 
             untouched_types = UNTOUCHED_TYPES + main.keep_untouched
             for var_name, value in namespace.items():
@@ -6443,9 +6441,9 @@ def validate_model(  # noqa: C901 (ignore complexity)
                             f'Private attributes "{var_name}" must not be a valid field name; '
                             f'Use sunder or dunder names, e. g. "_{var_name}" or "__{var_name}__"'
                         )
-                    private_attributes[var_name] = value
+                    private_attributes = value
                 elif main.underscore_attrs_are_private and is_valid_private_name(var_name) and can_be_changed:
-                    private_attributes[var_name] = PrivateAttr(default=value)
+                    private_attributes = PrivateAttr(default=value)
                 elif is_valid_field(var_name) and var_name not in annotations and can_be_changed:
                     validate_field_name(bases, var_name)
                     inferred = ModelField.infer(
@@ -6456,14 +6454,14 @@ def validate_model(  # noqa: C901 (ignore complexity)
                         config=config,
                     )
                     if var_name in fields:
-                        if lenient_issubclass(inferred.type_, fields[var_name].type_):
-                            inferred.type_ = fields[var_name].type_
+                        if lenient_issubclass(inferred.type_, fields.type_):
+                            inferred.type_ = fields.type_
                         else:
                             raise TypeError(
                                 f'The type of {name}.{var_name} differs from the new default value; '
                                 f'if you wish to change the type of this field, please use a type annotation'
                             )
-                    fields[var_name] = inferred
+                    fields = inferred
 
         _custom_root_type = ROOT_KEY in fields
         if _custom_root_type:
@@ -6497,7 +6495,7 @@ def validate_model(  # noqa: C901 (ignore complexity)
             ),
             '__post_root_validators__': unique_list(
                 post_root_validators + post_rv_new,
-                name_factory=lambda skip_on_failure_and_v: skip_on_failure_and_v[1].__name__,
+                name_factory=lambda skip_on_failure_and_v: skip_on_failure_and_v.__name__,
             ),
             '__schema_cache__': {},
             '__json_encoder__': staticmethod(json_encoder),
@@ -6531,7 +6529,7 @@ def validate_model(  # noqa: C901 (ignore complexity)
 
         return cls
 
-    def __instancecheck__(self, instance: Any) -> bool:
+def __instancecheck__(self, instance: Any) -> bool:
         """
         Avoid calling ABC _abc_subclasscheck unless we're pretty sure.
 
@@ -6539,31 +6537,31 @@ def validate_model(  # noqa: C901 (ignore complexity)
         """
         return hasattr(instance, '__post_root_validators__') and super().__instancecheck__(instance)
 
-    def _init_private_attributes(self) -> None:
+def _init_private_attributes(self) -> None:
         for name, private_attr in self.__private_attributes__.items():
             default = private_attr.get_default()
             if default is not Undefined:
                 object_setattr(self, name, default)
 
-    def _enforce_dict_if_root(cls, obj: Any) -> Any:
+def _enforce_dict_if_root(cls, obj: Any) -> Any:
         if cls.__custom_root_type__ and (
             not (isinstance(obj, dict) and obj.keys() == {ROOT_KEY})
             and not (isinstance(obj, BaseModel) and obj.__fields__.keys() == {ROOT_KEY})
-            or cls.__fields__[ROOT_KEY].shape in MAPPING_LIKE_SHAPES
+            or cls.__fields__.shape in MAPPING_LIKE_SHAPES
         ):
             return {ROOT_KEY: obj}
         else:
             return obj
 
-    def __get_validators__(cls) -> 'CallableGenerator':
+def __get_validators__(cls) -> 'CallableGenerator':
         yield cls.validate
 
-    def _decompose_class(cls: Type['Model'], obj: Any) -> GetterDict:
+def _decompose_class(cls: Type, obj: Any) -> GetterDict:
         if isinstance(obj, GetterDict):
             return obj
         return cls.__config__.getter_dict(obj)
 
-    def __try_update_forward_refs__(cls, **localns: Any) -> None:
+def __try_update_forward_refs__(cls, **localns: Any) -> None:
         """
         Same as update_forward_refs but will not raise exception
         when forward references are not defined.
@@ -6583,12 +6581,12 @@ def _raise_graceful_exit() -> None:
 class BaseSite(ABC):
     __slots__ = ("_runner", "_ssl_context", "_backlog", "_server")
 
-    def __init__(
+def __init__(
         self,
         runner: "BaseRunner",
         *,
         shutdown_timeout: float = 60.0,
-        ssl_context: Optional[SSLContext] = None,
+        ssl_context: Optional = None,
         backlog: int = 128,
     ) -> None:
         if runner.server is None:
@@ -6600,11 +6598,11 @@ class BaseSite(ABC):
         self._runner = runner
         self._ssl_context = ssl_context
         self._backlog = backlog
-        self._server: Optional[asyncio.AbstractServer] = None
+        self._server: Optional = None
 
     @property
     @abstractmethod
-    def name(self) -> str:
+def name(self) -> str:
         pass  # pragma: no cover
 
     @abstractmethod
@@ -6621,17 +6619,17 @@ class BaseSite(ABC):
 class TCPSite(BaseSite):
     __slots__ = ("_host", "_port", "_reuse_address", "_reuse_port")
 
-    def __init__(
+def __init__(
         self,
         runner: "BaseRunner",
-        host: Optional[str] = None,
-        port: Optional[int] = None,
+        host: Optional = None,
+        port: Optional = None,
         *,
         shutdown_timeout: float = 60.0,
-        ssl_context: Optional[SSLContext] = None,
+        ssl_context: Optional = None,
         backlog: int = 128,
-        reuse_address: Optional[bool] = None,
-        reuse_port: Optional[bool] = None,
+        reuse_address: Optional = None,
+        reuse_port: Optional = None,
     ) -> None:
         super().__init__(
             runner,
@@ -6647,7 +6645,7 @@ class TCPSite(BaseSite):
         self._reuse_port = reuse_port
 
     @property
-    def name(self) -> str:
+def name(self) -> str:
         scheme = "https" if self._ssl_context else "http"
         host = "0.0.0.0" if not self._host else self._host
         return str(URL.build(scheme=scheme, host=host, port=self._port))
@@ -6670,13 +6668,13 @@ class TCPSite(BaseSite):
 class UnixSite(BaseSite):
     __slots__ = ("_path",)
 
-    def __init__(
+def __init__(
         self,
         runner: "BaseRunner",
         path: PathLike,
         *,
         shutdown_timeout: float = 60.0,
-        ssl_context: Optional[SSLContext] = None,
+        ssl_context: Optional = None,
         backlog: int = 128,
     ) -> None:
         super().__init__(
@@ -6688,7 +6686,7 @@ class UnixSite(BaseSite):
         self._path = path
 
     @property
-    def name(self) -> str:
+def name(self) -> str:
         scheme = "https" if self._ssl_context else "http"
         return f"{scheme}://unix:{self._path}:"
 
@@ -6707,12 +6705,12 @@ class UnixSite(BaseSite):
 class NamedPipeSite(BaseSite):
     __slots__ = ("_path",)
 
-    def __init__(
+def __init__(
         self, runner: "BaseRunner", path: str, *, shutdown_timeout: float = 60.0
     ) -> None:
         loop = asyncio.get_event_loop()
         if not isinstance(
-            loop, asyncio.ProactorEventLoop  # type: ignore[attr-defined]
+            loop, asyncio.ProactorEventLoop  # type: ignore
         ):
             raise RuntimeError(
                 "Named Pipes only available in proactor loop under windows"
@@ -6721,7 +6719,7 @@ class NamedPipeSite(BaseSite):
         self._path = path
 
     @property
-    def name(self) -> str:
+def name(self) -> str:
         return self._path
 
     async def start(self) -> None:
@@ -6729,21 +6727,21 @@ class NamedPipeSite(BaseSite):
         loop = asyncio.get_event_loop()
         server = self._runner.server
         assert server is not None
-        _server = await loop.start_serving_pipe(  # type: ignore[attr-defined]
+        _server = await loop.start_serving_pipe(  # type: ignore
             server, self._path
         )
-        self._server = _server[0]
+        self._server = _server
 
 class SockSite(BaseSite):
     __slots__ = ("_sock", "_name")
 
-    def __init__(
+def __init__(
         self,
         runner: "BaseRunner",
         sock: socket.socket,
         *,
         shutdown_timeout: float = 60.0,
-        ssl_context: Optional[SSLContext] = None,
+        ssl_context: Optional = None,
         backlog: int = 128,
     ) -> None:
         super().__init__(
@@ -6757,12 +6755,12 @@ class SockSite(BaseSite):
         if hasattr(socket, "AF_UNIX") and sock.family == socket.AF_UNIX:
             name = f"{scheme}://unix:{sock.getsockname()}:"
         else:
-            host, port = sock.getsockname()[:2]
+            host, port = sock.getsockname()
             name = str(URL.build(scheme=scheme, host=host, port=port))
         self._name = name
 
     @property
-    def name(self) -> str:
+def name(self) -> str:
         return self._name
 
     async def start(self) -> None:
@@ -6777,7 +6775,7 @@ class SockSite(BaseSite):
 class BaseRunner(ABC):
     __slots__ = ("_handle_signals", "_kwargs", "_server", "_sites", "_shutdown_timeout")
 
-    def __init__(
+def __init__(
         self,
         *,
         handle_signals: bool = False,
@@ -6786,28 +6784,28 @@ class BaseRunner(ABC):
     ) -> None:
         self._handle_signals = handle_signals
         self._kwargs = kwargs
-        self._server: Optional[Server] = None
-        self._sites: List[BaseSite] = []
+        self._server: Optional = None
+        self._sites: List = 
         self._shutdown_timeout = shutdown_timeout
 
     @property
-    def server(self) -> Optional[Server]:
+def server(self) -> Optional:
         return self._server
 
     @property
-    def addresses(self) -> List[Any]:
-        ret: List[Any] = []
+def addresses(self) -> List:
+        ret: List = 
         for site in self._sites:
             server = site._server
             if server is not None:
-                sockets = server.sockets  # type: ignore[attr-defined]
+                sockets = server.sockets  # type: ignore
                 if sockets is not None:
                     for sock in sockets:
                         ret.append(sock.getsockname())
         return ret
 
     @property
-    def sites(self) -> Set[BaseSite]:
+def sites(self) -> Set:
         return set(self._sites)
 
     async def setup(self) -> None:
@@ -6862,16 +6860,16 @@ class BaseRunner(ABC):
     async def _cleanup_server(self) -> None:
         pass  # pragma: no cover
 
-    def _reg_site(self, site: BaseSite) -> None:
+def _reg_site(self, site: BaseSite) -> None:
         if site in self._sites:
             raise RuntimeError(f"Site {site} is already registered in runner {self}")
         self._sites.append(site)
 
-    def _check_site(self, site: BaseSite) -> None:
+def _check_site(self, site: BaseSite) -> None:
         if site not in self._sites:
             raise RuntimeError(f"Site {site} is not registered in runner {self}")
 
-    def _unreg_site(self, site: BaseSite) -> None:
+def _unreg_site(self, site: BaseSite) -> None:
         if site not in self._sites:
             raise RuntimeError(f"Site {site} is not registered in runner {self}")
         self._sites.remove(site)
@@ -6881,7 +6879,7 @@ class ServerRunner(BaseRunner):
 
     __slots__ = ("_web_server",)
 
-    def __init__(
+def __init__(
         self, web_server: Server, *, handle_signals: bool = False, **kwargs: Any
     ) -> None:
         super().__init__(handle_signals=handle_signals, **kwargs)
@@ -6901,7 +6899,7 @@ class AppRunner(BaseRunner):
 
     __slots__ = ("_app",)
 
-    def __init__(
+def __init__(
         self, app: Application, *, handle_signals: bool = False, **kwargs: Any
     ) -> None:
         super().__init__(handle_signals=handle_signals, **kwargs)
@@ -6913,7 +6911,7 @@ class AppRunner(BaseRunner):
         self._app = app
 
     @property
-    def app(self) -> Application:
+def app(self) -> Application:
         return self._app
 
     async def shutdown(self) -> None:
@@ -6931,56 +6929,56 @@ class AppRunner(BaseRunner):
     async def _cleanup_server(self) -> None:
         await self._app.cleanup()
 
-    def name(self) -> str:
+def name(self) -> str:
         pass  # pragma: no cover
 
-    def name(self) -> str:
+def name(self) -> str:
         scheme = "https" if self._ssl_context else "http"
         host = "0.0.0.0" if not self._host else self._host
         return str(URL.build(scheme=scheme, host=host, port=self._port))
 
-    def name(self) -> str:
+def name(self) -> str:
         scheme = "https" if self._ssl_context else "http"
         return f"{scheme}://unix:{self._path}:"
 
-    def name(self) -> str:
+def name(self) -> str:
         return self._path
 
-    def name(self) -> str:
+def name(self) -> str:
         return self._name
 
-    def server(self) -> Optional[Server]:
+def server(self) -> Optional:
         return self._server
 
-    def addresses(self) -> List[Any]:
-        ret: List[Any] = []
+def addresses(self) -> List:
+        ret: List = 
         for site in self._sites:
             server = site._server
             if server is not None:
-                sockets = server.sockets  # type: ignore[attr-defined]
+                sockets = server.sockets  # type: ignore
                 if sockets is not None:
                     for sock in sockets:
                         ret.append(sock.getsockname())
         return ret
 
-    def sites(self) -> Set[BaseSite]:
+def sites(self) -> Set:
         return set(self._sites)
 
-    def _reg_site(self, site: BaseSite) -> None:
+def _reg_site(self, site: BaseSite) -> None:
         if site in self._sites:
             raise RuntimeError(f"Site {site} is already registered in runner {self}")
         self._sites.append(site)
 
-    def _check_site(self, site: BaseSite) -> None:
+def _check_site(self, site: BaseSite) -> None:
         if site not in self._sites:
             raise RuntimeError(f"Site {site} is not registered in runner {self}")
 
-    def _unreg_site(self, site: BaseSite) -> None:
+def _unreg_site(self, site: BaseSite) -> None:
         if site not in self._sites:
             raise RuntimeError(f"Site {site} is not registered in runner {self}")
         self._sites.remove(site)
 
-    def app(self) -> Application:
+def app(self) -> Application:
         return self._app
 # --- Merged from main.py ---
 
@@ -6993,7 +6991,7 @@ class KeyAPI(LazyBackend):
     #
     # Proxy method calls to the backends
     #
-    def ecdsa_sign(self, message_hash: bytes, private_key: _PrivateKey) -> _Signature:
+def ecdsa_sign(self, message_hash: bytes, private_key: _PrivateKey) -> _Signature:
         validate_message_hash(message_hash)
         if not isinstance(private_key, PrivateKey):
             raise ValidationError(
@@ -7008,7 +7006,7 @@ class KeyAPI(LazyBackend):
             )
         return signature
 
-    def ecdsa_sign_non_recoverable(
+def ecdsa_sign_non_recoverable(
         self, message_hash: bytes, private_key: _PrivateKey
     ) -> _NonRecoverableSignature:
         validate_message_hash(message_hash)
@@ -7025,7 +7023,7 @@ class KeyAPI(LazyBackend):
             )
         return signature
 
-    def ecdsa_verify(
+def ecdsa_verify(
         self, message_hash: bytes, signature: BaseSignature, public_key: _PublicKey
     ) -> bool:
         validate_message_hash(message_hash)
@@ -7040,7 +7038,7 @@ class KeyAPI(LazyBackend):
             )
         return self.backend.ecdsa_verify(message_hash, signature, public_key)
 
-    def ecdsa_recover(self, message_hash: bytes, signature: _Signature) -> _PublicKey:
+def ecdsa_recover(self, message_hash: bytes, signature: _Signature) -> _PublicKey:
         validate_message_hash(message_hash)
         if not isinstance(signature, Signature):
             raise ValidationError(
@@ -7054,7 +7052,7 @@ class KeyAPI(LazyBackend):
             )
         return public_key
 
-    def private_key_to_public_key(self, private_key: _PrivateKey) -> _PublicKey:
+def private_key_to_public_key(self, private_key: _PrivateKey) -> _PublicKey:
         if not isinstance(private_key, PrivateKey):
             raise ValidationError(
                 "The `private_key` must be an instance of "
@@ -7068,7 +7066,7 @@ class KeyAPI(LazyBackend):
             )
         return public_key
 
-    def ecdsa_sign(self, message_hash: bytes, private_key: _PrivateKey) -> _Signature:
+def ecdsa_sign(self, message_hash: bytes, private_key: _PrivateKey) -> _Signature:
         validate_message_hash(message_hash)
         if not isinstance(private_key, PrivateKey):
             raise ValidationError(
@@ -7083,7 +7081,7 @@ class KeyAPI(LazyBackend):
             )
         return signature
 
-    def ecdsa_sign_non_recoverable(
+def ecdsa_sign_non_recoverable(
         self, message_hash: bytes, private_key: _PrivateKey
     ) -> _NonRecoverableSignature:
         validate_message_hash(message_hash)
@@ -7100,7 +7098,7 @@ class KeyAPI(LazyBackend):
             )
         return signature
 
-    def ecdsa_verify(
+def ecdsa_verify(
         self, message_hash: bytes, signature: BaseSignature, public_key: _PublicKey
     ) -> bool:
         validate_message_hash(message_hash)
@@ -7115,7 +7113,7 @@ class KeyAPI(LazyBackend):
             )
         return self.backend.ecdsa_verify(message_hash, signature, public_key)
 
-    def ecdsa_recover(self, message_hash: bytes, signature: _Signature) -> _PublicKey:
+def ecdsa_recover(self, message_hash: bytes, signature: _Signature) -> _PublicKey:
         validate_message_hash(message_hash)
         if not isinstance(signature, Signature):
             raise ValidationError(
@@ -7129,7 +7127,7 @@ class KeyAPI(LazyBackend):
             )
         return public_key
 
-    def private_key_to_public_key(self, private_key: _PrivateKey) -> _PublicKey:
+def private_key_to_public_key(self, private_key: _PrivateKey) -> _PublicKey:
         if not isinstance(private_key, PrivateKey):
             raise ValidationError(
                 "The `private_key` must be an instance of "
@@ -7145,47 +7143,47 @@ class KeyAPI(LazyBackend):
 # --- Merged from main.py ---
 
 class NativeECCBackend(BaseECCBackend):
-    def ecdsa_sign(self, msg_hash: bytes, private_key: PrivateKey) -> Signature:
+def ecdsa_sign(self, msg_hash: bytes, private_key: PrivateKey) -> Signature:
         signature_vrs = ecdsa_raw_sign(msg_hash, private_key.to_bytes())
         signature = Signature(vrs=signature_vrs, backend=self)
         return signature
 
-    def ecdsa_sign_non_recoverable(
+def ecdsa_sign_non_recoverable(
         self, msg_hash: bytes, private_key: PrivateKey
     ) -> NonRecoverableSignature:
         _, signature_r, signature_s = ecdsa_raw_sign(msg_hash, private_key.to_bytes())
         signature = NonRecoverableSignature(rs=(signature_r, signature_s), backend=self)
         return signature
 
-    def ecdsa_verify(
+def ecdsa_verify(
         self, msg_hash: bytes, signature: BaseSignature, public_key: PublicKey
     ) -> bool:
         return ecdsa_raw_verify(msg_hash, signature.rs, public_key.to_bytes())
 
-    def ecdsa_recover(self, msg_hash: bytes, signature: Signature) -> PublicKey:
+def ecdsa_recover(self, msg_hash: bytes, signature: Signature) -> PublicKey:
         public_key_bytes = ecdsa_raw_recover(msg_hash, signature.vrs)
         public_key = PublicKey(public_key_bytes, backend=self)
         return public_key
 
-    def private_key_to_public_key(self, private_key: PrivateKey) -> PublicKey:
+def private_key_to_public_key(self, private_key: PrivateKey) -> PublicKey:
         public_key_bytes = private_key_to_public_key(private_key.to_bytes())
         public_key = PublicKey(public_key_bytes, backend=self)
         return public_key
 
-    def decompress_public_key_bytes(self, compressed_public_key_bytes: bytes) -> bytes:
+def decompress_public_key_bytes(self, compressed_public_key_bytes: bytes) -> bytes:
         return decompress_public_key(compressed_public_key_bytes)
 
-    def compress_public_key_bytes(self, uncompressed_public_key_bytes: bytes) -> bytes:
+def compress_public_key_bytes(self, uncompressed_public_key_bytes: bytes) -> bytes:
         return compress_public_key(uncompressed_public_key_bytes)
 
-    def decompress_public_key_bytes(self, compressed_public_key_bytes: bytes) -> bytes:
+def decompress_public_key_bytes(self, compressed_public_key_bytes: bytes) -> bytes:
         return decompress_public_key(compressed_public_key_bytes)
 
-    def compress_public_key_bytes(self, uncompressed_public_key_bytes: bytes) -> bytes:
+def compress_public_key_bytes(self, uncompressed_public_key_bytes: bytes) -> bytes:
         return compress_public_key(uncompressed_public_key_bytes)
 # --- Merged from main.py ---
 
-def with_warn_for_invalid_lines(mappings: Iterator[Binding]) -> Iterator[Binding]:
+def with_warn_for_invalid_lines(mappings: Iterator) -> Iterator:
     for mapping in mappings:
         if mapping.error:
             logger.warning(
@@ -7195,25 +7193,25 @@ def with_warn_for_invalid_lines(mappings: Iterator[Binding]) -> Iterator[Binding
         yield mapping
 
 class DotEnv:
-    def __init__(
+def __init__(
         self,
-        dotenv_path: Optional[StrPath],
-        stream: Optional[IO[str]] = None,
+        dotenv_path: Optional,
+        stream: Optional] = None,
         verbose: bool = False,
-        encoding: Optional[str] = None,
+        encoding: Optional = None,
         interpolate: bool = True,
         override: bool = True,
     ) -> None:
-        self.dotenv_path: Optional[StrPath] = dotenv_path
-        self.stream: Optional[IO[str]] = stream
-        self._dict: Optional[Dict[str, Optional[str]]] = None
+        self.dotenv_path: Optional = dotenv_path
+        self.stream: Optional] = stream
+        self._dict: Optional]] = None
         self.verbose: bool = verbose
-        self.encoding: Optional[str] = encoding
+        self.encoding: Optional = encoding
         self.interpolate: bool = interpolate
         self.override: bool = override
 
     @contextmanager
-    def _get_stream(self) -> Iterator[IO[str]]:
+def _get_stream(self) -> Iterator]:
         if self.dotenv_path and os.path.isfile(self.dotenv_path):
             with open(self.dotenv_path, encoding=self.encoding) as stream:
                 yield stream
@@ -7227,7 +7225,7 @@ class DotEnv:
                 )
             yield io.StringIO('')
 
-    def dict(self) -> Dict[str, Optional[str]]:
+def dict(self) -> Dict]:
         """Return dotenv as dict"""
         if self._dict:
             return self._dict
@@ -7241,13 +7239,13 @@ class DotEnv:
 
         return self._dict
 
-    def parse(self) -> Iterator[Tuple[str, Optional[str]]]:
+def parse(self) -> Iterator]]:
         with self._get_stream() as stream:
             for mapping in with_warn_for_invalid_lines(parse_stream(stream)):
                 if mapping.key is not None:
                     yield mapping.key, mapping.value
 
-    def set_as_environment_variables(self) -> bool:
+def set_as_environment_variables(self) -> bool:
         """
         Load the current dotenv as system environment variable.
         """
@@ -7258,17 +7256,17 @@ class DotEnv:
             if k in os.environ and not self.override:
                 continue
             if v is not None:
-                os.environ[k] = v
+                os.environ = v
 
         return True
 
-    def get(self, key: str) -> Optional[str]:
+def get(self, key: str) -> Optional:
         """
         """
         data = self.dict()
 
         if key in data:
-            return data[key]
+            return data
 
         if self.verbose:
             logger.warning("Key %s not found in %s.", key, self.dotenv_path)
@@ -7278,8 +7276,8 @@ class DotEnv:
 def get_key(
     dotenv_path: StrPath,
     key_to_get: str,
-    encoding: Optional[str] = "utf-8",
-) -> Optional[str]:
+    encoding: Optional = "utf-8",
+) -> Optional:
     """
     Get the value of a given key from the given .env.
 
@@ -7289,8 +7287,8 @@ def get_key(
 
 def rewrite(
     path: StrPath,
-    encoding: Optional[str],
-) -> Iterator[Tuple[IO[str], IO[str]]]:
+    encoding: Optional,
+) -> Iterator, IO]]:
     if not os.path.isfile(path):
         with open(path, mode="w", encoding=encoding) as source:
             source.write("")
@@ -7309,8 +7307,8 @@ def set_key(
     value_to_set: str,
     quote_mode: str = "always",
     export: bool = False,
-    encoding: Optional[str] = "utf-8",
-) -> Tuple[Optional[bool], str, str]:
+    encoding: Optional = "utf-8",
+) -> Tuple, str, str]:
     """
     Adds or Updates a key/value to the given .env
 
@@ -7355,8 +7353,8 @@ def unset_key(
     dotenv_path: StrPath,
     key_to_unset: str,
     quote_mode: str = "always",
-    encoding: Optional[str] = "utf-8",
-) -> Tuple[Optional[bool], str]:
+    encoding: Optional = "utf-8",
+) -> Tuple, str]:
     """
     Removes a given key from the given `.env` file.
 
@@ -7382,17 +7380,17 @@ def unset_key(
     return removed, key_to_unset
 
 def resolve_variables(
-    values: Iterable[Tuple[str, Optional[str]]],
+    values: Iterable]],
     override: bool,
-) -> Mapping[str, Optional[str]]:
-    new_values: Dict[str, Optional[str]] = {}
+) -> Mapping]:
+    new_values: Dict] = {}
 
     for (name, value) in values:
         if value is None:
             result = None
         else:
             atoms = parse_variables(value)
-            env: Dict[str, Optional[str]] = {}
+            env: Dict] = {}
             if override:
                 env.update(os.environ)  # type: ignore
                 env.update(new_values)
@@ -7401,11 +7399,11 @@ def resolve_variables(
                 env.update(os.environ)  # type: ignore
             result = "".join(atom.resolve(env) for atom in atoms)
 
-        new_values[name] = result
+        new_values = result
 
     return new_values
 
-def _walk_to_root(path: str) -> Iterator[str]:
+def _walk_to_root(path: str) -> Iterator:
     """
     Yield directories starting from the given directory up to the root
     """
@@ -7433,9 +7431,9 @@ def find_dotenv(
     Returns path to the file if found, or an empty string otherwise
     """
 
-    def _is_interactive():
+def _is_interactive():
         """ Decide whether this is running in a REPL or IPython notebook """
-        main = __import__('__main__', None, None, fromlist=['__file__'])
+        main = __import__('__main__', None, None, fromlist=)
         return not hasattr(main, '__file__')
 
     if usecwd or _is_interactive() or getattr(sys, 'frozen', False):
@@ -7463,12 +7461,12 @@ def find_dotenv(
     return ''
 
 def load_dotenv(
-    dotenv_path: Optional[StrPath] = None,
-    stream: Optional[IO[str]] = None,
+    dotenv_path: Optional = None,
+    stream: Optional] = None,
     verbose: bool = False,
     override: bool = False,
     interpolate: bool = True,
-    encoding: Optional[str] = "utf-8",
+    encoding: Optional = "utf-8",
 ) -> bool:
     """Parse a .env file and then load all the variables found as environment variables.
 
@@ -7500,12 +7498,12 @@ def load_dotenv(
     return dotenv.set_as_environment_variables()
 
 def dotenv_values(
-    dotenv_path: Optional[StrPath] = None,
-    stream: Optional[IO[str]] = None,
+    dotenv_path: Optional = None,
+    stream: Optional] = None,
     verbose: bool = False,
     interpolate: bool = True,
-    encoding: Optional[str] = "utf-8",
-) -> Dict[str, Optional[str]]:
+    encoding: Optional = "utf-8",
+) -> Dict]:
     """
     Parse a .env file and return its content as a dict.
 
@@ -7534,7 +7532,7 @@ def dotenv_values(
         encoding=encoding,
     ).dict()
 
-    def _get_stream(self) -> Iterator[IO[str]]:
+def _get_stream(self) -> Iterator]:
         if self.dotenv_path and os.path.isfile(self.dotenv_path):
             with open(self.dotenv_path, encoding=self.encoding) as stream:
                 yield stream
@@ -7548,13 +7546,13 @@ def dotenv_values(
                 )
             yield io.StringIO('')
 
-    def parse(self) -> Iterator[Tuple[str, Optional[str]]]:
+def parse(self) -> Iterator]]:
         with self._get_stream() as stream:
             for mapping in with_warn_for_invalid_lines(parse_stream(stream)):
                 if mapping.key is not None:
                     yield mapping.key, mapping.value
 
-    def set_as_environment_variables(self) -> bool:
+def set_as_environment_variables(self) -> bool:
         """
         Load the current dotenv as system environment variable.
         """
@@ -7565,13 +7563,13 @@ def dotenv_values(
             if k in os.environ and not self.override:
                 continue
             if v is not None:
-                os.environ[k] = v
+                os.environ = v
 
         return True
 
-    def _is_interactive():
+def _is_interactive():
         """ Decide whether this is running in a REPL or IPython notebook """
-        main = __import__('__main__', None, None, fromlist=['__file__'])
+        main = __import__('__main__', None, None, fromlist=)
         return not hasattr(main, '__file__')
 # --- Merged from runtime_version.py ---
 
@@ -7670,12 +7668,12 @@ class HexBytes(bytes):
         3. The representation at console is in hex
     """
 
-    def __new__(cls: Type[bytes], val: BytesLike) -> "HexBytes":
+def __new__(cls: Type, val: BytesLike) :
         bytesval = to_bytes(val)
         return cast(HexBytes, super().__new__(cls, bytesval))  # type: ignore  # https://github.com/python/typeshed/issues/2630  # noqa: E501
 
-    def hex(
-        self, sep: Union[str, bytes] = None, bytes_per_sep: "SupportsIndex" = 1
+def hex(
+        self, sep: Union = None, bytes_per_sep: "SupportsIndex" = 1
     ) -> str:
         """
         Output hex-encoded bytes, with an "0x" prefix.
@@ -7685,27 +7683,27 @@ class HexBytes(bytes):
         return "0x" + super().hex()
 
     @overload
-    def __getitem__(self, key: "SupportsIndex") -> int:  # noqa: F811
+def __getitem__(self, key: "SupportsIndex") -> int:  # noqa: F811
         ...
 
     @overload  # noqa: F811
-    def __getitem__(self, key: slice) -> "HexBytes":  # noqa: F811
+def __getitem__(self, key: slice) :  # noqa: F811
         ...
 
-    def __getitem__(  # noqa: F811
-        self, key: Union["SupportsIndex", slice]
-    ) -> Union[int, bytes, "HexBytes"]:
+def __getitem__(  # noqa: F811
+        self, key: Union
+    ) -> Union:
         result = super().__getitem__(key)
         if hasattr(result, "hex"):
             return type(self)(result)
         else:
             return result
 
-    def __repr__(self) -> str:
+def __repr__(self) -> str:
         return f"HexBytes({self.hex()!r})"
 
-    def hex(
-        self, sep: Union[str, bytes] = None, bytes_per_sep: "SupportsIndex" = 1
+def hex(
+        self, sep: Union = None, bytes_per_sep: "SupportsIndex" = 1
     ) -> str:
         """
         Output hex-encoded bytes, with an "0x" prefix.
@@ -7732,12 +7730,12 @@ class HashableRLP(rlp.Serializable):  # type: ignore
             )
 
         my_obj = MyRLP(name2=b'\xff', name1=1)
-        list(my_obj) == [1, b'\xff']
+        list(my_obj) == 
         # note that the iteration order is always in RLP-defined order
     """
 
     @classmethod
-    def from_dict(cls, field_dict: Dict[str, Any]) -> Self:
+def from_dict(cls, field_dict: Dict) -> Self:
         r"""
         In addition to the standard initialization of.
 
@@ -7771,7 +7769,7 @@ class HashableRLP(rlp.Serializable):  # type: ignore
         return cls(**field_dict)
 
     @classmethod
-    def from_bytes(cls, serialized_bytes: Union[bytes, bytearray]) -> Self:
+def from_bytes(cls, serialized_bytes: Union) -> Self:
         """
         Shorthand invocation for :meth:`rlp.decode` using this class.
 
@@ -7782,7 +7780,7 @@ class HashableRLP(rlp.Serializable):  # type: ignore
         decoded = rlp.decode(serialized_bytes, cls)
         return cast(Self, decoded)
 
-    def hash(self) -> HexBytes:
+def hash(self) -> HexBytes:
         """
         :returns: the hash of the encoded bytestring
         :rtype: ~hexbytes.main.HexBytes
@@ -7794,13 +7792,13 @@ class HashableRLP(rlp.Serializable):  # type: ignore
             HexBytes,
         )
 
-    def __iter__(self) -> Any:
+def __iter__(self) -> Any:
         if hasattr(self, "fields"):
             return iter(getattr(self, field) for field, _ in self.fields)
         else:
             return super().__iter__()
 
-    def as_dict(self) -> Dict[str, Any]:
+def as_dict(self) -> Dict:
         """
         Convert rlp object to a dict
 
@@ -7809,12 +7807,12 @@ class HashableRLP(rlp.Serializable):  # type: ignore
         """
         try:
             _as_dict = super().as_dict()
-            return cast(Dict[str, Any], _as_dict)
+            return cast(Dict, _as_dict)
         except AttributeError:
             _as_dict = vars(self)
-            return cast(Dict[str, Any], _as_dict)
+            return cast(Dict, _as_dict)
 
-    def from_dict(cls, field_dict: Dict[str, Any]) -> Self:
+def from_dict(cls, field_dict: Dict) -> Self:
         r"""
         In addition to the standard initialization of.
 
@@ -7847,7 +7845,7 @@ class HashableRLP(rlp.Serializable):  # type: ignore
         """
         return cls(**field_dict)
 
-    def from_bytes(cls, serialized_bytes: Union[bytes, bytearray]) -> Self:
+def from_bytes(cls, serialized_bytes: Union) -> Self:
         """
         Shorthand invocation for :meth:`rlp.decode` using this class.
 
@@ -7858,7 +7856,7 @@ class HashableRLP(rlp.Serializable):  # type: ignore
         decoded = rlp.decode(serialized_bytes, cls)
         return cast(Self, decoded)
 
-    def hash(self) -> HexBytes:
+def hash(self) -> HexBytes:
         """
         :returns: the hash of the encoded bytestring
         :rtype: ~hexbytes.main.HexBytes
@@ -7870,7 +7868,7 @@ class HashableRLP(rlp.Serializable):  # type: ignore
             HexBytes,
         )
 
-    def as_dict(self) -> Dict[str, Any]:
+def as_dict(self) -> Dict:
         """
         Convert rlp object to a dict
 
@@ -7879,13 +7877,13 @@ class HashableRLP(rlp.Serializable):  # type: ignore
         """
         try:
             _as_dict = super().as_dict()
-            return cast(Dict[str, Any], _as_dict)
+            return cast(Dict, _as_dict)
         except AttributeError:
             _as_dict = vars(self)
-            return cast(Dict[str, Any], _as_dict)
+            return cast(Dict, _as_dict)
 # --- Merged from main.py ---
 
-def get_async_default_modules() -> Dict[str, Union[Type[Module], Sequence[Any]]]:
+def get_async_default_modules() -> Dict, Sequence]]:
     return {
         "eth": AsyncEth,
         "net": AsyncNet,
@@ -7899,7 +7897,7 @@ def get_async_default_modules() -> Dict[str, Union[Type[Module], Sequence[Any]]]
         ),
     }
 
-def get_default_modules() -> Dict[str, Union[Type[Module], Sequence[Any]]]:
+def get_default_modules() -> Dict, Sequence]]:
     return {
         "eth": Eth,
         "net": Net,
@@ -7930,83 +7928,83 @@ class BaseWeb3:
     RequestManager = DefaultRequestManager
 
     # mypy types
-    eth: Union[Eth, AsyncEth]
-    net: Union[Net, AsyncNet]
-    geth: Union[Geth, AsyncGeth]
+    eth: Union
+    net: Union
+    geth: Union
 
     # Encoding and Decoding
     @staticmethod
     @wraps(to_bytes)
-    def to_bytes(
+def to_bytes(
         primitive: Primitives = None, hexstr: HexStr = None, text: str = None
     ) -> bytes:
         return to_bytes(primitive, hexstr, text)
 
     @staticmethod
     @wraps(to_int)
-    def to_int(
+def to_int(
         primitive: Primitives = None, hexstr: HexStr = None, text: str = None
     ) -> int:
         return to_int(primitive, hexstr, text)
 
     @staticmethod
     @wraps(to_hex)
-    def to_hex(
+def to_hex(
         primitive: Primitives = None, hexstr: HexStr = None, text: str = None
     ) -> HexStr:
         return to_hex(primitive, hexstr, text)
 
     @staticmethod
     @wraps(to_text)
-    def to_text(
+def to_text(
         primitive: Primitives = None, hexstr: HexStr = None, text: str = None
     ) -> str:
         return to_text(primitive, hexstr, text)
 
     @staticmethod
     @wraps(to_json)
-    def to_json(obj: Dict[Any, Any]) -> str:
+def to_json(obj: Dict) -> str:
         return to_json(obj)
 
     # Currency Utility
     @staticmethod
     @wraps(to_wei)
-    def to_wei(number: Union[int, float, str, decimal.Decimal], unit: str) -> Wei:
+def to_wei(number: Union, unit: str) -> Wei:
         return cast(Wei, to_wei(number, unit))
 
     @staticmethod
     @wraps(from_wei)
-    def from_wei(number: int, unit: str) -> Union[int, decimal.Decimal]:
+def from_wei(number: int, unit: str) -> Union:
         return from_wei(number, unit)
 
     # Address Utility
     @staticmethod
     @wraps(is_address)
-    def is_address(value: Any) -> bool:
+def is_address(value: Any) -> bool:
         return is_address(value)
 
     @staticmethod
     @wraps(is_checksum_address)
-    def is_checksum_address(value: Any) -> bool:
+def is_checksum_address(value: Any) -> bool:
         return is_checksum_address(value)
 
     @staticmethod
     @wraps(to_checksum_address)
-    def to_checksum_address(value: Union[AnyAddress, str, bytes]) -> ChecksumAddress:
+def to_checksum_address(value: Union) -> ChecksumAddress:
         return to_checksum_address(value)
 
     @property
-    def api(self) -> str:
+def api(self) -> str:
         from web3 import __version__
 
         return __version__
 
     @property
-    def strict_bytes_type_checking(self) -> bool:
+def strict_bytes_type_checking(self) -> bool:
         return self._strict_bytes_type_checking
 
     @strict_bytes_type_checking.setter
-    def strict_bytes_type_checking(self, strict_bytes_type_check: bool) -> None:
+def strict_bytes_type_checking(self, strict_bytes_type_check: bool) -> None:
         self.codec = (
             ABICodec(build_strict_registry())
             if strict_bytes_type_check
@@ -8016,10 +8014,10 @@ class BaseWeb3:
 
     @staticmethod
     @apply_to_return_value(HexBytes)
-    def keccak(
-        primitive: Optional[Primitives] = None,
-        text: Optional[str] = None,
-        hexstr: Optional[HexStr] = None,
+def keccak(
+        primitive: Optional = None,
+        text: Optional = None,
+        hexstr: Optional = None,
     ) -> bytes:
         if isinstance(primitive, (bytes, int, type(None))):
             input_bytes = to_bytes(primitive, hexstr=hexstr, text=text)
@@ -8033,17 +8031,17 @@ class BaseWeb3:
         )
 
     @classmethod
-    def normalize_values(
-        cls, w3: "BaseWeb3", abi_types: List[TypeStr], values: List[Any]
-    ) -> List[Any]:
-        return map_abi_data([abi_ens_resolver(w3)], abi_types, values)
+def normalize_values(
+        cls, w3: "BaseWeb3", abi_types: List, values: List
+    ) -> List:
+        return map_abi_data(, abi_types, values)
 
     @combomethod
-    def solidity_keccak(cls, abi_types: List[TypeStr], values: List[Any]) -> bytes:
+def solidity_keccak(cls, abi_types: List, values: List) -> bytes:
         """
         Executes keccak256 exactly as Solidity does.
-        Takes list of abi_types as inputs -- `[uint24, int8[], bool]`
-        and list of corresponding values  -- `[20, [-1, 5, 0], True]`
+        Takes list of abi_types as inputs -- `, bool]`
+        and list of corresponding values  -- `, True]`
         """
         if len(abi_types) != len(values):
             raise ValueError(
@@ -8067,19 +8065,19 @@ class BaseWeb3:
         )
         return cls.keccak(hexstr=hex_string)
 
-    def attach_modules(
-        self, modules: Optional[Dict[str, Union[Type[Module], Sequence[Any]]]]
+def attach_modules(
+        self, modules: Optional, Sequence]]]
     ) -> None:
         """
         Attach modules to the `Web3` instance.
         """
         _attach_modules(self, modules)
 
-    def is_encodable(self, _type: TypeStr, value: Any) -> bool:
+def is_encodable(self, _type: TypeStr, value: Any) -> bool:
         return self.codec.is_encodable(_type, value)
 
     @property
-    def pm(self) -> "PM":
+def pm(self) :
         if hasattr(self, "_pm"):
             # ignored b/c property is dynamically set
             # via enable_unstable_package_management_api
@@ -8091,7 +8089,7 @@ class BaseWeb3:
                 "running `w3.enable_unstable_package_management_api()` and try again."
             )
 
-    def enable_unstable_package_management_api(self) -> None:
+def enable_unstable_package_management_api(self) -> None:
         if not hasattr(self, "_pm"):
             warnings.warn(
                 "The ``ethPM`` module is no longer being maintained and will be "
@@ -8108,15 +8106,15 @@ class Web3(BaseWeb3):
     net: Net
     geth: Geth
 
-    def __init__(
+def __init__(
         self,
-        provider: Optional[BaseProvider] = None,
-        middlewares: Optional[Sequence[Any]] = None,
-        modules: Optional[Dict[str, Union[Type[Module], Sequence[Any]]]] = None,
+        provider: Optional = None,
+        middlewares: Optional] = None,
+        modules: Optional, Sequence]]] = None,
         external_modules: Optional[
-            Dict[str, Union[Type[Module], Sequence[Any]]]
+            Dict, Sequence]]
         ] = None,
-        ens: Union[ENS, "Empty"] = empty,
+        ens: Union = empty,
     ) -> None:
         self.manager = self.RequestManager(self, provider, middlewares)
         self.codec = ABICodec(build_strict_registry())
@@ -8131,27 +8129,27 @@ class Web3(BaseWeb3):
 
         self.ens = ens
 
-    def is_connected(self, show_traceback: bool = False) -> bool:
+def is_connected(self, show_traceback: bool = False) -> bool:
         return self.provider.is_connected(show_traceback)
 
     @property
-    def middleware_onion(self) -> MiddlewareOnion:
+def middleware_onion(self) -> MiddlewareOnion:
         return cast(MiddlewareOnion, self.manager.middleware_onion)
 
     @property
-    def provider(self) -> BaseProvider:
+def provider(self) -> BaseProvider:
         return cast(BaseProvider, self.manager.provider)
 
     @provider.setter
-    def provider(self, provider: BaseProvider) -> None:
+def provider(self, provider: BaseProvider) -> None:
         self.manager.provider = provider
 
     @property
-    def client_version(self) -> str:
-        return self.manager.request_blocking(RPC.web3_clientVersion, [])
+def client_version(self) -> str:
+        return self.manager.request_blocking(RPC.web3_clientVersion, )
 
     @property
-    def ens(self) -> Union[ENS, "Empty"]:
+def ens(self) -> Union:
         if self._ens is empty:
             ns = ENS.from_web3(self)
             ns.w3 = self
@@ -8160,7 +8158,7 @@ class Web3(BaseWeb3):
         return self._ens
 
     @ens.setter
-    def ens(self, new_ens: Union[ENS, "Empty"]) -> None:
+def ens(self, new_ens: Union) -> None:
         if new_ens:
             new_ens.w3 = self  # set self object reference for ``ENS.w3``
         self._ens = new_ens
@@ -8171,15 +8169,15 @@ class AsyncWeb3(BaseWeb3):
     net: AsyncNet
     geth: AsyncGeth
 
-    def __init__(
+def __init__(
         self,
-        provider: Optional[AsyncBaseProvider] = None,
-        middlewares: Optional[Sequence[Any]] = None,
-        modules: Optional[Dict[str, Union[Type[Module], Sequence[Any]]]] = None,
+        provider: Optional = None,
+        middlewares: Optional] = None,
+        modules: Optional, Sequence]]] = None,
         external_modules: Optional[
-            Dict[str, Union[Type[Module], Sequence[Any]]]
+            Dict, Sequence]]
         ] = None,
-        ens: Union[AsyncENS, "Empty"] = empty,
+        ens: Union = empty,
         **kwargs: Any,
     ) -> None:
         self.manager = self.RequestManager(self, provider, middlewares)
@@ -8199,23 +8197,23 @@ class AsyncWeb3(BaseWeb3):
         return await self.provider.is_connected(show_traceback)
 
     @property
-    def middleware_onion(self) -> AsyncMiddlewareOnion:
+def middleware_onion(self) -> AsyncMiddlewareOnion:
         return cast(AsyncMiddlewareOnion, self.manager.middleware_onion)
 
     @property
-    def provider(self) -> AsyncBaseProvider:
+def provider(self) -> AsyncBaseProvider:
         return cast(AsyncBaseProvider, self.manager.provider)
 
     @provider.setter
-    def provider(self, provider: AsyncBaseProvider) -> None:
+def provider(self, provider: AsyncBaseProvider) -> None:
         self.manager.provider = provider
 
     @property
     async def client_version(self) -> str:
-        return await self.manager.coro_request(RPC.web3_clientVersion, [])
+        return await self.manager.coro_request(RPC.web3_clientVersion, )
 
     @property
-    def ens(self) -> Union[AsyncENS, "Empty"]:
+def ens(self) -> Union:
         if self._ens is empty:
             ns = AsyncENS.from_web3(self)
             ns.w3 = self
@@ -8223,21 +8221,21 @@ class AsyncWeb3(BaseWeb3):
         return self._ens
 
     @ens.setter
-    def ens(self, new_ens: Union[AsyncENS, "Empty"]) -> None:
+def ens(self, new_ens: Union) -> None:
         if new_ens:
             new_ens.w3 = self  # set self object reference for ``AsyncENS.w3``
         self._ens = new_ens
 
     @staticmethod
-    def persistent_websocket(
+def persistent_websocket(
         provider: PersistentConnectionProvider,
-        middlewares: Optional[Sequence[Any]] = None,
-        modules: Optional[Dict[str, Union[Type[Module], Sequence[Any]]]] = None,
+        middlewares: Optional] = None,
+        modules: Optional, Sequence]]] = None,
         external_modules: Optional[
-            Dict[str, Union[Type[Module], Sequence[Any]]]
+            Dict, Sequence]]
         ] = None,
-        ens: Union[AsyncENS, "Empty"] = empty,
-    ) -> "_PersistentConnectionWeb3":
+        ens: Union = empty,
+    ) :
         """
         Establish a persistent connection via websockets to a websocket provider using
         a ``PersistentConnectionProvider`` instance.
@@ -8255,15 +8253,15 @@ class _PersistentConnectionWeb3(AsyncWeb3):
 
     # w3 = AsyncWeb3.persistent_websocket(provider)
     # await w3.provider.connect()
-    def __init__(
+def __init__(
         self,
         provider: PersistentConnectionProvider = None,
-        middlewares: Optional[Sequence[Any]] = None,
-        modules: Optional[Dict[str, Union[Type[Module], Sequence[Any]]]] = None,
+        middlewares: Optional] = None,
+        modules: Optional, Sequence]]] = None,
         external_modules: Optional[
-            Dict[str, Union[Type[Module], Sequence[Any]]]
+            Dict, Sequence]]
         ] = None,
-        ens: Union[AsyncENS, "Empty"] = empty,
+        ens: Union = empty,
     ) -> None:
         if not isinstance(provider, PersistentConnectionProvider):
             raise Web3ValidationError(
@@ -8273,9 +8271,9 @@ class _PersistentConnectionWeb3(AsyncWeb3):
         self.ws = WebsocketConnection(self)
 
     # w3 = await AsyncWeb3.persistent_websocket(provider)
-    def __await__(
+def __await__(
         self,
-    ) -> Generator[Any, None, Self]:
+    ) -> Generator:
         async def __async_init__() -> Self:
             if self.provider._ws is None:
                 await self.provider.connect()
@@ -8291,14 +8289,14 @@ class _PersistentConnectionWeb3(AsyncWeb3):
 
     async def __aexit__(
         self,
-        exc_type: Type[BaseException],
+        exc_type: Type,
         exc_val: BaseException,
         exc_tb: TracebackType,
     ) -> None:
         await self.provider.disconnect()
 
     # async for w3 in w3.persistent_websocket(provider)
-    async def __aiter__(self) -> AsyncIterator[Self]:
+    async def __aiter__(self) -> AsyncIterator:
         if not await self.provider.is_connected():
             await self.provider.connect()
 
@@ -8309,53 +8307,53 @@ class _PersistentConnectionWeb3(AsyncWeb3):
                 # provider should handle connection / reconnection
                 continue
 
-    def to_bytes(
+def to_bytes(
         primitive: Primitives = None, hexstr: HexStr = None, text: str = None
     ) -> bytes:
         return to_bytes(primitive, hexstr, text)
 
-    def to_int(
+def to_int(
         primitive: Primitives = None, hexstr: HexStr = None, text: str = None
     ) -> int:
         return to_int(primitive, hexstr, text)
 
-    def to_hex(
+def to_hex(
         primitive: Primitives = None, hexstr: HexStr = None, text: str = None
     ) -> HexStr:
         return to_hex(primitive, hexstr, text)
 
-    def to_text(
+def to_text(
         primitive: Primitives = None, hexstr: HexStr = None, text: str = None
     ) -> str:
         return to_text(primitive, hexstr, text)
 
-    def to_json(obj: Dict[Any, Any]) -> str:
+def to_json(obj: Dict) -> str:
         return to_json(obj)
 
-    def to_wei(number: Union[int, float, str, decimal.Decimal], unit: str) -> Wei:
+def to_wei(number: Union, unit: str) -> Wei:
         return cast(Wei, to_wei(number, unit))
 
-    def from_wei(number: int, unit: str) -> Union[int, decimal.Decimal]:
+def from_wei(number: int, unit: str) -> Union:
         return from_wei(number, unit)
 
-    def is_address(value: Any) -> bool:
+def is_address(value: Any) -> bool:
         return is_address(value)
 
-    def is_checksum_address(value: Any) -> bool:
+def is_checksum_address(value: Any) -> bool:
         return is_checksum_address(value)
 
-    def to_checksum_address(value: Union[AnyAddress, str, bytes]) -> ChecksumAddress:
+def to_checksum_address(value: Union) -> ChecksumAddress:
         return to_checksum_address(value)
 
-    def api(self) -> str:
+def api(self) -> str:
         from web3 import __version__
 
         return __version__
 
-    def strict_bytes_type_checking(self) -> bool:
+def strict_bytes_type_checking(self) -> bool:
         return self._strict_bytes_type_checking
 
-    def strict_bytes_type_checking(self, strict_bytes_type_check: bool) -> None:
+def strict_bytes_type_checking(self, strict_bytes_type_check: bool) -> None:
         self.codec = (
             ABICodec(build_strict_registry())
             if strict_bytes_type_check
@@ -8363,10 +8361,10 @@ class _PersistentConnectionWeb3(AsyncWeb3):
         )
         self._strict_bytes_type_checking = strict_bytes_type_check
 
-    def keccak(
-        primitive: Optional[Primitives] = None,
-        text: Optional[str] = None,
-        hexstr: Optional[HexStr] = None,
+def keccak(
+        primitive: Optional = None,
+        text: Optional = None,
+        hexstr: Optional = None,
     ) -> bytes:
         if isinstance(primitive, (bytes, int, type(None))):
             input_bytes = to_bytes(primitive, hexstr=hexstr, text=text)
@@ -8379,16 +8377,16 @@ class _PersistentConnectionWeb3(AsyncWeb3):
             "keccak(b'\\x74\\x78\\x74'), or keccak(0x747874)."
         )
 
-    def normalize_values(
-        cls, w3: "BaseWeb3", abi_types: List[TypeStr], values: List[Any]
-    ) -> List[Any]:
-        return map_abi_data([abi_ens_resolver(w3)], abi_types, values)
+def normalize_values(
+        cls, w3: "BaseWeb3", abi_types: List, values: List
+    ) -> List:
+        return map_abi_data(, abi_types, values)
 
-    def solidity_keccak(cls, abi_types: List[TypeStr], values: List[Any]) -> bytes:
+def solidity_keccak(cls, abi_types: List, values: List) -> bytes:
         """
         Executes keccak256 exactly as Solidity does.
-        Takes list of abi_types as inputs -- `[uint24, int8[], bool]`
-        and list of corresponding values  -- `[20, [-1, 5, 0], True]`
+        Takes list of abi_types as inputs -- `, bool]`
+        and list of corresponding values  -- `, True]`
         """
         if len(abi_types) != len(values):
             raise ValueError(
@@ -8412,18 +8410,18 @@ class _PersistentConnectionWeb3(AsyncWeb3):
         )
         return cls.keccak(hexstr=hex_string)
 
-    def attach_modules(
-        self, modules: Optional[Dict[str, Union[Type[Module], Sequence[Any]]]]
+def attach_modules(
+        self, modules: Optional, Sequence]]]
     ) -> None:
         """
         Attach modules to the `Web3` instance.
         """
         _attach_modules(self, modules)
 
-    def is_encodable(self, _type: TypeStr, value: Any) -> bool:
+def is_encodable(self, _type: TypeStr, value: Any) -> bool:
         return self.codec.is_encodable(_type, value)
 
-    def pm(self) -> "PM":
+def pm(self) :
         if hasattr(self, "_pm"):
             # ignored b/c property is dynamically set
             # via enable_unstable_package_management_api
@@ -8435,7 +8433,7 @@ class _PersistentConnectionWeb3(AsyncWeb3):
                 "running `w3.enable_unstable_package_management_api()` and try again."
             )
 
-    def enable_unstable_package_management_api(self) -> None:
+def enable_unstable_package_management_api(self) -> None:
         if not hasattr(self, "_pm"):
             warnings.warn(
                 "The ``ethPM`` module is no longer being maintained and will be "
@@ -8446,22 +8444,22 @@ class _PersistentConnectionWeb3(AsyncWeb3):
 
             self.attach_modules({"_pm": PM})
 
-    def is_connected(self, show_traceback: bool = False) -> bool:
+def is_connected(self, show_traceback: bool = False) -> bool:
         return self.provider.is_connected(show_traceback)
 
-    def middleware_onion(self) -> MiddlewareOnion:
+def middleware_onion(self) -> MiddlewareOnion:
         return cast(MiddlewareOnion, self.manager.middleware_onion)
 
-    def provider(self) -> BaseProvider:
+def provider(self) -> BaseProvider:
         return cast(BaseProvider, self.manager.provider)
 
-    def provider(self, provider: BaseProvider) -> None:
+def provider(self, provider: BaseProvider) -> None:
         self.manager.provider = provider
 
-    def client_version(self) -> str:
-        return self.manager.request_blocking(RPC.web3_clientVersion, [])
+def client_version(self) -> str:
+        return self.manager.request_blocking(RPC.web3_clientVersion, )
 
-    def ens(self) -> Union[ENS, "Empty"]:
+def ens(self) -> Union:
         if self._ens is empty:
             ns = ENS.from_web3(self)
             ns.w3 = self
@@ -8469,41 +8467,41 @@ class _PersistentConnectionWeb3(AsyncWeb3):
 
         return self._ens
 
-    def ens(self, new_ens: Union[ENS, "Empty"]) -> None:
+def ens(self, new_ens: Union) -> None:
         if new_ens:
             new_ens.w3 = self  # set self object reference for ``ENS.w3``
         self._ens = new_ens
 
-    def middleware_onion(self) -> AsyncMiddlewareOnion:
+def middleware_onion(self) -> AsyncMiddlewareOnion:
         return cast(AsyncMiddlewareOnion, self.manager.middleware_onion)
 
-    def provider(self) -> AsyncBaseProvider:
+def provider(self) -> AsyncBaseProvider:
         return cast(AsyncBaseProvider, self.manager.provider)
 
-    def provider(self, provider: AsyncBaseProvider) -> None:
+def provider(self, provider: AsyncBaseProvider) -> None:
         self.manager.provider = provider
 
-    def ens(self) -> Union[AsyncENS, "Empty"]:
+def ens(self) -> Union:
         if self._ens is empty:
             ns = AsyncENS.from_web3(self)
             ns.w3 = self
             return ns
         return self._ens
 
-    def ens(self, new_ens: Union[AsyncENS, "Empty"]) -> None:
+def ens(self, new_ens: Union) -> None:
         if new_ens:
             new_ens.w3 = self  # set self object reference for ``AsyncENS.w3``
         self._ens = new_ens
 
-    def persistent_websocket(
+def persistent_websocket(
         provider: PersistentConnectionProvider,
-        middlewares: Optional[Sequence[Any]] = None,
-        modules: Optional[Dict[str, Union[Type[Module], Sequence[Any]]]] = None,
+        middlewares: Optional] = None,
+        modules: Optional, Sequence]]] = None,
         external_modules: Optional[
-            Dict[str, Union[Type[Module], Sequence[Any]]]
+            Dict, Sequence]]
         ] = None,
-        ens: Union[AsyncENS, "Empty"] = empty,
-    ) -> "_PersistentConnectionWeb3":
+        ens: Union = empty,
+    ) :
         """
         Establish a persistent connection via websockets to a websocket provider using
         a ``PersistentConnectionProvider`` instance.
@@ -8516,9 +8514,9 @@ class _PersistentConnectionWeb3(AsyncWeb3):
             ens,
         )
 
-    def __await__(
+def __await__(
         self,
-    ) -> Generator[Any, None, Self]:
+    ) -> Generator:
         async def __async_init__() -> Self:
             if self.provider._ws is None:
                 await self.provider.connect()
@@ -8529,7 +8527,7 @@ class _PersistentConnectionWeb3(AsyncWeb3):
 # --- Merged from main.py ---
 
 class Beacon:
-    def __init__(
+def __init__(
         self,
         base_url: str,
         request_timeout: float = 10.0,
@@ -8537,270 +8535,270 @@ class Beacon:
         self.base_url = base_url
         self.request_timeout = request_timeout
 
-    def _make_get_request(self, endpoint_url: str) -> Dict[str, Any]:
+def _make_get_request(self, endpoint_url: str) -> Dict:
         uri = URI(self.base_url + endpoint_url)
         return json_make_get_request(uri, timeout=self.request_timeout)
 
-    # [ BEACON endpoints ]
+    # 
 
     # states
 
-    def get_genesis(self) -> Dict[str, Any]:
+def get_genesis(self) -> Dict:
         return self._make_get_request(GET_GENESIS)
 
-    def get_hash_root(self, state_id: str = "head") -> Dict[str, Any]:
+def get_hash_root(self, state_id: str = "head") -> Dict:
         return self._make_get_request(GET_HASH_ROOT.format(state_id))
 
-    def get_fork_data(self, state_id: str = "head") -> Dict[str, Any]:
+def get_fork_data(self, state_id: str = "head") -> Dict:
         return self._make_get_request(GET_FORK_DATA.format(state_id))
 
-    def get_finality_checkpoint(self, state_id: str = "head") -> Dict[str, Any]:
+def get_finality_checkpoint(self, state_id: str = "head") -> Dict:
         return self._make_get_request(GET_FINALITY_CHECKPOINT.format(state_id))
 
-    def get_validators(self, state_id: str = "head") -> Dict[str, Any]:
+def get_validators(self, state_id: str = "head") -> Dict:
         return self._make_get_request(GET_VALIDATORS.format(state_id))
 
-    def get_validator(
+def get_validator(
         self, validator_id: str, state_id: str = "head"
-    ) -> Dict[str, Any]:
+    ) -> Dict:
         return self._make_get_request(GET_VALIDATOR.format(state_id, validator_id))
 
-    def get_validator_balances(self, state_id: str = "head") -> Dict[str, Any]:
+def get_validator_balances(self, state_id: str = "head") -> Dict:
         return self._make_get_request(GET_VALIDATOR_BALANCES.format(state_id))
 
-    def get_epoch_committees(self, state_id: str = "head") -> Dict[str, Any]:
+def get_epoch_committees(self, state_id: str = "head") -> Dict:
         return self._make_get_request(GET_EPOCH_COMMITTEES.format(state_id))
 
-    def get_epoch_sync_committees(self, state_id: str = "head") -> Dict[str, Any]:
+def get_epoch_sync_committees(self, state_id: str = "head") -> Dict:
         return self._make_get_request(GET_EPOCH_SYNC_COMMITTEES.format(state_id))
 
-    def get_epoch_randao(self, state_id: str = "head") -> Dict[str, Any]:
+def get_epoch_randao(self, state_id: str = "head") -> Dict:
         return self._make_get_request(GET_EPOCH_RANDAO.format(state_id))
 
     # headers
 
-    def get_block_headers(self) -> Dict[str, Any]:
+def get_block_headers(self) -> Dict:
         return self._make_get_request(GET_BLOCK_HEADERS)
 
-    def get_block_header(self, block_id: str) -> Dict[str, Any]:
+def get_block_header(self, block_id: str) -> Dict:
         return self._make_get_request(GET_BLOCK_HEADER.format(block_id))
 
     # blocks
 
-    def get_block(self, block_id: str) -> Dict[str, Any]:
+def get_block(self, block_id: str) -> Dict:
         return self._make_get_request(GET_BLOCK.format(block_id))
 
-    def get_block_root(self, block_id: str) -> Dict[str, Any]:
+def get_block_root(self, block_id: str) -> Dict:
         return self._make_get_request(GET_BLOCK_ROOT.format(block_id))
 
-    def get_block_attestations(self, block_id: str) -> Dict[str, Any]:
+def get_block_attestations(self, block_id: str) -> Dict:
         return self._make_get_request(GET_BLOCK_ATTESTATIONS.format(block_id))
 
-    def get_blinded_blocks(self, block_id: str) -> Dict[str, Any]:
+def get_blinded_blocks(self, block_id: str) -> Dict:
         return self._make_get_request(GET_BLINDED_BLOCKS.format(block_id))
 
     # rewards
 
-    def get_rewards(self, block_id: str) -> Dict[str, Any]:
+def get_rewards(self, block_id: str) -> Dict:
         return self._make_get_request(GET_REWARDS.format(block_id))
 
     # light client (untested but follows spec)
 
-    def get_light_client_bootstrap_structure(
+def get_light_client_bootstrap_structure(
         self, block_root: HexStr
-    ) -> Dict[str, Any]:
+    ) -> Dict:
         return self._make_get_request(
             GET_LIGHT_CLIENT_BOOTSTRAP_STRUCTURE.format(block_root)
         )
 
-    def get_light_client_updates(self) -> Dict[str, Any]:
+def get_light_client_updates(self) -> Dict:
         return self._make_get_request(GET_LIGHT_CLIENT_UPDATES)
 
-    def get_light_client_finality_update(self) -> Dict[str, Any]:
+def get_light_client_finality_update(self) -> Dict:
         return self._make_get_request(GET_LIGHT_CLIENT_FINALITY_UPDATE)
 
-    def get_light_client_optimistic_update(self) -> Dict[str, Any]:
+def get_light_client_optimistic_update(self) -> Dict:
         return self._make_get_request(GET_LIGHT_CLIENT_OPTIMISTIC_UPDATE)
 
     # pool
 
-    def get_attestations(self) -> Dict[str, Any]:
+def get_attestations(self) -> Dict:
         return self._make_get_request(GET_ATTESTATIONS)
 
-    def get_attester_slashings(self) -> Dict[str, Any]:
+def get_attester_slashings(self) -> Dict:
         return self._make_get_request(GET_ATTESTER_SLASHINGS)
 
-    def get_proposer_slashings(self) -> Dict[str, Any]:
+def get_proposer_slashings(self) -> Dict:
         return self._make_get_request(GET_PROPOSER_SLASHINGS)
 
-    def get_voluntary_exits(self) -> Dict[str, Any]:
+def get_voluntary_exits(self) -> Dict:
         return self._make_get_request(GET_VOLUNTARY_EXITS)
 
-    def get_bls_to_execution_changes(self) -> Dict[str, Any]:
+def get_bls_to_execution_changes(self) -> Dict:
         return self._make_get_request(GET_BLS_TO_EXECUTION_CHANGES)
 
-    # [ CONFIG endpoints ]
+    # 
 
-    def get_fork_schedule(self) -> Dict[str, Any]:
+def get_fork_schedule(self) -> Dict:
         return self._make_get_request(GET_FORK_SCHEDULE)
 
-    def get_spec(self) -> Dict[str, Any]:
+def get_spec(self) -> Dict:
         return self._make_get_request(GET_SPEC)
 
-    def get_deposit_contract(self) -> Dict[str, Any]:
+def get_deposit_contract(self) -> Dict:
         return self._make_get_request(GET_DEPOSIT_CONTRACT)
 
-    # [ DEBUG endpoints ]
+    # 
 
-    def get_beacon_state(self, state_id: str = "head") -> Dict[str, Any]:
+def get_beacon_state(self, state_id: str = "head") -> Dict:
         return self._make_get_request(GET_BEACON_STATE.format(state_id))
 
-    def get_beacon_heads(self) -> Dict[str, Any]:
+def get_beacon_heads(self) -> Dict:
         return self._make_get_request(GET_BEACON_HEADS)
 
-    # [ NODE endpoints ]
+    # 
 
-    def get_node_identity(self) -> Dict[str, Any]:
+def get_node_identity(self) -> Dict:
         return self._make_get_request(GET_NODE_IDENTITY)
 
-    def get_peers(self) -> Dict[str, Any]:
+def get_peers(self) -> Dict:
         return self._make_get_request(GET_PEERS)
 
-    def get_peer(self, peer_id: str) -> Dict[str, Any]:
+def get_peer(self, peer_id: str) -> Dict:
         return self._make_get_request(GET_PEER.format(peer_id))
 
-    def get_health(self) -> int:
+def get_health(self) -> int:
         url = URI(self.base_url + GET_HEALTH)
         response = get_response_from_get_request(url)
         return response.status_code
 
-    def get_version(self) -> Dict[str, Any]:
+def get_version(self) -> Dict:
         return self._make_get_request(GET_VERSION)
 
-    def get_syncing(self) -> Dict[str, Any]:
+def get_syncing(self) -> Dict:
         return self._make_get_request(GET_SYNCING)
 
-    def _make_get_request(self, endpoint_url: str) -> Dict[str, Any]:
+def _make_get_request(self, endpoint_url: str) -> Dict:
         uri = URI(self.base_url + endpoint_url)
         return json_make_get_request(uri, timeout=self.request_timeout)
 
-    def get_genesis(self) -> Dict[str, Any]:
+def get_genesis(self) -> Dict:
         return self._make_get_request(GET_GENESIS)
 
-    def get_hash_root(self, state_id: str = "head") -> Dict[str, Any]:
+def get_hash_root(self, state_id: str = "head") -> Dict:
         return self._make_get_request(GET_HASH_ROOT.format(state_id))
 
-    def get_fork_data(self, state_id: str = "head") -> Dict[str, Any]:
+def get_fork_data(self, state_id: str = "head") -> Dict:
         return self._make_get_request(GET_FORK_DATA.format(state_id))
 
-    def get_finality_checkpoint(self, state_id: str = "head") -> Dict[str, Any]:
+def get_finality_checkpoint(self, state_id: str = "head") -> Dict:
         return self._make_get_request(GET_FINALITY_CHECKPOINT.format(state_id))
 
-    def get_validators(self, state_id: str = "head") -> Dict[str, Any]:
+def get_validators(self, state_id: str = "head") -> Dict:
         return self._make_get_request(GET_VALIDATORS.format(state_id))
 
-    def get_validator(
+def get_validator(
         self, validator_id: str, state_id: str = "head"
-    ) -> Dict[str, Any]:
+    ) -> Dict:
         return self._make_get_request(GET_VALIDATOR.format(state_id, validator_id))
 
-    def get_validator_balances(self, state_id: str = "head") -> Dict[str, Any]:
+def get_validator_balances(self, state_id: str = "head") -> Dict:
         return self._make_get_request(GET_VALIDATOR_BALANCES.format(state_id))
 
-    def get_epoch_committees(self, state_id: str = "head") -> Dict[str, Any]:
+def get_epoch_committees(self, state_id: str = "head") -> Dict:
         return self._make_get_request(GET_EPOCH_COMMITTEES.format(state_id))
 
-    def get_epoch_sync_committees(self, state_id: str = "head") -> Dict[str, Any]:
+def get_epoch_sync_committees(self, state_id: str = "head") -> Dict:
         return self._make_get_request(GET_EPOCH_SYNC_COMMITTEES.format(state_id))
 
-    def get_epoch_randao(self, state_id: str = "head") -> Dict[str, Any]:
+def get_epoch_randao(self, state_id: str = "head") -> Dict:
         return self._make_get_request(GET_EPOCH_RANDAO.format(state_id))
 
-    def get_block_headers(self) -> Dict[str, Any]:
+def get_block_headers(self) -> Dict:
         return self._make_get_request(GET_BLOCK_HEADERS)
 
-    def get_block_header(self, block_id: str) -> Dict[str, Any]:
+def get_block_header(self, block_id: str) -> Dict:
         return self._make_get_request(GET_BLOCK_HEADER.format(block_id))
 
-    def get_block(self, block_id: str) -> Dict[str, Any]:
+def get_block(self, block_id: str) -> Dict:
         return self._make_get_request(GET_BLOCK.format(block_id))
 
-    def get_block_root(self, block_id: str) -> Dict[str, Any]:
+def get_block_root(self, block_id: str) -> Dict:
         return self._make_get_request(GET_BLOCK_ROOT.format(block_id))
 
-    def get_block_attestations(self, block_id: str) -> Dict[str, Any]:
+def get_block_attestations(self, block_id: str) -> Dict:
         return self._make_get_request(GET_BLOCK_ATTESTATIONS.format(block_id))
 
-    def get_blinded_blocks(self, block_id: str) -> Dict[str, Any]:
+def get_blinded_blocks(self, block_id: str) -> Dict:
         return self._make_get_request(GET_BLINDED_BLOCKS.format(block_id))
 
-    def get_rewards(self, block_id: str) -> Dict[str, Any]:
+def get_rewards(self, block_id: str) -> Dict:
         return self._make_get_request(GET_REWARDS.format(block_id))
 
-    def get_light_client_bootstrap_structure(
+def get_light_client_bootstrap_structure(
         self, block_root: HexStr
-    ) -> Dict[str, Any]:
+    ) -> Dict:
         return self._make_get_request(
             GET_LIGHT_CLIENT_BOOTSTRAP_STRUCTURE.format(block_root)
         )
 
-    def get_light_client_updates(self) -> Dict[str, Any]:
+def get_light_client_updates(self) -> Dict:
         return self._make_get_request(GET_LIGHT_CLIENT_UPDATES)
 
-    def get_light_client_finality_update(self) -> Dict[str, Any]:
+def get_light_client_finality_update(self) -> Dict:
         return self._make_get_request(GET_LIGHT_CLIENT_FINALITY_UPDATE)
 
-    def get_light_client_optimistic_update(self) -> Dict[str, Any]:
+def get_light_client_optimistic_update(self) -> Dict:
         return self._make_get_request(GET_LIGHT_CLIENT_OPTIMISTIC_UPDATE)
 
-    def get_attestations(self) -> Dict[str, Any]:
+def get_attestations(self) -> Dict:
         return self._make_get_request(GET_ATTESTATIONS)
 
-    def get_attester_slashings(self) -> Dict[str, Any]:
+def get_attester_slashings(self) -> Dict:
         return self._make_get_request(GET_ATTESTER_SLASHINGS)
 
-    def get_proposer_slashings(self) -> Dict[str, Any]:
+def get_proposer_slashings(self) -> Dict:
         return self._make_get_request(GET_PROPOSER_SLASHINGS)
 
-    def get_voluntary_exits(self) -> Dict[str, Any]:
+def get_voluntary_exits(self) -> Dict:
         return self._make_get_request(GET_VOLUNTARY_EXITS)
 
-    def get_bls_to_execution_changes(self) -> Dict[str, Any]:
+def get_bls_to_execution_changes(self) -> Dict:
         return self._make_get_request(GET_BLS_TO_EXECUTION_CHANGES)
 
-    def get_fork_schedule(self) -> Dict[str, Any]:
+def get_fork_schedule(self) -> Dict:
         return self._make_get_request(GET_FORK_SCHEDULE)
 
-    def get_spec(self) -> Dict[str, Any]:
+def get_spec(self) -> Dict:
         return self._make_get_request(GET_SPEC)
 
-    def get_deposit_contract(self) -> Dict[str, Any]:
+def get_deposit_contract(self) -> Dict:
         return self._make_get_request(GET_DEPOSIT_CONTRACT)
 
-    def get_beacon_state(self, state_id: str = "head") -> Dict[str, Any]:
+def get_beacon_state(self, state_id: str = "head") -> Dict:
         return self._make_get_request(GET_BEACON_STATE.format(state_id))
 
-    def get_beacon_heads(self) -> Dict[str, Any]:
+def get_beacon_heads(self) -> Dict:
         return self._make_get_request(GET_BEACON_HEADS)
 
-    def get_node_identity(self) -> Dict[str, Any]:
+def get_node_identity(self) -> Dict:
         return self._make_get_request(GET_NODE_IDENTITY)
 
-    def get_peers(self) -> Dict[str, Any]:
+def get_peers(self) -> Dict:
         return self._make_get_request(GET_PEERS)
 
-    def get_peer(self, peer_id: str) -> Dict[str, Any]:
+def get_peer(self, peer_id: str) -> Dict:
         return self._make_get_request(GET_PEER.format(peer_id))
 
-    def get_health(self) -> int:
+def get_health(self) -> int:
         url = URI(self.base_url + GET_HEALTH)
         response = get_response_from_get_request(url)
         return response.status_code
 
-    def get_version(self) -> Dict[str, Any]:
+def get_version(self) -> Dict:
         return self._make_get_request(GET_VERSION)
 
-    def get_syncing(self) -> Dict[str, Any]:
+def get_syncing(self) -> Dict:
         return self._make_get_request(GET_SYNCING)
 # --- Merged from main.py ---
 
@@ -8812,7 +8810,7 @@ class AsyncEthereumTesterProvider(AsyncBaseProvider):
         async_ethereum_tester_middleware,
     )
 
-    def __init__(self) -> None:
+def __init__(self) -> None:
         super().__init__()
 
         # do not import eth_tester until runtime, it is not a default dependency
@@ -8830,7 +8828,7 @@ class AsyncEthereumTesterProvider(AsyncBaseProvider):
     async def make_request(self, method: RPCEndpoint, params: Any) -> RPCResponse:
         return _make_request(method, params, self.api_endpoints, self.ethereum_tester)
 
-    async def is_connected(self, show_traceback: bool = False) -> Literal[True]:
+    async def is_connected(self, show_traceback: bool = False) -> Literal:
         return True
 
 class EthereumTesterProvider(BaseProvider):
@@ -8840,13 +8838,13 @@ class EthereumTesterProvider(BaseProvider):
         ethereum_tester_middleware,
     )
     ethereum_tester = None
-    api_endpoints: Optional[Dict[str, Dict[str, Callable[..., RPCResponse]]]] = None
+    api_endpoints: Optional]]] = None
 
-    def __init__(
+def __init__(
         self,
-        ethereum_tester: Optional[Union["EthereumTester", "BaseChainBackend"]] = None,
+        ethereum_tester: Optional] = None,
         api_endpoints: Optional[
-            Dict[str, Dict[str, Callable[..., RPCResponse]]]
+            Dict]]
         ] = None,
     ) -> None:
         # do not import eth_tester until runtime, it is not a default dependency
@@ -8881,10 +8879,10 @@ class EthereumTesterProvider(BaseProvider):
         else:
             self.api_endpoints = api_endpoints
 
-    def make_request(self, method: RPCEndpoint, params: Any) -> RPCResponse:
+def make_request(self, method: RPCEndpoint, params: Any) -> RPCResponse:
         return _make_request(method, params, self.api_endpoints, self.ethereum_tester)
 
-    def is_connected(self, show_traceback: bool = False) -> Literal[True]:
+def is_connected(self, show_traceback: bool = False) -> Literal:
         return True
 
 def _make_response(result: Any, message: str = "") -> RPCResponse:
@@ -8902,7 +8900,7 @@ def _make_response(result: Any, message: str = "") -> RPCResponse:
 def _make_request(
     method: RPCEndpoint,
     params: Any,
-    api_endpoints: Dict[str, Dict[str, Any]],
+    api_endpoints: Dict],
     ethereum_tester_instance: "EthereumTester",
 ) -> RPCResponse:
     # do not import eth_tester derivatives until runtime,
@@ -8914,7 +8912,7 @@ def _make_request(
     namespace, _, endpoint = method.partition("_")
 
     try:
-        delegator = api_endpoints[namespace][endpoint]
+        delegator = api_endpoints
     except KeyError as e:
         return _make_response(e, f"Unknown RPC Endpoint: {method}")
     try:
@@ -8922,14 +8920,14 @@ def _make_request(
     except NotImplementedError as e:
         return _make_response(e, f"RPC Endpoint has not been implemented: {method}")
     except TransactionFailed as e:
-        first_arg = e.args[0]
+        first_arg = e.args
         try:
             # sometimes eth-tester wraps an exception in another exception
             raw_error_msg = (
-                first_arg if not isinstance(first_arg, Exception) else first_arg.args[0]
+                first_arg if not isinstance(first_arg, Exception) else first_arg.args
             )
             reason = (
-                abi.decode(["string"], raw_error_msg[4:])[0]
+                abi.decode(, raw_error_msg)
                 if is_bytes(raw_error_msg)
                 else raw_error_msg
             )
@@ -8939,7 +8937,7 @@ def _make_request(
     else:
         return _make_response(response)
 
-    def make_request(self, method: RPCEndpoint, params: Any) -> RPCResponse:
+def make_request(self, method: RPCEndpoint, params: Any) -> RPCResponse:
         return _make_request(method, params, self.api_endpoints, self.ethereum_tester)
 # --- Merged from main.py ---
 
@@ -8947,11 +8945,11 @@ def build_web3_http(endpoint_uri: str) -> Web3:
     wait_for_http(endpoint_uri)
     _w3 = Web3(
         HTTPProvider(endpoint_uri),
-        middlewares=[gas_price_strategy_middleware, buffered_gas_estimate_middleware],
+        middlewares=,
     )
     return _w3
 
-def sync_benchmark(func: Callable[..., Any], n: int) -> Union[float, str]:
+def sync_benchmark(func: Callable, n: int) -> Union:
     try:
         starttime = timeit.default_timer()
         for _ in range(n):
@@ -8962,15 +8960,15 @@ def sync_benchmark(func: Callable[..., Any], n: int) -> Union[float, str]:
     except Exception:
         return "N/A"
 
-            def benchmark(method: Dict[str, Any]) -> None:
-                outcomes: Dict[str, Union[str, float]] = defaultdict(lambda: "N/A")
-                outcomes["name"] = method["name"]
-                outcomes["HTTPProvider"] = sync_benchmark(
-                    method["exec"],
+            def benchmark(method: Dict) -> None:
+                outcomes: Dict] = defaultdict(lambda: "N/A")
+                outcomes = method
+                outcomes = sync_benchmark(
+                    method,
                     num_calls,
                 )
-                outcomes["AsyncHTTPProvider"] = loop.run_until_complete(
-                    async_benchmark(method["async_exec"], num_calls)
+                outcomes = loop.run_until_complete(
+                    async_benchmark(method, num_calls)
                 )
                 print_entry(logger, outcomes)
 # --- Merged from runtime.py ---
@@ -8981,9 +8979,9 @@ def identity(x: V) -> V:
     """
     return x
 
-def markup_join(seq: t.Iterable[t.Any]) -> str:
+def markup_join(seq.Any]) -> str:
     """Concatenation that escapes if necessary and converts to string."""
-    buf = []
+    buf = 
     iterator = map(soft_str, seq)
     for arg in iterator:
         buf.append(arg)
@@ -8991,19 +8989,19 @@ def markup_join(seq: t.Iterable[t.Any]) -> str:
             return Markup("").join(chain(buf, iterator))
     return concat(buf)
 
-def str_join(seq: t.Iterable[t.Any]) -> str:
+def str_join(seq.Any]) -> str:
     """Simple args to string conversion and concatenation."""
     return concat(map(str, seq))
 
 def new_context(
     environment: "Environment",
-    template_name: t.Optional[str],
-    blocks: t.Dict[str, t.Callable[["Context"], t.Iterator[str]]],
-    vars: t.Optional[t.Dict[str, t.Any]] = None,
+    template_name
+    blocks.Callable, t.Iterator]],
+    vars.Dict] = None,
     shared: bool = False,
-    globals: t.Optional[t.MutableMapping[str, t.Any]] = None,
-    locals: t.Optional[t.Mapping[str, t.Any]] = None,
-) -> "Context":
+    globals.MutableMapping] = None,
+    locals.Mapping] = None,
+) :
     """Internal helper for context creation."""
     if vars is None:
         vars = {}
@@ -9018,7 +9016,7 @@ def new_context(
             parent = dict(parent)
         for key, value in locals.items():
             if value is not missing:
-                parent[key] = value
+                parent = value
     return environment.context_class(
         environment, parent, template_name, blocks, globals=globals
     )
@@ -9026,19 +9024,19 @@ def new_context(
 class TemplateReference:
     """The `self` in templates."""
 
-    def __init__(self, context: "Context") -> None:
+def __init__(self, context: "Context") -> None:
         self.__context = context
 
-    def __getitem__(self, name: str) -> t.Any:
-        blocks = self.__context.blocks[name]
+def __getitem__(self, name: str) :
+        blocks = self.__context.blocks
         return BlockReference(name, self.__context, blocks, 0)
 
-    def __repr__(self) -> str:
+def __repr__(self) -> str:
         return f"<{type(self).__name__} {self.__context.name!r}>"
 
 def _dict_method_all(dict_method: F) -> F:
     @functools.wraps(dict_method)
-    def f_all(self: "Context") -> t.Any:
+def f_all(self: "Context") :
         return dict_method(self.get_all())
 
     return t.cast(F, f_all)
@@ -9063,42 +9061,42 @@ class Context:
     :class:`Undefined` object for missing variables.
     """
 
-    def __init__(
+def __init__(
         self,
         environment: "Environment",
-        parent: t.Dict[str, t.Any],
-        name: t.Optional[str],
-        blocks: t.Dict[str, t.Callable[["Context"], t.Iterator[str]]],
-        globals: t.Optional[t.MutableMapping[str, t.Any]] = None,
+        parent.Any],
+        name
+        blocks.Callable, t.Iterator]],
+        globals.MutableMapping] = None,
     ):
         self.parent = parent
-        self.vars: t.Dict[str, t.Any] = {}
+        self.vars.Any] = {}
         self.environment: Environment = environment
         self.eval_ctx = EvalContext(self.environment, name)
-        self.exported_vars: t.Set[str] = set()
+        self.exported_vars= set()
         self.name = name
         self.globals_keys = set() if globals is None else set(globals)
 
         # create the initial mapping of blocks.  Whenever template inheritance
         # takes place the runtime will update this mapping with the new blocks
         # from the template.
-        self.blocks = {k: [v] for k, v in blocks.items()}
+        self.blocks = {k:  for k, v in blocks.items()}
 
-    def super(
-        self, name: str, current: t.Callable[["Context"], t.Iterator[str]]
-    ) -> t.Union["BlockReference", "Undefined"]:
+def super(
+        self, name: str, current"Context"], t.Iterator]
+    ) "BlockReference", "Undefined"]:
         """Render a parent block."""
         try:
-            blocks = self.blocks[name]
+            blocks = self.blocks
             index = blocks.index(current) + 1
-            blocks[index]
+            blocks
         except LookupError:
             return self.environment.undefined(
                 f"there is no parent block called {name!r}.", name="super"
             )
         return BlockReference(name, self, blocks, index)
 
-    def get(self, key: str, default: t.Any = None) -> t.Any:
+def get(self, key: str, default= None) :
         """Look up a variable by name, or return a default if the key is
         not found.
 
@@ -9106,11 +9104,11 @@ class Context:
         :param default: The value to return if the key is not found.
         """
         try:
-            return self[key]
+            return self
         except KeyError:
             return default
 
-    def resolve(self, key: str) -> t.Union[t.Any, "Undefined"]:
+def resolve(self, key: str) .Any, "Undefined"]:
         """Look up a variable by name, or return an :class:`Undefined`
         object if the key is not found.
 
@@ -9127,7 +9125,7 @@ class Context:
 
         return rv
 
-    def resolve_or_missing(self, key: str) -> t.Any:
+def resolve_or_missing(self, key: str) :
         """Look up a variable by name, or return a ``missing`` sentinel
         if the key is not found.
 
@@ -9138,18 +9136,18 @@ class Context:
         :param key: The variable name to look up.
         """
         if key in self.vars:
-            return self.vars[key]
+            return self.vars
 
         if key in self.parent:
-            return self.parent[key]
+            return self.parent
 
         return missing
 
-    def get_exported(self) -> t.Dict[str, t.Any]:
+def get_exported(self) .Any]:
         """Get a new dict with the exported variables."""
-        return {k: self.vars[k] for k in self.exported_vars}
+        return {k: self.vars for k in self.exported_vars}
 
-    def get_all(self) -> t.Dict[str, t.Any]:
+def get_all(self) .Any]:
         """Return the complete context as dict including the exported
         variables.  For optimizations reasons this might not return an
         actual copy so be careful with using it.
@@ -9161,12 +9159,12 @@ class Context:
         return dict(self.parent, **self.vars)
 
     @internalcode
-    def call(
+def call(
         __self,
-        __obj: t.Callable[..., t.Any],
-        *args: t.Any,
-        **kwargs: t.Any,  # noqa: B902
-    ) -> t.Union[t.Any, "Undefined"]:
+        __obj..., t.Any],
+        *args
+        **kwargs# noqa: B902
+    ) .Any, "Undefined"]:
         """Call the callable with the arguments and keyword arguments
         provided but inject the active context or environment as first
         argument if the callable has :func:`pass_context` or
@@ -9188,9 +9186,9 @@ class Context:
             # the active context should have access to variables set in
             # loops and blocks without mutating the context itself
             if kwargs.get("_loop_vars"):
-                __self = __self.derived(kwargs["_loop_vars"])
+                __self = __self.derived(kwargs)
             if kwargs.get("_block_vars"):
-                __self = __self.derived(kwargs["_block_vars"])
+                __self = __self.derived(kwargs)
             args = (__self,) + args
         elif pass_arg is _PassArg.eval_context:
             args = (__self.eval_ctx,) + args
@@ -9208,7 +9206,7 @@ class Context:
                 " StopIteration exception"
             )
 
-    def derived(self, locals: t.Optional[t.Dict[str, t.Any]] = None) -> "Context":
+def derived(self, locals.Dict] = None) :
         """Internal helper function to create a derived context.  This is
         used in situations where the system needs a new context in the same
         template that is independent.
@@ -9224,11 +9222,11 @@ class Context:
     values = _dict_method_all(dict.values)
     items = _dict_method_all(dict.items)
 
-    def __contains__(self, name: str) -> bool:
+def __contains__(self, name: str) -> bool:
         return name in self.vars or name in self.parent
 
-    def __getitem__(self, key: str) -> t.Any:
-        """Look up a variable by name with ``[]`` syntax, or raise a
+def __getitem__(self, key: str) :
+        """Look up a variable by name with ```` syntax, or raise a
         ``KeyError`` if the key is not found.
         """
         item = self.resolve_or_missing(key)
@@ -9238,17 +9236,17 @@ class Context:
 
         return item
 
-    def __repr__(self) -> str:
+def __repr__(self) -> str:
         return f"<{type(self).__name__} {self.get_all()!r} of {self.name!r}>"
 
 class BlockReference:
     """One block on a template reference."""
 
-    def __init__(
+def __init__(
         self,
         name: str,
         context: "Context",
-        stack: t.List[t.Callable[["Context"], t.Iterator[str]]],
+        stack.Callable, t.Iterator]],
         depth: int,
     ) -> None:
         self.name = name
@@ -9257,7 +9255,7 @@ class BlockReference:
         self._depth = depth
 
     @property
-    def super(self) -> t.Union["BlockReference", "Undefined"]:
+def super(self) "BlockReference", "Undefined"]:
         """Super the block."""
         if self._depth + 1 >= len(self._stack):
             return self._context.environment.undefined(
@@ -9268,7 +9266,7 @@ class BlockReference:
     @internalcode
     async def _async_call(self) -> str:
         rv = self._context.environment.concat(  # type: ignore
-            [x async for x in self._stack[self._depth](self._context)]  # type: ignore
+            (self._context)]  # type: ignore
         )
 
         if self._context.eval_ctx.autoescape:
@@ -9277,12 +9275,12 @@ class BlockReference:
         return rv
 
     @internalcode
-    def __call__(self) -> str:
+def __call__(self) -> str:
         if self._context.environment.is_async:
             return self._async_call()  # type: ignore
 
         rv = self._context.environment.concat(  # type: ignore
-            self._stack[self._depth](self._context)
+            self._stack(self._context)
         )
 
         if self._context.eval_ctx.autoescape:
@@ -9298,17 +9296,17 @@ class LoopContext:
     #: Current iteration of the loop, starting at 0.
     index0 = -1
 
-    _length: t.Optional[int] = None
-    _after: t.Any = missing
-    _current: t.Any = missing
-    _before: t.Any = missing
-    _last_changed_value: t.Any = missing
+    _length= None
+    _after= missing
+    _current= missing
+    _before= missing
+    _last_changed_value= missing
 
-    def __init__(
+def __init__(
         self,
-        iterable: t.Iterable[V],
-        undefined: t.Type["Undefined"],
-        recurse: t.Optional["LoopRenderFunc"] = None,
+        iterable
+        undefined"Undefined"],
+        recurse"LoopRenderFunc"] = None,
         depth0: int = 0,
     ) -> None:
         """
@@ -9327,11 +9325,11 @@ class LoopContext:
         self.depth0 = depth0
 
     @staticmethod
-    def _to_iterator(iterable: t.Iterable[V]) -> t.Iterator[V]:
+def _to_iterator(iterable) :
         return iter(iterable)
 
     @property
-    def length(self) -> int:
+def length(self) -> int:
         """Length of the iterable.
 
         If the iterable is a generator or otherwise does not have a
@@ -9349,21 +9347,21 @@ class LoopContext:
 
         return self._length
 
-    def __len__(self) -> int:
+def __len__(self) -> int:
         return self.length
 
     @property
-    def depth(self) -> int:
+def depth(self) -> int:
         """How many levels deep a recursive loop currently is, starting at 1."""
         return self.depth0 + 1
 
     @property
-    def index(self) -> int:
+def index(self) -> int:
         """Current iteration of the loop, starting at 1."""
         return self.index0 + 1
 
     @property
-    def revindex0(self) -> int:
+def revindex0(self) -> int:
         """Number of iterations from the end of the loop, ending at 0.
 
         Requires calculating :attr:`length`.
@@ -9371,7 +9369,7 @@ class LoopContext:
         return self.length - self.index
 
     @property
-    def revindex(self) -> int:
+def revindex(self) -> int:
         """Number of iterations from the end of the loop, ending at 1.
 
         Requires calculating :attr:`length`.
@@ -9379,11 +9377,11 @@ class LoopContext:
         return self.length - self.index0
 
     @property
-    def first(self) -> bool:
+def first(self) -> bool:
         """Whether this is the first iteration of the loop."""
         return self.index0 == 0
 
-    def _peek_next(self) -> t.Any:
+def _peek_next(self) :
         """Return the next element in the iterable, or :data:`missing`
         if the iterable is exhausted. Only peeks one item ahead, caching
         the result in :attr:`_last` for use in subsequent checks. The
@@ -9396,7 +9394,7 @@ class LoopContext:
         return self._after
 
     @property
-    def last(self) -> bool:
+def last(self) -> bool:
         """Whether this is the last iteration of the loop.
 
         Causes the iterable to advance early. See
@@ -9406,7 +9404,7 @@ class LoopContext:
         return self._peek_next() is missing
 
     @property
-    def previtem(self) -> t.Union[t.Any, "Undefined"]:
+def previtem(self) .Any, "Undefined"]:
         """The item in the previous iteration. Undefined during the
         first iteration.
         """
@@ -9416,7 +9414,7 @@ class LoopContext:
         return self._before
 
     @property
-    def nextitem(self) -> t.Union[t.Any, "Undefined"]:
+def nextitem(self) .Any, "Undefined"]:
         """The item in the next iteration. Undefined during the last
         iteration.
 
@@ -9431,7 +9429,7 @@ class LoopContext:
 
         return rv
 
-    def cycle(self, *args: V) -> V:
+def cycle(self, *args: V) -> V:
         """Return a value from the given args, cycling through based on
         the current :attr:`index0`.
 
@@ -9440,9 +9438,9 @@ class LoopContext:
         if not args:
             raise TypeError("no items for cycling given")
 
-        return args[self.index0 % len(args)]
+        return args
 
-    def changed(self, *value: t.Any) -> bool:
+def changed(self, *value) -> bool:
         """Return ``True`` if previously called with a different value
         (including when called for the first time).
 
@@ -9454,10 +9452,10 @@ class LoopContext:
 
         return False
 
-    def __iter__(self) -> "LoopContext":
+def __iter__(self) :
         return self
 
-    def __next__(self) -> t.Tuple[t.Any, "LoopContext"]:
+def __next__(self) .Any, "LoopContext"]:
         if self._after is not missing:
             rv = self._after
             self._after = missing
@@ -9470,7 +9468,7 @@ class LoopContext:
         return rv, self
 
     @internalcode
-    def __call__(self, iterable: t.Iterable[V]) -> str:
+def __call__(self, iterable) -> str:
         """When iterating over nested data, render the body of the loop
         recursively with the given inner iterable data.
 
@@ -9483,16 +9481,16 @@ class LoopContext:
 
         return self._recurse(iterable, self._recurse, depth=self.depth)
 
-    def __repr__(self) -> str:
+def __repr__(self) -> str:
         return f"<{type(self).__name__} {self.index}/{self.length}>"
 
 class AsyncLoopContext(LoopContext):
-    _iterator: t.AsyncIterator[t.Any]  # type: ignore
+    _iterator.Any]  # type: ignore
 
     @staticmethod
-    def _to_iterator(  # type: ignore
-        iterable: t.Union[t.Iterable[V], t.AsyncIterable[V]],
-    ) -> t.AsyncIterator[V]:
+def _to_iterator(  # type: ignore
+        iterable.Iterable, t.AsyncIterable],
+    ) :
         return auto_aiter(iterable)
 
     @property
@@ -9503,7 +9501,7 @@ class AsyncLoopContext(LoopContext):
         try:
             self._length = len(self._iterable)  # type: ignore
         except TypeError:
-            iterable = [x async for x in self._iterator]
+            iterable = 
             self._iterator = self._to_iterator(iterable)
             self._length = len(iterable) + self.index + (self._after is not missing)
 
@@ -9517,7 +9515,7 @@ class AsyncLoopContext(LoopContext):
     async def revindex(self) -> int:  # type: ignore
         return await self.length - self.index0
 
-    async def _peek_next(self) -> t.Any:
+    async def _peek_next(self) :
         if self._after is not missing:
             return self._after
 
@@ -9533,7 +9531,7 @@ class AsyncLoopContext(LoopContext):
         return await self._peek_next() is missing
 
     @property
-    async def nextitem(self) -> t.Union[t.Any, "Undefined"]:
+    async def nextitem(self) .Any, "Undefined"]:
         rv = await self._peek_next()
 
         if rv is missing:
@@ -9541,10 +9539,10 @@ class AsyncLoopContext(LoopContext):
 
         return rv
 
-    def __aiter__(self) -> "AsyncLoopContext":
+def __aiter__(self) :
         return self
 
-    async def __anext__(self) -> t.Tuple[t.Any, "AsyncLoopContext"]:
+    async def __anext__(self) .Any, "AsyncLoopContext"]:
         if self._after is not missing:
             rv = self._after
             self._after = missing
@@ -9559,16 +9557,16 @@ class AsyncLoopContext(LoopContext):
 class Macro:
     """Wraps a macro function."""
 
-    def __init__(
+def __init__(
         self,
         environment: "Environment",
-        func: t.Callable[..., str],
+        func..., str],
         name: str,
-        arguments: t.List[str],
+        arguments
         catch_kwargs: bool,
         catch_varargs: bool,
         caller: bool,
-        default_autoescape: t.Optional[bool] = None,
+        default_autoescape= None,
     ):
         self._environment = environment
         self._func = func
@@ -9590,7 +9588,7 @@ class Macro:
 
     @internalcode
     @pass_eval_context
-    def __call__(self, *args: t.Any, **kwargs: t.Any) -> str:
+def __call__(self, *args**kwargs) -> str:
         # This requires a bit of explanation,  In the past we used to
         # decide largely based on compile-time information if a macro is
         # safe or unsafe.  While there was a volatile mode it was largely
@@ -9607,14 +9605,14 @@ class Macro:
         # argument to callables otherwise anyway.  Worst case here is
         # that if no eval context is passed we fall back to the compile
         # time autoescape flag.
-        if args and isinstance(args[0], EvalContext):
-            autoescape = args[0].autoescape
-            args = args[1:]
+        if args and isinstance(args, EvalContext):
+            autoescape = args.autoescape
+            args = args
         else:
             autoescape = self._default_autoescape
 
         # try to consume the positional arguments
-        arguments = list(args[: self._argument_count])
+        arguments = list(args)
         off = len(arguments)
 
         # For information why this is necessary refer to the handling
@@ -9625,7 +9623,7 @@ class Macro:
         # arguments expected we start filling in keyword arguments
         # and defaults.
         if off != self._argument_count:
-            for name in self.arguments[len(arguments) :]:
+            for name in self.arguments:
                 try:
                     value = kwargs.pop(name)
                 except KeyError:
@@ -9657,7 +9655,7 @@ class Macro:
                 f"macro {self.name!r} takes no keyword argument {next(iter(kwargs))!r}"
             )
         if self.catch_varargs:
-            arguments.append(args[self._argument_count :])
+            arguments.append(args)
         elif len(args) > self._argument_count:
             raise TypeError(
                 f"macro {self.name!r} takes not more than"
@@ -9666,7 +9664,7 @@ class Macro:
 
         return self._invoke(arguments, autoescape)
 
-    async def _async_invoke(self, arguments: t.List[t.Any], autoescape: bool) -> str:
+    async def _async_invoke(self, arguments.Any], autoescape: bool) -> str:
         rv = await self._func(*arguments)  # type: ignore
 
         if autoescape:
@@ -9674,7 +9672,7 @@ class Macro:
 
         return rv  # type: ignore
 
-    def _invoke(self, arguments: t.List[t.Any], autoescape: bool) -> str:
+def _invoke(self, arguments.Any], autoescape: bool) -> str:
         if self._environment.is_async:
             return self._async_invoke(arguments, autoescape)  # type: ignore
 
@@ -9685,7 +9683,7 @@ class Macro:
 
         return rv
 
-    def __repr__(self) -> str:
+def __repr__(self) -> str:
         name = "anonymous" if self.name is None else repr(self.name)
         return f"<{type(self).__name__} {name}>"
 
@@ -9711,12 +9709,12 @@ class Undefined:
         "_undefined_exception",
     )
 
-    def __init__(
+def __init__(
         self,
-        hint: t.Optional[str] = None,
-        obj: t.Any = missing,
-        name: t.Optional[str] = None,
-        exc: t.Type[TemplateRuntimeError] = UndefinedError,
+        hint= None,
+        obj= missing,
+        name= None,
+        exc= UndefinedError,
     ) -> None:
         self._undefined_hint = hint
         self._undefined_obj = obj
@@ -9724,7 +9722,7 @@ class Undefined:
         self._undefined_exception = exc
 
     @property
-    def _undefined_message(self) -> str:
+def _undefined_message(self) -> str:
         """Build a message about the undefined value based on how it was
         accessed.
         """
@@ -9746,21 +9744,21 @@ class Undefined:
         )
 
     @internalcode
-    def _fail_with_undefined_error(
-        self, *args: t.Any, **kwargs: t.Any
-    ) -> "te.NoReturn":
+def _fail_with_undefined_error(
+        self, *args**kwargs
+    ) :
         """Raise an :exc:`UndefinedError` when operations are performed
         on the undefined value.
         """
         raise self._undefined_exception(self._undefined_message)
 
     @internalcode
-    def __getattr__(self, name: str) -> t.Any:
+def __getattr__(self, name: str) :
         # Raise AttributeError on requests for names that appear to be unimplemented
         # dunder methods to keep Python's internal protocol probing behaviors working
         # properly in cases where another exception type could cause unexpected or
         # difficult-to-diagnose failures.
-        if name[:2] == "__" and name[-2:] == "__":
+        if name == "__" and name == "__":
             raise AttributeError(name)
 
         return self._fail_with_undefined_error()
@@ -9776,37 +9774,37 @@ class Undefined:
     __int__ = __float__ = __complex__ = _fail_with_undefined_error
     __pow__ = __rpow__ = _fail_with_undefined_error
 
-    def __eq__(self, other: t.Any) -> bool:
+def __eq__(self, other) -> bool:
         return type(self) is type(other)
 
-    def __ne__(self, other: t.Any) -> bool:
+def __ne__(self, other) -> bool:
         return not self.__eq__(other)
 
-    def __hash__(self) -> int:
+def __hash__(self) -> int:
         return id(type(self))
 
-    def __str__(self) -> str:
+def __str__(self) -> str:
         return ""
 
-    def __len__(self) -> int:
+def __len__(self) -> int:
         return 0
 
-    def __iter__(self) -> t.Iterator[t.Any]:
+def __iter__(self) .Any]:
         yield from ()
 
-    async def __aiter__(self) -> t.AsyncIterator[t.Any]:
+    async def __aiter__(self) .Any]:
         for _ in ():
             yield
 
-    def __bool__(self) -> bool:
+def __bool__(self) -> bool:
         return False
 
-    def __repr__(self) -> str:
+def __repr__(self) -> str:
         return "Undefined"
 
 def make_logging_undefined(
-    logger: t.Optional["logging.Logger"] = None, base: t.Type[Undefined] = Undefined
-) -> t.Type[Undefined]:
+    logger"logging.Logger"] = None, base= Undefined
+) :
     """Given a logger object this returns a new undefined class that will
     log certain failures.  It will log iterations and printing.  If no
     logger is given a default logger is created.
@@ -9832,15 +9830,15 @@ def make_logging_undefined(
         logger = logging.getLogger(__name__)
         logger.addHandler(logging.StreamHandler(sys.stderr))
 
-    def _log_message(undef: Undefined) -> None:
+def _log_message(undef: Undefined) -> None:
         logger.warning("Template variable warning: %s", undef._undefined_message)
 
-    class LoggingUndefined(base):  # type: ignore
+class LoggingUndefined(base):  # type: ignore
         __slots__ = ()
 
         def _fail_with_undefined_error(  # type: ignore
-            self, *args: t.Any, **kwargs: t.Any
-        ) -> "te.NoReturn":
+            self, *args**kwargs
+        ) :
             try:
                 super()._fail_with_undefined_error(*args, **kwargs)
             except self._undefined_exception as e:
@@ -9851,7 +9849,7 @@ def make_logging_undefined(
             _log_message(self)
             return super().__str__()  # type: ignore
 
-        def __iter__(self) -> t.Iterator[t.Any]:
+        def __iter__(self) .Any]:
             _log_message(self)
             return super().__iter__()  # type: ignore
 
@@ -9867,9 +9865,9 @@ class ChainableUndefined(Undefined):
     :exc:`UndefinedError`.
 
     >>> foo = ChainableUndefined(name='foo')
-    >>> str(foo.bar['baz'])
+    >>> str(foo.bar)
     ''
-    >>> foo.bar['baz'] + 42
+    >>> foo.bar + 42
     Traceback (most recent call last):
       ...
     jinja2.exceptions.UndefinedError: 'foo' is undefined
@@ -9879,22 +9877,22 @@ class ChainableUndefined(Undefined):
 
     __slots__ = ()
 
-    def __html__(self) -> str:
+def __html__(self) -> str:
         return str(self)
 
-    def __getattr__(self, name: str) -> "ChainableUndefined":
+def __getattr__(self, name: str) :
         # Raise AttributeError on requests for names that appear to be unimplemented
         # dunder methods to avoid confusing Python with truthy non-method objects that
         # do not implement the protocol being probed for. e.g., copy.copy(Undefined())
         # fails spectacularly if getattr(Undefined(), '__setstate__') returns an
         # Undefined object instead of raising AttributeError to signal that it does not
         # support that style of object initialization.
-        if name[:2] == "__" and name[-2:] == "__":
+        if name == "__" and name == "__":
             raise AttributeError(name)
 
         return self
 
-    def __getitem__(self, _name: str) -> "ChainableUndefined":  # type: ignore[override]
+def __getitem__(self, _name: str) :  # type: ignore
         return self
 
 class DebugUndefined(Undefined):
@@ -9913,7 +9911,7 @@ class DebugUndefined(Undefined):
 
     __slots__ = ()
 
-    def __str__(self) -> str:
+def __str__(self) -> str:
         if self._undefined_hint:
             message = f"undefined value printed: {self._undefined_hint}"
 
@@ -9923,7 +9921,7 @@ class DebugUndefined(Undefined):
         else:
             message = (
                 f"no such element: {object_type_repr(self._undefined_obj)}"
-                f"[{self._undefined_name!r}]"
+                f""
             )
 
         return f"{{{{ {message} }}}}"
@@ -9953,63 +9951,63 @@ class StrictUndefined(Undefined):
     __eq__ = __ne__ = __bool__ = __hash__ = Undefined._fail_with_undefined_error
     __contains__ = Undefined._fail_with_undefined_error
 
-    class LoopRenderFunc(te.Protocol):
+class LoopRenderFunc(te.Protocol):
         def __call__(
             self,
-            reciter: t.Iterable[V],
+            reciter
             loop_render_func: "LoopRenderFunc",
             depth: int = 0,
         ) -> str: ...
 
-    def __init__(self, context: "Context") -> None:
+def __init__(self, context: "Context") -> None:
         self.__context = context
 
-    def __getitem__(self, name: str) -> t.Any:
-        blocks = self.__context.blocks[name]
+def __getitem__(self, name: str) :
+        blocks = self.__context.blocks
         return BlockReference(name, self.__context, blocks, 0)
 
-    def __repr__(self) -> str:
+def __repr__(self) -> str:
         return f"<{type(self).__name__} {self.__context.name!r}>"
 
-    def f_all(self: "Context") -> t.Any:
+def f_all(self: "Context") :
         return dict_method(self.get_all())
 
-    def __init__(
+def __init__(
         self,
         environment: "Environment",
-        parent: t.Dict[str, t.Any],
-        name: t.Optional[str],
-        blocks: t.Dict[str, t.Callable[["Context"], t.Iterator[str]]],
-        globals: t.Optional[t.MutableMapping[str, t.Any]] = None,
+        parent.Any],
+        name
+        blocks.Callable, t.Iterator]],
+        globals.MutableMapping] = None,
     ):
         self.parent = parent
-        self.vars: t.Dict[str, t.Any] = {}
+        self.vars.Any] = {}
         self.environment: Environment = environment
         self.eval_ctx = EvalContext(self.environment, name)
-        self.exported_vars: t.Set[str] = set()
+        self.exported_vars= set()
         self.name = name
         self.globals_keys = set() if globals is None else set(globals)
 
         # create the initial mapping of blocks.  Whenever template inheritance
         # takes place the runtime will update this mapping with the new blocks
         # from the template.
-        self.blocks = {k: [v] for k, v in blocks.items()}
+        self.blocks = {k:  for k, v in blocks.items()}
 
-    def super(
-        self, name: str, current: t.Callable[["Context"], t.Iterator[str]]
-    ) -> t.Union["BlockReference", "Undefined"]:
+def super(
+        self, name: str, current"Context"], t.Iterator]
+    ) "BlockReference", "Undefined"]:
         """Render a parent block."""
         try:
-            blocks = self.blocks[name]
+            blocks = self.blocks
             index = blocks.index(current) + 1
-            blocks[index]
+            blocks
         except LookupError:
             return self.environment.undefined(
                 f"there is no parent block called {name!r}.", name="super"
             )
         return BlockReference(name, self, blocks, index)
 
-    def get(self, key: str, default: t.Any = None) -> t.Any:
+def get(self, key: str, default= None) :
         """Look up a variable by name, or return a default if the key is
         not found.
 
@@ -10017,11 +10015,11 @@ class StrictUndefined(Undefined):
         :param default: The value to return if the key is not found.
         """
         try:
-            return self[key]
+            return self
         except KeyError:
             return default
 
-    def resolve(self, key: str) -> t.Union[t.Any, "Undefined"]:
+def resolve(self, key: str) .Any, "Undefined"]:
         """Look up a variable by name, or return an :class:`Undefined`
         object if the key is not found.
 
@@ -10038,7 +10036,7 @@ class StrictUndefined(Undefined):
 
         return rv
 
-    def resolve_or_missing(self, key: str) -> t.Any:
+def resolve_or_missing(self, key: str) :
         """Look up a variable by name, or return a ``missing`` sentinel
         if the key is not found.
 
@@ -10049,18 +10047,18 @@ class StrictUndefined(Undefined):
         :param key: The variable name to look up.
         """
         if key in self.vars:
-            return self.vars[key]
+            return self.vars
 
         if key in self.parent:
-            return self.parent[key]
+            return self.parent
 
         return missing
 
-    def get_exported(self) -> t.Dict[str, t.Any]:
+def get_exported(self) .Any]:
         """Get a new dict with the exported variables."""
-        return {k: self.vars[k] for k in self.exported_vars}
+        return {k: self.vars for k in self.exported_vars}
 
-    def get_all(self) -> t.Dict[str, t.Any]:
+def get_all(self) .Any]:
         """Return the complete context as dict including the exported
         variables.  For optimizations reasons this might not return an
         actual copy so be careful with using it.
@@ -10071,12 +10069,12 @@ class StrictUndefined(Undefined):
             return self.vars
         return dict(self.parent, **self.vars)
 
-    def call(
+def call(
         __self,
-        __obj: t.Callable[..., t.Any],
-        *args: t.Any,
-        **kwargs: t.Any,  # noqa: B902
-    ) -> t.Union[t.Any, "Undefined"]:
+        __obj..., t.Any],
+        *args
+        **kwargs# noqa: B902
+    ) .Any, "Undefined"]:
         """Call the callable with the arguments and keyword arguments
         provided but inject the active context or environment as first
         argument if the callable has :func:`pass_context` or
@@ -10098,9 +10096,9 @@ class StrictUndefined(Undefined):
             # the active context should have access to variables set in
             # loops and blocks without mutating the context itself
             if kwargs.get("_loop_vars"):
-                __self = __self.derived(kwargs["_loop_vars"])
+                __self = __self.derived(kwargs)
             if kwargs.get("_block_vars"):
-                __self = __self.derived(kwargs["_block_vars"])
+                __self = __self.derived(kwargs)
             args = (__self,) + args
         elif pass_arg is _PassArg.eval_context:
             args = (__self.eval_ctx,) + args
@@ -10118,7 +10116,7 @@ class StrictUndefined(Undefined):
                 " StopIteration exception"
             )
 
-    def derived(self, locals: t.Optional[t.Dict[str, t.Any]] = None) -> "Context":
+def derived(self, locals.Dict] = None) :
         """Internal helper function to create a derived context.  This is
         used in situations where the system needs a new context in the same
         template that is independent.
@@ -10130,11 +10128,11 @@ class StrictUndefined(Undefined):
         context.blocks.update((k, list(v)) for k, v in self.blocks.items())
         return context
 
-    def __contains__(self, name: str) -> bool:
+def __contains__(self, name: str) -> bool:
         return name in self.vars or name in self.parent
 
-    def __getitem__(self, key: str) -> t.Any:
-        """Look up a variable by name with ``[]`` syntax, or raise a
+def __getitem__(self, key: str) :
+        """Look up a variable by name with ```` syntax, or raise a
         ``KeyError`` if the key is not found.
         """
         item = self.resolve_or_missing(key)
@@ -10144,14 +10142,14 @@ class StrictUndefined(Undefined):
 
         return item
 
-    def __repr__(self) -> str:
+def __repr__(self) -> str:
         return f"<{type(self).__name__} {self.get_all()!r} of {self.name!r}>"
 
-    def __init__(
+def __init__(
         self,
         name: str,
         context: "Context",
-        stack: t.List[t.Callable[["Context"], t.Iterator[str]]],
+        stack.Callable, t.Iterator]],
         depth: int,
     ) -> None:
         self.name = name
@@ -10159,7 +10157,7 @@ class StrictUndefined(Undefined):
         self._stack = stack
         self._depth = depth
 
-    def super(self) -> t.Union["BlockReference", "Undefined"]:
+def super(self) "BlockReference", "Undefined"]:
         """Super the block."""
         if self._depth + 1 >= len(self._stack):
             return self._context.environment.undefined(
@@ -10167,12 +10165,12 @@ class StrictUndefined(Undefined):
             )
         return BlockReference(self.name, self._context, self._stack, self._depth + 1)
 
-    def __call__(self) -> str:
+def __call__(self) -> str:
         if self._context.environment.is_async:
             return self._async_call()  # type: ignore
 
         rv = self._context.environment.concat(  # type: ignore
-            self._stack[self._depth](self._context)
+            self._stack(self._context)
         )
 
         if self._context.eval_ctx.autoescape:
@@ -10180,11 +10178,11 @@ class StrictUndefined(Undefined):
 
         return rv
 
-    def __init__(
+def __init__(
         self,
-        iterable: t.Iterable[V],
-        undefined: t.Type["Undefined"],
-        recurse: t.Optional["LoopRenderFunc"] = None,
+        iterable
+        undefined"Undefined"],
+        recurse"LoopRenderFunc"] = None,
         depth0: int = 0,
     ) -> None:
         """
@@ -10202,10 +10200,10 @@ class StrictUndefined(Undefined):
         #: How many levels deep a recursive loop currently is, starting at 0.
         self.depth0 = depth0
 
-    def _to_iterator(iterable: t.Iterable[V]) -> t.Iterator[V]:
+def _to_iterator(iterable) :
         return iter(iterable)
 
-    def length(self) -> int:
+def length(self) -> int:
         """Length of the iterable.
 
         If the iterable is a generator or otherwise does not have a
@@ -10223,36 +10221,36 @@ class StrictUndefined(Undefined):
 
         return self._length
 
-    def __len__(self) -> int:
+def __len__(self) -> int:
         return self.length
 
-    def depth(self) -> int:
+def depth(self) -> int:
         """How many levels deep a recursive loop currently is, starting at 1."""
         return self.depth0 + 1
 
-    def index(self) -> int:
+def index(self) -> int:
         """Current iteration of the loop, starting at 1."""
         return self.index0 + 1
 
-    def revindex0(self) -> int:
+def revindex0(self) -> int:
         """Number of iterations from the end of the loop, ending at 0.
 
         Requires calculating :attr:`length`.
         """
         return self.length - self.index
 
-    def revindex(self) -> int:
+def revindex(self) -> int:
         """Number of iterations from the end of the loop, ending at 1.
 
         Requires calculating :attr:`length`.
         """
         return self.length - self.index0
 
-    def first(self) -> bool:
+def first(self) -> bool:
         """Whether this is the first iteration of the loop."""
         return self.index0 == 0
 
-    def _peek_next(self) -> t.Any:
+def _peek_next(self) :
         """Return the next element in the iterable, or :data:`missing`
         if the iterable is exhausted. Only peeks one item ahead, caching
         the result in :attr:`_last` for use in subsequent checks. The
@@ -10264,7 +10262,7 @@ class StrictUndefined(Undefined):
         self._after = next(self._iterator, missing)
         return self._after
 
-    def last(self) -> bool:
+def last(self) -> bool:
         """Whether this is the last iteration of the loop.
 
         Causes the iterable to advance early. See
@@ -10273,7 +10271,7 @@ class StrictUndefined(Undefined):
         """
         return self._peek_next() is missing
 
-    def previtem(self) -> t.Union[t.Any, "Undefined"]:
+def previtem(self) .Any, "Undefined"]:
         """The item in the previous iteration. Undefined during the
         first iteration.
         """
@@ -10282,7 +10280,7 @@ class StrictUndefined(Undefined):
 
         return self._before
 
-    def nextitem(self) -> t.Union[t.Any, "Undefined"]:
+def nextitem(self) .Any, "Undefined"]:
         """The item in the next iteration. Undefined during the last
         iteration.
 
@@ -10297,7 +10295,7 @@ class StrictUndefined(Undefined):
 
         return rv
 
-    def cycle(self, *args: V) -> V:
+def cycle(self, *args: V) -> V:
         """Return a value from the given args, cycling through based on
         the current :attr:`index0`.
 
@@ -10306,9 +10304,9 @@ class StrictUndefined(Undefined):
         if not args:
             raise TypeError("no items for cycling given")
 
-        return args[self.index0 % len(args)]
+        return args
 
-    def changed(self, *value: t.Any) -> bool:
+def changed(self, *value) -> bool:
         """Return ``True`` if previously called with a different value
         (including when called for the first time).
 
@@ -10320,10 +10318,10 @@ class StrictUndefined(Undefined):
 
         return False
 
-    def __iter__(self) -> "LoopContext":
+def __iter__(self) :
         return self
 
-    def __next__(self) -> t.Tuple[t.Any, "LoopContext"]:
+def __next__(self) .Any, "LoopContext"]:
         if self._after is not missing:
             rv = self._after
             self._after = missing
@@ -10335,7 +10333,7 @@ class StrictUndefined(Undefined):
         self._current = rv
         return rv, self
 
-    def __call__(self, iterable: t.Iterable[V]) -> str:
+def __call__(self, iterable) -> str:
         """When iterating over nested data, render the body of the loop
         recursively with the given inner iterable data.
 
@@ -10348,27 +10346,27 @@ class StrictUndefined(Undefined):
 
         return self._recurse(iterable, self._recurse, depth=self.depth)
 
-    def __repr__(self) -> str:
+def __repr__(self) -> str:
         return f"<{type(self).__name__} {self.index}/{self.length}>"
 
-    def _to_iterator(  # type: ignore
-        iterable: t.Union[t.Iterable[V], t.AsyncIterable[V]],
-    ) -> t.AsyncIterator[V]:
+def _to_iterator(  # type: ignore
+        iterable.Iterable, t.AsyncIterable],
+    ) :
         return auto_aiter(iterable)
 
-    def __aiter__(self) -> "AsyncLoopContext":
+def __aiter__(self) :
         return self
 
-    def __init__(
+def __init__(
         self,
         environment: "Environment",
-        func: t.Callable[..., str],
+        func..., str],
         name: str,
-        arguments: t.List[str],
+        arguments
         catch_kwargs: bool,
         catch_varargs: bool,
         caller: bool,
-        default_autoescape: t.Optional[bool] = None,
+        default_autoescape= None,
     ):
         self._environment = environment
         self._func = func
@@ -10388,7 +10386,7 @@ class StrictUndefined(Undefined):
 
         self._default_autoescape = default_autoescape
 
-    def __call__(self, *args: t.Any, **kwargs: t.Any) -> str:
+def __call__(self, *args**kwargs) -> str:
         # This requires a bit of explanation,  In the past we used to
         # decide largely based on compile-time information if a macro is
         # safe or unsafe.  While there was a volatile mode it was largely
@@ -10405,14 +10403,14 @@ class StrictUndefined(Undefined):
         # argument to callables otherwise anyway.  Worst case here is
         # that if no eval context is passed we fall back to the compile
         # time autoescape flag.
-        if args and isinstance(args[0], EvalContext):
-            autoescape = args[0].autoescape
-            args = args[1:]
+        if args and isinstance(args, EvalContext):
+            autoescape = args.autoescape
+            args = args
         else:
             autoescape = self._default_autoescape
 
         # try to consume the positional arguments
-        arguments = list(args[: self._argument_count])
+        arguments = list(args)
         off = len(arguments)
 
         # For information why this is necessary refer to the handling
@@ -10423,7 +10421,7 @@ class StrictUndefined(Undefined):
         # arguments expected we start filling in keyword arguments
         # and defaults.
         if off != self._argument_count:
-            for name in self.arguments[len(arguments) :]:
+            for name in self.arguments:
                 try:
                     value = kwargs.pop(name)
                 except KeyError:
@@ -10455,7 +10453,7 @@ class StrictUndefined(Undefined):
                 f"macro {self.name!r} takes no keyword argument {next(iter(kwargs))!r}"
             )
         if self.catch_varargs:
-            arguments.append(args[self._argument_count :])
+            arguments.append(args)
         elif len(args) > self._argument_count:
             raise TypeError(
                 f"macro {self.name!r} takes not more than"
@@ -10464,7 +10462,7 @@ class StrictUndefined(Undefined):
 
         return self._invoke(arguments, autoescape)
 
-    def _invoke(self, arguments: t.List[t.Any], autoescape: bool) -> str:
+def _invoke(self, arguments.Any], autoescape: bool) -> str:
         if self._environment.is_async:
             return self._async_invoke(arguments, autoescape)  # type: ignore
 
@@ -10475,23 +10473,23 @@ class StrictUndefined(Undefined):
 
         return rv
 
-    def __repr__(self) -> str:
+def __repr__(self) -> str:
         name = "anonymous" if self.name is None else repr(self.name)
         return f"<{type(self).__name__} {name}>"
 
-    def __init__(
+def __init__(
         self,
-        hint: t.Optional[str] = None,
-        obj: t.Any = missing,
-        name: t.Optional[str] = None,
-        exc: t.Type[TemplateRuntimeError] = UndefinedError,
+        hint= None,
+        obj= missing,
+        name= None,
+        exc= UndefinedError,
     ) -> None:
         self._undefined_hint = hint
         self._undefined_obj = obj
         self._undefined_name = name
         self._undefined_exception = exc
 
-    def _undefined_message(self) -> str:
+def _undefined_message(self) -> str:
         """Build a message about the undefined value based on how it was
         accessed.
         """
@@ -10512,57 +10510,57 @@ class StrictUndefined(Undefined):
             f" attribute {self._undefined_name!r}"
         )
 
-    def _fail_with_undefined_error(
-        self, *args: t.Any, **kwargs: t.Any
-    ) -> "te.NoReturn":
+def _fail_with_undefined_error(
+        self, *args**kwargs
+    ) :
         """Raise an :exc:`UndefinedError` when operations are performed
         on the undefined value.
         """
         raise self._undefined_exception(self._undefined_message)
 
-    def __getattr__(self, name: str) -> t.Any:
+def __getattr__(self, name: str) :
         # Raise AttributeError on requests for names that appear to be unimplemented
         # dunder methods to keep Python's internal protocol probing behaviors working
         # properly in cases where another exception type could cause unexpected or
         # difficult-to-diagnose failures.
-        if name[:2] == "__" and name[-2:] == "__":
+        if name == "__" and name == "__":
             raise AttributeError(name)
 
         return self._fail_with_undefined_error()
 
-    def __eq__(self, other: t.Any) -> bool:
+def __eq__(self, other) -> bool:
         return type(self) is type(other)
 
-    def __ne__(self, other: t.Any) -> bool:
+def __ne__(self, other) -> bool:
         return not self.__eq__(other)
 
-    def __hash__(self) -> int:
+def __hash__(self) -> int:
         return id(type(self))
 
-    def __str__(self) -> str:
+def __str__(self) -> str:
         return ""
 
-    def __len__(self) -> int:
+def __len__(self) -> int:
         return 0
 
-    def __iter__(self) -> t.Iterator[t.Any]:
+def __iter__(self) .Any]:
         yield from ()
 
-    def __bool__(self) -> bool:
+def __bool__(self) -> bool:
         return False
 
-    def __repr__(self) -> str:
+def __repr__(self) -> str:
         return "Undefined"
 
-    def _log_message(undef: Undefined) -> None:
+def _log_message(undef: Undefined) -> None:
         logger.warning("Template variable warning: %s", undef._undefined_message)
 
-    class LoggingUndefined(base):  # type: ignore
+class LoggingUndefined(base):  # type: ignore
         __slots__ = ()
 
         def _fail_with_undefined_error(  # type: ignore
-            self, *args: t.Any, **kwargs: t.Any
-        ) -> "te.NoReturn":
+            self, *args**kwargs
+        ) :
             try:
                 super()._fail_with_undefined_error(*args, **kwargs)
             except self._undefined_exception as e:
@@ -10573,7 +10571,7 @@ class StrictUndefined(Undefined):
             _log_message(self)
             return super().__str__()  # type: ignore
 
-        def __iter__(self) -> t.Iterator[t.Any]:
+        def __iter__(self) .Any]:
             _log_message(self)
             return super().__iter__()  # type: ignore
 
@@ -10581,25 +10579,25 @@ class StrictUndefined(Undefined):
             _log_message(self)
             return super().__bool__()  # type: ignore
 
-    def __html__(self) -> str:
+def __html__(self) -> str:
         return str(self)
 
-    def __getattr__(self, name: str) -> "ChainableUndefined":
+def __getattr__(self, name: str) :
         # Raise AttributeError on requests for names that appear to be unimplemented
         # dunder methods to avoid confusing Python with truthy non-method objects that
         # do not implement the protocol being probed for. e.g., copy.copy(Undefined())
         # fails spectacularly if getattr(Undefined(), '__setstate__') returns an
         # Undefined object instead of raising AttributeError to signal that it does not
         # support that style of object initialization.
-        if name[:2] == "__" and name[-2:] == "__":
+        if name == "__" and name == "__":
             raise AttributeError(name)
 
         return self
 
-    def __getitem__(self, _name: str) -> "ChainableUndefined":  # type: ignore[override]
+def __getitem__(self, _name: str) :  # type: ignore
         return self
 
-    def __str__(self) -> str:
+def __str__(self) -> str:
         if self._undefined_hint:
             message = f"undefined value printed: {self._undefined_hint}"
 
@@ -10609,21 +10607,21 @@ class StrictUndefined(Undefined):
         else:
             message = (
                 f"no such element: {object_type_repr(self._undefined_obj)}"
-                f"[{self._undefined_name!r}]"
+                f""
             )
 
         return f"{{{{ {message} }}}}"
 
         def __call__(
             self,
-            reciter: t.Iterable[V],
+            reciter
             loop_render_func: "LoopRenderFunc",
             depth: int = 0,
         ) -> str: ...
 
         def _fail_with_undefined_error(  # type: ignore
-            self, *args: t.Any, **kwargs: t.Any
-        ) -> "te.NoReturn":
+            self, *args**kwargs
+        ) :
             try:
                 super()._fail_with_undefined_error(*args, **kwargs)
             except self._undefined_exception as e:
@@ -10634,7 +10632,7 @@ class StrictUndefined(Undefined):
             _log_message(self)
             return super().__str__()  # type: ignore
 
-        def __iter__(self) -> t.Iterator[t.Any]:
+        def __iter__(self) .Any]:
             _log_message(self)
             return super().__iter__()  # type: ignore
 
@@ -10766,7 +10764,7 @@ def pytest_addoption(parser: Parser) -> None:
     group.addoption(
         "--import-mode",
         default="prepend",
-        choices=["prepend", "append", "importlib"],
+        choices=,
         dest="importmode",
         help="Prepend/append to sys.path when importing test modules and conftest "
         "files. Default: prepend.",
@@ -10792,7 +10790,7 @@ def pytest_addoption(parser: Parser) -> None:
         "Directories to search for tests when no files or directories are given on the "
         "command line",
         type="args",
-        default=[],
+        default=,
     )
     parser.addini(
         "collect_imported_tests",
@@ -10845,7 +10843,7 @@ def validate_basetemp(path: str) -> str:
     if not path:
         raise argparse.ArgumentTypeError(msg)
 
-    def is_ancestor(base: Path, query: Path) -> bool:
+def is_ancestor(base: Path, query: Path) -> bool:
         """Return whether query is an ancestor of base."""
         if base == query:
             return True
@@ -10862,7 +10860,7 @@ def validate_basetemp(path: str) -> str:
     return path
 
 def wrap_session(
-    config: Config, doit: Callable[[Config, Session], int | ExitCode | None]
+    config: Config, doit: Callable, int | ExitCode | None]
 ) -> int | ExitCode:
     """Skeleton command line program."""
     session = Session.from_config(config)
@@ -10947,7 +10945,7 @@ def pytest_runtestloop(session: Session) -> bool:
         return True
 
     for i, item in enumerate(session.items):
-        nextitem = session.items[i + 1] if i + 1 < len(session.items) else None
+        nextitem = session.items if i + 1 < len(session.items) else None
         item.main.hook.pytest_runtest_protocol(item=item, nextitem=nextitem)
         if session.shouldfail:
             raise session.Failed(session.shouldfail)
@@ -10959,7 +10957,7 @@ def _in_venv(path: Path) -> bool:
     """Attempt to detect if ``path`` is the root of a Virtual Environment by
     checking for the existence of the pyvenv.cfg file.
 
-    [https://peps.python.org/pep-0405/]
+    
 
     For regression protection we also check for conda environments that do not include pyenv.cfg yet --
     https://github.com/conda/conda/issues/13337 is the conda issue tracking adding pyenv.cfg.
@@ -10982,7 +10980,7 @@ def pytest_ignore_collect(collection_path: Path, config: Config) -> bool | None:
     ignore_paths = main._getconftest_pathlist(
         "collect_ignore", path=collection_path.parent
     )
-    ignore_paths = ignore_paths or []
+    ignore_paths = ignore_paths or 
     excludeopt = main.getoption("ignore")
     if excludeopt:
         ignore_paths.extend(absolutepath(x) for x in excludeopt)
@@ -10993,7 +10991,7 @@ def pytest_ignore_collect(collection_path: Path, config: Config) -> bool | None:
     ignore_globs = main._getconftest_pathlist(
         "collect_ignore_glob", path=collection_path.parent
     )
-    ignore_globs = ignore_globs or []
+    ignore_globs = ignore_globs or 
     excludeglobopt = main.getoption("ignore_glob")
     if excludeglobopt:
         ignore_globs.extend(absolutepath(x) for x in excludeglobopt)
@@ -11017,13 +11015,13 @@ def pytest_collect_directory(
 ) -> nodes.Collector | None:
     return Dir.from_parent(parent, path=path)
 
-def pytest_collection_modifyitems(items: list[nodes.Item], config: Config) -> None:
-    deselect_prefixes = tuple(main.getoption("deselect") or [])
+def pytest_collection_modifyitems(items: list, config: Config) -> None:
+    deselect_prefixes = tuple(main.getoption("deselect") or )
     if not deselect_prefixes:
         return
 
-    remaining = []
-    deselected = []
+    remaining = 
+    deselected = 
     for colitem in items:
         if colitem.nodeid.startswith(deselect_prefixes):
             deselected.append(colitem)
@@ -11032,20 +11030,20 @@ def pytest_collection_modifyitems(items: list[nodes.Item], config: Config) -> No
 
     if deselected:
         main.hook.pytest_deselected(items=deselected)
-        items[:] = remaining
+        items = remaining
 
 class FSHookProxy:
-    def __init__(
+def __init__(
         self,
         pm: PytestPluginManager,
-        remove_mods: AbstractSet[object],
+        remove_mods: AbstractSet,
     ) -> None:
         self.pm = pm
         self.remove_mods = remove_mods
 
-    def __getattr__(self, name: str) -> pluggy.HookCaller:
+def __getattr__(self, name: str) -> pluggy.HookCaller:
         x = self.pm.subset_hook_caller(name, remove_plugins=self.remove_mods)
-        self.__dict__[name] = x
+        self.__dict__ = x
         return x
 
 class Interrupted(KeyboardInterrupt):
@@ -11056,14 +11054,14 @@ class Interrupted(KeyboardInterrupt):
 class Failed(Exception):
     """Signals a stop as failed test run."""
 
-class _bestrelpath_cache(dict[Path, str]):
+class _bestrelpath_cache(dict):
     __slots__ = ("path",)
 
     path: Path
 
-    def __missing__(self, path: Path) -> str:
+def __missing__(self, path: Path) -> str:
         r = bestrelpath(self.path, path)
-        self[path] = r
+        self = r
         return r
 
 class Dir(nodes.Directory):
@@ -11079,7 +11077,7 @@ class Dir(nodes.Directory):
     """
 
     @classmethod
-    def from_parent(  # type: ignore[override]
+def from_parent(  # type: ignore
         cls,
         parent: nodes.Collector,
         *,
@@ -11093,10 +11091,10 @@ class Dir(nodes.Directory):
         """
         return super().from_parent(parent=parent, path=path)
 
-    def collect(self) -> Iterable[nodes.Item | nodes.Collector]:
+def collect(self) -> Iterable:
         config = self.config
         col: nodes.Collector | None
-        cols: Sequence[nodes.Collector]
+        cols: Sequence
         ihook = self.ihook
         for direntry in scandir(self.path):
             if direntry.is_dir():
@@ -11130,7 +11128,7 @@ class Session(nodes.Collector):
     _fixturemanager: FixtureManager
     exitstatus: int | ExitCode
 
-    def __init__(self, config: Config) -> None:
+def __init__(self, config: Config) -> None:
         super().__init__(
             name="",
             path=main.rootpath,
@@ -11145,23 +11143,23 @@ class Session(nodes.Collector):
         self._shouldstop: bool | str = False
         self._shouldfail: bool | str = False
         self.trace = main.trace.root.get("collection")
-        self._initialpaths: frozenset[Path] = frozenset()
-        self._initialpaths_with_parents: frozenset[Path] = frozenset()
-        self._notfound: list[tuple[str, Sequence[nodes.Collector]]] = []
-        self._initial_parts: list[CollectionArgument] = []
-        self._collection_cache: dict[nodes.Collector, CollectReport] = {}
-        self.items: list[nodes.Item] = []
+        self._initialpaths: frozenset = frozenset()
+        self._initialpaths_with_parents: frozenset = frozenset()
+        self._notfound: list]] = 
+        self._initial_parts: list = 
+        self._collection_cache: dict = {}
+        self.items: list = 
 
-        self._bestrelpathcache: dict[Path, str] = _bestrelpath_cache(main.rootpath)
+        self._bestrelpathcache: dict = _bestrelpath_cache(main.rootpath)
 
         self.main.pluginmanager.register(self, name="session")
 
     @classmethod
-    def from_config(cls, config: Config) -> Session:
+def from_config(cls, config: Config) -> Session:
         session: Session = cls._create(config=config)
         return session
 
-    def __repr__(self) -> str:
+def __repr__(self) -> str:
         return (
             f"<{self.__class__.__name__} {self.name} "
             f"exitstatus=%r "
@@ -11170,11 +11168,11 @@ class Session(nodes.Collector):
         ) % getattr(self, "exitstatus", "<UNSET>")
 
     @property
-    def shouldstop(self) -> bool | str:
+def shouldstop(self) -> bool | str:
         return self._shouldstop
 
     @shouldstop.setter
-    def shouldstop(self, value: bool | str) -> None:
+def shouldstop(self, value: bool | str) -> None:
         # The runner checks shouldfail and assumes that if it is set we are
         # definitely stopping, so prevent unsetting it.
         if value is False and self._shouldstop:
@@ -11188,11 +11186,11 @@ class Session(nodes.Collector):
         self._shouldstop = value
 
     @property
-    def shouldfail(self) -> bool | str:
+def shouldfail(self) -> bool | str:
         return self._shouldfail
 
     @shouldfail.setter
-    def shouldfail(self, value: bool | str) -> None:
+def shouldfail(self, value: bool | str) -> None:
         # The runner checks shouldfail and assumes that if it is set we are
         # definitely stopping, so prevent unsetting it.
         if value is False and self._shouldfail:
@@ -11206,26 +11204,26 @@ class Session(nodes.Collector):
         self._shouldfail = value
 
     @property
-    def startpath(self) -> Path:
+def startpath(self) -> Path:
         """The path from which pytest was invoked.
 
         .. versionadded:: 7.0.0
         """
         return self.main.invocation_params.dir
 
-    def _node_location_to_relpath(self, node_path: Path) -> str:
+def _node_location_to_relpath(self, node_path: Path) -> str:
         # bestrelpath is a quite slow function.
-        return self._bestrelpathcache[node_path]
+        return self._bestrelpathcache
 
     @hookimpl(tryfirst=True)
-    def pytest_collectstart(self) -> None:
+def pytest_collectstart(self) -> None:
         if self.shouldfail:
             raise self.Failed(self.shouldfail)
         if self.shouldstop:
             raise self.Interrupted(self.shouldstop)
 
     @hookimpl(tryfirst=True)
-    def pytest_runtest_logreport(self, report: TestReport | CollectReport) -> None:
+def pytest_runtest_logreport(self, report: TestReport | CollectReport) -> None:
         if report.failed and not hasattr(report, "wasxfail"):
             self.testsfailed += 1
             maxfail = self.main.getvalue("maxfail")
@@ -11234,9 +11232,9 @@ class Session(nodes.Collector):
 
     pytest_collectreport = pytest_runtest_logreport
 
-    def isinitpath(
+def isinitpath(
         self,
-        path: str | os.PathLike[str],
+        path: str | os.PathLike,
         *,
         with_parents: bool = False,
     ) -> bool:
@@ -11258,7 +11256,7 @@ class Session(nodes.Collector):
         else:
             return path_ in self._initialpaths
 
-    def gethookproxy(self, fspath: os.PathLike[str]) -> pluggy.HookRelay:
+def gethookproxy(self, fspath: os.PathLike) -> pluggy.HookRelay:
         # Optimization: Path(Path(...)) is much slower than isinstance.
         path = fspath if isinstance(fspath, Path) else Path(fspath)
         pm = self.main.pluginmanager
@@ -11269,31 +11267,31 @@ class Session(nodes.Collector):
         proxy: pluggy.HookRelay
         if remove_mods:
             # One or more conftests are not in use at this path.
-            proxy = PathAwareHookProxy(FSHookProxy(pm, remove_mods))  # type: ignore[arg-type,assignment]
+            proxy = PathAwareHookProxy(FSHookProxy(pm, remove_mods))  # type: ignore
         else:
             # All plugins are active for this fspath.
             proxy = self.main.hook
         return proxy
 
-    def _collect_path(
+def _collect_path(
         self,
         path: Path,
-        path_cache: dict[Path, Sequence[nodes.Collector]],
-    ) -> Sequence[nodes.Collector]:
+        path_cache: dict],
+    ) -> Sequence:
         """Create a Collector for the given path.
 
         `path_cache` makes it so the same Collectors are returned for the same
         path.
         """
         if path in path_cache:
-            return path_cache[path]
+            return path_cache
 
         if path.is_dir():
             ihook = self.gethookproxy(path.parent)
             col: nodes.Collector | None = ihook.pytest_collect_directory(
                 path=path, parent=self
             )
-            cols: Sequence[nodes.Collector] = (col,) if col is not None else ()
+            cols: Sequence = (col,) if col is not None else ()
 
         elif path.is_file():
             ihook = self.gethookproxy(path)
@@ -11303,22 +11301,22 @@ class Session(nodes.Collector):
             # Broken symlink or invalid/missing file.
             cols = ()
 
-        path_cache[path] = cols
+        path_cache = cols
         return cols
 
     @overload
-    def perform_collect(
-        self, args: Sequence[str] | None = ..., genitems: Literal[True] = ...
-    ) -> Sequence[nodes.Item]: ...
+def perform_collect(
+        self, args: Sequence | None = ..., genitems: Literal = ...
+    ) -> Sequence: ...
 
     @overload
-    def perform_collect(
-        self, args: Sequence[str] | None = ..., genitems: bool = ...
-    ) -> Sequence[nodes.Item | nodes.Collector]: ...
+def perform_collect(
+        self, args: Sequence | None = ..., genitems: bool = ...
+    ) -> Sequence: ...
 
-    def perform_collect(
-        self, args: Sequence[str] | None = None, genitems: bool = True
-    ) -> Sequence[nodes.Item | nodes.Collector]:
+def perform_collect(
+        self, args: Sequence | None = None, genitems: bool = True
+    ) -> Sequence:
         """Perform the collection phase for this session.
 
         This is called by the default :hook:`pytest_collection` hook
@@ -11340,14 +11338,14 @@ class Session(nodes.Collector):
 
         hook = self.main.hook
 
-        self._notfound = []
-        self._initial_parts = []
+        self._notfound = 
+        self._initial_parts = 
         self._collection_cache = {}
-        self.items = []
-        items: Sequence[nodes.Item | nodes.Collector] = self.items
+        self.items = 
+        items: Sequence = self.items
         try:
-            initialpaths: list[Path] = []
-            initialpaths_with_parents: list[Path] = []
+            initialpaths: list = 
+            initialpaths_with_parents: list = 
             for arg in args:
                 collection_argument = resolve_collection_argument(
                     self.main.invocation_params.dir,
@@ -11365,7 +11363,7 @@ class Session(nodes.Collector):
             self.ihook.pytest_collectreport(report=rep)
             self.trace.root.indent -= 1
             if self._notfound:
-                errors = []
+                errors = 
                 for arg, collectors in self._notfound:
                     if collectors:
                         errors.append(
@@ -11388,8 +11386,8 @@ class Session(nodes.Collector):
                 session=self, config=self.config, items=items
             )
         finally:
-            self._notfound = []
-            self._initial_parts = []
+            self._notfound = 
+            self._initial_parts = 
             self._collection_cache = {}
             hook.pytest_collection_finish(session=self)
 
@@ -11398,24 +11396,24 @@ class Session(nodes.Collector):
 
         return items
 
-    def _collect_one_node(
+def _collect_one_node(
         self,
         node: nodes.Collector,
         handle_dupes: bool = True,
-    ) -> tuple[CollectReport, bool]:
+    ) -> tuple:
         if node in self._collection_cache and handle_dupes:
-            rep = self._collection_cache[node]
+            rep = self._collection_cache
             return rep, True
         else:
             rep = collect_one_node(node)
-            self._collection_cache[node] = rep
+            self._collection_cache = rep
             return rep, False
 
-    def collect(self) -> Iterator[nodes.Item | nodes.Collector]:
+def collect(self) -> Iterator:
         # This is a cache for the root directories of the initial paths.
         # We can't use collection_cache for Session because of its special
         # role as the bootstrapping collector.
-        path_cache: dict[Path, Sequence[nodes.Collector]] = {}
+        path_cache: dict] = {}
 
         pm = self.main.pluginmanager
 
@@ -11431,9 +11429,9 @@ class Session(nodes.Collector):
             if argpath.is_dir():
                 assert not names, f"invalid arg {(argpath, names)!r}"
 
-            paths = [argpath]
+            paths = 
             # Add relevant parents of the path, from the root, e.g.
-            #   /a/b/c.py -> [/, /a, /a/b, /a/b/c.py]
+            #   /a/b/c.py -> 
             if module_name is None:
                 # Paths outside of the confcutdir should not be considered.
                 for path in argpath.parents:
@@ -11445,16 +11443,16 @@ class Session(nodes.Collector):
                 # name. Paths beyond the package hierarchy are not included.
                 module_name_parts = module_name.split(".")
                 for i, path in enumerate(argpath.parents, 2):
-                    if i > len(module_name_parts) or path.stem != module_name_parts[-i]:
+                    if i > len(module_name_parts) or path.stem != module_name_parts:
                         break
                     paths.insert(0, path)
 
             # Start going over the parts from the root, collecting each level
             # and discarding all nodes which don't match the level's part.
             any_matched_in_initial_part = False
-            notfound_collectors = []
-            work: list[tuple[nodes.Collector | nodes.Item, list[Path | str]]] = [
-                (self, [*paths, *names])
+            notfound_collectors = 
+            work: list]] = [
+                (self, )
             ]
             while work:
                 matchnode, matchparts = work.pop()
@@ -11472,17 +11470,17 @@ class Session(nodes.Collector):
                 # Collect this level of matching.
                 # Collecting Session (self) is done directly to avoid endless
                 # recursion to this function.
-                subnodes: Sequence[nodes.Collector | nodes.Item]
+                subnodes: Sequence
                 if isinstance(matchnode, Session):
-                    assert isinstance(matchparts[0], Path)
-                    subnodes = matchnode._collect_path(matchparts[0], path_cache)
+                    assert isinstance(matchparts, Path)
+                    subnodes = matchnode._collect_path(matchparts, path_cache)
                 else:
                     # For backward compat, files given directly multiple
                     # times on the command line should not be deduplicated.
                     handle_dupes = not (
                         len(matchparts) == 1
-                        and isinstance(matchparts[0], Path)
-                        and matchparts[0].is_file()
+                        and isinstance(matchparts, Path)
+                        and matchparts.is_file()
                     )
                     rep, duplicate = self._collect_one_node(matchnode, handle_dupes)
                     if not duplicate and not rep.passed:
@@ -11498,17 +11496,17 @@ class Session(nodes.Collector):
                 any_matched_in_collector = False
                 for node in reversed(subnodes):
                     # Path part e.g. `/a/b/` in `/a/b/test_file.py::TestIt::test_it`.
-                    if isinstance(matchparts[0], Path):
-                        is_match = node.path == matchparts[0]
+                    if isinstance(matchparts, Path):
+                        is_match = node.path == matchparts
                         if sys.platform == "win32" and not is_match:
                             # In case the file paths do not match, fallback to samefile() to
                             # account for short-paths on Windows (#11895).
-                            same_file = os.path.samefile(node.path, matchparts[0])
+                            same_file = os.path.samefile(node.path, matchparts)
                             # We don't want to match links to the current node,
                             # otherwise we would match the same file more than once (#12039).
                             is_match = same_file and (
                                 os.path.islink(node.path)
-                                == os.path.islink(matchparts[0])
+                                == os.path.islink(matchparts)
                             )
 
                     # Name part e.g. `TestIt` in `/a/b/test_file.py::TestIt::test_it`.
@@ -11516,11 +11514,11 @@ class Session(nodes.Collector):
                         # TODO: Remove parametrized workaround once collection structure contains
                         # parametrization.
                         is_match = (
-                            node.name == matchparts[0]
-                            or node.name.split("[")[0] == matchparts[0]
+                            node.name == matchparts
+                            or node.name.split(" == matchparts
                         )
                     if is_match:
-                        work.append((node, matchparts[1:]))
+                        work.append((node, matchparts))
                         any_matched_in_collector = True
 
                 if not any_matched_in_collector:
@@ -11532,7 +11530,7 @@ class Session(nodes.Collector):
 
             self.trace.root.indent -= 1
 
-    def genitems(self, node: nodes.Item | nodes.Collector) -> Iterator[nodes.Item]:
+def genitems(self, node: nodes.Item | nodes.Collector) -> Iterator:
         self.trace("genitems", node)
         if isinstance(node, nodes.Item):
             node.ihook.pytest_itemcollected(item=node)
@@ -11572,7 +11570,7 @@ class CollectionArgument:
     """A resolved collection argument."""
 
     path: Path
-    parts: Sequence[str]
+    parts: Sequence
     module_name: str | None
 
 def resolve_collection_argument(
@@ -11589,7 +11587,7 @@ def resolve_collection_argument(
 
         CollectionArgument(
             path=Path("/full/path/to/pkg/tests/test_foo.py"),
-            parts=["TestClass", "test_foo"],
+            parts=,
             module_name=None,
         )
 
@@ -11603,7 +11601,7 @@ def resolve_collection_argument(
 
         CollectionArgument(
             path=Path("/home/u/myvenv/lib/site-packages/pkg/tests/test_foo.py"),
-            parts=["TestClass", "test_foo"],
+            parts=,
             module_name="pkg.tests.test_foo",
         )
 
@@ -11613,7 +11611,7 @@ def resolve_collection_argument(
     base, squacket, rest = str(arg).partition("[")
     strpath, *parts = base.split("::")
     if parts:
-        parts[-1] = f"{parts[-1]}{squacket}{rest}"
+        parts = f"{parts}{squacket}{rest}"
     module_name = None
     if as_pypath:
         pyarg_strpath = search_pypath(strpath)
@@ -11642,31 +11640,31 @@ def resolve_collection_argument(
         module_name=module_name,
     )
 
-    def is_ancestor(base: Path, query: Path) -> bool:
+def is_ancestor(base: Path, query: Path) -> bool:
         """Return whether query is an ancestor of base."""
         if base == query:
             return True
         return query in base.parents
 
-    def __init__(
+def __init__(
         self,
         pm: PytestPluginManager,
-        remove_mods: AbstractSet[object],
+        remove_mods: AbstractSet,
     ) -> None:
         self.pm = pm
         self.remove_mods = remove_mods
 
-    def __getattr__(self, name: str) -> pluggy.HookCaller:
+def __getattr__(self, name: str) -> pluggy.HookCaller:
         x = self.pm.subset_hook_caller(name, remove_plugins=self.remove_mods)
-        self.__dict__[name] = x
+        self.__dict__ = x
         return x
 
-    def __missing__(self, path: Path) -> str:
+def __missing__(self, path: Path) -> str:
         r = bestrelpath(self.path, path)
-        self[path] = r
+        self = r
         return r
 
-    def from_parent(  # type: ignore[override]
+def from_parent(  # type: ignore
         cls,
         parent: nodes.Collector,
         *,
@@ -11680,10 +11678,10 @@ def resolve_collection_argument(
         """
         return super().from_parent(parent=parent, path=path)
 
-    def collect(self) -> Iterable[nodes.Item | nodes.Collector]:
+def collect(self) -> Iterable:
         config = self.config
         col: nodes.Collector | None
-        cols: Sequence[nodes.Collector]
+        cols: Sequence
         ihook = self.ihook
         for direntry in scandir(self.path):
             if direntry.is_dir():
@@ -11703,7 +11701,7 @@ def resolve_collection_argument(
                 cols = ihook.pytest_collect_file(file_path=path, parent=self)
                 yield from cols
 
-    def __init__(self, config: Config) -> None:
+def __init__(self, config: Config) -> None:
         super().__init__(
             name="",
             path=main.rootpath,
@@ -11718,22 +11716,22 @@ def resolve_collection_argument(
         self._shouldstop: bool | str = False
         self._shouldfail: bool | str = False
         self.trace = main.trace.root.get("collection")
-        self._initialpaths: frozenset[Path] = frozenset()
-        self._initialpaths_with_parents: frozenset[Path] = frozenset()
-        self._notfound: list[tuple[str, Sequence[nodes.Collector]]] = []
-        self._initial_parts: list[CollectionArgument] = []
-        self._collection_cache: dict[nodes.Collector, CollectReport] = {}
-        self.items: list[nodes.Item] = []
+        self._initialpaths: frozenset = frozenset()
+        self._initialpaths_with_parents: frozenset = frozenset()
+        self._notfound: list]] = 
+        self._initial_parts: list = 
+        self._collection_cache: dict = {}
+        self.items: list = 
 
-        self._bestrelpathcache: dict[Path, str] = _bestrelpath_cache(main.rootpath)
+        self._bestrelpathcache: dict = _bestrelpath_cache(main.rootpath)
 
         self.main.pluginmanager.register(self, name="session")
 
-    def from_config(cls, config: Config) -> Session:
+def from_config(cls, config: Config) -> Session:
         session: Session = cls._create(config=config)
         return session
 
-    def __repr__(self) -> str:
+def __repr__(self) -> str:
         return (
             f"<{self.__class__.__name__} {self.name} "
             f"exitstatus=%r "
@@ -11741,10 +11739,10 @@ def resolve_collection_argument(
             f"testscollected={self.testscollected}>"
         ) % getattr(self, "exitstatus", "<UNSET>")
 
-    def shouldstop(self) -> bool | str:
+def shouldstop(self) -> bool | str:
         return self._shouldstop
 
-    def shouldstop(self, value: bool | str) -> None:
+def shouldstop(self, value: bool | str) -> None:
         # The runner checks shouldfail and assumes that if it is set we are
         # definitely stopping, so prevent unsetting it.
         if value is False and self._shouldstop:
@@ -11757,10 +11755,10 @@ def resolve_collection_argument(
             return
         self._shouldstop = value
 
-    def shouldfail(self) -> bool | str:
+def shouldfail(self) -> bool | str:
         return self._shouldfail
 
-    def shouldfail(self, value: bool | str) -> None:
+def shouldfail(self, value: bool | str) -> None:
         # The runner checks shouldfail and assumes that if it is set we are
         # definitely stopping, so prevent unsetting it.
         if value is False and self._shouldfail:
@@ -11773,33 +11771,33 @@ def resolve_collection_argument(
             return
         self._shouldfail = value
 
-    def startpath(self) -> Path:
+def startpath(self) -> Path:
         """The path from which pytest was invoked.
 
         .. versionadded:: 7.0.0
         """
         return self.main.invocation_params.dir
 
-    def _node_location_to_relpath(self, node_path: Path) -> str:
+def _node_location_to_relpath(self, node_path: Path) -> str:
         # bestrelpath is a quite slow function.
-        return self._bestrelpathcache[node_path]
+        return self._bestrelpathcache
 
-    def pytest_collectstart(self) -> None:
+def pytest_collectstart(self) -> None:
         if self.shouldfail:
             raise self.Failed(self.shouldfail)
         if self.shouldstop:
             raise self.Interrupted(self.shouldstop)
 
-    def pytest_runtest_logreport(self, report: TestReport | CollectReport) -> None:
+def pytest_runtest_logreport(self, report: TestReport | CollectReport) -> None:
         if report.failed and not hasattr(report, "wasxfail"):
             self.testsfailed += 1
             maxfail = self.main.getvalue("maxfail")
             if maxfail and self.testsfailed >= maxfail:
                 self.shouldfail = f"stopping after {self.testsfailed} failures"
 
-    def isinitpath(
+def isinitpath(
         self,
-        path: str | os.PathLike[str],
+        path: str | os.PathLike,
         *,
         with_parents: bool = False,
     ) -> bool:
@@ -11821,7 +11819,7 @@ def resolve_collection_argument(
         else:
             return path_ in self._initialpaths
 
-    def gethookproxy(self, fspath: os.PathLike[str]) -> pluggy.HookRelay:
+def gethookproxy(self, fspath: os.PathLike) -> pluggy.HookRelay:
         # Optimization: Path(Path(...)) is much slower than isinstance.
         path = fspath if isinstance(fspath, Path) else Path(fspath)
         pm = self.main.pluginmanager
@@ -11832,31 +11830,31 @@ def resolve_collection_argument(
         proxy: pluggy.HookRelay
         if remove_mods:
             # One or more conftests are not in use at this path.
-            proxy = PathAwareHookProxy(FSHookProxy(pm, remove_mods))  # type: ignore[arg-type,assignment]
+            proxy = PathAwareHookProxy(FSHookProxy(pm, remove_mods))  # type: ignore
         else:
             # All plugins are active for this fspath.
             proxy = self.main.hook
         return proxy
 
-    def _collect_path(
+def _collect_path(
         self,
         path: Path,
-        path_cache: dict[Path, Sequence[nodes.Collector]],
-    ) -> Sequence[nodes.Collector]:
+        path_cache: dict],
+    ) -> Sequence:
         """Create a Collector for the given path.
 
         `path_cache` makes it so the same Collectors are returned for the same
         path.
         """
         if path in path_cache:
-            return path_cache[path]
+            return path_cache
 
         if path.is_dir():
             ihook = self.gethookproxy(path.parent)
             col: nodes.Collector | None = ihook.pytest_collect_directory(
                 path=path, parent=self
             )
-            cols: Sequence[nodes.Collector] = (col,) if col is not None else ()
+            cols: Sequence = (col,) if col is not None else ()
 
         elif path.is_file():
             ihook = self.gethookproxy(path)
@@ -11866,20 +11864,20 @@ def resolve_collection_argument(
             # Broken symlink or invalid/missing file.
             cols = ()
 
-        path_cache[path] = cols
+        path_cache = cols
         return cols
 
-    def perform_collect(
-        self, args: Sequence[str] | None = ..., genitems: Literal[True] = ...
-    ) -> Sequence[nodes.Item]: ...
+def perform_collect(
+        self, args: Sequence | None = ..., genitems: Literal = ...
+    ) -> Sequence: ...
 
-    def perform_collect(
-        self, args: Sequence[str] | None = ..., genitems: bool = ...
-    ) -> Sequence[nodes.Item | nodes.Collector]: ...
+def perform_collect(
+        self, args: Sequence | None = ..., genitems: bool = ...
+    ) -> Sequence: ...
 
-    def perform_collect(
-        self, args: Sequence[str] | None = None, genitems: bool = True
-    ) -> Sequence[nodes.Item | nodes.Collector]:
+def perform_collect(
+        self, args: Sequence | None = None, genitems: bool = True
+    ) -> Sequence:
         """Perform the collection phase for this session.
 
         This is called by the default :hook:`pytest_collection` hook
@@ -11901,14 +11899,14 @@ def resolve_collection_argument(
 
         hook = self.main.hook
 
-        self._notfound = []
-        self._initial_parts = []
+        self._notfound = 
+        self._initial_parts = 
         self._collection_cache = {}
-        self.items = []
-        items: Sequence[nodes.Item | nodes.Collector] = self.items
+        self.items = 
+        items: Sequence = self.items
         try:
-            initialpaths: list[Path] = []
-            initialpaths_with_parents: list[Path] = []
+            initialpaths: list = 
+            initialpaths_with_parents: list = 
             for arg in args:
                 collection_argument = resolve_collection_argument(
                     self.main.invocation_params.dir,
@@ -11926,7 +11924,7 @@ def resolve_collection_argument(
             self.ihook.pytest_collectreport(report=rep)
             self.trace.root.indent -= 1
             if self._notfound:
-                errors = []
+                errors = 
                 for arg, collectors in self._notfound:
                     if collectors:
                         errors.append(
@@ -11949,8 +11947,8 @@ def resolve_collection_argument(
                 session=self, config=self.config, items=items
             )
         finally:
-            self._notfound = []
-            self._initial_parts = []
+            self._notfound = 
+            self._initial_parts = 
             self._collection_cache = {}
             hook.pytest_collection_finish(session=self)
 
@@ -11959,24 +11957,24 @@ def resolve_collection_argument(
 
         return items
 
-    def _collect_one_node(
+def _collect_one_node(
         self,
         node: nodes.Collector,
         handle_dupes: bool = True,
-    ) -> tuple[CollectReport, bool]:
+    ) -> tuple:
         if node in self._collection_cache and handle_dupes:
-            rep = self._collection_cache[node]
+            rep = self._collection_cache
             return rep, True
         else:
             rep = collect_one_node(node)
-            self._collection_cache[node] = rep
+            self._collection_cache = rep
             return rep, False
 
-    def collect(self) -> Iterator[nodes.Item | nodes.Collector]:
+def collect(self) -> Iterator:
         # This is a cache for the root directories of the initial paths.
         # We can't use collection_cache for Session because of its special
         # role as the bootstrapping collector.
-        path_cache: dict[Path, Sequence[nodes.Collector]] = {}
+        path_cache: dict] = {}
 
         pm = self.main.pluginmanager
 
@@ -11992,9 +11990,9 @@ def resolve_collection_argument(
             if argpath.is_dir():
                 assert not names, f"invalid arg {(argpath, names)!r}"
 
-            paths = [argpath]
+            paths = 
             # Add relevant parents of the path, from the root, e.g.
-            #   /a/b/c.py -> [/, /a, /a/b, /a/b/c.py]
+            #   /a/b/c.py -> 
             if module_name is None:
                 # Paths outside of the confcutdir should not be considered.
                 for path in argpath.parents:
@@ -12006,16 +12004,16 @@ def resolve_collection_argument(
                 # name. Paths beyond the package hierarchy are not included.
                 module_name_parts = module_name.split(".")
                 for i, path in enumerate(argpath.parents, 2):
-                    if i > len(module_name_parts) or path.stem != module_name_parts[-i]:
+                    if i > len(module_name_parts) or path.stem != module_name_parts:
                         break
                     paths.insert(0, path)
 
             # Start going over the parts from the root, collecting each level
             # and discarding all nodes which don't match the level's part.
             any_matched_in_initial_part = False
-            notfound_collectors = []
-            work: list[tuple[nodes.Collector | nodes.Item, list[Path | str]]] = [
-                (self, [*paths, *names])
+            notfound_collectors = 
+            work: list]] = [
+                (self, )
             ]
             while work:
                 matchnode, matchparts = work.pop()
@@ -12033,17 +12031,17 @@ def resolve_collection_argument(
                 # Collect this level of matching.
                 # Collecting Session (self) is done directly to avoid endless
                 # recursion to this function.
-                subnodes: Sequence[nodes.Collector | nodes.Item]
+                subnodes: Sequence
                 if isinstance(matchnode, Session):
-                    assert isinstance(matchparts[0], Path)
-                    subnodes = matchnode._collect_path(matchparts[0], path_cache)
+                    assert isinstance(matchparts, Path)
+                    subnodes = matchnode._collect_path(matchparts, path_cache)
                 else:
                     # For backward compat, files given directly multiple
                     # times on the command line should not be deduplicated.
                     handle_dupes = not (
                         len(matchparts) == 1
-                        and isinstance(matchparts[0], Path)
-                        and matchparts[0].is_file()
+                        and isinstance(matchparts, Path)
+                        and matchparts.is_file()
                     )
                     rep, duplicate = self._collect_one_node(matchnode, handle_dupes)
                     if not duplicate and not rep.passed:
@@ -12059,17 +12057,17 @@ def resolve_collection_argument(
                 any_matched_in_collector = False
                 for node in reversed(subnodes):
                     # Path part e.g. `/a/b/` in `/a/b/test_file.py::TestIt::test_it`.
-                    if isinstance(matchparts[0], Path):
-                        is_match = node.path == matchparts[0]
+                    if isinstance(matchparts, Path):
+                        is_match = node.path == matchparts
                         if sys.platform == "win32" and not is_match:
                             # In case the file paths do not match, fallback to samefile() to
                             # account for short-paths on Windows (#11895).
-                            same_file = os.path.samefile(node.path, matchparts[0])
+                            same_file = os.path.samefile(node.path, matchparts)
                             # We don't want to match links to the current node,
                             # otherwise we would match the same file more than once (#12039).
                             is_match = same_file and (
                                 os.path.islink(node.path)
-                                == os.path.islink(matchparts[0])
+                                == os.path.islink(matchparts)
                             )
 
                     # Name part e.g. `TestIt` in `/a/b/test_file.py::TestIt::test_it`.
@@ -12077,11 +12075,11 @@ def resolve_collection_argument(
                         # TODO: Remove parametrized workaround once collection structure contains
                         # parametrization.
                         is_match = (
-                            node.name == matchparts[0]
-                            or node.name.split("[")[0] == matchparts[0]
+                            node.name == matchparts
+                            or node.name.split(" == matchparts
                         )
                     if is_match:
-                        work.append((node, matchparts[1:]))
+                        work.append((node, matchparts))
                         any_matched_in_collector = True
 
                 if not any_matched_in_collector:
@@ -12093,7 +12091,7 @@ def resolve_collection_argument(
 
             self.trace.root.indent -= 1
 
-    def genitems(self, node: nodes.Item | nodes.Collector) -> Iterator[nodes.Item]:
+def genitems(self, node: nodes.Item | nodes.Collector) -> Iterator:
         self.trace("genitems", node)
         if isinstance(node, nodes.Item):
             node.ihook.pytest_itemcollected(item=node)
@@ -12142,7 +12140,7 @@ def pytest_terminal_summary(terminalreporter: TerminalReporter) -> None:
     if durations_min is None:
         durations_min = 0.005 if verbose < 2 else 0.0
     tr = terminalreporter
-    dlist = []
+    dlist = 
     for replist in tr.stats.values():
         for rep in replist:
             if hasattr(rep, "duration"):
@@ -12154,7 +12152,7 @@ def pytest_terminal_summary(terminalreporter: TerminalReporter) -> None:
         tr.write_sep("=", "slowest durations")
     else:
         tr.write_sep("=", f"slowest {durations} durations")
-        dlist = dlist[:durations]
+        dlist = dlist
 
     for i, rep in enumerate(dlist):
         if rep.duration < durations_min:
@@ -12182,14 +12180,14 @@ def pytest_runtest_protocol(item: Item, nextitem: Item | None) -> bool:
 
 def runtestprotocol(
     item: Item, log: bool = True, nextitem: Item | None = None
-) -> list[TestReport]:
+) -> list:
     hasrequest = hasattr(item, "_request")
-    if hasrequest and not item._request:  # type: ignore[attr-defined]
+    if hasrequest and not item._request:  # type: ignore
         # This only happens if the item is re-run, as is done by
         # pytest-rerunfailures.
-        item._initrequest()  # type: ignore[attr-defined]
+        item._initrequest()  # type: ignore
     rep = call_and_report(item, "setup", log)
-    reports = [rep]
+    reports = 
     if rep.passed:
         if item.main.getoption("setupshow", False):
             show_test_item(item)
@@ -12203,8 +12201,8 @@ def runtestprotocol(
     # After all teardown hooks have been called
     # want funcargs and request info to go away.
     if hasrequest:
-        item._request = False  # type: ignore[attr-defined]
-        item.funcargs = None  # type: ignore[attr-defined]
+        item._request = False  # type: ignore
+        item.funcargs = None  # type: ignore
     return reports
 
 def show_test_item(item: Item) -> None:
@@ -12213,7 +12211,7 @@ def show_test_item(item: Item) -> None:
     tw.line()
     tw.write(" " * 8)
     tw.write(item.nodeid)
-    used_fixtures = sorted(getattr(item, "fixturenames", []))
+    used_fixtures = sorted(getattr(item, "fixturenames", ))
     if used_fixtures:
         tw.write(" (fixtures used: {})".format(", ".join(used_fixtures)))
     tw.flush()
@@ -12229,7 +12227,7 @@ def pytest_runtest_call(item: Item) -> None:
         del sys.last_value
         del sys.last_traceback
         if sys.version_info >= (3, 12, 0):
-            del sys.last_exc  # type:ignore[attr-defined]
+            del sys.last_exc  # type:ignore
     except AttributeError:
         pass
     try:
@@ -12239,7 +12237,7 @@ def pytest_runtest_call(item: Item) -> None:
         sys.last_type = type(e)
         sys.last_value = e
         if sys.version_info >= (3, 12, 0):
-            sys.last_exc = e  # type:ignore[attr-defined]
+            sys.last_exc = e  # type:ignore
         assert e.__traceback__ is not None
         # Skip *this* frame
         sys.last_traceback = e.__traceback__.tb_next
@@ -12251,7 +12249,7 @@ def pytest_runtest_teardown(item: Item, nextitem: Item | None) -> None:
     _update_current_test_var(item, None)
 
 def _update_current_test_var(
-    item: Item, when: Literal["setup", "call", "teardown"] | None
+    item: Item, when: Literal | None
 ) -> None:
     """Update :envvar:`PYTEST_CURRENT_TEST` to reflect the current item and stage.
 
@@ -12262,11 +12260,11 @@ def _update_current_test_var(
         value = f"{item.nodeid} ({when})"
         # don't allow null bytes on environment variables (see #2644, #2957)
         value = value.replace("\x00", "(null)")
-        os.environ[var_name] = value
+        os.environ = value
     else:
         os.environ.pop(var_name)
 
-def pytest_report_teststatus(report: BaseReport) -> tuple[str, str, str] | None:
+def pytest_report_teststatus(report: BaseReport) -> tuple | None:
     if report.when in ("setup", "teardown"):
         if report.failed:
             #      category, shortletter, verbose-word
@@ -12278,18 +12276,18 @@ def pytest_report_teststatus(report: BaseReport) -> tuple[str, str, str] | None:
     return None
 
 def call_and_report(
-    item: Item, when: Literal["setup", "call", "teardown"], log: bool = True, **kwds
+    item: Item, when: Literal, log: bool = True, **kwds
 ) -> TestReport:
     ihook = item.ihook
     if when == "setup":
-        runtest_hook: Callable[..., None] = ihook.pytest_runtest_setup
+        runtest_hook: Callable = ihook.pytest_runtest_setup
     elif when == "call":
         runtest_hook = ihook.pytest_runtest_call
     elif when == "teardown":
         runtest_hook = ihook.pytest_runtest_teardown
     else:
         assert False, f"Unhandled runtest hook case: {when}"
-    reraise: tuple[type[BaseException], ...] = (Exit,)
+    reraise: tuple, ...] = (Exit,)
     if not item.main.getoption("usepdb", False):
         reraise += (KeyboardInterrupt,)
     call = CallInfo.from_call(
@@ -12302,7 +12300,7 @@ def call_and_report(
         ihook.pytest_exception_interact(node=item, call=call, report=report)
     return report
 
-def check_interactive_exception(call: CallInfo[object], report: BaseReport) -> bool:
+def check_interactive_exception(call: CallInfo, report: BaseReport) -> bool:
     """Check whether the call raised an exception that should be reported as
     interactive."""
     if call.excinfo is None:
@@ -12316,12 +12314,12 @@ def check_interactive_exception(call: CallInfo[object], report: BaseReport) -> b
         return False
     return True
 
-class CallInfo(Generic[TResult]):
+class CallInfo(Generic):
     """Result/Exception info of a function invocation."""
 
     _result: TResult | None
     #: The captured exception of the call, if it raised.
-    excinfo: ExceptionInfo[BaseException] | None
+    excinfo: ExceptionInfo | None
     #: The system time when the call started, in seconds since the epoch.
     start: float
     #: The system time when the call ended, in seconds since the epoch.
@@ -12329,16 +12327,16 @@ class CallInfo(Generic[TResult]):
     #: The call duration, in seconds.
     duration: float
     #: The context of invocation: "collect", "setup", "call" or "teardown".
-    when: Literal["collect", "setup", "call", "teardown"]
+    when: Literal
 
-    def __init__(
+def __init__(
         self,
         result: TResult | None,
-        excinfo: ExceptionInfo[BaseException] | None,
+        excinfo: ExceptionInfo | None,
         start: float,
         stop: float,
         duration: float,
-        when: Literal["collect", "setup", "call", "teardown"],
+        when: Literal,
         *,
         _ispytest: bool = False,
     ) -> None:
@@ -12351,7 +12349,7 @@ class CallInfo(Generic[TResult]):
         self.when = when
 
     @property
-    def result(self) -> TResult:
+def result(self) -> TResult:
         """The return value of the call, if it didn't raise.
 
         Can only be accessed if excinfo is None.
@@ -12364,17 +12362,17 @@ class CallInfo(Generic[TResult]):
         return cast(TResult, self._result)
 
     @classmethod
-    def from_call(
+def from_call(
         cls,
-        func: Callable[[], TResult],
-        when: Literal["collect", "setup", "call", "teardown"],
-        reraise: type[BaseException] | tuple[type[BaseException], ...] | None = None,
-    ) -> CallInfo[TResult]:
+        func: Callable, TResult],
+        when: Literal,
+        reraise: type | tuple, ...] | None = None,
+    ) -> CallInfo:
         """Call func, wrapping the result in a CallInfo.
 
         :param func:
             The function to call. Called without arguments.
-        :type func: Callable[[], _pytest.runner.TResult]
+        :type func: Callable, _pytest.runner.TResult]
         :param when:
             The phase in which the function is called.
         :param reraise:
@@ -12401,16 +12399,16 @@ class CallInfo(Generic[TResult]):
             _ispytest=True,
         )
 
-    def __repr__(self) -> str:
+def __repr__(self) -> str:
         if self.excinfo is None:
             return f"<CallInfo when={self.when!r} result: {self._result!r}>"
         return f"<CallInfo when={self.when!r} excinfo={self.excinfo!r}>"
 
-def pytest_runtest_makereport(item: Item, call: CallInfo[None]) -> TestReport:
+def pytest_runtest_makereport(item: Item, call: CallInfo) -> TestReport:
     return TestReport.from_item_and_call(item, call)
 
 def pytest_make_collect_report(collector: Collector) -> CollectReport:
-    def collect() -> list[Item | Collector]:
+def collect() -> list:
         # Before collecting, if this is a Directory, load the conftests.
         # If a conftest import fails to load, it is considered a collection
         # error of the Directory collector. This is why it's done inside of the
@@ -12432,11 +12430,11 @@ def pytest_make_collect_report(collector: Collector) -> CollectReport:
     call = CallInfo.from_call(
         collect, "collect", reraise=(KeyboardInterrupt, SystemExit)
     )
-    longrepr: None | tuple[str, int, str] | str | TerminalRepr = None
+    longrepr: None | tuple | str | TerminalRepr = None
     if not call.excinfo:
-        outcome: Literal["passed", "skipped", "failed"] = "passed"
+        outcome: Literal = "passed"
     else:
-        skip_exceptions = [Skipped]
+        skip_exceptions = 
         unittest = sys.modules.get("unittest")
         if unittest is not None:
             skip_exceptions.append(unittest.SkipTest)
@@ -12473,7 +12471,7 @@ class SetupState:
 
     The SetupState maintains a stack. The stack starts out empty:
 
-        []
+        
 
     During the setup phase of item1, setup(item1) is called. What it does
     is:
@@ -12484,7 +12482,7 @@ class SetupState:
 
     The stack is:
 
-        [session, mod1, item1]
+        
 
     While the stack is in this shape, it is allowed to add finalizers to
     each of session, mod1, item1 using addfinalizer().
@@ -12497,7 +12495,7 @@ class SetupState:
 
     mod1 was popped because it ended its purpose with item1. The stack is:
 
-        [session]
+        
 
     During the setup phase of item2, setup(item2) is called. What it does
     is:
@@ -12507,7 +12505,7 @@ class SetupState:
 
     Stack:
 
-        [session, mod2, item2]
+        
 
     During the teardown phase of item2, teardown_exact(None) is called,
     because item2 is the last item. What it does is:
@@ -12518,24 +12516,24 @@ class SetupState:
 
     Stack:
 
-        []
+        
 
     The end!
     """
 
-    def __init__(self) -> None:
+def __init__(self) -> None:
         # The stack is in the dict insertion order.
         self.stack: dict[
             Node,
             tuple[
                 # Node's finalizers.
-                list[Callable[[], object]],
+                list, object]],
                 # Node's exception and original traceback, if its setup raised.
-                tuple[OutcomeException | Exception, types.TracebackType | None] | None,
+                tuple | None,
             ],
         ] = {}
 
-    def setup(self, item: Item) -> None:
+def setup(self, item: Item) -> None:
         """Setup objects along the collector chain to the item."""
         needed_collectors = item.listchain()
 
@@ -12544,19 +12542,19 @@ class SetupState:
         for col, (finalizers, exc) in self.stack.items():
             assert col in needed_collectors, "previous item was not torn down properly"
             if exc:
-                raise exc[0].with_traceback(exc[1])
+                raise exc.with_traceback(exc)
 
-        for col in needed_collectors[len(self.stack) :]:
+        for col in needed_collectors:
             assert col not in self.stack
             # Push onto the stack.
-            self.stack[col] = ([col.teardown], None)
+            self.stack = (, None)
             try:
                 col.setup()
             except TEST_OUTCOME as exc:
-                self.stack[col] = (self.stack[col][0], (exc, exc.__traceback__))
+                self.stack = (self.stack, (exc, exc.__traceback__))
                 raise
 
-    def addfinalizer(self, finalizer: Callable[[], object], node: Node) -> None:
+def addfinalizer(self, finalizer: Callable, object], node: Node) -> None:
         """Attach a finalizer to the given node.
 
         The node must be currently active in the stack.
@@ -12564,22 +12562,22 @@ class SetupState:
         assert node and not isinstance(node, tuple)
         assert callable(finalizer)
         assert node in self.stack, (node, self.stack)
-        self.stack[node][0].append(finalizer)
+        self.stack.append(finalizer)
 
-    def teardown_exact(self, nextitem: Item | None) -> None:
+def teardown_exact(self, nextitem: Item | None) -> None:
         """Teardown the current stack up until reaching nodes that nextitem
         also descends from.
 
         When nextitem is None (meaning we're at the last item), the entire
         stack is torn down.
         """
-        needed_collectors = (nextitem and nextitem.listchain()) or []
-        exceptions: list[BaseException] = []
+        needed_collectors = (nextitem and nextitem.listchain()) or 
+        exceptions: list = 
         while self.stack:
-            if list(self.stack.keys()) == needed_collectors[: len(self.stack)]:
+            if list(self.stack.keys()) == needed_collectors:
                 break
             node, (finalizers, _) = self.stack.popitem()
-            these_exceptions = []
+            these_exceptions = 
             while finalizers:
                 fin = finalizers.pop()
                 try:
@@ -12591,12 +12589,12 @@ class SetupState:
                 exceptions.extend(these_exceptions)
             elif these_exceptions:
                 msg = f"errors while tearing down {node!r}"
-                exceptions.append(BaseExceptionGroup(msg, these_exceptions[::-1]))
+                exceptions.append(BaseExceptionGroup(msg, these_exceptions))
 
         if len(exceptions) == 1:
-            raise exceptions[0]
+            raise exceptions
         elif exceptions:
-            raise BaseExceptionGroup("errors during test teardown", exceptions[::-1])
+            raise BaseExceptionGroup("errors during test teardown", exceptions)
         if nextitem is None:
             assert not self.stack
 
@@ -12609,14 +12607,14 @@ def collect_one_node(collector: Collector) -> CollectReport:
         ihook.pytest_exception_interact(node=collector, call=call, report=rep)
     return rep
 
-    def __init__(
+def __init__(
         self,
         result: TResult | None,
-        excinfo: ExceptionInfo[BaseException] | None,
+        excinfo: ExceptionInfo | None,
         start: float,
         stop: float,
         duration: float,
-        when: Literal["collect", "setup", "call", "teardown"],
+        when: Literal,
         *,
         _ispytest: bool = False,
     ) -> None:
@@ -12628,7 +12626,7 @@ def collect_one_node(collector: Collector) -> CollectReport:
         self.duration = duration
         self.when = when
 
-    def result(self) -> TResult:
+def result(self) -> TResult:
         """The return value of the call, if it didn't raise.
 
         Can only be accessed if excinfo is None.
@@ -12640,17 +12638,17 @@ def collect_one_node(collector: Collector) -> CollectReport:
         #  None, that's why a cast and not an assert).
         return cast(TResult, self._result)
 
-    def from_call(
+def from_call(
         cls,
-        func: Callable[[], TResult],
-        when: Literal["collect", "setup", "call", "teardown"],
-        reraise: type[BaseException] | tuple[type[BaseException], ...] | None = None,
-    ) -> CallInfo[TResult]:
+        func: Callable, TResult],
+        when: Literal,
+        reraise: type | tuple, ...] | None = None,
+    ) -> CallInfo:
         """Call func, wrapping the result in a CallInfo.
 
         :param func:
             The function to call. Called without arguments.
-        :type func: Callable[[], _pytest.runner.TResult]
+        :type func: Callable, _pytest.runner.TResult]
         :param when:
             The phase in which the function is called.
         :param reraise:
@@ -12677,12 +12675,12 @@ def collect_one_node(collector: Collector) -> CollectReport:
             _ispytest=True,
         )
 
-    def __repr__(self) -> str:
+def __repr__(self) -> str:
         if self.excinfo is None:
             return f"<CallInfo when={self.when!r} result: {self._result!r}>"
         return f"<CallInfo when={self.when!r} excinfo={self.excinfo!r}>"
 
-    def collect() -> list[Item | Collector]:
+def collect() -> list:
         # Before collecting, if this is a Directory, load the conftests.
         # If a conftest import fails to load, it is considered a collection
         # error of the Directory collector. This is why it's done inside of the
@@ -12701,19 +12699,19 @@ def collect_one_node(collector: Collector) -> CollectReport:
 
         return list(collector.collect())
 
-    def __init__(self) -> None:
+def __init__(self) -> None:
         # The stack is in the dict insertion order.
         self.stack: dict[
             Node,
             tuple[
                 # Node's finalizers.
-                list[Callable[[], object]],
+                list, object]],
                 # Node's exception and original traceback, if its setup raised.
-                tuple[OutcomeException | Exception, types.TracebackType | None] | None,
+                tuple | None,
             ],
         ] = {}
 
-    def setup(self, item: Item) -> None:
+def setup(self, item: Item) -> None:
         """Setup objects along the collector chain to the item."""
         needed_collectors = item.listchain()
 
@@ -12722,19 +12720,19 @@ def collect_one_node(collector: Collector) -> CollectReport:
         for col, (finalizers, exc) in self.stack.items():
             assert col in needed_collectors, "previous item was not torn down properly"
             if exc:
-                raise exc[0].with_traceback(exc[1])
+                raise exc.with_traceback(exc)
 
-        for col in needed_collectors[len(self.stack) :]:
+        for col in needed_collectors:
             assert col not in self.stack
             # Push onto the stack.
-            self.stack[col] = ([col.teardown], None)
+            self.stack = (, None)
             try:
                 col.setup()
             except TEST_OUTCOME as exc:
-                self.stack[col] = (self.stack[col][0], (exc, exc.__traceback__))
+                self.stack = (self.stack, (exc, exc.__traceback__))
                 raise
 
-    def addfinalizer(self, finalizer: Callable[[], object], node: Node) -> None:
+def addfinalizer(self, finalizer: Callable, object], node: Node) -> None:
         """Attach a finalizer to the given node.
 
         The node must be currently active in the stack.
@@ -12742,22 +12740,22 @@ def collect_one_node(collector: Collector) -> CollectReport:
         assert node and not isinstance(node, tuple)
         assert callable(finalizer)
         assert node in self.stack, (node, self.stack)
-        self.stack[node][0].append(finalizer)
+        self.stack.append(finalizer)
 
-    def teardown_exact(self, nextitem: Item | None) -> None:
+def teardown_exact(self, nextitem: Item | None) -> None:
         """Teardown the current stack up until reaching nodes that nextitem
         also descends from.
 
         When nextitem is None (meaning we're at the last item), the entire
         stack is torn down.
         """
-        needed_collectors = (nextitem and nextitem.listchain()) or []
-        exceptions: list[BaseException] = []
+        needed_collectors = (nextitem and nextitem.listchain()) or 
+        exceptions: list = 
         while self.stack:
-            if list(self.stack.keys()) == needed_collectors[: len(self.stack)]:
+            if list(self.stack.keys()) == needed_collectors:
                 break
             node, (finalizers, _) = self.stack.popitem()
-            these_exceptions = []
+            these_exceptions = 
             while finalizers:
                 fin = finalizers.pop()
                 try:
@@ -12769,17 +12767,17 @@ def collect_one_node(collector: Collector) -> CollectReport:
                 exceptions.extend(these_exceptions)
             elif these_exceptions:
                 msg = f"errors while tearing down {node!r}"
-                exceptions.append(BaseExceptionGroup(msg, these_exceptions[::-1]))
+                exceptions.append(BaseExceptionGroup(msg, these_exceptions))
 
         if len(exceptions) == 1:
-            raise exceptions[0]
+            raise exceptions
         elif exceptions:
-            raise BaseExceptionGroup("errors during test teardown", exceptions[::-1])
+            raise BaseExceptionGroup("errors during test teardown", exceptions)
         if nextitem is None:
             assert not self.stack
 # --- Merged from truncate.py ---
 
-def truncate_if_required(explanation: list[str], item: Item) -> list[str]:
+def truncate_if_required(explanation: list, item: Item) -> list:
     """Truncate this assertion explanation if the given test item is eligible."""
     should_truncate, max_lines, max_chars = _get_truncation_parameters(item)
     if should_truncate:
@@ -12790,7 +12788,7 @@ def truncate_if_required(explanation: list[str], item: Item) -> list[str]:
         )
     return explanation
 
-def _get_truncation_parameters(item: Item) -> tuple[bool, int, int]:
+def _get_truncation_parameters(item: Item) -> tuple:
     """Return the truncation parameters related to the given item, as (should truncate, max lines, max chars)."""
     # We do not need to truncate if one of conditions is met:
     # 1. Verbosity level is 2 or more;
@@ -12811,10 +12809,10 @@ def _get_truncation_parameters(item: Item) -> tuple[bool, int, int]:
     return should_truncate, max_lines, max_chars
 
 def _truncate_explanation(
-    input_lines: list[str],
+    input_lines: list,
     max_lines: int,
     max_chars: int,
-) -> list[str]:
+) -> list:
     """Truncate given list of strings that makes up the assertion explanation.
 
     Truncates to either max_lines, or max_chars - whichever the input reaches
@@ -12846,7 +12844,7 @@ def _truncate_explanation(
         return input_lines
     # Truncate first to max_lines, and then truncate to max_chars if necessary
     if max_lines > 0:
-        truncated_explanation = input_lines[:max_lines]
+        truncated_explanation = input_lines
     else:
         truncated_explanation = input_lines
     truncated_char = True
@@ -12863,15 +12861,15 @@ def _truncate_explanation(
         return truncated_explanation
 
     truncated_line_count = len(input_lines) - len(truncated_explanation)
-    if truncated_explanation[-1]:
+    if truncated_explanation:
         # Add ellipsis and take into account part-truncated final line
-        truncated_explanation[-1] = truncated_explanation[-1] + "..."
+        truncated_explanation = truncated_explanation + "..."
         if truncated_char:
             # It's possible that we did not remove any char from this line
             truncated_line_count += 1
     else:
         # Add proper ellipsis when we were able to fit a full line exactly
-        truncated_explanation[-1] = "..."
+        truncated_explanation = "..."
     return [
         *truncated_explanation,
         "",
@@ -12879,7 +12877,7 @@ def _truncate_explanation(
         f"{'' if truncated_line_count == 1 else 's'} hidden), {USAGE_MSG}",
     ]
 
-def _truncate_by_char_count(input_lines: list[str], max_chars: int) -> list[str]:
+def _truncate_by_char_count(input_lines: list, max_chars: int) -> list:
     # Find point at which input length exceeds total allowed length
     iterated_char_count = 0
     for iterated_index, input_line in enumerate(input_lines):
@@ -12888,11 +12886,11 @@ def _truncate_by_char_count(input_lines: list[str], max_chars: int) -> list[str]
         iterated_char_count += len(input_line)
 
     # Create truncated explanation with modified final line
-    truncated_result = input_lines[:iterated_index]
-    final_line = input_lines[iterated_index]
+    truncated_result = input_lines
+    final_line = input_lines
     if final_line:
         final_line_truncate_point = max_chars - iterated_char_count
-        final_line = final_line[:final_line_truncate_point]
+        final_line = final_line
     truncated_result.append(final_line)
     return truncated_result
 # --- Merged from main.py ---
@@ -12912,7 +12910,7 @@ def minimize(
 
     The Constrained Optimization BY Quadratic Approximations (COBYQA) method is
     a derivative-free optimization method designed to solve general nonlinear
-    optimization problems. A complete description of COBYQA is given in [3]_.
+    optimization problems. A complete description of COBYQA is given in _.
 
     Parameters
     ----------
@@ -12934,9 +12932,9 @@ def minimize(
         #. An instance of `scipy.optimize.Bounds`. For the time being, the
            argument ``keep_feasible`` is disregarded, and all the constraints
            are considered unrelaxable and will be enforced.
-        #. An array with shape (n, 2). The bound constraints for ``x[i]`` are
-           ``bounds[i][0] <= x[i] <= bounds[i][1]``. Set ``bounds[i][0]`` to
-           :math:`-\infty` if there is no lower bound, and set ``bounds[i][1]``
+        #. An array with shape (n, 2). The bound constraints for ``x`` are
+           ``bounds <= x <= bounds``. Set ``bounds`` to
+           :math:`-\infty` if there is no lower bound, and set ``bounds``
            to :math:`\infty` if there is no upper bound.
 
         The COBYQA method always respect the bound constraints.
@@ -13149,17 +13147,17 @@ def minimize(
 
     References
     ----------
-    .. [1] J. Nocedal and S. J. Wright. *Numerical Optimization*. Springer Ser.
+    ..  J. Nocedal and S. J. Wright. *Numerical Optimization*. Springer Ser.
        Oper. Res. Financ. Eng. Springer, New York, NY, USA, second edition,
        2006. `doi:10.1007/978-0-387-40065-5
        <https://doi.org/10.1007/978-0-387-40065-5>`_.
-    .. [2] M. J. D. Powell. A direct search optimization method that models the
+    ..  M. J. D. Powell. A direct search optimization method that models the
        objective and constraint functions by linear interpolation. In S. Gomez
        and J.-P. Hennart, editors, *Advances in Optimization and Numerical
        Analysis*, volume 275 of Math. Appl., pages 51--67. Springer, Dordrecht,
        Netherlands, 1994. `doi:10.1007/978-94-015-8330-5_4
        <https://doi.org/10.1007/978-94-015-8330-5_4>`_.
-    .. [3] T. M. Ragonneau. *Model-Based Derivative-Free Optimization Methods
+    ..  T. M. Ragonneau. *Model-Based Derivative-Free Optimization Methods
        and Software*. PhD thesis, Department of Applied Mathematics, The Hong
        Kong Polytechnic University, Hong Kong, China, 2022. URL:
        https://theses.lib.polyu.edu.hk/handle/200/12294.
@@ -13179,13 +13177,13 @@ def minimize(
 
     To solve the problem using COBYQA, run:
 
-    >>> x0 = [1.3, 0.7, 0.8, 1.9, 1.2]
+    >>> x0 = 
     >>> res = minimize(rosen, x0)
     >>> res.x
-    array([1., 1., 1., 1., 1.])
+    array()
 
     To see how bound and constraints are handled using `minimize`, we solve
-    Example 16.4 of [1]_, defined as
+    Example 16.4 of _, defined as
 
     .. math::
 
@@ -13204,22 +13202,22 @@ def minimize(
     Its objective function can be implemented as:
 
     >>> def fun(x):
-    ...     return (x[0] - 1.0)**2 + (x[1] - 2.5)**2
+    ...     return (x - 1.0)**2 + (x - 2.5)**2
 
     This problem can be solved using `minimize` as:
 
-    >>> x0 = [2.0, 0.0]
-    >>> bounds = Bounds([0.0, 0.0], np.inf)
+    >>> x0 = 
+    >>> bounds = Bounds(, np.inf)
     >>> constraints = LinearConstraint([
-    ...     [-1.0, 2.0],
-    ...     [1.0, 2.0],
-    ...     [1.0, -2.0],
-    ... ], -np.inf, [2.0, 6.0, 2.0])
+    ...     ,
+    ...     ,
+    ...     ,
+    ... ], -np.inf, )
     >>> res = minimize(fun, x0, bounds=bounds, constraints=constraints)
     >>> res.x
-    array([1.4, 1.7])
+    array()
 
-    To see how nonlinear constraints are handled, we solve Problem (F) of [2]_,
+    To see how nonlinear constraints are handled, we solve Problem (F) of _,
     defined as
 
     .. math::
@@ -13235,21 +13233,21 @@ def minimize(
     Its objective and constraint functions can be implemented as:
 
     >>> def fun(x):
-    ...     return -x[0] - x[1]
+    ...     return -x - x
     >>>
     >>> def cub(x):
-    ...     return [x[0]**2 - x[1], x[0]**2 + x[1]**2]
+    ...     return **2 - x, x**2 + x**2]
 
     This problem can be solved using `minimize` as:
 
-    >>> x0 = [1.0, 1.0]
-    >>> constraints = NonlinearConstraint(cub, -np.inf, [0.0, 1.0])
+    >>> x0 = 
+    >>> constraints = NonlinearConstraint(cub, -np.inf, )
     >>> res = minimize(fun, x0, constraints=constraints)
     >>> res.x
-    array([0.707, 0.707])
+    array()
 
     Finally, to see how to supply linear and nonlinear constraints
-    simultaneously, we solve Problem (G) of [2]_, defined as
+    simultaneously, we solve Problem (G) of _, defined as
 
     .. math::
 
@@ -13263,60 +13261,60 @@ def minimize(
     Its objective and nonlinear constraint functions can be implemented as:
 
     >>> def fun(x):
-    ...     return x[2]
+    ...     return x
     >>>
     >>> def cub(x):
-    ...     return x[0]**2 + x[1]**2 + 4.0*x[1] - x[2]
+    ...     return x**2 + x**2 + 4.0*x - x
 
     This problem can be solved using `minimize` as:
 
-    >>> x0 = [1.0, 1.0, 1.0]
+    >>> x0 = 
     >>> constraints = [
     ...     LinearConstraint(
-    ...         [[5.0, -1.0, 1.0], [-5.0, -1.0, 1.0]],
-    ...         [0.0, 0.0],
+    ...         , ],
+    ...         ,
     ...         np.inf,
     ...     ),
     ...     NonlinearConstraint(cub, -np.inf, 0.0),
     ... ]
     >>> res = minimize(fun, x0, constraints=constraints)
     >>> res.x
-    array([ 0., -3., -3.])
+    array()
     """
     # Get basic options that are needed for the initialization.
     if options is None:
         options = {}
     else:
         options = dict(options)
-    verbose = options.get(Options.VERBOSE, DEFAULT_OPTIONS[Options.VERBOSE])
+    verbose = options.get(Options.VERBOSE, DEFAULT_OPTIONS)
     verbose = bool(verbose)
     feasibility_tol = options.get(
         Options.FEASIBILITY_TOL,
-        DEFAULT_OPTIONS[Options.FEASIBILITY_TOL],
+        DEFAULT_OPTIONS,
     )
     feasibility_tol = float(feasibility_tol)
-    scale = options.get(Options.SCALE, DEFAULT_OPTIONS[Options.SCALE])
+    scale = options.get(Options.SCALE, DEFAULT_OPTIONS)
     scale = bool(scale)
     store_history = options.get(
         Options.STORE_HISTORY,
-        DEFAULT_OPTIONS[Options.STORE_HISTORY],
+        DEFAULT_OPTIONS,
     )
     store_history = bool(store_history)
-    if Options.HISTORY_SIZE in options and options[Options.HISTORY_SIZE] <= 0:
+    if Options.HISTORY_SIZE in options and options <= 0:
         raise ValueError("The size of the history must be positive.")
     history_size = options.get(
         Options.HISTORY_SIZE,
-        DEFAULT_OPTIONS[Options.HISTORY_SIZE],
+        DEFAULT_OPTIONS,
     )
     history_size = int(history_size)
-    if Options.FILTER_SIZE in options and options[Options.FILTER_SIZE] <= 0:
+    if Options.FILTER_SIZE in options and options <= 0:
         raise ValueError("The size of the filter must be positive.")
     filter_size = options.get(
         Options.FILTER_SIZE,
-        DEFAULT_OPTIONS[Options.FILTER_SIZE],
+        DEFAULT_OPTIONS,
     )
     filter_size = int(filter_size)
-    debug = options.get(Options.DEBUG, DEFAULT_OPTIONS[Options.DEBUG])
+    debug = options.get(Options.DEBUG, DEFAULT_OPTIONS)
     debug = bool(debug)
 
     # Initialize the objective function.
@@ -13326,7 +13324,7 @@ def minimize(
 
     # Initialize the bound constraints.
     if not hasattr(x0, "__len__"):
-        x0 = [x0]
+        x0 = 
     n_orig = len(x0)
     bounds = BoundConstraints(_get_bounds(bounds, n_orig))
 
@@ -13378,13 +13376,13 @@ def minimize(
         )
     if verbose:
         print("Starting the optimization procedure.")
-        print(f"Initial trust-region radius: {options[Options.RHOBEG]}.")
-        print(f"Final trust-region radius: {options[Options.RHOEND]}.")
+        print(f"Initial trust-region radius: {options}.")
+        print(f"Final trust-region radius: {options}.")
         print(
             f"Maximum number of function evaluations: "
-            f"{options[Options.MAX_EVAL]}."
+            f"{options}."
         )
-        print(f"Maximum number of iterations: {options[Options.MAX_ITER]}.")
+        print(f"Maximum number of iterations: {options}.")
         print()
     try:
         framework = TrustRegion(pb, options, constants)
@@ -13450,7 +13448,7 @@ def minimize(
         # Stop the optimization procedure if the maximum number of iterations
         # has been exceeded. We do not write the main loop as a for loop
         # because we want to access the number of iterations outside the loop.
-        if n_iter >= options[Options.MAX_ITER]:
+        if n_iter >= options:
             status = ExitStatus.MAX_ITER_WARNING
             break
         n_iter += 1
@@ -13460,7 +13458,7 @@ def minimize(
             np.linalg.norm(
                 framework.x_best - framework.models.interpolation.x_base
             )
-            >= constants[Constants.LARGE_SHIFT_FACTOR] * framework.radius
+            >= constants * framework.radius
         ):
             framework.shift_x_base(options)
 
@@ -13478,9 +13476,9 @@ def minimize(
         # criterion for performing an exceptional jump is taken from NEWUOA.
         if (
             s_norm
-            <= constants[Constants.SHORT_STEP_THRESHOLD] * framework.resolution
+            <= constants * framework.resolution
         ):
-            framework.radius *= constants[Constants.DECREASE_RESOLUTION_FACTOR]
+            framework.radius *= constants
             if radius_save > framework.resolution:
                 n_short_steps = 0
                 n_very_short_steps = 0
@@ -13502,7 +13500,7 @@ def minimize(
                     break
                 improve_geometry = dist_new > max(
                     framework.radius,
-                    constants[Constants.RESOLUTION_FACTOR]
+                    constants
                     * framework.resolution,
                 )
         else:
@@ -13547,7 +13545,7 @@ def minimize(
                     pb.type == "nonlinearly constrained"
                     and merit_new > merit_old
                     and np.linalg.norm(normal_step)
-                    > constants[Constants.BYRD_OMOJOKUN_FACTOR] ** 2.0
+                    > constants ** 2.0
                     * framework.radius
                 ):
                     soc_step = framework.get_second_order_correction_step(
@@ -13592,7 +13590,7 @@ def minimize(
                 try:
                     k_new = framework.get_index_to_remove(
                         framework.x_best + step
-                    )[0]
+                    )
                 except np.linalg.LinAlgError:
                     status = ExitStatus.LINALG_ERROR
                     break
@@ -13613,7 +13611,7 @@ def minimize(
 
                 # Attempt to replace the models by the alternative ones.
                 if framework.radius <= framework.resolution:
-                    if ratio >= constants[Constants.VERY_LOW_RATIO]:
+                    if ratio >= constants:
                         n_alt_models = 0
                     else:
                         n_alt_models += 1
@@ -13648,17 +13646,17 @@ def minimize(
                     break
                 improve_geometry = (
                     ill_conditioned
-                    or ratio <= constants[Constants.LOW_RATIO]
+                    or ratio <= constants
                     and dist_new
                     > max(
                         framework.radius,
-                        constants[Constants.RESOLUTION_FACTOR]
+                        constants
                         * framework.resolution,
                     )
                 )
                 enhance_resolution = (
                     radius_save <= framework.resolution
-                    and ratio <= constants[Constants.LOW_RATIO]
+                    and ratio <= constants
                     and not improve_geometry
                 )
             else:
@@ -13669,7 +13667,7 @@ def minimize(
 
         # Reduce the resolution if necessary.
         if enhance_resolution:
-            if framework.resolution <= options[Options.RHOEND]:
+            if framework.resolution <= options:
                 success = True
                 status = ExitStatus.RADIUS_SUCCESS
                 break
@@ -13758,7 +13756,7 @@ def _get_bounds(bounds, n):
                 "The shape of the bounds is not compatible with "
                 "the number of variables."
             )
-        return Bounds(bounds[:, 0], bounds[:, 1])
+        return Bounds(bounds, bounds)
     else:
         raise TypeError(
             "The bounds must be an instance of "
@@ -13773,8 +13771,8 @@ def _get_constraints(constraints):
         constraints = (constraints,)
 
     # Extract the linear and nonlinear constraints.
-    linear_constraints = []
-    nonlinear_constraints = []
+    linear_constraints = 
+    nonlinear_constraints = 
     for constraint in constraints:
         if isinstance(constraint, LinearConstraint):
             lb = exact_1d_array(
@@ -13811,17 +13809,17 @@ def _get_constraints(constraints):
                 )
             )
         elif isinstance(constraint, dict):
-            if "type" not in constraint or constraint["type"] not in (
+            if "type" not in constraint or constraint not in (
                 "eq",
                 "ineq",
             ):
                 raise ValueError('The constraint type must be "eq" or "ineq".')
-            if "fun" not in constraint or not callable(constraint["fun"]):
+            if "fun" not in constraint or not callable(constraint):
                 raise ValueError("The constraint function must be callable.")
             nonlinear_constraints.append(
                 {
-                    "fun": constraint["fun"],
-                    "type": constraint["type"],
+                    "fun": constraint,
+                    "type": constraint,
                     "args": constraint.get("args", ()),
                 }
             )
@@ -13837,49 +13835,49 @@ def _set_default_options(options, n):
     """
     Set the default options.
     """
-    if Options.RHOBEG in options and options[Options.RHOBEG] <= 0.0:
+    if Options.RHOBEG in options and options <= 0.0:
         raise ValueError("The initial trust-region radius must be positive.")
-    if Options.RHOEND in options and options[Options.RHOEND] < 0.0:
+    if Options.RHOEND in options and options < 0.0:
         raise ValueError("The final trust-region radius must be nonnegative.")
     if Options.RHOBEG in options and Options.RHOEND in options:
-        if options[Options.RHOBEG] < options[Options.RHOEND]:
+        if options < options:
             raise ValueError(
                 "The initial trust-region radius must be greater "
                 "than or equal to the final trust-region radius."
             )
     elif Options.RHOBEG in options:
-        options[Options.RHOEND.value] = np.min(
+        options = np.min(
             [
-                DEFAULT_OPTIONS[Options.RHOEND],
-                options[Options.RHOBEG],
+                DEFAULT_OPTIONS,
+                options,
             ]
         )
     elif Options.RHOEND in options:
-        options[Options.RHOBEG.value] = np.max(
+        options = np.max(
             [
-                DEFAULT_OPTIONS[Options.RHOBEG],
-                options[Options.RHOEND],
+                DEFAULT_OPTIONS,
+                options,
             ]
         )
     else:
-        options[Options.RHOBEG.value] = DEFAULT_OPTIONS[Options.RHOBEG]
-        options[Options.RHOEND.value] = DEFAULT_OPTIONS[Options.RHOEND]
-    options[Options.RHOBEG.value] = float(options[Options.RHOBEG])
-    options[Options.RHOEND.value] = float(options[Options.RHOEND])
-    if Options.NPT in options and options[Options.NPT] <= 0:
+        options = DEFAULT_OPTIONS
+        options = DEFAULT_OPTIONS
+    options = float(options)
+    options = float(options)
+    if Options.NPT in options and options <= 0:
         raise ValueError("The number of interpolation points must be "
                          "positive.")
     if (
         Options.NPT in options
-        and options[Options.NPT] > ((n + 1) * (n + 2)) // 2
+        and options > ((n + 1) * (n + 2)) // 2
     ):
         raise ValueError(
             f"The number of interpolation points must be at most "
             f"{((n + 1) * (n + 2)) // 2}."
         )
-    options.setdefault(Options.NPT.value, DEFAULT_OPTIONS[Options.NPT](n))
-    options[Options.NPT.value] = int(options[Options.NPT])
-    if Options.MAX_EVAL in options and options[Options.MAX_EVAL] <= 0:
+    options.setdefault(Options.NPT.value, DEFAULT_OPTIONS(n))
+    options = int(options)
+    if Options.MAX_EVAL in options and options <= 0:
         raise ValueError(
             "The maximum number of function evaluations must be positive."
         )
@@ -13887,49 +13885,49 @@ def _set_default_options(options, n):
         Options.MAX_EVAL.value,
         np.max(
             [
-                DEFAULT_OPTIONS[Options.MAX_EVAL](n),
-                options[Options.NPT] + 1,
+                DEFAULT_OPTIONS(n),
+                options + 1,
             ]
         ),
     )
-    options[Options.MAX_EVAL.value] = int(options[Options.MAX_EVAL])
-    if Options.MAX_ITER in options and options[Options.MAX_ITER] <= 0:
+    options = int(options)
+    if Options.MAX_ITER in options and options <= 0:
         raise ValueError("The maximum number of iterations must be positive.")
     options.setdefault(
         Options.MAX_ITER.value,
-        DEFAULT_OPTIONS[Options.MAX_ITER](n),
+        DEFAULT_OPTIONS(n),
     )
-    options[Options.MAX_ITER.value] = int(options[Options.MAX_ITER])
-    options.setdefault(Options.TARGET.value, DEFAULT_OPTIONS[Options.TARGET])
-    options[Options.TARGET.value] = float(options[Options.TARGET])
+    options = int(options)
+    options.setdefault(Options.TARGET.value, DEFAULT_OPTIONS)
+    options = float(options)
     options.setdefault(
         Options.FEASIBILITY_TOL.value,
-        DEFAULT_OPTIONS[Options.FEASIBILITY_TOL],
+        DEFAULT_OPTIONS,
     )
-    options[Options.FEASIBILITY_TOL.value] = float(
-        options[Options.FEASIBILITY_TOL]
+    options = float(
+        options
     )
-    options.setdefault(Options.VERBOSE.value, DEFAULT_OPTIONS[Options.VERBOSE])
-    options[Options.VERBOSE.value] = bool(options[Options.VERBOSE])
-    options.setdefault(Options.SCALE.value, DEFAULT_OPTIONS[Options.SCALE])
-    options[Options.SCALE.value] = bool(options[Options.SCALE])
+    options.setdefault(Options.VERBOSE.value, DEFAULT_OPTIONS)
+    options = bool(options)
+    options.setdefault(Options.SCALE.value, DEFAULT_OPTIONS)
+    options = bool(options)
     options.setdefault(
         Options.FILTER_SIZE.value,
-        DEFAULT_OPTIONS[Options.FILTER_SIZE],
+        DEFAULT_OPTIONS,
     )
-    options[Options.FILTER_SIZE.value] = int(options[Options.FILTER_SIZE])
+    options = int(options)
     options.setdefault(
         Options.STORE_HISTORY.value,
-        DEFAULT_OPTIONS[Options.STORE_HISTORY],
+        DEFAULT_OPTIONS,
     )
-    options[Options.STORE_HISTORY.value] = bool(options[Options.STORE_HISTORY])
+    options = bool(options)
     options.setdefault(
         Options.HISTORY_SIZE.value,
-        DEFAULT_OPTIONS[Options.HISTORY_SIZE],
+        DEFAULT_OPTIONS,
     )
-    options[Options.HISTORY_SIZE.value] = int(options[Options.HISTORY_SIZE])
-    options.setdefault(Options.DEBUG.value, DEFAULT_OPTIONS[Options.DEBUG])
-    options[Options.DEBUG.value] = bool(options[Options.DEBUG])
+    options = int(options)
+    options.setdefault(Options.DEBUG.value, DEFAULT_OPTIONS)
+    options = bool(options)
 
     # Check whether they are any unknown options.
     for key in options:
@@ -13943,14 +13941,14 @@ def _set_default_constants(**kwargs):
     constants = dict(kwargs)
     constants.setdefault(
         Constants.DECREASE_RADIUS_FACTOR.value,
-        DEFAULT_CONSTANTS[Constants.DECREASE_RADIUS_FACTOR],
+        DEFAULT_CONSTANTS,
     )
-    constants[Constants.DECREASE_RADIUS_FACTOR.value] = float(
-        constants[Constants.DECREASE_RADIUS_FACTOR]
+    constants = float(
+        constants
     )
     if (
-        constants[Constants.DECREASE_RADIUS_FACTOR] <= 0.0
-        or constants[Constants.DECREASE_RADIUS_FACTOR] >= 1.0
+        constants <= 0.0
+        or constants >= 1.0
     ):
         raise ValueError(
             "The constant decrease_radius_factor must be in the interval "
@@ -13958,25 +13956,25 @@ def _set_default_constants(**kwargs):
         )
     constants.setdefault(
         Constants.INCREASE_RADIUS_THRESHOLD.value,
-        DEFAULT_CONSTANTS[Constants.INCREASE_RADIUS_THRESHOLD],
+        DEFAULT_CONSTANTS,
     )
-    constants[Constants.INCREASE_RADIUS_THRESHOLD.value] = float(
-        constants[Constants.INCREASE_RADIUS_THRESHOLD]
+    constants = float(
+        constants
     )
-    if constants[Constants.INCREASE_RADIUS_THRESHOLD] <= 1.0:
+    if constants <= 1.0:
         raise ValueError(
             "The constant increase_radius_threshold must be greater than 1."
         )
     if (
         Constants.INCREASE_RADIUS_FACTOR in constants
-        and constants[Constants.INCREASE_RADIUS_FACTOR] <= 1.0
+        and constants <= 1.0
     ):
         raise ValueError(
             "The constant increase_radius_factor must be greater than 1."
         )
     if (
         Constants.DECREASE_RADIUS_THRESHOLD in constants
-        and constants[Constants.DECREASE_RADIUS_THRESHOLD] <= 1.0
+        and constants <= 1.0
     ):
         raise ValueError(
             "The constant decrease_radius_threshold must be greater than 1."
@@ -13986,43 +13984,43 @@ def _set_default_constants(**kwargs):
         and Constants.DECREASE_RADIUS_THRESHOLD in constants
     ):
         if (
-            constants[Constants.DECREASE_RADIUS_THRESHOLD]
-            >= constants[Constants.INCREASE_RADIUS_FACTOR]
+            constants
+            >= constants
         ):
             raise ValueError(
                 "The constant decrease_radius_threshold must be "
                 "less than increase_radius_factor."
             )
     elif Constants.INCREASE_RADIUS_FACTOR in constants:
-        constants[Constants.DECREASE_RADIUS_THRESHOLD.value] = np.min(
+        constants = np.min(
             [
-                DEFAULT_CONSTANTS[Constants.DECREASE_RADIUS_THRESHOLD],
-                0.5 * (1.0 + constants[Constants.INCREASE_RADIUS_FACTOR]),
+                DEFAULT_CONSTANTS,
+                0.5 * (1.0 + constants),
             ]
         )
     elif Constants.DECREASE_RADIUS_THRESHOLD in constants:
-        constants[Constants.INCREASE_RADIUS_FACTOR.value] = np.max(
+        constants = np.max(
             [
-                DEFAULT_CONSTANTS[Constants.INCREASE_RADIUS_FACTOR],
-                2.0 * constants[Constants.DECREASE_RADIUS_THRESHOLD],
+                DEFAULT_CONSTANTS,
+                2.0 * constants,
             ]
         )
     else:
-        constants[Constants.INCREASE_RADIUS_FACTOR.value] = DEFAULT_CONSTANTS[
+        constants = DEFAULT_CONSTANTS[
             Constants.INCREASE_RADIUS_FACTOR
         ]
-        constants[Constants.DECREASE_RADIUS_THRESHOLD.value] = (
-            DEFAULT_CONSTANTS[Constants.DECREASE_RADIUS_THRESHOLD])
+        constants = (
+            DEFAULT_CONSTANTS)
     constants.setdefault(
         Constants.DECREASE_RESOLUTION_FACTOR.value,
-        DEFAULT_CONSTANTS[Constants.DECREASE_RESOLUTION_FACTOR],
+        DEFAULT_CONSTANTS,
     )
-    constants[Constants.DECREASE_RESOLUTION_FACTOR.value] = float(
-        constants[Constants.DECREASE_RESOLUTION_FACTOR]
+    constants = float(
+        constants
     )
     if (
-        constants[Constants.DECREASE_RESOLUTION_FACTOR] <= 0.0
-        or constants[Constants.DECREASE_RESOLUTION_FACTOR] >= 1.0
+        constants <= 0.0
+        or constants >= 1.0
     ):
         raise ValueError(
             "The constant decrease_resolution_factor must be in the interval "
@@ -14030,14 +14028,14 @@ def _set_default_constants(**kwargs):
         )
     if (
         Constants.LARGE_RESOLUTION_THRESHOLD in constants
-        and constants[Constants.LARGE_RESOLUTION_THRESHOLD] <= 1.0
+        and constants <= 1.0
     ):
         raise ValueError(
             "The constant large_resolution_threshold must be greater than 1."
         )
     if (
         Constants.MODERATE_RESOLUTION_THRESHOLD in constants
-        and constants[Constants.MODERATE_RESOLUTION_THRESHOLD] <= 1.0
+        and constants <= 1.0
     ):
         raise ValueError(
             "The constant moderate_resolution_threshold must be greater than "
@@ -14048,91 +14046,91 @@ def _set_default_constants(**kwargs):
         and Constants.MODERATE_RESOLUTION_THRESHOLD in constants
     ):
         if (
-            constants[Constants.MODERATE_RESOLUTION_THRESHOLD]
-            > constants[Constants.LARGE_RESOLUTION_THRESHOLD]
+            constants
+            > constants
         ):
             raise ValueError(
                 "The constant moderate_resolution_threshold "
                 "must be at most large_resolution_threshold."
             )
     elif Constants.LARGE_RESOLUTION_THRESHOLD in constants:
-        constants[Constants.MODERATE_RESOLUTION_THRESHOLD.value] = np.min(
+        constants = np.min(
             [
-                DEFAULT_CONSTANTS[Constants.MODERATE_RESOLUTION_THRESHOLD],
-                constants[Constants.LARGE_RESOLUTION_THRESHOLD],
+                DEFAULT_CONSTANTS,
+                constants,
             ]
         )
     elif Constants.MODERATE_RESOLUTION_THRESHOLD in constants:
-        constants[Constants.LARGE_RESOLUTION_THRESHOLD.value] = np.max(
+        constants = np.max(
             [
-                DEFAULT_CONSTANTS[Constants.LARGE_RESOLUTION_THRESHOLD],
-                constants[Constants.MODERATE_RESOLUTION_THRESHOLD],
+                DEFAULT_CONSTANTS,
+                constants,
             ]
         )
     else:
-        constants[Constants.LARGE_RESOLUTION_THRESHOLD.value] = (
-            DEFAULT_CONSTANTS[Constants.LARGE_RESOLUTION_THRESHOLD]
+        constants = (
+            DEFAULT_CONSTANTS
         )
-        constants[Constants.MODERATE_RESOLUTION_THRESHOLD.value] = (
-            DEFAULT_CONSTANTS[Constants.MODERATE_RESOLUTION_THRESHOLD]
+        constants = (
+            DEFAULT_CONSTANTS
         )
     if Constants.LOW_RATIO in constants and (
-        constants[Constants.LOW_RATIO] <= 0.0
-        or constants[Constants.LOW_RATIO] >= 1.0
+        constants <= 0.0
+        or constants >= 1.0
     ):
         raise ValueError(
             "The constant low_ratio must be in the interval (0, 1)."
         )
     if Constants.HIGH_RATIO in constants and (
-        constants[Constants.HIGH_RATIO] <= 0.0
-        or constants[Constants.HIGH_RATIO] >= 1.0
+        constants <= 0.0
+        or constants >= 1.0
     ):
         raise ValueError(
             "The constant high_ratio must be in the interval (0, 1)."
         )
     if Constants.LOW_RATIO in constants and Constants.HIGH_RATIO in constants:
-        if constants[Constants.LOW_RATIO] > constants[Constants.HIGH_RATIO]:
+        if constants > constants:
             raise ValueError(
                 "The constant low_ratio must be at most high_ratio."
             )
     elif Constants.LOW_RATIO in constants:
-        constants[Constants.HIGH_RATIO.value] = np.max(
+        constants = np.max(
             [
-                DEFAULT_CONSTANTS[Constants.HIGH_RATIO],
-                constants[Constants.LOW_RATIO],
+                DEFAULT_CONSTANTS,
+                constants,
             ]
         )
     elif Constants.HIGH_RATIO in constants:
-        constants[Constants.LOW_RATIO.value] = np.min(
+        constants = np.min(
             [
-                DEFAULT_CONSTANTS[Constants.LOW_RATIO],
-                constants[Constants.HIGH_RATIO],
+                DEFAULT_CONSTANTS,
+                constants,
             ]
         )
     else:
-        constants[Constants.LOW_RATIO.value] = DEFAULT_CONSTANTS[
+        constants = DEFAULT_CONSTANTS[
             Constants.LOW_RATIO
         ]
-        constants[Constants.HIGH_RATIO.value] = DEFAULT_CONSTANTS[
+        constants = DEFAULT_CONSTANTS[
             Constants.HIGH_RATIO
         ]
     constants.setdefault(
         Constants.VERY_LOW_RATIO.value,
-        DEFAULT_CONSTANTS[Constants.VERY_LOW_RATIO],
+        DEFAULT_CONSTANTS,
     )
-    constants[Constants.VERY_LOW_RATIO.value] = float(
-        constants[Constants.VERY_LOW_RATIO]
+    constants = float(
+        constants
     )
     if (
-        constants[Constants.VERY_LOW_RATIO] <= 0.0
-        or constants[Constants.VERY_LOW_RATIO] >= 1.0
+        constants <= 0.0
+        or constants >= 1.0
     ):
         raise ValueError(
             "The constant very_low_ratio must be in the interval (0, 1)."
         )
     if (
         Constants.PENALTY_INCREASE_THRESHOLD in constants
-        and constants[Constants.PENALTY_INCREASE_THRESHOLD] < 1.0
+        and constants < 1.0
     ):
         raise ValueError(
             "The constant penalty_increase_threshold must be "
@@ -14140,7 +14138,7 @@ def _set_default_constants(**kwargs):
         )
     if (
         Constants.PENALTY_INCREASE_FACTOR in constants
-        and constants[Constants.PENALTY_INCREASE_FACTOR] <= 1.0
+        and constants <= 1.0
     ):
         raise ValueError(
             "The constant penalty_increase_factor must be greater than 1."
@@ -14150,8 +14148,8 @@ def _set_default_constants(**kwargs):
         and Constants.PENALTY_INCREASE_FACTOR in constants
     ):
         if (
-            constants[Constants.PENALTY_INCREASE_FACTOR]
-            < constants[Constants.PENALTY_INCREASE_THRESHOLD]
+            constants
+            < constants
         ):
             raise ValueError(
                 "The constant penalty_increase_factor must be "
@@ -14159,117 +14157,117 @@ def _set_default_constants(**kwargs):
                 "penalty_increase_threshold."
             )
     elif Constants.PENALTY_INCREASE_THRESHOLD in constants:
-        constants[Constants.PENALTY_INCREASE_FACTOR.value] = np.max(
+        constants = np.max(
             [
-                DEFAULT_CONSTANTS[Constants.PENALTY_INCREASE_FACTOR],
-                constants[Constants.PENALTY_INCREASE_THRESHOLD],
+                DEFAULT_CONSTANTS,
+                constants,
             ]
         )
     elif Constants.PENALTY_INCREASE_FACTOR in constants:
-        constants[Constants.PENALTY_INCREASE_THRESHOLD.value] = np.min(
+        constants = np.min(
             [
-                DEFAULT_CONSTANTS[Constants.PENALTY_INCREASE_THRESHOLD],
-                constants[Constants.PENALTY_INCREASE_FACTOR],
+                DEFAULT_CONSTANTS,
+                constants,
             ]
         )
     else:
-        constants[Constants.PENALTY_INCREASE_THRESHOLD.value] = (
-            DEFAULT_CONSTANTS[Constants.PENALTY_INCREASE_THRESHOLD]
+        constants = (
+            DEFAULT_CONSTANTS
         )
-        constants[Constants.PENALTY_INCREASE_FACTOR.value] = DEFAULT_CONSTANTS[
+        constants = DEFAULT_CONSTANTS[
             Constants.PENALTY_INCREASE_FACTOR
         ]
     constants.setdefault(
         Constants.SHORT_STEP_THRESHOLD.value,
-        DEFAULT_CONSTANTS[Constants.SHORT_STEP_THRESHOLD],
+        DEFAULT_CONSTANTS,
     )
-    constants[Constants.SHORT_STEP_THRESHOLD.value] = float(
-        constants[Constants.SHORT_STEP_THRESHOLD]
+    constants = float(
+        constants
     )
     if (
-        constants[Constants.SHORT_STEP_THRESHOLD] <= 0.0
-        or constants[Constants.SHORT_STEP_THRESHOLD] >= 1.0
+        constants <= 0.0
+        or constants >= 1.0
     ):
         raise ValueError(
             "The constant short_step_threshold must be in the interval (0, 1)."
         )
     constants.setdefault(
         Constants.LOW_RADIUS_FACTOR.value,
-        DEFAULT_CONSTANTS[Constants.LOW_RADIUS_FACTOR],
+        DEFAULT_CONSTANTS,
     )
-    constants[Constants.LOW_RADIUS_FACTOR.value] = float(
-        constants[Constants.LOW_RADIUS_FACTOR]
+    constants = float(
+        constants
     )
     if (
-        constants[Constants.LOW_RADIUS_FACTOR] <= 0.0
-        or constants[Constants.LOW_RADIUS_FACTOR] >= 1.0
+        constants <= 0.0
+        or constants >= 1.0
     ):
         raise ValueError(
             "The constant low_radius_factor must be in the interval (0, 1)."
         )
     constants.setdefault(
         Constants.BYRD_OMOJOKUN_FACTOR.value,
-        DEFAULT_CONSTANTS[Constants.BYRD_OMOJOKUN_FACTOR],
+        DEFAULT_CONSTANTS,
     )
-    constants[Constants.BYRD_OMOJOKUN_FACTOR.value] = float(
-        constants[Constants.BYRD_OMOJOKUN_FACTOR]
+    constants = float(
+        constants
     )
     if (
-        constants[Constants.BYRD_OMOJOKUN_FACTOR] <= 0.0
-        or constants[Constants.BYRD_OMOJOKUN_FACTOR] >= 1.0
+        constants <= 0.0
+        or constants >= 1.0
     ):
         raise ValueError(
             "The constant byrd_omojokun_factor must be in the interval (0, 1)."
         )
     constants.setdefault(
         Constants.THRESHOLD_RATIO_CONSTRAINTS.value,
-        DEFAULT_CONSTANTS[Constants.THRESHOLD_RATIO_CONSTRAINTS],
+        DEFAULT_CONSTANTS,
     )
-    constants[Constants.THRESHOLD_RATIO_CONSTRAINTS.value] = float(
-        constants[Constants.THRESHOLD_RATIO_CONSTRAINTS]
+    constants = float(
+        constants
     )
-    if constants[Constants.THRESHOLD_RATIO_CONSTRAINTS] <= 1.0:
+    if constants <= 1.0:
         raise ValueError(
             "The constant threshold_ratio_constraints must be greater than 1."
         )
     constants.setdefault(
         Constants.LARGE_SHIFT_FACTOR.value,
-        DEFAULT_CONSTANTS[Constants.LARGE_SHIFT_FACTOR],
+        DEFAULT_CONSTANTS,
     )
-    constants[Constants.LARGE_SHIFT_FACTOR.value] = float(
-        constants[Constants.LARGE_SHIFT_FACTOR]
+    constants = float(
+        constants
     )
-    if constants[Constants.LARGE_SHIFT_FACTOR] < 0.0:
+    if constants < 0.0:
         raise ValueError("The constant large_shift_factor must be "
                          "nonnegative.")
     constants.setdefault(
         Constants.LARGE_GRADIENT_FACTOR.value,
-        DEFAULT_CONSTANTS[Constants.LARGE_GRADIENT_FACTOR],
+        DEFAULT_CONSTANTS,
     )
-    constants[Constants.LARGE_GRADIENT_FACTOR.value] = float(
-        constants[Constants.LARGE_GRADIENT_FACTOR]
+    constants = float(
+        constants
     )
-    if constants[Constants.LARGE_GRADIENT_FACTOR] <= 1.0:
+    if constants <= 1.0:
         raise ValueError(
             "The constant large_gradient_factor must be greater than 1."
         )
     constants.setdefault(
         Constants.RESOLUTION_FACTOR.value,
-        DEFAULT_CONSTANTS[Constants.RESOLUTION_FACTOR],
+        DEFAULT_CONSTANTS,
     )
-    constants[Constants.RESOLUTION_FACTOR.value] = float(
-        constants[Constants.RESOLUTION_FACTOR]
+    constants = float(
+        constants
     )
-    if constants[Constants.RESOLUTION_FACTOR] <= 1.0:
+    if constants <= 1.0:
         raise ValueError(
             "The constant resolution_factor must be greater than 1."
         )
     constants.setdefault(
         Constants.IMPROVE_TCG.value,
-        DEFAULT_CONSTANTS[Constants.IMPROVE_TCG],
+        DEFAULT_CONSTANTS,
     )
-    constants[Constants.IMPROVE_TCG.value] = bool(
-        constants[Constants.IMPROVE_TCG]
+    constants = bool(
+        constants
     )
 
     # Check whether they are any unknown options.
@@ -14282,17 +14280,17 @@ def _eval(pb, framework, step, options):
     """
     Evaluate the objective and constraint functions.
     """
-    if pb.n_eval >= options[Options.MAX_EVAL]:
+    if pb.n_eval >= options:
         raise MaxEvalError
     x_eval = framework.x_best + step
     fun_val, cub_val, ceq_val = pb(x_eval, framework.penalty)
     r_val = pb.maxcv(x_eval, cub_val, ceq_val)
     if (
-        fun_val <= options[Options.TARGET]
-        and r_val <= options[Options.FEASIBILITY_TOL]
+        fun_val <= options
+        and r_val <= options
     ):
         raise TargetSuccess
-    if pb.is_feasibility and r_val <= options[Options.FEASIBILITY_TOL]:
+    if pb.is_feasibility and r_val <= options:
         raise FeasibleSuccess
     return fun_val, cub_val, ceq_val
 
@@ -14303,8 +14301,8 @@ def _build_result(pb, penalty, success, status, n_iter, options):
     # Build the result.
     x, fun, maxcv = pb.best_eval(penalty)
     success = success and np.isfinite(fun) and np.isfinite(maxcv)
-    if status not in [ExitStatus.TARGET_SUCCESS, ExitStatus.FEASIBLE_SUCCESS]:
-        success = success and maxcv <= options[Options.FEASIBILITY_TOL]
+    if status not in :
+        success = success and maxcv <= options
     result = OptimizeResult()
     result.message = {
         ExitStatus.RADIUS_SUCCESS: "The lower bound for the trust-region "
@@ -14331,12 +14329,12 @@ def _build_result(pb, penalty, success, status, n_iter, options):
     result.maxcv = maxcv
     result.nfev = pb.n_eval
     result.nit = n_iter
-    if options[Options.STORE_HISTORY]:
+    if options:
         result.fun_history = pb.fun_history
         result.maxcv_history = pb.maxcv_history
 
     # Print the result if requested.
-    if options[Options.VERBOSE]:
+    if options:
         _print_step(
             result.message,
             pb,
@@ -14365,19 +14363,19 @@ def _print_step(message, pb, x, fun_val, r_val, n_eval, n_iter):
 
 def compute_a(n):
     """a_k from DLMF 5.11.6"""
-    a = [mp.sqrt(2)/2]
+    a = 
     for k in range(1, n):
-        ak = a[-1]/k
+        ak = a/k
         for j in range(1, len(a)):
-            ak -= a[j]*a[-j]/(j + 1)
-        ak /= a[0]*(1 + mp.mpf(1)/(k + 1))
+            ak -= a*a/(j + 1)
+        ak /= a*(1 + mp.mpf(1)/(k + 1))
         a.append(ak)
     return a
 
 def compute_g(n):
     """g_k from DLMF 5.11.3/5.11.5"""
     a = compute_a(2*n)
-    g = [mp.sqrt(2)*mp.rf(0.5, k)*a[2*k] for k in range(n)]
+    g =  for k in range(n)]
     return g
 
 def eta(lam):
@@ -14397,19 +14395,19 @@ def compute_alpha(n):
 def compute_d(K, N):
     """d_{k, n} from DLMF 8.12.12"""
     M = N + 2*K
-    d0 = [-mp.mpf(1)/3]
+    d0 = 
     alpha = compute_alpha(M + 2)
     for n in range(1, M):
-        d0.append((n + 2)*alpha[n+2])
-    d = [d0]
+        d0.append((n + 2)*alpha)
+    d = 
     g = compute_g(K)
     for k in range(1, K):
-        dk = []
+        dk = 
         for n in range(M - 2*k):
-            dk.append((-1)**k*g[k]*d[0][n] + (n + 2)*d[k-1][n+2])
+            dk.append((-1)**k*g*d + (n + 2)*d)
         d.append(dk)
     for k in range(K):
-        d[k] = d[k][:N]
+        d = d
     return d
 
 def main():
@@ -14422,7 +14420,7 @@ def main():
     with open(fn + '.new', 'w') as f:
         f.write(header.format(K, N))
         for k, row in enumerate(d):
-            row = [mp.nstr(x, 17, min_fixed=0, max_fixed=0) for x in row]
+            row = 
             f.write('{')
             f.write(", ".join(row))
             if k < K - 1:
@@ -14444,14 +14442,14 @@ def gammainc(a, x, dps=50, maxterms=10**8):
     """
     with mp.workdps(dps):
         z, a, b = mp.mpf(a), mp.mpf(x), mp.mpf(x)
-        G = [z]
+        G = 
         negb = mp.fneg(b, exact=True)
 
         def h(z):
-            T1 = [mp.exp(negb), b, z], [1, z, -1], [], G, [1], [1+z], b
+            T1 = , , , G, , , b
             return (T1,)
 
-        res = mp.hypercomb(h, [z], maxterms=maxterms)
+        res = mp.hypercomb(h, , maxterms=maxterms)
         return mpf2float(res)
 
 def gammaincc(a, x, dps=50, maxterms=10**8):
@@ -14473,19 +14471,19 @@ def gammaincc(a, x, dps=50, maxterms=10**8):
             except mp.libmp.NoConvergence:
                 pass
         nega = mp.fneg(a, exact=True)
-        G = [z]
+        G = 
         # Use 2F0 series when possible; fall back to lower gamma representation
         try:
             def h(z):
                 r = z-1
-                return [([mp.exp(nega), a], [1, r], [], G, [1, -r], [], 1/nega)]
-            return mpf2float(mp.hypercomb(h, [z], force_series=True))
+                return , , , G, , , 1/nega)]
+            return mpf2float(mp.hypercomb(h, , force_series=True))
         except mp.libmp.NoConvergence:
             def h(z):
-                T1 = [], [1, z-1], [z], G, [], [], 0
-                T2 = [-mp.exp(nega), a, z], [1, z, -1], [], G, [1], [1+z], a
+                T1 = , , , G, , , 0
+                T2 = , , , G, , , a
                 return T1, T2
-            return mpf2float(mp.hypercomb(h, [z], maxterms=maxterms))
+            return mpf2float(mp.hypercomb(h, , maxterms=maxterms))
 
 def main():
     t0 = time()
@@ -14500,12 +14498,12 @@ def main():
     ltheta = np.logspace(np.log10(pi/4), np.log10(np.arctan(0.6)), 30)
     utheta = np.logspace(np.log10(pi/4), np.log10(np.arctan(1.4)), 30)
 
-    regimes = [(gammainc, ltheta), (gammaincc, utheta)]
+    regimes = 
     for func, theta in regimes:
         rg, thetag = np.meshgrid(r, theta)
         a, x = rg*np.cos(thetag), rg*np.sin(thetag)
         a, x = a.flatten(), x.flatten()
-        dataset = []
+        dataset = 
         for i, (a0, x0) in enumerate(zip(a, x)):
             if func == gammaincc:
                 # Exploit the fast integer path in gammaincc whenever
@@ -14521,27 +14519,27 @@ def main():
     print(f"{(time() - t0)/60} minutes elapsed")
 
         def h(z):
-            T1 = [mp.exp(negb), b, z], [1, z, -1], [], G, [1], [1+z], b
+            T1 = , , , G, , , b
             return (T1,)
 
             def h(z):
                 r = z-1
-                return [([mp.exp(nega), a], [1, r], [], G, [1, -r], [], 1/nega)]
+                return , , , G, , , 1/nega)]
 
             def h(z):
-                T1 = [], [1, z-1], [z], G, [], [], 0
-                T2 = [-mp.exp(nega), a, z], [1, z, -1], [], G, [1], [1+z], a
+                T1 = , , , G, , , 0
+                T2 = , , , G, , , a
                 return T1, T2
 # --- Merged from _shrunk_covariance.py ---
 
 def _ledoit_wolf(X, *, assume_centered, block_size):
     """Estimate the shrunk Ledoit-Wolf covariance matrix."""
     # for only one feature, the result is the same whatever the shrinkage
-    if len(X.shape) == 2 and X.shape[1] == 1:
+    if len(X.shape) == 2 and X.shape == 1:
         if not assume_centered:
             X = X - X.mean()
         return np.atleast_2d((X**2).mean()), 0.0
-    n_features = X.shape[1]
+    n_features = X.shape
 
     # get Ledoit-Wolf shrinkage
     shrinkage = ledoit_wolf_shrinkage(
@@ -14550,20 +14548,20 @@ def _ledoit_wolf(X, *, assume_centered, block_size):
     emp_cov = empirical_covariance(X, assume_centered=assume_centered)
     mu = np.sum(np.trace(emp_cov)) / n_features
     shrunk_cov = (1.0 - shrinkage) * emp_cov
-    shrunk_cov.flat[:: n_features + 1] += shrinkage * mu
+    shrunk_cov.flat += shrinkage * mu
 
     return shrunk_cov, shrinkage
 
 def _oas(X, *, assume_centered=False):
     """Estimate covariance with the Oracle Approximating Shrinkage algorithm.
 
-    The formulation is based on [1]_.
-    [1] "Shrinkage algorithms for MMSE covariance estimation.",
+    The formulation is based on _.
+     "Shrinkage algorithms for MMSE covariance estimation.",
         Chen, Y., Wiesel, A., Eldar, Y. C., & Hero, A. O.
         IEEE Transactions on Signal Processing, 58(10), 5016-5029, 2010.
         https://arxiv.org/pdf/0907.4698.pdf
     """
-    if len(X.shape) == 2 and X.shape[1] == 1:
+    if len(X.shape) == 2 and X.shape == 1:
         # for only one feature, the result is the same whatever the shrinkage
         if not assume_centered:
             X = X - X.mean()
@@ -14577,7 +14575,7 @@ def _oas(X, *, assume_centered=False):
     # shrinkage = min(
     # trace(S @ S.T) + trace(S)**2) / ((n + 1) (trace(S @ S.T) - trace(S)**2 / p), 1
     # )
-    # where n and p are n_samples and n_features, respectively (cf. Eq. 23 in [1]).
+    # where n and p are n_samples and n_features, respectively (cf. Eq. 23 in ).
     # The factor 2 / p is omitted since it does not impact the value of the estimator
     # for large p.
 
@@ -14596,11 +14594,11 @@ def _oas(X, *, assume_centered=False):
     shrinkage = 1.0 if den == 0 else min(num / den, 1.0)
 
     # The shrunk covariance is defined as:
-    # (1 - shrinkage) * S + shrinkage * F (cf. Eq. 4 in [1])
+    # (1 - shrinkage) * S + shrinkage * F (cf. Eq. 4 in )
     # where S is the empirical covariance and F is the shrinkage target defined as
-    # F = trace(S) / n_features * np.identity(n_features) (cf. Eq. 3 in [1])
+    # F = trace(S) / n_features * np.identity(n_features) (cf. Eq. 3 in )
     shrunk_cov = (1.0 - shrinkage) * emp_cov
-    shrunk_cov.flat[:: n_features + 1] += shrinkage * mu
+    shrunk_cov.flat += shrinkage * mu
 
     return shrunk_cov, shrinkage
 
@@ -14616,7 +14614,7 @@ def shrunk_covariance(emp_cov, shrinkage=0.1):
 
     shrinkage : float, default=0.1
         Coefficient in the convex combination used for the computation
-        of the shrunk estimate. Range is [0, 1].
+        of the shrunk estimate. Range is .
 
     Returns
     -------
@@ -14636,15 +14634,15 @@ def shrunk_covariance(emp_cov, shrinkage=0.1):
     >>> import numpy as np
     >>> from sklearn.datasets import make_gaussian_quantiles
     >>> from sklearn.covariance import empirical_covariance, shrunk_covariance
-    >>> real_cov = np.array([[.8, .3], [.3, .4]])
+    >>> real_cov = np.array(, ])
     >>> rng = np.random.RandomState(0)
-    >>> X = rng.multivariate_normal(mean=[0, 0], cov=real_cov, size=500)
+    >>> X = rng.multivariate_normal(mean=, cov=real_cov, size=500)
     >>> shrunk_covariance(empirical_covariance(X))
-    array([[0.739, 0.254],
-           [0.254, 0.411]])
+    array(,
+           ])
     """
     emp_cov = check_array(emp_cov, allow_nd=True)
-    n_features = emp_cov.shape[-1]
+    n_features = emp_cov.shape
 
     shrunk_cov = (1.0 - shrinkage) * emp_cov
     mu = np.trace(emp_cov, axis1=-2, axis2=-1) / n_features
@@ -14671,7 +14669,7 @@ class ShrunkCovariance(EmpiricalCovariance):
 
     shrinkage : float, default=0.1
         Coefficient in the convex combination used for the computation
-        of the shrunk estimate. Range is [0, 1].
+        of the shrunk estimate. Range is .
 
     Attributes
     ----------
@@ -14723,33 +14721,33 @@ class ShrunkCovariance(EmpiricalCovariance):
     >>> import numpy as np
     >>> from sklearn.covariance import ShrunkCovariance
     >>> from sklearn.datasets import make_gaussian_quantiles
-    >>> real_cov = np.array([[.8, .3],
-    ...                      [.3, .4]])
+    >>> real_cov = np.array(,
+    ...                      ])
     >>> rng = np.random.RandomState(0)
-    >>> X = rng.multivariate_normal(mean=[0, 0],
+    >>> X = rng.multivariate_normal(mean=,
     ...                                   cov=real_cov,
     ...                                   size=500)
     >>> cov = ShrunkCovariance().fit(X)
     >>> cov.covariance_
-    array([[0.7387, 0.2536],
-           [0.2536, 0.4110]])
+    array(,
+           ])
     >>> cov.location_
-    array([0.0622, 0.0193])
+    array()
     """
 
     _parameter_constraints: dict = {
         **EmpiricalCovariance._parameter_constraints,
-        "shrinkage": [Interval(Real, 0, 1, closed="both")],
+        "shrinkage": ,
     }
 
-    def __init__(self, *, store_precision=True, assume_centered=False, shrinkage=0.1):
+def __init__(self, *, store_precision=True, assume_centered=False, shrinkage=0.1):
         super().__init__(
             store_precision=store_precision, assume_centered=assume_centered
         )
         self.shrinkage = shrinkage
 
     @_fit_context(prefer_skip_nested_validation=True)
-    def fit(self, X, y=None):
+def fit(self, X, y=None):
         """Fit the shrunk covariance model to X.
 
         Parameters
@@ -14770,7 +14768,7 @@ class ShrunkCovariance(EmpiricalCovariance):
         # Not calling the parent object to fit, to avoid a potential
         # matrix inversion when setting the precision
         if self.assume_centered:
-            self.location_ = np.zeros(X.shape[1])
+            self.location_ = np.zeros(X.shape)
         else:
             self.location_ = X.mean(0)
         covariance = empirical_covariance(X, assume_centered=self.assume_centered)
@@ -14816,21 +14814,21 @@ def ledoit_wolf_shrinkage(X, assume_centered=False, block_size=1000):
     --------
     >>> import numpy as np
     >>> from sklearn.covariance import ledoit_wolf_shrinkage
-    >>> real_cov = np.array([[.4, .2], [.2, .8]])
+    >>> real_cov = np.array(, ])
     >>> rng = np.random.RandomState(0)
-    >>> X = rng.multivariate_normal(mean=[0, 0], cov=real_cov, size=50)
+    >>> X = rng.multivariate_normal(mean=, cov=real_cov, size=50)
     >>> shrinkage_coefficient = ledoit_wolf_shrinkage(X)
     >>> shrinkage_coefficient
     np.float64(0.23)
     """
     X = check_array(X)
     # for only one feature, the result is the same whatever the shrinkage
-    if len(X.shape) == 2 and X.shape[1] == 1:
+    if len(X.shape) == 2 and X.shape == 1:
         return 0.0
     if X.ndim == 1:
         X = np.reshape(X, (1, -1))
 
-    if X.shape[0] == 1:
+    if X.shape == 1:
         warnings.warn(
             "Only one sample available. You may want to reshape your data array"
         )
@@ -14855,21 +14853,21 @@ def ledoit_wolf_shrinkage(X, assume_centered=False, block_size=1000):
         for j in range(n_splits):
             rows = slice(block_size * i, block_size * (i + 1))
             cols = slice(block_size * j, block_size * (j + 1))
-            beta_ += np.sum(np.dot(X2.T[rows], X2[:, cols]))
-            delta_ += np.sum(np.dot(X.T[rows], X[:, cols]) ** 2)
+            beta_ += np.sum(np.dot(X2.T, X2))
+            delta_ += np.sum(np.dot(X.T, X) ** 2)
         rows = slice(block_size * i, block_size * (i + 1))
-        beta_ += np.sum(np.dot(X2.T[rows], X2[:, block_size * n_splits :]))
-        delta_ += np.sum(np.dot(X.T[rows], X[:, block_size * n_splits :]) ** 2)
+        beta_ += np.sum(np.dot(X2.T, X2))
+        delta_ += np.sum(np.dot(X.T, X) ** 2)
     for j in range(n_splits):
         cols = slice(block_size * j, block_size * (j + 1))
-        beta_ += np.sum(np.dot(X2.T[block_size * n_splits :], X2[:, cols]))
-        delta_ += np.sum(np.dot(X.T[block_size * n_splits :], X[:, cols]) ** 2)
+        beta_ += np.sum(np.dot(X2.T, X2))
+        delta_ += np.sum(np.dot(X.T, X) ** 2)
     delta_ += np.sum(
-        np.dot(X.T[block_size * n_splits :], X[:, block_size * n_splits :]) ** 2
+        np.dot(X.T, X) ** 2
     )
     delta_ /= n_samples**2
     beta_ += np.sum(
-        np.dot(X2.T[block_size * n_splits :], X2[:, block_size * n_splits :])
+        np.dot(X2.T, X2)
     )
     # use delta_ to compute beta
     beta = 1.0 / (n_features * n_samples) * (beta_ / n_samples - delta_)
@@ -14925,13 +14923,13 @@ def ledoit_wolf(X, *, assume_centered=False, block_size=1000):
     --------
     >>> import numpy as np
     >>> from sklearn.covariance import empirical_covariance, ledoit_wolf
-    >>> real_cov = np.array([[.4, .2], [.2, .8]])
+    >>> real_cov = np.array(, ])
     >>> rng = np.random.RandomState(0)
-    >>> X = rng.multivariate_normal(mean=[0, 0], cov=real_cov, size=50)
+    >>> X = rng.multivariate_normal(mean=, cov=real_cov, size=50)
     >>> covariance, shrinkage = ledoit_wolf(X)
     >>> covariance
-    array([[0.44, 0.16],
-           [0.16, 0.80]])
+    array(,
+           ])
     >>> shrinkage
     np.float64(0.23)
     """
@@ -14984,7 +14982,7 @@ class LedoitWolf(EmpiricalCovariance):
 
     shrinkage_ : float
         Coefficient in the convex combination used for the computation
-        of the shrunk estimate. Range is [0, 1].
+        of the shrunk estimate. Range is .
 
     n_features_in_ : int
         Number of features seen during :term:`fit`.
@@ -15030,18 +15028,18 @@ class LedoitWolf(EmpiricalCovariance):
     --------
     >>> import numpy as np
     >>> from sklearn.covariance import LedoitWolf
-    >>> real_cov = np.array([[.4, .2],
-    ...                      [.2, .8]])
+    >>> real_cov = np.array(,
+    ...                      ])
     >>> np.random.seed(0)
-    >>> X = np.random.multivariate_normal(mean=[0, 0],
+    >>> X = np.random.multivariate_normal(mean=,
     ...                                   cov=real_cov,
     ...                                   size=50)
     >>> cov = LedoitWolf().fit(X)
     >>> cov.covariance_
-    array([[0.4406, 0.1616],
-           [0.1616, 0.8022]])
+    array(,
+           ])
     >>> cov.location_
-    array([ 0.0595 , -0.0075])
+    array()
 
     See also :ref:`sphx_glr_auto_examples_covariance_plot_covariance_estimation.py`
     and :ref:`sphx_glr_auto_examples_covariance_plot_lw_vs_oas.py`
@@ -15050,17 +15048,17 @@ class LedoitWolf(EmpiricalCovariance):
 
     _parameter_constraints: dict = {
         **EmpiricalCovariance._parameter_constraints,
-        "block_size": [Interval(Integral, 1, None, closed="left")],
+        "block_size": ,
     }
 
-    def __init__(self, *, store_precision=True, assume_centered=False, block_size=1000):
+def __init__(self, *, store_precision=True, assume_centered=False, block_size=1000):
         super().__init__(
             store_precision=store_precision, assume_centered=assume_centered
         )
         self.block_size = block_size
 
     @_fit_context(prefer_skip_nested_validation=True)
-    def fit(self, X, y=None):
+def fit(self, X, y=None):
         """Fit the Ledoit-Wolf shrunk covariance model to X.
 
         Parameters
@@ -15080,7 +15078,7 @@ class LedoitWolf(EmpiricalCovariance):
         # covariance matrix (and potentially the precision)
         X = validate_data(self, X)
         if self.assume_centered:
-            self.location_ = np.zeros(X.shape[1])
+            self.location_ = np.zeros(X.shape)
         else:
             self.location_ = X.mean(0)
         covariance, shrinkage = _ledoit_wolf(
@@ -15123,9 +15121,9 @@ def oas(X, *, assume_centered=False):
     (1 - shrinkage) * cov + shrinkage * mu * np.identity(n_features),
 
     where mu = trace(cov) / n_features and shrinkage is given by the OAS formula
-    (see [1]_).
+    (see _).
 
-    The shrinkage formulation implemented here differs from Eq. 23 in [1]_. In
+    The shrinkage formulation implemented here differs from Eq. 23 in _. In
     the original article, formula (23) states that 2/p (p being the number of
     features) is multiplied by Trace(cov*cov) in both the numerator and
     denominator, but this operation is omitted because for a large p, the value
@@ -15133,7 +15131,7 @@ def oas(X, *, assume_centered=False):
 
     References
     ----------
-    .. [1] :arxiv:`"Shrinkage algorithms for MMSE covariance estimation.",
+    ..  :arxiv:`"Shrinkage algorithms for MMSE covariance estimation.",
            Chen, Y., Wiesel, A., Eldar, Y. C., & Hero, A. O.
            IEEE Transactions on Signal Processing, 58(10), 5016-5029, 2010.
            <0907.4698>`
@@ -15143,12 +15141,12 @@ def oas(X, *, assume_centered=False):
     >>> import numpy as np
     >>> from sklearn.covariance import oas
     >>> rng = np.random.RandomState(0)
-    >>> real_cov = [[.8, .3], [.3, .4]]
-    >>> X = rng.multivariate_normal(mean=[0, 0], cov=real_cov, size=500)
+    >>> real_cov = , ]
+    >>> X = rng.multivariate_normal(mean=, cov=real_cov, size=500)
     >>> shrunk_cov, shrinkage = oas(X)
     >>> shrunk_cov
-    array([[0.7533, 0.2763],
-           [0.2763, 0.3964]])
+    array(,
+           ])
     >>> shrinkage
     np.float64(0.0195)
     """
@@ -15187,7 +15185,7 @@ class OAS(EmpiricalCovariance):
 
     shrinkage_ : float
       coefficient in the convex combination used for the computation
-      of the shrunk estimate. Range is [0, 1].
+      of the shrunk estimate. Range is .
 
     n_features_in_ : int
         Number of features seen during :term:`fit`.
@@ -15221,9 +15219,9 @@ class OAS(EmpiricalCovariance):
     (1 - shrinkage) * cov + shrinkage * mu * np.identity(n_features),
 
     where mu = trace(cov) / n_features and shrinkage is given by the OAS formula
-    (see [1]_).
+    (see _).
 
-    The shrinkage formulation implemented here differs from Eq. 23 in [1]_. In
+    The shrinkage formulation implemented here differs from Eq. 23 in _. In
     the original article, formula (23) states that 2/p (p being the number of
     features) is multiplied by Trace(cov*cov) in both the numerator and
     denominator, but this operation is omitted because for a large p, the value
@@ -15231,7 +15229,7 @@ class OAS(EmpiricalCovariance):
 
     References
     ----------
-    .. [1] :arxiv:`"Shrinkage algorithms for MMSE covariance estimation.",
+    ..  :arxiv:`"Shrinkage algorithms for MMSE covariance estimation.",
            Chen, Y., Wiesel, A., Eldar, Y. C., & Hero, A. O.
            IEEE Transactions on Signal Processing, 58(10), 5016-5029, 2010.
            <0907.4698>`
@@ -15241,19 +15239,19 @@ class OAS(EmpiricalCovariance):
     >>> import numpy as np
     >>> from sklearn.covariance import OAS
     >>> from sklearn.datasets import make_gaussian_quantiles
-    >>> real_cov = np.array([[.8, .3],
-    ...                      [.3, .4]])
+    >>> real_cov = np.array(,
+    ...                      ])
     >>> rng = np.random.RandomState(0)
-    >>> X = rng.multivariate_normal(mean=[0, 0],
+    >>> X = rng.multivariate_normal(mean=,
     ...                             cov=real_cov,
     ...                             size=500)
     >>> oas = OAS().fit(X)
     >>> oas.covariance_
-    array([[0.7533, 0.2763],
-           [0.2763, 0.3964]])
+    array(,
+           ])
     >>> oas.precision_
-    array([[ 1.7833, -1.2431 ],
-           [-1.2431,  3.3889]])
+    array(,
+           ])
     >>> oas.shrinkage_
     np.float64(0.0195)
 
@@ -15263,7 +15261,7 @@ class OAS(EmpiricalCovariance):
     """
 
     @_fit_context(prefer_skip_nested_validation=True)
-    def fit(self, X, y=None):
+def fit(self, X, y=None):
         """Fit the Oracle Approximating Shrinkage covariance model to X.
 
         Parameters
@@ -15283,7 +15281,7 @@ class OAS(EmpiricalCovariance):
         # Not calling the parent object to fit, to avoid computing the
         # covariance matrix (and potentially the precision)
         if self.assume_centered:
-            self.location_ = np.zeros(X.shape[1])
+            self.location_ = np.zeros(X.shape)
         else:
             self.location_ = X.mean(0)
 
@@ -15293,13 +15291,13 @@ class OAS(EmpiricalCovariance):
 
         return self
 
-    def __init__(self, *, store_precision=True, assume_centered=False, shrinkage=0.1):
+def __init__(self, *, store_precision=True, assume_centered=False, shrinkage=0.1):
         super().__init__(
             store_precision=store_precision, assume_centered=assume_centered
         )
         self.shrinkage = shrinkage
 
-    def fit(self, X, y=None):
+def fit(self, X, y=None):
         """Fit the shrunk covariance model to X.
 
         Parameters
@@ -15320,7 +15318,7 @@ class OAS(EmpiricalCovariance):
         # Not calling the parent object to fit, to avoid a potential
         # matrix inversion when setting the precision
         if self.assume_centered:
-            self.location_ = np.zeros(X.shape[1])
+            self.location_ = np.zeros(X.shape)
         else:
             self.location_ = X.mean(0)
         covariance = empirical_covariance(X, assume_centered=self.assume_centered)
@@ -15329,13 +15327,13 @@ class OAS(EmpiricalCovariance):
 
         return self
 
-    def __init__(self, *, store_precision=True, assume_centered=False, block_size=1000):
+def __init__(self, *, store_precision=True, assume_centered=False, block_size=1000):
         super().__init__(
             store_precision=store_precision, assume_centered=assume_centered
         )
         self.block_size = block_size
 
-    def fit(self, X, y=None):
+def fit(self, X, y=None):
         """Fit the Ledoit-Wolf shrunk covariance model to X.
 
         Parameters
@@ -15355,7 +15353,7 @@ class OAS(EmpiricalCovariance):
         # covariance matrix (and potentially the precision)
         X = validate_data(self, X)
         if self.assume_centered:
-            self.location_ = np.zeros(X.shape[1])
+            self.location_ = np.zeros(X.shape)
         else:
             self.location_ = X.mean(0)
         covariance, shrinkage = _ledoit_wolf(
@@ -15366,7 +15364,7 @@ class OAS(EmpiricalCovariance):
 
         return self
 
-    def fit(self, X, y=None):
+def fit(self, X, y=None):
         """Fit the Oracle Approximating Shrinkage covariance model to X.
 
         Parameters
@@ -15386,7 +15384,7 @@ class OAS(EmpiricalCovariance):
         # Not calling the parent object to fit, to avoid computing the
         # covariance matrix (and potentially the precision)
         if self.assume_centered:
-            self.location_ = np.zeros(X.shape[1])
+            self.location_ = np.zeros(X.shape)
         else:
             self.location_ = X.mean(0)
 
@@ -15502,7 +15500,7 @@ class TruncatedSVD(ClassNamePrefixFeaturesOutMixin, TransformerMixin, BaseEstima
     SVD suffers from a problem called "sign indeterminacy", which means the
     sign of the ``components_`` and the output from transform depend on the
     algorithm and random state. To work around this, fit instances of this
-    class to data once, then keep the instance around to do transformations.
+class to data once, then keep the instance around to do transformations.
 
     References
     ----------
@@ -15517,30 +15515,30 @@ class TruncatedSVD(ClassNamePrefixFeaturesOutMixin, TransformerMixin, BaseEstima
     >>> import numpy as np
     >>> np.random.seed(0)
     >>> X_dense = np.random.rand(100, 100)
-    >>> X_dense[:, 2 * np.arange(50)] = 0
+    >>> X_dense = 0
     >>> X = csr_matrix(X_dense)
     >>> svd = TruncatedSVD(n_components=5, n_iter=7, random_state=42)
     >>> svd.fit(X)
     TruncatedSVD(n_components=5, n_iter=7, random_state=42)
     >>> print(svd.explained_variance_ratio_)
-    [0.0157 0.0512 0.0499 0.0479 0.0453]
+    
     >>> print(svd.explained_variance_ratio_.sum())
     0.2102
     >>> print(svd.singular_values_)
-    [35.2410  4.5981   4.5420  4.4486  4.3288]
+    
     """
 
     _parameter_constraints: dict = {
-        "n_components": [Interval(Integral, 1, None, closed="left")],
-        "algorithm": [StrOptions({"arpack", "randomized"})],
-        "n_iter": [Interval(Integral, 0, None, closed="left")],
-        "n_oversamples": [Interval(Integral, 1, None, closed="left")],
-        "power_iteration_normalizer": [StrOptions({"auto", "OR", "LU", "none"})],
-        "random_state": ["random_state"],
-        "tol": [Interval(Real, 0, None, closed="left")],
+        "n_components": ,
+        "algorithm": ,
+        "n_iter": ,
+        "n_oversamples": ,
+        "power_iteration_normalizer": ,
+        "random_state": ,
+        "tol": ,
     }
 
-    def __init__(
+def __init__(
         self,
         n_components=2,
         *,
@@ -15559,7 +15557,7 @@ class TruncatedSVD(ClassNamePrefixFeaturesOutMixin, TransformerMixin, BaseEstima
         self.random_state = random_state
         self.tol = tol
 
-    def fit(self, X, y=None):
+def fit(self, X, y=None):
         """Fit model on training data X.
 
         Parameters
@@ -15579,7 +15577,7 @@ class TruncatedSVD(ClassNamePrefixFeaturesOutMixin, TransformerMixin, BaseEstima
         return self
 
     @_fit_context(prefer_skip_nested_validation=True)
-    def fit_transform(self, X, y=None):
+def fit_transform(self, X, y=None):
         """Fit model to X and perform dimensionality reduction on X.
 
         Parameters
@@ -15595,7 +15593,7 @@ class TruncatedSVD(ClassNamePrefixFeaturesOutMixin, TransformerMixin, BaseEstima
         X_new : ndarray of shape (n_samples, n_components)
             Reduced version of X. This will always be a dense array.
         """
-        X = validate_data(self, X, accept_sparse=["csr", "csc"], ensure_min_features=2)
+        X = validate_data(self, X, accept_sparse=, ensure_min_features=2)
         random_state = check_random_state(self.random_state)
 
         if self.algorithm == "arpack":
@@ -15603,15 +15601,15 @@ class TruncatedSVD(ClassNamePrefixFeaturesOutMixin, TransformerMixin, BaseEstima
             U, Sigma, VT = svds(X, k=self.n_components, tol=self.tol, v0=v0)
             # svds doesn't abide by scipy.linalg.svd/randomized_svd
             # conventions, so reverse its outputs.
-            Sigma = Sigma[::-1]
+            Sigma = Sigma
             # u_based_decision=False is needed to be consistent with PCA.
-            U, VT = svd_flip(U[:, ::-1], VT[::-1], u_based_decision=False)
+            U, VT = svd_flip(U, VT, u_based_decision=False)
 
         elif self.algorithm == "randomized":
-            if self.n_components > X.shape[1]:
+            if self.n_components > X.shape:
                 raise ValueError(
                     f"n_components({self.n_components}) must be <="
-                    f" n_features({X.shape[1]})."
+                    f" n_features({X.shape})."
                 )
             U, Sigma, VT = _randomized_svd(
                 X,
@@ -15647,7 +15645,7 @@ class TruncatedSVD(ClassNamePrefixFeaturesOutMixin, TransformerMixin, BaseEstima
 
         return X_transformed
 
-    def transform(self, X):
+def transform(self, X):
         """Perform dimensionality reduction on X.
 
         Parameters
@@ -15661,10 +15659,10 @@ class TruncatedSVD(ClassNamePrefixFeaturesOutMixin, TransformerMixin, BaseEstima
             Reduced version of X. This will always be a dense array.
         """
         check_is_fitted(self)
-        X = validate_data(self, X, accept_sparse=["csr", "csc"], reset=False)
+        X = validate_data(self, X, accept_sparse=, reset=False)
         return safe_sparse_dot(X, self.components_.T)
 
-    def inverse_transform(self, X):
+def inverse_transform(self, X):
         """Transform X back to its original space.
 
         Returns an array X_original whose transform would be X.
@@ -15682,18 +15680,18 @@ class TruncatedSVD(ClassNamePrefixFeaturesOutMixin, TransformerMixin, BaseEstima
         X = check_array(X)
         return np.dot(X, self.components_)
 
-    def __sklearn_tags__(self):
+def __sklearn_tags__(self):
         tags = super().__sklearn_tags__()
         tags.input_tags.sparse = True
-        tags.transformer_tags.preserves_dtype = ["float64", "float32"]
+        tags.transformer_tags.preserves_dtype = 
         return tags
 
     @property
-    def _n_features_out(self):
+def _n_features_out(self):
         """Number of transformed output features."""
-        return self.components_.shape[0]
+        return self.components_.shape
 
-    def __init__(
+def __init__(
         self,
         n_components=2,
         *,
@@ -15712,7 +15710,7 @@ class TruncatedSVD(ClassNamePrefixFeaturesOutMixin, TransformerMixin, BaseEstima
         self.random_state = random_state
         self.tol = tol
 
-    def fit(self, X, y=None):
+def fit(self, X, y=None):
         """Fit model on training data X.
 
         Parameters
@@ -15731,7 +15729,7 @@ class TruncatedSVD(ClassNamePrefixFeaturesOutMixin, TransformerMixin, BaseEstima
         self.fit_transform(X)
         return self
 
-    def fit_transform(self, X, y=None):
+def fit_transform(self, X, y=None):
         """Fit model to X and perform dimensionality reduction on X.
 
         Parameters
@@ -15747,7 +15745,7 @@ class TruncatedSVD(ClassNamePrefixFeaturesOutMixin, TransformerMixin, BaseEstima
         X_new : ndarray of shape (n_samples, n_components)
             Reduced version of X. This will always be a dense array.
         """
-        X = validate_data(self, X, accept_sparse=["csr", "csc"], ensure_min_features=2)
+        X = validate_data(self, X, accept_sparse=, ensure_min_features=2)
         random_state = check_random_state(self.random_state)
 
         if self.algorithm == "arpack":
@@ -15755,15 +15753,15 @@ class TruncatedSVD(ClassNamePrefixFeaturesOutMixin, TransformerMixin, BaseEstima
             U, Sigma, VT = svds(X, k=self.n_components, tol=self.tol, v0=v0)
             # svds doesn't abide by scipy.linalg.svd/randomized_svd
             # conventions, so reverse its outputs.
-            Sigma = Sigma[::-1]
+            Sigma = Sigma
             # u_based_decision=False is needed to be consistent with PCA.
-            U, VT = svd_flip(U[:, ::-1], VT[::-1], u_based_decision=False)
+            U, VT = svd_flip(U, VT, u_based_decision=False)
 
         elif self.algorithm == "randomized":
-            if self.n_components > X.shape[1]:
+            if self.n_components > X.shape:
                 raise ValueError(
                     f"n_components({self.n_components}) must be <="
-                    f" n_features({X.shape[1]})."
+                    f" n_features({X.shape})."
                 )
             U, Sigma, VT = _randomized_svd(
                 X,
@@ -15799,7 +15797,7 @@ class TruncatedSVD(ClassNamePrefixFeaturesOutMixin, TransformerMixin, BaseEstima
 
         return X_transformed
 
-    def transform(self, X):
+def transform(self, X):
         """Perform dimensionality reduction on X.
 
         Parameters
@@ -15813,10 +15811,10 @@ class TruncatedSVD(ClassNamePrefixFeaturesOutMixin, TransformerMixin, BaseEstima
             Reduced version of X. This will always be a dense array.
         """
         check_is_fitted(self)
-        X = validate_data(self, X, accept_sparse=["csr", "csc"], reset=False)
+        X = validate_data(self, X, accept_sparse=, reset=False)
         return safe_sparse_dot(X, self.components_.T)
 
-    def inverse_transform(self, X):
+def inverse_transform(self, X):
         """Transform X back to its original space.
 
         Returns an array X_original whose transform would be X.
@@ -15834,12 +15832,12 @@ class TruncatedSVD(ClassNamePrefixFeaturesOutMixin, TransformerMixin, BaseEstima
         X = check_array(X)
         return np.dot(X, self.components_)
 
-    def __sklearn_tags__(self):
+def __sklearn_tags__(self):
         tags = super().__sklearn_tags__()
         tags.input_tags.sparse = True
-        tags.transformer_tags.preserves_dtype = ["float64", "float32"]
+        tags.transformer_tags.preserves_dtype = 
         return tags
 
-    def _n_features_out(self):
+def _n_features_out(self):
         """Number of transformed output features."""
-        return self.components_.shape[0]
+        return self.components_.shape
