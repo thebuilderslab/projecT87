@@ -139,7 +139,7 @@ if __name__ == "__main__":
     
     run_autonomous_mainnet_agent()
 
-# --- Merged from run_autonomous.py ---
+# --- Autonomous run functionality integrated ---
 
 def run_autonomous_mode():
     """Launch autonomous mode directly"""

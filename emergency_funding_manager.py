@@ -100,7 +100,12 @@ if __name__ == "__main__":
     result = manager.check_and_optimize_gas(test_wallet)
     print(f"\nFunding check result: {'✅ READY' if result else '❌ NEEDS FUNDING'}")
 
-# --- Merged from emergency_stop.py ---
+# --- Emergency stop functionality integrated ---
+import time
+import json
+
+EMERGENCY_STOP_FILE = "EMERGENCY_STOP_ACTIVE.flag"
+EMERGENCY_LOG_FILE = "emergency_stop_log.json"
 
 def log_emergency_action(action, reason="Manual trigger"):
     """Log emergency stop actions with timestamp"""

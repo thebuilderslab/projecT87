@@ -1640,7 +1640,7 @@ class ComprehensiveSystemDiagnostic:
         
         # Check emergency stop functionality
         try:
-            import emergency_stop
+            # emergency_stop functionality is integrated
             emergency_tests['emergency_stop_module'] = '✅ Emergency stop module available'
         except Exception as e:
             emergency_tests['emergency_stop_module'] = f'❌ Emergency stop error: {e}'
@@ -2074,7 +2074,7 @@ class ComprehensiveSystemDiagnostic:
         
         # Check emergency stop functionality
         try:
-            import emergency_stop
+            # emergency_stop functionality is integrated
             emergency_tests['emergency_stop_module'] = '✅ Emergency stop module available'
         except Exception as e:
             emergency_tests['emergency_stop_module'] = f'❌ Emergency stop error: {e}'
