@@ -745,3 +745,2221 @@ class MarketSignalStrategy:
         """Record that a signal was executed"""
         self.last_signal_time = time.time()
         print(f"📊 Market signal executed at {datetime.now().strftime('%H:%M:%S')}")
+
+# --- Merged from wallet_strategy_api.py ---
+
+def execute_strategy():
+    """API endpoint to execute strategy for a wallet"""
+    try:
+        data = request.json
+        
+        wallet_address = data.get('wallet_address')
+        network = data.get('network', 'arbitrum_mainnet')
+        strategy_type = data.get('strategy_type', 'monitor_only')
+        
+        if not wallet_address:
+            return jsonify({'error': 'wallet_address is required'}), 400
+        
+        # Validate wallet address format
+        from web3 import Web3
+        if not Web3.is_address(wallet_address):
+            return jsonify({'error': 'Invalid wallet address format'}), 400
+        
+        strategy_config = {
+            'type': strategy_type,
+            'health_factor_target': data.get('health_factor_target', 1.19),
+            'borrow_trigger_threshold': data.get('borrow_trigger_threshold', 0.02),
+            'risk_mitigation_enabled': data.get('risk_mitigation_enabled', True)
+        }
+        
+        # Execute strategy
+        result = agent.execute_strategy_for_wallet(wallet_address, network, strategy_config)
+        
+        return jsonify({
+            'success': True,
+            'wallet_address': wallet_address,
+            'network': network,
+            'strategy_type': strategy_type,
+            'result': result
+        })
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+def monitor_wallet():
+    """Start continuous monitoring for a wallet"""
+    try:
+        data = request.json
+        
+        wallet_address = data.get('wallet_address')
+        network = data.get('network', 'arbitrum_mainnet')
+        
+        if not wallet_address:
+            return jsonify({'error': 'wallet_address is required'}), 400
+        
+        session_id = f"{network}_{wallet_address}"
+        
+        # Start monitoring thread
+        if session_id not in monitoring_sessions:
+            monitoring_thread = threading.Thread(
+                target=continuous_monitoring,
+                args=(wallet_address, network, session_id)
+            )
+            monitoring_thread.daemon = True
+            monitoring_thread.start()
+            
+            monitoring_sessions[session_id] = {
+                'wallet_address': wallet_address,
+                'network': network,
+                'status': 'active',
+                'started_at': time.time()
+            }
+        
+        return jsonify({
+            'success': True,
+            'session_id': session_id,
+            'status': 'monitoring_started'
+        })
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+def stop_monitoring():
+    """Stop monitoring for a wallet"""
+    try:
+        data = request.json
+        session_id = data.get('session_id')
+        
+        if session_id in monitoring_sessions:
+            monitoring_sessions[session_id]['status'] = 'stopped'
+            return jsonify({'success': True, 'status': 'monitoring_stopped'})
+        else:
+            return jsonify({'error': 'Session not found'}), 404
+            
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+def wallet_status(wallet_address):
+    """Get current status of a wallet"""
+    try:
+        network = request.args.get('network', 'arbitrum_mainnet')
+        
+        strategy_config = {'type': 'monitor_only'}
+        result = agent.execute_strategy_for_wallet(wallet_address, network, strategy_config)
+        
+        # Get session info
+        session_id = f"{network}_{wallet_address}"
+        session_info = monitoring_sessions.get(session_id, {})
+        
+        return jsonify({
+            'wallet_address': wallet_address,
+            'network': network,
+            'monitoring_active': session_info.get('status') == 'active',
+            'last_check': time.time(),
+            'strategy_result': result
+        })
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+def generate_prompt():
+    """Generate strategy prompt for a wallet"""
+    try:
+        data = request.json
+        
+        wallet_address = data.get('wallet_address')
+        network = data.get('network', 'arbitrum_mainnet')
+        strategy_type = data.get('strategy_type', 'dynamic_health')
+        
+        if not wallet_address:
+            return jsonify({'error': 'wallet_address is required'}), 400
+        
+        prompt = create_multi_wallet_prompt(wallet_address, network)
+        
+        return jsonify({
+            'wallet_address': wallet_address,
+            'network': network,
+            'strategy_prompt': prompt
+        })
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+def continuous_monitoring(wallet_address, network, session_id):
+    """Continuous monitoring function"""
+    print(f"🔄 Starting continuous monitoring for {wallet_address} on {network}")
+    
+    while True:
+        try:
+            session = monitoring_sessions.get(session_id)
+            if not session or session.get('status') != 'active':
+                break
+            
+            # Execute monitoring
+            strategy_config = {'type': 'monitor_only'}
+            agent.execute_strategy_for_wallet(wallet_address, network, strategy_config)
+            
+            # Wait before next check
+            time.sleep(60)  # Check every minute
+            
+        except Exception as e:
+            print(f"❌ Monitoring error for {session_id}: {e}")
+            time.sleep(30)  # Wait before retrying
+    
+    print(f"🛑 Stopped monitoring for {session_id}")
+# --- Merged from ml_strategy_optimizer.py ---
+
+class MLStrategyOptimizer:
+    def __init__(self):
+        self.model = RandomForestRegressor(n_estimators=100, random_state=42)
+        self.scaler = StandardScaler()
+        self.features = ['health_factor', 'arb_price', 'eth_price', 'gas_price', 'market_volatility']
+        
+    def prepare_training_data(self):
+        """Prepare historical data for ML training"""
+        # Load performance history
+        performance_data = []
+        if os.path.exists('performance_log.json'):
+            with open('performance_log.json', 'r') as f:
+                for line in f:
+                    try:
+                        performance_data.append(json.loads(line))
+                    except:
+                        continue
+        
+        # Convert to DataFrame and engineer features
+        df = pd.DataFrame(performance_data)
+        
+        # Add market indicators (placeholder)
+        df['market_volatility'] = np.random.randn(len(df)) * 0.1
+        df['gas_price'] = np.random.uniform(20, 100, len(df))
+        
+        return df
+    
+    def train_performance_predictor(self):
+        """Train ML model to predict strategy performance"""
+        data = self.prepare_training_data()
+        
+        if len(data) < 50:  # Need sufficient training data
+            return {'status': 'insufficient_data', 'required': 50, 'available': len(data)}
+        
+        # Prepare features and target
+        X = data[self.features]
+        y = data['performance_metric']
+        
+        # Scale features
+        X_scaled = self.scaler.fit_transform(X)
+        
+        # Train model
+        self.model.fit(X_scaled, y)
+        
+        # Calculate feature importance
+        feature_importance = dict(zip(self.features, self.model.feature_importances_))
+        
+        return {
+            'status': 'trained',
+            'training_samples': len(data),
+            'feature_importance': feature_importance,
+            'model_score': self.model.score(X_scaled, y)
+        }
+    
+    def predict_optimal_parameters(self, current_conditions):
+        """Predict optimal strategy parameters based on current conditions"""
+        if not hasattr(self.model, 'feature_importances_'):
+            return {'error': 'Model not trained'}
+        
+        # Scale input conditions
+        conditions_scaled = self.scaler.transform([current_conditions])
+        
+        # Predict performance
+        predicted_performance = self.model.predict(conditions_scaled)[0]
+        
+        # Generate parameter recommendations
+        recommendations = {
+            'predicted_performance': predicted_performance,
+            'recommended_health_target': 1.25 if predicted_performance > 0.8 else 1.35,
+            'recommended_exploration_rate': 0.1 if predicted_performance > 0.8 else 0.05,
+            'confidence': min(1.0, predicted_performance)
+        }
+        
+        return recommendations
+
+    def prepare_training_data(self):
+        """Prepare historical data for ML training"""
+        # Load performance history
+        performance_data = []
+        if os.path.exists('performance_log.json'):
+            with open('performance_log.json', 'r') as f:
+                for line in f:
+                    try:
+                        performance_data.append(json.loads(line))
+                    except:
+                        continue
+        
+        # Convert to DataFrame and engineer features
+        df = pd.DataFrame(performance_data)
+        
+        # Add market indicators (placeholder)
+        df['market_volatility'] = np.random.randn(len(df)) * 0.1
+        df['gas_price'] = np.random.uniform(20, 100, len(df))
+        
+        return df
+
+    def train_performance_predictor(self):
+        """Train ML model to predict strategy performance"""
+        data = self.prepare_training_data()
+        
+        if len(data) < 50:  # Need sufficient training data
+            return {'status': 'insufficient_data', 'required': 50, 'available': len(data)}
+        
+        # Prepare features and target
+        X = data[self.features]
+        y = data['performance_metric']
+        
+        # Scale features
+        X_scaled = self.scaler.fit_transform(X)
+        
+        # Train model
+        self.model.fit(X_scaled, y)
+        
+        # Calculate feature importance
+        feature_importance = dict(zip(self.features, self.model.feature_importances_))
+        
+        return {
+            'status': 'trained',
+            'training_samples': len(data),
+            'feature_importance': feature_importance,
+            'model_score': self.model.score(X_scaled, y)
+        }
+
+    def predict_optimal_parameters(self, current_conditions):
+        """Predict optimal strategy parameters based on current conditions"""
+        if not hasattr(self.model, 'feature_importances_'):
+            return {'error': 'Model not trained'}
+        
+        # Scale input conditions
+        conditions_scaled = self.scaler.transform([current_conditions])
+        
+        # Predict performance
+        predicted_performance = self.model.predict(conditions_scaled)[0]
+        
+        # Generate parameter recommendations
+        recommendations = {
+            'predicted_performance': predicted_performance,
+            'recommended_health_target': 1.25 if predicted_performance > 0.8 else 1.35,
+            'recommended_exploration_rate': 0.1 if predicted_performance > 0.8 else 0.05,
+            'confidence': min(1.0, predicted_performance)
+        }
+        
+        return recommendations
+# --- Merged from collaborative_strategy_manager.py ---
+
+class CollaborativeStrategyManager:
+    def __init__(self, agent):
+        self.agent = agent
+        self.strategies_file = "strategies_database.json"
+        self.improvements_queue = "improvement_queue.json"
+        self.user_feedback_file = "user_feedback.json"
+
+    def load_strategies_database(self):
+        """Load existing strategies and their performance data"""
+        if os.path.exists(self.strategies_file):
+            with open(self.strategies_file, 'r') as f:
+                return json.load(f)
+        return {
+            "active_strategies": {},
+            "experimental_strategies": {},
+            "rejected_strategies": {},
+            "performance_history": []
+        }
+
+    def propose_strategy_improvement(self, strategy_type, improvement_data, source="agent"):
+        """Propose a new strategy improvement"""
+        try:
+            # Validate inputs
+            if not strategy_type or not isinstance(strategy_type, str):
+                print(f"⚠️ Invalid strategy_type: {strategy_type}")
+                return None
+
+            if not improvement_data or not isinstance(improvement_data, dict):
+                print(f"⚠️ Invalid improvement_data: {improvement_data}")
+                return None
+
+            # Create proposal with error handling
+            try:
+                proposal = {
+                    "id": f"{strategy_type}_{int(time.time())}",
+                    "type": strategy_type,
+                    "source": source,  # "agent" or "user"
+                    "timestamp": time.time(),
+                    "data": improvement_data,
+                    "status": "pending",
+                    "estimated_impact": self.estimate_impact(improvement_data),
+                    "risk_level": self.assess_risk(improvement_data)
+                }
+            except Exception as proposal_error:
+                print(f"⚠️ Error creating proposal object: {proposal_error}")
+                return None
+
+            # Load existing queue with error handling
+            queue = []
+            try:
+                if os.path.exists(self.improvements_queue):
+                    with open(self.improvements_queue, 'r') as f:
+                        queue = json.load(f)
+            except (json.JSONDecodeError, IOError) as load_error:
+                print(f"⚠️ Error loading improvements queue: {load_error}")
+                print("🔧 Starting with empty queue")
+                queue = []
+
+            # Add proposal to queue
+            try:
+                queue.append(proposal)
+            except Exception as append_error:
+                print(f"⚠️ Error appending to queue: {append_error}")
+                return None
+
+            # Save updated queue with error handling
+            try:
+                with open(self.improvements_queue, 'w') as f:
+                    json.dump(queue, f, indent=2)
+            except (IOError, json.JSONEncoder) as save_error:
+                print(f"⚠️ Error saving improvements queue: {save_error}")
+                return None
+
+            print(f"🚀 {source.upper()} STRATEGY PROPOSAL:")
+            print(f"   📝 Type: {strategy_type}")
+            print(f"   📊 Impact: {proposal['estimated_impact']}")
+            print(f"   ⚠️ Risk: {proposal['risk_level']}")
+            print(f"   🆔 ID: {proposal['id']}")
+
+            return proposal['id']
+
+        except Exception as e:
+            print(f"❌ Critical error in propose_strategy_improvement: {e}")
+            import traceback
+            print(f"🔍 Proposal error traceback: {traceback.format_exc()}")
+            return None
+
+    def agent_analyze_and_propose(self):
+        """Agent analyzes performance and proposes improvements"""
+        try:
+            # Check if agent object is properly initialized
+            if not hasattr(self, 'agent') or self.agent is None:
+                print("⚠️ Agent object not properly initialized in strategy manager")
+                return
+
+            # Attempt to get recent performance data
+            try:
+                recent_performance = self.agent.get_recent_performance(50)
+            except AttributeError as attr_error:
+                print(f"⚠️ Agent missing get_recent_performance method: {attr_error}")
+                return
+            except Exception as perf_error:
+                print(f"⚠️ Error getting recent performance: {perf_error}")
+                return
+
+            # Validate performance data
+            if not recent_performance:
+                print("📊 No recent performance data available - skipping analysis")
+                return
+
+            if not isinstance(recent_performance, list) or len(recent_performance) == 0:
+                print("📊 Invalid performance data format - skipping analysis")
+                return
+
+            # Calculate average performance with error handling
+            try:
+                valid_performances = []
+                for p in recent_performance:
+                    if isinstance(p, dict) and 'performance_metric' in p:
+                        metric = p['performance_metric']
+                        if isinstance(metric, (int, float)) and not (metric != metric):  # Check for NaN
+                            valid_performances.append(metric)
+
+                if not valid_performances:
+                    print("📊 No valid performance metrics found - skipping analysis")
+                    return
+
+                avg_performance = sum(valid_performances) / len(valid_performances)
+                print(f"📊 Calculated average performance: {avg_performance:.3f} from {len(valid_performances)} data points")
+
+            except (TypeError, ValueError, ZeroDivisionError) as calc_error:
+                print(f"⚠️ Error calculating performance average: {calc_error}")
+                return
+
+            # Agent proposes different improvements based on performance patterns
+            try:
+                if avg_performance < 0.75:
+                    # Poor performance - suggest conservative changes
+                    improvement = {
+                        "action": "reduce_risk",
+                        "parameters": {
+                            "max_borrow_ratio": 0.6,
+                            "health_factor_target": 1.25,
+                            "monitoring_frequency": "increased"
+                        },
+                        "reasoning": f"Performance at {avg_performance:.3f} suggests risk reduction needed"
+                    }
+                    self.propose_strategy_improvement("risk_reduction", improvement, "agent")
+
+                elif avg_performance > 0.85:
+                    # Good performance - suggest optimization
+                    improvement = {
+                        "action": "optimize_yield",
+                        "parameters": {
+                            "leverage_increase": 0.1,
+                            "new_asset_targets": ["USDT", "FRAX"],
+                            "arbitrage_opportunities": True
+                        },
+                        "reasoning": f"Strong performance at {avg_performance:.3f} allows for optimization"
+                    }
+                    self.propose_strategy_improvement("yield_optimization", improvement, "agent")
+                else:
+                    print(f"📊 Performance at {avg_performance:.3f} is stable - no immediate changes proposed")
+
+            except Exception as proposal_error:
+                print(f"⚠️ Error creating strategy proposal: {proposal_error}")
+                return
+
+        except Exception as e:
+            print(f"❌ Critical error in agent_analyze_and_propose: {e}")
+            import traceback
+            print(f"🔍 Strategy manager error traceback: {traceback.format_exc()}")
+            # Don't re-raise - let the main loop continue
+
+    def implement_approved_strategy(self, proposal_id):
+        """Implement an approved strategy improvement"""
+        queue = []
+        if os.path.exists(self.improvements_queue):
+            with open(self.improvements_queue, 'r') as f:
+                queue = json.load(f)
+
+        proposal = next((p for p in queue if p['id'] == proposal_id), None)
+        if not proposal:
+            print(f"❌ Proposal {proposal_id} not found")
+            return False
+
+        print(f"🔧 IMPLEMENTING STRATEGY: {proposal['type']}")
+
+        # Implement the strategy based on type
+        success = False
+        if proposal['type'] == "risk_reduction":
+            success = self.implement_risk_reduction(proposal['data'])
+        elif proposal['type'] == "yield_optimization":
+            success = self.implement_yield_optimization(proposal['data'])
+        elif proposal['type'] == "code_modification":
+            success = self.implement_code_modification(proposal['data'])
+
+        # Update proposal status
+        proposal['status'] = "implemented" if success else "failed"
+        proposal['implementation_time'] = time.time()
+
+        # Save updated queue
+        with open(self.improvements_queue, 'w') as f:
+            json.dump(queue, f, indent=2)
+
+        return success
+
+    def implement_risk_reduction(self, risk_data):
+        """Implement risk reduction strategies"""
+        try:
+            print(f"🔧 Implementing risk reduction strategy...")
+            print(f"   Target health factor: {risk_data['parameters']['health_factor_target']}")
+            print(f"   Max borrow ratio: {risk_data['parameters']['max_borrow_ratio']}")
+            print(f"   Monitoring frequency: {risk_data['parameters']['monitoring_frequency']}")
+            
+            # Update agent configuration for risk reduction
+            if hasattr(self.agent, 'health_factor_target'):
+                self.agent.health_factor_target = float(risk_data['parameters']['health_factor_target'])
+                
+            if hasattr(self.agent, 'max_borrow_ratio'):
+                self.agent.max_borrow_ratio = float(risk_data['parameters']['max_borrow_ratio'])
+                
+            print(f"✅ Risk reduction strategy implemented successfully")
+            return True
+            
+        except Exception as e:
+            print(f"❌ Risk reduction implementation failed: {e}")
+            return False
+
+    def implement_yield_optimization(self, optimization_data):
+        """Implement yield optimization strategies"""
+        try:
+            print(f"🚀 Implementing yield optimization strategy...")
+            
+            # Apply optimization parameters
+            if 'leverage_increase' in optimization_data['parameters']:
+                leverage_increase = float(optimization_data['parameters']['leverage_increase'])
+                print(f"   Increasing leverage by: {leverage_increase}")
+                
+            if 'new_asset_targets' in optimization_data['parameters']:
+                new_assets = optimization_data['parameters']['new_asset_targets']
+                print(f"   New target assets: {new_assets}")
+                
+            print(f"✅ Yield optimization strategy implemented successfully")
+            return True
+            
+        except Exception as e:
+            print(f"❌ Yield optimization implementation failed: {e}")
+            return False
+
+    def implement_code_modification(self, modification_data):
+        """Implement direct code modifications"""
+        try:
+            if modification_data['target_file'] == "arbitrum_testnet_agent.py":
+                # Read current agent code
+                with open('arbitrum_testnet_agent.py', 'r') as f:
+                    content = f.read()
+
+                # Apply modifications
+                if modification_data['action'] == "add_function":
+                    new_function = modification_data['function_code']
+                    # Insert before the last class method
+                    insertion_point = content.rfind("    def ")
+                    content = content[:insertion_point] + new_function + "\n\n" + content[insertion_point:]
+
+                elif modification_data['action'] == "modify_strategy":
+                    old_code = modification_data['old_code']
+                    new_code = modification_data['new_code']
+                    content = content.replace(old_code, new_code)
+
+                # Backup original and write new version
+                backup_name = f"arbitrum_testnet_agent_backup_{int(time.time())}.py"
+                with open(backup_name, 'w') as f:
+                    f.write(content)
+
+                with open('arbitrum_testnet_agent.py', 'w') as f:
+                    f.write(content)
+
+                print(f"✅ Code modified successfully (backup: {backup_name})")
+                return True
+
+        except Exception as e:
+            print(f"❌ Code modification failed: {e}")
+            return False
+
+    def estimate_impact(self, improvement_data):
+        """Estimate the potential impact of an improvement"""
+        if improvement_data.get('action') == 'reduce_risk':
+            return "Medium-High (Stability)"
+        elif improvement_data.get('action') == 'optimize_yield':
+            return "High (Profit)"
+        elif improvement_data.get('action') == 'code_modification':
+            return "Variable (Functionality)"
+        return "Unknown"
+
+    def assess_risk(self, improvement_data):
+        """Assess the risk level of an improvement"""
+        if improvement_data.get('action') == 'reduce_risk':
+            return "Low"
+        elif improvement_data.get('leverage_increase'):
+            return "High"
+        elif improvement_data.get('action') == 'code_modification':
+            return "Medium"
+        return "Low-Medium"
+
+    def get_user_input_on_proposals(self):
+        """Interactive interface for user to review proposals"""
+        if not os.path.exists(self.improvements_queue):
+            print("📭 No pending proposals")
+            return
+
+        with open(self.improvements_queue, 'r') as f:
+            queue = json.load(f)
+
+        pending = [p for p in queue if p['status'] == 'pending']
+        if not pending:
+            print("📭 No pending proposals")
+            return
+
+        print(f"\n🔍 REVIEWING {len(pending)} PENDING PROPOSALS:")
+        print("=" * 50)
+
+        for proposal in pending:
+            print(f"\n📋 Proposal ID: {proposal['id']}")
+            print(f"🔹 Type: {proposal['type']}")
+            print(f"🔹 Source: {proposal['source']}")
+            print(f"🔹 Impact: {proposal['estimated_impact']}")
+            print(f"🔹 Risk: {proposal['risk_level']}")
+            print(f"🔹 Details: {json.dumps(proposal['data'], indent=2)}")
+            print("-" * 30)
+
+        return pending
+
+    def submit_user_improvement(self, strategy_type, description, parameters=None):
+        """Allow user to submit strategy improvements"""
+        improvement = {
+            "description": description,
+            "parameters": parameters or {},
+            "user_priority": "high",
+            "timestamp": datetime.now().isoformat()
+        }
+
+        return self.propose_strategy_improvement(strategy_type, improvement, "user")
+
+    def print_collateral_message(self):
+        print(f"💡 Add $13+ worth of collateral to activate autonomous sequence")
+
+    def load_strategies_database(self):
+        """Load existing strategies and their performance data"""
+        if os.path.exists(self.strategies_file):
+            with open(self.strategies_file, 'r') as f:
+                return json.load(f)
+        return {
+            "active_strategies": {},
+            "experimental_strategies": {},
+            "rejected_strategies": {},
+            "performance_history": []
+        }
+
+    def propose_strategy_improvement(self, strategy_type, improvement_data, source="agent"):
+        """Propose a new strategy improvement"""
+        try:
+            # Validate inputs
+            if not strategy_type or not isinstance(strategy_type, str):
+                print(f"⚠️ Invalid strategy_type: {strategy_type}")
+                return None
+
+            if not improvement_data or not isinstance(improvement_data, dict):
+                print(f"⚠️ Invalid improvement_data: {improvement_data}")
+                return None
+
+            # Create proposal with error handling
+            try:
+                proposal = {
+                    "id": f"{strategy_type}_{int(time.time())}",
+                    "type": strategy_type,
+                    "source": source,  # "agent" or "user"
+                    "timestamp": time.time(),
+                    "data": improvement_data,
+                    "status": "pending",
+                    "estimated_impact": self.estimate_impact(improvement_data),
+                    "risk_level": self.assess_risk(improvement_data)
+                }
+            except Exception as proposal_error:
+                print(f"⚠️ Error creating proposal object: {proposal_error}")
+                return None
+
+            # Load existing queue with error handling
+            queue = []
+            try:
+                if os.path.exists(self.improvements_queue):
+                    with open(self.improvements_queue, 'r') as f:
+                        queue = json.load(f)
+            except (json.JSONDecodeError, IOError) as load_error:
+                print(f"⚠️ Error loading improvements queue: {load_error}")
+                print("🔧 Starting with empty queue")
+                queue = []
+
+            # Add proposal to queue
+            try:
+                queue.append(proposal)
+            except Exception as append_error:
+                print(f"⚠️ Error appending to queue: {append_error}")
+                return None
+
+            # Save updated queue with error handling
+            try:
+                with open(self.improvements_queue, 'w') as f:
+                    json.dump(queue, f, indent=2)
+            except (IOError, json.JSONEncoder) as save_error:
+                print(f"⚠️ Error saving improvements queue: {save_error}")
+                return None
+
+            print(f"🚀 {source.upper()} STRATEGY PROPOSAL:")
+            print(f"   📝 Type: {strategy_type}")
+            print(f"   📊 Impact: {proposal['estimated_impact']}")
+            print(f"   ⚠️ Risk: {proposal['risk_level']}")
+            print(f"   🆔 ID: {proposal['id']}")
+
+            return proposal['id']
+
+        except Exception as e:
+            print(f"❌ Critical error in propose_strategy_improvement: {e}")
+            import traceback
+            print(f"🔍 Proposal error traceback: {traceback.format_exc()}")
+            return None
+
+    def agent_analyze_and_propose(self):
+        """Agent analyzes performance and proposes improvements"""
+        try:
+            # Check if agent object is properly initialized
+            if not hasattr(self, 'agent') or self.agent is None:
+                print("⚠️ Agent object not properly initialized in strategy manager")
+                return
+
+            # Attempt to get recent performance data
+            try:
+                recent_performance = self.agent.get_recent_performance(50)
+            except AttributeError as attr_error:
+                print(f"⚠️ Agent missing get_recent_performance method: {attr_error}")
+                return
+            except Exception as perf_error:
+                print(f"⚠️ Error getting recent performance: {perf_error}")
+                return
+
+            # Validate performance data
+            if not recent_performance:
+                print("📊 No recent performance data available - skipping analysis")
+                return
+
+            if not isinstance(recent_performance, list) or len(recent_performance) == 0:
+                print("📊 Invalid performance data format - skipping analysis")
+                return
+
+            # Calculate average performance with error handling
+            try:
+                valid_performances = []
+                for p in recent_performance:
+                    if isinstance(p, dict) and 'performance_metric' in p:
+                        metric = p['performance_metric']
+                        if isinstance(metric, (int, float)) and not (metric != metric):  # Check for NaN
+                            valid_performances.append(metric)
+
+                if not valid_performances:
+                    print("📊 No valid performance metrics found - skipping analysis")
+                    return
+
+                avg_performance = sum(valid_performances) / len(valid_performances)
+                print(f"📊 Calculated average performance: {avg_performance:.3f} from {len(valid_performances)} data points")
+
+            except (TypeError, ValueError, ZeroDivisionError) as calc_error:
+                print(f"⚠️ Error calculating performance average: {calc_error}")
+                return
+
+            # Agent proposes different improvements based on performance patterns
+            try:
+                if avg_performance < 0.75:
+                    # Poor performance - suggest conservative changes
+                    improvement = {
+                        "action": "reduce_risk",
+                        "parameters": {
+                            "max_borrow_ratio": 0.6,
+                            "health_factor_target": 1.25,
+                            "monitoring_frequency": "increased"
+                        },
+                        "reasoning": f"Performance at {avg_performance:.3f} suggests risk reduction needed"
+                    }
+                    self.propose_strategy_improvement("risk_reduction", improvement, "agent")
+
+                elif avg_performance > 0.85:
+                    # Good performance - suggest optimization
+                    improvement = {
+                        "action": "optimize_yield",
+                        "parameters": {
+                            "leverage_increase": 0.1,
+                            "new_asset_targets": ["USDT", "FRAX"],
+                            "arbitrage_opportunities": True
+                        },
+                        "reasoning": f"Strong performance at {avg_performance:.3f} allows for optimization"
+                    }
+                    self.propose_strategy_improvement("yield_optimization", improvement, "agent")
+                else:
+                    print(f"📊 Performance at {avg_performance:.3f} is stable - no immediate changes proposed")
+
+            except Exception as proposal_error:
+                print(f"⚠️ Error creating strategy proposal: {proposal_error}")
+                return
+
+        except Exception as e:
+            print(f"❌ Critical error in agent_analyze_and_propose: {e}")
+            import traceback
+            print(f"🔍 Strategy manager error traceback: {traceback.format_exc()}")
+
+    def implement_approved_strategy(self, proposal_id):
+        """Implement an approved strategy improvement"""
+        queue = []
+        if os.path.exists(self.improvements_queue):
+            with open(self.improvements_queue, 'r') as f:
+                queue = json.load(f)
+
+        proposal = next((p for p in queue if p['id'] == proposal_id), None)
+        if not proposal:
+            print(f"❌ Proposal {proposal_id} not found")
+            return False
+
+        print(f"🔧 IMPLEMENTING STRATEGY: {proposal['type']}")
+
+        # Implement the strategy based on type
+        success = False
+        if proposal['type'] == "risk_reduction":
+            success = self.implement_risk_reduction(proposal['data'])
+        elif proposal['type'] == "yield_optimization":
+            success = self.implement_yield_optimization(proposal['data'])
+        elif proposal['type'] == "code_modification":
+            success = self.implement_code_modification(proposal['data'])
+
+        # Update proposal status
+        proposal['status'] = "implemented" if success else "failed"
+        proposal['implementation_time'] = time.time()
+
+        # Save updated queue
+        with open(self.improvements_queue, 'w') as f:
+            json.dump(queue, f, indent=2)
+
+        return success
+
+    def implement_risk_reduction(self, risk_data):
+        """Implement risk reduction strategies"""
+        try:
+            print(f"🔧 Implementing risk reduction strategy...")
+            print(f"   Target health factor: {risk_data['parameters']['health_factor_target']}")
+            print(f"   Max borrow ratio: {risk_data['parameters']['max_borrow_ratio']}")
+            print(f"   Monitoring frequency: {risk_data['parameters']['monitoring_frequency']}")
+            
+            # Update agent configuration for risk reduction
+            if hasattr(self.agent, 'health_factor_target'):
+                self.agent.health_factor_target = float(risk_data['parameters']['health_factor_target'])
+                
+            if hasattr(self.agent, 'max_borrow_ratio'):
+                self.agent.max_borrow_ratio = float(risk_data['parameters']['max_borrow_ratio'])
+                
+            print(f"✅ Risk reduction strategy implemented successfully")
+            return True
+            
+        except Exception as e:
+            print(f"❌ Risk reduction implementation failed: {e}")
+            return False
+
+    def implement_yield_optimization(self, optimization_data):
+        """Implement yield optimization strategies"""
+        try:
+            print(f"🚀 Implementing yield optimization strategy...")
+            
+            # Apply optimization parameters
+            if 'leverage_increase' in optimization_data['parameters']:
+                leverage_increase = float(optimization_data['parameters']['leverage_increase'])
+                print(f"   Increasing leverage by: {leverage_increase}")
+                
+            if 'new_asset_targets' in optimization_data['parameters']:
+                new_assets = optimization_data['parameters']['new_asset_targets']
+                print(f"   New target assets: {new_assets}")
+                
+            print(f"✅ Yield optimization strategy implemented successfully")
+            return True
+            
+        except Exception as e:
+            print(f"❌ Yield optimization implementation failed: {e}")
+            return False
+
+    def implement_code_modification(self, modification_data):
+        """Implement direct code modifications"""
+        try:
+            if modification_data['target_file'] == "arbitrum_testnet_agent.py":
+                # Read current agent code
+                with open('arbitrum_testnet_agent.py', 'r') as f:
+                    content = f.read()
+
+                # Apply modifications
+                if modification_data['action'] == "add_function":
+                    new_function = modification_data['function_code']
+                    # Insert before the last class method
+                    insertion_point = content.rfind("    def ")
+                    content = content[:insertion_point] + new_function + "\n\n" + content[insertion_point:]
+
+                elif modification_data['action'] == "modify_strategy":
+                    old_code = modification_data['old_code']
+                    new_code = modification_data['new_code']
+                    content = content.replace(old_code, new_code)
+
+                # Backup original and write new version
+                backup_name = f"arbitrum_testnet_agent_backup_{int(time.time())}.py"
+                with open(backup_name, 'w') as f:
+                    f.write(content)
+
+                with open('arbitrum_testnet_agent.py', 'w') as f:
+                    f.write(content)
+
+                print(f"✅ Code modified successfully (backup: {backup_name})")
+                return True
+
+        except Exception as e:
+            print(f"❌ Code modification failed: {e}")
+            return False
+
+    def estimate_impact(self, improvement_data):
+        """Estimate the potential impact of an improvement"""
+        if improvement_data.get('action') == 'reduce_risk':
+            return "Medium-High (Stability)"
+        elif improvement_data.get('action') == 'optimize_yield':
+            return "High (Profit)"
+        elif improvement_data.get('action') == 'code_modification':
+            return "Variable (Functionality)"
+        return "Unknown"
+
+    def assess_risk(self, improvement_data):
+        """Assess the risk level of an improvement"""
+        if improvement_data.get('action') == 'reduce_risk':
+            return "Low"
+        elif improvement_data.get('leverage_increase'):
+            return "High"
+        elif improvement_data.get('action') == 'code_modification':
+            return "Medium"
+        return "Low-Medium"
+
+    def get_user_input_on_proposals(self):
+        """Interactive interface for user to review proposals"""
+        if not os.path.exists(self.improvements_queue):
+            print("📭 No pending proposals")
+            return
+
+        with open(self.improvements_queue, 'r') as f:
+            queue = json.load(f)
+
+        pending = [p for p in queue if p['status'] == 'pending']
+        if not pending:
+            print("📭 No pending proposals")
+            return
+
+        print(f"\n🔍 REVIEWING {len(pending)} PENDING PROPOSALS:")
+        print("=" * 50)
+
+        for proposal in pending:
+            print(f"\n📋 Proposal ID: {proposal['id']}")
+            print(f"🔹 Type: {proposal['type']}")
+            print(f"🔹 Source: {proposal['source']}")
+            print(f"🔹 Impact: {proposal['estimated_impact']}")
+            print(f"🔹 Risk: {proposal['risk_level']}")
+            print(f"🔹 Details: {json.dumps(proposal['data'], indent=2)}")
+            print("-" * 30)
+
+        return pending
+
+    def submit_user_improvement(self, strategy_type, description, parameters=None):
+        """Allow user to submit strategy improvements"""
+        improvement = {
+            "description": description,
+            "parameters": parameters or {},
+            "user_priority": "high",
+            "timestamp": datetime.now().isoformat()
+        }
+
+        return self.propose_strategy_improvement(strategy_type, improvement, "user")
+
+    def print_collateral_message(self):
+        print(f"💡 Add $13+ worth of collateral to activate autonomous sequence")
+# --- Merged from strategy_optimizer.py ---
+
+class StrategyPerformance:
+    strategy_name: str
+    success_rate: float
+    avg_profit: float
+    gas_efficiency: float
+    accuracy_score: float
+    total_operations: int
+    last_updated: float
+
+class StrategyOptimizer:
+    def __init__(self, agent):
+        self.agent = agent
+        self.performance_history = {}
+        self.load_performance_data()
+        
+    def load_performance_data(self):
+        """Load historical strategy performance data"""
+        try:
+            with open('strategy_performance.json', 'r') as f:
+                data = json.load(f)
+                self.performance_history = {
+                    name: StrategyPerformance(**perf) for name, perf in data.items()
+                }
+        except FileNotFoundError:
+            # Initialize with default performance metrics
+            self.performance_history = {
+                'built_in_analysis': StrategyPerformance(
+                    strategy_name='built_in_analysis',
+                    success_rate=0.72,
+                    avg_profit=0.03,
+                    gas_efficiency=0.8,
+                    accuracy_score=0.75,
+                    total_operations=0,
+                    last_updated=time.time()
+                ),
+                'enhanced_analyzer': StrategyPerformance(
+                    strategy_name='enhanced_analyzer',
+                    success_rate=0.78,
+                    avg_profit=0.045,
+                    gas_efficiency=0.85,
+                    accuracy_score=0.82,
+                    total_operations=0,
+                    last_updated=time.time()
+                ),
+                'freqtrade_integration': StrategyPerformance(
+                    strategy_name='freqtrade_integration',
+                    success_rate=0.81,
+                    avg_profit=0.038,
+                    gas_efficiency=0.75,
+                    accuracy_score=0.85,
+                    total_operations=0,
+                    last_updated=time.time()
+                )
+            }
+    
+    def evaluate_current_conditions(self) -> Dict[str, float]:
+        """Evaluate current market conditions for strategy selection"""
+        try:
+            # Get current market volatility
+            btc_data = self.agent.market_signal_strategy.get_btc_price_data()
+            arb_data = self.agent.market_signal_strategy.get_arb_price_data()
+            
+            if not btc_data or not arb_data:
+                return {'volatility': 0.5, 'gas_cost': 0.5, 'market_trend': 0.5}
+            
+            # Calculate volatility
+            btc_volatility = abs(btc_data.get('percent_change_1h', 0))
+            arb_volatility = abs(arb_data.get('percent_change_1h', 0))
+            avg_volatility = (btc_volatility + arb_volatility) / 2
+            
+            # Normalize volatility (higher volatility = better for pattern recognition)
+            volatility_score = min(1.0, avg_volatility / 5.0)  # Cap at 5% volatility
+            
+            # Get gas conditions
+            gas_score = self.agent.market_signal_strategy.enhanced_analyzer.calculate_gas_efficiency_score()
+            
+            # Determine market trend strength
+            btc_trend = btc_data.get('percent_change_24h', 0)
+            trend_strength = min(1.0, abs(btc_trend) / 10.0)  # Strong trend if >10% daily change
+            
+            return {
+                'volatility': volatility_score,
+                'gas_cost': gas_score,
+                'market_trend': trend_strength
+            }
+            
+        except Exception as e:
+            logging.error(f"Failed to evaluate current conditions: {e}")
+            return {'volatility': 0.5, 'gas_cost': 0.5, 'market_trend': 0.5}
+    
+    def select_optimal_strategy(self) -> str:
+        """Select the optimal strategy based on current conditions and historical performance"""
+        conditions = self.evaluate_current_conditions()
+        
+        strategy_scores = {}
+        
+        for strategy_name, performance in self.performance_history.items():
+            # Base score from historical performance
+            base_score = (
+                performance.success_rate * 0.4 +
+                performance.accuracy_score * 0.3 +
+                performance.gas_efficiency * 0.2 +
+                min(performance.avg_profit * 10, 1.0) * 0.1
+            )
+            
+            # Adjust based on current conditions
+            condition_multiplier = 1.0
+            
+            if strategy_name == 'enhanced_analyzer':
+                # Enhanced analyzer works better in volatile conditions
+                condition_multiplier += conditions['volatility'] * 0.3
+            elif strategy_name == 'freqtrade_integration':
+                # Freqtrade works better in trending markets
+                condition_multiplier += conditions['market_trend'] * 0.4
+            elif strategy_name == 'built_in_analysis':
+                # Built-in analysis is more gas-efficient
+                condition_multiplier += conditions['gas_cost'] * 0.2
+            
+            strategy_scores[strategy_name] = base_score * condition_multiplier
+        
+        # Select strategy with highest score
+        optimal_strategy = max(strategy_scores, key=strategy_scores.get)
+        
+        logging.info(f"Strategy selection scores: {strategy_scores}")
+        logging.info(f"Optimal strategy selected: {optimal_strategy}")
+        
+        return optimal_strategy
+    
+    def update_strategy_performance(self, strategy_name: str, success: bool, 
+                                  profit: float, gas_used: float):
+        """Update strategy performance based on actual results"""
+        if strategy_name not in self.performance_history:
+            return
+        
+        performance = self.performance_history[strategy_name]
+        
+        # Update success rate with exponential moving average
+        alpha = 0.1  # Learning rate
+        performance.success_rate = (
+            performance.success_rate * (1 - alpha) + 
+            (1.0 if success else 0.0) * alpha
+        )
+        
+        # Update average profit
+        performance.avg_profit = (
+            performance.avg_profit * (1 - alpha) + 
+            profit * alpha
+        )
+        
+        # Update gas efficiency (inverse of gas used)
+        gas_efficiency = 1.0 / (1.0 + gas_used)  # Higher gas = lower efficiency
+        performance.gas_efficiency = (
+            performance.gas_efficiency * (1 - alpha) + 
+            gas_efficiency * alpha
+        )
+        
+        performance.total_operations += 1
+        performance.last_updated = time.time()
+        
+        # Save updated performance
+        self.save_performance_data()
+    
+    def save_performance_data(self):
+        """Save strategy performance data to file"""
+        try:
+            data = {
+                name: perf.__dict__ for name, perf in self.performance_history.items()
+            }
+            with open('strategy_performance.json', 'w') as f:
+                json.dump(data, f, indent=2, default=str)
+        except Exception as e:
+            logging.error(f"Failed to save performance data: {e}")
+    
+    def get_performance_report(self) -> Dict:
+        """Generate performance comparison report"""
+        return {
+            'strategies': {
+                name: {
+                    'success_rate': f"{perf.success_rate:.1%}",
+                    'avg_profit': f"{perf.avg_profit:.2%}",
+                    'gas_efficiency': f"{perf.gas_efficiency:.2f}",
+                    'accuracy_score': f"{perf.accuracy_score:.2f}",
+                    'total_operations': perf.total_operations
+                }
+                for name, perf in self.performance_history.items()
+            },
+            'current_optimal': self.select_optimal_strategy(),
+            'market_conditions': self.evaluate_current_conditions()
+        }
+
+    def load_performance_data(self):
+        """Load historical strategy performance data"""
+        try:
+            with open('strategy_performance.json', 'r') as f:
+                data = json.load(f)
+                self.performance_history = {
+                    name: StrategyPerformance(**perf) for name, perf in data.items()
+                }
+        except FileNotFoundError:
+            # Initialize with default performance metrics
+            self.performance_history = {
+                'built_in_analysis': StrategyPerformance(
+                    strategy_name='built_in_analysis',
+                    success_rate=0.72,
+                    avg_profit=0.03,
+                    gas_efficiency=0.8,
+                    accuracy_score=0.75,
+                    total_operations=0,
+                    last_updated=time.time()
+                ),
+                'enhanced_analyzer': StrategyPerformance(
+                    strategy_name='enhanced_analyzer',
+                    success_rate=0.78,
+                    avg_profit=0.045,
+                    gas_efficiency=0.85,
+                    accuracy_score=0.82,
+                    total_operations=0,
+                    last_updated=time.time()
+                ),
+                'freqtrade_integration': StrategyPerformance(
+                    strategy_name='freqtrade_integration',
+                    success_rate=0.81,
+                    avg_profit=0.038,
+                    gas_efficiency=0.75,
+                    accuracy_score=0.85,
+                    total_operations=0,
+                    last_updated=time.time()
+                )
+            }
+
+    def evaluate_current_conditions(self) -> Dict[str, float]:
+        """Evaluate current market conditions for strategy selection"""
+        try:
+            # Get current market volatility
+            btc_data = self.agent.market_signal_strategy.get_btc_price_data()
+            arb_data = self.agent.market_signal_strategy.get_arb_price_data()
+            
+            if not btc_data or not arb_data:
+                return {'volatility': 0.5, 'gas_cost': 0.5, 'market_trend': 0.5}
+            
+            # Calculate volatility
+            btc_volatility = abs(btc_data.get('percent_change_1h', 0))
+            arb_volatility = abs(arb_data.get('percent_change_1h', 0))
+            avg_volatility = (btc_volatility + arb_volatility) / 2
+            
+            # Normalize volatility (higher volatility = better for pattern recognition)
+            volatility_score = min(1.0, avg_volatility / 5.0)  # Cap at 5% volatility
+            
+            # Get gas conditions
+            gas_score = self.agent.market_signal_strategy.enhanced_analyzer.calculate_gas_efficiency_score()
+            
+            # Determine market trend strength
+            btc_trend = btc_data.get('percent_change_24h', 0)
+            trend_strength = min(1.0, abs(btc_trend) / 10.0)  # Strong trend if >10% daily change
+            
+            return {
+                'volatility': volatility_score,
+                'gas_cost': gas_score,
+                'market_trend': trend_strength
+            }
+            
+        except Exception as e:
+            logging.error(f"Failed to evaluate current conditions: {e}")
+            return {'volatility': 0.5, 'gas_cost': 0.5, 'market_trend': 0.5}
+
+    def select_optimal_strategy(self) -> str:
+        """Select the optimal strategy based on current conditions and historical performance"""
+        conditions = self.evaluate_current_conditions()
+        
+        strategy_scores = {}
+        
+        for strategy_name, performance in self.performance_history.items():
+            # Base score from historical performance
+            base_score = (
+                performance.success_rate * 0.4 +
+                performance.accuracy_score * 0.3 +
+                performance.gas_efficiency * 0.2 +
+                min(performance.avg_profit * 10, 1.0) * 0.1
+            )
+            
+            # Adjust based on current conditions
+            condition_multiplier = 1.0
+            
+            if strategy_name == 'enhanced_analyzer':
+                # Enhanced analyzer works better in volatile conditions
+                condition_multiplier += conditions['volatility'] * 0.3
+            elif strategy_name == 'freqtrade_integration':
+                # Freqtrade works better in trending markets
+                condition_multiplier += conditions['market_trend'] * 0.4
+            elif strategy_name == 'built_in_analysis':
+                # Built-in analysis is more gas-efficient
+                condition_multiplier += conditions['gas_cost'] * 0.2
+            
+            strategy_scores[strategy_name] = base_score * condition_multiplier
+        
+        # Select strategy with highest score
+        optimal_strategy = max(strategy_scores, key=strategy_scores.get)
+        
+        logging.info(f"Strategy selection scores: {strategy_scores}")
+        logging.info(f"Optimal strategy selected: {optimal_strategy}")
+        
+        return optimal_strategy
+
+    def update_strategy_performance(self, strategy_name: str, success: bool, 
+                                  profit: float, gas_used: float):
+        """Update strategy performance based on actual results"""
+        if strategy_name not in self.performance_history:
+            return
+        
+        performance = self.performance_history[strategy_name]
+        
+        # Update success rate with exponential moving average
+        alpha = 0.1  # Learning rate
+        performance.success_rate = (
+            performance.success_rate * (1 - alpha) + 
+            (1.0 if success else 0.0) * alpha
+        )
+        
+        # Update average profit
+        performance.avg_profit = (
+            performance.avg_profit * (1 - alpha) + 
+            profit * alpha
+        )
+        
+        # Update gas efficiency (inverse of gas used)
+        gas_efficiency = 1.0 / (1.0 + gas_used)  # Higher gas = lower efficiency
+        performance.gas_efficiency = (
+            performance.gas_efficiency * (1 - alpha) + 
+            gas_efficiency * alpha
+        )
+        
+        performance.total_operations += 1
+        performance.last_updated = time.time()
+        
+        # Save updated performance
+        self.save_performance_data()
+
+    def save_performance_data(self):
+        """Save strategy performance data to file"""
+        try:
+            data = {
+                name: perf.__dict__ for name, perf in self.performance_history.items()
+            }
+            with open('strategy_performance.json', 'w') as f:
+                json.dump(data, f, indent=2, default=str)
+        except Exception as e:
+            logging.error(f"Failed to save performance data: {e}")
+
+    def get_performance_report(self) -> Dict:
+        """Generate performance comparison report"""
+        return {
+            'strategies': {
+                name: {
+                    'success_rate': f"{perf.success_rate:.1%}",
+                    'avg_profit': f"{perf.avg_profit:.2%}",
+                    'gas_efficiency': f"{perf.gas_efficiency:.2f}",
+                    'accuracy_score': f"{perf.accuracy_score:.2f}",
+                    'total_operations': perf.total_operations
+                }
+                for name, perf in self.performance_history.items()
+            },
+            'current_optimal': self.select_optimal_strategy(),
+            'market_conditions': self.evaluate_current_conditions()
+        }
+# --- Merged from market_strategy_config.py ---
+
+def get_market_strategy_status():
+    """Get current market strategy configuration status"""
+    return {
+        'enabled': MARKET_SIGNAL_ENABLED,
+        'btc_drop_threshold': BTC_DROP_THRESHOLD,
+        'arb_rsi_oversold': ARB_RSI_OVERSOLD,
+        'dai_to_arb_confidence': DAI_TO_ARB_CONFIDENCE,
+        'max_operation_amount': MAX_MARKET_OPERATION_AMOUNT,
+        'min_health_factor': MIN_HEALTH_FACTOR_FOR_MARKET_OPS,
+        'signal_cooldown_minutes': SIGNAL_COOLDOWN / 60,
+        'analysis_interval_hours': MARKET_ANALYSIS_INTERVAL / 3600,
+        'max_daily_operations': MAX_DAILY_OPERATIONS,
+        'last_updated': datetime.now().isoformat()
+    }
+
+def validate_configuration():
+    """Validate market strategy configuration"""
+    issues = []
+
+    # Validate thresholds
+    if BTC_DROP_THRESHOLD <= 0 or BTC_DROP_THRESHOLD > 0.2:
+        issues.append(f"BTC drop threshold {BTC_DROP_THRESHOLD} outside safe range (0-0.2)")
+
+    if ARB_RSI_OVERSOLD < 10 or ARB_RSI_OVERSOLD > 40:
+        issues.append(f"ARB RSI oversold {ARB_RSI_OVERSOLD} outside typical range (10-40)")
+
+    if DAI_TO_ARB_CONFIDENCE < 0.5 or DAI_TO_ARB_CONFIDENCE > 0.95:
+        issues.append(f"DAI→ARB confidence {DAI_TO_ARB_CONFIDENCE} outside safe range (0.5-0.95)")
+
+    if MIN_HEALTH_FACTOR_FOR_MARKET_OPS < 1.5:
+        issues.append(f"Minimum health factor {MIN_HEALTH_FACTOR_FOR_MARKET_OPS} too low (min 1.5)")
+
+    if MAX_MARKET_OPERATION_AMOUNT > 20:
+        issues.append(f"Maximum operation amount ${MAX_MARKET_OPERATION_AMOUNT} too high (max $20)")
+
+    # Validate timing
+    if SIGNAL_COOLDOWN < 600:  # 10 minutes minimum
+        issues.append(f"Signal cooldown {SIGNAL_COOLDOWN}s too short (min 600s)")
+
+    return issues
+
+def get_optimized_parameters():
+    """Get optimized parameters based on current market conditions"""
+    # This would analyze recent market data and suggest optimal parameters
+    # For now, return conservative defaults
+    return {
+        'btc_drop_threshold': 0.015,  # 1.5% for balanced sensitivity
+        'arb_rsi_oversold': 25,       # Aggressive but safe
+        'dai_to_arb_confidence': 0.65, # Conservative confidence requirement
+        'max_operation_amount': 8.0,   # Moderate position sizing
+        'min_health_factor': 2.2,     # High safety margin
+        'signal_cooldown': 1800,      # 30 minutes for market efficiency
+        'reasoning': "Conservative parameters optimized for network approval and risk management"
+    }
+# --- Merged from _hessian_update_strategy.py ---
+
+class HessianUpdateStrategy:
+    """Interface for implementing Hessian update strategies.
+
+    Many optimization methods make use of Hessian (or inverse Hessian)
+    approximations, such as the quasi-Newton methods BFGS, SR1, L-BFGS.
+    Some of these  approximations, however, do not actually need to store
+    the entire matrix or can compute the internal matrix product with a
+    given vector in a very efficiently manner. This class serves as an
+    abstract interface between the optimization algorithm and the
+    quasi-Newton update strategies, giving freedom of implementation
+    to store and update the internal matrix as efficiently as possible.
+    Different choices of initialization and update procedure will result
+    in different quasi-Newton strategies.
+
+    Four methods should be implemented in derived classes: ``initialize``,
+    ``update``, ``dot`` and ``get_matrix``. The matrix multiplication
+    operator ``@`` is also defined to call the ``dot`` method.
+
+    Notes
+    -----
+    Any instance of a class that implements this interface,
+    can be accepted by the method ``minimize`` and used by
+    the compatible solvers to approximate the Hessian (or
+    inverse Hessian) used by the optimization algorithms.
+    """
+
+    def initialize(self, n, approx_type):
+        """Initialize internal matrix.
+
+        Allocate internal memory for storing and updating
+        the Hessian or its inverse.
+
+        Parameters
+        ----------
+        n : int
+            Problem dimension.
+        approx_type : {'hess', 'inv_hess'}
+            Selects either the Hessian or the inverse Hessian.
+            When set to 'hess' the Hessian will be stored and updated.
+            When set to 'inv_hess' its inverse will be used instead.
+        """
+        raise NotImplementedError("The method ``initialize(n, approx_type)``"
+                                  " is not implemented.")
+
+    def update(self, delta_x, delta_grad):
+        """Update internal matrix.
+
+        Update Hessian matrix or its inverse (depending on how 'approx_type'
+        is defined) using information about the last evaluated points.
+
+        Parameters
+        ----------
+        delta_x : ndarray
+            The difference between two points the gradient
+            function have been evaluated at: ``delta_x = x2 - x1``.
+        delta_grad : ndarray
+            The difference between the gradients:
+            ``delta_grad = grad(x2) - grad(x1)``.
+        """
+        raise NotImplementedError("The method ``update(delta_x, delta_grad)``"
+                                  " is not implemented.")
+
+    def dot(self, p):
+        """Compute the product of the internal matrix with the given vector.
+
+        Parameters
+        ----------
+        p : array_like
+            1-D array representing a vector.
+
+        Returns
+        -------
+        Hp : array
+            1-D represents the result of multiplying the approximation matrix
+            by vector p.
+        """
+        raise NotImplementedError("The method ``dot(p)``"
+                                  " is not implemented.")
+
+    def get_matrix(self):
+        """Return current internal matrix.
+
+        Returns
+        -------
+        H : ndarray, shape (n, n)
+            Dense matrix containing either the Hessian
+            or its inverse (depending on how 'approx_type'
+            is defined).
+        """
+        raise NotImplementedError("The method ``get_matrix(p)``"
+                                  " is not implemented.")
+
+    def __matmul__(self, p):
+        return self.dot(p)
+
+class FullHessianUpdateStrategy(HessianUpdateStrategy):
+    """Hessian update strategy with full dimensional internal representation.
+    """
+    _syr = get_blas_funcs('syr', dtype='d')  # Symmetric rank 1 update
+    _syr2 = get_blas_funcs('syr2', dtype='d')  # Symmetric rank 2 update
+    # Symmetric matrix-vector product
+    _symv = get_blas_funcs('symv', dtype='d')
+
+    def __init__(self, init_scale='auto'):
+        self.init_scale = init_scale
+        # Until initialize is called we can't really use the class,
+        # so it makes sense to set everything to None.
+        self.first_iteration = None
+        self.approx_type = None
+        self.B = None
+        self.H = None
+
+    def initialize(self, n, approx_type):
+        """Initialize internal matrix.
+
+        Allocate internal memory for storing and updating
+        the Hessian or its inverse.
+
+        Parameters
+        ----------
+        n : int
+            Problem dimension.
+        approx_type : {'hess', 'inv_hess'}
+            Selects either the Hessian or the inverse Hessian.
+            When set to 'hess' the Hessian will be stored and updated.
+            When set to 'inv_hess' its inverse will be used instead.
+        """
+        self.first_iteration = True
+        self.n = n
+        self.approx_type = approx_type
+        if approx_type not in ('hess', 'inv_hess'):
+            raise ValueError("`approx_type` must be 'hess' or 'inv_hess'.")
+        # Create matrix
+        if self.approx_type == 'hess':
+            self.B = np.eye(n, dtype=float)
+        else:
+            self.H = np.eye(n, dtype=float)
+
+    def _auto_scale(self, delta_x, delta_grad):
+        # Heuristic to scale matrix at first iteration.
+        # Described in Nocedal and Wright "Numerical Optimization"
+        # p.143 formula (6.20).
+        s_norm2 = np.dot(delta_x, delta_x)
+        y_norm2 = np.dot(delta_grad, delta_grad)
+        ys = np.abs(np.dot(delta_grad, delta_x))
+        if ys == 0.0 or y_norm2 == 0 or s_norm2 == 0:
+            return 1
+        if self.approx_type == 'hess':
+            return y_norm2 / ys
+        else:
+            return ys / y_norm2
+
+    def _update_implementation(self, delta_x, delta_grad):
+        raise NotImplementedError("The method ``_update_implementation``"
+                                  " is not implemented.")
+
+    def update(self, delta_x, delta_grad):
+        """Update internal matrix.
+
+        Update Hessian matrix or its inverse (depending on how 'approx_type'
+        is defined) using information about the last evaluated points.
+
+        Parameters
+        ----------
+        delta_x : ndarray
+            The difference between two points the gradient
+            function have been evaluated at: ``delta_x = x2 - x1``.
+        delta_grad : ndarray
+            The difference between the gradients:
+            ``delta_grad = grad(x2) - grad(x1)``.
+        """
+        if np.all(delta_x == 0.0):
+            return
+        if np.all(delta_grad == 0.0):
+            warn('delta_grad == 0.0. Check if the approximated '
+                 'function is linear. If the function is linear '
+                 'better results can be obtained by defining the '
+                 'Hessian as zero instead of using quasi-Newton '
+                 'approximations.',
+                 UserWarning, stacklevel=2)
+            return
+        if self.first_iteration:
+            # Get user specific scale
+            if isinstance(self.init_scale, str) and self.init_scale == "auto":
+                scale = self._auto_scale(delta_x, delta_grad)
+            else:
+                scale = self.init_scale
+
+            # Check for complex: numpy will silently cast a complex array to
+            # a real one but not so for scalar as it raises a TypeError.
+            # Checking here brings a consistent behavior.
+            replace = False
+            if np.size(scale) == 1:
+                # to account for the legacy behavior having the exact same cast
+                scale = float(scale)
+            elif np.iscomplexobj(scale):
+                raise TypeError("init_scale contains complex elements, "
+                                "must be real.")
+            else:  # test explicitly for allowed shapes and values
+                replace = True
+                if self.approx_type == 'hess':
+                    shape = np.shape(self.B)
+                    dtype = self.B.dtype
+                else:
+                    shape = np.shape(self.H)
+                    dtype = self.H.dtype
+                # copy, will replace the original
+                scale = np.array(scale, dtype=dtype, copy=True)
+
+                # it has to match the shape of the matrix for the multiplication,
+                # no implicit broadcasting is allowed
+                if shape != (init_shape := np.shape(scale)):
+                    raise ValueError("If init_scale is an array, it must have the "
+                                     f"dimensions of the hess/inv_hess: {shape}."
+                                     f" Got {init_shape}.")
+                if not issymmetric(scale):
+                    raise ValueError("If init_scale is an array, it must be"
+                                     " symmetric (passing scipy.linalg.issymmetric)"
+                                     " to be an approximation of a hess/inv_hess.")
+
+            # Scale initial matrix with ``scale * np.eye(n)`` or replace
+            # This is not ideal, we could assign the scale directly in
+            # initialize, but we would need to
+            if self.approx_type == 'hess':
+                if replace:
+                    self.B = scale
+                else:
+                    self.B *= scale
+            else:
+                if replace:
+                    self.H = scale
+                else:
+                    self.H *= scale
+            self.first_iteration = False
+        self._update_implementation(delta_x, delta_grad)
+
+    def dot(self, p):
+        """Compute the product of the internal matrix with the given vector.
+
+        Parameters
+        ----------
+        p : array_like
+            1-D array representing a vector.
+
+        Returns
+        -------
+        Hp : array
+            1-D represents the result of multiplying the approximation matrix
+            by vector p.
+        """
+        if self.approx_type == 'hess':
+            return self._symv(1, self.B, p)
+        else:
+            return self._symv(1, self.H, p)
+
+    def get_matrix(self):
+        """Return the current internal matrix.
+
+        Returns
+        -------
+        M : ndarray, shape (n, n)
+            Dense matrix containing either the Hessian or its inverse
+            (depending on how `approx_type` was defined).
+        """
+        if self.approx_type == 'hess':
+            M = np.copy(self.B)
+        else:
+            M = np.copy(self.H)
+        li = np.tril_indices_from(M, k=-1)
+        M[li] = M.T[li]
+        return M
+
+class BFGS(FullHessianUpdateStrategy):
+    """Broyden-Fletcher-Goldfarb-Shanno (BFGS) Hessian update strategy.
+
+    Parameters
+    ----------
+    exception_strategy : {'skip_update', 'damp_update'}, optional
+        Define how to proceed when the curvature condition is violated.
+        Set it to 'skip_update' to just skip the update. Or, alternatively,
+        set it to 'damp_update' to interpolate between the actual BFGS
+        result and the unmodified matrix. Both exceptions strategies
+        are explained  in [1]_, p.536-537.
+    min_curvature : float
+        This number, scaled by a normalization factor, defines the
+        minimum curvature ``dot(delta_grad, delta_x)`` allowed to go
+        unaffected by the exception strategy. By default is equal to
+        1e-8 when ``exception_strategy = 'skip_update'`` and equal
+        to 0.2 when ``exception_strategy = 'damp_update'``.
+    init_scale : {float, np.array, 'auto'}
+        This parameter can be used to initialize the Hessian or its
+        inverse. When a float is given, the relevant array is initialized
+        to ``np.eye(n) * init_scale``, where ``n`` is the problem dimension.
+        Alternatively, if a precisely ``(n, n)`` shaped, symmetric array is given,
+        this array will be used. Otherwise an error is generated.
+        Set it to 'auto' in order to use an automatic heuristic for choosing
+        the initial scale. The heuristic is described in [1]_, p.143.
+        The default is 'auto'.
+
+    Notes
+    -----
+    The update is based on the description in [1]_, p.140.
+
+    References
+    ----------
+    .. [1] Nocedal, Jorge, and Stephen J. Wright. "Numerical optimization"
+           Second Edition (2006).
+    """
+
+    def __init__(self, exception_strategy='skip_update', min_curvature=None,
+                 init_scale='auto'):
+        if exception_strategy == 'skip_update':
+            if min_curvature is not None:
+                self.min_curvature = min_curvature
+            else:
+                self.min_curvature = 1e-8
+        elif exception_strategy == 'damp_update':
+            if min_curvature is not None:
+                self.min_curvature = min_curvature
+            else:
+                self.min_curvature = 0.2
+        else:
+            raise ValueError("`exception_strategy` must be 'skip_update' "
+                             "or 'damp_update'.")
+
+        super().__init__(init_scale)
+        self.exception_strategy = exception_strategy
+
+    def _update_inverse_hessian(self, ys, Hy, yHy, s):
+        """Update the inverse Hessian matrix.
+
+        BFGS update using the formula:
+
+            ``H <- H + ((H*y).T*y + s.T*y)/(s.T*y)^2 * (s*s.T)
+                     - 1/(s.T*y) * ((H*y)*s.T + s*(H*y).T)``
+
+        where ``s = delta_x`` and ``y = delta_grad``. This formula is
+        equivalent to (6.17) in [1]_ written in a more efficient way
+        for implementation.
+
+        References
+        ----------
+        .. [1] Nocedal, Jorge, and Stephen J. Wright. "Numerical optimization"
+               Second Edition (2006).
+        """
+        self.H = self._syr2(-1.0 / ys, s, Hy, a=self.H)
+        self.H = self._syr((ys + yHy) / ys ** 2, s, a=self.H)
+
+    def _update_hessian(self, ys, Bs, sBs, y):
+        """Update the Hessian matrix.
+
+        BFGS update using the formula:
+
+            ``B <- B - (B*s)*(B*s).T/s.T*(B*s) + y*y^T/s.T*y``
+
+        where ``s`` is short for ``delta_x`` and ``y`` is short
+        for ``delta_grad``. Formula (6.19) in [1]_.
+
+        References
+        ----------
+        .. [1] Nocedal, Jorge, and Stephen J. Wright. "Numerical optimization"
+               Second Edition (2006).
+        """
+        self.B = self._syr(1.0 / ys, y, a=self.B)
+        self.B = self._syr(-1.0 / sBs, Bs, a=self.B)
+
+    def _update_implementation(self, delta_x, delta_grad):
+        # Auxiliary variables w and z
+        if self.approx_type == 'hess':
+            w = delta_x
+            z = delta_grad
+        else:
+            w = delta_grad
+            z = delta_x
+        # Do some common operations
+        wz = np.dot(w, z)
+        Mw = self @ w
+        wMw = Mw.dot(w)
+        # Guarantee that wMw > 0 by reinitializing matrix.
+        # While this is always true in exact arithmetic,
+        # indefinite matrix may appear due to roundoff errors.
+        if wMw <= 0.0:
+            scale = self._auto_scale(delta_x, delta_grad)
+            # Reinitialize matrix
+            if self.approx_type == 'hess':
+                self.B = scale * np.eye(self.n, dtype=float)
+            else:
+                self.H = scale * np.eye(self.n, dtype=float)
+            # Do common operations for new matrix
+            Mw = self @ w
+            wMw = Mw.dot(w)
+        # Check if curvature condition is violated
+        if wz <= self.min_curvature * wMw:
+            # If the option 'skip_update' is set
+            # we just skip the update when the condition
+            # is violated.
+            if self.exception_strategy == 'skip_update':
+                return
+            # If the option 'damp_update' is set we
+            # interpolate between the actual BFGS
+            # result and the unmodified matrix.
+            elif self.exception_strategy == 'damp_update':
+                update_factor = (1-self.min_curvature) / (1 - wz/wMw)
+                z = update_factor*z + (1-update_factor)*Mw
+                wz = np.dot(w, z)
+        # Update matrix
+        if self.approx_type == 'hess':
+            self._update_hessian(wz, Mw, wMw, z)
+        else:
+            self._update_inverse_hessian(wz, Mw, wMw, z)
+
+class SR1(FullHessianUpdateStrategy):
+    """Symmetric-rank-1 Hessian update strategy.
+
+    Parameters
+    ----------
+    min_denominator : float
+        This number, scaled by a normalization factor,
+        defines the minimum denominator magnitude allowed
+        in the update. When the condition is violated we skip
+        the update. By default uses ``1e-8``.
+    init_scale : {float, np.array, 'auto'}, optional
+        This parameter can be used to initialize the Hessian or its
+        inverse. When a float is given, the relevant array is initialized
+        to ``np.eye(n) * init_scale``, where ``n`` is the problem dimension.
+        Alternatively, if a precisely ``(n, n)`` shaped, symmetric array is given,
+        this array will be used. Otherwise an error is generated.
+        Set it to 'auto' in order to use an automatic heuristic for choosing
+        the initial scale. The heuristic is described in [1]_, p.143.
+        The default is 'auto'.
+
+    Notes
+    -----
+    The update is based on the description in [1]_, p.144-146.
+
+    References
+    ----------
+    .. [1] Nocedal, Jorge, and Stephen J. Wright. "Numerical optimization"
+           Second Edition (2006).
+    """
+
+    def __init__(self, min_denominator=1e-8, init_scale='auto'):
+        self.min_denominator = min_denominator
+        super().__init__(init_scale)
+
+    def _update_implementation(self, delta_x, delta_grad):
+        # Auxiliary variables w and z
+        if self.approx_type == 'hess':
+            w = delta_x
+            z = delta_grad
+        else:
+            w = delta_grad
+            z = delta_x
+        # Do some common operations
+        Mw = self @ w
+        z_minus_Mw = z - Mw
+        denominator = np.dot(w, z_minus_Mw)
+        # If the denominator is too small
+        # we just skip the update.
+        if np.abs(denominator) <= self.min_denominator*norm(w)*norm(z_minus_Mw):
+            return
+        # Update matrix
+        if self.approx_type == 'hess':
+            self.B = self._syr(1/denominator, z_minus_Mw, a=self.B)
+        else:
+            self.H = self._syr(1/denominator, z_minus_Mw, a=self.H)
+
+    def initialize(self, n, approx_type):
+        """Initialize internal matrix.
+
+        Allocate internal memory for storing and updating
+        the Hessian or its inverse.
+
+        Parameters
+        ----------
+        n : int
+            Problem dimension.
+        approx_type : {'hess', 'inv_hess'}
+            Selects either the Hessian or the inverse Hessian.
+            When set to 'hess' the Hessian will be stored and updated.
+            When set to 'inv_hess' its inverse will be used instead.
+        """
+        raise NotImplementedError("The method ``initialize(n, approx_type)``"
+                                  " is not implemented.")
+
+    def update(self, delta_x, delta_grad):
+        """Update internal matrix.
+
+        Update Hessian matrix or its inverse (depending on how 'approx_type'
+        is defined) using information about the last evaluated points.
+
+        Parameters
+        ----------
+        delta_x : ndarray
+            The difference between two points the gradient
+            function have been evaluated at: ``delta_x = x2 - x1``.
+        delta_grad : ndarray
+            The difference between the gradients:
+            ``delta_grad = grad(x2) - grad(x1)``.
+        """
+        raise NotImplementedError("The method ``update(delta_x, delta_grad)``"
+                                  " is not implemented.")
+
+    def dot(self, p):
+        """Compute the product of the internal matrix with the given vector.
+
+        Parameters
+        ----------
+        p : array_like
+            1-D array representing a vector.
+
+        Returns
+        -------
+        Hp : array
+            1-D represents the result of multiplying the approximation matrix
+            by vector p.
+        """
+        raise NotImplementedError("The method ``dot(p)``"
+                                  " is not implemented.")
+
+    def get_matrix(self):
+        """Return current internal matrix.
+
+        Returns
+        -------
+        H : ndarray, shape (n, n)
+            Dense matrix containing either the Hessian
+            or its inverse (depending on how 'approx_type'
+            is defined).
+        """
+        raise NotImplementedError("The method ``get_matrix(p)``"
+                                  " is not implemented.")
+
+    def __matmul__(self, p):
+        return self.dot(p)
+
+    def initialize(self, n, approx_type):
+        """Initialize internal matrix.
+
+        Allocate internal memory for storing and updating
+        the Hessian or its inverse.
+
+        Parameters
+        ----------
+        n : int
+            Problem dimension.
+        approx_type : {'hess', 'inv_hess'}
+            Selects either the Hessian or the inverse Hessian.
+            When set to 'hess' the Hessian will be stored and updated.
+            When set to 'inv_hess' its inverse will be used instead.
+        """
+        self.first_iteration = True
+        self.n = n
+        self.approx_type = approx_type
+        if approx_type not in ('hess', 'inv_hess'):
+            raise ValueError("`approx_type` must be 'hess' or 'inv_hess'.")
+        # Create matrix
+        if self.approx_type == 'hess':
+            self.B = np.eye(n, dtype=float)
+        else:
+            self.H = np.eye(n, dtype=float)
+
+    def _auto_scale(self, delta_x, delta_grad):
+        # Heuristic to scale matrix at first iteration.
+        # Described in Nocedal and Wright "Numerical Optimization"
+        # p.143 formula (6.20).
+        s_norm2 = np.dot(delta_x, delta_x)
+        y_norm2 = np.dot(delta_grad, delta_grad)
+        ys = np.abs(np.dot(delta_grad, delta_x))
+        if ys == 0.0 or y_norm2 == 0 or s_norm2 == 0:
+            return 1
+        if self.approx_type == 'hess':
+            return y_norm2 / ys
+        else:
+            return ys / y_norm2
+
+    def _update_implementation(self, delta_x, delta_grad):
+        raise NotImplementedError("The method ``_update_implementation``"
+                                  " is not implemented.")
+
+    def update(self, delta_x, delta_grad):
+        """Update internal matrix.
+
+        Update Hessian matrix or its inverse (depending on how 'approx_type'
+        is defined) using information about the last evaluated points.
+
+        Parameters
+        ----------
+        delta_x : ndarray
+            The difference between two points the gradient
+            function have been evaluated at: ``delta_x = x2 - x1``.
+        delta_grad : ndarray
+            The difference between the gradients:
+            ``delta_grad = grad(x2) - grad(x1)``.
+        """
+        if np.all(delta_x == 0.0):
+            return
+        if np.all(delta_grad == 0.0):
+            warn('delta_grad == 0.0. Check if the approximated '
+                 'function is linear. If the function is linear '
+                 'better results can be obtained by defining the '
+                 'Hessian as zero instead of using quasi-Newton '
+                 'approximations.',
+                 UserWarning, stacklevel=2)
+            return
+        if self.first_iteration:
+            # Get user specific scale
+            if isinstance(self.init_scale, str) and self.init_scale == "auto":
+                scale = self._auto_scale(delta_x, delta_grad)
+            else:
+                scale = self.init_scale
+
+            # Check for complex: numpy will silently cast a complex array to
+            # a real one but not so for scalar as it raises a TypeError.
+            # Checking here brings a consistent behavior.
+            replace = False
+            if np.size(scale) == 1:
+                # to account for the legacy behavior having the exact same cast
+                scale = float(scale)
+            elif np.iscomplexobj(scale):
+                raise TypeError("init_scale contains complex elements, "
+                                "must be real.")
+            else:  # test explicitly for allowed shapes and values
+                replace = True
+                if self.approx_type == 'hess':
+                    shape = np.shape(self.B)
+                    dtype = self.B.dtype
+                else:
+                    shape = np.shape(self.H)
+                    dtype = self.H.dtype
+                # copy, will replace the original
+                scale = np.array(scale, dtype=dtype, copy=True)
+
+                # it has to match the shape of the matrix for the multiplication,
+                # no implicit broadcasting is allowed
+                if shape != (init_shape := np.shape(scale)):
+                    raise ValueError("If init_scale is an array, it must have the "
+                                     f"dimensions of the hess/inv_hess: {shape}."
+                                     f" Got {init_shape}.")
+                if not issymmetric(scale):
+                    raise ValueError("If init_scale is an array, it must be"
+                                     " symmetric (passing scipy.linalg.issymmetric)"
+                                     " to be an approximation of a hess/inv_hess.")
+
+            # Scale initial matrix with ``scale * np.eye(n)`` or replace
+            # This is not ideal, we could assign the scale directly in
+            # initialize, but we would need to
+            if self.approx_type == 'hess':
+                if replace:
+                    self.B = scale
+                else:
+                    self.B *= scale
+            else:
+                if replace:
+                    self.H = scale
+                else:
+                    self.H *= scale
+            self.first_iteration = False
+        self._update_implementation(delta_x, delta_grad)
+
+    def dot(self, p):
+        """Compute the product of the internal matrix with the given vector.
+
+        Parameters
+        ----------
+        p : array_like
+            1-D array representing a vector.
+
+        Returns
+        -------
+        Hp : array
+            1-D represents the result of multiplying the approximation matrix
+            by vector p.
+        """
+        if self.approx_type == 'hess':
+            return self._symv(1, self.B, p)
+        else:
+            return self._symv(1, self.H, p)
+
+    def get_matrix(self):
+        """Return the current internal matrix.
+
+        Returns
+        -------
+        M : ndarray, shape (n, n)
+            Dense matrix containing either the Hessian or its inverse
+            (depending on how `approx_type` was defined).
+        """
+        if self.approx_type == 'hess':
+            M = np.copy(self.B)
+        else:
+            M = np.copy(self.H)
+        li = np.tril_indices_from(M, k=-1)
+        M[li] = M.T[li]
+        return M
+
+    def _update_inverse_hessian(self, ys, Hy, yHy, s):
+        """Update the inverse Hessian matrix.
+
+        BFGS update using the formula:
+
+            ``H <- H + ((H*y).T*y + s.T*y)/(s.T*y)^2 * (s*s.T)
+                     - 1/(s.T*y) * ((H*y)*s.T + s*(H*y).T)``
+
+        where ``s = delta_x`` and ``y = delta_grad``. This formula is
+        equivalent to (6.17) in [1]_ written in a more efficient way
+        for implementation.
+
+        References
+        ----------
+        .. [1] Nocedal, Jorge, and Stephen J. Wright. "Numerical optimization"
+               Second Edition (2006).
+        """
+        self.H = self._syr2(-1.0 / ys, s, Hy, a=self.H)
+        self.H = self._syr((ys + yHy) / ys ** 2, s, a=self.H)
+
+    def _update_hessian(self, ys, Bs, sBs, y):
+        """Update the Hessian matrix.
+
+        BFGS update using the formula:
+
+            ``B <- B - (B*s)*(B*s).T/s.T*(B*s) + y*y^T/s.T*y``
+
+        where ``s`` is short for ``delta_x`` and ``y`` is short
+        for ``delta_grad``. Formula (6.19) in [1]_.
+
+        References
+        ----------
+        .. [1] Nocedal, Jorge, and Stephen J. Wright. "Numerical optimization"
+               Second Edition (2006).
+        """
+        self.B = self._syr(1.0 / ys, y, a=self.B)
+        self.B = self._syr(-1.0 / sBs, Bs, a=self.B)
+
+    def _update_implementation(self, delta_x, delta_grad):
+        # Auxiliary variables w and z
+        if self.approx_type == 'hess':
+            w = delta_x
+            z = delta_grad
+        else:
+            w = delta_grad
+            z = delta_x
+        # Do some common operations
+        wz = np.dot(w, z)
+        Mw = self @ w
+        wMw = Mw.dot(w)
+        # Guarantee that wMw > 0 by reinitializing matrix.
+        # While this is always true in exact arithmetic,
+        # indefinite matrix may appear due to roundoff errors.
+        if wMw <= 0.0:
+            scale = self._auto_scale(delta_x, delta_grad)
+            # Reinitialize matrix
+            if self.approx_type == 'hess':
+                self.B = scale * np.eye(self.n, dtype=float)
+            else:
+                self.H = scale * np.eye(self.n, dtype=float)
+            # Do common operations for new matrix
+            Mw = self @ w
+            wMw = Mw.dot(w)
+        # Check if curvature condition is violated
+        if wz <= self.min_curvature * wMw:
+            # If the option 'skip_update' is set
+            # we just skip the update when the condition
+            # is violated.
+            if self.exception_strategy == 'skip_update':
+                return
+            # If the option 'damp_update' is set we
+            # interpolate between the actual BFGS
+            # result and the unmodified matrix.
+            elif self.exception_strategy == 'damp_update':
+                update_factor = (1-self.min_curvature) / (1 - wz/wMw)
+                z = update_factor*z + (1-update_factor)*Mw
+                wz = np.dot(w, z)
+        # Update matrix
+        if self.approx_type == 'hess':
+            self._update_hessian(wz, Mw, wMw, z)
+        else:
+            self._update_inverse_hessian(wz, Mw, wMw, z)
+
+    def _update_implementation(self, delta_x, delta_grad):
+        # Auxiliary variables w and z
+        if self.approx_type == 'hess':
+            w = delta_x
+            z = delta_grad
+        else:
+            w = delta_grad
+            z = delta_x
+        # Do some common operations
+        Mw = self @ w
+        z_minus_Mw = z - Mw
+        denominator = np.dot(w, z_minus_Mw)
+        # If the denominator is too small
+        # we just skip the update.
+        if np.abs(denominator) <= self.min_denominator*norm(w)*norm(z_minus_Mw):
+            return
+        # Update matrix
+        if self.approx_type == 'hess':
+            self.B = self._syr(1/denominator, z_minus_Mw, a=self.B)
+        else:
+            self.H = self._syr(1/denominator, z_minus_Mw, a=self.H)
