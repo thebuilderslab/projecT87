@@ -7,6 +7,8 @@ Automatically update import statements to reference canonical files
 
 import os
 import re
+import subprocess
+import sys
 
 # Comprehensive mapping of archived files to their canonical replacements
 IMPORT_MAPPINGS = {
@@ -250,8 +252,48 @@ def fix_all_imports():
 if __name__ == "__main__":
     success = fix_all_imports()
     
+    # Also check for common import issues in main files
+    critical_files = ['main.py', 'web_dashboard.py', 'aave_integration.py', 'emergency_funding_manager.py']
+    
+    for file_path in critical_files:
+        if os.path.exists(file_path):
+            try:
+                with open(file_path, 'r', encoding='utf-8') as f:
+                    content = f.read()
+                
+                # Check for problematic imports that might still exist
+                problematic_patterns = [
+                    r'from\s+arbitrum_testnet_agent\s+import',
+                    r'import\s+arbitrum_testnet_agent',
+                    r'from\s+emergency_stop\s+import',
+                    r'import\s+emergency_stop'
+                ]
+                
+                for pattern in problematic_patterns:
+                    if re.search(pattern, content):
+                        print(f"⚠️  Found potential import issue in {file_path}: {pattern}")
+                        
+            except Exception as e:
+                print(f"❌ Could not check {file_path}: {e}")
+    
     if success:
         print("\n🔄 Re-running verification...")
         os.system("python verify_deduplication_complete.py")
     else:
         print("\n✅ No import changes needed")
+        
+    # Quick syntax check on critical files
+    print("\n🔍 Quick syntax verification...")
+    for file_path in critical_files:
+        if os.path.exists(file_path):
+            try:
+                result = subprocess.run([sys.executable, '-m', 'py_compile', file_path], 
+                                      capture_output=True, text=True)
+                if result.returncode == 0:
+                    print(f"✅ Syntax OK: {file_path}")
+                else:
+                    print(f"❌ Syntax error in {file_path}: {result.stderr}")
+            except Exception as e:
+                print(f"❌ Could not check syntax for {file_path}: {e}")
+                
+    print("\n✅ Import fixing process complete!")
