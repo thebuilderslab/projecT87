@@ -661,11 +661,11 @@ def validate_mainnet_readiness(self):
             return False
 
         # Validate private key format
-        if len(private_key) not in :
+        if len(private_key) not in [64, 66]:
             print(f"❌ Invalid private key format (should be 64 or 66 characters)")
             return False
         print("✅ Private key: Configured properly")
-        optional_vars = 
+        optional_vars = ['PROMPT_KEY', 'OPTIMIZER_API_KEY', 'ARBISCAN_API_KEY'] 
 
         # Validate critical secrets
         for var in critical_vars:
@@ -800,7 +800,7 @@ def validate_mainnet_readiness(self):
         print("=" * 50)
 
         # Check critical environment variables
-        critical_vars = 
+        critical_vars = ['PRIVATE_KEY', 'COINMARKETCAP_API_KEY', 'NETWORK_MODE']
 
         # Check for private key (try PRIVATE_KEY first, then PRIVATE_KEY2 as fallback)
         private_key = os.getenv('PRIVATE_KEY') or os.getenv('PRIVATE_KEY2')
@@ -811,11 +811,11 @@ def validate_mainnet_readiness(self):
             return False
 
         # Validate private key format
-        if len(private_key) not in :
+        if len(private_key) not in [64, 66]:
             print(f"❌ Invalid private key format (should be 64 or 66 characters)")
             return False
         print("✅ Private key: Configured properly")
-        optional_vars = 
+        optional_vars = ['PROMPT_KEY', 'OPTIMIZER_API_KEY', 'ARBISCAN_API_KEY'] 
 
         # Validate critical secrets
         for var in critical_vars:
@@ -1092,14 +1092,14 @@ def api_status():
 def check_autonomous_agent():
     """Check if autonomous agent is running"""
     try:
-        result = subprocess.run(, capture_output=True, text=True, timeout=5)
+        result = subprocess.run(['ps', 'aux'], capture_output=True, text=True, timeout=5)
         return 'run_autonomous_mainnet.py' in result.stdout
     except:
         return False
 
 def check_dashboard_health():
     """Check if dashboard is accessible"""
-    ports_to_check = 
+    ports_to_check = [5000, 8080, 3000]
     
     for port in ports_to_check:
         try:
@@ -1112,8 +1112,8 @@ def check_dashboard_health():
 
 def check_secrets():
     """Verify critical secrets are available"""
-    required_secrets = 
-    missing = 
+    required_secrets = ['PRIVATE_KEY', 'NETWORK_MODE', 'COINMARKETCAP_API_KEY']
+    missing = []
     
     for secret in required_secrets:
         if not os.getenv(secret):
@@ -1221,7 +1221,7 @@ def run_comprehensive_audit():
         print(f"   Warnings: {warnings}")
         print(f"   Files Scanned: {report.get('files_scanned', 0)}")
         
-        if overall_status in :
+        if overall_status in ['PASSED', 'OK', 'SUCCESS']:
             print(f"✅ System audit passed - Ready for operation")
             return True
         else:
@@ -1267,8 +1267,8 @@ def test_defi_integrations():
     print("\n🔍 TESTING DEFI INTEGRATIONS...")
     print("=" * 60)
 
-    issues = 
-    warnings = 
+    issues = []
+    warnings = []
 
     try:
         from main import ArbitrumTestnetAgent
@@ -1340,7 +1340,7 @@ def launch_autonomous_system():
 
     try:
         # Launch the complete autonomous system
-        subprocess.run()
+        subprocess.run([sys.executable, 'main.py'])
 
     except KeyboardInterrupt:
         print("\n👋 System stopped by user")
