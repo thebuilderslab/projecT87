@@ -381,40 +381,64 @@ def verify_private_key():
         hex_part = private_key
         expected_length = 64
 
-    if len(private_key) not in :
-        print(f"❌ ERROR: Private key should be 64 or 66 characters long, got {len(private_key)}")
-        return False
+        if len(private_key) not in [64, 66]:
+            print(f"❌ ERROR: Private key should be 64 or 66 characters long, got {len(private_key)}")
+            return False
 
-    try:
-        # Test if it's valid hex
-        bytes.fromhex(hex_part)
-        print("✅ Private key format is valid (64-character hexadecimal)")
-        if private_key.startswith('0x'):
-            print("✅ Private key has 0x prefix")
-        else:
-            print("✅ Private key is raw hex (will be handled correctly)")
-        print("✅ Ready for mainnet wallet operations")
-        print("⚠️  ENSURE this wallet is funded on Arbitrum Mainnet!")
+        try:
+            # Test if it's valid hex
+            hex_part = private_key[2:] if private_key.startswith('0x') else private_key
+            bytes.fromhex(hex_part)
+            print("✅ Private key format is valid (64-character hexadecimal)")
+            if private_key.startswith('0x'):
+                print("✅ Private key has 0x prefix")
+            else:
+                print("✅ Private key is raw hex (will be handled correctly)")
+            print("✅ Ready for mainnet wallet operations")
+            print("⚠️ ENSURE this wallet is funded on Arbitrum Mainnet!")
+            return True
 
-        return True
+        except ValueError:
+            print("❌ ERROR: Private key contains invalid hexadecimal characters")
+            return False
 
-    except ValueError:
-        print("❌ ERROR: Private key contains invalid hexadecimal characters")
-        return False
 
-def verify_coinmarketcap_api():
-    """Verify COINMARKETCAP_API_KEY"""
-    print("\n🔍 VERIFYING COINMARKETCAP_API_KEY...")
+        def verify_coinmarketcap_api():
+            """Verify COINMARKETCAP_API_KEY"""
+            print("\n🔍 VERIFYING COINMARKETCAP_API_KEY...")
+            api_key = os.getenv('COINMARKETCAP_API_KEY')
 
-    api_key = os.getenv('COINMARKETCAP_API_KEY')
+            if not api_key:
+                print("❌ ERROR: COINMARKETCAP_API_KEY not found in secrets")
+                return False
 
-    if not api_key:
-        print("❌ ERROR: COINMARKETCAP_API_KEY not found in secrets")
-        return False
+            if len(api_key) < 10:
+                print("❌ ERROR: COINMARKETCAP_API_KEY appears too short")
+                return False
 
-    if len(api_key) < 10:
-        print("❌ ERROR: COINMARKETCAP_API_KEY appears too short")
-        return False
+            # Test API connectivity
+            try:
+                url = "https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest"
+                headers = {
+                    'Accepts': 'application/json',
+                    'X-CMC_PRO_API_KEY': api_key,
+                }
+                params = {'symbol': 'ARB'}
+
+                response = requests.get(url, headers=headers, params=params, timeout=10)
+
+                if response.status_code == 200:
+                    data = response.json()
+                    arb_price = data['data']['ARB']['quote']['USD']['price']
+                    print(f"✅ API connectivity verified. ARB price: {arb_price}")
+                    return True
+                else:
+                    print(f"❌ ERROR: API response code {response.status_code}")
+                    return False
+            except requests.exceptions.RequestException as e:
+                print(f"❌ ERROR: Request failed: {e}")
+                return False
+
 
     # Test API connectivity
     try:
