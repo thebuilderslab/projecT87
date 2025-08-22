@@ -180,6 +180,27 @@ args = "echo \"\""
 task = "shell.exec"
 args = "echo \"✅ Comprehensive Audit Complete\""
 
+[[workflows.workflow]]
+name = "🔍 System Validation"
+author = 39391053
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python system_validator.py"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"🔍 Running Comprehensive Audit\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python -c \"from main import run_comprehensive_audit; run_comprehensive_audit()\""
+
 [[ports]]
 localPort = 5000
 externalPort = 80
