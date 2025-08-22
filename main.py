@@ -650,7 +650,7 @@ def validate_mainnet_readiness(self):
         print("=" * 50)
 
         # Check critical environment variables
-        critical_vars = 
+    critical_vars = ['PRIVATE_KEY', 'COINMARKETCAP_API_KEY', 'NETWORK_MODE']
 
         # Check for private key (try PRIVATE_KEY first, then PRIVATE_KEY2 as fallback)
         private_key = os.getenv('PRIVATE_KEY') or os.getenv('PRIVATE_KEY2')
