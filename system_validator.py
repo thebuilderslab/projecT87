@@ -54,10 +54,41 @@ def validate_secrets():
     
     return all_valid
 
+def validate_network_approval_requirements():
+    """Validate specific network approval requirements"""
+    print("\n🌐 Network Approval Requirements:")
+    
+    # Check for comprehensive audit capability
+    try:
+        from comprehensive_syntax_validator import ComprehensiveSyntaxValidator
+        print("✅ Comprehensive audit system: Available")
+        audit_available = True
+    except ImportError:
+        print("❌ Comprehensive audit system: Not available")
+        audit_available = False
+    
+    # Check for network approval validator
+    network_validator_exists = os.path.exists('network_approval_validator.py')
+    if network_validator_exists:
+        print("✅ Network approval validator: Available")
+    else:
+        print("❌ Network approval validator: Missing")
+    
+    # Check mainnet readiness
+    network_mode = os.getenv('NETWORK_MODE', 'testnet')
+    if network_mode.lower() == 'mainnet':
+        print("✅ Network mode: Mainnet ready")
+        mainnet_ready = True
+    else:
+        print(f"⚠️  Network mode: {network_mode} (not mainnet)")
+        mainnet_ready = False
+    
+    return audit_available and network_validator_exists and mainnet_ready
+
 def main():
-    """Run complete system validation"""
-    print("🔍 SYSTEM VALIDATION")
-    print("=" * 40)
+    """Run complete system validation with network approval check"""
+    print("🔍 ENHANCED SYSTEM VALIDATION")
+    print("=" * 50)
     
     all_passed = True
     
@@ -76,14 +107,25 @@ def main():
     if not validate_secrets():
         all_passed = False
     
-    print("\n" + "=" * 40)
-    if all_passed:
+    # 4. Network approval requirements
+    network_ready = validate_network_approval_requirements()
+    if not network_ready:
+        print("\n⚠️  Network approval requirements not fully met")
+    
+    print("\n" + "=" * 50)
+    if all_passed and network_ready:
         print("✅ SYSTEM VALIDATION PASSED")
-        print("🚀 Ready for deployment")
+        print("🎉 NETWORK APPROVAL READY")
+        print("🚀 Ready for mainnet deployment")
+        return True
+    elif all_passed:
+        print("✅ BASIC VALIDATION PASSED")
+        print("⚠️  Network approval requirements need attention")
+        print("🔧 Run network approval validator for full assessment")
         return True
     else:
         print("❌ SYSTEM VALIDATION FAILED")
-        print("🛑 Fix issues before deployment")
+        print("🛑 Fix critical issues before deployment")
         return False
 
 if __name__ == "__main__":

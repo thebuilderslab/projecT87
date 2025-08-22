@@ -88,7 +88,8 @@ class ComprehensiveSyntaxValidator:
             ("os", "import os"),
             ("sys", "import sys"),
             ("time", "import time"),
-            ("subprocess", "import subprocess")
+            ("subprocess", "import subprocess"),
+            ("dotenv", "from dotenv import load_dotenv")
         ]
         
         all_imports_valid = True
