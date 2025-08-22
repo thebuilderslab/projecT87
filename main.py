@@ -571,10 +571,10 @@ def force_load_secret(var_name, default_value=None):
     # Method 3: Try subprocess printenv
     try:
         import subprocess
-        result = subprocess.run(, capture_output=True, text=True, timeout=5)
+        result = subprocess.run(['printenv', var_name], capture_output=True, text=True, timeout=5)
         if result.returncode == 0 and result.stdout.strip():
             value = result.stdout.strip()
-            os.environ = value
+            os.environ[var_name] = value
             return value
     except:
         pass
