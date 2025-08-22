@@ -381,64 +381,40 @@ def verify_private_key():
         hex_part = private_key
         expected_length = 64
 
-        if len(private_key) not in [64, 66]:
-            print(f"❌ ERROR: Private key should be 64 or 66 characters long, got {len(private_key)}")
-            return False
+    if len(private_key) not in :
+        print(f"❌ ERROR: Private key should be 64 or 66 characters long, got {len(private_key)}")
+        return False
 
-        try:
-            # Test if it's valid hex
-            hex_part = private_key[2:] if private_key.startswith('0x') else private_key
-            bytes.fromhex(hex_part)
-            print("✅ Private key format is valid (64-character hexadecimal)")
-            if private_key.startswith('0x'):
-                print("✅ Private key has 0x prefix")
-            else:
-                print("✅ Private key is raw hex (will be handled correctly)")
-            print("✅ Ready for mainnet wallet operations")
-            print("⚠️ ENSURE this wallet is funded on Arbitrum Mainnet!")
-            return True
+    try:
+        # Test if it's valid hex
+        bytes.fromhex(hex_part)
+        print("✅ Private key format is valid (64-character hexadecimal)")
+        if private_key.startswith('0x'):
+            print("✅ Private key has 0x prefix")
+        else:
+            print("✅ Private key is raw hex (will be handled correctly)")
+        print("✅ Ready for mainnet wallet operations")
+        print("⚠️  ENSURE this wallet is funded on Arbitrum Mainnet!")
 
-        except ValueError:
-            print("❌ ERROR: Private key contains invalid hexadecimal characters")
-            return False
+        return True
 
+    except ValueError:
+        print("❌ ERROR: Private key contains invalid hexadecimal characters")
+        return False
 
-        def verify_coinmarketcap_api():
-            """Verify COINMARKETCAP_API_KEY"""
-            print("\n🔍 VERIFYING COINMARKETCAP_API_KEY...")
-            api_key = os.getenv('COINMARKETCAP_API_KEY')
+def verify_coinmarketcap_api():
+    """Verify COINMARKETCAP_API_KEY"""
+    print("\n🔍 VERIFYING COINMARKETCAP_API_KEY...")
 
-            if not api_key:
-                print("❌ ERROR: COINMARKETCAP_API_KEY not found in secrets")
-                return False
+    api_key = os.getenv('COINMARKETCAP_API_KEY')
 
-            if len(api_key) < 10:
-                print("❌ ERROR: COINMARKETCAP_API_KEY appears too short")
-                return False
+    if not api_key:
+        print("❌ ERROR: COINMARKETCAP_API_KEY not found in secrets")
+        return False
 
-            # Test API connectivity
-            try:
-                url = "https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest"
-                headers = {
-                    'Accepts': 'application/json',
-                    'X-CMC_PRO_API_KEY': api_key,
-                }
-                params = {'symbol': 'ARB'}
-
-                response = requests.get(url, headers=headers, params=params, timeout=10)
-
-                if response.status_code == 200:
-                    data = response.json()
-                    arb_price = data['data']['ARB']['quote']['USD']['price']
-                    print(f"✅ API connectivity verified. ARB price: {arb_price}")
-                    return True
-                else:
-                    print(f"❌ ERROR: API response code {response.status_code}")
-                    return False
-            except requests.exceptions.RequestException as e:
-                print(f"❌ ERROR: Request failed: {e}")
-                return False
-
+    if len(api_key) < 10:
+        print("❌ ERROR: COINMARKETCAP_API_KEY appears too short")
+        return False
 
     # Test API connectivity
     try:
@@ -571,10 +547,10 @@ def force_load_secret(var_name, default_value=None):
     # Method 3: Try subprocess printenv
     try:
         import subprocess
-        result = subprocess.run(['printenv', var_name], capture_output=True, text=True, timeout=5)
+        result = subprocess.run(, capture_output=True, text=True, timeout=5)
         if result.returncode == 0 and result.stdout.strip():
             value = result.stdout.strip()
-            os.environ[var_name] = value
+            os.environ = value
             return value
     except:
         pass
@@ -650,7 +626,7 @@ def validate_mainnet_readiness(self):
         print("=" * 50)
 
         # Check critical environment variables
-    critical_vars = ['PRIVATE_KEY', 'COINMARKETCAP_API_KEY', 'NETWORK_MODE']
+        critical_vars = 
 
         # Check for private key (try PRIVATE_KEY first, then PRIVATE_KEY2 as fallback)
         private_key = os.getenv('PRIVATE_KEY') or os.getenv('PRIVATE_KEY2')
