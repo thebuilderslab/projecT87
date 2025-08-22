@@ -660,29 +660,27 @@ def validate_mainnet_readiness(self):
             print("   (Or ensure PRIVATE_KEY2 is available as fallback)")
             return False
 
-        # Validate private key format
-        if len(private_key) not in [64, 66]:
-            print(f"❌ Invalid private key format (should be 64 or 66 characters)")
+# Validate private key format
+if len(private_key) not in [64, 66]:
+    print("❌ Invalid private key format (should be 64 or 66 characters)")
+    return False
+print("✅ Private key: Configured properly")
+optional_vars = ['PROMPT_KEY', 'OPTIMIZER_API_KEY', 'ARBISCAN_API_KEY']
+
+# Validate critical secrets
+for var in critical_vars:
+    value = os.getenv(var)
+    if not value:
+        if var == 'PROMPT_KEY' and os.getenv('REPLIT_DEPLOYMENT'):
+            print(f"(In deployment, PROMPT_KEY might not be accessible but we can proceed anyway)")
+        else:
+            print(f"❌ Missing critical environment variable: {var}")
+            print(f"🔴 Please add {var} to your Replit Secrets")
             return False
-        print("✅ Private key: Configured properly")
-        optional_vars = ['PROMPT_KEY', 'OPTIMIZER_API_KEY', 'ARBISCAN_API_KEY'] 
 
-        # Validate critical secrets
-        for var in critical_vars:
-            value = os.getenv(var)
-            if not value:
-                if var == 'PROMPT_KEY' and os.getenv('REPLIT_DEPLOYMENT'):
-                    # In deployment, PROMPT_KEY might not be accessible but we can proceed
-                    print(f"⚠️  {var}: Not accessible in deployment environment (proceeding anyway)")
-                    continue
-                else:
-                    print(f"❌ Missing critical environment variable: {var}")
-                    print(f"💡 Please add {var} to your Replit Secrets")
-                    return False
-
-            if len(value.strip()) == 0:
-                print(f"❌ {var} is empty - please set a valid value")
-                return False
+    if len(value.strip()) == 0:
+        print(f"❌ {var} is empty – please set a valid value")
+        return False
 
             print(f"✅ {var}: Configured properly")
 
