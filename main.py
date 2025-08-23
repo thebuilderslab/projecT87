@@ -1087,27 +1087,27 @@ def start_dashboard():
         print("🔄 Starting fallback status server...")
         start_fallback_server(port)
 
-def start_fallback_server(port=5000):
-    """Start a simple fallback server"""
-    from flask import Flask, jsonify
+    def start_fallback_server(port=5000):
+        """Start a simple fallback server"""
+        from flask import Flask, jsonify
 
-    fallback_app = Flask(__name__)
+        fallback_app = Flask(__name__)
 
-    @fallback_app.route('/')
-    def status():
-    return """
-    <html>
-    <head><title>DeFi Agent Status</title></head>
-    <body style="font-family: Arial; padding: 20px; background: #1a1a1a; color: white;">
-        <h1>🤖 DeFi Agent Dashboard</h1>
-        <p>Status: Initializing...</p>
-        <p>Network: Arbitrum Mainnet</p>
-        <p>Mode: Safe Launch Mode</p>
-        <p><em>Dashboard is starting up with safety checks...</em></p>
-    </body>
-    </html>
-    """
-
+        @fallback_app.route('/')
+        def status():
+            return """
+            <html>
+            <head><title>DeFi Agent Status</title></head>
+            <body style="font-family: Arial; padding: 20px; background: #1a1a1a; color: white;">
+                <h1>🤖 DeFi Agent Dashboard</h1>
+                <p>Status: Initializing...</p>
+                <p>Network: Arbitrum Mainnet</p>
+                <p>Mode: Safe Launch Mode</p>
+                <p><em>Dashboard is starting up with safety checks...</em></p>
+            </body>
+            </html>
+            """
+ 
     @fallback_app.route('/api/status')
     def api_status():
         return jsonify({
@@ -1120,15 +1120,18 @@ def start_fallback_server(port=5000):
     fallback_app.run(host='0.0.0.0', port=port, debug=False)
 
 
+import socket
 
-        def is_port_available(port):
-            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-                try:
-                    s.bind(('0.0.0.0', port))
-                    return True
-                except:
-                    return False
-
+def is_port_available(port):
+    """
+    Checks if a given port is available.
+    """
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        try:
+            s.bind(('0.0.0.0', port))
+            return True
+        except:
+            return False
         class MockAgent:
             def __init__(self, *args, **kwargs):
                 self.address = '0x' + '0' * 40
@@ -1396,7 +1399,7 @@ def launch_autonomous_system():
 
     # Force mainnet mode
     os.environ = 'mainnet'
-
+ 
     try:
         # Launch the complete autonomous system
         subprocess.run([sys.executable, 'main.py'])
@@ -1407,35 +1410,34 @@ def launch_autonomous_system():
         print(f"❌ Launch failed: {e}")
 # --- Merged from runtime.py ---
 
-def identity(x: V) -> V:
+def identity(x):
     """Returns its argument. Useful for certain things in the
     environment.
     """
     return x
-
-def markup_join(seq.Any) -> str:
+def markup_join(seq):
     """Concatenation that escapes if necessary and converts to string."""
-    buf = 
+    buf = []
     iterator = map(soft_str, seq)
     for arg in iterator:
         buf.append(arg)
         if hasattr(arg, "__html__"):
             return Markup("").join(chain(buf, iterator))
     return concat(buf)
- 
-def str_join(seq.Any) -> str:
+
+def str_join(seq):
     """Simple args to string conversion and concatenation."""
     return concat(map(str, seq))
- 
+  
 def new_context(
-    environment: "Environment",
-    template_name
-    blocks.Callable, t.Iterator]),
-    vars.Dict] = None,
-    shared: bool = False,
-    globals.MutableMapping] = None,
-    locals.Mapping] = None,
-) :
+    environment,
+    template_name,
+    blocks,
+    vars=None,
+    shared=False,
+    globals=None,
+    locals=None,
+):
     """Internal helper for context creation."""
     if vars is None:
         vars = {}
@@ -1454,27 +1456,26 @@ def new_context(
     return environment.context_class(
         environment, parent, template_name, blocks, globals=globals
     )
-
 class TemplateReference:
     """The `self` in templates."""
 
-def __init__(self, context: "Context") -> None:
+    def __init__(self, context: "Context") -> None:
         self.__context = context
 
-def __getitem__(self, name: str) :
+    def __getitem__(self, name: str):
         blocks = self.__context.blocks
         return BlockReference(name, self.__context, blocks, 0)
 
-def __repr__(self) -> str:
+    def __repr__(self) -> str:
         return f"<{type(self).__name__} {self.__context.name!r}>"
+
 
 def _dict_method_all(dict_method: F) -> F:
     @functools.wraps(dict_method)
-def f_all(self: "Context") :
+    def f_all(self: "Context"):
         return dict_method(self.get_all())
 
     return t.cast(F, f_all)
-
 class Context:
     """The template context holds the variables of a template.  It stores the
     values passed to the template and also the names the template exports.
@@ -1494,70 +1495,73 @@ class Context:
     method that doesn't fail with a `KeyError` but returns an
     :class:`Undefined` object for missing variables.
     """
-
-def __init__(
+    def __init__(
         self,
-        environment: "Environment",
-        parent.Any],
-        name
-        blocks.Callable, t.Iterator]],
-        globals.MutableMapping] = None,
+        environment,
+        parent,
+        name,
+        blocks,
+        globals=None,
     ):
         self.parent = parent
-        self.vars.Any] = {}
-        self.environment: "Environment" = environment
+        self.vars = {}
+        self.environment = environment
         self.eval_ctx = EvalContext(self.environment, name)
-        self.exported_vars= set()
+        self.exported_vars = set()
         self.name = name
         self.globals_keys = set() if globals is None else set(globals)
+ # create the initial mapping of blocks. Whenever template inheritance
+ # takes place the runtime will update this mapping with the new blocks
+ # from the template.
 
-        # create the initial mapping of blocks.  Whenever template inheritance
-        # takes place the runtime will update this mapping with the new blocks
-        # from the template.
-        self.blocks = {k:  for k, v in blocks.items()}
+class MyClass:
+    def __init__(self, blocks):
+        # This line must be indented within a method
+        self.blocks = {k: v for k, v in blocks.items()}
 
-def super(
-        self, name: str, current"Context"], t.Iterator]
-    ) "BlockReference", "Undefined"]:
-        """Render a parent block."""
-        try:
-            blocks = self.blocks
-            index = blocks.index(current) + 1
-            blocks
-        except LookupError:
-            return self.environment.undefined(
-                f"there is no parent block called {name!r}.", name="super"
-            )
-        return BlockReference(name, self, blocks, index)
+# Example usage
+# my_instance = MyClass(some_blocks)
 
-def get(self, key: str, default= None) :
-        """Look up a variable by name, or return a default if the key is
-        not found.
+def super(self, name, current):
+     """Render a parent block."""
+     try:
+         blocks = self.blocks[name]
+         index = blocks.index(current) + 1
+     except (LookupError, KeyError):
+         return self.environment.undefined(
+             f"there is no parent block called {name!r}.", name="super"
+         )
+     return BlockReference(name, self, blocks, index)
 
-        :param key: The variable name to look up.
-        :param default: The value to return if the key is not found.
-        """
-        try:
-            return self
-        except KeyError:
-            return default
+def get(self, key, default=None):
+     """Look up a variable by name, or return a default if the key is
+     not found.
 
-def resolve(self, key: str) .Any, "Undefined"]:
-        """Look up a variable by name, or return an :class:`Undefined`
-        object if the key is not found.
+     :param key: The variable name to look up.
+     :param default: The value to return if the key is not found.
+     """
+def get(self, key, default=None):
+    try:
+        return self[key]
+    except KeyError:
+        return default
 
-        If you need to add custom behavior, override
-        :meth:`resolve_or_missing`, not this method. The various lookup
-        functions use that method, not this one.
+def resolve(self, key):
+    """Look up a variable by name, or return an :class:`Undefined`
+    object if the key is not found.
 
-        :param key: The variable name to look up.
-        """
-        rv = self.resolve_or_missing(key)
+    If you need to add custom behavior, override
+    :meth:`resolve_or_missing`, not this method. The various lookup
+    functions use that method, not this one.
 
-        if rv is missing:
-            return self.environment.undefined(name=key)
+    :param key: The variable name to look up.
+    """
+    rv = self.resolve_or_missing(key)
 
-        return rv
+    if rv is missing:
+        return self.environment.undefined(name=key)
+
+    return rv
 
 def resolve_or_missing(self, key: str) :
         """Look up a variable by name, or return a ``missing`` sentinel
@@ -1574,18 +1578,17 @@ def resolve_or_missing(self, key: str) :
 
         if key in self.parent:
             return self.parent
+    class MyClass:
+        def get_exported(self):
+            """Get a new dict with the exported variables."""
+            return {k: self.vars.get(k) for k in self.exported_vars}
 
-        return missing
-
-def get_exported(self) .Any]:
-        """Get a new dict with the exported variables."""
-        return {k: self.vars for k in self.exported_vars}
-
-def get_all(self) .Any]:
-        """Return the complete context as dict including the exported
-        variables.  For optimizations reasons this might not return an
-        actual copy so be careful with using it.
-        """
+        def get_all(self):
+            """Return the complete context as dict including the exported
+            variables. For optimizations reasons this might not return an
+            actual copy so be careful with using it.
+            """
+            # Additional code would go here
         if not self.vars:
             return self.parent
         if not self.parent:
