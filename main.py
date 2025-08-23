@@ -1598,19 +1598,15 @@ def my_function():
     # pass
 
 def derived(self, locals: dict = None):
-        """Internal helper function to create a derived context. This is
-        used in situations where the system needs a new context in the same
-        template that is independent."""
-        context = new_context(
-            self.environment, self.name, {}, self.get_all(), True, None, locals
-        )
-        context.eval_ctx = self.eval_ctx
-        context.blocks.update((k, list(v)) for k, v in self.blocks.items())
-        return context
-        """Internal helper function to create a derived context.  This is
-        used in situations where the system needs a new context in the same
-        template that is independent.
-        """
+    """Internal helper function to create a derived context. This is
+    used in situations where the system needs a new context in the same
+    template that is independent."""
+    context = new_context(
+        self.environment, self.name, {}, self.get_all(), True, None, locals
+    )
+    context.eval_ctx = self.eval_ctx
+    context.blocks.update((k, list(v)) for k, v in self.blocks.items())
+    return context
         context = new_context(
             self.environment, self.name, {}, self.get_all(), True, None, locals
         )
