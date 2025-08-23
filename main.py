@@ -1400,7 +1400,7 @@ def launch_autonomous_system():
     try:
         # Launch the complete autonomous system
         subprocess.run([sys.executable, 'main.py'])
-
+ 
     except KeyboardInterrupt:
         print("\n👋 System stopped by user")
     except Exception as e:
@@ -1413,7 +1413,7 @@ def identity(x: V) -> V:
     """
     return x
 
-def markup_join(seq.Any]) -> str:
+def markup_join(seq.Any) -> str:
     """Concatenation that escapes if necessary and converts to string."""
     buf = 
     iterator = map(soft_str, seq)
@@ -1422,8 +1422,8 @@ def markup_join(seq.Any]) -> str:
         if hasattr(arg, "__html__"):
             return Markup("").join(chain(buf, iterator))
     return concat(buf)
-
-def str_join(seq.Any]) -> str:
+ 
+def str_join(seq.Any) -> str:
     """Simple args to string conversion and concatenation."""
     return concat(map(str, seq))
 
