@@ -7,6 +7,7 @@ Fix Import Dependencies - Resolves circular imports and consolidates duplicate i
 import os
 import re
 import sys
+import py_compile
 from typing import Dict, List, Set
 
 class ImportDependencyFixer:
@@ -325,10 +326,11 @@ def validate_critical_imports():
     for file_path in critical_files:
         if os.path.exists(file_path):
             try:
-                # Test syntax compilation
-                import py_compile
+                # Test syntax compilation using the already imported py_compile
                 py_compile.compile(file_path, doraise=True)
                 print(f"✅ {file_path}: Import syntax OK")
+            except py_compile.PyCompileError as e:
+                print(f"❌ {file_path}: Syntax error - {e}")
             except Exception as e:
                 print(f"❌ {file_path}: Import error - {e}")
         else:
