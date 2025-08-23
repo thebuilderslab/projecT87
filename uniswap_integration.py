@@ -160,7 +160,7 @@ class UniswapIntegration:
     def swap_tokens(self, token_in, token_out, amount_in, fee=3000):
         """Execute token swap on Uniswap V3 with enhanced validation and error handling - DAI-ONLY ENFORCEMENT"""
         try:
-            import time
+# Removed duplicate:             import time
 
             # CRITICAL: Enforce DAI-only swap policy
             dai_address_lower = self.dai_address.lower()
@@ -533,7 +533,7 @@ class UniswapIntegration:
 
         except Exception as e:
             print(f"❌ Collateral optimization failed: {e}")
-            import traceback
+# Removed duplicate:             import traceback
             print(f"🔍 Full error: {traceback.format_exc()}")
             return False
 

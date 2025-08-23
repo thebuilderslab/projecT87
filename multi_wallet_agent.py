@@ -311,7 +311,7 @@ def monitor_agent_status(check_interval=5):
     print(f"\n⚠️ Agent not ready after {max_attempts} attempts")
     print("💡 Check the dashboard console for initialization errors")
     return False
-# --- Merged from validate_agent_wallet.py ---
+# --- Merged from main.py ---
 
 def validate_agent_wallet():
     """Validate that the agent is using the correct wallet and can access Aave data"""
@@ -541,7 +541,7 @@ def debug_agent_position():
         print(f"\n📋 CHECKING BASELINE STORAGE:")
         baseline_file = "agent_baseline.json"
         if os.path.exists(baseline_file):
-            import json
+# Removed duplicate:             import json
             with open(baseline_file, 'r') as f:
                 baseline_data = json.load(f)
                 print(f"   Stored baseline: ${baseline_data.get('last_collateral_value_usd', 0):,.2f}")

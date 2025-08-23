@@ -247,8 +247,8 @@ if __name__ == "__main__":
 Unified Aave Data Fetcher for reliable position data
 """
 
-from web3 import Web3
-import time
+# Removed duplicate: from web3 import Web3
+# Removed duplicate: import time
 
 def get_unified_aave_data(agent):
     """Get unified Aave data from multiple sources"""
@@ -312,8 +312,8 @@ Unified Aave Data Fetcher
 Centralized system for fetching Aave protocol data with fallbacks
 """
 
-from web3 import Web3
-import time
+# Removed duplicate: from web3 import Web3
+# Removed duplicate: import time
 
 def get_unified_aave_data(agent):
     """Get unified Aave data with error handling"""

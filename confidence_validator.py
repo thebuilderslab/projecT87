@@ -618,7 +618,7 @@ def validate_arbitrum_setup():
             print(f"\n⚠️  VALIDATION WARNING - No contracts deployed")
             print(f"🚀 Proceeding with mock data for development/testing")
             return True  # Allow operation with mocks for testnet development
-# --- Merged from system_validator.py ---
+# --- Merged from main.py ---
 
 class SystemValidator:
     def __init__(self):
@@ -920,12 +920,12 @@ def validate_core_fixes():
         print("\n5️⃣ Testing RPC Stability...")
         try:
             # Test RPC health monitor
-            from rpc_health_monitor import RPCHealthMonitor
+            from main import RPCHealthMonitor
             health_monitor = RPCHealthMonitor(agent)
             print(f"✅ RPC Health Monitor available")
             
             # Test circuit breaker
-            from rpc_circuit_breaker import RPCCircuitBreaker
+# Removed duplicate:             from rpc_circuit_breaker import RPCCircuitBreaker
             circuit_breaker = RPCCircuitBreaker()
             print(f"✅ RPC Circuit Breaker available")
             
@@ -1324,7 +1324,7 @@ class DependencyValidator:
             'aave_integration.py',
             'aave_integration.py', 
             'aave_integration.py',
-            'gas_fee_calculator.py',
+            'aave_integration.py',
             'aave_integration.py',
             'main.py',
             'rpc_circuit_breaker.py',
@@ -1797,7 +1797,7 @@ class DependencyValidator:
                 # Check if file exists
                 if os.path.exists(f"{module}.py"):
                     # Try to compile
-                    import py_compile
+# Removed duplicate:                     import py_compile
                     py_compile.compile(f"{module}.py", doraise=True)
                     
                     # Try to import
@@ -2176,7 +2176,7 @@ def integrate_enhanced_validation():
         
         # Source 2: Dashboard data (if available)
         try:
-            from web_dashboard import get_live_agent_data
+# Removed duplicate:             from web_dashboard import get_live_agent_data
             dashboard_data = get_live_agent_data()
             
             if dashboard_data and self._validate_dashboard_data(dashboard_data):
@@ -2303,12 +2303,12 @@ def run_final_validation():
         },
         {
             'name': 'System Compliance Check',
-            'command': 'python system_compliance_checker.py',
+            'command': 'python main.py',
             'critical': True
         },
         {
             'name': 'System Integration Validation',
-            'command': 'python validate_system_integration.py',
+            'command': 'python main.py',
             'critical': True
         },
         {
@@ -2397,7 +2397,7 @@ def main():
         sys.exit(1)
     
     return True
-# --- Merged from transaction_validator.py ---
+# --- Merged from main.py ---
 
 class TransactionValidator:
     def __init__(self, agent):
@@ -2805,7 +2805,7 @@ class TransactionValidator:
 
         except Exception as e:
             print(f"❌ Borrow validation failed: {e}")
-            import traceback
+# Removed duplicate:             import traceback
             print(f"🔍 Validation error details: {traceback.format_exc()}")
             return False
 
@@ -3233,7 +3233,7 @@ def validate_market_signal_environment():
     else:
         print("✅ ALL ENVIRONMENT VARIABLES PROPERLY CONFIGURED")
         return True
-# --- Merged from system_readiness_validator.py ---
+# --- Merged from main.py ---
 
 def validate_complete_system_readiness():
     """Validate complete system readiness for network execution"""
@@ -3318,7 +3318,7 @@ def validate_complete_system_readiness():
     # Check 7: Import Tests
     print("\n7️⃣ Import Tests:")
     try:
-        from main import ArbitrumTestnetAgent
+# Removed duplicate:         from main import ArbitrumTestnetAgent
         from main import MarketSignalStrategy
         from market_data_api_fix import MarketDataAPIFix
         readiness_score += 1
@@ -4241,7 +4241,7 @@ class BeforeValidator:
 
     Example:
         ```python
-        from typing import Annotated
+# Removed duplicate:         from typing import Annotated
 
         from pydantic import BaseModel, BeforeValidator
 
@@ -4402,7 +4402,7 @@ class WrapValidator:
 
     ```python
     from datetime import datetime
-    from typing import Annotated
+# Removed duplicate:     from typing import Annotated
 
     from pydantic import BaseModel, ValidationError, WrapValidator
 
@@ -4823,7 +4823,7 @@ def model_validator(
         # serialization schema. To work around this for use cases that will not involve serialization, we simply
         # catch any PydanticSchemaGenerationError that may be raised while attempting to build the serialization schema
         # and abort any attempts to handle special serialization.
-        from pydantic import PydanticSchemaGenerationError
+# Removed duplicate:         from pydantic import PydanticSchemaGenerationError
 
         try:
             schema = handler(source_type)
@@ -4976,7 +4976,7 @@ def model_validator(
 
         @classmethod
         def __get_pydantic_core_schema__(cls, source: Any, handler: GetCoreSchemaHandler) -> core_schema.CoreSchema:
-            from pydantic import PydanticSchemaGenerationError
+# Removed duplicate:             from pydantic import PydanticSchemaGenerationError
 
             # use the generic _origin_ as the second argument to isinstance when appropriate
             instance_of_schema = core_schema.is_instance_schema(_generics.get_origin(source) or source)
@@ -5028,7 +5028,7 @@ def model_validator(
             return Annotated[item, cls()]
 
         def __get_pydantic_core_schema__(cls, source: Any, handler: GetCoreSchemaHandler) -> core_schema.CoreSchema:
-            from pydantic import PydanticSchemaGenerationError
+# Removed duplicate:             from pydantic import PydanticSchemaGenerationError
 
             # use the generic _origin_ as the second argument to isinstance when appropriate
             instance_of_schema = core_schema.is_instance_schema(_generics.get_origin(source) or source)
@@ -5556,7 +5556,7 @@ def validator(
 
     Args:
         __field (str): The first field the validator should be called on; this is separate
-            from `fields` to ensure an error is raised if you don't pass at least one.
+# Removed duplicate:             from `fields` to ensure an error is raised if you don't pass at least one.
         *fields (str): Additional field(s) the validator should be called on.
         pre (bool, optional): Whether this validator should be called before the standard
             validators (else after). Defaults to False.
@@ -6147,7 +6147,7 @@ def make_generic_validator(validator: AnyCallable) -> 'ValidatorCallable':
     It's done like this so validators don't all need **kwargs in their signature, eg. any combination of
     the arguments "values", "fields" and/or "config" are permitted.
     """
-    from inspect import signature
+# Removed duplicate:     from inspect import signature
 
     if not isinstance(validator, (partial, partialmethod)):
         # This should be the default case, so overhead is reduced
@@ -8609,7 +8609,7 @@ def validator_for(
 
         """
         try:
-            import requests
+# Removed duplicate:             import requests
         except ImportError:
             requests = None
 

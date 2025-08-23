@@ -51,7 +51,7 @@ class RPCCircuitBreaker:
 RPC Circuit Breaker for reliable blockchain connections
 """
 
-import time
+# Removed duplicate: import time
 from typing import Dict, List, Optional
 
 class RPCCircuitBreaker:
@@ -105,7 +105,7 @@ RPC Circuit Breaker
 Implements circuit breaker pattern for RPC calls to improve reliability
 """
 
-import time
+# Removed duplicate: import time
 from typing import Dict, Optional, Callable, Any
 from enum import Enum
 
@@ -445,9 +445,9 @@ class EnhancedRPCManager:
         """Test RPC endpoint with multiple checks and timeout handling"""
         try:
             # Enhanced connection with timeout and retry settings
-            from requests.adapters import HTTPAdapter
-            from urllib3.util.retry import Retry
-            import requests
+# Removed duplicate:             from requests.adapters import HTTPAdapter
+# Removed duplicate:             from urllib3.util.retry import Retry
+# Removed duplicate:             import requests
             
             session = requests.Session()
             retry_strategy = Retry(
@@ -671,7 +671,7 @@ class WorkingRPCManager:
         """Test if an RPC endpoint is healthy"""
         try:
             from web3 import Web3
-            import time
+# Removed duplicate:             import time
             
             start_time = time.time()
             w3 = Web3(Web3.HTTPProvider(rpc_url, request_kwargs={'timeout': 10}))
@@ -731,8 +731,8 @@ class WorkingRPCManager:
     def test_rpc_health(self, rpc_url):
         """Test if an RPC endpoint is healthy"""
         try:
-            from web3 import Web3
-            import time
+# Removed duplicate:             from web3 import Web3
+# Removed duplicate:             import time
             
             start_time = time.time()
             w3 = Web3(Web3.HTTPProvider(rpc_url, request_kwargs={'timeout': 10}))

@@ -67,7 +67,7 @@ class FinalDAIComplianceValidator:
             'aave_integration.py',
             'aave_integration.py',
             'aave_integration.py',
-            'transaction_validator.py'
+            'main.py'
         ]
         
         for file_path in critical_files:
@@ -161,7 +161,7 @@ def main():
             'aave_integration.py',
             'aave_integration.py',
             'aave_integration.py',
-            'transaction_validator.py'
+            'main.py'
         ]
         
         for file_path in critical_files:
@@ -526,7 +526,7 @@ Only DAI → WBTC and DAI → WETH swaps are permitted.
             print("\n❌ DAI COMPLIANCE ENFORCEMENT INCOMPLETE")
             print("🔧 Manual review required for remaining violations")
             return False
-# --- Merged from system_compliance_checker.py ---
+# --- Merged from main.py ---
 
 class SystemComplianceChecker:
     def __init__(self):

@@ -279,7 +279,7 @@ def test_direct_arbiscan_api():
         print(f"❌ Request failed: {e}")
     
     return False
-# --- Merged from third_party_data_integration.py ---
+# --- Merged from main.py ---
 
 class ThirdPartyDataProvider:
     def __init__(self):
@@ -805,7 +805,7 @@ def enhance_aave_monitoring():
                 
         except Exception as e:
             print(f"❌ Error parsing Zapper data: {e}")
-            import traceback
+# Removed duplicate:             import traceback
             traceback.print_exc()
         
         print(f"📊 Final Zapper Aave data: {aave_data}")
@@ -1222,7 +1222,7 @@ def main():
     print("\n✅ ALL DIAGNOSTICS PASSED")
     print("🚀 DeFi integrations should now work correctly")
     return True
-# --- Merged from validate_system_integration.py ---
+# --- Merged from main.py ---
 
 class SystemIntegrationValidator:
     def __init__(self):
@@ -1285,7 +1285,7 @@ class SystemIntegrationValidator:
         print("\n2️⃣ TESTING AGENT INITIALIZATION")
         
         try:
-            from main import ArbitrumTestnetAgent
+# Removed duplicate:             from main import ArbitrumTestnetAgent
             agent = ArbitrumTestnetAgent()
             
             self.test_results["agent_init"] = "✅ Success"
@@ -1316,7 +1316,7 @@ class SystemIntegrationValidator:
         print("\n3️⃣ TESTING DEFI INTEGRATIONS")
         
         try:
-            from main import ArbitrumTestnetAgent
+# Removed duplicate:             from main import ArbitrumTestnetAgent
             agent = ArbitrumTestnetAgent()
             agent.initialize_integrations()
             
@@ -1353,7 +1353,7 @@ class SystemIntegrationValidator:
         print("\n4️⃣ TESTING SWAP COMPLIANCE")
         
         try:
-            from system_compliance_checker import SystemComplianceChecker
+            from main import SystemComplianceChecker
             checker = SystemComplianceChecker()
             compliance_result = checker.check_dai_only_compliance()
             
@@ -1374,8 +1374,8 @@ class SystemIntegrationValidator:
         print("\n5️⃣ TESTING TRANSACTION VALIDATION")
         
         try:
-            from transaction_validator import TransactionValidator
-            from main import ArbitrumTestnetAgent
+            from main import TransactionValidator
+# Removed duplicate:             from main import ArbitrumTestnetAgent
             
             agent = ArbitrumTestnetAgent()
             agent.initialize_integrations()
@@ -1496,7 +1496,7 @@ class SystemIntegrationValidator:
         print("\n2️⃣ TESTING AGENT INITIALIZATION")
         
         try:
-            from main import ArbitrumTestnetAgent
+# Removed duplicate:             from main import ArbitrumTestnetAgent
             agent = ArbitrumTestnetAgent()
             
             self.test_results["agent_init"] = "✅ Success"
@@ -1527,7 +1527,7 @@ class SystemIntegrationValidator:
         print("\n3️⃣ TESTING DEFI INTEGRATIONS")
         
         try:
-            from main import ArbitrumTestnetAgent
+# Removed duplicate:             from main import ArbitrumTestnetAgent
             agent = ArbitrumTestnetAgent()
             agent.initialize_integrations()
             
@@ -1564,7 +1564,7 @@ class SystemIntegrationValidator:
         print("\n4️⃣ TESTING SWAP COMPLIANCE")
         
         try:
-            from system_compliance_checker import SystemComplianceChecker
+# Removed duplicate:             from main import SystemComplianceChecker
             checker = SystemComplianceChecker()
             compliance_result = checker.check_dai_only_compliance()
             
@@ -1585,8 +1585,8 @@ class SystemIntegrationValidator:
         print("\n5️⃣ TESTING TRANSACTION VALIDATION")
         
         try:
-            from transaction_validator import TransactionValidator
-            from main import ArbitrumTestnetAgent
+# Removed duplicate:             from main import TransactionValidator
+# Removed duplicate:             from main import ArbitrumTestnetAgent
             
             agent = ArbitrumTestnetAgent()
             agent.initialize_integrations()
@@ -1604,8 +1604,8 @@ class SystemIntegrationValidator:
         print("\n6️⃣ TESTING JSON SERIALIZATION")
         
         try:
-            from main import safe_json_dumps, DecimalEncoder
-            import decimal
+# Removed duplicate:             from main import safe_json_dumps, DecimalEncoder
+# Removed duplicate:             import decimal
             
             test_data = {
                 'decimal_value': decimal.Decimal('123.456'),

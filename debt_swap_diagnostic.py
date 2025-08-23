@@ -591,7 +591,7 @@ class ComprehensiveDiagnostic:
         
         # Test agent initialization
         try:
-            from main import ArbitrumTestnetAgent
+# Removed duplicate:             from main import ArbitrumTestnetAgent
             agent = ArbitrumTestnetAgent()
             self.report["application"]["agent_initialization"] = {
                 "success": True,
@@ -1004,7 +1004,7 @@ def main():
     def test_rpc_endpoint(self, url):
         """Test a specific RPC endpoint"""
         try:
-            from web3 import Web3
+# Removed duplicate:             from web3 import Web3
             w3 = Web3(Web3.HTTPProvider(url))
             
             if w3.is_connected():
@@ -1025,7 +1025,7 @@ def main():
     def test_api_endpoint(self, url):
         """Test a specific API endpoint"""
         try:
-            import requests
+# Removed duplicate:             import requests
             response = requests.get(url, timeout=5)
             return {
                 "accessible": True,
@@ -1103,7 +1103,7 @@ def main():
         
         # Test agent initialization
         try:
-            from main import ArbitrumTestnetAgent
+# Removed duplicate:             from main import ArbitrumTestnetAgent
             agent = ArbitrumTestnetAgent()
             self.report["application"]["agent_initialization"] = {
                 "success": True,
@@ -1121,7 +1121,7 @@ def main():
         
         # Test web dashboard import
         try:
-            from web_dashboard import app
+# Removed duplicate:             from web_dashboard import app
             self.report["application"]["web_dashboard"] = {
                 "import_success": True,
                 "flask_app": str(type(app))
@@ -1328,7 +1328,7 @@ def main():
         
         print(f"\n📄 Full report available in diagnostic_report.json")
         print("🤖 This data is structured for AI analysis and debugging")
-# --- Merged from system_comprehensive_diagnostic.py ---
+# --- Merged from main.py ---
 
 class ComprehensiveSystemDiagnostic:
     def __init__(self):
@@ -1411,7 +1411,7 @@ class ComprehensiveSystemDiagnostic:
             'aave_integration.py': 'Aave DeFi integration',
             'aave_integration.py': 'Uniswap integration',
             'aave_integration.py': 'Health monitoring',
-            'gas_fee_calculator.py': 'Gas optimization'
+            'aave_integration.py': 'Gas optimization'
         }
         
         file_status = {}
@@ -1441,7 +1441,7 @@ class ComprehensiveSystemDiagnostic:
         print("\n🔍 CHECKING AGENT INITIALIZATION...")
         
         try:
-            from main import ArbitrumTestnetAgent
+# Removed duplicate:             from main import ArbitrumTestnetAgent
             agent = ArbitrumTestnetAgent()
             
             agent_tests = {
@@ -1555,7 +1555,7 @@ class ComprehensiveSystemDiagnostic:
             
         # Test Gas Calculator
         try:
-            from gas_fee_calculator import ArbitrumGasCalculator
+            from aave_integration import ArbitrumGasCalculator
             defi_tests['gas_calculator_import'] = '✅ Gas calculator imports'
         except Exception as e:
             defi_tests['gas_calculator_import'] = f'❌ Gas calculator import error: {e}'
@@ -1571,7 +1571,7 @@ class ComprehensiveSystemDiagnostic:
         function_tests = {}
         
         try:
-            from main import ArbitrumTestnetAgent
+# Removed duplicate:             from main import ArbitrumTestnetAgent
             agent = ArbitrumTestnetAgent()
             
             # Test critical autonomous functions
@@ -1673,7 +1673,7 @@ class ComprehensiveSystemDiagnostic:
         working_rpcs = 0
         for rpc in test_rpcs:
             try:
-                from web3 import Web3
+# Removed duplicate:                 from web3 import Web3
                 w3 = Web3(Web3.HTTPProvider(rpc, request_kwargs={'timeout': 5}))
                 if w3.is_connected():
                     chain_id = w3.eth.chain_id
@@ -1845,7 +1845,7 @@ class ComprehensiveSystemDiagnostic:
             'aave_integration.py': 'Aave DeFi integration',
             'aave_integration.py': 'Uniswap integration',
             'aave_integration.py': 'Health monitoring',
-            'gas_fee_calculator.py': 'Gas optimization'
+            'aave_integration.py': 'Gas optimization'
         }
         
         file_status = {}
@@ -1875,7 +1875,7 @@ class ComprehensiveSystemDiagnostic:
         print("\n🔍 CHECKING AGENT INITIALIZATION...")
         
         try:
-            from main import ArbitrumTestnetAgent
+# Removed duplicate:             from main import ArbitrumTestnetAgent
             agent = ArbitrumTestnetAgent()
             
             agent_tests = {
@@ -1934,7 +1934,7 @@ class ComprehensiveSystemDiagnostic:
         # Check if dashboard can start
         try:
             # Test import
-            import web_dashboard
+# Removed duplicate:             import web_dashboard
             dashboard_tests['import'] = '✅ Dashboard imports successfully'
             
             # Test critical functions
@@ -1965,7 +1965,7 @@ class ComprehensiveSystemDiagnostic:
         
         # Test Aave integration
         try:
-            from aave_integration import AaveArbitrumIntegration
+# Removed duplicate:             from aave_integration import AaveArbitrumIntegration
             defi_tests['aave_import'] = '✅ Aave integration imports'
         except Exception as e:
             defi_tests['aave_import'] = f'❌ Aave import error: {e}'
@@ -1973,7 +1973,7 @@ class ComprehensiveSystemDiagnostic:
             
         # Test Uniswap integration
         try:
-            from aave_integration import UniswapArbitrumIntegration
+# Removed duplicate:             from aave_integration import UniswapArbitrumIntegration
             defi_tests['uniswap_import'] = '✅ Uniswap integration imports'
         except Exception as e:
             defi_tests['uniswap_import'] = f'❌ Uniswap import error: {e}'
@@ -1981,7 +1981,7 @@ class ComprehensiveSystemDiagnostic:
             
         # Test Health Monitor
         try:
-            from aave_integration import AaveHealthMonitor
+# Removed duplicate:             from aave_integration import AaveHealthMonitor
             defi_tests['health_monitor_import'] = '✅ Health monitor imports'
         except Exception as e:
             defi_tests['health_monitor_import'] = f'❌ Health monitor import error: {e}'
@@ -1989,7 +1989,7 @@ class ComprehensiveSystemDiagnostic:
             
         # Test Gas Calculator
         try:
-            from gas_fee_calculator import ArbitrumGasCalculator
+# Removed duplicate:             from aave_integration import ArbitrumGasCalculator
             defi_tests['gas_calculator_import'] = '✅ Gas calculator imports'
         except Exception as e:
             defi_tests['gas_calculator_import'] = f'❌ Gas calculator import error: {e}'
@@ -2005,7 +2005,7 @@ class ComprehensiveSystemDiagnostic:
         function_tests = {}
         
         try:
-            from main import ArbitrumTestnetAgent
+# Removed duplicate:             from main import ArbitrumTestnetAgent
             agent = ArbitrumTestnetAgent()
             
             # Test critical autonomous functions
@@ -2107,7 +2107,7 @@ class ComprehensiveSystemDiagnostic:
         working_rpcs = 0
         for rpc in test_rpcs:
             try:
-                from web3 import Web3
+# Removed duplicate:                 from web3 import Web3
                 w3 = Web3(Web3.HTTPProvider(rpc, request_kwargs={'timeout': 5}))
                 if w3.is_connected():
                     chain_id = w3.eth.chain_id
@@ -2193,7 +2193,7 @@ class ComprehensiveSystemDiagnostic:
         self.generate_recommendations()
         
         print("=" * 80)
-# --- Merged from system_diagnostic_complete.py ---
+# --- Merged from main.py ---
 
 class SystemDiagnostic:
     def __init__(self):
@@ -2328,7 +2328,7 @@ class SystemDiagnostic:
             'aave_integration.py',
             'aave_integration.py',
             'aave_integration.py',
-            'gas_fee_calculator.py'
+            'aave_integration.py'
         ]
         
         for file in required_files:
@@ -2598,7 +2598,7 @@ class SystemDiagnostic:
             'aave_integration.py',
             'aave_integration.py',
             'aave_integration.py',
-            'gas_fee_calculator.py'
+            'aave_integration.py'
         ]
         
         for file in required_files:
@@ -3200,7 +3200,7 @@ class BorrowDiagnosticTool:
 def run_borrow_diagnostic():
     """Run the borrow diagnostic tool"""
     try:
-        from main import ArbitrumTestnetAgent
+# Removed duplicate:         from main import ArbitrumTestnetAgent
         
         print("🚀 Initializing Borrow Diagnostic Tool...")
         agent = ArbitrumTestnetAgent()
@@ -3620,7 +3620,7 @@ def run_borrow_diagnostic():
         try:
             filename = f"borrow_diagnostic_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
             
-            from main import safe_json_dump
+# Removed duplicate:             from main import safe_json_dump
             success = safe_json_dump(self.diagnostics, filename)
             
             if success:
@@ -3630,7 +3630,7 @@ def run_borrow_diagnostic():
 
         except Exception as e:
             print(f"⚠️ Error saving report: {e}")
-# --- Merged from supply_diagnostic.py ---
+# --- Merged from main.py ---
 
 def diagnose_supply_failure():
     """Comprehensive diagnostic for Aave supply failures"""
