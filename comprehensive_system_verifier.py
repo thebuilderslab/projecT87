@@ -26,7 +26,7 @@ class ComprehensiveSystemVerifier:
             'main.py',
             'web_dashboard.py', 
             'aave_integration.py',
-            'uniswap_integration.py'
+            'aave_integration.py'
         ]
         
         for file_path in critical_files:

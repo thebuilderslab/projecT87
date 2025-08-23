@@ -695,7 +695,7 @@ def get_system_metrics():
         agent_metrics = {}
         if agent_running:
             try:
-                from main import ArbitrumTestnetAgent
+# Removed duplicate:                 from main import ArbitrumTestnetAgent
                 temp_agent = ArbitrumTestnetAgent()
                 if hasattr(temp_agent, 'get_system_metrics'):
                     agent_metrics = temp_agent.get_system_metrics()
@@ -1466,7 +1466,7 @@ def check_market_signals():
         if os.path.exists('main.py'):
             # Try to initialize and test market signals
             try:
-                from main import ArbitrumTestnetAgent
+# Removed duplicate:                 from main import ArbitrumTestnetAgent
                 agent = ArbitrumTestnetAgent()
 
                 if hasattr(agent, 'market_signal_strategy') and agent.market_signal_strategy:
@@ -1591,7 +1591,7 @@ if __name__ == '__main__':
     print(f"🔗 Dashboard will be accessible at your Replit webview URL")
 
     app.run(host='0.0.0.0', port=port, debug=False, threaded=True)
-# --- Merged from test_dashboard_start.py ---
+# --- Merged from web_dashboard.py ---
 
 def test_dashboard_startup():
     """Test if the dashboard starts correctly"""
@@ -1627,7 +1627,7 @@ def test_dashboard_startup():
     # Test agent initialization
     try:
         print("\n🤖 Testing agent initialization...")
-        from main import ArbitrumTestnetAgent
+# Removed duplicate:         from main import ArbitrumTestnetAgent
         agent = ArbitrumTestnetAgent()
         print(f"✅ Agent initialized successfully")
         print(f"   Wallet: {agent.address}")
@@ -1659,14 +1659,14 @@ def test_dashboard_startup():
     print("   python web_dashboard.py")
     
     return True
-# --- Merged from quick_launch_dashboard.py ---
+# --- Merged from web_dashboard.py ---
 
 def setup_minimal_environment():
     """Set up minimal environment for dashboard"""
     # Ensure basic files exist
     if not os.path.exists('user_settings.json'):
         with open('user_settings.json', 'w') as f:
-            import json
+# Removed duplicate:             import json
             json.dump({
                 'health_factor_target': 1.19,
                 'borrow_trigger_threshold': 0.02,
@@ -1689,7 +1689,7 @@ def launch_dashboard():
     
     # Import and patch problematic functions
     try:
-        import web_dashboard
+# Removed duplicate:         import web_dashboard
         
         # Monkey patch the enhanced aave data function to return safe defaults
         def safe_enhanced_aave_data(agent):
@@ -1833,7 +1833,7 @@ def emergency_status():
     """Emergency status endpoint"""
     try:
         # Try to get real status
-        from main import ArbitrumTestnetAgent
+# Removed duplicate:         from main import ArbitrumTestnetAgent
         agent = ArbitrumTestnetAgent()
 
         return jsonify({
@@ -1872,7 +1872,7 @@ def emergency_wallet_status():
 
         # Try to initialize agent with improved error handling
         try:
-            from main import ArbitrumTestnetAgent
+# Removed duplicate:             from main import ArbitrumTestnetAgent
             agent = ArbitrumTestnetAgent()
             print(f"✅ Emergency agent initialized: {agent.address}")
 
@@ -1880,7 +1880,7 @@ def emergency_wallet_status():
             eth_balance = agent.get_eth_balance()
 
             # Get accurate Aave data
-            from web_dashboard import get_enhanced_aave_data
+# Removed duplicate:             from web_dashboard import get_enhanced_aave_data
             aave_data = get_enhanced_aave_data(agent)
 
             if aave_data:
@@ -2045,7 +2045,7 @@ def emergency_stop_status():
         'success': True,
         'recent_logs': []
     })
-# --- Merged from simple_dashboard.py ---
+# --- Merged from web_dashboard.py ---
 
 def check_secrets():
     return jsonify({
@@ -2058,7 +2058,7 @@ def check_secrets():
 
 def test_agent():
     try:
-        from main import ArbitrumTestnetAgent
+# Removed duplicate:         from main import ArbitrumTestnetAgent
         agent = ArbitrumTestnetAgent()
         return jsonify({
             'success': True,
@@ -2092,7 +2092,7 @@ def ensure_environment():
             'auto_mode': True,
             'exploration_rate': 0.1
         }
-        import json
+# Removed duplicate:         import json
         with open('user_settings.json', 'w') as f:
             json.dump(basic_settings, f, indent=2)
         print("✅ Created user_settings.json")
@@ -2118,13 +2118,13 @@ def test_dependencies():
     print("🧪 Testing dependencies...")
     
     try:
-        from flask import Flask
+# Removed duplicate:         from flask import Flask
         print("✅ Flask available")
         
-        from web3 import Web3
+# Removed duplicate:         from web3 import Web3
         print("✅ Web3 available")
         
-        from main import ArbitrumTestnetAgent
+# Removed duplicate:         from main import ArbitrumTestnetAgent
         print("✅ Agent available")
         
         return True
@@ -2135,7 +2135,7 @@ def test_dependencies():
 
 def run_monitoring_loop():
     """Run monitoring to ensure dashboard stays healthy"""
-    import threading
+# Removed duplicate:     import threading
     import requests
     
     def monitor():
@@ -2566,7 +2566,7 @@ def setup_app():
 def check_dashboard_running():
     """Check if dashboard is already running"""
     try:
-        import requests
+# Removed duplicate:         import requests
         response = requests.get("http://127.0.0.1:5000/api/test", timeout=3)
         return True
     except:
@@ -2624,7 +2624,7 @@ def kill_existing_dashboard():
         time.sleep(2)
     except Exception as e:
         print(f"⚠️ No existing dashboard processes to kill: {e}")
-# --- Merged from working_dashboard.py ---
+# --- Merged from web_dashboard.py ---
 
 class AgentDashboard:
     """Simple dashboard class based on old web_dashboard.py"""
@@ -2678,7 +2678,7 @@ class AgentDashboard:
             print(f"✅ Saved user settings")
         except Exception as e:
             print(f"❌ Could not save user settings: {e}")
-# --- Merged from start_working_dashboard.py ---
+# --- Merged from web_dashboard.py ---
 
 def main():
     print("🚀 Starting Working Dashboard based on old web_dashboard.py")
@@ -2698,12 +2698,12 @@ def main():
     
     # Run the working dashboard
     try:
-        subprocess.run(['python', 'working_dashboard.py'], check=True)
+        subprocess.run(['python', 'web_dashboard.py'], check=True)
     except KeyboardInterrupt:
         print("\n👋 Dashboard stopped")
     except Exception as e:
         print(f"❌ Dashboard error: {e}")
-# --- Merged from run_dashboard.py ---
+# --- Merged from web_dashboard.py ---
 
 def run_dashboard_preview():
     """Run dashboard in preview mode - works even with zero balance"""
@@ -3328,7 +3328,7 @@ def _pipepager(generator: t.Iterable[str], cmd: str, color: t.Optional[bool]) ->
     """Page through text by feeding it to another program.  Invoking a
     pager through this might support colors.
     """
-    import subprocess
+# Removed duplicate:     import subprocess
 
     env = dict(os.environ)
 
@@ -3377,7 +3377,7 @@ def _tempfilepager(
     generator: t.Iterable[str], cmd: str, color: t.Optional[bool]
 ) -> None:
     """Page through text by invoking a program on a temporary file."""
-    import tempfile
+# Removed duplicate:     import tempfile
 
     fd, filename = tempfile.mkstemp()
     # TODO: This never terminates if the passed generator never terminates.
@@ -3430,7 +3430,7 @@ class Editor:
         return "vi"
 
     def edit_file(self, filename: str) -> None:
-        import subprocess
+# Removed duplicate:         import subprocess
 
         editor = self.get_editor()
         environ: t.Optional[t.Dict[str, str]] = None
@@ -3452,7 +3452,7 @@ class Editor:
             ) from e
 
     def edit(self, text: t.Optional[t.AnyStr]) -> t.Optional[t.AnyStr]:
-        import tempfile
+# Removed duplicate:         import tempfile
 
         if not text:
             data = b""
@@ -3499,7 +3499,7 @@ class Editor:
             os.unlink(name)
 
 def open_url(url: str, wait: bool = False, locate: bool = False) -> int:
-    import subprocess
+# Removed duplicate:     import subprocess
 
     def _unquote_file(url: str) -> str:
         from urllib.parse import unquote
@@ -3688,7 +3688,7 @@ def _translate_ch_to_exc(ch: str) -> t.Optional[BaseException]:
         ).rstrip()
 
     def render_progress(self) -> None:
-        import shutil
+# Removed duplicate:         import shutil
 
         if self.is_hidden:
             # Only output the label as it changes if the output is not a
@@ -3833,7 +3833,7 @@ def _translate_ch_to_exc(ch: str) -> t.Optional[BaseException]:
         return "vi"
 
     def edit_file(self, filename: str) -> None:
-        import subprocess
+# Removed duplicate:         import subprocess
 
         editor = self.get_editor()
         environ: t.Optional[t.Dict[str, str]] = None
@@ -3855,7 +3855,7 @@ def _translate_ch_to_exc(ch: str) -> t.Optional[BaseException]:
             ) from e
 
     def edit(self, text: t.Optional[t.AnyStr]) -> t.Optional[t.AnyStr]:
-        import tempfile
+# Removed duplicate:         import tempfile
 
         if not text:
             data = b""
@@ -3902,7 +3902,7 @@ def _translate_ch_to_exc(ch: str) -> t.Optional[BaseException]:
             os.unlink(name)
 
     def _unquote_file(url: str) -> str:
-        from urllib.parse import unquote
+# Removed duplicate:         from urllib.parse import unquote
 
         if url.startswith("file://"):
             url = unquote(url[7:])
@@ -15058,7 +15058,7 @@ class WebsocketProviderV2(PersistentConnectionProvider):
 # --- Merged from _termui_impl.py ---
 
     def edit_files(self, filenames: cabc.Iterable[str]) -> None:
-        import subprocess
+# Removed duplicate:         import subprocess
 
         editor = self.get_editor()
         environ: dict[str, str] | None = None
@@ -20865,7 +20865,7 @@ class build_clib(old_build_clib):
             log.info('using additional config_fc from setup script '
                      'for fortran compiler: %s'
                      % (config_fc,))
-            from numpy.distutils.fcompiler import new_fcompiler
+# Removed duplicate:             from numpy.distutils.fcompiler import new_fcompiler
             fcompiler = new_fcompiler(compiler=fcompiler.compiler_type,
                                       verbose=self.verbose,
                                       dry_run=self.dry_run,
@@ -21171,7 +21171,7 @@ class build_clib(old_build_clib):
             log.info('using additional config_fc from setup script '
                      'for fortran compiler: %s'
                      % (config_fc,))
-            from numpy.distutils.fcompiler import new_fcompiler
+# Removed duplicate:             from numpy.distutils.fcompiler import new_fcompiler
             fcompiler = new_fcompiler(compiler=fcompiler.compiler_type,
                                       verbose=self.verbose,
                                       dry_run=self.dry_run,
@@ -21493,8 +21493,8 @@ class build_ext (old_build_ext):
         # bogus linking commands. Extensions must
         # explicitly specify the C libraries that they use.
 
-        from distutils.ccompiler import new_compiler
-        from numpy.distutils.fcompiler import new_fcompiler
+# Removed duplicate:         from distutils.ccompiler import new_compiler
+# Removed duplicate:         from numpy.distutils.fcompiler import new_fcompiler
 
         compiler_type = self.compiler
         # Initialize C compiler:
@@ -21535,7 +21535,7 @@ class build_ext (old_build_ext):
                 log.info("\n########### EXT COMPILER OPTIMIZATION ###########")
                 log.info(copt.report(full=True))
 
-            import atexit
+# Removed duplicate:             import atexit
             atexit.register(report, self.compiler_opt)
 
         # Setup directory for storing generated extra DLL files on Windows
@@ -23160,7 +23160,7 @@ class build_src(build_ext.build_ext):
                    and not skip_f2py:
                 log.info("f2py:> %s" % (target_file))
                 self.mkpath(target_dir)
-                from numpy.f2py import f2py2e
+# Removed duplicate:                 from numpy.f2py import f2py2e
                 f2py2e.run_main(f2py_options + ['--lower',
                                                 '--build-dir', target_dir]+\
                                 ['-m', ext_name]+f_sources)
@@ -23380,7 +23380,7 @@ def get_f2py_modulename(source):
         if not self.data_files:
             return
         log.info('building data_files sources')
-        from numpy.distutils.misc_util import get_data_files
+# Removed duplicate:         from numpy.distutils.misc_util import get_data_files
         new_data_files = []
         for data in self.data_files:
             if isinstance(data, str):
@@ -23751,7 +23751,7 @@ def get_f2py_modulename(source):
             if (self.force or newer_group(depends, target_file, 'newer')) \
                    and not skip_f2py:
                 log.info("f2py: %s" % (source))
-                from numpy.f2py import f2py2e
+# Removed duplicate:                 from numpy.f2py import f2py2e
                 f2py2e.run_main(f2py_options
                                     + ['--build-dir', target_dir, source])
             else:
@@ -23770,7 +23770,7 @@ def get_f2py_modulename(source):
                    and not skip_f2py:
                 log.info("f2py:> %s" % (target_file))
                 self.mkpath(target_dir)
-                from numpy.f2py import f2py2e
+# Removed duplicate:                 from numpy.f2py import f2py2e
                 f2py2e.run_main(f2py_options + ['--lower',
                                                 '--build-dir', target_dir]+\
                                 ['-m', ext_name]+f_sources)
@@ -23791,7 +23791,7 @@ def get_f2py_modulename(source):
             extension.include_dirs.append(build_dir)
 
         if not skip_f2py:
-            import numpy.f2py
+# Removed duplicate:             import numpy.f2py
             d = os.path.dirname(numpy.f2py.__file__)
             source_c = os.path.join(d, 'src', 'fortranobject.c')
             source_h = os.path.join(d, 'src', 'fortranobject.h')

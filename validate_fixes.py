@@ -15,7 +15,7 @@ def validate_syntax_fixes():
     
     critical_files = [
         'main.py',
-        'arbitrum_testnet_agent.py',
+        'main.py',
         'web_dashboard.py'
     ]
     

@@ -202,3 +202,144 @@ def main():
 
 if __name__ == "__main__":
     main()
+#!/usr/bin/env python3
+"""
+Fix Import Dependencies - Resolves circular imports and consolidates import structure
+"""
+
+import os
+import re
+from typing import Dict, List
+
+# Map of problematic imports to their correct targets
+IMPORT_FIXES = {
+    # Remove circular imports from main.py
+    'from main import ArbitrumTestnetAgent': '# ArbitrumTestnetAgent defined in main.py',
+    'from main import CollaborativeStrategyManager': '# CollaborativeStrategyManager defined in main.py',
+    'from main import MIN_ETH_FOR_OPERATIONS': '# Constants defined in main.py',
+    'from main import MIN_ETH_FOR_GAS_BUFFER': '# Constants defined in main.py',
+    
+    # Fix references to archived modules
+    'from arbitrum_testnet_agent import': 'from main import',
+    'import arbitrum_testnet_agent': 'import main',
+    'from emergency_stop import': 'from emergency_funding_manager import',
+    'import emergency_stop': 'import emergency_funding_manager',
+    
+    # Fix duplicated aave imports
+    'from enhanced_borrow_manager import': 'from aave_integration import',
+    'from enhanced_rpc_manager import': 'from aave_integration import',
+    'from health_monitor import': 'from aave_integration import',
+    
+    # Fix web dashboard imports
+    'from dashboard import': 'from web_dashboard import',
+    'from improved_web_dashboard import': 'from web_dashboard import',
+}
+
+def fix_file_imports(file_path: str) -> int:
+    """Fix imports in a single file"""
+    if not file_path.endswith('.py') or not os.path.exists(file_path):
+        return 0
+    
+    try:
+        with open(file_path, 'r', encoding='utf-8') as f:
+            content = f.read()
+        
+        original_content = content
+        changes_made = 0
+        
+        # Apply import fixes
+        for old_import, new_import in IMPORT_FIXES.items():
+            if old_import in content:
+                content = content.replace(old_import, new_import)
+                changes_made += 1
+        
+        # Remove duplicate import lines
+        lines = content.split('\n')
+        seen_imports = set()
+        cleaned_lines = []
+        
+        for line in lines:
+            # Check if line is an import
+            if line.strip().startswith(('import ', 'from ')) and 'import' in line:
+                # Normalize the import for comparison
+                normalized = re.sub(r'\s+', ' ', line.strip())
+                if normalized not in seen_imports:
+                    seen_imports.add(normalized)
+                    cleaned_lines.append(line)
+                else:
+                    changes_made += 1  # Skip duplicate
+            else:
+                cleaned_lines.append(line)
+        
+        content = '\n'.join(cleaned_lines)
+        
+        if content != original_content:
+            with open(file_path, 'w', encoding='utf-8') as f:
+                f.write(content)
+            if changes_made > 0:
+                print(f"✅ Fixed {changes_made} import issues in {file_path}")
+            return changes_made
+        
+        return 0
+        
+    except Exception as e:
+        print(f"❌ Error fixing imports in {file_path}: {e}")
+        return 0
+
+def scan_and_fix_imports():
+    """Scan all Python files and fix import issues"""
+    print("🔧 FIXING IMPORT DEPENDENCIES")
+    print("=" * 50)
+    
+    total_files_fixed = 0
+    total_changes = 0
+    
+    # Skip archived files
+    excluded_dirs = {'archive_duplicates', '.git', '__pycache__', 'node_modules'}
+    
+    for root, dirs, files in os.walk('.'):
+        # Remove excluded directories from traversal
+        dirs[:] = [d for d in dirs if d not in excluded_dirs]
+        
+        for file in files:
+            if file.endswith('.py'):
+                file_path = os.path.join(root, file)
+                changes = fix_file_imports(file_path)
+                if changes > 0:
+                    total_files_fixed += 1
+                    total_changes += changes
+    
+    print(f"\n✅ Import fixing complete!")
+    print(f"📁 Files modified: {total_files_fixed}")
+    print(f"🔄 Total import fixes: {total_changes}")
+    
+    return total_changes > 0
+
+def validate_critical_imports():
+    """Validate that critical files can be imported"""
+    print("\n🔍 VALIDATING CRITICAL IMPORTS")
+    print("=" * 40)
+    
+    critical_files = ['main.py', 'aave_integration.py', 'web_dashboard.py']
+    
+    for file_path in critical_files:
+        if os.path.exists(file_path):
+            try:
+                # Test syntax compilation
+                import py_compile
+                py_compile.compile(file_path, doraise=True)
+                print(f"✅ {file_path}: Import syntax OK")
+            except Exception as e:
+                print(f"❌ {file_path}: Import error - {e}")
+        else:
+            print(f"⚠️ {file_path}: File not found")
+
+if __name__ == "__main__":
+    success = scan_and_fix_imports()
+    validate_critical_imports()
+    
+    if success:
+        print("\n🎉 Import dependency resolution complete!")
+        print("💡 Next: Run syntax validation to verify fixes")
+    else:
+        print("\n✅ No import changes needed")

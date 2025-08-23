@@ -432,7 +432,7 @@ Last Success: {self.stats['last_success'] or 'None'}
 Last Failure: {self.stats['last_failure'] or 'None'}
 """
         return report
-# --- Merged from quick_system_status.py ---
+# --- Merged from main.py ---
 
 def quick_status_check():
     """Quick system status check"""
@@ -1275,7 +1275,7 @@ class AaveHealthMonitor:
             print(f"🔍 Enhanced dashboard data fetching with validation...")
 
             try:
-                from web_dashboard import get_live_agent_data
+# Removed duplicate:                 from web_dashboard import get_live_agent_data
                 live_data = get_live_agent_data()
 
                 # Enhanced validation with timeout protection
@@ -1309,7 +1309,7 @@ class AaveHealthMonitor:
 
                     # Get current ETH price for accurate conversion
                     try:
-                        import requests
+# Removed duplicate:                         import requests
                         url = "https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest"
                         headers = {'X-CMC_PRO_API_KEY': os.getenv('COINMARKETCAP_API_KEY')}
                         params = {'symbol': 'ETH', 'convert': 'USD'}
@@ -1704,7 +1704,7 @@ class AaveHealthMonitor:
         except Exception as e:
             print(f"❌ Unexpected error fetching ARB price: {e}")
             print(f"   Exception type: {type(e).__name__}")
-            import traceback
+# Removed duplicate:             import traceback
             print(f"   Full traceback: {traceback.format_exc()}")
             return None
 

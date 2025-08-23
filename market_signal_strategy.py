@@ -102,7 +102,7 @@ class MarketSignalStrategy:
         """Get ARB price data using fixed API with fallbacks"""
         try:
             if not hasattr(self, 'market_data_api'):
-                from market_data_api_fix import MarketDataAPIFix
+# Removed duplicate:                 from market_data_api_fix import MarketDataAPIFix
                 self.market_data_api = MarketDataAPIFix(self.coinmarketcap_api_key)
 
             return self.market_data_api.get_arb_price_data_fixed()
@@ -612,10 +612,10 @@ Market Signal Strategy for Debt Swapping
 Monitors market conditions and executes strategic debt swaps between DAI and ARB
 """
 
-import os
-import time
-import requests
-import logging
+# Removed duplicate: import os
+# Removed duplicate: import time
+# Removed duplicate: import requests
+# Removed duplicate: import logging
 from datetime import datetime
 
 logging.basicConfig(level=logging.INFO)
@@ -746,7 +746,7 @@ class MarketSignalStrategy:
         self.last_signal_time = time.time()
         print(f"📊 Market signal executed at {datetime.now().strftime('%H:%M:%S')}")
 
-# --- Merged from wallet_strategy_api.py ---
+# --- Merged from main.py ---
 
 def execute_strategy():
     """API endpoint to execute strategy for a wallet"""
@@ -1224,7 +1224,7 @@ class CollaborativeStrategyManager:
 
         except Exception as e:
             print(f"❌ Critical error in agent_analyze_and_propose: {e}")
-            import traceback
+# Removed duplicate:             import traceback
             print(f"🔍 Strategy manager error traceback: {traceback.format_exc()}")
             # Don't re-raise - let the main loop continue
 
@@ -1477,7 +1477,7 @@ class CollaborativeStrategyManager:
 
         except Exception as e:
             print(f"❌ Critical error in propose_strategy_improvement: {e}")
-            import traceback
+# Removed duplicate:             import traceback
             print(f"🔍 Proposal error traceback: {traceback.format_exc()}")
             return None
 
@@ -1564,7 +1564,7 @@ class CollaborativeStrategyManager:
 
         except Exception as e:
             print(f"❌ Critical error in agent_analyze_and_propose: {e}")
-            import traceback
+# Removed duplicate:             import traceback
             print(f"🔍 Strategy manager error traceback: {traceback.format_exc()}")
 
     def implement_approved_strategy(self, proposal_id):
@@ -1739,7 +1739,7 @@ class CollaborativeStrategyManager:
 
     def print_collateral_message(self):
         print(f"💡 Add $13+ worth of collateral to activate autonomous sequence")
-# --- Merged from strategy_optimizer.py ---
+# --- Merged from main.py ---
 
 class StrategyPerformance:
     strategy_name: str

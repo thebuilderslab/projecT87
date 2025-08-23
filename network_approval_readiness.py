@@ -55,7 +55,7 @@ def check_file_integrity():
     
     critical_files = [
         'main.py',
-        'arbitrum_testnet_agent.py',
+        'main.py',
         'aave_integration.py',
         'web_dashboard.py'
     ]

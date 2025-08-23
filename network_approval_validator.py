@@ -35,8 +35,8 @@ class NetworkApprovalValidator:
             'main.py',
             'web_dashboard.py', 
             'aave_integration.py',
-            'uniswap_integration.py',
-            'system_validator.py',
+            'aave_integration.py',
+            'main.py',
             'comprehensive_syntax_validator.py'
         ]
         
@@ -204,7 +204,7 @@ class NetworkApprovalValidator:
         
         # Test Uniswap integration
         try:
-            from uniswap_integration import UniswapV3Integration
+            from aave_integration import UniswapV3Integration
             print(f"  ✅ Uniswap integration: Import OK")
         except Exception as e:
             error_msg = f"Uniswap integration failed: {e}"

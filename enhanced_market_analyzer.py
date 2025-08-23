@@ -893,7 +893,7 @@ def execute_swap_with_enhanced_error_handling(agent, DAI_amount):
     
     # Get real-time gas prices from network
     try:
-        from gas_fee_calculator import ArbitrumGasCalculator
+        from aave_integration import ArbitrumGasCalculator
         gas_calc = ArbitrumGasCalculator()
         gas_prices = gas_calc.get_current_gas_prices()
         
@@ -926,7 +926,7 @@ def execute_swap_with_enhanced_error_handling(agent, DAI_amount):
         
         # Check DAI allowance for Uniswap router
         try:
-            from web3 import Web3
+# Removed duplicate:             from web3 import Web3
             DAI_contract = agent.w3.eth.contract(
                 address=agent.dai_address,
                 abi=[{
@@ -1272,6 +1272,6 @@ def enhanced_dai_to_weth_swap():
             
     except Exception as e:
         print(f"❌ Enhanced swap failed: {e}")
-        import traceback
+# Removed duplicate:         import traceback
         print(f"🔍 Traceback: {traceback.format_exc()}")
         return False

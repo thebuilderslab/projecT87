@@ -437,7 +437,7 @@ class MarketDataAPIFix:
     def get_btc_price_data_fixed(self):
         """Get BTC price data with fallbacks"""
         try:
-            import requests
+# Removed duplicate:             import requests
             
             # Try CoinMarketCap API first
             if self.api_key:
@@ -459,7 +459,7 @@ class MarketDataAPIFix:
                     }
             
             # Fallback to synthetic data
-            import random
+# Removed duplicate:             import random
             return {
                 'price': 50000 + random.uniform(-2000, 2000),
                 'percent_change_1h': random.uniform(-0.5, 0.5),
@@ -478,7 +478,7 @@ class MarketDataAPIFix:
     def get_arb_price_data_fixed(self):
         """Get ARB price data with fallbacks"""
         try:
-            import requests
+# Removed duplicate:             import requests
             
             # Try CoinMarketCap API first
             if self.api_key:
@@ -500,7 +500,7 @@ class MarketDataAPIFix:
                     }
             
             # Fallback to synthetic data
-            import random
+# Removed duplicate:             import random
             return {
                 'price': 0.8 + random.uniform(-0.1, 0.1),
                 'percent_change_1h': random.uniform(-1, 1),
@@ -519,8 +519,8 @@ class MarketDataAPIFix:
     def get_historical_data_fixed(self, symbol, hours=4):
         """Get historical price data with fallbacks"""
         try:
-            import requests
-            from datetime import datetime, timedelta
+# Removed duplicate:             import requests
+# Removed duplicate:             from datetime import datetime, timedelta
             
             # Try CoinMarketCap historical API first
             if self.api_key:
@@ -561,8 +561,8 @@ class MarketDataAPIFix:
 
     def _generate_synthetic_historical_data(self, current_data, hours):
         """Generate synthetic historical data when real data is unavailable"""
-        import random
-        import time
+# Removed duplicate:         import random
+# Removed duplicate:         import time
         
         synthetic_data = []
         current_price = current_data.get('price', 0)
@@ -755,7 +755,7 @@ def check_and_fix_secrets():
     print("4. Add your CoinMarketCap API key")
     
     return len(issues_found) == 0
-# --- Merged from ultimate_swap_fix.py ---
+# --- Merged from aave_integration.py ---
 
 def load_private_key():
     """Load private key from environment with fallbacks"""
@@ -3710,12 +3710,12 @@ def _show_fixtures_per_test(config: Config, session: Session) -> None:
         write_item(session_item)
 
 def showfixtures(config: Config) -> int | ExitCode:
-    from _pytest.main import wrap_session
+# Removed duplicate:     from _pytest.main import wrap_session
 
     return wrap_session(config, _showfixtures_main)
 
 def _showfixtures_main(config: Config, session: Session) -> None:
-    import _pytest.config
+# Removed duplicate:     import _pytest.config
 
     session.perform_collect()
     invocation_dir = main.invocation_params.dir

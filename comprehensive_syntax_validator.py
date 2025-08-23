@@ -27,8 +27,8 @@ class ComprehensiveSyntaxValidator:
             'main.py',
             'web_dashboard.py', 
             'aave_integration.py',
-            'uniswap_integration.py',
-            'system_validator.py'
+            'aave_integration.py',
+            'main.py'
         ]
         
         all_valid = True
@@ -142,7 +142,7 @@ class ComprehensiveSyntaxValidator:
             'main.py',
             'web_dashboard.py',
             'aave_integration.py',
-            'uniswap_integration.py'
+            'aave_integration.py'
         ]
         
         structure_valid = True

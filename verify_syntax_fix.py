@@ -29,7 +29,7 @@ def test_import():
     print("=" * 40)
     
     try:
-        from arbitrum_testnet_agent import ArbitrumTestnetAgent
+        from main import ArbitrumTestnetAgent
         print("✅ ArbitrumTestnetAgent: Import successful")
         return True
     except ImportError as e:
