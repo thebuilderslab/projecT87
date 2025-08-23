@@ -1600,69 +1600,26 @@ def my_function():
             return self.vars
         return dict(self.parent, **self.vars)
 
-    @internalcode
-    def call(
-            __self,
-            __obj: Any,
-            *args: Any,
-            **kwargs: Any
-        ) -> Any:
-     def my_function(__self, __obj: Any, *args: Any, **kwargs: Any) -> Any:
-     """
-     A function that takes an object, additional positional arguments,
-     and keyword arguments, returning an arbitrary type. Add your logic here.
-     """
-     # Example of a function body
-     return __obj(*args, **kwargs)
+    def my_function(__self, __obj: Any, *args: Any, **kwargs: Any) -> Any:
+    """
+    A function that takes an object, additional positional arguments,
+    and keyword arguments, returning an arbitrary type. Add your logic here.
+    """
+    # Example of a function body
+    return __obj(*args, **kwargs)
 
-     # Your logic here
-     # pass
-   pass
-        *args
-        **kwargs# noqa: B902
-    ) .Any, "Undefined"]:
-        """Call the callable with the arguments and keyword arguments
-        provided but inject the active context or environment as first
-        argument if the callable has :func:`pass_context` or
-        :func:`pass_environment`.
-        """
-        if __debug__:
-            __traceback_hide__ = True  # noqa
+    # Your logic here
+    # pass
 
-        # Allow callable classes to take a context
-        if (
-            hasattr(__obj, "__call__")  # noqa: B004
-            and _PassArg.from_obj(__obj.__call__) is not None
-        ):
-            __obj = __obj.__call__
+def derived(self, locals: dict = None):
+    """Internal helper function to create a derived context. This is
+    used in situations where the system needs a new context in the same
+    template that is independent."""
 
-        pass_arg = _PassArg.from_obj(__obj)
-
-        if pass_arg is _PassArg.context:
-            # the active context should have access to variables set in
-            # loops and blocks without mutating the context itself
-            if kwargs.get("_loop_vars"):
-                __self = __self.derived(kwargs)
-            if kwargs.get("_block_vars"):
-                __self = __self.derived(kwargs)
-            args = (__self,) + args
-        elif pass_arg is _PassArg.eval_context:
-            args = (__self.eval_ctx,) + args
-        elif pass_arg is _PassArg.environment:
-            args = (__self.environment,) + args
-
-        kwargs.pop("_block_vars", None)
-        kwargs.pop("_loop_vars", None)
-
-        try:
-            return __obj(*args, **kwargs)
-        except StopIteration:
-            return __self.environment.undefined(
-                "value was undefined because a callable raised a"
-                " StopIteration exception"
-            )
-
-def derived(self, locals.Dict] = None) :
+    # Additional code for creating a derived context will go here
+    # This might include creating a new context using data from the 
+    # current context and 'locals'
+    pass
         """Internal helper function to create a derived context.  This is
         used in situations where the system needs a new context in the same
         template that is independent.
