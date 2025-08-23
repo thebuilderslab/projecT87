@@ -666,7 +666,6 @@ def force_load_secret(var_name, default_value=None):
 class MainnetSafetyManager:
     """Manages safety features for mainnet deployment"""
 
-    def __init__(self):
         self.emergency_stop = False
         self.emergency_stop_file = 'EMERGENCY_STOP_ACTIVE.flag'
         self.monitoring_active = True
@@ -850,30 +849,25 @@ def start_web_dashboard():
         except Exception as e2:
             print(f"❌ Fallback port failed: {e2}")
 
-def __init__(self):
         self.emergency_stop = False
         self.emergency_stop_file = 'EMERGENCY_STOP_ACTIVE.flag'
         self.monitoring_active = True
 
-def check_emergency_stop(self):
         """Check if emergency stop has been triggered"""
         return os.path.exists(self.emergency_stop_file) or self.emergency_stop
 
-def trigger_emergency_stop(self, reason="Manual trigger"):
         """Trigger emergency stop"""
         self.emergency_stop = True
         with open(self.emergency_stop_file, 'w') as f:
             f.write(f"EMERGENCY STOP TRIGGERED\nReason: {reason}\nTimestamp: {time.time()}\n")
         print(f"🚨 EMERGENCY STOP ACTIVATED: {reason}")
 
-def clear_emergency_stop(self):
         """Clear emergency stop (manual intervention required)"""
         self.emergency_stop = False
         if os.path.exists(self.emergency_stop_file):
             os.remove(self.emergency_stop_file)
         print("✅ Emergency stop cleared")
 
-def validate_mainnet_readiness(self):
         """Validate system is ready for mainnet deployment"""
         print("🔍 MAINNET READINESS VALIDATION")
         print("=" * 50)
@@ -953,7 +947,6 @@ def validate_mainnet_readiness(self):
 
         return True
 
-def get_available_port(start_port=5000):
         for port in range(start_port, start_port + 20):
             try:
                 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -1032,7 +1025,6 @@ def patch_imports():
             def get_eth_balance(self):
                 return 0.0
 
-            def initialize_integrations(self):
                 return False
 
         # Inject mock
@@ -1122,7 +1114,6 @@ def start_dashboard():
 
 import socket
 
-def is_port_available(port):
     """
     Checks if a given port is available.
     """
@@ -1133,21 +1124,16 @@ def is_port_available(port):
         except:
             return False
         class MockAgent:
-            def __init__(self, *args, **kwargs):
                 self.address = '0x' + '0' * 40
                 self.w3 = None
                 self.account = None
 
-            def get_eth_balance(self):
                 return 0.0
 
-            def initialize_integrations(self):
                 return False
 
-            def get_eth_balance(self):
                 return 0.0
 
-            def initialize_integrations(self):
                 return False
 # --- Merged from main.py ---
 
@@ -1540,7 +1526,6 @@ def get(self, key, default=None):
      :param key: The variable name to look up.
      :param default: The value to return if the key is not found.
      """
-def get(self, key, default=None):
     try:
         return self[key]
     except KeyError:
@@ -1649,13 +1634,11 @@ def __getitem__(self, key: str) :
 
         return item
 
-def __repr__(self) -> str:
         return f"<{type(self).__name__} {self.get_all()!r} of {self.name!r}>"
 
 class BlockReference:
     """One block on a template reference."""
 
-def __init__(
         self,
         name: str,
         context: "Context",
@@ -1713,7 +1696,6 @@ class LoopContext:
     _before= missing
     _last_changed_value= missing
 
-def __init__(
         self,
         iterable
         undefined"Undefined"],
@@ -1892,7 +1874,6 @@ def __call__(self, iterable) -> str:
 
         return self._recurse(iterable, self._recurse, depth=self.depth)
 
-def __repr__(self) -> str:
         return f"<{type(self).__name__} {self.index}/{self.length}>"
 
 class AsyncLoopContext(LoopContext):
@@ -1968,7 +1949,6 @@ def __aiter__(self) :
 class Macro:
     """Wraps a macro function."""
 
-def __init__(
         self,
         environment: "Environment",
         func..., str],
@@ -2094,7 +2074,6 @@ def _invoke(self, arguments.Any], autoescape: bool) -> str:
 
         return rv
 
-def __repr__(self) -> str:
         name = "anonymous" if self.name is None else repr(self.name)
         return f"<{type(self).__name__} {name}>"
 
@@ -2120,7 +2099,6 @@ class Undefined:
         "_undefined_exception",
     )
 
-def __init__(
         self,
         hint= None,
         obj= missing,
@@ -2193,7 +2171,6 @@ def __hash__(self) -> int:
 def __str__(self) -> str:
         return ""
 
-def __len__(self) -> int:
         return 0
 
 def __iter__(self) .Any]:
@@ -2206,7 +2183,6 @@ def __iter__(self) .Any]:
 def __bool__(self) -> bool:
         return False
 
-def __repr__(self) -> str:
         return "Undefined"
 
 def make_logging_undefined(
@@ -2252,15 +2228,12 @@ class LoggingUndefined(base):  # type: ignore
                 logger.error("Template variable error: %s", e)  # type: ignore
                 raise e
 
-        def __str__(self) -> str:
             _log_message(self)
             return super().__str__()  # type: ignore
 
-        def __iter__(self) .Any]:
             _log_message(self)
             return super().__iter__()  # type: ignore
 
-        def __bool__(self) -> bool:
             _log_message(self)
             return super().__bool__()  # type: ignore
 
@@ -2308,7 +2281,6 @@ class DebugUndefined(Undefined):
 
     __slots__ = ()
 
-def __str__(self) -> str:
         if self._undefined_hint:
             message = f"undefined value printed: {self._undefined_hint}"
 
@@ -2360,7 +2332,6 @@ def __getitem__(self, name: str) :
         blocks = self.__context.blocks
         return BlockReference(name, self.__context, blocks, 0)
 
-def __repr__(self) -> str:
         return f"<{type(self).__name__} {self.__context.name!r}>"
 
 def f_all(self: "Context") :
@@ -2409,7 +2380,6 @@ def resolve(self, key: str) .Any, "Undefined"]:
 
         return rv
 
-def resolve_or_missing(self, key: str) :
         """Look up a variable by name, or return a ``missing`` sentinel
         if the key is not found.
 
@@ -2489,7 +2459,6 @@ def call(
                 " StopIteration exception"
             )
 
-def derived(self, locals.Dict] = None) :
         """Internal helper function to create a derived context.  This is
         used in situations where the system needs a new context in the same
         template that is independent.
@@ -2501,10 +2470,8 @@ def derived(self, locals.Dict] = None) :
         context.blocks.update((k, list(v)) for k, v in self.blocks.items())
         return context
 
-def __contains__(self, name: str) -> bool:
         return name in self.vars or name in self.parent
 
-def __getitem__(self, key: str) :
         """Look up a variable by name with ```` syntax, or raise a
         ``KeyError`` if the key is not found.
         """
@@ -2515,10 +2482,8 @@ def __getitem__(self, key: str) :
 
         return item
 
-def __repr__(self) -> str:
         return f"<{type(self).__name__} {self.get_all()!r} of {self.name!r}>"
 
-def super(self) "BlockReference", "Undefined"]:
         """Super the block."""
         if self._depth + 1 >= len(self._stack):
             return self._context.environment.undefined(
@@ -2526,7 +2491,6 @@ def super(self) "BlockReference", "Undefined"]:
             )
         return BlockReference(self.name, self._context, self._stack, self._depth + 1)
 
-def __call__(self) -> str:
         if self._context.environment.is_async:
             return self._async_call()  # type: ignore
 
@@ -2537,10 +2501,8 @@ def __call__(self) -> str:
 
         return rv
 
-def _to_iterator(iterable) :
         return iter(iterable)
 
-def length(self) -> int:
         """Length of the iterable.
 
         If the iterable is a generator or otherwise does not have a
@@ -2558,36 +2520,29 @@ def length(self) -> int:
 
         return self._length
 
-def __len__(self) -> int:
         return self.length
 
-def depth(self) -> int:
         """How many levels deep a recursive loop currently is, starting at 1."""
         return self.depth0 + 1
 
-def index(self) -> int:
         """Current iteration of the loop, starting at 1."""
         return self.index0 + 1
 
-def revindex0(self) -> int:
         """Number of iterations from the end of the loop, ending at 0.
 
         Requires calculating :attr:`length`.
         """
         return self.length - self.index
 
-def revindex(self) -> int:
         """Number of iterations from the end of the loop, ending at 1.
 
         Requires calculating :attr:`length`.
         """
         return self.length - self.index0
 
-def first(self) -> bool:
         """Whether this is the first iteration of the loop."""
         return self.index0 == 0
 
-def _peek_next(self) :
         """Return the next element in the iterable, or :data:`missing`
         if the iterable is exhausted. Only peeks one item ahead, caching
         the result in :attr:`_last` for use in subsequent checks. The
@@ -2599,7 +2554,6 @@ def _peek_next(self) :
         self._after = next(self._iterator, missing)
         return self._after
 
-def last(self) -> bool:
         """Whether this is the last iteration of the loop.
 
         Causes the iterable to advance early. See
@@ -2608,7 +2562,6 @@ def last(self) -> bool:
         """
         return self._peek_next() is missing
 
-def previtem(self) .Any, "Undefined"]:
         """The item in the previous iteration. Undefined during the
         first iteration.
         """
@@ -2617,7 +2570,6 @@ def previtem(self) .Any, "Undefined"]:
 
         return self._before
 
-def nextitem(self) .Any, "Undefined"]:
         """The item in the next iteration. Undefined during the last
         iteration.
 
@@ -2632,7 +2584,6 @@ def nextitem(self) .Any, "Undefined"]:
 
         return rv
 
-def cycle(self, *args: V) -> V:
         """Return a value from the given args, cycling through based on
         the current :attr:`index0`.
 
@@ -2643,7 +2594,6 @@ def cycle(self, *args: V) -> V:
 
         return args
 
-def changed(self, *value) -> bool:
         """Return ``True`` if previously called with a different value
         (including when called for the first time).
 
@@ -2655,10 +2605,8 @@ def changed(self, *value) -> bool:
 
         return False
 
-def __iter__(self) :
         return self
 
-def __next__(self) .Any, "LoopContext"]:
         if self._after is not missing:
             rv = self._after
             self._after = missing
@@ -2670,7 +2618,6 @@ def __next__(self) .Any, "LoopContext"]:
         self._current = rv
         return rv, self
 
-def __call__(self, iterable) -> str:
         """When iterating over nested data, render the body of the loop
         recursively with the given inner iterable data.
 
@@ -2683,18 +2630,14 @@ def __call__(self, iterable) -> str:
 
         return self._recurse(iterable, self._recurse, depth=self.depth)
 
-def __repr__(self) -> str:
         return f"<{type(self).__name__} {self.index}/{self.length}>"
 
-def _to_iterator(  # type: ignore
         iterable.Iterable, t.AsyncIterable],
     ) :
         return auto_aiter(iterable)
 
-def __aiter__(self) :
         return self
 
-def __call__(self, *args**kwargs) -> str:
         # This requires a bit of explanation,  In the past we used to
         # decide largely based on compile-time information if a macro is
         # safe or unsafe.  While there was a volatile mode it was largely
@@ -2770,7 +2713,6 @@ def __call__(self, *args**kwargs) -> str:
 
         return self._invoke(arguments, autoescape)
 
-def _invoke(self, arguments.Any], autoescape: bool) -> str:
         if self._environment.is_async:
             return self._async_invoke(arguments, autoescape)  # type: ignore
 
@@ -2781,11 +2723,9 @@ def _invoke(self, arguments.Any], autoescape: bool) -> str:
 
         return rv
 
-def __repr__(self) -> str:
         name = "anonymous" if self.name is None else repr(self.name)
         return f"<{type(self).__name__} {name}>"
 
-def _undefined_message(self) -> str:
         """Build a message about the undefined value based on how it was
         accessed.
         """
@@ -2806,7 +2746,6 @@ def _undefined_message(self) -> str:
             f" attribute {self._undefined_name!r}"
         )
 
-def _fail_with_undefined_error(
         self, *args**kwargs
     ) :
         """Raise an :exc:`UndefinedError` when operations are performed
@@ -2814,43 +2753,32 @@ def _fail_with_undefined_error(
         """
         raise self._undefined_exception(self._undefined_message)
 
-def __getattr__(self, name: str) :
         if name == "__":
             raise AttributeError(name)
 
         return self._fail_with_undefined_error()
 
-def __eq__(self, other) -> bool:
         return type(self) is type(other)
 
-def __ne__(self, other) -> bool:
         return not self.__eq__(other)
 
-def __hash__(self) -> int:
         return id(type(self))
 
-def __str__(self) -> str:
         return ""
 
-def __len__(self) -> int:
         return 0
 
-def __iter__(self) .Any]:
         yield from ()
 
-def __bool__(self) -> bool:
         return False
 
-def __repr__(self) -> str:
         return "Undefined"
 
-def _log_message(undef: Undefined) -> None:
         logger.warning("Template variable warning: %s", undef._undefined_message)
 
 class LoggingUndefined(base):  # type: ignore
         __slots__ = ()
 
-        def _fail_with_undefined_error(  # type: ignore
             self, *args**kwargs
         ) :
             try:
@@ -2859,25 +2787,19 @@ class LoggingUndefined(base):  # type: ignore
                 logger.error("Template variable error: %s", e)  # type: ignore
                 raise e
 
-        def __str__(self) -> str:
             _log_message(self)
             return super().__str__()  # type: ignore
 
-        def __iter__(self) .Any]:
             _log_message(self)
             return super().__iter__()  # type: ignore
 
-        def __bool__(self) -> bool:
             _log_message(self)
             return super().__bool__()  # type: ignore
 
-def __html__(self) -> str:
         return str(self)
 
-def __getattr__(self, _: str) :
         return self
 
-def __str__(self) -> str:
         if self._undefined_hint:
             message = f"undefined value printed: {self._undefined_hint}"
 
@@ -2892,14 +2814,12 @@ def __str__(self) -> str:
 
         return f"{{{{ {message} }}}}"
 
-        def __call__(
             self,
             reciter
             loop_render_func: "LoopRenderFunc",
             depth: int = 0,
         ) -> str: ...
 
-        def _fail_with_undefined_error(  # type: ignore
             self, *args**kwargs
         ) :
             try:
@@ -2908,15 +2828,12 @@ def __str__(self) -> str:
                 logger.error("Template variable error: %s", e)  # type: ignore
                 raise e
 
-        def __str__(self) -> str:
             _log_message(self)
             return super().__str__()  # type: ignore
 
-        def __iter__(self) .Any]:
             _log_message(self)
             return super().__iter__()  # type: ignore
 
-        def __bool__(self) -> bool:
             _log_message(self)
             return super().__bool__()  # type: ignore
 # --- Merged from main.py ---
@@ -2975,7 +2892,6 @@ class FileType:
     Backported from CPython 3.12
     """
 
-def __init__(
         self,
         mode: str = "r",
         bufsize: int = -1,
@@ -3005,7 +2921,6 @@ def __call__(self, string: str) -> typing.IO:  # type: ignore
             message = f"can't open '{string}': {e}"
             raise argparse.ArgumentTypeError(message)
 
-def __repr__(self) -> str:
         args = self._mode, self._bufsize
         kwargs = 
         args_str = ", ".join(
@@ -4389,7 +4304,6 @@ def __iter__(self) -> TupleGenerator:
         if extra:
             yield from extra.items()
 
-def __repr__(self) -> str:
         return f'{self.__repr_name__()}({self.__repr_str__(", ")})'
 
 def __repr_args__(self) -> _repr.ReprArgs:
@@ -4427,7 +4341,6 @@ def __repr_args__(self) -> _repr.ReprArgs:
     __pretty__ = _repr.Representation.__pretty__
     __rich_repr__ = _repr.Representation.__rich_repr__
 
-def __str__(self) -> str:
         return self.__repr_str__(' ')
 
     # ##### Deprecated methods from v1 #####
@@ -4846,7 +4759,6 @@ def create_model(
     **field_definitions: Any | tuple,
 ) -> type: ...
 
-def create_model(
     model_name: str,
     /,
     *,
@@ -4952,7 +4864,6 @@ def create_model(  # noqa: C901
         **kwds,
     )
 
-def model_fields(cls) -> dict:
         """A mapping of field names to their respective  instances.
 
         !!! warning
@@ -4961,7 +4872,6 @@ def model_fields(cls) -> dict:
         """
         return getattr(cls, '__pydantic_fields__', {})
 
-def model_computed_fields(cls) -> dict:
         """A mapping of computed field names to their respective  instances.
 
         !!! warning
@@ -4970,7 +4880,6 @@ def model_computed_fields(cls) -> dict:
         """
         return getattr(cls, '__pydantic_computed_fields__', {})
 
-def model_extra(self) -> dict | None:
         """Get extra fields set during validation.
 
         Returns:
@@ -4978,7 +4887,6 @@ def model_extra(self) -> dict | None:
         """
         return self.__pydantic_extra__
 
-def model_fields_set(self) -> set:
         """Returns the set of fields that have been explicitly set on this model instance.
 
         Returns:
@@ -4987,7 +4895,6 @@ def model_fields_set(self) -> set:
         """
         return self.__pydantic_fields_set__
 
-def model_construct(cls, _fields_set: set | None = None, **values: Any) -> Self:  # noqa: C901
         """Creates a new instance of the `Model` class with validated data.
 
         Creates a new model setting `__dict__` and `__pydantic_fields_set__` from trusted or pre-validated data.
@@ -5067,7 +4974,6 @@ def model_construct(cls, _fields_set: set | None = None, **values: Any) -> Self:
 
         return m
 
-def model_copy(self, *, update: Mapping | None = None, deep: bool = False) -> Self:
         """!!! abstract "Usage Documentation"
             (../concepts/serialization.md#model_copy)
 
@@ -5101,7 +5007,6 @@ def model_copy(self, *, update: Mapping | None = None, deep: bool = False) -> Se
             copied.__pydantic_fields_set__.update(update.keys())
         return copied
 
-def model_dump(
         self,
         *,
         mode: Literal | str = 'python',
@@ -5159,7 +5064,6 @@ def model_dump(
             serialize_as_any=serialize_as_any,
         )
 
-def model_dump_json(
         self,
         *,
         indent: int | None = None,
@@ -5215,7 +5119,6 @@ def model_dump_json(
             serialize_as_any=serialize_as_any,
         ).decode()
 
-def model_json_schema(
         cls,
         by_alias: bool = True,
         ref_template: str = DEFAULT_REF_TEMPLATE,
@@ -5238,7 +5141,6 @@ def model_json_schema(
             cls, by_alias=by_alias, ref_template=ref_template, schema_generator=schema_generator, mode=mode
         )
 
-def model_parametrized_name(cls, params: tuple, ...]) -> str:
         """Compute the class name for parametrizations of generic classes.
 
         This method can be overridden to achieve a custom naming scheme for generic BaseModels.
@@ -5264,13 +5166,11 @@ def model_parametrized_name(cls, params: tuple, ...]) -> str:
         params_component = ', '.join(param_names)
         return f'{cls.__name__}'
 
-def model_post_init(self, context: Any, /) -> None:
         """Override this method to perform additional initialization after `__init__` and `model_construct`.
         This is useful if you want to do some validation that requires the entire model to be initialized.
         """
         pass
 
-def model_rebuild(
         cls,
         *,
         force: bool = False,
@@ -5346,7 +5246,6 @@ def model_rebuild(
             ns_resolver=ns_resolver,
         )
 
-def model_validate(
         cls,
         obj: Any,
         *,
@@ -5385,7 +5284,6 @@ def model_validate(
             obj, strict=strict, from_attributes=from_attributes, context=context, by_alias=by_alias, by_name=by_name
         )
 
-def model_validate_json(
         cls,
         json_data: str | bytes | bytearray,
         *,
@@ -5425,7 +5323,6 @@ def model_validate_json(
             json_data, strict=strict, context=context, by_alias=by_alias, by_name=by_name
         )
 
-def model_validate_strings(
         cls,
         obj: Any,
         *,
@@ -5459,7 +5356,6 @@ def model_validate_strings(
             obj, strict=strict, context=context, by_alias=by_alias, by_name=by_name
         )
 
-def __get_pydantic_core_schema__(cls, source: type, handler: GetCoreSchemaHandler, /) -> CoreSchema:
         # This warning is only emitted when calling `super().__get_pydantic_core_schema__` from a model subclass.
         # In the generate schema logic, this method (`BaseModel.__get_pydantic_core_schema__`) is special cased to
         # *not* be called if not overridden.
@@ -5478,7 +5374,6 @@ def __get_pydantic_core_schema__(cls, source: type, handler: GetCoreSchemaHandle
 
         return handler(source)
 
-def __get_pydantic_json_schema__(
         cls,
         core_schema: CoreSchema,
         handler: GetJsonSchemaHandler,
@@ -5503,7 +5398,6 @@ def __get_pydantic_json_schema__(
         """
         return handler(core_schema)
 
-def __pydantic_init_subclass__(cls, **kwargs: Any) -> None:
         """This is intended to behave just like `__init_subclass__`, but is called by `ModelMetaclass`
         only after the class is actually fully initialized. In particular, attributes like `model_fields` will
         be present when this is called.
@@ -5521,7 +5415,6 @@ def __pydantic_init_subclass__(cls, **kwargs: Any) -> None:
         """
         pass
 
-def __class_getitem__(
         cls, typevar_values: type | tuple, ...]
     ) -> type | _forward_ref.PydanticRecursiveRef:
         cached = _generics.get_cached_generic_type_early(cls, typevar_values)
@@ -5588,7 +5481,6 @@ def __class_getitem__(
 
         return submodel
 
-def __copy__(self) -> Self:
         """Returns a shallow copy of the model."""
         cls = type(self)
         m = cls.__new__(cls)
@@ -5607,7 +5499,6 @@ def __copy__(self) -> Self:
 
         return m
 
-def __deepcopy__(self, memo: dict | None = None) -> Self:
         """Returns a deep copy of the model."""
         cls = type(self)
         m = cls.__new__(cls)
@@ -5628,7 +5519,6 @@ def __deepcopy__(self, memo: dict | None = None) -> Self:
 
         return m
 
-def __getstate__(self) -> dict:
         private = self.__pydantic_private__
         if private:
             private = {k: v for k, v in private.items() if v is not PydanticUndefined}
@@ -5639,13 +5529,11 @@ def __getstate__(self) -> dict:
             '__pydantic_private__': private,
         }
 
-def __setstate__(self, state: dict) -> None:
         _object_setattr(self, '__pydantic_fields_set__', state.get('__pydantic_fields_set__', {}))
         _object_setattr(self, '__pydantic_extra__', state.get('__pydantic_extra__', {}))
         _object_setattr(self, '__pydantic_private__', state.get('__pydantic_private__', {}))
         _object_setattr(self, '__dict__', state.get('__dict__', {}))
 
-def __repr_args__(self) -> _repr.ReprArgs:
         # Eagerly create the repr of computed fields, as this may trigger access of cached properties and as such
         # modify the instance's `__dict__`. If we don't do it now, it could happen when iterating over the `__dict__`
         # below if the instance happens to be referenced in a field, and would modify the `__dict__` size *during* iteration.
@@ -5673,7 +5561,6 @@ def __repr_args__(self) -> _repr.ReprArgs:
             yield from ((k, v) for k, v in pydantic_extra.items())
         yield from computed_fields_repr_args
 
-def __fields__(self) -> dict:
         warnings.warn(
             'The `__fields__` attribute is deprecated, use `model_fields` instead.',
             category=PydanticDeprecatedSince20,
@@ -5681,7 +5568,6 @@ def __fields__(self) -> dict:
         )
         return getattr(type(self), '__pydantic_fields__', {})
 
-def __fields_set__(self) -> set:
         warnings.warn(
             'The `__fields_set__` attribute is deprecated, use `model_fields_set` instead.',
             category=PydanticDeprecatedSince20,
@@ -5689,7 +5575,6 @@ def __fields_set__(self) -> set:
         )
         return self.__pydantic_fields_set__
 
-def dict(  # noqa: D102
         self,
         *,
         include: IncEx | None = None,
@@ -5713,7 +5598,6 @@ def dict(  # noqa: D102
             exclude_none=exclude_none,
         )
 
-def json(  # noqa: D102
         self,
         *,
         include: IncEx | None = None,
@@ -5746,7 +5630,6 @@ def json(  # noqa: D102
             exclude_none=exclude_none,
         )
 
-def parse_obj(cls, obj: Any) -> Self:  # noqa: D102
         warnings.warn(
             'The `parse_obj` method is deprecated; use `model_validate` instead.',
             category=PydanticDeprecatedSince20,
@@ -5754,7 +5637,6 @@ def parse_obj(cls, obj: Any) -> Self:  # noqa: D102
         )
         return cls.model_validate(obj)
 
-def parse_raw(  # noqa: D102
         cls,
         b: str | bytes,
         *,
@@ -5802,7 +5684,6 @@ def parse_raw(  # noqa: D102
             raise pydantic_core.ValidationError.from_exception_data(cls.__name__, )
         return cls.model_validate(obj)
 
-def parse_file(  # noqa: D102
         cls,
         path: str | Path,
         *,
@@ -5828,7 +5709,6 @@ def parse_file(  # noqa: D102
         )
         return cls.parse_obj(obj)
 
-def from_orm(cls, obj: Any) -> Self:  # noqa: D102
         warnings.warn(
             'The `from_orm` method is deprecated; set '
             "`model_config=True` and use `model_validate` instead.",
@@ -5841,7 +5721,6 @@ def from_orm(cls, obj: Any) -> Self:  # noqa: D102
             )
         return cls.model_validate(obj)
 
-def construct(cls, _fields_set: set | None = None, **values: Any) -> Self:  # noqa: D102
         warnings.warn(
             'The `construct` method is deprecated; use `model_construct` instead.',
             category=PydanticDeprecatedSince20,
@@ -5849,7 +5728,6 @@ def construct(cls, _fields_set: set | None = None, **values: Any) -> Self:  # no
         )
         return cls.model_construct(_fields_set=_fields_set, **values)
 
-def copy(
         self,
         *,
         include: AbstractSetIntStr | MappingIntStrAny | None = None,
@@ -5921,7 +5799,6 @@ def copy(
 
         return copy_internals._copy_and_set_values(self, values, fields_set, extra, private, deep=deep)
 
-def schema(  # noqa: D102
         cls, by_alias: bool = True, ref_template: str = DEFAULT_REF_TEMPLATE
     ) -> Dict:  # noqa UP006
         warnings.warn(
@@ -5931,7 +5808,6 @@ def schema(  # noqa: D102
         )
         return cls.model_json_schema(by_alias=by_alias, ref_template=ref_template)
 
-def schema_json(  # noqa: D102
         cls, *, by_alias: bool = True, ref_template: str = DEFAULT_REF_TEMPLATE, **dumps_kwargs: Any
     ) -> str:  # pragma: no cover
         warnings.warn(
@@ -5949,7 +5825,6 @@ def schema_json(  # noqa: D102
             **dumps_kwargs,
         )
 
-def validate(cls, value: Any) -> Self:  # noqa: D102
         warnings.warn(
             'The `validate` method is deprecated; use `model_validate` instead.',
             category=PydanticDeprecatedSince20,
@@ -5957,7 +5832,6 @@ def validate(cls, value: Any) -> Self:  # noqa: D102
         )
         return cls.model_validate(value)
 
-def update_forward_refs(cls, **localns: Any) -> None:  # noqa: D102
         warnings.warn(
             'The `update_forward_refs` method is deprecated; use `model_rebuild` instead.',
             category=PydanticDeprecatedSince20,
@@ -5967,7 +5841,6 @@ def update_forward_refs(cls, **localns: Any) -> None:  # noqa: D102
             raise TypeError('`localns` arguments are not longer accepted.')
         cls.model_rebuild(force=True)
 
-def _iter(self, *args: Any, **kwargs: Any) -> Any:
         warnings.warn(
             'The private method `_iter` will be removed and should no longer be used.',
             category=PydanticDeprecatedSince20,
@@ -5977,7 +5850,6 @@ def _iter(self, *args: Any, **kwargs: Any) -> Any:
 
         return copy_internals._iter(self, *args, **kwargs)
 
-def _copy_and_set_values(self, *args: Any, **kwargs: Any) -> Any:
         warnings.warn(
             'The private method `_copy_and_set_values` will be removed and should no longer be used.',
             category=PydanticDeprecatedSince20,
@@ -5987,7 +5859,6 @@ def _copy_and_set_values(self, *args: Any, **kwargs: Any) -> Any:
 
         return copy_internals._copy_and_set_values(self, *args, **kwargs)
 
-def _get_value(cls, *args: Any, **kwargs: Any) -> Any:
         warnings.warn(
             'The private method `_get_value` will be removed and should no longer be used.',
             category=PydanticDeprecatedSince20,
@@ -5997,7 +5868,6 @@ def _get_value(cls, *args: Any, **kwargs: Any) -> Any:
 
         return copy_internals._get_value(cls, *args, **kwargs)
 
-def _calculate_keys(self, *args: Any, **kwargs: Any) -> Any:
         warnings.warn(
             'The private method `_calculate_keys` will be removed and should no longer be used.',
             category=PydanticDeprecatedSince20,
@@ -6007,7 +5877,6 @@ def _calculate_keys(self, *args: Any, **kwargs: Any) -> Any:
 
         return copy_internals._calculate_keys(self, *args, **kwargs)
 
-        def __setattr__(self, name: str, value: Any) -> None:
             if (setattr_handler := self.__pydantic_setattr_handlers__.get(name)) is not None:
                 setattr_handler(self, name, value)
             # if None is returned from _setattr_handler, the attribute was set directly
@@ -6015,7 +5884,6 @@ def _calculate_keys(self, *args: Any, **kwargs: Any) -> Any:
                 setattr_handler(self, name, value)  # call here to not memo on possibly unknown fields
                 self.__pydantic_setattr_handlers__ = setattr_handler  # memoize the handler for faster access
 
-        def _setattr_handler(self, name: str, value: Any) -> Callable, None] | None:
             """Get a handler for setting an attribute on the model instance.
 
             Returns:
@@ -6069,7 +5937,6 @@ def _calculate_keys(self, *args: Any, **kwargs: Any) -> Any:
             else:
                 return _SIMPLE_SETATTR_HANDLERS
 
-        def __delattr__(self, item: str) -> Any:
             cls = self.__class__
 
             if item in self.__private_attributes__:
@@ -6102,10 +5969,8 @@ def _calculate_keys(self, *args: Any, **kwargs: Any) -> Any:
                 except AttributeError:
                     raise AttributeError(f'{type(self).__name__!r} object has no attribute {item!r}')
 
-        def __replace__(self, **changes: Any) -> Self:
             return self.model_copy(update=changes)
 
-        def __init_subclass__(cls, **kwargs: Unpack):
             """This signature is included purely to help type-checkers check arguments to class declaration, which
             provides a way to conveniently set model_config key/value pairs.
 
@@ -6407,10 +6272,8 @@ def validate_model(  # noqa: C901 (ignore complexity)
     else:
         return values, fields_set, None
 
-def hash_function(self_: Any) -> int:
         return hash(self_.__class__) + hash(tuple(self_.__dict__.values()))
 
-def __new__(mcs, name, bases, namespace, **kwargs):  # noqa C901
         fields: Dict = {}
         config = BaseConfig
         validators: 'ValidatorListDict' = {}
@@ -6461,7 +6324,6 @@ def __new__(mcs, name, bases, namespace, **kwargs):  # noqa C901
 
         untouched_types = ANNOTATED_FIELD_UNTOUCHED_TYPES
 
-        def is_untouched(v: Any) -> bool:
             return isinstance(v, untouched_types) or v.__class__.__name__ == 'cython_function_or_method'
 
         if (namespace.get('__module__'), namespace.get('__qualname__')) != ('pydantic.main', 'BaseModel'):
@@ -6591,7 +6453,6 @@ def __new__(mcs, name, bases, namespace, **kwargs):  # noqa C901
 
         return cls
 
-def __instancecheck__(self, instance: Any) -> bool:
         """
         Avoid calling ABC _abc_subclasscheck unless we're pretty sure.
 
@@ -6630,7 +6491,6 @@ def __try_update_forward_refs__(cls, **localns: Any) -> None:
         """
         update_model_forward_refs(cls, cls.__fields__.values(), cls.__config__.json_encoders, localns, (NameError,))
 
-        def is_untouched(v: Any) -> bool:
             return isinstance(v, untouched_types) or v.__class__.__name__ == 'cython_function_or_method'
 # --- Merged from web_runner.py ---
 
@@ -6643,7 +6503,6 @@ def _raise_graceful_exit() -> None:
 class BaseSite(ABC):
     __slots__ = ("_runner", "_ssl_context", "_backlog", "_server")
 
-def __init__(
         self,
         runner: "BaseRunner",
         *,
@@ -6681,7 +6540,6 @@ def name(self) -> str:
 class TCPSite(BaseSite):
     __slots__ = ("_host", "_port", "_reuse_address", "_reuse_port")
 
-def __init__(
         self,
         runner: "BaseRunner",
         host: Optional = None,
@@ -6707,7 +6565,6 @@ def __init__(
         self._reuse_port = reuse_port
 
     @property
-def name(self) -> str:
         scheme = "https" if self._ssl_context else "http"
         host = "0.0.0.0" if not self._host else self._host
         return str(URL.build(scheme=scheme, host=host, port=self._port))
@@ -6730,7 +6587,6 @@ def name(self) -> str:
 class UnixSite(BaseSite):
     __slots__ = ("_path",)
 
-def __init__(
         self,
         runner: "BaseRunner",
         path: PathLike,
@@ -6748,7 +6604,6 @@ def __init__(
         self._path = path
 
     @property
-def name(self) -> str:
         scheme = "https" if self._ssl_context else "http"
         return f"{scheme}://unix:{self._path}:"
 
@@ -6767,7 +6622,6 @@ def name(self) -> str:
 class NamedPipeSite(BaseSite):
     __slots__ = ("_path",)
 
-def __init__(
         self, runner: "BaseRunner", path: str, *, shutdown_timeout: float = 60.0
     ) -> None:
         loop = asyncio.get_event_loop()
@@ -6781,7 +6635,6 @@ def __init__(
         self._path = path
 
     @property
-def name(self) -> str:
         return self._path
 
     async def start(self) -> None:
@@ -6797,7 +6650,6 @@ def name(self) -> str:
 class SockSite(BaseSite):
     __slots__ = ("_sock", "_name")
 
-def __init__(
         self,
         runner: "BaseRunner",
         sock: socket.socket,
@@ -6822,7 +6674,6 @@ def __init__(
         self._name = name
 
     @property
-def name(self) -> str:
         return self._name
 
     async def start(self) -> None:
@@ -6837,7 +6688,6 @@ def name(self) -> str:
 class BaseRunner(ABC):
     __slots__ = ("_handle_signals", "_kwargs", "_server", "_sites", "_shutdown_timeout")
 
-def __init__(
         self,
         *,
         handle_signals: bool = False,
@@ -6941,7 +6791,6 @@ class ServerRunner(BaseRunner):
 
     __slots__ = ("_web_server",)
 
-def __init__(
         self, web_server: Server, *, handle_signals: bool = False, **kwargs: Any
     ) -> None:
         super().__init__(handle_signals=handle_signals, **kwargs)
@@ -6961,7 +6810,6 @@ class AppRunner(BaseRunner):
 
     __slots__ = ("_app",)
 
-def __init__(
         self, app: Application, *, handle_signals: bool = False, **kwargs: Any
     ) -> None:
         super().__init__(handle_signals=handle_signals, **kwargs)
@@ -6991,28 +6839,21 @@ def app(self) -> Application:
     async def _cleanup_server(self) -> None:
         await self._app.cleanup()
 
-def name(self) -> str:
         pass  # pragma: no cover
 
-def name(self) -> str:
         scheme = "https" if self._ssl_context else "http"
         host = "0.0.0.0" if not self._host else self._host
         return str(URL.build(scheme=scheme, host=host, port=self._port))
 
-def name(self) -> str:
         scheme = "https" if self._ssl_context else "http"
         return f"{scheme}://unix:{self._path}:"
 
-def name(self) -> str:
         return self._path
 
-def name(self) -> str:
         return self._name
 
-def server(self) -> Optional:
         return self._server
 
-def addresses(self) -> List:
         ret: List = 
         for site in self._sites:
             server = site._server
@@ -7023,24 +6864,19 @@ def addresses(self) -> List:
                         ret.append(sock.getsockname())
         return ret
 
-def sites(self) -> Set:
         return set(self._sites)
 
-def _reg_site(self, site: BaseSite) -> None:
         if site in self._sites:
             raise RuntimeError(f"Site {site} is already registered in runner {self}")
         self._sites.append(site)
 
-def _check_site(self, site: BaseSite) -> None:
         if site not in self._sites:
             raise RuntimeError(f"Site {site} is not registered in runner {self}")
 
-def _unreg_site(self, site: BaseSite) -> None:
         if site not in self._sites:
             raise RuntimeError(f"Site {site} is not registered in runner {self}")
         self._sites.remove(site)
 
-def app(self) -> Application:
         return self._app
 # --- Merged from main.py ---
 
@@ -7128,7 +6964,6 @@ def private_key_to_public_key(self, private_key: _PrivateKey) -> _PublicKey:
             )
         return public_key
 
-def ecdsa_sign(self, message_hash: bytes, private_key: _PrivateKey) -> _Signature:
         validate_message_hash(message_hash)
         if not isinstance(private_key, PrivateKey):
             raise ValidationError(
@@ -7143,7 +6978,6 @@ def ecdsa_sign(self, message_hash: bytes, private_key: _PrivateKey) -> _Signatur
             )
         return signature
 
-def ecdsa_sign_non_recoverable(
         self, message_hash: bytes, private_key: _PrivateKey
     ) -> _NonRecoverableSignature:
         validate_message_hash(message_hash)
@@ -7160,7 +6994,6 @@ def ecdsa_sign_non_recoverable(
             )
         return signature
 
-def ecdsa_verify(
         self, message_hash: bytes, signature: BaseSignature, public_key: _PublicKey
     ) -> bool:
         validate_message_hash(message_hash)
@@ -7175,7 +7008,6 @@ def ecdsa_verify(
             )
         return self.backend.ecdsa_verify(message_hash, signature, public_key)
 
-def ecdsa_recover(self, message_hash: bytes, signature: _Signature) -> _PublicKey:
         validate_message_hash(message_hash)
         if not isinstance(signature, Signature):
             raise ValidationError(
@@ -7189,7 +7021,6 @@ def ecdsa_recover(self, message_hash: bytes, signature: _Signature) -> _PublicKe
             )
         return public_key
 
-def private_key_to_public_key(self, private_key: _PrivateKey) -> _PublicKey:
         if not isinstance(private_key, PrivateKey):
             raise ValidationError(
                 "The `private_key` must be an instance of "
@@ -7210,14 +7041,12 @@ def ecdsa_sign(self, msg_hash: bytes, private_key: PrivateKey) -> Signature:
         signature = Signature(vrs=signature_vrs, backend=self)
         return signature
 
-def ecdsa_sign_non_recoverable(
         self, msg_hash: bytes, private_key: PrivateKey
     ) -> NonRecoverableSignature:
         _, signature_r, signature_s = ecdsa_raw_sign(msg_hash, private_key.to_bytes())
         signature = NonRecoverableSignature(rs=(signature_r, signature_s), backend=self)
         return signature
 
-def ecdsa_verify(
         self, msg_hash: bytes, signature: BaseSignature, public_key: PublicKey
     ) -> bool:
         return ecdsa_raw_verify(msg_hash, signature.rs, public_key.to_bytes())
@@ -7238,10 +7067,8 @@ def decompress_public_key_bytes(self, compressed_public_key_bytes: bytes) -> byt
 def compress_public_key_bytes(self, uncompressed_public_key_bytes: bytes) -> bytes:
         return compress_public_key(uncompressed_public_key_bytes)
 
-def decompress_public_key_bytes(self, compressed_public_key_bytes: bytes) -> bytes:
         return decompress_public_key(compressed_public_key_bytes)
 
-def compress_public_key_bytes(self, uncompressed_public_key_bytes: bytes) -> bytes:
         return compress_public_key(uncompressed_public_key_bytes)
 # --- Merged from main.py ---
 
@@ -7255,7 +7082,6 @@ def with_warn_for_invalid_lines(mappings: Iterator) -> Iterator:
         yield mapping
 
 class DotEnv:
-def __init__(
         self,
         dotenv_path: Optional,
         stream: Optional] = None,
@@ -7594,7 +7420,6 @@ def dotenv_values(
         encoding=encoding,
     ).dict()
 
-def _get_stream(self) -> Iterator]:
         if self.dotenv_path and os.path.isfile(self.dotenv_path):
             with open(self.dotenv_path, encoding=self.encoding) as stream:
                 yield stream
@@ -7608,13 +7433,11 @@ def _get_stream(self) -> Iterator]:
                 )
             yield io.StringIO('')
 
-def parse(self) -> Iterator]]:
         with self._get_stream() as stream:
             for mapping in with_warn_for_invalid_lines(parse_stream(stream)):
                 if mapping.key is not None:
                     yield mapping.key, mapping.value
 
-def set_as_environment_variables(self) -> bool:
         """
         Load the current dotenv as system environment variable.
         """
@@ -7629,7 +7452,6 @@ def set_as_environment_variables(self) -> bool:
 
         return True
 
-def _is_interactive():
         """ Decide whether this is running in a REPL or IPython notebook """
         main = __import__('__main__', None, None, fromlist=)
         return not hasattr(main, '__file__')
@@ -7761,10 +7583,8 @@ def __getitem__(  # noqa: F811
         else:
             return result
 
-def __repr__(self) -> str:
         return f"HexBytes({self.hex()!r})"
 
-def hex(
         self, sep: Union = None, bytes_per_sep: "SupportsIndex" = 1
     ) -> str:
         """
@@ -7874,7 +7694,6 @@ def as_dict(self) -> Dict:
             _as_dict = vars(self)
             return cast(Dict, _as_dict)
 
-def from_dict(cls, field_dict: Dict) -> Self:
         r"""
         In addition to the standard initialization of.
 
@@ -7907,7 +7726,6 @@ def from_dict(cls, field_dict: Dict) -> Self:
         """
         return cls(**field_dict)
 
-def from_bytes(cls, serialized_bytes: Union) -> Self:
         """
         Shorthand invocation for :meth:`rlp.decode` using this class.
 
@@ -7918,7 +7736,6 @@ def from_bytes(cls, serialized_bytes: Union) -> Self:
         decoded = rlp.decode(serialized_bytes, cls)
         return cast(Self, decoded)
 
-def hash(self) -> HexBytes:
         """
         :returns: the hash of the encoded bytestring
         :rtype: ~hexbytes.main.HexBytes
@@ -7930,7 +7747,6 @@ def hash(self) -> HexBytes:
             HexBytes,
         )
 
-def as_dict(self) -> Dict:
         """
         Convert rlp object to a dict
 
@@ -8168,7 +7984,6 @@ class Web3(BaseWeb3):
     net: Net
     geth: Geth
 
-def __init__(
         self,
         provider: Optional = None,
         middlewares: Optional] = None,
@@ -8231,7 +8046,6 @@ class AsyncWeb3(BaseWeb3):
     net: AsyncNet
     geth: AsyncGeth
 
-def __init__(
         self,
         provider: Optional = None,
         middlewares: Optional] = None,
@@ -8275,7 +8089,6 @@ def provider(self, provider: AsyncBaseProvider) -> None:
         return await self.manager.coro_request(RPC.web3_clientVersion, )
 
     @property
-def ens(self) -> Union:
         if self._ens is empty:
             ns = AsyncENS.from_web3(self)
             ns.w3 = self
@@ -8283,7 +8096,6 @@ def ens(self) -> Union:
         return self._ens
 
     @ens.setter
-def ens(self, new_ens: Union) -> None:
         if new_ens:
             new_ens.w3 = self  # set self object reference for ``AsyncENS.w3``
         self._ens = new_ens
@@ -8315,7 +8127,6 @@ class _PersistentConnectionWeb3(AsyncWeb3):
 
     # w3 = AsyncWeb3.persistent_websocket(provider)
     # await w3.provider.connect()
-def __init__(
         self,
         provider: PersistentConnectionProvider = None,
         middlewares: Optional] = None,
@@ -8369,53 +8180,40 @@ def __await__(
                 # provider should handle connection / reconnection
                 continue
 
-def to_bytes(
         primitive: Primitives = None, hexstr: HexStr = None, text: str = None
     ) -> bytes:
         return to_bytes(primitive, hexstr, text)
 
-def to_int(
         primitive: Primitives = None, hexstr: HexStr = None, text: str = None
     ) -> int:
         return to_int(primitive, hexstr, text)
 
-def to_hex(
         primitive: Primitives = None, hexstr: HexStr = None, text: str = None
     ) -> HexStr:
         return to_hex(primitive, hexstr, text)
 
-def to_text(
         primitive: Primitives = None, hexstr: HexStr = None, text: str = None
     ) -> str:
         return to_text(primitive, hexstr, text)
 
-def to_json(obj: Dict) -> str:
         return to_json(obj)
 
-def to_wei(number: Union, unit: str) -> Wei:
         return cast(Wei, to_wei(number, unit))
 
-def from_wei(number: int, unit: str) -> Union:
         return from_wei(number, unit)
 
-def is_address(value: Any) -> bool:
         return is_address(value)
 
-def is_checksum_address(value: Any) -> bool:
         return is_checksum_address(value)
 
-def to_checksum_address(value: Union) -> ChecksumAddress:
         return to_checksum_address(value)
 
-def api(self) -> str:
 # Removed duplicate:         from web3 import __version__
 
         return __version__
 
-def strict_bytes_type_checking(self) -> bool:
         return self._strict_bytes_type_checking
 
-def strict_bytes_type_checking(self, strict_bytes_type_check: bool) -> None:
         self.codec = (
             ABICodec(build_strict_registry())
             if strict_bytes_type_check
@@ -8423,7 +8221,6 @@ def strict_bytes_type_checking(self, strict_bytes_type_check: bool) -> None:
         )
         self._strict_bytes_type_checking = strict_bytes_type_check
 
-def keccak(
         primitive: Optional = None,
         text: Optional = None,
         hexstr: Optional = None,
@@ -8439,12 +8236,10 @@ def keccak(
             "keccak(b'\\x74\\x78\\x74'), or keccak(0x747874)."
         )
 
-def normalize_values(
         cls, w3: "BaseWeb3", abi_types: List, values: List
     ) -> List:
         return map_abi_data(, abi_types, values)
 
-def solidity_keccak(cls, abi_types: List, values: List) -> bytes:
         """
         Executes keccak256 exactly as Solidity does.
         Takes list of abi_types as inputs -- `, bool]`
@@ -8472,7 +8267,6 @@ def solidity_keccak(cls, abi_types: List, values: List) -> bytes:
         )
         return cls.keccak(hexstr=hex_string)
 
-def attach_modules(
         self, modules: Optional, Sequence]]]
     ) -> None:
         """
@@ -8480,10 +8274,8 @@ def attach_modules(
         """
         _attach_modules(self, modules)
 
-def is_encodable(self, _type: TypeStr, value: Any) -> bool:
         return self.codec.is_encodable(_type, value)
 
-def pm(self) :
         if hasattr(self, "_pm"):
             # ignored b/c property is dynamically set
             # via enable_unstable_package_management_api
@@ -8495,7 +8287,6 @@ def pm(self) :
                 "running `w3.enable_unstable_package_management_api()` and try again."
             )
 
-def enable_unstable_package_management_api(self) -> None:
         if not hasattr(self, "_pm"):
             warnings.warn(
                 "The ``ethPM`` module is no longer being maintained and will be "
@@ -8506,22 +8297,16 @@ def enable_unstable_package_management_api(self) -> None:
 
             self.attach_modules({"_pm": PM})
 
-def is_connected(self, show_traceback: bool = False) -> bool:
         return self.provider.is_connected(show_traceback)
 
-def middleware_onion(self) -> MiddlewareOnion:
         return cast(MiddlewareOnion, self.manager.middleware_onion)
 
-def provider(self) -> BaseProvider:
         return cast(BaseProvider, self.manager.provider)
 
-def provider(self, provider: BaseProvider) -> None:
         self.manager.provider = provider
 
-def client_version(self) -> str:
         return self.manager.request_blocking(RPC.web3_clientVersion, )
 
-def ens(self) -> Union:
         if self._ens is empty:
             ns = ENS.from_web3(self)
             ns.w3 = self
@@ -8529,33 +8314,26 @@ def ens(self) -> Union:
 
         return self._ens
 
-def ens(self, new_ens: Union) -> None:
         if new_ens:
             new_ens.w3 = self  # set self object reference for ``ENS.w3``
         self._ens = new_ens
 
-def middleware_onion(self) -> AsyncMiddlewareOnion:
         return cast(AsyncMiddlewareOnion, self.manager.middleware_onion)
 
-def provider(self) -> AsyncBaseProvider:
         return cast(AsyncBaseProvider, self.manager.provider)
 
-def provider(self, provider: AsyncBaseProvider) -> None:
         self.manager.provider = provider
 
-def ens(self) -> Union:
         if self._ens is empty:
             ns = AsyncENS.from_web3(self)
             ns.w3 = self
             return ns
         return self._ens
 
-def ens(self, new_ens: Union) -> None:
         if new_ens:
             new_ens.w3 = self  # set self object reference for ``AsyncENS.w3``
         self._ens = new_ens
 
-def persistent_websocket(
         provider: PersistentConnectionProvider,
         middlewares: Optional] = None,
         modules: Optional, Sequence]]] = None,
@@ -8576,7 +8354,6 @@ def persistent_websocket(
             ens,
         )
 
-def __await__(
         self,
     ) -> Generator:
         async def __async_init__() -> Self:
@@ -8589,7 +8366,6 @@ def __await__(
 # --- Merged from main.py ---
 
 class Beacon:
-def __init__(
         self,
         base_url: str,
         request_timeout: float = 10.0,
@@ -8740,127 +8516,89 @@ def get_version(self) -> Dict:
 def get_syncing(self) -> Dict:
         return self._make_get_request(GET_SYNCING)
 
-def _make_get_request(self, endpoint_url: str) -> Dict:
         uri = URI(self.base_url + endpoint_url)
         return json_make_get_request(uri, timeout=self.request_timeout)
 
-def get_genesis(self) -> Dict:
         return self._make_get_request(GET_GENESIS)
 
-def get_hash_root(self, state_id: str = "head") -> Dict:
         return self._make_get_request(GET_HASH_ROOT.format(state_id))
 
-def get_fork_data(self, state_id: str = "head") -> Dict:
         return self._make_get_request(GET_FORK_DATA.format(state_id))
 
-def get_finality_checkpoint(self, state_id: str = "head") -> Dict:
         return self._make_get_request(GET_FINALITY_CHECKPOINT.format(state_id))
 
-def get_validators(self, state_id: str = "head") -> Dict:
         return self._make_get_request(GET_VALIDATORS.format(state_id))
 
-def get_validator(
         self, validator_id: str, state_id: str = "head"
     ) -> Dict:
         return self._make_get_request(GET_VALIDATOR.format(state_id, validator_id))
 
-def get_validator_balances(self, state_id: str = "head") -> Dict:
         return self._make_get_request(GET_VALIDATOR_BALANCES.format(state_id))
 
-def get_epoch_committees(self, state_id: str = "head") -> Dict:
         return self._make_get_request(GET_EPOCH_COMMITTEES.format(state_id))
 
-def get_epoch_sync_committees(self, state_id: str = "head") -> Dict:
         return self._make_get_request(GET_EPOCH_SYNC_COMMITTEES.format(state_id))
 
-def get_epoch_randao(self, state_id: str = "head") -> Dict:
         return self._make_get_request(GET_EPOCH_RANDAO.format(state_id))
 
-def get_block_headers(self) -> Dict:
         return self._make_get_request(GET_BLOCK_HEADERS)
 
-def get_block_header(self, block_id: str) -> Dict:
         return self._make_get_request(GET_BLOCK_HEADER.format(block_id))
 
-def get_block(self, block_id: str) -> Dict:
         return self._make_get_request(GET_BLOCK.format(block_id))
 
-def get_block_root(self, block_id: str) -> Dict:
         return self._make_get_request(GET_BLOCK_ROOT.format(block_id))
 
-def get_block_attestations(self, block_id: str) -> Dict:
         return self._make_get_request(GET_BLOCK_ATTESTATIONS.format(block_id))
 
-def get_blinded_blocks(self, block_id: str) -> Dict:
         return self._make_get_request(GET_BLINDED_BLOCKS.format(block_id))
 
-def get_rewards(self, block_id: str) -> Dict:
         return self._make_get_request(GET_REWARDS.format(block_id))
 
-def get_light_client_bootstrap_structure(
         self, block_root: HexStr
     ) -> Dict:
         return self._make_get_request(
             GET_LIGHT_CLIENT_BOOTSTRAP_STRUCTURE.format(block_root)
         )
 
-def get_light_client_updates(self) -> Dict:
         return self._make_get_request(GET_LIGHT_CLIENT_UPDATES)
 
-def get_light_client_finality_update(self) -> Dict:
         return self._make_get_request(GET_LIGHT_CLIENT_FINALITY_UPDATE)
 
-def get_light_client_optimistic_update(self) -> Dict:
         return self._make_get_request(GET_LIGHT_CLIENT_OPTIMISTIC_UPDATE)
 
-def get_attestations(self) -> Dict:
         return self._make_get_request(GET_ATTESTATIONS)
 
-def get_attester_slashings(self) -> Dict:
         return self._make_get_request(GET_ATTESTER_SLASHINGS)
 
-def get_proposer_slashings(self) -> Dict:
         return self._make_get_request(GET_PROPOSER_SLASHINGS)
 
-def get_voluntary_exits(self) -> Dict:
         return self._make_get_request(GET_VOLUNTARY_EXITS)
 
-def get_bls_to_execution_changes(self) -> Dict:
         return self._make_get_request(GET_BLS_TO_EXECUTION_CHANGES)
 
-def get_fork_schedule(self) -> Dict:
         return self._make_get_request(GET_FORK_SCHEDULE)
 
-def get_spec(self) -> Dict:
         return self._make_get_request(GET_SPEC)
 
-def get_deposit_contract(self) -> Dict:
         return self._make_get_request(GET_DEPOSIT_CONTRACT)
 
-def get_beacon_state(self, state_id: str = "head") -> Dict:
         return self._make_get_request(GET_BEACON_STATE.format(state_id))
 
-def get_beacon_heads(self) -> Dict:
         return self._make_get_request(GET_BEACON_HEADS)
 
-def get_node_identity(self) -> Dict:
         return self._make_get_request(GET_NODE_IDENTITY)
 
-def get_peers(self) -> Dict:
         return self._make_get_request(GET_PEERS)
 
-def get_peer(self, peer_id: str) -> Dict:
         return self._make_get_request(GET_PEER.format(peer_id))
 
-def get_health(self) -> int:
         url = URI(self.base_url + GET_HEALTH)
         response = get_response_from_get_request(url)
         return response.status_code
 
-def get_version(self) -> Dict:
         return self._make_get_request(GET_VERSION)
 
-def get_syncing(self) -> Dict:
         return self._make_get_request(GET_SYNCING)
 # --- Merged from main.py ---
 
@@ -8902,7 +8640,6 @@ class EthereumTesterProvider(BaseProvider):
     ethereum_tester = None
     api_endpoints: Optional]]] = None
 
-def __init__(
         self,
         ethereum_tester: Optional] = None,
         api_endpoints: Optional[
@@ -8999,7 +8736,6 @@ def _make_request(
     else:
         return _make_response(response)
 
-def make_request(self, method: RPCEndpoint, params: Any) -> RPCResponse:
         return _make_request(method, params, self.api_endpoints, self.ethereum_tester)
 # --- Merged from main.py ---
 
@@ -9055,7 +8791,6 @@ def str_join(seq.Any]) -> str:
     """Simple args to string conversion and concatenation."""
     return concat(map(str, seq))
 
-def new_context(
     environment: "Environment",
     template_name
     blocks.Callable, t.Iterator]],
@@ -9086,19 +8821,14 @@ def new_context(
 class TemplateReference:
     """The `self` in templates."""
 
-def __init__(self, context: "Context") -> None:
         self.__context = context
 
-def __getitem__(self, name: str) :
         blocks = self.__context.blocks
         return BlockReference(name, self.__context, blocks, 0)
 
-def __repr__(self) -> str:
         return f"<{type(self).__name__} {self.__context.name!r}>"
 
-def _dict_method_all(dict_method: F) -> F:
     @functools.wraps(dict_method)
-def f_all(self: "Context") :
         return dict_method(self.get_all())
 
     return t.cast(F, f_all)
@@ -9123,7 +8853,6 @@ class Context:
     :class:`Undefined` object for missing variables.
     """
 
-def __init__(
         self,
         environment: "Environment",
         parent.Any],
@@ -9144,7 +8873,6 @@ def __init__(
         # from the template.
         self.blocks = {k:  for k, v in blocks.items()}
 
-def super(
         self, name: str, current"Context"], t.Iterator]
     ) "BlockReference", "Undefined"]:
         """Render a parent block."""
@@ -9158,7 +8886,6 @@ def super(
             )
         return BlockReference(name, self, blocks, index)
 
-def get(self, key: str, default= None) :
         """Look up a variable by name, or return a default if the key is
         not found.
 
@@ -9170,7 +8897,6 @@ def get(self, key: str, default= None) :
         except KeyError:
             return default
 
-def resolve(self, key: str) .Any, "Undefined"]:
         """Look up a variable by name, or return an :class:`Undefined`
         object if the key is not found.
 
@@ -9187,7 +8913,6 @@ def resolve(self, key: str) .Any, "Undefined"]:
 
         return rv
 
-def resolve_or_missing(self, key: str) :
         """Look up a variable by name, or return a ``missing`` sentinel
         if the key is not found.
 
@@ -9205,11 +8930,9 @@ def resolve_or_missing(self, key: str) :
 
         return missing
 
-def get_exported(self) .Any]:
         """Get a new dict with the exported variables."""
         return {k: self.vars for k in self.exported_vars}
 
-def get_all(self) .Any]:
         """Return the complete context as dict including the exported
         variables.  For optimizations reasons this might not return an
         actual copy so be careful with using it.
@@ -9221,7 +8944,6 @@ def get_all(self) .Any]:
         return dict(self.parent, **self.vars)
 
     @internalcode
-def call(
         __self,
         __obj..., t.Any],
         *args
@@ -9268,7 +8990,6 @@ def call(
                 " StopIteration exception"
             )
 
-def derived(self, locals.Dict] = None) :
         """Internal helper function to create a derived context.  This is
         used in situations where the system needs a new context in the same
         template that is independent.
@@ -9284,10 +9005,8 @@ def derived(self, locals.Dict] = None) :
     values = _dict_method_all(dict.values)
     items = _dict_method_all(dict.items)
 
-def __contains__(self, name: str) -> bool:
         return name in self.vars or name in self.parent
 
-def __getitem__(self, key: str) :
         """Look up a variable by name with ```` syntax, or raise a
         ``KeyError`` if the key is not found.
         """
@@ -9298,13 +9017,11 @@ def __getitem__(self, key: str) :
 
         return item
 
-def __repr__(self) -> str:
         return f"<{type(self).__name__} {self.get_all()!r} of {self.name!r}>"
 
 class BlockReference:
     """One block on a template reference."""
 
-def __init__(
         self,
         name: str,
         context: "Context",
@@ -9317,7 +9034,6 @@ def __init__(
         self._depth = depth
 
     @property
-def super(self) "BlockReference", "Undefined"]:
         """Super the block."""
         if self._depth + 1 >= len(self._stack):
             return self._context.environment.undefined(
@@ -9337,7 +9053,6 @@ def super(self) "BlockReference", "Undefined"]:
         return rv
 
     @internalcode
-def __call__(self) -> str:
         if self._context.environment.is_async:
             return self._async_call()  # type: ignore
 
@@ -9364,7 +9079,6 @@ class LoopContext:
     _before= missing
     _last_changed_value= missing
 
-def __init__(
         self,
         iterable
         undefined"Undefined"],
@@ -9387,11 +9101,9 @@ def __init__(
         self.depth0 = depth0
 
     @staticmethod
-def _to_iterator(iterable) :
         return iter(iterable)
 
     @property
-def length(self) -> int:
         """Length of the iterable.
 
         If the iterable is a generator or otherwise does not have a
@@ -9409,21 +9121,17 @@ def length(self) -> int:
 
         return self._length
 
-def __len__(self) -> int:
         return self.length
 
     @property
-def depth(self) -> int:
         """How many levels deep a recursive loop currently is, starting at 1."""
         return self.depth0 + 1
 
     @property
-def index(self) -> int:
         """Current iteration of the loop, starting at 1."""
         return self.index0 + 1
 
     @property
-def revindex0(self) -> int:
         """Number of iterations from the end of the loop, ending at 0.
 
         Requires calculating :attr:`length`.
@@ -9431,7 +9139,6 @@ def revindex0(self) -> int:
         return self.length - self.index
 
     @property
-def revindex(self) -> int:
         """Number of iterations from the end of the loop, ending at 1.
 
         Requires calculating :attr:`length`.
@@ -9439,11 +9146,9 @@ def revindex(self) -> int:
         return self.length - self.index0
 
     @property
-def first(self) -> bool:
         """Whether this is the first iteration of the loop."""
         return self.index0 == 0
 
-def _peek_next(self) :
         """Return the next element in the iterable, or :data:`missing`
         if the iterable is exhausted. Only peeks one item ahead, caching
         the result in :attr:`_last` for use in subsequent checks. The
@@ -9456,7 +9161,6 @@ def _peek_next(self) :
         return self._after
 
     @property
-def last(self) -> bool:
         """Whether this is the last iteration of the loop.
 
         Causes the iterable to advance early. See
@@ -9466,7 +9170,6 @@ def last(self) -> bool:
         return self._peek_next() is missing
 
     @property
-def previtem(self) .Any, "Undefined"]:
         """The item in the previous iteration. Undefined during the
         first iteration.
         """
@@ -9476,7 +9179,6 @@ def previtem(self) .Any, "Undefined"]:
         return self._before
 
     @property
-def nextitem(self) .Any, "Undefined"]:
         """The item in the next iteration. Undefined during the last
         iteration.
 
@@ -9491,7 +9193,6 @@ def nextitem(self) .Any, "Undefined"]:
 
         return rv
 
-def cycle(self, *args: V) -> V:
         """Return a value from the given args, cycling through based on
         the current :attr:`index0`.
 
@@ -9502,7 +9203,6 @@ def cycle(self, *args: V) -> V:
 
         return args
 
-def changed(self, *value) -> bool:
         """Return ``True`` if previously called with a different value
         (including when called for the first time).
 
@@ -9514,10 +9214,8 @@ def changed(self, *value) -> bool:
 
         return False
 
-def __iter__(self) :
         return self
 
-def __next__(self) .Any, "LoopContext"]:
         if self._after is not missing:
             rv = self._after
             self._after = missing
@@ -9530,7 +9228,6 @@ def __next__(self) .Any, "LoopContext"]:
         return rv, self
 
     @internalcode
-def __call__(self, iterable) -> str:
         """When iterating over nested data, render the body of the loop
         recursively with the given inner iterable data.
 
@@ -9543,14 +9240,12 @@ def __call__(self, iterable) -> str:
 
         return self._recurse(iterable, self._recurse, depth=self.depth)
 
-def __repr__(self) -> str:
         return f"<{type(self).__name__} {self.index}/{self.length}>"
 
 class AsyncLoopContext(LoopContext):
     _iterator.Any]  # type: ignore
 
     @staticmethod
-def _to_iterator(  # type: ignore
         iterable.Iterable, t.AsyncIterable],
     ) :
         return auto_aiter(iterable)
@@ -9601,7 +9296,6 @@ def _to_iterator(  # type: ignore
 
         return rv
 
-def __aiter__(self) :
         return self
 
     async def __anext__(self) .Any, "AsyncLoopContext"]:
@@ -9619,7 +9313,6 @@ def __aiter__(self) :
 class Macro:
     """Wraps a macro function."""
 
-def __init__(
         self,
         environment: "Environment",
         func..., str],
@@ -9650,7 +9343,6 @@ def __init__(
 
     @internalcode
     @pass_eval_context
-def __call__(self, *args**kwargs) -> str:
         # This requires a bit of explanation,  In the past we used to
         # decide largely based on compile-time information if a macro is
         # safe or unsafe.  While there was a volatile mode it was largely
@@ -9734,7 +9426,6 @@ def __call__(self, *args**kwargs) -> str:
 
         return rv  # type: ignore
 
-def _invoke(self, arguments.Any], autoescape: bool) -> str:
         if self._environment.is_async:
             return self._async_invoke(arguments, autoescape)  # type: ignore
 
@@ -9745,7 +9436,6 @@ def _invoke(self, arguments.Any], autoescape: bool) -> str:
 
         return rv
 
-def __repr__(self) -> str:
         name = "anonymous" if self.name is None else repr(self.name)
         return f"<{type(self).__name__} {name}>"
 
@@ -9771,7 +9461,6 @@ class Undefined:
         "_undefined_exception",
     )
 
-def __init__(
         self,
         hint= None,
         obj= missing,
@@ -9784,7 +9473,6 @@ def __init__(
         self._undefined_exception = exc
 
     @property
-def _undefined_message(self) -> str:
         """Build a message about the undefined value based on how it was
         accessed.
         """
@@ -9806,7 +9494,6 @@ def _undefined_message(self) -> str:
         )
 
     @internalcode
-def _fail_with_undefined_error(
         self, *args**kwargs
     ) :
         """Raise an :exc:`UndefinedError` when operations are performed
@@ -9815,7 +9502,6 @@ def _fail_with_undefined_error(
         raise self._undefined_exception(self._undefined_message)
 
     @internalcode
-def __getattr__(self, name: str) :
         # Raise AttributeError on requests for names that appear to be unimplemented
         # dunder methods to keep Python's internal protocol probing behaviors working
         # properly in cases where another exception type could cause unexpected or
@@ -9836,35 +9522,26 @@ def __getattr__(self, name: str) :
     __int__ = __float__ = __complex__ = _fail_with_undefined_error
     __pow__ = __rpow__ = _fail_with_undefined_error
 
-def __eq__(self, other) -> bool:
         return type(self) is type(other)
 
-def __ne__(self, other) -> bool:
         return not self.__eq__(other)
 
-def __hash__(self) -> int:
         return id(type(self))
 
-def __str__(self) -> str:
         return ""
 
-def __len__(self) -> int:
         return 0
 
-def __iter__(self) .Any]:
         yield from ()
 
     async def __aiter__(self) .Any]:
         for _ in ():
             yield
 
-def __bool__(self) -> bool:
         return False
 
-def __repr__(self) -> str:
         return "Undefined"
 
-def make_logging_undefined(
     logger"logging.Logger"] = None, base= Undefined
 ) :
     """Given a logger object this returns a new undefined class that will
@@ -9892,13 +9569,11 @@ def make_logging_undefined(
         logger = logging.getLogger(__name__)
         logger.addHandler(logging.StreamHandler(sys.stderr))
 
-def _log_message(undef: Undefined) -> None:
         logger.warning("Template variable warning: %s", undef._undefined_message)
 
 class LoggingUndefined(base):  # type: ignore
         __slots__ = ()
 
-        def _fail_with_undefined_error(  # type: ignore
             self, *args**kwargs
         ) :
             try:
@@ -9907,15 +9582,12 @@ class LoggingUndefined(base):  # type: ignore
                 logger.error("Template variable error: %s", e)  # type: ignore
                 raise e
 
-        def __str__(self) -> str:
             _log_message(self)
             return super().__str__()  # type: ignore
 
-        def __iter__(self) .Any]:
             _log_message(self)
             return super().__iter__()  # type: ignore
 
-        def __bool__(self) -> bool:
             _log_message(self)
             return super().__bool__()  # type: ignore
 
@@ -9939,10 +9611,8 @@ class ChainableUndefined(Undefined):
 
     __slots__ = ()
 
-def __html__(self) -> str:
         return str(self)
 
-def __getattr__(self, name: str) :
         # Raise AttributeError on requests for names that appear to be unimplemented
         # dunder methods to avoid confusing Python with truthy non-method objects that
         # do not implement the protocol being probed for. e.g., copy.copy(Undefined())
@@ -9973,7 +9643,6 @@ class DebugUndefined(Undefined):
 
     __slots__ = ()
 
-def __str__(self) -> str:
         if self._undefined_hint:
             message = f"undefined value printed: {self._undefined_hint}"
 
@@ -10014,27 +9683,21 @@ class StrictUndefined(Undefined):
     __contains__ = Undefined._fail_with_undefined_error
 
 class LoopRenderFunc(te.Protocol):
-        def __call__(
             self,
             reciter
             loop_render_func: "LoopRenderFunc",
             depth: int = 0,
         ) -> str: ...
 
-def __init__(self, context: "Context") -> None:
         self.__context = context
 
-def __getitem__(self, name: str) :
         blocks = self.__context.blocks
         return BlockReference(name, self.__context, blocks, 0)
 
-def __repr__(self) -> str:
         return f"<{type(self).__name__} {self.__context.name!r}>"
 
-def f_all(self: "Context") :
         return dict_method(self.get_all())
 
-def __init__(
         self,
         environment: "Environment",
         parent.Any],
@@ -10055,7 +9718,6 @@ def __init__(
         # from the template.
         self.blocks = {k:  for k, v in blocks.items()}
 
-def super(
         self, name: str, current"Context"], t.Iterator]
     ) "BlockReference", "Undefined"]:
         """Render a parent block."""
@@ -10069,7 +9731,6 @@ def super(
             )
         return BlockReference(name, self, blocks, index)
 
-def get(self, key: str, default= None) :
         """Look up a variable by name, or return a default if the key is
         not found.
 
@@ -10081,7 +9742,6 @@ def get(self, key: str, default= None) :
         except KeyError:
             return default
 
-def resolve(self, key: str) .Any, "Undefined"]:
         """Look up a variable by name, or return an :class:`Undefined`
         object if the key is not found.
 
@@ -10098,7 +9758,6 @@ def resolve(self, key: str) .Any, "Undefined"]:
 
         return rv
 
-def resolve_or_missing(self, key: str) :
         """Look up a variable by name, or return a ``missing`` sentinel
         if the key is not found.
 
@@ -10116,11 +9775,9 @@ def resolve_or_missing(self, key: str) :
 
         return missing
 
-def get_exported(self) .Any]:
         """Get a new dict with the exported variables."""
         return {k: self.vars for k in self.exported_vars}
 
-def get_all(self) .Any]:
         """Return the complete context as dict including the exported
         variables.  For optimizations reasons this might not return an
         actual copy so be careful with using it.
@@ -10131,7 +9788,6 @@ def get_all(self) .Any]:
             return self.vars
         return dict(self.parent, **self.vars)
 
-def call(
         __self,
         __obj..., t.Any],
         *args
@@ -10178,7 +9834,6 @@ def call(
                 " StopIteration exception"
             )
 
-def derived(self, locals.Dict] = None) :
         """Internal helper function to create a derived context.  This is
         used in situations where the system needs a new context in the same
         template that is independent.
@@ -10190,10 +9845,8 @@ def derived(self, locals.Dict] = None) :
         context.blocks.update((k, list(v)) for k, v in self.blocks.items())
         return context
 
-def __contains__(self, name: str) -> bool:
         return name in self.vars or name in self.parent
 
-def __getitem__(self, key: str) :
         """Look up a variable by name with ```` syntax, or raise a
         ``KeyError`` if the key is not found.
         """
@@ -10204,10 +9857,8 @@ def __getitem__(self, key: str) :
 
         return item
 
-def __repr__(self) -> str:
         return f"<{type(self).__name__} {self.get_all()!r} of {self.name!r}>"
 
-def __init__(
         self,
         name: str,
         context: "Context",
@@ -10219,7 +9870,6 @@ def __init__(
         self._stack = stack
         self._depth = depth
 
-def super(self) "BlockReference", "Undefined"]:
         """Super the block."""
         if self._depth + 1 >= len(self._stack):
             return self._context.environment.undefined(
@@ -10227,7 +9877,6 @@ def super(self) "BlockReference", "Undefined"]:
             )
         return BlockReference(self.name, self._context, self._stack, self._depth + 1)
 
-def __call__(self) -> str:
         if self._context.environment.is_async:
             return self._async_call()  # type: ignore
 
@@ -10240,7 +9889,6 @@ def __call__(self) -> str:
 
         return rv
 
-def __init__(
         self,
         iterable
         undefined"Undefined"],
@@ -10262,10 +9910,8 @@ def __init__(
         #: How many levels deep a recursive loop currently is, starting at 0.
         self.depth0 = depth0
 
-def _to_iterator(iterable) :
         return iter(iterable)
 
-def length(self) -> int:
         """Length of the iterable.
 
         If the iterable is a generator or otherwise does not have a
@@ -10283,36 +9929,29 @@ def length(self) -> int:
 
         return self._length
 
-def __len__(self) -> int:
         return self.length
 
-def depth(self) -> int:
         """How many levels deep a recursive loop currently is, starting at 1."""
         return self.depth0 + 1
 
-def index(self) -> int:
         """Current iteration of the loop, starting at 1."""
         return self.index0 + 1
 
-def revindex0(self) -> int:
         """Number of iterations from the end of the loop, ending at 0.
 
         Requires calculating :attr:`length`.
         """
         return self.length - self.index
 
-def revindex(self) -> int:
         """Number of iterations from the end of the loop, ending at 1.
 
         Requires calculating :attr:`length`.
         """
         return self.length - self.index0
 
-def first(self) -> bool:
         """Whether this is the first iteration of the loop."""
         return self.index0 == 0
 
-def _peek_next(self) :
         """Return the next element in the iterable, or :data:`missing`
         if the iterable is exhausted. Only peeks one item ahead, caching
         the result in :attr:`_last` for use in subsequent checks. The
@@ -10324,7 +9963,6 @@ def _peek_next(self) :
         self._after = next(self._iterator, missing)
         return self._after
 
-def last(self) -> bool:
         """Whether this is the last iteration of the loop.
 
         Causes the iterable to advance early. See
@@ -10333,7 +9971,6 @@ def last(self) -> bool:
         """
         return self._peek_next() is missing
 
-def previtem(self) .Any, "Undefined"]:
         """The item in the previous iteration. Undefined during the
         first iteration.
         """
@@ -10342,7 +9979,6 @@ def previtem(self) .Any, "Undefined"]:
 
         return self._before
 
-def nextitem(self) .Any, "Undefined"]:
         """The item in the next iteration. Undefined during the last
         iteration.
 
@@ -10357,7 +9993,6 @@ def nextitem(self) .Any, "Undefined"]:
 
         return rv
 
-def cycle(self, *args: V) -> V:
         """Return a value from the given args, cycling through based on
         the current :attr:`index0`.
 
@@ -10368,7 +10003,6 @@ def cycle(self, *args: V) -> V:
 
         return args
 
-def changed(self, *value) -> bool:
         """Return ``True`` if previously called with a different value
         (including when called for the first time).
 
@@ -10380,10 +10014,8 @@ def changed(self, *value) -> bool:
 
         return False
 
-def __iter__(self) :
         return self
 
-def __next__(self) .Any, "LoopContext"]:
         if self._after is not missing:
             rv = self._after
             self._after = missing
@@ -10395,7 +10027,6 @@ def __next__(self) .Any, "LoopContext"]:
         self._current = rv
         return rv, self
 
-def __call__(self, iterable) -> str:
         """When iterating over nested data, render the body of the loop
         recursively with the given inner iterable data.
 
@@ -10408,18 +10039,14 @@ def __call__(self, iterable) -> str:
 
         return self._recurse(iterable, self._recurse, depth=self.depth)
 
-def __repr__(self) -> str:
         return f"<{type(self).__name__} {self.index}/{self.length}>"
 
-def _to_iterator(  # type: ignore
         iterable.Iterable, t.AsyncIterable],
     ) :
         return auto_aiter(iterable)
 
-def __aiter__(self) :
         return self
 
-def __init__(
         self,
         environment: "Environment",
         func..., str],
@@ -10448,7 +10075,6 @@ def __init__(
 
         self._default_autoescape = default_autoescape
 
-def __call__(self, *args**kwargs) -> str:
         # This requires a bit of explanation,  In the past we used to
         # decide largely based on compile-time information if a macro is
         # safe or unsafe.  While there was a volatile mode it was largely
@@ -10524,7 +10150,6 @@ def __call__(self, *args**kwargs) -> str:
 
         return self._invoke(arguments, autoescape)
 
-def _invoke(self, arguments.Any], autoescape: bool) -> str:
         if self._environment.is_async:
             return self._async_invoke(arguments, autoescape)  # type: ignore
 
@@ -10535,11 +10160,9 @@ def _invoke(self, arguments.Any], autoescape: bool) -> str:
 
         return rv
 
-def __repr__(self) -> str:
         name = "anonymous" if self.name is None else repr(self.name)
         return f"<{type(self).__name__} {name}>"
 
-def __init__(
         self,
         hint= None,
         obj= missing,
@@ -10551,7 +10174,6 @@ def __init__(
         self._undefined_name = name
         self._undefined_exception = exc
 
-def _undefined_message(self) -> str:
         """Build a message about the undefined value based on how it was
         accessed.
         """
@@ -10572,7 +10194,6 @@ def _undefined_message(self) -> str:
             f" attribute {self._undefined_name!r}"
         )
 
-def _fail_with_undefined_error(
         self, *args**kwargs
     ) :
         """Raise an :exc:`UndefinedError` when operations are performed
@@ -10580,7 +10201,6 @@ def _fail_with_undefined_error(
         """
         raise self._undefined_exception(self._undefined_message)
 
-def __getattr__(self, name: str) :
         # Raise AttributeError on requests for names that appear to be unimplemented
         # dunder methods to keep Python's internal protocol probing behaviors working
         # properly in cases where another exception type could cause unexpected or
@@ -10590,37 +10210,27 @@ def __getattr__(self, name: str) :
 
         return self._fail_with_undefined_error()
 
-def __eq__(self, other) -> bool:
         return type(self) is type(other)
 
-def __ne__(self, other) -> bool:
         return not self.__eq__(other)
 
-def __hash__(self) -> int:
         return id(type(self))
 
-def __str__(self) -> str:
         return ""
 
-def __len__(self) -> int:
         return 0
 
-def __iter__(self) .Any]:
         yield from ()
 
-def __bool__(self) -> bool:
         return False
 
-def __repr__(self) -> str:
         return "Undefined"
 
-def _log_message(undef: Undefined) -> None:
         logger.warning("Template variable warning: %s", undef._undefined_message)
 
 class LoggingUndefined(base):  # type: ignore
         __slots__ = ()
 
-        def _fail_with_undefined_error(  # type: ignore
             self, *args**kwargs
         ) :
             try:
@@ -10629,22 +10239,17 @@ class LoggingUndefined(base):  # type: ignore
                 logger.error("Template variable error: %s", e)  # type: ignore
                 raise e
 
-        def __str__(self) -> str:
             _log_message(self)
             return super().__str__()  # type: ignore
 
-        def __iter__(self) .Any]:
             _log_message(self)
             return super().__iter__()  # type: ignore
 
-        def __bool__(self) -> bool:
             _log_message(self)
             return super().__bool__()  # type: ignore
 
-def __html__(self) -> str:
         return str(self)
 
-def __getattr__(self, name: str) :
         # Raise AttributeError on requests for names that appear to be unimplemented
         # dunder methods to avoid confusing Python with truthy non-method objects that
         # do not implement the protocol being probed for. e.g., copy.copy(Undefined())
@@ -10656,10 +10261,8 @@ def __getattr__(self, name: str) :
 
         return self
 
-def __getitem__(self, _name: str) :  # type: ignore
         return self
 
-def __str__(self) -> str:
         if self._undefined_hint:
             message = f"undefined value printed: {self._undefined_hint}"
 
@@ -10674,14 +10277,12 @@ def __str__(self) -> str:
 
         return f"{{{{ {message} }}}}"
 
-        def __call__(
             self,
             reciter
             loop_render_func: "LoopRenderFunc",
             depth: int = 0,
         ) -> str: ...
 
-        def _fail_with_undefined_error(  # type: ignore
             self, *args**kwargs
         ) :
             try:
@@ -10690,15 +10291,12 @@ def __str__(self) -> str:
                 logger.error("Template variable error: %s", e)  # type: ignore
                 raise e
 
-        def __str__(self) -> str:
             _log_message(self)
             return super().__str__()  # type: ignore
 
-        def __iter__(self) .Any]:
             _log_message(self)
             return super().__iter__()  # type: ignore
 
-        def __bool__(self) -> bool:
             _log_message(self)
             return super().__bool__()  # type: ignore
 # --- Merged from main.py ---
@@ -11095,7 +10693,6 @@ def pytest_collection_modifyitems(items: list, config: Config) -> None:
         items = remaining
 
 class FSHookProxy:
-def __init__(
         self,
         pm: PytestPluginManager,
         remove_mods: AbstractSet,
@@ -11221,7 +10818,6 @@ def from_config(cls, config: Config) -> Session:
         session: Session = cls._create(config=config)
         return session
 
-def __repr__(self) -> str:
         return (
             f"<{self.__class__.__name__} {self.name} "
             f"exitstatus=%r "
@@ -11372,11 +10968,9 @@ def perform_collect(
     ) -> Sequence: ...
 
     @overload
-def perform_collect(
         self, args: Sequence | None = ..., genitems: bool = ...
     ) -> Sequence: ...
 
-def perform_collect(
         self, args: Sequence | None = None, genitems: bool = True
     ) -> Sequence:
         """Perform the collection phase for this session.
@@ -11702,13 +11296,11 @@ def resolve_collection_argument(
         module_name=module_name,
     )
 
-def is_ancestor(base: Path, query: Path) -> bool:
         """Return whether query is an ancestor of base."""
         if base == query:
             return True
         return query in base.parents
 
-def __init__(
         self,
         pm: PytestPluginManager,
         remove_mods: AbstractSet,
@@ -11716,17 +11308,14 @@ def __init__(
         self.pm = pm
         self.remove_mods = remove_mods
 
-def __getattr__(self, name: str) -> pluggy.HookCaller:
         x = self.pm.subset_hook_caller(name, remove_plugins=self.remove_mods)
         self.__dict__ = x
         return x
 
-def __missing__(self, path: Path) -> str:
         r = bestrelpath(self.path, path)
         self = r
         return r
 
-def from_parent(  # type: ignore
         cls,
         parent: nodes.Collector,
         *,
@@ -11740,7 +11329,6 @@ def from_parent(  # type: ignore
         """
         return super().from_parent(parent=parent, path=path)
 
-def collect(self) -> Iterable:
         config = self.config
         col: nodes.Collector | None
         cols: Sequence
@@ -11763,7 +11351,6 @@ def collect(self) -> Iterable:
                 cols = ihook.pytest_collect_file(file_path=path, parent=self)
                 yield from cols
 
-def __init__(self, config: Config) -> None:
         super().__init__(
             name="",
             path=main.rootpath,
@@ -11789,11 +11376,9 @@ def __init__(self, config: Config) -> None:
 
         self.main.pluginmanager.register(self, name="session")
 
-def from_config(cls, config: Config) -> Session:
         session: Session = cls._create(config=config)
         return session
 
-def __repr__(self) -> str:
         return (
             f"<{self.__class__.__name__} {self.name} "
             f"exitstatus=%r "
@@ -11801,10 +11386,8 @@ def __repr__(self) -> str:
             f"testscollected={self.testscollected}>"
         ) % getattr(self, "exitstatus", "<UNSET>")
 
-def shouldstop(self) -> bool | str:
         return self._shouldstop
 
-def shouldstop(self, value: bool | str) -> None:
         # The runner checks shouldfail and assumes that if it is set we are
         # definitely stopping, so prevent unsetting it.
         if value is False and self._shouldstop:
@@ -11817,10 +11400,8 @@ def shouldstop(self, value: bool | str) -> None:
             return
         self._shouldstop = value
 
-def shouldfail(self) -> bool | str:
         return self._shouldfail
 
-def shouldfail(self, value: bool | str) -> None:
         # The runner checks shouldfail and assumes that if it is set we are
         # definitely stopping, so prevent unsetting it.
         if value is False and self._shouldfail:
@@ -11833,31 +11414,26 @@ def shouldfail(self, value: bool | str) -> None:
             return
         self._shouldfail = value
 
-def startpath(self) -> Path:
         """The path from which pytest was invoked.
 
         .. versionadded:: 7.0.0
         """
         return self.main.invocation_params.dir
 
-def _node_location_to_relpath(self, node_path: Path) -> str:
         # bestrelpath is a quite slow function.
         return self._bestrelpathcache
 
-def pytest_collectstart(self) -> None:
         if self.shouldfail:
             raise self.Failed(self.shouldfail)
         if self.shouldstop:
             raise self.Interrupted(self.shouldstop)
 
-def pytest_runtest_logreport(self, report: TestReport | CollectReport) -> None:
         if report.failed and not hasattr(report, "wasxfail"):
             self.testsfailed += 1
             maxfail = self.main.getvalue("maxfail")
             if maxfail and self.testsfailed >= maxfail:
                 self.shouldfail = f"stopping after {self.testsfailed} failures"
 
-def isinitpath(
         self,
         path: str | os.PathLike,
         *,
@@ -11881,7 +11457,6 @@ def isinitpath(
         else:
             return path_ in self._initialpaths
 
-def gethookproxy(self, fspath: os.PathLike) -> pluggy.HookRelay:
         # Optimization: Path(Path(...)) is much slower than isinstance.
         path = fspath if isinstance(fspath, Path) else Path(fspath)
         pm = self.main.pluginmanager
@@ -11898,7 +11473,6 @@ def gethookproxy(self, fspath: os.PathLike) -> pluggy.HookRelay:
             proxy = self.main.hook
         return proxy
 
-def _collect_path(
         self,
         path: Path,
         path_cache: dict],
@@ -11929,15 +11503,12 @@ def _collect_path(
         path_cache = cols
         return cols
 
-def perform_collect(
         self, args: Sequence | None = ..., genitems: Literal = ...
     ) -> Sequence: ...
 
-def perform_collect(
         self, args: Sequence | None = ..., genitems: bool = ...
     ) -> Sequence: ...
 
-def perform_collect(
         self, args: Sequence | None = None, genitems: bool = True
     ) -> Sequence:
         """Perform the collection phase for this session.
@@ -12019,7 +11590,6 @@ def perform_collect(
 
         return items
 
-def _collect_one_node(
         self,
         node: nodes.Collector,
         handle_dupes: bool = True,
@@ -12032,7 +11602,6 @@ def _collect_one_node(
             self._collection_cache = rep
             return rep, False
 
-def collect(self) -> Iterator:
         # This is a cache for the root directories of the initial paths.
         # We can't use collection_cache for Session because of its special
         # role as the bootstrapping collector.
@@ -12153,7 +11722,6 @@ def collect(self) -> Iterator:
 
             self.trace.root.indent -= 1
 
-def genitems(self, node: nodes.Item | nodes.Collector) -> Iterator:
         self.trace("genitems", node)
         if isinstance(node, nodes.Item):
             node.ihook.pytest_itemcollected(item=node)
@@ -12173,7 +11741,6 @@ def genitems(self, node: nodes.Item | nodes.Collector) -> Iterator:
                 node.ihook.pytest_collectreport(report=rep)
 # --- Merged from runner.py ---
 
-def pytest_addoption(parser: Parser) -> None:
     group = parser.getgroup("terminal reporting", "Reporting", after="general")
     group.addoption(
         "--durations",
@@ -12391,7 +11958,6 @@ class CallInfo(Generic):
     #: The context of invocation: "collect", "setup", "call" or "teardown".
     when: Literal
 
-def __init__(
         self,
         result: TResult | None,
         excinfo: ExceptionInfo | None,
@@ -12461,7 +12027,6 @@ def from_call(
             _ispytest=True,
         )
 
-def __repr__(self) -> str:
         if self.excinfo is None:
             return f"<CallInfo when={self.when!r} result: {self._result!r}>"
         return f"<CallInfo when={self.when!r} excinfo={self.excinfo!r}>"
@@ -12583,7 +12148,6 @@ class SetupState:
     The end!
     """
 
-def __init__(self) -> None:
         # The stack is in the dict insertion order.
         self.stack: dict[
             Node,
@@ -12669,7 +12233,6 @@ def collect_one_node(collector: Collector) -> CollectReport:
         ihook.pytest_exception_interact(node=collector, call=call, report=rep)
     return rep
 
-def __init__(
         self,
         result: TResult | None,
         excinfo: ExceptionInfo | None,
@@ -12688,7 +12251,6 @@ def __init__(
         self.duration = duration
         self.when = when
 
-def result(self) -> TResult:
         """The return value of the call, if it didn't raise.
 
         Can only be accessed if excinfo is None.
@@ -12700,7 +12262,6 @@ def result(self) -> TResult:
         #  None, that's why a cast and not an assert).
         return cast(TResult, self._result)
 
-def from_call(
         cls,
         func: Callable, TResult],
         when: Literal,
@@ -12737,12 +12298,10 @@ def from_call(
             _ispytest=True,
         )
 
-def __repr__(self) -> str:
         if self.excinfo is None:
             return f"<CallInfo when={self.when!r} result: {self._result!r}>"
         return f"<CallInfo when={self.when!r} excinfo={self.excinfo!r}>"
 
-def collect() -> list:
         # Before collecting, if this is a Directory, load the conftests.
         # If a conftest import fails to load, it is considered a collection
         # error of the Directory collector. This is why it's done inside of the
@@ -12761,7 +12320,6 @@ def collect() -> list:
 
         return list(collector.collect())
 
-def __init__(self) -> None:
         # The stack is in the dict insertion order.
         self.stack: dict[
             Node,
@@ -12773,7 +12331,6 @@ def __init__(self) -> None:
             ],
         ] = {}
 
-def setup(self, item: Item) -> None:
         """Setup objects along the collector chain to the item."""
         needed_collectors = item.listchain()
 
@@ -12794,7 +12351,6 @@ def setup(self, item: Item) -> None:
                 self.stack = (self.stack, (exc, exc.__traceback__))
                 raise
 
-def addfinalizer(self, finalizer: Callable, object], node: Node) -> None:
         """Attach a finalizer to the given node.
 
         The node must be currently active in the stack.
@@ -12804,7 +12360,6 @@ def addfinalizer(self, finalizer: Callable, object], node: Node) -> None:
         assert node in self.stack, (node, self.stack)
         self.stack.append(finalizer)
 
-def teardown_exact(self, nextitem: Item | None) -> None:
         """Teardown the current stack up until reaching nodes that nextitem
         also descends from.
 
@@ -14472,7 +14027,6 @@ def compute_d(K, N):
         d = d
     return d
 
-def main():
     print(__doc__)
     K = 25
     N = 25
@@ -14536,18 +14090,15 @@ def gammaincc(a, x, dps=50, maxterms=10**8):
         G = 
         # Use 2F0 series when possible; fall back to lower gamma representation
         try:
-            def h(z):
                 r = z-1
                 return , , , G, , , 1/nega)]
             return mpf2float(mp.hypercomb(h, , force_series=True))
         except mp.libmp.NoConvergence:
-            def h(z):
                 T1 = , , , G, , , 0
                 T2 = , , , G, , , a
                 return T1, T2
             return mpf2float(mp.hypercomb(h, , maxterms=maxterms))
 
-def main():
     t0 = time()
     # It would be nice to have data for larger values, but either this
     # requires prohibitively large precision (dps > 800) or mpmath has
@@ -14580,15 +14131,12 @@ def main():
 
     print(f"{(time() - t0)/60} minutes elapsed")
 
-        def h(z):
             T1 = , , , G, , , b
             return (T1,)
 
-            def h(z):
                 r = z-1
                 return , , , G, , , 1/nega)]
 
-            def h(z):
                 T1 = , , , G, , , 0
                 T2 = , , , G, , , a
                 return T1, T2
@@ -15120,7 +14668,6 @@ def __init__(self, *, store_precision=True, assume_centered=False, block_size=10
         self.block_size = block_size
 
     @_fit_context(prefer_skip_nested_validation=True)
-def fit(self, X, y=None):
         """Fit the Ledoit-Wolf shrunk covariance model to X.
 
         Parameters
@@ -15323,7 +14870,6 @@ class OAS(EmpiricalCovariance):
     """
 
     @_fit_context(prefer_skip_nested_validation=True)
-def fit(self, X, y=None):
         """Fit the Oracle Approximating Shrinkage covariance model to X.
 
         Parameters
@@ -15353,13 +14899,11 @@ def fit(self, X, y=None):
 
         return self
 
-def __init__(self, *, store_precision=True, assume_centered=False, shrinkage=0.1):
         super().__init__(
             store_precision=store_precision, assume_centered=assume_centered
         )
         self.shrinkage = shrinkage
 
-def fit(self, X, y=None):
         """Fit the shrunk covariance model to X.
 
         Parameters
@@ -15389,13 +14933,11 @@ def fit(self, X, y=None):
 
         return self
 
-def __init__(self, *, store_precision=True, assume_centered=False, block_size=1000):
         super().__init__(
             store_precision=store_precision, assume_centered=assume_centered
         )
         self.block_size = block_size
 
-def fit(self, X, y=None):
         """Fit the Ledoit-Wolf shrunk covariance model to X.
 
         Parameters
@@ -15426,7 +14968,6 @@ def fit(self, X, y=None):
 
         return self
 
-def fit(self, X, y=None):
         """Fit the Oracle Approximating Shrinkage covariance model to X.
 
         Parameters
@@ -15600,7 +15141,6 @@ class to data once, then keep the instance around to do transformations.
         "tol": ,
     }
 
-def __init__(
         self,
         n_components=2,
         *,
@@ -15619,7 +15159,6 @@ def __init__(
         self.random_state = random_state
         self.tol = tol
 
-def fit(self, X, y=None):
         """Fit model on training data X.
 
         Parameters
@@ -15753,7 +15292,6 @@ def _n_features_out(self):
         """Number of transformed output features."""
         return self.components_.shape
 
-def __init__(
         self,
         n_components=2,
         *,
@@ -15772,7 +15310,6 @@ def __init__(
         self.random_state = random_state
         self.tol = tol
 
-def fit(self, X, y=None):
         """Fit model on training data X.
 
         Parameters
@@ -15791,7 +15328,6 @@ def fit(self, X, y=None):
         self.fit_transform(X)
         return self
 
-def fit_transform(self, X, y=None):
         """Fit model to X and perform dimensionality reduction on X.
 
         Parameters
@@ -15859,7 +15395,6 @@ def fit_transform(self, X, y=None):
 
         return X_transformed
 
-def transform(self, X):
         """Perform dimensionality reduction on X.
 
         Parameters
@@ -15876,7 +15411,6 @@ def transform(self, X):
         X = validate_data(self, X, accept_sparse=, reset=False)
         return safe_sparse_dot(X, self.components_.T)
 
-def inverse_transform(self, X):
         """Transform X back to its original space.
 
         Returns an array X_original whose transform would be X.
@@ -15894,13 +15428,11 @@ def inverse_transform(self, X):
         X = check_array(X)
         return np.dot(X, self.components_)
 
-def __sklearn_tags__(self):
     tags = super().__sklearn_tags__()
     tags.input_tags.sparse = True
     tags.transformer_tags.preserves_dtype = True
     return tags
         return tags
 
-def _n_features_out(self):
         """Number of transformed output features."""
         return self.components_.shape
