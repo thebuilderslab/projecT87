@@ -9,11 +9,30 @@ import os
 import time
 import json
 import requests
-from web3 import Web3
-from eth_account import Account
 from decimal import Decimal
 from dotenv import load_dotenv
 import logging
+
+# Enhanced Web3 import with error handling
+try:
+    from web3 import Web3
+    from web3.providers import HTTPProvider
+    from eth_account import Account
+    print("✅ Aave Integration: Web3 and eth_account imported successfully")
+except ImportError as e:
+    print(f"❌ Aave Integration: Web3 import failed: {e}")
+    print("🔧 Installing required packages...")
+    import subprocess
+    import sys
+    try:
+        subprocess.check_call([sys.executable, "-m", "pip", "install", "web3>=6.0.0", "eth-account>=0.8.0"])
+        from web3 import Web3
+        from web3.providers import HTTPProvider
+        from eth_account import Account
+        print("✅ Aave Integration: Packages installed and imported successfully")
+    except Exception as install_error:
+        print(f"❌ Failed to install required packages: {install_error}")
+        raise
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)

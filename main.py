@@ -12,9 +12,21 @@ from dotenv import load_dotenv
 
 try:
     from web3 import Web3
-except ImportError:
-    print("Warning: web3 not available")
-    Web3 = None
+    from web3.providers import HTTPProvider
+    print("✅ Web3 library imported successfully")
+except ImportError as e:
+    print(f"❌ Web3 import failed: {e}")
+    print("🔧 Installing web3 library...")
+    import subprocess
+    import sys
+    try:
+        subprocess.check_call([sys.executable, "-m", "pip", "install", "web3>=6.0.0"])
+        from web3 import Web3
+        from web3.providers import HTTPProvider
+        print("✅ Web3 library installed and imported successfully")
+    except Exception as install_error:
+        print(f"❌ Failed to install web3: {install_error}")
+        Web3 = None
 
 # --- Configuration ---
 CONFIG_FILE = 'agent_config.json'

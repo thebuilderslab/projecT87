@@ -11,12 +11,24 @@ from eth_account import Account
 
 class UniswapIntegration:
     def __init__(self, w3, account):
+        # Enhanced Web3 validation
+        if w3 is None:
+            raise ValueError("❌ Web3 instance is None - cannot initialize Uniswap integration")
+        
+        if not w3.is_connected():
+            raise ValueError("❌ Web3 instance is not connected to network")
+            
         self.w3 = w3
         self.account = account
         self.address = account.address
 
         # Determine network based on chain ID
-        chain_id = self.w3.eth.chain_id
+        try:
+            chain_id = self.w3.eth.chain_id
+            print(f"✅ Uniswap Integration: Connected to chain ID {chain_id}")
+        except Exception as e:
+            print(f"❌ Failed to get chain ID: {e}")
+            raise
 
         if chain_id == 42161:  # Arbitrum Mainnet
             print(f"🌐 Initializing Uniswap for Arbitrum Mainnet (Chain ID: {chain_id})")
