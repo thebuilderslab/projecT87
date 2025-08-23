@@ -1532,73 +1532,70 @@ class Context:
         self.exported_vars = set()
         self.name = name
         self.globals_keys = set() if globals is None else set(globals)
- # create the initial mapping of blocks. Whenever template inheritance
- # takes place the runtime will update this mapping with the new blocks
- # from the template.
+# create the initial mapping of blocks. Whenever template inheritance
+# takes place the runtime will update this mapping with the new blocks
+# from the template.
 
 class MyClass:
     def __init__(self, blocks):
         # This line must be indented within a method
         self.blocks = {k: v for k, v in blocks.items()}
 
-# Example usage
-# my_instance = MyClass(some_blocks)
+    def super(self, name, current):
+        """Render a parent block."""
+        try:
+            blocks = self.blocks[name]
+            index = blocks.index(current) + 1
+        except (LookupError, KeyError):
+            return self.environment.undefined(
+                f"there is no parent block called {name!r}.", name="super"
+            )
+        return BlockReference(name, self, blocks, index)
 
-def super(self, name, current):
-     """Render a parent block."""
-     try:
-         blocks = self.blocks[name]
-         index = blocks.index(current) + 1
-     except (LookupError, KeyError):
-         return self.environment.undefined(
-             f"there is no parent block called {name!r}.", name="super"
-         )
-     return BlockReference(name, self, blocks, index)
+    def get(self, key, default=None):
+        """Look up a variable by name, or return a default if the key is
+        not found.
 
-def get(self, key, default=None):
-     """Look up a variable by name, or return a default if the key is
-     not found.
+        :param key: The variable name to look up.
+        :param default: The value to return if the key is not found.
+        """
+        try:
+            return self[key]
+        except KeyError:
+            return default
 
-     :param key: The variable name to look up.
-     :param default: The value to return if the key is not found.
-     """
-    try:
-        return self[key]
-    except KeyError:
-        return default
+    def resolve(self, key):
+        """Look up a variable by name, or return an :class:`Undefined`
+        object if the key is not found.
 
-def resolve(self, key):
-    """Look up a variable by name, or return an :class:`Undefined`
-    object if the key is not found.
+        If you need to add custom behavior, override
+        :meth:`resolve_or_missing`, not this method. The various lookup
+        functions use that method, not this one.
 
-    If you need to add custom behavior, override
-    :meth:`resolve_or_missing`, not this method. The various lookup
-    functions use that method, not this one.
+        :param key: The variable name to look up.
+        """
+        rv = self.resolve_or_missing(key)
 
-    :param key: The variable name to look up.
-    """
-    rv = self.resolve_or_missing(key)
+        if rv is missing:
+            return self.environment.undefined(name=key)
 
-    if rv is missing:
-        return self.environment.undefined(name=key)
+        return rv
 
-    return rv
-
-def resolve_or_missing(self, key: str) :
+    def resolve_or_missing(self, key: str):
         """Look up a variable by name, or return a ``missing`` sentinel
         if the key is not found.
 
         Override this method to add custom lookup behavior.
         :meth:`resolve`, :meth:`get`, and :meth:`__getitem__` use this
         method. Don't call this method directly.
-# 
-# :param key: The variable name to look up.
-# """
-# if key in self.vars:
-#     return self.vars[key]
-#
-# if key in self.parent:
-#     return self.parent[key]
+
+        :param key: The variable name to look up.
+        """
+        if key in self.vars:
+            return self.vars[key]
+
+        if key in self.parent:
+            return self.parent[key]
 
 def my_function():
     # Add your code block here, ensuring it's indented properly
@@ -1615,22 +1612,22 @@ def my_function():
         """
         # Additional code would go here
         pass
-        if not self.vars:
-            return self.parent
-        if not self.parent:
-            return self.vars
-        return dict(self.parent, **self.vars)
 
-    def my_function(__self, __obj: Any, *args: Any, **kwargs: Any) -> Any:
-    """
-    A function that takes an object, additional positional arguments,
-    and keyword arguments, returning an arbitrary type. Add your logic here.
-    """
-    # Example of a function body
+        def my_function(__self, __obj: Any, *args: Any, **kwargs: Any) -> Any:
+            """
+            A function that takes an object, additional positional arguments,
+            and keyword arguments, returning an arbitrary type. Add your logic here.
+            """
+            # Example of a function body
+            if not self.vars:
+                return self.parent
+            if not self.parent:
+                return self.vars
+            return dict(self.parent, **self.vars)
     return __obj(*args, **kwargs)
 
     # Your logic here
-    # pass
+# pass
 
 def derived(self, locals: dict = None):
     """Internal helper function to create a derived context. This is
@@ -1642,37 +1639,36 @@ def derived(self, locals: dict = None):
     context.eval_ctx = self.eval_ctx
     context.blocks.update((k, list(v)) for k, v in self.blocks.items())
     return context
-        context.eval_ctx = self.eval_ctx
-        context.blocks.update((k, list(v)) for k, v in self.blocks.items())
-        return context
 
-    keys = _dict_method_all(dict.keys)
-    values = _dict_method_all(dict.values)
-    items = _dict_method_all(dict.items)
+keys = _dict_method_all(dict.keys)
+values = _dict_method_all(dict.values)
+items = _dict_method_all(dict.items)
 
 def __contains__(self, name: str) -> bool:
-        return name in self.vars or name in self.parent
+    return name in self.vars or name in self.parent
 
-def __getitem__(self, key: str) :
-        """Look up a variable by name with ```` syntax, or raise a
-        ``KeyError`` if the key is not found.
-        """
-        item = self.resolve_or_missing(key)
+def __getitem__(self, key: str):
+    """Look up a variable by name with ```` syntax, or raise a
+    ``KeyError`` if the key is not found.
+    """
+    item = self.resolve_or_missing(key)
 
-        if item is missing:
-            raise KeyError(key)
+    if item is missing:
+        raise KeyError(key)
 
-        return item
+    return item
+def __repr__(self) -> str:
+    return f"<{type(self).__name__} {self.get_all()!r} of {self.name!r}>"
 
-        return f"<{type(self).__name__} {self.get_all()!r} of {self.name!r}>"
 
 class BlockReference:
     """One block on a template reference."""
 
+    def __init__(
         self,
         name: str,
         context: "Context",
-        stack.Callable, t.Iterator]],
+        stack: "list[t.Callable | t.Iterator]",
         depth: int,
     ) -> None:
         self.name = name
@@ -1681,7 +1677,7 @@ class BlockReference:
         self._depth = depth
 
     @property
-def super(self) "BlockReference", "Undefined"]:
+    def super(self) -> "BlockReference | Undefined":
         """Super the block."""
         if self._depth + 1 >= len(self._stack):
             return self._context.environment.undefined(
@@ -1692,18 +1688,20 @@ def super(self) "BlockReference", "Undefined"]:
     @internalcode
     async def _async_call(self) -> str:
         rv = concat(
-            (self._context)]  # type: ignore
+            (self._stack[self._depth](self._context)),
         )
-
         if self._context.eval_ctx.autoescape:
             return Markup(rv)
-
         return rv
 
     @internalcode
-def __call__(self) -> str:
+    def __call__(self) -> str:
         if self._context.environment.is_async:
-            return self._async_call()  # type: ignore
+            return self._async_call()
+        # The return value for the sync case is missing from your snippet
+        # but would likely involve a non-async call to the stack.
+        # You may need to add this part depending on your full code.
+        pass
 
         rv = concat(self._stack(self._context))
 
@@ -1712,46 +1710,46 @@ def __call__(self) -> str:
 
         return rv
 
-class LoopContext:
-    """A wrapper iterable for dynamic ``for`` loops, with information
-    about the loop and iteration.
-    """
+    class Loop:
+        #: Current iteration of the loop, starting at 0.
+        index0 = -1
 
-    #: Current iteration of the loop, starting at 0.
-    index0 = -1
+        _length= None
+        _after= missing
+        _current= missing
+        _before= missing
+        _last_changed_value= missing
 
-    _length= None
-    _after= missing
-    _current= missing
-    _before= missing
-    _last_changed_value= missing
-
-        self,
-        iterable
-        undefined"Undefined"],
-        recurse"LoopRenderFunc"] = None,
-        depth0: int = 0,
-    ) -> None:
-        """
-        :param iterable: Iterable to wrap.
-        :param undefined: :class:`Undefined` class to use for next and
+        def __init__(
+            self,
+            iterable,
+            undefined,
+            recurse=None,
+            depth0: int = 0,
+        ) -> None:
+            """
+            :param iterable: Iterable to wrap.
+            :param undefined: :class:`Undefined` class to use for next and
             previous items.
-        :param recurse: The function to render the loop body when the
+            :param recurse: The function to render the loop body when the
             loop is marked recursive.
-        :param depth0: Incremented when looping recursively.
-        """
-        self._iterable = iterable
-        self._iterator = self._to_iterator(iterable)
-        self._undefined = undefined
-        self._recurse = recurse
-        #: How many levels deep a recursive loop currently is, starting at 0.
-        self.depth0 = depth0
+            :param depth0: Incremented when looping recursively.
+            """
+            self._iterable = iterable
+            self._iterator = self._to_iterator(iterable)
+            self._undefined = undefined
+            self._recurse = recurse
+            #: How many levels deep a recursi00ve loop currently is, starting at 0.
+            self.depth0 = depth0
 
     @staticmethod
-def _to_iterator(iterable) :
+    def _to_iterator(iterable):
         return iter(iterable)
 
     @property
+    def your_property_name(self):
+        # your property code here
+        pass
 def length(self) -> int:
         """Length of the iterable.
 
