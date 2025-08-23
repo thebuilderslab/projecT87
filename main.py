@@ -1578,9 +1578,8 @@ def resolve_or_missing(self, key: str) :
 
         if key in self.parent:
             return self.parent
-    class MyClass:
-        def get_exported(self):
-            """Get a new dict with the exported variables."""
+            def get_exported(self):
+         
             return {k: self.vars.get(k) for k in self.exported_vars}
 
         def get_all(self):
