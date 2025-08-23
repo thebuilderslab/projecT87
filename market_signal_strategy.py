@@ -35,6 +35,15 @@ class MarketSignalStrategy:
 
         # Initialize enhanced market analyzer
         self.enhanced_analyzer = EnhancedMarketAnalyzer(agent)
+        
+        # Initialize RSI calculator for real technical analysis
+        try:
+            from rsi_calculator import RSICalculator
+            self.rsi_calculator = RSICalculator(self.coinmarketcap_api_key)
+            logging.info("✅ RSI Calculator initialized - Real RSI data available")
+        except ImportError:
+            self.rsi_calculator = None
+            logging.warning("⚠️ RSI Calculator not available - using simplified calculations")
 
         # Initialize advanced trend analyzer for minute-by-minute analysis
         try:
@@ -116,19 +125,25 @@ class MarketSignalStrategy:
             }
 
     def calculate_technical_indicators(self, price_data: Dict) -> Dict:
-        """Calculate simplified technical indicators for ARB"""
+        """Calculate technical indicators for ARB using real RSI"""
         try:
-            # Simplified RSI calculation based on recent price changes
-            price_change_1h = price_data.get('percent_change_1h', 0)
-            price_change_24h = price_data.get('percent_change_24h', 0)
-
-            # Simple momentum-based RSI approximation
-            if price_change_1h > 2:
-                rsi_estimate = 70 + (price_change_1h - 2) * 5  # Trending overbought
-            elif price_change_1h < -2:
-                rsi_estimate = 30 + (price_change_1h + 2) * 5  # Trending oversold
+            # Try to use real RSI calculation first
+            if hasattr(self, 'rsi_calculator'):
+                arb_rsi_data = self.rsi_calculator.get_arb_rsi()
+                rsi_estimate = arb_rsi_data.get('rsi', 50.0)
+                logging.info(f"📊 Real RSI calculated: {rsi_estimate:.1f}")
             else:
-                rsi_estimate = 50 + price_change_1h * 10  # Neutral with slight bias
+                # Fallback to simplified RSI calculation
+                price_change_1h = price_data.get('percent_change_1h', 0)
+                price_change_24h = price_data.get('percent_change_24h', 0)
+
+                # Simple momentum-based RSI approximation
+                if price_change_1h > 2:
+                    rsi_estimate = 70 + (price_change_1h - 2) * 5  # Trending overbought
+                elif price_change_1h < -2:
+                    rsi_estimate = 30 + (price_change_1h + 2) * 5  # Trending oversold
+                else:
+                    rsi_estimate = 50 + price_change_1h * 10  # Neutral with slight bias
 
             rsi_estimate = max(0, min(100, rsi_estimate))  # Clamp to 0-100
 
