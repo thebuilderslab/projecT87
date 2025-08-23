@@ -491,6 +491,40 @@ def verify_coinmarketcap_api():
         print(f"❌ CoinMarketCap API test error: {e}")
         return False
 
+    if not api_key:
+        print("❌ ERROR: COINMARKETCAP_API_KEY not found in secrets")
+        return False
+
+    if len(api_key) < 10:
+        print("❌ ERROR: COINMARKETCAP_API_KEY appears too short")
+        return False
+
+    # Test API connectivity
+    try:
+        url = "https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest"
+        headers = {
+            'Accepts': 'application/json',
+            'X-CMC_PRO_API_KEY': api_key,
+        }
+        params = {'symbol': 'ARB'}
+
+        response = requests.get(url, headers=headers, params=params, timeout=10)
+
+        if response.status_code == 200:
+            data = response.json()
+            arb_price = data['data']['ARB']['quote']['USD']['price']
+            print(f"✅ CoinMarketCap API key is valid")
+            print(f"✅ Successfully fetched ARB price: ${arb_price:.4f}")
+            return True
+        else:
+            print(f"❌ API test failed with status {response.status_code}")
+            print(f"Response: {response.text}")
+            return False
+
+    except Exception as e:
+        print(f"❌ CoinMarketCap API test error: {e}")
+        return False
+
 def verify_additional_secrets():
     """Verify PROMPT_KEY, MAINET_ACCOUNT_KEY, OPTIMIZER_API_KEY"""
     print("\n🔍 VERIFYING ADDITIONAL SECRETS...")
@@ -645,6 +679,18 @@ def force_load_secret(var_name, default_value=None):
 
 class MainnetSafetyManager:
     """Manages safety features for mainnet deployment"""
+    
+    def __init__(self):
+        self.emergency_stop_active = False
+        self.safety_checks = []
+    
+    def trigger_emergency_stop(self, reason):
+        """Trigger emergency stop with reason"""
+        self.emergency_stop_active = True
+        print(f"🛑 EMERGENCY STOP TRIGGERED: {reason}")
+        # Create emergency stop flag file
+        with open('EMERGENCY_STOP_ACTIVE.flag', 'w') as f:
+            f.write(f"Emergency stop triggered: {reason}\nTimestamp: {datetime.now()}")
 
 def signal_handler(signum, frame):
     """Handle Ctrl+C gracefully"""
