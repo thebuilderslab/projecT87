@@ -9,6 +9,27 @@ import time
 from web3 import Web3
 from eth_account import Account
 
+# Enhanced Web3 import with error handling
+try:
+    from web3 import Web3
+    from web3.providers import HTTPProvider
+    from eth_account import Account
+    print("✅ Uniswap Integration: Web3 and eth_account imported successfully")
+except ImportError as e:
+    print(f"❌ Uniswap Integration: Web3 import failed: {e}")
+    print("🔧 Installing required packages...")
+    import subprocess
+    import sys
+    try:
+        subprocess.check_call([sys.executable, "-m", "pip", "install", "web3>=6.0.0", "eth-account>=0.8.0"])
+        from web3 import Web3
+        from web3.providers import HTTPProvider
+        from eth_account import Account
+        print("✅ Uniswap Integration: Packages installed and imported successfully")
+    except Exception as install_error:
+        print(f"❌ Failed to install required packages: {install_error}")
+        raise
+
 class UniswapIntegration:
     def __init__(self, w3, account):
         # Enhanced Web3 validation

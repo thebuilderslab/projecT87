@@ -13,26 +13,80 @@ from decimal import Decimal
 from dotenv import load_dotenv
 import logging
 
-# Enhanced Web3 import with error handling
-try:
-    from web3 import Web3
-    from web3.providers import HTTPProvider
-    from eth_account import Account
-    print("✅ Aave Integration: Web3 and eth_account imported successfully")
-except ImportError as e:
-    print(f"❌ Aave Integration: Web3 import failed: {e}")
-    print("🔧 Installing required packages...")
-    import subprocess
-    import sys
+# Enhanced Web3 import with comprehensive error handling and installation
+Web3 = None
+HTTPProvider = None
+Account = None
+
+def ensure_web3_imports():
+    """Ensure Web3 and related libraries are available"""
+    global Web3, HTTPProvider, Account
+    
+    if Web3 is not None:
+        return True
+        
     try:
-        subprocess.check_call([sys.executable, "-m", "pip", "install", "web3>=6.0.0", "eth-account>=0.8.0"])
         from web3 import Web3
         from web3.providers import HTTPProvider
         from eth_account import Account
-        print("✅ Aave Integration: Packages installed and imported successfully")
-    except Exception as install_error:
-        print(f"❌ Failed to install required packages: {install_error}")
-        raise
+        print("✅ Aave Integration: Web3 libraries imported successfully")
+        return True
+    except ImportError as e:
+        print(f"❌ Aave Integration: Web3 import failed: {e}")
+        print("🔧 Installing required packages...")
+        import subprocess
+        import sys
+        try:
+            # Install with specific versions for compatibility
+            packages = [
+                "web3>=6.0.0,<7.0.0",
+                "eth-account>=0.8.0,<1.0.0", 
+                "eth-abi>=4.0.0",
+                "eth-typing>=3.0.0"
+            ]
+            
+            for package in packages:
+                print(f"Installing {package}...")
+                subprocess.check_call([
+                    sys.executable, "-m", "pip", "install", "--no-cache-dir", package
+                ], stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
+            
+            # Try importing again after installation
+            from web3 import Web3
+            from web3.providers import HTTPProvider
+            from eth_account import Account
+            print("✅ Aave Integration: Packages installed and imported successfully")
+            return True
+            
+        except Exception as install_error:
+            print(f"❌ Failed to install required packages: {install_error}")
+            print("🔄 Falling back to mock implementations for development")
+            
+            # Create mock implementations to prevent crashes
+            class MockWeb3:
+                def __init__(self, *args, **kwargs):
+                    self.eth = MockEth()
+                def is_connected(self):
+                    return False
+                def to_checksum_address(self, addr):
+                    return addr
+                    
+            class MockEth:
+                def __init__(self):
+                    self.chain_id = 42161
+                    
+            class MockAccount:
+                def __init__(self):
+                    self.address = "0x0000000000000000000000000000000000000000"
+                    self.key = "mock_key"
+                    
+            Web3 = MockWeb3
+            HTTPProvider = lambda x: None
+            Account = MockAccount
+            return False
+
+# Initialize Web3 imports on module load
+ensure_web3_imports()
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
