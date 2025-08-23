@@ -1,0 +1,89 @@
+~/workspace$ python -c "
+> import ast
+> import sys
+> 
+> def find_indentation_errors(filename):
+>     try:
+>         with open(filename, 'r') as f:
+>             lines = f.readlines()
+>         
+>         print(f'Analyzing {filename} for indentation errors...')
+>         print('=' * 60)
+>         
+>         # Try to compile and catch syntax errors
+>         try:
+>             with open(filename, 'r') as f:
+>                 source = f.read()
+>             ast.parse(source, filename)
+>             print('No syntax errors found.')
+>             return
+>         except SyntaxError as e:
+>             if 'unindent does not match any outer indentation level' in str(e):
+>                 print(f'Line {e.lineno}: {e.msg}')
+>                 if e.text:
+>                     print(f'Text: {repr(e.text.rstrip())}')
+>                 
+>                 # Show context around the error
+>                 start = max(0, e.lineno - 5)
+>                 end = min(len(lines), e.lineno + 5)
+>                 print(f'\\nContext around line {e.lineno}:')
+>                 for i in range(start, end):
+>                     line_num = i + 1
+>                     line = lines[i].rstrip()
+>                     marker = '>>> ' if line_num == e.lineno else '    '
+>                     leading_spaces = len(lines[i]) - len(lines[i].lstrip())
+>                     print(f'{marker}{line_num:4d} (indent:{leading_spaces:2d}): {line}')
+>         
+>         # Manual indentation analysis
+>         print('\\n' + '=' * 60)
+>         print('Manual indentation analysis:')
+>         
+>         indent_stack = [0]  # Stack to track indentation levels
+>         errors = []
+>         
+>         for line_num, line in enumerate(lines, 1):
+>             if not line.strip():  # Skip empty lines
+>                 continue
+>                 
+>             leading_spaces = len(line) - len(line.lstrip())
+>             
+>             # Check if this is a continuation of previous line
+>             if line_num > 1:
+>                 prev_line = lines[line_num - 2].rstrip()
+>                 if prev_line.endswith('\\\\') or prev_line.endswith(',') or prev_line.endswith('('):
+>                     continue
+>             
+>             # If line starts with spaces, check indentation
+>             if leading_spaces > 0:
+>                 # Check if indentation matches any level in stack
+>                 if leading_spaces not in indent_stack:
+>                     # Check if it's a valid increase (multiple of 4 from last level)
+>                     if leading_spaces > indent_stack[-1]:
+>                         if (leading_spaces - indent_stack[-1]) % 4 == 0:
+>                             indent_stack.append(leading_spaces)
+>                         else:
+>                             errors.append((line_num, leading_spaces, line.strip()[:50]))
+>                     else:
+>                         # Check if it's a valid decrease
+>                         valid_unindent = False
+>                         while indent_stack and indent_stack[-1] > leading_spaces:
+>                             indent_stack.pop()
+>                         if not indent_stack or indent_stack[-1] != leading_spaces:
+>                             errors.append((line_num, leading_spaces, line.strip()[:50]))
+>             else:
+>                 # Line at column 0, reset stack
+>                 indent_stack = [0]
+>         
+>         if errors:
+>             print('\\nPotential indentation errors found:')
+>             for line_num, indent, text in errors:
+>                 print(f'Line {line_num:4d} (indent:{indent:2d}): {text}')
+>         else:
+>             print('No obvious indentation errors found in manual analysis.')
+> 
+> find_indentation_errors('main.py')
+> "
+  File "<string>", line 84
+    find_indentation_errors('main.py')
+SyntaxError: expected 'except' or 'finally' block
+~/workspace$ 

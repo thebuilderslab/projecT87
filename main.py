@@ -15919,9 +15919,10 @@ def inverse_transform(self, X):
         return np.dot(X, self.components_)
 
 def __sklearn_tags__(self):
-        tags = super().__sklearn_tags__()
-        tags.input_tags.sparse = True
-        tags.transformer_tags.preserves_dtype = 
+    tags = super().__sklearn_tags__()
+    tags.input_tags.sparse = True
+    tags.transformer_tags.preserves_dtype = True
+    return tags
         return tags
 
 def _n_features_out(self):
