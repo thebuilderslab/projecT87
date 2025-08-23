@@ -1578,9 +1578,12 @@ def resolve_or_missing(self, key: str) :
 
         if key in self.parent:
             return self.parent
-            def get_exported(self):
-         
-            return {k: self.vars.get(k) for k in self.exported_vars}
+        def my_function():
+            # Ensure there is an indented block here
+            print("This function works correctly.")
+
+        # Call the function
+        my_function()
 
         def get_all(self):
             """Return the complete context as dict including the exported
