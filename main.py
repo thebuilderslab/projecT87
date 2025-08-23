@@ -666,6 +666,7 @@ def force_load_secret(var_name, default_value=None):
 class MainnetSafetyManager:
     """Manages safety features for mainnet deployment"""
 
+    def __init__(self):
         self.emergency_stop = False
         self.emergency_stop_file = 'EMERGENCY_STOP_ACTIVE.flag'
         self.monitoring_active = True
@@ -1597,14 +1598,15 @@ def my_function():
     # pass
 
 def derived(self, locals: dict = None):
-    """Internal helper function to create a derived context. This is
-    used in situations where the system needs a new context in the same
-    template that is independent."""
-
-    # Additional code for creating a derived context will go here
-    # This might include creating a new context using data from the 
-    # current context and 'locals'
-    pass
+        """Internal helper function to create a derived context. This is
+        used in situations where the system needs a new context in the same
+        template that is independent."""
+        context = new_context(
+            self.environment, self.name, {}, self.get_all(), True, None, locals
+        )
+        context.eval_ctx = self.eval_ctx
+        context.blocks.update((k, list(v)) for k, v in self.blocks.items())
+        return context
         """Internal helper function to create a derived context.  This is
         used in situations where the system needs a new context in the same
         template that is independent.
