@@ -1426,11 +1426,11 @@ def markup_join(seq.Any) -> str:
 def str_join(seq.Any) -> str:
     """Simple args to string conversion and concatenation."""
     return concat(map(str, seq))
-
+ 
 def new_context(
     environment: "Environment",
     template_name
-    blocks.Callable, t.Iterator]],
+    blocks.Callable, t.Iterator]),
     vars.Dict] = None,
     shared: bool = False,
     globals.MutableMapping] = None,
