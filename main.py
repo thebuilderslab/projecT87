@@ -1,11 +1,11 @@
-from main import ArbitrumTestnetAgent # Assuming this is where your agent class is
-from main import CollaborativeStrategyManager
+# Removed circular import
+# Removed circular import
 import time
 import json
 import os
 import traceback
 from datetime import datetime
-from main import MIN_ETH_FOR_OPERATIONS, MIN_ETH_FOR_GAS_BUFFER
+# Removed circular import
 
 # --- Configuration ---
 CONFIG_FILE = 'agent_config.json'
@@ -250,7 +250,7 @@ if __name__ == "__main__":
     # Check if wallet is set up
     if not os.path.exists('.env'):
         print("❌ No .env file found!")
-        print("💡 Run 'python setup_test_wallet.py' to set up your test wallet first")
+        print("💡 Run 'python main.py' to set up your test wallet first")
         exit(1)
 
     # Ensure log files exist
@@ -321,7 +321,7 @@ if __name__ == "__main__":
     else:
         print("❌ Invalid choice. Starting autonomous mode by default.")
         autonomous_agent_loop()
-# --- Merged from verify_mainnet_secrets.py ---
+# --- Merged from main.py ---
 
 def verify_arbitrum_rpc():
     """Verify ARBITRUM_RPC_URL connectivity and mainnet status"""
@@ -884,7 +884,7 @@ def get_available_port(start_port=5000):
                 print(f"❌ Port {port} is in use, trying next...")
                 continue
         return 8080
-# --- Merged from safe_dashboard_launcher.py ---
+# --- Merged from web_dashboard.py ---
 
 def setup_safe_environment():
     """Set up a safe environment for the dashboard"""
@@ -1085,7 +1085,7 @@ def api_status():
 
             def initialize_integrations(self):
                 return False
-# --- Merged from startup_ready_check.py ---
+# --- Merged from main.py ---
 
 def check_autonomous_agent():
     """Check if autonomous agent is running"""
@@ -1202,7 +1202,7 @@ def run_comprehensive_audit():
     print("=" * 60)
     
     try:
-        from comprehensive_system_audit import ComprehensiveSystemAudit
+        from main import ComprehensiveSystemAudit
         
         audit = ComprehensiveSystemAudit()
         report = audit.run_full_audit()
@@ -1269,7 +1269,7 @@ def test_defi_integrations():
     warnings = []
 
     try:
-        from main import ArbitrumTestnetAgent
+# Removed duplicate:         from main import ArbitrumTestnetAgent
         agent = ArbitrumTestnetAgent()
 
         # Test DeFi integrations initialization separately
@@ -4517,7 +4517,7 @@ def parse_raw(  # noqa: D102
                 allow_pickle=allow_pickle,
             )
         except (ValueError, TypeError) as exc:
-            import json
+# Removed duplicate:             import json
 
             # try to match V1
             if isinstance(exc, UnicodeDecodeError):
@@ -4560,7 +4560,7 @@ def parse_file(  # noqa: D102
             category=PydanticDeprecatedSince20,
             stacklevel=2,
         )
-        from .deprecated import parse
+# Removed duplicate:         from .deprecated import parse
 
         obj = parse.load_file(
             path,
@@ -4702,7 +4702,7 @@ def schema_json(  # noqa: D102
             category=PydanticDeprecatedSince20,
             stacklevel=2,
         )
-        import json
+# Removed duplicate:         import json
 
         from .deprecated.json import pydantic_encoder
 
@@ -4746,7 +4746,7 @@ def _iter(self, *args: Any, **kwargs: Any) -> Any:
             category=PydanticDeprecatedSince20,
             stacklevel=2,
         )
-        from .deprecated import copy_internals
+# Removed duplicate:         from .deprecated import copy_internals
 
         return copy_internals._iter(self, *args, **kwargs)
 
@@ -4760,7 +4760,7 @@ def _copy_and_set_values(self, *args: Any, **kwargs: Any) -> Any:
             category=PydanticDeprecatedSince20,
             stacklevel=2,
         )
-        from .deprecated import copy_internals
+# Removed duplicate:         from .deprecated import copy_internals
 
         return copy_internals._copy_and_set_values(self, *args, **kwargs)
 
@@ -4775,7 +4775,7 @@ def _get_value(cls, *args: Any, **kwargs: Any) -> Any:
             category=PydanticDeprecatedSince20,
             stacklevel=2,
         )
-        from .deprecated import copy_internals
+# Removed duplicate:         from .deprecated import copy_internals
 
         return copy_internals._get_value(cls, *args, **kwargs)
 
@@ -4789,7 +4789,7 @@ def _calculate_keys(self, *args: Any, **kwargs: Any) -> Any:
             category=PydanticDeprecatedSince20,
             stacklevel=2,
         )
-        from .deprecated import copy_internals
+# Removed duplicate:         from .deprecated import copy_internals
 
         return copy_internals._calculate_keys(self, *args, **kwargs)
 
@@ -5729,7 +5729,7 @@ def parse_raw(  # noqa: D102
             category=PydanticDeprecatedSince20,
             stacklevel=2,
         )
-        from .deprecated import parse
+# Removed duplicate:         from .deprecated import parse
 
         try:
             obj = parse.load_str_bytes(
@@ -5740,7 +5740,7 @@ def parse_raw(  # noqa: D102
                 allow_pickle=allow_pickle,
             )
         except (ValueError, TypeError) as exc:
-            import json
+# Removed duplicate:             import json
 
             # try to match V1
             if isinstance(exc, UnicodeDecodeError):
@@ -5777,7 +5777,7 @@ def parse_file(  # noqa: D102
             category=PydanticDeprecatedSince20,
             stacklevel=2,
         )
-        from .deprecated import parse
+# Removed duplicate:         from .deprecated import parse
 
         obj = parse.load_file(
             path,
@@ -5845,7 +5845,7 @@ def copy(
             category=PydanticDeprecatedSince20,
             stacklevel=2,
         )
-        from .deprecated import copy_internals
+# Removed duplicate:         from .deprecated import copy_internals
 
         values = dict(
             copy_internals._iter(
@@ -5899,9 +5899,9 @@ def schema_json(  # noqa: D102
             category=PydanticDeprecatedSince20,
             stacklevel=2,
         )
-        import json
+# Removed duplicate:         import json
 
-        from .deprecated.json import pydantic_encoder
+# Removed duplicate:         from .deprecated.json import pydantic_encoder
 
         return json.dumps(
             cls.model_json_schema(by_alias=by_alias, ref_template=ref_template),
@@ -5933,7 +5933,7 @@ def _iter(self, *args: Any, **kwargs: Any) -> Any:
             category=PydanticDeprecatedSince20,
             stacklevel=2,
         )
-        from .deprecated import copy_internals
+# Removed duplicate:         from .deprecated import copy_internals
 
         return copy_internals._iter(self, *args, **kwargs)
 
@@ -5943,7 +5943,7 @@ def _copy_and_set_values(self, *args: Any, **kwargs: Any) -> Any:
             category=PydanticDeprecatedSince20,
             stacklevel=2,
         )
-        from .deprecated import copy_internals
+# Removed duplicate:         from .deprecated import copy_internals
 
         return copy_internals._copy_and_set_values(self, *args, **kwargs)
 
@@ -5953,7 +5953,7 @@ def _get_value(cls, *args: Any, **kwargs: Any) -> Any:
             category=PydanticDeprecatedSince20,
             stacklevel=2,
         )
-        from .deprecated import copy_internals
+# Removed duplicate:         from .deprecated import copy_internals
 
         return copy_internals._get_value(cls, *args, **kwargs)
 
@@ -5963,7 +5963,7 @@ def _calculate_keys(self, *args: Any, **kwargs: Any) -> Any:
             category=PydanticDeprecatedSince20,
             stacklevel=2,
         )
-        from .deprecated import copy_internals
+# Removed duplicate:         from .deprecated import copy_internals
 
         return copy_internals._calculate_keys(self, *args, **kwargs)
 
@@ -8368,7 +8368,7 @@ def to_checksum_address(value: Union) -> ChecksumAddress:
         return to_checksum_address(value)
 
 def api(self) -> str:
-        from web3 import __version__
+# Removed duplicate:         from web3 import __version__
 
         return __version__
 
@@ -8462,7 +8462,7 @@ def enable_unstable_package_management_api(self) -> None:
                 "deprecated with ``web3.py`` version 7",
                 UserWarning,
             )
-            from web3.pm import PM  # noqa: F811
+# Removed duplicate:             from web3.pm import PM  # noqa: F811
 
             self.attach_modules({"_pm": PM})
 
@@ -9847,7 +9847,7 @@ def make_logging_undefined(
                  defaults to :class:`Undefined`.
     """
     if logger is None:
-        import logging
+# Removed duplicate:         import logging
 
         logger = logging.getLogger(__name__)
         logger.addHandler(logging.StreamHandler(sys.stderr))
@@ -11908,7 +11908,7 @@ def perform_collect(
         ``Session``.
 
         This function normally recursively expands any collectors collected
-        from the session to their items, and only items are returned. For
+# Removed duplicate:         from the session to their items, and only items are returned. For
         testing purposes, this may be suppressed by passing ``genitems=False``,
         in which case the return value contains these collectors unexpanded,
         and ``session.items`` is empty.
