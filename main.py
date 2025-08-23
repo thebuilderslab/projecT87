@@ -1143,6 +1143,7 @@ def start_dashboard():
 
 import socket
 
+def is_port_available(port):
     """
     Checks if a given port is available.
     """
@@ -1152,18 +1153,24 @@ import socket
             return True
         except:
             return False
-        class MockAgent:
-                self.address = '0x' + '0' * 40
-                self.w3 = None
-                self.account = None
 
-                return 0.0
+class MockAgent:
+    def __init__(self, *args, **kwargs):
+        self.address = '0x' + '0' * 40
+        self.w3 = None
+        self.account = None
 
-                return False
+    def get_eth_balance(self):
+        return 0.0
 
-                return 0.0
+    def initialize_integrations(self):
+        return False
 
-                return False
+    def setup_web3_connection(self):
+        return 0.0
+
+    def run_real_defi_task(self, run_id, iteration, config):
+        return False
 # --- Merged from main.py ---
 
 def check_autonomous_agent():
