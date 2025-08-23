@@ -822,8 +822,8 @@ def start_web_dashboard():
         return
     print("🌐 Starting web web_dashboard...")
     
-    # Import the port allocation function from web_dashboard import socket
-def get_available_port(start_port=5000):
+    # Import the port allocation function from web_dashboard
+    def get_available_port(start_port=5000):
         for port in range(start_port, start_port + 20):
             try:
                 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
