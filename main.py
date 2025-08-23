@@ -1095,18 +1095,18 @@ def start_fallback_server(port=5000):
 
     @fallback_app.route('/')
     def status():
-        return """
-        <html>
-        <head><title>DeFi Agent Status</title></head>
-        <body style="font-family: Arial; padding: 20px; background: #1a1a1a; color: white;">
-            <h1>🤖 DeFi Agent Dashboard</h1>
-            <p>Status: Initializing...</p>
-            <p>Network: Arbitrum Mainnet</p>
-            <p>Mode: Safe Launch Mode</p>
-            <p><em>Dashboard is starting up with safety checks...</em></p>
-        </body>
-        </html>
-        """
+    return """
+    <html>
+    <head><title>DeFi Agent Status</title></head>
+    <body style="font-family: Arial; padding: 20px; background: #1a1a1a; color: white;">
+        <h1>🤖 DeFi Agent Dashboard</h1>
+        <p>Status: Initializing...</p>
+        <p>Network: Arbitrum Mainnet</p>
+        <p>Mode: Safe Launch Mode</p>
+        <p><em>Dashboard is starting up with safety checks...</em></p>
+    </body>
+    </html>
+    """
 
     @fallback_app.route('/api/status')
     def api_status():
