@@ -752,25 +752,26 @@ for var in critical_vars:
     value = os.getenv(var)
     if not value:
         if var == 'PROMPT_KEY' and os.getenv('REPLIT_DEPLOYMENT'):
-            print(f"(In deployment, PROMPT_KEY might not be accessible but we can proceed anyway)")
+            print(f"⚠️  {var}: Not accessible in deployment environment (proceeding anyway)")
         else:
             print(f"❌ Missing critical environment variable: {var}")
-            print(f"🔴 Please add {var} to your Replit Secrets")
+            print(f"💡 Please add {var} to your Replit Secrets")
             return False
 
-    if len(value.strip()) == 0:
-        print(f"❌ {var} is empty – please set a valid value")
+    elif len(value.strip()) == 0:
+        print(f"❌ {var} is empty - please set a valid value")
         return False
 
-            print(f"✅ {var}: Configured properly")
+    else:
+        print(f"✅ {var}: Configured properly")
 
-        # Check optional secrets with warnings
-        for var in optional_vars:
-            value = os.getenv(var)
-            if not value or len(value.strip()) == 0:
-                print(f"⚠️  {var}: Missing or placeholder (some features may be limited)")
-            else:
-                print(f"✅ {var}: Configured properly")
+# Check optional secrets with warnings
+for var in optional_vars:
+    value = os.getenv(var)
+    if not value or len(value.strip()) == 0:
+        print(f"⚠️  {var}: Missing or placeholder (some features may be limited)")
+    else:
+        print(f"✅ {var}: Configured properly")
 
         # Check network mode
         network_mode = os.getenv('NETWORK_MODE', 'testnet')
