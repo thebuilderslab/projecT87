@@ -207,8 +207,8 @@ if __name__ == "__main__":
 Fix Import Dependencies - Resolves circular imports and consolidates import structure
 """
 
-import os
-import re
+# Removed duplicate: import os
+# Removed duplicate: import re
 from typing import Dict, List
 
 # Map of problematic imports to their correct targets
@@ -220,19 +220,19 @@ IMPORT_FIXES = {
     'from main import MIN_ETH_FOR_GAS_BUFFER': '# Constants defined in main.py',
     
     # Fix references to archived modules
-    'from arbitrum_testnet_agent import': 'from main import',
-    'import arbitrum_testnet_agent': 'import main',
-    'from emergency_stop import': 'from emergency_funding_manager import',
-    'import emergency_stop': 'import emergency_funding_manager',
+    'from main import': 'from main import',
+    'import main': 'import main',
+    'from emergency_funding_manager import': 'from emergency_funding_manager import',
+    'import emergency_funding_manager': 'import emergency_funding_manager',
     
     # Fix duplicated aave imports
-    'from enhanced_borrow_manager import': 'from aave_integration import',
-    'from enhanced_rpc_manager import': 'from aave_integration import',
+    'from aave_integration import': 'from aave_integration import',
+    'from aave_integration import': 'from aave_integration import',
     'from health_monitor import': 'from aave_integration import',
     
     # Fix web dashboard imports
-    'from dashboard import': 'from web_dashboard import',
-    'from improved_web_dashboard import': 'from web_dashboard import',
+    'from web_dashboard import': 'from web_dashboard import',
+    'from web_dashboard import': 'from web_dashboard import',
 }
 
 def fix_file_imports(file_path: str) -> int:
