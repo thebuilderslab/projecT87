@@ -696,8 +696,46 @@ def validate_mainnet_readiness(self):
 
         # Check critical environment variables
     critical_vars = ['PRIVATE_KEY', 'COINMARKETCAP_API_KEY', 'NETWORK_MODE']
+    optional_vars = ['PROMPT_KEY', 'OPTIMIZER_API_KEY', 'ARBISCAN_API_KEY']
 
-        # Check for private key (try PRIVATE_KEY first, then PRIVATE_KEY2 as fallback)
+    # Check for private key (try PRIVATE_KEY first, then PRIVATE_KEY2 as fallback)
+    private_key = os.getenv('PRIVATE_KEY') or os.getenv('PRIVATE_KEY2')
+    if not private_key:
+        print(f"❌ No private key found (checked PRIVATE_KEY and PRIVATE_KEY2)")
+        return False
+
+    # Validate private key format
+    if len(private_key) not in [64, 66]:
+        print(f"❌ Invalid private key format (should be 64 or 66 characters)")
+        return False
+    print("✅ Private key: Configured properly")
+
+    # Validate critical secrets
+    for var in critical_vars:
+        value = os.getenv(var)
+        if not value:
+            if var == 'PROMPT_KEY' and os.getenv('REPLIT_DEPLOYMENT'):
+                # In deployment, PROMPT_KEY might not be accessible but we can proceed
+                print(f"⚠️  {var}: Not accessible in deployment environment (proceeding anyway)")
+                continue
+            else:
+                print(f"❌ Missing critical environment variable: {var}")
+                print(f"💡 Please add {var} to your Replit Secrets")
+                return False
+
+        if len(value.strip()) == 0:
+            print(f"❌ {var} is empty - please set a valid value")
+            return False
+
+        print(f"✅ {var}: Configured properly")
+
+    # Check optional secrets with warnings
+    for var in optional_vars:
+        value = os.getenv(var)
+        if not value or len(value.strip()) == 0:
+            print(f"⚠️  {var}: Missing or placeholder (some features may be limited)")
+        else:
+            print(f"✅ {var}: Configured properly")
         private_key = os.getenv('PRIVATE_KEY') or os.getenv('PRIVATE_KEY2')
         if not private_key:
             print("❌ Missing critical environment variable: PRIVATE_KEY")
