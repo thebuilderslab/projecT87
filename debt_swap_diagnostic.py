@@ -7,7 +7,7 @@ Debt Swap Diagnostic Tool - Debug why debt swaps aren't executing on-chain
 import os
 import time
 from datetime import datetime
-from main import ArbitrumTestnetAgent
+# ArbitrumTestnetAgent defined in main.py
 
 def diagnose_debt_swap_strategy():
     """Comprehensive diagnosis of debt swap strategy execution"""
@@ -591,7 +591,7 @@ class ComprehensiveDiagnostic:
         
         # Test agent initialization
         try:
-# Removed duplicate:             from main import ArbitrumTestnetAgent
+# Removed duplicate:             # ArbitrumTestnetAgent defined in main.py
             agent = ArbitrumTestnetAgent()
             self.report["application"]["agent_initialization"] = {
                 "success": True,
@@ -1103,7 +1103,7 @@ def main():
         
         # Test agent initialization
         try:
-# Removed duplicate:             from main import ArbitrumTestnetAgent
+# Removed duplicate:             # ArbitrumTestnetAgent defined in main.py
             agent = ArbitrumTestnetAgent()
             self.report["application"]["agent_initialization"] = {
                 "success": True,
@@ -1441,7 +1441,7 @@ class ComprehensiveSystemDiagnostic:
         print("\n🔍 CHECKING AGENT INITIALIZATION...")
         
         try:
-# Removed duplicate:             from main import ArbitrumTestnetAgent
+# Removed duplicate:             # ArbitrumTestnetAgent defined in main.py
             agent = ArbitrumTestnetAgent()
             
             agent_tests = {
@@ -1571,7 +1571,7 @@ class ComprehensiveSystemDiagnostic:
         function_tests = {}
         
         try:
-# Removed duplicate:             from main import ArbitrumTestnetAgent
+# Removed duplicate:             # ArbitrumTestnetAgent defined in main.py
             agent = ArbitrumTestnetAgent()
             
             # Test critical autonomous functions
@@ -1875,7 +1875,7 @@ class ComprehensiveSystemDiagnostic:
         print("\n🔍 CHECKING AGENT INITIALIZATION...")
         
         try:
-# Removed duplicate:             from main import ArbitrumTestnetAgent
+# Removed duplicate:             # ArbitrumTestnetAgent defined in main.py
             agent = ArbitrumTestnetAgent()
             
             agent_tests = {
@@ -2005,7 +2005,7 @@ class ComprehensiveSystemDiagnostic:
         function_tests = {}
         
         try:
-# Removed duplicate:             from main import ArbitrumTestnetAgent
+# Removed duplicate:             # ArbitrumTestnetAgent defined in main.py
             agent = ArbitrumTestnetAgent()
             
             # Test critical autonomous functions
@@ -3200,7 +3200,7 @@ class BorrowDiagnosticTool:
 def run_borrow_diagnostic():
     """Run the borrow diagnostic tool"""
     try:
-# Removed duplicate:         from main import ArbitrumTestnetAgent
+# Removed duplicate:         # ArbitrumTestnetAgent defined in main.py
         
         print("🚀 Initializing Borrow Diagnostic Tool...")
         agent = ArbitrumTestnetAgent()

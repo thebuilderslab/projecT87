@@ -1129,7 +1129,7 @@ class ContractValidator:
 def test_contract_validator():
     """Test the contract validator with known addresses"""
     try:
-        from main import ArbitrumTestnetAgent
+        # ArbitrumTestnetAgent defined in main.py
         
         agent = ArbitrumTestnetAgent()
         validator = ContractValidator(agent.w3)
@@ -3318,7 +3318,7 @@ def validate_complete_system_readiness():
     # Check 7: Import Tests
     print("\n7️⃣ Import Tests:")
     try:
-# Removed duplicate:         from main import ArbitrumTestnetAgent
+# Removed duplicate:         # ArbitrumTestnetAgent defined in main.py
         from main import MarketSignalStrategy
         from market_data_api_fix import MarketDataAPIFix
         readiness_score += 1

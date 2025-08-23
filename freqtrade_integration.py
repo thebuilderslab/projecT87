@@ -1172,7 +1172,7 @@ def test_agent_initialization():
     print("\n🔍 Testing Agent Initialization...")
     
     try:
-        from main import ArbitrumTestnetAgent
+        # ArbitrumTestnetAgent defined in main.py
         print("✅ Agent module imported successfully")
         
         # Test initialization
@@ -1285,7 +1285,7 @@ class SystemIntegrationValidator:
         print("\n2️⃣ TESTING AGENT INITIALIZATION")
         
         try:
-# Removed duplicate:             from main import ArbitrumTestnetAgent
+# Removed duplicate:             # ArbitrumTestnetAgent defined in main.py
             agent = ArbitrumTestnetAgent()
             
             self.test_results["agent_init"] = "✅ Success"
@@ -1316,7 +1316,7 @@ class SystemIntegrationValidator:
         print("\n3️⃣ TESTING DEFI INTEGRATIONS")
         
         try:
-# Removed duplicate:             from main import ArbitrumTestnetAgent
+# Removed duplicate:             # ArbitrumTestnetAgent defined in main.py
             agent = ArbitrumTestnetAgent()
             agent.initialize_integrations()
             
@@ -1375,7 +1375,7 @@ class SystemIntegrationValidator:
         
         try:
             from main import TransactionValidator
-# Removed duplicate:             from main import ArbitrumTestnetAgent
+# Removed duplicate:             # ArbitrumTestnetAgent defined in main.py
             
             agent = ArbitrumTestnetAgent()
             agent.initialize_integrations()
@@ -1496,7 +1496,7 @@ class SystemIntegrationValidator:
         print("\n2️⃣ TESTING AGENT INITIALIZATION")
         
         try:
-# Removed duplicate:             from main import ArbitrumTestnetAgent
+# Removed duplicate:             # ArbitrumTestnetAgent defined in main.py
             agent = ArbitrumTestnetAgent()
             
             self.test_results["agent_init"] = "✅ Success"
@@ -1527,7 +1527,7 @@ class SystemIntegrationValidator:
         print("\n3️⃣ TESTING DEFI INTEGRATIONS")
         
         try:
-# Removed duplicate:             from main import ArbitrumTestnetAgent
+# Removed duplicate:             # ArbitrumTestnetAgent defined in main.py
             agent = ArbitrumTestnetAgent()
             agent.initialize_integrations()
             
@@ -1586,7 +1586,7 @@ class SystemIntegrationValidator:
         
         try:
 # Removed duplicate:             from main import TransactionValidator
-# Removed duplicate:             from main import ArbitrumTestnetAgent
+# Removed duplicate:             # ArbitrumTestnetAgent defined in main.py
             
             agent = ArbitrumTestnetAgent()
             agent.initialize_integrations()

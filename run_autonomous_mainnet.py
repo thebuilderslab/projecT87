@@ -10,7 +10,7 @@ import sys
 import time
 import json
 from datetime import datetime
-from main import ArbitrumTestnetAgent
+# ArbitrumTestnetAgent defined in main.py
 
 # Force mainnet mode
 os.environ['NETWORK_MODE'] = 'mainnet'

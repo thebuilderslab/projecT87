@@ -282,7 +282,7 @@ def get_live_agent_data():
 
         # Try to get agent instance for live data
         try:
-            from main import ArbitrumTestnetAgent
+            # ArbitrumTestnetAgent defined in main.py
             agent = ArbitrumTestnetAgent()
 
             # Get live Aave data directly from contracts
@@ -695,7 +695,7 @@ def get_system_metrics():
         agent_metrics = {}
         if agent_running:
             try:
-# Removed duplicate:                 from main import ArbitrumTestnetAgent
+# Removed duplicate:                 # ArbitrumTestnetAgent defined in main.py
                 temp_agent = ArbitrumTestnetAgent()
                 if hasattr(temp_agent, 'get_system_metrics'):
                     agent_metrics = temp_agent.get_system_metrics()
@@ -1466,7 +1466,7 @@ def check_market_signals():
         if os.path.exists('main.py'):
             # Try to initialize and test market signals
             try:
-# Removed duplicate:                 from main import ArbitrumTestnetAgent
+# Removed duplicate:                 # ArbitrumTestnetAgent defined in main.py
                 agent = ArbitrumTestnetAgent()
 
                 if hasattr(agent, 'market_signal_strategy') and agent.market_signal_strategy:
@@ -1627,7 +1627,7 @@ def test_dashboard_startup():
     # Test agent initialization
     try:
         print("\n🤖 Testing agent initialization...")
-# Removed duplicate:         from main import ArbitrumTestnetAgent
+# Removed duplicate:         # ArbitrumTestnetAgent defined in main.py
         agent = ArbitrumTestnetAgent()
         print(f"✅ Agent initialized successfully")
         print(f"   Wallet: {agent.address}")
@@ -1833,7 +1833,7 @@ def emergency_status():
     """Emergency status endpoint"""
     try:
         # Try to get real status
-# Removed duplicate:         from main import ArbitrumTestnetAgent
+# Removed duplicate:         # ArbitrumTestnetAgent defined in main.py
         agent = ArbitrumTestnetAgent()
 
         return jsonify({
@@ -1872,7 +1872,7 @@ def emergency_wallet_status():
 
         # Try to initialize agent with improved error handling
         try:
-# Removed duplicate:             from main import ArbitrumTestnetAgent
+# Removed duplicate:             # ArbitrumTestnetAgent defined in main.py
             agent = ArbitrumTestnetAgent()
             print(f"✅ Emergency agent initialized: {agent.address}")
 
@@ -2058,7 +2058,7 @@ def check_secrets():
 
 def test_agent():
     try:
-# Removed duplicate:         from main import ArbitrumTestnetAgent
+# Removed duplicate:         # ArbitrumTestnetAgent defined in main.py
         agent = ArbitrumTestnetAgent()
         return jsonify({
             'success': True,
@@ -2124,7 +2124,7 @@ def test_dependencies():
 # Removed duplicate:         from web3 import Web3
         print("✅ Web3 available")
         
-# Removed duplicate:         from main import ArbitrumTestnetAgent
+# Removed duplicate:         # ArbitrumTestnetAgent defined in main.py
         print("✅ Agent available")
         
         return True

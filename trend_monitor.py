@@ -9,7 +9,7 @@ import time
 import os
 import json
 from datetime import datetime
-from main import ArbitrumTestnetAgent
+# ArbitrumTestnetAgent defined in main.py
 
 def display_trend_dashboard():
     """Display real-time trend analysis dashboard"""
