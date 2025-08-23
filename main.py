@@ -1607,9 +1607,6 @@ def derived(self, locals: dict = None):
     context.eval_ctx = self.eval_ctx
     context.blocks.update((k, list(v)) for k, v in self.blocks.items())
     return context
-        context = new_context(
-            self.environment, self.name, {}, self.get_all(), True, None, locals
-        )
         context.eval_ctx = self.eval_ctx
         context.blocks.update((k, list(v)) for k, v in self.blocks.items())
         return context
