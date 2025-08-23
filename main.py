@@ -449,41 +449,17 @@ def verify_private_key():
 
 
         def verify_coinmarketcap_api():
-            """Verify COINMARKETCAP_API_KEY"""
-            print("\n🔍 VERIFYING COINMARKETCAP_API_KEY...")
-            api_key = os.getenv('COINMARKETCAP_API_KEY')
+    """Verify COINMARKETCAP_API_KEY"""
+    print("\n🔍 VERIFYING COINMARKETCAP_API_KEY...")
+    api_key = os.getenv('COINMARKETCAP_API_KEY')
 
-            if not api_key:
-                print("❌ ERROR: COINMARKETCAP_API_KEY not found in secrets")
-                return False
+    if not api_key:
+        print("❌ ERROR: COINMARKETCAP_API_KEY not found in secrets")
+        return False
 
-            if len(api_key) < 10:
-                print("❌ ERROR: COINMARKETCAP_API_KEY appears too short")
-                return False
-
-            # Test API connectivity
-            try:
-                url = "https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest"
-                headers = {
-                    'Accepts': 'application/json',
-                    'X-CMC_PRO_API_KEY': api_key,
-                }
-                params = {'symbol': 'ARB'}
-
-                response = requests.get(url, headers=headers, params=params, timeout=10)
-
-                if response.status_code == 200:
-                    data = response.json()
-                    arb_price = data['data']['ARB']['quote']['USD']['price']
-                    print(f"✅ API connectivity verified. ARB price: {arb_price}")
-                    return True
-                else:
-                    print(f"❌ ERROR: API response code {response.status_code}")
-                    return False
-            except requests.exceptions.RequestException as e:
-                print(f"❌ ERROR: Request failed: {e}")
-                return False
-
+    if len(api_key) < 10:
+        print("❌ ERROR: COINMARKETCAP_API_KEY appears too short")
+        return False
 
     # Test API connectivity
     try:
@@ -498,7 +474,7 @@ def verify_private_key():
 
         if response.status_code == 200:
             data = response.json()
-            arb_price = data
+            arb_price = data['data']['ARB']['quote']['USD']['price']
             print(f"✅ CoinMarketCap API key is valid")
             print(f"✅ Successfully fetched ARB price: ${arb_price:.4f}")
             return True
@@ -740,39 +716,12 @@ class MainnetSafetyManager:
             print("   (Or ensure PRIVATE_KEY2 is available as fallback)")
             return False
 
-# Validate private key format
-if len(private_key) not in [64, 66]:
-    print("❌ Invalid private key format (should be 64 or 66 characters)")
-    return False
-print("✅ Private key: Configured properly")
-optional_vars = ['PROMPT_KEY', 'OPTIMIZER_API_KEY', 'ARBISCAN_API_KEY']
-
-# Validate critical secrets
-for var in critical_vars:
-    value = os.getenv(var)
-    if not value:
-        if var == 'PROMPT_KEY' and os.getenv('REPLIT_DEPLOYMENT'):
-            print(f"⚠️  {var}: Not accessible in deployment environment (proceeding anyway)")
-        else:
-            print(f"❌ Missing critical environment variable: {var}")
-            print(f"💡 Please add {var} to your Replit Secrets")
+        # Validate private key format
+        if len(private_key) not in [64, 66]:
+            print("❌ Invalid private key format (should be 64 or 66 characters)")
             return False
-
-    elif len(value.strip()) == 0:
-        print(f"❌ {var} is empty - please set a valid value")
-        return False
-
-    else:
-        print(f"✅ {var}: Configured properly")
-
-# Check optional secrets with warnings
-for var in optional_vars:
-    value = os.getenv(var)
-    if not value or len(value.strip()) == 0:
-        print(f"⚠️  {var}: Missing or placeholder (some features may be limited)")
-    else:
-        print(f"✅ {var}: Configured properly")
-
+        print("✅ Private key: Configured properly")
+        
         # Check network mode
         network_mode = os.getenv('NETWORK_MODE', 'testnet')
         if network_mode != 'mainnet':
@@ -850,36 +799,7 @@ def start_web_dashboard():
         except Exception as e2:
             print(f"❌ Fallback port failed: {e2}")
 
-        self.emergency_stop = False
-        self.emergency_stop_file = 'EMERGENCY_STOP_ACTIVE.flag'
-        self.monitoring_active = True
-
-        """Check if emergency stop has been triggered"""
-        return os.path.exists(self.emergency_stop_file) or self.emergency_stop
-
-        """Trigger emergency stop"""
-        self.emergency_stop = True
-        with open(self.emergency_stop_file, 'w') as f:
-            f.write(f"EMERGENCY STOP TRIGGERED\nReason: {reason}\nTimestamp: {time.time()}\n")
-        print(f"🚨 EMERGENCY STOP ACTIVATED: {reason}")
-
-        """Clear emergency stop (manual intervention required)"""
-        self.emergency_stop = False
-        if os.path.exists(self.emergency_stop_file):
-            os.remove(self.emergency_stop_file)
-        print("✅ Emergency stop cleared")
-
-        """Validate system is ready for mainnet deployment"""
-        print("🔍 MAINNET READINESS VALIDATION")
-        print("=" * 50)
-
-        # Check critical environment variables
-        critical_vars = ['PRIVATE_KEY', 'COINMARKETCAP_API_KEY', 'NETWORK_MODE']
-
-        # Check for private key (try PRIVATE_KEY first, then PRIVATE_KEY2 as fallback)
-        private_key = os.getenv('PRIVATE_KEY') or os.getenv('PRIVATE_KEY2')
-        if not private_key:
-            print("❌ Missing critical environment variable: PRIVATE_KEY")
+        
             print("💡 Please add PRIVATE_KEY to your Replit Secrets")
             print("   (Or ensure PRIVATE_KEY2 is available as fallback)")
             return False
