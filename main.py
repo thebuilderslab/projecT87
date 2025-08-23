@@ -10,23 +10,42 @@ import requests
 from datetime import datetime
 from dotenv import load_dotenv
 
-try:
-    from web3 import Web3
-    from web3.providers import HTTPProvider
-    print("✅ Web3 library imported successfully")
-except ImportError as e:
-    print(f"❌ Web3 import failed: {e}")
-    print("🔧 Installing web3 library...")
-    import subprocess
-    import sys
+# Enhanced Web3 import with fallback
+Web3 = None
+HTTPProvider = None
+
+def ensure_web3_available():
+    """Ensure Web3 is available globally"""
+    global Web3, HTTPProvider
+    if Web3 is not None:
+        return True
+        
     try:
-        subprocess.check_call([sys.executable, "-m", "pip", "install", "web3>=6.0.0"])
-        from web3 import Web3
-        from web3.providers import HTTPProvider
-        print("✅ Web3 library installed and imported successfully")
-    except Exception as install_error:
-        print(f"❌ Failed to install web3: {install_error}")
-        Web3 = None
+        from web3 import Web3 as _Web3
+        from web3.providers import HTTPProvider as _HTTPProvider
+        Web3 = _Web3
+        HTTPProvider = _HTTPProvider
+        print("✅ Web3 library imported successfully")
+        return True
+    except ImportError as e:
+        print(f"❌ Web3 import failed: {e}")
+        print("🔧 Installing web3 library...")
+        import subprocess
+        import sys
+        try:
+            subprocess.check_call([sys.executable, "-m", "pip", "install", "web3>=6.0.0"])
+            from web3 import Web3 as _Web3
+            from web3.providers import HTTPProvider as _HTTPProvider
+            Web3 = _Web3
+            HTTPProvider = _HTTPProvider
+            print("✅ Web3 library installed and imported successfully")
+            return True
+        except Exception as install_error:
+            print(f"❌ Failed to install web3: {install_error}")
+            return False
+
+# Initialize Web3 availability
+ensure_web3_available()
 
 # --- Configuration ---
 CONFIG_FILE = 'agent_config.json'
@@ -57,11 +76,53 @@ class ArbitrumTestnetAgent:
     def initialize_integrations(self):
         """Initialize DeFi integrations"""
         try:
+            # Ensure Web3 is available before importing integrations
+            if not ensure_web3_available():
+                print("❌ Web3 not available for integrations")
+                return False
+                
+            # Use deferred import to avoid circular dependency
             from aave_integration import AaveArbitrumIntegration
-            self.aave = AaveArbitrumIntegration()
+            
+            # Initialize with Web3 instance
+            if self.w3 and self.account:
+                self.aave = AaveArbitrumIntegration(self.w3, self.account)
+            else:
+                print("⚠️ Web3 or account not ready, deferring Aave initialization")
+                return False
             return True
         except Exception as e:
             print(f"Failed to initialize integrations: {e}")
+            return False
+    
+    def setup_web3_connection(self):
+        """Setup Web3 connection and account"""
+        try:
+            if not ensure_web3_available():
+                return False
+                
+            # Setup RPC connection
+            rpc_url = os.getenv('ARBITRUM_RPC_URL', 'https://arb1.arbitrum.io/rpc')
+            self.w3 = Web3(HTTPProvider(rpc_url))
+            
+            if not self.w3.is_connected():
+                print(f"❌ Failed to connect to {rpc_url}")
+                return False
+                
+            # Setup account
+            private_key = os.getenv('PRIVATE_KEY2') or os.getenv('PRIVATE_KEY')
+            if private_key:
+                from eth_account import Account
+                self.account = Account.from_key(private_key)
+                self.address = self.account.address
+                print(f"✅ Agent initialized: {self.address}")
+                return True
+            else:
+                print("❌ No private key found")
+                return False
+                
+        except Exception as e:
+            print(f"❌ Web3 setup failed: {e}")
             return False
     
     def run_real_defi_task(self, run_id, iteration, config):
@@ -190,20 +251,23 @@ def autonomous_agent_loop():
 
     try:
         arbitrum_agent = ArbitrumTestnetAgent()
-        # --- IMPORTANT ADDITION: Initialize DeFi integrations ---
-        if not arbitrum_agent.initialize_integrations():
-            print("❌ DeFi integrations failed to initialize. Retrying in 30 seconds...")
-            time.sleep(30)
-            # Don't return here - let it continue and retry in the main loop
+        
+        # Setup Web3 connection first
+        if not arbitrum_agent.setup_web3_connection():
+            print("❌ Web3 connection failed. Will retry in main loop...")
         else:
-            strategy_manager = CollaborativeStrategyManager(arbitrum_agent)
-            print("🚀 Arbitrum agent initialized successfully!")
-            print("🤝 Collaborative strategy manager ready!")
+            # Initialize DeFi integrations after Web3 is ready
+            if not arbitrum_agent.initialize_integrations():
+                print("❌ DeFi integrations failed to initialize. Retrying in 30 seconds...")
+                time.sleep(30)
+            else:
+                strategy_manager = CollaborativeStrategyManager(arbitrum_agent)
+                print("🚀 Arbitrum agent initialized successfully!")
+                print("🤝 Collaborative strategy manager ready!")
     except Exception as e:
         print(f"❌ Failed to initialize Arbitrum agent or its integrations: {e}")
         print("💡 Please ensure your .env file is correctly set up and dependencies are installed.")
         print("🔄 Will retry initialization in the main loop...")
-        # Don't return here - let the main loop handle retries
 
     # --- CONTINUOUS OPERATION LOOP ---
     iteration = 0
