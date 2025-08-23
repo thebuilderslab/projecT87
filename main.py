@@ -522,22 +522,18 @@ def verify_private_key():
         except ValueError:
             print("❌ ERROR: Private key contains invalid hexadecimal characters")
             return False
+    def verify_coinmarketcap_api():
+        """Verify COINMARKETCAP_API_KEY"""
+        print("\n🔍 VERIFYING COINMARKETCAP_API_KEY...")
+        api_key = os.getenv('COINMARKETCAP_API_KEY')
 
+        if not api_key:
+            print("❌ ERROR: COINMARKETCAP_API_KEY not found in secrets")
+            return False
 
-        def verify_coinmarketcap_api():
-    """Verify COINMARKETCAP_API_KEY"""
-    print("\n🔍 VERIFYING COINMARKETCAP_API_KEY...")
-    api_key = os.getenv('COINMARKETCAP_API_KEY')
-
-    if not api_key:
-        print("❌ ERROR: COINMARKETCAP_API_KEY not found in secrets")
-        return False
-
-    if len(api_key) < 10:
-        print("❌ ERROR: COINMARKETCAP_API_KEY appears too short")
-        return False
-
-    # Test API connectivity
+        if len(api_key) < 10:
+            print("❌ ERROR: COINMARKETCAP_API_KEY appears too short")
+            return False
     try:
         url = "https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest"
         headers = {
