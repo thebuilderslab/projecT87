@@ -523,41 +523,7 @@ def verify_private_key():
             print("❌ ERROR: Private key contains invalid hexadecimal characters")
             return False
     def verify_coinmarketcap_api():
-        """Verify COINMARKETCAP_API_KEY"""
-        print("\n🔍 VERIFYING COINMARKETCAP_API_KEY...")
-        api_key = os.getenv('COINMARKETCAP_API_KEY')
-
-        if not api_key:
-            print("❌ ERROR: COINMARKETCAP_API_KEY not found in secrets")
-            return False
-
-        if len(api_key) < 10:
-            print("❌ ERROR: COINMARKETCAP_API_KEY appears too short")
-            return False
-    try:
-        url = "https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest"
-        headers = {
-            'Accepts': 'application/json',
-            'X-CMC_PRO_API_KEY': api_key,
-        }
-        params = {'symbol': 'ARB'}
-
-        response = requests.get(url, headers=headers, params=params, timeout=10)
-
-        if response.status_code == 200:
-            data = response.json()
-            arb_price = data['data']['ARB']['quote']['USD']['price']
-            print(f"✅ CoinMarketCap API key is valid")
-            print(f"✅ Successfully fetched ARB price: ${arb_price:.4f}")
-            return True
-        else:
-            print(f"❌ API test failed with status {response.status_code}")
-            print(f"Response: {response.text}")
-            return False
-
-    except Exception as e:
-        print(f"❌ CoinMarketCap API test error: {e}")
-        return False
+    """Verify COINMARKETCAP_API_KEY"""
     print("\n🔍 VERIFYING COINMARKETCAP_API_KEY...")
     api_key = os.getenv('COINMARKETCAP_API_KEY')
 
