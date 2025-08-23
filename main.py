@@ -666,30 +666,30 @@ def force_load_secret(var_name, default_value=None):
 class MainnetSafetyManager:
     """Manages safety features for mainnet deployment"""
 
-def __init__(self):
+    def __init__(self):
         self.emergency_stop = False
         self.emergency_stop_file = 'EMERGENCY_STOP_ACTIVE.flag'
         self.monitoring_active = True
 
-def check_emergency_stop(self):
+    def check_emergency_stop(self):
         """Check if emergency stop has been triggered"""
         return os.path.exists(self.emergency_stop_file) or self.emergency_stop
 
-def trigger_emergency_stop(self, reason="Manual trigger"):
+    def trigger_emergency_stop(self, reason="Manual trigger"):
         """Trigger emergency stop"""
         self.emergency_stop = True
         with open(self.emergency_stop_file, 'w') as f:
             f.write(f"EMERGENCY STOP TRIGGERED\nReason: {reason}\nTimestamp: {time.time()}\n")
         print(f"🚨 EMERGENCY STOP ACTIVATED: {reason}")
 
-def clear_emergency_stop(self):
+    def clear_emergency_stop(self):
         """Clear emergency stop (manual intervention required)"""
         self.emergency_stop = False
         if os.path.exists(self.emergency_stop_file):
             os.remove(self.emergency_stop_file)
         print("✅ Emergency stop cleared")
 
-def validate_mainnet_readiness(self):
+    def validate_mainnet_readiness(self):
         """Validate system is ready for mainnet deployment"""
         print("🔍 MAINNET READINESS VALIDATION")
         print("=" * 50)
@@ -1094,7 +1094,7 @@ def start_fallback_server(port=5000):
     fallback_app = Flask(__name__)
 
     @fallback_app.route('/')
-def status():
+    def status():
         return """
         <html>
         <head><title>DeFi Agent Status</title></head>
@@ -1109,7 +1109,7 @@ def status():
         """
 
     @fallback_app.route('/api/status')
-def api_status():
+    def api_status():
         return jsonify({
             'status': 'initializing',
             'mode': 'safe_launch',
@@ -1119,27 +1119,7 @@ def api_status():
 
     fallback_app.run(host='0.0.0.0', port=port, debug=False)
 
-def status():
-        return """
-        <html>
-        <head><title>DeFi Agent Status</title></head>
-        <body style="font-family: Arial; padding: 20px; background: #1a1a1a; color: white;">
-            <h1>🤖 DeFi Agent Dashboard</h1>
-            <p>Status: Initializing...</p>
-            <p>Network: Arbitrum Mainnet</p>
-            <p>Mode: Safe Launch Mode</p>
-            <p><em>Dashboard is starting up with safety checks...</em></p>
-        </body>
-        </html>
-        """
 
-def api_status():
-        return jsonify({
-            'status': 'initializing',
-            'mode': 'safe_launch',
-            'network': 'arbitrum_mainnet',
-            'timestamp': time.time()
-        })
 
         def is_port_available(port):
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
