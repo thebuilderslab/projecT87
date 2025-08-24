@@ -858,26 +858,27 @@ def patch_imports():
     # Create minimal mock classes if imports fail
     sys.path.insert(0, '.')
 
-    try:
-        # Test critical imports
-        # ArbitrumTestnetAgent defined in main.py
-        print("✅ ArbitrumTestnetAgent import successful")
-    except Exception as e:
-        print(f"⚠️ ArbitrumTestnetAgent import failed: {e}")
-        # Create mock class
-        class MockAgent:
-    def __init__(self):
-        self.address = "0x0000000000000000000000000000000000000000"
-        
-    def get_eth_balance(self):
-        return 0.0
+    # 
+        try:
+            # Test critical imports
+            # ArbitrumTestnetAgent defined in main.py
+            print("✅ ArbitrumTestnetAgent import successful")
+        except Exception as e:
+            print(f"⚠️ ArbitrumTestnetAgent import failed: {e}")
+            # Create mock class
+            class MockAgent:
+                def __init__(self):
+                    self.address = "0x0000000000000000000000000000000000000000"
 
-def start_dashboard():
-    """Start dashboard with comprehensive error handling"""
-    try:
-        print("🚀 Starting web web_dashboard...")
+                def get_eth_balance(self):
+                    return 0.0
 
-        # Import Flask app
+    def start_dashboard():
+        """Start dashboard with comprehensive error handling"""
+        try:
+            print("🚀 Starting web web_dashboard...")
+
+            # Import Flask app
         from web_dashboard import app
 
         # Check if port 5000 is available
