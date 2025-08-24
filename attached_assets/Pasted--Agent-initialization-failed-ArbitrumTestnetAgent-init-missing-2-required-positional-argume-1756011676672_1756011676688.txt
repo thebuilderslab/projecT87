@@ -1,0 +1,73 @@
+⚠️ Agent initialization failed: ArbitrumTestnetAgent.__init__() missing 2 required positional arguments: 'rpc_manager' and 'private_key'
+📊 Using latest autonomous agent data from console logs
+🔍 Autonomous agent running check: True
+⚠️ Agent initialization failed: ArbitrumTestnetAgent.__init__() missing 2 required positional arguments: 'rpc_manager' and 'private_key'
+📊 Using latest autonomous agent data from console logs
+🔍 Autonomous agent running check: True
+🔍 Autonomous agent running check: True
+172.31.117.194 - - [24/Aug/2025 05:00:49] "GET /api/console HTTP/1.1" 200 -
+INFO:werkzeug:172.31.117.194 - - [24/Aug/2025 05:00:49] "GET /api/console HTTP/1.1" 200 -
+🔍 Autonomous agent running check: True
+⚠️ Agent metrics fetch failed: ArbitrumTestnetAgent.__init__() missing 2 required positional arguments: 'rpc_manager' and 'private_key'
+⚠️ Agent initialization failed: ArbitrumTestnetAgent.__init__() missing 2 required positional arguments: 'rpc_manager' and 'private_key'
+📊 Using latest autonomous agent data from console logs
+172.31.117.194 - - [24/Aug/2025 05:00:49] "GET /api/system_metrics HTTP/1.1" 200 -
+INFO:werkzeug:172.31.117.194 - - [24/Aug/2025 05:00:49] "GET /api/system_metrics HTTP/1.1" 200 -
+🔍 Autonomous agent running check: True
+🔍 Autonomous agent running check: True
+172.31.117.194 - - [24/Aug/2025 05:00:49] "GET /api/console HTTP/1.1" 200 -
+INFO:werkzeug:172.31.117.194 - - [24/Aug/2025 05:00:49] "GET /api/console HTTP/1.1" 200 -
+🔍 Autonomous agent running check: True
+⚠️ Agent metrics fetch failed: ArbitrumTestnetAgent.__init__() missing 2 required positional arguments: 'rpc_manager' and 'private_key'
+⚠️ Agent initialization failed: ArbitrumTestnetAgent.__init__() missing 2 required positional arguments: 'rpc_manager' and 'private_key'
+📊 Using latest autonomous agent data from console logs
+172.31.117.194 - - [24/Aug/2025 05:00:49] "GET /api/system_metrics HTTP/1.1" 200 -
+INFO:werkzeug:172.31.117.194 - - [24/Aug/2025 05:00:49] "GET /api/system_metrics HTTP/1.1" 200 -
+🔍 Autonomous agent running check: True
+🔍 Autonomous agent running check: True
+172.31.117.194 - - [24/Aug/2025 05:00:51] "GET /api/console HTTP/1.1" 200 -
+INFO:werkzeug:172.31.117.194 - - [24/Aug/2025 05:00:51] "GET /api/console HTTP/1.1" 200 -
+🔍 Autonomous agent running check: True
+⚠️ Agent metrics fetch failed: ArbitrumTestnetAgent.__init__() missing 2 required positional arguments: 'rpc_manager' and 'private_key'
+⚠️ Agent initialization failed: ArbitrumTestnetAgent.__init__() missing 2 required positional arguments: 'rpc_manager' and 'private_key'
+📊 Using latest autonomous agent data from console logs
+172.31.117.194 - - [24/Aug/2025 05:00:51] "GET /api/system_metrics HTTP/1.1" 200 -
+INFO:werkzeug:172.31.117.194 - - [24/Aug/2025 05:00:51] "GET /api/system_metrics HTTP/1.1" 200 -
+⚠️ Agent initialization failed: ArbitrumTestnetAgent.__init__() missing 2 required positional arguments: 'rpc_manager' and 'private_key'
+📊 Using latest autonomous agent data from console logs
+🔍 Autonomous agent running check: True
+⚠️ Agent initialization failed: ArbitrumTestnetAgent.__init__() missing 2 required positional arguments: 'rpc_manager' and 'private_key'
+📊 Using latest autonomous agent data from console logs
+🔍 Autonomous agent running check: True
+🔍 Autonomous agent running check: True
+172.31.117.194 - - [24/Aug/2025 05:00:51] "GET /api/console HTTP/1.1" 200 -
+INFO:werkzeug:172.31.117.194 - - [24/Aug/2025 05:00:51] "GET /api/console HTTP/1.1" 200 -
+🔍 Autonomous agent running check: True
+⚠️ Agent metrics fetch failed: ArbitrumTestnetAgent.__init__() missing 2 required positional arguments: 'rpc_manager' and 'private_key'
+⚠️ Agent initialization failed: ArbitrumTestnetAgent.__init__() missing 2 required positional arguments: 'rpc_manager' and 'private_key'
+📊 Using latest autonomous agent data from console logs
+172.31.117.194 - - [24/Aug/2025 05:00:51] "GET /api/system_metrics HTTP/1.1" 200 -
+INFO:werkzeug:172.31.117.194 - - [24/Aug/2025 05:00:51] "GET /api/system_metrics HTTP/1.1" 200 -
+🔍 Autonomous agent running check: True
+🔍 Autonomous agent running check: True
+172.31.117.194 - - [24/Aug/2025 05:00:53] "GET /api/console HTTP/1.1" 200 -
+INFO:werkzeug:172.31.117.194 - - [24/Aug/2025 05:00:53] "GET /api/console HTTP/1.1" 200 -
+🔍 Autonomous agent running check: True
+⚠️ Agent metrics fetch failed: ArbitrumTestnetAgent.__init__() missing 2 required positional arguments: 'rpc_manager' and 'private_key'
+⚠️ Agent initialization failed: ArbitrumTestnetAgent.__init__() missing 2 required positional arguments: 'rpc_manager' and 'private_key'
+📊 Using latest autonomous agent data from console logs
+172.31.117.194 - - [24/Aug/2025 05:00:53] "GET /api/system_metrics HTTP/1.1" 200 -
+INFO:werkzeug:172.31.117.194 - - [24/Aug/2025 05:00:53] "GET /api/system_metrics HTTP/1.1" 200 -
+⚠️ Agent initialization failed: ArbitrumTestnetAgent.__init__() missing 2 required positional arguments: 'rpc_manager' and 'private_key'
+📊 Using latest autonomous agent data from console logs
+🔍 Autonomous agent running check: True
+⚠️ Agent initialization failed: ArbitrumTestnetAgent.__init__() missing 2 required positional arguments: 'rpc_manager' and 'private_key'
+📊 Using latest autonomous agent data from console logs
+🔍 Autonomous agent running check: True
+🔍 Autonomous agent running check: True
+172.31.117.194 - - [24/Aug/2025 05:00:55] "GET /api/console HTTP/1.1" 200 -
+INFO:werkzeug:172.31.117.194 - - [24/Aug/2025 05:00:55] "GET /api/console HTTP/1.1" 200 -
+🔍 Autonomous agent running check: True
+⚠️ Agent metrics fetch failed: ArbitrumTestnetAgent.__init__() missing 2 required positional arguments: 'rpc_manager' and 'private_key'
+⚠️ Agent initialization failed: ArbitrumTestnetAgent.__init__() missing 2 required positional arguments: 'rpc_manager' and 'private_key'
+📊 Using latest autonomous agent data from console logs

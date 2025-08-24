@@ -23,10 +23,22 @@ from gas_fee_calculator import ArbitrumGasCalculator
 from config_constants import MIN_ETH_FOR_OPERATIONS, MIN_ETH_FOR_GAS_BUFFER
 import requests
 import sys
-import traceback
+import traceback 
 
 class ArbitrumTestnetAgent:
-    def __init__(self):
+    def __init__(self, rpc_manager, private_key):
+        self.rpc_manager = rpc_manager
+        self.private_key = private_key
+        self.w3 = self.rpc_manager.get_web3()
+        self.address = self.w3.eth.account.from_key(private_key).address
+        self.aave_pool = self.w3.eth.contract(address=AAVE_POOL_ADDRESS, abi=AAVE_POOL_ABI)
+        self.dai_token = self.w3.eth.contract(address=DAI_ADDRESS, abi=DAI_ABI)
+
+    def get_user_account_data(self):
+        """Fetches the user's account data from the Aave protocol."""
+        return self.aave_pool.functions.getUserAccountData(self.address).call()
+
+    # Add other methods like get_eth_balance, get_token_balance, etc.
         """Initialize the Arbitrum Testnet Agent with proper configuration"""
         print("🤖 Initializing Arbitrum Testnet Agent...")
         # Load environment variables
