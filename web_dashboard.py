@@ -287,7 +287,6 @@ def get_live_agent_data():
         # Try to get agent instance for live data
         try:
             from arbitrum_testnet_agent import ArbitrumTestnetAgent
-
             # Create a minimal RPC manager mock for the agent
             class MockRPCManager:
                 def get_web3(self):
@@ -296,6 +295,15 @@ def get_live_agent_data():
 
             private_key = os.getenv('PRIVATE_KEY') or os.getenv('WALLET_PRIVATE_KEY')
             if private_key:
+                # Define required Aave addresses for Arbitrum Mainnet
+                import sys
+                if 'arbitrum_testnet_agent' not in sys.modules:
+                    # Import required constants before creating agent
+                    AAVE_POOL_ADDRESS = "0x794a61358D6845594F94dc1DB02A252b5b4814aD"
+                    AAVE_POOL_DATA_PROVIDER = "0x69FA688f1Dc47d4B5d8029D5a35FB7a548310654"
+                    globals()['AAVE_POOL_ADDRESS'] = AAVE_POOL_ADDRESS
+                    globals()['AAVE_POOL_DATA_PROVIDER'] = AAVE_POOL_DATA_PROVIDER
+
                 agent = ArbitrumTestnetAgent(MockRPCManager(), private_key)
 
                 # Get live Aave data directly from contracts
@@ -422,8 +430,11 @@ def wallet_status():
 
         # Get fresh Aave data directly
         try:
-            if agent and hasattr(agent, 'w3') and hasattr(agent, 'aave_pool_address'):
+            if agent and hasattr(agent, 'w3'):
                 from web3 import Web3
+                # Use hardcoded Aave pool address for Arbitrum Mainnet
+                aave_pool_address = "0x794a61358D6845594F94dc1DB02A252b5b4814aD"
+
                 pool_abi = [{
                     "inputs": [{"name": "user", "type": "address"}],
                     "name": "getUserAccountData",
@@ -439,7 +450,7 @@ def wallet_status():
                     "type": "function"
                 }]
 
-                pool_contract = agent.w3.eth.contract(address=agent.aave_pool_address, abi=pool_abi)
+                pool_contract = agent.w3.eth.contract(address=aave_pool_address, abi=pool_abi)
                 account_data = pool_contract.functions.getUserAccountData(agent.address).call()
 
                 fresh_collateral_usd = account_data[0] / (10**8)
