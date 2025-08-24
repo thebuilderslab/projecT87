@@ -18,8 +18,10 @@ import requests
 import sys
 import traceback
 
+class ArbitrumTestnetAgent:
+    def __init__(self):
+        """Initialize the Arbitrum Testnet Agent with proper configuration"""
         print("🤖 Initializing Arbitrum Testnet Agent...")
-
         # Load environment variables
         self.private_key = os.getenv('WALLET_PRIVATE_KEY')
         print(f"DEBUG: WALLET_PRIVATE_KEY loaded from environment: {'[REDACTED]' if self.private_key else 'None'}")
