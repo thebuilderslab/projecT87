@@ -45,6 +45,70 @@ class MarketSignal:
     recommendation: str
     timestamp: float
 
+class CoinGeckoAPI:
+    """CoinGecko API client for fetching market data"""
+    
+    def __init__(self, api_key: str = None):
+        self.api_key = api_key
+        self.base_url = "https://api.coingecko.com/api/v3"
+        self.session = requests.Session()
+        if self.api_key:
+            self.session.headers.update({
+                'x-cg-pro-api-key': self.api_key,
+            })
+    
+    def get_current_price(self, symbol: str) -> Optional[Dict]:
+        """Get current price and basic metrics from CoinGecko"""
+        try:
+            # Map symbols to CoinGecko IDs
+            symbol_map = {
+                'BTC': 'bitcoin',
+                'ETH': 'ethereum', 
+                'DAI': 'dai'
+            }
+            
+            gecko_id = symbol_map.get(symbol.upper())
+            if not gecko_id:
+                logger.warning(f"Unknown symbol for CoinGecko: {symbol}")
+                return None
+            
+            url = f"{self.base_url}/simple/price"
+            params = {
+                'ids': gecko_id,
+                'vs_currencies': 'usd',
+                'include_24hr_change': 'true',
+                'include_24hr_vol': 'true',
+                'include_market_cap': 'true'
+            }
+            
+            response = self.session.get(url, params=params, timeout=30)
+            response.raise_for_status()
+            
+            data = response.json()
+            if gecko_id not in data:
+                return None
+            
+            coin_data = data[gecko_id]
+            
+            return {
+                'price': coin_data.get('usd', 0),
+                'percent_change_1h': 0,  # CoinGecko simple API doesn't provide 1h change
+                'percent_change_24h': coin_data.get('usd_24h_change', 0),
+                'percent_change_7d': 0,  # Not available in simple API
+                'volume_24h': coin_data.get('usd_24h_vol', 0),
+                'market_cap': coin_data.get('usd_market_cap', 0)
+            }
+            
+        except requests.exceptions.RequestException as e:
+            if hasattr(e.response, 'status_code') and e.response.status_code == 429:
+                logger.warning(f"CoinGecko rate limit hit for {symbol}: {e}")
+                raise requests.exceptions.HTTPError("Rate limit exceeded", response=e.response)
+            logger.error(f"CoinGecko API error for {symbol}: {e}")
+            return None
+        except Exception as e:
+            logger.error(f"Unexpected CoinGecko error for {symbol}: {e}")
+            return None
+
 class CoinMarketCapAPI:
     """CoinMarketCap API client for fetching market data"""
     
@@ -204,18 +268,71 @@ class EnhancedMarketAnalyzer:
     
     def __init__(self, agent):
         self.agent = agent
-        self.api_key = os.getenv('COINMARKETCAP_API_KEY')
-        if not self.api_key:
-            raise ValueError("COINMARKETCAP_API_KEY not found in environment variables")
         
-        self.cmc_client = CoinMarketCapAPI(self.api_key)
+        # Initialize CoinGecko API (primary)
+        self.coingecko_api_key = os.getenv('COINGECKO_API_KEY')
+        self.coingecko_client = CoinGeckoAPI(self.coingecko_api_key)
+        
+        # Initialize CoinMarketCap API (fallback)
+        self.coinmarketcap_api_key = os.getenv('COINMARKETCAP_API_KEY')
+        if not self.coinmarketcap_api_key:
+            logger.warning("COINMARKETCAP_API_KEY not found - fallback API unavailable")
+            self.cmc_client = None
+        else:
+            self.cmc_client = CoinMarketCapAPI(self.coinmarketcap_api_key)
+        
         self.technical_analysis = TechnicalAnalysis()
         
         # Cache for historical data
         self.data_cache = {}
         self.cache_timeout = 3600  # 1 hour
         
-        logger.info("Enhanced Market Analyzer initialized successfully")
+        logger.info("Enhanced Market Analyzer initialized with CoinGecko primary and CoinMarketCap fallback")
+    
+    def get_current_prices(self, symbols: List[str]) -> Dict[str, Optional[Dict]]:
+        """Get current prices using CoinGecko primary, CoinMarketCap fallback strategy"""
+        results = {}
+        
+        for symbol in symbols:
+            try:
+                # Primary: Try CoinGecko first
+                logger.info(f"Fetching {symbol} price from CoinGecko (primary)")
+                price_data = self.coingecko_client.get_current_price(symbol)
+                
+                if price_data:
+                    logger.info(f"✅ CoinGecko: {symbol} = ${price_data['price']:.2f}")
+                    results[symbol] = price_data
+                    continue
+                    
+            except requests.exceptions.HTTPError as e:
+                if hasattr(e, 'response') and e.response.status_code == 429:
+                    logger.warning(f"⚠️ CoinGecko rate limit hit for {symbol}, switching to CoinMarketCap fallback")
+                else:
+                    logger.warning(f"⚠️ CoinGecko API error for {symbol}: {e}")
+            except Exception as e:
+                logger.warning(f"⚠️ CoinGecko unexpected error for {symbol}: {e}")
+            
+            # Fallback: Try CoinMarketCap
+            if self.cmc_client:
+                try:
+                    logger.info(f"Fetching {symbol} price from CoinMarketCap (fallback)")
+                    price_data = self.cmc_client.get_current_price(symbol)
+                    
+                    if price_data:
+                        logger.info(f"✅ CoinMarketCap: {symbol} = ${price_data['price']:.2f}")
+                        results[symbol] = price_data
+                        continue
+                        
+                except Exception as e:
+                    logger.error(f"❌ CoinMarketCap fallback failed for {symbol}: {e}")
+            else:
+                logger.error(f"❌ CoinMarketCap fallback not available for {symbol}")
+            
+            # Both APIs failed
+            logger.critical(f"🚨 CRITICAL: No market data could be fetched for {symbol}")
+            results[symbol] = None
+        
+        return results
     
     def get_cached_data(self, symbol: str, days: int = 365) -> Optional[pd.DataFrame]:
         """Get cached historical data or fetch new data"""
@@ -227,8 +344,11 @@ class EnhancedMarketAnalyzer:
             if current_time - timestamp < self.cache_timeout:
                 return cached_data
         
-        # Fetch new data
-        data = self.cmc_client.get_historical_data(symbol, days)
+        # Fetch new data - try CoinGecko first, then CoinMarketCap
+        data = None
+        if self.cmc_client:
+            data = self.cmc_client.get_historical_data(symbol, days)
+        
         if data is not None:
             self.data_cache[cache_key] = (data, current_time)
         
@@ -346,22 +466,24 @@ class EnhancedMarketAnalyzer:
             return None
     
     def get_market_summary(self) -> Dict:
-        """Get comprehensive market summary"""
+        """Get comprehensive market summary using dual API strategy"""
         try:
             summary = {
                 'timestamp': time.time(),
                 'btc_analysis': {},
                 'eth_analysis': {},
                 'dai_analysis': {},
-                'market_sentiment': 'neutral'
+                'market_sentiment': 'neutral',
+                'data_source': 'mixed'  # Track which APIs were used
             }
             
-            # Analyze major cryptocurrencies
+            # Analyze major cryptocurrencies using dual API strategy
             symbols = ['BTC', 'ETH', 'DAI']
+            current_prices = self.get_current_prices(symbols)
             
             for symbol in symbols:
                 try:
-                    current_data = self.cmc_client.get_current_price(symbol)
+                    current_data = current_prices.get(symbol)
                     if current_data:
                         signal = self.analyze_market_signal(symbol)
                         
@@ -377,6 +499,9 @@ class EnhancedMarketAnalyzer:
                         }
                         
                         summary[f'{symbol.lower()}_analysis'] = analysis
+                    else:
+                        logger.error(f"No price data available for {symbol}")
+                        summary[f'{symbol.lower()}_analysis'] = {'error': 'No data available'}
                         
                 except Exception as e:
                     logger.error(f"Error analyzing {symbol}: {e}")
@@ -395,7 +520,7 @@ class EnhancedMarketAnalyzer:
             else:
                 summary['market_sentiment'] = 'neutral'
             
-            logger.info("Market summary generated successfully")
+            logger.info("Market summary generated successfully with dual API strategy")
             return summary
             
         except Exception as e:
@@ -467,16 +592,22 @@ class EnhancedMarketSignalStrategy:
 def test_enhanced_market_analyzer():
     """Test the enhanced market analyzer"""
     try:
-        print("🧪 Testing Enhanced Market Analyzer with CoinMarketCap API")
+        print("🧪 Testing Enhanced Market Analyzer with CoinGecko + CoinMarketCap APIs")
         print("=" * 60)
         
-        # Check API key
-        api_key = os.getenv('COINMARKETCAP_API_KEY')
-        if not api_key:
-            print("❌ COINMARKETCAP_API_KEY not found in environment")
-            return False
+        # Check API keys
+        coingecko_key = os.getenv('COINGECKO_API_KEY')
+        coinmarketcap_key = os.getenv('COINMARKETCAP_API_KEY')
         
-        print(f"✅ API Key found: {api_key[:8]}...")
+        if coingecko_key:
+            print(f"✅ CoinGecko API Key found: {coingecko_key[:8]}...")
+        else:
+            print("⚠️ COINGECKO_API_KEY not found - using free tier")
+        
+        if coinmarketcap_key:
+            print(f"✅ CoinMarketCap API Key found: {coinmarketcap_key[:8]}...")
+        else:
+            print("❌ COINMARKETCAP_API_KEY not found - fallback unavailable")
         
         # Create mock agent
         class MockAgent:
