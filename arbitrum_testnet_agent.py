@@ -47,7 +47,7 @@ class ArbitrumTestnetAgent:
             print(f"❌ Environment validation failed: {env_error}")
             print("💡 Please check your Replit secrets configuration")
             print("🔧 Attempting graceful recovery...")
-            
+
             # Try to continue with minimal functionality
             try:
                 if self._validate_critical_environment():
@@ -394,7 +394,7 @@ class ArbitrumTestnetAgent:
 
         # Capacity-Based System Parameters
         self.capacity_optimization_threshold = float(os.getenv('CAPACITY_OPTIMIZATION_THRESHOLD', '0.20'))  # 20% utilization threshold
-        self.capacity_health_factor_threshold = float(os.getenv('CAPACITY_HEALTH_FACTOR_THRESHOLD', '2.05')) # HF > 2.05 for capacity optimization (reduced from 2.1)
+        self.capacity_health_factor_threshold = float(os.getenv('CAPACITY_HEALTH_FACTOR_THRESHOLD', '2.05')) # Reduced from 2.1 for optimization
         self.capacity_available_threshold = float(os.getenv('CAPACITY_AVAILABLE_THRESHOLD', '13.0')) # $13 minimum available capacity
 
         # System Operation Parameters
@@ -468,33 +468,39 @@ class ArbitrumTestnetAgent:
         """Validate critical environment variables are present"""
         required_vars = ['WALLET_PRIVATE_KEY', 'COINMARKETCAP_API_KEY']
         missing_vars = []
-        
+
         for var in required_vars:
             if not os.getenv(var):
                 missing_vars.append(var)
-        
+
         if missing_vars:
             raise Exception(f"Missing required environment variables: {missing_vars}")
-        
+
         print("✅ All critical environment variables validated successfully")
         return True
 
     def _validate_market_signal_environment(self):
-        """Validate market signal environment variables (optional)"""
+        """Validate market signal environment settings"""
         try:
-            # Optional market signal variables - don't fail if missing
-            market_vars = {
-                'MARKET_SIGNAL_ENABLED': os.getenv('MARKET_SIGNAL_ENABLED', 'false'),
-                'BTC_DROP_THRESHOLD': os.getenv('BTC_DROP_THRESHOLD', '0.02'),
-                'DAI_TO_ARB_THRESHOLD': os.getenv('DAI_TO_ARB_THRESHOLD', '0.8')
-            }
-            
-            print("✅ Market signal environment variables checked")
+            # Check if market signal strategy is enabled
+            market_enabled = os.getenv('MARKET_SIGNAL_ENABLED', 'false').lower() == 'true'
+            if not market_enabled:
+                print("ℹ️ Market signal operations disabled")
+                return True
+
+            # Validate market signal requirements
+            required_vars = ['COINMARKETCAP_API_KEY']
+            for var in required_vars:
+                if not os.getenv(var):
+                    print(f"⚠️ Market signal variable missing: {var}")
+                    return False
+
+            print("✅ Market signal environment validated")
             return True
-            
+
         except Exception as e:
-            print(f"⚠️ Market signal validation warning: {e}")
-            return True  # Don't fail initialization for optional features
+            print(f"❌ Market signal validation error: {e}")
+            return False
 
     def _auto_initialize_baseline(self):
         """Auto-initialize baseline collateral value"""
@@ -550,6 +556,7 @@ class ArbitrumTestnetAgent:
                 safe_json_dump(baseline_data, 'agent_baseline.json')
 
                 return True
+
             else:
                 print("⚠️ No collateral value provided for baseline update")
                 return False
@@ -1333,10 +1340,10 @@ class ArbitrumTestnetAgent:
             self.last_transaction_successful = False # Mark as failed on exception
             return 0.1
 
-    def _validate_dai_compliance(self):
-        """Validate that system is operating in DAI-only mode"""
+    def _validate_dai_compliance_environment(self):
+        """Validate DAI compliance environment settings"""
         try:
-            # Check that DAI address is properly set
+            # Ensure DAI address is configured
             if not hasattr(self, 'dai_address') or not self.dai_address:
                 print("❌ DAI address not configured")
                 return False
@@ -1468,36 +1475,53 @@ class ArbitrumTestnetAgent:
             import traceback
             traceback.print_exc()
             return False
+
     def _execute_market_signal_operation(self, available_borrows_usd):
-        """Execute market signal-triggered operation - DAI only"""
+        """Execute market signal-triggered operation - DAI debt swaps only"""
         try:
-            print("🚀 Executing market signal-triggered operation (DAI-only)")
+            print("📊 Executing market signal operation (DAI debt swaps)")
 
-            # Comprehensive pre-transaction validation
+            # Check health factor requirement (2.0 minimum)
+            try:
+                account_data = self.aave.get_user_account_data()
+                if account_data:
+                    health_factor = account_data.get('healthFactor', 0)
+                    if health_factor < 2.0:
+                        print(f"❌ Health factor {health_factor:.3f} below market signal threshold 2.0")
+                        return False
+                    print(f"✅ Health factor {health_factor:.3f} meets market signal requirement")
+            except Exception as hf_error:
+                print(f"⚠️ Could not verify health factor: {hf_error}")
+                return False
+
+            # Conservative amount for market signal operations
+            swap_amount_usd = min(available_borrows_usd * 0.05, 3.0)  # 5% or $3 max
+
+            if swap_amount_usd < 0.5:
+                print("⚠️ Market signal amount too small")
+                return False
+
+            print(f"💱 Market signal debt swap: ${swap_amount_usd:.2f}")
+
+            # Validate transaction preconditions
             if not self._validate_transaction_preconditions(available_borrows_usd):
-                print("❌ Transaction preconditions not met")
+                print("❌ Market signal preconditions not met")
                 return False
 
-            # Calculate safe borrow amount with enhanced validation
-            borrow_amount = self._calculate_validated_borrow_amount(available_borrows_usd, "market_signal")
+            # Execute conservative debt swap (DAI-only operations)
+            print(f"🔄 Executing DAI-based market signal operation...")
 
-            if borrow_amount < 1.0:
-                print("⚠️ Borrow amount too small after validation")
-                return False
-
-            print(f"💰 Validated borrow amount: ${borrow_amount:.2f} DAI")
-
-            # Execute DAI borrow with enhanced error handling
-            result = self._execute_validated_dai_borrow(borrow_amount)
+            # For market signals, we perform minimal DAI borrowing
+            result = self._execute_validated_dai_borrow(swap_amount_usd)
             if result:
-                print(f"✅ Successfully borrowed ${borrow_amount:.2f} DAI based on market signal")
+                print(f"✅ Market signal operation successful: ${swap_amount_usd:.2f} DAI")
                 return True
             else:
-                print(f"❌ Failed to borrow DAI based on market signal")
+                print(f"❌ Market signal DAI operation failed")
                 return False
 
         except Exception as e:
-            print(f"❌ Market signal operation error: {e}")
+            print(f"❌ Market signal operation failed: {e}")
             import traceback
             traceback.print_exc()
             return False
@@ -2197,35 +2221,51 @@ class ArbitrumTestnetAgent:
             return False
 
     def _execute_market_signal_operation(self, available_borrows_usd):
-        """Execute market signal-triggered operation - DAI only"""
+        """Execute market signal-triggered operation - DAI debt swaps only"""
         try:
-            print("🚀 Executing market signal-triggered operation (DAI-only)")
+            print("📊 Executing market signal operation (DAI debt swaps)")
 
-            # Comprehensive pre-transaction validation
+            # Check health factor requirement (2.0 minimum)
+            try:
+                account_data = self.aave.get_user_account_data()
+                if account_data:
+                    health_factor = account_data.get('healthFactor', 0)
+                    if health_factor < 2.0:
+                        print(f"❌ Health factor {health_factor:.3f} below market signal threshold 2.0")
+                        return False
+                    print(f"✅ Health factor {health_factor:.3f} meets market signal requirement")
+            except Exception as hf_error:
+                print(f"⚠️ Could not verify health factor: {hf_error}")
+                return False
+
+            # Conservative amount for market signal operations
+            swap_amount_usd = min(available_borrows_usd * 0.05, 3.0)  # 5% or $3 max
+
+            if swap_amount_usd < 0.5:
+                print("⚠️ Market signal amount too small")
+                return False
+
+            print(f"💱 Market signal debt swap: ${swap_amount_usd:.2f}")
+
+            # Validate transaction preconditions
             if not self._validate_transaction_preconditions(available_borrows_usd):
-                print("❌ Transaction preconditions not met")
+                print("❌ Market signal preconditions not met")
                 return False
 
-            # Calculate safe borrow amount with enhanced validation
-            borrow_amount = self._calculate_validated_borrow_amount(available_borrows_usd, "market_signal")
+            # Execute conservative debt swap (DAI-only operations)
+            print(f"🔄 Executing DAI-based market signal operation...")
 
-            if borrow_amount < 1.0:
-                print("⚠️ Borrow amount too small after validation")
-                return False
-
-            print(f"💰 Validated borrow amount: ${borrow_amount:.2f} DAI")
-
-            # Execute DAI borrow with enhanced error handling
-            result = self._execute_validated_dai_borrow(borrow_amount)
+            # For market signals, we perform minimal DAI borrowing
+            result = self._execute_validated_dai_borrow(swap_amount_usd)
             if result:
-                print(f"✅ Successfully borrowed ${borrow_amount:.2f} DAI based on market signal")
+                print(f"✅ Market signal operation successful: ${swap_amount_usd:.2f} DAI")
                 return True
             else:
-                print(f"❌ Failed to borrow DAI based on market signal")
+                print(f"❌ Market signal DAI operation failed")
                 return False
 
         except Exception as e:
-            print(f"❌ Market signal operation error: {e}")
+            print(f"❌ Market signal operation failed: {e}")
             import traceback
             traceback.print_exc()
             return False
@@ -2361,8 +2401,8 @@ class ArbitrumTestnetAgent:
             }
 
             # Check if market signal strategy is enabled
-            if (hasattr(self, 'market_signal_strategy') and 
-                self.market_signal_strategy and 
+            if (hasattr(self, 'market_signal_strategy') and
+                self.market_signal_strategy and
                 getattr(self.market_signal_strategy, 'market_signal_enabled', False)):
                 validation_results['market_signal_enabled'] = True
                 print("✅ Market signal strategy enabled")
@@ -2396,7 +2436,7 @@ class ArbitrumTestnetAgent:
                 print("❌ Network not connected")
 
             # Check integrations
-            if (hasattr(self, 'aave') and self.aave and 
+            if (hasattr(self, 'aave') and self.aave and
                 hasattr(self, 'uniswap') and self.uniswap):
                 validation_results['integrations_ready'] = True
                 print("✅ DeFi integrations ready")
