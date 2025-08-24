@@ -1,0 +1,29 @@
+## Replit Agent Task: Enhance and Debug Debt Swap Agent
+
+### 🎯 **Primary Goal**
+Ensure the market analysis features of the debt swap agent are fully implemented and operational by integrating and using the CoinMarketCap API for market data.
+
+### 📝 **Task Description**
+The agent needs to connect to the CoinMarketCap API to perform technical and historical timeframe analysis. This task involves setting up the API key and verifying that the data is being fetched and processed correctly.
+
+### 🐛 **Debug & Fix**
+1.  **Identify the problem:** The previous setup used an incomplete Aave protocol connection. The new approach requires a proper connection to CoinMarketCap.
+2.  **Locate the code:** Find the main configuration or initialization file where environment variables and API keys are declared.
+3.  **Define the variable:** Add the following line to the appropriate location in the code to define the CoinMarketCap API key:
+    `COINMARKETCAP_API_KEY = "YOUR_API_KEY_HERE"`
+    *Note: Replace "YOUR_API_KEY_HERE" with your actual API key from CoinMarketCap.*
+4.  **Update the script:** Modify the code that fetches market data to use the CoinMarketCap API endpoint instead of a direct Aave protocol connection. This will enable the agent to pull the necessary historical and real-time price data.
+
+### ✨ **Enhancement Goals**
+Once the bug is fixed, the agent should successfully perform the following market analysis enhancements:
+* **Technical Analysis:** Use the CoinMarketCap API to fetch real-time and historical price data for minute-by-minute analysis.
+* **Historical Timeframe Analysis:** Utilize the API to pull historical data, allowing the agent to backtest strategies and analyze trends over longer time periods.
+* **Full Signal Functionality:** The agent should no longer show the "Market signal methods incomplete - using fallback mode" warning and should be using its full, configured market signal strategy based on the data from CoinMarketCap.
+
+### ✅ **Verification and Monitoring**
+After running the script, carefully monitor the console logs. The task is successfully completed when you see the following confirmations:
+* The log message confirming successful connection to the CoinMarketCap API appears.
+* The agent successfully fetches and processes data from the CoinMarketCap API.
+* The agent runs its technical and historical analysis without errors.
+
+Report the status of the fixes and confirm the full operation of the market analysis features.
