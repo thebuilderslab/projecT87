@@ -278,22 +278,26 @@ def get_live_agent_data():
     """Get live data from unified Aave fetcher - eliminates cached data issues"""
     try:
         # Use unified fetcher for live Aave data
-        from unified_aave_data_fetcher import get_unified_aave_data
+        try:
+            from unified_aave_data_fetcher import get_unified_aave_data
+        except ImportError:
+            print("⚠️ unified_aave_data_fetcher not found. Install it to get live data.")
+            return None
 
         # Try to get agent instance for live data
         try:
             from arbitrum_testnet_agent import ArbitrumTestnetAgent
-            
+
             # Create a minimal RPC manager mock for the agent
             class MockRPCManager:
                 def get_web3(self):
                     from web3 import Web3
                     return Web3(Web3.HTTPProvider("https://arb1.arbitrum.io/rpc"))
-            
+
             private_key = os.getenv('PRIVATE_KEY') or os.getenv('WALLET_PRIVATE_KEY')
             if private_key:
                 agent = ArbitrumTestnetAgent(MockRPCManager(), private_key)
-                
+
                 # Get live Aave data directly from contracts
                 live_data = get_unified_aave_data(agent)
             else:
@@ -390,7 +394,7 @@ def dashboard():
             'network_mode': 'mainnet',
             'chain_id': 42161,
             'network_name': 'Arbitrum Mainnet',
-            'rpc_url': 'https://arbitrum-mainnet.infura.io/v3/...'
+            'rpc_url': 'https://arb1.arbitrum.io/rpc'
         }
 
         agent_status = "Connected" if agent else "Initializing..."
@@ -713,8 +717,8 @@ def get_system_metrics():
                     def get_web3(self):
                         from web3 import Web3
                         return Web3(Web3.HTTPProvider("https://arb1.arbitrum.io/rpc"))
-                
-                private_key = os.getenv('PRIVATE_KEY') or os.getenv('WALLET_PRIVATE_KEY')
+
+                private_key = os.getenv('PRIVATE_KEY') or os.getenv('Wallet_PRIVATE_KEY')
                 if private_key:
                     temp_agent = ArbitrumTestnetAgent(MockRPCManager(), private_key)
                     if hasattr(temp_agent, 'get_system_metrics'):
@@ -819,7 +823,7 @@ def analyze_trigger_conditions(live_data):
     try:
         current_collateral = live_data.get('total_collateral_usdc', 192.85)
         baseline = live_data.get('baseline_collateral', 177.79)
-        growth_threshold = 12.0  # $12 growth trigger
+        growth_threshold = 12.0  # $12 collateral growth trigger
 
         growth_achieved = current_collateral - baseline
         growth_needed = max(0, growth_threshold - growth_achieved)
@@ -1034,7 +1038,7 @@ def get_network_info_api():
             'network_mode': 'mainnet',
             'chain_id': 42161,
             'network_name': 'Arbitrum Mainnet',
-            'rpc_url': 'https://arbitrum-mainnet.infura.io/v3/...'
+            'rpc_url': 'https://arb1.arbitrum.io/rpc'
         }
         return jsonify(network_info)
     except Exception as e:
@@ -1489,53 +1493,50 @@ def check_market_signals():
             # Try to initialize and test market signals
             try:
                 from arbitrum_testnet_agent import ArbitrumTestnetAgent
-                
+
                 # Create a minimal RPC manager mock for the agent
                 class MockRPCManager:
                     def get_web3(self):
                         from web3 import Web3
                         return Web3(Web3.HTTPProvider("https://arb1.arbitrum.io/rpc"))
-                
-                private_key = os.getenv('PRIVATE_KEY') or os.getenv('WALLET_PRIVATE_KEY')
+
+                private_key = os.getenv('PRIVATE_KEY') or os.getenv('Wallet_PRIVATE_KEY')
                 if private_key:
                     agent = ArbitrumTestnetAgent(MockRPCManager(), private_key)
 
                     if hasattr(agent, 'market_signal_strategy') and agent.market_signal_strategy:
+                        # Test if strategy can execute
+                        can_execute = agent.market_signal_strategy.should_execute_trade()
+
+                        if can_execute:
+                            return f"[{timestamp}] 🚨 DEBT SWAP TRIGGER: Market conditions met | EXECUTING SWAP"
+                        else:
+                            # Get current market status
+                            signal = agent.market_signal_strategy.analyze_market_signals()
+                            if signal:
+                                btc_change = signal.btc_price_change
+                                arb_rsi = signal.arb_technical_score
+                                confidence = signal.confidence
+
+                                status = f"[{timestamp}] 📊 MARKET ANALYSIS: BTC {btc_change:+.2f}% | ARB RSI {arb_rsi:.1f} | Confidence {confidence:.0%}"
+
+                                # Check specific triggers
+                                btc_threshold = float(os.getenv('BTC_DROP_THRESHOLD', '0.002')) * 100
+                                if btc_change <= -btc_threshold:
+                                    status += f" | ✅ BTC drop trigger met"
+                                else:
+                                    status += f" | ❌ BTC needs {-btc_threshold:.1f}% drop"
+
+                                if arb_rsi <= 30:
+                                    status += f" | ✅ ARB oversold"
+                                else:
+                                    status += f" | ❌ ARB not oversold"
+
+                                return status
+                            else:
+                                return f"[{timestamp}] 📊 MARKET SIGNALS: No signal data | Waiting for market conditions"
                 else:
                     return f"[{timestamp}] ❌ MARKET SIGNALS: No private key for agent initialization"
-                    # Test if strategy can execute
-                    can_execute = agent.market_signal_strategy.should_execute_trade()
-
-                    if can_execute:
-                        return f"[{timestamp}] 🚨 DEBT SWAP TRIGGER: Market conditions met | EXECUTING SWAP"
-                    else:
-                        # Get current market status
-                        signal = agent.market_signal_strategy.analyze_market_signals()
-                        if signal:
-                            btc_change = signal.btc_price_change
-                            arb_rsi = signal.arb_technical_score
-                            confidence = signal.confidence
-
-                            status = f"[{timestamp}] 📊 MARKET ANALYSIS: BTC {btc_change:+.2f}% | ARB RSI {arb_rsi:.1f} | Confidence {confidence:.0%}"
-
-                            # Check specific triggers
-                            btc_threshold = float(os.getenv('BTC_DROP_THRESHOLD', '0.002')) * 100
-                            if btc_change <= -btc_threshold:
-                                status += f" | ✅ BTC drop trigger met"
-                            else:
-                                status += f" | ❌ BTC needs {-btc_threshold:.1f}% drop"
-
-                            if arb_rsi <= 30:
-                                status += f" | ✅ ARB oversold"
-                            else:
-                                status += f" | ❌ ARB not oversold"
-
-                            return status
-                        else:
-                            return f"[{timestamp}] 📊 MARKET SIGNALS: No signal data | Waiting for market conditions"
-                else:
-                    return f"[{timestamp}] ⚠️ MARKET SIGNALS: Strategy not initialized | Checking agent status"
-
             except Exception as agent_error:
                 return f"[{timestamp}] ❌ MARKET SIGNALS: Agent error | {str(agent_error)[:50]}"
 
@@ -1543,7 +1544,7 @@ def check_market_signals():
             return f"[{timestamp}] ❌ MARKET SIGNALS: Strategy file missing | Install market_signal_strategy.py"
 
     except Exception as e:
-        return f"[{datetime.now().strftime('%H:%M:%S')}] ❌ MARKET SIGNALS: Check failed | {str(e)[:50]}"
+        return f"[{timestamp}] ❌ MARKET SIGNALS: Check failed | {str(e)[:50]}"
 
 def get_available_port(start_port=5000):
     """Find an available port starting from start_port"""
