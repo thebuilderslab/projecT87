@@ -1156,35 +1156,6 @@ def launch_autonomous_system():
         print("\n👋 System stopped by user")
     except Exception as e:
         print(f"❌ Launch failed: {e}")
-# --- Merged from runtime.py ---
-
-def new_context(
-    environment,
-    template_name,
-    blocks,
-    vars=None,
-    shared=False,
-    globals=None,
-    locals=None,
-):
-    """Internal helper for context creation."""
-    if vars is None:
-        vars = {}
-    if shared:
-        parent = vars
-    else:
-        parent = dict(globals or (), **vars)
-    if locals:
-        # if the parent is shared a copy should be created because
-        # we don't want to modify the dict passed
-        if shared:
-            parent = dict(parent)
-        for key, value in locals.items():
-            if value is not missing:
-                parent = value
-    return environment.context_class(
-        environment, parent, template_name, blocks, globals=globals
-    )
 class TemplateReference:
     """The `self` in templates."""
 
