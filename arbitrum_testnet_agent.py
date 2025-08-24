@@ -1453,7 +1453,7 @@ class ArbitrumTestnetAgent:
                 return False
 
         except Exception as e:
-            print(f"❌ Market signal-triggered operation failed: {e}")
+            print(f"❌ Market signal operation error: {e}")
             import traceback
             traceback.print_exc()
             return False
