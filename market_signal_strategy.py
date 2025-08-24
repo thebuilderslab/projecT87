@@ -20,6 +20,7 @@ class MarketSignalStrategy:
     def __init__(self, agent):
         self.agent = agent
         self.initialized = False
+        self.market_signal_enabled = True  # Enable market signal functionality by default
         
         try:
             # Try to import and initialize enhanced analyzer
