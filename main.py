@@ -680,18 +680,6 @@ def force_load_secret(var_name, default_value=None):
 class MainnetSafetyManager:
     """Manages safety features for mainnet deployment"""
     
-    def __init__(self):
-        self.emergency_stop_active = False
-        self.safety_checks = []
-    
-    def trigger_emergency_stop(self, reason):
-        """Trigger emergency stop with reason"""
-        self.emergency_stop_active = True
-        print(f"🛑 EMERGENCY STOP TRIGGERED: {reason}")
-        # Create emergency stop flag file
-        with open('EMERGENCY_STOP_ACTIVE.flag', 'w') as f:
-            f.write(f"Emergency stop triggered: {reason}\nTimestamp: {datetime.now()}")
-
 def signal_handler(signum, frame):
     """Handle Ctrl+C gracefully"""
     print("\n🛑 Shutdown signal received...")

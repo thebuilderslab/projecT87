@@ -64,25 +64,7 @@ def ensure_web3_imports():
 
             # Create mock implementations to prevent crashes
             class MockWeb3:
-                def __init__(self):
-                    self.eth = MockEth()
-
-                def is_connected(self):
-                    return False
-
-            class MockEth:
-                def __init__(self):
-                    self.chain_id = 42161
-
-            class MockAccount:
-                def __init__(self):
-                    self.address = "0x0000000000000000000000000000000000000000"
-
-            # Set mock implementations
-            Web3 = MockWeb3
-            HTTPProvider = lambda x: None
-            Account = MockAccount
-
+    pass
 # Initialize Web3 imports on module load
 ensure_web3_imports()
 
@@ -91,43 +73,6 @@ logger = logging.getLogger(__name__)
 
 class AaveArbitrumIntegration:
     """Aave integration for Arbitrum mainnet operations"""
-
-    def __init__(self, w3, account, network_mode='mainnet'):
-        self.w3 = w3
-        self.account = account
-        self.network_mode = network_mode
-        self.pool_address = "0x794a61358D6845594F94dc1DB02A252b5b4814aD"  # Aave V3 Pool on Arbitrum
-
-    def get_user_account_data(self):
-        """Get user account data from Aave"""
-        try:
-            pool_abi = [{
-                "inputs": [{"name": "user", "type": "address"}],
-                "name": "getUserAccountData",
-                "outputs": [
-                    {"name": "totalCollateralBase", "type": "uint256"},
-                    {"name": "totalDebtBase", "type": "uint256"},
-                    {"name": "availableBorrowsBase", "type": "uint256"},
-                    {"name": "currentLiquidationThreshold", "type": "uint256"},
-                    {"name": "ltv", "type": "uint256"},
-                    {"name": "healthFactor", "type": "uint256"}
-                ],
-                "stateMutability": "view",
-                "type": "function"
-            }]
-
-            pool_contract = self.w3.eth.contract(address=self.pool_address, abi=pool_abi)
-            account_data = pool_contract.functions.getUserAccountData(self.account.address).call()
-
-            return {
-                'totalCollateralUSD': account_data[0] / (10**8),
-                'totalDebtUSD': account_data[1] / (10**8),
-                'availableBorrowsUSD': account_data[2] / (10**8),
-                'healthFactor': account_data[5] / (10**18) if account_data[5] > 0 else float('inf')
-            }
-        except Exception as e:
-            print(f"❌ Aave account data error: {e}")
-            return None
 
 class AaveAPIFallback:
     def __init__(self, agent):
