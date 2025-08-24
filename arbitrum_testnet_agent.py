@@ -16,6 +16,113 @@ try:
     print(f"🔍 Web3 version: {web3_version}")
 except:
     print("⚠️ Cannot determine Web3 version")
+
+# --- Aave and DeFi-specific constants and ABIs ---
+AAVE_POOL_ADDRESS = '0x794a61358D6845594F94dc1DB02A252b5b4814aD'
+DAI_ADDRESS = '0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1'
+
+AAVE_POOL_ABI = [
+    {
+        "inputs": [
+            {"name": "asset", "type": "address"},
+            {"name": "amount", "type": "uint256"},
+            {"name": "onBehalfOf", "type": "address"},
+            {"name": "referralCode", "type": "uint16"}
+        ],
+        "name": "supply",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {"name": "asset", "type": "address"},
+            {"name": "amount", "type": "uint256"},
+            {"name": "interestRateMode", "type": "uint256"},
+            {"name": "referralCode", "type": "uint16"},
+            {"name": "onBehalfOf", "type": "address"}
+        ],
+        "name": "borrow",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {"name": "asset", "type": "address"},
+            {"name": "amount", "type": "uint256"},
+            {"name": "to", "type": "address"}
+        ],
+        "name": "withdraw",
+        "outputs": [{"name": "", "type": "uint256"}],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {"name": "asset", "type": "address"},
+            {"name": "amount", "type": "uint256"},
+            {"name": "rateMode", "type": "uint256"},
+            {"name": "onBehalfOf", "type": "address"}
+        ],
+        "name": "repay",
+        "outputs": [{"name": "", "type": "uint256"}],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [{"name": "user", "type": "address"}],
+        "name": "getUserAccountData",
+        "outputs": [
+            {"name": "totalCollateralBase", "type": "uint256"},
+            {"name": "totalDebtBase", "type": "uint256"},
+            {"name": "availableBorrowsBase", "type": "uint256"},
+            {"name": "currentLiquidationThreshold", "type": "uint256"},
+            {"name": "ltv", "type": "uint256"},
+            {"name": "healthFactor", "type": "uint256"}
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    }
+]
+
+DAI_ABI = [
+    {
+        "inputs": [
+            {"name": "spender", "type": "address"},
+            {"name": "amount", "type": "uint256"}
+        ],
+        "name": "approve",
+        "outputs": [{"name": "", "type": "bool"}],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [{"name": "account", "type": "address"}],
+        "name": "balanceOf",
+        "outputs": [{"name": "", "type": "uint256"}],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "decimals",
+        "outputs": [{"name": "", "type": "uint8"}],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {"name": "owner", "type": "address"},
+            {"name": "spender", "type": "address"}
+        ],
+        "name": "allowance",
+        "outputs": [{"name": "", "type": "uint256"}],
+        "stateMutability": "view",
+        "type": "function"
+    }
+]
+
 from aave_integration import AaveArbitrumIntegration
 from uniswap_integration import UniswapIntegration
 from aave_health_monitor import AaveHealthMonitor as HealthMonitor
@@ -26,19 +133,7 @@ import sys
 import traceback 
 
 class ArbitrumTestnetAgent:
-    def __init__(self, rpc_manager, private_key):
-        self.rpc_manager = rpc_manager
-        self.private_key = private_key
-        self.w3 = self.rpc_manager.get_web3()
-        self.address = self.w3.eth.account.from_key(private_key).address
-        self.aave_pool = self.w3.eth.contract(address=AAVE_POOL_ADDRESS, abi=AAVE_POOL_ABI)
-        self.dai_token = self.w3.eth.contract(address=DAI_ADDRESS, abi=DAI_ABI)
-
-    def get_user_account_data(self):
-        """Fetches the user's account data from the Aave protocol."""
-        return self.aave_pool.functions.getUserAccountData(self.address).call()
-
-    # Add other methods like get_eth_balance, get_token_balance, etc.
+    def __init__(self, rpc_manager=None, private_key=None):
         """Initialize the Arbitrum Testnet Agent with proper configuration"""
         print("🤖 Initializing Arbitrum Testnet Agent...")
         # Load environment variables
