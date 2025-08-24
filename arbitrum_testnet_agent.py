@@ -1482,7 +1482,7 @@ class ArbitrumTestnetAgent:
 
             # Check health factor requirement (2.0 minimum)
             try:
-                account_data = self.aave.get_user_account_data()
+                account_data = self.get_user_account_data()
                 if account_data:
                     health_factor = account_data.get('healthFactor', 0)
                     if health_factor < 2.0:
@@ -1953,10 +1953,9 @@ class ArbitrumTestnetAgent:
     def get_health_factor(self):
         """Get current health factor from Aave"""
         try:
-            if self.aave:
-                account_data = self.aave.get_user_account_data()
-                if account_data:
-                    return account_data.get('healthFactor', 0)
+            account_data = self.get_user_account_data()
+            if account_data:
+                return account_data.get('healthFactor', 0)
             return 0.0
         except Exception as e:
             print(f"❌ Error getting health factor: {e}")
@@ -2172,10 +2171,9 @@ class ArbitrumTestnetAgent:
     def get_health_factor(self):
         """Get current health factor from Aave"""
         try:
-            if self.aave:
-                account_data = self.aave.get_user_account_data()
-                if account_data:
-                    return account_data.get('healthFactor', 0)
+            account_data = self.get_user_account_data()
+            if account_data:
+                return account_data.get('healthFactor', 0)
             return 0.0
         except Exception as e:
             print(f"❌ Error getting health factor: {e}")
@@ -2226,7 +2224,7 @@ class ArbitrumTestnetAgent:
 
             # Check health factor requirement (2.0 minimum)
             try:
-                account_data = self.aave.get_user_account_data()
+                account_data = self.get_user_account_data()
                 if account_data:
                     health_factor = account_data.get('healthFactor', 0)
                     if health_factor < 2.0:
@@ -2458,3 +2456,13 @@ class ArbitrumTestnetAgent:
         except Exception as e:
             print(f"❌ Debt swap readiness validation failed: {e}")
             return {'ready': False, 'score': 0, 'details': {}}
+
+    def get_user_account_data(self):
+        """Get comprehensive user account data from Aave"""
+        try:
+            if self.aave:
+                return self.aave.get_user_account_data()
+            return None
+        except Exception as e:
+            print(f"❌ Error getting user account data: {e}")
+            return None
