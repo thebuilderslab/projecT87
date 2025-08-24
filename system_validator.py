@@ -1,133 +1,154 @@
-
 #!/usr/bin/env python3
 """
-System Validation Script
-Validates all components are working properly before deployment
+System Validator - Runs for 4 minutes to validate system stability
+Tests all endpoints and monitors for errors
 """
 
-import sys
-import os
-import ast
+import time
+import requests
+import threading
+import json
+from datetime import datetime
 
-def validate_syntax(file_path):
-    """Validate Python file syntax"""
-    try:
-        with open(file_path, 'r', encoding='utf-8') as f:
-            content = f.read()
-        
-        # Parse the file to check for syntax errors
-        ast.parse(content)
-        print(f"✅ {file_path}: Syntax OK")
-        return True
-    except SyntaxError as e:
-        print(f"❌ {file_path}: Syntax Error - {e}")
-        return False
-    except Exception as e:
-        print(f"⚠️ {file_path}: Could not validate - {e}")
-        return False
+class SystemValidator:
+    def __init__(self):
+        self.base_url = "http://localhost:5000"
+        self.start_time = time.time()
+        self.test_duration = 240  # 4 minutes
+        self.results = {
+            'total_tests': 0,
+            'successful_tests': 0,
+            'failed_tests': 0,
+            'api_responses': [],
+            'errors': [],
+            'status': 'running'
+        }
 
-def validate_imports():
-    """Validate that main.py can import successfully"""
-    try:
-        import main
-        print("✅ main.py: Import successful")
-        return True
-    except Exception as e:
-        print(f"❌ main.py: Import failed - {e}")
-        return False
+    def test_api_endpoint(self, endpoint: str) -> bool:
+        """Test a single API endpoint"""
+        try:
+            response = requests.get(f"{self.base_url}{endpoint}", timeout=10)
+            self.results['total_tests'] += 1
 
-def validate_secrets():
-    """Validate required secrets are available"""
-    required_secrets = [
-        'NETWORK_MODE', 'COINMARKETCAP_API_KEY', 'PROMPT_KEY', 
-        'PRIVATE_KEY', 'ARBITRUM_RPC_URL'
-    ]
-    
-    all_valid = True
-    for secret in required_secrets:
-        value = os.getenv(secret)
-        if value:
-            print(f"✅ {secret}: Available")
+            if response.status_code == 200:
+                data = response.json()
+                self.results['successful_tests'] += 1
+                self.results['api_responses'].append({
+                    'endpoint': endpoint,
+                    'status': 'success',
+                    'timestamp': time.time(),
+                    'data_keys': list(data.keys()) if isinstance(data, dict) else []
+                })
+                return True
+            else:
+                self.results['failed_tests'] += 1
+                self.results['errors'].append({
+                    'endpoint': endpoint,
+                    'error': f"HTTP {response.status_code}",
+                    'timestamp': time.time()
+                })
+                return False
+
+        except Exception as e:
+            self.results['failed_tests'] += 1
+            self.results['errors'].append({
+                'endpoint': endpoint,
+                'error': str(e),
+                'timestamp': time.time()
+            })
+            return False
+
+    def continuous_testing(self):
+        """Run continuous tests for 4 minutes"""
+        print("🧪 STARTING 4-MINUTE SYSTEM VALIDATION")
+        print("=" * 50)
+
+        endpoints_to_test = [
+            "/api/wallet-status",
+            "/api/system-status",
+            "/"
+        ]
+
+        test_count = 0
+        while time.time() - self.start_time < self.test_duration:
+            current_time = time.time() - self.start_time
+
+            # Test each endpoint
+            for endpoint in endpoints_to_test:
+                success = self.test_api_endpoint(endpoint)
+                test_count += 1
+
+                if test_count % 10 == 0:  # Print status every 10 tests
+                    print(f"⏱️ {current_time:.1f}s - Tests: {self.results['total_tests']}, "
+                          f"Success: {self.results['successful_tests']}, "
+                          f"Failed: {self.results['failed_tests']}")
+
+            # Wait 10 seconds between test cycles
+            time.sleep(10)
+
+        self.results['status'] = 'completed'
+        self.results['duration'] = time.time() - self.start_time
+
+    def generate_report(self):
+        """Generate final validation report"""
+        print("\n🎯 4-MINUTE VALIDATION COMPLETE")
+        print("=" * 50)
+        print(f"Duration: {self.results['duration']:.1f} seconds")
+        print(f"Total Tests: {self.results['total_tests']}")
+        print(f"Successful: {self.results['successful_tests']}")
+        print(f"Failed: {self.results['failed_tests']}")
+
+        success_rate = (self.results['successful_tests'] / self.results['total_tests'] * 100) if self.results['total_tests'] > 0 else 0
+        print(f"Success Rate: {success_rate:.1f}%")
+
+        if self.results['errors']:
+            print(f"\n❌ ERRORS DETECTED ({len(self.results['errors'])}):")
+            for error in self.results['errors'][-5:]:  # Show last 5 errors
+                print(f"   {error['endpoint']}: {error['error']}")
+
+        # System health assessment
+        if success_rate >= 90 and len(self.results['errors']) < 5:
+            print(f"\n✅ SYSTEM STATUS: HEALTHY")
+            print(f"✅ Dashboard is running stably")
+            print(f"✅ Ready for continuous operation")
+        elif success_rate >= 70:
+            print(f"\n⚠️ SYSTEM STATUS: MODERATE")
+            print(f"⚠️ Some issues detected but functional")
         else:
-            print(f"❌ {secret}: Missing")
-            all_valid = False
-    
-    return all_valid
+            print(f"\n❌ SYSTEM STATUS: UNSTABLE")
+            print(f"❌ Significant issues detected")
 
-def validate_network_approval_requirements():
-    """Validate specific network approval requirements"""
-    print("\n🌐 Network Approval Requirements:")
-    
-    # Check for comprehensive audit capability
-    try:
-        from comprehensive_syntax_validator import ComprehensiveSyntaxValidator
-        print("✅ Comprehensive audit system: Available")
-        audit_available = True
-    except ImportError:
-        print("❌ Comprehensive audit system: Not available")
-        audit_available = False
-    
-    # Check for network approval validator
-    network_validator_exists = os.path.exists('network_approval_validator.py')
-    if network_validator_exists:
-        print("✅ Network approval validator: Available")
-    else:
-        print("❌ Network approval validator: Missing")
-    
-    # Check mainnet readiness
-    network_mode = os.getenv('NETWORK_MODE', 'testnet')
-    if network_mode.lower() == 'mainnet':
-        print("✅ Network mode: Mainnet ready")
-        mainnet_ready = True
-    else:
-        print(f"⚠️  Network mode: {network_mode} (not mainnet)")
-        mainnet_ready = False
-    
-    return audit_available and network_validator_exists and mainnet_ready
+        return success_rate >= 90
 
-def main():
-    """Run complete system validation with network approval check"""
-    print("🔍 ENHANCED SYSTEM VALIDATION")
-    print("=" * 50)
-    
-    all_passed = True
-    
-    # 1. Syntax validation
-    print("\n📝 Syntax Validation:")
-    if not validate_syntax('main.py'):
-        all_passed = False
-    
-    # 2. Import validation
-    print("\n📦 Import Validation:")
-    if not validate_imports():
-        all_passed = False
-    
-    # 3. Secrets validation
-    print("\n🔐 Secrets Validation:")
-    if not validate_secrets():
-        all_passed = False
-    
-    # 4. Network approval requirements
-    network_ready = validate_network_approval_requirements()
-    if not network_ready:
-        print("\n⚠️  Network approval requirements not fully met")
-    
-    print("\n" + "=" * 50)
-    if all_passed and network_ready:
-        print("✅ SYSTEM VALIDATION PASSED")
-        print("🎉 NETWORK APPROVAL READY")
-        print("🚀 Ready for mainnet deployment")
-        return True
-    elif all_passed:
-        print("✅ BASIC VALIDATION PASSED")
-        print("⚠️  Network approval requirements need attention")
-        print("🔧 Run network approval validator for full assessment")
-        return True
-    else:
-        print("❌ SYSTEM VALIDATION FAILED")
-        print("🛑 Fix critical issues before deployment")
-        return False
+def run_validation():
+    """Run the 4-minute system validation"""
+    validator = SystemValidator()
+
+    # Start validation in background
+    validation_thread = threading.Thread(target=validator.continuous_testing)
+    validation_thread.daemon = True
+    validation_thread.start()
+
+    # Wait for completion
+    validation_thread.join()
+
+    # Generate report
+    return validator.generate_report()
 
 if __name__ == "__main__":
-    success = main()
-    sys.exit(0 if success else 1)
+    print("🚀 System Validator Starting...")
+    print("⏱️ Will run for 4 minutes to validate system stability")
+
+    # Give dashboard time to start
+    print("⏳ Waiting 30 seconds for dashboard to initialize...")
+    time.sleep(30)
+
+    # Run validation
+    success = run_validation()
+
+    if success:
+        print("\n🎉 SYSTEM VALIDATION PASSED!")
+        print("🎪 Ready to tell knock-knock joke!")
+    else:
+        print("\n❌ SYSTEM VALIDATION FAILED!")
+        print("🔧 Additional fixes needed")

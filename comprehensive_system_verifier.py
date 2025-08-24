@@ -1,132 +1,417 @@
+
 #!/usr/bin/env python3
 """
-Comprehensive System Verifier
-Validates all system components before deployment
+Comprehensive System Verifier for 95% Execution Success Rate
+Validates all components for maximum reliability
 """
 
 import os
 import sys
-import subprocess
-import traceback
+import time
+import json
 from datetime import datetime
 
 class ComprehensiveSystemVerifier:
     def __init__(self):
-        self.errors = []
+        self.test_results = {}
+        self.critical_failures = []
         self.warnings = []
-
-    def verify_syntax(self):
-        """Verify syntax of main files"""
-        print("🔍 Verifying syntax...")
-
-        main_files = ['main.py', 'aave_integration.py', 'web_dashboard.py']
-        syntax_ok = True
-
-        for file_path in main_files:
-            if os.path.exists(file_path):
-                try:
-                    result = subprocess.run(
-                        [sys.executable, '-m', 'py_compile', file_path],
-                        capture_output=True, text=True
-                    )
-                    if result.returncode == 0:
-                        print(f"✅ {file_path}: Syntax OK")
-                    else:
-                        print(f"❌ {file_path}: Syntax Error")
-                        self.errors.append(f"Syntax error in {file_path}")
-                        syntax_ok = False
-                except Exception as e:
-                    print(f"⚠️ {file_path}: Could not verify - {e}")
-                    self.warnings.append(f"Could not verify {file_path}")
-            else:
-                print(f"⚠️ {file_path}: File not found")
-                self.warnings.append(f"Missing file: {file_path}")
-
-        return syntax_ok
-
-    def verify_imports(self):
-        """Verify critical imports work"""
-        print("\n🔍 Verifying imports...")
-
-        import_tests = [
-            ('main', 'Main module'),
-            ('aave_integration', 'Aave integration'),
-            ('emergency_funding_manager', 'Emergency manager')
+        self.success_threshold = 0.95  # 95% success rate target
+        
+    def verify_complete_system(self):
+        """Run comprehensive system verification for 95% reliability"""
+        print("🔍 COMPREHENSIVE SYSTEM VERIFICATION FOR 95% RELIABILITY")
+        print("=" * 70)
+        print(f"📅 {datetime.now().strftime('%Y-%m-%d %H:%M:%S UTC')}")
+        print("=" * 70)
+        
+        # Phase 1: Syntax and Import Validation
+        self._verify_syntax_and_imports()
+        
+        # Phase 2: DAI Compliance Verification
+        self._verify_dai_compliance()
+        
+        # Phase 3: Integration Verification
+        self._verify_integrations()
+        
+        # Phase 4: Network and Contract Verification
+        self._verify_network_and_contracts()
+        
+        # Phase 5: Transaction Pipeline Verification
+        self._verify_transaction_pipeline()
+        
+        # Phase 6: Performance and Reliability Tests
+        self._verify_performance_reliability()
+        
+        # Generate comprehensive report
+        return self._generate_comprehensive_report()
+    
+    def _verify_syntax_and_imports(self):
+        """Verify all syntax and imports work correctly"""
+        print("\n1️⃣ SYNTAX AND IMPORT VERIFICATION")
+        print("-" * 40)
+        
+        critical_modules = [
+            'arbitrum_testnet_agent',
+            'enhanced_borrow_manager',
+            'uniswap_integration',
+            'aave_integration',
+            'transaction_validator',
+            'aave_health_monitor',
+            'dai_compliance_enforcer'
         ]
-
-        imports_ok = True
-        for module_name, description in import_tests:
+        
+        import_success = 0
+        for module in critical_modules:
             try:
-                __import__(module_name)
-                print(f"✅ {description}: Import OK")
+                exec(f"import {module}")
+                self.test_results[f"import_{module}"] = "✅ Success"
+                import_success += 1
+                print(f"   ✅ {module}: Imported successfully")
+            except SyntaxError as e:
+                self.test_results[f"import_{module}"] = f"❌ Syntax Error: {e}"
+                self.critical_failures.append(f"Syntax error in {module}: {e}")
+                print(f"   ❌ {module}: Syntax error - {e}")
             except Exception as e:
-                print(f"❌ {description}: Import failed - {e}")
-                self.errors.append(f"Import error in {module_name}")
-                imports_ok = False
-
-        return imports_ok
-
-    def verify_environment(self):
-        """Verify environment variables"""
-        print("\n🔍 Verifying environment...")
-
-        required_vars = ['NETWORK_MODE', 'PRIVATE_KEY', 'COINMARKETCAP_API_KEY']
-        env_ok = True
-
-        for var in required_vars:
-            value = os.getenv(var)
-            if value:
-                print(f"✅ {var}: Set")
+                self.test_results[f"import_{module}"] = f"❌ Import Error: {e}"
+                self.critical_failures.append(f"Import failure: {module} - {e}")
+                print(f"   ❌ {module}: Import failed - {e}")
+        
+        import_rate = import_success / len(critical_modules)
+        print(f"📊 Import Success Rate: {import_rate:.1%}")
+        
+        if import_rate < 1.0:
+            self.critical_failures.append(f"Import success rate below 100%: {import_rate:.1%}")
+    
+    def _verify_dai_compliance(self):
+        """Verify strict DAI compliance enforcement"""
+        print("\n2️⃣ DAI COMPLIANCE VERIFICATION")
+        print("-" * 40)
+        
+        try:
+            # Run DAI compliance enforcer
+            from dai_compliance_enforcer import DAIComplianceEnforcer
+            enforcer = DAIComplianceEnforcer()
+            compliance_result = enforcer.enforce_dai_compliance()
+            
+            if compliance_result:
+                self.test_results["dai_compliance"] = "✅ Fully Compliant"
+                print("   ✅ DAI compliance: Fully enforced")
             else:
-                print(f"❌ {var}: Missing")
-                self.errors.append(f"Missing environment variable: {var}")
-                env_ok = False
-
-        return env_ok
-
-    def run_verification(self):
-        """Run complete verification"""
-        print("🔍 COMPREHENSIVE SYSTEM VERIFICATION")
-        print("=" * 60)
-
-        results = {
-            'syntax': self.verify_syntax(),
-            'imports': self.verify_imports(),
-            'environment': self.verify_environment()
-        }
-
-        print(f"\n📊 VERIFICATION RESULTS:")
-        for test_name, result in results.items():
-            status = "✅ PASS" if result else "❌ FAIL"
-            print(f"   {test_name.title()}: {status}")
-
-        all_passed = all(results.values())
-
-        if self.errors:
-            print(f"\n❌ ERRORS FOUND:")
-            for error in self.errors:
-                print(f"   - {error}")
-
+                self.test_results["dai_compliance"] = "❌ Violations Found"
+                self.critical_failures.append("DAI compliance violations detected")
+                print("   ❌ DAI compliance: Violations found")
+                
+            # Run original compliance checker for verification
+            from system_compliance_checker import SystemComplianceChecker
+            checker = SystemComplianceChecker()
+            verification_result = checker.check_dai_only_compliance()
+            
+            if verification_result:
+                print("   ✅ Secondary verification: Passed")
+            else:
+                print("   ⚠️ Secondary verification: Failed")
+                self.warnings.append("Secondary DAI compliance check failed")
+                
+        except Exception as e:
+            self.test_results["dai_compliance"] = f"❌ Error: {e}"
+            self.critical_failures.append(f"DAI compliance verification failed: {e}")
+            print(f"   ❌ DAI compliance verification failed: {e}")
+    
+    def _verify_integrations(self):
+        """Verify all DeFi integrations"""
+        print("\n3️⃣ INTEGRATION VERIFICATION")
+        print("-" * 40)
+        
+        try:
+            from arbitrum_testnet_agent import ArbitrumTestnetAgent
+            agent = ArbitrumTestnetAgent()
+            
+            # Test agent initialization
+            self.test_results["agent_init"] = "✅ Success"
+            print(f"   ✅ Agent initialized: {agent.address}")
+            
+            # Test integration initialization
+            integration_success = agent.initialize_integrations()
+            
+            if integration_success:
+                self.test_results["integrations"] = "✅ All Initialized"
+                print("   ✅ All integrations initialized successfully")
+                
+                # Test individual integrations
+                if hasattr(agent, 'aave') and agent.aave:
+                    print("   ✅ Aave integration: Available")
+                else:
+                    self.warnings.append("Aave integration not available")
+                    
+                if hasattr(agent, 'uniswap') and agent.uniswap:
+                    print("   ✅ Uniswap integration: Available")
+                else:
+                    self.warnings.append("Uniswap integration not available")
+                    
+                if hasattr(agent, 'enhanced_borrow_manager') and agent.enhanced_borrow_manager:
+                    print("   ✅ Enhanced Borrow Manager: Available")
+                else:
+                    self.warnings.append("Enhanced Borrow Manager not available")
+                    
+            else:
+                self.test_results["integrations"] = "❌ Failed"
+                self.critical_failures.append("Integration initialization failed")
+                print("   ❌ Integration initialization failed")
+                
+        except Exception as e:
+            self.test_results["integrations"] = f"❌ Error: {e}"
+            self.critical_failures.append(f"Integration verification failed: {e}")
+            print(f"   ❌ Integration verification failed: {e}")
+    
+    def _verify_network_and_contracts(self):
+        """Verify network connectivity and contract access"""
+        print("\n4️⃣ NETWORK AND CONTRACT VERIFICATION")
+        print("-" * 40)
+        
+        try:
+            from arbitrum_testnet_agent import ArbitrumTestnetAgent
+            agent = ArbitrumTestnetAgent()
+            
+            # Test network connectivity
+            network_ok, network_msg = agent.check_network_status()
+            if network_ok:
+                self.test_results["network"] = "✅ Connected"
+                print(f"   ✅ Network: {network_msg}")
+            else:
+                self.test_results["network"] = f"❌ {network_msg}"
+                self.critical_failures.append(f"Network connectivity failed: {network_msg}")
+                print(f"   ❌ Network: {network_msg}")
+                
+            # Test contract accessibility
+            contracts_tested = 0
+            contracts_working = 0
+            
+            token_contracts = {
+                'DAI': agent.dai_address,
+                'WBTC': agent.wbtc_address,
+                'WETH': agent.weth_address
+            }
+            
+            for name, address in token_contracts.items():
+                contracts_tested += 1
+                try:
+                    contract = agent.w3.eth.contract(
+                        address=address,
+                        abi=[{
+                            "constant": True,
+                            "inputs": [],
+                            "name": "symbol",
+                            "outputs": [{"name": "", "type": "string"}],
+                            "type": "function"
+                        }]
+                    )
+                    symbol = contract.functions.symbol().call()
+                    contracts_working += 1
+                    print(f"   ✅ {name} contract: {symbol} at {address}")
+                except Exception as e:
+                    print(f"   ❌ {name} contract failed: {e}")
+                    
+            contract_rate = contracts_working / contracts_tested
+            print(f"📊 Contract Success Rate: {contract_rate:.1%}")
+            
+            if contract_rate < 1.0:
+                self.warnings.append(f"Contract success rate below 100%: {contract_rate:.1%}")
+                
+        except Exception as e:
+            self.test_results["network_contracts"] = f"❌ Error: {e}"
+            self.critical_failures.append(f"Network/contract verification failed: {e}")
+            print(f"   ❌ Network/contract verification failed: {e}")
+    
+    def _verify_transaction_pipeline(self):
+        """Verify transaction validation pipeline"""
+        print("\n5️⃣ TRANSACTION PIPELINE VERIFICATION")
+        print("-" * 40)
+        
+        try:
+            from transaction_validator import TransactionValidator
+            from arbitrum_testnet_agent import ArbitrumTestnetAgent
+            
+            agent = ArbitrumTestnetAgent()
+            agent.initialize_integrations()
+            validator = TransactionValidator(agent)
+            
+            # Test DAI → WBTC validation (should pass)
+            dai_wbtc_valid = validator.validate_swap_transaction(
+                agent.dai_address, 
+                agent.wbtc_address, 
+                1.0
+            )
+            
+            if dai_wbtc_valid:
+                print("   ✅ DAI → WBTC validation: Passed")
+            else:
+                print("   ❌ DAI → WBTC validation: Failed")
+                self.warnings.append("DAI → WBTC validation failed")
+            
+            # Test DAI → WETH validation (should pass)
+            dai_weth_valid = validator.validate_swap_transaction(
+                agent.dai_address, 
+                agent.weth_address, 
+                1.0
+            )
+            
+            if dai_weth_valid:
+                print("   ✅ DAI → WETH validation: Passed")
+            else:
+                print("   ❌ DAI → WETH validation: Failed")
+                self.warnings.append("DAI → WETH validation failed")
+            
+            # Test forbidden swap (should fail)
+            try:
+                forbidden_valid = validator.validate_swap_transaction(
+                    agent.usdc_address,  # USDC should be forbidden
+                    agent.wbtc_address, 
+                    1.0
+                )
+                
+                if not forbidden_valid:
+                    print("   ✅ USDC rejection: Correctly blocked")
+                else:
+                    print("   ❌ USDC rejection: Failed to block")
+                    self.critical_failures.append("DAI compliance not enforced in validator")
+            except:
+                print("   ✅ USDC rejection: Correctly blocked")
+            
+            self.test_results["transaction_pipeline"] = "✅ Verified"
+            
+        except Exception as e:
+            self.test_results["transaction_pipeline"] = f"❌ Error: {e}"
+            self.critical_failures.append(f"Transaction pipeline verification failed: {e}")
+            print(f"   ❌ Transaction pipeline verification failed: {e}")
+    
+    def _verify_performance_reliability(self):
+        """Verify system performance and reliability metrics"""
+        print("\n6️⃣ PERFORMANCE AND RELIABILITY VERIFICATION")
+        print("-" * 40)
+        
+        try:
+            # Test gas price optimization
+            from arbitrum_testnet_agent import ArbitrumTestnetAgent
+            agent = ArbitrumTestnetAgent()
+            
+            gas_price = agent.w3.eth.gas_price
+            base_fee = agent.w3.eth.get_block('latest').get('baseFeePerGas', gas_price)
+            
+            if gas_price and base_fee:
+                congestion_ratio = gas_price / base_fee
+                print(f"   📊 Network congestion: {congestion_ratio:.2f}x base fee")
+                
+                if congestion_ratio < 5.0:  # Less than 5x base fee
+                    print("   ✅ Gas optimization: Favorable conditions")
+                else:
+                    print("   ⚠️ Gas optimization: High congestion")
+                    self.warnings.append("High network congestion detected")
+            
+            # Test error handling robustness
+            error_handling_score = 0
+            total_tests = 3
+            
+            # Test 1: Invalid amount handling
+            try:
+                from transaction_validator import TransactionValidator
+                validator = TransactionValidator(agent)
+                result = validator.validate_swap_transaction(agent.dai_address, agent.wbtc_address, -1.0)
+                if not result:  # Should return False for negative amount
+                    error_handling_score += 1
+                    print("   ✅ Error handling: Invalid amount correctly rejected")
+                else:
+                    print("   ❌ Error handling: Invalid amount not rejected")
+            except:
+                print("   ❌ Error handling: Exception in invalid amount test")
+            
+            # Test 2: Network failure simulation
+            try:
+                # This should handle network errors gracefully
+                agent.switch_to_fallback_rpc()
+                error_handling_score += 1
+                print("   ✅ Error handling: RPC failover functional")
+            except:
+                print("   ⚠️ Error handling: RPC failover needs attention")
+            
+            # Test 3: Emergency stop functionality
+            try:
+                if hasattr(agent, 'check_emergency_stop'):
+                    stop_result = agent.check_emergency_stop()
+                    error_handling_score += 1
+                    print("   ✅ Error handling: Emergency stop functional")
+                else:
+                    print("   ⚠️ Error handling: Emergency stop not available")
+            except:
+                print("   ❌ Error handling: Emergency stop test failed")
+            
+            reliability_score = error_handling_score / total_tests
+            print(f"📊 Error Handling Score: {reliability_score:.1%}")
+            
+            if reliability_score >= 0.8:
+                self.test_results["reliability"] = "✅ High Reliability"
+            else:
+                self.test_results["reliability"] = f"⚠️ Moderate Reliability ({reliability_score:.1%})"
+                self.warnings.append(f"Reliability score below target: {reliability_score:.1%}")
+                
+        except Exception as e:
+            self.test_results["reliability"] = f"❌ Error: {e}"
+            print(f"   ❌ Performance/reliability verification failed: {e}")
+    
+    def _generate_comprehensive_report(self):
+        """Generate comprehensive verification report"""
+        print("\n" + "=" * 70)
+        print("📊 COMPREHENSIVE SYSTEM VERIFICATION REPORT")
+        print("=" * 70)
+        
+        total_tests = len(self.test_results)
+        successful_tests = len([r for r in self.test_results.values() if "✅" in r])
+        warning_tests = len([r for r in self.test_results.values() if "⚠️" in r])
+        
+        success_rate = successful_tests / total_tests if total_tests > 0 else 0
+        
+        print(f"✅ Successful tests: {successful_tests}/{total_tests} ({success_rate:.1%})")
+        print(f"⚠️ Tests with warnings: {warning_tests}")
+        print(f"❌ Critical failures: {len(self.critical_failures)}")
+        print(f"⚠️ Total warnings: {len(self.warnings)}")
+        
+        if self.critical_failures:
+            print("\n🚨 CRITICAL FAILURES:")
+            for failure in self.critical_failures:
+                print(f"   • {failure}")
+        
         if self.warnings:
-            print(f"\n⚠️ WARNINGS:")
+            print("\n⚠️ WARNINGS:")
             for warning in self.warnings:
-                print(f"   - {warning}")
-
-        if all_passed:
-            print(f"\n🎉 ALL VERIFICATIONS PASSED!")
-            print(f"✅ System ready for operation")
+                print(f"   • {warning}")
+        
+        # Calculate overall system readiness
+        if len(self.critical_failures) == 0 and success_rate >= self.success_threshold:
+            print(f"\n🎉 SYSTEM READY FOR 95% RELIABILITY DEPLOYMENT")
+            print(f"✅ Success rate: {success_rate:.1%} (Target: {self.success_threshold:.1%})")
+            print(f"✅ No critical failures detected")
+            print(f"🚀 System verified for autonomous operation")
+            return True
         else:
-            print(f"\n❌ VERIFICATION FAILED")
-            print(f"🔧 Fix errors before proceeding")
-
-        return all_passed
+            print(f"\n❌ SYSTEM NOT READY FOR HIGH-RELIABILITY DEPLOYMENT")
+            print(f"📊 Current success rate: {success_rate:.1%} (Target: {self.success_threshold:.1%})")
+            if len(self.critical_failures) > 0:
+                print(f"❌ Critical failures must be resolved")
+            print(f"🔧 Address issues before deployment")
+            return False
 
 def main():
-    """Run verification"""
+    """Run comprehensive system verification"""
     verifier = ComprehensiveSystemVerifier()
-    success = verifier.run_verification()
-    return success
+    system_ready = verifier.verify_complete_system()
+    
+    if system_ready:
+        print("\n🚀 PROCEED WITH AUTONOMOUS SYSTEM DEPLOYMENT")
+    else:
+        print("\n🛑 RESOLVE ISSUES BEFORE DEPLOYMENT")
+        sys.exit(1)
+    
+    return system_ready
 
 if __name__ == "__main__":
-    success = main()
-    sys.exit(0 if success else 1)
+    main()

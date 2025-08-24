@@ -1,114 +1,101 @@
+
 #!/usr/bin/env python3
 """
-Emergency Funding Manager
-Handles emergency stop functionality and system safety
+EMERGENCY FUNDING MANAGER
+Handles low ETH balance and gas fee optimization
 """
 
 import os
-import time
-import json
-from datetime import datetime
+from web3 import Web3
+from enhanced_rpc_manager import EnhancedRPCManager
 
 class EmergencyFundingManager:
-    """Manages emergency stop and safety features"""
-
     def __init__(self):
-        self.emergency_stop_file = 'EMERGENCY_STOP_ACTIVE.flag'
-        self.emergency_active = False
-
-    def activate_emergency_stop(self, reason="Manual activation"):
-        """Activate emergency stop"""
-        self.emergency_active = True
-
-        emergency_data = {
-            'timestamp': time.time(),
-            'datetime': datetime.now().strftime('%Y-%m-%d %H:%M:%S UTC'),
-            'reason': reason,
-            'activated_by': 'EmergencyFundingManager'
-        }
-
-        with open(self.emergency_stop_file, 'w') as f:
-            f.write(f"EMERGENCY STOP ACTIVATED\n")
-            f.write(f"Reason: {reason}\n")
-            f.write(f"Time: {emergency_data['datetime']}\n")
-            f.write(f"Timestamp: {emergency_data['timestamp']}\n")
-
-        print(f"🚨 EMERGENCY STOP ACTIVATED: {reason}")
-        return True
-
-    def clear_emergency_stop(self):
-        """Clear emergency stop"""
-        if os.path.exists(self.emergency_stop_file):
-            os.remove(self.emergency_stop_file)
-
-        self.emergency_active = False
-        print("✅ Emergency stop cleared")
-        return True
-
-    def is_emergency_active(self):
-        """Check if emergency stop is active"""
-        return os.path.exists(self.emergency_stop_file) or self.emergency_active
-
-    def get_emergency_status(self):
-        """Get emergency status details"""
-        if not self.is_emergency_active():
-            return {
-                'active': False,
-                'status': 'Normal operation'
-            }
-
+        self.rpc_manager = EnhancedRPCManager()
+        self.min_eth_required = 0.005  # Minimum ETH for operations
+        
+    def check_and_optimize_gas(self, wallet_address):
+        """Check ETH balance and optimize gas usage"""
+        if not self.rpc_manager.find_working_rpc():
+            return False
+        
+        w3 = self.rpc_manager.w3
+        eth_balance = w3.eth.get_balance(wallet_address) / 10**18
+        
+        print(f"⚡ Current ETH Balance: {eth_balance:.6f} ETH")
+        print(f"💡 Minimum Required: {self.min_eth_required:.6f} ETH")
+        
+        if eth_balance < self.min_eth_required:
+            print("❌ Insufficient ETH for gas fees")
+            self.provide_funding_guidance(wallet_address, eth_balance)
+            return False
+        else:
+            print("✅ Sufficient ETH for gas fees")
+            return True
+    
+    def provide_funding_guidance(self, wallet_address, current_balance):
+        """Provide specific funding guidance"""
+        needed_eth = self.min_eth_required - current_balance
+        
+        print(f"\n💰 FUNDING GUIDANCE")
+        print(f"=" * 40)
+        print(f"📍 Wallet: {wallet_address}")
+        print(f"🏦 Current: {current_balance:.6f} ETH")
+        print(f"💎 Needed: {needed_eth:.6f} ETH")
+        print(f"💵 USD Cost: ~${needed_eth * 2500:.2f}")
+        
+        print(f"\n🚀 FUNDING OPTIONS:")
+        print(f"1. 🏦 CEX Transfer: Send from Coinbase/Binance")
+        print(f"2. 🌉 Bridge: Use Arbitrum bridge from mainnet")
+        print(f"3. 💳 Buy directly: Use on-ramp services")
+        
+        print(f"\n⚡ OPTIMIZED GAS SETTINGS:")
+        print(f"• Use 0.01 Gwei gas price (Arbitrum is cheap)")
+        print(f"• Batch transactions when possible")
+        print(f"• Monitor gas prices before executing")
+    
+    def calculate_optimized_gas(self, operation_type="swap"):
+        """Calculate optimized gas settings"""
+        if not self.rpc_manager.w3:
+            return None
+        
         try:
-            with open(self.emergency_stop_file, 'r') as f:
-                content = f.read()
-
-            return {
-                'active': True,
-                'status': 'Emergency stop active',
-                'details': content
+            # Get current gas price
+            current_gas_price = self.rpc_manager.w3.eth.gas_price
+            
+            # Arbitrum typically has very low gas prices
+            optimized_gas_price = min(current_gas_price, self.rpc_manager.w3.to_wei(0.1, 'gwei'))
+            
+            # Gas limits for different operations
+            gas_limits = {
+                'approve': 60000,
+                'swap': 300000,
+                'supply': 200000,
+                'borrow': 250000
             }
-        except:
+            
+            gas_limit = gas_limits.get(operation_type, 200000)
+            
+            estimated_cost_eth = (optimized_gas_price * gas_limit) / 10**18
+            estimated_cost_usd = estimated_cost_eth * 2500
+            
             return {
-                'active': True,
-                'status': 'Emergency stop active',
-                'details': 'Details unavailable'
+                'gas_price': optimized_gas_price,
+                'gas_limit': gas_limit,
+                'estimated_cost_eth': estimated_cost_eth,
+                'estimated_cost_usd': estimated_cost_usd
             }
-
-def activate_emergency_stop(reason="Manual activation"):
-    """Global function to activate emergency stop"""
-    manager = EmergencyFundingManager()
-    return manager.activate_emergency_stop(reason)
-
-def clear_emergency_stop():
-    """Global function to clear emergency stop"""
-    manager = EmergencyFundingManager()
-    return manager.clear_emergency_stop()
-
-def check_emergency_status():
-    """Global function to check emergency status"""
-    manager = EmergencyFundingManager()
-    return manager.get_emergency_status()
+            
+        except Exception as e:
+            print(f"❌ Gas calculation error: {e}")
+            return None
 
 if __name__ == "__main__":
-    print("🚨 Emergency Funding Manager")
-    print("=" * 40)
-
+    # Test the funding manager
     manager = EmergencyFundingManager()
-    status = manager.get_emergency_status()
-
-    print(f"Emergency Status: {'ACTIVE' if status['active'] else 'CLEAR'}")
-    print(f"Details: {status['status']}")
-
-    if status['active']:
-        print("\n💡 To clear emergency stop:")
-        print("1. Run: python emergency_funding_manager.py clear")
-        print("2. Or use the web dashboard")
-        print("3. Or call clear_emergency_stop() function")
-
-    # Handle command line arguments
-    import sys
-    if len(sys.argv) > 1:
-        if sys.argv[1] == 'clear':
-            manager.clear_emergency_stop()
-        elif sys.argv[1] == 'activate':
-            reason = sys.argv[2] if len(sys.argv) > 2 else "Command line activation"
-            manager.activate_emergency_stop(reason)
+    
+    # Example wallet address (replace with actual)
+    test_wallet = "0x5B823270e3719CDe8669e5e5326B455EaA8a350b"
+    
+    result = manager.check_and_optimize_gas(test_wallet)
+    print(f"\nFunding check result: {'✅ READY' if result else '❌ NEEDS FUNDING'}")

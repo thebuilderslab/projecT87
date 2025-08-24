@@ -2,7 +2,7 @@ entrypoint = "main.py"
 modules = ["python-3.11"]
 
 [nix]
-channel = "stable-25_05"
+channel = "stable-24_05"
 packages = ["glibcLocales"]
 
 [unitTest]
@@ -19,7 +19,7 @@ run = ["sh", "-c", "python web_dashboard.py"]
 deploymentTarget = "cloudrun"
 
 [workflows]
-runButton = "🚀 FULL SYSTEM CONTROL"
+runButton = "🌐 Dashboard Preview"
 
 [[workflows.workflow]]
 name = "🔍 Test Enhanced Diagnostics Fixed"
@@ -129,166 +129,6 @@ mode = "sequential"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "python main.py"
-
-[[workflows.workflow]]
-name = "🚀 FULL SYSTEM CONTROL"
-author = 39391053
-mode = "sequential"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "python main.py"
-
-[[workflows.workflow]]
-name = "🔍 Run Comprehensive Audit"
-author = 39391053
-mode = "sequential"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "echo \"🔍 Starting Comprehensive System Audit\""
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "echo \"=====================================\""
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "python comprehensive_system_audit.py"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "echo \"\""
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "echo \"🔍 Testing Main System Components\""
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "echo \"=================================\""
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "python -c \"from main import run_comprehensive_audit; run_comprehensive_audit()\""
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "echo \"\""
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "echo \"✅ Comprehensive Audit Complete\""
-
-[[workflows.workflow]]
-name = "🔍 System Validation"
-author = 39391053
-mode = "sequential"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "python system_validator.py"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "echo \"\""
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "echo \"🔍 Running Comprehensive Audit\""
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "python -c \"from main import run_comprehensive_audit; run_comprehensive_audit()\""
-
-[[workflows.workflow]]
-name = "🎯 Network Approval Validation"
-author = 39391053
-mode = "sequential"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "echo \"🎯 NETWORK APPROVAL VALIDATION SUITE\""
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "echo \"====================================\""
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "python network_approval_validator.py"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "echo \"\""
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "echo \"🔍 Running Enhanced System Validation\""
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "echo \"===================================\""
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "python system_validator.py"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "echo \"\""
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "echo \"🔍 Running Comprehensive Syntax Validation\""
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "echo \"==========================================\""
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "python comprehensive_syntax_validator.py"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "echo \"\""
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "echo \"📊 Final Network Approval Assessment\""
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "echo \"===================================\""
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "python -c \""
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "print('🏆 NETWORK APPROVAL SUMMARY')"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "print('=' * 40)"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "print('✅ All critical validations completed')"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "print('🚀 System ready for network approval')"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "print('📋 Next: Deploy to mainnet using approved workflows')"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "\""
 
 [[ports]]
 localPort = 5000

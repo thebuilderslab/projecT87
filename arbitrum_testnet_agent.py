@@ -23,13 +23,13 @@ class ArbitrumTestnetAgent:
         print("🤖 Initializing Arbitrum Testnet Agent...")
 
         # Load environment variables
-        self.private_key = os.getenv('Wallet_PRIVATE_KEY')
+        self.private_key = os.getenv('WALLET_PRIVATE_KEY')
         # Ensure the wallet address is derived from the private key or explicitly set
         # This is where your wallet's private key will be loaded from Replit secrets
-        wallet_private_key = os.environ.get("Wallet_PRIVATE_KEY")
+        wallet_private_key = os.environ.get("WALLET_PRIVATE_KEY")
         print(f"DEBUG: WALLET_PRIVATE_KEY loaded from environment: {'[REDACTED]' if wallet_private_key else 'None'}")
         if not wallet_private_key:
-            raise ValueError("Wallet_PRIVATE_KEY environment variable not set.")
+            raise ValueError("WALLET_PRIVATE_KEY environment variable not set.")
         self.coinmarketcap_api_key = os.getenv('COINMARKETCAP_API_KEY')
         self.network_mode = os.getenv('NETWORK_MODE', 'testnet')
 
@@ -305,7 +305,7 @@ class ArbitrumTestnetAgent:
         return False
 
     def _initialize_account(self):
-        """Initialize account after RPC connection"""
+        """Initialize account after RPC setup"""
         # Validate and clean private key format
         private_key = self.private_key.strip()
 
@@ -366,6 +366,35 @@ class ArbitrumTestnetAgent:
             self.dai_address = "0x5f6bB460B6d0bdA2CCaDdd7A19B5F6E7b5b8E1DB"
             self.arb_address = "0x1b20e6a3B2a86618C32A37ffcD5E98C0d20a6E42"
             self.aave_pool_address = "0x18cd499E3d7ed42FebA981ac9236A278E4Cdc2ee"
+
+        # Initialize real blockchain integrations
+        self.aave = None
+        self.uniswap = None
+        self.health_monitor = None
+        self.gas_calculator = None
+        self.enhanced_borrow_manager = None
+        self.market_signal_strategy = None
+
+        # HYBRID APPROACH CONFIGURATION - Combines Growth-Triggered and Capacity-Based Systems
+        # Configuration parameters loaded from environment variables (Replit Secrets)
+        self.target_health_factor = float(os.getenv('TARGET_HEALTH_FACTOR', '3.5')) # Target HF for general management
+
+        # Growth-Triggered System Parameters - Fixed to match distribution ratio
+        self.growth_trigger_threshold = float(os.getenv('GROWTH_TRIGGER_THRESHOLD', '13.0')) # $13 collateral growth to trigger borrowing
+        self.growth_health_factor_threshold = float(os.getenv('GROWTH_HEALTH_FACTOR_THRESHOLD', '2.1')) # HF > 2.1 for growth-triggered
+
+        # Capacity-Based System Parameters
+        self.capacity_optimization_threshold = float(os.getenv('CAPACITY_OPTIMIZATION_THRESHOLD', '0.20'))  # 20% utilization threshold
+        self.capacity_health_factor_threshold = float(os.getenv('CAPACITY_HEALTH_FACTOR_THRESHOLD', '2.05')) # HF > 2.05 for capacity optimization (reduced from 2.1)
+        self.capacity_available_threshold = float(os.getenv('CAPACITY_AVAILABLE_THRESHOLD', '13.0')) # $13 minimum available capacity
+
+        # System Operation Parameters
+        self.re_leverage_percentage = float(os.getenv('RE_LEVERAGE_PERCENTAGE', '0.50')) # Percentage of growth to re-leverage
+        self.min_borrow_releverage = float(os.getenv('MIN_BORROW_RELEVERAGE', '10.0')) # Minimum borrow amount for re-leverage
+        self.max_borrow_releverage = float(os.getenv('MAX_BORROW_RELEVERAGE', '200.0')) # Maximum borrow amount for re-leverage
+        self.safe_releverage_hf_threshold = float(os.getenv('SAFE_RELEVERAGE_HF_THRESHOLD', '2.1')) # Minimum HF to safely re-leverage
+
+        self.previous_leveraged_value_usd = None # Initialize for tracking growth
 
         # Initialize collateral tracking for autonomous triggers
         # Start with 0.0 but will sync with actual position on first run
@@ -1127,10 +1156,9 @@ class ArbitrumTestnetAgent:
                     print("ℹ️ Market Signal Strategy initialized but disabled")
                     logging.info("ℹ️ Market Signal Strategy initialized but disabled")
                     self.debt_swap_active = False
-            except ImportError as e:
-                print(f"⚠️ Market Signal Strategy import failed: {e}")
-                print("⚠️ Debt swaps disabled - continuing without market signals")
-                logging.warning(f"Market Signal Strategy not available: {e}")
+            except ImportError:
+                print("⚠️ Market Signal Strategy not available - debt swaps disabled")
+                logging.warning("Market Signal Strategy not available")
                 self.market_signal_strategy = None
                 self.debt_swap_active = False
             except Exception as e:
@@ -2104,7 +2132,7 @@ class ArbitrumTestnetAgent:
             if swap_result and 'tx_hash' in swap_result:
                 print(f"✅ DEBT SWAP CONFIRMED - TX: {swap_result['tx_hash']}")
 
-               # Verify ARB received
+                # Verify ARB received
                 import time
                 time.sleep(5)
                 arb_balance_after = self.get_arb_balance()
@@ -2119,53 +2147,12 @@ class ArbitrumTestnetAgent:
             else:
                 print("❌ Debt swap transaction failed")
                 return False
-            def _execute_market_signal_operation(self, available_borrows_dai):
-                """Execute market signal-triggered debt swap operation"""
-                try:
-                    print(f"🔄 Executing market signal operation with ${available_borrows_usd:.2f} available")
-                except Exception as e:
-                    print(f"❌ Error during market signal operation: {e}")
-                    return False
-                    
 
-            # Validate market signal strategy is available
-            if not hasattr(self, 'market_signal_strategy') or not self.market_signal_strategy:
-                print("❌ Market signal strategy not available")
-                return False
 
-            # Check if market signal indicates we should trade
-            should_trade = self.market_signal_strategy.should_execute_trade()
-            if not should_trade:
-                print("⚠️ Market signals do not indicate favorable conditions for trading")
-                return False
-
-            # Use conservative amount for market signal operations
-            safe_amount = min(3.0, available_borrows_usd * 0.05)  # 5% of available or $3 max
-
-            if safe_amount < 0.5:
-                print(f"⚠️ Amount too small for market operation: ${safe_amount:.2f}")
-                return False
-
-            # Validate transaction preconditions
-            if not self._validate_transaction_preconditions(safe_amount):
-                print("❌ Transaction preconditions not met for market signal operation")
-                return False
-
-            # Execute validated DAI borrow
-            success = self._execute_validated_dai_borrow(safe_amount)
-
-            if success:
-                print(f"✅ Market signal operation completed successfully: ${safe_amount:.2f}")
-                return True
-            else:
-                print(f"❌ Market signal operation failed")
-                return False
-
-        except Exception as e:
-            print(f"❌ Market signal operation error: {e}")
-            import traceback
-            traceback.print_exc()
-            return False
+    def _execute_market_signal_operation(self, available_borrows_usd):
+        """Execute market signal-triggered debt swap operation"""
+        try:
+            print(f"🔄 Executing market signal operation with ${available_borrows_usd:.2f} available")
 
             # Validate market signal strategy is available
             if not hasattr(self, 'market_signal_strategy') or not self.market_signal_strategy:
@@ -2204,6 +2191,7 @@ class ArbitrumTestnetAgent:
             print(f"❌ Market signal operation error: {e}")
             traceback.print_exc()
             return False
+
 
     def execute_debt_swap_arb_to_dai(self, arb_amount):
         """Execute ARB to DAI debt swap for market signal strategy"""
@@ -2226,14 +2214,14 @@ class ArbitrumTestnetAgent:
                 # Verify DAI received
                 import time
                 time.sleep(5)
-                arb_balance_after = self.get_arb_balance()
-                arb_received = arb_balance_after - dai_balance_before
+                dai_balance_after = self.get_dai_balance()
+                dai_received = dai_balance_after - dai_balance_before
 
-                if arb_received > 0:
-                    print(f"✅ Received {arb_received:.6f} ARB from debt swap")
+                if dai_received > 0:
+                    print(f"✅ Received {dai_received:.6f} DAI from debt swap")
                     return True
                 else:
-                    print("⚠️ ARB balance did not increase as expected")
+                    print("⚠️ DAI balance did not increase as expected")
                     return False
             else:
                 print("❌ Debt swap transaction failed")
@@ -2335,8 +2323,8 @@ class ArbitrumTestnetAgent:
             }
 
             # Check if market signal strategy is enabled
-            if (hasattr(self, 'market_signal_strategy') and
-                self.market_signal_strategy and
+            if (hasattr(self, 'market_signal_strategy') and 
+                self.market_signal_strategy and 
                 getattr(self.market_signal_strategy, 'market_signal_enabled', False)):
                 validation_results['market_signal_enabled'] = True
                 print("✅ Market signal strategy enabled")
@@ -2370,7 +2358,7 @@ class ArbitrumTestnetAgent:
                 print("❌ Network not connected")
 
             # Check integrations
-            if (hasattr(self, 'aave') and self.aave and
+            if (hasattr(self, 'aave') and self.aave and 
                 hasattr(self, 'uniswap') and self.uniswap):
                 validation_results['integrations_ready'] = True
                 print("✅ DeFi integrations ready")

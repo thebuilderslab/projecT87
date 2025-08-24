@@ -9,47 +9,14 @@ import time
 from web3 import Web3
 from eth_account import Account
 
-# Enhanced Web3 import with error handling
-try:
-    from web3 import Web3
-    from web3.providers import HTTPProvider
-    from eth_account import Account
-    print("✅ Uniswap Integration: Web3 and eth_account imported successfully")
-except ImportError as e:
-    print(f"❌ Uniswap Integration: Web3 import failed: {e}")
-    print("🔧 Installing required packages...")
-    import subprocess
-    import sys
-    try:
-        subprocess.check_call([sys.executable, "-m", "pip", "install", "web3>=6.0.0", "eth-account>=0.8.0"])
-        from web3 import Web3
-        from web3.providers import HTTPProvider
-        from eth_account import Account
-        print("✅ Uniswap Integration: Packages installed and imported successfully")
-    except Exception as install_error:
-        print(f"❌ Failed to install required packages: {install_error}")
-        raise
-
 class UniswapIntegration:
     def __init__(self, w3, account):
-        # Enhanced Web3 validation
-        if w3 is None:
-            raise ValueError("❌ Web3 instance is None - cannot initialize Uniswap integration")
-        
-        if not w3.is_connected():
-            raise ValueError("❌ Web3 instance is not connected to network")
-            
         self.w3 = w3
         self.account = account
         self.address = account.address
 
         # Determine network based on chain ID
-        try:
-            chain_id = self.w3.eth.chain_id
-            print(f"✅ Uniswap Integration: Connected to chain ID {chain_id}")
-        except Exception as e:
-            print(f"❌ Failed to get chain ID: {e}")
-            raise
+        chain_id = self.w3.eth.chain_id
 
         if chain_id == 42161:  # Arbitrum Mainnet
             print(f"🌐 Initializing Uniswap for Arbitrum Mainnet (Chain ID: {chain_id})")
@@ -193,7 +160,7 @@ class UniswapIntegration:
     def swap_tokens(self, token_in, token_out, amount_in, fee=3000):
         """Execute token swap on Uniswap V3 with enhanced validation and error handling - DAI-ONLY ENFORCEMENT"""
         try:
-# Removed duplicate:             import time
+            import time
 
             # CRITICAL: Enforce DAI-only swap policy
             dai_address_lower = self.dai_address.lower()
@@ -566,7 +533,7 @@ class UniswapIntegration:
 
         except Exception as e:
             print(f"❌ Collateral optimization failed: {e}")
-# Removed duplicate:             import traceback
+            import traceback
             print(f"🔍 Full error: {traceback.format_exc()}")
             return False
 
