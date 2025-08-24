@@ -18,6 +18,8 @@ import requests
 import sys
 import traceback
 
+class ArbitrumTestnetAgent:
+    def __init__(self):
         print("🤖 Initializing Arbitrum Testnet Agent...")
 
         # Load environment variables
