@@ -866,6 +866,12 @@ def patch_imports():
         print(f"⚠️ ArbitrumTestnetAgent import failed: {e}")
         # Create mock class
         class MockAgent:
+    def __init__(self):
+        self.address = "0x0000000000000000000000000000000000000000"
+        
+    def get_eth_balance(self):
+        return 0.0
+
 def start_dashboard():
     """Start dashboard with comprehensive error handling"""
     try:
