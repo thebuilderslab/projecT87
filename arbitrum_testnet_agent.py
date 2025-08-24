@@ -9,6 +9,13 @@ import errno
 from datetime import datetime
 from web3 import Web3
 from eth_account import Account
+
+# Web3 version compatibility check
+try:
+    web3_version = Web3.__version__
+    print(f"🔍 Web3 version: {web3_version}")
+except:
+    print("⚠️ Cannot determine Web3 version")
 from aave_integration import AaveArbitrumIntegration
 from uniswap_integration import UniswapIntegration
 from aave_health_monitor import AaveHealthMonitor as HealthMonitor
@@ -81,13 +88,26 @@ class ArbitrumTestnetAgent:
                     print(f"❌ Fallback RPC {fallback_rpc} failed: {e}")
                     continue
             else:
-                raise Exception("Failed to connect to any available RPC endpoint")
+                print("❌ All RPC endpoints failed initial testing")
+                print("🔄 Attempting simplified connection to primary RPC...")
+                
+                # Fallback: Try simple connection without extensive testing
+                try:
+                    fallback_rpc = self.rpc_endpoints[0]  # Use first RPC as fallback
+                    self.w3 = Web3(Web3.HTTPProvider(fallback_rpc))
+                    if self.w3.is_connected():
+                        self.rpc_url = fallback_rpc
+                        print(f"✅ Fallback connection successful: {fallback_rpc}")
+                    else:
+                        raise Exception("Fallback connection also failed")
+                except:
+                    raise Exception("Failed to connect to any available RPC endpoint")
         else:
             print(f"✅ Successfully connected to primary RPC: {self.rpc_url}")
 
         # Final verification of Web3 connection
         try:
-            chain_id = self.w3.chain_id
+            chain_id = self.w3.eth.chain_id
             block_number = self.w3.eth.block_number
             print(f"🔍 DEBUG: Web3 connection verified - Chain ID: {chain_id}, Latest Block: {block_number}")
         except Exception as e:
@@ -164,8 +184,8 @@ class ArbitrumTestnetAgent:
             try:
                 print(f"🔍 Testing RPC: {rpc_url}")
 
-                # Create test connection
-                test_w3 = Web3(Web3.HTTPProvider(rpc_url, request_kwargs={'timeout': 10}))
+                # Create test connection with retry mechanism
+                test_w3 = Web3(Web3.HTTPProvider(rpc_url, request_kwargs={'timeout': 15}))
 
                 # Comprehensive tests
                 start_time = time.time()
@@ -175,10 +195,17 @@ class ArbitrumTestnetAgent:
                     print(f"❌ Not connected: {rpc_url}")
                     continue
 
-                # Test 2: Chain ID verification
-                chain_id = test_w3.chain_id
-                if chain_id != expected_chain_id:
-                    print(f"❌ Wrong chain ID {chain_id}: {rpc_url}")
+                # Test 2: Chain ID verification with proper error handling
+                try:
+                    chain_id = test_w3.eth.chain_id
+                    if chain_id != expected_chain_id:
+                        print(f"❌ Wrong chain ID {chain_id}: {rpc_url}")
+                        continue
+                except AttributeError:
+                    print(f"❌ Web3 version incompatibility: {rpc_url}")
+                    continue
+                except Exception as chain_error:
+                    print(f"❌ Chain ID check failed: {rpc_url} - {chain_error}")
                     continue
 
                 # Test 3: Latest block (freshness test)

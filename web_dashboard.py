@@ -1515,16 +1515,19 @@ def check_market_signals():
 def get_available_port(start_port=5000):
     """Find an available port starting from start_port"""
     import socket
-    for port in range(start_port, start_port + 20):
+    for port in range(start_port, start_port + 10):
         try:
             sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            sock.bind(('0.0.0.0', port))
+            sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            result = sock.connect_ex(('127.0.0.1', port))
             sock.close()
-            print(f"✅ Port {port} is available")
-            return port
-        except OSError:
-            print(f"❌ Port {port} is in use, trying next...")
-            continue
+            if result != 0:  # Port is available
+                print(f"✅ Port {port} is available")
+                return port
+            else:
+                print(f"❌ Port {port} is in use, trying next...")
+        except Exception as e:
+            print(f"⚠️ Error checking port {port}: {e}")
     return 8080  # Fallback port
 
 def log_startup_diagnostics():
@@ -1553,10 +1556,12 @@ def log_startup_diagnostics():
     for file in files_to_check:
         if os.path.exists(file):
             try:
-                size = os.path.path.getsize(file)
+                size = os.path.getsize(file)
                 print(f"   ✅ {file}: {size} bytes")
-            except:
-                print(f"   ⚠️ {file}: exists but can't read size")
+            except OSError as e:
+                print(f"   ⚠️ {file}: exists but permission error - {e}")
+            except Exception as e:
+                print(f"   ⚠️ {file}: exists but read error - {e}")
         else:
             print(f"   ❌ {file}: not found")
 
