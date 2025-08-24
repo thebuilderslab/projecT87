@@ -2135,121 +2135,54 @@ class ArbitrumTestnetAgent:
                 # Verify ARB received
                 import time
                 time.sleep(5)
-# 
-def my_function():
-    # Ensure there is an indented block here
-    print("This function works correctly.")
+                arb_balance_after = self.get_arb_balance()
+                arb_received = arb_balance_after - arb_balance_before
 
-# 
-# Call the function
-my_function()
-my_function()
-
-# 
-class MyClass:
-    def get_all(self):
-        """Return the complete context as dict including the exported
-        variables. For optimizations reasons this might not return an
-        actual copy so be careful with using it.
-        """
-        # Additional code would go here
-        if key in self.vars:
-            return self.vars
-
-        if key in self.parent:
-            return self.parent
-
-    # 
-    def _execute_market_signal_operation(self, available_borrows_usd):
-        """Execute market signal-triggered debt swap operation"""
-        try:
-            print(f"🔄 Executing market signal operation with ${available_borrows_usd:.2f} available")
-
-            # 
-            # Validate market signal strategy is available
-            if not hasattr(self, 'market_signal_strategy') or not self.market_signal_strategy:
-                print("❌ Market signal strategy not available")
-                return False
-
-            # 
-            # Check if market signal indicates we should trade
-            should_trade = self.market_signal_strategy.should_execute_trade()
-            if not should_trade:
-                print("⚠️ Market signals do not indicate favorable conditions for trading")
-                return False
-
-            # 
-            # Use conservative amount for market signal operations
-            safe_amount = min(3.0, available_borrows_usd * 0.05)  # 5% of available or $3 max
-
-            if safe_amount < 0.5:
-                print(f"⚠️ Amount too small for market operation: ${safe_amount:.2f}")
-                return False
-
-            # 
-            # Validate transaction
-            arb_balance_after = self.get_arb_balance()
-            arb_received = arb_balance_after - arb_balance_before
-
-            if arb_received > 0:
-                print(f"✅ Received {arb_received:.6f} ARB from debt swap")
-                return True
+                if arb_received > 0:
+                    print(f"✅ Received {arb_received:.6f} ARB from debt swap")
+                    return True
+                else:
+                    print("⚠️ ARB balance did not increase as expected")
+                    return False
             else:
-                print("⚠️ ARB balance did not increase as expected")
+                print("❌ Debt swap transaction failed")
                 return False
+
         except Exception as e:
-            print("❌ Debt swap transaction failed")
-            return Falsetion preconditions
-            if not self._validate_transaction_preconditions(safe_amount):
-                print("❌ Transaction preconditions not met for market signal operation")
+            print(f"❌ Debt swap ARB→DAI failed: {e}")
+            return False
+
+    def _execute_market_signal_operation(self, available_borrows_usd):
+        """Execute market signal-triggered operation - DAI only"""
+        try:
+            print("🚀 Executing market signal-triggered operation (DAI-only)")
+
+            # Comprehensive pre-transaction validation
+            if not self._validate_transaction_preconditions(available_borrows_usd):
+                print("❌ Transaction preconditions not met")
                 return False
 
-            # Execute validated DAI borrow
-            success = self._execute_validated_dai_borrow(safe_amount)
+            # Calculate safe borrow amount with enhanced validation
+            borrow_amount = self._calculate_validated_borrow_amount(available_borrows_usd, "market_signal")
 
-            if success:
-                print(f"✅ Market signal operation completed successfully: ${safe_amount:.2f}")
+            if borrow_amount < 1.0:
+                print("⚠️ Borrow amount too small after validation")
+                return False
+
+            print(f"💰 Validated borrow amount: ${borrow_amount:.2f} DAI")
+
+            # Execute DAI borrow with enhanced error handling
+            result = self._execute_validated_dai_borrow(borrow_amount)
+            if result:
+                print(f"✅ Successfully borrowed ${borrow_amount:.2f} DAI based on market signal")
                 return True
             else:
-                print(f"❌ Market signal operation failed")
+                print(f"❌ Failed to borrow DAI based on market signal")
                 return False
 
         except Exception as e:
             print(f"❌ Market signal operation error: {e}")
             import traceback
-            traceback.print_exc()
-            return False
-
-            # Check if market signal indicates we should trade
-            should_trade = self.market_signal_strategy.should_execute_trade()
-            if not should_trade:
-                print("⚠️ Market signals do not indicate favorable conditions for trading")
-                return False
-
-            # Use conservative amount for market signal operations
-            safe_amount = min(3.0, available_borrows_usd * 0.05)  # 5% of available or $3 max
-
-            if safe_amount < 0.5:
-                print(f"⚠️ Amount too small for market operation: ${safe_amount:.2f}")
-                return False
-
-            # Validate transaction preconditions
-            if not self._validate_transaction_preconditions(safe_amount):
-                print("❌ Transaction preconditions not met for market signal operation")
-                return False
-
-            # Execute validated DAI borrow
-            success = self._execute_validated_dai_borrow(safe_amount)
-
-            if success:
-                print(f"✅ Market signal operation completed successfully: ${safe_amount:.2f}")
-                return True
-            else:
-                print(f"❌ Market signal operation failed")
-                return False
-
-        except Exception as e:
-            print(f"❌ Market signal operation error: {e}")
             traceback.print_exc()
             return False
 
