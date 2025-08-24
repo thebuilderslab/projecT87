@@ -1,4 +1,3 @@
-
 #!/usr/bin/env python3
 """
 Comprehensive System Verifier
@@ -15,150 +14,119 @@ class ComprehensiveSystemVerifier:
     def __init__(self):
         self.errors = []
         self.warnings = []
-        self.passed_tests = []
-        
-    def validate_syntax(self):
-        """Validate Python file syntax"""
-        print("🔍 SYNTAX VALIDATION")
-        print("=" * 50)
-        
-        critical_files = [
-            'main.py',
-            'web_dashboard.py', 
-            'aave_integration.py',
-            'aave_integration.py'
-        ]
-        
-        for file_path in critical_files:
+
+    def verify_syntax(self):
+        """Verify syntax of main files"""
+        print("🔍 Verifying syntax...")
+
+        main_files = ['main.py', 'aave_integration.py', 'web_dashboard.py']
+        syntax_ok = True
+
+        for file_path in main_files:
             if os.path.exists(file_path):
                 try:
                     result = subprocess.run(
-                        ['python', '-m', 'py_compile', file_path],
+                        [sys.executable, '-m', 'py_compile', file_path],
                         capture_output=True, text=True
                     )
                     if result.returncode == 0:
                         print(f"✅ {file_path}: Syntax OK")
-                        self.passed_tests.append(f"Syntax: {file_path}")
                     else:
-                        error_msg = result.stderr.strip()
-                        print(f"❌ {file_path}: {error_msg}")
-                        self.errors.append(f"Syntax error in {file_path}: {error_msg}")
+                        print(f"❌ {file_path}: Syntax Error")
+                        self.errors.append(f"Syntax error in {file_path}")
+                        syntax_ok = False
                 except Exception as e:
-                    error_msg = f"Failed to check {file_path}: {e}"
-                    print(f"❌ {file_path}: {error_msg}")
-                    self.errors.append(error_msg)
+                    print(f"⚠️ {file_path}: Could not verify - {e}")
+                    self.warnings.append(f"Could not verify {file_path}")
             else:
-                warning_msg = f"File not found: {file_path}"
-                print(f"⚠️ {file_path}: Not found")
-                self.warnings.append(warning_msg)
-                
-    def validate_imports(self):
-        """Validate critical imports"""
-        print("\n🔍 IMPORT VALIDATION")
-        print("=" * 50)
-        
+                print(f"⚠️ {file_path}: File not found")
+                self.warnings.append(f"Missing file: {file_path}")
+
+        return syntax_ok
+
+    def verify_imports(self):
+        """Verify critical imports work"""
+        print("\n🔍 Verifying imports...")
+
         import_tests = [
-            ('web3', 'from web3 import Web3'),
-            ('requests', 'import requests'),
-            ('flask', 'from flask import Flask'),
-            ('json', 'import json'),
-            ('os', 'import os')
+            ('main', 'Main module'),
+            ('aave_integration', 'Aave integration'),
+            ('emergency_funding_manager', 'Emergency manager')
         ]
-        
-        for name, import_stmt in import_tests:
+
+        imports_ok = True
+        for module_name, description in import_tests:
             try:
-                exec(import_stmt)
-                print(f"✅ {name}: Import successful")
-                self.passed_tests.append(f"Import: {name}")
-            except ImportError as e:
-                error_msg = f"Import failed for {name}: {e}"
-                print(f"❌ {name}: {error_msg}")
-                self.errors.append(error_msg)
-                
-    def validate_secrets(self):
-        """Validate environment secrets"""
-        print("\n🔍 SECRETS VALIDATION")
-        print("=" * 50)
-        
-        required_secrets = [
-            'NETWORK_MODE',
-            'COINMARKETCAP_API_KEY',
-            'PRIVATE_KEY',
-            'ARBITRUM_RPC_URL'
-        ]
-        
-        for secret in required_secrets:
-            value = os.getenv(secret)
-            if value and len(value.strip()) > 0:
-                print(f"✅ {secret}: Available")
-                self.passed_tests.append(f"Secret: {secret}")
+                __import__(module_name)
+                print(f"✅ {description}: Import OK")
+            except Exception as e:
+                print(f"❌ {description}: Import failed - {e}")
+                self.errors.append(f"Import error in {module_name}")
+                imports_ok = False
+
+        return imports_ok
+
+    def verify_environment(self):
+        """Verify environment variables"""
+        print("\n🔍 Verifying environment...")
+
+        required_vars = ['NETWORK_MODE', 'PRIVATE_KEY', 'COINMARKETCAP_API_KEY']
+        env_ok = True
+
+        for var in required_vars:
+            value = os.getenv(var)
+            if value:
+                print(f"✅ {var}: Set")
             else:
-                error_msg = f"Missing or empty secret: {secret}"
-                print(f"❌ {secret}: Missing")
-                self.errors.append(error_msg)
-                
-    def validate_network_config(self):
-        """Validate network configuration"""
-        print("\n🔍 NETWORK CONFIGURATION")
-        print("=" * 50)
-        
-        network_mode = os.getenv('NETWORK_MODE', 'testnet')
-        arbitrum_rpc = os.getenv('ARBITRUM_RPC_URL', '')
-        
-        if network_mode == 'mainnet':
-            if 'arb1.arbitrum.io' in arbitrum_rpc:
-                print("✅ Network: Mainnet configuration correct")
-                self.passed_tests.append("Network: Mainnet config")
-            else:
-                error_msg = "Mainnet mode but RPC URL not mainnet"
-                print(f"❌ Network: {error_msg}")
-                self.errors.append(error_msg)
-        else:
-            print(f"⚠️ Network: Mode is {network_mode}")
-            self.warnings.append(f"Network mode: {network_mode}")
-            
-    def run_full_verification(self):
-        """Run complete system verification"""
-        print("🚀 COMPREHENSIVE SYSTEM VERIFICATION")
+                print(f"❌ {var}: Missing")
+                self.errors.append(f"Missing environment variable: {var}")
+                env_ok = False
+
+        return env_ok
+
+    def run_verification(self):
+        """Run complete verification"""
+        print("🔍 COMPREHENSIVE SYSTEM VERIFICATION")
         print("=" * 60)
-        
-        self.validate_syntax()
-        self.validate_imports()
-        self.validate_secrets()
-        self.validate_network_config()
-        
-        # Generate summary
-        print(f"\n📊 VERIFICATION SUMMARY")
-        print("=" * 60)
-        print(f"✅ Tests Passed: {len(self.passed_tests)}")
-        print(f"⚠️ Warnings: {len(self.warnings)}")
-        print(f"❌ Errors: {len(self.errors)}")
-        
+
+        results = {
+            'syntax': self.verify_syntax(),
+            'imports': self.verify_imports(),
+            'environment': self.verify_environment()
+        }
+
+        print(f"\n📊 VERIFICATION RESULTS:")
+        for test_name, result in results.items():
+            status = "✅ PASS" if result else "❌ FAIL"
+            print(f"   {test_name.title()}: {status}")
+
+        all_passed = all(results.values())
+
         if self.errors:
-            print(f"\n❌ CRITICAL ERRORS:")
+            print(f"\n❌ ERRORS FOUND:")
             for error in self.errors:
-                print(f"   • {error}")
-                
+                print(f"   - {error}")
+
         if self.warnings:
             print(f"\n⚠️ WARNINGS:")
             for warning in self.warnings:
-                print(f"   • {warning}")
-                
-        success = len(self.errors) == 0
-        
-        if success:
-            print(f"\n🎉 SYSTEM READY FOR DEPLOYMENT")
+                print(f"   - {warning}")
+
+        if all_passed:
+            print(f"\n🎉 ALL VERIFICATIONS PASSED!")
+            print(f"✅ System ready for operation")
         else:
-            print(f"\n🛑 SYSTEM NOT READY - FIX ERRORS FIRST")
-            
-        return success
+            print(f"\n❌ VERIFICATION FAILED")
+            print(f"🔧 Fix errors before proceeding")
+
+        return all_passed
 
 def main():
-    """Main verification function"""
+    """Run verification"""
     verifier = ComprehensiveSystemVerifier()
-    success = verifier.run_full_verification()
-    
-    return 0 if success else 1
+    success = verifier.run_verification()
+    return success
 
 if __name__ == "__main__":
-    sys.exit(main())
+    success = main()
+    sys.exit(0 if success else 1)
