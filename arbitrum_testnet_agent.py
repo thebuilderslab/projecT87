@@ -2463,13 +2463,3 @@ class ArbitrumTestnetAgent:
         except Exception as e:
             print(f"❌ Error getting user account data: {e}")
             return None
-
-    def get_user_account_data(self):
-        """Get comprehensive user account data from Aave"""
-        try:
-            if self.aave:
-                return self.aave.get_user_account_data()
-            return None
-        except Exception as e:
-            print(f"❌ Error getting user account data: {e}")
-            return None
