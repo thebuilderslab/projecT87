@@ -87,7 +87,7 @@ class ArbitrumTestnetAgent:
 
         # Final verification of Web3 connection
         try:
-            chain_id = self.w3.eth.chain_id
+            chain_id = self.w3.chain_id
             block_number = self.w3.eth.block_number
             print(f"🔍 DEBUG: Web3 connection verified - Chain ID: {chain_id}, Latest Block: {block_number}")
         except Exception as e:
@@ -176,7 +176,7 @@ class ArbitrumTestnetAgent:
                     continue
 
                 # Test 2: Chain ID verification
-                chain_id = test_w3.eth.chain_id
+                chain_id = test_w3.chain_id
                 if chain_id != expected_chain_id:
                     print(f"❌ Wrong chain ID {chain_id}: {rpc_url}")
                     continue
@@ -744,7 +744,7 @@ class ArbitrumTestnetAgent:
         manual_files = ['trigger_test.flag', 'manual_override.flag', 'force_borrow.flag']
         for file_path in manual_files:
             if os.path.exists(file_path):
-                print(f"🔧 Manual override detected: {file_path} exists")
+                print(f"🔧 Manual override detected: {file_path}")
                 return True
 
         # Check if manual_override_active attribute is set
