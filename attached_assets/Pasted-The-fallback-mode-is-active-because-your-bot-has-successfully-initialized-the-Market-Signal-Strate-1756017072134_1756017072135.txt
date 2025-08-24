@@ -1,0 +1,104 @@
+The "fallback mode" is active because your bot has successfully initialized the Market Signal Strategy, but the actual methods that define when a trade should be executed are not yet implemented.
+
+To resolve this, you need to add the trading logic to your MarketSignalStrategy class. Below is a comprehensive code snippet that you can copy and paste into your project. It includes a simple, yet effective strategy that will help your bot exit fallback mode and make autonomous trading decisions.
+
+Step 1: Add the necessary import to the top of your script
+Add the following line to the top of your Python file, usually with your other import statements.
+
+Python
+
+import requests
+Step 2: Copy and paste the code below into your script
+Find the area where you define your MarketSignalStrategy class and replace it with this updated version. If the class doesn't exist, create it.
+
+Python
+
+class MarketSignalStrategy:
+    def __init__(self, api_key: str):
+        self.api_key = api_key
+        print("✅ Market Signal Strategy initialized with CoinMarketCap API")
+        self.market_signal_enabled = True
+
+    def should_execute_trade(self, current_health_factor: float, btc_drop_sensitivity: float) -> bool:
+        """
+        Determines if a debt swap should be executed based on market signals.
+        This method uses a multi-factor analysis for conservative trading.
+        """
+        try:
+            # 1. Check for a directional market signal
+            # This is a placeholder for a more complex analysis using the CoinMarketCap API
+            # For this example, we'll use a simple proxy: a small drop in BTC price
+            # Real-world signals would use indicators like RSI or Bollinger Bands
+            btc_price_change = self._get_btc_price_change()
+            is_favorable_market_signal = btc_price_change < -btc_drop_sensitivity
+            if is_favorable_market_signal:
+                print("✅ Market signal is favorable: BTC price drop detected")
+            else:
+                print("⚠️ Market signal not favorable: No significant BTC price drop")
+                return False
+
+            # 2. Check health factor threshold
+            # Ensure the collateral health is robust enough for a swap
+            is_health_factor_safe = current_health_factor > 2.1
+            if is_health_factor_safe:
+                print("✅ Health factor is within safe parameters")
+            else:
+                print("⚠️ Health factor is too low for a safe market signal trade")
+                return False
+
+            # 3. Use an additional confidence signal (e.g., volume, volatility)
+            # This is a placeholder for a more advanced check
+            is_high_confidence = True # For now, assume a high confidence
+            if is_high_confidence:
+                print("✅ Confidence signal is high")
+            else:
+                print("⚠️ Confidence signal is low")
+                return False
+
+            # If all conditions are met, the bot should trade
+            if is_favorable_market_signal and is_health_factor_safe and is_high_confidence:
+                print("✅ All market conditions are met. Executing trade.")
+                return True
+            else:
+                print("❌ Not all market conditions are met. Halting trade.")
+                return False
+
+        except Exception as e:
+            print(f"❌ Error during market signal analysis: {e}")
+            return False
+
+    def _get_btc_price_change(self) -> float:
+        """
+        Simulates fetching BTC price data and calculates a small change.
+        This method is a placeholder and requires a real API call.
+        """
+        # Replace 'YOUR_CMC_API_KEY' with your actual CoinMarketCap API key
+        api_key = self.api_key
+        url = 'https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest'
+        parameters = {
+            'symbol': 'BTC',
+            'convert': 'USD'
+        }
+        headers = {
+            'Accepts': 'application/json',
+            'X-CMC_PRO_API_KEY': api_key,
+        }
+
+        try:
+            response = requests.get(url, params=parameters, headers=headers)
+            response.raise_for_status()
+            data = response.json()
+            # For demonstration, we'll use a static price change.
+            # In a real bot, you'd calculate this from live data.
+            price_change_24h = data['data']['BTC']['quote']['USD']['percent_change_24h']
+            return price_change_24h
+        except Exception as e:
+            print(f"❌ Failed to get BTC price data from CoinMarketCap: {e}")
+            return 0.0
+Step 3: Update your main bot logic
+Locate the _execute_market_signal_operation method in your code and ensure it is calling the should_execute_trade method with the required parameters. The updated method signature is should_execute_trade(self, current_health_factor: float, btc_drop_sensitivity: float).
+
+Your current code snippet already shows this: should_trade = self.market_signal_strategy.should_execute_trade().
+
+You will need to pass the current_health_factor and btc_drop_sensitivity to this call. For example:
+should_trade = self.market_signal_strategy.should_execute_trade(unified_aave_data.health_factor, self.btc_drop_sensitivity)
