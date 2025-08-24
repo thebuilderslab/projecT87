@@ -380,7 +380,7 @@ def get_live_agent_data():
     }
 
 # Add initial console messages
-console_buffer.append(f"[{datetime.now().strftime('%H:%M:%S')}] 🚀 DeFi Agent Dashboard started")
+console_buffer.append(f"[{datetime.now().strftime('%H:%M:%S')}] 🚀 Dashboard started")
 console_buffer.append(f"[{datetime.now().strftime('%H:%M:%S')}] 🌐 Running on Arbitrum Mainnet")
 
 # Initialize agent in background
@@ -987,18 +987,18 @@ def get_market_signal_status():
     try:
         timestamp = datetime.now().strftime('%H:%M:%S')
 
-        # Check if market signal strategy is enabled
-        market_enabled = os.getenv('MARKET_SIGNAL_ENABLED', 'false').lower() == 'true'
-
-        if not market_enabled:
-            return f"[{timestamp}] 💤 MARKET SIGNALS: Disabled | Enable in Secrets: MARKET_SIGNAL_ENABLED=true"
+        # Check if CoinMarketCap API key is available
+        api_key = os.getenv('COINMARKETCAP_API_KEY')
+        if not api_key:
+            return f"[{timestamp}] ❌ MARKET SIGNALS: CoinMarketCap API key not found | Add COINMARKETCAP_API_KEY to Secrets"
 
         # Try to get enhanced market analysis
         try:
             from enhanced_market_analyzer import EnhancedMarketAnalyzer
 
             class MockAgent:
-                pass
+                def __init__(self):
+                    self.address = "0x1234...5678"
 
             analyzer = EnhancedMarketAnalyzer(MockAgent())
             market_summary = analyzer.get_market_summary()
@@ -1014,20 +1014,30 @@ def get_market_signal_status():
                     'neutral': '➡️',
                     'bearish': '📉',
                     'very_bearish': '💥'
-                }.get(sentiment, '❓')
+                }.get(sentiment, '➡️')
 
                 return (f"[{timestamp}] {sentiment_emoji} ENHANCED SIGNALS: {sentiment.upper()} | "
                        f"BTC: {btc_change:+.1f}% | ETH: {eth_change:+.1f}% | CoinMarketCap API Active")
 
         except Exception as enhanced_error:
-            # Fallback to basic status
-            pass
+            # Fallback to basic status if enhanced analysis fails
+            print(f"⚠️ Enhanced market analysis failed: {enhanced_error}")
+            # Still check if market signals are enabled at all
+            market_enabled = os.getenv('MARKET_SIGNAL_ENABLED', 'false').lower() == 'true'
+            if market_enabled:
+                return f"[{timestamp}] ⚠️ MARKET SIGNALS: Active (Analysis Error) | Check logs for details"
+            else:
+                return f"[{timestamp}] 💤 MARKET SIGNALS: Disabled"
 
-        # Return basic enabled status
-        return f"[{timestamp}] 🔍 MARKET SIGNALS: Active | Monitoring for debt swap opportunities"
+        # Default return if CoinMarketCap API is enabled but analysis didn't occur or failed
+        market_enabled = os.getenv('MARKET_SIGNAL_ENABLED', 'false').lower() == 'true'
+        if market_enabled:
+            return f"[{timestamp}] 📊 MARKET SIGNALS: Enabled | Waiting for market data"
+        else:
+            return f"[{timestamp}] 💤 MARKET SIGNALS: Disabled"
 
     except Exception as e:
-        return f"[{timestamp}] ❌ MARKET SIGNALS: Error | {str(e)[:50]}"
+        return f"[{timestamp}] ❌ MARKET SIGNALS: Check failed | {str(e)[:50]}"
 
 
 @app.route('/api/system_mode', methods=['POST'])

@@ -1,5 +1,4 @@
 
-```python
 #!/usr/bin/env python3
 """
 Enhanced Market Analyzer with CoinMarketCap API Integration
@@ -61,63 +60,35 @@ class CoinMarketCapAPI:
     def get_historical_data(self, symbol: str, days: int = 365) -> Optional[pd.DataFrame]:
         """Fetch historical OHLCV data for a given symbol"""
         try:
-            # Get symbol ID first
-            url = f"{self.base_url}/v1/cryptocurrency/map"
-            params = {'symbol': symbol}
+            # Get current quote first for recent data
+            url = f"{self.base_url}/v1/cryptocurrency/quotes/latest"
+            params = {'symbol': symbol, 'convert': 'USD'}
             
             response = self.session.get(url, params=params, timeout=30)
             response.raise_for_status()
             
             data = response.json()
-            if not data['data']:
+            if 'data' not in data or symbol not in data['data']:
                 logger.warning(f"No data found for symbol {symbol}")
                 return None
                 
-            crypto_id = data['data'][0]['id']
+            quote_data = data['data'][symbol]['quote']['USD']
             
-            # Get historical quotes
-            end_date = datetime.now()
-            start_date = end_date - timedelta(days=days)
+            # Create a simple DataFrame with current price
+            # Note: CoinMarketCap historical API requires specific plan
+            df = pd.DataFrame({
+                'timestamp': [datetime.now()],
+                'open': [quote_data['price']],
+                'high': [quote_data['price']],
+                'low': [quote_data['price']],
+                'close': [quote_data['price']],
+                'volume': [quote_data.get('volume_24h', 0)]
+            })
             
-            quotes_url = f"{self.base_url}/v2/cryptocurrency/quotes/historical"
-            quotes_params = {
-                'id': crypto_id,
-                'time_start': start_date.strftime('%Y-%m-%d'),
-                'time_end': end_date.strftime('%Y-%m-%d'),
-                'interval': 'daily',
-                'count': days
-            }
-            
-            quotes_response = self.session.get(quotes_url, params=quotes_params, timeout=30)
-            quotes_response.raise_for_status()
-            
-            quotes_data = quotes_response.json()
-            
-            if 'data' not in quotes_data or not quotes_data['data']:
-                logger.warning(f"No historical data found for {symbol}")
-                return None
-                
-            # Convert to DataFrame
-            historical_data = []
-            for entry in quotes_data['data']:
-                timestamp = pd.to_datetime(entry['timestamp'])
-                quote = entry['quote']['USD']
-                
-                historical_data.append({
-                    'timestamp': timestamp,
-                    'open': quote.get('open', quote['price']),
-                    'high': quote.get('high', quote['price']),
-                    'low': quote.get('low', quote['price']),
-                    'close': quote['price'],
-                    'volume': quote.get('volume_24h', 0),
-                    'market_cap': quote.get('market_cap', 0)
-                })
-            
-            df = pd.DataFrame(historical_data)
+            df['timestamp'] = pd.to_datetime(df['timestamp'])
             df.set_index('timestamp', inplace=True)
-            df.sort_index(inplace=True)
             
-            logger.info(f"Successfully fetched {len(df)} days of data for {symbol}")
+            logger.info(f"Successfully fetched current data for {symbol}")
             return df
             
         except Exception as e:
@@ -125,72 +96,108 @@ class CoinMarketCapAPI:
             return None
     
     def get_current_price(self, symbol: str) -> Optional[Dict]:
-        """Get current price and 24h data for a symbol"""
+        """Get current price and basic metrics"""
         try:
             url = f"{self.base_url}/v1/cryptocurrency/quotes/latest"
-            params = {'symbol': symbol}
+            params = {'symbol': symbol, 'convert': 'USD'}
             
             response = self.session.get(url, params=params, timeout=30)
             response.raise_for_status()
             
             data = response.json()
-            if symbol in data['data']:
-                quote = data['data'][symbol]['quote']['USD']
-                return {
-                    'price': quote['price'],
-                    'percent_change_1h': quote.get('percent_change_1h', 0),
-                    'percent_change_24h': quote.get('percent_change_24h', 0),
-                    'percent_change_7d': quote.get('percent_change_7d', 0),
-                    'volume_24h': quote.get('volume_24h', 0),
-                    'market_cap': quote.get('market_cap', 0)
-                }
-            return None
+            if 'data' not in data or symbol not in data['data']:
+                return None
+                
+            quote_data = data['data'][symbol]['quote']['USD']
+            
+            return {
+                'price': quote_data['price'],
+                'percent_change_1h': quote_data.get('percent_change_1h', 0),
+                'percent_change_24h': quote_data.get('percent_change_24h', 0),
+                'percent_change_7d': quote_data.get('percent_change_7d', 0),
+                'volume_24h': quote_data.get('volume_24h', 0),
+                'market_cap': quote_data.get('market_cap', 0)
+            }
             
         except Exception as e:
             logger.error(f"Error fetching current price for {symbol}: {e}")
             return None
 
 class TechnicalAnalysis:
-    """Technical analysis calculations for trading indicators"""
+    """Technical analysis calculations"""
     
     @staticmethod
-    def calculate_rsi(prices: pd.Series, period: int = 14) -> pd.Series:
-        """Calculate Relative Strength Index"""
-        delta = prices.diff()
-        gain = (delta.where(delta > 0, 0)).rolling(window=period).mean()
-        loss = (-delta.where(delta < 0, 0)).rolling(window=period).mean()
-        rs = gain / loss
-        rsi = 100 - (100 / (1 + rs))
-        return rsi
+    def calculate_rsi(prices: pd.Series, period: int = 14) -> float:
+        """Calculate RSI"""
+        try:
+            if len(prices) < period + 1:
+                return 50.0  # Neutral RSI if insufficient data
+                
+            delta = prices.diff()
+            gain = (delta.where(delta > 0, 0)).rolling(window=period).mean()
+            loss = (-delta.where(delta < 0, 0)).rolling(window=period).mean()
+            
+            rs = gain / loss
+            rsi = 100 - (100 / (1 + rs))
+            
+            return float(rsi.iloc[-1]) if not pd.isna(rsi.iloc[-1]) else 50.0
+        except:
+            return 50.0
     
     @staticmethod
-    def calculate_macd(prices: pd.Series, fast: int = 12, slow: int = 26, signal: int = 9) -> Tuple[pd.Series, pd.Series, pd.Series]:
-        """Calculate MACD line, signal line, and histogram"""
-        ema_fast = prices.ewm(span=fast).mean()
-        ema_slow = prices.ewm(span=slow).mean()
-        macd_line = ema_fast - ema_slow
-        signal_line = macd_line.ewm(span=signal).mean()
-        histogram = macd_line - signal_line
-        return macd_line, signal_line, histogram
+    def calculate_macd(prices: pd.Series, fast: int = 12, slow: int = 26, signal: int = 9) -> Tuple[float, float, float]:
+        """Calculate MACD"""
+        try:
+            if len(prices) < slow + signal:
+                return 0.0, 0.0, 0.0
+                
+            ema_fast = prices.ewm(span=fast).mean()
+            ema_slow = prices.ewm(span=slow).mean()
+            
+            macd_line = ema_fast - ema_slow
+            signal_line = macd_line.ewm(span=signal).mean()
+            histogram = macd_line - signal_line
+            
+            return (
+                float(macd_line.iloc[-1]) if not pd.isna(macd_line.iloc[-1]) else 0.0,
+                float(signal_line.iloc[-1]) if not pd.isna(signal_line.iloc[-1]) else 0.0,
+                float(histogram.iloc[-1]) if not pd.isna(histogram.iloc[-1]) else 0.0
+            )
+        except:
+            return 0.0, 0.0, 0.0
     
     @staticmethod
-    def calculate_sma(prices: pd.Series, period: int) -> pd.Series:
+    def calculate_sma(prices: pd.Series, period: int) -> float:
         """Calculate Simple Moving Average"""
-        return prices.rolling(window=period).mean()
+        try:
+            if len(prices) < period:
+                return float(prices.mean()) if len(prices) > 0 else 0.0
+                
+            sma = prices.rolling(window=period).mean()
+            return float(sma.iloc[-1]) if not pd.isna(sma.iloc[-1]) else 0.0
+        except:
+            return 0.0
     
     @staticmethod
-    def calculate_bollinger_bands(prices: pd.Series, period: int = 20, std_dev: int = 2) -> Tuple[pd.Series, pd.Series, pd.Series]:
+    def calculate_bollinger_bands(prices: pd.Series, period: int = 20, std_dev: int = 2) -> Tuple[float, float]:
         """Calculate Bollinger Bands"""
-        sma = prices.rolling(window=period).mean()
-        std = prices.rolling(window=period).std()
-        upper_band = sma + (std * std_dev)
-        lower_band = sma - (std * std_dev)
-        return upper_band, sma, lower_band
-    
-    @staticmethod
-    def calculate_volume_sma(volume: pd.Series, period: int = 20) -> pd.Series:
-        """Calculate volume Simple Moving Average"""
-        return volume.rolling(window=period).mean()
+        try:
+            if len(prices) < period:
+                mean_price = float(prices.mean()) if len(prices) > 0 else 0.0
+                return mean_price, mean_price
+                
+            sma = prices.rolling(window=period).mean()
+            std = prices.rolling(window=period).std()
+            
+            upper_band = sma + (std * std_dev)
+            lower_band = sma - (std * std_dev)
+            
+            return (
+                float(upper_band.iloc[-1]) if not pd.isna(upper_band.iloc[-1]) else 0.0,
+                float(lower_band.iloc[-1]) if not pd.isna(lower_band.iloc[-1]) else 0.0
+            )
+        except:
+            return 0.0, 0.0
 
 class EnhancedMarketAnalyzer:
     """Enhanced market analyzer with comprehensive technical analysis"""
@@ -230,36 +237,35 @@ class EnhancedMarketAnalyzer:
     def calculate_indicators(self, data: pd.DataFrame) -> Optional[TechnicalIndicators]:
         """Calculate all technical indicators for the given data"""
         try:
-            if len(data) < 200:  # Need enough data for 200-day MA
-                logger.warning("Insufficient data for complete technical analysis")
+            if data is None or len(data) == 0:
                 return None
-            
-            close_prices = data['close']
+                
+            prices = data['close']
             volume = data['volume']
             
-            # Calculate indicators
-            rsi = self.technical_analysis.calculate_rsi(close_prices).iloc[-1]
-            macd_line, signal_line, histogram = self.technical_analysis.calculate_macd(close_prices)
+            # Calculate all indicators
+            rsi = self.technical_analysis.calculate_rsi(prices)
+            macd_line, macd_signal, macd_histogram = self.technical_analysis.calculate_macd(prices)
             
-            sma_9 = self.technical_analysis.calculate_sma(close_prices, 9).iloc[-1]
-            sma_50 = self.technical_analysis.calculate_sma(close_prices, 50).iloc[-1]
-            sma_100 = self.technical_analysis.calculate_sma(close_prices, 100).iloc[-1]
-            sma_200 = self.technical_analysis.calculate_sma(close_prices, 200).iloc[-1]
+            sma_9 = self.technical_analysis.calculate_sma(prices, 9)
+            sma_50 = self.technical_analysis.calculate_sma(prices, 50)
+            sma_100 = self.technical_analysis.calculate_sma(prices, 100)
+            sma_200 = self.technical_analysis.calculate_sma(prices, 200)
             
-            upper_bb, middle_bb, lower_bb = self.technical_analysis.calculate_bollinger_bands(close_prices)
-            volume_sma = self.technical_analysis.calculate_volume_sma(volume).iloc[-1]
+            bollinger_upper, bollinger_lower = self.technical_analysis.calculate_bollinger_bands(prices)
+            volume_sma = self.technical_analysis.calculate_sma(volume, 20)
             
             return TechnicalIndicators(
                 rsi=rsi,
-                macd_line=macd_line.iloc[-1],
-                macd_signal=signal_line.iloc[-1],
-                macd_histogram=histogram.iloc[-1],
+                macd_line=macd_line,
+                macd_signal=macd_signal,
+                macd_histogram=macd_histogram,
                 sma_9=sma_9,
                 sma_50=sma_50,
                 sma_100=sma_100,
                 sma_200=sma_200,
-                bollinger_upper=upper_bb.iloc[-1],
-                bollinger_lower=lower_bb.iloc[-1],
+                bollinger_upper=bollinger_upper,
+                bollinger_lower=bollinger_lower,
                 volume_sma=volume_sma
             )
             
@@ -267,262 +273,255 @@ class EnhancedMarketAnalyzer:
             logger.error(f"Error calculating indicators: {e}")
             return None
     
-    def analyze_signal_strength(self, indicators: TechnicalIndicators, current_price: float) -> Tuple[str, float, str]:
-        """Analyze signal strength based on technical indicators"""
-        bullish_signals = 0
-        bearish_signals = 0
-        total_signals = 0
-        
-        # RSI Analysis
-        if indicators.rsi < 30:
-            bullish_signals += 2  # Oversold - strong bullish
-        elif indicators.rsi < 40:
-            bullish_signals += 1  # Moderately oversold
-        elif indicators.rsi > 70:
-            bearish_signals += 2  # Overbought - strong bearish
-        elif indicators.rsi > 60:
-            bearish_signals += 1  # Moderately overbought
-        total_signals += 2
-        
-        # MACD Analysis
-        if indicators.macd_line > indicators.macd_signal and indicators.macd_histogram > 0:
-            bullish_signals += 2  # MACD bullish crossover
-        elif indicators.macd_line < indicators.macd_signal and indicators.macd_histogram < 0:
-            bearish_signals += 2  # MACD bearish crossover
-        total_signals += 2
-        
-        # Moving Average Analysis
-        if indicators.sma_9 > indicators.sma_50 > indicators.sma_100 > indicators.sma_200:
-            bullish_signals += 3  # Strong uptrend
-        elif indicators.sma_9 < indicators.sma_50 < indicators.sma_100 < indicators.sma_200:
-            bearish_signals += 3  # Strong downtrend
-        elif indicators.sma_9 > indicators.sma_50:
-            bullish_signals += 1  # Short-term bullish
-        elif indicators.sma_9 < indicators.sma_50:
-            bearish_signals += 1  # Short-term bearish
-        total_signals += 3
-        
-        # Bollinger Bands Analysis
-        if current_price < indicators.bollinger_lower:
-            bullish_signals += 1  # Price below lower band - potential bounce
-        elif current_price > indicators.bollinger_upper:
-            bearish_signals += 1  # Price above upper band - potential reversal
-        total_signals += 1
-        
-        # Calculate confidence and determine signal
-        net_bullish = bullish_signals - bearish_signals
-        confidence = abs(net_bullish) / total_signals
-        
-        if net_bullish > 2:
-            signal_type = "bullish"
-            strength = "strong" if confidence > 0.6 else "moderate"
-        elif net_bullish < -2:
-            signal_type = "bearish"
-            strength = "strong" if confidence > 0.6 else "moderate"
-        else:
-            signal_type = "neutral"
-            strength = "weak"
-            confidence = max(0.1, confidence)  # Minimum confidence for neutral
-        
-        return signal_type, confidence, strength
-    
-    def should_execute_trade(self) -> bool:
-        """Enhanced trade execution decision based on comprehensive analysis"""
+    def analyze_market_signal(self, symbol: str) -> Optional[MarketSignal]:
+        """Analyze market signal for a given symbol"""
         try:
-            logger.info("🔍 ENHANCED MARKET ANALYSIS - Comprehensive Technical Analysis")
-            logger.info("=" * 70)
+            # Get historical data
+            data = self.get_cached_data(symbol)
+            if data is None:
+                logger.warning(f"No data available for {symbol}")
+                return None
             
-            # Fetch data for multiple assets
-            btc_data = self.get_cached_data('BTC', 365)
-            eth_data = self.get_cached_data('ETH', 365)
+            # Calculate indicators
+            indicators = self.calculate_indicators(data)
+            if indicators is None:
+                return None
             
-            # Get current prices
-            btc_current = self.cmc_client.get_current_price('BTC')
-            eth_current = self.cmc_client.get_current_price('ETH')
+            # Determine signal based on indicators
+            signal_score = 0
+            signals = []
             
-            if not all([btc_data is not None, eth_data is not None, btc_current, eth_current]):
-                logger.warning("⚠️ Insufficient market data for analysis")
-                return False
+            # RSI analysis
+            if indicators.rsi < 30:
+                signal_score += 1
+                signals.append("RSI oversold (bullish)")
+            elif indicators.rsi > 70:
+                signal_score -= 1
+                signals.append("RSI overbought (bearish)")
             
-            # Calculate indicators for BTC and ETH
-            btc_indicators = self.calculate_indicators(btc_data)
-            eth_indicators = self.calculate_indicators(eth_data)
-            
-            if not btc_indicators or not eth_indicators:
-                logger.warning("⚠️ Failed to calculate technical indicators")
-                return False
-            
-            # Analyze signals
-            btc_signal, btc_confidence, btc_strength = self.analyze_signal_strength(
-                btc_indicators, btc_current['price']
-            )
-            eth_signal, eth_confidence, eth_strength = self.analyze_signal_strength(
-                eth_indicators, eth_current['price']
-            )
-            
-            logger.info(f"📊 BTC Analysis:")
-            logger.info(f"   Signal: {btc_signal.upper()} ({btc_strength})")
-            logger.info(f"   Confidence: {btc_confidence:.2f}")
-            logger.info(f"   RSI: {btc_indicators.rsi:.1f}")
-            logger.info(f"   MACD: {btc_indicators.macd_line:.2f} / {btc_indicators.macd_signal:.2f}")
-            logger.info(f"   Price vs SMA50: {((btc_current['price'] / btc_indicators.sma_50 - 1) * 100):+.1f}%")
-            
-            logger.info(f"📊 ETH Analysis:")
-            logger.info(f"   Signal: {eth_signal.upper()} ({eth_strength})")
-            logger.info(f"   Confidence: {eth_confidence:.2f}")
-            logger.info(f"   RSI: {eth_indicators.rsi:.1f}")
-            logger.info(f"   MACD: {eth_indicators.macd_line:.2f} / {eth_indicators.macd_signal:.2f}")
-            logger.info(f"   Price vs SMA50: {((eth_current['price'] / eth_indicators.sma_50 - 1) * 100):+.1f}%")
-            
-            # Market momentum analysis
-            btc_momentum = btc_current['percent_change_24h']
-            eth_momentum = eth_current['percent_change_24h']
-            
-            logger.info(f"📈 Market Momentum:")
-            logger.info(f"   BTC 24h: {btc_momentum:+.2f}%")
-            logger.info(f"   ETH 24h: {eth_momentum:+.2f}%")
-            
-            # Enhanced decision logic
-            should_trade = False
-            trade_reason = ""
-            
-            # Strong bullish conditions for debt swap (DAI → ARB)
-            if (btc_signal == "bullish" and eth_signal == "bullish" and 
-                btc_confidence > 0.6 and eth_confidence > 0.6):
-                should_trade = True
-                trade_reason = "Strong bullish signals across major assets"
-                
-            # Oversold conditions with momentum
-            elif (btc_indicators.rsi < 30 or eth_indicators.rsi < 30) and (btc_momentum > -5):
-                should_trade = True
-                trade_reason = "Oversold conditions with limited downside momentum"
-                
-            # MACD bullish crossover with confirming signals
-            elif (btc_indicators.macd_histogram > 0 and eth_indicators.macd_histogram > 0 and
-                  btc_confidence > 0.4 and eth_confidence > 0.4):
-                should_trade = True
-                trade_reason = "MACD bullish crossover with confirmation"
-                
-            # Moving average golden cross
-            elif (btc_indicators.sma_50 > btc_indicators.sma_200 and 
-                  eth_indicators.sma_50 > eth_indicators.sma_200 and
-                  btc_current['price'] > btc_indicators.sma_50):
-                should_trade = True
-                trade_reason = "Golden cross pattern with price above key MA"
-            
-            logger.info(f"🎯 TRADE DECISION:")
-            if should_trade:
-                logger.info(f"   ✅ EXECUTE TRADE")
-                logger.info(f"   📝 Reason: {trade_reason}")
-                logger.info(f"   💪 Combined Confidence: {(btc_confidence + eth_confidence) / 2:.2f}")
+            # MACD analysis
+            if indicators.macd_line > indicators.macd_signal:
+                signal_score += 1
+                signals.append("MACD bullish crossover")
             else:
-                logger.info(f"   ❌ HOLD POSITION")
-                logger.info(f"   📝 Reason: Market conditions not favorable for debt swap")
-                logger.info(f"   ⚠️ Recommendation: Wait for stronger technical signals")
+                signal_score -= 1
+                signals.append("MACD bearish crossover")
             
-            return should_trade
+            # Moving average analysis
+            current_price = data['close'].iloc[-1]
+            if current_price > indicators.sma_50:
+                signal_score += 1
+                signals.append("Above 50-day MA (bullish)")
+            else:
+                signal_score -= 1
+                signals.append("Below 50-day MA (bearish)")
+            
+            # Determine overall signal
+            if signal_score >= 2:
+                signal_type = "bullish"
+                strength = "strong" if signal_score >= 3 else "moderate"
+                recommendation = "BUY"
+            elif signal_score <= -2:
+                signal_type = "bearish"
+                strength = "strong" if signal_score <= -3 else "moderate"
+                recommendation = "SELL"
+            else:
+                signal_type = "neutral"
+                strength = "weak"
+                recommendation = "HOLD"
+            
+            confidence = min(abs(signal_score) / 3.0, 1.0)
+            
+            return MarketSignal(
+                signal_type=signal_type,
+                confidence=confidence,
+                strength=strength,
+                indicators=indicators,
+                recommendation=recommendation,
+                timestamp=time.time()
+            )
             
         except Exception as e:
-            logger.error(f"❌ Enhanced market analysis failed: {e}")
-            return False
+            logger.error(f"Error analyzing market signal for {symbol}: {e}")
+            return None
     
     def get_market_summary(self) -> Dict:
-        """Get comprehensive market summary for dashboard display"""
+        """Get comprehensive market summary"""
         try:
             summary = {
+                'timestamp': time.time(),
                 'btc_analysis': {},
                 'eth_analysis': {},
-                'market_sentiment': 'neutral',
-                'recommendation': 'hold',
-                'confidence': 0.0,
-                'last_updated': time.time()
+                'dai_analysis': {},
+                'market_sentiment': 'neutral'
             }
             
-            # Get current market data
-            btc_current = self.cmc_client.get_current_price('BTC')
-            eth_current = self.cmc_client.get_current_price('ETH')
+            # Analyze major cryptocurrencies
+            symbols = ['BTC', 'ETH', 'DAI']
             
-            if btc_current:
-                summary['btc_analysis'] = {
-                    'price': btc_current['price'],
-                    'change_24h': btc_current['percent_change_24h'],
-                    'volume_24h': btc_current['volume_24h']
-                }
-            
-            if eth_current:
-                summary['eth_analysis'] = {
-                    'price': eth_current['price'],
-                    'change_24h': eth_current['percent_change_24h'],
-                    'volume_24h': eth_current['volume_24h']
-                }
+            for symbol in symbols:
+                try:
+                    current_data = self.cmc_client.get_current_price(symbol)
+                    if current_data:
+                        signal = self.analyze_market_signal(symbol)
+                        
+                        analysis = {
+                            'price': current_data['price'],
+                            'change_1h': current_data['percent_change_1h'],
+                            'change_24h': current_data['percent_change_24h'],
+                            'change_7d': current_data['percent_change_7d'],
+                            'volume_24h': current_data['volume_24h'],
+                            'signal': signal.signal_type if signal else 'unknown',
+                            'confidence': signal.confidence if signal else 0.0,
+                            'recommendation': signal.recommendation if signal else 'HOLD'
+                        }
+                        
+                        summary[f'{symbol.lower()}_analysis'] = analysis
+                        
+                except Exception as e:
+                    logger.error(f"Error analyzing {symbol}: {e}")
+                    summary[f'{symbol.lower()}_analysis'] = {'error': str(e)}
             
             # Determine overall market sentiment
-            if btc_current and eth_current:
-                avg_change = (btc_current['percent_change_24h'] + eth_current['percent_change_24h']) / 2
-                if avg_change > 5:
-                    summary['market_sentiment'] = 'very_bullish'
-                elif avg_change > 2:
-                    summary['market_sentiment'] = 'bullish'
-                elif avg_change < -5:
-                    summary['market_sentiment'] = 'very_bearish'
-                elif avg_change < -2:
-                    summary['market_sentiment'] = 'bearish'
-                else:
-                    summary['market_sentiment'] = 'neutral'
+            bullish_count = sum(1 for k, v in summary.items() 
+                              if k.endswith('_analysis') and v.get('signal') == 'bullish')
+            bearish_count = sum(1 for k, v in summary.items() 
+                              if k.endswith('_analysis') and v.get('signal') == 'bearish')
             
+            if bullish_count > bearish_count:
+                summary['market_sentiment'] = 'bullish'
+            elif bearish_count > bullish_count:
+                summary['market_sentiment'] = 'bearish'
+            else:
+                summary['market_sentiment'] = 'neutral'
+            
+            logger.info("Market summary generated successfully")
             return summary
             
         except Exception as e:
             logger.error(f"Error generating market summary: {e}")
-            return {'error': str(e), 'last_updated': time.time()}
+            return {'error': str(e), 'timestamp': time.time()}
 
-# Integration with existing market signal strategy
 class EnhancedMarketSignalStrategy:
-    """Enhanced market signal strategy with comprehensive technical analysis"""
+    """Enhanced market signal strategy for debt swap decisions"""
     
     def __init__(self, agent):
         self.agent = agent
-        self.analyzer = EnhancedMarketAnalyzer(agent)
-        self.last_analysis_time = 0
-        self.analysis_cooldown = 300  # 5 minutes
-        
-        logger.info("Enhanced Market Signal Strategy initialized")
+        try:
+            self.analyzer = EnhancedMarketAnalyzer(agent)
+            self.initialized = True
+            logger.info("Enhanced Market Signal Strategy initialized successfully")
+        except Exception as e:
+            logger.error(f"Failed to initialize Enhanced Market Signal Strategy: {e}")
+            self.initialized = False
     
     def should_execute_trade(self) -> bool:
-        """Enhanced trade execution with comprehensive market analysis"""
-        current_time = time.time()
-        
-        # Check cooldown
-        if current_time - self.last_analysis_time < self.analysis_cooldown:
-            logger.info(f"⏰ Analysis in cooldown: {self.analysis_cooldown - (current_time - self.last_analysis_time):.0f}s remaining")
+        """Determine if a trade should be executed based on market analysis"""
+        if not self.initialized:
+            logger.warning("Market signal strategy not initialized, defaulting to False")
             return False
         
         try:
-            should_trade = self.analyzer.should_execute_trade()
-            self.last_analysis_time = current_time
-            return should_trade
+            # Get market summary
+            summary = self.analyzer.get_market_summary()
+            
+            if 'error' in summary:
+                logger.error(f"Market analysis error: {summary['error']}")
+                return False
+            
+            # Conservative trading logic
+            btc_signal = summary.get('btc_analysis', {}).get('signal', 'neutral')
+            eth_signal = summary.get('eth_analysis', {}).get('signal', 'neutral')
+            market_sentiment = summary.get('market_sentiment', 'neutral')
+            
+            # Only execute trades in strong bullish conditions
+            if (btc_signal == 'bullish' and 
+                eth_signal == 'bullish' and 
+                market_sentiment == 'bullish'):
+                
+                btc_confidence = summary.get('btc_analysis', {}).get('confidence', 0.0)
+                eth_confidence = summary.get('eth_analysis', {}).get('confidence', 0.0)
+                
+                # Require high confidence
+                if btc_confidence > 0.7 and eth_confidence > 0.7:
+                    logger.info("Strong bullish signal detected - recommending trade execution")
+                    return True
+            
+            logger.info(f"Market conditions not favorable for trading: BTC={btc_signal}, ETH={eth_signal}, Sentiment={market_sentiment}")
+            return False
             
         except Exception as e:
-            logger.error(f"Enhanced trade analysis failed: {e}")
+            logger.error(f"Error in trade decision analysis: {e}")
             return False
     
-    def get_market_status(self) -> Dict:
-        """Get current market analysis status"""
-        return self.analyzer.get_market_summary()
+    def get_strategy_status(self) -> Dict:
+        """Get current strategy status"""
+        return {
+            'initialized': self.initialized,
+            'strategy_name': 'Enhanced CoinMarketCap Strategy',
+            'last_update': time.time(),
+            'api_key_present': bool(os.getenv('COINMARKETCAP_API_KEY'))
+        }
 
-if __name__ == "__main__":
-    # Test the enhanced analyzer
-    class MockAgent:
-        pass
-    
+# Test functionality
+def test_enhanced_market_analyzer():
+    """Test the enhanced market analyzer"""
     try:
-        analyzer = EnhancedMarketAnalyzer(MockAgent())
-        print("✅ Enhanced Market Analyzer initialized successfully")
+        print("🧪 Testing Enhanced Market Analyzer with CoinMarketCap API")
+        print("=" * 60)
+        
+        # Check API key
+        api_key = os.getenv('COINMARKETCAP_API_KEY')
+        if not api_key:
+            print("❌ COINMARKETCAP_API_KEY not found in environment")
+            return False
+        
+        print(f"✅ API Key found: {api_key[:8]}...")
+        
+        # Create mock agent
+        class MockAgent:
+            def __init__(self):
+                self.address = "0x1234...5678"
+        
+        # Test analyzer
+        agent = MockAgent()
+        analyzer = EnhancedMarketAnalyzer(agent)
+        print("✅ Enhanced Market Analyzer initialized")
         
         # Test market summary
+        print("📊 Testing market summary...")
         summary = analyzer.get_market_summary()
-        print(f"📊 Market Summary: {summary}")
+        
+        if 'error' not in summary:
+            print("✅ Market summary generated successfully")
+            print(f"📈 Market sentiment: {summary.get('market_sentiment', 'unknown')}")
+            
+            if 'btc_analysis' in summary:
+                btc = summary['btc_analysis']
+                if 'price' in btc:
+                    print(f"₿ BTC: ${btc['price']:.2f} ({btc.get('change_24h', 0):.2f}% 24h)")
+                    
+            if 'eth_analysis' in summary:
+                eth = summary['eth_analysis']
+                if 'price' in eth:
+                    print(f"Ξ ETH: ${eth['price']:.2f} ({eth.get('change_24h', 0):.2f}% 24h)")
+        else:
+            print(f"❌ Market summary failed: {summary['error']}")
+            return False
+        
+        # Test strategy
+        strategy = EnhancedMarketSignalStrategy(agent)
+        print("✅ Enhanced Market Signal Strategy initialized")
+        
+        trade_decision = strategy.should_execute_trade()
+        print(f"🎯 Trade recommendation: {'EXECUTE' if trade_decision else 'HOLD'}")
+        
+        print("\n🎉 Enhanced Market Analyzer test completed successfully!")
+        return True
         
     except Exception as e:
         print(f"❌ Test failed: {e}")
-```
+        return False
+
+if __name__ == "__main__":
+    test_enhanced_market_analyzer()
