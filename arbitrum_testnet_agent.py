@@ -42,7 +42,6 @@ class ArbitrumTestnetAgent:
         # Validate critical environment variables early
         try:
             self._validate_critical_environment()
-            self._validate_market_signal_environment()
         except Exception as env_error:
             print(f"❌ Environment validation failed: {env_error}")
             print("💡 Please check your Replit secrets configuration")

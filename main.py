@@ -166,8 +166,12 @@ def autonomous_agent_loop():
                 try:
                     arbitrum_agent = ArbitrumTestnetAgent()
                     if arbitrum_agent.initialize_integrations():
-                        strategy_manager = CollaborativeStrategyManager(arbitrum_agent)
-                        print("✅ Agent successfully initialized!")
+                        try:
+                            strategy_manager = CollaborativeStrategyManager(arbitrum_agent)
+                            print("✅ Agent and strategy manager successfully initialized!")
+                        except ImportError:
+                            print("⚠️ Strategy manager not available, continuing with agent only")
+                            strategy_manager = None
                     else:
                         print("⚠️ Integration initialization failed, will retry next iteration")
                         time.sleep(45)

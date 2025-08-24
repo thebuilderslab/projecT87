@@ -9,7 +9,7 @@ import logging
 import json
 from datetime import datetime, timedelta
 import requests
-from typing import Dict, Optional, Tuple, List
+from typing import Dict, Optional, Tuple, List, Any
 from dataclasses import dataclass
 
 # Import enhanced analyzer components
@@ -24,17 +24,24 @@ class MarketSignal:
     confidence: float  # 0.0 to 1.0
     btc_price_change: float
     arb_technical_score: float
-    timestamp: float
+    should_execute: bool = False
+    timestamp: float = 0 # Initialize with a default value
+
 
 class MarketSignalStrategy:
     def __init__(self, agent):
         self.agent = agent
-        self.coinmarketcap_api_key = agent.coinmarketcap_api_key
+        self.coinmarketcap_api_key = os.getenv('COINMARKETCAP_API_KEY')
         self.signal_history = []
         self.last_signal_time = 0
 
         # Initialize enhanced market analyzer
-        self.enhanced_analyzer = EnhancedMarketAnalyzer(agent)
+        try:
+            self.enhanced_analyzer = EnhancedMarketAnalyzer(agent)
+        except NameError:
+            logging.warning("EnhancedMarketAnalyzer not found. Proceeding without it.")
+            self.enhanced_analyzer = None
+
 
         # Initialize advanced trend analyzer for minute-by-minute analysis
         try:
@@ -60,8 +67,8 @@ class MarketSignalStrategy:
 
         # Market signal thresholds - OPTIMIZED FOR 1-HOUR DECISION WINDOW
         self.market_signal_enabled = os.getenv('MARKET_SIGNAL_ENABLED', 'true').lower() == 'true'
-        self.dai_to_arb_threshold = float(os.getenv('DAI_TO_ARB_THRESHOLD', '0.92'))  # 92% confidence for DAI→ARB (1hr window)
-        self.arb_to_dai_threshold = float(os.getenv('ARB_TO_DAI_THRESHOLD', '0.88'))  # 88% confidence for ARB→DAI
+        self.dai_to_arb_threshold = float(os.getenv('DAI_TO_ARB_THRESHOLD', '0.9'))  # 90% confidence for DAI→ARB (1hr window)
+        self.arb_to_dai_threshold = float(os.getenv('ARB_TO_DAI_THRESHOLD', '0.6'))  # 60% confidence for ARB→DAI
         self.high_confidence_threshold = 0.90  # Ultra-high confidence threshold
         self.pattern_confirmation_required = True  # Require pattern confirmation
 
@@ -71,20 +78,20 @@ class MarketSignalStrategy:
         self.arb_1h_momentum_threshold = float(os.getenv('ARB_1H_MOMENTUM_THRESHOLD', '0.003'))  # 0.3% momentum (more sensitive)
 
         logging.info(f"Market Signal Strategy initialized - Enabled: {self.market_signal_enabled}")
-        
+
         if self.market_signal_enabled:
             print("🔄 DEBT SWAP SYSTEM READY FOR SIMULTANEOUS OPERATION")
             print("   • DAI-to-ARB swaps: Enabled")
-            print("   • ARB-to-DAI swaps: Enabled") 
+            print("   • ARB-to-DAI swaps: Enabled")
             print("   • Market monitoring: Active")
-            print("   • Confidence threshold: 92%")
-            print("   • BTC drop sensitivity: 0.2%")
+            print("   • Confidence threshold: 90% for DAI->ARB, 60% for ARB->DAI")
+            print("   • BTC drop sensitivity: 0.2% (1h)")
             print("   • Integration: Hybrid system compatible")
 
     def get_btc_price_data(self) -> Optional[Dict]:
         """Get BTC price data using fixed API with fallbacks"""
         try:
-            if not hasattr(self, 'market_data_api'):
+            if not hasattr(self, 'market_data_api') or self.market_data_api is None:
                 from market_data_api_fix import MarketDataAPIFix
                 self.market_data_api = MarketDataAPIFix(self.coinmarketcap_api_key)
 
@@ -101,7 +108,7 @@ class MarketSignalStrategy:
     def get_arb_price_data(self) -> Optional[Dict]:
         """Get ARB price data using fixed API with fallbacks"""
         try:
-            if not hasattr(self, 'market_data_api'):
+            if not hasattr(self, 'market_data_api') or self.market_data_api is None:
                 from market_data_api_fix import MarketDataAPIFix
                 self.market_data_api = MarketDataAPIFix(self.coinmarketcap_api_key)
 
@@ -158,28 +165,29 @@ class MarketSignalStrategy:
                 return None
 
             # Try enhanced analysis first with 90% confidence validation
-            enhanced_signal = self.enhanced_analyzer.generate_enhanced_signal()
-            if enhanced_signal and enhanced_signal.confidence >= self.high_confidence_threshold:
-                # Additional validation for 90% confidence
-                pattern_score = enhanced_signal.pattern_analysis.get('count', 0) * 0.1
-                success_bonus = enhanced_signal.success_probability * 0.2
-                gas_bonus = enhanced_signal.gas_efficiency_score * 0.1
+            if self.enhanced_analyzer:
+                enhanced_signal = self.enhanced_analyzer.generate_enhanced_signal()
+                if enhanced_signal and enhanced_signal.confidence >= self.high_confidence_threshold:
+                    # Additional validation for 90% confidence
+                    pattern_score = enhanced_signal.pattern_analysis.get('count', 0) * 0.1
+                    success_bonus = enhanced_signal.success_probability * 0.2
+                    gas_bonus = enhanced_signal.gas_efficiency_score * 0.1
 
-                adjusted_confidence = min(0.95, enhanced_signal.confidence + pattern_score + success_bonus + gas_bonus)
+                    adjusted_confidence = min(0.95, enhanced_signal.confidence + pattern_score + success_bonus + gas_bonus)
 
-                if adjusted_confidence >= self.high_confidence_threshold:
-                    logging.info(f"HIGH CONFIDENCE Enhanced signal: {enhanced_signal.signal_type} "
-                               f"(confidence: {adjusted_confidence:.2f}, "
-                               f"success_prob: {enhanced_signal.success_probability:.2f})")
+                    if adjusted_confidence >= self.high_confidence_threshold:
+                        logging.info(f"HIGH CONFIDENCE Enhanced signal: {enhanced_signal.signal_type} "
+                                   f"(confidence: {adjusted_confidence:.2f}, "
+                                   f"success_prob: {enhanced_signal.success_probability:.2f})")
 
-                    # Convert to standard MarketSignal format
-                    return MarketSignal(
-                        signal_type=enhanced_signal.signal_type,
-                        confidence=adjusted_confidence,
-                        btc_price_change=enhanced_signal.btc_analysis.get('momentum', 0),
-                        arb_technical_score=enhanced_signal.arb_analysis.get('rsi', 50),
-                        timestamp=enhanced_signal.timestamp
-                    )
+                        # Convert to standard MarketSignal format
+                        return MarketSignal(
+                            signal_type=enhanced_signal.signal_type,
+                            confidence=adjusted_confidence,
+                            btc_price_change=enhanced_signal.btc_analysis.get('momentum', 0),
+                            arb_technical_score=enhanced_signal.arb_analysis.get('rsi', 50),
+                            should_execute=True
+                        )
 
             # Get market data
             btc_data = self.get_btc_price_data()
@@ -204,6 +212,7 @@ class MarketSignalStrategy:
             # Generate signal
             signal_type = 'neutral'
             confidence = 0.0
+            should_execute = False
 
             # Bearish signal (DAI → ARB opportunity)
             if btc_drop_signal and arb_oversold:
@@ -221,16 +230,23 @@ class MarketSignalStrategy:
                 signal_type = 'bullish'
                 confidence = 0.5
 
+            # Final check for execution based on thresholds
+            if signal_type == 'bearish' and confidence >= self.dai_to_arb_threshold:
+                should_execute = True
+            elif signal_type == 'bullish' and confidence >= self.arb_to_dai_threshold:
+                should_execute = True
+
             signal = MarketSignal(
                 signal_type=signal_type,
                 confidence=confidence,
                 btc_price_change=btc_data['percent_change_1h'],
                 arb_technical_score=arb_indicators['rsi'],
+                should_execute=should_execute,
                 timestamp=current_time
             )
 
             if signal.confidence > 0.3:  # Only log significant signals
-                logging.info(f"Market signal generated: {signal.signal_type} (confidence: {signal.confidence:.2f})")
+                logging.info(f"Market signal generated: {signal.signal_type} (confidence: {signal.confidence:.2f}, execute: {signal.should_execute})")
                 logging.info(f"BTC 1h change: {signal.btc_price_change:.2f}%, ARB RSI: {signal.arb_technical_score:.1f}")
 
             return signal
@@ -240,7 +256,7 @@ class MarketSignalStrategy:
             return None
 
     def should_execute_market_strategy(self, signal: MarketSignal) -> Tuple[bool, str]:
-        """Determine if market strategy should execute based on 1-hour confidence signal"""
+        """Determine if market strategy should be executed based on 1-hour confidence signal"""
         try:
             # Enhanced 1-hour decision logic for DAI → ARB swaps
             if signal.signal_type == 'bearish':
@@ -256,7 +272,7 @@ class MarketSignalStrategy:
                     return True, 'dai_to_arb'
 
             # Check if we should swap ARB → DAI (bullish market, ARB overbought)
-            elif (signal.signal_type == 'bullish' and 
+            elif (signal.signal_type == 'bullish' and
                   signal.confidence >= self.arb_to_dai_threshold):
                 return True, 'arb_to_dai'
 
@@ -607,140 +623,91 @@ class MarketSignalStrategy:
             status['trend_analysis'] = trend_summary
 
         return status
-"""
-Market Signal Strategy for Debt Swapping
-Monitors market conditions and executes strategic debt swaps between DAI and ARB
-"""
 
-import os
-import time
-import requests
-import logging
-from datetime import datetime
-
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
-
-class MarketSignalStrategy:
-    def __init__(self, agent):
-        self.agent = agent
-        
-        # Load configuration from environment variables
-        self.market_signal_enabled = os.getenv('MARKET_SIGNAL_ENABLED', 'false').lower() == 'true'
-        self.btc_drop_threshold = float(os.getenv('BTC_DROP_THRESHOLD', '0.01'))  # 1% BTC drop
-        self.dai_to_arb_threshold = float(os.getenv('DAI_TO_ARB_THRESHOLD', '0.7'))  # 70% confidence
-        self.arb_to_dai_threshold = float(os.getenv('ARB_TO_DAI_THRESHOLD', '0.6'))  # 60% confidence
-        self.arb_rsi_oversold = float(os.getenv('ARB_RSI_OVERSOLD', '30'))
-        self.arb_rsi_overbought = float(os.getenv('ARB_RSI_OVERBOUGHT', '70'))
-        self.signal_cooldown = int(os.getenv('SIGNAL_COOLDOWN', '300'))  # 5 minutes
-        
-        self.last_signal_time = 0
-        self.last_btc_price = None
-        self.pending_approval = False
-        
-        # Print initialization status
-        print(f"🔄 Market Signal Strategy Initialized:")
-        print(f"   • Enabled: {'✅ YES' if self.market_signal_enabled else '❌ NO'}")
-        if self.market_signal_enabled:
-            print(f"   • BTC Drop Threshold: {self.btc_drop_threshold:.1%}")
-            print(f"   • DAI→ARB Confidence: {self.dai_to_arb_threshold:.0%}")
-            print(f"   • ARB→DAI Confidence: {self.arb_to_dai_threshold:.0%}")
-            print(f"   • Signal Cooldown: {self.signal_cooldown}s")
-        
-    def should_execute_trade(self):
-        """Check if market conditions favor a debt swap"""
-        if not self.market_signal_enabled:
-            return False
-            
-        # Check cooldown
-        if time.time() - self.last_signal_time < self.signal_cooldown:
-            return False
-            
-        try:
-            # Get market data
-            btc_signal = self._check_btc_signal()
-            arb_signal = self._check_arb_signal()
-            
-            # Determine if we should execute
-            if btc_signal == "bearish" and arb_signal == "oversold":
-                print("🔄 MARKET SIGNAL: Bearish BTC + Oversold ARB → DAI→ARB swap recommended")
-                return True
-            elif btc_signal == "bullish" and arb_signal == "overbought":
-                print("🔄 MARKET SIGNAL: Bullish BTC + Overbought ARB → ARB→DAI swap recommended")
-                return True
-                
-            return False
-            
-        except Exception as e:
-            print(f"❌ Market signal check failed: {e}")
-            return False
-    
     def _check_btc_signal(self):
         """Check BTC price movement for bearish/bullish signals"""
         try:
-            # Simple price movement check (can be enhanced with more sophisticated analysis)
-            # For demo purposes, return neutral
-            return "neutral"
+            btc_data = self.get_btc_price_data()
+            if not btc_data:
+                return "neutral"
+
+            btc_change_1h = btc_data.get('percent_change_1h', 0)
+
+            if btc_change_1h <= -self.btc_drop_threshold:
+                return "bearish"
+            elif btc_change_1h >= self.btc_drop_threshold:
+                return "bullish"
+            else:
+                return "neutral"
         except Exception as e:
-            logger.error(f"BTC signal check failed: {e}")
+            logging.error(f"BTC signal check failed: {e}")
             return "neutral"
-    
+
     def _check_arb_signal(self):
         """Check ARB RSI for oversold/overbought conditions"""
         try:
-            # Simple RSI simulation (can be enhanced with real data)
-            # For demo purposes, return neutral
-            return "neutral"
+            arb_data = self.get_arb_price_data()
+            if not arb_data:
+                return "neutral"
+
+            arb_rsi = self._calculate_simple_rsi(arb_data.get('percent_change_1h', 0))
+
+            if arb_rsi <= self.arb_rsi_oversold:
+                return "oversold"
+            elif arb_rsi >= self.arb_rsi_overbought:
+                return "overbought"
+            else:
+                return "neutral"
         except Exception as e:
-            logger.error(f"ARB signal check failed: {e}")
+            logging.error(f"ARB signal check failed: {e}")
             return "neutral"
-    
+
     def get_recommended_swap_direction(self):
         """Get recommended swap direction based on current market signals"""
         try:
             btc_signal = self._check_btc_signal()
             arb_signal = self._check_arb_signal()
-            
+
             if btc_signal == "bearish" and arb_signal == "oversold":
                 return "DAI_TO_ARB"
             elif btc_signal == "bullish" and arb_signal == "overbought":
                 return "ARB_TO_DAI"
             else:
                 return "HOLD"
-                
+
         except Exception as e:
             logger.error(f"Swap direction analysis failed: {e}")
             return "HOLD"
-    
+
     def calculate_swap_amount(self, available_balance):
         """Calculate optimal swap amount based on market confidence"""
         try:
             direction = self.get_recommended_swap_direction()
-            
+
             if direction == "DAI_TO_ARB":
                 confidence_factor = self.dai_to_arb_threshold
             elif direction == "ARB_TO_DAI":
                 confidence_factor = self.arb_to_dai_threshold
             else:
                 return 0.0
-            
+
             # Conservative approach: use 5-10% of available balance
             base_percentage = 0.05  # 5% base
             max_percentage = 0.10   # 10% maximum
-            
+
             swap_percentage = base_percentage + (confidence_factor - 0.5) * (max_percentage - base_percentage)
             swap_amount = available_balance * swap_percentage
-            
+
             # Apply minimum and maximum limits
             min_swap = 1.0   # $1 minimum
             max_swap = 10.0  # $10 maximum for safety
-            
+
             return max(min_swap, min(swap_amount, max_swap))
-            
+
         except Exception as e:
             logger.error(f"Swap amount calculation failed: {e}")
             return 0.0
-    
+
     def record_signal_execution(self):
         """Record that a signal was executed"""
         self.last_signal_time = time.time()
