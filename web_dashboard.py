@@ -293,7 +293,7 @@ def get_live_agent_data():
                     from web3 import Web3
                     return Web3(Web3.HTTPProvider("https://arb1.arbitrum.io/rpc"))
 
-            private_key = os.getenv('PRIVATE_KEY') or os.getenv('WALLET_PRIVATE_KEY')
+            private_key = os.getenv('PRIVATE_KEY') or os.getenv('Wallet_PRIVATE_KEY')
             if private_key:
                 # Define required Aave addresses for Arbitrum Mainnet
                 import sys
@@ -983,24 +983,52 @@ def get_network_approval_status(live_data):
         }
 
 def get_market_signal_status():
-    """Get market signal and debt swap status"""
+    """Get enhanced market signal status with CoinMarketCap analysis"""
     try:
+        timestamp = datetime.now().strftime('%H:%M:%S')
+
+        # Check if market signal strategy is enabled
         market_enabled = os.getenv('MARKET_SIGNAL_ENABLED', 'false').lower() == 'true'
 
-        return {
-            'enabled': market_enabled,
-            'btc_threshold': float(os.getenv('BTC_DROP_THRESHOLD', '0.01')) * 100,
-            'dai_to_arb_threshold': float(os.getenv('DAI_TO_ARB_THRESHOLD', '0.7')) * 100,
-            'arb_rsi_threshold': float(os.getenv('ARB_RSI_OVERSOLD', '30')),
-            'status': 'Active' if market_enabled else 'Disabled',
-            'last_signal': 'Awaiting market conditions' if market_enabled else 'Not monitoring'
-        }
+        if not market_enabled:
+            return f"[{timestamp}] 💤 MARKET SIGNALS: Disabled | Enable in Secrets: MARKET_SIGNAL_ENABLED=true"
+
+        # Try to get enhanced market analysis
+        try:
+            from enhanced_market_analyzer import EnhancedMarketAnalyzer
+
+            class MockAgent:
+                pass
+
+            analyzer = EnhancedMarketAnalyzer(MockAgent())
+            market_summary = analyzer.get_market_summary()
+
+            if 'error' not in market_summary:
+                btc_change = market_summary.get('btc_analysis', {}).get('change_24h', 0)
+                eth_change = market_summary.get('eth_analysis', {}).get('change_24h', 0)
+                sentiment = market_summary.get('market_sentiment', 'neutral')
+
+                sentiment_emoji = {
+                    'very_bullish': '🚀',
+                    'bullish': '📈',
+                    'neutral': '➡️',
+                    'bearish': '📉',
+                    'very_bearish': '💥'
+                }.get(sentiment, '❓')
+
+                return (f"[{timestamp}] {sentiment_emoji} ENHANCED SIGNALS: {sentiment.upper()} | "
+                       f"BTC: {btc_change:+.1f}% | ETH: {eth_change:+.1f}% | CoinMarketCap API Active")
+
+        except Exception as enhanced_error:
+            # Fallback to basic status
+            pass
+
+        # Return basic enabled status
+        return f"[{timestamp}] 🔍 MARKET SIGNALS: Active | Monitoring for debt swap opportunities"
+
     except Exception as e:
-        return {
-            'enabled': False,
-            'status': f'Error: {e}',
-            'error': str(e)
-        }
+        return f"[{timestamp}] ❌ MARKET SIGNALS: Error | {str(e)[:50]}"
+
 
 @app.route('/api/system_mode', methods=['POST'])
 def set_system_mode():
@@ -1612,7 +1640,7 @@ def log_startup_diagnostics():
 
     print(f"🤖 Agent Initialization:")
     print(f"   Agent object: {agent is not None}")
-    print(f"   Dashboard object: True") #Assume always initialized
+    print(f"   Dashboard object: True") #assume always initialized
 
     print("=" * 60)
 

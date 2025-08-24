@@ -35,12 +35,20 @@ class MarketSignalStrategy:
         self.signal_history = []
         self.last_signal_time = 0
 
-        # Initialize enhanced market analyzer
+        # Initialize enhanced market analyzer with comprehensive technical analysis
         try:
+            from enhanced_market_analyzer import EnhancedMarketAnalyzer, EnhancedMarketSignalStrategy
             self.enhanced_analyzer = EnhancedMarketAnalyzer(agent)
-        except NameError:
-            logging.warning("EnhancedMarketAnalyzer not found. Proceeding without it.")
+            self.enhanced_strategy = EnhancedMarketSignalStrategy(agent)
+            logging.info("✅ Enhanced Market Analyzer with CoinMarketCap integration initialized")
+        except ImportError as e:
+            logging.warning(f"Enhanced market analyzer not available: {e}")
             self.enhanced_analyzer = None
+            self.enhanced_strategy = None
+        except Exception as e:
+            logging.error(f"Failed to initialize enhanced market analyzer: {e}")
+            self.enhanced_analyzer = None
+            self.enhanced_strategy = None
 
 
         # Initialize advanced trend analyzer for minute-by-minute analysis
@@ -381,10 +389,10 @@ class MarketSignalStrategy:
             return False
 
     def should_execute_trade(self) -> bool:
-        """Check if debt swap trade should execute based on current market conditions with minute-by-minute analysis"""
+        """Check if debt swap trade should execute based on comprehensive market analysis"""
         try:
-            print(f"\n🔍 CHECKING DEBT SWAP CONDITIONS (MINUTE-BY-MINUTE ANALYSIS):")
-            print(f"=" * 60)
+            print(f"\n🔍 COMPREHENSIVE DEBT SWAP ANALYSIS (ENHANCED WITH COINMARKETCAP):")
+            print(f"=" * 70)
 
             # Check if market signal strategy is enabled
             if not self.market_signal_enabled:
@@ -392,6 +400,24 @@ class MarketSignalStrategy:
                 return False
 
             print(f"✅ Market signal strategy is ENABLED")
+            
+            # Priority 1: Enhanced technical analysis with CoinMarketCap data
+            if self.enhanced_strategy:
+                print(f"🚀 Running enhanced CoinMarketCap technical analysis...")
+                try:
+                    enhanced_decision = self.enhanced_strategy.should_execute_trade()
+                    if enhanced_decision:
+                        print(f"✅ ENHANCED ANALYSIS RECOMMENDS TRADE EXECUTION")
+                        print(f"📊 Based on comprehensive technical indicators from CoinMarketCap API")
+                        return True
+                    else:
+                        print(f"📊 Enhanced analysis suggests holding current position")
+                        # Continue with fallback analysis
+                except Exception as e:
+                    print(f"⚠️ Enhanced analysis failed: {e}")
+                    print(f"🔄 Falling back to standard analysis...")
+            
+            print(f"🔄 Running standard market signal analysis...")
 
             # Step 1: Collect real-time trend data
             if self.trend_analyzer and self.minute_analysis_enabled:
@@ -607,15 +633,24 @@ class MarketSignalStrategy:
             return False
 
     def get_strategy_status(self) -> Dict:
-        """Get current market strategy status including trend analysis"""
+        """Get current market strategy status including enhanced technical analysis"""
         status = {
             'enabled': self.market_signal_enabled,
             'last_signal_time': self.last_signal_time,
             'cooldown_remaining': max(0, self.signal_cooldown - (time.time() - self.last_signal_time)),
             'btc_threshold': self.btc_drop_threshold,
             'signal_history_count': len(self.signal_history),
-            'minute_analysis_enabled': self.minute_analysis_enabled
+            'minute_analysis_enabled': self.minute_analysis_enabled,
+            'enhanced_analysis_enabled': self.enhanced_analyzer is not None
         }
+
+        # Add enhanced market analysis status
+        if self.enhanced_strategy:
+            try:
+                enhanced_status = self.enhanced_strategy.get_market_status()
+                status['enhanced_market_analysis'] = enhanced_status
+            except Exception as e:
+                status['enhanced_market_analysis'] = {'error': str(e)}
 
         # Add trend analyzer status if available
         if self.trend_analyzer:
