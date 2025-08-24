@@ -42,10 +42,10 @@ class ArbitrumTestnetAgent:
         """Initialize the Arbitrum Testnet Agent with proper configuration"""
         print("🤖 Initializing Arbitrum Testnet Agent...")
         # Load environment variables
-        self.private_key = os.getenv('WALLET_PRIVATE_KEY')
-        print(f"DEBUG: WALLET_PRIVATE_KEY loaded from environment: {'[REDACTED]' if self.private_key else 'None'}")
+        self.private_key = private_key or os.getenv('PRIVATE_KEY') or os.getenv('WALLET_PRIVATE_KEY')
+        print(f"DEBUG: Private key loaded from parameter/environment: {'[REDACTED]' if self.private_key else 'None'}")
         if not self.private_key:
-            raise ValueError("WALLET_PRIVATE_KEY environment variable not set.")
+            raise ValueError("Private key not provided and no PRIVATE_KEY or WALLET_PRIVATE_KEY environment variable set.")
         self.coinmarketcap_api_key = os.getenv('COINMARKETCAP_API_KEY')
         self.network_mode = os.getenv('NETWORK_MODE', 'testnet')
 

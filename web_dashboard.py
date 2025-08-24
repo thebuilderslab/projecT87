@@ -283,10 +283,22 @@ def get_live_agent_data():
         # Try to get agent instance for live data
         try:
             from arbitrum_testnet_agent import ArbitrumTestnetAgent
-            agent = ArbitrumTestnetAgent()
-
-            # Get live Aave data directly from contracts
-            live_data = get_unified_aave_data(agent)
+            
+            # Create a minimal RPC manager mock for the agent
+            class MockRPCManager:
+                def get_web3(self):
+                    from web3 import Web3
+                    return Web3(Web3.HTTPProvider("https://arb1.arbitrum.io/rpc"))
+            
+            private_key = os.getenv('PRIVATE_KEY') or os.getenv('WALLET_PRIVATE_KEY')
+            if private_key:
+                agent = ArbitrumTestnetAgent(MockRPCManager(), private_key)
+                
+                # Get live Aave data directly from contracts
+                live_data = get_unified_aave_data(agent)
+            else:
+                print("⚠️ No private key found for agent initialization")
+                live_data = None
 
             if live_data:
                 print(f"📊 Using LIVE AAVE CONTRACT data: HF {live_data['health_factor']:.4f}")
@@ -696,9 +708,19 @@ def get_system_metrics():
         if agent_running:
             try:
                 from arbitrum_testnet_agent import ArbitrumTestnetAgent
-                temp_agent = ArbitrumTestnetAgent()
-                if hasattr(temp_agent, 'get_system_metrics'):
-                    agent_metrics = temp_agent.get_system_metrics()
+                # Create a minimal RPC manager mock for the agent
+                class MockRPCManager:
+                    def get_web3(self):
+                        from web3 import Web3
+                        return Web3(Web3.HTTPProvider("https://arb1.arbitrum.io/rpc"))
+                
+                private_key = os.getenv('PRIVATE_KEY') or os.getenv('WALLET_PRIVATE_KEY')
+                if private_key:
+                    temp_agent = ArbitrumTestnetAgent(MockRPCManager(), private_key)
+                    if hasattr(temp_agent, 'get_system_metrics'):
+                        agent_metrics = temp_agent.get_system_metrics()
+                else:
+                    print("⚠️ No private key found for agent initialization")
             except Exception as e:
                 print(f"⚠️ Agent metrics fetch failed: {e}")
 
@@ -1467,9 +1489,20 @@ def check_market_signals():
             # Try to initialize and test market signals
             try:
                 from arbitrum_testnet_agent import ArbitrumTestnetAgent
-                agent = ArbitrumTestnetAgent()
+                
+                # Create a minimal RPC manager mock for the agent
+                class MockRPCManager:
+                    def get_web3(self):
+                        from web3 import Web3
+                        return Web3(Web3.HTTPProvider("https://arb1.arbitrum.io/rpc"))
+                
+                private_key = os.getenv('PRIVATE_KEY') or os.getenv('WALLET_PRIVATE_KEY')
+                if private_key:
+                    agent = ArbitrumTestnetAgent(MockRPCManager(), private_key)
 
-                if hasattr(agent, 'market_signal_strategy') and agent.market_signal_strategy:
+                    if hasattr(agent, 'market_signal_strategy') and agent.market_signal_strategy:
+                else:
+                    return f"[{timestamp}] ❌ MARKET SIGNALS: No private key for agent initialization"
                     # Test if strategy can execute
                     can_execute = agent.market_signal_strategy.should_execute_trade()
 
