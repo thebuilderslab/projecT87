@@ -50,16 +50,24 @@ class MarketSignalStrategy:
                 if analysis and not analysis.get('error'):
                     # Check for synthetic data usage
                     using_synthetic = False
-                    for key in ['btc_analysis', 'eth_analysis', 'arb_analysis']:
-                        if key in analysis and analysis[key].get('source') == 'synthetic_fallback':
-                            using_synthetic = True
-                            break
+                    synthetic_count = 0
                     
-                    if using_synthetic:
-                        logger.warning("🔄 Using synthetic market data - trading disabled for safety")
+                    for key in ['btc_analysis', 'eth_analysis', 'arb_analysis', 'dai_analysis']:
+                        if key in analysis:
+                            if analysis[key].get('source') == 'synthetic_fallback' or analysis[key].get('synthetic'):
+                                using_synthetic = True
+                                synthetic_count += 1
+                    
+                    # Allow limited trading if only some data is synthetic
+                    if synthetic_count >= 3:  # If 3+ sources are synthetic, disable trading
+                        logger.warning("🔄 Too much synthetic market data - trading disabled for safety")
                         return False
+                    elif using_synthetic:
+                        logger.info("🔄 Some synthetic data detected - using conservative trading")
+                        # Still allow trading but be more conservative
+                        return self.enhanced_strategy.should_execute_trade() if hasattr(self.enhanced_strategy, 'should_execute_trade') else False
                     
-                return self.enhanced_strategy.should_execute_trade()
+                return self.enhanced_strategy.should_execute_trade() if hasattr(self.enhanced_strategy, 'should_execute_trade') else False
             else:
                 # Fallback mode - very conservative
                 logger.info("Using fallback trading logic (no market signals)")

@@ -415,14 +415,24 @@ class EnhancedMarketAnalyzer:
     def __init__(self, agent):
         self.agent = agent
         
-        # Initialize COIN_API (primary)
+        # Initialize COIN_API (primary) with validation
         self.coin_api_key = os.getenv('COIN_API')
-        if not self.coin_api_key:
-            logger.error("COIN_API key not found in environment variables")
+        if not self.coin_api_key or len(self.coin_api_key) < 20:
+            logger.warning("COIN_API key not found or invalid - disabling primary source")
             self.coin_api_client = None
         else:
-            self.coin_api_client = CoinAPIClient(self.coin_api_key)
-            logger.info("COIN_API client initialized successfully")
+            try:
+                self.coin_api_client = CoinAPIClient(self.coin_api_key)
+                # Test the API key with a simple call
+                test_result = self.coin_api_client.get_current_price('BTC')
+                if test_result:
+                    logger.info("COIN_API client initialized and validated successfully")
+                else:
+                    logger.warning("COIN_API key validation failed - disabling primary source")
+                    self.coin_api_client = None
+            except Exception as e:
+                logger.error(f"COIN_API initialization failed: {e}")
+                self.coin_api_client = None
         
         # Initialize CoinGecko API (secondary fallback)
         self.coingecko_api_key = os.getenv('COINGECKO_API_KEY')
@@ -465,14 +475,23 @@ class EnhancedMarketAnalyzer:
             except requests.exceptions.HTTPError as e:
                 if hasattr(e, 'response') and e.response.status_code == 429:
                     logger.warning(f"⚠️ COIN_API rate limit hit for {symbol}, switching to fallback")
+                    # Disable COIN_API temporarily to avoid further rate limit hits
+                    self.coin_api_client = None
+                elif hasattr(e, 'response') and e.response.status_code in [401, 403]:
+                    logger.error(f"⚠️ COIN_API authentication failed for {symbol} - disabling")
+                    self.coin_api_client = None
                 else:
                     logger.warning(f"⚠️ COIN_API error for {symbol}: {e}")
             except Exception as e:
                 logger.warning(f"⚠️ COIN_API unexpected error for {symbol}: {e}")
             
-            # Secondary Fallback: Try CoinGecko
+            # Secondary Fallback: Try CoinGecko with delay
             try:
                 logger.info(f"Fetching {symbol} price from CoinGecko (secondary fallback)")
+                # Add small delay to respect rate limits
+                import time
+                time.sleep(0.5)
+                
                 price_data = self.coingecko_client.get_current_price(symbol)
                 
                 if price_data:
@@ -482,7 +501,8 @@ class EnhancedMarketAnalyzer:
                     
             except requests.exceptions.HTTPError as e:
                 if hasattr(e, 'response') and e.response.status_code == 429:
-                    logger.warning(f"⚠️ CoinGecko rate limit hit for {symbol}, switching to tertiary fallback")
+                    logger.warning(f"⚠️ CoinGecko rate limit hit for {symbol}, waiting before tertiary fallback")
+                    time.sleep(2)  # Wait 2 seconds before trying next API
                 else:
                     logger.warning(f"⚠️ CoinGecko API error for {symbol}: {e}")
             except Exception as e:
@@ -508,20 +528,27 @@ class EnhancedMarketAnalyzer:
             logger.critical(f"🚨 CRITICAL: No market data could be fetched for {symbol} from any source")
             logger.info(f"🔄 Generating synthetic market data for {symbol} to maintain operations")
             
-            # Generate realistic synthetic price data based on symbol
+            # Generate realistic synthetic price data with time-based seed for consistency
             import random
+            import time
+            import hashlib
+            
+            # Use time-based seed for more consistent synthetic data
+            time_seed = int(time.time() / 300)  # Changes every 5 minutes
+            random.seed(hashlib.md5(f"{symbol}_{time_seed}".encode()).hexdigest())
+            
             synthetic_prices = {
-                'BTC': {'base': 65000, 'volatility': 0.02},
-                'ETH': {'base': 2600, 'volatility': 0.03},
-                'ARB': {'base': 0.85, 'volatility': 0.05},
-                'DAI': {'base': 1.0, 'volatility': 0.001}
+                'BTC': {'base': 97500, 'volatility': 0.015},  # Updated realistic prices
+                'ETH': {'base': 3250, 'volatility': 0.02},
+                'ARB': {'base': 0.41, 'volatility': 0.03},  # Match actual ARB price from logs
+                'DAI': {'base': 1.0, 'volatility': 0.0005}
             }
             
             if symbol in synthetic_prices:
                 base_price = synthetic_prices[symbol]['base']
                 volatility = synthetic_prices[symbol]['volatility']
                 
-                # Generate realistic price with small random movement
+                # Generate realistic price with controlled movement
                 price_variation = random.uniform(-volatility, volatility)
                 synthetic_price = base_price * (1 + price_variation)
                 

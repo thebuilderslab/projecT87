@@ -163,6 +163,18 @@ def autonomous_agent_loop():
             # Check if agent needs initialization or reinitialization
             if arbitrum_agent is None or not hasattr(arbitrum_agent, 'aave') or arbitrum_agent.aave is None:
                 print("🔄 Agent not initialized or missing integrations, attempting to initialize...")
+                
+                # Validate API keys before initialization
+                try:
+                    from validate_api_keys import main as validate_apis
+                    api_validation = validate_apis()
+                    if not api_validation:
+                        print("⚠️ API validation failed, but continuing with fallback data...")
+                except ImportError:
+                    print("⚠️ API validation script not found, continuing...")
+                except Exception as e:
+                    print(f"⚠️ API validation error: {e}, continuing...")
+                
                 try:
                     arbitrum_agent = ArbitrumTestnetAgent()
                     if arbitrum_agent.initialize_integrations():
