@@ -88,6 +88,99 @@ class MarketSignalStrategy:
                 'timestamp': time.time()
             }
     
+    def analyze_market_signals(self) -> Dict:
+        """Analyze current market signals for trading decisions"""
+        try:
+            if self.initialized and self.enhanced_analyzer:
+                # Get comprehensive market analysis
+                analysis = self.enhanced_analyzer.get_market_summary()
+                
+                if analysis and not analysis.get('error'):
+                    # Extract key signals
+                    btc_analysis = analysis.get('btc_analysis', {})
+                    eth_analysis = analysis.get('eth_analysis', {})
+                    arb_analysis = analysis.get('arb_analysis', {})
+                    
+                    # Calculate overall signal strength
+                    signal_strength = 0
+                    signals_detected = []
+                    
+                    # BTC signal analysis
+                    if btc_analysis.get('signal') == 'bullish':
+                        signal_strength += btc_analysis.get('confidence', 0) * 0.4  # 40% weight
+                        signals_detected.append(f"BTC bullish ({btc_analysis.get('confidence', 0):.2f})")
+                    elif btc_analysis.get('signal') == 'bearish':
+                        signal_strength -= btc_analysis.get('confidence', 0) * 0.4
+                        signals_detected.append(f"BTC bearish ({btc_analysis.get('confidence', 0):.2f})")
+                    
+                    # ETH signal analysis
+                    if eth_analysis.get('signal') == 'bullish':
+                        signal_strength += eth_analysis.get('confidence', 0) * 0.3  # 30% weight
+                        signals_detected.append(f"ETH bullish ({eth_analysis.get('confidence', 0):.2f})")
+                    elif eth_analysis.get('signal') == 'bearish':
+                        signal_strength -= eth_analysis.get('confidence', 0) * 0.3
+                        signals_detected.append(f"ETH bearish ({eth_analysis.get('confidence', 0):.2f})")
+                    
+                    # ARB signal analysis
+                    if arb_analysis.get('signal') == 'bullish':
+                        signal_strength += arb_analysis.get('confidence', 0) * 0.3  # 30% weight
+                        signals_detected.append(f"ARB bullish ({arb_analysis.get('confidence', 0):.2f})")
+                    elif arb_analysis.get('signal') == 'bearish':
+                        signal_strength -= arb_analysis.get('confidence', 0) * 0.3
+                        signals_detected.append(f"ARB bearish ({arb_analysis.get('confidence', 0):.2f})")
+                    
+                    # Determine overall recommendation
+                    if signal_strength > 0.6:
+                        recommendation = "STRONG_BUY"
+                        action = "dai_to_arb"
+                    elif signal_strength > 0.3:
+                        recommendation = "BUY"
+                        action = "dai_to_arb"
+                    elif signal_strength < -0.6:
+                        recommendation = "STRONG_SELL"
+                        action = "arb_to_dai"
+                    elif signal_strength < -0.3:
+                        recommendation = "SELL"
+                        action = "arb_to_dai"
+                    else:
+                        recommendation = "HOLD"
+                        action = "hold"
+                    
+                    return {
+                        'signal_strength': signal_strength,
+                        'recommendation': recommendation,
+                        'action': action,
+                        'signals_detected': signals_detected,
+                        'market_sentiment': analysis.get('market_sentiment', 'neutral'),
+                        'confidence_level': abs(signal_strength),
+                        'timestamp': time.time(),
+                        'status': 'success'
+                    }
+                else:
+                    return {
+                        'status': 'error',
+                        'message': 'Market analysis failed',
+                        'timestamp': time.time()
+                    }
+            else:
+                return {
+                    'status': 'fallback',
+                    'message': 'Enhanced market analysis not available',
+                    'recommendation': 'HOLD',
+                    'action': 'hold',
+                    'timestamp': time.time()
+                }
+                
+        except Exception as e:
+            logger.error(f"Error analyzing market signals: {e}")
+            return {
+                'status': 'error',
+                'message': str(e),
+                'recommendation': 'HOLD',
+                'action': 'hold',
+                'timestamp': time.time()
+            }
+    
     def get_strategy_status(self) -> Dict:
         """Get strategy status"""
         return {

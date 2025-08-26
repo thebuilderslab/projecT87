@@ -571,10 +571,15 @@ class ArbitrumTestnetAgent:
                 logging.info("🔄 Debt swap system activated for simultaneous operation")
 
                 # Validate market signal methods are available
-                if hasattr(self.market_signal_strategy, 'should_execute_trade') and hasattr(self.market_signal_strategy, 'analyze_market_signals'):
-                    print("✅ Market signal methods validated")
+                required_methods = ['should_execute_trade', 'analyze_market_signals', 'get_market_analysis']
+                missing_methods = [method for method in required_methods if not hasattr(self.market_signal_strategy, method)]
+                
+                if not missing_methods:
+                    print("✅ Market signal methods validated - all required methods present")
+                    print("✅ Enhanced market signal system fully operational")
                 else:
-                    print("⚠️ Market signal methods incomplete - using fallback mode")
+                    print(f"⚠️ Market signal methods incomplete - missing: {missing_methods}")
+                    print("⚠️ Using fallback mode for safety")
                     self.debt_swap_active = False
             else:
                 print("ℹ️ Market Signal Strategy initialized but disabled")
