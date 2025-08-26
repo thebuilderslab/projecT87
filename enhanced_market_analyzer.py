@@ -149,7 +149,7 @@ class CoinAPIClient:
                 return None
             
             # Get historical data for percentage changes
-            historical_url = f"{self.base_url}/ohlcv/{coin_symbol.replace('/', '')}/USD/history"
+            historical_url = f"{self.base_url}/ohlcv/{base_symbol}/USD/history"
             params = {
                 'period_id': '1DAY',
                 'time_start': (datetime.now() - timedelta(days=7)).isoformat(),
@@ -214,11 +214,11 @@ class CoinAPIClient:
                 'ARB': 'ARB'
             }
             
-            coin_symbol = symbol_map.get(symbol.upper())
-            if not coin_symbol:
+            base_symbol = symbol_map.get(symbol.upper())
+            if not base_symbol:
                 return None
             
-            url = f"{self.base_url}/ohlcv/{coin_symbol}/USD/history"
+            url = f"{self.base_url}/ohlcv/{base_symbol}/USD/history"
             params = {
                 'period_id': '1DAY',
                 'time_start': (datetime.now() - timedelta(days=days)).isoformat(),
