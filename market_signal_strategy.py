@@ -45,6 +45,20 @@ class MarketSignalStrategy:
         """Determine if a trade should be executed"""
         try:
             if self.initialized and self.enhanced_strategy:
+                # Check if we're using synthetic data
+                analysis = self.get_market_analysis()
+                if analysis and not analysis.get('error'):
+                    # Check for synthetic data usage
+                    using_synthetic = False
+                    for key in ['btc_analysis', 'eth_analysis', 'arb_analysis']:
+                        if key in analysis and analysis[key].get('source') == 'synthetic_fallback':
+                            using_synthetic = True
+                            break
+                    
+                    if using_synthetic:
+                        logger.warning("🔄 Using synthetic market data - trading disabled for safety")
+                        return False
+                    
                 return self.enhanced_strategy.should_execute_trade()
             else:
                 # Fallback mode - very conservative
