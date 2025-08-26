@@ -16,18 +16,36 @@ def validate_coin_api():
         return False, "COIN_API key not found"
     
     try:
+        # Use a simpler endpoint for validation
         url = "https://rest.coinapi.io/v1/exchangerate/BTC/USD"
-        headers = {'X-CoinAPI-Key': api_key}
-        response = requests.get(url, headers=headers, timeout=10)
+        headers = {
+            'X-CoinAPI-Key': api_key,
+            'Accept': 'application/json'
+        }
+        response = requests.get(url, headers=headers, timeout=15)
         
         if response.status_code == 200:
-            return True, "COIN_API key valid"
+            data = response.json()
+            if 'rate' in data and data['rate'] > 0:
+                return True, f"COIN_API key valid (BTC rate: ${data['rate']:.2f})"
+            else:
+                return False, "COIN_API returned invalid data"
         elif response.status_code == 401:
-            return False, "COIN_API key invalid"
+            return False, "COIN_API key unauthorized"
+        elif response.status_code == 403:
+            return False, "COIN_API key forbidden - check permissions"
         elif response.status_code == 429:
             return False, "COIN_API rate limit exceeded"
         else:
-            return False, f"COIN_API error: {response.status_code}"
+            try:
+                error_data = response.json()
+                return False, f"COIN_API error {response.status_code}: {error_data.get('error', 'Unknown error')}"
+            except:
+                return False, f"COIN_API HTTP error: {response.status_code}"
+    except requests.exceptions.Timeout:
+        return False, "COIN_API validation timeout"
+    except requests.exceptions.ConnectionError:
+        return False, "COIN_API connection failed"
     except Exception as e:
         return False, f"COIN_API validation error: {e}"
 
