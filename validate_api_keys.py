@@ -15,9 +15,13 @@ def validate_coin_api():
     if not api_key:
         return False, "COIN_API key not found"
     
+    # Check key format - should be UUID format (36+ chars)
+    if len(api_key) < 30:
+        return False, f"COIN_API key too short ({len(api_key)} chars) - should be 36+ characters UUID format"
+    
     try:
-        # Use the assets endpoint for validation (more reliable)
-        url = "https://rest.coinapi.io/v1/assets"
+        # Use simple exchange rate endpoint for validation
+        url = "https://rest.coinapi.io/v1/exchangerate/BTC/USD"
         headers = {
             'X-CoinAPI-Key': api_key,
             'Accept': 'application/json'
@@ -26,16 +30,16 @@ def validate_coin_api():
         
         if response.status_code == 200:
             data = response.json()
-            if isinstance(data, list) and len(data) > 0:
-                return True, f"COIN_API key valid ({len(data)} assets available)"
+            if 'rate' in data and data['rate'] > 0:
+                return True, f"COIN_API key valid (BTC price: ${data['rate']:,.2f})"
             else:
-                return False, "COIN_API returned empty data"
+                return False, "COIN_API returned invalid data format"
         elif response.status_code == 401:
-            return False, "COIN_API key unauthorized"
+            return False, "COIN_API key unauthorized - check your API key"
         elif response.status_code == 403:
-            return False, "COIN_API key forbidden - check permissions"
+            return False, "COIN_API key forbidden - check permissions or upgrade plan"
         elif response.status_code == 429:
-            return False, "COIN_API rate limit exceeded"
+            return False, "COIN_API rate limit exceeded - try again later"
         else:
             try:
                 error_data = response.json()
@@ -45,6 +49,8 @@ def validate_coin_api():
                 return False, f"COIN_API HTTP error: {response.status_code}"
     except requests.exceptions.Timeout:
         return False, "COIN_API validation timeout"
+    except Exception as e:
+        return False, f"COIN_API validation error: {e}"
     except requests.exceptions.ConnectionError:
         return False, "COIN_API connection failed"
     except Exception as e:
