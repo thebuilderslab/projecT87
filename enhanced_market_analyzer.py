@@ -416,18 +416,20 @@ class EnhancedMarketAnalyzer:
 
         # Initialize COIN_API (primary) with validation
         self.coin_api_key = os.getenv('COIN_API')
-        if not self.coin_api_key or len(self.coin_api_key) < 20:
-            logger.warning("COIN_API key not found or invalid - disabling primary source")
+        if not self.coin_api_key:
+            logger.warning("COIN_API key not found - disabling primary source")
             self.coin_api_client = None
         else:
             try:
                 self.coin_api_client = CoinAPIClient(self.coin_api_key)
-                # Test the API key with a simple call
-                test_result = self.coin_api_client.get_current_price('BTC')
-                if test_result:
-                    logger.info("COIN_API client initialized and validated successfully")
+                # Quick validation test
+                headers = {'X-CoinAPI-Key': self.coin_api_key}
+                test_response = requests.get('https://rest.coinapi.io/v1/assets?filter_asset_id=BTC', 
+                                           headers=headers, timeout=10)
+                if test_response.status_code == 200:
+                    logger.info("COIN_API client initialized successfully")
                 else:
-                    logger.warning("COIN_API key validation failed - disabling primary source")
+                    logger.warning(f"COIN_API validation failed: {test_response.status_code}")
                     self.coin_api_client = None
             except Exception as e:
                 logger.error(f"COIN_API initialization failed: {e}")

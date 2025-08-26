@@ -16,8 +16,8 @@ def validate_coin_api():
         return False, "COIN_API key not found"
     
     try:
-        # Use a simpler endpoint for validation
-        url = "https://rest.coinapi.io/v1/exchangerate/BTC/USD"
+        # Use the assets endpoint for validation (more reliable)
+        url = "https://rest.coinapi.io/v1/assets"
         headers = {
             'X-CoinAPI-Key': api_key,
             'Accept': 'application/json'
@@ -26,10 +26,10 @@ def validate_coin_api():
         
         if response.status_code == 200:
             data = response.json()
-            if 'rate' in data and data['rate'] > 0:
-                return True, f"COIN_API key valid (BTC rate: ${data['rate']:.2f})"
+            if isinstance(data, list) and len(data) > 0:
+                return True, f"COIN_API key valid ({len(data)} assets available)"
             else:
-                return False, "COIN_API returned invalid data"
+                return False, "COIN_API returned empty data"
         elif response.status_code == 401:
             return False, "COIN_API key unauthorized"
         elif response.status_code == 403:
@@ -39,7 +39,8 @@ def validate_coin_api():
         else:
             try:
                 error_data = response.json()
-                return False, f"COIN_API error {response.status_code}: {error_data.get('error', 'Unknown error')}"
+                error_msg = error_data.get('error', 'Unknown error')
+                return False, f"COIN_API error {response.status_code}: {error_msg}"
             except:
                 return False, f"COIN_API HTTP error: {response.status_code}"
     except requests.exceptions.Timeout:
