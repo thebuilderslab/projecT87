@@ -79,8 +79,9 @@ class MarketSignalStrategy:
         return {
             'initialized': self.initialized,
             'enhanced_mode': bool(self.enhanced_strategy and self.enhanced_strategy.initialized),
-            'api_key_present': bool(os.getenv('COINMARKETCAP_API_KEY')),
-            'strategy_type': 'enhanced' if self.initialized else 'fallback',
+            'coin_api_present': bool(os.getenv('COIN_API')),
+            'coinmarketcap_api_present': bool(os.getenv('COINMARKETCAP_API_KEY')),
+            'strategy_type': 'enhanced_coin_api' if self.initialized else 'fallback',
             'last_update': time.time()
         }
 

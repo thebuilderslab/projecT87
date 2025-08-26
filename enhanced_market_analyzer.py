@@ -109,6 +109,145 @@ class CoinGeckoAPI:
             logger.error(f"Unexpected CoinGecko error for {symbol}: {e}")
             return None
 
+class CoinAPIClient:
+    """COIN_API client for fetching market data - Primary data source"""
+    
+    def __init__(self, api_key: str):
+        self.api_key = api_key
+        self.base_url = "https://rest.coinapi.io/v1"
+        self.session = requests.Session()
+        self.session.headers.update({
+            'X-CoinAPI-Key': self.api_key,
+            'Accept': 'application/json'
+        })
+        
+    def get_current_price(self, symbol: str) -> Optional[Dict]:
+        """Get current price and metrics from COIN_API"""
+        try:
+            # Map symbols to COIN_API format
+            symbol_map = {
+                'BTC': 'BTC/USD',
+                'ETH': 'ETH/USD',
+                'DAI': 'DAI/USD',
+                'ARB': 'ARB/USD'
+            }
+            
+            coin_symbol = symbol_map.get(symbol.upper())
+            if not coin_symbol:
+                logger.warning(f"Unknown symbol for COIN_API: {symbol}")
+                return None
+            
+            # Get current exchange rate
+            url = f"{self.base_url}/exchangerate/{coin_symbol.replace('/', '/')}"
+            response = self.session.get(url, timeout=30)
+            response.raise_for_status()
+            
+            data = response.json()
+            current_price = data.get('rate', 0)
+            
+            if current_price == 0:
+                return None
+            
+            # Get historical data for percentage changes
+            historical_url = f"{self.base_url}/ohlcv/{coin_symbol.replace('/', '')}/USD/history"
+            params = {
+                'period_id': '1DAY',
+                'time_start': (datetime.now() - timedelta(days=7)).isoformat(),
+                'limit': 7
+            }
+            
+            hist_response = self.session.get(historical_url, params=params, timeout=30)
+            
+            # Calculate percentage changes
+            percent_change_1h = 0
+            percent_change_24h = 0
+            percent_change_7d = 0
+            volume_24h = 0
+            
+            if hist_response.status_code == 200:
+                hist_data = hist_response.json()
+                if len(hist_data) > 0:
+                    latest = hist_data[-1]
+                    if len(hist_data) > 1:
+                        prev_24h = hist_data[-2]
+                        percent_change_24h = ((current_price - prev_24h['price_close']) / prev_24h['price_close']) * 100
+                    
+                    if len(hist_data) >= 7:
+                        prev_7d = hist_data[0]
+                        percent_change_7d = ((current_price - prev_7d['price_close']) / prev_7d['price_close']) * 100
+                    
+                    volume_24h = latest.get('volume_traded', 0)
+            
+            return {
+                'price': current_price,
+                'percent_change_1h': percent_change_1h,
+                'percent_change_24h': percent_change_24h,
+                'percent_change_7d': percent_change_7d,
+                'volume_24h': volume_24h,
+                'market_cap': 0  # COIN_API doesn't provide market cap in basic plan
+            }
+            
+        except requests.exceptions.RequestException as e:
+            if hasattr(e.response, 'status_code') and e.response.status_code == 429:
+                logger.warning(f"COIN_API rate limit hit for {symbol}: {e}")
+                raise requests.exceptions.HTTPError("Rate limit exceeded", response=e.response)
+            logger.error(f"COIN_API error for {symbol}: {e}")
+            return None
+        except Exception as e:
+            logger.error(f"Unexpected COIN_API error for {symbol}: {e}")
+            return None
+    
+    def get_historical_data(self, symbol: str, days: int = 365) -> Optional[pd.DataFrame]:
+        """Fetch historical OHLCV data from COIN_API"""
+        try:
+            symbol_map = {
+                'BTC': 'BTC',
+                'ETH': 'ETH', 
+                'DAI': 'DAI',
+                'ARB': 'ARB'
+            }
+            
+            coin_symbol = symbol_map.get(symbol.upper())
+            if not coin_symbol:
+                return None
+            
+            url = f"{self.base_url}/ohlcv/{coin_symbol}/USD/history"
+            params = {
+                'period_id': '1DAY',
+                'time_start': (datetime.now() - timedelta(days=days)).isoformat(),
+                'limit': days
+            }
+            
+            response = self.session.get(url, params=params, timeout=30)
+            response.raise_for_status()
+            
+            data = response.json()
+            
+            if not data:
+                return None
+            
+            # Convert to DataFrame
+            df_data = []
+            for item in data:
+                df_data.append({
+                    'timestamp': pd.to_datetime(item['time_period_start']),
+                    'open': item['price_open'],
+                    'high': item['price_high'],
+                    'low': item['price_low'],
+                    'close': item['price_close'],
+                    'volume': item['volume_traded']
+                })
+            
+            df = pd.DataFrame(df_data)
+            df.set_index('timestamp', inplace=True)
+            
+            logger.info(f"Successfully fetched {len(df)} days of data for {symbol} from COIN_API")
+            return df
+            
+        except Exception as e:
+            logger.error(f"Error fetching historical data for {symbol} from COIN_API: {e}")
+            return None
+
 class CoinMarketCapAPI:
     """CoinMarketCap API client for fetching market data"""
     
@@ -269,14 +408,23 @@ class EnhancedMarketAnalyzer:
     def __init__(self, agent):
         self.agent = agent
         
-        # Initialize CoinGecko API (primary)
+        # Initialize COIN_API (primary)
+        self.coin_api_key = os.getenv('COIN_API')
+        if not self.coin_api_key:
+            logger.error("COIN_API key not found in environment variables")
+            self.coin_api_client = None
+        else:
+            self.coin_api_client = CoinAPIClient(self.coin_api_key)
+            logger.info("COIN_API client initialized successfully")
+        
+        # Initialize CoinGecko API (secondary fallback)
         self.coingecko_api_key = os.getenv('COINGECKO_API_KEY')
         self.coingecko_client = CoinGeckoAPI(self.coingecko_api_key)
         
-        # Initialize CoinMarketCap API (fallback)
+        # Initialize CoinMarketCap API (tertiary fallback)
         self.coinmarketcap_api_key = os.getenv('COINMARKETCAP_API_KEY')
         if not self.coinmarketcap_api_key:
-            logger.warning("COINMARKETCAP_API_KEY not found - fallback API unavailable")
+            logger.warning("COINMARKETCAP_API_KEY not found - tertiary fallback unavailable")
             self.cmc_client = None
         else:
             self.cmc_client = CoinMarketCapAPI(self.coinmarketcap_api_key)
@@ -287,16 +435,37 @@ class EnhancedMarketAnalyzer:
         self.data_cache = {}
         self.cache_timeout = 3600  # 1 hour
         
-        logger.info("Enhanced Market Analyzer initialized with CoinGecko primary and CoinMarketCap fallback")
+        logger.info("Enhanced Market Analyzer initialized with COIN_API primary, CoinGecko secondary, and CoinMarketCap tertiary fallback")
     
     def get_current_prices(self, symbols: List[str]) -> Dict[str, Optional[Dict]]:
-        """Get current prices using CoinGecko primary, CoinMarketCap fallback strategy"""
+        """Get current prices using COIN_API primary, with CoinGecko and CoinMarketCap fallbacks"""
         results = {}
         
         for symbol in symbols:
             try:
-                # Primary: Try CoinGecko first
-                logger.info(f"Fetching {symbol} price from CoinGecko (primary)")
+                # Primary: Try COIN_API first
+                if self.coin_api_client:
+                    logger.info(f"Fetching {symbol} price from COIN_API (primary)")
+                    price_data = self.coin_api_client.get_current_price(symbol)
+                    
+                    if price_data:
+                        logger.info(f"✅ COIN_API: {symbol} = ${price_data['price']:.2f}")
+                        results[symbol] = price_data
+                        continue
+                else:
+                    logger.warning(f"⚠️ COIN_API client not available for {symbol}")
+                    
+            except requests.exceptions.HTTPError as e:
+                if hasattr(e, 'response') and e.response.status_code == 429:
+                    logger.warning(f"⚠️ COIN_API rate limit hit for {symbol}, switching to fallback")
+                else:
+                    logger.warning(f"⚠️ COIN_API error for {symbol}: {e}")
+            except Exception as e:
+                logger.warning(f"⚠️ COIN_API unexpected error for {symbol}: {e}")
+            
+            # Secondary Fallback: Try CoinGecko
+            try:
+                logger.info(f"Fetching {symbol} price from CoinGecko (secondary fallback)")
                 price_data = self.coingecko_client.get_current_price(symbol)
                 
                 if price_data:
@@ -306,16 +475,16 @@ class EnhancedMarketAnalyzer:
                     
             except requests.exceptions.HTTPError as e:
                 if hasattr(e, 'response') and e.response.status_code == 429:
-                    logger.warning(f"⚠️ CoinGecko rate limit hit for {symbol}, switching to CoinMarketCap fallback")
+                    logger.warning(f"⚠️ CoinGecko rate limit hit for {symbol}, switching to tertiary fallback")
                 else:
                     logger.warning(f"⚠️ CoinGecko API error for {symbol}: {e}")
             except Exception as e:
                 logger.warning(f"⚠️ CoinGecko unexpected error for {symbol}: {e}")
             
-            # Fallback: Try CoinMarketCap
+            # Tertiary Fallback: Try CoinMarketCap
             if self.cmc_client:
                 try:
-                    logger.info(f"Fetching {symbol} price from CoinMarketCap (fallback)")
+                    logger.info(f"Fetching {symbol} price from CoinMarketCap (tertiary fallback)")
                     price_data = self.cmc_client.get_current_price(symbol)
                     
                     if price_data:
@@ -324,12 +493,12 @@ class EnhancedMarketAnalyzer:
                         continue
                         
                 except Exception as e:
-                    logger.error(f"❌ CoinMarketCap fallback failed for {symbol}: {e}")
+                    logger.error(f"❌ CoinMarketCap tertiary fallback failed for {symbol}: {e}")
             else:
-                logger.error(f"❌ CoinMarketCap fallback not available for {symbol}")
+                logger.error(f"❌ CoinMarketCap tertiary fallback not available for {symbol}")
             
-            # Both APIs failed
-            logger.critical(f"🚨 CRITICAL: No market data could be fetched for {symbol}")
+            # All APIs failed
+            logger.critical(f"🚨 CRITICAL: No market data could be fetched for {symbol} from any source")
             results[symbol] = None
         
         return results
@@ -344,10 +513,26 @@ class EnhancedMarketAnalyzer:
             if current_time - timestamp < self.cache_timeout:
                 return cached_data
         
-        # Fetch new data - try CoinGecko first, then CoinMarketCap
+        # Fetch new data - try COIN_API first, then CoinMarketCap fallback
         data = None
-        if self.cmc_client:
-            data = self.cmc_client.get_historical_data(symbol, days)
+        
+        # Primary: Try COIN_API
+        if self.coin_api_client:
+            try:
+                data = self.coin_api_client.get_historical_data(symbol, days)
+                if data is not None:
+                    logger.info(f"Successfully fetched historical data for {symbol} from COIN_API")
+            except Exception as e:
+                logger.warning(f"COIN_API historical data failed for {symbol}: {e}")
+        
+        # Fallback: Try CoinMarketCap if COIN_API failed
+        if data is None and self.cmc_client:
+            try:
+                data = self.cmc_client.get_historical_data(symbol, days)
+                if data is not None:
+                    logger.info(f"Successfully fetched historical data for {symbol} from CoinMarketCap fallback")
+            except Exception as e:
+                logger.warning(f"CoinMarketCap historical data fallback failed for {symbol}: {e}")
         
         if data is not None:
             self.data_cache[cache_key] = (data, current_time)
@@ -473,12 +658,13 @@ class EnhancedMarketAnalyzer:
                 'btc_analysis': {},
                 'eth_analysis': {},
                 'dai_analysis': {},
+                'arb_analysis': {},
                 'market_sentiment': 'neutral',
-                'data_source': 'mixed'  # Track which APIs were used
+                'data_source': 'coin_api_primary'  # Track which APIs were used
             }
             
-            # Analyze major cryptocurrencies using dual API strategy
-            symbols = ['BTC', 'ETH', 'DAI']
+            # Analyze major cryptocurrencies using COIN_API strategy
+            symbols = ['BTC', 'ETH', 'DAI', 'ARB']
             current_prices = self.get_current_prices(symbols)
             
             for symbol in symbols:
@@ -520,7 +706,7 @@ class EnhancedMarketAnalyzer:
             else:
                 summary['market_sentiment'] = 'neutral'
             
-            logger.info("Market summary generated successfully with dual API strategy")
+            logger.info("Market summary generated successfully with COIN_API primary strategy")
             return summary
             
         except Exception as e:
