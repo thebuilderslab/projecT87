@@ -130,14 +130,14 @@ from gas_fee_calculator import ArbitrumGasCalculator
 from config_constants import MIN_ETH_FOR_OPERATIONS, MIN_ETH_FOR_GAS_BUFFER
 import requests
 import sys
-import traceback 
+import traceback
 
 class ArbitrumTestnetAgent:
     def __init__(self, rpc_manager=None, private_key=None):
         """Initialize the Arbitrum Testnet Agent with proper configuration"""
         print("🤖 Initializing Arbitrum Testnet Agent...")
         # Load environment variables
-        self.private_key = private_key or os.getenv('PRIVATE_KEY') or os.getenv('WALLET_PRIVATE_KEY')
+        self.private_key = private_key or os.getenv('PRIVATE_KEY') or os.getenv('Wallet_PRIVATE_KEY')
         print(f"DEBUG: Private key loaded from parameter/environment: {'[REDACTED]' if self.private_key else 'None'}")
         if not self.private_key:
             raise ValueError("Private key not provided and no PRIVATE_KEY or WALLET_PRIVATE_KEY environment variable set.")
@@ -197,7 +197,7 @@ class ArbitrumTestnetAgent:
             else:
                 print("❌ All RPC endpoints failed initial testing")
                 print("🔄 Attempting simplified connection to primary RPC...")
-                
+
                 # Fallback: Try simple connection without extensive testing
                 try:
                     fallback_rpc = self.rpc_endpoints[0]  # Use first RPC as fallback
@@ -573,7 +573,7 @@ class ArbitrumTestnetAgent:
                 # Validate market signal methods are available
                 required_methods = ['should_execute_trade', 'analyze_market_signals', 'get_market_analysis']
                 missing_methods = [method for method in required_methods if not hasattr(self.market_signal_strategy, method)]
-                
+
                 if not missing_methods:
                     print("✅ Market signal methods validated - all required methods present")
                     print("✅ Enhanced market signal system fully operational")

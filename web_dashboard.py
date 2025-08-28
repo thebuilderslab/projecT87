@@ -485,7 +485,7 @@ def wallet_status():
             'total_collateral_usdc': live_agent_data.get('total_collateral_usdc', 177.32),
             'total_debt_usdc': live_agent_data.get('total_debt_usdc', 35.06),
             'available_borrows_usdc': live_agent_data.get('available_borrows_usdc', 96.62),
-            'arb_price': 0.4100,  # From autonomous agent logs
+            'arb_price': round(float(os.getenv('ARB_PRICE', '0.4100')), 4) if os.getenv('ARB_PRICE') else 0.4100,  # From autonomous agent logs
             'network_name': 'Arbitrum Mainnet',
             'network_mode': 'mainnet',
             'timestamp': time.time(),

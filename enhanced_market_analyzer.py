@@ -621,7 +621,7 @@ class EnhancedMarketAnalyzer:
                     price_data = self.coin_api_client.get_current_price(symbol)
 
                     if price_data:
-                        logger.info(f"✅ COIN_API: {symbol} = ${price_data['price']:.2f}")
+                        logger.info(f"✅ COIN_API: {symbol} = ${price_data['price']:.4f}")
                         results[symbol] = price_data
                         continue
                 else:
