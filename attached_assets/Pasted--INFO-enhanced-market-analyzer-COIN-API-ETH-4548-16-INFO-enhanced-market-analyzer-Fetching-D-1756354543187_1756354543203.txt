@@ -1,0 +1,1037 @@
+
+INFO:enhanced_market_analyzer:✅ COIN_API: ETH = $4548.16
+INFO:enhanced_market_analyzer:Fetching DAI price from COIN_API (primary)
+INFO:enhanced_market_analyzer:✅ COIN_API: DAI = $1.00
+INFO:enhanced_market_analyzer:Fetching ARB price from COIN_API (primary)
+INFO:enhanced_market_analyzer:COIN_API client initialized successfully
+INFO:enhanced_market_analyzer:Enhanced Market Analyzer initialized with COIN_API primary, CoinGecko secondary, and CoinMarketCap tertiary fallback
+INFO:enhanced_market_analyzer:Enhanced Market Signal Strategy initialized successfully
+INFO:market_signal_strategy:✅ Market Signal Strategy initialized with CoinMarketCap API
+✅ Market Signal Strategy enabled and ready for debt swaps
+INFO:root:✅ Market Signal Strategy enabled and ready for debt swaps
+🔄 Debt swap system activated for simultaneous operation
+INFO:root:🔄 Debt swap system activated for simultaneous operation
+✅ Market signal methods validated - all required methods present
+✅ Enhanced market signal system fully operational
+🔍 Fetching unified Aave data...
+✅ RPC passed tests: https://arbitrum-one.publicnode.com (1.01s)
+📊 RPC Test Results: 5/5 endpoints working
+🌐 Operating on Arbitrum Mainnet
+🔍 DEBUG: Final RPC selection results:
+   Primary RPC: https://arbitrum-one.public.blastapi.io
+   Fallback RPCs: 4 available
+🚨 NETWORK_MODE from environment: 'mainnet'
+🔗 Primary RPC: https://arbitrum-one.public.blastapi.io
+🔄 Fallback RPCs: 4 available
+🔍 DEBUG: Attempting to create Web3 connection with primary RPC: https://arbitrum-one.public.blastapi.io
+✅ Unified Aave data retrieved successfully:
+   Collateral: $265.08
+   Debt: $108.27
+   Health Factor: 1.9532
+📊 Using LIVE AAVE CONTRACT data: HF 1.9532
+✅ Successfully connected to primary RPC: https://arbitrum-one.public.blastapi.io
+🔍 API: Fetching wallet status...
+🤖 Initializing Arbitrum Testnet Agent...
+DEBUG: Private key loaded from parameter/environment: [REDACTED]
+✅ All critical environment variables validated successfully
+🔍 DEBUG: Starting RPC manager initialization...
+🔍 DEBUG: Network mode: mainnet
+🔍 DEBUG: ALCHEMY_RPC_URL from env: https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-bM9XgIIU
+🔗 DEBUG: Added Alchemy RPC to endpoints list: https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-...
+🔍 DEBUG: Total RPC endpoints to test: 5
+🔍 Testing RPC: https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-bM9XgIIU
+INFO:enhanced_market_analyzer:✅ COIN_API: ARB = $0.51
+🔍 Autonomous agent running check: True
+🔍 Autonomous agent running check: True
+172.31.100.226 - - [28/Aug/2025 04:10:30] "GET /api/console HTTP/1.1" 200 -
+INFO:werkzeug:172.31.100.226 - - [28/Aug/2025 04:10:30] "GET /api/console HTTP/1.1" 200 -
+🔍 DEBUG: Web3 connection verified - Chain ID: 42161, Latest Block: 373060073
+🔑 Wallet Address: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+💰 AGENT INITIALIZED WITH WALLET: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+✅ Private key format validated and normalized
+📋 Mainnet Token addresses verified (DAI-ONLY COMPLIANCE):
+   DAI: 0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1
+   WBTC: 0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f
+   WETH: 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1
+   Aave Pool: 0x794a61358D6845594F94dc1DB02A252b5b4814aD
+💰 Initialized last_collateral_value_usd to 0.0 (will sync with actual position)
+📊 Initialized last_collateral_value_usd to: 0.0
+
+🔄 HYBRID SYSTEM CONFIGURATION:
+═══════════════════════════════════════
+🚀 GROWTH-TRIGGERED SYSTEM:
+   • Growth Threshold: $40
+   • Health Factor: > 2.1
+   • Re-leverage %: 50.0%
+   • Min/Max Borrow: $10 - $200
+⚡ CAPACITY-BASED SYSTEM:
+   • Available Capacity: > $13
+   • Health Factor: > 2.0
+   • Max Utilization: < 20%
+   • Current Available: $85.21 (MEETS THRESHOLD)
+   • Current Utilization: ~15% (MEETS THRESHOLD)
+🔧 SYSTEM SETTINGS:
+   • Operation Cooldown: 60s
+   • Target Health Factor: 3.5
+═══════════════════════════════════════
+
+ERROR:enhanced_market_analyzer:Error fetching historical data for BTC from COIN_API: 404 Client Error: Not Found for url: https://rest.coinapi.io/v1/ohlcv/BTC/USD/history?period_id=1DAY&time_start=2024-08-28T04%3A10%3A30.105927&limit=365
+🔍 Autonomous agent running check: True
+🤖 Initializing Arbitrum Testnet Agent...
+DEBUG: Private key loaded from parameter/environment: [REDACTED]
+✅ All critical environment variables validated successfully
+🔍 DEBUG: Starting RPC manager initialization...
+🔍 DEBUG: Network mode: mainnet
+🔍 DEBUG: ALCHEMY_RPC_URL from env: https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-bM9XgIIU
+🔗 DEBUG: Added Alchemy RPC to endpoints list: https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-...
+🔍 DEBUG: Total RPC endpoints to test: 5
+🔍 Testing RPC: https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-bM9XgIIU
+INFO:enhanced_market_analyzer:COIN_API client initialized successfully
+INFO:enhanced_market_analyzer:Enhanced Market Analyzer initialized with COIN_API primary, CoinGecko secondary, and CoinMarketCap tertiary fallback
+INFO:enhanced_market_analyzer:Fetching BTC price from COIN_API (primary)
+✅ RPC passed tests: https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-bM9XgIIU (0.22s)
+🔍 Testing RPC: https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f938ff891c141
+ERROR:enhanced_market_analyzer:Error fetching historical data for BTC: 429 Client Error: Too Many Requests for url: https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?symbol=BTC&convert=USD
+WARNING:enhanced_market_analyzer:No data available for BTC
+ERROR:enhanced_market_analyzer:Error fetching historical data for ETH from COIN_API: 404 Client Error: Not Found for url: https://rest.coinapi.io/v1/ohlcv/ETH/USD/history?period_id=1DAY&time_start=2024-08-28T04%3A10%3A30.351650&limit=365
+INFO:enhanced_market_analyzer:COIN_API client initialized successfully
+INFO:enhanced_market_analyzer:Enhanced Market Analyzer initialized with COIN_API primary, CoinGecko secondary, and CoinMarketCap tertiary fallback
+INFO:enhanced_market_analyzer:Enhanced Market Signal Strategy initialized successfully
+INFO:market_signal_strategy:✅ Market Signal Strategy initialized with CoinMarketCap API
+✅ Market Signal Strategy enabled and ready for debt swaps
+INFO:root:✅ Market Signal Strategy enabled and ready for debt swaps
+🔄 Debt swap system activated for simultaneous operation
+INFO:root:🔄 Debt swap system activated for simultaneous operation
+✅ Market signal methods validated - all required methods present
+✅ Enhanced market signal system fully operational
+✅ RPC passed tests: https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-bM9XgIIU (0.26s)
+🔍 Testing RPC: https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f938ff891c141
+⚠️ Success rate prediction failed: 'NoneType' object has no attribute 'get_user_account_data'
+🤖 Initializing Arbitrum Testnet Agent...
+DEBUG: Private key loaded from parameter/environment: [REDACTED]
+✅ All critical environment variables validated successfully
+🔍 DEBUG: Starting RPC manager initialization...
+🔍 DEBUG: Network mode: mainnet
+🔍 DEBUG: ALCHEMY_RPC_URL from env: https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-bM9XgIIU
+🔗 DEBUG: Added Alchemy RPC to endpoints list: https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-...
+🔍 DEBUG: Total RPC endpoints to test: 5
+🔍 Testing RPC: https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-bM9XgIIU
+INFO:enhanced_market_analyzer:✅ COIN_API: BTC = $112111.63
+INFO:enhanced_market_analyzer:Fetching ETH price from COIN_API (primary)
+ERROR:enhanced_market_analyzer:Error fetching historical data for ETH: 429 Client Error: Too Many Requests for url: https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?symbol=ETH&convert=USD
+WARNING:enhanced_market_analyzer:No data available for ETH
+INFO:enhanced_market_analyzer:✅ COIN_API: ETH = $4548.30
+INFO:enhanced_market_analyzer:Fetching DAI price from COIN_API (primary)
+✅ RPC passed tests: https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-bM9XgIIU (0.17s)
+🔍 Testing RPC: https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f938ff891c141
+ERROR:enhanced_market_analyzer:Error fetching historical data for DAI from COIN_API: 404 Client Error: Not Found for url: https://rest.coinapi.io/v1/ohlcv/DAI/USD/history?period_id=1DAY&time_start=2024-08-28T04%3A10%3A30.625739&limit=365
+ERROR:enhanced_market_analyzer:Error fetching historical data for DAI: 429 Client Error: Too Many Requests for url: https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?symbol=DAI&convert=USD
+WARNING:enhanced_market_analyzer:No data available for DAI
+INFO:enhanced_market_analyzer:✅ COIN_API: DAI = $1.00
+INFO:enhanced_market_analyzer:Fetching ARB price from COIN_API (primary)
+✅ RPC passed tests: https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f938ff891c141 (0.50s)
+🔍 Testing RPC: https://arb1.arbitrum.io/rpc
+ERROR:enhanced_market_analyzer:Error fetching historical data for ARB from COIN_API: 404 Client Error: Not Found for url: https://rest.coinapi.io/v1/ohlcv/ARB/USD/history?period_id=1DAY&time_start=2024-08-28T04%3A10%3A30.775506&limit=365
+INFO:enhanced_market_analyzer:✅ COIN_API: ARB = $0.51
+✅ RPC passed tests: https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f938ff891c141 (0.29s)
+🔍 Testing RPC: https://arb1.arbitrum.io/rpc
+✅ RPC passed tests: https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f938ff891c141 (0.49s)
+🔍 Testing RPC: https://arb1.arbitrum.io/rpc
+ERROR:enhanced_market_analyzer:Error fetching historical data for BTC from COIN_API: 404 Client Error: Not Found for url: https://rest.coinapi.io/v1/ohlcv/BTC/USD/history?period_id=1DAY&time_start=2024-08-28T04%3A10%3A30.926805&limit=365
+🤖 Initializing Arbitrum Testnet Agent...
+DEBUG: Private key loaded from parameter/environment: [REDACTED]
+✅ All critical environment variables validated successfully
+🔍 DEBUG: Starting RPC manager initialization...
+🔍 DEBUG: Network mode: mainnet
+🔍 DEBUG: ALCHEMY_RPC_URL from env: https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-bM9XgIIU
+🔗 DEBUG: Added Alchemy RPC to endpoints list: https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-...
+🔍 DEBUG: Total RPC endpoints to test: 5
+🔍 Testing RPC: https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-bM9XgIIU
+ERROR:enhanced_market_analyzer:Error fetching historical data for ARB: 429 Client Error: Too Many Requests for url: https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?symbol=ARB&convert=USD
+WARNING:enhanced_market_analyzer:No data available for ARB
+INFO:enhanced_market_analyzer:Market summary generated successfully with COIN_API primary strategy
+172.31.100.226 - - [28/Aug/2025 04:10:31] "GET /api/system_metrics HTTP/1.1" 200 -
+INFO:werkzeug:172.31.100.226 - - [28/Aug/2025 04:10:31] "GET /api/system_metrics HTTP/1.1" 200 -
+ERROR:enhanced_market_analyzer:Error fetching historical data for BTC: 429 Client Error: Too Many Requests for url: https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?symbol=BTC&convert=USD
+WARNING:enhanced_market_analyzer:No data available for BTC
+ERROR:enhanced_market_analyzer:Error fetching historical data for ETH from COIN_API: 404 Client Error: Not Found for url: https://rest.coinapi.io/v1/ohlcv/ETH/USD/history?period_id=1DAY&time_start=2024-08-28T04%3A10%3A31.123088&limit=365
+✅ RPC passed tests: https://arb1.arbitrum.io/rpc (0.38s)
+🔍 Testing RPC: https://arbitrum-one.public.blastapi.io
+✅ RPC passed tests: https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-bM9XgIIU (0.23s)
+🔍 Testing RPC: https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f938ff891c141
+ERROR:enhanced_market_analyzer:Error fetching historical data for ETH: 429 Client Error: Too Many Requests for url: https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?symbol=ETH&convert=USD
+WARNING:enhanced_market_analyzer:No data available for ETH
+✅ RPC passed tests: https://arb1.arbitrum.io/rpc (0.35s)
+🔍 Testing RPC: https://arbitrum-one.public.blastapi.io
+ERROR:enhanced_market_analyzer:Error fetching historical data for DAI from COIN_API: 404 Client Error: Not Found for url: https://rest.coinapi.io/v1/ohlcv/DAI/USD/history?period_id=1DAY&time_start=2024-08-28T04%3A10%3A31.269548&limit=365
+🔍 Autonomous agent running check: True
+🤖 Initializing Arbitrum Testnet Agent...
+DEBUG: Private key loaded from parameter/environment: [REDACTED]
+✅ All critical environment variables validated successfully
+🔍 DEBUG: Starting RPC manager initialization...
+🔍 DEBUG: Network mode: mainnet
+🔍 DEBUG: ALCHEMY_RPC_URL from env: https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-bM9XgIIU
+🔗 DEBUG: Added Alchemy RPC to endpoints list: https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-...
+🔍 DEBUG: Total RPC endpoints to test: 5
+🔍 Testing RPC: https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-bM9XgIIU
+✅ RPC passed tests: https://arb1.arbitrum.io/rpc (0.39s)
+🔍 Testing RPC: https://arbitrum-one.public.blastapi.io
+✅ RPC passed tests: https://arbitrum-one.public.blastapi.io (0.19s)
+🔍 Testing RPC: https://arbitrum-one.publicnode.com
+ERROR:enhanced_market_analyzer:Error fetching historical data for DAI: 429 Client Error: Too Many Requests for url: https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?symbol=DAI&convert=USD
+WARNING:enhanced_market_analyzer:No data available for DAI
+✅ RPC passed tests: https://arbitrum-one.public.blastapi.io (0.14s)
+🔍 Testing RPC: https://arbitrum-one.publicnode.com
+ERROR:enhanced_market_analyzer:Error fetching historical data for ARB from COIN_API: 404 Client Error: Not Found for url: https://rest.coinapi.io/v1/ohlcv/ARB/USD/history?period_id=1DAY&time_start=2024-08-28T04%3A10%3A31.418733&limit=365
+✅ RPC passed tests: https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f938ff891c141 (0.29s)
+🔍 Testing RPC: https://arb1.arbitrum.io/rpc
+✅ RPC passed tests: https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-bM9XgIIU (0.19s)
+🔍 Testing RPC: https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f938ff891c141
+ERROR:enhanced_market_analyzer:Error fetching historical data for ARB: 429 Client Error: Too Many Requests for url: https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?symbol=ARB&convert=USD
+WARNING:enhanced_market_analyzer:No data available for ARB
+INFO:enhanced_market_analyzer:Market summary generated successfully with COIN_API primary strategy
+172.31.100.226 - - [28/Aug/2025 04:10:31] "GET /api/system_metrics HTTP/1.1" 200 -
+INFO:werkzeug:172.31.100.226 - - [28/Aug/2025 04:10:31] "GET /api/system_metrics HTTP/1.1" 200 -
+✅ RPC passed tests: https://arbitrum-one.public.blastapi.io (0.20s)
+🔍 Testing RPC: https://arbitrum-one.publicnode.com
+🔍 Autonomous agent running check: True
+🔍 Autonomous agent running check: True
+🔍 Autonomous agent running check: True
+172.31.100.226 - - [28/Aug/2025 04:10:31] "GET /api/console HTTP/1.1" 200 -
+INFO:werkzeug:172.31.100.226 - - [28/Aug/2025 04:10:31] "GET /api/console HTTP/1.1" 200 -
+✅ RPC passed tests: https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f938ff891c141 (0.28s)
+🔍 Testing RPC: https://arb1.arbitrum.io/rpc
+✅ RPC passed tests: https://arb1.arbitrum.io/rpc (0.36s)
+🔍 Testing RPC: https://arbitrum-one.public.blastapi.io
+✅ RPC passed tests: https://arbitrum-one.publicnode.com (0.56s)
+📊 RPC Test Results: 5/5 endpoints working
+🌐 Operating on Arbitrum Mainnet
+🔍 DEBUG: Final RPC selection results:
+   Primary RPC: https://arbitrum-one.public.blastapi.io
+   Fallback RPCs: 4 available
+🚨 NETWORK_MODE from environment: 'mainnet'
+🔗 Primary RPC: https://arbitrum-one.public.blastapi.io
+🔄 Fallback RPCs: 4 available
+🔍 DEBUG: Attempting to create Web3 connection with primary RPC: https://arbitrum-one.public.blastapi.io
+✅ Successfully connected to primary RPC: https://arbitrum-one.public.blastapi.io
+✅ RPC passed tests: https://arbitrum-one.public.blastapi.io (0.12s)
+🔍 Testing RPC: https://arbitrum-one.publicnode.com
+🔍 DEBUG: Web3 connection verified - Chain ID: 42161, Latest Block: 373060081
+🔑 Wallet Address: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+💰 AGENT INITIALIZED WITH WALLET: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+✅ Private key format validated and normalized
+📋 Mainnet Token addresses verified (DAI-ONLY COMPLIANCE):
+   DAI: 0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1
+   WBTC: 0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f
+   WETH: 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1
+   Aave Pool: 0x794a61358D6845594F94dc1DB02A252b5b4814aD
+💰 Initialized last_collateral_value_usd to 0.0 (will sync with actual position)
+📊 Initialized last_collateral_value_usd to: 0.0
+
+🔄 HYBRID SYSTEM CONFIGURATION:
+═══════════════════════════════════════
+🚀 GROWTH-TRIGGERED SYSTEM:
+   • Growth Threshold: $40
+   • Health Factor: > 2.1
+   • Re-leverage %: 50.0%
+   • Min/Max Borrow: $10 - $200
+⚡ CAPACITY-BASED SYSTEM:
+   • Available Capacity: > $13
+   • Health Factor: > 2.0
+   • Max Utilization: < 20%
+   • Current Available: $85.21 (MEETS THRESHOLD)
+   • Current Utilization: ~15% (MEETS THRESHOLD)
+🔧 SYSTEM SETTINGS:
+   • Operation Cooldown: 60s
+   • Target Health Factor: 3.5
+═══════════════════════════════════════
+
+✅ RPC passed tests: https://arb1.arbitrum.io/rpc (0.37s)
+🔍 Testing RPC: https://arbitrum-one.public.blastapi.io
+INFO:enhanced_market_analyzer:COIN_API client initialized successfully
+INFO:enhanced_market_analyzer:Enhanced Market Analyzer initialized with COIN_API primary, CoinGecko secondary, and CoinMarketCap tertiary fallback
+INFO:enhanced_market_analyzer:Enhanced Market Signal Strategy initialized successfully
+INFO:market_signal_strategy:✅ Market Signal Strategy initialized with CoinMarketCap API
+✅ Market Signal Strategy enabled and ready for debt swaps
+INFO:root:✅ Market Signal Strategy enabled and ready for debt swaps
+🔄 Debt swap system activated for simultaneous operation
+INFO:root:🔄 Debt swap system activated for simultaneous operation
+✅ Market signal methods validated - all required methods present
+✅ Enhanced market signal system fully operational
+🔍 Fetching unified Aave data...
+✅ RPC passed tests: https://arbitrum-one.public.blastapi.io (0.15s)
+🔍 Testing RPC: https://arbitrum-one.publicnode.com
+✅ RPC passed tests: https://arbitrum-one.publicnode.com (0.91s)
+📊 RPC Test Results: 5/5 endpoints working
+🌐 Operating on Arbitrum Mainnet
+🔍 DEBUG: Final RPC selection results:
+   Primary RPC: https://arbitrum-one.public.blastapi.io
+   Fallback RPCs: 4 available
+🚨 NETWORK_MODE from environment: 'mainnet'
+🔗 Primary RPC: https://arbitrum-one.public.blastapi.io
+🔄 Fallback RPCs: 4 available
+🔍 DEBUG: Attempting to create Web3 connection with primary RPC: https://arbitrum-one.public.blastapi.io
+✅ Unified Aave data retrieved successfully:
+   Collateral: $265.08
+   Debt: $108.27
+   Health Factor: 1.9532
+📊 Using LIVE AAVE CONTRACT data: HF 1.9532
+🔍 Autonomous agent running check: True
+⚠️ Fresh Aave data fetch failed: 'NoneType' object has no attribute 'eth'
+✅ Wallet status retrieved: HF 1.9532, Agent Running: True
+172.31.100.226 - - [28/Aug/2025 04:10:32] "GET /api/wallet_status HTTP/1.1" 200 -
+INFO:werkzeug:172.31.100.226 - - [28/Aug/2025 04:10:32] "GET /api/wallet_status HTTP/1.1" 200 -
+✅ Successfully connected to primary RPC: https://arbitrum-one.public.blastapi.io
+🔍 DEBUG: Web3 connection verified - Chain ID: 42161, Latest Block: 373060082
+🔑 Wallet Address: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+💰 AGENT INITIALIZED WITH WALLET: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+✅ Private key format validated and normalized
+📋 Mainnet Token addresses verified (DAI-ONLY COMPLIANCE):
+   DAI: 0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1
+   WBTC: 0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f
+   WETH: 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1
+   Aave Pool: 0x794a61358D6845594F94dc1DB02A252b5b4814aD
+💰 Initialized last_collateral_value_usd to 0.0 (will sync with actual position)
+📊 Initialized last_collateral_value_usd to: 0.0
+
+🔄 HYBRID SYSTEM CONFIGURATION:
+═══════════════════════════════════════
+🚀 GROWTH-TRIGGERED SYSTEM:
+   • Growth Threshold: $40
+   • Health Factor: > 2.1
+   • Re-leverage %: 50.0%
+   • Min/Max Borrow: $10 - $200
+⚡ CAPACITY-BASED SYSTEM:
+   • Available Capacity: > $13
+   • Health Factor: > 2.0
+   • Max Utilization: < 20%
+   • Current Available: $85.21 (MEETS THRESHOLD)
+   • Current Utilization: ~15% (MEETS THRESHOLD)
+🔧 SYSTEM SETTINGS:
+   • Operation Cooldown: 60s
+   • Target Health Factor: 3.5
+═══════════════════════════════════════
+
+🔍 Autonomous agent running check: True
+🔍 Autonomous agent running check: True
+172.31.100.226 - - [28/Aug/2025 04:10:32] "GET /api/console HTTP/1.1" 200 -
+INFO:werkzeug:172.31.100.226 - - [28/Aug/2025 04:10:32] "GET /api/console HTTP/1.1" 200 -
+✅ RPC passed tests: https://arbitrum-one.publicnode.com (1.02s)
+📊 RPC Test Results: 5/5 endpoints working
+🌐 Operating on Arbitrum Mainnet
+🔍 DEBUG: Final RPC selection results:
+   Primary RPC: https://arbitrum-one.public.blastapi.io
+   Fallback RPCs: 4 available
+🚨 NETWORK_MODE from environment: 'mainnet'
+🔗 Primary RPC: https://arbitrum-one.public.blastapi.io
+🔄 Fallback RPCs: 4 available
+🔍 DEBUG: Attempting to create Web3 connection with primary RPC: https://arbitrum-one.public.blastapi.io
+✅ Successfully connected to primary RPC: https://arbitrum-one.public.blastapi.io
+INFO:enhanced_market_analyzer:COIN_API client initialized successfully
+INFO:enhanced_market_analyzer:Enhanced Market Analyzer initialized with COIN_API primary, CoinGecko secondary, and CoinMarketCap tertiary fallback
+INFO:enhanced_market_analyzer:Enhanced Market Signal Strategy initialized successfully
+INFO:market_signal_strategy:✅ Market Signal Strategy initialized with CoinMarketCap API
+✅ Market Signal Strategy enabled and ready for debt swaps
+INFO:root:✅ Market Signal Strategy enabled and ready for debt swaps
+🔄 Debt swap system activated for simultaneous operation
+INFO:root:🔄 Debt swap system activated for simultaneous operation
+✅ Market signal methods validated - all required methods present
+✅ Enhanced market signal system fully operational
+🔍 Fetching unified Aave data...
+🔍 DEBUG: Web3 connection verified - Chain ID: 42161, Latest Block: 373060084
+🔑 Wallet Address: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+💰 AGENT INITIALIZED WITH WALLET: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+✅ Private key format validated and normalized
+📋 Mainnet Token addresses verified (DAI-ONLY COMPLIANCE):
+   DAI: 0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1
+   WBTC: 0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f
+   WETH: 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1
+   Aave Pool: 0x794a61358D6845594F94dc1DB02A252b5b4814aD
+💰 Initialized last_collateral_value_usd to 0.0 (will sync with actual position)
+📊 Initialized last_collateral_value_usd to: 0.0
+
+🔄 HYBRID SYSTEM CONFIGURATION:
+═══════════════════════════════════════
+🚀 GROWTH-TRIGGERED SYSTEM:
+   • Growth Threshold: $40
+   • Health Factor: > 2.1
+   • Re-leverage %: 50.0%
+   • Min/Max Borrow: $10 - $200
+⚡ CAPACITY-BASED SYSTEM:
+   • Available Capacity: > $13
+   • Health Factor: > 2.0
+   • Max Utilization: < 20%
+   • Current Available: $85.21 (MEETS THRESHOLD)
+   • Current Utilization: ~15% (MEETS THRESHOLD)
+🔧 SYSTEM SETTINGS:
+   • Operation Cooldown: 60s
+   • Target Health Factor: 3.5
+═══════════════════════════════════════
+
+✅ Unified Aave data retrieved successfully:
+   Collateral: $265.08
+   Debt: $108.27
+   Health Factor: 1.9532
+📊 Using LIVE AAVE CONTRACT data: HF 1.9532
+✅ RPC passed tests: https://arbitrum-one.publicnode.com (0.92s)
+📊 RPC Test Results: 5/5 endpoints working
+🌐 Operating on Arbitrum Mainnet
+🔍 DEBUG: Final RPC selection results:
+   Primary RPC: https://arbitrum-one.public.blastapi.io
+   Fallback RPCs: 4 available
+🚨 NETWORK_MODE from environment: 'mainnet'
+🔗 Primary RPC: https://arbitrum-one.public.blastapi.io
+🔄 Fallback RPCs: 4 available
+🔍 DEBUG: Attempting to create Web3 connection with primary RPC: https://arbitrum-one.public.blastapi.io
+✅ Successfully connected to primary RPC: https://arbitrum-one.public.blastapi.io
+INFO:enhanced_market_analyzer:COIN_API client initialized successfully
+INFO:enhanced_market_analyzer:Enhanced Market Analyzer initialized with COIN_API primary, CoinGecko secondary, and CoinMarketCap tertiary fallback
+INFO:enhanced_market_analyzer:Enhanced Market Signal Strategy initialized successfully
+INFO:market_signal_strategy:✅ Market Signal Strategy initialized with CoinMarketCap API
+✅ Market Signal Strategy enabled and ready for debt swaps
+INFO:root:✅ Market Signal Strategy enabled and ready for debt swaps
+🔄 Debt swap system activated for simultaneous operation
+INFO:root:🔄 Debt swap system activated for simultaneous operation
+✅ Market signal methods validated - all required methods present
+✅ Enhanced market signal system fully operational
+INFO:enhanced_market_analyzer:COIN_API client initialized successfully
+INFO:enhanced_market_analyzer:Enhanced Market Analyzer initialized with COIN_API primary, CoinGecko secondary, and CoinMarketCap tertiary fallback
+INFO:enhanced_market_analyzer:Fetching BTC price from COIN_API (primary)
+🔍 DEBUG: Web3 connection verified - Chain ID: 42161, Latest Block: 373060085
+🔑 Wallet Address: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+💰 AGENT INITIALIZED WITH WALLET: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+✅ Private key format validated and normalized
+📋 Mainnet Token addresses verified (DAI-ONLY COMPLIANCE):
+   DAI: 0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1
+   WBTC: 0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f
+   WETH: 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1
+   Aave Pool: 0x794a61358D6845594F94dc1DB02A252b5b4814aD
+💰 Initialized last_collateral_value_usd to 0.0 (will sync with actual position)
+📊 Initialized last_collateral_value_usd to: 0.0
+
+🔄 HYBRID SYSTEM CONFIGURATION:
+═══════════════════════════════════════
+🚀 GROWTH-TRIGGERED SYSTEM:
+   • Growth Threshold: $40
+   • Health Factor: > 2.1
+   • Re-leverage %: 50.0%
+   • Min/Max Borrow: $10 - $200
+⚡ CAPACITY-BASED SYSTEM:
+   • Available Capacity: > $13
+   • Health Factor: > 2.0
+   • Max Utilization: < 20%
+   • Current Available: $85.21 (MEETS THRESHOLD)
+   • Current Utilization: ~15% (MEETS THRESHOLD)
+🔧 SYSTEM SETTINGS:
+   • Operation Cooldown: 60s
+   • Target Health Factor: 3.5
+═══════════════════════════════════════
+
+⚠️ Success rate prediction failed: 'NoneType' object has no attribute 'get_user_account_data'
+🤖 Initializing Arbitrum Testnet Agent...
+DEBUG: Private key loaded from parameter/environment: [REDACTED]
+✅ All critical environment variables validated successfully
+🔍 DEBUG: Starting RPC manager initialization...
+🔍 DEBUG: Network mode: mainnet
+🔍 DEBUG: ALCHEMY_RPC_URL from env: https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-bM9XgIIU
+🔗 DEBUG: Added Alchemy RPC to endpoints list: https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-...
+🔍 DEBUG: Total RPC endpoints to test: 5
+🔍 Testing RPC: https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-bM9XgIIU
+INFO:enhanced_market_analyzer:COIN_API client initialized successfully
+INFO:enhanced_market_analyzer:Enhanced Market Analyzer initialized with COIN_API primary, CoinGecko secondary, and CoinMarketCap tertiary fallback
+INFO:enhanced_market_analyzer:Enhanced Market Signal Strategy initialized successfully
+INFO:market_signal_strategy:✅ Market Signal Strategy initialized with CoinMarketCap API
+✅ Market Signal Strategy enabled and ready for debt swaps
+INFO:root:✅ Market Signal Strategy enabled and ready for debt swaps
+🔄 Debt swap system activated for simultaneous operation
+INFO:root:🔄 Debt swap system activated for simultaneous operation
+✅ Market signal methods validated - all required methods present
+✅ Enhanced market signal system fully operational
+🔍 Fetching unified Aave data...
+✅ RPC passed tests: https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-bM9XgIIU (0.21s)
+🔍 Testing RPC: https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f938ff891c141
+INFO:enhanced_market_analyzer:✅ COIN_API: BTC = $112111.02
+INFO:enhanced_market_analyzer:Fetching ETH price from COIN_API (primary)
+✅ Unified Aave data retrieved successfully:
+✅ RPC passed tests: https://arbitrum-one.publicnode.com (0.98s)
+📊 RPC Test Results: 5/5 endpoints working
+🌐 Operating on Arbitrum Mainnet
+🔍 DEBUG: Final RPC selection results:
+   Primary RPC: https://arbitrum-one.public.blastapi.io
+   Fallback RPCs: 4 available
+🚨 NETWORK_MODE from environment: 'mainnet'
+🔗 Primary RPC: https://arbitrum-one.public.blastapi.io
+🔄 Fallback RPCs: 4 available
+🔍 DEBUG: Attempting to create Web3 connection with primary RPC: https://arbitrum-one.public.blastapi.io
+   Collateral: $265.08
+   Debt: $108.27
+   Health Factor: 1.9532
+📊 Using LIVE AAVE CONTRACT data: HF 1.9532
+🔍 Autonomous agent running check: True
+🤖 Initializing Arbitrum Testnet Agent...
+DEBUG: Private key loaded from parameter/environment: [REDACTED]
+✅ All critical environment variables validated successfully
+🔍 DEBUG: Starting RPC manager initialization...
+🔍 DEBUG: Network mode: mainnet
+🔍 DEBUG: ALCHEMY_RPC_URL from env: https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-bM9XgIIU
+🔗 DEBUG: Added Alchemy RPC to endpoints list: https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-...
+🔍 DEBUG: Total RPC endpoints to test: 5
+🔍 Testing RPC: https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-bM9XgIIU
+✅ Successfully connected to primary RPC: https://arbitrum-one.public.blastapi.io
+INFO:enhanced_market_analyzer:✅ COIN_API: ETH = $4548.30
+INFO:enhanced_market_analyzer:Fetching DAI price from COIN_API (primary)
+🔍 DEBUG: Web3 connection verified - Chain ID: 42161, Latest Block: 373060086
+🔑 Wallet Address: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+💰 AGENT INITIALIZED WITH WALLET: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+✅ Private key format validated and normalized
+📋 Mainnet Token addresses verified (DAI-ONLY COMPLIANCE):
+   DAI: 0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1
+   WBTC: 0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f
+   WETH: 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1
+   Aave Pool: 0x794a61358D6845594F94dc1DB02A252b5b4814aD
+💰 Initialized last_collateral_value_usd to 0.0 (will sync with actual position)
+📊 Initialized last_collateral_value_usd to: 0.0
+
+🔄 HYBRID SYSTEM CONFIGURATION:
+═══════════════════════════════════════
+🚀 GROWTH-TRIGGERED SYSTEM:
+   • Growth Threshold: $40
+   • Health Factor: > 2.1
+   • Re-leverage %: 50.0%
+   • Min/Max Borrow: $10 - $200
+⚡ CAPACITY-BASED SYSTEM:
+   • Available Capacity: > $13
+   • Health Factor: > 2.0
+   • Max Utilization: < 20%
+   • Current Available: $85.21 (MEETS THRESHOLD)
+   • Current Utilization: ~15% (MEETS THRESHOLD)
+🔧 SYSTEM SETTINGS:
+   • Operation Cooldown: 60s
+   • Target Health Factor: 3.5
+═══════════════════════════════════════
+
+✅ RPC passed tests: https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-bM9XgIIU (0.17s)
+🔍 Testing RPC: https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f938ff891c141
+INFO:enhanced_market_analyzer:✅ COIN_API: DAI = $1.00
+INFO:enhanced_market_analyzer:Fetching ARB price from COIN_API (primary)
+✅ RPC passed tests: https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f938ff891c141 (0.27s)
+🔍 Testing RPC: https://arb1.arbitrum.io/rpc
+INFO:enhanced_market_analyzer:COIN_API client initialized successfully
+INFO:enhanced_market_analyzer:Enhanced Market Analyzer initialized with COIN_API primary, CoinGecko secondary, and CoinMarketCap tertiary fallback
+INFO:enhanced_market_analyzer:Enhanced Market Signal Strategy initialized successfully
+INFO:market_signal_strategy:✅ Market Signal Strategy initialized with CoinMarketCap API
+✅ Market Signal Strategy enabled and ready for debt swaps
+INFO:root:✅ Market Signal Strategy enabled and ready for debt swaps
+🔄 Debt swap system activated for simultaneous operation
+INFO:root:🔄 Debt swap system activated for simultaneous operation
+✅ Market signal methods validated - all required methods present
+✅ Enhanced market signal system fully operational
+INFO:enhanced_market_analyzer:✅ COIN_API: ARB = $0.51
+🔍 Autonomous agent running check: True
+🔍 Autonomous agent running check: True
+172.31.100.226 - - [28/Aug/2025 04:10:33] "GET /api/console HTTP/1.1" 200 -
+INFO:werkzeug:172.31.100.226 - - [28/Aug/2025 04:10:33] "GET /api/console HTTP/1.1" 200 -
+ERROR:enhanced_market_analyzer:Error fetching historical data for BTC from COIN_API: 404 Client Error: Not Found for url: https://rest.coinapi.io/v1/ohlcv/BTC/USD/history?period_id=1DAY&time_start=2024-08-28T04%3A10%3A33.671794&limit=365
+⚠️ Success rate prediction failed: 'NoneType' object has no attribute 'get_user_account_data'
+🤖 Initializing Arbitrum Testnet Agent...
+DEBUG: Private key loaded from parameter/environment: [REDACTED]
+✅ All critical environment variables validated successfully
+🔍 DEBUG: Starting RPC manager initialization...
+🔍 DEBUG: Network mode: mainnet
+🔍 DEBUG: ALCHEMY_RPC_URL from env: https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-bM9XgIIU
+🔗 DEBUG: Added Alchemy RPC to endpoints list: https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-...
+🔍 DEBUG: Total RPC endpoints to test: 5
+🔍 Testing RPC: https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-bM9XgIIU
+✅ RPC passed tests: https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f938ff891c141 (0.28s)
+🔍 Testing RPC: https://arb1.arbitrum.io/rpc
+🔍 Autonomous agent running check: True
+🤖 Initializing Arbitrum Testnet Agent...
+DEBUG: Private key loaded from parameter/environment: [REDACTED]
+✅ All critical environment variables validated successfully
+🔍 DEBUG: Starting RPC manager initialization...
+🔍 DEBUG: Network mode: mainnet
+🔍 DEBUG: ALCHEMY_RPC_URL from env: https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-bM9XgIIU
+🔗 DEBUG: Added Alchemy RPC to endpoints list: https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-...
+🔍 DEBUG: Total RPC endpoints to test: 5
+🔍 Testing RPC: https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-bM9XgIIU
+✅ RPC passed tests: https://arb1.arbitrum.io/rpc (0.35s)
+🔍 Testing RPC: https://arbitrum-one.public.blastapi.io
+✅ RPC passed tests: https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-bM9XgIIU (0.17s)
+🔍 Testing RPC: https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f938ff891c141
+ERROR:enhanced_market_analyzer:Error fetching historical data for BTC: 429 Client Error: Too Many Requests for url: https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?symbol=BTC&convert=USD
+WARNING:enhanced_market_analyzer:No data available for BTC
+✅ RPC passed tests: https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-bM9XgIIU (0.16s)
+🔍 Testing RPC: https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f938ff891c141
+ERROR:enhanced_market_analyzer:Error fetching historical data for ETH from COIN_API: 404 Client Error: Not Found for url: https://rest.coinapi.io/v1/ohlcv/ETH/USD/history?period_id=1DAY&time_start=2024-08-28T04%3A10%3A33.938792&limit=365
+✅ RPC passed tests: https://arbitrum-one.public.blastapi.io (0.14s)
+🔍 Testing RPC: https://arbitrum-one.publicnode.com
+ERROR:enhanced_market_analyzer:Error fetching historical data for ETH: 429 Client Error: Too Many Requests for url: https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?symbol=ETH&convert=USD
+WARNING:enhanced_market_analyzer:No data available for ETH
+✅ RPC passed tests: https://arb1.arbitrum.io/rpc (0.35s)
+🔍 Testing RPC: https://arbitrum-one.public.blastapi.io
+✅ RPC passed tests: https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f938ff891c141 (0.27s)
+🔍 Testing RPC: https://arb1.arbitrum.io/rpc
+✅ RPC passed tests: https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f938ff891c141 (0.27s)
+🔍 Testing RPC: https://arb1.arbitrum.io/rpc
+✅ RPC passed tests: https://arbitrum-one.public.blastapi.io (0.11s)
+🔍 Testing RPC: https://arbitrum-one.publicnode.com
+✅ RPC passed tests: https://arb1.arbitrum.io/rpc (0.37s)
+🔍 Testing RPC: https://arbitrum-one.public.blastapi.io
+✅ RPC passed tests: https://arb1.arbitrum.io/rpc (0.33s)
+🔍 Testing RPC: https://arbitrum-one.public.blastapi.io
+ERROR:enhanced_market_analyzer:Error fetching historical data for DAI from COIN_API: 404 Client Error: Not Found for url: https://rest.coinapi.io/v1/ohlcv/DAI/USD/history?period_id=1DAY&time_start=2024-08-28T04%3A10%3A34.083713&limit=365
+ERROR:enhanced_market_analyzer:Error fetching historical data for DAI: 429 Client Error: Too Many Requests for url: https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?symbol=DAI&convert=USD
+WARNING:enhanced_market_analyzer:No data available for DAI
+✅ RPC passed tests: https://arbitrum-one.public.blastapi.io (0.13s)
+🔍 Testing RPC: https://arbitrum-one.publicnode.com
+✅ RPC passed tests: https://arbitrum-one.public.blastapi.io (0.18s)
+ERROR:enhanced_market_analyzer:Error fetching historical data for ARB from COIN_API: 404 Client Error: Not Found for url: https://rest.coinapi.io/v1/ohlcv/ARB/USD/history?period_id=1DAY&time_start=2024-08-28T04%3A10%3A34.689089&limit=365
+🔍 Testing RPC: https://arbitrum-one.publicnode.com
+ERROR:enhanced_market_analyzer:Error fetching historical data for ARB: 429 Client Error: Too Many Requests for url: https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?symbol=ARB&convert=USD
+WARNING:enhanced_market_analyzer:No data available for ARB
+INFO:enhanced_market_analyzer:Market summary generated successfully with COIN_API primary strategy
+172.31.100.226 - - [28/Aug/2025 04:10:34] "GET /api/system_metrics HTTP/1.1" 200 -
+INFO:werkzeug:172.31.100.226 - - [28/Aug/2025 04:10:34] "GET /api/system_metrics HTTP/1.1" 200 -
+✅ RPC passed tests: https://arbitrum-one.publicnode.com (0.72s)
+📊 RPC Test Results: 5/5 endpoints working
+🌐 Operating on Arbitrum Mainnet
+🔍 DEBUG: Final RPC selection results:
+   Primary RPC: https://arbitrum-one.public.blastapi.io
+   Fallback RPCs: 4 available
+🚨 NETWORK_MODE from environment: 'mainnet'
+🔗 Primary RPC: https://arbitrum-one.public.blastapi.io
+🔄 Fallback RPCs: 4 available
+🔍 DEBUG: Attempting to create Web3 connection with primary RPC: https://arbitrum-one.public.blastapi.io
+✅ Successfully connected to primary RPC: https://arbitrum-one.public.blastapi.io
+🔍 DEBUG: Web3 connection verified - Chain ID: 42161, Latest Block: 373060092
+🔑 Wallet Address: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+💰 AGENT INITIALIZED WITH WALLET: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+✅ Private key format validated and normalized
+📋 Mainnet Token addresses verified (DAI-ONLY COMPLIANCE):
+   DAI: 0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1
+   WBTC: 0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f
+   WETH: 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1
+   Aave Pool: 0x794a61358D6845594F94dc1DB02A252b5b4814aD
+💰 Initialized last_collateral_value_usd to 0.0 (will sync with actual position)
+📊 Initialized last_collateral_value_usd to: 0.0
+
+🔄 HYBRID SYSTEM CONFIGURATION:
+═══════════════════════════════════════
+🚀 GROWTH-TRIGGERED SYSTEM:
+   • Growth Threshold: $40
+   • Health Factor: > 2.1
+   • Re-leverage %: 50.0%
+   • Min/Max Borrow: $10 - $200
+⚡ CAPACITY-BASED SYSTEM:
+   • Available Capacity: > $13
+   • Health Factor: > 2.0
+   • Max Utilization: < 20%
+   • Current Available: $85.21 (MEETS THRESHOLD)
+   • Current Utilization: ~15% (MEETS THRESHOLD)
+🔧 SYSTEM SETTINGS:
+   • Operation Cooldown: 60s
+   • Target Health Factor: 3.5
+═══════════════════════════════════════
+
+✅ RPC passed tests: https://arbitrum-one.publicnode.com (1.03s)
+📊 RPC Test Results: 5/5 endpoints working
+🌐 Operating on Arbitrum Mainnet
+🔍 DEBUG: Final RPC selection results:
+   Primary RPC: https://arbitrum-one.public.blastapi.io
+   Fallback RPCs: 4 available
+🚨 NETWORK_MODE from environment: 'mainnet'
+🔗 Primary RPC: https://arbitrum-one.public.blastapi.io
+🔄 Fallback RPCs: 4 available
+🔍 DEBUG: Attempting to create Web3 connection with primary RPC: https://arbitrum-one.public.blastapi.io
+✅ Successfully connected to primary RPC: https://arbitrum-one.public.blastapi.io
+🔍 DEBUG: Web3 connection verified - Chain ID: 42161, Latest Block: 373060093
+🔑 Wallet Address: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+💰 AGENT INITIALIZED WITH WALLET: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+✅ Private key format validated and normalized
+📋 Mainnet Token addresses verified (DAI-ONLY COMPLIANCE):
+   DAI: 0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1
+   WBTC: 0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f
+   WETH: 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1
+   Aave Pool: 0x794a61358D6845594F94dc1DB02A252b5b4814aD
+💰 Initialized last_collateral_value_usd to 0.0 (will sync with actual position)
+📊 Initialized last_collateral_value_usd to: 0.0
+
+🔄 HYBRID SYSTEM CONFIGURATION:
+═══════════════════════════════════════
+🚀 GROWTH-TRIGGERED SYSTEM:
+   • Growth Threshold: $40
+   • Health Factor: > 2.1
+   • Re-leverage %: 50.0%
+   • Min/Max Borrow: $10 - $200
+⚡ CAPACITY-BASED SYSTEM:
+   • Available Capacity: > $13
+   • Health Factor: > 2.0
+   • Max Utilization: < 20%
+   • Current Available: $85.21 (MEETS THRESHOLD)
+   • Current Utilization: ~15% (MEETS THRESHOLD)
+🔧 SYSTEM SETTINGS:
+   • Operation Cooldown: 60s
+   • Target Health Factor: 3.5
+═══════════════════════════════════════
+
+INFO:enhanced_market_analyzer:COIN_API client initialized successfully
+INFO:enhanced_market_analyzer:Enhanced Market Analyzer initialized with COIN_API primary, CoinGecko secondary, and CoinMarketCap tertiary fallback
+INFO:enhanced_market_analyzer:Enhanced Market Signal Strategy initialized successfully
+INFO:market_signal_strategy:✅ Market Signal Strategy initialized with CoinMarketCap API
+✅ Market Signal Strategy enabled and ready for debt swaps
+INFO:root:✅ Market Signal Strategy enabled and ready for debt swaps
+🔄 Debt swap system activated for simultaneous operation
+INFO:root:🔄 Debt swap system activated for simultaneous operation
+✅ Market signal methods validated - all required methods present
+✅ Enhanced market signal system fully operational
+🔍 Fetching unified Aave data...
+✅ Unified Aave data retrieved successfully:
+   Collateral: $265.08
+   Debt: $108.27
+   Health Factor: 1.9532
+📊 Using LIVE AAVE CONTRACT data: HF 1.9532
+🤖 Initializing Arbitrum Testnet Agent...
+DEBUG: Private key loaded from parameter/environment: [REDACTED]
+✅ All critical environment variables validated successfully
+🔍 DEBUG: Starting RPC manager initialization...
+🔍 DEBUG: Network mode: mainnet
+🔍 DEBUG: ALCHEMY_RPC_URL from env: https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-bM9XgIIU
+🔗 DEBUG: Added Alchemy RPC to endpoints list: https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-...
+🔍 DEBUG: Total RPC endpoints to test: 5
+🔍 Testing RPC: https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-bM9XgIIU
+INFO:enhanced_market_analyzer:COIN_API client initialized successfully
+INFO:enhanced_market_analyzer:Enhanced Market Analyzer initialized with COIN_API primary, CoinGecko secondary, and CoinMarketCap tertiary fallback
+INFO:enhanced_market_analyzer:Enhanced Market Signal Strategy initialized successfully
+INFO:market_signal_strategy:✅ Market Signal Strategy initialized with CoinMarketCap API
+✅ Market Signal Strategy enabled and ready for debt swaps
+INFO:root:✅ Market Signal Strategy enabled and ready for debt swaps
+🔄 Debt swap system activated for simultaneous operation
+INFO:root:🔄 Debt swap system activated for simultaneous operation
+✅ Market signal methods validated - all required methods present
+✅ Enhanced market signal system fully operational
+🔍 Fetching unified Aave data...
+✅ Unified Aave data retrieved successfully:
+   Collateral: $265.08
+   Debt: $108.27
+   Health Factor: 1.9532
+📊 Using LIVE AAVE CONTRACT data: HF 1.9532
+✅ RPC passed tests: https://arbitrum-one.publicnode.com (0.79s)
+📊 RPC Test Results: 5/5 endpoints working
+🌐 Operating on Arbitrum Mainnet
+🔍 DEBUG: Final RPC selection results:
+   Primary RPC: https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-bM9XgIIU
+   Fallback RPCs: 4 available
+🚨 NETWORK_MODE from environment: 'mainnet'
+🔗 Primary RPC: https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-bM9XgIIU
+🔄 Fallback RPCs: 4 available
+🔍 DEBUG: Attempting to create Web3 connection with primary RPC: https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-bM9XgIIU
+✅ RPC passed tests: https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-bM9XgIIU (0.15s)
+🔍 Testing RPC: https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f938ff891c141
+✅ Successfully connected to primary RPC: https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-bM9XgIIU
+✅ RPC passed tests: https://arbitrum-one.publicnode.com (0.88s)
+📊 RPC Test Results: 5/5 endpoints working
+🌐 Operating on Arbitrum Mainnet
+🔍 DEBUG: Final RPC selection results:
+   Primary RPC: https://arbitrum-one.public.blastapi.io
+   Fallback RPCs: 4 available
+🚨 NETWORK_MODE from environment: 'mainnet'
+🔗 Primary RPC: https://arbitrum-one.public.blastapi.io
+🔄 Fallback RPCs: 4 available
+🔍 DEBUG: Attempting to create Web3 connection with primary RPC: https://arbitrum-one.public.blastapi.io
+✅ Successfully connected to primary RPC: https://arbitrum-one.public.blastapi.io
+🔍 DEBUG: Web3 connection verified - Chain ID: 42161, Latest Block: 373060095
+🔍 Autonomous agent running check: True
+🔑 Wallet Address: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+💰 AGENT INITIALIZED WITH WALLET: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+✅ Private key format validated and normalized
+📋 Mainnet Token addresses verified (DAI-ONLY COMPLIANCE):
+   DAI: 0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1
+   WBTC: 0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f
+   WETH: 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1
+   Aave Pool: 0x794a61358D6845594F94dc1DB02A252b5b4814aD
+💰 Initialized last_collateral_value_usd to 0.0 (will sync with actual position)
+📊 Initialized last_collateral_value_usd to: 0.0
+
+🔄 HYBRID SYSTEM CONFIGURATION:
+═══════════════════════════════════════
+🚀 GROWTH-TRIGGERED SYSTEM:
+   • Growth Threshold: $40
+   • Health Factor: > 2.1
+   • Re-leverage %: 50.0%
+   • Min/Max Borrow: $10 - $200
+⚡ CAPACITY-BASED SYSTEM:
+   • Available Capacity: > $13
+   • Health Factor: > 2.0
+   • Max Utilization: < 20%
+   • Current Available: $85.21 (MEETS THRESHOLD)
+   • Current Utilization: ~15% (MEETS THRESHOLD)
+🔧 SYSTEM SETTINGS:
+   • Operation Cooldown: 60s
+   • Target Health Factor: 3.5
+═══════════════════════════════════════
+
+🔍 Autonomous agent running check: True
+172.31.100.226 - - [28/Aug/2025 04:10:35] "GET /api/console HTTP/1.1" 200 -
+INFO:werkzeug:172.31.100.226 - - [28/Aug/2025 04:10:35] "GET /api/console HTTP/1.1" 200 -
+🔍 DEBUG: Web3 connection verified - Chain ID: 42161, Latest Block: 373060096
+🔑 Wallet Address: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+INFO:enhanced_market_analyzer:COIN_API client initialized successfully
+INFO:enhanced_market_analyzer:Enhanced Market Analyzer initialized with COIN_API primary, CoinGecko secondary, and CoinMarketCap tertiary fallback
+INFO:enhanced_market_analyzer:Fetching BTC price from COIN_API (primary)
+💰 AGENT INITIALIZED WITH WALLET: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+✅ Private key format validated and normalized
+📋 Mainnet Token addresses verified (DAI-ONLY COMPLIANCE):
+   DAI: 0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1
+   WBTC: 0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f
+   WETH: 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1
+   Aave Pool: 0x794a61358D6845594F94dc1DB02A252b5b4814aD
+💰 Initialized last_collateral_value_usd to 0.0 (will sync with actual position)
+📊 Initialized last_collateral_value_usd to: 0.0
+
+🔄 HYBRID SYSTEM CONFIGURATION:
+═══════════════════════════════════════
+🚀 GROWTH-TRIGGERED SYSTEM:
+   • Growth Threshold: $40
+   • Health Factor: > 2.1
+   • Re-leverage %: 50.0%
+   • Min/Max Borrow: $10 - $200
+⚡ CAPACITY-BASED SYSTEM:
+   • Available Capacity: > $13
+   • Health Factor: > 2.0
+   • Max Utilization: < 20%
+   • Current Available: $85.21 (MEETS THRESHOLD)
+   • Current Utilization: ~15% (MEETS THRESHOLD)
+🔧 SYSTEM SETTINGS:
+   • Operation Cooldown: 60s
+   • Target Health Factor: 3.5
+═══════════════════════════════════════
+
+🔍 Autonomous agent running check: True
+🤖 Initializing Arbitrum Testnet Agent...
+DEBUG: Private key loaded from parameter/environment: [REDACTED]
+✅ All critical environment variables validated successfully
+🔍 DEBUG: Starting RPC manager initialization...
+🔍 DEBUG: Network mode: mainnet
+🔍 DEBUG: ALCHEMY_RPC_URL from env: https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-bM9XgIIU
+🔗 DEBUG: Added Alchemy RPC to endpoints list: https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-...
+🔍 DEBUG: Total RPC endpoints to test: 5
+🔍 Testing RPC: https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-bM9XgIIU
+✅ RPC passed tests: https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f938ff891c141 (0.28s)
+🔍 Testing RPC: https://arb1.arbitrum.io/rpc
+INFO:enhanced_market_analyzer:COIN_API client initialized successfully
+INFO:enhanced_market_analyzer:Enhanced Market Analyzer initialized with COIN_API primary, CoinGecko secondary, and CoinMarketCap tertiary fallback
+INFO:enhanced_market_analyzer:Enhanced Market Signal Strategy initialized successfully
+INFO:market_signal_strategy:✅ Market Signal Strategy initialized with CoinMarketCap API
+✅ Market Signal Strategy enabled and ready for debt swaps
+INFO:root:✅ Market Signal Strategy enabled and ready for debt swaps
+🔄 Debt swap system activated for simultaneous operation
+INFO:root:🔄 Debt swap system activated for simultaneous operation
+✅ Market signal methods validated - all required methods present
+✅ Enhanced market signal system fully operational
+🔍 Fetching unified Aave data...
+INFO:enhanced_market_analyzer:COIN_API client initialized successfully
+INFO:enhanced_market_analyzer:Enhanced Market Analyzer initialized with COIN_API primary, CoinGecko secondary, and CoinMarketCap tertiary fallback
+INFO:enhanced_market_analyzer:Enhanced Market Signal Strategy initialized successfully
+INFO:market_signal_strategy:✅ Market Signal Strategy initialized with CoinMarketCap API
+✅ Market Signal Strategy enabled and ready for debt swaps
+INFO:root:✅ Market Signal Strategy enabled and ready for debt swaps
+🔄 Debt swap system activated for simultaneous operation
+INFO:root:🔄 Debt swap system activated for simultaneous operation
+✅ Market signal methods validated - all required methods present
+✅ Enhanced market signal system fully operational
+INFO:enhanced_market_analyzer:✅ COIN_API: BTC = $112113.02
+INFO:enhanced_market_analyzer:Fetching ETH price from COIN_API (primary)
+✅ Unified Aave data retrieved successfully:
+   Collateral: $265.08
+   Debt: $108.27
+   Health Factor: 1.9532
+📊 Using LIVE AAVE CONTRACT data: HF 1.9532
+⚠️ Success rate prediction failed: 'NoneType' object has no attribute 'get_user_account_data'
+🤖 Initializing Arbitrum Testnet Agent...
+DEBUG: Private key loaded from parameter/environment: [REDACTED]
+✅ All critical environment variables validated successfully
+🔍 DEBUG: Starting RPC manager initialization...
+🔍 DEBUG: Network mode: mainnet
+🔍 DEBUG: ALCHEMY_RPC_URL from env: https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-bM9XgIIU
+🔗 DEBUG: Added Alchemy RPC to endpoints list: https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-...
+🔍 DEBUG: Total RPC endpoints to test: 5
+🔍 Testing RPC: https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-bM9XgIIU
+✅ RPC passed tests: https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-bM9XgIIU (0.23s)
+🔍 Testing RPC: https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f938ff891c141
+INFO:enhanced_market_analyzer:✅ COIN_API: ETH = $4548.52
+INFO:enhanced_market_analyzer:Fetching DAI price from COIN_API (primary)
+✅ RPC passed tests: https://arb1.arbitrum.io/rpc (0.33s)
+🔍 Testing RPC: https://arbitrum-one.public.blastapi.io
+INFO:enhanced_market_analyzer:COIN_API client initialized successfully
+INFO:enhanced_market_analyzer:Enhanced Market Analyzer initialized with COIN_API primary, CoinGecko secondary, and CoinMarketCap tertiary fallback
+INFO:enhanced_market_analyzer:Fetching BTC price from COIN_API (primary)
+✅ RPC passed tests: https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-bM9XgIIU (0.19s)
+🔍 Testing RPC: https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f938ff891c141
+INFO:enhanced_market_analyzer:✅ COIN_API: DAI = $1.00
+INFO:enhanced_market_analyzer:Fetching ARB price from COIN_API (primary)
+✅ RPC passed tests: https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f938ff891c141 (0.27s)
+🔍 Testing RPC: https://arb1.arbitrum.io/rpc
+✅ RPC passed tests: https://arbitrum-one.public.blastapi.io (0.13s)
+🔍 Testing RPC: https://arbitrum-one.publicnode.com
+INFO:enhanced_market_analyzer:✅ COIN_API: ARB = $0.51
+ERROR:enhanced_market_analyzer:Error fetching historical data for BTC from COIN_API: 404 Client Error: Not Found for url: https://rest.coinapi.io/v1/ohlcv/BTC/USD/history?period_id=1DAY&time_start=2024-08-28T04%3A10%3A36.365765&limit=365
+INFO:enhanced_market_analyzer:✅ COIN_API: BTC = $112111.19
+INFO:enhanced_market_analyzer:Fetching ETH price from COIN_API (primary)
+✅ RPC passed tests: https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f938ff891c141 (0.28s)
+🔍 Testing RPC: https://arb1.arbitrum.io/rpc
+ERROR:enhanced_market_analyzer:Error fetching historical data for BTC: 429 Client Error: Too Many Requests for url: https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?symbol=BTC&convert=USD
+WARNING:enhanced_market_analyzer:No data available for BTC
+ERROR:enhanced_market_analyzer:Error fetching historical data for ETH from COIN_API: 404 Client Error: Not Found for url: https://rest.coinapi.io/v1/ohlcv/ETH/USD/history?period_id=1DAY&time_start=2024-08-28T04%3A10%3A36.541751&limit=365
+INFO:enhanced_market_analyzer:✅ COIN_API: ETH = $4548.52
+INFO:enhanced_market_analyzer:Fetching DAI price from COIN_API (primary)
+✅ RPC passed tests: https://arb1.arbitrum.io/rpc (0.32s)
+🔍 Testing RPC: https://arbitrum-one.public.blastapi.io
+ERROR:enhanced_market_analyzer:Error fetching historical data for ETH: 429 Client Error: Too Many Requests for url: https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?symbol=ETH&convert=USD
+WARNING:enhanced_market_analyzer:No data available for ETH
+INFO:enhanced_market_analyzer:✅ COIN_API: DAI = $1.00
+INFO:enhanced_market_analyzer:Fetching ARB price from COIN_API (primary)
+ERROR:enhanced_market_analyzer:Error fetching historical data for DAI from COIN_API: 404 Client Error: Not Found for url: https://rest.coinapi.io/v1/ohlcv/DAI/USD/history?period_id=1DAY&time_start=2024-08-28T04%3A10%3A36.687800&limit=365
+✅ RPC passed tests: https://arbitrum-one.public.blastapi.io (0.14s)
+🔍 Testing RPC: https://arbitrum-one.publicnode.com
+✅ RPC passed tests: https://arb1.arbitrum.io/rpc (0.32s)
+🔍 Testing RPC: https://arbitrum-one.public.blastapi.io
+ERROR:enhanced_market_analyzer:Error fetching historical data for DAI: 429 Client Error: Too Many Requests for url: https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?symbol=DAI&convert=USD
+WARNING:enhanced_market_analyzer:No data available for DAI
+✅ RPC passed tests: https://arbitrum-one.publicnode.com (0.54s)
+📊 RPC Test Results: 5/5 endpoints working
+🌐 Operating on Arbitrum Mainnet
+🔍 DEBUG: Final RPC selection results:
+   Primary RPC: https://arbitrum-one.public.blastapi.io
+   Fallback RPCs: 4 available
+🚨 NETWORK_MODE from environment: 'mainnet'
+🔗 Primary RPC: https://arbitrum-one.public.blastapi.io
+🔄 Fallback RPCs: 4 available
+🔍 DEBUG: Attempting to create Web3 connection with primary RPC: https://arbitrum-one.public.blastapi.io
+INFO:enhanced_market_analyzer:✅ COIN_API: ARB = $0.51
+✅ Successfully connected to primary RPC: https://arbitrum-one.public.blastapi.io
+ERROR:enhanced_market_analyzer:Error fetching historical data for ARB from COIN_API: 404 Client Error: Not Found for url: https://rest.coinapi.io/v1/ohlcv/ARB/USD/history?period_id=1DAY&time_start=2024-08-28T04%3A10%3A36.838893&limit=365
+ERROR:enhanced_market_analyzer:Error fetching historical data for BTC from COIN_API: 404 Client Error: Not Found for url: https://rest.coinapi.io/v1/ohlcv/BTC/USD/history?period_id=1DAY&time_start=2024-08-28T04%3A10%3A36.864769&limit=365
+🔍 DEBUG: Web3 connection verified - Chain ID: 42161, Latest Block: 373060101
+🔑 Wallet Address: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+💰 AGENT INITIALIZED WITH WALLET: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+✅ Private key format validated and normalized
+📋 Mainnet Token addresses verified (DAI-ONLY COMPLIANCE):
+   DAI: 0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1
+   WBTC: 0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f
+   WETH: 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1
+   Aave Pool: 0x794a61358D6845594F94dc1DB02A252b5b4814aD
+💰 Initialized last_collateral_value_usd to 0.0 (will sync with actual position)
+📊 Initialized last_collateral_value_usd to: 0.0
+
+🔄 HYBRID SYSTEM CONFIGURATION:
+═══════════════════════════════════════
+🚀 GROWTH-TRIGGERED SYSTEM:
+   • Growth Threshold: $40
+   • Health Factor: > 2.1
+   • Re-leverage %: 50.0%
+   • Min/Max Borrow: $10 - $200
+⚡ CAPACITY-BASED SYSTEM:
+   • Available Capacity: > $13
+   • Health Factor: > 2.0
+   • Max Utilization: < 20%
+   • Current Available: $85.21 (MEETS THRESHOLD)
+   • Current Utilization: ~15% (MEETS THRESHOLD)
+🔧 SYSTEM SETTINGS:
+   • Operation Cooldown: 60s
+   • Target Health Factor: 3.5
+═══════════════════════════════════════
+
+ERROR:enhanced_market_analyzer:Error fetching historical data for ARB: 429 Client Error: Too Many Requests for url: https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?symbol=ARB&convert=USD
+WARNING:enhanced_market_analyzer:No data available for ARB
+INFO:enhanced_market_analyzer:Market summary generated successfully with COIN_API primary strategy
+✅ RPC passed tests: https://arbitrum-one.public.blastapi.io (0.16s)
+🔍 Testing RPC: https://arbitrum-one.publicnode.com
+172.31.100.226 - - [28/Aug/2025 04:10:37] "GET /api/system_metrics HTTP/1.1" 200 -
+INFO:werkzeug:172.31.100.226 - - [28/Aug/2025 04:10:37] "GET /api/system_metrics HTTP/1.1" 200 -
+ERROR:enhanced_market_analyzer:Error fetching historical data for BTC: 429 Client Error: Too Many Requests for url: https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?symbol=BTC&convert=USD
+WARNING:enhanced_market_analyzer:No data available for BTC
+ERROR:enhanced_market_analyzer:Error fetching historical data for ETH from COIN_API: 404 Client Error: Not Found for url: https://rest.coinapi.io/v1/ohlcv/ETH/USD/history?period_id=1DAY&time_start=2024-08-28T04%3A10%3A37.093071&limit=365
+INFO:enhanced_market_analyzer:COIN_API client initialized successfully
+INFO:enhanced_market_analyzer:Enhanced Market Analyzer initialized with COIN_API primary, CoinGecko secondary, and CoinMarketCap tertiary fallback
+INFO:enhanced_market_analyzer:Enhanced Market Signal Strategy initialized successfully
+INFO:market_signal_strategy:✅ Market Signal Strategy initialized with CoinMarketCap API
+✅ Market Signal Strategy enabled and ready for debt swaps
+INFO:root:✅ Market Signal Strategy enabled and ready for debt swaps
+🔄 Debt swap system activated for simultaneous operation
+INFO:root:🔄 Debt swap system activated for simultaneous operation
+✅ Market signal methods validated - all required methods present
+✅ Enhanced market signal system fully operational
+INFO:enhanced_market_analyzer:Fetching BTC price from COIN_API (primary)
+ERROR:enhanced_market_analyzer:Error fetching historical data for ETH: 429 Client Error: Too Many Requests for url: https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?symbol=ETH&convert=USD
+WARNING:enhanced_market_analyzer:No data available for ETH
+ERROR:enhanced_market_analyzer:Error fetching historical data for DAI from COIN_API: 404 Client Error: Not Found for url: https://rest.coinapi.io/v1/ohlcv/DAI/USD/history?period_id=1DAY&time_start=2024-08-28T04%3A10%3A37.285168&limit=365
+ERROR:enhanced_market_analyzer:Error fetching historical data for DAI: 429 Client Error: Too Many Requests for url: https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?symbol=DAI&convert=USD
+WARNING:enhanced_market_analyzer:No data available for DAI
+INFO:enhanced_market_analyzer:✅ COIN_API: BTC = $112111.20
+INFO:enhanced_market_analyzer:Fetching ETH price from COIN_API (primary)
+ERROR:enhanced_market_analyzer:Error fetching historical data for ARB from COIN_API: 404 Client Error: Not Found for url: https://rest.coinapi.io/v1/ohlcv/ARB/USD/history?period_id=1DAY&time_start=2024-08-28T04%3A10%3A37.433284&limit=365
+✅ RPC passed tests: https://arbitrum-one.publicnode.com (0.77s)
+📊 RPC Test Results: 5/5 endpoints working
+🌐 Operating on Arbitrum Mainnet
+🔍 DEBUG: Final RPC selection results:
+   Primary RPC: https://arbitrum-one.public.blastapi.io
+   Fallback RPCs: 4 available
+🚨 NETWORK_MODE from environment: 'mainnet'
+🔗 Primary RPC: https://arbitrum-one.public.blastapi.io
+🔄 Fallback RPCs: 4 available
+🔍 DEBUG: Attempting to create Web3 connection with primary RPC: https://arbitrum-one.public.blastapi.io
+INFO:enhanced_market_analyzer:✅ COIN_API: ETH = $4548.73
+INFO:enhanced_market_analyzer:Fetching DAI price from COIN_API (primary)
+✅ Successfully connected to primary RPC: https://arbitrum-one.public.blastapi.io
+🔍 DEBUG: Web3 connection verified - Chain ID: 42161, Latest Block: 373060103
+🔑 Wallet Address: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+💰 AGENT INITIALIZED WITH WALLET: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+✅ Private key format validated and normalized
+📋 Mainnet Token addresses verified (DAI-ONLY COMPLIANCE):
+   DAI: 0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1
+   WBTC: 0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f
+   WETH: 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1
+   Aave Pool: 0x794a61358D6845594F94dc1DB02A252b5b4814aD
+💰 Initialized last_collateral_value_usd to 0.0 (will sync with actual position)
+📊 Initialized last_collateral_value_usd to: 0.0
+
+🔄 HYBRID SYSTEM CONFIGURATION:
+═══════════════════════════════════════
+🚀 GROWTH-TRIGGERED SYSTEM:
+   • Growth Threshold: $40
+   • Health Factor: > 2.1
+   • Re-leverage %: 50.0%
+   • Min/Max Borrow: $10 - $200
+⚡ CAPACITY-BASED SYSTEM:
+   • Available Capacity: > $13
+   • Health Factor: > 2.0
+   • Max Utilization: < 20%
+   • Current Available: $85.21 (MEETS THRESHOLD)
+   • Current Utilization: ~15% (MEETS THRESHOLD)
+🔧 SYSTEM SETTINGS:
+   • Operation Cooldown: 60s
+   • Target Health Factor: 3.5
+═══════════════════════════════════════
+
+✅ RPC passed tests: https://arbitrum-one.publicnode.com (0.66s)
+📊 RPC Test Results: 5/5 endpoints working
+🌐 Operating on Arbitrum Mainnet
+🔍 DEBUG: Final RPC selection results:
+   Primary RPC: https://arbitrum-one.public.blastapi.io
+   Fallback RPCs: 4 available
+🚨 NETWORK_MODE from environment: 'mainnet'
+🔗 Primary RPC: https://arbitrum-one.public.blastapi.io
+🔄 Fallback RPCs: 4 available
+🔍 DEBUG: Attempting to create Web3 connection with primary RPC: https://arbitrum-one.public.blastapi.io
+✅ Successfully connected to primary RPC: https://arbitrum-one.public.blastapi.io
+🔍 Autonomous agent running check: True
+INFO:enhanced_market_analyzer:✅ COIN_API: DAI = $1.00
+INFO:enhanced_market_analyzer:Fetching ARB price from COIN_API (primary)
+🔍 Autonomous agent running check: True
+172.31.100.226 - - [28/Aug/2025 04:10:37] "GET /api/console HTTP/1.1" 200 -
+INFO:werkzeug:172.31.100.226 - - [28/Aug/2025 04:10:37] "GET /api/console HTTP/1.1" 200 -
+ERROR:enhanced_market_analyzer:Error fetching historical data for ARB: 429 Client Error: Too Many Requests for url: https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?symbol=ARB&convert=USD
+WARNING:enhanced_market_analyzer:No data available for ARB
+INFO:enhanced_market_analyzer:Market summary generated successfully with COIN_API primary strategy
+172.31.100.226 - - [28/Aug/2025 04:10:37] "GET /api/system_metrics HTTP/1.1" 200 -
+INFO:werkzeug:172.31.100.226 - - [28/Aug/2025 04:10:37] "GET /api/system_metrics HTTP/1.1" 200 -
