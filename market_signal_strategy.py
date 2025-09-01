@@ -19,6 +19,9 @@ class MarketSignalStrategy:
     def __init__(self, agent):
         self.agent = agent
 
+        # Market signal enablement (set by environment variable)
+        self.market_signal_enabled = os.getenv('MARKET_SIGNAL_ENABLED', 'false').lower() == 'true'
+        
         # Enhanced API rate limiting
         self.last_api_call = 0
         self.api_call_interval = 60  # Minimum 60 seconds between API calls

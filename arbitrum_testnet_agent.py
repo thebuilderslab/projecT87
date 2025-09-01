@@ -132,6 +132,10 @@ import requests
 import sys
 import traceback
 
+# Setup basic logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
+
 class ArbitrumTestnetAgent:
     def __init__(self, rpc_manager=None, private_key=None):
         """Initialize the Arbitrum Testnet Agent with proper configuration"""
@@ -1286,194 +1290,71 @@ class ArbitrumTestnetAgent:
             return []
 
     def initialize_integrations(self):
-        """Initialize all real DeFi integrations with strict error handling"""
+        """Initialize all DeFi integrations with robust validation"""
         try:
-            # Handle system process errors (ptrace/syscall issues)
-            import signal
-            import errno
+            print("🔄 Initializing DeFi integrations...")
 
-            def handle_process_errors():
-                """Handle common process errors like ESRCH, ptrace issues"""
-                try:
-                    # Ignore SIGCHLD to prevent zombie processes
-                    signal.signal(signal.SIGCHLD, signal.SIG_IGN)
-                except (OSError, AttributeError):
-                    pass  # Not all systems support this
+            # Validate Web3 connection first
+            if not self.w3 or not self.w3.is_connected():
+                print("❌ Web3 connection required before initializing integrations")
+                return False
 
-            handle_process_errors()
+            # Test basic connectivity
+            try:
+                block_number = self.w3.eth.block_number
+                print(f"✅ Web3 connected - Block: {block_number}")
+            except Exception as web3_error:
+                print(f"❌ Web3 connection test failed: {web3_error}")
+                return False
 
-            # Check if already initialized to prevent multiple initializations
-            if hasattr(self, 'aave') and self.aave is not None:
-                print("✅ DeFi integrations already initialized, skipping...")
-                return True
+            # Initialize Aave integration with validation
+            from aave_integration import AaveArbitrumIntegration
+            self.aave = AaveArbitrumIntegration(self.w3, self.account, self.network_mode)
 
-            print("🚀 Initializing Real DeFi Integrations...")
+            # Test Aave connection immediately
+            try:
+                test_data = self.aave.get_user_account_data()
+                if test_data is not None:
+                    print("✅ Aave integration initialized and validated")
+                else:
+                    print("⚠️ Aave initialized but data retrieval failed")
+            except Exception as aave_error:
+                print(f"❌ Aave validation failed: {aave_error}")
+                self.aave = None
+                return False
 
-            # Initialize Real Aave, Uniswap, and Health Monitor Integrations
-            self.aave = AaveArbitrumIntegration(self.w3, self.account)
+            # Initialize Uniswap integration
+            from uniswap_integration import UniswapIntegration
             self.uniswap = UniswapIntegration(self.w3, self.account)
-            self.health_monitor = HealthMonitor(self.w3, self.account, self.aave)
-            print("✅ Initialized Real Aave, Uniswap, and Health Monitor Integrations.")
+            print("✅ Uniswap integration initialized")
 
-            # Initialize Gas Calculator
-            self.gas_calculator = ArbitrumGasCalculator()
-            print("⛽ Initialized Gas Calculator.")
-
-            # Initialize Enhanced Borrow Manager
-            try:
-                from enhanced_borrow_manager import EnhancedBorrowManager
-                self.enhanced_borrow_manager = EnhancedBorrowManager(self)
-                print("🏦 Initialized Enhanced Borrow Manager.")
-            except Exception as e:
-                print(f"❌ Enhanced borrow manager initialization failed: {e}")
-
-            # Initialize Market Signal Strategy
-            try:
-                from market_signal_strategy import MarketSignalStrategy
-                self.market_signal_strategy = MarketSignalStrategy(self)
-                if self.market_signal_strategy.market_signal_enabled:
-                    print("✅ Market Signal Strategy enabled and ready for debt swaps")
-                    logging.info("✅ Market Signal Strategy enabled and ready for debt swaps")
-                    # Start debt swap monitoring immediately
-                    self.debt_swap_active = True
-                    print("🔄 Debt swap system activated for simultaneous operation")
-                    logging.info("🔄 Debt swap system activated for simultaneous operation")
-                else:
-                    print("ℹ️ Market Signal Strategy initialized but disabled")
-                    logging.info("ℹ️ Market Signal Strategy initialized but disabled")
-                    self.debt_swap_active = False
-            except ImportError:
-                print("⚠️ Market Signal Strategy not available - debt swaps disabled")
-                logging.warning("Market Signal Strategy not available")
-                self.market_signal_strategy = None
-                self.debt_swap_active = False
-            except Exception as e:
-                print(f"❌ Market Signal Strategy initialization failed: {e}")
-                logging.error(f"Market Signal Strategy initialization failed: {e}")
-                self.market_signal_strategy = None
-                self.debt_swap_active = False
-
-
-            return True
-
-        except Exception as e:
-            error_msg = str(e).lower()
-            if 'esrch' in error_msg or 'no such process' in error_msg:
-                print(f"⚠️ Process error detected, attempting recovery: {e}")
-                # Wait and retry once for process-related errors
-                time.sleep(2)
-                try:
-                    # Retry initialization
-                    self.aave = AaveArbitrumIntegration(self.w3, self.account)
-                    self.uniswap = UniswapIntegration(self.w3, self.account)
-                    self.health_monitor = HealthMonitor(self.w3, self.account, self.aave)
-                    print("✅ Recovery successful after process error")
-                    return True
-                except Exception as retry_e:
-                    print(f"❌ Recovery failed: {retry_e}")
-
-            print(f"❌ Integration initialization failed: {e}")
-            return False
-
-    def run_real_defi_task(self, run_id, iteration, config):
-        """Execute real DeFi operations with DAI-only compliance"""
-        try:
-            print(f"\n🎯 AUTONOMOUS RUN {run_id}, ITERATION {iteration}")
-            print("=" * 60)
-
-            # Check emergency stop
-            if self.check_emergency_stop():
-                print("🛑 Emergency stop active - skipping operations")
-                return 0.1
-
-            # Check cooldown (but allow sequence continuation)
-            if self.is_operation_on_cooldown(allow_sequence_continuation=False):
-                print("⏰ Operations in cooldown period")
-                return 0.2
-
-            # Track operation attempt
-            self.track_operation_attempt()
-            self.current_iteration = iteration # Update current iteration for metrics
-
-            # Get account status
-            account_data = self.aave.get_user_account_data()
-            if not account_data:
-                print("❌ Unable to get account data")
-                return 0.1
-
-            health_factor = account_data.get('healthFactor', 0)
-            available_borrows = account_data.get('availableBorrowsUSD', 0)
-            total_collateral = account_data.get('totalCollateralUSD', 0)
-
-            print(f"📊 Account Status:")
-            print(f"   Health Factor: {health_factor:.3f}")
-            print(f"   Available Borrows: ${available_borrows:.2f}")
-            print(f"   Total Collateral: ${total_collateral:.2f}")
-
-            # Check for growth-triggered operations
-            if self._should_execute_growth_triggered_operation(total_collateral, health_factor, available_borrows):
-                self.triggers_activated_count += 1
-                self.next_trigger_threshold = self.growth_trigger_threshold # Reset for next growth trigger
-                success = self._execute_growth_triggered_operation(available_borrows)
-                if success:
-                    performance_score = 0.8
-                    self.record_successful_operation("growth_triggered")
-                    self.last_transaction_successful = True
-                else:
-                    performance_score = 0.3
-                    self.last_transaction_successful = False
-            # Check for capacity-based operations
-            elif self._should_execute_capacity_operation(available_borrows, health_factor):
-                self.triggers_activated_count += 1
-                self.next_trigger_threshold = self.capacity_available_threshold # Reset for next capacity trigger
-                success = self._execute_capacity_operation(available_borrows)
-                if success:
-                    performance_score = 0.7
-                    self.record_successful_operation("capacity_based")
-                    self.last_transaction_successful = True
-                else:
-                    performance_score = 0.3
-                    self.last_transaction_successful = False
-            # Check for market signal-triggered operations
-            elif self.market_signal_strategy and hasattr(self.market_signal_strategy, 'should_execute_trade'):
-                try:
-                    should_trade = self.market_signal_strategy.should_execute_trade()
-                    if should_trade:
-                        print("🚀 Market signal triggered - executing market-driven operation")
-                        self.triggers_activated_count += 1
-                        # Use standardized method name
-                        success = self._execute_market_signal_operation(available_borrows)
-                        if success:
-                            performance_score = 0.8
-                            self.record_successful_operation("market_signal")
-                            self.last_transaction_successful = True
-                        else:
-                            performance_score = 0.3
-                            self.last_transaction_successful = False
-                    else:
-                        print("📊 Market signals checked - no action needed")
-                        performance_score = 0.6
-                        self.last_transaction_successful = True
-                except Exception as e:
-                    print(f"❌ Market signal check failed: {e}")
-                    performance_score = 0.3
-                    self.last_transaction_successful = False
+            # Initialize health monitor with Aave validation
+            if self.aave:
+                from aave_health_monitor import AaveHealthMonitor
+                self.health_monitor = AaveHealthMonitor(self.aave)
+                print("✅ Health monitor initialized")
             else:
-                print("✅ No operations needed - system stable")
-                performance_score = 0.6
-                self.last_transaction_successful = True # Assume stable means no failed ops
+                print("⚠️ Health monitor skipped - Aave not available")
+                self.health_monitor = None
 
-            # Update baseline if we have new collateral data
-            if total_collateral > 0:
-                self.update_baseline_after_success(total_collateral)
+            # Initialize gas calculator
+            from gas_fee_calculator import ArbitrumGasCalculator
+            self.gas_calculator = ArbitrumGasCalculator(self.w3)
+            print("✅ Gas calculator initialized")
 
-            print(f"📈 Task Performance: {performance_score:.2f}")
-            return performance_score
+            # Final validation check
+            if self.aave and self.uniswap:
+                print("🎉 All critical integrations successfully initialized")
+                return True
+            else:
+                print("❌ Critical integrations missing")
+                return False
 
         except Exception as e:
-            print(f"❌ DeFi task execution failed: {e}")
-            self.last_transaction_successful = False # Mark as failed on exception
-            return 0.1
+            print(f"❌ Integration initialization failed: {e}")
+            import traceback
+            print(f"🔍 Full error: {traceback.format_exc()}")
+            return False
 
     def _validate_dai_compliance_environment(self):
         """Validate DAI compliance environment settings"""
@@ -2027,234 +1908,93 @@ class ArbitrumTestnetAgent:
             return False
 
     def get_eth_balance(self):
-        """Get ETH balance for gas fee calculations"""
+        """Get ETH balance of the wallet"""
         try:
-            if self.w3 and self.address:
-                balance_wei = self.w3.eth.get_balance(self.address)
-                balance_eth = self.w3.from_wei(balance_wei, 'ether')
-                return float(balance_eth)
-            return 0.0
+            balance_wei = self.w3.eth.get_balance(self.address)
+            balance_eth = self.w3.from_wei(balance_wei, 'ether')
+            return float(balance_eth)
         except Exception as e:
-            print(f"❌ Error getting ETH balance: {e}")
+            logger.error(f"Failed to get ETH balance: {e}")
             return 0.0
-
-    def get_wbtc_balance(self):
-        """Get WBTC token balance"""
-        try:
-            if self.aave:
-                return self.aave.get_token_balance(self.wbtc_address)
-            return 0.0
-        except Exception as e:
-            print(f"❌ Error getting WBTC balance: {e}")
-            return 0.0
-
-    def get_weth_balance(self):
-        """Get WETH token balance"""
-        try:
-            if self.aave:
-                return self.aave.get_token_balance(self.weth_address)
-            return 0.0
-        except Exception as e:
-            print(f"❌ Error getting WETH balance: {e}")
-            return 0.0
-
-    def get_dai_balance(self):
-        """Get DAI token balance"""
-        try:
-            if self.aave:
-                return self.aave.get_dai_balance()
-            return 0.0
-        except Exception as e:
-            print(f"❌ Error getting DAI balance: {e}")
-            return 0.0
-
-    def get_arb_balance(self):
-        """Get ARB token balance"""
-        try:
-            if self.aave:
-                return self.aave.get_token_balance(self.arb_address)
-            return 0.0
-        except Exception as e:
-            print(f"❌ Error getting ARB balance: {e}")
-            return 0.0
-
-    def check_emergency_stop(self):
-        """Check if emergency stop is active"""
-        try:
-            return os.path.exists('EMERGENCY_STOP_ACTIVE.flag')
-        except Exception as e:
-            print(f"❌ Error checking emergency stop: {e}")
-            return False
 
     def get_health_factor(self):
         """Get current health factor from Aave"""
         try:
-            account_data = self.get_user_account_data()
-            if account_data:
-                return account_data.get('healthFactor', 0)
-            return 0.0
-        except Exception as e:
-            print(f"❌ Error getting health factor: {e}")
-            return 0.0
-
-    def get_system_metrics(self):
-        """Get comprehensive system metrics for dashboard"""
-        try:
-            return {
-                'timestamp': time.time(),
-                'current_iteration': getattr(self, 'current_iteration', 0),
-                'last_operation_time': getattr(self, 'last_successful_operation_time', 0),
-                'rest_period_remaining': max(0, self.operation_cooldown_seconds - (time.time() - getattr(self, 'last_successful_operation_time', 0))),
-                'triggers_activated': getattr(self, 'triggers_activated_count', 0),
-                'last_sequence_type': getattr(self, 'last_operation_type', 'none'),
-                'next_trigger_target': getattr(self, 'next_trigger_threshold', 0),
-                'baseline_collateral': getattr(self, 'last_collateral_value_usd', 0),
-                'borrowed_assets': self._get_borrowed_assets_summary(),
-                'pending_approvals': self._check_pending_approvals(),
-                'self_improvement_proposals': self._get_improvement_proposals(),
-                'network_approval_status': self._get_network_status()
-            }
-        except Exception as e:
-            print(f"❌ Error getting system metrics: {e}")
-            return {}
-
-    def _get_borrowed_assets_summary(self):
-        """Get summary of currently borrowed assets"""
-        try:
             if not self.aave:
-                return {'total_borrowed_usd': 0, 'assets': []}
+                print("⚠️ Aave integration not available for health factor check")
+                return 0.0
 
             account_data = self.aave.get_user_account_data()
             if account_data:
-                return {
-                    'total_borrowed_usd': account_data.get('totalDebtUSD', 0),
-                    'assets': ['DAI'],  # DAI-only compliance
-                    'utilization_ratio': account_data.get('totalDebtUSD', 0) / max(account_data.get('totalCollateralUSD', 1), 1)
-                }
-            return {'total_borrowed_usd': 0, 'assets': []}
-        except Exception as e:
-            print(f"❌ Error getting borrowed assets: {e}")
-            return {'total_borrowed_usd': 0, 'assets': []}
+                health_factor = account_data.get('healthFactor', 0)
+                print(f"📊 Health Factor: {health_factor:.4f}")
+                return health_factor
+            else:
+                print("⚠️ Cannot retrieve account data for health factor")
+                return 0.0
 
-    def _check_pending_approvals(self):
-        """Check if there are pending user approvals needed"""
+        except Exception as e:
+            print(f"❌ Health factor check failed: {e}")
+            return 0.0
+
+    def run_real_defi_task(self, run_id, iteration, config):
+        """Enhanced DeFi task execution with comprehensive logging"""
         try:
-            # Check for user settings changes
-            if os.path.exists('parameter_update_trigger.flag'):
-                return {'pending': True, 'type': 'parameter_changes', 'message': 'Parameter changes need review'}
+            print(f"\n🔄 REAL DEFI TASK EXECUTION")
+            print(f"Run ID: {run_id}, Iteration: {iteration}")
+            print("=" * 50)
 
-            # Check for strategy proposals
-            if hasattr(self, 'market_signal_strategy') and self.market_signal_strategy:
-                if getattr(self.market_signal_strategy, 'pending_approval', False):
-                    return {'pending': True, 'type': 'strategy_change', 'message': 'Market signal strategy changes pending'}
+            # Initialize integrations if needed
+            if not hasattr(self, 'aave') or not self.aave:
+                print("🔄 Initializing integrations...")
+                if not self.initialize_integrations():
+                    print("❌ Integration initialization failed")
+                    return 0.0
 
-            return {'pending': False, 'type': 'none', 'message': 'No approvals needed'}
-        except Exception as e:
-            return {'pending': False, 'type': 'error', 'message': f'Approval check failed: {e}'}
+            # Step 1: System health check
+            print("🔍 Step 1: System Health Check")
+            eth_balance = self.get_eth_balance()
+            health_factor = self.get_health_factor()
 
-    def _get_improvement_proposals(self):
-        """Get self-improvement proposal headlines"""
-        try:
-            proposals = []
+            print(f"💰 ETH Balance: {eth_balance:.6f}")
+            print(f"🏥 Health Factor: {health_factor:.4f}")
 
-            # Performance-based improvements
-            if hasattr(self, 'operation_stats'):
-                success_rate = (self.operation_stats.get('successes', 0) / max(self.operation_stats.get('attempts', 1), 1)) * 100
-                if success_rate < 80:
-                    proposals.append("🔧 Optimize gas strategy for better success rate")
-                if success_rate > 90:
-                    proposals.append("📈 Consider increasing operation frequency")
+            # Step 2: Market signal check (if enabled)
+            if self.debt_swap_active and self.market_signal_strategy:
+                print("🔍 Step 2: Market Signal Analysis")
+                try:
+                    signals = self.market_signal_strategy.get_market_analysis()
+                    print(f"📈 Market Status: {signals.get('status', 'unknown')}")
 
-            # Health factor improvements
-            try:
-                health_factor = self.get_health_factor()
-                if health_factor > 4.0:
-                    proposals.append("💰 Increase leverage for better capital efficiency")
-                elif health_factor < 2.0:
-                    proposals.append("🛡️ Reduce leverage for safety")
-            except:
-                pass
+                    # Execute market signal operation
+                    signal_success = self._execute_market_signal_operation()
+                    if signal_success:
+                        print("✅ Market signal operation completed")
+                        return 0.8  # Good performance score
+                    else:
+                        print("⚠️ Market signal operation skipped or failed")
+                        return 0.5  # Neutral performance
 
-            # Market conditions
-            if hasattr(self, 'market_signal_strategy') and self.market_signal_strategy:
-                if getattr(self.market_signal_strategy, 'market_signal_enabled', False):
-                    proposals.append("🚀 Market signals active - debt swap optimization ready")
+                except Exception as signal_error:
+                    print(f"❌ Market signal check failed: {signal_error}")
+                    return 0.3  # Lower performance due to error
+            else:
+                print("ℹ️ Step 2: Market signals disabled - skipping")
 
-            return proposals[:3]  # Return top 3 proposals
-        except Exception as e:
-            return [f"❌ Proposal generation error: {str(e)[:50]}"]
-
-    def _get_network_status(self):
-        """Get network approval and execution status"""
-        try:
-            # Check recent transaction success
-            recent_success = getattr(self, 'last_transaction_successful', True)
-            gas_price = self.w3.eth.gas_price if self.w3 else 0
-
-            return {
-                'ready_for_execution': recent_success and gas_price > 0,
-                'estimated_approval_chance': self.get_success_rate_prediction() if hasattr(self, 'get_success_rate_prediction') else 75,
-                'network_congestion': 'Low' if gas_price < 100000000 else 'High',  # 0.1 gwei threshold
-                'last_execution_status': 'Success' if recent_success else 'Failed'
-            }
-        except Exception as e:
-            return {
-                'ready_for_execution': False,
-                'estimated_approval_chance': 50,
-                'network_congestion': 'Unknown',
-                'last_execution_status': f'Error: {e}'
-            }
-
-    def _validate_critical_environment(self):
-        """Validate all critical environment variables"""
-        validation_errors = []
-
-        # Validate PRIVATE_KEY
-        if not self.private_key:
-            validation_errors.append("PRIVATE_KEY is required")
-        elif len(self.private_key.replace('0x', '')) != 64:
-            validation_errors.append(f"PRIVATE_KEY invalid length: {len(self.private_key)}")
-
-        # Validate API keys
-        if not self.coinmarketcap_api_key:
-            validation_errors.append("COINMARKETCAP_API_KEY is required")
-        elif len(self.coinmarketcap_api_key) < 30:
-            validation_errors.append("COINMARKETCAP_API_KEY appears invalid (too short)")
-
-        # Validate network mode
-        if self.network_mode not in ['mainnet', 'testnet']:
-            validation_errors.append(f"NETWORK_MODE must be 'mainnet' or 'testnet', got: {self.network_mode}")
-
-        if validation_errors:
-            error_msg = "❌ CRITICAL ENVIRONMENT VALIDATION FAILED:\n" + "\n".join(f"   • {error}" for error in validation_errors)
-            raise Exception(error_msg)
-
-        print("✅ All critical environment variables validated successfully")
-
-    def _get_dynamic_gas_price(self):
-        """Get dynamic gas price with congestion awareness"""
-        try:
-            base_gas_price = self.w3.eth.gas_price
-            latest_block = self.w3.eth.get_block('latest')
-
-            # Check network congestion
-            gas_used_ratio = latest_block.gasUsed / latest_block.gasLimit
-
-            if gas_used_ratio > 0.9:  # High congestion
-                multiplier = 1.5
-                print(f"⚠️ High network congestion detected ({gas_used_ratio:.1%}), increasing gas price by 50%")
-            elif gas_used_ratio > 0.7:  # Medium congestion
-                multiplier = 1.2
-                print(f"📊 Medium network congestion ({gas_used_ratio:.1%}), increasing gas price by 20%")
-            else:  # Low congestion
-                multiplier = 1.1
-                print(f"✅ Low network congestion ({gas_used_ratio:.1%}), using standard gas price")
-
-            return int(base_gas_price * multiplier)
+            # Step 3: Basic operations check
+            print("🔍 Step 3: Basic Operations Check")
+            if health_factor > 2.0 and eth_balance > 0.001:
+                print("✅ System operational - all checks passed")
+                return 0.7  # Good baseline performance
+            else:
+                print("⚠️ System operational but with limitations")
+                return 0.4  # Limited performance
 
         except Exception as e:
-            print(f"❌ Dynamic gas calculation failed: {e}, using base price")
-            return self.w3.eth.gas_price
+            print(f"❌ DeFi task execution failed: {e}")
+            import traceback
+            print(f"🔍 Full error: {traceback.format_exc()}")
+            return 0.1  # Poor performance due to failure
 
     def get_wbtc_balance(self):
         """Get WBTC token balance"""
@@ -2303,17 +2043,6 @@ class ArbitrumTestnetAgent:
         except Exception as e:
             print(f"❌ Error checking emergency stop: {e}")
             return False
-
-    def get_health_factor(self):
-        """Get current health factor from Aave"""
-        try:
-            account_data = self.get_user_account_data()
-            if account_data:
-                return account_data.get('healthFactor', 0)
-            return 0.0
-        except Exception as e:
-            print(f"❌ Error getting health factor: {e}")
-            return 0.0
 
     def execute_debt_swap_dai_to_arb(self, dai_amount):
         """Execute DAI to ARB debt swap with debt reduction optimization"""
@@ -2349,7 +2078,7 @@ class ArbitrumTestnetAgent:
 
                 if arb_received > 0:
                     print(f"✅ Received {arb_received:.6f} ARB from debt swap")
-                    
+
                     # IMMEDIATE DEBT REDUCTION ATTEMPT
                     self._attempt_immediate_debt_reduction_with_arb(arb_received)
                     return True
@@ -2368,13 +2097,13 @@ class ArbitrumTestnetAgent:
         """Attempt immediate debt reduction by swapping ARB back when profitable"""
         try:
             print(f"🎯 DEBT REDUCTION ATTEMPT: {arb_amount:.6f} ARB available")
-            
+
             # Check ARB price movement (if depreciated, swap back immediately)
             current_arb_price = self._get_current_arb_price()
-            
+
             if current_arb_price and hasattr(self, 'arb_entry_price'):
                 price_change = (current_arb_price - self.arb_entry_price) / self.arb_entry_price
-                
+
                 if price_change < -0.02:  # If ARB dropped 2% or more, swap back
                     print(f"📉 ARB depreciated {price_change:.1%}, executing debt reduction")
                     return self.execute_arb_to_dai_debt_reduction(arb_amount * 0.8)  # Use 80% to account for fees
@@ -2383,9 +2112,9 @@ class ArbitrumTestnetAgent:
                     # Store ARB for later debt reduction
                     self.arb_debt_reduction_pool = getattr(self, 'arb_debt_reduction_pool', 0) + arb_amount
                     return True
-            
+
             return False
-            
+
         except Exception as e:
             print(f"❌ Immediate debt reduction attempt failed: {e}")
             return False
@@ -2412,13 +2141,13 @@ class ArbitrumTestnetAgent:
 
                 if dai_received > 0:
                     print(f"✅ Received {dai_received:.6f} DAI for debt reduction")
-                    
+
                     # IMMEDIATE DAI DEBT REPAYMENT
                     repay_success = self._execute_immediate_dai_repayment(dai_received)
                     if repay_success:
                         print(f"🎉 DEBT SUCCESSFULLY REDUCED by ${dai_received:.2f}")
                         return True
-                    
+
                 return dai_received > 0
             else:
                 print("❌ Debt reduction swap failed")
@@ -2432,38 +2161,38 @@ class ArbitrumTestnetAgent:
         """Execute immediate DAI debt repayment to improve health factor"""
         try:
             print(f"💰 IMMEDIATE DEBT REPAYMENT: {dai_amount:.6f} DAI")
-            
+
             # Get current debt info
             account_data = self.aave.get_user_account_data()
             current_debt = account_data.get('totalDebtUSD', 0)
-            
+
             if current_debt <= 0:
                 print("ℹ️ No debt to repay")
                 return True
-            
+
             # Repay the DAI debt (keep small buffer for fees)
             repay_amount = min(dai_amount * 0.98, current_debt)  # Use 98% to account for interest
-            
+
             if repay_amount > 0.01:  # Only repay if meaningful amount
                 repay_result = self.aave.repay_dai(repay_amount)
-                
+
                 if repay_result:
                     print(f"✅ DEBT REPAYMENT SUCCESSFUL - TX: {repay_result}")
-                    
+
                     # Verify health factor improvement
                     time.sleep(3)
                     new_account_data = self.aave.get_user_account_data()
                     new_health_factor = new_account_data.get('healthFactor', 0)
                     new_debt = new_account_data.get('totalDebtUSD', 0)
-                    
+
                     debt_reduction = current_debt - new_debt
                     print(f"📈 Debt reduced by ${debt_reduction:.2f}")
                     print(f"💚 Health factor improved to {new_health_factor:.4f}")
-                    
+
                     return True
-                    
+
             return False
-            
+
         except Exception as e:
             print(f"❌ Immediate DAI repayment failed: {e}")
             return False
