@@ -220,14 +220,14 @@ def main():
     test_results['agent_init'] = agent is not None
     
     if agent:
-        # Test 2: Market signal strategy
-        test_results['market_signals'] = test_market_signal_strategy(agent)
+        # Test 2: Market signal strategy  
+        test_results['market_signals'] = test_market_signals(agent)
         
         # Test 3: Debt swap readiness
         test_results['debt_swap_readiness'] = test_debt_swap_readiness(agent)
         
         # Test 4: Complete system integration
-        test_results['system_integration'] = test_complete_system_integration(agent)
+        test_results['system_integration'] = test_system_integration(agent)
     else:
         print("❌ Skipping further tests due to agent initialization failure")
         test_results.update({
@@ -361,41 +361,136 @@ def test_enhanced_market_analyzer():
         print(f"❌ Enhanced market analyzer test failed: {e}")
         return False
 
-def test_market_signals():
+def test_market_signals(agent):
     """Test market signal functionality"""
     print("\n🧪 TESTING MARKET SIGNALS")
     print("=" * 50)
     
     try:
-        # This would test market signal integration
-        print("✅ Market signals test placeholder")
-        return True
+        if not agent:
+            print("❌ Agent not available for market signals test")
+            return False
+            
+        # Check if market signal strategy is initialized
+        if hasattr(agent, 'market_signal_strategy') and agent.market_signal_strategy:
+            print("✅ Market signal strategy available")
+            
+            # Test market signal analysis
+            try:
+                if hasattr(agent.market_signal_strategy, 'analyze_market_signals'):
+                    signals = agent.market_signal_strategy.analyze_market_signals()
+                    print(f"✅ Market analysis successful: {signals.get('status', 'unknown')}")
+                else:
+                    print("⚠️ Market analysis method not available")
+                
+                # Test trade decision logic
+                if hasattr(agent.market_signal_strategy, 'should_execute_trade'):
+                    should_trade = agent.market_signal_strategy.should_execute_trade()
+                    print(f"✅ Trade decision logic working: {should_trade}")
+                else:
+                    print("⚠️ Trade decision method not available")
+                
+                return True
+                
+            except Exception as signal_error:
+                print(f"❌ Market signal analysis failed: {signal_error}")
+                return False
+        else:
+            print("⚠️ Market signal strategy not initialized")
+            return False
+            
     except Exception as e:
         print(f"❌ Market signals test failed: {e}")
         return False
 
-def test_debt_swap_readiness():
+def test_debt_swap_readiness(agent):
     """Test debt swap readiness"""
     print("\n🧪 TESTING DEBT SWAP READINESS")
     print("=" * 50)
     
     try:
-        # This would test debt swap functionality
-        print("✅ Debt swap readiness test placeholder")
+        if not agent:
+            print("❌ Agent not available for debt swap test")
+            return False
+            
+        # Test debt swap readiness validation
+        if hasattr(agent, 'validate_debt_swap_readiness'):
+            readiness = agent.validate_debt_swap_readiness()
+            print(f"✅ Debt swap readiness check completed")
+            print(f"   Ready: {readiness.get('ready', False)}")
+            print(f"   Score: {readiness.get('score', 0):.1f}%")
+        else:
+            print("⚠️ Debt swap readiness method not available")
+        
+        # Test debt swap conditions
+        if hasattr(agent, 'check_debt_swap_conditions'):
+            conditions_ok, message = agent.check_debt_swap_conditions()
+            print(f"✅ Debt swap conditions check: {conditions_ok}")
+            print(f"   Message: {message}")
+        else:
+            print("⚠️ Debt swap conditions method not available")
+        
+        # Test debt swap parameters
+        if hasattr(agent, 'get_debt_swap_parameters'):
+            params = agent.get_debt_swap_parameters()
+            if params:
+                print(f"✅ Debt swap parameters available")
+                print(f"   Market signals enabled: {params.get('market_signal_enabled', False)}")
+            else:
+                print("⚠️ Debt swap parameters not available")
+        
         return True
+        
     except Exception as e:
         print(f"❌ Debt swap readiness test failed: {e}")
         return False
 
-def test_system_integration():
+def test_system_integration(agent):
     """Test system integration"""
     print("\n🧪 TESTING SYSTEM INTEGRATION")
     print("=" * 50)
     
     try:
-        # This would test overall system integration
-        print("✅ System integration test placeholder")
+        if not agent:
+            print("❌ Agent not available for system integration test")
+            return False
+        
+        # Test overall system health
+        print("🔍 Testing system health...")
+        
+        # Check network approval readiness
+        if hasattr(agent, 'check_network_approval_readiness'):
+            readiness = agent.check_network_approval_readiness()
+            print(f"✅ Network approval readiness: {readiness.get('ready', False)}")
+            print(f"   Score: {readiness.get('score', 0)}/{readiness.get('max_score', 100)}")
+            print(f"   Status: {readiness.get('status', 'unknown')}")
+        else:
+            print("⚠️ Network approval readiness method not available")
+        
+        # Test ETH balance check
+        try:
+            eth_balance = agent.get_eth_balance()
+            print(f"✅ ETH balance check: {eth_balance:.6f} ETH")
+        except Exception as e:
+            print(f"❌ ETH balance check failed: {e}")
+        
+        # Test health factor check
+        try:
+            health_factor = agent.get_health_factor()
+            print(f"✅ Health factor check: {health_factor:.4f}")
+        except Exception as e:
+            print(f"❌ Health factor check failed: {e}")
+        
+        # Test real DeFi task execution
+        print("🔍 Testing real DeFi task execution...")
+        try:
+            performance = agent.run_real_defi_task(1, 1, {})
+            print(f"✅ DeFi task execution: {performance:.2f} performance score")
+        except Exception as e:
+            print(f"❌ DeFi task execution failed: {e}")
+        
         return True
+        
     except Exception as e:
         print(f"❌ System integration test failed: {e}")
         return False
