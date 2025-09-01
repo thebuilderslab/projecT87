@@ -609,6 +609,100 @@ class EnhancedMarketAnalyzer:
 
         logger.info("Enhanced Market Analyzer initialized with COIN_API primary, CoinGecko secondary, and CoinMarketCap tertiary fallback")
 
+    def get_current_arb_price_with_tracking(self) -> Optional[float]:
+        """Get current ARB price with historical tracking for debt reduction"""
+        try:
+            current_prices = self.get_current_prices(['ARB'])
+            arb_data = current_prices.get('ARB')
+            
+            if arb_data and 'price' in arb_data:
+                arb_price = arb_data['price']
+                
+                # Track price history for debt reduction analysis
+                if not hasattr(self, 'arb_price_history'):
+                    self.arb_price_history = []
+                
+                self.arb_price_history.append({
+                    'price': arb_price,
+                    'timestamp': time.time(),
+                    'change_1h': arb_data.get('percent_change_1h', 0),
+                    'change_24h': arb_data.get('percent_change_24h', 0)
+                })
+                
+                # Keep only last 24 hours of price data
+                cutoff_time = time.time() - 86400  # 24 hours ago
+                self.arb_price_history = [
+                    entry for entry in self.arb_price_history 
+                    if entry['timestamp'] > cutoff_time
+                ]
+                
+                return arb_price
+                
+            return None
+            
+        except Exception as e:
+            logger.error(f"ARB price tracking failed: {e}")
+            return None
+
+    def analyze_arb_depreciation_trend(self, hours_back: int = 4) -> Dict:
+        """Analyze ARB depreciation trend for debt reduction timing"""
+        try:
+            if not hasattr(self, 'arb_price_history') or len(self.arb_price_history) < 2:
+                return {'trend': 'insufficient_data', 'confidence': 0.0}
+            
+            # Filter to specified time window
+            cutoff_time = time.time() - (hours_back * 3600)
+            recent_prices = [
+                entry for entry in self.arb_price_history 
+                if entry['timestamp'] > cutoff_time
+            ]
+            
+            if len(recent_prices) < 3:
+                return {'trend': 'insufficient_recent_data', 'confidence': 0.0}
+            
+            # Calculate trend metrics
+            prices = [entry['price'] for entry in recent_prices]
+            timestamps = [entry['timestamp'] for entry in recent_prices]
+            
+            # Simple linear regression for trend
+            n = len(prices)
+            sum_x = sum(timestamps)
+            sum_y = sum(prices)
+            sum_xy = sum(t * p for t, p in zip(timestamps, prices))
+            sum_x2 = sum(t * t for t in timestamps)
+            
+            # Calculate slope (trend direction)
+            slope = (n * sum_xy - sum_x * sum_y) / (n * sum_x2 - sum_x * sum_x)
+            
+            # Calculate percentage change over period
+            price_change = (prices[-1] - prices[0]) / prices[0]
+            
+            # Determine trend strength and confidence
+            if price_change < -0.02:  # 2% or more drop
+                trend = 'strong_depreciation'
+                confidence = min(abs(price_change) * 10, 1.0)  # Higher confidence for bigger drops
+            elif price_change < -0.005:  # 0.5% drop
+                trend = 'moderate_depreciation'
+                confidence = min(abs(price_change) * 20, 0.8)
+            elif price_change > 0.02:  # 2% or more gain
+                trend = 'strong_appreciation'
+                confidence = min(price_change * 10, 1.0)
+            else:
+                trend = 'sideways'
+                confidence = 0.3
+            
+            return {
+                'trend': trend,
+                'confidence': confidence,
+                'price_change': price_change,
+                'slope': slope,
+                'debt_reduction_opportunity': trend in ['strong_depreciation', 'moderate_depreciation'] and confidence > 0.6
+            }
+            
+        except Exception as e:
+            logger.error(f"ARB depreciation trend analysis failed: {e}")
+            return {'trend': 'error', 'confidence': 0.0}
+
     def get_current_prices(self, symbols: List[str]) -> Dict[str, Optional[Dict]]:
         """Get current prices using COIN_API primary, with CoinGecko and CoinMarketCap fallbacks"""
         results = {}

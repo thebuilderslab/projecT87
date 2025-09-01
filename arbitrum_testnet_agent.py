@@ -2316,31 +2316,42 @@ class ArbitrumTestnetAgent:
             return 0.0
 
     def execute_debt_swap_dai_to_arb(self, dai_amount):
-        """Execute DAI to ARB debt swap for market signal strategy"""
+        """Execute DAI to ARB debt swap with debt reduction optimization"""
         try:
-            print(f"🔄 DEBT SWAP: DAI → ARB for {dai_amount:.6f} DAI")
+            print(f"🔄 OPTIMIZED DEBT SWAP: DAI → ARB for {dai_amount:.6f} DAI")
+
+            # Pre-swap validation with health factor check
+            health_factor = self.get_health_factor()
+            if health_factor < 2.1:  # Higher threshold for debt swaps
+                print(f"❌ Health factor {health_factor:.3f} too low for debt swap")
+                return False
 
             # Get ARB balance before swap
             arb_balance_before = self.get_arb_balance()
 
-            # Execute swap via Uniswap
+            # Execute swap via Uniswap with slippage protection
             if not self.uniswap:
                 print("❌ Uniswap integration not available for debt swap")
                 return False
 
-            swap_result = self.uniswap.swap_dai_for_arb(dai_amount)
+            # Add slippage protection for ARB swaps (ARB can be volatile)
+            swap_result = self.uniswap.swap_dai_for_arb(dai_amount, max_slippage=0.05)  # 5% max slippage
 
             if swap_result and 'tx_hash' in swap_result:
                 print(f"✅ DEBT SWAP CONFIRMED - TX: {swap_result['tx_hash']}")
+                print(f"🔗 Verify: https://arbiscan.io/tx/{swap_result['tx_hash']}")
 
-                # Verify ARB received
+                # Verify ARB received with better error handling
                 import time
-                time.sleep(5)
+                time.sleep(8)  # Wait longer for ARB price updates
                 arb_balance_after = self.get_arb_balance()
                 arb_received = arb_balance_after - arb_balance_before
 
                 if arb_received > 0:
                     print(f"✅ Received {arb_received:.6f} ARB from debt swap")
+                    
+                    # IMMEDIATE DEBT REDUCTION ATTEMPT
+                    self._attempt_immediate_debt_reduction_with_arb(arb_received)
                     return True
                 else:
                     print("⚠️ ARB balance did not increase as expected")
@@ -2350,7 +2361,111 @@ class ArbitrumTestnetAgent:
                 return False
 
         except Exception as e:
-            print(f"❌ Debt swap ARB→DAI failed: {e}")
+            print(f"❌ Debt swap DAI→ARB failed: {e}")
+            return False
+
+    def _attempt_immediate_debt_reduction_with_arb(self, arb_amount):
+        """Attempt immediate debt reduction by swapping ARB back when profitable"""
+        try:
+            print(f"🎯 DEBT REDUCTION ATTEMPT: {arb_amount:.6f} ARB available")
+            
+            # Check ARB price movement (if depreciated, swap back immediately)
+            current_arb_price = self._get_current_arb_price()
+            
+            if current_arb_price and hasattr(self, 'arb_entry_price'):
+                price_change = (current_arb_price - self.arb_entry_price) / self.arb_entry_price
+                
+                if price_change < -0.02:  # If ARB dropped 2% or more, swap back
+                    print(f"📉 ARB depreciated {price_change:.1%}, executing debt reduction")
+                    return self.execute_arb_to_dai_debt_reduction(arb_amount * 0.8)  # Use 80% to account for fees
+                else:
+                    print(f"📈 ARB holding steady ({price_change:+.1%}), waiting for better opportunity")
+                    # Store ARB for later debt reduction
+                    self.arb_debt_reduction_pool = getattr(self, 'arb_debt_reduction_pool', 0) + arb_amount
+                    return True
+            
+            return False
+            
+        except Exception as e:
+            print(f"❌ Immediate debt reduction attempt failed: {e}")
+            return False
+
+    def execute_arb_to_dai_debt_reduction(self, arb_amount):
+        """Execute ARB to DAI swap specifically for debt reduction"""
+        try:
+            print(f"🔄 DEBT REDUCTION SWAP: ARB → DAI for {arb_amount:.6f} ARB")
+
+            # Get DAI balance before swap
+            dai_balance_before = self.get_dai_balance()
+
+            # Execute swap with minimal slippage (debt reduction priority)
+            swap_result = self.uniswap.swap_arb_for_dai(arb_amount, max_slippage=0.03)  # 3% max slippage
+
+            if swap_result and 'tx_hash' in swap_result:
+                print(f"✅ DEBT REDUCTION SWAP CONFIRMED - TX: {swap_result['tx_hash']}")
+
+                # Verify DAI received
+                import time
+                time.sleep(5)
+                dai_balance_after = self.get_dai_balance()
+                dai_received = dai_balance_after - dai_balance_before
+
+                if dai_received > 0:
+                    print(f"✅ Received {dai_received:.6f} DAI for debt reduction")
+                    
+                    # IMMEDIATE DAI DEBT REPAYMENT
+                    repay_success = self._execute_immediate_dai_repayment(dai_received)
+                    if repay_success:
+                        print(f"🎉 DEBT SUCCESSFULLY REDUCED by ${dai_received:.2f}")
+                        return True
+                    
+                return dai_received > 0
+            else:
+                print("❌ Debt reduction swap failed")
+                return False
+
+        except Exception as e:
+            print(f"❌ ARB→DAI debt reduction failed: {e}")
+            return False
+
+    def _execute_immediate_dai_repayment(self, dai_amount):
+        """Execute immediate DAI debt repayment to improve health factor"""
+        try:
+            print(f"💰 IMMEDIATE DEBT REPAYMENT: {dai_amount:.6f} DAI")
+            
+            # Get current debt info
+            account_data = self.aave.get_user_account_data()
+            current_debt = account_data.get('totalDebtUSD', 0)
+            
+            if current_debt <= 0:
+                print("ℹ️ No debt to repay")
+                return True
+            
+            # Repay the DAI debt (keep small buffer for fees)
+            repay_amount = min(dai_amount * 0.98, current_debt)  # Use 98% to account for interest
+            
+            if repay_amount > 0.01:  # Only repay if meaningful amount
+                repay_result = self.aave.repay_dai(repay_amount)
+                
+                if repay_result:
+                    print(f"✅ DEBT REPAYMENT SUCCESSFUL - TX: {repay_result}")
+                    
+                    # Verify health factor improvement
+                    time.sleep(3)
+                    new_account_data = self.aave.get_user_account_data()
+                    new_health_factor = new_account_data.get('healthFactor', 0)
+                    new_debt = new_account_data.get('totalDebtUSD', 0)
+                    
+                    debt_reduction = current_debt - new_debt
+                    print(f"📈 Debt reduced by ${debt_reduction:.2f}")
+                    print(f"💚 Health factor improved to {new_health_factor:.4f}")
+                    
+                    return True
+                    
+            return False
+            
+        except Exception as e:
+            print(f"❌ Immediate DAI repayment failed: {e}")
             return False
 
     def _execute_market_signal_operation(self, available_borrows_usd):
