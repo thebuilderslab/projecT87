@@ -1,0 +1,48 @@
+~/workspace$ python test_debt_swap_system.py
+🚀 COMPREHENSIVE DEBT SWAP SYSTEM TEST
+============================================================
+🕐 Started at: 2025-09-01 23:32:54
+============================================================
+🔧 SETTING UP TEST ENVIRONMENT
+==================================================
+✅ Set MARKET_SIGNAL_ENABLED=true
+✅ Set BTC_DROP_THRESHOLD=0.002
+✅ Set DAI_TO_ARB_THRESHOLD=0.92
+✅ Set ARB_TO_DAI_THRESHOLD=0.88
+✅ Set ARB_RSI_OVERSOLD=30
+✅ Set ARB_RSI_OVERBOUGHT=70
+✅ Set NETWORK_MODE=testnet
+✅ Test environment configured
+
+🧪 TESTING AGENT INITIALIZATION
+==================================================
+⚠️ Cannot determine Web3 version
+❌ Agent initialization failed: expected 'except' or 'finally' block (uniswap_integration.py, line 202)
+🔍 Full error: Traceback (most recent call last):
+  File "/home/runner/workspace/test_debt_swap_system.py", line 40, in test_agent_initialization
+    from arbitrum_testnet_agent import ArbitrumTestnetAgent
+  File "/home/runner/workspace/arbitrum_testnet_agent.py", line 127, in <module>
+    from uniswap_integration import UniswapIntegration
+  File "/home/runner/workspace/uniswap_integration.py", line 202
+    def swap_dai_for_arb(self, dai_amount, max_slippage=0.05):
+SyntaxError: expected 'except' or 'finally' block
+
+❌ Skipping further tests due to agent initialization failure
+
+🧪 TESTING ENHANCED MARKET ANALYZER
+==================================================
+❌ Enhanced market analyzer test failed: unexpected indent (enhanced_market_analyzer.py, line 816)
+
+============================================================
+📊 FINAL TEST RESULTS
+============================================================
+Agent Init: ❌ FAIL
+Market Signals: ❌ FAIL
+Debt Swap Readiness: ❌ FAIL
+System Integration: ❌ FAIL
+Market Analyzer: ❌ FAIL
+------------------------------------------------------------
+Summary: 0/5 tests passed (0.0%)
+⚠️ SEVERAL TESTS FAILED - SYSTEM NEEDS FIXES
+🕐 Completed at: 2025-09-01 23:32:55
+~/workspace$ 
