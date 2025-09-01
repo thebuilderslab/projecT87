@@ -197,16 +197,7 @@ class UniswapIntegration:
 
                         # Verify it's a valid ERC20 token
                         token_contract = self.w3.eth.contract(address=checksummed_addr, abi=self.erc20_abi)
-                        symbol = token_contract.functions.symbol().call()
-                        decimals = token_contract.functions.decimals().call()
-
-                        print(f"✅ Token validated: {symbol} (decimals: {decimals}) at {checksummed_addr}")
-
-                    except Exception as contract_error:
-                        print(f"❌ Token contract validation failed for {token_addr}: {contract_error}")
-                        return None
-
-            # Continue with swap execution logic here
+                        # Continue with swap execution logic here
             return self._execute_validated_swap(token_in, token_out, amount_in, fee)
 
         except Exception as e:
