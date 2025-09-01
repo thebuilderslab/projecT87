@@ -1,0 +1,63 @@
+~/workspace$ python test_debt_swap_system.py
+🚀 COMPREHENSIVE DEBT SWAP SYSTEM TEST
+============================================================
+🕐 Started at: 2025-09-01 23:35:26
+============================================================
+🔧 SETTING UP TEST ENVIRONMENT
+==================================================
+✅ Set MARKET_SIGNAL_ENABLED=true
+✅ Set BTC_DROP_THRESHOLD=0.002
+✅ Set DAI_TO_ARB_THRESHOLD=0.92
+✅ Set ARB_TO_DAI_THRESHOLD=0.88
+✅ Set ARB_RSI_OVERSOLD=30
+✅ Set ARB_RSI_OVERBOUGHT=70
+✅ Set NETWORK_MODE=testnet
+✅ Test environment configured
+
+🧪 TESTING AGENT INITIALIZATION
+==================================================
+⚠️ Cannot determine Web3 version
+❌ Agent initialization failed: expected 'except' or 'finally' block (uniswap_integration.py, line 202)
+🔍 Full error: Traceback (most recent call last):
+  File "/home/runner/workspace/test_debt_swap_system.py", line 40, in test_agent_initialization
+    from arbitrum_testnet_agent import ArbitrumTestnetAgent
+  File "/home/runner/workspace/arbitrum_testnet_agent.py", line 127, in <module>
+    from uniswap_integration import UniswapIntegration
+  File "/home/runner/workspace/uniswap_integration.py", line 202
+    except Exception as e:
+SyntaxError: expected 'except' or 'finally' block
+
+❌ Skipping further tests due to agent initialization failure
+
+🧪 TESTING ENHANCED MARKET ANALYZER
+==================================================
+INFO:enhanced_market_analyzer:COIN_API client initialized successfully
+INFO:enhanced_market_analyzer:Enhanced Market Analyzer initialized with COIN_API primary, CoinGecko secondary, and CoinMarketCap tertiary fallback
+✅ Enhanced Market Analyzer created
+📊 Testing price fetching...
+INFO:enhanced_market_analyzer:Fetching BTC from COIN_API (attempt 1)
+INFO:enhanced_market_analyzer:✅ COIN_API: BTC = $108785.2335
+INFO:enhanced_market_analyzer:Fetching ETH from COIN_API (attempt 1)
+INFO:enhanced_market_analyzer:✅ COIN_API: ETH = $4288.3983
+INFO:enhanced_market_analyzer:Fetching ARB from COIN_API (attempt 1)
+INFO:enhanced_market_analyzer:✅ COIN_API: ARB = $0.4734
+INFO:enhanced_market_analyzer:Fetching DAI from COIN_API (attempt 1)
+INFO:enhanced_market_analyzer:✅ COIN_API: DAI = $1.0002
+✅ BTC: $108785.2335 (api)
+✅ ETH: $4288.3983 (api)
+✅ ARB: $0.4734 (api)
+✅ DAI: $1.0002 (api)
+
+============================================================
+📊 FINAL TEST RESULTS
+============================================================
+Agent Init: ❌ FAIL
+Market Signals: ❌ FAIL
+Debt Swap Readiness: ❌ FAIL
+System Integration: ❌ FAIL
+Market Analyzer: ✅ PASS
+------------------------------------------------------------
+Summary: 1/5 tests passed (20.0%)
+⚠️ SEVERAL TESTS FAILED - SYSTEM NEEDS FIXES
+🕐 Completed at: 2025-09-01 23:35:29
+~/workspace$ 
