@@ -199,6 +199,10 @@ class UniswapIntegration:
                         token_contract = self.w3.eth.contract(address=checksummed_addr, abi=self.erc20_abi)
 
 
+    except Exception as e:
+            print(f"❌ Token swap failed: {e}")
+            return None
+
     def swap_dai_for_arb(self, dai_amount, max_slippage=0.05):
         """Swap DAI for ARB with slippage protection for debt swaps"""
         try:
@@ -689,6 +693,39 @@ class UniswapIntegration:
 
         except Exception as e:
             print(f"❌ DAI to WBTC swap failed: {e}")
+            return False
+
+    def swap_dai_for_weth(self, dai_amount):
+        """Swap DAI for WETH on Uniswap V3 - DAI compliance enforced"""
+        try:
+            print(f"🔄 Swapping {dai_amount:.6f} DAI for WETH...")
+
+            # DAI compliance check
+            if dai_amount <= 0:
+                print("❌ Invalid DAI amount for swap")
+                return False
+
+            swap_result = self._execute_swap(
+                self.dai_address,
+                self.weth_address, 
+                dai_amount,
+                "DAI",
+                "WETH"
+            )
+
+            if swap_result and isinstance(swap_result, str):
+                return {
+                    'success': True,
+                    'tx_hash': swap_result,
+                    'amount_in': dai_amount,
+                    'token_in': 'DAI',
+                    'token_out': 'WETH'
+                }
+            else:
+                return False
+
+        except Exception as e:
+            print(f"❌ DAI to WETH swap failed: {e}")
             return False
 
     def _execute_swap(self, token_in, token_out, amount, token_in_name, token_out_name):

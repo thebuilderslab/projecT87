@@ -1492,7 +1492,7 @@ class ArbitrumTestnetAgent:
             traceback.print_exc()
             return False
 
-    def _execute_market_signal_operation(self, available_borrows_usd):
+    def _execute_market_signal_operation(self, available_borrows_usd=None):
         """Execute market signal-triggered operation - DAI debt swaps only"""
         try:
             print("📊 Executing market signal operation (DAI debt swaps)")
@@ -1511,6 +1511,14 @@ class ArbitrumTestnetAgent:
                 return False
 
             # Conservative amount for market signal operations
+            # Use available_borrows_usd if provided, otherwise fetch it
+            if available_borrows_usd is None:
+                account_data = self.get_user_account_data()
+                if not account_data:
+                    print("❌ Could not fetch available borrows for market signal")
+                    return False
+                available_borrows_usd = account_data.get('availableBorrowsUSD', 0)
+
             swap_amount_usd = min(available_borrows_usd * 0.05, 3.0)  # 5% or $3 max
 
             if swap_amount_usd < 0.5:
@@ -1566,7 +1574,7 @@ class ArbitrumTestnetAgent:
 
             # 4. Validate health factor
             health_factor = account_data.get('healthFactor', 0)
-            if health_factor < 1.5:
+            if health_factor < 1.5: # Lowered threshold for general precondition check
                 print(f"❌ Health factor too low: {health_factor:.3f}")
                 return False
 
@@ -2197,7 +2205,7 @@ class ArbitrumTestnetAgent:
             print(f"❌ Immediate DAI repayment failed: {e}")
             return False
 
-    def _execute_market_signal_operation(self, available_borrows_usd):
+    def _execute_market_signal_operation(self, available_borrows_usd=None):
         """Execute market signal-triggered operation - DAI debt swaps only"""
         try:
             print("📊 Executing market signal operation (DAI debt swaps)")
@@ -2216,6 +2224,14 @@ class ArbitrumTestnetAgent:
                 return False
 
             # Conservative amount for market signal operations
+            # Use available_borrows_usd if provided, otherwise fetch it
+            if available_borrows_usd is None:
+                account_data = self.get_user_account_data()
+                if not account_data:
+                    print("❌ Could not fetch available borrows for market signal")
+                    return False
+                available_borrows_usd = account_data.get('availableBorrowsUSD', 0)
+
             swap_amount_usd = min(available_borrows_usd * 0.05, 3.0)  # 5% or $3 max
 
             if swap_amount_usd < 0.5:
