@@ -564,18 +564,64 @@ class TechnicalAnalysis:
             return 0.0, 0.0
 
 class EnhancedMarketAnalyzer:
-    def __init__(self):
+    def __init__(self, agent=None): # Added agent parameter
+        """Initialize the enhanced market analyzer"""
+        self.agent = agent # Store agent
         self.api_call_history = {}
         self.retry_delays = {}  # Track retry delays for exponential backoff
         self.max_retries = 3
         self.base_delay = 1  # Start with 1 second delay
         self.max_delay = 300  # Maximum 5 minutes delay
-        
+        self.price_cache = {}
+        self.indicators_cache = {}
+        self.last_api_call = 0
+        self.rate_limit_delay = 2.0  # 2 seconds between API calls
+
+        # Initialize logger
+        self.logger = logging.getLogger(__name__)
+
+        # Initialize CoinMarketCap API client
+        self.coinmarketcap_key = os.getenv('COINMARKETCAP_API_KEY')
+        if not self.coinmarketcap_key:
+            self.logger.warning("COINMARKETCAP_API_KEY not found. CoinMarketCap features will be limited.")
+            self.cmc_client = None
+        else:
+            try:
+                # Validate API key format
+                if not self.coinmarketcap_key or len(self.coinmarketcap_key) < 10:
+                    raise ValueError("Invalid CoinMarketCap API key provided")
+                self.cmc_client = CoinMarketCapAPI(self.coinmarketcap_key)
+                self.logger.info(f"✅ Enhanced Market Analyzer initialized with CoinMarketCap API key: {self.coinmarketcap_key[:8]}...")
+            except ValueError as e:
+                self.logger.error(f"Error initializing CoinMarketCap API: {e}")
+                self.cmc_client = None
+            except Exception as e:
+                self.logger.error(f"Unexpected error initializing CoinMarketCap API: {e}")
+                self.cmc_client = None
+
+        # Test if we can get market data from CoinMarketCap
+        if self.cmc_client:
+            try:
+                test_data = self.fetch_optimized_market_data()
+                if test_data and 'btc_analysis' in test_data:
+                    self.initialized = True
+                    self.logger.info("CoinMarketCap API test successful.")
+                else:
+                    self.initialized = False
+                    self.logger.warning("CoinMarketCap API test failed - using fallback mode.")
+            except Exception as e:
+                self.initialized = False
+                self.logger.error(f"CoinMarketCap API test failed: {e}")
+        else:
+            self.initialized = False
+            self.logger.warning("CoinMarketCap API client not available, setting initialized to False.")
+
+
     def _exponential_backoff(self, api_name: str, attempt: int) -> float:
         """Calculate exponential backoff delay"""
         delay = self.base_delay * (2 ** attempt) + random.uniform(0, 1)
         return min(delay, self.max_delay)
-    
+
     def _make_api_request(self, url: str, headers: Dict, api_name: str = "unknown") -> Optional[Dict]:
         """Make API request with exponential backoff and rate limiting"""
         for attempt in range(self.max_retries):
@@ -587,92 +633,92 @@ class EnhancedMarketAnalyzer:
                         sleep_duration = wait_time - time.time()
                         logger.info(f"Rate limit backoff for {api_name}: waiting {sleep_duration:.1f}s")
                         time.sleep(sleep_duration)
-                
+
                 response = requests.get(url, headers=headers, timeout=30)
-                
+
                 if response.status_code == 200:
                     # Success - clear any retry delays
                     if api_name in self.retry_delays:
                         del self.retry_delays[api_name]
                     return response.json()
-                
+
                 elif response.status_code == 429:  # Too Many Requests
                     delay = self._exponential_backoff(api_name, attempt)
                     self.retry_delays[api_name] = time.time() + delay
                     logger.warning(f"Rate limit hit for {api_name}, retrying in {delay:.1f}s (attempt {attempt + 1})")
-                    
+
                     if attempt < self.max_retries - 1:
                         time.sleep(delay)
                         continue
-                
+
                 elif response.status_code == 404:
                     logger.error(f"API endpoint not found for {api_name}: {url}")
                     return None
-                
+
                 else:
                     logger.error(f"API request failed for {api_name}: {response.status_code}")
                     if attempt < self.max_retries - 1:
                         delay = self._exponential_backoff(api_name, attempt)
                         time.sleep(delay)
                         continue
-                
+
             except requests.exceptions.Timeout:
                 logger.warning(f"API timeout for {api_name} (attempt {attempt + 1})")
                 if attempt < self.max_retries - 1:
                     time.sleep(self._exponential_backoff(api_name, attempt))
                     continue
-            
+
             except Exception as e:
                 logger.error(f"API request error for {api_name}: {e}")
                 if attempt < self.max_retries - 1:
                     time.sleep(self._exponential_backoff(api_name, attempt))
                     continue
-        
+
         logger.error(f"All retry attempts failed for {api_name}")
         return None
 
     def fetch_optimized_market_data(self) -> Dict:
         """Fetch only essential market data to stay within API limits"""
+        if not self.cmc_client:
+            logger.warning("CoinMarketCap client not available, returning fallback data.")
+            return self._get_fallback_data()
+
         try:
-            coinmarketcap_api_key = os.getenv('COINMARKETCAP_API_KEY')
-            if not coinmarketcap_api_key:
-                return self._get_fallback_data()
-            
             # Optimize: Request only essential coins and minimal data
             url = "https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest"
             headers = {
-                'X-CMC_PRO_API_KEY': coinmarketcap_api_key,
+                'X-CMC_PRO_API_KEY': self.coinmarketcap_key,
                 'Accept': 'application/json'
             }
-            
+
             # Request only BTC, ETH, ARB instead of all markets
             params = {
                 'symbol': 'BTC,ETH,ARB',
                 'convert': 'USD'
             }
-            
+
             full_url = f"{url}?{'&'.join([f'{k}={v}' for k, v in params.items()])}"
             data = self._make_api_request(full_url, headers, "CoinMarketCap")
-            
+
             if data and 'data' in data:
                 return self._process_coinmarketcap_data(data['data'])
             else:
                 return self._get_fallback_data()
-                
+
         except Exception as e:
             logger.error(f"Error fetching optimized market data: {e}")
             return self._get_fallback_data()
-    
+
     def _process_coinmarketcap_data(self, data: Dict) -> Dict:
         """Process CoinMarketCap data efficiently"""
         try:
             processed_data = {}
-            
+
             for symbol in ['BTC', 'ETH', 'ARB']:
                 if symbol in data:
                     coin_data = data[symbol]
                     quote = coin_data['quote']['USD']
-                    
+
                     processed_data[f'{symbol.lower()}_analysis'] = {
                         'price': quote['price'],
                         'change_24h': quote['percent_change_24h'],
@@ -683,17 +729,17 @@ class EnhancedMarketAnalyzer:
                         'source': 'coinmarketcap_api',
                         'timestamp': time.time()
                     }
-            
+
             # Add market sentiment based on overall performance
             sentiment = self._calculate_market_sentiment(processed_data)
             processed_data['market_sentiment'] = sentiment
-            
+
             return processed_data
-            
+
         except Exception as e:
             logger.error(f"Error processing CoinMarketCap data: {e}")
             return self._get_fallback_data()
-    
+
     def _determine_signal(self, change_24h: float) -> str:
         """Determine market signal based on price change"""
         if change_24h > 5:
@@ -706,7 +752,7 @@ class EnhancedMarketAnalyzer:
             return 'bearish'
         else:
             return 'very_bearish'
-    
+
     def _calculate_market_sentiment(self, data: Dict) -> str:
         """Calculate overall market sentiment"""
         try:
@@ -714,12 +760,12 @@ class EnhancedMarketAnalyzer:
             for key in ['btc_analysis', 'eth_analysis', 'arb_analysis']:
                 if key in data:
                     changes.append(data[key].get('change_24h', 0))
-            
+
             if not changes:
                 return 'neutral'
-            
+
             avg_change = sum(changes) / len(changes)
-            
+
             if avg_change > 3:
                 return 'very_bullish'
             elif avg_change > 1:
@@ -730,11 +776,11 @@ class EnhancedMarketAnalyzer:
                 return 'bearish'
             else:
                 return 'very_bearish'
-                
+
         except Exception as e:
             logger.error(f"Error calculating market sentiment: {e}")
             return 'neutral'
-    
+
     def _get_fallback_data(self) -> Dict:
         """Provide fallback synthetic data when APIs fail"""
         return {
@@ -748,7 +794,7 @@ class EnhancedMarketAnalyzer:
             'eth_analysis': {
                 'price': 2500,
                 'change_24h': -0.3,
-                'signal': 'neutral', 
+                'signal': 'neutral',
                 'confidence': 0.3,
                 'source': 'synthetic_fallback'
             },
@@ -763,255 +809,157 @@ class EnhancedMarketAnalyzer:
             'market_sentiment': 'neutral'
         }
 
-class EnhancedMarketSignalStrategy:
-    """Enhanced market analyzer with comprehensive technical analysis"""
+    def get_market_data_with_fallback(self, symbol: str) -> Optional[Dict]:
+        """Get market data with multiple fallback sources and improved error handling"""
 
-    def __init__(self, agent):
-        self.agent = agent
+        # Respect rate limits with exponential backoff
+        current_time = time.time()
+        if current_time - self.last_api_call < self.rate_limit_delay:
+            time.sleep(self.rate_limit_delay - (current_time - self.last_api_call))
 
-        # Initialize COIN_API (primary) with validation
-        self.coin_api_key = os.getenv('COIN_API')
-        if not self.coin_api_key:
-            logger.warning("COIN_API key not found - disabling primary source")
-            self.coin_api_client = None
-        else:
+        # Primary: CoinMarketCap with retry logic
+        for attempt in range(3):
             try:
-                self.coin_api_client = CoinAPIClient(self.coin_api_key)
-                # Quick validation test
-                headers = {'X-CoinAPI-Key': self.coin_api_key}
-                test_response = requests.get('https://rest.coinapi.io/v1/assets?filter_asset_id=BTC',
-                                           headers=headers, timeout=10)
-                if test_response.status_code == 200:
-                    logger.info("COIN_API client initialized successfully")
+                cmc_data = self._fetch_coinmarketcap_data(symbol)
+                if cmc_data and 'price' in cmc_data:
+                    self.last_api_call = time.time()
+                    return cmc_data
+            except requests.exceptions.Timeout:
+                logger.warning(f"CoinMarketCap timeout for {symbol}, attempt {attempt + 1}")
+                time.sleep(2 ** attempt)  # Exponential backoff
+            except requests.exceptions.HTTPError as e:
+                if e.response.status_code == 429:  # Rate limit
+                    wait_time = 2 ** attempt
+                    logger.warning(f"Rate limit hit for CoinMarketCap, waiting {wait_time}s")
+                    time.sleep(wait_time)
                 else:
-                    logger.warning(f"COIN_API validation failed: {test_response.status_code}")
-                    self.coin_api_client = None
+                    break
             except Exception as e:
-                logger.error(f"COIN_API initialization failed: {e}")
-                self.coin_api_client = None
+                logger.warning(f"CoinMarketCap failed for {symbol}: {e}")
+                break
 
-        # Initialize CoinGecko API (secondary fallback)
-        self.coingecko_api_key = os.getenv('COINGECKO_API_KEY')
-        self.coingecko_client = CoinGeckoAPI(self.coingecko_api_key)
-
-        # Initialize CoinMarketCap API (tertiary fallback)
-        self.coinmarketcap_api_key = os.getenv('COINMARKETCAP_API_KEY')
-        if not self.coinmarketcap_api_key:
-            logger.warning("COINMARKETCAP_API_KEY not found - tertiary fallback unavailable")
-            self.cmc_client = None
-        else:
-            self.cmc_client = CoinMarketCapAPI(self.coinmarketcap_api_key)
-
-        self.technical_analysis = TechnicalAnalysis()
-
-        # Cache for historical data
-        self.data_cache = {}
-        self.cache_timeout = 3600  # 1 hour
-
-        logger.info("Enhanced Market Analyzer initialized with COIN_API primary, CoinGecko secondary, and CoinMarketCap tertiary fallback")
-
-    def get_current_arb_price_with_tracking(self) -> Optional[float]:
-        """Get current ARB price with historical tracking for debt reduction"""
+        # Fallback 1: CoinGecko with timeout
         try:
-            current_prices = self.get_current_prices(['ARB'])
-            arb_data = current_prices.get('ARB')
-
-            if arb_data and 'price' in arb_data:
-                arb_price = arb_data['price']
-
-                # Track price history for debt reduction analysis
-                if not hasattr(self, 'arb_price_history'):
-                    self.arb_price_history = []
-
-                self.arb_price_history.append({
-                    'price': arb_price,
-                    'timestamp': time.time(),
-                    'change_1h': arb_data.get('percent_change_1h', 0),
-                    'change_24h': arb_data.get('percent_change_24h', 0)
-                })
-
-                # Keep only last 24 hours of price data
-                cutoff_time = time.time() - 86400  # 24 hours ago
-                self.arb_price_history = [
-                    entry for entry in self.arb_price_history
-                    if entry['timestamp'] > cutoff_time
-                ]
-
-                return arb_price
-
-            return None
-
+            gecko_data = self._fetch_coingecko_data(symbol)
+            if gecko_data and 'price' in gecko_data:
+                self.last_api_call = time.time()
+                return gecko_data
         except Exception as e:
-            logger.error(f"ARB price tracking failed: {e}")
-            return None
+            logger.warning(f"CoinGecko failed for {symbol}: {e}")
 
-    def analyze_arb_depreciation_trend(self, hours_back: int = 4) -> Dict:
-        """Analyze ARB depreciation trend for debt reduction timing"""
-        try:
-            if not hasattr(self, 'arb_price_history') or len(self.arb_price_history) < 2:
-                return {'trend': 'insufficient_data', 'confidence': 0.0}
+        # Fallback 2: Use cached data if available
+        if symbol in self.price_cache:
+            cache_data = self.price_cache[symbol]
+            cache_age = current_time - cache_data.get('timestamp', 0)
+            if cache_age < 3600:  # Use cache if less than 1 hour old
+                logger.info(f"Using cached data for {symbol} (age: {cache_age:.0f}s)")
+                return cache_data
 
-            # Filter to specified time window
-            cutoff_time = time.time() - (hours_back * 3600)
-            recent_prices = [
-                entry for entry in self.arb_price_history
-                if entry['timestamp'] > cutoff_time
-            ]
+        # Fallback 3: Mock data for testing
+        logger.warning(f"All APIs failed for {symbol}, using mock data")
+        return self._get_mock_data(symbol)
 
-            if len(recent_prices) < 3:
-                return {'trend': 'insufficient_recent_data', 'confidence': 0.0}
-
-            # Calculate trend metrics
-            prices = [entry['price'] for entry in recent_prices]
-            timestamps = [entry['timestamp'] for entry in recent_prices]
-
-            # Simple linear regression for trend
-            n = len(prices)
-            sum_x = sum(timestamps)
-            sum_y = sum(prices)
-            sum_xy = sum(t * p for t, p in zip(timestamps, prices))
-            sum_x2 = sum(t * t for t in timestamps)
-
-            # Calculate slope (trend direction)
-            slope = (n * sum_xy - sum_x * sum_y) / (n * sum_x2 - sum_x * sum_x)
-
-            # Calculate percentage change over period
-            price_change = (prices[-1] - prices[0]) / prices[0]
-
-            # Determine trend strength and confidence
-            if price_change < -0.02:  # 2% or more drop
-                trend = 'strong_depreciation'
-                confidence = min(abs(price_change) * 10, 1.0)  # Higher confidence for bigger drops
-            elif price_change < -0.005:  # 0.5% drop
-                trend = 'moderate_depreciation'
-                confidence = min(abs(price_change) * 20, 0.8)
-            elif price_change > 0.02:  # 2% or more gain
-                trend = 'strong_appreciation'
-                confidence = min(price_change * 10, 1.0)
-            else:
-                trend = 'sideways'
-                confidence = 0.3
-
-            return {
-                'trend': trend,
-                'confidence': confidence,
-                'price_change': price_change,
-                'slope': slope,
-                'debt_reduction_opportunity': trend in ['strong_depreciation', 'moderate_depreciation'] and confidence > 0.6
-            }
-
-        except Exception as e:
-            logger.error(f"ARB depreciation trend analysis failed: {e}")
-            return {'trend': 'error', 'confidence': 0.0}
-
-    def get_current_prices(self, symbols: List[str]) -> Dict[str, Optional[Dict]]:
-        """Get current prices using COIN_API primary, with CoinGecko and CoinMarketCap fallbacks"""
-        results = {}
-
-        for symbol in symbols:
-            # Try each API with exponential backoff
-            price_data = self._fetch_price_with_backoff(symbol)
-            if price_data:
-                results[symbol] = price_data
-            else:
-                # Generate synthetic data as last resort
-                results[symbol] = self._generate_synthetic_price_data(symbol)
-
-        return results
-
-    def _fetch_price_with_backoff(self, symbol: str, max_retries: int = 3) -> Optional[Dict]:
-        """Fetch price data with exponential backoff for rate limiting"""
-        import random
-
-        apis_to_try = [
-            ('COIN_API', self._try_coin_api),
-            ('CoinGecko', self._try_coingecko),
-            ('CoinMarketCap', self._try_coinmarketcap)
-        ]
-
-        for api_name, api_func in apis_to_try:
-            for attempt in range(max_retries):
-                try:
-                    logger.info(f"Fetching {symbol} from {api_name} (attempt {attempt + 1})")
-                    price_data = api_func(symbol)
-
-                    if price_data:
-                        logger.info(f"✅ {api_name}: {symbol} = ${price_data['price']:.4f}")
-                        return price_data
-
-                except requests.exceptions.HTTPError as e:
-                    if hasattr(e, 'response') and e.response and e.response.status_code == 429:
-                        # Calculate exponential backoff with jitter
-                        base_delay = 2 ** attempt  # 1, 2, 4 seconds
-                        jitter = random.uniform(0.1, 0.5)  # Add randomness
-                        delay = base_delay + jitter
-
-                        logger.warning(f"⚠️ {api_name} rate limited for {symbol}, waiting {delay:.1f}s")
-                        time.sleep(delay)
-                        continue
-                    else:
-                        logger.warning(f"⚠️ {api_name} HTTP error for {symbol}: {e}")
-                        break  # Try next API
-
-                except Exception as e:
-                    logger.warning(f"⚠️ {api_name} unexpected error for {symbol}: {e}")
-                    break  # Try next API
-
-        return None
-
-    def _try_coin_api(self, symbol: str) -> Optional[Dict]:
-        """Try COIN_API with proper error handling"""
-        if not self.coin_api_client:
-            return None
-        return self.coin_api_client.get_current_price(symbol)
-
-    def _try_coingecko(self, symbol: str) -> Optional[Dict]:
-        """Try CoinGecko API with proper error handling"""
-        return self.coingecko_client.get_current_price(symbol)
-
-    def _try_coinmarketcap(self, symbol: str) -> Optional[Dict]:
-        """Try CoinMarketCap API with proper error handling"""
-        if not self.cmc_client:
-            return None
-        return self.cmc_client.get_current_price(symbol)
-
-    def _generate_synthetic_price_data(self, symbol: str) -> Dict:
-        """Generate realistic synthetic price data when all APIs fail"""
-        import random
-        import hashlib
-
-        # Use time-based seed for consistency
-        time_seed = int(time.time() / 300)  # Changes every 5 minutes
-        random.seed(hashlib.md5(f"{symbol}_{time_seed}".encode()).hexdigest())
-
-        synthetic_prices = {
-            'BTC': {'base': 97500, 'volatility': 0.015},
-            'ETH': {'base': 3250, 'volatility': 0.02},
-            'ARB': {'base': 0.41, 'volatility': 0.03},
-            'DAI': {'base': 1.0, 'volatility': 0.0005}
+    def _fetch_coinmarketcap_data(self, symbol: str) -> Optional[Dict]:
+        """Fetch data from CoinMarketCap API with improved error handling"""
+        url = "https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest"
+        headers = {
+            'X-CMC_PRO_API_KEY': self.coinmarketcap_key,
+            'Accept': 'application/json',
+            'Accept-Encoding': 'deflate, gzip'
+        }
+        params = {
+            'symbol': symbol,
+            'convert': 'USD',
+            'aux': 'market_cap,volume_24h'
         }
 
-        if symbol in synthetic_prices:
-            base_price = synthetic_prices[symbol]['base']
-            volatility = synthetic_prices[symbol]['volatility']
-            price_variation = random.uniform(-volatility, volatility)
-            synthetic_price = base_price * (1 + price_variation)
+        try:
+            response = requests.get(
+                url,
+                headers=headers,
+                params=params,
+                timeout=15,
+                verify=True
+            )
 
-            synthetic_data = {
-                'price': synthetic_price,
-                'percent_change_1h': random.uniform(-0.5, 0.5),
-                'percent_change_24h': random.uniform(-3.0, 3.0),
-                'percent_change_7d': random.uniform(-8.0, 8.0),
-                'volume_24h': random.uniform(1000000, 10000000),
-                'market_cap': 0,
-                'source': 'synthetic_fallback',
-                'synthetic': True
+            # Handle rate limiting specifically
+            if response.status_code == 429:
+                retry_after = response.headers.get('Retry-After', '60')
+                logger.warning(f"Rate limit hit, should retry after {retry_after} seconds")
+                raise requests.exceptions.HTTPError(response=response)
+
+            response.raise_for_status()
+
+            data = response.json()
+
+            # Validate response structure
+            if not data.get('data') or symbol not in data['data']:
+                logger.error(f"Invalid response structure for {symbol}: {data}")
+                return None
+
+            quote_data = data['data'][symbol]['quote']['USD']
+
+            result = {
+                'price': float(quote_data['price']),
+                'percent_change_24h': float(quote_data.get('percent_change_24h', 0)),
+                'market_cap': float(quote_data.get('market_cap', 0)),
+                'volume_24h': float(quote_data.get('volume_24h', 0)),
+                'source': 'coinmarketcap',
+                'timestamp': time.time(),
+                'last_updated': quote_data.get('last_updated')
             }
 
-            logger.warning(f"⚠️ Using synthetic data for {symbol}: ${synthetic_data['price']:.4f}")
-            return synthetic_data
+            # Cache the successful result
+            self.price_cache[symbol] = result
 
+            return result
+
+        except requests.exceptions.RequestException as e:
+            logger.error(f"CoinMarketCap API request failed for {symbol}: {e}")
+            raise
+        except (KeyError, ValueError, TypeError) as e:
+            logger.error(f"CoinMarketCap data parsing failed for {symbol}: {e}")
+            return None
+
+    def _fetch_coingecko_data(self, symbol: str) -> Optional[Dict]:
+        """Fetch data from CoinGecko API"""
+        if not self.agent or not hasattr(self.agent, 'address'):
+            logger.warning("Agent or agent address not available for CoinGecko data fetch.")
+            return None
+
+        try:
+            coingecko_client = CoinGeckoAPI(os.getenv('COINGECKO_API_KEY'))
+            data = coingecko_client.get_current_price(symbol)
+            if data:
+                data['source'] = 'coingecko'
+                data['timestamp'] = time.time()
+                self.price_cache[symbol] = data # Cache successful result
+            return data
+        except Exception as e:
+            logger.error(f"CoinGecko API request failed for {symbol}: {e}")
+            return None
+
+    def _get_mock_data(self, symbol: str) -> Optional[Dict]:
+        """Generate mock data for a symbol"""
+        logger.info(f"Generating mock data for {symbol}")
+        mock_prices = {
+            'BTC': {'price': 50000, 'change_24h': 1.5, 'market_cap': 1e12, 'volume_24h': 30e9},
+            'ETH': {'price': 3000, 'change_24h': 2.0, 'market_cap': 350e9, 'volume_24h': 15e9},
+            'ARB': {'price': 1.0, 'change_24h': -0.5, 'market_cap': 1e9, 'volume_24h': 100e6},
+            'DAI': {'price': 1.0, 'change_24h': 0.0, 'market_cap': 10e9, 'volume_24h': 1e6}
+        }
+        if symbol in mock_prices:
+            data = mock_prices[symbol]
+            return {
+                'price': data['price'],
+                'percent_change_24h': data['change_24h'],
+                'market_cap': data['market_cap'],
+                'volume_24h': data['volume_24h'],
+                'source': 'mock',
+                'timestamp': time.time()
+            }
         return None
+
 
     def get_cached_data(self, symbol: str, days: int = 365) -> Optional[pd.DataFrame]:
         """Get cached historical data or fetch new data"""
@@ -1275,8 +1223,8 @@ class EnhancedMarketSignalStrategy:
     def __init__(self, agent):
         self.agent = agent
         try:
-            self.analyzer = EnhancedMarketAnalyzer()
-            
+            self.analyzer = EnhancedMarketAnalyzer(agent) # Pass agent to analyzer
+
             # Test if we can get market data
             test_data = self.analyzer.fetch_optimized_market_data()
             if test_data and 'btc_analysis' in test_data:
@@ -1285,7 +1233,7 @@ class EnhancedMarketSignalStrategy:
             else:
                 self.initialized = False
                 logger.warning("Enhanced Market Signal Strategy API test failed - using fallback mode")
-                
+
         except Exception as e:
             logger.error(f"Failed to initialize Enhanced Market Signal Strategy: {e}")
             self.initialized = False
@@ -1366,7 +1314,7 @@ def test_enhanced_market_analyzer():
 
         # Test analyzer
         agent = MockAgent()
-        analyzer = EnhancedMarketAnalyzer(agent)
+        analyzer = EnhancedMarketAnalyzer(agent) # Pass agent instance
         print("✅ Enhanced Market Analyzer initialized")
 
         # Test market summary
