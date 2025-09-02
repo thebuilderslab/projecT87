@@ -1040,8 +1040,78 @@ def get_market_signal_status():
         return f"[{timestamp}] ❌ MARKET SIGNALS: Check failed | {str(e)[:50]}"
 
 
-@app.route('/api/system_mode', methods=['POST'])
-def set_system_mode():
+@app.route('/api/market_signals')
+def get_market_signals():
+    """Get real-time market signal status"""
+    try:
+        # Check market signal strategy status
+        market_enabled = os.getenv('MARKET_SIGNAL_ENABLED', 'false').lower() == 'true'
+
+        # Check API availability
+        coinapi_key = (os.getenv('COIN_API') or 
+                       os.getenv('COIN_API_KEY') or 
+                       os.getenv('COINAPI_KEY') or
+                       os.getenv('COINAPI'))
+        coinmarketcap_key = os.getenv('COINMARKETCAP_API_KEY')
+
+        # Test strategy initialization
+        strategy_initialized = False
+        data_source = "None"
+        error_message = None
+
+        if market_enabled:
+            try:
+                from market_signal_strategy import MarketSignalStrategy
+
+                # Create minimal test to verify strategy works
+                class MockAgent:
+                    def __init__(self):
+                        self.address = "0x0000000000000000000000000000000000000000"
+
+                test_agent = MockAgent()
+                strategy = MarketSignalStrategy(test_agent)
+
+                if hasattr(strategy, 'initialization_successful') and strategy.initialization_successful:
+                    strategy_initialized = True
+
+                    if coinapi_key:
+                        data_source = "CoinAPI"
+                    elif coinmarketcap_key:
+                        data_source = "CoinMarketCap" 
+                    else:
+                        data_source = "Mock Data"
+                else:
+                    error_message = "Strategy initialization failed"
+
+            except Exception as e:
+                error_message = f"Import/initialization error: {str(e)[:100]}"
+        else:
+            error_message = "Market signals are disabled. Set MARKET_SIGNAL_ENABLED=true."
+
+
+        return jsonify({
+            'market_signals_enabled': market_enabled,
+            'strategy_initialized': strategy_initialized,
+            'data_source': data_source,
+            'api_keys_available': {
+                'coinapi': bool(coinapi_key),
+                'coinmarketcap': bool(coinmarketcap_key)
+            },
+            'error_message': error_message,
+            'timestamp': time.time(),
+            'success': True
+        })
+
+    except Exception as e:
+        return jsonify({
+            'error': f"Market signals check failed: {str(e)}",
+            'timestamp': time.time(),
+            'success': False
+        })
+
+
+@app.route('/api/set_system_mode', methods=['POST'])
+def set_system_mode_api():
     """Set system mode (autonomous/manual)"""
     global system_mode
     try:
@@ -1590,10 +1660,11 @@ def check_market_signals():
                 return f"[{timestamp}] ❌ MARKET SIGNALS: Agent error | {str(agent_error)[:50]}"
 
         else:
-            return f"[{timestamp}] ❌ MARKET SIGNALS: Strategy file missing | Install market_signal_strategy.py"
+            return f"[{timestamp}] ❌ MARKET SIGNALS: Strategy file missing | market_signal_strategy.py not found"
 
     except Exception as e:
-        return f"[{timestamp}] ❌ MARKET SIGNALS: Check failed | {str(e)[:50]}"
+        return f"[{timestamp}] ❌ MARKET SIGNALS: Check failed | {str(e)[:40]}"
+
 
 def get_available_port(start_port=5000):
     """Find an available port starting from start_port"""

@@ -740,35 +740,69 @@ class ArbitrumTestnetAgent:
         print(f"═══════════════════════════════════════\n")
 
     def _display_debt_swap_thresholds(self):
-        """Display debt swap thresholds dynamically"""
+        """Display debt swap thresholds dynamically with real-time status"""
         try:
-            coinapi_key = (os.getenv('COIN_API_KEY') or 
-                          os.getenv('COINAPI_KEY') or 
-                          os.getenv('COIN_API') or
+            coinapi_key = (os.getenv('COIN_API') or 
+                          os.getenv('COIN_API_KEY') or 
+                          os.getenv('COINAPI_KEY') or
                           os.getenv('COINAPI'))
             coinmarketcap_key = os.getenv('COINMARKETCAP_API_KEY')
             market_signal_enabled = os.getenv('MARKET_SIGNAL_ENABLED', 'false').lower() == 'true'
 
             print("💱 DEBT SWAP THRESHOLDS:")
-            if market_signal_enabled and (coinapi_key or coinmarketcap_key):
-                print("   ✅ Market signal strategy enabled")
+            
+            # Check actual strategy status instead of just environment variables
+            strategy_operational = False
+            data_source = "None"
+            
+            if (hasattr(self, 'market_signal_strategy') and 
+                self.market_signal_strategy and 
+                hasattr(self.market_signal_strategy, 'initialization_successful') and
+                self.market_signal_strategy.initialization_successful):
+                
+                strategy_operational = True
+                
+                # Determine data source
+                if hasattr(self.market_signal_strategy, 'enhanced_analyzer') and self.market_signal_strategy.enhanced_analyzer:
+                    primary_api = getattr(self.market_signal_strategy.enhanced_analyzer, 'primary_api', None)
+                    mock_mode = getattr(self.market_signal_strategy.enhanced_analyzer, 'mock_mode', False)
+                    
+                    if primary_api == 'coinapi':
+                        data_source = "CoinAPI (Primary)"
+                    elif primary_api == 'coinmarketcap':
+                        data_source = "CoinMarketCap (Secondary)"
+                    elif mock_mode:
+                        data_source = "Mock Data (Fallback)"
+                    else:
+                        data_source = "API Data"
+
+            if strategy_operational:
+                print("   ✅ Market signal strategy OPERATIONAL")
+                print(f"   ✅ Data Source: {data_source}")
+                print("   ✅ Debt swaps ACTIVE")
+                
+                # Show which APIs are configured
                 if coinapi_key:
                     print("   ✅ COIN_API configured (PRIMARY)")
                 if coinmarketcap_key:
                     print("   ✅ CoinMarketCap API configured (SECONDARY)")
-                print("   📊 Debt swaps active")
-            else:
-                if hasattr(self, 'market_signal_strategy') and self.market_signal_strategy:
-                    print("   ❌ Market signal strategy not available")
-                else:
-                    print("   ❌ Market signal strategy not available")
-                print("   📊 Debt swaps disabled")
+                    
+            elif market_signal_enabled:
+                print("   ⚠️ Market signal strategy enabled but not operational")
+                print("   📊 Debt swaps disabled (initialization failed)")
+                
+                # Show API status for debugging
                 if coinapi_key:
-                    print("   ✅ COIN_API configured (PRIMARY)")
+                    print("   ✅ COIN_API configured")
                 if coinmarketcap_key:
-                    print("   ✅ COINMARKETCAP_API_KEY configured (SECONDARY)")
+                    print("   ✅ CoinMarketCap API configured")
                 if not coinapi_key and not coinmarketcap_key:
                     print("   ❌ No API keys configured")
+                    
+            else:
+                print("   ❌ Market signal strategy disabled")
+                print("   📊 Debt swaps disabled (MARKET_SIGNAL_ENABLED=false)")
+                
         except Exception as e:
             print(f"   ❌ Error displaying debt swap thresholds: {e}")
 
