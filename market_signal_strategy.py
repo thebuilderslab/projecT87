@@ -323,9 +323,15 @@ class MarketSignalStrategy:
         
         # Check if enhanced analyzer has sufficient data
         enhanced_ready = False
+        enhanced_arb_points = 0
+        enhanced_btc_points = 0
+        
         if self.enhanced_analyzer and hasattr(self.enhanced_analyzer, 'price_history'):
             arb_history = self.enhanced_analyzer.price_history.get('ARB', [])
-            enhanced_ready = len(arb_history) >= min_points_for_basic
+            btc_history = self.enhanced_analyzer.price_history.get('BTC', [])
+            enhanced_arb_points = len(arb_history)
+            enhanced_btc_points = len(btc_history)
+            enhanced_ready = enhanced_arb_points >= min_points_for_basic
         
         return {
             'initialized': self.initialized,
@@ -334,12 +340,16 @@ class MarketSignalStrategy:
             'coinapi_present': bool(os.getenv('COIN_API') or os.getenv('COIN_API_KEY') or os.getenv('COINAPI_KEY')),
             'strategy_type': 'enhanced_coinmarketcap' if self.initialized else 'fallback',
             'price_history_points': price_points,
+            'enhanced_arb_points': enhanced_arb_points,
+            'enhanced_btc_points': enhanced_btc_points,
             'ohlcv_history_points': ohlcv_points,
             'technical_indicators_ready': enhanced_ready or price_points >= min_points_for_basic,
             'technical_indicators_full': enhanced_ready and price_points >= min_points_for_full,
             'data_source': self._get_current_data_source(),
             'last_update': time.time(),
-            'initialization_successful': self.initialization_successful
+            'initialization_successful': self.initialization_successful,
+            'min_points_for_basic': min_points_for_basic,
+            'min_points_for_full': min_points_for_full
         }
     
     def _get_current_data_source(self) -> str:

@@ -390,7 +390,7 @@ class EnhancedMarketAnalyzer:
 
             price_point = {
                 'price': data['price'],
-                'timestamp': data['timestamp'],
+                'timestamp': data.get('timestamp', time.time()),
                 'change_24h': data.get('percent_change_24h', 0),
                 'volume': data.get('volume_24h', 0),
                 'source': data.get('source', 'unknown')
@@ -401,6 +401,9 @@ class EnhancedMarketAnalyzer:
             # Keep only the last max_history_points
             if len(self.price_history[symbol]) > self.max_history_points:
                 self.price_history[symbol] = self.price_history[symbol][-self.max_history_points:]
+
+            # Debug logging to verify storage
+            self.logger.info(f"📊 Stored data point for {symbol}: {len(self.price_history[symbol])} total points")
 
         except Exception as e:
             self.logger.error(f"Error storing historical data for {symbol}: {e}")
