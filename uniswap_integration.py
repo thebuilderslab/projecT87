@@ -730,7 +730,7 @@ class UniswapIntegration:
             return False
 
     def swap_dai_for_arb(self, dai_amount):
-        """Swap DAI for ARB on Uniswap V3 - Extended for ARB token swaps"""
+        """Swap DAI for ARB on Uniswap V3 - Extended for ARB token swaps with profit tracking"""
         try:
             print(f"🔄 Swapping {dai_amount:.6f} DAI for ARB...")
 
@@ -738,6 +738,15 @@ class UniswapIntegration:
             if dai_amount <= 0:
                 print("❌ Invalid DAI amount for swap")
                 return False
+
+            # Get ARB price before swap for tracking
+            arb_price = 0.41  # Default, should be fetched from price oracle
+            try:
+                # Try to get real ARB price if market analyzer is available
+                if hasattr(self, '_get_arb_price'):
+                    arb_price = self._get_arb_price()
+            except:
+                pass
 
             # ARB token address for Arbitrum Mainnet
             arb_address = "0x912CE59144191C1204E64559FE8253a0e49E6548"
@@ -751,12 +760,27 @@ class UniswapIntegration:
             )
 
             if swap_result and isinstance(swap_result, str):
+                # Calculate ARB received (estimate)
+                arb_received = dai_amount / arb_price
+                
+                # Start profit tracking
+                try:
+                    from debt_swap_profit_tracker import track_dai_to_arb_swap
+                    cycle_id = track_dai_to_arb_swap(dai_amount, arb_received, arb_price)
+                    print(f"📊 Profit tracking started: {cycle_id}")
+                except Exception as track_error:
+                    print(f"⚠️ Profit tracking failed: {track_error}")
+                    cycle_id = None
+                
                 return {
                     'success': True,
                     'tx_hash': swap_result,
                     'amount_in': dai_amount,
                     'token_in': 'DAI',
-                    'token_out': 'ARB'
+                    'token_out': 'ARB',
+                    'arb_received': arb_received,
+                    'arb_price': arb_price,
+                    'cycle_id': cycle_id
                 }
             else:
                 return False
@@ -765,8 +789,8 @@ class UniswapIntegration:
             print(f"❌ DAI to ARB swap failed: {e}")
             return False
 
-    def swap_arb_for_dai(self, arb_amount):
-        """Swap ARB for DAI on Uniswap V3 - Reverse swap functionality"""
+    def swap_arb_for_dai(self, arb_amount, cycle_id=None):
+        """Swap ARB for DAI on Uniswap V3 - Reverse swap functionality with profit tracking"""
         try:
             print(f"🔄 Swapping {arb_amount:.6f} ARB for DAI...")
 
@@ -774,6 +798,14 @@ class UniswapIntegration:
             if arb_amount <= 0:
                 print("❌ Invalid ARB amount for swap")
                 return False
+
+            # Get ARB price for tracking
+            arb_price = 0.41  # Default, should be fetched from price oracle
+            try:
+                if hasattr(self, '_get_arb_price'):
+                    arb_price = self._get_arb_price()
+            except:
+                pass
 
             # ARB token address for Arbitrum Mainnet
             arb_address = "0x912CE59144191C1204E64559FE8253a0e49E6548"
@@ -787,12 +819,26 @@ class UniswapIntegration:
             )
 
             if swap_result and isinstance(swap_result, str):
+                # Calculate DAI received (estimate)
+                dai_received = arb_amount * arb_price
+                
+                # Complete profit tracking if cycle_id provided
+                if cycle_id:
+                    try:
+                        from debt_swap_profit_tracker import track_arb_to_dai_swap
+                        track_arb_to_dai_swap(cycle_id, dai_received, arb_price)
+                        print(f"📊 Profit tracking completed for cycle: {cycle_id}")
+                    except Exception as track_error:
+                        print(f"⚠️ Profit tracking completion failed: {track_error}")
+                
                 return {
                     'success': True,
                     'tx_hash': swap_result,
                     'amount_in': arb_amount,
                     'token_in': 'ARB',
-                    'token_out': 'DAI'
+                    'token_out': 'DAI',
+                    'dai_received': dai_received,
+                    'arb_price': arb_price
                 }
             else:
                 return False
