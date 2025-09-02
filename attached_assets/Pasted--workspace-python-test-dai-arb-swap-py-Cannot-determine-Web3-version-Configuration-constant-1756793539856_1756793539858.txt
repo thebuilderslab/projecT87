@@ -1,0 +1,266 @@
+~/workspace$ python test_dai_arb_swap.py
+⚠️ Cannot determine Web3 version
+✅ Configuration constants loaded successfully
+🧪 DAI ↔ ARB SWAP TEST
+==============================
+
+🔍 CHECKING SYSTEM SWAP CAPABILITIES
+========================================
+🤖 Initializing Arbitrum Testnet Agent...
+DEBUG: Private key loaded from parameter/environment: [REDACTED]
+✅ All critical environment variables validated successfully
+🔍 DEBUG: Starting RPC manager initialization...
+🔍 DEBUG: Network mode: mainnet
+🔍 DEBUG: ALCHEMY_RPC_URL from env: https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-bM9XgIIU
+🔗 DEBUG: Added Alchemy RPC to endpoints list: https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-...
+🔍 DEBUG: Total RPC endpoints to test: 5
+🔍 Testing RPC: https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-bM9XgIIU
+✅ RPC passed tests: https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-bM9XgIIU (0.19s)
+🔍 Testing RPC: https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f938ff891c141
+✅ RPC passed tests: https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f938ff891c141 (0.50s)
+🔍 Testing RPC: https://arb1.arbitrum.io/rpc
+✅ RPC passed tests: https://arb1.arbitrum.io/rpc (0.38s)
+🔍 Testing RPC: https://arbitrum-one.public.blastapi.io
+✅ RPC passed tests: https://arbitrum-one.public.blastapi.io (0.18s)
+🔍 Testing RPC: https://arbitrum-one.publicnode.com
+✅ RPC passed tests: https://arbitrum-one.publicnode.com (0.74s)
+📊 RPC Test Results: 5/5 endpoints working
+🌐 Operating on Arbitrum Mainnet
+🔍 DEBUG: Final RPC selection results:
+   Primary RPC: https://arbitrum-one.public.blastapi.io
+   Fallback RPCs: 4 available
+🚨 NETWORK_MODE from environment: 'mainnet'
+🔗 Primary RPC: https://arbitrum-one.public.blastapi.io
+🔄 Fallback RPCs: 4 available
+🔍 DEBUG: Attempting to create Web3 connection with primary RPC: https://arbitrum-one.public.blastapi.io
+✅ Successfully connected to primary RPC: https://arbitrum-one.public.blastapi.io
+🔍 DEBUG: Web3 connection verified - Chain ID: 42161, Latest Block: 374818818
+🔑 Wallet Address: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+💰 AGENT INITIALIZED WITH WALLET: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+✅ Private key format validated and normalized
+📋 Mainnet Token addresses verified (DAI-ONLY COMPLIANCE):
+   DAI: 0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1
+   WBTC: 0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f
+   WETH: 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1
+   Aave Pool: 0x794a61358D6845594F94dc1DB02A252b5b4814aD
+💰 Initialized last_collateral_value_usd to 0.0 (will sync with actual position)
+📊 Initialized last_collateral_value_usd to: 0.0
+
+🔄 HYBRID SYSTEM CONFIGURATION:
+═══════════════════════════════════════
+🚀 GROWTH-TRIGGERED SYSTEM:
+   • Growth Threshold: $40
+   • Health Factor: > 2.1
+   • Re-leverage %: 50.0%
+   • Min/Max Borrow: $10 - $200
+⚡ CAPACITY-BASED SYSTEM:
+   • Available Capacity: > $13
+   • Health Factor: > 2.0
+   • Max Utilization: < 20%
+   • Current Available: $85.21 (MEETS THRESHOLD)
+   • Current Utilization: ~15% (MEETS THRESHOLD)
+🔧 SYSTEM SETTINGS:
+   • Operation Cooldown: 60s
+   • Target Health Factor: 3.5
+💱 DEBT SWAP THRESHOLDS:
+   ⚠️ Market signal strategy enabled but not operational
+   📊 Debt swaps disabled (initialization failed)
+   ✅ COIN_API configured
+   ✅ CoinMarketCap API configured
+🔍 INTEGRATED MARKET INDICATORS:
+   ⚠️ Market signal strategy not available
+═══════════════════════════════════════
+
+🔍 Found CoinAPI key in COIN_API: 7e05fb0d...
+🔄 Initializing Market Signal Strategy...
+🔍 DEBUG Environment Variables:
+   COIN_API: SET
+   COIN_API_KEY: NOT_SET
+   COINAPI_KEY: NOT_SET
+   COINMARKETCAP_API_KEY: SET
+   MARKET_SIGNAL_ENABLED: true
+🔍 All market-related environment variables found:
+   COINGECKO_API_KEY: [REDACTED]
+   COIN_API: 7e05fb0d-f9ac-45b5-9091-012509fdaf8a
+   COINMARKETCAP_API_KEY: [REDACTED]
+   MARKET_SIGNAL_ENABLED: true
+INFO:enhanced_market_analyzer:🎯 PRIMARY: CoinAPI initialized successfully with key: 7e05fb0d...
+INFO:enhanced_market_analyzer:✅ CoinAPI confirmed as PRIMARY market data source
+INFO:enhanced_market_analyzer:✅ Enhanced Market Analyzer initialized successfully with coinapi
+INFO:enhanced_market_analyzer:   Primary: coinapi | Secondary: None | Mock Mode: False
+INFO:market_signal_strategy:✅ Market Signal Strategy initialized with CoinAPI (Primary)
+INFO:market_signal_strategy:   Primary: CoinAPI | Secondary: CoinMarketCap | Fallback: Mock Data
+INFO:market_signal_strategy:✅ initialization_successful = True
+🔍 DEBUG Environment Variables:
+   COIN_API: SET
+   COIN_API_KEY: NOT_SET
+   COINAPI_KEY: NOT_SET
+   COINMARKETCAP_API_KEY: SET
+   MARKET_SIGNAL_ENABLED: true
+🔍 All market-related environment variables found:
+   COINGECKO_API_KEY: [REDACTED]
+   COIN_API: 7e05fb0d-f9ac-45b5-9091-012509fdaf8a
+   COINMARKETCAP_API_KEY: [REDACTED]
+   MARKET_SIGNAL_ENABLED: true
+INFO:enhanced_market_analyzer:🎯 PRIMARY: CoinAPI initialized successfully with key: 7e05fb0d...
+INFO:enhanced_market_analyzer:✅ CoinAPI confirmed as PRIMARY market data source
+INFO:enhanced_market_analyzer:✅ Enhanced Market Analyzer initialized successfully with coinapi
+INFO:enhanced_market_analyzer:   Primary: coinapi | Secondary: None | Mock Mode: False
+INFO:enhanced_market_analyzer:📊 Stored data point for BTC: 1 total points
+INFO:enhanced_market_analyzer:🎯 Using PRIMARY CoinAPI data for BTC: $110364.7966
+INFO:enhanced_market_analyzer:📊 Stored data point for ETH: 1 total points
+INFO:enhanced_market_analyzer:🎯 Using PRIMARY CoinAPI data for ETH: $4399.3017
+INFO:enhanced_market_analyzer:📊 Stored data point for DAI: 1 total points
+INFO:enhanced_market_analyzer:🎯 Using PRIMARY CoinAPI data for DAI: $0.9999
+INFO:enhanced_market_analyzer:📊 Stored data point for ARB: 1 total points
+INFO:enhanced_market_analyzer:🎯 Using PRIMARY CoinAPI data for ARB: $0.4935
+INFO:enhanced_market_analyzer:Enhanced Market Signal Strategy initialized successfully with working API
+INFO:market_signal_strategy:✅ Enhanced strategy component loaded successfully
+✅ Market Signal Strategy FORCED to operational status
+✅ Debt swap system ACTIVATED with forced initialization
+✅ Market Signal Strategy initialized with CoinAPI (Primary)
+🔄 Debt swap system activated with market signal integration
+🎯 Market Signal Strategy Status: ACTIVE
+✅ Enhanced error handling configured
+✅ Uniswap Integration: Missing
+✅ Market Strategy: Available
+✅ Debt Swap Active: True
+✅ Technical Indicators: Not Ready
+✅ Data Source: CoinAPI (Primary)
+🔄 TESTING DAI ↔ ARB SWAP SEQUENCE
+==================================================
+🤖 Initializing agent...
+🤖 Initializing Arbitrum Testnet Agent...
+DEBUG: Private key loaded from parameter/environment: [REDACTED]
+✅ All critical environment variables validated successfully
+🔍 DEBUG: Starting RPC manager initialization...
+🔍 DEBUG: Network mode: mainnet
+🔍 DEBUG: ALCHEMY_RPC_URL from env: https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-bM9XgIIU
+🔗 DEBUG: Added Alchemy RPC to endpoints list: https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-...
+🔍 DEBUG: Total RPC endpoints to test: 5
+🔍 Testing RPC: https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-bM9XgIIU
+✅ RPC passed tests: https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-bM9XgIIU (0.41s)
+🔍 Testing RPC: https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f938ff891c141
+✅ RPC passed tests: https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f938ff891c141 (0.30s)
+🔍 Testing RPC: https://arb1.arbitrum.io/rpc
+✅ RPC passed tests: https://arb1.arbitrum.io/rpc (0.35s)
+🔍 Testing RPC: https://arbitrum-one.public.blastapi.io
+✅ RPC passed tests: https://arbitrum-one.public.blastapi.io (0.17s)
+🔍 Testing RPC: https://arbitrum-one.publicnode.com
+✅ RPC passed tests: https://arbitrum-one.publicnode.com (0.76s)
+📊 RPC Test Results: 5/5 endpoints working
+🌐 Operating on Arbitrum Mainnet
+🔍 DEBUG: Final RPC selection results:
+   Primary RPC: https://arbitrum-one.public.blastapi.io
+   Fallback RPCs: 4 available
+🚨 NETWORK_MODE from environment: 'mainnet'
+🔗 Primary RPC: https://arbitrum-one.public.blastapi.io
+🔄 Fallback RPCs: 4 available
+🔍 DEBUG: Attempting to create Web3 connection with primary RPC: https://arbitrum-one.public.blastapi.io
+✅ Successfully connected to primary RPC: https://arbitrum-one.public.blastapi.io
+🔍 DEBUG: Web3 connection verified - Chain ID: 42161, Latest Block: 374818953
+🔑 Wallet Address: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+💰 AGENT INITIALIZED WITH WALLET: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+✅ Private key format validated and normalized
+📋 Mainnet Token addresses verified (DAI-ONLY COMPLIANCE):
+   DAI: 0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1
+   WBTC: 0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f
+   WETH: 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1
+   Aave Pool: 0x794a61358D6845594F94dc1DB02A252b5b4814aD
+💰 Initialized last_collateral_value_usd to 0.0 (will sync with actual position)
+📊 Initialized last_collateral_value_usd to: 0.0
+
+🔄 HYBRID SYSTEM CONFIGURATION:
+═══════════════════════════════════════
+🚀 GROWTH-TRIGGERED SYSTEM:
+   • Growth Threshold: $40
+   • Health Factor: > 2.1
+   • Re-leverage %: 50.0%
+   • Min/Max Borrow: $10 - $200
+⚡ CAPACITY-BASED SYSTEM:
+   • Available Capacity: > $13
+   • Health Factor: > 2.0
+   • Max Utilization: < 20%
+   • Current Available: $85.21 (MEETS THRESHOLD)
+   • Current Utilization: ~15% (MEETS THRESHOLD)
+🔧 SYSTEM SETTINGS:
+   • Operation Cooldown: 60s
+   • Target Health Factor: 3.5
+💱 DEBT SWAP THRESHOLDS:
+   ⚠️ Market signal strategy enabled but not operational
+   📊 Debt swaps disabled (initialization failed)
+   ✅ COIN_API configured
+   ✅ CoinMarketCap API configured
+🔍 INTEGRATED MARKET INDICATORS:
+   ⚠️ Market signal strategy not available
+═══════════════════════════════════════
+
+🔍 Found CoinAPI key in COIN_API: 7e05fb0d...
+🔄 Initializing Market Signal Strategy...
+🔍 DEBUG Environment Variables:
+   COIN_API: SET
+   COIN_API_KEY: NOT_SET
+   COINAPI_KEY: NOT_SET
+   COINMARKETCAP_API_KEY: SET
+   MARKET_SIGNAL_ENABLED: true
+🔍 All market-related environment variables found:
+   COINGECKO_API_KEY: [REDACTED]
+   COIN_API: 7e05fb0d-f9ac-45b5-9091-012509fdaf8a
+   COINMARKETCAP_API_KEY: [REDACTED]
+   MARKET_SIGNAL_ENABLED: true
+INFO:enhanced_market_analyzer:🎯 PRIMARY: CoinAPI initialized successfully with key: 7e05fb0d...
+INFO:enhanced_market_analyzer:✅ CoinAPI confirmed as PRIMARY market data source
+INFO:enhanced_market_analyzer:✅ Enhanced Market Analyzer initialized successfully with coinapi
+INFO:enhanced_market_analyzer:   Primary: coinapi | Secondary: None | Mock Mode: False
+INFO:market_signal_strategy:✅ Market Signal Strategy initialized with CoinAPI (Primary)
+INFO:market_signal_strategy:   Primary: CoinAPI | Secondary: CoinMarketCap | Fallback: Mock Data
+INFO:market_signal_strategy:✅ initialization_successful = True
+🔍 DEBUG Environment Variables:
+   COIN_API: SET
+   COIN_API_KEY: NOT_SET
+   COINAPI_KEY: NOT_SET
+   COINMARKETCAP_API_KEY: SET
+   MARKET_SIGNAL_ENABLED: true
+🔍 All market-related environment variables found:
+   COINGECKO_API_KEY: [REDACTED]
+   COIN_API: 7e05fb0d-f9ac-45b5-9091-012509fdaf8a
+   COINMARKETCAP_API_KEY: [REDACTED]
+   MARKET_SIGNAL_ENABLED: true
+INFO:enhanced_market_analyzer:🎯 PRIMARY: CoinAPI initialized successfully with key: 7e05fb0d...
+INFO:enhanced_market_analyzer:✅ CoinAPI confirmed as PRIMARY market data source
+INFO:enhanced_market_analyzer:✅ Enhanced Market Analyzer initialized successfully with coinapi
+INFO:enhanced_market_analyzer:   Primary: coinapi | Secondary: None | Mock Mode: False
+INFO:enhanced_market_analyzer:📊 Stored data point for BTC: 1 total points
+INFO:enhanced_market_analyzer:🎯 Using PRIMARY CoinAPI data for BTC: $110343.0669
+INFO:enhanced_market_analyzer:📊 Stored data point for ETH: 1 total points
+INFO:enhanced_market_analyzer:🎯 Using PRIMARY CoinAPI data for ETH: $4398.4802
+INFO:enhanced_market_analyzer:📊 Stored data point for DAI: 1 total points
+INFO:enhanced_market_analyzer:🎯 Using PRIMARY CoinAPI data for DAI: $0.9999
+INFO:enhanced_market_analyzer:📊 Stored data point for ARB: 1 total points
+INFO:enhanced_market_analyzer:🎯 Using PRIMARY CoinAPI data for ARB: $0.4928
+INFO:enhanced_market_analyzer:Enhanced Market Signal Strategy initialized successfully with working API
+INFO:market_signal_strategy:✅ Enhanced strategy component loaded successfully
+✅ Market Signal Strategy FORCED to operational status
+✅ Debt swap system ACTIVATED with forced initialization
+✅ Market Signal Strategy initialized with CoinAPI (Primary)
+🔄 Debt swap system activated with market signal integration
+🎯 Market Signal Strategy Status: ACTIVE
+✅ Enhanced error handling configured
+🔄 Initializing DeFi integrations...
+✅ Web3 connected - Block: 374819078
+✅ Aave integration initialized for mainnet with DAI-only compliance
+✅ Aave integration initialized and validated
+🌐 Initializing Uniswap for Arbitrum Mainnet (Chain ID: 42161)
+🔄 Uniswap V3 integration initialized
+✅ Uniswap integration initialized
+❌ Integration initialization failed: AaveHealthMonitor.__init__() missing 2 required positional arguments: 'account' and 'aave_integration'
+🔍 Full error: Traceback (most recent call last):
+  File "/home/runner/workspace/arbitrum_testnet_agent.py", line 1658, in initialize_integrations
+    self.health_monitor = AaveHealthMonitor(self.aave)
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: AaveHealthMonitor.__init__() missing 2 required positional arguments: 'account' and 'aave_integration'
+
+❌ Failed to initialize integrations
+
+❌ SWAP TEST FAILED
+💡 Check logs for details
