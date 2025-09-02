@@ -233,7 +233,11 @@ class EnhancedMarketAnalyzer:
         self.logger = logging.getLogger(__name__)
 
         # Initialize API clients - CoinAPI as PRIMARY, CoinMarketCap as SECONDARY
-        self.coinapi_key = os.getenv('COIN_API_KEY') or os.getenv('COINAPI_KEY') or os.getenv('COIN_API')
+        # Check all possible secret key variations
+        self.coinapi_key = (os.getenv('COIN_API_KEY') or 
+                           os.getenv('COINAPI_KEY') or 
+                           os.getenv('COIN_API') or
+                           os.getenv('COINAPI'))
         self.coinmarketcap_key = os.getenv('COINMARKETCAP_API_KEY')
 
         # Historical data tracking for pattern analysis

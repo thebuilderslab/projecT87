@@ -567,7 +567,10 @@ class ArbitrumTestnetAgent:
         # Initialize market signal strategy if enabled
         market_signal_enabled = os.getenv('MARKET_SIGNAL_ENABLED', 'false').lower() == 'true'
         coinmarketcap_key = os.getenv('COINMARKETCAP_API_KEY')
-        coinapi_key = os.getenv('COIN_API') or os.getenv('COINAPI_KEY') or os.getenv('COIN_API_KEY')
+        coinapi_key = (os.getenv('COIN_API_KEY') or 
+                          os.getenv('COINAPI_KEY') or 
+                          os.getenv('COIN_API') or
+                          os.getenv('COINAPI'))
 
         # Debug API availability
         if coinapi_key:
@@ -731,7 +734,10 @@ class ArbitrumTestnetAgent:
     def _display_debt_swap_thresholds(self):
         """Display debt swap thresholds dynamically"""
         try:
-            coinapi_key = os.getenv('COIN_API') or os.getenv('COINAPI_KEY') or os.getenv('COIN_API_KEY')
+            coinapi_key = (os.getenv('COIN_API_KEY') or 
+                          os.getenv('COINAPI_KEY') or 
+                          os.getenv('COIN_API') or
+                          os.getenv('COINAPI'))
             coinmarketcap_key = os.getenv('COINMARKETCAP_API_KEY')
             market_signal_enabled = os.getenv('MARKET_SIGNAL_ENABLED', 'false').lower() == 'true'
 
