@@ -217,7 +217,7 @@ class UniswapIntegration:
         """Execute the validated swap with comprehensive error handling and debt swap logic"""
         try:
             print(f"🔄 Executing validated debt swap: {amount_in} tokens")
-            
+
             # Convert amount_in to wei FIRST
             amount_in_wei = self._convert_to_wei(token_in, amount_in)
             print(f"🔄 Converting {amount_in} to {amount_in_wei} wei for {token_in}")
@@ -264,7 +264,7 @@ class UniswapIntegration:
                         signed_approve = self.w3.eth.account.sign_transaction(approve_tx, self.account.key)
                         approve_hash = self.w3.eth.send_raw_transaction(signed_approve.rawTransaction)
                         print(f"✅ Approval sent: {approve_hash.hex()}")
-                        
+
                         # Wait for approval confirmation
                         import time
                         time.sleep(8)
@@ -332,17 +332,17 @@ class UniswapIntegration:
         """Swap DAI for ARB with slippage protection for debt swaps"""
         try:
             print(f"🔄 Swapping {dai_amount:.6f} DAI for ARB (max slippage: {max_slippage:.1%})")
-            
+
             # Convert DAI amount to wei
             dai_amount_wei = int(dai_amount * 10**18)
-            
+
             # Get ARB/DAI pool address (you'll need to find the correct pool)
             arb_dai_pool = "0x0000000000000000000000000000000000000000"  # Replace with actual pool
-            
+
             # Calculate minimum ARB output with slippage protection
             estimated_arb_output = self._estimate_arb_output(dai_amount_wei)
             min_arb_out = int(estimated_arb_output * (1 - max_slippage))
-            
+
             # Execute swap through Uniswap V3 router
             # This is a simplified version - you'll need proper Uniswap V3 integration
             swap_params = {
@@ -355,21 +355,21 @@ class UniswapIntegration:
                 'amountOutMinimum': min_arb_out,
                 'sqrtPriceLimitX96': 0
             }
-            
+
             # Build and execute transaction (simplified)
             tx = self._build_swap_transaction(swap_params)
             if tx:
                 signed_tx = self.w3.eth.account.sign_transaction(tx, self.account.key)
                 tx_hash = self.w3.eth.send_raw_transaction(signed_tx.rawTransaction)
-                
+
                 receipt = self.w3.eth.wait_for_transaction_receipt(tx_hash, timeout=120)
-                
+
                 if receipt.status == 1:
                     print(f"✅ DAI→ARB swap successful")
                     return {'tx_hash': tx_hash.hex(), 'success': True}
-                    
+
             return {'success': False, 'error': 'Transaction failed'}
-            
+
         except Exception as e:
             print(f"❌ DAI→ARB swap failed: {e}")
             return {'success': False, 'error': str(e)}
@@ -378,14 +378,14 @@ class UniswapIntegration:
         """Swap ARB for DAI with minimal slippage for debt reduction"""
         try:
             print(f"🔄 Swapping {arb_amount:.6f} ARB for DAI (debt reduction)")
-            
+
             # Convert ARB amount to wei (ARB has 18 decimals)
             arb_amount_wei = int(arb_amount * 10**18)
-            
+
             # Calculate minimum DAI output with slippage protection
             estimated_dai_output = self._estimate_dai_output_from_arb(arb_amount_wei)
             min_dai_out = int(estimated_dai_output * (1 - max_slippage))
-            
+
             # Execute swap for debt reduction
             swap_params = {
                 'tokenIn': self.agent.arb_address,
@@ -397,21 +397,21 @@ class UniswapIntegration:
                 'amountOutMinimum': min_dai_out,
                 'sqrtPriceLimitX96': 0
             }
-            
+
             # Build and execute transaction
             tx = self._build_swap_transaction(swap_params)
             if tx:
                 signed_tx = self.w3.eth.account.sign_transaction(tx, self.account.key)
                 tx_hash = self.w3.eth.send_raw_transaction(signed_tx.rawTransaction)
-                
+
                 receipt = self.w3.eth.wait_for_transaction_receipt(tx_hash, timeout=120)
-                
+
                 if receipt.status == 1:
                     print(f"✅ ARB→DAI debt reduction swap successful")
                     return {'tx_hash': tx_hash.hex(), 'success': True}
-                    
+
             return {'success': False, 'error': 'Transaction failed'}
-            
+
         except Exception as e:
             print(f"❌ ARB→DAI debt reduction swap failed: {e}")
             return {'success': False, 'error': str(e)}
@@ -423,12 +423,12 @@ class UniswapIntegration:
         try:
             dai_price = 1.0  # DAI is stable
             arb_price = 0.41  # Current ARB price from logs
-            
+
             dai_value = dai_amount_wei / 10**18
             estimated_arb = (dai_value * dai_price / arb_price) * 0.997  # Account for 0.3% fee
-            
+
             return int(estimated_arb * 10**18)  # Convert to wei
-            
+
         except:
             return 0
 
@@ -437,12 +437,12 @@ class UniswapIntegration:
         try:
             dai_price = 1.0  # DAI is stable
             arb_price = 0.41  # Current ARB price
-            
+
             arb_value = arb_amount_wei / 10**18
             estimated_dai = (arb_value * arb_price / dai_price) * 0.997  # Account for fee
-            
+
             return int(estimated_dai * 10**18)  # Convert to wei
-            
+
         except:
             return 0
 
@@ -595,7 +595,7 @@ class UniswapIntegration:
             chain_id = self.w3.eth.chain_id
 
             if chain_id == 42161:  # Arbitrum Mainnet
-                swap_gas_price = max(base_gas_price, int(0.1 * 10**9))  # Min 0.1 gwei (increased)
+                swap_gas_price = max(base_gas_price, int(0.1 * 10**9))  # Min 0.1 gwei
                 gas_limit = 500000  # Increased gas limit for complex swaps
             else:
                 swap_gas_price = int(base_gas_price * 1.5)  # 50% higher for testnet
