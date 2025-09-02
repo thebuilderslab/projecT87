@@ -333,14 +333,9 @@ class EnhancedMarketAnalyzer:
 
     def get_market_data_with_fallback(self, symbol: str) -> Optional[Dict]:
         """Get market data with CoinAPI as PRIMARY, CoinMarketCap as SECONDARY fallback"""
-        # If in mock mode or too many API failures, go straight to mock data
-        if self.mock_mode or self.api_failure_count >= self.max_api_failures:
-            data = self._get_mock_data(symbol)
-            if data:
-                self._store_historical_data(symbol, data)
-            return data
-
         current_time = time.time()
+        
+        # Rate limiting check
         if current_time - self.last_api_call < self.rate_limit_delay:
             time.sleep(self.rate_limit_delay - (current_time - self.last_api_call))
 
@@ -370,6 +365,7 @@ class EnhancedMarketAnalyzer:
                     data['source'] = 'coinmarketcap_secondary'
                     data['timestamp'] = time.time()
                     self._store_historical_data(symbol, data)
+                    self.logger.info(f"🔄 Using SECONDARY CoinMarketCap data for {symbol}: ${data['price']:.4f}")
                     return data
             except Exception as e:
                 self.api_failure_count += 1
@@ -379,11 +375,11 @@ class EnhancedMarketAnalyzer:
                 else:
                     self.logger.warning(f"CoinMarketCap (SECONDARY) failed for {symbol}: {e}")
 
-        # Return mock data as final fallback
-        self.logger.warning(f"Both CoinAPI and CoinMarketCap failed for {symbol}, using mock data")
+        # Return mock data as final fallback - ALWAYS store for technical indicators
         data = self._get_mock_data(symbol)
         if data:
             self._store_historical_data(symbol, data)
+            self.logger.info(f"📊 Using mock data for {symbol}: ${data['price']:.4f} (for technical indicators)")
         return data
 
     def _store_historical_data(self, symbol: str, data: Dict) -> None:

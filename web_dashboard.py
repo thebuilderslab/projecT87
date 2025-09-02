@@ -1048,8 +1048,8 @@ def get_market_signals():
         market_enabled = os.getenv('MARKET_SIGNAL_ENABLED', 'false').lower() == 'true'
 
         # Check API availability
-        coinapi_key = (os.getenv('COIN_API') or 
-                       os.getenv('COIN_API_KEY') or 
+        coinapi_key = (os.getenv('COIN_API') or
+                       os.getenv('COIN_API_KEY') or
                        os.getenv('COINAPI_KEY') or
                        os.getenv('COINAPI'))
         coinmarketcap_key = os.getenv('COINMARKETCAP_API_KEY')
@@ -1074,12 +1074,24 @@ def get_market_signals():
                 if hasattr(strategy, 'initialization_successful') and strategy.initialization_successful:
                     strategy_initialized = True
 
+                    # Get detailed status
+                    status = strategy.get_strategy_status()
+
                     if coinapi_key:
                         data_source = "CoinAPI"
                     elif coinmarketcap_key:
-                        data_source = "CoinMarketCap" 
+                        data_source = "CoinMarketCap"
                     else:
                         data_source = "Mock Data"
+
+                    # Add technical indicators status
+                    tech_ready = status.get('technical_indicators_ready', False)
+                    price_points = status.get('price_history_points', 0)
+
+                    if tech_ready:
+                        data_source += f" (Tech Ready: {price_points} pts)"
+                    else:
+                        data_source += f" (Tech Pending: {price_points}/5 pts)"
                 else:
                     error_message = "Strategy initialization failed"
 

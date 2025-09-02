@@ -313,17 +313,46 @@ class MarketSignalStrategy:
 
     def get_strategy_status(self) -> Dict:
         """Get strategy status"""
+        # Technical indicators need at least 14 data points for RSI calculation
+        # But we'll consider them "ready" with fewer points for basic operation
+        min_points_for_basic = 5
+        min_points_for_full = 14
+        
+        price_points = len(self.arb_price_history)
+        ohlcv_points = len(self.arb_ohlcv_history)
+        
+        # Check if enhanced analyzer has sufficient data
+        enhanced_ready = False
+        if self.enhanced_analyzer and hasattr(self.enhanced_analyzer, 'price_history'):
+            arb_history = self.enhanced_analyzer.price_history.get('ARB', [])
+            enhanced_ready = len(arb_history) >= min_points_for_basic
+        
         return {
             'initialized': self.initialized,
-            'enhanced_mode': bool(self.enhanced_strategy and self.enhanced_strategy.initialized if self.enhanced_strategy else False),
+            'enhanced_mode': bool(self.enhanced_strategy and getattr(self.enhanced_strategy, 'initialized', False) if self.enhanced_strategy else False),
             'coinmarketcap_api_present': bool(os.getenv('COINMARKETCAP_API_KEY')),
+            'coinapi_present': bool(os.getenv('COIN_API') or os.getenv('COIN_API_KEY') or os.getenv('COINAPI_KEY')),
             'strategy_type': 'enhanced_coinmarketcap' if self.initialized else 'fallback',
-            'price_history_points': len(self.arb_price_history),
-            'ohlcv_history_points': len(self.arb_ohlcv_history),
-            'technical_indicators_ready': len(self.arb_price_history) >= 9,
+            'price_history_points': price_points,
+            'ohlcv_history_points': ohlcv_points,
+            'technical_indicators_ready': enhanced_ready or price_points >= min_points_for_basic,
+            'technical_indicators_full': enhanced_ready and price_points >= min_points_for_full,
+            'data_source': self._get_current_data_source(),
             'last_update': time.time(),
             'initialization_successful': self.initialization_successful
         }
+    
+    def _get_current_data_source(self) -> str:
+        """Get current data source being used"""
+        if self.enhanced_analyzer:
+            if hasattr(self.enhanced_analyzer, 'primary_api') and self.enhanced_analyzer.primary_api:
+                if self.enhanced_analyzer.primary_api == 'coinapi':
+                    return "CoinAPI (Primary)"
+                elif self.enhanced_analyzer.primary_api == 'coinmarketcap':
+                    return "CoinMarketCap (Secondary)"
+            elif getattr(self.enhanced_analyzer, 'mock_mode', False):
+                return "Mock Data (Fallback)"
+        return "Unknown"
 
 # Backward compatibility
 def create_market_signal_strategy(agent):
