@@ -31,5 +31,16 @@
     "expected_dai_value": 0.21857945008583415,
     "status": "DAI_TO_ARB_COMPLETE",
     "phase": "waiting_for_arb_to_dai"
+  },
+  "cycle_1756838700_2172": {
+    "cycle_id": "cycle_1756838700_2172",
+    "start_time": 1756838700.7530704,
+    "start_timestamp": "2025-09-02T18:45:00.753072",
+    "initial_dai_amount": 0.22303811702436716,
+    "arb_amount_received": 0.5439954073765053,
+    "arb_price_at_entry": 0.41,
+    "expected_dai_value": 0.22303811702436716,
+    "status": "DAI_TO_ARB_COMPLETE",
+    "phase": "waiting_for_arb_to_dai"
   }
 }
