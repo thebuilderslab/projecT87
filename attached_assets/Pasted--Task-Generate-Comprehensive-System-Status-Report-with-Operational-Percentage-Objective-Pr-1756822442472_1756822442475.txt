@@ -1,0 +1,36 @@
+### Task: Generate Comprehensive System Status Report with Operational Percentage
+
+**Objective:** Provide a full, detailed status report on the autonomous agent, including a calculated percentage of its operational components.
+
+**Instructions:**
+
+1.  **System Overview:**
+    * **Agent ID and Wallet:** Report the agent's unique ID and connected wallet address.
+    * **Network:** Confirm the network the agent is operating on (e.g., Arbitrum Mainnet, Testnet).
+    * **Overall Status:** Provide a single-line summary of the system's health, such as "Fully Operational," "Limited," or "Offline."
+
+2.  **Calculate Operational Percentage:**
+    * Create a list of all primary system components. This list should include:
+        * Core files (`main.py`, `arbitrum_testnet_agent.py`, `enhanced_market_analyzer.py`, `web_dashboard.py`, `aave_integration.py`, `market_signal_strategy.py`).
+        * RPC Manager.
+        * Aave and Uniswap Integrations.
+        * Market Signal Strategy (`RSI`, `MACD`, `Moving Averages`, `Bearish Chart Patterns`).
+        * Hybrid Triggers (`Growth-Triggered`, `Capacity-Based`).
+        * API Connections (`CoinAPI`, `CoinMarketCap`).
+    * Count the number of components that have been verified as fully operational (using `✅` status in logs).
+    * **Calculate and report the operational percentage** by dividing the number of operational components by the total number of components and multiplying by 100.
+
+3.  **Detailed Status Breakdown:**
+    * **Files in Active Use:** List all core files and their current status (e.g., `main.py` - ✅ RUNNING).
+    * **Core Logic and Triggers:**
+        * **Hybrid System Configuration:** Output the current configuration for all operational systems, including Growth-Triggered and Capacity-Based thresholds.
+        * **Market Signal Strategy:** Detail the specific indicators being monitored, such as BTC Drop Detection, RSI Analysis, and the specific bearish chart patterns being detected.
+        * **Operational Triggers:** Explain the conditions that must be met to trigger a debt swap, including the `MARKET_SIGNAL_ENABLED` check and the minimum health factor requirement.
+
+4.  **Error Diagnostics and Prevention:**
+    * **Current Errors:** List any active or recent errors, such as API rate limits (`429 Too Many Requests`), connection failures (`RPC check failed`), or dashboard-specific errors (`HTTP 502`).
+    * **Root Cause Analysis:** For each active error, provide a brief analysis of the likely root cause.
+    * **Prevention Plan:** Outline the steps the system has taken or will take to prevent these errors from recurring, such as exponential backoff or dynamic RPC selection.
+
+5.  **Final Summary:**
+    * Provide a final, comprehensive summary of the system's current capabilities and any remaining limitations that prevent it from achieving 100% full capacity. Note that a visual bug in the dashboard display is a known issue that does not affect core functionality.
