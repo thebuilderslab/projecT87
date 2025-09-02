@@ -566,17 +566,25 @@ class ArbitrumTestnetAgent:
 
         # Initialize market signal strategy if enabled
         market_signal_enabled = os.getenv('MARKET_SIGNAL_ENABLED', 'false').lower() == 'true'
-        coinmarketcap_key = os.getenv('COINMARKETCAP_API_KEY')
-        coinapi_key = (os.getenv('COIN_API_KEY') or 
-                          os.getenv('COINAPI_KEY') or 
-                          os.getenv('COIN_API') or
-                          os.getenv('COINAPI'))
+        
+        # Debug API availability with comprehensive checking
+        # Force refresh environment variables
+        import importlib
+        importlib.reload(os)
 
-        # Debug API availability
-        if coinapi_key:
-            print(f"🎯 COIN_API key available for primary market data")
+        # Check all possible variations systematically
+        coinapi_key = None
+        coinapi_variations = ['COIN_API_KEY', 'COINAPI_KEY', 'COIN_API', 'COINAPI']
+        for var_name in coinapi_variations:
+            key_value = os.getenv(var_name)
+            if key_value and len(key_value.strip()) > 10:
+                coinapi_key = key_value.strip()
+                print(f"🔍 Found CoinAPI key in {var_name}: {coinapi_key[:8]}...")
+                break
+
+        coinmarketcap_key = os.getenv('COINMARKETCAP_API_KEY')
         if coinmarketcap_key:
-            print(f"🔄 CoinMarketCap key available for secondary market data")
+            coinmarketcap_key = coinmarketcap_key.strip()
 
         self.market_signal_strategy = None
         self.debt_swap_active = False
@@ -2385,7 +2393,7 @@ class ArbitrumTestnetAgent:
                 return True
 
             # Repay the DAI debt (keep small buffer for fees)
-            repay_amount = min(dai_amount * 0.98, current_debt)  # Use 98% to account for interest
+            repay_amount = min(dai_amount * 0.98, current_debt)  # Use 98% to account for fees
 
             if repay_amount > 0.01:  # Only repay if meaningful amount
                 repay_result = self.aave.repay_dai(repay_amount)

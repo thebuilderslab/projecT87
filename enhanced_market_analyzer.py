@@ -233,12 +233,29 @@ class EnhancedMarketAnalyzer:
         self.logger = logging.getLogger(__name__)
 
         # Initialize API clients - CoinAPI as PRIMARY, CoinMarketCap as SECONDARY
-        # Check all possible secret key variations
+        # Check all possible secret key variations with debug output
         self.coinapi_key = (os.getenv('COIN_API_KEY') or 
                            os.getenv('COINAPI_KEY') or 
                            os.getenv('COIN_API') or
                            os.getenv('COINAPI'))
         self.coinmarketcap_key = os.getenv('COINMARKETCAP_API_KEY')
+        
+        # Debug environment variable reading
+        print(f"🔍 DEBUG Environment Variables:")
+        print(f"   COIN_API_KEY: {'SET' if os.getenv('COIN_API_KEY') else 'NOT_SET'}")
+        print(f"   COINAPI_KEY: {'SET' if os.getenv('COINAPI_KEY') else 'NOT_SET'}")
+        print(f"   COINMARKETCAP_API_KEY: {'SET' if os.getenv('COINMARKETCAP_API_KEY') else 'NOT_SET'}")
+        print(f"   MARKET_SIGNAL_ENABLED: {os.getenv('MARKET_SIGNAL_ENABLED', 'NOT_SET')}")
+        
+        # Force read from all environment variables
+        all_env_vars = dict(os.environ)
+        market_vars = {k: v for k, v in all_env_vars.items() if 'COIN' in k or 'MARKET' in k}
+        if market_vars:
+            print(f"🔍 All market-related environment variables found:")
+            for key, value in market_vars.items():
+                print(f"   {key}: {'[REDACTED]' if 'KEY' in key else value}")
+        else:
+            print(f"⚠️ No market-related environment variables found")
 
         # Historical data tracking for pattern analysis
         self.price_history = {}  # Store 5-minute historical data
@@ -306,11 +323,12 @@ class EnhancedMarketAnalyzer:
                 self.mock_mode = True
                 self.initialized = True
 
-        # If both APIs failed, use mock mode
+        # If both APIs failed, use mock mode but still mark as initialized
         if not self.primary_api:
             self.logger.warning("Both CoinAPI and CoinMarketCap unavailable. Using mock data mode.")
             self.mock_mode = True
             self.initialized = True
+            self.logger.info("✅ Enhanced Market Analyzer initialized in MOCK MODE - system operational")
 
     def get_market_data_with_fallback(self, symbol: str) -> Optional[Dict]:
         """Get market data with CoinAPI as PRIMARY, CoinMarketCap as SECONDARY fallback"""
