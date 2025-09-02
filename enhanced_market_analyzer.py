@@ -580,7 +580,22 @@ class EnhancedMarketAnalyzer:
         # Initialize logger
         self.logger = logging.getLogger(__name__)
 
-        # Initialize CoinMarketCap API client
+        # Initialize API clients in priority order
+        
+        # Primary: COIN_API (if available)
+        self.coin_api_key = os.getenv('COIN_API_KEY')
+        if self.coin_api_key:
+            try:
+                self.coin_api_client = CoinAPIClient(self.coin_api_key)
+                self.logger.info(f"✅ COIN_API initialized as primary source: {self.coin_api_key[:8]}...")
+            except Exception as e:
+                self.logger.warning(f"COIN_API initialization failed: {e}")
+                self.coin_api_client = None
+        else:
+            self.coin_api_client = None
+            self.logger.info("COIN_API_KEY not found - using CoinGecko/CoinMarketCap fallbacks")
+
+        # Secondary: CoinMarketCap API client
         self.coinmarketcap_key = os.getenv('COINMARKETCAP_API_KEY')
         if not self.coinmarketcap_key:
             self.logger.warning("COINMARKETCAP_API_KEY not found. CoinMarketCap features will be limited.")
@@ -591,7 +606,7 @@ class EnhancedMarketAnalyzer:
                 if not self.coinmarketcap_key or len(self.coinmarketcap_key) < 10:
                     raise ValueError("Invalid CoinMarketCap API key provided")
                 self.cmc_client = CoinMarketCapAPI(self.coinmarketcap_key)
-                self.logger.info(f"✅ Enhanced Market Analyzer initialized with CoinMarketCap API key: {self.coinmarketcap_key[:8]}...")
+                self.logger.info(f"✅ CoinMarketCap initialized as secondary source: {self.coinmarketcap_key[:8]}...")
             except ValueError as e:
                 self.logger.error(f"Error initializing CoinMarketCap API: {e}")
                 self.cmc_client = None
@@ -599,19 +614,15 @@ class EnhancedMarketAnalyzer:
                 self.logger.error(f"Unexpected error initializing CoinMarketCap API: {e}")
                 self.cmc_client = None
 
-        # Test if we can get market data from CoinMarketCap
+        # Initialize with conservative API testing to avoid rate limits
         if self.cmc_client:
             try:
-                test_data = self.fetch_optimized_market_data()
-                if test_data and 'btc_analysis' in test_data:
-                    self.initialized = True
-                    self.logger.info("CoinMarketCap API test successful.")
-                else:
-                    self.initialized = False
-                    self.logger.warning("CoinMarketCap API test failed - using fallback mode.")
+                # Skip aggressive testing during initialization to preserve rate limits
+                self.initialized = True
+                self.logger.info("CoinMarketCap API client initialized - deferring connection test to first use")
             except Exception as e:
                 self.initialized = False
-                self.logger.error(f"CoinMarketCap API test failed: {e}")
+                self.logger.error(f"CoinMarketCap API initialization failed: {e}")
         else:
             self.initialized = False
             self.logger.warning("CoinMarketCap API client not available, setting initialized to False.")
@@ -810,44 +821,59 @@ class EnhancedMarketAnalyzer:
         }
 
     def get_market_data_with_fallback(self, symbol: str) -> Optional[Dict]:
-        """Get market data with multiple fallback sources and improved error handling"""
+        """Get market data with COIN_API as primary, CoinMarketCap as fallback"""
 
         # Respect rate limits with exponential backoff
         current_time = time.time()
         if current_time - self.last_api_call < self.rate_limit_delay:
             time.sleep(self.rate_limit_delay - (current_time - self.last_api_call))
 
-        # Primary: CoinMarketCap with retry logic
-        for attempt in range(3):
+        # PRIMARY: Try COIN_API first (if available)
+        coin_api_key = os.getenv('COIN_API_KEY')
+        if coin_api_key:
             try:
-                cmc_data = self._fetch_coinmarketcap_data(symbol)
-                if cmc_data and 'price' in cmc_data:
+                from enhanced_market_analyzer import CoinAPIClient
+                coin_client = CoinAPIClient(coin_api_key)
+                coin_data = coin_client.get_current_price(symbol)
+                if coin_data and 'price' in coin_data:
                     self.last_api_call = time.time()
-                    return cmc_data
-            except requests.exceptions.Timeout:
-                logger.warning(f"CoinMarketCap timeout for {symbol}, attempt {attempt + 1}")
-                time.sleep(2 ** attempt)  # Exponential backoff
-            except requests.exceptions.HTTPError as e:
-                if e.response.status_code == 429:  # Rate limit
-                    wait_time = 2 ** attempt
-                    logger.warning(f"Rate limit hit for CoinMarketCap, waiting {wait_time}s")
-                    time.sleep(wait_time)
-                else:
-                    break
+                    coin_data['source'] = 'coin_api_primary'
+                    self.price_cache[symbol] = coin_data
+                    logger.info(f"✅ COIN_API primary: {symbol} - ${coin_data['price']:.2f}")
+                    return coin_data
             except Exception as e:
-                logger.warning(f"CoinMarketCap failed for {symbol}: {e}")
-                break
+                logger.warning(f"COIN_API primary failed for {symbol}: {e}")
 
-        # Fallback 1: CoinGecko with timeout
+        # SECONDARY: CoinGecko (free tier, reliable)
         try:
             gecko_data = self._fetch_coingecko_data(symbol)
             if gecko_data and 'price' in gecko_data:
                 self.last_api_call = time.time()
+                gecko_data['source'] = 'coingecko_secondary'
+                self.price_cache[symbol] = gecko_data
+                logger.info(f"✅ CoinGecko secondary: {symbol} - ${gecko_data['price']:.2f}")
                 return gecko_data
         except Exception as e:
-            logger.warning(f"CoinGecko failed for {symbol}: {e}")
+            logger.warning(f"CoinGecko secondary failed for {symbol}: {e}")
 
-        # Fallback 2: Use cached data if available
+        # TERTIARY: CoinMarketCap (rate limited, use sparingly)
+        try:
+            cmc_data = self._fetch_coinmarketcap_data(symbol)
+            if cmc_data and 'price' in cmc_data:
+                self.last_api_call = time.time()
+                cmc_data['source'] = 'coinmarketcap_tertiary'
+                self.price_cache[symbol] = cmc_data
+                logger.info(f"✅ CoinMarketCap tertiary: {symbol} - ${cmc_data['price']:.2f}")
+                return cmc_data
+        except requests.exceptions.HTTPError as e:
+            if hasattr(e, 'response') and e.response.status_code == 429:
+                logger.warning(f"⚠️ CoinMarketCap rate limited for {symbol} - skipping to preserve limits")
+            else:
+                logger.warning(f"CoinMarketCap tertiary failed for {symbol}: {e}")
+        except Exception as e:
+            logger.warning(f"CoinMarketCap tertiary failed for {symbol}: {e}")
+
+        # FALLBACK: Use cached data if available
         if symbol in self.price_cache:
             cache_data = self.price_cache[symbol]
             cache_age = current_time - cache_data.get('timestamp', 0)
@@ -855,7 +881,7 @@ class EnhancedMarketAnalyzer:
                 logger.info(f"Using cached data for {symbol} (age: {cache_age:.0f}s)")
                 return cache_data
 
-        # Fallback 3: Mock data for testing
+        # FINAL FALLBACK: Mock data for testing
         logger.warning(f"All APIs failed for {symbol}, using mock data")
         return self._get_mock_data(symbol)
 

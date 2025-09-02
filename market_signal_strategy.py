@@ -56,7 +56,8 @@ class MarketSignalStrategy:
             self.initialized = self.enhanced_strategy.initialized
 
             if self.initialized:
-                logger.info("✅ Market Signal Strategy initialized with CoinMarketCap API")
+                logger.info("✅ Market Signal Strategy initialized with optimized API prioritization")
+                logger.info("   Primary: COIN_API | Secondary: CoinGecko | Tertiary: CoinMarketCap")
                 self.initialization_successful = True # Set flag if strategy initializes
             else:
                 logger.warning("⚠️ Enhanced strategy failed, using fallback mode")
