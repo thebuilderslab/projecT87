@@ -603,16 +603,16 @@ class ArbitrumTestnetAgent:
                 # FORCE SUCCESSFUL INITIALIZATION: Always accept strategy if it was created
                 self.market_signal_strategy = strategy
                 self.debt_swap_active = True
-                
-                # CRITICAL FIX: Force all initialization flags to True
+
+                # Critical fix: Force all initialization flags to True
                 strategy.initialized = True
                 strategy.initialization_successful = True
-                
+
                 # Force enhanced analyzer to be operational if it exists
                 if hasattr(strategy, 'enhanced_analyzer') and strategy.enhanced_analyzer:
                     strategy.enhanced_analyzer.initialized = True
                     strategy.enhanced_analyzer.initialization_successful = True
-                
+
                 print("✅ Market Signal Strategy FORCED to operational status")
                 print("✅ Debt swap system ACTIVATED with forced initialization")
 
@@ -631,10 +631,10 @@ class ArbitrumTestnetAgent:
                         print("✅ Market Signal Strategy initialized with API Data")
                 else:
                     # Check for direct API access
-                    coinapi_key = (os.getenv('COIN_API') or os.getenv('COIN_API_KEY') or 
+                    coinapi_key = (os.getenv('COIN_API') or os.getenv('COIN_API_KEY') or
                                   os.getenv('COINAPI_KEY') or os.getenv('COINAPI'))
                     coinmarketcap_key = os.getenv('COINMARKETCAP_API_KEY')
-                    
+
                     if coinapi_key:
                         print("✅ Market Signal Strategy initialized with CoinAPI (Direct)")
                     elif coinmarketcap_key:
@@ -792,8 +792,8 @@ class ArbitrumTestnetAgent:
                         data_source = "API Data"
 
             # Check for forced operational status
-            if (hasattr(self, 'market_signal_strategy') and 
-                self.market_signal_strategy and 
+            if (hasattr(self, 'market_signal_strategy') and
+                self.market_signal_strategy and
                 getattr(self, 'debt_swap_active', False)):
                 print("   ✅ Market signal strategy FORCED OPERATIONAL")
                 print(f"   ✅ Data Source: {data_source}")
@@ -835,7 +835,7 @@ class ArbitrumTestnetAgent:
                 try:
                     # Get strategy status first to show technical indicators readiness
                     strategy_status = self.market_signal_strategy.get_strategy_status()
-                    
+
                     # Force technical indicators to be ready if strategy is operational
                     if getattr(self, 'debt_swap_active', False):
                         tech_indicators_ready = True
@@ -843,7 +843,7 @@ class ArbitrumTestnetAgent:
                     else:
                         tech_indicators_ready = strategy_status.get('technical_indicators_ready', False)
                         tech_indicators_full = strategy_status.get('technical_indicators_full', False)
-                    
+
                     enhanced_arb_points = strategy_status.get('enhanced_arb_points', 0)
                     enhanced_btc_points = strategy_status.get('enhanced_btc_points', 0)
                     data_source = strategy_status.get('data_source', 'Unknown')
@@ -1655,8 +1655,12 @@ class ArbitrumTestnetAgent:
             # Initialize health monitor with Aave validation
             if self.aave:
                 from aave_health_monitor import AaveHealthMonitor
-                self.health_monitor = AaveHealthMonitor(self.aave)
-                print("✅ Health monitor initialized")
+                try:
+                    self.health_monitor = AaveHealthMonitor(self.w3, self.account, self.aave)
+                    print("✅ Health monitor initialized")
+                except Exception as health_error:
+                    print(f"⚠️ Health monitor initialization failed: {health_error}")
+                    self.health_monitor = None
             else:
                 print("⚠️ Health monitor skipped - Aave not available")
                 self.health_monitor = None
@@ -2241,13 +2245,13 @@ class ArbitrumTestnetAgent:
             return False
 
     def get_eth_balance(self):
-        """Get ETH balance of the wallet"""
+        """Get ETH balance of the agent's wallet"""
         try:
             balance_wei = self.w3.eth.get_balance(self.address)
             balance_eth = self.w3.from_wei(balance_wei, 'ether')
             return float(balance_eth)
         except Exception as e:
-            logger.error(f"Failed to get ETH balance: {e}")
+            print(f"❌ Error getting ETH balance: {e}")
             return 0.0
 
     def get_health_factor(self):
@@ -2360,11 +2364,32 @@ class ArbitrumTestnetAgent:
             return 0.0
 
     def get_arb_balance(self):
-        """Get ARB token balance"""
+        """Get ARB token balance of the agent's wallet"""
         try:
-            if self.aave:
-                return self.aave.get_token_balance(self.arb_address)
-            return 0.0
+            arb_contract = self.w3.eth.contract(
+                address=self.arb_address,
+                abi=self.uniswap.erc20_abi if self.uniswap else [
+                    {
+                        "inputs": [{"name": "account", "type": "address"}],
+                        "name": "balanceOf",
+                        "outputs": [{"name": "", "type": "uint256"}],
+                        "stateMutability": "view",
+                        "type": "function"
+                    },
+                    {
+                        "inputs": [],
+                        "name": "decimals",
+                        "outputs": [{"name": "", "type": "uint8"}],
+                        "stateMutability": "view",
+                        "type": "function"
+                    }
+                ]
+            )
+
+            balance_wei = arb_contract.functions.balanceOf(self.address).call()
+            decimals = arb_contract.functions.decimals().call()
+            balance_arb = balance_wei / (10 ** decimals)
+            return float(balance_arb)
         except Exception as e:
             print(f"❌ Error getting ARB balance: {e}")
             return 0.0

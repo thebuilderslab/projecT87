@@ -170,10 +170,15 @@ class UniswapIntegration:
             token_in_lower = token_in.lower()
             token_out_lower = token_out.lower()
 
-            # Validate only allowed swap combinations
+            # Validate allowed swap combinations including ARB
+            arb_address = "0x912CE59144191C1204E64559FE8253a0e49E6548"
+            arb_address_lower = arb_address.lower()
+            
             allowed_swaps = [
                 (dai_address_lower, wbtc_address_lower),  # DAI → WBTC
                 (dai_address_lower, weth_address_lower),  # DAI → WETH
+                (dai_address_lower, arb_address_lower),   # DAI → ARB
+                (arb_address_lower, dai_address_lower),   # ARB → DAI
             ]
 
             current_swap = (token_in_lower, token_out_lower)
@@ -183,7 +188,18 @@ class UniswapIntegration:
                 print(f"🎯 Current swap pair not in allowlist: {current_swap}")
                 return None
 
-            print(f"✅ APPROVED SWAP: DAI → {'WBTC' if token_out_lower == wbtc_address_lower else 'WETH'}")
+            if token_out_lower == wbtc_address_lower:
+                token_out_name = "WBTC"
+            elif token_out_lower == weth_address_lower:
+                token_out_name = "WETH"
+            elif token_out_lower == arb_address_lower:
+                token_out_name = "ARB"
+            elif token_in_lower == arb_address_lower:
+                token_out_name = "DAI (from ARB)"
+            else:
+                token_out_name = "UNKNOWN"
+            
+            print(f"✅ APPROVED SWAP: {token_in_lower.split('x')[1][:6]}... → {token_out_name}")
 
             # Enhanced contract validation
             for token_addr in [token_in, token_out]:
@@ -711,6 +727,78 @@ class UniswapIntegration:
 
         except Exception as e:
             print(f"❌ DAI to WETH swap failed: {e}")
+            return False
+
+    def swap_dai_for_arb(self, dai_amount):
+        """Swap DAI for ARB on Uniswap V3 - Extended for ARB token swaps"""
+        try:
+            print(f"🔄 Swapping {dai_amount:.6f} DAI for ARB...")
+
+            # DAI compliance check
+            if dai_amount <= 0:
+                print("❌ Invalid DAI amount for swap")
+                return False
+
+            # ARB token address for Arbitrum Mainnet
+            arb_address = "0x912CE59144191C1204E64559FE8253a0e49E6548"
+
+            swap_result = self._execute_swap(
+                self.dai_address,
+                arb_address, 
+                dai_amount,
+                "DAI",
+                "ARB"
+            )
+
+            if swap_result and isinstance(swap_result, str):
+                return {
+                    'success': True,
+                    'tx_hash': swap_result,
+                    'amount_in': dai_amount,
+                    'token_in': 'DAI',
+                    'token_out': 'ARB'
+                }
+            else:
+                return False
+
+        except Exception as e:
+            print(f"❌ DAI to ARB swap failed: {e}")
+            return False
+
+    def swap_arb_for_dai(self, arb_amount):
+        """Swap ARB for DAI on Uniswap V3 - Reverse swap functionality"""
+        try:
+            print(f"🔄 Swapping {arb_amount:.6f} ARB for DAI...")
+
+            # ARB compliance check
+            if arb_amount <= 0:
+                print("❌ Invalid ARB amount for swap")
+                return False
+
+            # ARB token address for Arbitrum Mainnet
+            arb_address = "0x912CE59144191C1204E64559FE8253a0e49E6548"
+
+            swap_result = self._execute_swap(
+                arb_address,
+                self.dai_address, 
+                arb_amount,
+                "ARB",
+                "DAI"
+            )
+
+            if swap_result and isinstance(swap_result, str):
+                return {
+                    'success': True,
+                    'tx_hash': swap_result,
+                    'amount_in': arb_amount,
+                    'token_in': 'ARB',
+                    'token_out': 'DAI'
+                }
+            else:
+                return False
+
+        except Exception as e:
+            print(f"❌ ARB to DAI swap failed: {e}")
             return False
 
     def _execute_swap(self, token_in, token_out, amount, token_in_name, token_out_name):
