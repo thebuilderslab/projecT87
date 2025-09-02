@@ -2466,69 +2466,33 @@ class ArbitrumTestnetAgent:
             return None
 
     def _get_current_arb_price(self):
-        """Get current ARB price with multi-source fallback mechanism"""
+        """Get current ARB price using EnhancedMarketAnalyzer with fallback mechanisms"""
         try:
-            print("💰 Fetching current ARB price...")
+            # Primary method: Use EnhancedMarketAnalyzer
+            if hasattr(self, 'market_analyzer') and self.market_analyzer:
+                market_data = self.market_analyzer.get_market_data()
+                if market_data and 'arb_price' in market_data:
+                    arb_price = market_data['arb_price']
+                    print(f"📊 Current ARB price from market analyzer: ${arb_price:.4f}")
+                    return arb_price
 
-            # Try EnhancedMarketAnalyzer first
-            if hasattr(self, 'market_signal_strategy') and self.market_signal_strategy:
-                try:
-                    from enhanced_market_analyzer import EnhancedMarketAnalyzer
-                    analyzer = EnhancedMarketAnalyzer(self)
-                    prices = analyzer.get_current_prices(['ARB'])
+            # Fallback method: Direct price fetch
+            if hasattr(self, 'market_analyzer') and self.market_analyzer:
+                price_data = self.market_analyzer.fetch_price_data()
+                if price_data and 'ARB' in price_data:
+                    arb_price = price_data['ARB']['price']
+                    print(f"📊 Current ARB price from fallback: ${arb_price:.4f}")
+                    return arb_price
 
-                    if 'ARB' in prices and prices['ARB'] and 'price' in prices['ARB']:
-                        arb_price = prices['ARB']['price']
-                        print(f"✅ ARB price from EnhancedMarketAnalyzer: ${arb_price:.4f}")
-                        return arb_price
-                except Exception as analyzer_error:
-                    print(f"⚠️ EnhancedMarketAnalyzer failed: {analyzer_error}")
-
-            # Fallback 1: CoinMarketCap API
-            if self.coinmarketcap_api_key:
-                try:
-                    import requests
-                    url = "https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest"
-                    headers = {
-                        'Accepts': 'application/json',
-                        'X-CMC_PRO_API_KEY': self.coinmarketcap_api_key,
-                    }
-                    params = {'symbol': 'ARB'}
-
-                    response = requests.get(url, headers=headers, params=params, timeout=10)
-                    if response.status_code == 200:
-                        data = response.json()
-                        if 'data' in data and 'ARB' in data['data']:
-                            arb_price = data['data']['ARB']['quote']['USD']['price']
-                            print(f"✅ ARB price from CoinMarketCap: ${arb_price:.4f}")
-                            return arb_price
-                except Exception as cmc_error:
-                    print(f"⚠️ CoinMarketCap API failed: {cmc_error}")
-
-            # Fallback 2: CoinGecko API (free, no key required)
-            try:
-                import requests
-                url = "https://api.coingecko.com/api/v3/simple/price"
-                params = {'ids': 'arbitrum', 'vs_currencies': 'usd'}
-
-                response = requests.get(url, params=params, timeout=10)
-                if response.status_code == 200:
-                    data = response.json()
-                    if 'arbitrum' in data and 'usd' in data['arbitrum']:
-                        arb_price = data['arbitrum']['usd']
-                        print(f"✅ ARB price from CoinGecko: ${arb_price:.4f}")
-                        return arb_price
-            except Exception as gecko_error:
-                print(f"⚠️ CoinGecko API failed: {gecko_error}")
-
-            # Final fallback: Use cached/estimated price
-            fallback_price = 0.41  # Conservative estimate based on recent market data
-            print(f"⚠️ Using fallback ARB price: ${fallback_price:.4f}")
-            return fallback_price
+            # Final fallback: Use a reasonable default
+            default_price = 0.41  # Conservative estimate based on recent data
+            print(f"⚠️ Using default ARB price: ${default_price:.4f}")
+            return default_price
 
         except Exception as e:
             print(f"❌ Failed to get ARB price: {e}")
-            return 0.41  # Conservative fallback
+            # Return conservative default
+            return 0.41
 
     def _setup_enhanced_error_handling(self):
         """Setup enhanced error handling for system operations"""

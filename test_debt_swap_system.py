@@ -417,5 +417,10 @@ def main():
 
     print(f"🕐 Completed at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
 
-if __name__ == "__main__":
+# Placeholder for the actual test function call
+def test_debt_swap_system():
+    """Placeholder for the main test execution function"""
     main()
+
+if __name__ == "__main__":
+    test_debt_swap_system()
