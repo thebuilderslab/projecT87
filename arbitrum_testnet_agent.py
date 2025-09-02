@@ -603,6 +603,25 @@ class ArbitrumTestnetAgent:
 
                 print("✅ Market Signal Strategy FORCED to operational status")
                 print("✅ Debt swap system ACTIVATED with forced initialization")
+                
+                # Add console reporting capability
+                def get_arb_balance(self):
+                    """Get ARB token balance"""
+                    try:
+                        if hasattr(self, 'uniswap') and self.uniswap:
+                            arb_contract = self.w3.eth.contract(
+                                address=self.arb_address, 
+                                abi=self.uniswap.erc20_abi
+                            )
+                            balance_wei = arb_contract.functions.balanceOf(self.address).call()
+                            return balance_wei / (10 ** 18)  # ARB has 18 decimals
+                    except Exception as e:
+                        print(f"❌ Error getting ARB balance: {e}")
+                    return 0.0
+                
+                # Add method to agent
+                import types
+                self.get_arb_balance = types.MethodType(get_arb_balance, self)
 
                 # Determine what data source we're using
                 if hasattr(strategy, 'enhanced_analyzer') and strategy.enhanced_analyzer:

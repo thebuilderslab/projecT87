@@ -9,6 +9,7 @@ import os
 import time
 from datetime import datetime
 from decimal import Decimal
+from typing import Dict, List
 
 class DebtSwapProfitTracker:
     def __init__(self):

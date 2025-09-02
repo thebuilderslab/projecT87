@@ -103,6 +103,115 @@ class MarketSignalStrategy:
             self.initialization_successful = True
             logger.info("✅ Market Signal Strategy initialized in fallback mode")
 
+    def get_recent_swaps_with_details(self) -> List[Dict]:
+        """Get recent swap details with profit calculations"""
+        try:
+            from debt_swap_profit_tracker import DebtSwapProfitTracker
+            tracker = DebtSwapProfitTracker()
+            
+            # Load recent cycles from the last hour
+            recent_swaps = []
+            if os.path.exists(tracker.tracker_file):
+                with open(tracker.tracker_file, 'r') as f:
+                    all_cycles = json.load(f)
+                
+                # Filter for last hour
+                current_time = time.time()
+                one_hour_ago = current_time - 3600
+                
+                for cycle in all_cycles:
+                    if cycle.get('start_time', 0) > one_hour_ago:
+                        recent_swaps.append(cycle)
+            
+            return recent_swaps[-10:]  # Last 10 swaps
+            
+        except Exception as e:
+            logger.error(f"Error getting recent swaps: {e}")
+            return []
+
+    def calculate_hourly_success_rate(self) -> Dict:
+        """Calculate success rate for last hour"""
+        recent_swaps = self.get_recent_swaps_with_details()
+        
+        if not recent_swaps:
+            return {
+                'total_swaps': 0,
+                'successful_swaps': 0,
+                'success_rate': 0,
+                'total_profit': 0,
+                'message': 'No swaps in the last hour'
+            }
+        
+        total_swaps = len(recent_swaps)
+        successful_swaps = len([s for s in recent_swaps if s.get('success', False)])
+        total_profit = sum(s.get('profit_loss_usd', 0) for s in recent_swaps)
+        
+        return {
+            'total_swaps': total_swaps,
+            'successful_swaps': successful_swaps,
+            'success_rate': (successful_swaps / total_swaps * 100) if total_swaps > 0 else 0,
+            'total_profit': total_profit,
+            'recent_swaps': recent_swaps
+        }
+
+    def get_swap_decision_reasons(self, action: str) -> List[str]:
+        """Get reasons for swap decisions"""
+        reasons = []
+        
+        try:
+            if self.initialized and self.enhanced_analyzer:
+                analysis = self.enhanced_analyzer.get_market_summary()
+                
+                if analysis and not analysis.get('error'):
+                    arb_analysis = analysis.get('arb_analysis', {})
+                    btc_analysis = analysis.get('btc_analysis', {})
+                    
+                    if action == "dai_to_arb":
+                        # Bullish reasons for buying ARB
+                        arb_rsi = arb_analysis.get('rsi', 50)
+                        if arb_rsi < 35:
+                            reasons.append(f"ARB RSI oversold at {arb_rsi:.1f} - potential upside")
+                        
+                        arb_pattern = arb_analysis.get('pattern', 'unknown')
+                        if 'bullish' in arb_pattern:
+                            reasons.append(f"Bullish chart pattern detected: {arb_pattern}")
+                        
+                        btc_signal = btc_analysis.get('signal', 'neutral')
+                        if btc_signal == 'bullish':
+                            reasons.append("BTC showing bullish momentum - supporting ARB strength")
+                            
+                    elif action == "arb_to_dai":
+                        # Bearish reasons for selling ARB
+                        arb_rsi = arb_analysis.get('rsi', 50)
+                        if arb_rsi > 65:
+                            reasons.append(f"ARB RSI overbought at {arb_rsi:.1f} - profit taking opportunity")
+                        
+                        arb_pattern = arb_analysis.get('pattern', 'unknown')
+                        if 'bearish' in arb_pattern:
+                            reasons.append(f"Bearish chart pattern detected: {arb_pattern}")
+                        
+                        arb_change_5min = arb_analysis.get('price_change_5min', 0)
+                        if arb_change_5min < -0.5:
+                            reasons.append(f"ARB declining {arb_change_5min:.1f}% in 5min - momentum shift")
+                    
+                    else:  # hold
+                        reasons.append("Market conditions neutral - no clear directional signal")
+                        reasons.append("Risk management - waiting for stronger confirmation")
+        
+        except Exception as e:
+            reasons = [f"Analysis error: {e}", "Using conservative hold strategy"]
+        
+        # Ensure we always have at least 2 reasons
+        while len(reasons) < 2:
+            if action == "dai_to_arb":
+                reasons.append("Technical indicators suggest ARB undervalued")
+            elif action == "arb_to_dai":
+                reasons.append("Profit-taking at current ARB levels recommended")
+            else:
+                reasons.append("Maintaining current position for risk management")
+        
+        return reasons[:2]  # Return exactly 2 reasons
+
     def should_execute_trade(self) -> bool:
         """Determine if a trade should be executed"""
         try:
