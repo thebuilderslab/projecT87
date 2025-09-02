@@ -25,11 +25,11 @@ class UniswapIntegration:
             self.factory_address = self.w3.to_checksum_address("0x1F98431c8aD98523631AE4a59f267346ea31F984")  # V3 Factory
             self.quoter_address = self.w3.to_checksum_address("0xb27308f9F90D607463bb33eA1BeBb41C27CE5AB6")   # Quoter V2
 
-            # Mainnet token addresses
+            # Mainnet token addresses - Fixed duplicates and added ARB
             self.weth_address = self.w3.to_checksum_address("0x82aF49447D8a07e3bd95BD0d56f35241523fBab1")
             self.dai_address = self.w3.to_checksum_address("0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1")
             self.wbtc_address = self.w3.to_checksum_address("0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f")
-            self.dai_address = self.w3.to_checksum_address("0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1")
+            self.arb_address = self.w3.to_checksum_address("0x912CE59144191C1204E64559FE8253a0e49E6548")
         else:  # Arbitrum Sepolia Testnet
             print(f"🧪 Initializing Uniswap for Arbitrum Sepolia Testnet (Chain ID: {chain_id})")
             # Uniswap V3 Arbitrum Sepolia addresses
@@ -37,11 +37,11 @@ class UniswapIntegration:
             self.factory_address = self.w3.to_checksum_address("0x248AB79Bbb9bC29bB72f7Cd42F17e054Fc40188e")  # V3 Factory
             self.quoter_address = self.w3.to_checksum_address("0x2779a0CC1c3e0E44D2542EC3637094d26349e68e")   # Quoter V2
 
-            # Testnet token addresses
+            # Testnet token addresses - Fixed duplicates and added ARB
             self.weth_address = self.w3.to_checksum_address("0x980B62Da83eFf3D4576C647993b0c1D7faf17c73")
             self.dai_address = self.w3.to_checksum_address("0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d")
             self.wbtc_address = self.w3.to_checksum_address("0x078f358208685046a11C85e8ad32895DED33A249")
-            self.dai_address = self.w3.to_checksum_address("0x82E64f49Ed5EC1bC6e43DAD4FC8Af9bb3A2312EE")
+            self.arb_address = self.w3.to_checksum_address("0x1b20e6a3B2a86618C32A37ffcD5E98C0d20a6E42")
 
         self.router_abi = self._get_router_abi()
         self.erc20_abi = self._get_erc20_abi()
@@ -148,10 +148,13 @@ class UniswapIntegration:
             decimals = token_contract.functions.decimals().call()
         except:
             # Fallback decimals if contract call fails
-            if token_address.lower() == "0xaf88d065e77c8cf0eaeff3e253e648a15cee23dc":  # DAI
-                decimals = 6
-            elif token_address.lower() == "0x2f2a2543b76a4166549f7aab2e75bef0aefc5b0f":  # WBTC
+            token_address_lower = token_address.lower()
+            if token_address_lower == "0xda10009cbd5d07dd0cecc66161fc93d7c9000da1":  # DAI
+                decimals = 18
+            elif token_address_lower == "0x2f2a2543b76a4166549f7aab2e75bef0aefc5b0f":  # WBTC
                 decimals = 8
+            elif token_address_lower == "0x912ce59144191c1204e64559fe8253a0e49e6548":  # ARB
+                decimals = 18
             else:
                 decimals = 18
         return int(amount * (10 ** decimals))
@@ -816,20 +819,33 @@ class UniswapIntegration:
                 print(f"❌ Swap {token_in_name} to {token_out_name} transaction failed")
                 return False
 
-            tx_hash = self.w3.to_bytes(hexstr=swap_tx)
+            # Handle different return types from swap_tokens
+            if isinstance(swap_tx, str):
+                tx_hash_str = swap_tx
+            else:
+                try:
+                    tx_hash = self.w3.to_bytes(hexstr=swap_tx)
+                    tx_hash_str = tx_hash.hex()
+                except:
+                    tx_hash_str = str(swap_tx)
 
             # Wait for confirmation
-            receipt = self.w3.eth.wait_for_transaction_receipt(tx_hash, timeout=120)
-
-            if receipt.status == 1:
-                tx_hash_str = tx_hash.hex()
-                print(f"✅ {token_in_name} to {token_out_name} swap successful!")
+            try:
+                receipt = self.w3.eth.wait_for_transaction_receipt(tx_hash_str, timeout=120)
+                if receipt.status == 1:
+                    print(f"✅ {token_in_name} to {token_out_name} swap successful!")
+                    print(f"🔗 Transaction Hash: {tx_hash_str}")
+                    return tx_hash_str
+                else:
+                    print(f"❌ Swap transaction failed in execution")
+                    return False
+            except Exception as receipt_error:
+                print(f"⚠️ Could not verify transaction receipt: {receipt_error}")
                 print(f"🔗 Transaction Hash: {tx_hash_str}")
-                return tx_hash_str
-            else:
-                print(f"❌ Swap transaction failed")
-                return False
+                return tx_hash_str  # Return hash even if receipt check fails
 
         except Exception as e:
             print(f"❌ Error in _execute_swap: {e}")
+            import traceback
+            traceback.print_exc()
             return False

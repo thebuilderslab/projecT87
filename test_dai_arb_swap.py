@@ -121,10 +121,16 @@ def test_dai_arb_swap():
 
         # Execute DAI to ARB swap
         try:
+            # Check if swap method exists
+            if not hasattr(agent.uniswap, 'swap_dai_for_arb'):
+                print("❌ swap_dai_for_arb method not available")
+                return False
+
             swap_result = agent.uniswap.swap_dai_for_arb(swap_amount)
 
             if not swap_result or not swap_result.get('success'):
                 print("❌ DAI → ARB swap failed")
+                print(f"   Swap result: {swap_result}")
                 return False
 
             print(f"✅ DAI → ARB swap successful")
@@ -132,6 +138,8 @@ def test_dai_arb_swap():
 
         except Exception as swap_error:
             print(f"❌ DAI → ARB swap error: {swap_error}")
+            import traceback
+            traceback.print_exc()
             return False
 
         # Wait for confirmation
@@ -140,7 +148,26 @@ def test_dai_arb_swap():
 
         # Check ARB balance after swap
         try:
-            arb_balance_after = agent.aave.get_token_balance(arb_address) if hasattr(agent, 'aave') and agent.aave else 0
+            # Use Uniswap integration to check ARB balance if available
+            if hasattr(agent, 'uniswap') and agent.uniswap:
+                # Create ARB token contract
+                arb_contract = agent.w3.eth.contract(
+                    address=arb_address,
+                    abi=[{
+                        "constant": True,
+                        "inputs": [{"name": "_owner", "type": "address"}],
+                        "name": "balanceOf",
+                        "outputs": [{"name": "balance", "type": "uint256"}],
+                        "type": "function"
+                    }]
+                )
+                arb_balance_wei = arb_contract.functions.balanceOf(agent.address).call()
+                arb_balance_after = arb_balance_wei / (10**18)  # ARB has 18 decimals
+            elif hasattr(agent, 'aave') and agent.aave:
+                arb_balance_after = agent.aave.get_token_balance(arb_address)
+            else:
+                arb_balance_after = 0
+
             arb_received = arb_balance_after - arb_balance_before
 
             print(f"\n💰 ARB RECEIVED: {arb_received:.6f}")

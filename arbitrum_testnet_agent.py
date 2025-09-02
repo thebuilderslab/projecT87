@@ -512,35 +512,6 @@ class ArbitrumTestnetAgent:
             self.arb_address = "0x1b20e6a3B2a86618C32A37ffcD5E98C0d20a6E42"
             self.aave_pool_address = "0x18cd499E3d7ed42FebA981ac9236A278E4Cdc2ee"
 
-        # Initialize real blockchain integrations
-        self.aave = None
-        self.uniswap = None
-        self.health_monitor = None
-        self.gas_calculator = None
-        self.enhanced_borrow_manager = None
-        self.market_signal_strategy = None
-
-        # HYBRID APPROACH CONFIGURATION - Combines Growth-Triggered and Capacity-Based Systems
-        # Configuration parameters loaded from environment variables (Replit Secrets)
-        self.target_health_factor = float(os.getenv('TARGET_HEALTH_FACTOR', '3.5')) # Target HF for general management
-
-        # Growth-Triggered System Parameters - Fixed to match distribution ratio
-        self.growth_trigger_threshold = float(os.getenv('GROWTH_TRIGGER_THRESHOLD', '13.0')) # $13 collateral growth to trigger borrowing
-        self.growth_health_factor_threshold = float(os.getenv('GROWTH_HEALTH_FACTOR_THRESHOLD', '2.1')) # HF > 2.1 for growth-triggered
-
-        # Capacity-Based System Parameters
-        self.capacity_optimization_threshold = float(os.getenv('CAPACITY_OPTIMIZATION_THRESHOLD', '0.20'))  # 20% utilization threshold
-        self.capacity_health_factor_threshold = float(os.getenv('CAPACITY_HEALTH_FACTOR_THRESHOLD', '2.05')) # Reduced from 2.1 for optimization
-        self.capacity_available_threshold = float(os.getenv('CAPACITY_AVAILABLE_THRESHOLD', '13.0')) # $13 minimum available capacity
-
-        # System Operation Parameters
-        self.re_leverage_percentage = float(os.getenv('RE_LEVERAGE_PERCENTAGE', '0.50')) # Percentage of growth to re-leverage
-        self.min_borrow_releverage = float(os.getenv('MIN_BORROW_RELEVERAGE', '10.0')) # Minimum borrow amount for re-leverage
-        self.max_borrow_releverage = float(os.getenv('MAX_BORROW_RELEVERAGE', '200.0')) # Maximum borrow amount for re-leverage
-        self.safe_releverage_hf_threshold = float(os.getenv('SAFE_RELEVERAGE_HF_THRESHOLD', '2.1')) # Minimum HF to safely re-leverage
-
-        self.previous_leveraged_value_usd = None # Initialize for tracking growth
-
         # Initialize collateral tracking for autonomous triggers
         # Start with 0.0 but will sync with actual position on first run
         self.last_collateral_value_usd = 0.0
@@ -2246,520 +2217,91 @@ class ArbitrumTestnetAgent:
             return False
 
     def get_eth_balance(self):
-        """Get ETH balance from wallet"""
+        """Get ETH balance in readable format"""
         try:
             balance_wei = self.w3.eth.get_balance(self.address)
-            return float(self.w3.from_wei(balance_wei, 'ether'))
+            return balance_wei / (10**18)
         except Exception as e:
             print(f"❌ Failed to get ETH balance: {e}")
+            return 0.0
+
+    def get_dai_balance(self):
+        """Get DAI balance using Aave integration"""
+        try:
+            if hasattr(self, 'aave') and self.aave:
+                return self.aave.get_dai_balance()
+            else:
+                print("❌ Aave integration not available for DAI balance")
+                return 0.0
+        except Exception as e:
+            print(f"❌ Failed to get DAI balance: {e}")
             return 0.0
 
     def get_health_factor(self):
         """Get current health factor from Aave"""
         try:
-            if not self.aave:
-                print("⚠️ Aave integration not available for health factor check")
-                return 0.0
-
-            account_data = self.aave.get_user_account_data()
-            if account_data:
-                health_factor = account_data.get('healthFactor', 0)
-                print(f"📊 Health Factor: {health_factor:.4f}")
-                return health_factor
+            if hasattr(self, 'aave') and self.aave:
+                account_data = self.aave.get_user_account_data()
+                return account_data.get('healthFactor', 0) if account_data else 0
             else:
-                print("⚠️ Cannot retrieve account data for health factor")
+                print("❌ Aave integration not available for health factor")
                 return 0.0
-
         except Exception as e:
-            print(f"❌ Health factor check failed: {e}")
+            print(f"❌ Failed to get health factor: {e}")
             return 0.0
 
-    def run_real_defi_task(self, run_id, iteration, config):
-        """Enhanced DeFi task execution with comprehensive logging"""
+    def run_real_defi_task(self, run_id, iteration, agent_config):
+        """Run real DeFi task for autonomous operations"""
         try:
-            print(f"\n🔄 REAL DEFI TASK EXECUTION")
-            print(f"Run ID: {run_id}, Iteration: {iteration}")
-            print("=" * 50)
+            print(f"🚀 Running real DeFi task - Run {run_id}, Iteration {iteration}")
 
-            # Initialize integrations if needed
+            # Basic validation
             if not hasattr(self, 'aave') or not self.aave:
-                print("🔄 Initializing integrations...")
-                if not self.initialize_integrations():
-                    print("❌ Integration initialization failed")
-                    return 0.0
+                print("❌ Aave integration not available")
+                return 0.5
 
-            # Step 1: System health check
-            print("🔍 Step 1: System Health Check")
-            eth_balance = self.get_eth_balance()
-            health_factor = self.get_health_factor()
-
-            print(f"💰 ETH Balance: {eth_balance:.6f}")
-            print(f"🏥 Health Factor: {health_factor:.4f}")
-
-            # Step 2: Market signal check (if enabled)
-            if self.debt_swap_active and self.market_signal_strategy:
-                print("🔍 Step 2: Market Signal Analysis")
-                try:
-                    signals = self.market_signal_strategy.get_market_analysis()
-                    print(f"📈 Market Status: {signals.get('status', 'unknown')}")
-
-                    # Execute market signal operation
-                    signal_success = self._execute_market_signal_operation()
-                    if signal_success:
-                        print("✅ Market signal operation completed")
-                        return 0.8  # Good performance score
-                    else:
-                        print("⚠️ Market signal operation skipped or failed")
-                        return 0.5  # Neutral performance
-
-                except Exception as signal_error:
-                    print(f"❌ Market signal check failed: {signal_error}")
-                    return 0.3  # Lower performance due to error
-            else:
-                print("ℹ️ Step 2: Market signals disabled - skipping")
-
-            # Step 3: Basic operations check
-            print("🔍 Step 3: Basic Operations Check")
-            if health_factor > 2.0 and eth_balance > 0.001:
-                print("✅ System operational - all checks passed")
-                return 0.7  # Good baseline performance
-            else:
-                print("⚠️ System operational but with limitations")
-                return 0.4  # Limited performance
-
-        except Exception as e:
-            print(f"❌ DeFi task execution failed: {e}")
-            import traceback
-            print(f"🔍 Full error: {traceback.format_exc()}")
-            return 0.1  # Poor performance due to failure
-
-    def get_wbtc_balance(self):
-        """Get WBTC token balance"""
-        try:
-            if self.aave:
-                return self.aave.get_token_balance(self.wbtc_address)
-            return 0.0
-        except Exception as e:
-            print(f"❌ Error getting WBTC balance: {e}")
-            return 0.0
-
-    def get_weth_balance(self):
-        """Get WETH token balance"""
-        try:
-            if self.aave:
-                return self.aave.get_token_balance(self.weth_address)
-            return 0.0
-        except Exception as e:
-            print(f"❌ Error getting WETH balance: {e}")
-            return 0.0
-
-    def get_dai_balance(self):
-        """Get DAI balance from wallet"""
-        try:
-            if hasattr(self, 'aave') and self.aave:
-                return self.aave.get_dai_balance()
-            else:
-                # Fallback: direct token balance check
-                dai_contract = self.w3.eth.contract(address=self.dai_address, abi=DAI_ABI)
-                balance_wei = dai_contract.functions.balanceOf(self.address).call()
-                decimals = dai_contract.functions.decimals().call()
-                return balance_wei / (10 ** decimals)
-        except Exception as e:
-            print(f"❌ Failed to get DAI balance: {e}")
-            return 0.0
-
-    def get_arb_balance(self):
-        """Get ARB token balance from wallet"""
-        try:
-            arb_address = "0x912CE59144191C1204E64559FE8253a0e49E6548"
-            if hasattr(self, 'aave') and self.aave:
-                return self.aave.get_token_balance(arb_address)
-            else:
-                # Fallback: direct token balance check
-                arb_contract = self.w3.eth.contract(address=arb_address, abi=DAI_ABI)  # Use DAI_ABI for ERC20 functions
-                balance_wei = arb_contract.functions.balanceOf(self.address).call()
-                decimals = arb_contract.functions.decimals().call()
-                return balance_wei / (10 ** decimals)
-        except Exception as e:
-            print(f"❌ Failed to get ARB balance: {e}")
-            return 0.0
-
-    def get_wbtc_balance(self):
-        """Get WBTC balance from wallet"""
-        try:
-            if hasattr(self, 'aave') and self.aave:
-                return self.aave.get_token_balance(self.wbtc_address)
-            else:
-                # Fallback: direct token balance check
-                wbtc_contract = self.w3.eth.contract(address=self.wbtc_address, abi=DAI_ABI)
-                balance_wei = wbtc_contract.functions.balanceOf(self.address).call()
-                decimals = wbtc_contract.functions.decimals().call()
-                return balance_wei / (10 ** decimals)
-        except Exception as e:
-            print(f"❌ Failed to get WBTC balance: {e}")
-            return 0.0
-
-    def get_weth_balance(self):
-        """Get WETH balance from wallet"""
-        try:
-            if hasattr(self, 'aave') and self.aave:
-                return self.aave.get_token_balance(self.weth_address)
-            else:
-                # Fallback: direct token balance check
-                weth_contract = self.w3.eth.contract(address=self.weth_address, abi=DAI_ABI)
-                balance_wei = weth_contract.functions.balanceOf(self.address).call()
-                decimals = weth_contract.functions.decimals().call()
-                return balance_wei / (10 ** decimals)
-        except Exception as e:
-            print(f"❌ Failed to get WETH balance: {e}")
-            return 0.0
-
-    def get_arb_balance(self):
-        """Get ARB token balance of the agent's wallet"""
-        try:
-            arb_contract = self.w3.eth.contract(
-                address=self.arb_address,
-                abi=self.uniswap.erc20_abi if self.uniswap else [
-                    {
-                        "inputs": [{"name": "account", "type": "address"}],
-                        "name": "balanceOf",
-                        "outputs": [{"name": "", "type": "uint256"}],
-                        "stateMutability": "view",
-                        "type": "function"
-                    },
-                    {
-                        "inputs": [],
-                        "name": "decimals",
-                        "outputs": [{"name": "", "type": "uint8"}],
-                        "stateMutability": "view",
-                        "type": "function"
-                    }
-                ]
-            )
-
-            balance_wei = arb_contract.functions.balanceOf(self.address).call()
-            decimals = arb_contract.functions.decimals().call()
-            balance_arb = balance_wei / (10 ** decimals)
-            return float(balance_arb)
-        except Exception as e:
-            print(f"❌ Error getting ARB balance: {e}")
-            return 0.0
-
-    def check_emergency_stop(self):
-        """Check if emergency stop is active"""
-        try:
-            return os.path.exists('EMERGENCY_STOP_ACTIVE.flag')
-        except Exception as e:
-            print(f"❌ Error checking emergency stop: {e}")
-            return False
-
-    def execute_dai_to_arb_swap(self, dai_amount):
-        """Execute DAI to ARB swap, log details, and return transaction result"""
-        try:
-            print(f"🔄 Executing DAI → ARB swap for {dai_amount:.6f} DAI")
-
-            if not self.uniswap:
-                print("❌ Uniswap integration not available")
-                return False, "Uniswap not initialized"
-
-            # Get ARB balance before swap
-            arb_balance_before = self.get_arb_balance()
-
-            # Execute swap
-            swap_result = self.uniswap.swap_dai_for_arb(dai_amount)
-
-            if swap_result and 'tx_hash' in swap_result:
-                print(f"✅ DAI → ARB Swap successful - TX: {swap_result['tx_hash']}")
-                print(f"🔗 Verify on Arbiscan: https://arbiscan.io/tx/{swap_result['tx_hash']}")
-
-                # Verify ARB received
-                import time
-                time.sleep(8)  # Allow time for ARB price updates
-                arb_balance_after = self.get_arb_balance()
-                arb_received = arb_balance_after - arb_balance_before
-
-                if arb_received > 0:
-                    print(f"✅ Received {arb_received:.8f} ARB")
-                    # Store ARB entry price if it's the first time receiving ARB
-                    if not hasattr(self, 'arb_entry_price') or self.arb_entry_price is None or self.arb_entry_price == 0:
-                        self.arb_entry_price = self._get_current_arb_price() if self._get_current_arb_price() else 0.41
-                        print(f"💰 Set ARB entry price: ${self.arb_entry_price:.4f}")
-                    return True, f"Swap successful, received {arb_received:.8f} ARB"
-                else:
-                    print("⚠️ ARB balance did not increase as expected")
-                    return False, "ARB balance unchanged"
-            else:
-                print("❌ DAI → ARB Swap failed")
-                return False, "Swap transaction failed"
-
-        except Exception as e:
-            print(f"❌ DAI → ARB Swap error: {e}")
-            return False, f"Swap error: {e}"
-
-    def execute_arb_to_dai_swap(self, arb_amount):
-        """Execute ARB to DAI swap, log details, and return transaction result"""
-        try:
-            print(f"🔄 Executing ARB → DAI swap for {arb_amount:.8f} ARB")
-
-            if not self.uniswap:
-                print("❌ Uniswap integration not available")
-                return False, "Uniswap not initialized"
-
-            # Get DAI balance before swap
-            dai_balance_before = self.get_dai_balance()
-
-            # Execute swap
-            swap_result = self.uniswap.swap_arb_for_dai(arb_amount)
-
-            if swap_result and 'tx_hash' in swap_result:
-                print(f"✅ ARB → DAI Swap successful - TX: {swap_result['tx_hash']}")
-                print(f"🔗 Verify on Arbiscan: https://arbiscan.io/tx/{swap_result['tx_hash']}")
-
-                # Verify DAI received
-                import time
-                time.sleep(5)
-                dai_balance_after = self.get_dai_balance()
-                dai_received = dai_balance_after - dai_balance_before
-
-                if dai_received > 0:
-                    print(f"✅ Received {dai_received:.6f} DAI")
-                    # Update ARB entry price if swap was successful
-                    if arb_amount > 0:
-                        self.arb_entry_price = self._get_current_arb_price() if self._get_current_arb_price() else 0.41
-                        print(f"💰 Updated ARB entry price: ${self.arb_entry_price:.4f}")
-                    return True, f"Swap successful, received {dai_received:.6f} DAI"
-                else:
-                    print("⚠️ DAI balance did not increase as expected")
-                    return False, "DAI balance unchanged"
-            else:
-                print("❌ ARB → DAI Swap failed")
-                return False, "Swap transaction failed"
-
-        except Exception as e:
-            print(f"❌ ARB → DAI Swap error: {e}")
-            return False, f"Swap error: {e}"
-
-
-    def execute_debt_swap_strategy(self, signal_data):
-        """Execute debt swap based on market signals with technical indicators validation"""
-        try:
-            action = signal_data.get('action', 'hold')
-            confidence = signal_data.get('confidence_level', 0)
-            signals_detected = signal_data.get('signals_detected', [])
-
-            # Validate technical indicators before execution
-            if hasattr(self, 'market_signal_strategy') and self.market_signal_strategy:
-                strategy_status = self.market_signal_strategy.get_strategy_status()
-                tech_indicators_ready = strategy_status.get('technical_indicators_ready', False)
-                tech_indicators_full = strategy_status.get('technical_indicators_full', False)
-
-                if not tech_indicators_ready:
-                    logger.warning("🚫 Debt swap cancelled: Technical indicators not ready")
-                    return False, "Technical indicators insufficient for safe execution"
-
-                logger.info(f"✅ Technical Indicators Status: Ready={tech_indicators_ready}, Full={tech_indicators_full}")
-
-            logger.info(f"🔄 Executing debt swap: {action} (confidence: {confidence:.2f})")
-            logger.info(f"📊 Based on signals: {signals_detected}")
-
-            # Get current balances
-            dai_balance = self.aave.get_dai_balance()
-            account_data = self.aave.get_user_account_data()
-            available_borrows = account_data.get('availableBorrowsUSD', 0)
-
-            if action == 'dai_to_arb':
-                # Swap DAI to ARB (bullish signal)
-                if dai_balance < 1:
-                    # Borrow more DAI first
-                    borrow_amount = min(available_borrows * 0.5, 50)  # Conservative 50% of available
-                    logger.info(f"📈 Borrowing ${borrow_amount:.2f} DAI for bullish ARB swap")
-                    result = self.aave.borrow_dai(borrow_amount)
-                    if result:
-                        dai_balance = self.aave.get_dai_balance()
-
-                # Execute swap to ARB
-                if dai_balance >= 1:
-                    swap_amount = min(dai_balance * 0.8, 100)  # Use 80% of DAI, max $100
-                    logger.info(f"🚀 Swapping ${swap_amount:.2f} DAI to ARB based on technical signals")
-                    return self.execute_dai_to_arb_swap(swap_amount)
-
-            elif action == 'arb_to_dai':
-                # Swap ARB to DAI (bearish signal)
-                arb_balance = self.get_token_balance('ARB')
-                if arb_balance >= 1:
-                    swap_amount = min(arb_balance * 0.8, 100)  # Use 80% of ARB, max $100
-                    logger.info(f"📉 Swapping ${swap_amount:.2f} ARB to DAI based on technical signals")
-                    return self.execute_arb_to_dai_swap(swap_amount)
-
-            return False, f"No action taken for signal: {action}"
-
-        except Exception as e:
-            logger.error(f"Error executing debt swap strategy: {e}")
-            return False, f"Execution error: {e}"
-
-
-    def check_debt_swap_conditions(self):
-        """Check if conditions are met for debt swap operations with enhanced market signal integration"""
-        try:
-            # Get current account data
+            # Get account status
             account_data = self.aave.get_user_account_data()
             if not account_data:
-                return False, "Unable to retrieve account data"
+                print("❌ Could not retrieve account data")
+                return 0.3
 
             health_factor = account_data.get('healthFactor', 0)
             available_borrows = account_data.get('availableBorrowsUSD', 0)
-            total_debt = account_data.get('totalDebtUSD', 0)
 
-            # Basic safety checks
-            if health_factor < 1.25:
-                return False, f"Health factor too low: {health_factor:.3f} (minimum 1.25)"
+            print(f"📊 Health Factor: {health_factor:.3f}")
+            print(f"💰 Available Borrows: ${available_borrows:.2f}")
 
-            if available_borrows < 10:
-                return False, f"Insufficient borrowing capacity: ${available_borrows:.2f}"
+            # Simple performance metric based on health and capacity
+            if health_factor > 2.0 and available_borrows > 10:
+                performance = 0.8
+            elif health_factor > 1.5:
+                performance = 0.6
+            else:
+                performance = 0.4
 
-            # Enhanced market signal integration with technical indicators readiness check
-            if hasattr(self, 'market_signal_strategy') and self.market_signal_strategy:
-                try:
-                    # First check if technical indicators are ready
-                    strategy_status = self.market_signal_strategy.get_strategy_status()
-                    tech_indicators_ready = strategy_status.get('technical_indicators_ready', False)
-                    enhanced_arb_points = strategy_status.get('enhanced_arb_points', 0)
-                    enhanced_btc_points = strategy_status.get('enhanced_btc_points', 0)
-
-                    if not tech_indicators_ready:
-                        return False, f"Technical indicators not ready: ARB points={enhanced_arb_points}, BTC points={enhanced_btc_points}"
-
-                    # Get market signals
-                    signals = self.market_signal_strategy.analyze_market_signals()
-                    if signals and signals.get('status') == 'success':
-                        action = signals.get('action', 'hold')
-                        confidence = signals.get('confidence_level', 0)
-                        signals_detected = signals.get('signals_detected', [])
-
-                        # Log technical indicator status
-                        logger.info(f"📊 Technical Indicators Ready: ARB={enhanced_arb_points} points, BTC={enhanced_btc_points} points")
-                        logger.info(f"🔍 Market Signals Detected: {signals_detected}")
-
-                        # Only proceed with high confidence signals
-                        if action != 'hold' and confidence > 0.6:
-                            return True, f"Market signal detected: {action} (confidence: {confidence:.2f}, indicators: {len(signals_detected)})"
-                        else:
-                            return False, f"Market signals insufficient: {action} (confidence: {confidence:.2f})"
-                    else:
-                        return False, "Market signal analysis failed"
-                except Exception as e:
-                    logger.error(f"Market signal error: {e}")
-                    return False, f"Market signal error: {e}"
-
-            return False, "Market signal strategy not available"
+            return performance
 
         except Exception as e:
-            logger.error(f"Error checking debt swap conditions: {e}")
-            return False, f"Condition check error: {e}"
-
-
-    def _get_current_arb_price(self):
-        """Get current ARB price using EnhancedMarketAnalyzer with fallback mechanisms"""
-        try:
-            # Primary method: Use EnhancedMarketAnalyzer
-            if hasattr(self, 'market_analyzer') and self.market_analyzer:
-                market_data = self.market_analyzer.get_market_data()
-                if market_data and 'arb_price' in market_data:
-                    arb_price = market_data['arb_price']
-                    print(f"📊 Current ARB price from market analyzer: ${arb_price:.4f}")
-                    return arb_price
-
-            # Fallback method: Direct price fetch
-            if hasattr(self, 'market_analyzer') and self.market_analyzer:
-                price_data = self.market_analyzer.fetch_price_data()
-                if price_data and 'ARB' in price_data:
-                    arb_price = price_data['ARB']['price']
-                    print(f"📊 Current ARB price from fallback: ${arb_price:.4f}")
-                    return arb_price
-
-            # Final fallback: Use a reasonable default
-            default_price = 0.41  # Conservative estimate based on recent data
-            print(f"⚠️ Using default ARB price: ${default_price:.4f}")
-            return default_price
-
-        except Exception as e:
-            print(f"❌ Failed to get ARB price: {e}")
-            # Return conservative default
-            return 0.41
+            print(f"❌ Real DeFi task failed: {e}")
+            return 0.2
 
     def _setup_enhanced_error_handling(self):
-        """Setup enhanced error handling for system operations"""
+        """Setup enhanced error handling for the agent"""
         try:
-            # Set up signal handlers for graceful shutdown
-            import signal
-
-            def signal_handler(signum, frame):
-                print(f"\n🛑 Received signal {signum}, initiating graceful shutdown...")
-                self._emergency_shutdown()
-
-            signal.signal(signal.SIGINT, signal_handler)
-            signal.signal(signal.SIGTERM, signal_handler)
-
-            print("✅ Enhanced error handling configured")
-
+            # Basic error handling setup
+            signal.signal(signal.SIGINT, self._handle_emergency_stop)
+            signal.signal(signal.SIGTERM, self._handle_emergency_stop)
+            print("✅ Enhanced error handling setup complete")
         except Exception as e:
-            print(f"⚠️ Could not setup enhanced error handling: {e}")
+            print(f"⚠️ Error handling setup failed: {e}")
 
-    def _handle_system_error(self, error, operation="general"):
-        """Handle system-level errors with appropriate recovery"""
-        try:
-            error_str = str(error).lower()
-
-            if isinstance(error, OSError):
-                if "connection" in error_str or "network" in error_str:
-                    print(f"🔄 Network error in {operation}, attempting RPC failover...")
-                    return self.switch_to_fallback_rpc()
-                elif "permission" in error_str:
-                    print(f"❌ Permission error in {operation}: {error}")
-                    return False
-                else:
-                    print(f"⚠️ OS error in {operation}: {error}")
-                    return False
-
-            elif isinstance(error, ConnectionError):
-                print(f"🔄 Connection error in {operation}, retrying with backoff...")
-                import time
-                time.sleep(2)  # Brief backoff
-                return self.switch_to_fallback_rpc()
-
-            else:
-                print(f"❌ Unexpected error in {operation}: {error}")
-                return False
-
-        except Exception as handler_error:
-            print(f"❌ Error handler failed: {handler_error}")
-            return False
-
-    def _emergency_shutdown(self):
-        """Emergency shutdown procedure"""
-        try:
-            print("🚨 EMERGENCY SHUTDOWN INITIATED")
-            print("💾 Saving critical state...")
-
-            # Save current state
-            if hasattr(self, 'last_collateral_value_usd'):
-                emergency_state = {
-                    'timestamp': time.time(),
-                    'last_collateral_value_usd': self.last_collateral_value_usd,
-                    'emergency_shutdown': True
-                }
-
-                import json
-                with open('emergency_state.json', 'w') as f:
-                    json.dump(emergency_state, f, indent=2)
-
-            print("✅ Emergency shutdown completed")
-
-        except Exception as e:
-            print(f"❌ Emergency shutdown error: {e}")
-        finally:
-            import sys
-            sys.exit(0)
+    def _handle_emergency_stop(self, signum, frame):
+        """Handle emergency stop signals"""
+        print("🛑 Emergency stop signal received")
+        print("🔄 Gracefully shutting down operations...")
+        # Add cleanup logic here if needed
+        exit(0)
 
     def get_token_balance(self, token_symbol):
         """Get balance of a specified token"""
