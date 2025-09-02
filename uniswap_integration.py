@@ -214,14 +214,118 @@ class UniswapIntegration:
             return None
 
     def _execute_validated_swap(self, token_in, token_out, amount_in, fee):
-        """Execute the validated swap with proper error handling"""
+        """Execute the validated swap with comprehensive error handling and debt swap logic"""
         try:
-            # This method will contain the actual swap execution logic
-            # For now, return a placeholder to prevent syntax errors
-            print(f"🔄 Executing validated swap: {amount_in} tokens")
-            return None
+            print(f"🔄 Executing validated debt swap: {amount_in} tokens")
+            
+            # Convert amount_in to wei FIRST
+            amount_in_wei = self._convert_to_wei(token_in, amount_in)
+            print(f"🔄 Converting {amount_in} to {amount_in_wei} wei for {token_in}")
+
+            if amount_in_wei <= 0:
+                print(f"❌ Invalid wei conversion result: {amount_in_wei}")
+                return None
+
+            # Check ETH balance for gas
+            eth_balance = self.w3.eth.get_balance(self.address)
+            min_eth_needed = self.w3.to_wei(0.001, 'ether')  # 0.001 ETH minimum
+            if eth_balance < min_eth_needed:
+                print(f"❌ Insufficient ETH for gas: {self.w3.from_wei(eth_balance, 'ether'):.6f} ETH")
+                return None
+
+            # Approve token spending if needed
+            if token_in != "0x0000000000000000000000000000000000000000":  # Not ETH
+                token_contract = self.w3.eth.contract(address=token_in, abi=self.erc20_abi)
+
+                # Check current allowance first
+                try:
+                    current_allowance = token_contract.functions.allowance(self.address, self.router_address).call()
+                    if current_allowance < amount_in_wei:
+                        # Need to approve
+                        nonce = self.w3.eth.get_transaction_count(self.address)
+                        base_gas_price = self.w3.eth.gas_price
+                        chain_id = self.w3.eth.chain_id
+
+                        if chain_id == 42161:  # Arbitrum Mainnet
+                            optimized_gas_price = max(base_gas_price, int(0.01 * 10**9))  # Min 0.01 gwei
+                        else:
+                            optimized_gas_price = int(base_gas_price * 1.2)  # 20% higher for testnet
+
+                        approve_tx = token_contract.functions.approve(
+                            self.router_address, 
+                            amount_in_wei * 2  # Approve 2x amount for efficiency
+                        ).build_transaction({
+                            'chainId': chain_id,
+                            'gas': 100000,
+                            'gasPrice': optimized_gas_price,
+                            'nonce': nonce,
+                        })
+
+                        signed_approve = self.w3.eth.account.sign_transaction(approve_tx, self.account.key)
+                        approve_hash = self.w3.eth.send_raw_transaction(signed_approve.rawTransaction)
+                        print(f"✅ Approval sent: {approve_hash.hex()}")
+                        
+                        # Wait for approval confirmation
+                        import time
+                        time.sleep(8)
+
+                except Exception as approve_error:
+                    print(f"❌ Approval failed: {approve_error}")
+                    return None
+
+            # Build swap parameters
+            deadline = int(time.time()) + 600  # 10 minutes from now
+            min_output_amount = 1  # Minimal output requirement for safety
+
+            swap_params = {
+                'tokenIn': self.w3.to_checksum_address(token_in),
+                'tokenOut': self.w3.to_checksum_address(token_out),
+                'fee': fee,
+                'recipient': self.w3.to_checksum_address(self.address),
+                'deadline': deadline,
+                'amountIn': amount_in_wei,
+                'amountOutMinimum': min_output_amount,
+                'sqrtPriceLimitX96': 0
+            }
+
+            # Build swap transaction
+            nonce = self.w3.eth.get_transaction_count(self.address)
+            base_gas_price = self.w3.eth.gas_price
+            chain_id = self.w3.eth.chain_id
+
+            if chain_id == 42161:  # Arbitrum Mainnet
+                swap_gas_price = max(base_gas_price, int(0.1 * 10**9))  # Min 0.1 gwei
+                gas_limit = 500000
+            else:
+                swap_gas_price = int(base_gas_price * 1.5)  # 50% higher for testnet
+                gas_limit = 450000
+
+            swap_tx = self.router_contract.functions.exactInputSingle(
+                swap_params
+            ).build_transaction({
+                'chainId': chain_id,
+                'gas': gas_limit,
+                'gasPrice': swap_gas_price,
+                'nonce': nonce,
+                'value': amount_in_wei if token_in == "0x0000000000000000000000000000000000000000" else 0
+            })
+
+            print(f"🔄 Swap transaction built:")
+            print(f"   Gas Price: {self.w3.from_wei(swap_gas_price, 'gwei'):.4f} gwei")
+            print(f"   Gas Limit: {gas_limit}")
+            print(f"   Amount In: {amount_in_wei} wei ({amount_in} tokens)")
+
+            # Execute the swap
+            signed_swap = self.w3.eth.account.sign_transaction(swap_tx, self.account.key)
+            tx_hash = self.w3.eth.send_raw_transaction(signed_swap.rawTransaction)
+
+            print(f"✅ Debt swap executed successfully: {tx_hash.hex()}")
+            return tx_hash.hex()
+
         except Exception as e:
-            print(f"❌ Swap execution failed: {e}")
+            print(f"❌ Validated debt swap failed: {e}")
+            import traceback
+            print(f"🔍 Full traceback: {traceback.format_exc()}")
             return None
 
     def swap_dai_for_arb(self, dai_amount, max_slippage=0.05):

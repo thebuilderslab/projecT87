@@ -227,6 +227,8 @@ class ArbitrumTestnetAgent:
 
         # Initialize account after successful RPC connection
         self._initialize_account()
+        # Setup enhanced error handling
+        self._setup_enhanced_error_handling()
 
     def _initialize_enhanced_rpc_manager(self):
         """Initialize enhanced RPC management with only working endpoints"""
@@ -2462,3 +2464,142 @@ class ArbitrumTestnetAgent:
         except Exception as e:
             print(f"❌ Error getting user account data: {e}")
             return None
+
+    def _get_current_arb_price(self):
+        """Get current ARB price with multi-source fallback mechanism"""
+        try:
+            print("💰 Fetching current ARB price...")
+
+            # Try EnhancedMarketAnalyzer first
+            if hasattr(self, 'market_signal_strategy') and self.market_signal_strategy:
+                try:
+                    from enhanced_market_analyzer import EnhancedMarketAnalyzer
+                    analyzer = EnhancedMarketAnalyzer(self)
+                    prices = analyzer.get_current_prices(['ARB'])
+
+                    if 'ARB' in prices and prices['ARB'] and 'price' in prices['ARB']:
+                        arb_price = prices['ARB']['price']
+                        print(f"✅ ARB price from EnhancedMarketAnalyzer: ${arb_price:.4f}")
+                        return arb_price
+                except Exception as analyzer_error:
+                    print(f"⚠️ EnhancedMarketAnalyzer failed: {analyzer_error}")
+
+            # Fallback 1: CoinMarketCap API
+            if self.coinmarketcap_api_key:
+                try:
+                    import requests
+                    url = "https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest"
+                    headers = {
+                        'Accepts': 'application/json',
+                        'X-CMC_PRO_API_KEY': self.coinmarketcap_api_key,
+                    }
+                    params = {'symbol': 'ARB'}
+
+                    response = requests.get(url, headers=headers, params=params, timeout=10)
+                    if response.status_code == 200:
+                        data = response.json()
+                        if 'data' in data and 'ARB' in data['data']:
+                            arb_price = data['data']['ARB']['quote']['USD']['price']
+                            print(f"✅ ARB price from CoinMarketCap: ${arb_price:.4f}")
+                            return arb_price
+                except Exception as cmc_error:
+                    print(f"⚠️ CoinMarketCap API failed: {cmc_error}")
+
+            # Fallback 2: CoinGecko API (free, no key required)
+            try:
+                import requests
+                url = "https://api.coingecko.com/api/v3/simple/price"
+                params = {'ids': 'arbitrum', 'vs_currencies': 'usd'}
+
+                response = requests.get(url, params=params, timeout=10)
+                if response.status_code == 200:
+                    data = response.json()
+                    if 'arbitrum' in data and 'usd' in data['arbitrum']:
+                        arb_price = data['arbitrum']['usd']
+                        print(f"✅ ARB price from CoinGecko: ${arb_price:.4f}")
+                        return arb_price
+            except Exception as gecko_error:
+                print(f"⚠️ CoinGecko API failed: {gecko_error}")
+
+            # Final fallback: Use cached/estimated price
+            fallback_price = 0.41  # Conservative estimate based on recent market data
+            print(f"⚠️ Using fallback ARB price: ${fallback_price:.4f}")
+            return fallback_price
+
+        except Exception as e:
+            print(f"❌ Failed to get ARB price: {e}")
+            return 0.41  # Conservative fallback
+
+    def _setup_enhanced_error_handling(self):
+        """Setup enhanced error handling for system operations"""
+        try:
+            # Set up signal handlers for graceful shutdown
+            import signal
+
+            def signal_handler(signum, frame):
+                print(f"\n🛑 Received signal {signum}, initiating graceful shutdown...")
+                self._emergency_shutdown()
+
+            signal.signal(signal.SIGINT, signal_handler)
+            signal.signal(signal.SIGTERM, signal_handler)
+
+            print("✅ Enhanced error handling configured")
+
+        except Exception as e:
+            print(f"⚠️ Could not setup enhanced error handling: {e}")
+
+    def _handle_system_error(self, error, operation="general"):
+        """Handle system-level errors with appropriate recovery"""
+        try:
+            error_str = str(error).lower()
+
+            if isinstance(error, OSError):
+                if "connection" in error_str or "network" in error_str:
+                    print(f"🔄 Network error in {operation}, attempting RPC failover...")
+                    return self.switch_to_fallback_rpc()
+                elif "permission" in error_str:
+                    print(f"❌ Permission error in {operation}: {error}")
+                    return False
+                else:
+                    print(f"⚠️ OS error in {operation}: {error}")
+                    return False
+
+            elif isinstance(error, ConnectionError):
+                print(f"🔄 Connection error in {operation}, retrying with backoff...")
+                import time
+                time.sleep(2)  # Brief backoff
+                return self.switch_to_fallback_rpc()
+
+            else:
+                print(f"❌ Unexpected error in {operation}: {error}")
+                return False
+
+        except Exception as handler_error:
+            print(f"❌ Error handler failed: {handler_error}")
+            return False
+
+    def _emergency_shutdown(self):
+        """Emergency shutdown procedure"""
+        try:
+            print("🚨 EMERGENCY SHUTDOWN INITIATED")
+            print("💾 Saving critical state...")
+
+            # Save current state
+            if hasattr(self, 'last_collateral_value_usd'):
+                emergency_state = {
+                    'timestamp': time.time(),
+                    'last_collateral_value_usd': self.last_collateral_value_usd,
+                    'emergency_shutdown': True
+                }
+
+                import json
+                with open('emergency_state.json', 'w') as f:
+                    json.dump(emergency_state, f, indent=2)
+
+            print("✅ Emergency shutdown completed")
+
+        except Exception as e:
+            print(f"❌ Emergency shutdown error: {e}")
+        finally:
+            import sys
+            sys.exit(0)

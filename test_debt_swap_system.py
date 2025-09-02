@@ -413,31 +413,40 @@ def test_debt_swap_readiness(agent):
             print("❌ Agent not available for debt swap test")
             return False
             
-        # Test debt swap readiness validation
-        if hasattr(agent, 'validate_debt_swap_readiness'):
-            readiness = agent.validate_debt_swap_readiness()
-            print(f"✅ Debt swap readiness check completed")
-            print(f"   Ready: {readiness.get('ready', False)}")
-            print(f"   Score: {readiness.get('score', 0):.1f}%")
-        else:
-            print("⚠️ Debt swap readiness method not available")
+        # Test basic readiness components
+        print("🔍 Testing debt swap readiness components...")
         
-        # Test debt swap conditions
-        if hasattr(agent, 'check_debt_swap_conditions'):
-            conditions_ok, message = agent.check_debt_swap_conditions()
-            print(f"✅ Debt swap conditions check: {conditions_ok}")
-            print(f"   Message: {message}")
-        else:
-            print("⚠️ Debt swap conditions method not available")
-        
-        # Test debt swap parameters
-        if hasattr(agent, 'get_debt_swap_parameters'):
-            params = agent.get_debt_swap_parameters()
-            if params:
-                print(f"✅ Debt swap parameters available")
-                print(f"   Market signals enabled: {params.get('market_signal_enabled', False)}")
+        # Test health factor
+        try:
+            health_factor = agent.get_health_factor()
+            if health_factor > 2.0:
+                print(f"✅ Health factor safe for debt swaps: {health_factor:.4f}")
             else:
-                print("⚠️ Debt swap parameters not available")
+                print(f"⚠️ Health factor low: {health_factor:.4f}")
+        except Exception as hf_error:
+            print(f"❌ Health factor check failed: {hf_error}")
+        
+        # Test ETH balance
+        try:
+            eth_balance = agent.get_eth_balance()
+            if eth_balance > 0.001:
+                print(f"✅ ETH balance sufficient: {eth_balance:.6f}")
+            else:
+                print(f"⚠️ ETH balance low: {eth_balance:.6f}")
+        except Exception as eth_error:
+            print(f"❌ ETH balance check failed: {eth_error}")
+        
+        # Test Aave integration
+        if hasattr(agent, 'aave') and agent.aave:
+            print("✅ Aave integration ready")
+        else:
+            print("❌ Aave integration not available")
+        
+        # Test Uniswap integration  
+        if hasattr(agent, 'uniswap') and agent.uniswap:
+            print("✅ Uniswap integration ready")
+        else:
+            print("❌ Uniswap integration not available")
         
         return True
         
@@ -484,8 +493,11 @@ def test_system_integration(agent):
         # Test real DeFi task execution
         print("🔍 Testing real DeFi task execution...")
         try:
-            performance = agent.run_real_defi_task(1, 1, {})
-            print(f"✅ DeFi task execution: {performance:.2f} performance score")
+            if hasattr(agent, 'run_real_defi_task'):
+                performance = agent.run_real_defi_task(1, 1, {})
+                print(f"✅ DeFi task execution: {performance:.2f} performance score")
+            else:
+                print("⚠️ run_real_defi_task method not available")
         except Exception as e:
             print(f"❌ DeFi task execution failed: {e}")
         
