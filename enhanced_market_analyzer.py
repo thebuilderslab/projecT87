@@ -233,7 +233,7 @@ class EnhancedMarketAnalyzer:
         self.logger = logging.getLogger(__name__)
 
         # Initialize API clients - CoinAPI as PRIMARY, CoinMarketCap as SECONDARY
-        self.coinapi_key = os.getenv('COIN_API') or os.getenv('COINAPI_KEY') or os.getenv('COIN_API_KEY')
+        self.coinapi_key = os.getenv('COIN_API_KEY') or os.getenv('COINAPI_KEY') or os.getenv('COIN_API')
         self.coinmarketcap_key = os.getenv('COINMARKETCAP_API_KEY')
 
         # Historical data tracking for pattern analysis
@@ -263,7 +263,7 @@ class EnhancedMarketAnalyzer:
                 self.logger.warning(f"❌ CoinAPI PRIMARY initialization failed: {coinapi_error}")
                 self.coinapi_client = None
         else:
-            self.logger.warning("❌ COIN_API not found in Replit Secrets. Add COIN_API to use primary data source.")
+            self.logger.warning("❌ COIN_API_KEY not found in Replit Secrets. Add COIN_API_KEY or COINAPI_KEY to use primary data source.")
 
         # Initialize CoinMarketCap as SECONDARY (fallback)
         if not self.primary_api and self.coinmarketcap_key:
