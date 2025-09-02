@@ -567,33 +567,44 @@ class ArbitrumTestnetAgent:
         # Initialize Market Signal Strategy with enhanced console output
         try:
             from market_signal_strategy import MarketSignalStrategy
+            print("🔄 Initializing Market Signal Strategy...")
             self.market_signal_strategy = MarketSignalStrategy(self)
-            if self.market_signal_strategy.market_signal_enabled:
-                print("✅ Market Signal Strategy enabled and ready for debt swaps")
-                logging.info("✅ Market Signal Strategy enabled and ready for debt swaps")
-                # Start debt swap monitoring immediately
-                self.debt_swap_active = True
-                print("🔄 Debt swap system activated for simultaneous operation")
-                logging.info("🔄 Debt swap system activated for simultaneous operation")
+            
+            # Check if the strategy was initialized properly
+            if hasattr(self.market_signal_strategy, 'initialized') and self.market_signal_strategy.initialized:
+                print("✅ Market Signal Strategy core initialized successfully")
+                
+                if self.market_signal_strategy.market_signal_enabled:
+                    print("✅ Market Signal Strategy enabled and ready for debt swaps")
+                    logging.info("✅ Market Signal Strategy enabled and ready for debt swaps")
+                    # Start debt swap monitoring immediately
+                    self.debt_swap_active = True
+                    print("🔄 Debt swap system activated for simultaneous operation")
+                    logging.info("🔄 Debt swap system activated for simultaneous operation")
 
-                # Validate market signal methods are available including new pattern detection
-                required_methods = ['should_execute_trade', 'analyze_market_signals', 'get_market_analysis', 
-                                  'detect_bearish_reversal_patterns', 'detect_bearish_continuation_patterns']
-                missing_methods = [method for method in required_methods if not hasattr(self.market_signal_strategy, method)]
+                    # Validate market signal methods are available including new pattern detection
+                    required_methods = ['should_execute_trade', 'analyze_market_signals', 'get_market_analysis', 
+                                      'detect_bearish_reversal_patterns', 'detect_bearish_continuation_patterns']
+                    missing_methods = [method for method in required_methods if not hasattr(self.market_signal_strategy, method)]
 
-                if not missing_methods:
-                    print("✅ Market signal methods validated - all required methods present")
-                    print("✅ Enhanced market signal system with chart pattern analysis operational")
-                    print("📉 Bearish pattern detection: Head & Shoulders, Double Top, Triple Top, Rounding Top")
-                    print("📉 Continuation pattern detection: Bearish Flag, Pennant, Falling Wedge, Descending Triangle")
+                    if not missing_methods:
+                        print("✅ Market signal methods validated - all required methods present")
+                        print("✅ Enhanced market signal system with chart pattern analysis operational")
+                        print("📉 Bearish pattern detection: Head & Shoulders, Double Top, Triple Top, Rounding Top")
+                        print("📉 Continuation pattern detection: Bearish Flag, Pennant, Falling Wedge, Descending Triangle")
+                    else:
+                        print(f"⚠️ Market signal methods incomplete - missing: {missing_methods}")
+                        print("⚠️ Using fallback mode for safety")
+                        self.debt_swap_active = False
                 else:
-                    print(f"⚠️ Market signal methods incomplete - missing: {missing_methods}")
-                    print("⚠️ Using fallback mode for safety")
+                    print("ℹ️ Market Signal Strategy initialized but disabled (MARKET_SIGNAL_ENABLED=false)")
+                    logging.info("ℹ️ Market Signal Strategy initialized but disabled")
                     self.debt_swap_active = False
             else:
-                print("ℹ️ Market Signal Strategy initialized but disabled")
-                logging.info("ℹ️ Market Signal Strategy initialized but disabled")
+                print("⚠️ Market Signal Strategy initialized but enhanced features disabled")
+                print("ℹ️ Using basic fallback mode")
                 self.debt_swap_active = False
+                
         except ImportError as e:
             print(f"⚠️ Market Signal Strategy import failed: {e}")
             print("⚠️ Debt swaps disabled - continuing without market signals")
@@ -602,6 +613,7 @@ class ArbitrumTestnetAgent:
             self.debt_swap_active = False
         except Exception as e:
             print(f"❌ Market Signal Strategy initialization failed: {e}")
+            print(f"🔍 Error details: {str(e)}")
             logging.error(f"Market Signal Strategy initialization failed: {e}")
             self.market_signal_strategy = None
             self.debt_swap_active = False
@@ -700,21 +712,33 @@ class ArbitrumTestnetAgent:
             
             # Get thresholds from market signal strategy
             if hasattr(self, 'market_signal_strategy') and self.market_signal_strategy:
-                dai_to_arb_threshold = getattr(self.market_signal_strategy, 'base_dai_to_arb_threshold', 0.92)
-                arb_to_dai_threshold = getattr(self.market_signal_strategy, 'base_arb_to_dai_threshold', 0.88)
-                btc_drop_threshold = os.getenv('BTC_DROP_THRESHOLD', '0.01')
-                arb_rsi_oversold = os.getenv('ARB_RSI_OVERSOLD', '30')
-                arb_rsi_overbought = os.getenv('ARB_RSI_OVERBOUGHT', '70')
-                
-                print(f"   • DAI→ARB Confidence: ≥ {dai_to_arb_threshold:.1%}")
-                print(f"   • ARB→DAI Confidence: ≥ {arb_to_dai_threshold:.1%}")
-                print(f"   • BTC Drop Trigger: ≥ {float(btc_drop_threshold):.1%}")
-                print(f"   • ARB RSI Oversold: < {arb_rsi_oversold}")
-                print(f"   • ARB RSI Overbought: > {arb_rsi_overbought}")
-                print(f"   • Minimum Health Factor: 1.8")
+                # Check if strategy is properly initialized
+                if hasattr(self.market_signal_strategy, 'initialized') and self.market_signal_strategy.initialized:
+                    dai_to_arb_threshold = getattr(self.market_signal_strategy, 'base_dai_to_arb_threshold', 0.92)
+                    arb_to_dai_threshold = getattr(self.market_signal_strategy, 'base_arb_to_dai_threshold', 0.88)
+                    btc_drop_threshold = os.getenv('BTC_DROP_THRESHOLD', '0.01')
+                    arb_rsi_oversold = os.getenv('ARB_RSI_OVERSOLD', '30')
+                    arb_rsi_overbought = os.getenv('ARB_RSI_OVERBOUGHT', '70')
+                    
+                    print(f"   • DAI→ARB Confidence: ≥ {dai_to_arb_threshold:.1%}")
+                    print(f"   • ARB→DAI Confidence: ≥ {arb_to_dai_threshold:.1%}")
+                    print(f"   • BTC Drop Trigger: ≥ {float(btc_drop_threshold):.1%}")
+                    print(f"   • ARB RSI Oversold: < {arb_rsi_oversold}")
+                    print(f"   • ARB RSI Overbought: > {arb_rsi_overbought}")
+                    print(f"   • Minimum Health Factor: 1.8")
+                    
+                    # Check if market signals are enabled
+                    if self.market_signal_strategy.market_signal_enabled:
+                        print(f"   ✅ Market signals enabled")
+                    else:
+                        print(f"   ⚠️ Market signals disabled (set MARKET_SIGNAL_ENABLED=true)")
+                else:
+                    print(f"   ⚠️ Market signal strategy not fully initialized")
+                    print(f"   📊 Enhanced debt swaps disabled")
             else:
-                print(f"   ⚠️ Market signal strategy not available")
+                print(f"   ❌ Market signal strategy not available")
                 print(f"   📊 Debt swaps disabled")
+                print(f"   💡 Tip: Set MARKET_SIGNAL_ENABLED=true and COINMARKETCAP_API_KEY")
         except Exception as e:
             print(f"   ❌ Error displaying debt swap thresholds: {e}")
 
@@ -724,44 +748,75 @@ class ArbitrumTestnetAgent:
             print(f"📊 INTEGRATED MARKET INDICATORS:")
             
             if hasattr(self, 'market_signal_strategy') and self.market_signal_strategy:
-                # Get current market analysis
-                analysis = self.market_signal_strategy.get_market_analysis()
-                
-                if analysis and not analysis.get('error'):
-                    # Display current market sentiment
-                    sentiment = analysis.get('market_sentiment', 'unknown')
-                    print(f"   • Market Sentiment: {sentiment.upper()}")
+                # Check if strategy is properly initialized
+                if hasattr(self.market_signal_strategy, 'initialized') and self.market_signal_strategy.initialized:
+                    # Get current market analysis
+                    analysis = self.market_signal_strategy.get_market_analysis()
                     
-                    # Display BTC analysis if available
-                    btc_analysis = analysis.get('btc_analysis', {})
-                    if btc_analysis:
-                        btc_price = btc_analysis.get('price', 0)
-                        btc_change = btc_analysis.get('change_24h', 0)
-                        print(f"   • BTC: ${btc_price:,.2f} ({btc_change:+.2f}% 24h)")
-                    
-                    # Display ARB analysis if available
-                    arb_analysis = analysis.get('arb_analysis', {})
-                    if arb_analysis:
-                        arb_price = arb_analysis.get('price', 0)
-                        arb_rsi = arb_analysis.get('rsi', 0)
-                        print(f"   • ARB: ${arb_price:.4f} (RSI: {arb_rsi:.1f})")
-                    
-                    # Display API status
-                    coinmarketcap_api = os.getenv('COINMARKETCAP_API_KEY')
-                    api_status = "✅ Active" if coinmarketcap_api else "❌ Missing"
-                    print(f"   • CoinMarketCap API: {api_status}")
-                    
-                    # Display data history status
-                    price_history_length = len(getattr(self.market_signal_strategy, 'arb_price_history', []))
-                    print(f"   • Price History Points: {price_history_length}/25 required")
+                    if analysis and not analysis.get('error'):
+                        # Display current market sentiment
+                        sentiment = analysis.get('market_sentiment', 'unknown')
+                        print(f"   • Market Sentiment: {sentiment.upper()}")
+                        
+                        # Display BTC analysis if available
+                        btc_analysis = analysis.get('btc_analysis', {})
+                        if btc_analysis and 'price' in btc_analysis:
+                            btc_price = btc_analysis.get('price', 0)
+                            btc_change = btc_analysis.get('change_24h', 0)
+                            source = btc_analysis.get('source', 'api')
+                            print(f"   • BTC: ${btc_price:,.2f} ({btc_change:+.2f}% 24h) [{source}]")
+                        
+                        # Display ARB analysis if available
+                        arb_analysis = analysis.get('arb_analysis', {})
+                        if arb_analysis and 'price' in arb_analysis:
+                            arb_price = arb_analysis.get('price', 0)
+                            arb_rsi = arb_analysis.get('rsi', 50)
+                            source = arb_analysis.get('source', 'api')
+                            print(f"   • ARB: ${arb_price:.4f} (RSI: {arb_rsi:.1f}) [{source}]")
+                        
+                        # Display API status
+                        coinmarketcap_api = os.getenv('COINMARKETCAP_API_KEY')
+                        api_status = "✅ Active" if coinmarketcap_api else "❌ Missing"
+                        print(f"   • CoinMarketCap API: {api_status}")
+                        
+                        # Display data history status
+                        price_history_length = len(getattr(self.market_signal_strategy, 'arb_price_history', []))
+                        print(f"   • Price History Points: {price_history_length}/25 required")
+                        
+                        # Display strategy status
+                        strategy_status = self.market_signal_strategy.get_strategy_status()
+                        print(f"   • Enhanced Mode: {'✅' if strategy_status.get('enhanced_mode', False) else '❌'}")
+                        
+                    else:
+                        print(f"   ⚠️ Market analysis not available")
+                        print(f"   📊 Using fallback mode")
+                        
+                        # Still show API status
+                        coinmarketcap_api = os.getenv('COINMARKETCAP_API_KEY')
+                        api_status = "✅ Present" if coinmarketcap_api else "❌ Missing"
+                        print(f"   • CoinMarketCap API: {api_status}")
                 else:
-                    print(f"   ⚠️ Market analysis not available")
-                    print(f"   📊 Using fallback mode")
+                    print(f"   ⚠️ Market signal strategy initialized but not enhanced")
+                    print(f"   📊 Basic mode only")
+                    
+                    # Check environment variables
+                    coinmarketcap_api = os.getenv('COINMARKETCAP_API_KEY')
+                    market_enabled = os.getenv('MARKET_SIGNAL_ENABLED', 'false').lower() == 'true'
+                    print(f"   • Market Signals Enabled: {'✅' if market_enabled else '❌'}")
+                    print(f"   • CoinMarketCap API: {'✅' if coinmarketcap_api else '❌'}")
             else:
                 print(f"   ❌ Market signal strategy not initialized")
                 print(f"   📊 Enhanced indicators disabled")
+                
+                # Show what's needed
+                coinmarketcap_api = os.getenv('COINMARKETCAP_API_KEY')
+                market_enabled = os.getenv('MARKET_SIGNAL_ENABLED', 'false').lower() == 'true'
+                print(f"   💡 Required: MARKET_SIGNAL_ENABLED=true")
+                print(f"   💡 Required: COINMARKETCAP_API_KEY {'✅' if coinmarketcap_api else '❌'}")
         except Exception as e:
             print(f"   ❌ Error displaying market indicators: {e}")
+            import traceback
+            print(f"   🔍 Debug: {traceback.format_exc()}")
 
     def _display_bearish_chart_patterns(self):
         """Display detected bearish chart patterns"""

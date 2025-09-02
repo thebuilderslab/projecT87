@@ -1275,9 +1275,17 @@ class EnhancedMarketSignalStrategy:
     def __init__(self, agent):
         self.agent = agent
         try:
-            self.analyzer = EnhancedMarketAnalyzer(agent)
-            self.initialized = True
-            logger.info("Enhanced Market Signal Strategy initialized successfully")
+            self.analyzer = EnhancedMarketAnalyzer()
+            
+            # Test if we can get market data
+            test_data = self.analyzer.fetch_optimized_market_data()
+            if test_data and 'btc_analysis' in test_data:
+                self.initialized = True
+                logger.info("Enhanced Market Signal Strategy initialized successfully with working API")
+            else:
+                self.initialized = False
+                logger.warning("Enhanced Market Signal Strategy API test failed - using fallback mode")
+                
         except Exception as e:
             logger.error(f"Failed to initialize Enhanced Market Signal Strategy: {e}")
             self.initialized = False
