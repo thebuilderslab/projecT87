@@ -681,11 +681,87 @@ class ArbitrumTestnetAgent:
         print(f"   • Operation Cooldown: {self.operation_cooldown_seconds}s")
         print(f"   • Target Health Factor: {self.target_health_factor:.1f}")
         
+        # Display debt swap thresholds
+        self._display_debt_swap_thresholds()
+        
+        # Display integrated market indicators
+        self._display_integrated_market_indicators()
+        
         # Display bearish chart patterns if market signal strategy is available
         if hasattr(self, 'market_signal_strategy') and self.market_signal_strategy:
             self._display_bearish_chart_patterns()
         
         print(f"═══════════════════════════════════════\n")
+
+    def _display_debt_swap_thresholds(self):
+        """Display debt swap thresholds dynamically"""
+        try:
+            print(f"💱 DEBT SWAP THRESHOLDS:")
+            
+            # Get thresholds from market signal strategy
+            if hasattr(self, 'market_signal_strategy') and self.market_signal_strategy:
+                dai_to_arb_threshold = getattr(self.market_signal_strategy, 'base_dai_to_arb_threshold', 0.92)
+                arb_to_dai_threshold = getattr(self.market_signal_strategy, 'base_arb_to_dai_threshold', 0.88)
+                btc_drop_threshold = os.getenv('BTC_DROP_THRESHOLD', '0.01')
+                arb_rsi_oversold = os.getenv('ARB_RSI_OVERSOLD', '30')
+                arb_rsi_overbought = os.getenv('ARB_RSI_OVERBOUGHT', '70')
+                
+                print(f"   • DAI→ARB Confidence: ≥ {dai_to_arb_threshold:.1%}")
+                print(f"   • ARB→DAI Confidence: ≥ {arb_to_dai_threshold:.1%}")
+                print(f"   • BTC Drop Trigger: ≥ {float(btc_drop_threshold):.1%}")
+                print(f"   • ARB RSI Oversold: < {arb_rsi_oversold}")
+                print(f"   • ARB RSI Overbought: > {arb_rsi_overbought}")
+                print(f"   • Minimum Health Factor: 1.8")
+            else:
+                print(f"   ⚠️ Market signal strategy not available")
+                print(f"   📊 Debt swaps disabled")
+        except Exception as e:
+            print(f"   ❌ Error displaying debt swap thresholds: {e}")
+
+    def _display_integrated_market_indicators(self):
+        """Display integrated market indicators dynamically"""
+        try:
+            print(f"📊 INTEGRATED MARKET INDICATORS:")
+            
+            if hasattr(self, 'market_signal_strategy') and self.market_signal_strategy:
+                # Get current market analysis
+                analysis = self.market_signal_strategy.get_market_analysis()
+                
+                if analysis and not analysis.get('error'):
+                    # Display current market sentiment
+                    sentiment = analysis.get('market_sentiment', 'unknown')
+                    print(f"   • Market Sentiment: {sentiment.upper()}")
+                    
+                    # Display BTC analysis if available
+                    btc_analysis = analysis.get('btc_analysis', {})
+                    if btc_analysis:
+                        btc_price = btc_analysis.get('price', 0)
+                        btc_change = btc_analysis.get('change_24h', 0)
+                        print(f"   • BTC: ${btc_price:,.2f} ({btc_change:+.2f}% 24h)")
+                    
+                    # Display ARB analysis if available
+                    arb_analysis = analysis.get('arb_analysis', {})
+                    if arb_analysis:
+                        arb_price = arb_analysis.get('price', 0)
+                        arb_rsi = arb_analysis.get('rsi', 0)
+                        print(f"   • ARB: ${arb_price:.4f} (RSI: {arb_rsi:.1f})")
+                    
+                    # Display API status
+                    coinmarketcap_api = os.getenv('COINMARKETCAP_API_KEY')
+                    api_status = "✅ Active" if coinmarketcap_api else "❌ Missing"
+                    print(f"   • CoinMarketCap API: {api_status}")
+                    
+                    # Display data history status
+                    price_history_length = len(getattr(self.market_signal_strategy, 'arb_price_history', []))
+                    print(f"   • Price History Points: {price_history_length}/25 required")
+                else:
+                    print(f"   ⚠️ Market analysis not available")
+                    print(f"   📊 Using fallback mode")
+            else:
+                print(f"   ❌ Market signal strategy not initialized")
+                print(f"   📊 Enhanced indicators disabled")
+        except Exception as e:
+            print(f"   ❌ Error displaying market indicators: {e}")
 
     def _display_bearish_chart_patterns(self):
         """Display detected bearish chart patterns"""

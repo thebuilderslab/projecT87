@@ -38,9 +38,13 @@ class MarketSignalStrategy:
         self.base_arb_to_dai_threshold = 0.88  # 88% base confidence
         self.market_volatility_modifier = 0.0  # Adjusts thresholds based on volatility
 
-        # ARB price tracking for debt reduction
+        # Enhanced price tracking for robust pattern analysis
         self.arb_price_history = []
+        self.arb_ohlcv_history = []  # Store OHLCV data for better pattern detection
         self.arb_entry_prices = {}  # Track entry prices for debt swaps
+        self.max_history_length = 25  # Store at least 25 data points for pattern analysis
+        self.moving_averages = {'sma_9': 0, 'sma_50': 0, 'sma_100': 0, 'sma_200': 0}
+        self.macd_data = {'macd_line': 0, 'signal_line': 0, 'histogram': 0}
 
         try:
             # Try to import and initialize enhanced analyzer
@@ -380,24 +384,59 @@ class MarketSignalStrategy:
                     arb_analysis = analysis.get('arb_analysis', {})
                     dai_analysis = analysis.get('dai_analysis', {}) # Assuming DAI analysis might be relevant
 
-                    # Update ARB price history for depreciation tracking
+                    # Enhanced ARB price and OHLCV data tracking
                     if 'price' in arb_analysis:
-                        self.arb_price_history.append(arb_analysis['price'])
-                        if len(self.arb_price_history) > 10: # Keep last 10 prices
+                        current_price = arb_analysis['price']
+                        self.arb_price_history.append(current_price)
+                        
+                        # Store OHLCV data if available, otherwise simulate
+                        ohlcv_data = {
+                            'open': arb_analysis.get('open', current_price),
+                            'high': arb_analysis.get('high', current_price * 1.01),
+                            'low': arb_analysis.get('low', current_price * 0.99),
+                            'close': current_price,
+                            'volume': arb_analysis.get('volume', 1000000),
+                            'timestamp': time.time()
+                        }
+                        self.arb_ohlcv_history.append(ohlcv_data)
+                        
+                        # Maintain max history length
+                        if len(self.arb_price_history) > self.max_history_length:
                             self.arb_price_history.pop(0)
+                        if len(self.arb_ohlcv_history) > self.max_history_length:
+                            self.arb_ohlcv_history.pop(0)
+                        
+                        # Update technical indicators
+                        self._update_technical_indicators()
 
                     # Check ARB depreciation for debt reduction
                     self.check_arb_depreciation_for_debt_reduction(arb_analysis)
 
-                    # ENHANCED: Detect bearish chart patterns
+                    # ENHANCED: Detect bearish chart patterns with validation
                     bearish_reversal_patterns = []
                     bearish_continuation_patterns = []
+                    pattern_validation_passed = False
                     
-                    # Use price history for pattern detection
-                    if hasattr(self, 'arb_price_history') and len(self.arb_price_history) > 10:
-                        price_data = [{'price': p} for p in self.arb_price_history]
+                    # Use enhanced OHLCV history for pattern detection
+                    if len(self.arb_ohlcv_history) >= 15:
+                        # Convert OHLCV to price data for pattern detection
+                        price_data = [{'price': ohlcv['close']} for ohlcv in self.arb_ohlcv_history]
                         bearish_reversal_patterns = self.detect_bearish_reversal_patterns(price_data)
                         bearish_continuation_patterns = self.detect_bearish_continuation_patterns(price_data)
+                        
+                        # Validate patterns with technical indicators
+                        if bearish_reversal_patterns or bearish_continuation_patterns:
+                            pattern_data = {
+                                'reversal_patterns': bearish_reversal_patterns,
+                                'continuation_patterns': bearish_continuation_patterns
+                            }
+                            pattern_validation_passed, validation_reason = self._validate_bearish_signal_with_indicators(pattern_data)
+                            
+                            if not pattern_validation_passed:
+                                logger.info(f"Pattern validation failed: {validation_reason}")
+                                # Clear patterns if they don't pass validation
+                                bearish_reversal_patterns = []
+                                bearish_continuation_patterns = []
 
                     # Calculate adjusted confidence thresholds
                     volatility = abs(analysis.get('market_volatility', 0)) # Example: use a market volatility metric
@@ -555,6 +594,109 @@ class MarketSignalStrategy:
         return False
 
 
+    def _update_technical_indicators(self):
+        """Update technical indicators for enhanced pattern validation"""
+        try:
+            if len(self.arb_price_history) < 9:
+                return  # Need at least 9 data points for SMA calculation
+            
+            prices = self.arb_price_history
+            
+            # Calculate Simple Moving Averages
+            if len(prices) >= 9:
+                self.moving_averages['sma_9'] = sum(prices[-9:]) / 9
+            if len(prices) >= 50:
+                self.moving_averages['sma_50'] = sum(prices[-50:]) / 50
+            if len(prices) >= 100:
+                self.moving_averages['sma_100'] = sum(prices[-100:]) / 100
+            if len(prices) >= 200:
+                self.moving_averages['sma_200'] = sum(prices[-200:]) / 200
+            
+            # Calculate MACD (simplified version)
+            if len(prices) >= 26:
+                ema_12 = self._calculate_ema(prices, 12)
+                ema_26 = self._calculate_ema(prices, 26)
+                self.macd_data['macd_line'] = ema_12 - ema_26
+                
+                # Signal line is 9-period EMA of MACD line
+                if hasattr(self, 'macd_history'):
+                    self.macd_history.append(self.macd_data['macd_line'])
+                    if len(self.macd_history) > 50:
+                        self.macd_history.pop(0)
+                    if len(self.macd_history) >= 9:
+                        self.macd_data['signal_line'] = self._calculate_ema(self.macd_history, 9)
+                        self.macd_data['histogram'] = self.macd_data['macd_line'] - self.macd_data['signal_line']
+                else:
+                    self.macd_history = [self.macd_data['macd_line']]
+                    
+        except Exception as e:
+            logger.error(f"Error updating technical indicators: {e}")
+
+    def _calculate_ema(self, prices, period):
+        """Calculate Exponential Moving Average"""
+        try:
+            if len(prices) < period:
+                return sum(prices) / len(prices)  # Fallback to SMA
+            
+            multiplier = 2 / (period + 1)
+            ema = sum(prices[:period]) / period  # Start with SMA
+            
+            for price in prices[period:]:
+                ema = (price * multiplier) + (ema * (1 - multiplier))
+            
+            return ema
+        except Exception as e:
+            logger.error(f"Error calculating EMA: {e}")
+            return 0
+
+    def _validate_bearish_signal_with_indicators(self, patterns):
+        """Validate bearish patterns with technical indicators"""
+        try:
+            if not patterns:
+                return False, "No patterns detected"
+            
+            current_price = self.arb_price_history[-1] if self.arb_price_history else 0
+            validation_score = 0
+            validation_reasons = []
+            
+            # Check if price is below moving averages (bearish confirmation)
+            below_ma_count = 0
+            for ma_name, ma_value in self.moving_averages.items():
+                if ma_value > 0 and current_price < ma_value:
+                    below_ma_count += 1
+                    validation_reasons.append(f"Below {ma_name.upper()}")
+            
+            if below_ma_count >= 2:
+                validation_score += 0.3
+            
+            # Check MACD for bearish confirmation
+            if self.macd_data['macd_line'] < 0:
+                validation_score += 0.2
+                validation_reasons.append("MACD below zero")
+            if self.macd_data['histogram'] < 0:
+                validation_score += 0.2
+                validation_reasons.append("MACD bearish crossover")
+            
+            # Pattern strength scoring
+            reversal_patterns = patterns.get('reversal_patterns', [])
+            continuation_patterns = patterns.get('continuation_patterns', [])
+            
+            if len(reversal_patterns) >= 1 and len(continuation_patterns) >= 1:
+                validation_score += 0.3
+                validation_reasons.append("Double pattern confirmation")
+            elif len(reversal_patterns) >= 1 or len(continuation_patterns) >= 1:
+                validation_score += 0.1
+                validation_reasons.append("Single pattern detected")
+            
+            # Require minimum 70% validation score
+            is_validated = validation_score >= 0.7
+            
+            return is_validated, f"Score: {validation_score:.1f}, Reasons: {', '.join(validation_reasons)}"
+            
+        except Exception as e:
+            logger.error(f"Error validating bearish signal: {e}")
+            return False, f"Validation error: {e}"
+
     def get_strategy_status(self) -> Dict:
         """Get strategy status"""
         return {
@@ -563,6 +705,9 @@ class MarketSignalStrategy:
             'coin_api_present': bool(os.getenv('COIN_API')),
             'coinmarketcap_api_present': bool(os.getenv('COINMARKETCAP_API_KEY')),
             'strategy_type': 'enhanced_coin_api' if self.initialized else 'fallback',
+            'price_history_points': len(self.arb_price_history),
+            'ohlcv_history_points': len(self.arb_ohlcv_history),
+            'technical_indicators_ready': len(self.arb_price_history) >= 9,
             'last_update': time.time()
         }
 

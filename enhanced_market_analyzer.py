@@ -14,6 +14,7 @@ from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Tuple
 from dataclasses import dataclass
 import json
+import random
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -563,6 +564,206 @@ class TechnicalAnalysis:
             return 0.0, 0.0
 
 class EnhancedMarketAnalyzer:
+    def __init__(self):
+        self.api_call_history = {}
+        self.retry_delays = {}  # Track retry delays for exponential backoff
+        self.max_retries = 3
+        self.base_delay = 1  # Start with 1 second delay
+        self.max_delay = 300  # Maximum 5 minutes delay
+        
+    def _exponential_backoff(self, api_name: str, attempt: int) -> float:
+        """Calculate exponential backoff delay"""
+        delay = self.base_delay * (2 ** attempt) + random.uniform(0, 1)
+        return min(delay, self.max_delay)
+    
+    def _make_api_request(self, url: str, headers: Dict, api_name: str = "unknown") -> Optional[Dict]:
+        """Make API request with exponential backoff and rate limiting"""
+        for attempt in range(self.max_retries):
+            try:
+                # Check if we need to wait before making the request
+                if api_name in self.retry_delays:
+                    wait_time = self.retry_delays[api_name]
+                    if wait_time > time.time():
+                        sleep_duration = wait_time - time.time()
+                        logger.info(f"Rate limit backoff for {api_name}: waiting {sleep_duration:.1f}s")
+                        time.sleep(sleep_duration)
+                
+                response = requests.get(url, headers=headers, timeout=30)
+                
+                if response.status_code == 200:
+                    # Success - clear any retry delays
+                    if api_name in self.retry_delays:
+                        del self.retry_delays[api_name]
+                    return response.json()
+                
+                elif response.status_code == 429:  # Too Many Requests
+                    delay = self._exponential_backoff(api_name, attempt)
+                    self.retry_delays[api_name] = time.time() + delay
+                    logger.warning(f"Rate limit hit for {api_name}, retrying in {delay:.1f}s (attempt {attempt + 1})")
+                    
+                    if attempt < self.max_retries - 1:
+                        time.sleep(delay)
+                        continue
+                
+                elif response.status_code == 404:
+                    logger.error(f"API endpoint not found for {api_name}: {url}")
+                    return None
+                
+                else:
+                    logger.error(f"API request failed for {api_name}: {response.status_code}")
+                    if attempt < self.max_retries - 1:
+                        delay = self._exponential_backoff(api_name, attempt)
+                        time.sleep(delay)
+                        continue
+                
+            except requests.exceptions.Timeout:
+                logger.warning(f"API timeout for {api_name} (attempt {attempt + 1})")
+                if attempt < self.max_retries - 1:
+                    time.sleep(self._exponential_backoff(api_name, attempt))
+                    continue
+            
+            except Exception as e:
+                logger.error(f"API request error for {api_name}: {e}")
+                if attempt < self.max_retries - 1:
+                    time.sleep(self._exponential_backoff(api_name, attempt))
+                    continue
+        
+        logger.error(f"All retry attempts failed for {api_name}")
+        return None
+
+    def fetch_optimized_market_data(self) -> Dict:
+        """Fetch only essential market data to stay within API limits"""
+        try:
+            coinmarketcap_api_key = os.getenv('COINMARKETCAP_API_KEY')
+            if not coinmarketcap_api_key:
+                return self._get_fallback_data()
+            
+            # Optimize: Request only essential coins and minimal data
+            url = "https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest"
+            headers = {
+                'X-CMC_PRO_API_KEY': coinmarketcap_api_key,
+                'Accept': 'application/json'
+            }
+            
+            # Request only BTC, ETH, ARB instead of all markets
+            params = {
+                'symbol': 'BTC,ETH,ARB',
+                'convert': 'USD'
+            }
+            
+            full_url = f"{url}?{'&'.join([f'{k}={v}' for k, v in params.items()])}"
+            data = self._make_api_request(full_url, headers, "CoinMarketCap")
+            
+            if data and 'data' in data:
+                return self._process_coinmarketcap_data(data['data'])
+            else:
+                return self._get_fallback_data()
+                
+        except Exception as e:
+            logger.error(f"Error fetching optimized market data: {e}")
+            return self._get_fallback_data()
+    
+    def _process_coinmarketcap_data(self, data: Dict) -> Dict:
+        """Process CoinMarketCap data efficiently"""
+        try:
+            processed_data = {}
+            
+            for symbol in ['BTC', 'ETH', 'ARB']:
+                if symbol in data:
+                    coin_data = data[symbol]
+                    quote = coin_data['quote']['USD']
+                    
+                    processed_data[f'{symbol.lower()}_analysis'] = {
+                        'price': quote['price'],
+                        'change_24h': quote['percent_change_24h'],
+                        'volume_24h': quote['volume_24h'],
+                        'market_cap': quote['market_cap'],
+                        'signal': self._determine_signal(quote['percent_change_24h']),
+                        'confidence': min(abs(quote['percent_change_24h']) / 10, 1.0),
+                        'source': 'coinmarketcap_api',
+                        'timestamp': time.time()
+                    }
+            
+            # Add market sentiment based on overall performance
+            sentiment = self._calculate_market_sentiment(processed_data)
+            processed_data['market_sentiment'] = sentiment
+            
+            return processed_data
+            
+        except Exception as e:
+            logger.error(f"Error processing CoinMarketCap data: {e}")
+            return self._get_fallback_data()
+    
+    def _determine_signal(self, change_24h: float) -> str:
+        """Determine market signal based on price change"""
+        if change_24h > 5:
+            return 'very_bullish'
+        elif change_24h > 2:
+            return 'bullish'
+        elif change_24h > -2:
+            return 'neutral'
+        elif change_24h > -5:
+            return 'bearish'
+        else:
+            return 'very_bearish'
+    
+    def _calculate_market_sentiment(self, data: Dict) -> str:
+        """Calculate overall market sentiment"""
+        try:
+            changes = []
+            for key in ['btc_analysis', 'eth_analysis', 'arb_analysis']:
+                if key in data:
+                    changes.append(data[key].get('change_24h', 0))
+            
+            if not changes:
+                return 'neutral'
+            
+            avg_change = sum(changes) / len(changes)
+            
+            if avg_change > 3:
+                return 'very_bullish'
+            elif avg_change > 1:
+                return 'bullish'
+            elif avg_change > -1:
+                return 'neutral'
+            elif avg_change > -3:
+                return 'bearish'
+            else:
+                return 'very_bearish'
+                
+        except Exception as e:
+            logger.error(f"Error calculating market sentiment: {e}")
+            return 'neutral'
+    
+    def _get_fallback_data(self) -> Dict:
+        """Provide fallback synthetic data when APIs fail"""
+        return {
+            'btc_analysis': {
+                'price': 43000,
+                'change_24h': -0.5,
+                'signal': 'neutral',
+                'confidence': 0.3,
+                'source': 'synthetic_fallback'
+            },
+            'eth_analysis': {
+                'price': 2500,
+                'change_24h': -0.3,
+                'signal': 'neutral', 
+                'confidence': 0.3,
+                'source': 'synthetic_fallback'
+            },
+            'arb_analysis': {
+                'price': 0.41,
+                'change_24h': -0.1,
+                'rsi': 45,
+                'signal': 'neutral',
+                'confidence': 0.3,
+                'source': 'synthetic_fallback'
+            },
+            'market_sentiment': 'neutral'
+        }
+
+class EnhancedMarketSignalStrategy:
     """Enhanced market analyzer with comprehensive technical analysis"""
 
     def __init__(self, agent):
