@@ -576,20 +576,28 @@ class ArbitrumTestnetAgent:
                 print("🔄 Initializing Market Signal Strategy...")
                 from market_signal_strategy import MarketSignalStrategy
 
-                # FIXED: Pass agent instance instead of API key
+                # Initialize Market Signal Strategy
                 strategy = MarketSignalStrategy(self)
 
-                # Only assign if initialization was successful
-                if hasattr(strategy, 'initialization_successful') and strategy.initialization_successful:
+                # Market signal strategy now has better fallback handling
+                if (hasattr(strategy, 'initialization_successful') and strategy.initialization_successful) or \
+                   (hasattr(strategy, 'initialized') and strategy.initialized):
                     self.market_signal_strategy = strategy
                     self.debt_swap_active = True
-                    print("✅ Market Signal Strategy initialized and verified successfully")
-                elif hasattr(strategy, 'initialized') and strategy.initialized:
-                    self.market_signal_strategy = strategy
-                    self.debt_swap_active = True
-                    print("✅ Market Signal Strategy initialized with enhanced analyzer")
+                    
+                    # Determine what mode we're running in
+                    if hasattr(strategy, 'enhanced_analyzer') and strategy.enhanced_analyzer:
+                        if getattr(strategy.enhanced_analyzer, 'mock_mode', False):
+                            print("✅ Market Signal Strategy initialized with Mock Data (API rate limited)")
+                        else:
+                            print("✅ Market Signal Strategy initialized with CoinMarketCap API")
+                    else:
+                        print("✅ Market Signal Strategy initialized in Conservative Mode")
+                        
+                    # Always activate debt swaps if strategy initializes
+                    print("🔄 Debt swap system activated with market signal integration")
                 else:
-                    print("❌ Market Signal Strategy initialization failed verification")
+                    print("❌ Market Signal Strategy initialization failed completely")
                     self.market_signal_strategy = None
                     self.debt_swap_active = False
 

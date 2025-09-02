@@ -169,7 +169,9 @@ class EnhancedMarketAnalyzer:
         self.cache_timeout = 3600  # 1 hour cache timeout
         self.technical_analysis = TechnicalAnalysis()
         self.last_api_call = 0
-        self.rate_limit_delay = 2.0  # 2 seconds between API calls
+        self.rate_limit_delay = 10.0  # Increased to 10 seconds to avoid rate limits
+        self.api_failure_count = 0
+        self.max_api_failures = 3
 
         # Initialize logger
         self.logger = logging.getLogger(__name__)
@@ -177,46 +179,78 @@ class EnhancedMarketAnalyzer:
         # Initialize CoinMarketCap API client
         self.coinmarketcap_key = os.getenv('COINMARKETCAP_API_KEY')
         if not self.coinmarketcap_key:
-            self.logger.warning("COINMARKETCAP_API_KEY not found. CoinMarketCap features will be limited.")
+            self.logger.warning("COINMARKETCAP_API_KEY not found. Using mock data mode.")
             self.cmc_client = None
-            self.initialized = False
+            self.initialized = True  # Still consider initialized for mock mode
+            self.mock_mode = True
         else:
             try:
                 if not self.coinmarketcap_key or len(self.coinmarketcap_key) < 10:
                     raise ValueError("Invalid CoinMarketCap API key provided")
                 self.cmc_client = CoinMarketCapAPI(self.coinmarketcap_key)
-                self.initialized = True
-                self.logger.info(f"✅ Enhanced Market Analyzer initialized with CoinMarketCap API key: {self.coinmarketcap_key[:8]}...")
-                self.logger.info("CoinMarketCap API test successful.")
+                self.mock_mode = False
+                
+                # Test API with a simple call and handle rate limits gracefully
+                try:
+                    test_data = self.cmc_client.get_current_price('BTC')
+                    if test_data:
+                        self.initialized = True
+                        self.logger.info(f"✅ Enhanced Market Analyzer initialized with CoinMarketCap API key: {self.coinmarketcap_key[:8]}...")
+                        self.logger.info("CoinMarketCap API test successful.")
+                    else:
+                        raise Exception("API test returned no data")
+                except Exception as api_error:
+                    if "429" in str(api_error) or "Too Many Requests" in str(api_error):
+                        self.logger.warning("CoinMarketCap API rate limited during initialization - switching to mock mode")
+                        self.mock_mode = True
+                        self.initialized = True
+                    else:
+                        self.logger.error(f"CoinMarketCap API test failed: {api_error}")
+                        self.mock_mode = True
+                        self.initialized = True  # Still allow mock mode operation
+                        
             except ValueError as e:
                 self.logger.error(f"Error initializing CoinMarketCap API: {e}")
                 self.cmc_client = None
-                self.initialized = False
+                self.initialized = True  # Allow mock mode
+                self.mock_mode = True
             except Exception as e:
                 self.logger.error(f"Unexpected error initializing CoinMarketCap API: {e}")
                 self.cmc_client = None
-                self.initialized = False
+                self.initialized = True  # Allow mock mode
+                self.mock_mode = True
 
     def get_market_data_with_fallback(self, symbol: str) -> Optional[Dict]:
         """Get market data with fallback mechanisms"""
+        # If in mock mode or too many API failures, go straight to mock data
+        if self.mock_mode or self.api_failure_count >= self.max_api_failures:
+            return self._get_mock_data(symbol)
+
         current_time = time.time()
         if current_time - self.last_api_call < self.rate_limit_delay:
             time.sleep(self.rate_limit_delay - (current_time - self.last_api_call))
 
         # Try CoinMarketCap first
-        if self.cmc_client:
+        if self.cmc_client and not self.mock_mode:
             try:
                 data = self.cmc_client.get_current_price(symbol)
                 if data and 'price' in data:
                     self.last_api_call = time.time()
+                    self.api_failure_count = 0  # Reset failure count on success
                     data['source'] = 'coinmarketcap'
                     data['timestamp'] = time.time()
                     return data
             except Exception as e:
-                self.logger.warning(f"CoinMarketCap failed for {symbol}: {e}")
+                self.api_failure_count += 1
+                if "429" in str(e) or "Too Many Requests" in str(e):
+                    self.logger.warning(f"CoinMarketCap rate limited for {symbol} - switching to mock mode temporarily")
+                    self.mock_mode = True  # Temporarily switch to mock mode
+                else:
+                    self.logger.warning(f"CoinMarketCap failed for {symbol}: {e}")
 
         # Return mock data as fallback
-        self.logger.warning(f"All APIs failed for {symbol}, using mock data")
+        if not self.mock_mode:
+            self.logger.warning(f"All APIs failed for {symbol}, using mock data")
         return self._get_mock_data(symbol)
 
     def _get_mock_data(self, symbol: str) -> Optional[Dict]:

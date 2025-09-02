@@ -201,24 +201,46 @@ def autonomous_agent_loop():
             # Main agent logic
             timestamp = time.time()
 
-            # Ensure debt swap system is active if market signals are enabled
-            if (hasattr(arbitrum_agent, 'market_signal_strategy') and 
-                arbitrum_agent.market_signal_strategy and 
-                hasattr(arbitrum_agent.market_signal_strategy, 'market_signal_enabled') and
-                arbitrum_agent.market_signal_strategy.market_signal_enabled):
-                arbitrum_agent.debt_swap_active = True
-                print("🔄 INTEGRATED TRIGGER SYSTEM: All triggers active")
-                print("   • Market Signal Triggers: ✅ Active")
-                print("   • Growth-Triggered System: ✅ Active") 
-                print("   • Capacity-Based System: ✅ Active")
-                print("   • Simultaneous monitoring enabled")
-            else:
-                # Debug why market signals aren't active
-                if hasattr(arbitrum_agent, 'market_signal_strategy') and arbitrum_agent.market_signal_strategy:
+            # Check market signal integration status
+            market_signals_enabled = os.getenv('MARKET_SIGNAL_ENABLED', 'false').lower() == 'true'
+            
+            if market_signals_enabled and hasattr(arbitrum_agent, 'market_signal_strategy') and arbitrum_agent.market_signal_strategy:
+                try:
+                    # Test if strategy is functional
                     strategy_status = arbitrum_agent.market_signal_strategy.get_strategy_status()
-                    print(f"🔍 Market Signal Status: {strategy_status}")
-                else:
-                    print("🔍 Market Signal Strategy: Not initialized")
+                    
+                    if strategy_status.get('initialized', False) or strategy_status.get('initialization_successful', False):
+                        arbitrum_agent.debt_swap_active = True
+                        
+                        # Determine operation mode
+                        if strategy_status.get('enhanced_mode', False):
+                            mode = "Enhanced CoinMarketCap"
+                        elif hasattr(arbitrum_agent.market_signal_strategy, 'enhanced_analyzer') and \
+                             getattr(arbitrum_agent.market_signal_strategy.enhanced_analyzer, 'mock_mode', False):
+                            mode = "Mock Data (Rate Limited)"
+                        else:
+                            mode = "Conservative Fallback"
+                            
+                        print("🔄 INTEGRATED TRIGGER SYSTEM: All triggers active")
+                        print(f"   • Market Signal Mode: {mode}")
+                        print("   • Growth-Triggered System: ✅ Active") 
+                        print("   • Capacity-Based System: ✅ Active")
+                        print("   • Debt Swap Integration: ✅ Active")
+                    else:
+                        print("⚠️ Market Signal Strategy initialized but not fully functional")
+                        print(f"   Status: {strategy_status}")
+                        
+                except Exception as status_error:
+                    print(f"⚠️ Market Signal Strategy status check failed: {status_error}")
+                    
+            elif market_signals_enabled:
+                print("⚠️ Market signals enabled but strategy not properly initialized")
+                if not hasattr(arbitrum_agent, 'market_signal_strategy'):
+                    print("   • Strategy attribute missing")
+                elif not arbitrum_agent.market_signal_strategy:
+                    print("   • Strategy is None")
+            else:
+                print("ℹ️ Market signals disabled (MARKET_SIGNAL_ENABLED=false)")
 
             # Use real DeFi operations instead of simulation
             performance = arbitrum_agent.run_real_defi_task(run_id_counter, iteration, agent_config)
