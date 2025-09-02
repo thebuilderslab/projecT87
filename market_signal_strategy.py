@@ -150,19 +150,19 @@ class MarketSignalStrategy:
             }
 
     def analyze_market_signals(self) -> Dict:
-        """Analyze current market signals for trading decisions"""
+        """Analyze current market signals for trading decisions with 5-minute pattern analysis"""
         try:
             if self.initialized and self.enhanced_analyzer:
-                # Get comprehensive market analysis
+                # Get comprehensive market analysis with pattern detection
                 analysis = self.enhanced_analyzer.get_market_summary()
 
                 if analysis and not analysis.get('error'):
-                    # Extract key signals
+                    # Extract key signals with enhanced pattern analysis
                     btc_analysis = analysis.get('btc_analysis', {})
                     eth_analysis = analysis.get('eth_analysis', {})
                     arb_analysis = analysis.get('arb_analysis', {})
 
-                    # Enhanced ARB price tracking
+                    # Enhanced ARB price tracking with pattern analysis
                     if 'price' in arb_analysis:
                         current_price = arb_analysis['price']
                         self.arb_price_history.append(current_price)
@@ -184,58 +184,86 @@ class MarketSignalStrategy:
                         if len(self.arb_ohlcv_history) > self.max_history_length:
                             self.arb_ohlcv_history.pop(0)
 
-                    # Calculate overall signal strength
+                    # Calculate overall signal strength with enhanced pattern analysis
                     signal_strength = 0
                     signals_detected = []
+                    
+                    # Get 5-minute pattern analysis for better timing
+                    btc_pattern = btc_analysis.get('pattern', 'unknown')
+                    arb_pattern = arb_analysis.get('pattern', 'unknown')
+                    
+                    # BTC signal analysis with pattern consideration
+                    btc_signal = btc_analysis.get('signal', 'neutral')
+                    btc_confidence = btc_analysis.get('confidence', 0)
+                    if btc_signal == 'bullish':
+                        weight = 0.5 if btc_pattern in ['strong_bullish', 'moderate_bullish'] else 0.4
+                        signal_strength += btc_confidence * weight
+                        signals_detected.append(f"BTC {btc_pattern} ({btc_confidence:.2f})")
+                    elif btc_signal == 'bearish':
+                        weight = 0.5 if btc_pattern in ['strong_bearish', 'moderate_bearish'] else 0.4
+                        signal_strength -= btc_confidence * weight
+                        signals_detected.append(f"BTC {btc_pattern} ({btc_confidence:.2f})")
 
-                    # BTC signal analysis
-                    if btc_analysis.get('signal') == 'bullish':
-                        signal_strength += btc_analysis.get('confidence', 0) * 0.4
-                        signals_detected.append(f"BTC bullish ({btc_analysis.get('confidence', 0):.2f})")
-                    elif btc_analysis.get('signal') == 'bearish':
-                        signal_strength -= btc_analysis.get('confidence', 0) * 0.4
-                        signals_detected.append(f"BTC bearish ({btc_analysis.get('confidence', 0):.2f})")
+                    # ETH signal analysis with pattern consideration
+                    eth_signal = eth_analysis.get('signal', 'neutral')
+                    eth_confidence = eth_analysis.get('confidence', 0)
+                    eth_pattern = eth_analysis.get('pattern', 'unknown')
+                    if eth_signal == 'bullish':
+                        weight = 0.3 if eth_pattern in ['strong_bullish', 'moderate_bullish'] else 0.25
+                        signal_strength += eth_confidence * weight
+                        signals_detected.append(f"ETH {eth_pattern} ({eth_confidence:.2f})")
+                    elif eth_signal == 'bearish':
+                        weight = 0.3 if eth_pattern in ['strong_bearish', 'moderate_bearish'] else 0.25
+                        signal_strength -= eth_confidence * weight
+                        signals_detected.append(f"ETH {eth_pattern} ({eth_confidence:.2f})")
 
-                    # ETH signal analysis
-                    if eth_analysis.get('signal') == 'bullish':
-                        signal_strength += eth_analysis.get('confidence', 0) * 0.3
-                        signals_detected.append(f"ETH bullish ({eth_analysis.get('confidence', 0):.2f})")
-                    elif eth_analysis.get('signal') == 'bearish':
-                        signal_strength -= eth_analysis.get('confidence', 0) * 0.3
-                        signals_detected.append(f"ETH bearish ({eth_analysis.get('confidence', 0):.2f})")
-
-                    # ARB signal analysis (RSI conditions for swaps)
+                    # Enhanced ARB signal analysis with RSI and 5-minute patterns
                     arb_rsi = arb_analysis.get('rsi', 45)
                     arb_confidence = arb_analysis.get('confidence', 0)
-                    if arb_rsi < 30:  # Oversold ARB
-                        # DAI -> ARB swap condition
-                        if arb_confidence >= 0.7:
-                            signal_strength += arb_confidence * 0.3
-                            signals_detected.append(f"DAI->ARB (ARB oversold, conf: {arb_confidence:.2f})")
-                    elif arb_rsi > 70:  # Overbought ARB
-                        # ARB -> DAI swap condition
+                    arb_price_change_5min = arb_analysis.get('price_change_5min', 0)
+                    
+                    # Strong bearish pattern detection for ARB->DAI swaps
+                    if (arb_pattern in ['strong_bearish', 'moderate_bearish'] and 
+                        arb_price_change_5min < -0.5 and arb_rsi > 60):
+                        # Strong bearish signal - swap ARB to DAI
+                        signal_strength -= arb_confidence * 0.4
+                        signals_detected.append(f"ARB->DAI (bearish pattern, 5min: {arb_price_change_5min:.1f}%, RSI: {arb_rsi:.0f})")
+                    
+                    # Strong bullish pattern detection for DAI->ARB swaps
+                    elif (arb_pattern in ['strong_bullish', 'moderate_bullish'] and 
+                          arb_price_change_5min > 0.5 and arb_rsi < 40):
+                        # Strong bullish signal - swap DAI to ARB
+                        signal_strength += arb_confidence * 0.4
+                        signals_detected.append(f"DAI->ARB (bullish pattern, 5min: {arb_price_change_5min:.1f}%, RSI: {arb_rsi:.0f})")
+                    
+                    # Traditional RSI-based signals (secondary)
+                    elif arb_rsi < 25:  # Extremely oversold ARB
                         if arb_confidence >= 0.6:
-                            signal_strength -= arb_confidence * 0.3
-                            signals_detected.append(f"ARB->DAI (ARB overbought, conf: {arb_confidence:.2f})")
+                            signal_strength += arb_confidence * 0.25
+                            signals_detected.append(f"DAI->ARB (extreme oversold, RSI: {arb_rsi:.0f})")
+                    elif arb_rsi > 75:  # Extremely overbought ARB
+                        if arb_confidence >= 0.6:
+                            signal_strength -= arb_confidence * 0.25
+                            signals_detected.append(f"ARB->DAI (extreme overbought, RSI: {arb_rsi:.0f})")
 
-                    # Apply overall sentiment to signal strength
+                    # Apply market sentiment with pattern consideration
                     market_sentiment = analysis.get('market_sentiment', 'neutral')
                     if market_sentiment == 'bearish':
-                        signal_strength *= 0.8
+                        signal_strength *= 0.85
                     elif market_sentiment == 'bullish':
-                        signal_strength *= 1.2
+                        signal_strength *= 1.15
 
-                    # Determine overall recommendation and action
-                    if signal_strength > 0.6:
+                    # Enhanced recommendation logic with stricter thresholds
+                    if signal_strength > 0.7:
                         recommendation = "STRONG_BUY"
                         action = "dai_to_arb"
-                    elif signal_strength > 0.3:
+                    elif signal_strength > 0.4:
                         recommendation = "BUY"
                         action = "dai_to_arb"
-                    elif signal_strength < -0.6:
+                    elif signal_strength < -0.7:
                         recommendation = "STRONG_SELL"
                         action = "arb_to_dai"
-                    elif signal_strength < -0.3:
+                    elif signal_strength < -0.4:
                         recommendation = "SELL"
                         action = "arb_to_dai"
                     else:

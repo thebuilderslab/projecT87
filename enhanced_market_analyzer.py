@@ -233,8 +233,12 @@ class EnhancedMarketAnalyzer:
         self.logger = logging.getLogger(__name__)
 
         # Initialize API clients - CoinAPI as PRIMARY, CoinMarketCap as SECONDARY
-        self.coinapi_key = os.getenv('COINAPI_KEY') or os.getenv('COIN_API_KEY')
+        self.coinapi_key = os.getenv('COIN_API') or os.getenv('COINAPI_KEY') or os.getenv('COIN_API_KEY')
         self.coinmarketcap_key = os.getenv('COINMARKETCAP_API_KEY')
+        
+        # Historical data tracking for pattern analysis
+        self.price_history = {}  # Store 5-minute historical data
+        self.max_history_points = 20  # Keep 20 data points (100 minutes of history)
         
         self.coinapi_client = None
         self.cmc_client = None
@@ -259,7 +263,7 @@ class EnhancedMarketAnalyzer:
                 self.logger.warning(f"❌ CoinAPI PRIMARY initialization failed: {coinapi_error}")
                 self.coinapi_client = None
         else:
-            self.logger.warning("❌ COINAPI_KEY not found in Replit Secrets. Add COINAPI_KEY or COIN_API_KEY to use primary data source.")
+            self.logger.warning("❌ COIN_API not found in Replit Secrets. Add COIN_API to use primary data source.")
 
         # Initialize CoinMarketCap as SECONDARY (fallback)
         if not self.primary_api and self.coinmarketcap_key:
@@ -308,7 +312,10 @@ class EnhancedMarketAnalyzer:
         """Get market data with CoinAPI as PRIMARY, CoinMarketCap as SECONDARY fallback"""
         # If in mock mode or too many API failures, go straight to mock data
         if self.mock_mode or self.api_failure_count >= self.max_api_failures:
-            return self._get_mock_data(symbol)
+            data = self._get_mock_data(symbol)
+            if data:
+                self._store_historical_data(symbol, data)
+            return data
 
         current_time = time.time()
         if current_time - self.last_api_call < self.rate_limit_delay:
@@ -323,6 +330,7 @@ class EnhancedMarketAnalyzer:
                     self.api_failure_count = 0  # Reset failure count on success
                     data['source'] = 'coinapi_primary'
                     data['timestamp'] = time.time()
+                    self._store_historical_data(symbol, data)
                     self.logger.info(f"🎯 Using PRIMARY CoinAPI data for {symbol}: ${data['price']:.4f}")
                     return data
             except Exception as e:
@@ -338,6 +346,7 @@ class EnhancedMarketAnalyzer:
                     self.api_failure_count = 0  # Reset failure count on success
                     data['source'] = 'coinmarketcap_secondary'
                     data['timestamp'] = time.time()
+                    self._store_historical_data(symbol, data)
                     return data
             except Exception as e:
                 self.api_failure_count += 1
@@ -349,7 +358,100 @@ class EnhancedMarketAnalyzer:
 
         # Return mock data as final fallback
         self.logger.warning(f"Both CoinAPI and CoinMarketCap failed for {symbol}, using mock data")
-        return self._get_mock_data(symbol)
+        data = self._get_mock_data(symbol)
+        if data:
+            self._store_historical_data(symbol, data)
+        return data
+    
+    def _store_historical_data(self, symbol: str, data: Dict) -> None:
+        """Store historical price data for pattern analysis"""
+        try:
+            if symbol not in self.price_history:
+                self.price_history[symbol] = []
+            
+            price_point = {
+                'price': data['price'],
+                'timestamp': data['timestamp'],
+                'change_24h': data.get('percent_change_24h', 0),
+                'volume': data.get('volume_24h', 0),
+                'source': data.get('source', 'unknown')
+            }
+            
+            self.price_history[symbol].append(price_point)
+            
+            # Keep only the last max_history_points
+            if len(self.price_history[symbol]) > self.max_history_points:
+                self.price_history[symbol] = self.price_history[symbol][-self.max_history_points:]
+                
+        except Exception as e:
+            self.logger.error(f"Error storing historical data for {symbol}: {e}")
+    
+    def analyze_bearish_pattern(self, symbol: str) -> Dict:
+        """Analyze bearish patterns using 5-minute historical data"""
+        try:
+            if symbol not in self.price_history or len(self.price_history[symbol]) < 5:
+                return {'pattern': 'insufficient_data', 'confidence': 0.0, 'signal': 'neutral'}
+            
+            history = self.price_history[symbol]
+            current_time = time.time()
+            
+            # Get data from last 5 minutes (300 seconds)
+            recent_data = [point for point in history if current_time - point['timestamp'] <= 300]
+            
+            if len(recent_data) < 2:
+                return {'pattern': 'insufficient_recent_data', 'confidence': 0.0, 'signal': 'neutral'}
+            
+            # Calculate price trend over last 5 minutes
+            prices = [point['price'] for point in recent_data]
+            timestamps = [point['timestamp'] for point in recent_data]
+            
+            # Simple linear regression for trend
+            n = len(prices)
+            sum_x = sum(timestamps)
+            sum_y = sum(prices)
+            sum_xy = sum(timestamps[i] * prices[i] for i in range(n))
+            sum_x2 = sum(t * t for t in timestamps)
+            
+            slope = (n * sum_xy - sum_x * sum_y) / (n * sum_x2 - sum_x * sum_x) if (n * sum_x2 - sum_x * sum_x) != 0 else 0
+            
+            # Calculate percentage change
+            price_change = ((prices[-1] - prices[0]) / prices[0]) * 100 if prices[0] != 0 else 0
+            
+            # Determine pattern
+            if slope < -0.001 and price_change < -1.0:  # Declining trend > 1%
+                pattern = 'strong_bearish'
+                confidence = min(abs(price_change) / 5.0, 1.0)  # Max confidence at 5% drop
+                signal = 'bearish'
+            elif slope < -0.0005 and price_change < -0.5:  # Declining trend > 0.5%
+                pattern = 'moderate_bearish'
+                confidence = min(abs(price_change) / 3.0, 0.8)
+                signal = 'bearish'
+            elif slope > 0.001 and price_change > 1.0:  # Rising trend > 1%
+                pattern = 'strong_bullish'
+                confidence = min(price_change / 5.0, 1.0)
+                signal = 'bullish'
+            elif slope > 0.0005 and price_change > 0.5:  # Rising trend > 0.5%
+                pattern = 'moderate_bullish'
+                confidence = min(price_change / 3.0, 0.8)
+                signal = 'bullish'
+            else:
+                pattern = 'sideways'
+                confidence = 0.3
+                signal = 'neutral'
+            
+            return {
+                'pattern': pattern,
+                'confidence': confidence,
+                'signal': signal,
+                'price_change_5min': price_change,
+                'trend_slope': slope,
+                'data_points': len(recent_data),
+                'timeframe': '5min'
+            }
+            
+        except Exception as e:
+            self.logger.error(f"Error analyzing bearish pattern for {symbol}: {e}")
+            return {'pattern': 'analysis_error', 'confidence': 0.0, 'signal': 'neutral'}
 
     def _get_mock_data(self, symbol: str) -> Optional[Dict]:
         """Generate mock data for a symbol"""
@@ -390,18 +492,29 @@ class EnhancedMarketAnalyzer:
                 try:
                     current_data = self.get_market_data_with_fallback(symbol)
                     if current_data:
+                        # Get pattern analysis
+                        pattern_analysis = self.analyze_bearish_pattern(symbol)
+                        
                         analysis = {
                             'price': current_data['price'],
                             'change_24h': current_data.get('percent_change_24h', 0),
                             'volume_24h': current_data.get('volume_24h', 0),
-                            'signal': self._determine_signal(current_data.get('percent_change_24h', 0)),
-                            'confidence': min(abs(current_data.get('percent_change_24h', 0)) / 10, 1.0),
-                            'source': current_data.get('source', 'unknown')
+                            'signal': pattern_analysis.get('signal', 'neutral'),
+                            'confidence': pattern_analysis.get('confidence', 0.0),
+                            'source': current_data.get('source', 'unknown'),
+                            'pattern': pattern_analysis.get('pattern', 'unknown'),
+                            'price_change_5min': pattern_analysis.get('price_change_5min', 0),
+                            'trend_slope': pattern_analysis.get('trend_slope', 0)
                         }
 
-                        # Add RSI for ARB
+                        # Add RSI for ARB (enhanced calculation based on historical data)
                         if symbol == 'ARB':
-                            analysis['rsi'] = 45  # Mock RSI value
+                            if len(self.price_history.get('ARB', [])) >= 14:
+                                # Calculate RSI from historical data
+                                prices = [point['price'] for point in self.price_history['ARB'][-14:]]
+                                analysis['rsi'] = self._calculate_rsi(prices)
+                            else:
+                                analysis['rsi'] = 45  # Default neutral RSI
 
                         summary[f'{symbol.lower()}_analysis'] = analysis
                     else:
@@ -442,6 +555,29 @@ class EnhancedMarketAnalyzer:
             return 'bearish'
         else:
             return 'very_bearish'
+    
+    def _calculate_rsi(self, prices: List[float], period: int = 14) -> float:
+        """Calculate RSI from price data"""
+        try:
+            if len(prices) < period + 1:
+                return 50.0  # Neutral RSI
+            
+            deltas = [prices[i] - prices[i-1] for i in range(1, len(prices))]
+            gains = [delta if delta > 0 else 0 for delta in deltas]
+            losses = [-delta if delta < 0 else 0 for delta in deltas]
+            
+            avg_gain = sum(gains[-period:]) / period
+            avg_loss = sum(losses[-period:]) / period
+            
+            if avg_loss == 0:
+                return 100.0
+            
+            rs = avg_gain / avg_loss
+            rsi = 100 - (100 / (1 + rs))
+            
+            return float(rsi)
+        except:
+            return 50.0
 
 class EnhancedMarketSignalStrategy:
     """Enhanced market signal strategy for debt swap decisions"""
