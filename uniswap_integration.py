@@ -174,7 +174,7 @@ class UniswapIntegration:
             # Validate allowed swap combinations including ARB
             arb_address = "0x912CE59144191C1204E64559FE8253a0e49E6548"
             arb_address_lower = arb_address.lower()
-            
+
             allowed_swaps = [
                 (dai_address_lower, wbtc_address_lower),  # DAI → WBTC
                 (dai_address_lower, weth_address_lower),  # DAI → WETH
@@ -199,7 +199,7 @@ class UniswapIntegration:
                 token_out_name = "DAI (from ARB)"
             else:
                 token_out_name = "UNKNOWN"
-            
+
             print(f"✅ APPROVED SWAP: {token_in_lower.split('x')[1][:6]}... → {token_out_name}")
 
             # Enhanced contract validation
@@ -762,7 +762,7 @@ class UniswapIntegration:
             if swap_result and isinstance(swap_result, str):
                 # Calculate ARB received (estimate)
                 arb_received = dai_amount / arb_price
-                
+
                 # Start profit tracking
                 try:
                     from debt_swap_profit_tracker import track_dai_to_arb_swap
@@ -771,7 +771,7 @@ class UniswapIntegration:
                 except Exception as track_error:
                     print(f"⚠️ Profit tracking failed: {track_error}")
                     cycle_id = None
-                
+
                 return {
                     'success': True,
                     'tx_hash': swap_result,
@@ -821,7 +821,7 @@ class UniswapIntegration:
             if swap_result and isinstance(swap_result, str):
                 # Calculate DAI received (estimate)
                 dai_received = arb_amount * arb_price
-                
+
                 # Complete profit tracking if cycle_id provided
                 if cycle_id:
                     try:
@@ -830,7 +830,7 @@ class UniswapIntegration:
                         print(f"📊 Profit tracking completed for cycle: {cycle_id}")
                     except Exception as track_error:
                         print(f"⚠️ Profit tracking completion failed: {track_error}")
-                
+
                 return {
                     'success': True,
                     'tx_hash': swap_result,

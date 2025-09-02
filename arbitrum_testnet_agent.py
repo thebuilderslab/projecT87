@@ -249,13 +249,13 @@ class ArbitrumTestnetAgent:
             else:
                 print("⚠️ DEBUG: No ALCHEMY_RPC_URL found in environment variables")
 
-            # Add high-throughput fallback endpoints (removed problematic Infura)
+            # High-throughput stable endpoints (removed problematic Infura)
             fallback_endpoints = [
                 "https://arbitrum.llamarpc.com",
                 "https://arb1.arbitrum.io/rpc", 
-                "https://arbitrum-one.public.blastapi.io",
                 "https://arbitrum-one.publicnode.com",
-                "https://arbitrum.rpc.subquery.network/public"
+                "https://arbitrum-one.public.blastapi.io",
+                "https://rpc.ankr.com/arbitrum"
             ]
 
             self.rpc_endpoints.extend(fallback_endpoints)
