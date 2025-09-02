@@ -163,8 +163,6 @@ class UniswapIntegration:
     def swap_tokens(self, token_in, token_out, amount_in, fee=3000):
         """Execute token swap on Uniswap V3 with enhanced validation and error handling - DAI-ONLY ENFORCEMENT"""
         try:
-            import time
-
             # CRITICAL: Enforce DAI-only swap policy
             dai_address_lower = self.dai_address.lower()
             wbtc_address_lower = self.wbtc_address.lower()
@@ -285,7 +283,6 @@ class UniswapIntegration:
                         print(f"✅ Approval sent: {approve_hash.hex()}")
 
                         # Wait for approval confirmation
-                        import time
                         time.sleep(8)
 
                 except Exception as approve_error:
