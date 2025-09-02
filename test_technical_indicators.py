@@ -93,7 +93,33 @@ def test_technical_indicators():
                 
                 if len(arb_history) >= 5:
                     print("   ✅ Sufficient data for basic technical analysis")
-                    return True
+                    
+                    # Test 7: Integration with debt swap mechanism
+                    print("\n7️⃣ Testing Debt Swap Integration...")
+                    try:
+                        from arbitrum_testnet_agent import ArbitrumTestnetAgent
+                        test_agent = ArbitrumTestnetAgent()
+                        
+                        if hasattr(test_agent, 'market_signal_strategy'):
+                            # Test debt swap condition checking with technical indicators
+                            conditions_ok, message = test_agent.check_debt_swap_conditions()
+                            print(f"   Debt swap conditions: {message}")
+                            
+                            if "Technical indicators not ready" not in message:
+                                print("   ✅ Technical indicators properly integrated with debt swap logic")
+                                integration_success = True
+                            else:
+                                print("   ⚠️ Technical indicators integration needs more data")
+                                integration_success = False
+                        else:
+                            print("   ⚠️ Agent market signal strategy not available")
+                            integration_success = False
+                            
+                    except Exception as e:
+                        print(f"   ❌ Integration test failed: {e}")
+                        integration_success = False
+                    
+                    return True and integration_success
                 else:
                     print("   ⚠️ Insufficient data for technical analysis")
             else:

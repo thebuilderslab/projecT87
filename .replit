@@ -143,6 +143,135 @@ args = "echo \"🚀 Starting Autonomous DeFi Agent on Arbitrum Mainnet\""
 task = "shell.exec"
 args = "python main.py"
 
+[[workflows.workflow]]
+name = "🔍 Test Technical Indicators Integration"
+author = 39391053
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"🔍 Testing Technical Indicators Integration with Debt Swap Mechanism\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"==================================================================\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python test_technical_indicators.py"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"🔍 Testing Integration Status\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"============================\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python -c \""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "from arbitrum_testnet_agent import ArbitrumTestnetAgent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "from market_signal_strategy import MarketSignalStrategy"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = ""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "# Test integration"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "try:"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "    agent = ArbitrumTestnetAgent()"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "    if hasattr(agent, 'market_signal_strategy') and agent.market_signal_strategy:"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "        strategy = agent.market_signal_strategy"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "        status = strategy.get_strategy_status()"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = '''        print(f'Technical Indicators Ready: {status.get(\"technical_indicators_ready\", False)}')'''
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = '''        print(f'Enhanced ARB Points: {status.get(\"enhanced_arb_points\", 0)}')'''
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = '''        print(f'Enhanced BTC Points: {status.get(\"enhanced_btc_points\", 0)}')'''
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = '''        print(f'Data Source: {status.get(\"data_source\", \"Unknown\")}')'''
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "        "
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "        # Test debt swap integration"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "        conditions_ok, message = agent.check_debt_swap_conditions()"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "        print(f'Debt Swap Integration: {message}')"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "    else:"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "        print('Market signal strategy not available')"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "except Exception as e:"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "    print(f'Integration test error: {e}')"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"✅ Technical Indicators Integration Test Complete\""
+
 [[ports]]
 localPort = 5000
 externalPort = 80
