@@ -1,0 +1,219 @@
+══════════════════════════════════════
+
+🔄 Initializing Market Signal Strategy...
+WARNING:enhanced_market_analyzer:❌ COINAPI_KEY not found in Replit Secrets. Add COINAPI_KEY or COIN_API_KEY to use primary data source.
+INFO:enhanced_market_analyzer:✅ Enhanced Market Analyzer initialized with CoinMarketCap as FALLBACK PRIMARY: 1d8c060c...
+INFO:enhanced_market_analyzer:CoinMarketCap API test successful - using as primary (CoinAPI not available).
+INFO:market_signal_strategy:✅ Market Signal Strategy initialized with CoinMarketCap (Fallback Primary)
+INFO:market_signal_strategy:   Primary: CoinAPI | Secondary: CoinMarketCap | Fallback: Mock Data
+WARNING:enhanced_market_analyzer:❌ COINAPI_KEY not found in Replit Secrets. Add COINAPI_KEY or COIN_API_KEY to use primary data source.
+🔍 Autonomous agent running check: True
+🔍 Autonomous agent running check: True
+172.31.64.162 - - [02/Sep/2025 04:07:27] "GET /api/console HTTP/1.1" 200 -
+INFO:werkzeug:172.31.64.162 - - [02/Sep/2025 04:07:27] "GET /api/console HTTP/1.1" 200 -
+INFO:enhanced_market_analyzer:✅ Enhanced Market Analyzer initialized with CoinMarketCap as FALLBACK PRIMARY: 1d8c060c...
+INFO:enhanced_market_analyzer:CoinMarketCap API test successful - using as primary (CoinAPI not available).
+🔍 Autonomous agent running check: True
+🔍 Autonomous agent running check: True
+172.31.64.162 - - [02/Sep/2025 04:07:29] "GET /api/console HTTP/1.1" 200 -
+INFO:werkzeug:172.31.64.162 - - [02/Sep/2025 04:07:29] "GET /api/console HTTP/1.1" 200 -
+🔍 Autonomous agent running check: True
+🔍 Autonomous agent running check: True
+172.31.64.162 - - [02/Sep/2025 04:07:31] "GET /api/console HTTP/1.1" 200 -
+INFO:werkzeug:172.31.64.162 - - [02/Sep/2025 04:07:31] "GET /api/console HTTP/1.1" 200 -
+🔍 Autonomous agent running check: True
+🔍 Autonomous agent running check: True
+172.31.64.162 - - [02/Sep/2025 04:07:34] "GET /api/console HTTP/1.1" 200 -
+INFO:werkzeug:172.31.64.162 - - [02/Sep/2025 04:07:34] "GET /api/console HTTP/1.1" 200 -
+🔍 Autonomous agent running check: True
+🔍 Autonomous agent running check: True
+172.31.64.162 - - [02/Sep/2025 04:07:35] "GET /api/console HTTP/1.1" 200 -
+INFO:werkzeug:172.31.64.162 - - [02/Sep/2025 04:07:35] "GET /api/console HTTP/1.1" 200 -
+🔍 Autonomous agent running check: True
+🔍 Autonomous agent running check: True
+172.31.64.162 - - [02/Sep/2025 04:07:37] "GET /api/console HTTP/1.1" 200 -
+INFO:werkzeug:172.31.64.162 - - [02/Sep/2025 04:07:37] "GET /api/console HTTP/1.1" 200 -
+🔍 Autonomous agent running check: True
+🔍 Autonomous agent running check: True
+172.31.64.162 - - [02/Sep/2025 04:07:39] "GET /api/console HTTP/1.1" 200 -
+INFO:werkzeug:172.31.64.162 - - [02/Sep/2025 04:07:39] "GET /api/console HTTP/1.1" 200 -
+🔍 Autonomous agent running check: True
+🔍 Autonomous agent running check: True
+172.31.64.162 - - [02/Sep/2025 04:07:41] "GET /api/console HTTP/1.1" 200 -
+INFO:werkzeug:172.31.64.162 - - [02/Sep/2025 04:07:41] "GET /api/console HTTP/1.1" 200 -
+🔍 Autonomous agent running check: True
+🔍 Autonomous agent running check: True
+172.31.64.162 - - [02/Sep/2025 04:07:44] "GET /api/console HTTP/1.1" 200 -
+INFO:werkzeug:172.31.64.162 - - [02/Sep/2025 04:07:44] "GET /api/console HTTP/1.1" 200 -
+🔍 Autonomous agent running check: True
+🔍 Autonomous agent running check: True
+172.31.64.162 - - [02/Sep/2025 04:07:45] "GET /api/console HTTP/1.1" 200 -
+INFO:werkzeug:172.31.64.162 - - [02/Sep/2025 04:07:45] "GET /api/console HTTP/1.1" 200 -
+🔍 Autonomous agent running check: True
+🤖 Initializing Arbitrum Testnet Agent...
+DEBUG: Private key loaded from parameter/environment: [REDACTED]
+✅ All critical environment variables validated successfully
+🔍 DEBUG: Starting RPC manager initialization...
+🔍 DEBUG: Network mode: mainnet
+🔍 DEBUG: ALCHEMY_RPC_URL from env: https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-bM9XgIIU
+🔗 DEBUG: Added Alchemy RPC to endpoints list: https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-...
+🔍 DEBUG: Total RPC endpoints to test: 5
+🔍 Testing RPC: https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-bM9XgIIU
+✅ RPC passed tests: https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-bM9XgIIU (0.17s)
+🔍 Testing RPC: https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f938ff891c141
+✅ RPC passed tests: https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f938ff891c141 (0.52s)
+🔍 Testing RPC: https://arb1.arbitrum.io/rpc
+✅ RPC passed tests: https://arb1.arbitrum.io/rpc (0.42s)
+🔍 Testing RPC: https://arbitrum-one.public.blastapi.io
+✅ RPC passed tests: https://arbitrum-one.public.blastapi.io (0.15s)
+🔍 Testing RPC: https://arbitrum-one.publicnode.com
+INFO:enhanced_market_analyzer:Enhanced Market Signal Strategy initialized successfully with working API
+INFO:market_signal_strategy:✅ Enhanced strategy component loaded successfully
+✅ Market Signal Strategy initialized with CoinMarketCap (Fallback Primary)
+🔄 Debt swap system activated with market signal integration
+🎯 Market Signal Strategy Status: ACTIVE
+⚠️ Could not setup enhanced error handling: signal only works in main thread of the main interpreter
+🔍 Fetching unified Aave data...
+✅ Unified Aave data retrieved successfully:
+   Collateral: $259.07
+   Debt: $108.36
+   Health Factor: 1.9067
+📊 Using LIVE AAVE CONTRACT data: HF 1.9067
+🔍 Autonomous agent running check: True
+🤖 Initializing Arbitrum Testnet Agent...
+DEBUG: Private key loaded from parameter/environment: [REDACTED]
+✅ All critical environment variables validated successfully
+🔍 DEBUG: Starting RPC manager initialization...
+🔍 DEBUG: Network mode: mainnet
+🔍 DEBUG: ALCHEMY_RPC_URL from env: https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-bM9XgIIU
+🔗 DEBUG: Added Alchemy RPC to endpoints list: https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-...
+🔍 DEBUG: Total RPC endpoints to test: 5
+🔍 Testing RPC: https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-bM9XgIIU
+✅ RPC passed tests: https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-bM9XgIIU (0.18s)
+🔍 Testing RPC: https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f938ff891c141
+✅ RPC passed tests: https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f938ff891c141 (0.29s)
+🔍 Testing RPC: https://arb1.arbitrum.io/rpc
+🔍 Autonomous agent running check: True
+🔍 Autonomous agent running check: True
+172.31.64.162 - - [02/Sep/2025 04:07:48] "GET /api/console HTTP/1.1" 200 -
+INFO:werkzeug:172.31.64.162 - - [02/Sep/2025 04:07:48] "GET /api/console HTTP/1.1" 200 -
+🔍 Autonomous agent running check: True
+🤖 Initializing Arbitrum Testnet Agent...
+DEBUG: Private key loaded from parameter/environment: [REDACTED]
+✅ All critical environment variables validated successfully
+🔍 DEBUG: Starting RPC manager initialization...
+🔍 DEBUG: Network mode: mainnet
+🔍 DEBUG: ALCHEMY_RPC_URL from env: https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-bM9XgIIU
+🔗 DEBUG: Added Alchemy RPC to endpoints list: https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-...
+🔍 DEBUG: Total RPC endpoints to test: 5
+🔍 Testing RPC: https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-bM9XgIIU
+✅ RPC passed tests: https://arb1.arbitrum.io/rpc (0.45s)
+🔍 Testing RPC: https://arbitrum-one.public.blastapi.io
+✅ RPC passed tests: https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-bM9XgIIU (0.20s)
+🔍 Testing RPC: https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f938ff891c141
+✅ RPC passed tests: https://arbitrum-one.public.blastapi.io (0.15s)
+🔍 Testing RPC: https://arbitrum-one.publicnode.com
+❌ Not connected: https://arbitrum-one.publicnode.com
+📊 RPC Test Results: 4/5 endpoints working
+🌐 Operating on Arbitrum Mainnet
+🔍 DEBUG: Final RPC selection results:
+   Primary RPC: https://arbitrum-one.public.blastapi.io
+   Fallback RPCs: 3 available
+🚨 NETWORK_MODE from environment: 'mainnet'
+🔗 Primary RPC: https://arbitrum-one.public.blastapi.io
+🔄 Fallback RPCs: 3 available
+🔍 DEBUG: Attempting to create Web3 connection with primary RPC: https://arbitrum-one.public.blastapi.io
+✅ Successfully connected to primary RPC: https://arbitrum-one.public.blastapi.io
+🔍 DEBUG: Web3 connection verified - Chain ID: 42161, Latest Block: 374789568
+🔑 Wallet Address: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+💰 AGENT INITIALIZED WITH WALLET: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+✅ Private key format validated and normalized
+📋 Mainnet Token addresses verified (DAI-ONLY COMPLIANCE):
+   DAI: 0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1
+   WBTC: 0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f
+   WETH: 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1
+   Aave Pool: 0x794a61358D6845594F94dc1DB02A252b5b4814aD
+💰 Initialized last_collateral_value_usd to 0.0 (will sync with actual position)
+📊 Initialized last_collateral_value_usd to: 0.0
+
+🔄 HYBRID SYSTEM CONFIGURATION:
+═══════════════════════════════════════
+🚀 GROWTH-TRIGGERED SYSTEM:
+   • Growth Threshold: $40
+   • Health Factor: > 2.1
+   • Re-leverage %: 50.0%
+   • Min/Max Borrow: $10 - $200
+⚡ CAPACITY-BASED SYSTEM:
+   • Available Capacity: > $13
+   • Health Factor: > 2.0
+   • Max Utilization: < 20%
+   • Current Available: $85.21 (MEETS THRESHOLD)
+   • Current Utilization: ~15% (MEETS THRESHOLD)
+🔧 SYSTEM SETTINGS:
+   • Operation Cooldown: 60s
+   • Target Health Factor: 3.5
+💱 DEBT SWAP THRESHOLDS:
+   ❌ Market signal strategy not available
+   📊 Debt swaps disabled
+   ✅ COINMARKETCAP_API_KEY configured (Secondary)
+📊 INTEGRATED MARKET INDICATORS:
+   ❌ Market signal strategy not initialized
+   📊 Enhanced indicators disabled
+   ✅ MARKET_SIGNAL_ENABLED configured
+   ✅ COINMARKETCAP_API_KEY configured (Secondary)
+📊 INTEGRATED MARKET INDICATORS:
+   ❌ Market signal strategy not initialized
+   📊 Enhanced indicators disabled
+   💡 Required: MARKET_SIGNAL_ENABLED=true
+   💡 Required: COINMARKETCAP_API_KEY ✅
+═══════════════════════════════════════
+
+🔄 Initializing Market Signal Strategy...
+WARNING:enhanced_market_analyzer:❌ COINAPI_KEY not found in Replit Secrets. Add COINAPI_KEY or COIN_API_KEY to use primary data source.
+INFO:enhanced_market_analyzer:✅ Enhanced Market Analyzer initialized with CoinMarketCap as FALLBACK PRIMARY: 1d8c060c...
+INFO:enhanced_market_analyzer:CoinMarketCap API test successful - using as primary (CoinAPI not available).
+INFO:market_signal_strategy:✅ Market Signal Strategy initialized with CoinMarketCap (Fallback Primary)
+INFO:market_signal_strategy:   Primary: CoinAPI | Secondary: CoinMarketCap | Fallback: Mock Data
+WARNING:enhanced_market_analyzer:❌ COINAPI_KEY not found in Replit Secrets. Add COINAPI_KEY or COIN_API_KEY to use primary data source.
+✅ RPC passed tests: https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f938ff891c141 (0.47s)
+🔍 Testing RPC: https://arb1.arbitrum.io/rpc
+INFO:enhanced_market_analyzer:✅ Enhanced Market Analyzer initialized with CoinMarketCap as FALLBACK PRIMARY: 1d8c060c...
+INFO:enhanced_market_analyzer:CoinMarketCap API test successful - using as primary (CoinAPI not available).
+✅ RPC passed tests: https://arb1.arbitrum.io/rpc (0.42s)
+🔍 Testing RPC: https://arbitrum-one.public.blastapi.io
+✅ RPC passed tests: https://arbitrum-one.public.blastapi.io (0.17s)
+🔍 Testing RPC: https://arbitrum-one.publicnode.com
+❌ Not connected: https://arbitrum-one.publicnode.com
+📊 RPC Test Results: 4/5 endpoints working
+🌐 Operating on Arbitrum Mainnet
+🔍 DEBUG: Final RPC selection results:
+   Primary RPC: https://arbitrum-one.public.blastapi.io
+   Fallback RPCs: 3 available
+🚨 NETWORK_MODE from environment: 'mainnet'
+🔗 Primary RPC: https://arbitrum-one.public.blastapi.io
+🔄 Fallback RPCs: 3 available
+🔍 DEBUG: Attempting to create Web3 connection with primary RPC: https://arbitrum-one.public.blastapi.io
+✅ Successfully connected to primary RPC: https://arbitrum-one.public.blastapi.io
+🔍 DEBUG: Web3 connection verified - Chain ID: 42161, Latest Block: 374789574
+🔑 Wallet Address: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+💰 AGENT INITIALIZED WITH WALLET: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+✅ Private key format validated and normalized
+📋 Mainnet Token addresses verified (DAI-ONLY COMPLIANCE):
+   DAI: 0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1
+   WBTC: 0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f
+   WETH: 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1
+   Aave Pool: 0x794a61358D6845594F94dc1DB02A252b5b4814aD
+💰 Initialized last_collateral_value_usd to 0.0 (will sync with actual position)
+📊 Initialized last_collateral_value_usd to: 0.0
+
+🔄 HYBRID SYSTEM CONFIGURATION:
+═══════════════════════════════════════
+🚀 GROWTH-TRIGGERED SYSTEM:
+   • Growth Threshold: $40
+   • Health Factor: > 2.1
+   • Re-leverage %: 50.0%
+   • Min/Max Borrow: $10 - $200
+⚡ CAPACITY-BASED SYSTEM:
+   • Available Capacity: > $13
+   • Health Factor: > 2.0
+   • Max Utilization: < 20%
