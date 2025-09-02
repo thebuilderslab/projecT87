@@ -7,7 +7,7 @@ Enhanced market analysis for debt swap decisions
 import os
 import time
 import logging
-from typing import Dict, Optional
+from typing import Dict, Optional, List
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -116,6 +116,256 @@ class MarketSignalStrategy:
                 'timestamp': time.time()
             }
 
+    def detect_bearish_reversal_patterns(self, price_data) -> List[str]:
+        """Detect bearish reversal patterns indicating potential trend change"""
+        patterns_detected = []
+        
+        try:
+            if not price_data or len(price_data) < 20:
+                return patterns_detected
+            
+            # Convert to price list for analysis
+            prices = [float(p.get('price', 0)) for p in price_data[-20:]]
+            if not prices or all(p == 0 for p in prices):
+                return patterns_detected
+            
+            # Head and Shoulders Pattern
+            if self._detect_head_and_shoulders(prices):
+                patterns_detected.append("Head and Shoulders")
+            
+            # Double Top Pattern
+            if self._detect_double_top(prices):
+                patterns_detected.append("Double Top")
+            
+            # Triple Top Pattern
+            if self._detect_triple_top(prices):
+                patterns_detected.append("Triple Top")
+            
+            # Rounding Top Pattern
+            if self._detect_rounding_top(prices):
+                patterns_detected.append("Rounding Top")
+                
+        except Exception as e:
+            logger.error(f"Error detecting bearish reversal patterns: {e}")
+            
+        return patterns_detected
+    
+    def detect_bearish_continuation_patterns(self, price_data) -> List[str]:
+        """Detect bearish continuation patterns indicating downtrend continuation"""
+        patterns_detected = []
+        
+        try:
+            if not price_data or len(price_data) < 15:
+                return patterns_detected
+            
+            prices = [float(p.get('price', 0)) for p in price_data[-15:]]
+            if not prices or all(p == 0 for p in prices):
+                return patterns_detected
+            
+            # Bearish Flag Pattern
+            if self._detect_bearish_flag(prices):
+                patterns_detected.append("Bearish Flag")
+            
+            # Bearish Pennant Pattern
+            if self._detect_bearish_pennant(prices):
+                patterns_detected.append("Bearish Pennant")
+            
+            # Falling Wedge Pattern
+            if self._detect_falling_wedge(prices):
+                patterns_detected.append("Falling Wedge")
+            
+            # Descending Triangle Pattern
+            if self._detect_descending_triangle(prices):
+                patterns_detected.append("Descending Triangle")
+                
+        except Exception as e:
+            logger.error(f"Error detecting bearish continuation patterns: {e}")
+            
+        return patterns_detected
+    
+    def _detect_head_and_shoulders(self, prices) -> bool:
+        """Detect Head and Shoulders pattern"""
+        if len(prices) < 15:
+            return False
+        
+        # Find potential peaks
+        peaks = []
+        for i in range(2, len(prices) - 2):
+            if prices[i] > prices[i-1] and prices[i] > prices[i+1]:
+                peaks.append((i, prices[i]))
+        
+        if len(peaks) < 3:
+            return False
+        
+        # Check if we have a head and shoulders formation
+        # Head should be higher than both shoulders
+        for i in range(len(peaks) - 2):
+            left_shoulder = peaks[i][1]
+            head = peaks[i + 1][1]
+            right_shoulder = peaks[i + 2][1]
+            
+            if (head > left_shoulder and head > right_shoulder and
+                abs(left_shoulder - right_shoulder) / max(left_shoulder, right_shoulder) < 0.05):
+                return True
+        
+        return False
+    
+    def _detect_double_top(self, prices) -> bool:
+        """Detect Double Top pattern"""
+        if len(prices) < 10:
+            return False
+        
+        peaks = []
+        for i in range(1, len(prices) - 1):
+            if prices[i] > prices[i-1] and prices[i] > prices[i+1]:
+                peaks.append((i, prices[i]))
+        
+        if len(peaks) < 2:
+            return False
+        
+        # Check for double top - two peaks at similar levels
+        for i in range(len(peaks) - 1):
+            peak1 = peaks[i][1]
+            peak2 = peaks[i + 1][1]
+            
+            if abs(peak1 - peak2) / max(peak1, peak2) < 0.03:  # Within 3%
+                return True
+        
+        return False
+    
+    def _detect_triple_top(self, prices) -> bool:
+        """Detect Triple Top pattern"""
+        if len(prices) < 15:
+            return False
+        
+        peaks = []
+        for i in range(1, len(prices) - 1):
+            if prices[i] > prices[i-1] and prices[i] > prices[i+1]:
+                peaks.append((i, prices[i]))
+        
+        if len(peaks) < 3:
+            return False
+        
+        # Check for triple top - three peaks at similar levels
+        for i in range(len(peaks) - 2):
+            peak1 = peaks[i][1]
+            peak2 = peaks[i + 1][1]
+            peak3 = peaks[i + 2][1]
+            
+            avg_peak = (peak1 + peak2 + peak3) / 3
+            if all(abs(p - avg_peak) / avg_peak < 0.04 for p in [peak1, peak2, peak3]):
+                return True
+        
+        return False
+    
+    def _detect_rounding_top(self, prices) -> bool:
+        """Detect Rounding Top pattern"""
+        if len(prices) < 12:
+            return False
+        
+        # Check for gradual rise followed by gradual decline
+        mid_point = len(prices) // 2
+        first_half = prices[:mid_point]
+        second_half = prices[mid_point:]
+        
+        # First half should generally trend up
+        first_trend = sum(1 for i in range(1, len(first_half)) if first_half[i] > first_half[i-1])
+        # Second half should generally trend down
+        second_trend = sum(1 for i in range(1, len(second_half)) if second_half[i] < second_half[i-1])
+        
+        return (first_trend > len(first_half) * 0.6 and 
+                second_trend > len(second_half) * 0.6)
+    
+    def _detect_bearish_flag(self, prices) -> bool:
+        """Detect Bearish Flag pattern"""
+        if len(prices) < 10:
+            return False
+        
+        # Look for small upward consolidation after downtrend
+        recent_trend = prices[-5:]
+        if len(recent_trend) < 5:
+            return False
+        
+        # Check if recent prices are consolidating slightly upward
+        slope = (recent_trend[-1] - recent_trend[0]) / len(recent_trend)
+        range_size = max(recent_trend) - min(recent_trend)
+        avg_price = sum(recent_trend) / len(recent_trend)
+        
+        return (slope > 0 and range_size / avg_price < 0.02)  # Small upward movement
+    
+    def _detect_bearish_pennant(self, prices) -> bool:
+        """Detect Bearish Pennant pattern"""
+        if len(prices) < 8:
+            return False
+        
+        recent_prices = prices[-8:]
+        highs = []
+        lows = []
+        
+        for i in range(1, len(recent_prices) - 1):
+            if (recent_prices[i] > recent_prices[i-1] and 
+                recent_prices[i] > recent_prices[i+1]):
+                highs.append(recent_prices[i])
+            if (recent_prices[i] < recent_prices[i-1] and 
+                recent_prices[i] < recent_prices[i+1]):
+                lows.append(recent_prices[i])
+        
+        # Pennant has converging trend lines
+        if len(highs) >= 2 and len(lows) >= 2:
+            high_trend = highs[-1] < highs[0]  # Descending highs
+            low_trend = lows[-1] > lows[0]    # Ascending lows
+            return high_trend and low_trend
+        
+        return False
+    
+    def _detect_falling_wedge(self, prices) -> bool:
+        """Detect Falling Wedge pattern"""
+        if len(prices) < 10:
+            return False
+        
+        # Both highs and lows should be declining but converging
+        highs = []
+        lows = []
+        
+        for i in range(1, len(prices) - 1):
+            if (prices[i] > prices[i-1] and prices[i] > prices[i+1]):
+                highs.append((i, prices[i]))
+            if (prices[i] < prices[i-1] and prices[i] < prices[i+1]):
+                lows.append((i, prices[i]))
+        
+        if len(highs) >= 2 and len(lows) >= 2:
+            # Check if both trend lines are declining and converging
+            high_slope = (highs[-1][1] - highs[0][1]) / (highs[-1][0] - highs[0][0])
+            low_slope = (lows[-1][1] - lows[0][1]) / (lows[-1][0] - lows[0][0])
+            
+            return (high_slope < 0 and low_slope < 0 and abs(high_slope) > abs(low_slope))
+        
+        return False
+    
+    def _detect_descending_triangle(self, prices) -> bool:
+        """Detect Descending Triangle pattern"""
+        if len(prices) < 10:
+            return False
+        
+        lows = []
+        highs = []
+        
+        for i in range(1, len(prices) - 1):
+            if (prices[i] < prices[i-1] and prices[i] < prices[i+1]):
+                lows.append(prices[i])
+            if (prices[i] > prices[i-1] and prices[i] > prices[i+1]):
+                highs.append(prices[i])
+        
+        if len(lows) >= 2 and len(highs) >= 2:
+            # Lows should be roughly horizontal, highs should be descending
+            low_range = max(lows) - min(lows)
+            avg_low = sum(lows) / len(lows)
+            high_trend = highs[-1] < highs[0]  # Descending highs
+            
+            return (low_range / avg_low < 0.02 and high_trend)  # Flat support, descending resistance
+        
+        return False
+
     def analyze_market_signals(self) -> Dict:
         """Analyze current market signals for trading decisions"""
         try:
@@ -138,6 +388,16 @@ class MarketSignalStrategy:
 
                     # Check ARB depreciation for debt reduction
                     self.check_arb_depreciation_for_debt_reduction(arb_analysis)
+
+                    # ENHANCED: Detect bearish chart patterns
+                    bearish_reversal_patterns = []
+                    bearish_continuation_patterns = []
+                    
+                    # Use price history for pattern detection
+                    if hasattr(self, 'arb_price_history') and len(self.arb_price_history) > 10:
+                        price_data = [{'price': p} for p in self.arb_price_history]
+                        bearish_reversal_patterns = self.detect_bearish_reversal_patterns(price_data)
+                        bearish_continuation_patterns = self.detect_bearish_continuation_patterns(price_data)
 
                     # Calculate adjusted confidence thresholds
                     volatility = abs(analysis.get('market_volatility', 0)) # Example: use a market volatility metric
@@ -179,6 +439,11 @@ class MarketSignalStrategy:
                                 signal_strength -= arb_confidence * 0.3 # 30% weight for ARB->DAI
                                 signals_detected.append(f"ARB->DAI (ARB overbought, conf: {arb_confidence:.2f})")
 
+                    # Apply bearish pattern influence
+                    if bearish_reversal_patterns or bearish_continuation_patterns:
+                        pattern_weight = len(bearish_reversal_patterns) * 0.15 + len(bearish_continuation_patterns) * 0.10
+                        signal_strength -= pattern_weight  # Bearish patterns reduce signal strength
+
                     # Apply overall sentiment to signal strength
                     market_sentiment = analysis.get('market_sentiment', 'neutral')
                     if market_sentiment == 'bearish':
@@ -210,6 +475,8 @@ class MarketSignalStrategy:
                         'signals_detected': signals_detected,
                         'market_sentiment': market_sentiment,
                         'confidence_level': abs(signal_strength),
+                        'bearish_reversal_patterns': bearish_reversal_patterns,
+                        'bearish_continuation_patterns': bearish_continuation_patterns,
                         'timestamp': time.time(),
                         'status': 'success'
                     }

@@ -576,13 +576,16 @@ class ArbitrumTestnetAgent:
                 print("🔄 Debt swap system activated for simultaneous operation")
                 logging.info("🔄 Debt swap system activated for simultaneous operation")
 
-                # Validate market signal methods are available
-                required_methods = ['should_execute_trade', 'analyze_market_signals', 'get_market_analysis']
+                # Validate market signal methods are available including new pattern detection
+                required_methods = ['should_execute_trade', 'analyze_market_signals', 'get_market_analysis', 
+                                  'detect_bearish_reversal_patterns', 'detect_bearish_continuation_patterns']
                 missing_methods = [method for method in required_methods if not hasattr(self.market_signal_strategy, method)]
 
                 if not missing_methods:
                     print("✅ Market signal methods validated - all required methods present")
-                    print("✅ Enhanced market signal system fully operational")
+                    print("✅ Enhanced market signal system with chart pattern analysis operational")
+                    print("📉 Bearish pattern detection: Head & Shoulders, Double Top, Triple Top, Rounding Top")
+                    print("📉 Continuation pattern detection: Bearish Flag, Pennant, Falling Wedge, Descending Triangle")
                 else:
                     print(f"⚠️ Market signal methods incomplete - missing: {missing_methods}")
                     print("⚠️ Using fallback mode for safety")
@@ -677,7 +680,54 @@ class ArbitrumTestnetAgent:
         print(f"🔧 SYSTEM SETTINGS:")
         print(f"   • Operation Cooldown: {self.operation_cooldown_seconds}s")
         print(f"   • Target Health Factor: {self.target_health_factor:.1f}")
+        
+        # Display bearish chart patterns if market signal strategy is available
+        if hasattr(self, 'market_signal_strategy') and self.market_signal_strategy:
+            self._display_bearish_chart_patterns()
+        
         print(f"═══════════════════════════════════════\n")
+
+    def _display_bearish_chart_patterns(self):
+        """Display detected bearish chart patterns"""
+        try:
+            if not self.market_signal_strategy:
+                return
+            
+            # Get current market signals including chart patterns
+            signals = self.market_signal_strategy.analyze_market_signals()
+            
+            print(f"📉 BEARISH CHART PATTERNS:")
+            
+            # Display bearish reversal patterns
+            reversal_patterns = signals.get('bearish_reversal_patterns', [])
+            continuation_patterns = signals.get('bearish_continuation_patterns', [])
+            
+            if reversal_patterns or continuation_patterns:
+                if reversal_patterns:
+                    print(f"   🔄 REVERSAL PATTERNS:")
+                    for pattern in reversal_patterns:
+                        print(f"      • {pattern}")
+                
+                if continuation_patterns:
+                    print(f"   ⬇️ CONTINUATION PATTERNS:")
+                    for pattern in continuation_patterns:
+                        print(f"      • {pattern}")
+                
+                # Calculate pattern impact
+                total_patterns = len(reversal_patterns) + len(continuation_patterns)
+                if total_patterns > 0:
+                    print(f"   📊 Pattern Impact: {total_patterns} pattern(s) detected")
+                    if total_patterns >= 2:
+                        print(f"   ⚠️ Strong bearish signal from multiple patterns")
+                    else:
+                        print(f"   ℹ️ Moderate bearish signal detected")
+            else:
+                print(f"   ✅ No bearish patterns detected")
+                print(f"   📈 Market structure appears neutral to bullish")
+            
+        except Exception as e:
+            print(f"   ❌ Pattern analysis unavailable: {e}")
+            print(f"   📊 Using basic technical analysis only")
 
     def update_baseline_after_success(self, new_collateral_value=None):
         """Update baseline collateral value after successful operation"""
