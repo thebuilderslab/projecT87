@@ -10,22 +10,29 @@ from web3 import Web3
 from dotenv import load_dotenv
 
 class ArbitrumGasCalculator:
-    def __init__(self):
+    def __init__(self, w3=None):
+        from dotenv import load_dotenv
         load_dotenv()
         
-        # Connect to Arbitrum (mainnet or testnet based on NETWORK_MODE)
-        network_mode = os.getenv('NETWORK_MODE', 'mainnet')
-        
-        if network_mode == 'mainnet':
-            rpc_url = 'https://arb1.arbitrum.io/rpc'
-            self.chain_id = 42161
-            print("⛽ Gas Calculator: Arbitrum Mainnet")
+        if w3:
+            # Use provided Web3 instance
+            self.w3 = w3
+            self.chain_id = w3.eth.chain_id
+            print(f"⛽ Gas Calculator: Using provided Web3 instance (Chain ID: {self.chain_id})")
         else:
-            rpc_url = 'https://sepolia-rollup.arbitrum.io/rpc'
-            self.chain_id = 421614
-            print("⛽ Gas Calculator: Arbitrum Sepolia")
+            # Connect to Arbitrum (mainnet or testnet based on NETWORK_MODE)
+            network_mode = os.getenv('NETWORK_MODE', 'mainnet')
             
-        self.w3 = Web3(Web3.HTTPProvider(rpc_url))
+            if network_mode == 'mainnet':
+                rpc_url = 'https://arb1.arbitrum.io/rpc'
+                self.chain_id = 42161
+                print("⛽ Gas Calculator: Arbitrum Mainnet")
+            else:
+                rpc_url = 'https://sepolia-rollup.arbitrum.io/rpc'
+                self.chain_id = 421614
+                print("⛽ Gas Calculator: Arbitrum Sepolia")
+                
+            self.w3 = Web3(Web3.HTTPProvider(rpc_url))
         
         # Realistic gas limits for Arbitrum operations
         self.gas_limits = {

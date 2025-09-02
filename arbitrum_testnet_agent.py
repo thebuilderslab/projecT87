@@ -1027,8 +1027,7 @@ class ArbitrumTestnetAgent:
             print(f"❌ Failed to update baseline: {e}")
             return False
 
-
-    def execute_enhanced_borrow_with_retry(self, amount_dai):
+    def _execute_enhanced_borrow_with_retry(self, amount_dai):
         """Execute borrow with enhanced retry logic and critical post-borrow recovery"""
         max_attempts = 3
 
@@ -2146,6 +2145,7 @@ class ArbitrumTestnetAgent:
             swap_result = self.uniswap.swap_dai_for_wbtc(dai_amount)
 
             if swap_result and 'tx_hash' in swap_result:
+                print(f"✅ WBTC swap completed: {swap_result['tx_hash']}")
                 # Wait for confirmation
                 import time
                 time.sleep(5)
@@ -2180,6 +2180,7 @@ class ArbitrumTestnetAgent:
             swap_result = self.uniswap.swap_dai_for_weth(dai_amount)
 
             if swap_result and 'tx_hash' in swap_result:
+                print(f"✅ WETH swap completed: {swap_result['tx_hash']}")
                 # Wait for confirmation
                 import time
                 time.sleep(5)
@@ -2245,13 +2246,12 @@ class ArbitrumTestnetAgent:
             return False
 
     def get_eth_balance(self):
-        """Get ETH balance of the agent's wallet"""
+        """Get ETH balance from wallet"""
         try:
             balance_wei = self.w3.eth.get_balance(self.address)
-            balance_eth = self.w3.from_wei(balance_wei, 'ether')
-            return float(balance_eth)
+            return float(self.w3.from_wei(balance_wei, 'ether'))
         except Exception as e:
-            print(f"❌ Error getting ETH balance: {e}")
+            print(f"❌ Failed to get ETH balance: {e}")
             return 0.0
 
     def get_health_factor(self):
@@ -2354,13 +2354,64 @@ class ArbitrumTestnetAgent:
             return 0.0
 
     def get_dai_balance(self):
-        """Get DAI token balance"""
+        """Get DAI balance from wallet"""
         try:
-            if self.aave:
+            if hasattr(self, 'aave') and self.aave:
                 return self.aave.get_dai_balance()
-            return 0.0
+            else:
+                # Fallback: direct token balance check
+                dai_contract = self.w3.eth.contract(address=self.dai_address, abi=DAI_ABI)
+                balance_wei = dai_contract.functions.balanceOf(self.address).call()
+                decimals = dai_contract.functions.decimals().call()
+                return balance_wei / (10 ** decimals)
         except Exception as e:
-            print(f"❌ Error getting DAI balance: {e}")
+            print(f"❌ Failed to get DAI balance: {e}")
+            return 0.0
+
+    def get_arb_balance(self):
+        """Get ARB token balance from wallet"""
+        try:
+            arb_address = "0x912CE59144191C1204E64559FE8253a0e49E6548"
+            if hasattr(self, 'aave') and self.aave:
+                return self.aave.get_token_balance(arb_address)
+            else:
+                # Fallback: direct token balance check
+                arb_contract = self.w3.eth.contract(address=arb_address, abi=DAI_ABI)  # Use DAI_ABI for ERC20 functions
+                balance_wei = arb_contract.functions.balanceOf(self.address).call()
+                decimals = arb_contract.functions.decimals().call()
+                return balance_wei / (10 ** decimals)
+        except Exception as e:
+            print(f"❌ Failed to get ARB balance: {e}")
+            return 0.0
+
+    def get_wbtc_balance(self):
+        """Get WBTC balance from wallet"""
+        try:
+            if hasattr(self, 'aave') and self.aave:
+                return self.aave.get_token_balance(self.wbtc_address)
+            else:
+                # Fallback: direct token balance check
+                wbtc_contract = self.w3.eth.contract(address=self.wbtc_address, abi=DAI_ABI)
+                balance_wei = wbtc_contract.functions.balanceOf(self.address).call()
+                decimals = wbtc_contract.functions.decimals().call()
+                return balance_wei / (10 ** decimals)
+        except Exception as e:
+            print(f"❌ Failed to get WBTC balance: {e}")
+            return 0.0
+
+    def get_weth_balance(self):
+        """Get WETH balance from wallet"""
+        try:
+            if hasattr(self, 'aave') and self.aave:
+                return self.aave.get_token_balance(self.weth_address)
+            else:
+                # Fallback: direct token balance check
+                weth_contract = self.w3.eth.contract(address=self.weth_address, abi=DAI_ABI)
+                balance_wei = weth_contract.functions.balanceOf(self.address).call()
+                decimals = weth_contract.functions.decimals().call()
+                return balance_wei / (10 ** decimals)
+        except Exception as e:
+            print(f"❌ Failed to get WETH balance: {e}")
             return 0.0
 
     def get_arb_balance(self):
@@ -2808,11 +2859,25 @@ class ArbitrumTestnetAgent:
 
 
     def get_user_account_data(self):
-        """Get comprehensive user account data from Aave"""
+        """Get user account data from Aave"""
         try:
-            if self.aave:
+            if hasattr(self, 'aave') and self.aave:
                 return self.aave.get_user_account_data()
-            return None
+            else:
+                print("❌ Aave integration not available")
+                return None
         except Exception as e:
-            print(f"❌ Error getting user account data: {e}")
+            print(f"❌ Failed to get user account data: {e}")
             return None
+
+    def get_health_factor(self):
+        """Get health factor from Aave"""
+        try:
+            account_data = self.get_user_account_data()
+            if account_data:
+                return account_data.get('healthFactor', 0)
+            else:
+                return 0
+        except Exception as e:
+            print(f"❌ Failed to get health factor: {e}")
+            return 0
