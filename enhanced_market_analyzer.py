@@ -234,14 +234,15 @@ class EnhancedMarketAnalyzer:
 
         # Initialize API clients - CoinAPI as PRIMARY, CoinMarketCap as SECONDARY
         # Check all possible secret key variations with debug output
-        self.coinapi_key = (os.getenv('COIN_API_KEY') or 
-                           os.getenv('COINAPI_KEY') or 
-                           os.getenv('COIN_API') or
+        self.coinapi_key = (os.getenv('COIN_API') or 
+                           os.getenv('COIN_API_KEY') or 
+                           os.getenv('COINAPI_KEY') or
                            os.getenv('COINAPI'))
         self.coinmarketcap_key = os.getenv('COINMARKETCAP_API_KEY')
         
         # Debug environment variable reading
         print(f"🔍 DEBUG Environment Variables:")
+        print(f"   COIN_API: {'SET' if os.getenv('COIN_API') else 'NOT_SET'}")
         print(f"   COIN_API_KEY: {'SET' if os.getenv('COIN_API_KEY') else 'NOT_SET'}")
         print(f"   COINAPI_KEY: {'SET' if os.getenv('COINAPI_KEY') else 'NOT_SET'}")
         print(f"   COINMARKETCAP_API_KEY: {'SET' if os.getenv('COINMARKETCAP_API_KEY') else 'NOT_SET'}")
@@ -284,7 +285,7 @@ class EnhancedMarketAnalyzer:
                 self.logger.warning(f"❌ CoinAPI PRIMARY initialization failed: {coinapi_error}")
                 self.coinapi_client = None
         else:
-            self.logger.warning("❌ COIN_API_KEY not found in Replit Secrets. Add COIN_API_KEY or COINAPI_KEY to use primary data source.")
+            self.logger.warning("❌ CoinAPI key not found in Replit Secrets. Your key is in COIN_API - this should now work correctly.")
 
         # Initialize CoinMarketCap as SECONDARY (fallback)
         if not self.primary_api and self.coinmarketcap_key:

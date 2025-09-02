@@ -203,7 +203,7 @@ def autonomous_agent_loop():
 
             # Check market signal integration status
             market_signals_enabled = os.getenv('MARKET_SIGNAL_ENABLED', 'false').lower() == 'true'
-            coinapi_key = os.getenv('COINAPI_KEY') or os.getenv('COIN_API_KEY') 
+            coinapi_key = os.getenv('COIN_API') or os.getenv('COIN_API_KEY') or os.getenv('COINAPI_KEY') 
             coinmarketcap_key = os.getenv('COINMARKETCAP_API_KEY')
             
             # Debug API availability
