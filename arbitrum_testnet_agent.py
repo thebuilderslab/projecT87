@@ -525,6 +525,19 @@ class ArbitrumTestnetAgent:
         self.operation_cooldown_seconds = 60 # 1 minute cooldown
         self.last_operation_type = None  # Track type of last operation
 
+        # Growth-Triggered System Configuration
+        self.growth_trigger_threshold = 50.0  # $50 growth threshold
+        self.growth_health_factor_threshold = 2.0  # Minimum health factor for growth operations
+        self.re_leverage_percentage = 0.15  # 15% re-leverage percentage
+        self.min_borrow_releverage = 5.0  # Minimum borrow amount for re-leverage
+        self.max_borrow_releverage = 100.0  # Maximum borrow amount for re-leverage
+
+        # Capacity-Based System Configuration
+        self.capacity_available_threshold = 25.0  # $25 minimum available capacity
+        self.capacity_health_factor_threshold = 1.8  # Minimum health factor for capacity operations
+        self.capacity_optimization_threshold = 0.85  # 85% maximum utilization
+        self.target_health_factor = 2.5  # Target health factor to maintain
+
         # Display Hybrid System Configuration
         self._display_hybrid_system_config()
 
@@ -2411,6 +2424,42 @@ class ArbitrumTestnetAgent:
         except Exception as e:
             print(f"❌ Failed to get user account data: {e}")
             return None
+
+    def get_wbtc_balance(self):
+        """Get WBTC balance using Aave integration"""
+        try:
+            if hasattr(self, 'aave') and self.aave:
+                return self.aave.get_token_balance(self.wbtc_address)
+            else:
+                print("❌ Aave integration not available for WBTC balance")
+                return 0.0
+        except Exception as e:
+            print(f"❌ Failed to get WBTC balance: {e}")
+            return 0.0
+
+    def get_weth_balance(self):
+        """Get WETH balance using Aave integration"""
+        try:
+            if hasattr(self, 'aave') and self.aave:
+                return self.aave.get_token_balance(self.weth_address)
+            else:
+                print("❌ Aave integration not available for WETH balance")
+                return 0.0
+        except Exception as e:
+            print(f"❌ Failed to get WETH balance: {e}")
+            return 0.0
+
+    def get_arb_balance(self):
+        """Get ARB balance using Aave integration"""
+        try:
+            if hasattr(self, 'aave') and self.aave:
+                return self.aave.get_token_balance(self.arb_address)
+            else:
+                print("❌ Aave integration not available for ARB balance")
+                return 0.0
+        except Exception as e:
+            print(f"❌ Failed to get ARB balance: {e}")
+            return 0.0
 
     def get_health_factor(self):
         """Get health factor from Aave"""
