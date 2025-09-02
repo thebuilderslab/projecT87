@@ -1499,13 +1499,13 @@ class ArbitrumTestnetAgent:
         try:
             print("📊 Executing market signal operation (DAI debt swaps)")
 
-            # Check health factor requirement (2.0 minimum)
+            # Check health factor requirement (1.8 minimum)
             try:
                 account_data = self.get_user_account_data()
                 if account_data:
                     health_factor = account_data.get('healthFactor', 0)
-                    if health_factor < 2.0:
-                        print(f"❌ Health factor {health_factor:.3f} below market signal threshold 2.0")
+                    if health_factor < 1.8:
+                        print(f"❌ Health factor {health_factor:.3f} below market signal threshold 1.8")
                         return False
                     print(f"✅ Health factor {health_factor:.3f} meets market signal requirement")
             except Exception as hf_error:
@@ -1551,6 +1551,7 @@ class ArbitrumTestnetAgent:
             import traceback
             traceback.print_exc()
             return False
+
 
     def _validate_transaction_preconditions(self, available_borrows):
         """Validate all preconditions before attempting any transaction"""
@@ -2212,13 +2213,13 @@ class ArbitrumTestnetAgent:
         try:
             print("📊 Executing market signal operation (DAI debt swaps)")
 
-            # Check health factor requirement (2.0 minimum)
+            # Check health factor requirement (1.8 minimum)
             try:
                 account_data = self.get_user_account_data()
                 if account_data:
                     health_factor = account_data.get('healthFactor', 0)
-                    if health_factor < 2.0:
-                        print(f"❌ Health factor {health_factor:.3f} below market signal threshold 2.0")
+                    if health_factor < 1.8:
+                        print(f"❌ Health factor {health_factor:.3f} below market signal threshold 1.8")
                         return False
                     print(f"✅ Health factor {health_factor:.3f} meets market signal requirement")
             except Exception as hf_error:
