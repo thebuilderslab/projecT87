@@ -1,4 +1,3 @@
-
 #!/usr/bin/env python3
 """
 Technical Indicators Integration Test with Debt Swap Mechanism
@@ -64,7 +63,7 @@ def test_enhanced_market_analyzer():
             data = analyzer.get_market_data_with_fallback(symbol)
             if data:
                 print(f"✅ {symbol}: ${data.get('price', 0):.4f}")
-                
+
                 # Store historical data for pattern analysis
                 analyzer.store_historical_data(symbol, data)
             else:
@@ -111,11 +110,11 @@ def test_market_signal_strategy_initialization():
         analysis = strategy.get_market_analysis()
         if analysis and not analysis.get('error'):
             print("✅ Market analysis functional")
-            
+
             # Display key market data
             btc_data = analysis.get('btc_analysis', {})
             arb_data = analysis.get('arb_analysis', {})
-            
+
             if btc_data:
                 print(f"₿ BTC: ${btc_data.get('price', 0):,.2f} ({btc_data.get('change_24h', 0):+.2f}%)")
             if arb_data:
@@ -144,7 +143,7 @@ def test_debt_swap_integration():
         # Check if market signal strategy is properly integrated
         if hasattr(agent, 'market_signal_strategy') and agent.market_signal_strategy:
             print("✅ Market signal strategy integrated into agent")
-            
+
             # Check debt swap activation
             debt_swap_active = getattr(agent, 'debt_swap_active', False)
             print(f"✅ Debt swap active: {debt_swap_active}")
@@ -193,7 +192,7 @@ def test_technical_indicators_data_flow():
 
         # Initialize agent with market signals
         agent = ArbitrumTestnetAgent()
-        
+
         if not hasattr(agent, 'market_signal_strategy') or not agent.market_signal_strategy:
             print("❌ Market signal strategy not available on agent")
             return False
@@ -202,10 +201,10 @@ def test_technical_indicators_data_flow():
 
         # Force data collection for testing
         print("📊 Forcing data collection...")
-        
+
         if hasattr(strategy, 'enhanced_analyzer') and strategy.enhanced_analyzer:
             analyzer = strategy.enhanced_analyzer
-            
+
             # Collect fresh data for BTC and ARB
             for symbol in ['BTC', 'ARB']:
                 print(f"🔄 Collecting {symbol} data...")
@@ -273,7 +272,7 @@ def test_debt_swap_decision_process():
             return False
 
         print("✅ Market signal strategy available")
-        
+
         # Force strategy to be operational
         if hasattr(agent.market_signal_strategy, 'initialization_successful'):
             if not agent.market_signal_strategy.initialization_successful:
@@ -310,77 +309,12 @@ def test_debt_swap_decision_process():
                 print(f"⚠️ Market signal analysis failed: {signal_error}")
                 return False
 
-        return True
+        return False
 
     except Exception as e:
         print(f"❌ Debt swap decision process test failed: {e}")
-        return Falseor testing
-        if not agent.initialize_integrations():
-            print("⚠️ Integrations not fully initialized, testing with mock data")
-
-        # Test market signal trigger conditions
-        print("📊 Testing market signal trigger conditions...")
-        
-        try:
-            # Get account data for health factor check
-            if hasattr(agent, 'aave') and agent.aave:
-                account_data = agent.aave.get_user_account_data()
-                if account_data:
-                    health_factor = account_data.get('healthFactor', 0)
-                    available_borrows = account_data.get('availableBorrowsUSD', 0)
-                    print(f"✅ Health Factor: {health_factor:.3f}")
-                    print(f"✅ Available Borrows: ${available_borrows:.2f}")
-                    
-                    # Test if market signal operation would be allowed
-                    if health_factor > 1.8:
-                        print("✅ Health factor meets market signal threshold (>1.8)")
-                    else:
-                        print(f"❌ Health factor {health_factor:.3f} below threshold 1.8")
-                else:
-                    print("⚠️ Cannot retrieve account data")
-            else:
-                print("⚠️ Aave integration not available for testing")
-
-            # Test market signal analysis
-            strategy = agent.market_signal_strategy
-            signals = strategy.analyze_market_signals()
-            
-            if signals and signals.get('status') == 'success':
-                action = signals.get('action', 'hold')
-                confidence = signals.get('confidence_level', 0)
-                signals_detected = signals.get('signals_detected', [])
-                
-                print(f"\n🎯 MARKET SIGNAL ANALYSIS:")
-                print(f"   Action: {action.upper()}")
-                print(f"   Confidence: {confidence:.2f}")
-                print(f"   Signals: {len(signals_detected)} detected")
-                
-                for signal in signals_detected:
-                    print(f"      • {signal}")
-                
-                # Check if this would trigger a debt swap
-                if action != 'hold' and confidence > 0.6:
-                    print(f"🚀 DEBT SWAP WOULD BE TRIGGERED!")
-                    print(f"   Type: {action}")
-                    print(f"   Confidence: {confidence:.2f}")
-                else:
-                    print(f"⏳ No debt swap trigger (action: {action}, confidence: {confidence:.2f})")
-                    
-            else:
-                print("❌ Market signal analysis failed")
-                if signals:
-                    print(f"   Error: {signals.get('message', 'Unknown error')}")
-
-            return True
-
-        except Exception as analysis_error:
-            print(f"❌ Decision process test failed: {analysis_error}")
-            return False
-
-    except Exception as e:
-        print(f"❌ Debt swap decision test failed: {e}")
-        traceback.print_exc()
         return False
+
 
 def main():
     """Run comprehensive technical indicators integration tests"""
