@@ -51,19 +51,22 @@ class MarketSignalStrategy:
             # Try to import and initialize enhanced analyzer
             from enhanced_market_analyzer import EnhancedMarketAnalyzer, EnhancedMarketSignalStrategy
 
-            self.enhanced_strategy = EnhancedMarketSignalStrategy(agent)
-            self.enhanced_analyzer = self.enhanced_strategy.analyzer if self.enhanced_strategy.initialized else None
-            self.initialized = self.enhanced_strategy.initialized
+            # FIXED: Initialize analyzer directly with agent
+            self.enhanced_analyzer = EnhancedMarketAnalyzer(agent)
+            self.initialized = self.enhanced_analyzer.initialized
 
+            # FIXED: Initialize enhanced strategy separately
             if self.initialized:
-                logger.info("✅ Market Signal Strategy initialized with optimized API prioritization")
-                logger.info("   Primary: COIN_API | Secondary: CoinGecko | Tertiary: CoinMarketCap")
-                self.initialization_successful = True # Set flag if strategy initializes
+                self.enhanced_strategy = EnhancedMarketSignalStrategy(agent)
+                self.initialization_successful = True
+                logger.info("✅ Market Signal Strategy initialized with CoinMarketCap API")
+                logger.info("   Primary: CoinMarketCap | Secondary: CoinGecko | Fallback: Mock Data")
             else:
-                logger.warning("⚠️ Enhanced strategy failed, using fallback mode")
+                self.enhanced_strategy = None
+                logger.warning("⚠️ Enhanced analyzer failed, using fallback mode")
 
-        except ImportError:
-            logger.error("enhanced_market_analyzer not found. Please ensure it is installed.")
+        except ImportError as e:
+            logger.error(f"enhanced_market_analyzer not found: {e}")
             self.initialized = False
             self.enhanced_strategy = None
             self.enhanced_analyzer = None

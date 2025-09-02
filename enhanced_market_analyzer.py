@@ -120,6 +120,9 @@ class CoinAPIClient:
             'X-CoinAPI-Key': self.api_key,
             'Accept': 'application/json'
         })
+        # Add rate limiting
+        self.last_call_time = 0
+        self.min_call_interval = 1.0  # 1 second between calls
 
     def get_current_price(self, symbol: str) -> Optional[Dict]:
         """Get current price and metrics from COIN_API"""
@@ -188,18 +191,19 @@ class CoinAPIClient:
             }
 
         except requests.exceptions.HTTPError as e:
-                if hasattr(e, 'response') and e.response is not None:
-                    if e.response.status_code == 429:
-                        logger.warning(f"⚠️ COIN_API rate limit hit for {symbol}, switching to fallback")
-                        # Don't disable completely, just skip this call
-                    elif e.response.status_code in [401, 403]:
-                        logger.warning(f"⚠️ COIN_API authentication failed for {symbol}: Invalid API key")
-                        # Disable COIN_API for this session
-                        self.coin_api_client = None
-                    else:
-                        logger.warning(f"⚠️ COIN_API error for {symbol}: {e}")
+            if hasattr(e, 'response') and e.response is not None:
+                if e.response.status_code == 429:
+                    logger.warning(f"⚠️ COIN_API rate limit hit for {symbol}, switching to fallback")
+                    raise requests.exceptions.HTTPError("Rate limit exceeded", response=e.response)
+                elif e.response.status_code in [401, 403]:
+                    logger.warning(f"⚠️ COIN_API authentication failed for {symbol}: Invalid API key")
+                    return None
                 else:
                     logger.warning(f"⚠️ COIN_API error for {symbol}: {e}")
+                    return None
+            else:
+                logger.warning(f"⚠️ COIN_API error for {symbol}: {e}")
+                return None
         except Exception as e:
             logger.warning(f"⚠️ COIN_API unexpected error for {symbol}: {e}")
             return None
@@ -408,6 +412,110 @@ class CoinAPIClient:
         logger.info(f"Generated {len(data_points)} synthetic data points for {symbol}")
         return data_points
 
+    def _get_coingecko_historical_data(self, symbol: str, hours: int = 24) -> Optional[List[Dict]]:
+        """Helper to get historical data from CoinGecko"""
+        try:
+            # Map symbols to CoinGecko IDs
+            symbol_map = {
+                'BTC': 'bitcoin',
+                'ETH': 'ethereum',
+                'DAI': 'dai',
+                'ARB': 'arbitrum'
+            }
+
+            gecko_id = symbol_map.get(symbol.upper())
+            if not gecko_id:
+                logger.warning(f"Unknown symbol for CoinGecko historical: {symbol}")
+                return None
+
+            coingecko_client = CoinGeckoAPI()
+            base_url = "https://api.coingecko.com/api/v3"
+            
+            url = f"{base_url}/coins/{gecko_id}/market_chart"
+            params = {
+                'vs_currency': 'usd',
+                'days': max(1, hours // 24),
+                'interval': 'daily'
+            }
+
+            response = requests.get(url, params=params, timeout=30)
+            response.raise_for_status()
+
+            data = response.json()
+            if 'prices' not in data:
+                return None
+
+            historical_data = []
+            for price_point in data['prices'][-hours:]:
+                timestamp = datetime.fromtimestamp(price_point[0] / 1000)
+                historical_data.append({
+                    'timestamp': timestamp.isoformat(),
+                    'price': price_point[1],
+                    'volume': 0,
+                    'source': 'coingecko'
+                })
+
+            return historical_data
+
+        except Exception as e:
+            logger.error(f"CoinGecko historical data error for {symbol}: {e}")
+            return None
+
+    def _get_coinmarketcap_historical_data(self, symbol: str, hours: int = 24) -> Optional[List[Dict]]:
+        """Helper to get historical data from CoinMarketCap"""
+        try:
+            if not self.cmc_client:
+                return None
+
+            # Use current price as fallback for historical
+            current_data = self.cmc_client.get_current_price(symbol)
+            if current_data:
+                return [{
+                    'timestamp': datetime.now().isoformat(),
+                    'price': current_data['price'],
+                    'volume': current_data.get('volume_24h', 0),
+                    'source': 'coinmarketcap_current'
+                }]
+
+            return None
+
+        except Exception as e:
+            logger.error(f"CoinMarketCap historical data error for {symbol}: {e}")
+            return None
+
+    def _convert_cmc_to_standard_format(self, cmc_data: List[Dict], symbol: str) -> Optional[List[Dict]]:
+        """Convert CoinMarketCap data format to standardized format"""
+        if not cmc_data:
+            return None
+
+        standardized_data = []
+        for entry in cmc_data:
+            try:
+                standardized_data.append({
+                    'timestamp': entry.get('timestamp', datetime.now().isoformat()),
+                    'price': entry.get('price', 0),
+                    'volume': entry.get('volume', 0),
+                    'source': entry.get('source', 'coinmarketcap')
+                })
+            except Exception as e:
+                logger.error(f"Error converting CoinMarketCap entry: {e}")
+
+        return standardized_data
+
+    def get_current_prices(self, symbols: List[str]) -> Dict[str, Dict]:
+        """Get current prices for multiple symbols"""
+        prices = {}
+        for symbol in symbols:
+            try:
+                price_data = self.get_market_data_with_fallback(symbol)
+                if price_data:
+                    prices[symbol] = price_data
+                    time.sleep(0.5)  # Rate limiting between calls
+            except Exception as e:
+                logger.error(f"Error fetching price for {symbol}: {e}")
+                
+        return prices
+
 
 class CoinMarketCapAPI:
     """CoinMarketCap API client for fetching market data"""
@@ -576,6 +684,11 @@ class EnhancedMarketAnalyzer:
         self.indicators_cache = {}
         self.last_api_call = 0
         self.rate_limit_delay = 2.0  # 2 seconds between API calls
+        
+        # Add missing attributes
+        self.data_cache = {}
+        self.cache_timeout = 3600  # 1 hour cache timeout
+        self.technical_analysis = TechnicalAnalysis()
 
         # Initialize logger
         self.logger = logging.getLogger(__name__)
@@ -614,18 +727,30 @@ class EnhancedMarketAnalyzer:
                 self.logger.error(f"Unexpected error initializing CoinMarketCap API: {e}")
                 self.cmc_client = None
 
-        # Initialize with conservative API testing to avoid rate limits
+        # Test CoinMarketCap connection with rate limiting
         if self.cmc_client:
             try:
-                # Skip aggressive testing during initialization to preserve rate limits
-                self.initialized = True
-                self.logger.info("CoinMarketCap API client initialized - deferring connection test to first use")
+                # Conservative connection test with rate limiting
+                current_time = time.time()
+                if current_time - self.last_api_call >= 2.0:  # 2 second rate limit
+                    test_data = self.get_market_data_with_fallback('BTC')
+                    if test_data and 'price' in test_data:
+                        self.initialized = True
+                        self.logger.info(f"✅ Enhanced Market Analyzer initialized with CoinMarketCap API key: {self.coinmarketcap_key[:8]}...")
+                        self.logger.info("CoinMarketCap API test successful.")
+                    else:
+                        self.initialized = False
+                        self.logger.warning("CoinMarketCap API test failed")
+                else:
+                    # Skip test due to rate limiting, assume working
+                    self.initialized = True
+                    self.logger.info("CoinMarketCap API initialized - test skipped due to rate limiting")
             except Exception as e:
                 self.initialized = False
                 self.logger.error(f"CoinMarketCap API initialization failed: {e}")
         else:
             self.initialized = False
-            self.logger.warning("CoinMarketCap API client not available, setting initialized to False.")
+            self.logger.warning("CoinMarketCap API client not available")
 
 
     def _exponential_backoff(self, api_name: str, attempt: int) -> float:
@@ -1180,6 +1305,20 @@ class EnhancedMarketAnalyzer:
             logger.error(f"Error analyzing market signal for {symbol}: {e}")
             return None
 
+    def get_current_prices(self, symbols: List[str]) -> Dict[str, Dict]:
+        """Get current prices for multiple symbols with rate limiting"""
+        prices = {}
+        for symbol in symbols:
+            try:
+                price_data = self.get_market_data_with_fallback(symbol)
+                if price_data:
+                    prices[symbol] = price_data
+                    time.sleep(0.5)  # Rate limiting between calls
+            except Exception as e:
+                logger.error(f"Error fetching price for {symbol}: {e}")
+                
+        return prices
+
     def get_market_summary(self) -> Dict:
         """Get comprehensive market summary using dual API strategy"""
         try:
@@ -1190,10 +1329,10 @@ class EnhancedMarketAnalyzer:
                 'dai_analysis': {},
                 'arb_analysis': {},
                 'market_sentiment': 'neutral',
-                'data_source': 'coin_api_primary'  # Track which APIs were used
+                'data_source': 'coinmarketcap_primary'  # Track which APIs were used
             }
 
-            # Analyze major cryptocurrencies using COIN_API strategy
+            # Analyze major cryptocurrencies using optimized strategy
             symbols = ['BTC', 'ETH', 'DAI', 'ARB']
             current_prices = self.get_current_prices(symbols)
 

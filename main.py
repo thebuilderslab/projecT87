@@ -204,6 +204,7 @@ def autonomous_agent_loop():
             # Ensure debt swap system is active if market signals are enabled
             if (hasattr(arbitrum_agent, 'market_signal_strategy') and 
                 arbitrum_agent.market_signal_strategy and 
+                hasattr(arbitrum_agent.market_signal_strategy, 'market_signal_enabled') and
                 arbitrum_agent.market_signal_strategy.market_signal_enabled):
                 arbitrum_agent.debt_swap_active = True
                 print("🔄 INTEGRATED TRIGGER SYSTEM: All triggers active")
@@ -211,6 +212,13 @@ def autonomous_agent_loop():
                 print("   • Growth-Triggered System: ✅ Active") 
                 print("   • Capacity-Based System: ✅ Active")
                 print("   • Simultaneous monitoring enabled")
+            else:
+                # Debug why market signals aren't active
+                if hasattr(arbitrum_agent, 'market_signal_strategy') and arbitrum_agent.market_signal_strategy:
+                    strategy_status = arbitrum_agent.market_signal_strategy.get_strategy_status()
+                    print(f"🔍 Market Signal Status: {strategy_status}")
+                else:
+                    print("🔍 Market Signal Strategy: Not initialized")
 
             # Use real DeFi operations instead of simulation
             performance = arbitrum_agent.run_real_defi_task(run_id_counter, iteration, agent_config)

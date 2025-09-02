@@ -576,14 +576,18 @@ class ArbitrumTestnetAgent:
                 print("🔄 Initializing Market Signal Strategy...")
                 from market_signal_strategy import MarketSignalStrategy
 
-                # Create strategy instance
-                strategy = MarketSignalStrategy(coinmarketcap_key)
+                # FIXED: Pass agent instance instead of API key
+                strategy = MarketSignalStrategy(self)
 
                 # Only assign if initialization was successful
-                if strategy.initialization_successful:
+                if hasattr(strategy, 'initialization_successful') and strategy.initialization_successful:
                     self.market_signal_strategy = strategy
                     self.debt_swap_active = True
                     print("✅ Market Signal Strategy initialized and verified successfully")
+                elif hasattr(strategy, 'initialized') and strategy.initialized:
+                    self.market_signal_strategy = strategy
+                    self.debt_swap_active = True
+                    print("✅ Market Signal Strategy initialized with enhanced analyzer")
                 else:
                     print("❌ Market Signal Strategy initialization failed verification")
                     self.market_signal_strategy = None

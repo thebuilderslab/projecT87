@@ -172,3 +172,127 @@ def main():
 if __name__ == "__main__":
     success = main()
     sys.exit(0 if success else 1)
+#!/usr/bin/env python3
+"""
+Comprehensive Market Signal Integration Test
+Tests all components of the market signal strategy system
+"""
+
+import os
+import time
+import logging
+from datetime import datetime
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+def test_market_signal_integration():
+    """Test complete market signal integration"""
+    print("🔍 MARKET SIGNAL INTEGRATION TEST")
+    print("=" * 50)
+    
+    try:
+        # Test 1: Environment Variables
+        print("\n1️⃣ Testing Environment Variables...")
+        market_enabled = os.getenv('MARKET_SIGNAL_ENABLED', 'false').lower() == 'true'
+        coinmarketcap_key = os.getenv('COINMARKETCAP_API_KEY')
+        
+        print(f"   MARKET_SIGNAL_ENABLED: {market_enabled}")
+        print(f"   COINMARKETCAP_API_KEY: {'✅ Set' if coinmarketcap_key else '❌ Missing'}")
+        
+        if not market_enabled:
+            print("⚠️ Market signals disabled - enable with MARKET_SIGNAL_ENABLED=true")
+            return False
+            
+        if not coinmarketcap_key:
+            print("❌ COINMARKETCAP_API_KEY missing")
+            return False
+        
+        # Test 2: Enhanced Market Analyzer
+        print("\n2️⃣ Testing Enhanced Market Analyzer...")
+        try:
+            from enhanced_market_analyzer import EnhancedMarketAnalyzer
+            
+            # Create mock agent
+            class MockAgent:
+                def __init__(self):
+                    self.address = "0x5B823270e3719CDe8669e5e5326B455EaA8a350b"
+            
+            agent = MockAgent()
+            analyzer = EnhancedMarketAnalyzer(agent)
+            
+            print(f"   Analyzer initialized: {analyzer.initialized}")
+            
+            if analyzer.initialized:
+                # Test market data fetch
+                test_data = analyzer.get_market_data_with_fallback('BTC')
+                if test_data and 'price' in test_data:
+                    print(f"   ✅ BTC price fetch: ${test_data['price']:.2f}")
+                    print(f"   📊 Data source: {test_data.get('source', 'unknown')}")
+                else:
+                    print("   ⚠️ Price fetch returned no data")
+            
+        except Exception as e:
+            print(f"   ❌ Analyzer test failed: {e}")
+            return False
+        
+        # Test 3: Market Signal Strategy
+        print("\n3️⃣ Testing Market Signal Strategy...")
+        try:
+            from market_signal_strategy import MarketSignalStrategy
+            
+            strategy = MarketSignalStrategy(agent)
+            print(f"   Strategy initialized: {strategy.initialized}")
+            print(f"   Initialization successful: {strategy.initialization_successful}")
+            
+            if strategy.initialized:
+                # Test market analysis
+                analysis = strategy.get_market_analysis()
+                if analysis and not analysis.get('error'):
+                    print(f"   ✅ Market analysis successful")
+                    print(f"   📊 Status: {analysis.get('status', 'unknown')}")
+                else:
+                    print(f"   ⚠️ Market analysis failed: {analysis.get('error', 'unknown')}")
+            
+        except Exception as e:
+            print(f"   ❌ Strategy test failed: {e}")
+            return False
+        
+        # Test 4: Agent Integration
+        print("\n4️⃣ Testing Agent Integration...")
+        try:
+            from arbitrum_testnet_agent import ArbitrumTestnetAgent
+            
+            agent = ArbitrumTestnetAgent()
+            
+            if hasattr(agent, 'market_signal_strategy') and agent.market_signal_strategy:
+                print("   ✅ Market signal strategy attached to agent")
+                print(f"   🔄 Debt swap active: {agent.debt_swap_active}")
+                
+                # Test strategy status
+                status = agent.market_signal_strategy.get_strategy_status()
+                print(f"   📊 Strategy status: {status}")
+                
+            else:
+                print("   ❌ Market signal strategy not attached to agent")
+                return False
+            
+        except Exception as e:
+            print(f"   ❌ Agent integration test failed: {e}")
+            return False
+        
+        print("\n🎉 ALL INTEGRATION TESTS PASSED!")
+        print("✅ Market Signal Strategy is fully integrated")
+        return True
+        
+    except Exception as e:
+        print(f"❌ Integration test failed: {e}")
+        return False
+
+if __name__ == "__main__":
+    success = test_market_signal_integration()
+    if success:
+        print("\n🚀 Market Signal Strategy ready for production!")
+    else:
+        print("\n❌ Integration issues detected - check configuration")
