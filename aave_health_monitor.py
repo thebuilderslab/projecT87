@@ -74,24 +74,38 @@ class AaveHealthMonitor:
                 from web_dashboard import get_live_agent_data
                 live_data = get_live_agent_data()
 
+                # Critical None check - prevent NoneType errors
+                if live_data is None:
+                    print("⚠️ Dashboard returned None - using fallback method")
+                    raise Exception("Dashboard method returned None")
+
                 # Enhanced validation with timeout protection
-                if not live_data:
-                    raise Exception("No live data received from dashboard")
+                if not live_data or not isinstance(live_data, dict):
+                    print(f"⚠️ Invalid data type from dashboard: {type(live_data)}")
+                    raise Exception("No valid data received from dashboard")
 
                 # Validate required fields exist
                 required_fields = ['health_factor', 'total_collateral_usdc', 'total_debt_usdc', 'available_borrows_usdc']
+                missing_fields = []
                 for field in required_fields:
-                    if field not in live_data:
-                        raise Exception(f"Missing required field: {field}")
+                    if field not in live_data or live_data[field] is None:
+                        missing_fields.append(field)
 
-                # Validate data ranges
-                if live_data['health_factor'] <= 0 or live_data['health_factor'] > 1000:
-                    raise Exception(f"Invalid health factor: {live_data['health_factor']}")
+                if missing_fields:
+                    print(f"⚠️ Missing fields in dashboard data: {missing_fields}")
+                    raise Exception(f"Missing required fields: {missing_fields}")
 
-                if live_data['total_collateral_usdc'] < 0:
-                    raise Exception(f"Invalid collateral amount: {live_data['total_collateral_usdc']}")
+                # Validate data ranges with None checks
+                health_factor = live_data.get('health_factor')
+                collateral = live_data.get('total_collateral_usdc')
+                
+                if health_factor is None or health_factor <= 0 or health_factor > 1000:
+                    print(f"⚠️ Invalid health factor: {health_factor}")
+                    raise Exception(f"Invalid health factor: {health_factor}")
 
-                live_data = get_live_agent_data()
+                if collateral is None or collateral < 0:
+                    print(f"⚠️ Invalid collateral amount: {collateral}")
+                    raise Exception(f"Invalid collateral amount: {collateral}")
 
                 # Enhanced data validation
                 if live_data and self._validate_aave_data(live_data):
@@ -238,22 +252,32 @@ class AaveHealthMonitor:
             return self._get_fallback_account_data()
 
     def _get_fallback_account_data(self):
-        """Fallback account data analysis when Aave calls fail"""
+        """Fallback account data analysis when Aave calls fail - NEVER returns None"""
         try:
-            # Get direct wallet balances
-            eth_balance = self.w3.eth.get_balance(self.user_address) / 1e18
+            # Get direct wallet balances with None protection
+            try:
+                eth_balance = self.w3.eth.get_balance(self.user_address) / 1e18
+                if eth_balance is None:
+                    eth_balance = 0.0
+            except Exception as eth_err:
+                print(f"⚠️ ETH balance fetch failed: {eth_err}")
+                eth_balance = 0.0
 
-            # Try to get token balances directly
+            # Try to get token balances directly with None protection
             wbtc_balance = 0.0
             usdc_balance = 0.0
 
             try:
-                if hasattr(self.aave, 'wbtc_address'):
-                    wbtc_balance = self.aave.get_token_balance(self.aave.wbtc_address)
-                if hasattr(self.aave, 'usdc_address'):
-                    usdc_balance = self.aave.get_token_balance(self.aave.usdc_address)
+                if hasattr(self.aave, 'wbtc_address') and self.aave.wbtc_address:
+                    balance = self.aave.get_token_balance(self.aave.wbtc_address)
+                    wbtc_balance = balance if balance is not None else 0.0
+                if hasattr(self.aave, 'usdc_address') and self.aave.usdc_address:
+                    balance = self.aave.get_token_balance(self.aave.usdc_address)
+                    usdc_balance = balance if balance is not None else 0.0
             except Exception as token_err:
                 print(f"⚠️ Token balance retrieval failed: {token_err}")
+                wbtc_balance = 0.0
+                usdc_balance = 0.0
 
             # Estimate collateral from transaction history if possible
             estimated_collateral = 0.0
@@ -261,28 +285,34 @@ class AaveHealthMonitor:
                 # If we have WBTC, assume some was supplied
                 estimated_collateral = wbtc_balance * 0.8  # Conservative estimate
 
+            # GUARANTEED non-None fallback data structure
             fallback_data = {
-                'total_collateral_eth': estimated_collateral,
+                'total_collateral_eth': float(estimated_collateral) if estimated_collateral is not None else 0.0,
                 'total_debt_eth': 0.0,  # Conservative assumption
-                'available_borrows_eth': estimated_collateral * 0.7,  # 70% LTV estimate
+                'available_borrows_eth': float(estimated_collateral * 0.7) if estimated_collateral is not None else 0.0,
+                'total_collateral_usdc': float(estimated_collateral * 3000) if estimated_collateral is not None else 0.0,  # ~$3000/ETH estimate
+                'total_debt_usdc': 0.0,
+                'available_borrows_usdc': float(estimated_collateral * 2100) if estimated_collateral is not None else 0.0,  # 70% of collateral
                 'health_factor': float('inf') if estimated_collateral == 0 else 2.5,  # Conservative
-                'eth_balance': eth_balance,
-                'wbtc_balance': wbtc_balance,
-                'usdc_balance': usdc_balance,
+                'eth_balance': float(eth_balance) if eth_balance is not None else 0.0,
+                'wbtc_balance': float(wbtc_balance) if wbtc_balance is not None else 0.0,
+                'usdc_balance': float(usdc_balance) if usdc_balance is not None else 0.0,
                 'timestamp': time.time(),
-                'data_source': 'fallback_analysis'
+                'data_source': 'fallback_analysis',
+                'data_quality': 'fallback'
             }
 
             print(f"🔄 FALLBACK DATA ANALYSIS:")
-            print(f"   ETH Balance: {eth_balance:.6f}")
-            print(f"   WBTC Balance: {wbtc_balance:.8f}")
-            print(f"   USDC Balance: {usdc_balance:.2f}")
-            print(f"   Estimated Collateral: {estimated_collateral:.6f} ETH")
+            print(f"   ETH Balance: {fallback_data['eth_balance']:.6f}")
+            print(f"   WBTC Balance: {fallback_data['wbtc_balance']:.8f}")
+            print(f"   USDC Balance: {fallback_data['usdc_balance']:.2f}")
+            print(f"   Estimated Collateral: {fallback_data['total_collateral_eth']:.6f} ETH")
             print(f"   Health Factor: {fallback_data['health_factor']}")
             print(f"🔄 AGENT WILL CONTINUE WITH FALLBACK DATA")
 
-            # Store in history
-            self.health_history.append(fallback_data)
+            # Store in history with None check
+            if hasattr(self, 'health_history') and self.health_history is not None:
+                self.health_history.append(fallback_data)
 
             return fallback_data
 
@@ -290,19 +320,32 @@ class AaveHealthMonitor:
             print(f"⚠️ Fallback analysis also failed: {fallback_err}")
             print(f"🔄 USING MINIMAL SAFE DEFAULTS TO CONTINUE OPERATIONS")
 
-            # Absolute minimum to keep agent running
-            return {
+            # GUARANTEED minimal safe defaults - NEVER None
+            minimal_data = {
                 'total_collateral_eth': 0.0,
                 'total_debt_eth': 0.0,
                 'available_borrows_eth': 0.0,
+                'total_collateral_usdc': 0.0,
+                'total_debt_usdc': 0.0,
+                'available_borrows_usdc': 0.0,
                 'health_factor': float('inf'),
                 'timestamp': time.time(),
-                'data_source': 'minimal_defaults'
+                'data_source': 'minimal_defaults',
+                'data_quality': 'minimal'
             }
 
+            print(f"🔴 Using minimal safe defaults to prevent None errors")
+            return minimal_data
+
     def _validate_aave_data(self, data):
-        """Validate Aave data quality and completeness"""
+        """Validate Aave data quality and completeness with enhanced None checking"""
+        # Critical None check first
+        if data is None:
+            print(f"   ❌ Data is None")
+            return False
+            
         if not data or not isinstance(data, dict):
+            print(f"   ❌ Data is not a valid dictionary: {type(data)}")
             return False
 
         required_fields = ['health_factor', 'total_collateral_usdc', 'total_debt_usdc', 'available_borrows_usdc']
@@ -313,15 +356,24 @@ class AaveHealthMonitor:
                 return False
 
             value = data[field]
-            if value is None or (isinstance(value, (int, float)) and value < 0):
-                print(f"   ❌ Invalid value for {field}: {value}")
+            if value is None:
+                print(f"   ❌ Field {field} is None")
+                return False
+                
+            if isinstance(value, (int, float)) and value < 0:
+                print(f"   ❌ Invalid negative value for {field}: {value}")
                 return False
 
-        # Additional business logic validation
+        # Additional business logic validation with None protection
         health_factor = data.get('health_factor', 0)
         collateral = data.get('total_collateral_usdc', 0)
         debt = data.get('total_debt_usdc', 0)
         available = data.get('available_borrows_usdc', 0)
+
+        # Ensure no None values in extracted data
+        if any(v is None for v in [health_factor, collateral, debt, available]):
+            print(f"   ❌ One or more values are None: HF={health_factor}, Col={collateral}, Debt={debt}, Avail={available}")
+            return False
 
         # Health factor should be reasonable
         if health_factor < 0.1 or health_factor > 100:
@@ -338,6 +390,7 @@ class AaveHealthMonitor:
             print(f"   ❌ Available borrows exceed collateral: ${available:.2f} vs ${collateral:.2f}")
             return False
 
+        print(f"   ✅ Data validation passed")
         return True
 
     def _get_data_failure_reason(self, data):
