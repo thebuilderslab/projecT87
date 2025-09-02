@@ -1,15 +1,15 @@
-from arbitrum_testnet_agent import ArbitrumTestnetAgent # Assuming this is where your agent class is
-from collaborative_strategy_manager import CollaborativeStrategyManager
-import time
-import json
-import os
-import traceback
+#!/usr/bin/env python3
+"""
+Autonomous Arbitrum DeFi Agent - Main Entry Point
+Fixed signal handling to work in main thread
+"""
+
 import signal
 import sys
-from datetime import datetime
-from config import MIN_ETH_FOR_OPERATIONS, MIN_ETH_FOR_GAS_BUFFER
+import time
+import os
 
-# Setup signal handling in main thread immediately
+# CRITICAL FIX: Signal handling must be in main thread BEFORE any other imports
 def signal_handler(signum, frame):
     """Enhanced signal handler for graceful shutdown"""
     print(f"\n🛑 Signal {signum} received - initiating graceful shutdown...")
@@ -25,14 +25,33 @@ def signal_handler(signum, frame):
     print("👋 Autonomous agent shutting down safely...")
     sys.exit(0)
 
-# Register signal handlers in main thread
+# Register signal handlers in main thread IMMEDIATELY
 try:
     signal.signal(signal.SIGINT, signal_handler)   # Ctrl+C
     signal.signal(signal.SIGTERM, signal_handler)  # Termination signal
     print("✅ Enhanced error handling signal setup complete")
 except Exception as e:
-    print(f"⚠️ Could not setup signal handling: {e}")
+    print(f"⚠️ Could not setup enhanced error handling: {e}")
     # Continue without signal handling on systems that don't support it
+
+# Now import other modules after signal handling is established
+from arbitrum_testnet_agent import ArbitrumTestnetAgent
+try:
+    from collaborative_strategy_manager import CollaborativeStrategyManager
+except ImportError:
+    print("⚠️ Collaborative strategy manager not available")
+    CollaborativeStrategyManager = None
+
+import json
+import traceback
+from datetime import datetime
+
+try:
+    from config import MIN_ETH_FOR_OPERATIONS, MIN_ETH_FOR_GAS_BUFFER
+except ImportError:
+    print("⚠️ Config module not found, using defaults")
+    MIN_ETH_FOR_OPERATIONS = 0.001
+    MIN_ETH_FOR_GAS_BUFFER = 0.0005
 
 # --- Configuration ---
 CONFIG_FILE = 'agent_config.json'
