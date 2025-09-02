@@ -241,25 +241,25 @@ class EnhancedMarketAnalyzer:
         self.primary_api = None
         self.secondary_api = None
         
-        # Initialize CoinAPI as PRIMARY
+        # PRIORITY: Initialize CoinAPI as PRIMARY DATA SOURCE
         if self.coinapi_key:
             try:
                 self.coinapi_client = CoinAPI(self.coinapi_key)
-                # Test CoinAPI
+                # Test CoinAPI connection
                 test_data = self.coinapi_client.get_current_price('BTC')
                 if test_data and 'price' in test_data:
                     self.primary_api = 'coinapi'
                     self.initialized = True
                     self.mock_mode = False
-                    self.logger.info(f"✅ Enhanced Market Analyzer initialized with CoinAPI as PRIMARY: {self.coinapi_key[:8]}...")
-                    self.logger.info("CoinAPI test successful - using as primary data source.")
+                    self.logger.info(f"🎯 PRIMARY: CoinAPI initialized successfully with key: {self.coinapi_key[:8]}...")
+                    self.logger.info("✅ CoinAPI confirmed as PRIMARY market data source")
                 else:
                     raise Exception("CoinAPI test returned no data")
             except Exception as coinapi_error:
-                self.logger.warning(f"CoinAPI initialization failed: {coinapi_error}")
+                self.logger.warning(f"❌ CoinAPI PRIMARY initialization failed: {coinapi_error}")
                 self.coinapi_client = None
         else:
-            self.logger.warning("COINAPI_KEY not found. Checking CoinMarketCap as fallback.")
+            self.logger.warning("❌ COINAPI_KEY not found in Replit Secrets. Add COINAPI_KEY or COIN_API_KEY to use primary data source.")
 
         # Initialize CoinMarketCap as SECONDARY (fallback)
         if not self.primary_api and self.coinmarketcap_key:
@@ -314,7 +314,7 @@ class EnhancedMarketAnalyzer:
         if current_time - self.last_api_call < self.rate_limit_delay:
             time.sleep(self.rate_limit_delay - (current_time - self.last_api_call))
 
-        # Try CoinAPI FIRST (PRIMARY)
+        # PRIORITY 1: Try CoinAPI FIRST (PRIMARY DATA SOURCE)
         if self.coinapi_client and not self.mock_mode:
             try:
                 data = self.coinapi_client.get_current_price(symbol)
@@ -323,9 +323,10 @@ class EnhancedMarketAnalyzer:
                     self.api_failure_count = 0  # Reset failure count on success
                     data['source'] = 'coinapi_primary'
                     data['timestamp'] = time.time()
+                    self.logger.info(f"🎯 Using PRIMARY CoinAPI data for {symbol}: ${data['price']:.4f}")
                     return data
             except Exception as e:
-                self.logger.warning(f"CoinAPI (PRIMARY) failed for {symbol}: {e}")
+                self.logger.warning(f"❌ CoinAPI (PRIMARY) failed for {symbol}: {e}")
                 # Don't increment failure count for CoinAPI - try CoinMarketCap fallback
 
         # Try CoinMarketCap as SECONDARY fallback
