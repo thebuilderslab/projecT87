@@ -249,12 +249,13 @@ class ArbitrumTestnetAgent:
             else:
                 print("⚠️ DEBUG: No ALCHEMY_RPC_URL found in environment variables")
 
-            # Add fallback endpoints
+            # Add high-throughput fallback endpoints (removed problematic Infura)
             fallback_endpoints = [
-                "https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f938ff891c141",
-                "https://arb1.arbitrum.io/rpc",
+                "https://arbitrum.llamarpc.com",
+                "https://arb1.arbitrum.io/rpc", 
                 "https://arbitrum-one.public.blastapi.io",
-                "https://arbitrum-one.publicnode.com"
+                "https://arbitrum-one.publicnode.com",
+                "https://arbitrum.rpc.subquery.network/public"
             ]
 
             self.rpc_endpoints.extend(fallback_endpoints)
@@ -356,9 +357,9 @@ class ArbitrumTestnetAgent:
         return [rpc['url'] for rpc in working_rpcs]
 
     def _create_robust_web3_connection(self, rpc_url):
-        """Create a robust Web3 connection with optimized settings"""
+        """Create a robust Web3 connection with exponential backoff retry mechanism"""
         try:
-            # Enhanced request settings for reliability
+            # Enhanced request settings for reliability with rate limit handling
             request_kwargs = {
                 'timeout': 30,
                 'headers': {
@@ -368,17 +369,20 @@ class ArbitrumTestnetAgent:
                 }
             }
 
-            # Add retry settings for better reliability
+            # Enhanced retry settings with exponential backoff for rate limits
             from requests.adapters import HTTPAdapter
             from urllib3.util.retry import Retry
 
             import requests
             session = requests.Session()
 
+            # Aggressive retry strategy for rate limits
             retry_strategy = Retry(
-                total=3,
-                backoff_factor=0.3,
+                total=5,  # Increased retries
+                backoff_factor=1.0,  # Exponential backoff: 1s, 2s, 4s, 8s, 16s
                 status_forcelist=[429, 500, 502, 503, 504],
+                respect_retry_after_header=True,  # Honor rate limit headers
+                raise_on_status=False
             )
 
             adapter = HTTPAdapter(max_retries=retry_strategy)
@@ -407,7 +411,7 @@ class ArbitrumTestnetAgent:
 
         current_rpc = self.rpc_url
         working_rpcs = [
-            "https://arbitrum-mainnet.infura.io/v3/5d36f0061cbc4dda980f938ff891c141",
+            "https://arbitrum.llamarpc.com",
             "https://arb1.arbitrum.io/rpc",
             "https://arbitrum-one.publicnode.com",
             "https://arbitrum-one.public.blastapi.io"
