@@ -6,6 +6,7 @@ Test DAI ↔ ARB swap operations with proper integration setup
 import os
 import time
 import sys
+import traceback
 
 def test_dai_arb_swap():
     """Test DAI to ARB swap and back to DAI"""
@@ -138,7 +139,6 @@ def test_dai_arb_swap():
 
         except Exception as swap_error:
             print(f"❌ DAI → ARB swap error: {swap_error}")
-            import traceback
             traceback.print_exc()
             return False
 
@@ -228,14 +228,81 @@ def test_dai_arb_swap():
     except Exception as e:
         print(f"❌ SWAP TEST FAILED")
         print(f"💡 Error: {e}")
-        import traceback
         traceback.print_exc()
         return False
 
-if __name__ == "__main__":
-    success = test_dai_arb_swap()
-    if success:
-        print("\n🎉 All swap tests passed!")
+def test_arb_for_dai():
+    """Test ARB to DAI swap operation"""
+    print("\n🔄 TESTING ARB → DAI SWAP")
+    print("=" * 40)
+
+    try:
+        from arbitrum_testnet_agent import ArbitrumTestnetAgent
+        agent = ArbitrumTestnetAgent()
+
+        if not agent.initialize_integrations():
+            print("❌ Failed to initialize integrations")
+            return False
+
+        # Get initial balances
+        arb_balance = agent.get_arb_balance() if hasattr(agent, 'get_arb_balance') else 0
+        dai_balance = agent.get_dai_balance() if hasattr(agent, 'get_dai_balance') else 0
+
+        print(f"📊 Initial ARB: {arb_balance:.6f}, DAI: {dai_balance:.6f}")
+
+        if arb_balance < 0.0001:
+            print("⚠️ Insufficient ARB for test, skipping ARB→DAI swap")
+            return False
+
+        # Test swap amount
+        swap_amount = min(0.0001, arb_balance * 0.1)
+        print(f"🔄 Swapping {swap_amount:.6f} ARB for DAI...")
+
+        if hasattr(agent, 'uniswap') and agent.uniswap:
+            swap_result = agent.uniswap.swap_arb_for_dai(swap_amount)
+
+            if swap_result and 'tx_hash' in swap_result:
+                print(f"✅ APPROVED SWAP: ARB → DAI")
+                print(f"📋 TX: {swap_result['tx_hash']}")
+                return True
+            else:
+                print("❌ ARB → DAI swap failed")
+                return False
+        else:
+            print("❌ Uniswap not available")
+            return False
+
+    except Exception as e:
+        print(f"❌ ARB→DAI test error: {e}")
+        return False
+
+def main():
+    """Main function with comprehensive error handling"""
+    print("🔄 BIDIRECTIONAL DAI ↔ ARB SWAP TEST")
+    print("=" * 50)
+
+    # Run the DAI to ARB swap test first
+    dai_to_arb_success = test_dai_arb_swap()
+
+    if dai_to_arb_success:
+        print("✅ DAI → ARB swap test completed successfully")
+
+        # Test reverse swap (ARB → DAI)
+        print("\n" + "=" * 50)
+        arb_to_dai_success = test_arb_for_dai()
+
+        if arb_to_dai_success:
+            print("✅ ARB → DAI swap test completed successfully")
+            print("\n🎉 BIDIRECTIONAL SWAP CAPABILITY VERIFIED")
+        else:
+            print("⚠️ ARB → DAI swap test failed or skipped")
+
+        return True
+
     else:
-        print("\n❌ Swap tests failed!")
-        print("💡 Check logs for details")
+        print("❌ DAI → ARB swap test failed")
+        return False
+
+
+if __name__ == "__main__":
+    main()

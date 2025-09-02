@@ -4,8 +4,35 @@ import time
 import json
 import os
 import traceback
+import signal
+import sys
 from datetime import datetime
 from config import MIN_ETH_FOR_OPERATIONS, MIN_ETH_FOR_GAS_BUFFER
+
+# Setup signal handling in main thread immediately
+def signal_handler(signum, frame):
+    """Enhanced signal handler for graceful shutdown"""
+    print(f"\n🛑 Signal {signum} received - initiating graceful shutdown...")
+    
+    # Create emergency stop flag
+    try:
+        with open('EMERGENCY_STOP_ACTIVE.flag', 'w') as f:
+            f.write(f"Emergency stop activated by signal {signum} at {time.time()}")
+        print("✅ Emergency stop flag created")
+    except Exception as e:
+        print(f"⚠️ Could not create emergency stop flag: {e}")
+    
+    print("👋 Autonomous agent shutting down safely...")
+    sys.exit(0)
+
+# Register signal handlers in main thread
+try:
+    signal.signal(signal.SIGINT, signal_handler)   # Ctrl+C
+    signal.signal(signal.SIGTERM, signal_handler)  # Termination signal
+    print("✅ Enhanced error handling signal setup complete")
+except Exception as e:
+    print(f"⚠️ Could not setup signal handling: {e}")
+    # Continue without signal handling on systems that don't support it
 
 # --- Configuration ---
 CONFIG_FILE = 'agent_config.json'
