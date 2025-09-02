@@ -571,7 +571,11 @@ class ArbitrumTestnetAgent:
         self.market_signal_strategy = None
         self.debt_swap_active = False
 
-        if market_signal_enabled and coinmarketcap_key:
+        # Check for ANY market data API key (CoinAPI primary, CoinMarketCap secondary)
+        coinapi_key = os.getenv('COINAPI_KEY') or os.getenv('COIN_API_KEY')
+        any_market_api = coinapi_key or coinmarketcap_key
+
+        if market_signal_enabled and any_market_api:
             try:
                 print("🔄 Initializing Market Signal Strategy...")
                 from market_signal_strategy import MarketSignalStrategy
@@ -579,25 +583,33 @@ class ArbitrumTestnetAgent:
                 # Initialize Market Signal Strategy
                 strategy = MarketSignalStrategy(self)
 
-                # Market signal strategy now has better fallback handling
-                if (hasattr(strategy, 'initialization_successful') and strategy.initialization_successful) or \
-                   (hasattr(strategy, 'initialized') and strategy.initialized):
+                # CRITICAL FIX: Check initialization_successful flag properly
+                if hasattr(strategy, 'initialization_successful') and strategy.initialization_successful:
                     self.market_signal_strategy = strategy
                     self.debt_swap_active = True
                     
-                    # Determine what mode we're running in
+                    # Determine what data source we're using
                     if hasattr(strategy, 'enhanced_analyzer') and strategy.enhanced_analyzer:
-                        if getattr(strategy.enhanced_analyzer, 'mock_mode', False):
-                            print("✅ Market Signal Strategy initialized with Mock Data (API rate limited)")
+                        if hasattr(strategy.enhanced_analyzer, 'primary_api'):
+                            if strategy.enhanced_analyzer.primary_api == 'coinapi':
+                                print("✅ Market Signal Strategy initialized with CoinAPI (Primary)")
+                            elif strategy.enhanced_analyzer.primary_api == 'coinmarketcap':
+                                print("✅ Market Signal Strategy initialized with CoinMarketCap (Fallback Primary)")
+                            else:
+                                print("✅ Market Signal Strategy initialized with Mock Data")
+                        elif getattr(strategy.enhanced_analyzer, 'mock_mode', False):
+                            print("✅ Market Signal Strategy initialized with Mock Data (API issues)")
                         else:
-                            print("✅ Market Signal Strategy initialized with CoinMarketCap API")
+                            print("✅ Market Signal Strategy initialized with API Data")
                     else:
                         print("✅ Market Signal Strategy initialized in Conservative Mode")
                         
-                    # Always activate debt swaps if strategy initializes
+                    # Always activate debt swaps if strategy initializes successfully
                     print("🔄 Debt swap system activated with market signal integration")
                 else:
-                    print("❌ Market Signal Strategy initialization failed completely")
+                    print("❌ Market Signal Strategy initialization failed - initialization_successful = False")
+                    if hasattr(strategy, 'initialized'):
+                        print(f"   Strategy initialized flag: {strategy.initialized}")
                     self.market_signal_strategy = None
                     self.debt_swap_active = False
 
@@ -720,15 +732,32 @@ class ArbitrumTestnetAgent:
                 print("   🎯 ARB oversold RSI: < 30")
                 print("   🎯 ARB overbought RSI: > 70")
                 print("   🔄 Signal cooldown: 5 minutes")
+                
+                # Show which API is being used
+                if hasattr(self.market_signal_strategy, 'enhanced_analyzer') and self.market_signal_strategy.enhanced_analyzer:
+                    primary_api = getattr(self.market_signal_strategy.enhanced_analyzer, 'primary_api', 'unknown')
+                    if primary_api == 'coinapi':
+                        print("   🎯 Data Source: CoinAPI (Primary)")
+                    elif primary_api == 'coinmarketcap':
+                        print("   🎯 Data Source: CoinMarketCap (Fallback)")
+                    else:
+                        print("   🎯 Data Source: Mock Data")
+                        
             else:
                 print("   ❌ Market signal strategy not available")
                 print("   📊 Debt swaps disabled")
                 if not os.getenv('MARKET_SIGNAL_ENABLED', 'false').lower() == 'true':
                     print("   💡 Required: Set MARKET_SIGNAL_ENABLED=true")
-                if not os.getenv('COINMARKETCAP_API_KEY'):
-                    print("   💡 Required: Set COINMARKETCAP_API_KEY")
+                
+                coinapi_key = os.getenv('COINAPI_KEY') or os.getenv('COIN_API_KEY')
+                coinmarketcap_key = os.getenv('COINMARKETCAP_API_KEY')
+                
+                if coinapi_key:
+                    print("   ✅ COINAPI_KEY configured (Primary)")
+                elif coinmarketcap_key:
+                    print("   ✅ COINMARKETCAP_API_KEY configured (Secondary)")
                 else:
-                    print("   ✅ COINMARKETCAP_API_KEY configured")
+                    print("   💡 Required: Set COINAPI_KEY (primary) or COINMARKETCAP_API_KEY (fallback)")
 
             print("📊 INTEGRATED MARKET INDICATORS:")
             if (self.market_signal_strategy and 
@@ -746,10 +775,17 @@ class ArbitrumTestnetAgent:
                     print("   💡 Required: MARKET_SIGNAL_ENABLED=true")
                 else:
                     print("   ✅ MARKET_SIGNAL_ENABLED configured")
-                if not os.getenv('COINMARKETCAP_API_KEY'):
-                    print("   💡 Required: COINMARKETCAP_API_KEY")
+                
+                # Check for API keys in priority order
+                coinapi_key = os.getenv('COINAPI_KEY') or os.getenv('COIN_API_KEY')
+                coinmarketcap_key = os.getenv('COINMARKETCAP_API_KEY')
+                
+                if coinapi_key:
+                    print("   ✅ COINAPI_KEY configured (Primary)")
+                elif coinmarketcap_key:
+                    print("   ✅ COINMARKETCAP_API_KEY configured (Secondary)")
                 else:
-                    print("   ✅ COINMARKETCAP_API_KEY configured")
+                    print("   💡 Required: COINAPI_KEY (primary) or COINMARKETCAP_API_KEY (fallback)")
         except Exception as e:
             print(f"   ❌ Error displaying debt swap thresholds: {e}")
 

@@ -203,6 +203,14 @@ def autonomous_agent_loop():
 
             # Check market signal integration status
             market_signals_enabled = os.getenv('MARKET_SIGNAL_ENABLED', 'false').lower() == 'true'
+            coinapi_key = os.getenv('COINAPI_KEY') or os.getenv('COIN_API_KEY') 
+            coinmarketcap_key = os.getenv('COINMARKETCAP_API_KEY')
+            
+            # Debug API availability
+            if coinapi_key:
+                print(f"🎯 CoinAPI key available for primary market data")
+            if coinmarketcap_key:
+                print(f"🔄 CoinMarketCap key available for secondary market data")
             
             if market_signals_enabled and hasattr(arbitrum_agent, 'market_signal_strategy') and arbitrum_agent.market_signal_strategy:
                 try:

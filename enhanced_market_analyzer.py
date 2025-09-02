@@ -45,8 +45,64 @@ class MarketSignal:
     recommendation: str
     timestamp: float
 
+class CoinAPI:
+    """CoinAPI client for fetching market data (PRIMARY DATA SOURCE)"""
+
+    def __init__(self, api_key: str):
+        self.api_key = api_key
+        self.base_url = "https://rest.coinapi.io/v1"
+        self.session = requests.Session()
+        self.session.headers.update({
+            'X-CoinAPI-Key': self.api_key,
+        })
+
+    def get_current_price(self, symbol: str) -> Optional[Dict]:
+        """Get current price from CoinAPI"""
+        try:
+            # Convert symbol to CoinAPI format
+            symbol_map = {
+                'BTC': 'BTC',
+                'ETH': 'ETH', 
+                'ARB': 'ARB',
+                'DAI': 'DAI'
+            }
+            
+            coin_symbol = symbol_map.get(symbol, symbol)
+            url = f"{self.base_url}/exchangerate/{coin_symbol}/USD"
+
+            response = self.session.get(url, timeout=30)
+            response.raise_for_status()
+
+            data = response.json()
+            
+            if 'rate' not in data:
+                return None
+
+            # Get additional data if available
+            try:
+                # Get OHLCV data for additional metrics
+                ohlcv_url = f"{self.base_url}/ohlcv/{coin_symbol}/USD/latest"
+                ohlcv_response = self.session.get(ohlcv_url, timeout=30)
+                ohlcv_data = ohlcv_response.json() if ohlcv_response.status_code == 200 else {}
+            except:
+                ohlcv_data = {}
+
+            return {
+                'price': data['rate'],
+                'percent_change_1h': 0,  # CoinAPI doesn't provide this directly
+                'percent_change_24h': ohlcv_data.get('price_change_pct', 0),
+                'percent_change_7d': 0,
+                'volume_24h': ohlcv_data.get('volume_traded', 0),
+                'market_cap': 0,
+                'source': 'coinapi'
+            }
+
+        except Exception as e:
+            logger.error(f"Error fetching price from CoinAPI for {symbol}: {e}")
+            return None
+
 class CoinMarketCapAPI:
-    """CoinMarketCap API client for fetching market data"""
+    """CoinMarketCap API client for fetching market data (SECONDARY DATA SOURCE)"""
 
     def __init__(self, api_key: str):
         self.api_key = api_key
@@ -176,52 +232,80 @@ class EnhancedMarketAnalyzer:
         # Initialize logger
         self.logger = logging.getLogger(__name__)
 
-        # Initialize CoinMarketCap API client
+        # Initialize API clients - CoinAPI as PRIMARY, CoinMarketCap as SECONDARY
+        self.coinapi_key = os.getenv('COINAPI_KEY') or os.getenv('COIN_API_KEY')
         self.coinmarketcap_key = os.getenv('COINMARKETCAP_API_KEY')
-        if not self.coinmarketcap_key:
-            self.logger.warning("COINMARKETCAP_API_KEY not found. Using mock data mode.")
-            self.cmc_client = None
-            self.initialized = True  # Still consider initialized for mock mode
-            self.mock_mode = True
-        else:
+        
+        self.coinapi_client = None
+        self.cmc_client = None
+        self.primary_api = None
+        self.secondary_api = None
+        
+        # Initialize CoinAPI as PRIMARY
+        if self.coinapi_key:
             try:
-                if not self.coinmarketcap_key or len(self.coinmarketcap_key) < 10:
+                self.coinapi_client = CoinAPI(self.coinapi_key)
+                # Test CoinAPI
+                test_data = self.coinapi_client.get_current_price('BTC')
+                if test_data and 'price' in test_data:
+                    self.primary_api = 'coinapi'
+                    self.initialized = True
+                    self.mock_mode = False
+                    self.logger.info(f"✅ Enhanced Market Analyzer initialized with CoinAPI as PRIMARY: {self.coinapi_key[:8]}...")
+                    self.logger.info("CoinAPI test successful - using as primary data source.")
+                else:
+                    raise Exception("CoinAPI test returned no data")
+            except Exception as coinapi_error:
+                self.logger.warning(f"CoinAPI initialization failed: {coinapi_error}")
+                self.coinapi_client = None
+        else:
+            self.logger.warning("COINAPI_KEY not found. Checking CoinMarketCap as fallback.")
+
+        # Initialize CoinMarketCap as SECONDARY (fallback)
+        if not self.primary_api and self.coinmarketcap_key:
+            try:
+                if len(self.coinmarketcap_key) < 10:
                     raise ValueError("Invalid CoinMarketCap API key provided")
                 self.cmc_client = CoinMarketCapAPI(self.coinmarketcap_key)
-                self.mock_mode = False
                 
-                # Test API with a simple call and handle rate limits gracefully
+                # Test CoinMarketCap API
                 try:
                     test_data = self.cmc_client.get_current_price('BTC')
                     if test_data:
+                        self.primary_api = 'coinmarketcap'
                         self.initialized = True
-                        self.logger.info(f"✅ Enhanced Market Analyzer initialized with CoinMarketCap API key: {self.coinmarketcap_key[:8]}...")
-                        self.logger.info("CoinMarketCap API test successful.")
+                        self.mock_mode = False
+                        self.logger.info(f"✅ Enhanced Market Analyzer initialized with CoinMarketCap as FALLBACK PRIMARY: {self.coinmarketcap_key[:8]}...")
+                        self.logger.info("CoinMarketCap API test successful - using as primary (CoinAPI not available).")
                     else:
-                        raise Exception("API test returned no data")
-                except Exception as api_error:
-                    if "429" in str(api_error) or "Too Many Requests" in str(api_error):
+                        raise Exception("CoinMarketCap API test returned no data")
+                except Exception as cmc_error:
+                    if "429" in str(cmc_error) or "Too Many Requests" in str(cmc_error):
                         self.logger.warning("CoinMarketCap API rate limited during initialization - switching to mock mode")
                         self.mock_mode = True
                         self.initialized = True
                     else:
-                        self.logger.error(f"CoinMarketCap API test failed: {api_error}")
+                        self.logger.error(f"CoinMarketCap API test failed: {cmc_error}")
                         self.mock_mode = True
-                        self.initialized = True  # Still allow mock mode operation
+                        self.initialized = True
                         
             except ValueError as e:
                 self.logger.error(f"Error initializing CoinMarketCap API: {e}")
-                self.cmc_client = None
-                self.initialized = True  # Allow mock mode
                 self.mock_mode = True
+                self.initialized = True
             except Exception as e:
                 self.logger.error(f"Unexpected error initializing CoinMarketCap API: {e}")
-                self.cmc_client = None
-                self.initialized = True  # Allow mock mode
                 self.mock_mode = True
+                self.initialized = True
+
+        # If both APIs failed, use mock mode
+        if not self.primary_api:
+            self.logger.warning("Both CoinAPI and CoinMarketCap unavailable. Using mock data mode.")
+            self.mock_mode = True
+            self.initialized = True
 
     def get_market_data_with_fallback(self, symbol: str) -> Optional[Dict]:
-        """Get market data with fallback mechanisms"""
+        """Get market data with CoinAPI as PRIMARY, CoinMarketCap as SECONDARY fallback"""
         # If in mock mode or too many API failures, go straight to mock data
         if self.mock_mode or self.api_failure_count >= self.max_api_failures:
             return self._get_mock_data(symbol)
@@ -230,27 +314,40 @@ class EnhancedMarketAnalyzer:
         if current_time - self.last_api_call < self.rate_limit_delay:
             time.sleep(self.rate_limit_delay - (current_time - self.last_api_call))
 
-        # Try CoinMarketCap first
+        # Try CoinAPI FIRST (PRIMARY)
+        if self.coinapi_client and not self.mock_mode:
+            try:
+                data = self.coinapi_client.get_current_price(symbol)
+                if data and 'price' in data:
+                    self.last_api_call = time.time()
+                    self.api_failure_count = 0  # Reset failure count on success
+                    data['source'] = 'coinapi_primary'
+                    data['timestamp'] = time.time()
+                    return data
+            except Exception as e:
+                self.logger.warning(f"CoinAPI (PRIMARY) failed for {symbol}: {e}")
+                # Don't increment failure count for CoinAPI - try CoinMarketCap fallback
+
+        # Try CoinMarketCap as SECONDARY fallback
         if self.cmc_client and not self.mock_mode:
             try:
                 data = self.cmc_client.get_current_price(symbol)
                 if data and 'price' in data:
                     self.last_api_call = time.time()
                     self.api_failure_count = 0  # Reset failure count on success
-                    data['source'] = 'coinmarketcap'
+                    data['source'] = 'coinmarketcap_secondary'
                     data['timestamp'] = time.time()
                     return data
             except Exception as e:
                 self.api_failure_count += 1
                 if "429" in str(e) or "Too Many Requests" in str(e):
-                    self.logger.warning(f"CoinMarketCap rate limited for {symbol} - switching to mock mode temporarily")
-                    self.mock_mode = True  # Temporarily switch to mock mode
+                    self.logger.warning(f"CoinMarketCap (SECONDARY) rate limited for {symbol} - switching to mock mode")
+                    self.mock_mode = True  # Switch to mock mode after both APIs fail
                 else:
-                    self.logger.warning(f"CoinMarketCap failed for {symbol}: {e}")
+                    self.logger.warning(f"CoinMarketCap (SECONDARY) failed for {symbol}: {e}")
 
-        # Return mock data as fallback
-        if not self.mock_mode:
-            self.logger.warning(f"All APIs failed for {symbol}, using mock data")
+        # Return mock data as final fallback
+        self.logger.warning(f"Both CoinAPI and CoinMarketCap failed for {symbol}, using mock data")
         return self._get_mock_data(symbol)
 
     def _get_mock_data(self, symbol: str) -> Optional[Dict]:

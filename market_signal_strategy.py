@@ -48,28 +48,32 @@ class MarketSignalStrategy:
             # Enhanced analyzer now always initializes (with mock fallback)
             self.initialized = self.enhanced_analyzer.initialized
 
-            # Initialize enhanced strategy - it should work even with mock data
+            # CRITICAL FIX: Always mark as initialization successful if analyzer initializes
             if self.initialized:
+                self.initialization_successful = True
+                
+                # Determine data source for logging
+                if hasattr(self.enhanced_analyzer, 'primary_api'):
+                    if self.enhanced_analyzer.primary_api == 'coinapi':
+                        data_source = "CoinAPI (Primary)"
+                    elif self.enhanced_analyzer.primary_api == 'coinmarketcap':
+                        data_source = "CoinMarketCap (Fallback Primary)"
+                    else:
+                        data_source = "Mock Data"
+                else:
+                    data_source = "Mock Data" if getattr(self.enhanced_analyzer, 'mock_mode', False) else "Unknown API"
+                
+                logger.info(f"✅ Market Signal Strategy initialized with {data_source}")
+                logger.info("   Primary: CoinAPI | Secondary: CoinMarketCap | Fallback: Mock Data")
+
                 try:
                     self.enhanced_strategy = EnhancedMarketSignalStrategy(agent)
-                    # Test if strategy can perform basic operations
-                    test_analysis = self.enhanced_analyzer.get_market_summary()
-                    if test_analysis and not test_analysis.get('error'):
-                        self.initialization_successful = True
-                        data_source = "CoinMarketCap API" if not getattr(self.enhanced_analyzer, 'mock_mode', False) else "Mock Data"
-                        logger.info(f"✅ Market Signal Strategy initialized with {data_source}")
-                        logger.info("   Primary: CoinMarketCap | Secondary: Mock | Fallback: Conservative")
-                    else:
-                        # Even if analysis fails, we can still operate in conservative mode
-                        self.initialization_successful = True
-                        logger.info("✅ Market Signal Strategy initialized in conservative mode")
-                        
+                    logger.info("✅ Enhanced strategy component loaded successfully")
                 except Exception as strategy_error:
-                    logger.warning(f"Enhanced strategy initialization issue: {strategy_error}")
-                    # Create a basic fallback strategy
+                    logger.warning(f"Enhanced strategy component issue: {strategy_error}")
                     self.enhanced_strategy = None
-                    self.initialization_successful = True  # Still allow basic operation
-                    logger.info("✅ Market Signal Strategy initialized in basic fallback mode")
+                    # Don't fail initialization for this
+                    
             else:
                 self.enhanced_strategy = None
                 self.initialization_successful = False
