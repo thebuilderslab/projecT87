@@ -113,7 +113,7 @@ class MarketSignalStrategy:
             logger.info("✅ Mock analyzer created for debt swap operations")
 
     def _detect_macd_bullish_crossover(self, arb_analysis):
-        """Detect MACD bullish crossover for primary DAI→ARB trigger"""
+        """Detect MACD bullish crossover for ARB→DAI trigger (sell high)"""
         try:
             # Get MACD data from analysis
             macd_line = arb_analysis.get('macd_line', 0)
@@ -146,7 +146,7 @@ class MarketSignalStrategy:
             prev_macd = self.macd_history[-2]
             curr_macd = self.macd_history[-1]
             
-            # Detect bullish crossover: MACD line crosses above signal line
+            # Detect bullish crossover: MACD line crosses above signal line (sell signal)
             prev_below = prev_macd['macd_line'] <= prev_macd['signal_line']
             curr_above = curr_macd['macd_line'] > curr_macd['signal_line']
             
@@ -154,7 +154,7 @@ class MarketSignalStrategy:
             histogram_positive = curr_macd['histogram'] > 0
             
             if prev_below and curr_above and histogram_positive:
-                logger.info(f"🚀 MACD BULLISH CROSSOVER DETECTED!")
+                logger.info(f"🚀 MACD BULLISH CROSSOVER DETECTED - SELL HIGH SIGNAL!")
                 logger.info(f"   Previous: MACD {prev_macd['macd_line']:.4f} ≤ Signal {prev_macd['signal_line']:.4f}")
                 logger.info(f"   Current:  MACD {curr_macd['macd_line']:.4f} > Signal {curr_macd['signal_line']:.4f}")
                 logger.info(f"   Histogram: {curr_macd['histogram']:.4f} (positive)")
@@ -163,7 +163,47 @@ class MarketSignalStrategy:
             return False
             
         except Exception as e:
-            logger.error(f"MACD crossover detection error: {e}")
+            logger.error(f"MACD bullish crossover detection error: {e}")
+            return False
+
+    def _detect_macd_bearish_crossover(self, arb_analysis):
+        """Detect MACD bearish crossover for DAI→ARB trigger (buy low)"""
+        try:
+            # Get MACD data from analysis
+            macd_line = arb_analysis.get('macd_line', 0)
+            macd_signal = arb_analysis.get('macd_signal', 0)
+            macd_histogram = arb_analysis.get('macd_histogram', 0)
+            
+            # Store current MACD data if not already done in bullish detection
+            if not hasattr(self, 'macd_history'):
+                self.macd_history = []
+            
+            # Need at least 2 readings to detect crossover
+            if len(self.macd_history) < 2:
+                return False
+            
+            # Get previous and current MACD values
+            prev_macd = self.macd_history[-2]
+            curr_macd = self.macd_history[-1]
+            
+            # Detect bearish crossover: MACD line crosses below signal line (buy signal)
+            prev_above = prev_macd['macd_line'] > prev_macd['signal_line']
+            curr_below = curr_macd['macd_line'] <= curr_macd['signal_line']
+            
+            # Additional confirmation: histogram turning negative
+            histogram_negative = curr_macd['histogram'] < 0
+            
+            if prev_above and curr_below and histogram_negative:
+                logger.info(f"📉 MACD BEARISH CROSSOVER DETECTED - BUY LOW SIGNAL!")
+                logger.info(f"   Previous: MACD {prev_macd['macd_line']:.4f} > Signal {prev_macd['signal_line']:.4f}")
+                logger.info(f"   Current:  MACD {curr_macd['macd_line']:.4f} ≤ Signal {curr_macd['signal_line']:.4f}")
+                logger.info(f"   Histogram: {curr_macd['histogram']:.4f} (negative)")
+                return True
+                
+            return False
+            
+        except Exception as e:
+            logger.error(f"MACD bearish crossover detection error: {e}")
             return False
 
     def _create_mock_analyzer(self):
@@ -256,36 +296,36 @@ class MarketSignalStrategy:
                     btc_analysis = analysis.get('btc_analysis', {})
                     
                     if action == "dai_to_arb":
-                        # Bullish reasons for buying ARB with DAI
+                        # CORRECTED: Bearish reasons for buying ARB with DAI (buy low strategy)
                         arb_rsi = arb_analysis.get('rsi', 50)
-                        if arb_rsi < 40:  # Using optimized threshold
-                            reasons.append(f"ARB oversold at RSI {arb_rsi:.1f} - bullish opportunity")
-                        
-                        arb_pattern = arb_analysis.get('pattern', 'unknown')
-                        if 'bullish' in arb_pattern:
-                            reasons.append(f"Bullish ARB pattern: {arb_pattern} - upward momentum")
-                        
-                        arb_change_5min = arb_analysis.get('price_change_5min', 0)
-                        if arb_change_5min > 0.3:
-                            reasons.append(f"ARB gaining {arb_change_5min:.1f}% in 5min - positive momentum")
-                            
-                        btc_signal = btc_analysis.get('signal', 'neutral')
-                        if btc_signal == 'bullish':
-                            reasons.append("BTC bullish momentum supporting ARB strength")
-                            
-                    elif action == "arb_to_dai":
-                        # Bearish reasons for selling ARB to DAI
-                        arb_rsi = arb_analysis.get('rsi', 50)
-                        if arb_rsi > 70:  # Using optimized threshold
-                            reasons.append(f"ARB overbought at RSI {arb_rsi:.1f} - profit taking time")
+                        if arb_rsi < 45:  # Using high-frequency threshold
+                            reasons.append(f"ARB oversold at RSI {arb_rsi:.1f} - buy low opportunity")
                         
                         arb_pattern = arb_analysis.get('pattern', 'unknown')
                         if 'bearish' in arb_pattern:
-                            reasons.append(f"Bearish ARB pattern: {arb_pattern} - downward pressure")
+                            reasons.append(f"Bearish ARB pattern: {arb_pattern} - buy the dip")
                         
                         arb_change_5min = arb_analysis.get('price_change_5min', 0)
                         if arb_change_5min < -0.3:
-                            reasons.append(f"ARB declining {arb_change_5min:.1f}% in 5min - bearish momentum")
+                            reasons.append(f"ARB declining {arb_change_5min:.1f}% in 5min - buy low opportunity")
+                            
+                        btc_signal = btc_analysis.get('signal', 'neutral')
+                        if btc_signal == 'bearish':
+                            reasons.append("BTC bearish pressure creating ARB buying opportunity")
+                            
+                    elif action == "arb_to_dai":
+                        # CORRECTED: Bullish reasons for selling ARB to DAI (sell high strategy)
+                        arb_rsi = arb_analysis.get('rsi', 50)
+                        if arb_rsi > 65:  # Using high-frequency threshold
+                            reasons.append(f"ARB overbought at RSI {arb_rsi:.1f} - sell high opportunity")
+                        
+                        arb_pattern = arb_analysis.get('pattern', 'unknown')
+                        if 'bullish' in arb_pattern:
+                            reasons.append(f"Bullish ARB pattern: {arb_pattern} - sell the peak")
+                        
+                        arb_change_5min = arb_analysis.get('price_change_5min', 0)
+                        if arb_change_5min > 0.3:
+                            reasons.append(f"ARB gaining {arb_change_5min:.1f}% in 5min - sell high opportunity")
                     
                     else:  # hold
                         reasons.append("Market conditions neutral - no clear directional signal")
@@ -411,12 +451,19 @@ class MarketSignalStrategy:
                         DAI_TO_ARB_THRESHOLD, ARB_TO_DAI_THRESHOLD
                     )
                     
-                    # PRIMARY TRIGGER: MACD Bullish Crossover Detection
+                    # PRIMARY TRIGGER: MACD Bearish Crossover Detection for DAI→ARB (buy low)
+                    macd_bearish_crossover = self._detect_macd_bearish_crossover(arb_analysis)
+                    if macd_bearish_crossover:
+                        signal_strength += 0.6  # Strong positive signal for DAI→ARB (buy when bearish)
+                        signals_detected.append("MACD Bearish Crossover - Buy Low Trigger")
+                        logger.info("📉 MACD BEARISH CROSSOVER DETECTED - Strong DAI→ARB signal (buy low)")
+                    
+                    # SECONDARY TRIGGER: MACD Bullish Crossover for ARB→DAI (sell high)
                     macd_bullish_crossover = self._detect_macd_bullish_crossover(arb_analysis)
                     if macd_bullish_crossover:
-                        signal_strength += 0.6  # Strong positive signal for DAI→ARB
-                        signals_detected.append("MACD Bullish Crossover - Primary Trigger")
-                        logger.info("🚀 MACD BULLISH CROSSOVER DETECTED - Strong DAI→ARB signal")
+                        signal_strength -= 0.6  # Strong negative signal for ARB→DAI (sell when bullish)
+                        signals_detected.append("MACD Bullish Crossover - Sell High Trigger")
+                        logger.info("🚀 MACD BULLISH CROSSOVER DETECTED - Strong ARB→DAI signal (sell high)")
                     
                     # Get 5-minute pattern analysis for better timing
                     btc_pattern = btc_analysis.get('pattern', 'unknown')
@@ -458,29 +505,29 @@ class MarketSignalStrategy:
                         signal_strength -= 0.3  # Bearish signal
                         signals_detected.append(f"BTC Drop {btc_change*100:.1f}% (threshold: {BTC_DROP_THRESHOLD*100:.1f}%)")
                     
-                    # CORRECTED: Bullish ARB pattern detection for DAI->ARB swaps (buy ARB when bullish)
-                    if (arb_pattern in ['strong_bullish', 'moderate_bullish'] and 
-                        arb_price_change_5min > 0.3 and arb_rsi < ARB_RSI_OVERSOLD):
-                        # Strong bullish signal - swap DAI to ARB (buy ARB)
-                        signal_strength += arb_confidence * 0.5  # Positive signal strength
-                        signals_detected.append(f"DAI->ARB (bullish pattern detected, 5min: {arb_price_change_5min:.1f}%, RSI: {arb_rsi:.0f})")
+                    # CORRECTED LOGIC: Bearish ARB signals trigger DAI→ARB (buy low strategy)
+                    if (arb_pattern in ['strong_bearish', 'moderate_bearish'] and 
+                        arb_price_change_5min < -0.3 and arb_rsi < ARB_RSI_OVERSOLD):
+                        # Bearish ARB signal - buy ARB with DAI (buy when low)
+                        signal_strength += arb_confidence * 0.5  # Positive signal strength for DAI→ARB
+                        signals_detected.append(f"DAI->ARB (bearish dip detected - buy low, 5min: {arb_price_change_5min:.1f}%, RSI: {arb_rsi:.0f})")
                     
-                    # CORRECTED: Bearish ARB pattern detection for ARB->DAI swaps (sell ARB when bearish)
-                    elif (arb_pattern in ['strong_bearish', 'moderate_bearish'] and 
-                          arb_price_change_5min < -0.3 and arb_rsi > ARB_RSI_OVERBOUGHT):
-                        # Bearish signal - swap ARB to DAI (sell ARB)
-                        signal_strength -= arb_confidence * 0.4  # Negative signal strength
-                        signals_detected.append(f"ARB->DAI (bearish pattern detected, 5min: {arb_price_change_5min:.1f}%, RSI: {arb_rsi:.0f})")
+                    # CORRECTED LOGIC: Bullish ARB signals trigger ARB→DAI (sell high strategy)
+                    elif (arb_pattern in ['strong_bullish', 'moderate_bullish'] and 
+                          arb_price_change_5min > 0.3 and arb_rsi > ARB_RSI_OVERBOUGHT):
+                        # Bullish ARB signal - sell ARB for DAI (sell when high)
+                        signal_strength -= arb_confidence * 0.4  # Negative signal strength for ARB→DAI
+                        signals_detected.append(f"ARB->DAI (bullish peak detected - sell high, 5min: {arb_price_change_5min:.1f}%, RSI: {arb_rsi:.0f})")
                     
-                    # CORRECTED: RSI-based signals with proper logic
-                    elif arb_rsi < ARB_RSI_OVERSOLD:  # ARB oversold = good time to buy ARB
+                    # CORRECTED LOGIC: RSI-based signals with proper buy low/sell high logic
+                    elif arb_rsi < ARB_RSI_OVERSOLD:  # ARB oversold = buy opportunity (bearish condition)
                         if arb_confidence >= 0.4:
-                            signal_strength += arb_confidence * 0.3  # Positive for DAI->ARB
-                            signals_detected.append(f"DAI->ARB (ARB oversold opportunity, RSI: {arb_rsi:.0f})")
-                    elif arb_rsi > ARB_RSI_OVERBOUGHT:  # ARB overbought = good time to sell ARB
+                            signal_strength += arb_confidence * 0.3  # Positive for DAI->ARB (buy low)
+                            signals_detected.append(f"DAI->ARB (ARB oversold - buy low opportunity, RSI: {arb_rsi:.0f})")
+                    elif arb_rsi > ARB_RSI_OVERBOUGHT:  # ARB overbought = sell opportunity (bullish condition)
                         if arb_confidence >= 0.4:
-                            signal_strength -= arb_confidence * 0.3  # Negative for ARB->DAI
-                            signals_detected.append(f"ARB->DAI (ARB overbought, take profits, RSI: {arb_rsi:.0f})")
+                            signal_strength -= arb_confidence * 0.3  # Negative for ARB->DAI (sell high)
+                            signals_detected.append(f"ARB->DAI (ARB overbought - sell high opportunity, RSI: {arb_rsi:.0f})")
 
                     # Apply market sentiment with pattern consideration
                     market_sentiment = analysis.get('market_sentiment', 'neutral')

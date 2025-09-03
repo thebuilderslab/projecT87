@@ -337,10 +337,9 @@ def autonomous_agent_loop():
                     print(f"⚠️ Failed to reinitialize connections: {reinit_error}")
 
         finally:
-            # This block will always execute, whether there was an error or not.
-            # It's important for controlling the loop's frequency.
-            sleep_duration_seconds = 45  # Sleep for 45 seconds
-            print(f"💤 Sleeping for {sleep_duration_seconds} seconds before next iteration...")
+            # High-frequency trading: reduced sleep duration
+            sleep_duration_seconds = 30  # Sleep for 30 seconds (high-frequency)
+            print(f"💤 High-frequency mode: Sleeping for {sleep_duration_seconds} seconds before next iteration...")
             time.sleep(sleep_duration_seconds)
 
 if __name__ == "__main__":

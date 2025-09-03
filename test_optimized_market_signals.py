@@ -61,33 +61,33 @@ def test_optimized_parameters_with_mock_data():
                     self.price_history = {'ARB': [], 'BTC': []}
                     
                 def get_market_summary(self):
-                    """Return guaranteed bullish ARB conditions for DAI→ARB trigger"""
+                    """Return corrected bearish ARB conditions for DAI→ARB trigger (buy low)"""
                     return {
                         'btc_analysis': {
-                            'price': 97200,  # Strong BTC price
-                            'change_24h': 2.1,  # Positive momentum
-                            'signal': 'bullish',
-                            'pattern': 'strong_bullish',
-                            'confidence': 0.8,
-                            'price_change_5min': 0.3
+                            'price': 96500,  # Neutral BTC price
+                            'change_24h': -0.5,  # Slight decline
+                            'signal': 'neutral',
+                            'pattern': 'consolidation',
+                            'confidence': 0.6,
+                            'price_change_5min': -0.1
                         },
                         'arb_analysis': {
-                            'price': 0.72,  # ARB price
-                            'change_24h': 3.5,  # Strong daily gain
-                            'signal': 'bullish',  # CORRECTED: Bullish ARB signal
-                            'rsi': 35,  # Below 40 threshold (oversold = good to buy)
-                            'pattern': 'strong_bullish',  # CORRECTED: Bullish pattern for DAI→ARB
-                            'confidence': 0.9,  # High confidence
-                            'price_change_5min': 1.2,  # CORRECTED: Positive momentum (bullish)
-                            # CRITICAL: MACD Bullish Crossover Data
-                            'macd_line': 0.0025,     # MACD above signal
-                            'macd_signal': 0.0015,   # Signal line
-                            'macd_histogram': 0.001  # Positive histogram
+                            'price': 0.66,  # Lower ARB price (bearish)
+                            'change_24h': -2.1,  # Daily decline (bearish)
+                            'signal': 'bearish',  # CORRECTED: Bearish ARB signal for buy low
+                            'rsi': 42,  # Below 45 threshold (oversold = buy opportunity)
+                            'pattern': 'moderate_bearish',  # CORRECTED: Bearish pattern triggers DAI→ARB
+                            'confidence': 0.8,  # High confidence
+                            'price_change_5min': -0.7,  # CORRECTED: Negative momentum (bearish dip)
+                            # CRITICAL: MACD Bearish Crossover Data
+                            'macd_line': -0.001,     # MACD below signal (bearish)
+                            'macd_signal': 0.0015,   # Signal line above
+                            'macd_histogram': -0.0025  # Negative histogram (bearish)
                         },
-                        'market_sentiment': 'bullish',
+                        'market_sentiment': 'bearish',
                         'mock_data': True,
                         'test_mode': True,
-                        'logic_note': 'Bullish ARB data triggers DAI→ARB swap (buy ARB with DAI)'
+                        'logic_note': 'CORRECTED: Bearish ARB data triggers DAI→ARB swap (buy low strategy)'
                     }
             
             # Replace the analyzer with our mock bullish version
