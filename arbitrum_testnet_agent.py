@@ -562,7 +562,7 @@ class ArbitrumTestnetAgent:
 
         # Check all possible variations systematically
         coinapi_key = None
-        coinapi_variations = ['COIN_API_KEY', 'COINAPI_KEY', 'COIN_API', 'COINAPI']
+        coinapi_variations = ['COIN_API_KEY', 'COIN_API', 'COINAPI_KEY', 'COINAPI']
         for var_name in coinapi_variations:
             key_value = os.getenv(var_name)
             if key_value and len(key_value.strip()) > 10:
@@ -603,7 +603,7 @@ class ArbitrumTestnetAgent:
 
                 print("✅ Market Signal Strategy FORCED to operational status")
                 print("✅ Debt swap system ACTIVATED with forced initialization")
-                
+
                 # Add console reporting capability
                 def get_arb_balance(self):
                     """Get ARB token balance"""
@@ -618,7 +618,7 @@ class ArbitrumTestnetAgent:
                     except Exception as e:
                         print(f"❌ Error getting ARB balance: {e}")
                     return 0.0
-                
+
                 # Add method to agent
                 import types
                 self.get_arb_balance = types.MethodType(get_arb_balance, self)
@@ -2495,3 +2495,109 @@ class ArbitrumTestnetAgent:
         except Exception as e:
             print(f"❌ Failed to get health factor: {e}")
             return 0
+
+    def _execute_debt_swap_dai_to_arb(self):
+        """Execute DAI to ARB debt swap with profit tracking"""
+        try:
+            print("🔄 Executing DAI → ARB debt swap...")
+
+            # Check DAI balance
+            dai_balance = self.get_dai_balance()
+
+            if dai_balance < 10.0:  # Need at least $10 DAI
+                print(f"❌ Insufficient DAI balance: {dai_balance:.2f}")
+                return False
+
+            # Use up to 50% of DAI balance for swap
+            swap_amount = min(dai_balance * 0.5, 100.0)  # Max $100
+
+            print(f"💱 Swapping {swap_amount:.2f} DAI for ARB...")
+
+            # Execute swap via Uniswap
+            if hasattr(self, 'uniswap') and self.uniswap:
+                result = self.uniswap.swap_dai_for_arb(swap_amount)
+
+                if result and result.get('success'):
+                    tx_hash = result.get('tx_hash')
+                    cycle_id = result.get('cycle_id')
+
+                    print(f"✅ DAI → ARB swap successful!")
+                    print(f"🔗 TX: {tx_hash}")
+                    print(f"📊 Cycle ID: {cycle_id}")
+
+                    # Log the swap with console reporter
+                    try:
+                        from swap_console_reporter import log_swap_execution
+                        log_swap_execution('dai_to_arb', swap_amount, result.get('arb_received', 0), 
+                                         self.market_signal_strategy.get_swap_decision_reasons('dai_to_arb'))
+                    except:
+                        pass
+
+                    return True
+                else:
+                    print("❌ DAI → ARB swap failed")
+                    return False
+            else:
+                print("❌ Uniswap integration not available")
+                return False
+
+        except Exception as e:
+            print(f"❌ DAI → ARB debt swap error: {e}")
+            return False
+
+    def _execute_debt_swap_arb_to_dai(self):
+        """Execute ARB to DAI debt swap with profit tracking"""
+        try:
+            print("🔄 Executing ARB → DAI debt swap...")
+
+            # Check ARB balance
+            arb_balance = self.get_arb_balance()
+
+            if arb_balance < 5.0:  # Need at least 5 ARB
+                print(f"❌ Insufficient ARB balance: {arb_balance:.6f}")
+                return False
+
+            # Use up to 80% of ARB balance for swap back to DAI
+            swap_amount = arb_balance * 0.8
+
+            print(f"💱 Swapping {swap_amount:.6f} ARB for DAI...")
+
+            # Execute swap via Uniswap
+            if hasattr(self, 'uniswap') and self.uniswap:
+                result = self.uniswap.swap_arb_for_dai(swap_amount)
+
+                if result and result.get('success'):
+                    tx_hash = result.get('tx_hash')
+
+                    print(f"✅ ARB → DAI swap successful!")
+                    print(f"🔗 TX: {tx_hash}")
+                    print(f"💰 DAI received: {result.get('dai_received', 0):.2f}")
+
+                    # Log the swap with console reporter
+                    try:
+                        from swap_console_reporter import log_swap_execution
+                        log_swap_execution('arb_to_dai', swap_amount, result.get('dai_received', 0),
+                                         self.market_signal_strategy.get_swap_decision_reasons('arb_to_dai'))
+                    except:
+                        pass
+
+                    return True
+                else:
+                    print("❌ ARB → DAI swap failed")
+                    return False
+            else:
+                print("❌ Uniswap integration not available")
+                return False
+
+        except Exception as e:
+            print(f"❌ ARB → DAI debt swap error: {e}")
+            return False
+
+    def get_dai_balance(self):
+        """Get current DAI balance"""
+        try:
+            if hasattr(self, 'aave') and self.aave:
+                return self.aave.get_dai_balance()
+            return 0.0
+        except:
+            return 0.0
