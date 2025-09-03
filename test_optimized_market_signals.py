@@ -61,7 +61,7 @@ def test_optimized_parameters_with_mock_data():
                     self.price_history = {'ARB': [], 'BTC': []}
                     
                 def get_market_summary(self):
-                    """Return guaranteed bullish market conditions"""
+                    """Return guaranteed bullish ARB conditions for DAI→ARB trigger"""
                     return {
                         'btc_analysis': {
                             'price': 97200,  # Strong BTC price
@@ -72,13 +72,13 @@ def test_optimized_parameters_with_mock_data():
                             'price_change_5min': 0.3
                         },
                         'arb_analysis': {
-                            'price': 0.72,  # ARB price increase
+                            'price': 0.72,  # ARB price
                             'change_24h': 3.5,  # Strong daily gain
-                            'signal': 'bullish',
-                            'rsi': 35,  # Below 40 threshold (oversold)
-                            'pattern': 'bullish_momentum',
+                            'signal': 'bullish',  # CORRECTED: Bullish ARB signal
+                            'rsi': 35,  # Below 40 threshold (oversold = good to buy)
+                            'pattern': 'strong_bullish',  # CORRECTED: Bullish pattern for DAI→ARB
                             'confidence': 0.9,  # High confidence
-                            'price_change_5min': 1.2,  # Strong 5min momentum
+                            'price_change_5min': 1.2,  # CORRECTED: Positive momentum (bullish)
                             # CRITICAL: MACD Bullish Crossover Data
                             'macd_line': 0.0025,     # MACD above signal
                             'macd_signal': 0.0015,   # Signal line
@@ -86,7 +86,8 @@ def test_optimized_parameters_with_mock_data():
                         },
                         'market_sentiment': 'bullish',
                         'mock_data': True,
-                        'test_mode': True
+                        'test_mode': True,
+                        'logic_note': 'Bullish ARB data triggers DAI→ARB swap (buy ARB with DAI)'
                     }
             
             # Replace the analyzer with our mock bullish version

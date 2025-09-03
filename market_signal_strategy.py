@@ -256,32 +256,36 @@ class MarketSignalStrategy:
                     btc_analysis = analysis.get('btc_analysis', {})
                     
                     if action == "dai_to_arb":
-                        # Bullish reasons for buying ARB
+                        # Bullish reasons for buying ARB with DAI
                         arb_rsi = arb_analysis.get('rsi', 50)
-                        if arb_rsi < 35:
-                            reasons.append(f"ARB RSI oversold at {arb_rsi:.1f} - potential upside")
+                        if arb_rsi < 40:  # Using optimized threshold
+                            reasons.append(f"ARB oversold at RSI {arb_rsi:.1f} - bullish opportunity")
                         
                         arb_pattern = arb_analysis.get('pattern', 'unknown')
                         if 'bullish' in arb_pattern:
-                            reasons.append(f"Bullish chart pattern detected: {arb_pattern}")
+                            reasons.append(f"Bullish ARB pattern: {arb_pattern} - upward momentum")
                         
+                        arb_change_5min = arb_analysis.get('price_change_5min', 0)
+                        if arb_change_5min > 0.3:
+                            reasons.append(f"ARB gaining {arb_change_5min:.1f}% in 5min - positive momentum")
+                            
                         btc_signal = btc_analysis.get('signal', 'neutral')
                         if btc_signal == 'bullish':
-                            reasons.append("BTC showing bullish momentum - supporting ARB strength")
+                            reasons.append("BTC bullish momentum supporting ARB strength")
                             
                     elif action == "arb_to_dai":
-                        # Bearish reasons for selling ARB
+                        # Bearish reasons for selling ARB to DAI
                         arb_rsi = arb_analysis.get('rsi', 50)
-                        if arb_rsi > 65:
-                            reasons.append(f"ARB RSI overbought at {arb_rsi:.1f} - profit taking opportunity")
+                        if arb_rsi > 70:  # Using optimized threshold
+                            reasons.append(f"ARB overbought at RSI {arb_rsi:.1f} - profit taking time")
                         
                         arb_pattern = arb_analysis.get('pattern', 'unknown')
                         if 'bearish' in arb_pattern:
-                            reasons.append(f"Bearish chart pattern detected: {arb_pattern}")
+                            reasons.append(f"Bearish ARB pattern: {arb_pattern} - downward pressure")
                         
                         arb_change_5min = arb_analysis.get('price_change_5min', 0)
-                        if arb_change_5min < -0.5:
-                            reasons.append(f"ARB declining {arb_change_5min:.1f}% in 5min - momentum shift")
+                        if arb_change_5min < -0.3:
+                            reasons.append(f"ARB declining {arb_change_5min:.1f}% in 5min - bearish momentum")
                     
                     else:  # hold
                         reasons.append("Market conditions neutral - no clear directional signal")
@@ -357,7 +361,13 @@ class MarketSignalStrategy:
             }
 
     def analyze_market_signals(self) -> Dict:
-        """Analyze current market signals for trading decisions with MACD and optimized parameters"""
+        """
+        Analyze current market signals for trading decisions with MACD and optimized parameters
+        
+        CORRECTED LOGIC:
+        - DAI → ARB: Triggered by BULLISH ARB signals (buy ARB when expected to rise)
+        - ARB → DAI: Triggered by BEARISH ARB signals (sell ARB when expected to fall)
+        """
         try:
             if self.initialized and self.enhanced_analyzer:
                 # Get comprehensive market analysis with pattern detection
@@ -448,29 +458,29 @@ class MarketSignalStrategy:
                         signal_strength -= 0.3  # Bearish signal
                         signals_detected.append(f"BTC Drop {btc_change*100:.1f}% (threshold: {BTC_DROP_THRESHOLD*100:.1f}%)")
                     
-                    # Strong bearish pattern detection for ARB->DAI swaps
-                    if (arb_pattern in ['strong_bearish', 'moderate_bearish'] and 
-                        arb_price_change_5min < -0.3 and arb_rsi > ARB_RSI_OVERBOUGHT):
-                        # Bearish signal - swap ARB to DAI
-                        signal_strength -= arb_confidence * 0.4
-                        signals_detected.append(f"ARB->DAI (bearish pattern, 5min: {arb_price_change_5min:.1f}%, RSI: {arb_rsi:.0f})")
+                    # CORRECTED: Bullish ARB pattern detection for DAI->ARB swaps (buy ARB when bullish)
+                    if (arb_pattern in ['strong_bullish', 'moderate_bullish'] and 
+                        arb_price_change_5min > 0.3 and arb_rsi < ARB_RSI_OVERSOLD):
+                        # Strong bullish signal - swap DAI to ARB (buy ARB)
+                        signal_strength += arb_confidence * 0.5  # Positive signal strength
+                        signals_detected.append(f"DAI->ARB (bullish pattern detected, 5min: {arb_price_change_5min:.1f}%, RSI: {arb_rsi:.0f})")
                     
-                    # OPTIMIZED bullish pattern detection for DAI->ARB swaps (improved RSI threshold)
-                    elif (arb_pattern in ['strong_bullish', 'moderate_bullish'] and 
-                          arb_price_change_5min > 0.3 and arb_rsi < ARB_RSI_OVERSOLD):
-                        # Strong bullish signal - swap DAI to ARB
-                        signal_strength += arb_confidence * 0.5  # Increased weight
-                        signals_detected.append(f"DAI->ARB (optimized bullish pattern, 5min: {arb_price_change_5min:.1f}%, RSI: {arb_rsi:.0f})")
+                    # CORRECTED: Bearish ARB pattern detection for ARB->DAI swaps (sell ARB when bearish)
+                    elif (arb_pattern in ['strong_bearish', 'moderate_bearish'] and 
+                          arb_price_change_5min < -0.3 and arb_rsi > ARB_RSI_OVERBOUGHT):
+                        # Bearish signal - swap ARB to DAI (sell ARB)
+                        signal_strength -= arb_confidence * 0.4  # Negative signal strength
+                        signals_detected.append(f"ARB->DAI (bearish pattern detected, 5min: {arb_price_change_5min:.1f}%, RSI: {arb_rsi:.0f})")
                     
-                    # OPTIMIZED RSI-based signals with new thresholds
-                    elif arb_rsi < ARB_RSI_OVERSOLD:  # Now triggers at 40 instead of 25
-                        if arb_confidence >= 0.4:  # Lower confidence requirement
-                            signal_strength += arb_confidence * 0.3
-                            signals_detected.append(f"DAI->ARB (optimized oversold, RSI: {arb_rsi:.0f})")
-                    elif arb_rsi > ARB_RSI_OVERBOUGHT:  # Triggers at 70
-                        if arb_confidence >= 0.4:  # Lower confidence requirement
-                            signal_strength -= arb_confidence * 0.3
-                            signals_detected.append(f"ARB->DAI (optimized overbought, RSI: {arb_rsi:.0f})")
+                    # CORRECTED: RSI-based signals with proper logic
+                    elif arb_rsi < ARB_RSI_OVERSOLD:  # ARB oversold = good time to buy ARB
+                        if arb_confidence >= 0.4:
+                            signal_strength += arb_confidence * 0.3  # Positive for DAI->ARB
+                            signals_detected.append(f"DAI->ARB (ARB oversold opportunity, RSI: {arb_rsi:.0f})")
+                    elif arb_rsi > ARB_RSI_OVERBOUGHT:  # ARB overbought = good time to sell ARB
+                        if arb_confidence >= 0.4:
+                            signal_strength -= arb_confidence * 0.3  # Negative for ARB->DAI
+                            signals_detected.append(f"ARB->DAI (ARB overbought, take profits, RSI: {arb_rsi:.0f})")
 
                     # Apply market sentiment with pattern consideration
                     market_sentiment = analysis.get('market_sentiment', 'neutral')
