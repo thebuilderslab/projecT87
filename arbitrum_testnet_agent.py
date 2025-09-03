@@ -528,6 +528,17 @@ class ArbitrumTestnetAgent:
         self.last_successful_operation_time = 0  # Unix timestamp of last op
         self.operation_cooldown_seconds = 30  # HIGH-FREQUENCY: 30 second cooldown
         self.last_operation_type = None  # Track type of last operation
+        
+        # VALIDATE HIGH-FREQUENCY PARAMETERS
+        from environmental_configuration import OPERATION_COOLDOWN, MIN_SWAP_AMOUNT, MAX_SWAP_AMOUNT
+        if self.operation_cooldown_seconds != OPERATION_COOLDOWN:
+            print(f"⚠️ Agent cooldown mismatch: {self.operation_cooldown_seconds}s vs config {OPERATION_COOLDOWN}s")
+            self.operation_cooldown_seconds = OPERATION_COOLDOWN  # Sync with config
+        
+        print(f"✅ HIGH-FREQUENCY PARAMETERS CONFIRMED:")
+        print(f"   Operation Cooldown: {self.operation_cooldown_seconds}s")
+        print(f"   Min/Max Swap: ${MIN_SWAP_AMOUNT} - ${MAX_SWAP_AMOUNT}")
+        print(f"   System ready for high-frequency debt swapping")
 
         # Growth-Triggered System Configuration
         self.growth_trigger_threshold = 50.0  # $50 growth threshold

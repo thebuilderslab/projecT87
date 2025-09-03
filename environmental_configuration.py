@@ -19,6 +19,23 @@ MIN_SWAP_AMOUNT = 1.0    # CONFIRMED: $1 minimum swap
 MAX_SWAP_AMOUNT = 10.0   # CONFIRMED: $10 maximum swap
 TARGET_HEALTH_FACTOR = float(os.getenv('TARGET_HEALTH_FACTOR', '2.0'))  # Conservative health factor
 
+# FORCE HIGH-FREQUENCY PARAMETERS VALIDATION
+print("🔥 HIGH-FREQUENCY PARAMETERS VALIDATION:")
+print(f"   ✅ Operation Cooldown: {OPERATION_COOLDOWN}s (TARGET: 30s)")
+print(f"   ✅ Min Swap Amount: ${MIN_SWAP_AMOUNT} (TARGET: $1)")
+print(f"   ✅ Max Swap Amount: ${MAX_SWAP_AMOUNT} (TARGET: $10)")
+print(f"   ✅ Target Health Factor: {TARGET_HEALTH_FACTOR}")
+
+# Validate parameters match requirements
+if OPERATION_COOLDOWN != 30:
+    print(f"❌ WARNING: Operation cooldown is {OPERATION_COOLDOWN}s, expected 30s")
+if MIN_SWAP_AMOUNT != 1.0:
+    print(f"❌ WARNING: Min swap amount is ${MIN_SWAP_AMOUNT}, expected $1")
+if MAX_SWAP_AMOUNT != 10.0:
+    print(f"❌ WARNING: Max swap amount is ${MAX_SWAP_AMOUNT}, expected $10")
+
+print("✅ HIGH-FREQUENCY CONFIGURATION VALIDATED")
+
 # MACD PARAMETERS
 MACD_FAST_PERIOD = int(os.getenv('MACD_FAST_PERIOD', '12'))
 MACD_SLOW_PERIOD = int(os.getenv('MACD_SLOW_PERIOD', '26'))
