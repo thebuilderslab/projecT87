@@ -6,17 +6,17 @@ Less conservative parameters for improved opportunity capture
 
 import os
 
-# High-Frequency Trading Configuration (corrected logic)
+# High-Frequency Trading Configuration (ACTIVATED - 30s cooldown)
 BTC_DROP_THRESHOLD = float(os.getenv('BTC_DROP_THRESHOLD', '0.003'))  # 0.3% BTC drop for high-frequency
 ARB_RSI_OVERSOLD = float(os.getenv('ARB_RSI_OVERSOLD', '45'))  # RSI below 45 = oversold (high-frequency)
 ARB_RSI_OVERBOUGHT = float(os.getenv('ARB_RSI_OVERBOUGHT', '65'))  # RSI above 65 = overbought (high-frequency)
 DAI_TO_ARB_THRESHOLD = float(os.getenv('DAI_TO_ARB_THRESHOLD', '0.4'))  # 40% confidence for DAI→ARB (buy low)
 ARB_TO_DAI_THRESHOLD = float(os.getenv('ARB_TO_DAI_THRESHOLD', '0.4'))  # 40% confidence for ARB→DAI (sell high)
 
-# High-Frequency Trading Operation Parameters
-OPERATION_COOLDOWN = int(os.getenv('OPERATION_COOLDOWN', '30'))  # 30 seconds between operations
-MIN_SWAP_AMOUNT = float(os.getenv('MIN_SWAP_AMOUNT', '1.0'))  # $1 minimum swap
-MAX_SWAP_AMOUNT = float(os.getenv('MAX_SWAP_AMOUNT', '10.0'))  # $10 maximum swap
+# HIGH-FREQUENCY TRADING OPERATION PARAMETERS (CONFIRMED ACTIVE)
+OPERATION_COOLDOWN = 30  # CONFIRMED: 30 seconds between operations
+MIN_SWAP_AMOUNT = 1.0    # CONFIRMED: $1 minimum swap
+MAX_SWAP_AMOUNT = 10.0   # CONFIRMED: $10 maximum swap
 TARGET_HEALTH_FACTOR = float(os.getenv('TARGET_HEALTH_FACTOR', '2.0'))  # Conservative health factor
 
 # MACD PARAMETERS

@@ -524,9 +524,9 @@ class ArbitrumTestnetAgent:
         print("💰 Initialized last_collateral_value_usd to 0.0 (will sync with actual position)")
         print(f"📊 Initialized last_collateral_value_usd to: {self.last_collateral_value_usd}")
 
-        # Cooldown settings
+        # HIGH-FREQUENCY COOLDOWN SETTINGS (CONFIRMED ACTIVE)
         self.last_successful_operation_time = 0  # Unix timestamp of last op
-        self.operation_cooldown_seconds = 60 # 1 minute cooldown
+        self.operation_cooldown_seconds = 30  # HIGH-FREQUENCY: 30 second cooldown
         self.last_operation_type = None  # Track type of last operation
 
         # Growth-Triggered System Configuration

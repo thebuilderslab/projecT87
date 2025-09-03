@@ -337,9 +337,11 @@ def autonomous_agent_loop():
                     print(f"⚠️ Failed to reinitialize connections: {reinit_error}")
 
         finally:
-            # High-frequency trading: reduced sleep duration
-            sleep_duration_seconds = 30  # Sleep for 30 seconds (high-frequency)
-            print(f"💤 High-frequency mode: Sleeping for {sleep_duration_seconds} seconds before next iteration...")
+            # HIGH-FREQUENCY TRADING: Confirmed 30-second intervals
+            from environmental_configuration import OPERATION_COOLDOWN
+            sleep_duration_seconds = OPERATION_COOLDOWN  # Use configured cooldown (30s)
+            print(f"💤 HIGH-FREQUENCY MODE ACTIVE: Sleeping for {sleep_duration_seconds} seconds before next iteration...")
+            print(f"⚡ Next iteration will check for market signals and debt swap opportunities")
             time.sleep(sleep_duration_seconds)
 
 if __name__ == "__main__":
