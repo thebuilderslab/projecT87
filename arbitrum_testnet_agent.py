@@ -252,7 +252,7 @@ class ArbitrumTestnetAgent:
             # High-throughput stable endpoints (removed problematic Infura)
             fallback_endpoints = [
                 "https://arbitrum.llamarpc.com",
-                "https://arb1.arbitrum.io/rpc", 
+                "https://arb1.arbitrum.io/rpc",
                 "https://arbitrum-one.publicnode.com",
                 "https://arbitrum-one.public.blastapi.io",
                 "https://rpc.ankr.com/arbitrum"
@@ -596,11 +596,6 @@ class ArbitrumTestnetAgent:
                 strategy.initialized = True
                 strategy.initialization_successful = True
 
-                # Force enhanced analyzer to be operational if it exists
-                if hasattr(strategy, 'enhanced_analyzer') and strategy.enhanced_analyzer:
-                    strategy.enhanced_analyzer.initialized = True
-                    strategy.enhanced_analyzer.initialization_successful = True
-
                 print("✅ Market Signal Strategy FORCED to operational status")
                 print("✅ Debt swap system ACTIVATED with forced initialization")
 
@@ -610,7 +605,7 @@ class ArbitrumTestnetAgent:
                     try:
                         if hasattr(self, 'uniswap') and self.uniswap:
                             arb_contract = self.w3.eth.contract(
-                                address=self.arb_address, 
+                                address=self.arb_address,
                                 abi=self.uniswap.erc20_abi
                             )
                             balance_wei = arb_contract.functions.balanceOf(self.address).call()
@@ -2496,7 +2491,642 @@ class ArbitrumTestnetAgent:
             print(f"❌ Failed to get health factor: {e}")
             return 0
 
-    def _execute_debt_swap_dai_to_arb(self):
+    def _execute_debt_swap_dai_to_arb(self, confidence):
+        """Execute DAI to ARB debt swap with profit tracking"""
+        try:
+            print("🔄 Executing DAI → ARB debt swap...")
+
+            # Check DAI balance
+            dai_balance = self.get_dai_balance()
+
+            if dai_balance < 10.0:  # Need at least $10 DAI
+                print(f"❌ Insufficient DAI balance: {dai_balance:.2f}")
+                return False
+
+            # Calculate optimal swap amount
+            swap_amount = self._calculate_optimal_swap_amount('dai_to_arb')
+
+            if swap_amount < 1.0:
+                print("❌ Optimal swap amount too low for DAI→ARB")
+                return False
+
+            print(f"💱 Swapping {swap_amount:.2f} DAI for ARB...")
+
+            # Execute swap via Uniswap
+            if hasattr(self, 'uniswap') and self.uniswap:
+                result = self.uniswap.swap_dai_for_arb(swap_amount)
+
+                if result and result.get('success'):
+                    tx_hash = result.get('tx_hash')
+                    cycle_id = result.get('cycle_id')
+
+                    print(f"✅ DAI → ARB swap successful!")
+                    print(f"🔗 TX: {tx_hash}")
+                    print(f"📊 Cycle ID: {cycle_id}")
+
+                    # Log the swap with console reporter
+                    try:
+                        from swap_console_reporter import log_swap_execution
+                        log_swap_execution('dai_to_arb', swap_amount, result.get('arb_received', 0),
+                                         self.market_signal_strategy.get_swap_decision_reasons('dai_to_arb'))
+                    except Exception as log_err:
+                        print(f"Logging error: {log_err}")
+
+                    return True
+                else:
+                    print("❌ DAI → ARB swap failed")
+                    return False
+            else:
+                print("❌ Uniswap integration not available")
+                return False
+
+        except Exception as e:
+            print(f"❌ DAI → ARB debt swap error: {e}")
+            return False
+
+    def _execute_debt_swap_arb_to_dai(self, confidence):
+        """Execute ARB to DAI debt swap with profit tracking"""
+        try:
+            print("🔄 Executing ARB → DAI debt swap...")
+
+            # Check ARB balance
+            arb_balance = self.get_arb_balance()
+
+            if arb_balance < 5.0:  # Need at least 5 ARB
+                print(f"❌ Insufficient ARB balance: {arb_balance:.6f}")
+                return False
+
+            # Calculate optimal swap amount
+            swap_amount = self._calculate_optimal_swap_amount('arb_to_dai')
+
+            if swap_amount < 1.0:
+                print("❌ Optimal swap amount too low for ARB→DAI")
+                return False
+
+            print(f"💱 Swapping {swap_amount:.6f} ARB for DAI...")
+
+            # Execute swap via Uniswap
+            if hasattr(self, 'uniswap') and self.uniswap:
+                result = self.uniswap.swap_arb_for_dai(swap_amount)
+
+                if result and result.get('success'):
+                    tx_hash = result.get('tx_hash')
+
+                    print(f"✅ ARB → DAI swap successful!")
+                    print(f"🔗 TX: {tx_hash}")
+                    print(f"💰 DAI received: {result.get('dai_received', 0):.2f}")
+
+                    # Log the swap with console reporter
+                    try:
+                        from swap_console_reporter import log_swap_execution
+                        log_swap_execution('arb_to_dai', swap_amount, result.get('dai_received', 0),
+                                         self.market_signal_strategy.get_swap_decision_reasons('arb_to_dai'))
+                    except Exception as log_err:
+                        print(f"Logging error: {log_err}")
+
+                    return True
+                else:
+                    print("❌ ARB → DAI swap failed")
+                    return False
+            else:
+                print("❌ Uniswap integration not available")
+                return False
+
+        except Exception as e:
+            print(f"❌ ARB → DAI debt swap error: {e}")
+            return False
+
+    def _calculate_optimal_swap_amount(self, swap_type: str) -> float:
+        """Calculate optimal swap amount based on available funds and risk management"""
+        try:
+            if not self.aave:
+                return 0.0
+
+            account_data = self.aave.get_user_account_data()
+            if not account_data:
+                return 0.0
+
+            available_borrows = account_data.get('availableBorrowsUSD', 0)
+            health_factor = account_data.get('healthFactor', 0)
+
+            if swap_type == 'dai_to_arb':
+                # Calculate safe DAI amount to swap to ARB
+                if health_factor > 2.0:
+                    return min(available_borrows * 0.15, 10.0)  # 15% or $10 max (optimized)
+                elif health_factor > 1.8:
+                    return min(available_borrows * 0.1, 5.0)   # 10% or $5 max
+                else:
+                    return 0.0
+            elif swap_type == 'arb_to_dai':
+                # Calculate ARB amount to swap back to DAI
+                balances = self.aave.get_user_balances()
+                arb_balance = balances.get('borrowed', {}).get('ARB', 0)
+
+                if arb_balance > 5.0:
+                    return min(arb_balance * 0.5, 20.0)  # 50% or $20 max
+                else:
+                    return arb_balance  # Swap all if small amount
+
+            return 0.0
+
+        except Exception as e:
+            logger.error(f"Error calculating swap amount: {e}")
+            return 0.0
+
+    def check_debt_swap_conditions(self):
+        """Check if debt swap conditions are met"""
+        try:
+            # Check if market signal strategy is available
+            if not hasattr(self, 'market_signal_strategy') or not self.market_signal_strategy:
+                return False, "Market signal strategy not available"
+
+            # Check if strategy is properly initialized
+            if not hasattr(self.market_signal_strategy, 'initialization_successful'):
+                return False, "Market signal strategy not initialized"
+
+            if not self.market_signal_strategy.initialization_successful:
+                return False, "Market signal strategy initialization failed"
+
+            # Check technical indicators readiness
+            status = self.market_signal_strategy.get_strategy_status()
+            tech_ready = status.get('technical_indicators_ready', False)
+
+            if not tech_ready:
+                arb_points = status.get('enhanced_arb_points', 0)
+                btc_points = status.get('enhanced_btc_points', 0)
+                min_points = status.get('min_points_for_basic', 5)
+                return False, f"Insufficient data points (ARB: {arb_points}, BTC: {btc_points}, need: {min_points})"
+
+            # Check health factor if Aave is available
+            if hasattr(self, 'aave') and self.aave:
+                try:
+                    account_data = self.aave.get_user_account_data()
+                    if account_data:
+                        health_factor = account_data.get('healthFactor', 0)
+                        if health_factor < 1.8:
+                            return False, f"Health factor too low: {health_factor:.3f} (need >1.8)"
+                    else:
+                        return False, "Cannot retrieve account data"
+                except Exception as hf_error:
+                    return False, f"Health factor check failed: {hf_error}"
+
+            # Check debt swap activation
+            if not getattr(self, 'debt_swap_active', False):
+                return False, "Debt swap system not activated"
+
+            return True, "All debt swap conditions met - system ready"
+
+        except Exception as e:
+            return False, f"Debt swap condition check failed: {e}"
+
+    def _perform_debt_swap_operations(self, performance_score):
+        """ Execute debt swap operations based on market signals """
+        # 🎯 OPTIMIZED DEBT SWAP SYSTEM WITH MACD AND ENHANCED TRIGGERS
+        if self.debt_swap_active and hasattr(self, 'market_signal_strategy') and self.market_signal_strategy:
+            try:
+                # Get market analysis for debt swap decisions
+                signals = self.market_signal_strategy.analyze_market_signals()
+
+                if signals and signals.get('status') == 'success':
+                    action = signals.get('action', 'hold')
+                    confidence = signals.get('confidence_level', 0)
+                    signals_detected = signals.get('signals_detected', [])
+
+                    # Enhanced logging for transparency
+                    from swap_console_reporter import SwapConsoleReporter
+                    reporter = SwapConsoleReporter()
+
+                    # OPTIMIZED EXECUTION LOGIC with MACD priority
+                    if action == 'dai_to_arb':
+                        # Check for MACD bullish crossover (primary trigger)
+                        macd_trigger = any('MACD Bullish Crossover' in signal for signal in signals_detected)
+
+                        # Optimized confidence threshold (0.5 instead of 0.7)
+                        if confidence >= 0.5 or macd_trigger:
+                            print(f"🚀 EXECUTING DAI→ARB SWAP (optimized parameters)")
+                            print(f"   Confidence: {confidence:.2f} (threshold: 0.5)")
+                            print(f"   MACD Crossover: {'✅ DETECTED' if macd_trigger else '❌'}")
+                            print(f"   Signals: {', '.join(signals_detected)}")
+
+                            # Get decision reasons
+                            reasons = self.market_signal_strategy.get_swap_decision_reasons('dai_to_arb')
+
+                            # Execute swap with optimized parameters
+                            swap_amount = self._calculate_optimal_swap_amount('dai_to_arb')
+                            result = self._execute_debt_swap_dai_to_arb(confidence)
+
+                            # Report swap execution
+                            reporter.report_swap_execution('dai_to_arb', swap_amount, reasons, confidence)
+
+                            if result:
+                                print("✅ DAI→ARB swap completed successfully")
+                                performance_score += 0.4  # Higher reward for successful execution
+                            else:
+                                print("❌ DAI→ARB swap failed")
+                        else:
+                            print(f"⏸️ DAI→ARB confidence {confidence:.2f} below optimized threshold (0.5)")
+
+                    elif action == 'arb_to_dai':
+                        if confidence >= 0.6:  # Conservative for profit-taking
+                            print(f"📈 EXECUTING ARB→DAI SWAP (profit-taking)")
+                            print(f"   Confidence: {confidence:.2f} (threshold: 0.6)")
+                            print(f"   Signals: {', '.join(signals_detected)}")
+
+                            # Get decision reasons
+                            reasons = self.market_signal_strategy.get_swap_decision_reasons('arb_to_dai')
+
+                            # Execute swap
+                            swap_amount = self._calculate_optimal_swap_amount('arb_to_dai')
+                            result = self._execute_debt_swap_arb_to_dai(confidence)
+
+                            # Report swap execution
+                            reporter.report_swap_execution('arb_to_dai', swap_amount, reasons, confidence)
+
+                            if result:
+                                print("✅ ARB→DAI swap completed successfully")
+                                performance_score += 0.3
+                            else:
+                                print("❌ ARB→DAI swap failed")
+                        else:
+                            print(f"⏸️ ARB→DAI confidence {confidence:.2f} below threshold (0.6)")
+                    else:
+                        # HOLD decision with reasons
+                        reasons = self.market_signal_strategy.get_swap_decision_reasons('hold')
+                        print(f"💰 HOLDING POSITION - Market Analysis:")
+                        print(f"   Action: {action.upper()}")
+                        print(f"   Confidence: {confidence:.2f}")
+                        print(f"   Reasons:")
+                        for i, reason in enumerate(reasons, 1):
+                            print(f"      {i}. {reason}")
+
+                else:
+                    print("⚠️ Market signal analysis failed - using conservative strategy")
+            except Exception as e:
+                print(f"❌ Error during debt swap operations: {e}")
+                import traceback
+                traceback.print_exc()
+
+        return performance_score # Return the potentially modified performance_score
+
+    def _calculate_optimal_swap_amount(self, swap_type: str) -> float:
+        """Calculate optimal swap amount based on available funds and risk management"""
+        try:
+            if not self.aave:
+                return 0.0
+
+            account_data = self.aave.get_user_account_data()
+            if not account_data:
+                return 0.0
+
+            available_borrows = account_data.get('availableBorrowsUSD', 0)
+            health_factor = account_data.get('healthFactor', 0)
+
+            if swap_type == 'dai_to_arb':
+                # Calculate safe DAI amount to swap to ARB
+                if health_factor > 2.0:
+                    return min(available_borrows * 0.15, 10.0)  # 15% or $10 max (optimized)
+                elif health_factor > 1.8:
+                    return min(available_borrows * 0.1, 5.0)   # 10% or $5 max
+                else:
+                    return 0.0
+            elif swap_type == 'arb_to_dai':
+                # Calculate ARB amount to swap back to DAI
+                balances = self.aave.get_user_balances()
+                arb_balance = balances.get('borrowed', {}).get('ARB', 0)
+
+                if arb_balance > 5.0:
+                    return min(arb_balance * 0.5, 20.0)  # 50% or $20 max
+                else:
+                    return arb_balance  # Swap all if small amount
+
+            return 0.0
+
+        except Exception as e:
+            logger.error(f"Error calculating swap amount: {e}")
+            return 0.0
+
+    def check_debt_swap_conditions(self):
+        """Check if debt swap conditions are met"""
+        try:
+            # Check if market signal strategy is available
+            if not hasattr(self, 'market_signal_strategy') or not self.market_signal_strategy:
+                return False, "Market signal strategy not available"
+
+            # Check if strategy is properly initialized
+            if not hasattr(self.market_signal_strategy, 'initialization_successful'):
+                return False, "Market signal strategy not initialized"
+
+            if not self.market_signal_strategy.initialization_successful:
+                return False, "Market signal strategy initialization failed"
+
+            # Check technical indicators readiness
+            status = self.market_signal_strategy.get_strategy_status()
+            tech_ready = status.get('technical_indicators_ready', False)
+
+            if not tech_ready:
+                arb_points = status.get('enhanced_arb_points', 0)
+                btc_points = status.get('enhanced_btc_points', 0)
+                min_points = status.get('min_points_for_basic', 5)
+                return False, f"Insufficient data points (ARB: {arb_points}, BTC: {btc_points}, need: {min_points})"
+
+            # Check health factor if Aave is available
+            if hasattr(self, 'aave') and self.aave:
+                try:
+                    account_data = self.aave.get_user_account_data()
+                    if account_data:
+                        health_factor = account_data.get('healthFactor', 0)
+                        if health_factor < 1.8:
+                            return False, f"Health factor too low: {health_factor:.3f} (need >1.8)"
+                    else:
+                        return False, "Cannot retrieve account data"
+                except Exception as hf_error:
+                    return False, f"Health factor check failed: {hf_error}"
+
+            # Check debt swap activation
+            if not getattr(self, 'debt_swap_active', False):
+                return False, "Debt swap system not activated"
+
+            return True, "All debt swap conditions met - system ready"
+
+        except Exception as e:
+            return False, f"Debt swap condition check failed: {e}"
+
+    def run(self):
+        """Main loop for the agent"""
+        print("\n" + "="*60)
+        print("🚀 STARTING AUTONOMOUS TRADING AGENT 🚀")
+        print("="*60 + "\n")
+
+        # Initialize integrations early
+        if not self.initialize_integrations():
+            print("❌ Failed to initialize critical integrations. Exiting.")
+            sys.exit(1)
+
+        # Initialize baseline if not already done
+        if not self.baseline_initialized:
+            self._auto_initialize_baseline()
+
+        iteration = 0
+        while True:
+            iteration += 1
+            print(f"\n{'Iter.':<10} | {'Health Factor':<15} | {'Action':<25} | {'Status':<15}")
+            print("-" * 70)
+
+            performance_score = 0.5  # Base performance score
+
+            try:
+                # Get current account data
+                account_data = self.get_user_account_data()
+                if not account_data:
+                    print("❌ Failed to get account data. Skipping iteration.")
+                    time.sleep(10)
+                    continue
+
+                health_factor = account_data.get('healthFactor', 0)
+                available_borrows = account_data.get('availableBorrowsUSD', 0)
+                total_collateral = account_data.get('totalCollateralUSD', 0)
+
+                # Update baseline if significant growth detected and baseline is initialized
+                if self.baseline_initialized and total_collateral > self.last_collateral_value_usd * 1.1:
+                    self.update_baseline_after_success(total_collateral)
+
+                # System status checks
+                if health_factor < 1.5:
+                    action = "EMERGENCY REPAYMENT NEEDED"
+                    status = "CRITICAL"
+                    performance_score *= 0.1
+                elif self._should_execute_growth_triggered_operation(total_collateral, health_factor, available_borrows):
+                    action = "GROWTH TRIGGERED"
+                    status = "EXECUTING"
+                    if self._execute_growth_triggered_operation(available_borrows):
+                        performance_score += 0.3
+                        status = "SUCCESS"
+                    else:
+                        status = "FAILED"
+                        performance_score *= 0.5
+                elif self._should_execute_capacity_operation(available_borrows, health_factor):
+                    action = "CAPACITY OPTIMIZATION"
+                    status = "EXECUTING"
+                    if self._execute_capacity_operation(available_borrows):
+                        performance_score += 0.2
+                        status = "SUCCESS"
+                    else:
+                        status = "FAILED"
+                        performance_score *= 0.5
+                else:
+                    action = "IDLE / MONITORING"
+                    status = "HEALTHY"
+                    performance_score += 0.05
+
+                # Add debt swap operations
+                performance_score = self._perform_debt_swap_operations(performance_score)
+
+                # Record operation attempt
+                self.track_operation_attempt()
+
+                # Update operation stats and record success
+                if status in ["SUCCESS", "HEALTHY", "EXECUTING"]: # Consider executing as potential success for cooldown
+                    self.record_successful_operation(operation_type=action.split()[0].lower() if action != "IDLE / MONITORING" else "monitoring")
+                else:
+                    pass # Failure is handled implicitly by lack of success recording
+
+                print(f"{iteration:<10} | {health_factor:<15.3f} | {action:<25} | {status:<15}")
+
+                # Cooldown logic
+                if not self.is_operation_on_cooldown(allow_sequence_continuation=True):
+                    # Add a small sleep to prevent hammering the RPCs
+                    time.sleep(15)
+                else:
+                    # If on cooldown, sleep for remaining time
+                    remaining = self.operation_cooldown_seconds - (time.time() - self.last_successful_operation_time)
+                    time.sleep(max(0, remaining + 5)) # Sleep a bit longer to be safe
+
+
+            except Exception as e:
+                print(f"\n❌ UNEXPECTED ERROR IN MAIN LOOP: {e}")
+                print("🔄 Attempting to recover and continue...")
+                import traceback
+                traceback.print_exc()
+                time.sleep(10) # Wait before next attempt
+
+            # Safety break for testing
+            # if iteration > 5:
+            #     print("🚀 Reached iteration limit. Stopping agent.")
+            #     break
+
+    def _perform_debt_swap_operations(self, performance_score):
+        """ Execute debt swap operations based on market signals """
+        # 🎯 OPTIMIZED DEBT SWAP SYSTEM WITH MACD AND ENHANCED TRIGGERS
+        if self.debt_swap_active and hasattr(self, 'market_signal_strategy') and self.market_signal_strategy:
+            try:
+                # Get market analysis for debt swap decisions
+                signals = self.market_signal_strategy.analyze_market_signals()
+
+                if signals and signals.get('status') == 'success':
+                    action = signals.get('action', 'hold')
+                    confidence = signals.get('confidence_level', 0)
+                    signals_detected = signals.get('signals_detected', [])
+
+                    # Enhanced logging for transparency
+                    from swap_console_reporter import SwapConsoleReporter
+                    reporter = SwapConsoleReporter()
+
+                    # OPTIMIZED EXECUTION LOGIC with MACD priority
+                    if action == 'dai_to_arb':
+                        # Check for MACD bullish crossover (primary trigger)
+                        macd_trigger = any('MACD Bullish Crossover' in signal for signal in signals_detected)
+
+                        # Optimized confidence threshold (0.5 instead of 0.7)
+                        if confidence >= 0.5 or macd_trigger:
+                            print(f"🚀 EXECUTING DAI→ARB SWAP (optimized parameters)")
+                            print(f"   Confidence: {confidence:.2f} (threshold: 0.5)")
+                            print(f"   MACD Crossover: {'✅ DETECTED' if macd_trigger else '❌'}")
+                            print(f"   Signals: {', '.join(signals_detected)}")
+
+                            # Get decision reasons
+                            reasons = self.market_signal_strategy.get_swap_decision_reasons('dai_to_arb')
+
+                            # Execute swap with optimized parameters
+                            swap_amount = self._calculate_optimal_swap_amount('dai_to_arb')
+                            result = self._execute_debt_swap_dai_to_arb(confidence)
+
+                            # Report swap execution
+                            reporter.report_swap_execution('dai_to_arb', swap_amount, reasons, confidence)
+
+                            if result:
+                                print("✅ DAI→ARB swap completed successfully")
+                                performance_score += 0.4  # Higher reward for successful execution
+                            else:
+                                print("❌ DAI→ARB swap failed")
+                        else:
+                            print(f"⏸️ DAI→ARB confidence {confidence:.2f} below optimized threshold (0.5)")
+
+                    elif action == 'arb_to_dai':
+                        if confidence >= 0.6:  # Conservative for profit-taking
+                            print(f"📈 EXECUTING ARB→DAI SWAP (profit-taking)")
+                            print(f"   Confidence: {confidence:.2f} (threshold: 0.6)")
+                            print(f"   Signals: {', '.join(signals_detected)}")
+
+                            # Get decision reasons
+                            reasons = self.market_signal_strategy.get_swap_decision_reasons('arb_to_dai')
+
+                            # Execute swap
+                            swap_amount = self._calculate_optimal_swap_amount('arb_to_dai')
+                            result = self._execute_debt_swap_arb_to_dai(confidence)
+
+                            # Report swap execution
+                            reporter.report_swap_execution('arb_to_dai', swap_amount, reasons, confidence)
+
+                            if result:
+                                print("✅ ARB→DAI swap completed successfully")
+                                performance_score += 0.3
+                            else:
+                                print("❌ ARB→DAI swap failed")
+                        else:
+                            print(f"⏸️ ARB→DAI confidence {confidence:.2f} below threshold (0.6)")
+                    else:
+                        # HOLD decision with reasons
+                        reasons = self.market_signal_strategy.get_swap_decision_reasons('hold')
+                        print(f"💰 HOLDING POSITION - Market Analysis:")
+                        print(f"   Action: {action.upper()}")
+                        print(f"   Confidence: {confidence:.2f}")
+                        print(f"   Reasons:")
+                        for i, reason in enumerate(reasons, 1):
+                            print(f"      {i}. {reason}")
+
+                else:
+                    print("⚠️ Market signal analysis failed - using conservative strategy")
+            except Exception as e:
+                print(f"❌ Error during debt swap operations: {e}")
+                import traceback
+                traceback.print_exc()
+
+        return performance_score # Return the potentially modified performance_score
+
+    def _calculate_optimal_swap_amount(self, swap_type: str) -> float:
+        """Calculate optimal swap amount based on available funds and risk management"""
+        try:
+            if not self.aave:
+                return 0.0
+
+            account_data = self.aave.get_user_account_data()
+            if not account_data:
+                return 0.0
+
+            available_borrows = account_data.get('availableBorrowsUSD', 0)
+            health_factor = account_data.get('healthFactor', 0)
+
+            if swap_type == 'dai_to_arb':
+                # Calculate safe DAI amount to swap to ARB
+                if health_factor > 2.0:
+                    return min(available_borrows * 0.15, 10.0)  # 15% or $10 max (optimized)
+                elif health_factor > 1.8:
+                    return min(available_borrows * 0.1, 5.0)   # 10% or $5 max
+                else:
+                    return 0.0
+            elif swap_type == 'arb_to_dai':
+                # Calculate ARB amount to swap back to DAI
+                balances = self.aave.get_user_balances()
+                arb_balance = balances.get('borrowed', {}).get('ARB', 0)
+
+                if arb_balance > 5.0:
+                    return min(arb_balance * 0.5, 20.0)  # 50% or $20 max
+                else:
+                    return arb_balance  # Swap all if small amount
+
+            return 0.0
+
+        except Exception as e:
+            logger.error(f"Error calculating swap amount: {e}")
+            return 0.0
+
+    def check_debt_swap_conditions(self):
+        """Check if debt swap conditions are met"""
+        try:
+            # Check if market signal strategy is available
+            if not hasattr(self, 'market_signal_strategy') or not self.market_signal_strategy:
+                return False, "Market signal strategy not available"
+
+            # Check if strategy is properly initialized
+            if not hasattr(self.market_signal_strategy, 'initialization_successful'):
+                return False, "Market signal strategy not initialized"
+
+            if not self.market_signal_strategy.initialization_successful:
+                return False, "Market signal strategy initialization failed"
+
+            # Check technical indicators readiness
+            status = self.market_signal_strategy.get_strategy_status()
+            tech_ready = status.get('technical_indicators_ready', False)
+
+            if not tech_ready:
+                arb_points = status.get('enhanced_arb_points', 0)
+                btc_points = status.get('enhanced_btc_points', 0)
+                min_points = status.get('min_points_for_basic', 5)
+                return False, f"Insufficient data points (ARB: {arb_points}, BTC: {btc_points}, need: {min_points})"
+
+            # Check health factor if Aave is available
+            if hasattr(self, 'aave') and self.aave:
+                try:
+                    account_data = self.aave.get_user_account_data()
+                    if account_data:
+                        health_factor = account_data.get('healthFactor', 0)
+                        if health_factor < 1.8:
+                            return False, f"Health factor too low: {health_factor:.3f} (need >1.8)"
+                    else:
+                        return False, "Cannot retrieve account data"
+                except Exception as hf_error:
+                    return False, f"Health factor check failed: {hf_error}"
+
+            # Check debt swap activation
+            if not getattr(self, 'debt_swap_active', False):
+                return False, "Debt swap system not activated"
+
+            return True, "All debt swap conditions met - system ready"
+
+        except Exception as e:
+            return False, f"Debt swap condition check failed: {e}"
+
+    def _execute_debt_swap_dai_to_arb(self, confidence):
         """Execute DAI to ARB debt swap with profit tracking"""
         try:
             print("🔄 Executing DAI → ARB debt swap...")
@@ -2528,7 +3158,7 @@ class ArbitrumTestnetAgent:
                     # Log the swap with console reporter
                     try:
                         from swap_console_reporter import log_swap_execution
-                        log_swap_execution('dai_to_arb', swap_amount, result.get('arb_received', 0), 
+                        log_swap_execution('dai_to_arb', swap_amount, result.get('arb_received', 0),
                                          self.market_signal_strategy.get_swap_decision_reasons('dai_to_arb'))
                     except:
                         pass
@@ -2545,7 +3175,7 @@ class ArbitrumTestnetAgent:
             print(f"❌ DAI → ARB debt swap error: {e}")
             return False
 
-    def _execute_debt_swap_arb_to_dai(self):
+    def _execute_debt_swap_arb_to_dai(self, confidence):
         """Execute ARB to DAI debt swap with profit tracking"""
         try:
             print("🔄 Executing ARB → DAI debt swap...")
@@ -2592,6 +3222,89 @@ class ArbitrumTestnetAgent:
         except Exception as e:
             print(f"❌ ARB → DAI debt swap error: {e}")
             return False
+
+    def _calculate_optimal_swap_amount(self, swap_type: str) -> float:
+        """Calculate optimal swap amount based on available funds and risk management"""
+        try:
+            if not self.aave:
+                return 0.0
+
+            account_data = self.aave.get_user_account_data()
+            if not account_data:
+                return 0.0
+
+            available_borrows = account_data.get('availableBorrowsUSD', 0)
+            health_factor = account_data.get('healthFactor', 0)
+
+            if swap_type == 'dai_to_arb':
+                # Calculate safe DAI amount to swap to ARB
+                if health_factor > 2.0:
+                    return min(available_borrows * 0.15, 10.0)  # 15% or $10 max (optimized)
+                elif health_factor > 1.8:
+                    return min(available_borrows * 0.1, 5.0)   # 10% or $5 max
+                else:
+                    return 0.0
+            elif swap_type == 'arb_to_dai':
+                # Calculate ARB amount to swap back to DAI
+                balances = self.aave.get_user_balances()
+                arb_balance = balances.get('borrowed', {}).get('ARB', 0)
+
+                if arb_balance > 5.0:
+                    return min(arb_balance * 0.5, 20.0)  # 50% or $20 max
+                else:
+                    return arb_balance  # Swap all if small amount
+
+            return 0.0
+
+        except Exception as e:
+            logger.error(f"Error calculating swap amount: {e}")
+            return 0.0
+
+    def check_debt_swap_conditions(self):
+        """Check if debt swap conditions are met"""
+        try:
+            # Check if market signal strategy is available
+            if not hasattr(self, 'market_signal_strategy') or not self.market_signal_strategy:
+                return False, "Market signal strategy not available"
+
+            # Check if strategy is properly initialized
+            if not hasattr(self.market_signal_strategy, 'initialization_successful'):
+                return False, "Market signal strategy not initialized"
+
+            if not self.market_signal_strategy.initialization_successful:
+                return False, "Market signal strategy initialization failed"
+
+            # Check technical indicators readiness
+            status = self.market_signal_strategy.get_strategy_status()
+            tech_ready = status.get('technical_indicators_ready', False)
+
+            if not tech_ready:
+                arb_points = status.get('enhanced_arb_points', 0)
+                btc_points = status.get('enhanced_btc_points', 0)
+                min_points = status.get('min_points_for_basic', 5)
+                return False, f"Insufficient data points (ARB: {arb_points}, BTC: {btc_points}, need: {min_points})"
+
+            # Check health factor if Aave is available
+            if hasattr(self, 'aave') and self.aave:
+                try:
+                    account_data = self.aave.get_user_account_data()
+                    if account_data:
+                        health_factor = account_data.get('healthFactor', 0)
+                        if health_factor < 1.8:
+                            return False, f"Health factor too low: {health_factor:.3f} (need >1.8)"
+                    else:
+                        return False, "Cannot retrieve account data"
+                except Exception as hf_error:
+                    return False, f"Health factor check failed: {hf_error}"
+
+            # Check debt swap activation
+            if not getattr(self, 'debt_swap_active', False):
+                return False, "Debt swap system not activated"
+
+            return True, "All debt swap conditions met - system ready"
+
+        except Exception as e:
+            return False, f"Debt swap condition check failed: {e}"
 
     def get_dai_balance(self):
         """Get current DAI balance"""

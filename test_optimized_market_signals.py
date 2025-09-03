@@ -187,18 +187,62 @@ def simulate_dai_arb_swap(agent, confidence, signals_detected):
         print(f"❌ Swap simulation failed: {e}")
         return False
 
+def run_comprehensive_test():
+    """Run comprehensive test with actual swap execution simulation"""
+    print("🚀 TESTING OPTIMIZED MARKET LOGIC WITH SWAP EXECUTION")
+    print("=" * 60)
+    
+    # Test optimized parameters first
+    params_success = test_optimized_parameters()
+    
+    if params_success:
+        print("\n✅ OPTIMIZED PARAMETERS VALIDATED")
+        print("🔄 Testing actual swap execution logic...")
+        
+        # Test actual swap execution with optimized agent
+        try:
+            from arbitrum_testnet_agent import ArbitrumTestnetAgent
+            
+            # Initialize agent with optimized settings
+            agent = ArbitrumTestnetAgent()
+            agent.debt_swap_active = True
+            
+            # Force mock data for testing
+            if hasattr(agent, 'market_signal_strategy') and agent.market_signal_strategy:
+                # Simulate optimized market conditions
+                test_result = agent.run_real_defi_task(1, 1, {'optimization_test': True})
+                
+                print(f"🎯 Agent execution result: {test_result:.3f}")
+                
+                if test_result > 0:
+                    print("✅ SWAP EXECUTION LOGIC OPERATIONAL")
+                    return True
+                else:
+                    print("⚠️ Swap execution needs further optimization")
+                    return False
+            else:
+                print("❌ Market signal strategy not available for testing")
+                return False
+                
+        except Exception as e:
+            print(f"❌ Swap execution test failed: {e}")
+            return False
+    else:
+        return False
+
 if __name__ == "__main__":
-    print("🔍 STARTING OPTIMIZED MARKET SIGNAL TEST")
-    print("🎯 Objective: Verify less conservative parameters enable DAI→ARB swaps")
+    print("🔍 COMPREHENSIVE OPTIMIZED MARKET SIGNAL TEST")
+    print("🎯 Objective: Verify optimized parameters and swap execution")
     print()
     
-    success = test_optimized_parameters()
+    success = run_comprehensive_test()
     
     print("\n" + "=" * 60)
     if success:
-        print("✅ OPTIMIZATION TEST PASSED")
-        print("🚀 System ready to capture market opportunities with new parameters")
+        print("✅ OPTIMIZATION AND EXECUTION TEST PASSED")
+        print("🚀 System ready to execute swaps with optimized parameters")
+        print("💡 Next: Monitor live execution in autonomous mode")
     else:
-        print("❌ OPTIMIZATION TEST FAILED")
-        print("🔧 Further parameter adjustments may be needed")
+        print("❌ OPTIMIZATION TEST INCOMPLETE")
+        print("🔧 Review system logs and continue debugging")
     print("=" * 60)
