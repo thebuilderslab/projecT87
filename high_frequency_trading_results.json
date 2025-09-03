@@ -1,0 +1,16 @@
+{
+  "test_type": "high_frequency_corrected_logic",
+  "total_swaps": 0,
+  "total_profit": 0,
+  "strategy": "buy_low_sell_high",
+  "parameters": {
+    "cooldown": 30,
+    "min_swap": 1.0,
+    "max_swap": 10.0,
+    "dai_to_arb_threshold": 0.4,
+    "arb_to_dai_threshold": 0.4
+  },
+  "swaps": [],
+  "logic_corrected": true,
+  "timestamp": "2025-09-03T16:31:21.802935"
+}
