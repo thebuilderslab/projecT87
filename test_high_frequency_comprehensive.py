@@ -10,6 +10,7 @@ import sys
 import time
 import json
 from datetime import datetime
+from environmental_configuration import OPERATION_COOLDOWN, MIN_SWAP_AMOUNT, MAX_SWAP_AMOUNT
 
 def test_high_frequency_configuration():
     """Test and validate high-frequency configuration"""
@@ -210,6 +211,9 @@ def force_high_confidence_swap(agent, threshold):
     try:
         print(f"\n🚀 FORCING HIGH-CONFIDENCE SWAP EXECUTION")
         print("-" * 50)
+        
+        # Import/define high-frequency parameters
+        from environmental_configuration import MIN_SWAP_AMOUNT, MAX_SWAP_AMOUNT
         
         # Create ultra-high confidence mock signals
         ultra_mock_signals = {
