@@ -270,3 +270,150 @@ def get_hourly_performance():
         'success_rate': 66.7,
         'total_profit': 2.15
     }
+#!/usr/bin/env python3
+"""
+Swap Console Reporter
+Enhanced console reporting for debt swap operations with profit tracking
+"""
+
+import os
+import json
+import time
+from datetime import datetime, timedelta
+from typing import List, Dict
+
+class SwapConsoleReporter:
+    """Enhanced console reporter for debt swap operations"""
+    
+    def __init__(self):
+        self.swap_log_file = 'debt_swap_cycles.json'
+        
+    def report_swap_execution(self, swap_type: str, amount: float, reasons: List[str], 
+                            confidence: float, profit: float = 0):
+        """Report swap execution with full details"""
+        timestamp = datetime.now().strftime('%H:%M:%S')
+        
+        print(f"\n💱 DEBT SWAP EXECUTED AT {timestamp}")
+        print("=" * 50)
+        print(f"🔄 Swap Type: {swap_type.upper()}")
+        print(f"💰 Amount: ${amount:.2f}")
+        print(f"📊 Confidence: {confidence:.2f}")
+        if profit != 0:
+            profit_emoji = "📈" if profit > 0 else "📉"
+            print(f"{profit_emoji} Profit/Loss: ${profit:.2f}")
+        
+        print(f"🎯 Decision Reasons:")
+        for i, reason in enumerate(reasons, 1):
+            print(f"   {i}. {reason}")
+        
+        print("=" * 50)
+        
+        # Log to file
+        swap_entry = {
+            'timestamp': time.time(),
+            'formatted_time': timestamp,
+            'swap_type': swap_type,
+            'amount': amount,
+            'confidence': confidence,
+            'profit': profit,
+            'reasons': reasons
+        }
+        
+        self._append_to_swap_log(swap_entry)
+        
+    def get_hourly_stats(self) -> Dict:
+        """Get swap statistics for the last hour"""
+        try:
+            if not os.path.exists(self.swap_log_file):
+                return {
+                    'total_swaps': 0,
+                    'successful_swaps': 0,
+                    'success_rate': 0,
+                    'total_profit': 0,
+                    'dai_to_arb_count': 0,
+                    'arb_to_dai_count': 0
+                }
+            
+            with open(self.swap_log_file, 'r') as f:
+                all_swaps = json.load(f)
+            
+            # Filter for last hour
+            one_hour_ago = time.time() - 3600
+            recent_swaps = [s for s in all_swaps if s.get('timestamp', 0) > one_hour_ago]
+            
+            # Calculate statistics
+            total_swaps = len(recent_swaps)
+            successful_swaps = len([s for s in recent_swaps if s.get('profit', 0) >= 0])
+            total_profit = sum(s.get('profit', 0) for s in recent_swaps)
+            
+            dai_to_arb = len([s for s in recent_swaps if s.get('swap_type') == 'dai_to_arb'])
+            arb_to_dai = len([s for s in recent_swaps if s.get('swap_type') == 'arb_to_dai'])
+            
+            return {
+                'total_swaps': total_swaps,
+                'successful_swaps': successful_swaps,
+                'success_rate': (successful_swaps / total_swaps * 100) if total_swaps > 0 else 0,
+                'total_profit': total_profit,
+                'dai_to_arb_count': dai_to_arb,
+                'arb_to_dai_count': arb_to_dai,
+                'recent_swaps': recent_swaps[-5:]  # Last 5 swaps
+            }
+            
+        except Exception as e:
+            print(f"❌ Error calculating hourly stats: {e}")
+            return {'error': str(e)}
+    
+    def report_hourly_summary(self):
+        """Report hourly swap summary to console"""
+        stats = self.get_hourly_stats()
+        
+        if 'error' in stats:
+            print(f"⚠️ Stats error: {stats['error']}")
+            return
+        
+        timestamp = datetime.now().strftime('%H:%M:%S')
+        
+        print(f"\n📊 HOURLY SWAP SUMMARY ({timestamp})")
+        print("=" * 40)
+        print(f"🔄 Total Swaps: {stats['total_swaps']}")
+        print(f"✅ Successful: {stats['successful_swaps']}")
+        print(f"📈 Success Rate: {stats['success_rate']:.1f}%")
+        print(f"💰 Total Profit: ${stats['total_profit']:.2f}")
+        print(f"🔵 DAI→ARB: {stats['dai_to_arb_count']}")
+        print(f"🟡 ARB→DAI: {stats['arb_to_dai_count']}")
+        print("=" * 40)
+        
+        # Show recent swaps if any
+        if stats.get('recent_swaps'):
+            print("📋 Recent Swaps:")
+            for swap in stats['recent_swaps']:
+                swap_time = datetime.fromtimestamp(swap['timestamp']).strftime('%H:%M')
+                print(f"   {swap_time}: {swap['swap_type'].upper()} ${swap['amount']:.2f} (${swap.get('profit', 0):.2f})")
+    
+    def _append_to_swap_log(self, swap_entry: Dict):
+        """Append swap entry to log file"""
+        try:
+            # Load existing swaps
+            if os.path.exists(self.swap_log_file):
+                with open(self.swap_log_file, 'r') as f:
+                    swaps = json.load(f)
+            else:
+                swaps = []
+            
+            # Add new swap
+            swaps.append(swap_entry)
+            
+            # Keep only last 100 swaps
+            if len(swaps) > 100:
+                swaps = swaps[-100:]
+            
+            # Save back to file
+            with open(self.swap_log_file, 'w') as f:
+                json.dump(swaps, f, indent=2)
+                
+        except Exception as e:
+            print(f"⚠️ Failed to log swap: {e}")
+
+# Test execution
+if __name__ == "__main__":
+    test_optimized_parameters()
