@@ -41,12 +41,17 @@ def verify_aave_resolution():
             abi=pool_abi
         )
         
-        account_data = pool_contract.functions.getUserAccountData(agent.address).call()
+        # Force fresh contract call with latest block
+        account_data = pool_contract.functions.getUserAccountData(agent.address).call(block_identifier='latest')
         
         collateral_usd = account_data[0] / (10**8)
         debt_usd = account_data[1] / (10**8)
         available_usd = account_data[2] / (10**8)
         health_factor = account_data[5] / (10**18) if account_data[5] > 0 else float('inf')
+        
+        print(f"🔍 VERIFICATION: Using latest block for real-time data")
+        print(f"📊 Block number: {agent.w3.eth.block_number}")
+        print(f"⏰ Timestamp: {time.time()}")
         
         print(f"   ✅ Contract call successful!")
         print(f"   📊 Collateral: ${collateral_usd:.2f}")

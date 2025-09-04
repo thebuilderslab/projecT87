@@ -191,8 +191,11 @@ class AaveHealthMonitor:
                 abi=self.data_provider_abi
             )
 
-            # Call the function
-            user_data = data_provider_contract.functions.getUserAccountData(user_address).call()
+            # Call the function with latest block to prevent stale data
+            user_data = data_provider_contract.functions.getUserAccountData(user_address).call(block_identifier='latest')
+            
+            print(f"🔍 LIVE DATA: Fetched from block {self.w3.eth.block_number}")
+            print(f"⏰ Fresh timestamp: {time.time()}")
 
             # Extract data from getUserAccountData
             # Note: Aave V3 Pool returns values in USD base units (8 decimals), not ETH

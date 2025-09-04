@@ -119,7 +119,8 @@ class AaveArbitrumIntegration:
             max_retries = 3
             for attempt in range(max_retries):
                 try:
-                    account_data = self.pool_contract.functions.getUserAccountData(self.account.address).call()
+                    # Force latest block to prevent stale data
+                    account_data = self.pool_contract.functions.getUserAccountData(self.account.address).call(block_identifier='latest')
 
                     # Ensure account_data is not None
                     if account_data is None:
