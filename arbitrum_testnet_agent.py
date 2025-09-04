@@ -571,15 +571,11 @@ class ArbitrumTestnetAgent:
         import importlib
         importlib.reload(os)
 
-        # Check all possible variations systematically
-        coinapi_key = None
-        coinapi_variations = ['COIN_API_KEY', 'COIN_API', 'COINAPI_KEY', 'COINAPI']
-        for var_name in coinapi_variations:
-            key_value = os.getenv(var_name)
-            if key_value and len(key_value.strip()) > 10:
-                coinapi_key = key_value.strip()
-                print(f"🔍 Found CoinAPI key in {var_name}: {coinapi_key[:8]}...")
-                break
+        # Use standardized COIN_API environment variable
+        coinapi_key = os.getenv('COIN_API')
+        if coinapi_key:
+            coinapi_key = coinapi_key.strip()
+            print(f"🔍 Found CoinAPI key in COIN_API: {coinapi_key[:8]}...")
 
         coinmarketcap_key = os.getenv('COINMARKETCAP_API_KEY')
         if coinmarketcap_key:
@@ -644,8 +640,7 @@ class ArbitrumTestnetAgent:
                         print("✅ Market Signal Strategy initialized with API Data")
                 else:
                     # Check for direct API access
-                    coinapi_key = (os.getenv('COIN_API') or os.getenv('COIN_API_KEY') or
-                                  os.getenv('COINAPI_KEY') or os.getenv('COINAPI'))
+                    coinapi_key = os.getenv('COIN_API')
                     coinmarketcap_key = os.getenv('COINMARKETCAP_API_KEY')
 
                     if coinapi_key:
@@ -770,10 +765,7 @@ class ArbitrumTestnetAgent:
     def _display_debt_swap_thresholds(self):
         """Display debt swap thresholds dynamically with real-time status"""
         try:
-            coinapi_key = (os.getenv('COIN_API') or
-                          os.getenv('COIN_API_KEY') or
-                          os.getenv('COINAPI_KEY') or
-                          os.getenv('COINAPI'))
+            coinapi_key = os.getenv('COIN_API')
             coinmarketcap_key = os.getenv('COINMARKETCAP_API_KEY')
             market_signal_enabled = os.getenv('MARKET_SIGNAL_ENABLED', 'false').lower() == 'true'
 

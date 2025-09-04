@@ -233,18 +233,12 @@ class EnhancedMarketAnalyzer:
         self.logger = logging.getLogger(__name__)
 
         # Initialize API clients - CoinAPI as PRIMARY, CoinMarketCap as SECONDARY
-        # Check all possible secret key variations with debug output
-        self.coinapi_key = (os.getenv('COIN_API') or 
-                           os.getenv('COIN_API_KEY') or 
-                           os.getenv('COINAPI_KEY') or
-                           os.getenv('COINAPI'))
+        self.coinapi_key = os.getenv('COIN_API')
         self.coinmarketcap_key = os.getenv('COINMARKETCAP_API_KEY')
 
         # Debug environment variable reading
         print(f"🔍 DEBUG Environment Variables:")
         print(f"   COIN_API: {'SET' if os.getenv('COIN_API') else 'NOT_SET'}")
-        print(f"   COIN_API_KEY: {'SET' if os.getenv('COIN_API_KEY') else 'NOT_SET'}")
-        print(f"   COINAPI_KEY: {'SET' if os.getenv('COINAPI_KEY') else 'NOT_SET'}")
         print(f"   COINMARKETCAP_API_KEY: {'SET' if os.getenv('COINMARKETCAP_API_KEY') else 'NOT_SET'}")
         print(f"   MARKET_SIGNAL_ENABLED: {os.getenv('MARKET_SIGNAL_ENABLED', 'NOT_SET')}")
 
