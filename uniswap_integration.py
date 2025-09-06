@@ -347,21 +347,6 @@ class UniswapIntegration:
                     print(f"⚠️ Balance check failed: {balance_error}")
                     return None  # Don't proceed if balance check fails
 
-            # Convert amount_in to wei FIRST
-            amount_in_wei = self._convert_to_wei(token_in, amount_in)
-            print(f"🔄 Converting {amount_in} to {amount_in_wei} wei for {token_in}")
-
-            if amount_in_wei <= 0:
-                print(f"❌ Invalid wei conversion result: {amount_in_wei}")
-                return None
-
-            # Check ETH balance for gas
-            eth_balance = self.w3.eth.get_balance(self.address)
-            min_eth_needed = self.w3.to_wei(0.001, 'ether')  # 0.001 ETH minimum
-            if eth_balance < min_eth_needed:
-                print(f"❌ Insufficient ETH for gas: {self.w3.from_wei(eth_balance, 'ether'):.6f} ETH")
-                return None
-
             # Approve token spending with enhanced validation
             if token_in != "0x0000000000000000000000000000000000000000":  # Not ETH
                 token_contract = self.w3.eth.contract(address=token_in, abi=self.erc20_abi)
