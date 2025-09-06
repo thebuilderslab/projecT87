@@ -112,8 +112,8 @@ class MarketSignalStrategy:
             self.enhanced_analyzer = self._create_mock_analyzer()
             logger.info("✅ Mock analyzer created for debt swap operations")
 
-    def _detect_macd_bullish_crossover(self, arb_analysis):
-        """Detect MACD bullish crossover for ARB→DAI trigger (sell high)"""
+    def _detect_macd_uptrend_crossover(self, arb_analysis):
+        """Detect MACD bullish crossover for ARB→DAI trigger (buy low/repay high)"""
         try:
             # Get MACD data from analysis
             macd_line = arb_analysis.get('macd_line', 0)
@@ -146,7 +146,7 @@ class MarketSignalStrategy:
             prev_macd = self.macd_history[-2]
             curr_macd = self.macd_history[-1]
             
-            # Detect bullish crossover: MACD line crosses above signal line (sell signal)
+            # Detect bullish crossover: MACD line crosses above signal line (repay signal)
             prev_below = prev_macd['macd_line'] <= prev_macd['signal_line']
             curr_above = curr_macd['macd_line'] > curr_macd['signal_line']
             
@@ -154,16 +154,16 @@ class MarketSignalStrategy:
             histogram_positive = curr_macd['histogram'] > 0
             
             if prev_below and curr_above and histogram_positive:
-                logger.info(f"🚀 MACD BULLISH CROSSOVER DETECTED - SELL HIGH SIGNAL!")
+                logger.info(f"🚀 MACD BULLISH CROSSOVER DETECTED - REPAY SIGNAL!")
                 logger.info(f"   Previous: MACD {prev_macd['macd_line']:.4f} ≤ Signal {prev_macd['signal_line']:.4f}")
-                logger.info(f"   Current:  MACD {curr_macd['macd_line']:.4f} > Signal {curr_macd['signal_line']:.4f}")
-                logger.info(f"   Histogram: {curr_macd['histogram']:.4f} (positive)")
+                logger.info(f"   Current: MACD {curr_macd['macd_line']:.4f} > Signal {curr_macd['signal_line']:.4f}")
+                logger.info(f"   Histogram: {curr_macd['histogram']:.4f} > 0")
                 return True
                 
             return False
             
         except Exception as e:
-            logger.error(f"MACD bullish crossover detection error: {e}")
+            logger.error(f"Error in MACD crossover detection: {e}")
             return False
 
     def _detect_macd_bearish_crossover(self, arb_analysis):
@@ -508,12 +508,12 @@ class MarketSignalStrategy:
                         signals_detected.append("MACD Bearish Crossover - Swap to Declining ARB")
                         logger.info("🚨 MACD BEARISH CROSSOVER DETECTED - Strong DAI→ARB signal (swap to declining asset)")
                     
-                    # SECONDARY TRIGGER: MACD Bullish Crossover for ARB→DAI (swap back from rising asset)
-                    macd_bullish_crossover = self._detect_macd_bullish_crossover(arb_analysis)
-                    if macd_bullish_crossover:
-                        signal_strength -= 0.6  # Strong negative signal for ARB→DAI (swap back from rising asset)
-                        signals_detected.append("MACD Bullish Crossover - Swap Back from Rising ARB")
-                        logger.info("🚀 MACD BULLISH CROSSOVER DETECTED - Strong ARB→DAI signal (swap back from rising asset)")
+                    # SECONDARY TRIGGER: MACD Uptrend Crossover for ARB→DAI (repay when trending up)
+                    macd_uptrend_crossover = self._detect_macd_uptrend_crossover(arb_analysis)
+                    if macd_uptrend_crossover:
+                        signal_strength -= 0.6  # Strong negative signal for ARB→DAI (repay when trending up)
+                        signals_detected.append("MACD Uptrend Crossover - Repay Signal")
+                        logger.info("🚀 MACD UPTREND CROSSOVER DETECTED - Strong ARB→DAI repay signal")
                     
                     # Get 5-minute pattern analysis for better timing
                     btc_pattern = btc_analysis.get('pattern', 'unknown')
