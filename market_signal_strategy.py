@@ -206,6 +206,56 @@ class MarketSignalStrategy:
             logger.error(f"MACD bearish crossover detection error: {e}")
             return False
 
+    def _detect_macd_downtrend_crossover(self, arb_analysis):
+        """Detect MACD bearish crossover for DAI→ARB trigger (swap to declining asset)"""
+        try:
+            # Get MACD data from analysis
+            macd_line = arb_analysis.get('macd_line', 0)
+            macd_signal = arb_analysis.get('macd_signal', 0)
+            macd_histogram = arb_analysis.get('macd_histogram', 0)
+
+            # Store current MACD data
+            current_macd = {
+                'macd_line': macd_line,
+                'signal_line': macd_signal,
+                'histogram': macd_histogram,
+                'timestamp': time.time()
+            }
+
+            if not hasattr(self, 'macd_history'):
+                self.macd_history = []
+
+            self.macd_history.append(current_macd)
+
+            if len(self.macd_history) > 10:
+                self.macd_history.pop(0)
+
+            if len(self.macd_history) < 2:
+                return False
+
+            prev_macd = self.macd_history[-2]
+            curr_macd = self.macd_history[-1]
+
+            # Detect bearish crossover: MACD line crosses below signal line
+            prev_above = prev_macd['macd_line'] >= prev_macd['signal_line']
+            curr_below = curr_macd['macd_line'] < curr_macd['signal_line']
+
+            # Additional confirmation: histogram turning negative
+            histogram_negative = curr_macd['histogram'] < 0
+
+            if prev_above and curr_below and histogram_negative:
+                logger.info(f"🚨 MACD BEARISH CROSSOVER DETECTED - SWAP TO ARB SIGNAL!")
+                logger.info(f"   Previous: MACD {prev_macd['macd_line']:.4f} ≥ Signal {prev_macd['signal_line']:.4f}")
+                logger.info(f"   Current: MACD {curr_macd['macd_line']:.4f} < Signal {curr_macd['signal_line']:.4f}")
+                logger.info(f"   Histogram: {curr_macd['histogram']:.4f} < 0")
+                return True
+
+            return False
+
+        except Exception as e:
+            logger.error(f"Error in MACD downtrend crossover detection: {e}")
+            return False
+
     def _create_mock_analyzer(self):
         """Create a mock analyzer for basic debt swap functionality with MACD"""
         class MockAnalyzer:
@@ -451,19 +501,19 @@ class MarketSignalStrategy:
                         DAI_TO_ARB_THRESHOLD, ARB_TO_DAI_THRESHOLD
                     )
                     
-                    # PRIMARY TRIGGER: MACD Bearish Crossover Detection for DAI→ARB (buy low)
-                    macd_bearish_crossover = self._detect_macd_bearish_crossover(arb_analysis)
-                    if macd_bearish_crossover:
-                        signal_strength += 0.6  # Strong positive signal for DAI→ARB (buy when bearish)
-                        signals_detected.append("MACD Bearish Crossover - Buy Low Trigger")
-                        logger.info("📉 MACD BEARISH CROSSOVER DETECTED - Strong DAI→ARB signal (buy low)")
+                    # PRIMARY TRIGGER: MACD Downtrend Crossover Detection for DAI→ARB (swap to declining asset)
+                    macd_downtrend_crossover = self._detect_macd_downtrend_crossover(arb_analysis)
+                    if macd_downtrend_crossover:
+                        signal_strength += 0.6  # Strong positive signal for DAI→ARB (swap to declining asset)
+                        signals_detected.append("MACD Bearish Crossover - Swap to Declining ARB")
+                        logger.info("🚨 MACD BEARISH CROSSOVER DETECTED - Strong DAI→ARB signal (swap to declining asset)")
                     
-                    # SECONDARY TRIGGER: MACD Bullish Crossover for ARB→DAI (sell high)
+                    # SECONDARY TRIGGER: MACD Bullish Crossover for ARB→DAI (swap back from rising asset)
                     macd_bullish_crossover = self._detect_macd_bullish_crossover(arb_analysis)
                     if macd_bullish_crossover:
-                        signal_strength -= 0.6  # Strong negative signal for ARB→DAI (sell when bullish)
-                        signals_detected.append("MACD Bullish Crossover - Sell High Trigger")
-                        logger.info("🚀 MACD BULLISH CROSSOVER DETECTED - Strong ARB→DAI signal (sell high)")
+                        signal_strength -= 0.6  # Strong negative signal for ARB→DAI (swap back from rising asset)
+                        signals_detected.append("MACD Bullish Crossover - Swap Back from Rising ARB")
+                        logger.info("🚀 MACD BULLISH CROSSOVER DETECTED - Strong ARB→DAI signal (swap back from rising asset)")
                     
                     # Get 5-minute pattern analysis for better timing
                     btc_pattern = btc_analysis.get('pattern', 'unknown')
