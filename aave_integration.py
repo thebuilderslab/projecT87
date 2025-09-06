@@ -12,6 +12,7 @@ from web3 import Web3
 from eth_account import Account
 from decimal import Decimal
 import logging
+from uniswap_integration import UniswapIntegration
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -27,13 +28,18 @@ class AaveArbitrumIntegration:
             self.dai_address = "0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1"
             self.wbtc_address = "0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f"
             self.weth_address = "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1"
+            self.arb_address = "0x912CE59144191C1204E64559FE8253a0e49E6548"
             self.pool_address = "0x794a61358D6845594F94dc1DB02A252b5b4814aD"
         else:
             # Testnet addresses
             self.dai_address = "0x5f6bB460B6d0bdA2CCaDdd7A19B5F6E7b5b8E1DB"
             self.wbtc_address = "0xA2d460Bc966F6C4D5527a6ba35C6cB57c15c8F96"
             self.weth_address = "0x980B62Da83eFf3D4576C647993b0c1D7faf17c73"
+            self.arb_address = "0x1b20e6a3B2a86618C32A37ffcD5E98C0d20a6E42"
             self.pool_address = "0x18cd499E3d7ed42FebA981ac9236A278E4Cdc2ee"
+
+        # Initialize Uniswap integration for swapping
+        self.uniswap = UniswapIntegration(w3, account)
 
         # Initialize pool contract
         self._initialize_pool_contract()
@@ -618,4 +624,61 @@ class AaveArbitrumIntegration:
 
         except Exception as e:
             logger.error(f"DAI repayment failed: {e}")
+            return False
+
+    def swap_borrowed_debt(self, token_in_address, token_out_address, amount_to_swap):
+        """
+        Swaps borrowed debt from one asset to another.
+        This function withdraws the borrowed token and swaps it via Uniswap.
+        DAI-ONLY COMPLIANCE: Only DAI-based swaps are permitted.
+        """
+        try:
+            # DAI-ONLY COMPLIANCE CHECK
+            dai_address_lower = self.dai_address.lower()
+            token_in_lower = token_in_address.lower()
+            token_out_lower = token_out_address.lower()
+            
+            # Validate allowed swap combinations
+            allowed_swaps = [
+                (dai_address_lower, self.wbtc_address.lower()),  # DAI → WBTC
+                (dai_address_lower, self.weth_address.lower()),  # DAI → WETH
+                (dai_address_lower, self.arb_address.lower()),   # DAI → ARB
+                (self.arb_address.lower(), dai_address_lower),   # ARB → DAI
+            ]
+            
+            current_swap = (token_in_lower, token_out_lower)
+            if current_swap not in allowed_swaps:
+                logger.error(f"❌ FORBIDDEN SWAP: {token_in_address} → {token_out_address}")
+                logger.error(f"🚫 Only DAI → WBTC, DAI → WETH, DAI → ARB, and ARB → DAI swaps are allowed")
+                return False
+
+            # 1. Check if the amount is sufficient for the swap
+            if amount_to_swap <= 0:
+                logger.error("Swap amount must be greater than zero.")
+                return False
+
+            # 2. Check token balance before swap
+            token_balance = self.get_token_balance(token_in_address)
+            if token_balance < amount_to_swap:
+                logger.error(f"Insufficient token balance: {token_balance:.6f} < {amount_to_swap:.6f}")
+                return False
+
+            # 3. Perform the swap using the Uniswap integration
+            print(f"🔄 Executing debt swap of {amount_to_swap:.6f} from {token_in_address} to {token_out_address}...")
+            
+            if not hasattr(self, 'uniswap') or not self.uniswap:
+                logger.error("❌ Uniswap integration not available")
+                return False
+                
+            tx_hash = self.uniswap.swap_tokens(token_in_address, token_out_address, amount_to_swap)
+            
+            if tx_hash:
+                print(f"✅ Debt swap successful: {tx_hash}")
+                return tx_hash
+            else:
+                logger.error("❌ Debt swap failed.")
+                return False
+
+        except Exception as e:
+            logger.error(f"Critical error during debt swap: {e}")
             return False
