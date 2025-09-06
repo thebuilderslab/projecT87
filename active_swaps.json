@@ -53,5 +53,38 @@
     "expected_dai_value": 0.22735851409617852,
     "status": "DAI_TO_ARB_COMPLETE",
     "phase": "waiting_for_arb_to_dai"
+  },
+  "cycle_1757124555_6203": {
+    "cycle_id": "cycle_1757124555_6203",
+    "start_time": 1757124555.5312364,
+    "start_timestamp": "2025-09-06T02:09:15.531239",
+    "initial_dai_amount": 0.5,
+    "arb_amount_received": 1.2195121951219512,
+    "arb_price_at_entry": 0.41,
+    "expected_dai_value": 0.5,
+    "status": "DAI_TO_ARB_COMPLETE",
+    "phase": "waiting_for_arb_to_dai"
+  },
+  "cycle_1757124564_1172": {
+    "cycle_id": "cycle_1757124564_1172",
+    "start_time": 1757124564.092554,
+    "start_timestamp": "2025-09-06T02:09:24.092555",
+    "initial_dai_amount": 0.5,
+    "arb_amount_received": 1.2195121951219512,
+    "arb_price_at_entry": 0.41,
+    "expected_dai_value": 0.5,
+    "status": "DAI_TO_ARB_COMPLETE",
+    "phase": "waiting_for_arb_to_dai"
+  },
+  "cycle_1757124823_9815": {
+    "cycle_id": "cycle_1757124823_9815",
+    "start_time": 1757124823.1993816,
+    "start_timestamp": "2025-09-06T02:13:43.199383",
+    "initial_dai_amount": 0.4994009008944034,
+    "arb_amount_received": 1.2180509777912278,
+    "arb_price_at_entry": 0.41,
+    "expected_dai_value": 0.4994009008944034,
+    "status": "DAI_TO_ARB_COMPLETE",
+    "phase": "waiting_for_arb_to_dai"
   }
 }
