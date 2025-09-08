@@ -308,9 +308,13 @@ class EnhancedMarketAnalyzer:
                             break
                         time.sleep(1)  # Brief delay before retry
                     except Exception as test_error:
-                        self.logger.warning(f"CoinAPI test attempt {attempt + 1} failed: {test_error}")
-                        if attempt == 0:
-                            time.sleep(2)
+                        if "403" in str(test_error) or "forbidden" in str(test_error).lower():
+                            self.logger.error(f"🚫 CoinAPI key permissions denied - API key may be invalid or expired")
+                            break  # Don't retry on permission errors
+                        else:
+                            self.logger.warning(f"CoinAPI test attempt {attempt + 1} failed: {test_error}")
+                            if attempt == 0:
+                                time.sleep(2)
                 
                 if test_data and test_data.get('price', 0) > 0:
                     self.primary_api = 'coinapi'
@@ -319,15 +323,20 @@ class EnhancedMarketAnalyzer:
                     self.logger.info(f"🎯 PRIMARY: CoinAPI initialized successfully with key: {self.coinapi_key[:8]}...")
                     self.logger.info("✅ CoinAPI confirmed as PRIMARY market data source")
                 else:
-                    raise Exception("CoinAPI test returned no valid data after retries")
+                    raise Exception("CoinAPI test returned no valid data or permissions denied")
             except Exception as coinapi_error:
-                self.logger.warning(f"❌ CoinAPI PRIMARY initialization failed: {coinapi_error}")
-                self.logger.info("🔄 CoinAPI will be available as fallback, proceeding with CoinMarketCap...")
-                # Don't set coinapi_client to None - keep it for fallback attempts
-                if not hasattr(self, 'coinapi_client') or not self.coinapi_client:
-                    self.coinapi_client = CoinAPI(self.coinapi_key) if self.coinapi_key else None
+                if "403" in str(coinapi_error) or "forbidden" in str(coinapi_error).lower():
+                    self.logger.error(f"❌ CoinAPI FORBIDDEN: API key invalid or expired - {coinapi_error}")
+                    self.logger.info("💡 Please check your COIN_API key in Replit Secrets - it may need renewal")
+                    self.coinapi_client = None  # Disable CoinAPI completely on permission errors
+                else:
+                    self.logger.warning(f"❌ CoinAPI PRIMARY initialization failed: {coinapi_error}")
+                    self.logger.info("🔄 CoinAPI will be available as fallback, proceeding with CoinMarketCap...")
+                    # Keep client for potential later recovery
+                    if not hasattr(self, 'coinapi_client') or not self.coinapi_client:
+                        self.coinapi_client = CoinAPI(self.coinapi_key) if self.coinapi_key else None
         else:
-            self.logger.warning("❌ CoinAPI key not found in Replit Secrets. Your key is in COIN_API - this should now work correctly.")
+            self.logger.warning("❌ CoinAPI key not found in Replit Secrets. Add COIN_API to your secrets.")
 
         # Initialize CoinMarketCap as SECONDARY (fallback)
         if not self.primary_api and self.coinmarketcap_key:
@@ -408,7 +417,11 @@ class EnhancedMarketAnalyzer:
                     self.logger.info(f"🎯 Using PRIMARY CoinAPI data for {symbol}: ${data['price']:.4f}")
                     return data
             except Exception as e:
-                self.logger.warning(f"❌ CoinAPI (PRIMARY) failed for {symbol}: {e}")
+                if "403" in str(e) or "forbidden" in str(e).lower():
+                    self.logger.error(f"🚫 CoinAPI forbidden for {symbol} - disabling CoinAPI client")
+                    self.coinapi_client = None  # Disable permanently on permission errors
+                else:
+                    self.logger.warning(f"❌ CoinAPI (PRIMARY) failed for {symbol}: {e}")
                 # Don't increment failure count for CoinAPI - try CoinMarketCap fallback
 
         # Try CoinMarketCap as SECONDARY fallback
