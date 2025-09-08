@@ -62,7 +62,7 @@ class CoinAPI:
             # Convert symbol to CoinAPI format
             symbol_map = {
                 'BTC': 'BTC',
-                'ETH': 'ETH',
+                'ETH': 'ETH', 
                 'ARB': 'ARB',
                 'DAI': 'DAI'
             }
@@ -70,33 +70,64 @@ class CoinAPI:
             coin_symbol = symbol_map.get(symbol, symbol)
             url = f"{self.base_url}/exchangerate/{coin_symbol}/USD"
 
-            response = self.session.get(url, timeout=30)
-            response.raise_for_status()
+            # Add proper headers and reduced timeout
+            headers = {
+                'X-CoinAPI-Key': self.api_key,
+                'Accept': 'application/json'
+            }
 
+            response = self.session.get(url, headers=headers, timeout=15)
+            
+            if response.status_code == 401:
+                logger.error(f"CoinAPI unauthorized - check API key")
+                return None
+            elif response.status_code == 403:
+                logger.error(f"CoinAPI forbidden - check permissions")
+                return None
+            elif response.status_code == 429:
+                logger.warning(f"CoinAPI rate limited")
+                return None
+            
+            response.raise_for_status()
             data = response.json()
 
-            if 'rate' not in data:
+            if 'rate' not in data or not isinstance(data.get('rate'), (int, float)):
+                logger.warning(f"CoinAPI returned invalid data format for {symbol}")
                 return None
 
-            # Get additional data if available
+            # Validate price is reasonable
+            price = float(data['rate'])
+            if price <= 0:
+                logger.warning(f"CoinAPI returned invalid price {price} for {symbol}")
+                return None
+
+            # Get additional data if available (optional, don't fail on this)
+            ohlcv_data = {}
             try:
-                # Get OHLCV data for additional metrics
                 ohlcv_url = f"{self.base_url}/ohlcv/{coin_symbol}/USD/latest"
-                ohlcv_response = self.session.get(ohlcv_url, timeout=30)
-                ohlcv_data = ohlcv_response.json() if ohlcv_response.status_code == 200 else {}
+                ohlcv_response = self.session.get(ohlcv_url, headers=headers, timeout=10)
+                if ohlcv_response.status_code == 200:
+                    ohlcv_data = ohlcv_response.json()
             except:
-                ohlcv_data = {}
+                pass  # Optional data, don't fail
 
             return {
-                'price': data['rate'],
+                'price': price,
                 'percent_change_1h': 0,  # CoinAPI doesn't provide this directly
-                'percent_change_24h': ohlcv_data.get('price_change_pct', 0),
+                'percent_change_24h': ohlcv_data.get('price_change_pct', 0) * 100 if ohlcv_data.get('price_change_pct') else 0,
                 'percent_change_7d': 0,
                 'volume_24h': ohlcv_data.get('volume_traded', 0),
                 'market_cap': 0,
-                'source': 'coinapi'
+                'source': 'coinapi',
+                'timestamp': time.time()
             }
 
+        except requests.exceptions.Timeout:
+            logger.error(f"CoinAPI timeout for {symbol}")
+            return None
+        except requests.exceptions.ConnectionError:
+            logger.error(f"CoinAPI connection error for {symbol}")
+            return None
         except Exception as e:
             logger.error(f"Error fetching price from CoinAPI for {symbol}: {e}")
             return None
@@ -268,19 +299,33 @@ class EnhancedMarketAnalyzer:
         if self.coinapi_key:
             try:
                 self.coinapi_client = CoinAPI(self.coinapi_key)
-                # Test CoinAPI connection
-                test_data = self.coinapi_client.get_current_price('BTC')
-                if test_data and 'price' in test_data:
+                # Test CoinAPI connection with timeout and retry
+                test_data = None
+                for attempt in range(2):  # Try twice
+                    try:
+                        test_data = self.coinapi_client.get_current_price('BTC')
+                        if test_data and test_data.get('price', 0) > 0:
+                            break
+                        time.sleep(1)  # Brief delay before retry
+                    except Exception as test_error:
+                        self.logger.warning(f"CoinAPI test attempt {attempt + 1} failed: {test_error}")
+                        if attempt == 0:
+                            time.sleep(2)
+                
+                if test_data and test_data.get('price', 0) > 0:
                     self.primary_api = 'coinapi'
                     self.initialized = True
                     self.mock_mode = False
                     self.logger.info(f"🎯 PRIMARY: CoinAPI initialized successfully with key: {self.coinapi_key[:8]}...")
                     self.logger.info("✅ CoinAPI confirmed as PRIMARY market data source")
                 else:
-                    raise Exception("CoinAPI test returned no data")
+                    raise Exception("CoinAPI test returned no valid data after retries")
             except Exception as coinapi_error:
                 self.logger.warning(f"❌ CoinAPI PRIMARY initialization failed: {coinapi_error}")
-                self.coinapi_client = None
+                self.logger.info("🔄 CoinAPI will be available as fallback, proceeding with CoinMarketCap...")
+                # Don't set coinapi_client to None - keep it for fallback attempts
+                if not hasattr(self, 'coinapi_client') or not self.coinapi_client:
+                    self.coinapi_client = CoinAPI(self.coinapi_key) if self.coinapi_key else None
         else:
             self.logger.warning("❌ CoinAPI key not found in Replit Secrets. Your key is in COIN_API - this should now work correctly.")
 
