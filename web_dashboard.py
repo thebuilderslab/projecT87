@@ -12,6 +12,11 @@ import subprocess
 from datetime import datetime
 from collections import deque
 import re
+import logging
+
+# Configure logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 agent = None
@@ -47,14 +52,14 @@ def initialize_agent():
     """Initialize agent safely"""
     global agent
     try:
-        print("🔄 Dashboard: Connecting to running autonomous agent...")
+        logger.info("🔄 Dashboard: Connecting to running autonomous agent...")
 
         # Always create agent since autonomous mainnet is running
         agent = WorkingAgent()
 
         # Check if autonomous agent is running
         if check_autonomous_agent_running():
-            print("✅ Dashboard: Connected to running AUTONOMOUS MAINNET agent")
+            logger.info("✅ Dashboard: Connected to running AUTONOMOUS MAINNET agent")
             # Update with live autonomous agent data
             agent.live_data.update({
                 'data_source': 'autonomous_mainnet_agent',
@@ -71,7 +76,7 @@ def initialize_agent():
                 'trigger_threshold': 204.85  # Next trigger at $204.85
             })
         else:
-            print("⚠️ Dashboard: Autonomous agent not running, using cached data")
+            logger.warning("⚠️ Dashboard: Autonomous agent not running, using cached data")
             # Still use good cached data (updated with current values)
             agent.live_data.update({
                 'data_source': 'cached_mainnet_data',
@@ -83,10 +88,10 @@ def initialize_agent():
                 'baseline_collateral': 192.85  # Updated baseline
             })
 
-        print("✅ Dashboard: Successfully connected to autonomous agent data")
+        logger.info("✅ Dashboard: Successfully connected to autonomous agent data")
 
     except Exception as e:
-        print(f"⚠️ Dashboard: Connection error: {e}")
+        logger.error(f"⚠️ Dashboard: Connection error: {e}")
         agent = WorkingAgent()
 
 def check_autonomous_agent_running():
@@ -99,10 +104,10 @@ def check_autonomous_agent_running():
                      'ArbitrumTestnetAgent' in result.stdout or
                      'complete_autonomous_launcher.py' in result.stdout or
                      'main.py' in result.stdout)
-        print(f"🔍 Autonomous agent running check: {is_running}")
+        logger.debug(f"🔍 Autonomous agent running check: {is_running}")
         return is_running
     except Exception as e:
-        print(f"⚠️ Error checking autonomous agent: {e}")
+        logger.error(f"⚠️ Error checking autonomous agent: {e}")
         return False
 
 def monitor_console_output():
@@ -163,6 +168,7 @@ def monitor_console_output():
                             if not console_buffer or console_buffer[-1] != console_line:
                                 console_buffer.append(console_line)
                 except Exception as e:
+                    logger.error(f"Error reading performance log: {e}")
                     pass
 
             # Method 2.5: Check for debt swap transaction logs
@@ -175,7 +181,8 @@ def monitor_console_output():
                             if content.strip():
                                 timestamp = datetime.now().strftime('%H:%M:%S')
                                 console_buffer.append(f"[{timestamp}] 🔍 DEBT SWAP: Found activity in {file_name}")
-            except:
+            except Exception as e:
+                logger.error(f"Error checking debt swap logs: {e}")
                 pass
 
             # Method 3: Add live wallet status updates
@@ -185,7 +192,8 @@ def monitor_console_output():
                     wallet_line = f"[{datetime.now().strftime('%H:%M:%S')}] 💰 Wallet: HF={live_data['health_factor']:.4f}, ${live_data.get('total_collateral_usdc', 0):.2f} collateral"
                     if not console_buffer or not any(f"HF={live_data['health_factor']:.4f}" in line for line in list(console_buffer)[-3:]):
                         console_buffer.append(wallet_line)
-            except:
+            except Exception as e:
+                logger.error(f"Error adding wallet status update: {e}")
                 pass
 
             # Method 4: Monitor system health with comprehensive detail including debt swap monitoring
@@ -203,11 +211,13 @@ def monitor_console_output():
 
                         # Detailed status line
                         detail_line = f"[{datetime.now().strftime('%H:%M:%S')}] 📊 Aave Status: HF={hf:.4f} | Collateral=${collateral:.2f} | Debt=${debt:.2f} | Available=${available:.2f}"
-                        console_buffer.append(detail_line)
+                        if not console_buffer or console_buffer[-1] != detail_line:
+                            console_buffer.append(detail_line)
 
                         # DEBT SWAP MONITORING - Check conditions
                         debt_swap_status = check_debt_swap_conditions(hf, available, debt)
-                        console_buffer.append(debt_swap_status)
+                        if not console_buffer or console_buffer[-1] != debt_swap_status:
+                            console_buffer.append(debt_swap_status)
 
                         # Health factor assessment
                         if hf > 2.0:
@@ -223,7 +233,7 @@ def monitor_console_output():
 
                         # Enhanced market signal monitoring with debt swap focus
                         market_status = check_market_signals()
-                        if market_status:
+                        if market_status and (not console_buffer or console_buffer[-1] != market_status):
                             console_buffer.append(market_status)
 
                         # Check for debt swap execution logs every few cycles
@@ -231,26 +241,32 @@ def monitor_console_output():
                             debt_swap_logs = check_for_debt_swap_activity()
                             if debt_swap_logs:
                                 for log in debt_swap_logs:
-                                    console_buffer.append(log)
+                                    if not console_buffer or console_buffer[-1] != log:
+                                        console_buffer.append(log)
 
                         # Network status
                         network_line = f"[{datetime.now().strftime('%H:%M:%S')}] 🌐 Network: Arbitrum Mainnet | Chain ID: 42161 | RPC: Connected"
                         if len(console_buffer) % 8 == 0:  # Every 8th cycle
-                            console_buffer.append(network_line)
+                            if not console_buffer or console_buffer[-1] != network_line:
+                                console_buffer.append(network_line)
 
                 except Exception as e:
+                    logger.error(f"Error fetching live data for system metrics: {e}")
                     error_line = f"[{datetime.now().strftime('%H:%M:%S')}] ❌ Live data fetch error: {str(e)[:60]}"
-                    console_buffer.append(error_line)
+                    if not console_buffer or console_buffer[-1] != error_line:
+                        console_buffer.append(error_line)
             else:
                 system_line = f"[{datetime.now().strftime('%H:%M:%S')}] 🟡 System: Dashboard-only mode - Agent not detected"
 
                 # Add more context when agent is not running
                 if len(console_buffer) % 4 == 0:
                     context_line = f"[{datetime.now().strftime('%H:%M:%S')}] 🔍 Monitoring: Checking for agent processes and log files..."
-                    console_buffer.append(context_line)
+                    if not console_buffer or console_buffer[-1] != context_line:
+                        console_buffer.append(context_line)
 
             if not console_buffer or not any("System:" in line for line in list(console_buffer)[-3:]):
-                console_buffer.append(system_line)
+                if not console_buffer or console_buffer[-1] != system_line:
+                    console_buffer.append(system_line)
 
             # Keep buffer size manageable but allow more entries for larger console
             if len(console_buffer) > 80:
@@ -259,8 +275,10 @@ def monitor_console_output():
             time.sleep(3)  # Check every 3 seconds for more responsive updates
 
         except Exception as e:
+            logger.error(f"Critical error in console monitor loop: {e}")
             error_line = f"[{datetime.now().strftime('%H:%M:%S')}] ⚠️ Console monitor error: {str(e)[:50]}"
-            console_buffer.append(error_line)
+            if not console_buffer or console_buffer[-1] != error_line:
+                console_buffer.append(error_line)
             time.sleep(15)
 
 def get_system_mode():
@@ -277,13 +295,6 @@ def get_system_mode():
 def get_live_agent_data():
     """Get live data from unified Aave fetcher - eliminates cached data issues"""
     try:
-        # Use unified fetcher for live Aave data
-        try:
-            from unified_aave_data_fetcher import get_unified_aave_data
-        except ImportError:
-            print("⚠️ unified_aave_data_fetcher not found. Install it to get live data.")
-            return None
-
         # Try to get agent instance for live data
         try:
             from arbitrum_testnet_agent import ArbitrumTestnetAgent
@@ -304,22 +315,57 @@ def get_live_agent_data():
                     globals()['AAVE_POOL_ADDRESS'] = AAVE_POOL_ADDRESS
                     globals()['AAVE_POOL_DATA_PROVIDER'] = AAVE_POOL_DATA_PROVIDER
 
-                agent = ArbitrumTestnetAgent(MockRPCManager(), private_key)
+                # Instantiate agent if it hasn't been already (e.g., in initialize_agent)
+                if agent is None or not hasattr(agent, 'w3'):
+                    agent = ArbitrumTestnetAgent(MockRPCManager(), private_key)
 
                 # Get live Aave data directly from contracts
-                live_data = get_unified_aave_data(agent)
-            else:
-                print("⚠️ No private key found for agent initialization")
-                live_data = None
+                # This call should ideally be refactored to a separate function to avoid duplication
+                # and ensure it's only called when necessary.
+                # For now, we assume the agent is correctly initialized if we reach this point.
+                if agent and agent.w3:
+                    # Use hardcoded Aave pool address for Arbitrum Mainnet
+                    aave_pool_address = "0x794a61358D6845594F94dc1DB02A252b5b4814aD"
+                    pool_abi = [{
+                        "inputs": [{"name": "user", "type": "address"}],
+                        "name": "getUserAccountData",
+                        "outputs": [
+                            {"name": "totalCollateralBase", "type": "uint256"},
+                            {"name": "totalDebtBase", "type": "uint256"},
+                            {"name": "availableBorrowsBase", "type": "uint256"},
+                            {"name": "currentLiquidationThreshold", "type": "uint256"},
+                            {"name": "ltv", "type": "uint256"},
+                            {"name": "healthFactor", "type": "uint256"}
+                        ],
+                        "stateMutability": "view",
+                        "type": "function"
+                    }]
+                    pool_contract = agent.w3.eth.contract(address=aave_pool_address, abi=pool_abi)
+                    account_data = pool_contract.functions.getUserAccountData(agent.address).call()
 
-            if live_data:
-                print(f"📊 Using LIVE AAVE CONTRACT data: HF {live_data['health_factor']:.4f}")
-                return live_data
-            else:
-                print(f"⚠️ Live data fetch failed, trying fallback methods...")
+                    fresh_collateral_usd = account_data[0] / (10**8)
+                    fresh_debt_usd = account_data[1] / (10**8)
+                    fresh_available_borrows_usd = account_data[2] / (10**8)
+                    fresh_health_factor = account_data[5] / (10**18) if account_data[5] > 0 else float('inf')
 
+                    live_data_from_contract = {
+                        'health_factor': fresh_health_factor,
+                        'total_collateral_usdc': fresh_collateral_usd,
+                        'total_debt_usdc': fresh_debt_usd,
+                        'available_borrows_usdc': fresh_available_borrows_usd,
+                        'data_source': 'live_aave_contract_fresh',
+                        'last_update': time.time(),
+                        'data_quality': 'VALIDATED'
+                    }
+                    logger.info(f"📊 Using LIVE AAVE CONTRACT data: HF {live_data_from_contract['health_factor']:.4f}")
+                    return live_data_from_contract
+                else:
+                    logger.warning("⚠️ Agent or agent.w3 not initialized properly for contract data fetch.")
+
+        except ImportError:
+            logger.warning("unified_aave_data_fetcher not found. Install it to get live data.")
         except Exception as agent_error:
-            print(f"⚠️ Agent initialization failed: {agent_error}")
+            logger.error(f"⚠️ Agent initialization failed: {agent_error}")
 
         # Fallback: Try to read from performance log for latest data
         if os.path.exists('performance_log.json'):
@@ -332,7 +378,7 @@ def get_live_agent_data():
 
                     # Check if we have fresh Aave data from autonomous agent
                     if metadata and metadata.get('health_factor', 0) > 0:
-                        print(f"📊 Using cached autonomous agent data: HF {metadata.get('health_factor', 0):.4f}")
+                        logger.info(f"📊 Using cached autonomous agent data: HF {metadata.get('health_factor', 0):.4f}")
                         return {
                             'health_factor': metadata.get('health_factor', 4.3460),
                             'total_collateral_usdc': metadata.get('total_collateral_usdc', 177.73),
@@ -348,7 +394,7 @@ def get_live_agent_data():
                     # Also check for direct Aave data in the log entry
                     if 'aave_data' in latest:
                         aave_data = latest['aave_data']
-                        print(f"📊 Using live Aave data from agent: HF {aave_data.get('health_factor', 0):.4f}")
+                        logger.info(f"📊 Using live Aave data from agent: HF {aave_data.get('health_factor', 0):.4f}")
                         return {
                             'health_factor': aave_data.get('health_factor', 4.3460),
                             'total_collateral_usdc': aave_data.get('total_collateral_usd', 192.85),
@@ -362,10 +408,11 @@ def get_live_agent_data():
                         }
 
     except Exception as e:
-        print(f"⚠️ Error reading autonomous agent data: {e}")
+        logger.error(f"⚠️ Error reading autonomous agent data: {e}")
 
     # Method 3: Return current live data from autonomous agent console (updated with latest values)
-    print("📊 Using latest autonomous agent data from console logs")
+    # This is a fallback if other methods fail.
+    logger.info("📊 Using latest autonomous agent data from console logs as fallback")
     return {
         'health_factor': 4.3460,  # Current live value from autonomous agent
         'total_collateral_usdc': 192.85,  # Current live value from autonomous agent
@@ -413,14 +460,14 @@ def dashboard():
                              network_info=network_info)
 
     except Exception as e:
-        print(f"❌ Dashboard route error: {e}")
+        logger.error(f"Dashboard route error: {e}")
         return f"Dashboard Error: {str(e)}", 500
 
 @app.route('/api/wallet_status')
 def wallet_status():
     """Get current wallet status with live data"""
     try:
-        print("🔍 API: Fetching wallet status...")
+        logger.info("🔍 API: Fetching wallet status...")
 
         # Get live data from autonomous agent if available
         live_agent_data = get_live_agent_data()
@@ -428,7 +475,7 @@ def wallet_status():
         # Check if autonomous agent is currently running
         agent_is_running = check_autonomous_agent_running()
 
-        # Get fresh Aave data directly
+        # Get fresh Aave data directly if possible
         try:
             if agent and hasattr(agent, 'w3'):
                 from web3 import Web3
@@ -458,20 +505,22 @@ def wallet_status():
                 fresh_available_borrows_usd = account_data[2] / (10**8)
                 fresh_health_factor = account_data[5] / (10**18) if account_data[5] > 0 else float('inf')
 
-                print(f"✅ Fresh Aave data: Collateral ${fresh_collateral_usd:.2f}, HF {fresh_health_factor:.4f}")
+                logger.info(f"✅ Fresh Aave data: Collateral ${fresh_collateral_usd:.2f}, HF {fresh_health_factor:.4f}")
 
-                # Use fresh data if available
-                live_agent_data.update({
-                    'health_factor': fresh_health_factor,
-                    'total_collateral_usdc': fresh_collateral_usd,
-                    'total_debt_usdc': fresh_debt_usd,
-                    'available_borrows_usdc': fresh_available_borrows_usd,
-                    'data_source': 'live_aave_contract_fresh'
-                })
+                # Use fresh data if available and it's more up-to-date
+                if fresh_health_factor > 0 and fresh_health_factor != live_agent_data.get('health_factor', 0):
+                    live_agent_data.update({
+                        'health_factor': fresh_health_factor,
+                        'total_collateral_usdc': fresh_collateral_usd,
+                        'total_debt_usdc': fresh_debt_usd,
+                        'available_borrows_usdc': fresh_available_borrows_usd,
+                        'data_source': 'live_aave_contract_fresh',
+                        'data_quality': 'VALIDATED'
+                    })
         except Exception as fresh_error:
-            print(f"⚠️ Fresh Aave data fetch failed: {fresh_error}")
+            logger.warning(f"⚠️ Fresh Aave data fetch failed: {fresh_error}")
 
-        wallet_data = {
+        data = {
             'wallet_address': '0x5B823270e3719CDe8669e5e5326B455EaA8a350b',
             'eth_balance': 0.001805,  # From latest agent logs
             'usdc_balance': 0.0,
@@ -499,11 +548,30 @@ def wallet_status():
             'success': True
         }
 
-        print(f"✅ Wallet status retrieved: HF {wallet_data['health_factor']:.4f}, Agent Running: {agent_is_running}")
-        return jsonify(wallet_data)
+        # Get market analysis
+        try:
+            if hasattr(agent, 'market_signal_strategy') and agent.market_signal_strategy:
+                market_analysis = agent.market_signal_strategy.get_market_analysis()
+                data['market_analysis'] = market_analysis
+        except Exception as e:
+            logger.error(f"Error getting market analysis: {e}")
+            data['market_analysis'] = {'error': str(e)}
+
+        # Get cost optimization data
+        try:
+            if hasattr(agent, 'cost_manager') and agent.cost_manager:
+                cost_data = agent.cost_manager.get_usage_summary()
+                data['cost_optimization'] = cost_data
+        except Exception as e:
+            logger.error(f"Error getting cost optimization data: {e}")
+            data['cost_optimization'] = {'error': str(e)}
+
+
+        logger.info(f"✅ Wallet status retrieved: HF {data['health_factor']:.4f}, Agent Running: {agent_is_running}")
+        return jsonify(data)
 
     except Exception as e:
-        print(f"❌ Wallet status error: {e}")
+        logger.error(f"Wallet status error: {e}")
         return jsonify({
             'error': 'Connection successful - showing cached data',
             'success': False,
@@ -542,13 +610,14 @@ def get_parameters():
                 with open('user_settings.json', 'r') as f:
                     user_settings = json.load(f)
                     config.update(user_settings)
-        except:
+        except Exception as e:
+            logger.error(f"Error loading user settings: {e}")
             pass
 
         return jsonify(config)
 
     except Exception as e:
-        print(f"❌ Parameters error: {e}")
+        logger.error(f"Parameters API error: {e}")
         return jsonify({'error': str(e), 'success': False}), 200
 
 @app.route('/api/emergency_status')
@@ -568,12 +637,14 @@ def get_emergency_status():
             try:
                 with open(emergency_file, 'r') as f:
                     status['details'] = f.read()
-            except:
+            except Exception as e:
+                logger.error(f"Error reading emergency flag file: {e}")
                 status['details'] = "Emergency stop active"
 
         return jsonify(status)
 
     except Exception as e:
+        logger.error(f"Emergency status API error: {e}")
         return jsonify({
             'active': False,
             'error': str(e),
@@ -592,7 +663,8 @@ def performance_data():
                 for line in f:
                     try:
                         performance_data.append(json.loads(line))
-                    except:
+                    except json.JSONDecodeError:
+                        logger.warning(f"Skipping malformed line in performance_log.json: {line.strip()}")
                         continue
 
         if len(performance_data) >= 2:
@@ -618,6 +690,7 @@ def performance_data():
             })
 
     except Exception as e:
+        logger.error(f"Performance data API error: {e}")
         return jsonify({
             'error': str(e),
             'pnl_24h': 0.0,
@@ -639,11 +712,14 @@ def activate_emergency_stop():
             f.write(f"Reason: {reason}\n")
             f.write(f"Timestamp: {time.time()}\n")
             f.write(f"DateTime: {datetime.now().strftime('%Y-%m-%d %H:%M:%S UTC')}\n")
+            f.flush()
+            os.fsync(f.fileno())
 
-        print(f"🛑 Emergency stop activated: {reason}")
+        logger.warning(f"🛑 Emergency stop activated: {reason}")
         return jsonify({'success': True, 'message': 'Emergency stop activated'})
 
     except Exception as e:
+        logger.error(f"Activate emergency stop API error: {e}")
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/emergency_stop', methods=['DELETE'])
@@ -653,12 +729,13 @@ def clear_emergency_stop():
         emergency_file = 'EMERGENCY_STOP_ACTIVE.flag'
         if os.path.exists(emergency_file):
             os.remove(emergency_file)
-            print("✅ Emergency stop cleared")
+            logger.info("✅ Emergency stop cleared")
             return jsonify({'success': True, 'message': 'Emergency stop cleared'})
         else:
             return jsonify({'success': False, 'message': 'No emergency stop active'})
 
     except Exception as e:
+        logger.error(f"Clear emergency stop API error: {e}")
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/test')
@@ -676,22 +753,24 @@ def get_console_output():
     try:
         # Add a fresh status line if buffer is getting stale
         if console_buffer:
-            last_line_time = console_buffer[-1][:10] if console_buffer[-1].startswith('[') else ""
-            current_time = datetime.now().strftime('%H:%M:%S')
-
-            # If last message is more than 30 seconds old, add current status
+            last_line_str = console_buffer[-1]
             try:
-                if last_line_time:
-                    last_time = datetime.strptime(last_line_time[1:9], '%H:%M:%S')
-                    current_time_obj = datetime.strptime(current_time, '%H:%M:%S')
-                    time_diff = (current_time_obj - last_time).seconds
+                # Extract timestamp from the first line if it's in the expected format
+                if last_line_str.startswith('['):
+                    last_timestamp_str = last_line_str[1:10] # [HH:MM:SS]
+                    last_time = datetime.strptime(last_timestamp_str, '%H:%M:%S')
+                    current_time = datetime.now()
+                    time_diff = (current_time - last_time).total_seconds()
 
                     if time_diff > 30:
                         agent_running = check_autonomous_agent_running()
                         status_msg = "🟢 Active" if agent_running else "🟡 Dashboard only"
-                        console_buffer.append(f"[{current_time}] {status_msg} - System operational")
-            except:
+                        new_status_line = f"[{current_time.strftime('%H:%M:%S')}] {status_msg} - System operational"
+                        console_buffer.append(new_status_line)
+            except (ValueError, IndexError):
+                # Handle cases where the last line is not a timestamped log
                 pass
+
 
         # Ensure we have some content
         if not console_buffer:
@@ -706,6 +785,7 @@ def get_console_output():
             'success': True
         })
     except Exception as e:
+        logger.error(f"Console output API error: {e}")
         return jsonify({
             'error': str(e),
             'console_lines': [f"[{datetime.now().strftime('%H:%M:%S')}] ❌ Console error: {str(e)}"],
@@ -731,13 +811,20 @@ def get_system_metrics():
 
                 private_key = os.getenv('PRIVATE_KEY') or os.getenv('Wallet_PRIVATE_KEY')
                 if private_key:
-                    temp_agent = ArbitrumTestnetAgent(MockRPCManager(), private_key)
-                    if hasattr(temp_agent, 'get_system_metrics'):
-                        agent_metrics = temp_agent.get_system_metrics()
+                    # Ensure agent is initialized if not already
+                    if agent is None or not hasattr(agent, 'get_system_metrics'):
+                        agent = ArbitrumTestnetAgent(MockRPCManager(), private_key)
+
+                    if hasattr(agent, 'get_system_metrics'):
+                        agent_metrics = agent.get_system_metrics()
+                    else:
+                        logger.warning("Agent does not have get_system_metrics method.")
                 else:
-                    print("⚠️ No private key found for agent initialization")
+                    logger.warning("No private key found for agent initialization to fetch metrics.")
+            except ImportError:
+                logger.error("arbitrum_testnet_agent not found. Cannot fetch agent system metrics.")
             except Exception as e:
-                print(f"⚠️ Agent metrics fetch failed: {e}")
+                logger.error(f"Error fetching agent system metrics: {e}")
 
         # Get performance data
         performance_data = []
@@ -747,7 +834,8 @@ def get_system_metrics():
                 for line in lines[-10:]:  # Last 10 entries
                     try:
                         performance_data.append(json.loads(line))
-                    except:
+                    except json.JSONDecodeError:
+                        logger.warning(f"Skipping malformed line in performance_log.json for metrics: {line.strip()}")
                         continue
 
         # Calculate metrics
@@ -775,8 +863,8 @@ def get_system_metrics():
             'baseline_collateral': live_data.get('baseline_collateral', 177.79),
             'borrowed_assets': {
                 'total_borrowed_usd': live_data.get('total_debt_usdc', 35.06),
-                'assets': ['DAI'],
-                'utilization_ratio': (live_data.get('total_debt_usdc', 35.06) / max(live_data.get('total_collateral_usdc', 192.85), 1)) * 100
+                'assets': ['DAI'], # Example asset
+                'utilization_ratio': (live_data.get('total_debt_usdc', 35.06) / max(live_data.get('total_collateral_usdc', 1), 1)) * 100
             },
             'pending_approvals': check_pending_approvals(),
             'self_improvement_proposals': get_improvement_proposals(live_data, performance_data),
@@ -788,6 +876,7 @@ def get_system_metrics():
         })
 
     except Exception as e:
+        logger.error(f"System metrics API error: {e}")
         return jsonify({
             'error': str(e),
             'timestamp': time.time(),
@@ -822,6 +911,7 @@ def _get_debt_swap_status():
             'timestamp': time.time()
         }
     except Exception as e:
+        logger.error(f"Error in _get_debt_swap_status: {e}")
         return {
             'enabled': False,
             'status': f"Error fetching status: {e}",
@@ -862,6 +952,7 @@ def analyze_trigger_conditions(live_data):
             'trigger_probability': calculate_trigger_probability(growth_trigger_ready, capacity_trigger_ready, health_factor)
         }
     except Exception as e:
+        logger.error(f"Error in analyze_trigger_conditions: {e}")
         return {'error': str(e)}
 
 def calculate_trigger_probability(growth_ready, capacity_ready, health_factor):
@@ -906,6 +997,7 @@ def check_pending_approvals():
             'items': pending
         }
     except Exception as e:
+        logger.error(f"Error in check_pending_approvals: {e}")
         return {'pending': False, 'count': 0, 'items': [], 'error': str(e)}
 
 def get_improvement_proposals(live_data, performance_data):
@@ -943,6 +1035,7 @@ def get_improvement_proposals(live_data, performance_data):
 
         return proposals[:4]  # Return top 4 proposals
     except Exception as e:
+        logger.error(f"Error in get_improvement_proposals: {e}")
         return [f"❌ Proposal error: {str(e)[:50]}"]
 
 def get_network_approval_status(live_data):
@@ -975,6 +1068,7 @@ def get_network_approval_status(live_data):
             'next_execution_window': 'Immediate' if approval_probability > 80 else '1-2 minutes'
         }
     except Exception as e:
+        logger.error(f"Error in get_network_approval_status: {e}")
         return {
             'ready_for_execution': False,
             'approval_probability': 50,
@@ -1019,9 +1113,12 @@ def get_market_signal_status():
                 return (f"[{timestamp}] {sentiment_emoji} ENHANCED SIGNALS: {sentiment.upper()} | "
                        f"BTC: {btc_change:+.1f}% | ETH: {eth_change:+.1f}% | CoinMarketCap API Active")
 
+        except ImportError:
+            logger.error("enhanced_market_analyzer not found. Cannot get enhanced market signals.")
+            return f"[{timestamp}] ❌ MARKET SIGNALS: enhanced_market_analyzer not found"
         except Exception as enhanced_error:
             # Fallback to basic status if enhanced analysis fails
-            print(f"⚠️ Enhanced market analysis failed: {enhanced_error}")
+            logger.warning(f"Enhanced market analysis failed: {enhanced_error}")
             # Still check if market signals are enabled at all
             market_enabled = os.getenv('MARKET_SIGNAL_ENABLED', 'false').lower() == 'true'
             if market_enabled:
@@ -1037,6 +1134,7 @@ def get_market_signal_status():
             return f"[{timestamp}] 💤 MARKET SIGNALS: Disabled"
 
     except Exception as e:
+        logger.error(f"Market signal status check failed: {e}")
         return f"[{timestamp}] ❌ MARKET SIGNALS: Check failed | {str(e)[:50]}"
 
 
@@ -1095,6 +1193,8 @@ def get_market_signals():
                 else:
                     error_message = "Strategy initialization failed"
 
+            except ImportError:
+                error_message = "market_signal_strategy not found."
             except Exception as e:
                 error_message = f"Import/initialization error: {str(e)[:100]}"
         else:
@@ -1115,6 +1215,7 @@ def get_market_signals():
         })
 
     except Exception as e:
+        logger.error(f"Market signals API error: {e}")
         return jsonify({
             'error': f"Market signals check failed: {str(e)}",
             'timestamp': time.time(),
@@ -1142,6 +1243,7 @@ def set_system_mode_api():
             'message': f'System mode set to {mode}'
         })
     except Exception as e:
+        logger.error(f"Set system mode API error: {e}")
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/system_status')
@@ -1159,6 +1261,7 @@ def system_status():
             'live_data_available': bool(get_live_agent_data())
         })
     except Exception as e:
+        logger.error(f"System status API error: {e}")
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/network-info')
@@ -1173,6 +1276,7 @@ def get_network_info_api():
         }
         return jsonify(network_info)
     except Exception as e:
+        logger.error(f"Network info API error: {e}")
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/switch-network', methods=['POST'])
@@ -1207,6 +1311,8 @@ def switch_network():
 
             with open(env_file, 'w') as f:
                 f.writelines(lines)
+                f.flush()
+                os.fsync(f.fileno())
 
         # Log the network switch
         log_entry = {
@@ -1222,13 +1328,20 @@ def switch_network():
         switch_log_file = 'network_switch_log.json'
         if os.path.exists(switch_log_file):
             with open(switch_log_file, 'r') as f:
-                logs = json.load(f)
+                try:
+                    logs = json.load(f)
+                except json.JSONDecodeError:
+                    logger.warning(f"Malformed JSON in {switch_log_file}, resetting.")
+                    logs = []
         else:
             logs = []
 
         logs.append(log_entry)
         with open(switch_log_file, 'w') as f:
             json.dump(logs, f, indent=2)
+            f.flush()
+            os.fsync(f.fileno())
+
 
         return jsonify({
             'success': True,
@@ -1239,13 +1352,14 @@ def switch_network():
         })
 
     except Exception as e:
+        logger.error(f"Switch network API error: {e}")
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/diagnostics/connection-test')
 def connection_test():
     """Simple connection test for UI debugging"""
     try:
-        print("🔍 API: Connection test requested")
+        logger.info("🔍 API: Connection test requested")
         response = {
             'status': 'connected',
             'timestamp': time.time(),
@@ -1256,37 +1370,49 @@ def connection_test():
             'deployment_mode': bool(os.getenv('REPLIT_DEPLOYMENT')),
             'api_version': '1.0'
         }
-        print(f"✅ API: Connection test successful: {response}")
+        logger.info(f"✅ API: Connection test successful: {response}")
         return jsonify(response)
     except Exception as e:
-        print(f"❌ API: Connection test failed: {e}")
+        logger.error(f"Connection test API error: {e}")
         return jsonify({'error': str(e), 'status': 'error'}), 500
 
 @app.route('/api/debug/test-all')
 def test_all_endpoints():
     """Test all critical endpoints and return results"""
     try:
-        print("🔍 API: /api/debug/test-all called")
+        logger.info("🔍 API: /api/debug/test-all called")
         results = {}
 
-        # Test each endpoint
-        endpoints = ['/api/parameters', '/api/emergency_status', '/api/wallet_status', '/api/performance']
+        # Test each endpoint by calling its corresponding function
+        endpoints_to_test = {
+            '/api/parameters': get_parameters,
+            '/api/emergency_status': get_emergency_status,
+            '/api/wallet_status': wallet_status,
+            '/api/performance': performance_data,
+            '/api/console': get_console_output,
+            '/api/system_status': system_status,
+            '/api/network-info': get_network_info_api,
+            '/api/health-check': comprehensive_health_check,
+            '/api/parameter-sync-status': get_parameter_sync_status,
+            '/api/diagnostics/debug-parameters': debug_parameters,
+            '/api/market_signals': get_market_signals,
+            '/api/system_metrics': get_system_metrics
+        }
 
-        for endpoint in endpoints:
-            try:
-                print(f"🔍 Testing endpoint: {endpoint}")
-                # We can't easily call the endpoints directly, but we can test their functions
-                if endpoint == '/api/parameters':
-                    result = get_parameters()
-                    results[endpoint] = {'status': 'success', 'has_data': bool(result.data)}
-                elif endpoint == '/api/emergency_status':
-                    result = get_emergency_status()
-                    results[endpoint] = {'status': 'success', 'has_data': bool(result.data)}
-                else:
-                    results[endpoint] = {'status': 'not_tested', 'reason': 'requires_request_context'}
-            except Exception as e:
-                results[endpoint] = {'status': 'error', 'error': str(e)}
-                print(f"❌ Endpoint {endpoint} failed: {e}")
+        # Use Flask's test client for proper context
+        with app.test_client() as client:
+            for endpoint, func in endpoints_to_test.items():
+                try:
+                    logger.info(f"🔍 Testing endpoint: {endpoint}")
+                    response = client.get(endpoint)
+                    results[endpoint] = {
+                        'status': 'success' if response.status_code == 200 else 'error',
+                        'status_code': response.status_code,
+                        'has_data': bool(response.get_data())
+                    }
+                except Exception as e:
+                    results[endpoint] = {'status': 'exception', 'error': str(e)}
+                    logger.error(f"Endpoint {endpoint} test failed: {e}")
 
         return jsonify({
             'test_results': results,
@@ -1296,7 +1422,7 @@ def test_all_endpoints():
         })
 
     except Exception as e:
-        print(f"❌ API: test-all failed: {e}")
+        logger.error(f"Test all endpoints API error: {e}")
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/health-check')
@@ -1320,7 +1446,7 @@ def comprehensive_health_check():
             'secrets': {
                 'coinmarketcap_api': bool(os.getenv('COINMARKETCAP_API_KEY')),
                 'private_key': bool(os.getenv('PRIVATE_KEY')),
-                'network_mode': True
+                'network_mode': True # Assumes network mode is configured
             },
             'api_status': {
                 'wallet_status': 'working',
@@ -1329,8 +1455,24 @@ def comprehensive_health_check():
             }
         }
 
+        # Perform checks on API endpoints
+        endpoints_to_check = ['/api/wallet_status', '/api/parameters', '/api/emergency_status']
+        for endpoint in endpoints_to_check:
+            try:
+                with app.test_client() as client:
+                    response = client.get(endpoint)
+                    status = 'working' if response.status_code == 200 else f'error ({response.status_code})'
+                    health_status['api_status'][endpoint.split('/')[-1]] = status
+            except Exception as e:
+                health_status['api_status'][endpoint.split('/')[-1]] = f'exception: {str(e)[:50]}'
+                health_status['overall_status'] = 'degraded'
+
+        if health_status['overall_status'] != 'healthy':
+             health_status['overall_status'] = 'degraded'
+
         return jsonify(health_status)
     except Exception as e:
+        logger.error(f"Comprehensive health check API error: {e}")
         return jsonify({
             'overall_status': 'error',
             'error': str(e),
@@ -1365,9 +1507,14 @@ def get_parameter_sync_status():
                     for line in lines[-5:]:
                         entry = json.loads(line)
                         if entry.get('timestamp', 0) > settings_mtime:
-                            recent_update = True
-                            break
-            except:
+                            # Check if it's related to parameter updates or agent reloads
+                            if 'parameter' in entry.get('action', '').lower() or \
+                               'reload' in entry.get('action', '').lower() or \
+                               'settings_updated' in entry.get('event_type', ''):
+                                recent_update = True
+                                break
+            except (json.JSONDecodeError, IOError) as e:
+                logger.warning(f"Error reading performance log for sync status: {e}")
                 pass
 
         return jsonify({
@@ -1378,6 +1525,7 @@ def get_parameter_sync_status():
         })
 
     except Exception as e:
+        logger.error(f"Parameter sync status API error: {e}")
         return jsonify({
             'sync_status': 'error',
             'error': str(e)
@@ -1388,48 +1536,53 @@ def debug_parameters():
     """Debug parameter loading issues"""
     try:
         debug_info = {
-            'config_file_exists': False, # No config files used
+            'config_file_exists': False, # No agent_config.json used directly
             'user_settings_exists': os.path.exists('user_settings.json'),
-            'dashboard_available': True, #always available
-            'dashboard_has_params': True #assume dashboard always initialized
+            'dashboard_available': True, # Dashboard itself is available
+            'dashboard_has_params': True # Dashboard initializes with default parameters
         }
 
-        # Try different parameter loading methods
+        # Load parameters using the same logic as get_parameters()
         methods = {}
 
-        # Method 1: Default config
+        # Method 1: Default parameters defined in get_parameters
         methods['default_config'] = {
             'learning_rate': 0.01,
             'exploration_rate': 0.1,
             'max_iterations_per_run': 100,
             'optimization_target_threshold': 0.95,
-            'health_factor_target': 1.19,
-            'borrow_trigger_threshold': 0.02,
+            'health_factor_target': 1.25, # Updated default
+            'borrow_trigger_threshold': 12.0, # Updated default
             'arb_decline_threshold': 0.05,
             'auto_mode': True
         }
 
-        # Method 2: From agent_config.json
-        # No agent config
-
-        # Method 3: From user_settings.json
+        # Method 2: Parameters from user_settings.json if it exists
         if os.path.exists('user_settings.json'):
             try:
                 with open('user_settings.json', 'r') as f:
-                    methods['user_settings_file'] = json.load(f)
-            except Exception as e:
-                methods['user_settings_file'] = {'error': str(e)}
+                    user_settings = json.load(f)
+                    methods['user_settings_file'] = user_settings
+            except (json.JSONDecodeError, IOError) as e:
+                methods['user_settings_file'] = {'error': f"Failed to load: {e}"}
+        else:
+            methods['user_settings_file'] = {'error': 'File not found'}
 
-        # Method 4: From dashboard
-        methods['dashboard_params'] = methods['default_config']  # Use defaults directly
+        # Method 3: Parameters as loaded by the dashboard (which uses defaults and then user_settings)
+        loaded_params = methods['default_config'].copy()
+        if 'user_settings_file' in methods and isinstance(methods['user_settings_file'], dict) and 'error' not in methods['user_settings_file']:
+            loaded_params.update(methods['user_settings_file'])
+        methods['dashboard_loaded_params'] = loaded_params
+
 
         return jsonify({
             'debug_info': debug_info,
-            'parameter_methods': methods,
-            'recommendation': 'Check which method is causing the issue'
+            'parameter_sources': methods,
+            'recommendation': 'Compare "default_config", "user_settings_file", and "dashboard_loaded_params" to identify discrepancies.'
         })
 
     except Exception as e:
+        logger.error(f"Debug parameters API error: {e}")
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/parameters', methods=['POST'])
@@ -1443,11 +1596,26 @@ def save_parameters():
         existing_settings = {}
 
         if os.path.exists(settings_file):
-            with open(settings_file, 'r') as f:
-                existing_settings = json.load(f)
+            try:
+                with open(settings_file, 'r') as f:
+                    existing_settings = json.load(f)
+            except (json.JSONDecodeError, IOError) as e:
+                logger.warning(f"Could not load existing user settings: {e}. Starting fresh.")
+                existing_settings = {}
 
-        # Update with new parameters
-        existing_settings.update(data)
+        # Update with new parameters, ensuring only valid parameters are updated
+        # Filter out non-parameter keys if necessary, or assume input is clean
+        valid_param_keys = {'health_factor_target', 'borrow_trigger_threshold', 'arb_decline_threshold',
+                            'exploration_rate', 'auto_mode', 'learning_rate', 'max_iterations_per_run',
+                            'optimization_target_threshold'}
+        updated_params_list = []
+        for key, value in data.items():
+            if key in valid_param_keys:
+                existing_settings[key] = value
+                updated_params_list.append(key)
+            else:
+                logger.warning(f"Ignoring unknown parameter key: {key}")
+
 
         # Add timestamp to force reload detection
         existing_settings['last_updated'] = time.time()
@@ -1463,24 +1631,23 @@ def save_parameters():
         trigger_file = 'parameter_update_trigger.flag'
         with open(trigger_file, 'w') as f:
             f.write(f"Parameters updated at {time.time()}\n")
-            f.write(f"Updated: {list(data.keys())}\n")
+            f.write(f"Updated: {updated_params_list}\n")
             f.flush()
             os.fsync(f.fileno())
 
-        updated_params = list(data.keys())
-        print(f"✅ Parameters updated via dashboard: {updated_params}")
-        print(f"📁 Settings file updated with timestamp: {existing_settings['last_updated']}")
+        logger.info(f"✅ Parameters updated via dashboard: {updated_params_list}")
+        logger.info(f"📁 Settings file updated with timestamp: {existing_settings['last_updated']}")
 
         return jsonify({
             'status': 'success',
-            'message': f'Parameters updated: {", ".join(updated_params)}',
-            'updated_parameters': updated_params,
+            'message': f'Parameters updated: {", ".join(updated_params_list)}',
+            'updated_parameters': updated_params_list,
             'timestamp': existing_settings['last_updated'],
             'update_count': existing_settings['update_count']
         })
 
     except Exception as e:
-        print(f"❌ Failed to save parameters: {e}")
+        logger.error(f"Failed to save parameters: {e}")
         return jsonify({'error': str(e)}), 500
 
 def check_debt_swap_conditions(health_factor, available_borrows, total_debt):
@@ -1493,33 +1660,30 @@ def check_debt_swap_conditions(health_factor, available_borrows, total_debt):
 
         # Market signal environment check with detailed validation
         market_enabled = os.getenv('MARKET_SIGNAL_ENABLED', 'false').lower() == 'true'
-        btc_threshold = float(os.getenv('BTC_DROP_THRESHOLD', '0.01'))  # Default 1%
-        dai_threshold = float(os.getenv('DAI_TO_ARB_THRESHOLD', '0.7'))  # Default 70%
+        btc_threshold = float(os.getenv('BTC_DROP_THRESHOLD', '0.002'))  # Default 0.2% drop
+        dai_threshold = float(os.getenv('DAI_TO_ARB_THRESHOLD', '0.7'))  # Default 70% confidence
         arb_rsi_threshold = float(os.getenv('ARB_RSI_OVERSOLD', '30'))  # Default 30
 
         if market_enabled:
             status = f"[{timestamp}] 🚀 DEBT SWAP: Market signals ENABLED"
-            status += f" | BTC drop ≥{btc_threshold*100:.1f}% triggers swap"
+            status += f" | BTC drop ≥{btc_threshold*100:.2f}% triggers swap"
             status += f" | DAI→ARB confidence ≥{dai_threshold*100:.0f}%"
             status += f" | ARB RSI ≤{arb_rsi_threshold}"
             status += f" | Debt ratio: {debt_ratio:.1%}"
 
-            # Check if agent has market signal strategy initialized
+            # Check if agent has market signal strategy initialized or running
+            strategy_active = False
             try:
-                # Try to import and check if agent is running with market signals
-                if os.path.exists('performance_log.json'):
-                    with open('performance_log.json', 'r') as f:
-                        lines = f.readlines()
-                        if lines:
-                            latest = json.loads(lines[-1])
-                            if 'market_signal' in str(latest).lower():
-                                status += f" | Strategy: ACTIVE"
-                            else:
-                                status += f" | Strategy: INITIALIZING"
+                # Check if agent object exists and has the strategy attribute
+                if agent and hasattr(agent, 'market_signal_strategy') and agent.market_signal_strategy:
+                    strategy_active = True
+                    status += f" | Strategy: ACTIVE"
                 else:
-                    status += f" | Strategy: WAITING"
-            except:
-                status += f" | Strategy: UNKNOWN"
+                    status += f" | Strategy: INITIALIZING"
+            except Exception as agent_check_error:
+                logger.warning(f"Error checking agent strategy status: {agent_check_error}")
+                status += f" | Strategy: UNKNOWN ERROR"
+
         else:
             status = f"[{timestamp}] ❌ DEBT SWAP: Market signals DISABLED"
             status += f" | Enable with MARKET_SIGNAL_ENABLED=true in Secrets"
@@ -1541,6 +1705,7 @@ def check_debt_swap_conditions(health_factor, available_borrows, total_debt):
         return status
 
     except Exception as e:
+        logger.error(f"Error in check_debt_swap_conditions: {e}")
         return f"[{datetime.now().strftime('%H:%M:%S')}] ❌ DEBT SWAP: Condition check failed: {str(e)[:50]}"
 
 def check_for_debt_swap_activity():
@@ -1556,24 +1721,28 @@ def check_for_debt_swap_activity():
                     lines = f.readlines()
                     # Check last 3 entries for debt swap activity
                     for line in lines[-3:]:
-                        entry = json.loads(line)
-                        metadata = entry.get('metadata', {})
+                        try:
+                            entry = json.loads(line)
+                            metadata = entry.get('metadata', {})
 
-                        # Look for market signal operations
-                        if (metadata.get('operation_type') == 'market_signal' or
-                            'debt_swap' in str(metadata).lower() or
-                            'market_driven' in str(metadata).lower()):
+                            # Look for market signal operations or debt swap indicators
+                            if (metadata.get('operation_type') == 'market_signal' or
+                                'debt_swap' in str(metadata).lower() or
+                                'market_driven' in str(metadata).lower()):
 
-                            log_time = datetime.fromtimestamp(entry.get('timestamp', time.time()))
-                            operation = metadata.get('operation_type', 'debt_swap')
-                            amount = metadata.get('amount', 0)
-                            success = metadata.get('success', False)
+                                log_time = datetime.fromtimestamp(entry.get('timestamp', time.time()))
+                                operation = metadata.get('operation_type', 'debt_swap')
+                                amount = metadata.get('amount', 0)
+                                success = metadata.get('success', False)
 
-                            status_icon = "✅" if success else "❌"
-                            activity_logs.append(
-                                f"[{timestamp}] {status_icon} DEBT SWAP EXECUTED: {operation} | ${amount:.2f} | {log_time.strftime('%H:%M:%S')}"
-                            )
-            except:
+                                status_icon = "✅" if success else "❌"
+                                activity_logs.append(
+                                    f"[{timestamp}] {status_icon} DEBT SWAP EXECUTED: {operation} | ${amount:.2f} | {log_time.strftime('%H:%M:%S')}"
+                                )
+                        except json.JSONDecodeError:
+                            continue # Skip malformed lines
+            except IOError as e:
+                logger.warning(f"Could not read performance log for debt swap activity: {e}")
                 pass
 
         # Check for market signal strategy logs
@@ -1587,7 +1756,8 @@ def check_for_debt_swap_activity():
                             activity_logs.append(
                                 f"[{timestamp}] 📊 DEBT SWAP LOG: Activity detected in {log_file}"
                             )
-                except:
+                except IOError as e:
+                    logger.warning(f"Could not read {log_file} for debt swap activity: {e}")
                     pass
 
         # Check for transaction hashes in recent operations
@@ -1600,12 +1770,14 @@ def check_for_debt_swap_activity():
                     activity_logs.append(
                         f"[{timestamp}] 🔗 DEBT SWAP TX: Recent transaction file {file}"
                     )
-        except:
+        except Exception as e:
+            logger.warning(f"Error checking recent transaction files: {e}")
             pass
 
         return activity_logs[-3:]  # Return last 3 activity logs
 
     except Exception as e:
+        logger.error(f"Error in check_for_debt_swap_activity: {e}")
         return [f"[{datetime.now().strftime('%H:%M:%S')}] ❌ DEBT SWAP: Activity check failed | {str(e)[:40]}"]
 
 def check_market_signals():
@@ -1619,62 +1791,52 @@ def check_market_signals():
         if not market_enabled:
             return f"[{timestamp}] 🚀 DEBT SWAP: Ready to enable | Set MARKET_SIGNAL_ENABLED=true in Secrets to activate"
 
-        # Check if market signal strategy files exist
-        if os.path.exists('market_signal_strategy.py'):
-            # Try to initialize and test market signals
-            try:
-                from arbitrum_testnet_agent import ArbitrumTestnetAgent
-
-                # Create a minimal RPC manager mock for the agent
-                class MockRPCManager:
-                    def get_web3(self):
-                        from web3 import Web3
-                        return Web3(Web3.HTTPProvider("https://arb1.arbitrum.io/rpc"))
-
-                private_key = os.getenv('PRIVATE_KEY') or os.getenv('Wallet_PRIVATE_KEY')
-                if private_key:
-                    agent = ArbitrumTestnetAgent(MockRPCManager(), private_key)
-
-                    if hasattr(agent, 'market_signal_strategy') and agent.market_signal_strategy:
-                        # Test if strategy can execute
-                        can_execute = agent.market_signal_strategy.should_execute_trade()
-
-                        if can_execute:
-                            return f"[{timestamp}] 🚨 DEBT SWAP TRIGGER: Market conditions met | EXECUTING SWAP"
-                        else:
-                            # Get current market status
-                            signal = agent.market_signal_strategy.analyze_market_signals()
-                            if signal:
-                                btc_change = signal.btc_price_change
-                                arb_rsi = signal.arb_technical_score
-                                confidence = signal.confidence
-
-                                status = f"[{timestamp}] 📊 MARKET ANALYSIS: BTC {btc_change:+.2f}% | ARB RSI {arb_rsi:.1f} | Confidence {confidence:.0%}"
-
-                                # Check specific triggers
-                                btc_threshold = float(os.getenv('BTC_DROP_THRESHOLD', '0.002')) * 100
-                                if btc_change <= -btc_threshold:
-                                    status += f" | ✅ BTC drop trigger met"
-                                else:
-                                    status += f" | ❌ BTC needs {-btc_threshold:.1f}% drop"
-
-                                if arb_rsi <= 30:
-                                    status += f" | ✅ ARB oversold"
-                                else:
-                                    status += f" | ❌ ARB not oversold"
-
-                                return status
-                            else:
-                                return f"[{timestamp}] 📊 MARKET SIGNALS: No signal data | Waiting for market conditions"
-                else:
-                    return f"[{timestamp}] ❌ MARKET SIGNALS: No private key for agent initialization"
-            except Exception as agent_error:
-                return f"[{timestamp}] ❌ MARKET SIGNALS: Agent error | {str(agent_error)[:50]}"
-
-        else:
+        # Check if market signal strategy files exist and if agent is initialized
+        if not os.path.exists('market_signal_strategy.py'):
             return f"[{timestamp}] ❌ MARKET SIGNALS: Strategy file missing | market_signal_strategy.py not found"
 
+        if agent is None or not hasattr(agent, 'market_signal_strategy') or not agent.market_signal_strategy:
+            return f"[{timestamp}] ❌ MARKET SIGNALS: Agent strategy not initialized or failed to load"
+
+        # Try to get market analysis from the agent's strategy
+        try:
+            strategy = agent.market_signal_strategy
+            can_execute = strategy.should_execute_trade()
+
+            if can_execute:
+                return f"[{timestamp}] 🚨 DEBT SWAP TRIGGER: Market conditions met | EXECUTING SWAP"
+            else:
+                # Get current market status
+                signal = strategy.analyze_market_signals()
+                if signal:
+                    btc_change = signal.btc_price_change
+                    arb_rsi = signal.arb_technical_score
+                    confidence = signal.confidence
+
+                    status = f"[{timestamp}] 📊 MARKET ANALYSIS: BTC {btc_change:+.2f}% | ARB RSI {arb_rsi:.1f} | Confidence {confidence:.0%}"
+
+                    # Check specific triggers based on environment variables
+                    btc_threshold = float(os.getenv('BTC_DROP_THRESHOLD', '0.002')) * 100 # default 0.2%
+                    if btc_change <= -btc_threshold:
+                        status += f" | ✅ BTC drop trigger met"
+                    else:
+                        status += f" | ❌ BTC needs {-btc_threshold:.1f}% drop"
+
+                    arb_rsi_oversold = float(os.getenv('ARB_RSI_OVERSOLD', '30'))
+                    if arb_rsi <= arb_rsi_oversold:
+                        status += f" | ✅ ARB oversold (RSI ≤ {arb_rsi_oversold})"
+                    else:
+                        status += f" | ❌ ARB not oversold (RSI > {arb_rsi_oversold})"
+
+                    return status
+                else:
+                    return f"[{timestamp}] 📊 MARKET SIGNALS: No signal data | Waiting for market conditions"
+        except Exception as agent_error:
+            logger.error(f"Error analyzing market signals with agent: {agent_error}")
+            return f"[{timestamp}] ❌ MARKET SIGNALS: Agent error | {str(agent_error)[:50]}"
+
     except Exception as e:
+        logger.error(f"General error in check_market_signals: {e}")
         return f"[{timestamp}] ❌ MARKET SIGNALS: Check failed | {str(e)[:40]}"
 
 
@@ -1688,12 +1850,12 @@ def get_available_port(start_port=5000):
             result = sock.connect_ex(('127.0.0.1', port))
             sock.close()
             if result != 0:  # Port is available
-                print(f"✅ Port {port} is available")
+                logger.info(f"✅ Port {port} is available")
                 return port
             else:
-                print(f"❌ Port {port} is in use, trying next...")
+                logger.warning(f"❌ Port {port} is in use, trying next...")
         except Exception as e:
-            print(f"⚠️ Error checking port {port}: {e}")
+            logger.error(f"⚠️ Error checking port {port}: {e}")
     return 8080  # Fallback port
 
 def log_startup_diagnostics():
@@ -1704,7 +1866,7 @@ def log_startup_diagnostics():
 
     print(f"📂 Working Directory: {os.getcwd()}")
     print(f"🌍 Environment Variables:")
-    env_vars = ['NETWORK_MODE', 'PRIVATE_KEY', 'COINMARKETCAP_API_KEY', 'REPLIT_DEPLOYMENT']
+    env_vars = ['NETWORK_MODE', 'PRIVATE_KEY', 'COINMARKETCAP_API_KEY', 'REPLIT_DEPLOYMENT', 'MARKET_SIGNAL_ENABLED', 'ARB_PRICE']
     for var in env_vars:
         value = os.getenv(var)
         if value:
@@ -1712,13 +1874,15 @@ def log_startup_diagnostics():
                 print(f"   {var}: {value[:10]}...{value[-4:] if len(value) > 14 else 'short'}")
             elif var == 'COINMARKETCAP_API_KEY':
                 print(f"   {var}: {value[:8]}...{value[-4:] if len(value) > 12 else 'short'}")
+            elif var in ['ARB_PRICE']:
+                print(f"   {var}: {value}")
             else:
                 print(f"   {var}: {value}")
         else:
             print(f"   {var}: NOT SET")
 
     print(f"📁 Key Files:")
-    files_to_check = ['user_settings.json', 'agent_config.json', 'EMERGENCY_STOP_ACTIVE.flag', 'performance_log.json']
+    files_to_check = ['user_settings.json', 'EMERGENCY_STOP_ACTIVE.flag', 'performance_log.json', 'network_switch_log.json', 'parameter_update_trigger.flag']
     for file in files_to_check:
         if os.path.exists(file):
             try:
@@ -1733,32 +1897,34 @@ def log_startup_diagnostics():
 
     print(f"🤖 Agent Initialization:")
     print(f"   Agent object: {agent is not None}")
-    print(f"   Dashboard object: True") #assume always initialized
+    print(f"   Agent connected: {check_autonomous_agent_running()}")
+    print(f"   Dashboard object: True") # Dashboard object is always created
 
     print("=" * 60)
 
 if __name__ == '__main__':
     log_startup_diagnostics()
 
-    # Check for emergency stop and clear if needed for dashboard
+    # Check for emergency stop and clear if needed for dashboard access
     if os.path.exists('EMERGENCY_STOP_ACTIVE.flag'):
-        print("⚠️ Emergency stop detected - clearing for dashboard access...")
+        logger.warning("⚠️ Emergency stop detected - clearing for dashboard access...")
         try:
             os.remove('EMERGENCY_STOP_ACTIVE.flag')
-            print("✅ Emergency stop cleared for dashboard")
-        except:
-            print("❌ Could not clear emergency stop flag")
+            logger.info("✅ Emergency stop flag cleared for dashboard")
+        except OSError as e:
+            logger.error(f"❌ Could not clear emergency stop flag: {e}")
 
-    print("🚀 Starting DeFi Agent Web Dashboard")
-    print("📱 Access your dashboard at the web preview URL")
+    logger.info("🚀 Starting DeFi Agent Web Dashboard")
+    logger.info("📱 Access your dashboard at the web preview URL")
 
     # Use dynamic port selection to avoid conflicts
     port = get_available_port(5000)
 
     if port != 5000:
-        print(f"⚠️ Port 5000 in use, using port {port} instead")
+        logger.warning(f"Port 5000 in use, using port {port} instead")
 
-    print(f"🌐 Starting web dashboard on port {port}")
-    print(f"🔗 Dashboard will be accessible at your Replit webview URL")
+    logger.info(f"🌐 Starting web dashboard on port {port}")
+    logger.info(f"🔗 Dashboard will be accessible at your Replit webview URL")
 
+    # Run the Flask app
     app.run(host='0.0.0.0', port=port, debug=False, threaded=True)

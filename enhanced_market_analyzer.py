@@ -254,9 +254,18 @@ class EnhancedMarketAnalyzer:
         self.agent = agent
         self.data_cache = {}
         self.cache_timeout = 3600  # 1 hour cache timeout
+        
+        # Initialize cost optimization for starter plan
+        try:
+            from cost_optimization_manager import CostOptimizationManager
+            self.cost_manager = CostOptimizationManager()
+            self.cost_optimization_enabled = True
+        except ImportError:
+            self.cost_manager = None
+            self.cost_optimization_enabled = False
         self.technical_analysis = TechnicalAnalysis()
         self.last_api_call = 0
-        self.rate_limit_delay = 10.0  # Increased to 10 seconds to avoid rate limits
+        self.rate_limit_delay = 60.0  # Increased to 60 seconds for starter plan optimization
         self.api_failure_count = 0
         self.max_api_failures = 3
 
@@ -400,6 +409,20 @@ class EnhancedMarketAnalyzer:
         """Get market data with CoinAPI as PRIMARY, CoinMarketCap as SECONDARY fallback"""
         current_time = time.time()
 
+        # Cost optimization check for starter plan
+        if self.cost_optimization_enabled and self.cost_manager:
+            cost_check = self.cost_manager.can_make_api_call('coinapi')
+            if not cost_check['allowed']:
+                logger.warning(f"API call blocked by cost optimization: {cost_check}")
+                # Return cached data if available
+                if symbol in self.data_cache:
+                    cached_data = self.data_cache[symbol]
+                    if current_time - cached_data.get('timestamp', 0) < 3600:  # Use 1-hour old cache
+                        logger.info(f"Using extended cache for {symbol} due to budget limits")
+                        return cached_data
+                # Fallback to mock data if no cache
+                return self._get_mock_data(symbol)
+
         # Rate limiting check
         if current_time - self.last_api_call < self.rate_limit_delay:
             time.sleep(self.rate_limit_delay - (current_time - self.last_api_call))
@@ -411,9 +434,15 @@ class EnhancedMarketAnalyzer:
                 if data and 'price' in data:
                     self.last_api_call = time.time()
                     self.api_failure_count = 0  # Reset failure count on success
+                    
+                    # Record API usage for cost tracking
+                    if self.cost_optimization_enabled and self.cost_manager:
+                        self.cost_manager.record_api_call('coinapi', success=True)
+                    
                     data['source'] = 'coinapi_primary'
                     data['timestamp'] = time.time()
                     self._store_historical_data(symbol, data)
+                    self.data_cache[symbol] = data  # Cache for budget optimization
                     self.logger.info(f"🎯 Using PRIMARY CoinAPI data for {symbol}: ${data['price']:.4f}")
                     return data
             except Exception as e:

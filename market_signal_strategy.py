@@ -25,9 +25,9 @@ class MarketSignalStrategy:
 
         # Enhanced API rate limiting
         self.last_api_call = 0
-        self.api_call_interval = 60  # Minimum 60 seconds between API calls
+        self.api_call_interval = 300  # Minimum 5 minutes between API calls for starter plan
         self.api_call_count = 0
-        self.max_api_calls_per_hour = 100  # Conservative limit
+        self.max_api_calls_per_hour = 12  # Starter plan: 12 calls per hour = 288/day
 
         # Enhanced price tracking for robust pattern analysis
         self.arb_price_history = []
