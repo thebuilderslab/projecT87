@@ -294,14 +294,15 @@ def get_system_mode():
 
 def get_live_agent_data():
     """Get live data from unified Aave fetcher - eliminates cached data issues"""
+    global agent
     try:
         # Try to get agent instance for live data
         try:
             from arbitrum_testnet_agent import ArbitrumTestnetAgent
+            from web3 import Web3
             # Create a minimal RPC manager mock for the agent
             class MockRPCManager:
                 def get_web3(self):
-                    from web3 import Web3
                     return Web3(Web3.HTTPProvider("https://arb1.arbitrum.io/rpc"))
 
             private_key = os.getenv('PRIVATE_KEY') or os.getenv('Wallet_PRIVATE_KEY')
@@ -340,7 +341,7 @@ def get_live_agent_data():
                         "stateMutability": "view",
                         "type": "function"
                     }]
-                    pool_contract = agent.w3.eth.contract(address=aave_pool_address, abi=pool_abi)
+                    pool_contract = agent.w3.eth.contract(address=Web3.to_checksum_address(aave_pool_address), abi=pool_abi)
                     account_data = pool_contract.functions.getUserAccountData(agent.address).call()
 
                     fresh_collateral_usd = account_data[0] / (10**8)
@@ -442,6 +443,7 @@ console_buffer.append(f"[{datetime.now().strftime('%H:%M:%S')}] 🔄 Initializin
 @app.route('/')
 def dashboard():
     """Main dashboard page"""
+    global agent
     try:
         emergency_active = os.path.exists('EMERGENCY_STOP_ACTIVE.flag')
 
@@ -497,7 +499,7 @@ def wallet_status():
                     "type": "function"
                 }]
 
-                pool_contract = agent.w3.eth.contract(address=aave_pool_address, abi=pool_abi)
+                pool_contract = agent.w3.eth.contract(address=Web3.to_checksum_address(aave_pool_address), abi=pool_abi)
                 account_data = pool_contract.functions.getUserAccountData(agent.address).call()
 
                 fresh_collateral_usd = account_data[0] / (10**8)
@@ -813,7 +815,8 @@ def get_system_metrics():
                 if private_key:
                     # Ensure agent is initialized if not already
                     if agent is None or not hasattr(agent, 'get_system_metrics'):
-                        agent = ArbitrumTestnetAgent(MockRPCManager(), private_key)
+                        temp_agent = ArbitrumTestnetAgent(MockRPCManager(), private_key)
+                        agent = temp_agent
 
                     if hasattr(agent, 'get_system_metrics'):
                         agent_metrics = agent.get_system_metrics()
@@ -1782,6 +1785,7 @@ def check_for_debt_swap_activity():
 
 def check_market_signals():
     """Check current market signals for debt swapping with real-time analysis"""
+    global agent
     try:
         timestamp = datetime.now().strftime('%H:%M:%S')
 
