@@ -965,52 +965,6 @@ class ArbitrumTestnetAgent:
             print(f"   ❌ Pattern analysis unavailable: {e}")
             print(f"   📊 Using basic technical analysis only")
 
-    def check_debt_swap_conditions(self):
-        """Check if debt swap conditions are met"""
-        try:
-            # Check if market signal strategy is available
-            if not hasattr(self, 'market_signal_strategy') or not self.market_signal_strategy:
-                return False, "Market signal strategy not available"
-
-            # Check if strategy is properly initialized
-            if not hasattr(self.market_signal_strategy, 'initialization_successful'):
-                return False, "Market signal strategy not initialized"
-
-            if not self.market_signal_strategy.initialization_successful:
-                return False, "Market signal strategy initialization failed"
-
-            # Check technical indicators readiness
-            status = self.market_signal_strategy.get_strategy_status()
-            tech_ready = status.get('technical_indicators_ready', False)
-
-            if not tech_ready:
-                arb_points = status.get('enhanced_arb_points', 0)
-                btc_points = status.get('enhanced_btc_points', 0)
-                min_points = status.get('min_points_for_basic', 5)
-                return False, f"Insufficient data points (ARB: {arb_points}, BTC: {btc_points}, need: {min_points})"
-
-            # Check health factor if Aave is available
-            if hasattr(self, 'aave') and self.aave:
-                try:
-                    account_data = self.aave.get_user_account_data()
-                    if account_data:
-                        health_factor = account_data.get('healthFactor', 0)
-                        if health_factor < 1.8:
-                            return False, f"Health factor too low: {health_factor:.3f} (need >1.8)"
-                    else:
-                        return False, "Cannot retrieve account data"
-                except Exception as hf_error:
-                    return False, f"Health factor check failed: {hf_error}"
-
-            # Check debt swap activation
-            if not getattr(self, 'debt_swap_active', False):
-                return False, "Debt swap system not activated"
-
-            return True, "All debt swap conditions met - system ready"
-
-        except Exception as e:
-            return False, f"Debt swap condition check failed: {e}"
-
 
     def update_baseline_after_success(self, new_collateral_value=None):
         """Update baseline collateral value after successful operation"""
@@ -1072,7 +1026,7 @@ class ArbitrumTestnetAgent:
                         )
                         return success
                     else:
-                        print(f"⚠️ DAI not received as expected. Expected: {amount_ai:.6f}, Got: {dai_received:.6f}")
+                        print(f"⚠️ DAI not received as expected. Expected: {amount_dai:.6f}, Got: {dai_received:.6f}")
                         return False
                 else:
                     print(f"❌ Enhanced borrow attempt {attempt + 1} failed")
