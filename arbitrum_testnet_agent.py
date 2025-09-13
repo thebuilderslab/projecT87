@@ -146,7 +146,7 @@ class ArbitrumTestnetAgent:
         if not self.private_key:
             raise ValueError("Private key not provided and no PRIVATE_KEY or WALLET_PRIVATE_KEY environment variable set.")
         self.coinmarketcap_api_key = os.getenv('COINMARKETCAP_API_KEY')
-        self.network_mode = os.getenv('NETWORK_MODE', 'testnet')
+        self.network_mode = os.getenv('NETWORK_MODE', 'mainnet')
 
         if not self.private_key:
             raise Exception("Wallet_PRIVATE_KEY environment variable not found!")
