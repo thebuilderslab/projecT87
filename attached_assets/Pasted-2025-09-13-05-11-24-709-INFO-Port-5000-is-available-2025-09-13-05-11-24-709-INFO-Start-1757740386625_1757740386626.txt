@@ -1,0 +1,318 @@
+2025-09-13 05:11:24,709 - INFO - ✅ Port 5000 is available
+2025-09-13 05:11:24,709 - INFO - 🌐 Starting web dashboard on port 5000
+2025-09-13 05:11:24,709 - INFO - 🔗 Dashboard will be accessible at your Replit webview URL
+ * Serving Flask app 'web_dashboard'
+ * Debug mode: off
+2025-09-13 05:11:24,734 - INFO - WARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://172.31.75.194:5000
+2025-09-13 05:11:24,734 - INFO - Press CTRL+C to quit
+2025-09-13 05:11:25,764 - INFO - 172.31.75.194 - - [13/Sep/2025 05:11:25] "GET / HTTP/1.1" 200 -
+⚠️ Cannot determine Web3 version
+✅ Configuration constants loaded successfully
+2025-09-13 05:11:26,218 - ERROR - ⚠️ Agent initialization failed: cannot access local variable 'agent' where it is not associated with a value
+2025-09-13 05:11:26,222 - INFO - 📊 Using latest autonomous agent data from console logs as fallback
+2025-09-13 05:11:26,231 - ERROR - ⚠️ Agent initialization failed: cannot access local variable 'agent' where it is not associated with a value
+2025-09-13 05:11:26,233 - INFO - 📊 Using latest autonomous agent data from console logs as fallback
+2025-09-13 05:11:26,304 - INFO - 172.31.75.194 - - [13/Sep/2025 05:11:26] "GET /api/test HTTP/1.1" 200 -
+2025-09-13 05:11:26,469 - INFO - 🔍 API: Fetching wallet status...
+2025-09-13 05:11:26,469 - ERROR - ⚠️ Agent initialization failed: cannot access local variable 'agent' where it is not associated with a value
+2025-09-13 05:11:26,471 - INFO - 📊 Using latest autonomous agent data from console logs as fallback
+2025-09-13 05:11:26,481 - WARNING - ⚠️ Fresh Aave data fetch failed: 'NoneType' object has no attribute 'eth'
+2025-09-13 05:11:26,481 - INFO - ✅ Wallet status retrieved: HF 4.3460, Agent Running: True
+2025-09-13 05:11:26,481 - INFO - 172.31.75.194 - - [13/Sep/2025 05:11:26] "GET /api/wallet_status HTTP/1.1" 200 -
+2025-09-13 05:11:26,586 - INFO - 172.31.75.194 - - [13/Sep/2025 05:11:26] "GET /api/console HTTP/1.1" 200 -
+2025-09-13 05:11:26,683 - ERROR - Error fetching agent system metrics: cannot access local variable 'agent' where it is not associated with a value
+2025-09-13 05:11:26,685 - ERROR - ⚠️ Agent initialization failed: cannot access local variable 'agent' where it is not associated with a value
+2025-09-13 05:11:26,688 - INFO - 📊 Using latest autonomous agent data from console logs as fallback
+✅ Cost Optimization Manager initialized
+   Daily limit: 833 credits
+   Hourly limit: 35 credits
+   Current interval: 300s
+🔍 DEBUG Environment Variables:
+   COIN_API: SET
+   COINMARKETCAP_API_KEY: SET
+   MARKET_SIGNAL_ENABLED: true
+🔍 All market-related environment variables found:
+   MARKET_SIGNAL_ENABLED: true
+   COIN_API: 07554c7b-645d-44ed-a4f2-78bb7b2a31d5
+   COINMARKETCAP_API_KEY: [REDACTED]
+   COINGECKO_API_KEY: [REDACTED]
+2025-09-13 05:11:28,286 - INFO - 🎯 PRIMARY: CoinAPI initialized successfully with key: 07554c7b...
+2025-09-13 05:11:28,286 - INFO - ✅ CoinAPI confirmed as PRIMARY market data source
+2025-09-13 05:11:28,287 - INFO - ✅ Enhanced Market Analyzer initialized successfully with coinapi
+2025-09-13 05:11:28,287 - INFO -    Primary: coinapi | Secondary: None | Mock Mode: False
+2025-09-13 05:11:28,421 - INFO - API call recorded: coinapi, cost: 1, hourly: 14/35
+2025-09-13 05:11:28,421 - INFO - 📊 Stored data point for BTC: 1 total points
+2025-09-13 05:11:28,421 - INFO - 🎯 Using PRIMARY CoinAPI data for BTC: $115786.9162
+2025-09-13 05:11:28,512 - INFO - 172.31.75.194 - - [13/Sep/2025 05:11:28] "GET /api/console HTTP/1.1" 200 -
+2025-09-13 05:11:29,246 - ERROR - ⚠️ Agent initialization failed: cannot access local variable 'agent' where it is not associated with a value
+2025-09-13 05:11:29,249 - INFO - 📊 Using latest autonomous agent data from console logs as fallback
+2025-09-13 05:11:29,257 - ERROR - ⚠️ Agent initialization failed: cannot access local variable 'agent' where it is not associated with a value
+2025-09-13 05:11:29,259 - INFO - 📊 Using latest autonomous agent data from console logs as fallback
+2025-09-13 05:11:30,493 - INFO - 172.31.75.194 - - [13/Sep/2025 05:11:30] "GET /api/console HTTP/1.1" 200 -
+2025-09-13 05:11:32,268 - ERROR - ⚠️ Agent initialization failed: cannot access local variable 'agent' where it is not associated with a value
+2025-09-13 05:11:32,270 - INFO - 📊 Using latest autonomous agent data from console logs as fallback
+2025-09-13 05:11:32,277 - ERROR - ⚠️ Agent initialization failed: cannot access local variable 'agent' where it is not associated with a value
+2025-09-13 05:11:32,279 - INFO - 📊 Using latest autonomous agent data from console logs as fallback
+2025-09-13 05:11:32,492 - INFO - 172.31.75.194 - - [13/Sep/2025 05:11:32] "GET /api/console HTTP/1.1" 200 -
+2025-09-13 05:11:34,486 - INFO - 172.31.75.194 - - [13/Sep/2025 05:11:34] "GET /api/console HTTP/1.1" 200 -
+2025-09-13 05:11:35,287 - ERROR - ⚠️ Agent initialization failed: cannot access local variable 'agent' where it is not associated with a value
+2025-09-13 05:11:35,288 - INFO - 📊 Using latest autonomous agent data from console logs as fallback
+2025-09-13 05:11:35,294 - ERROR - ⚠️ Agent initialization failed: cannot access local variable 'agent' where it is not associated with a value
+2025-09-13 05:11:35,296 - INFO - 📊 Using latest autonomous agent data from console logs as fallback
+2025-09-13 05:11:36,498 - INFO - 172.31.75.194 - - [13/Sep/2025 05:11:36] "GET /api/console HTTP/1.1" 200 -
+2025-09-13 05:11:38,308 - ERROR - ⚠️ Agent initialization failed: cannot access local variable 'agent' where it is not associated with a value
+2025-09-13 05:11:38,310 - INFO - 📊 Using latest autonomous agent data from console logs as fallback
+2025-09-13 05:11:38,318 - ERROR - ⚠️ Agent initialization failed: cannot access local variable 'agent' where it is not associated with a value
+2025-09-13 05:11:38,320 - INFO - 📊 Using latest autonomous agent data from console logs as fallback
+2025-09-13 05:11:38,497 - INFO - 172.31.75.194 - - [13/Sep/2025 05:11:38] "GET /api/console HTTP/1.1" 200 -
+2025-09-13 05:11:40,506 - INFO - 172.31.75.194 - - [13/Sep/2025 05:11:40] "GET /api/console HTTP/1.1" 200 -
+2025-09-13 05:11:41,330 - ERROR - ⚠️ Agent initialization failed: cannot access local variable 'agent' where it is not associated with a value
+2025-09-13 05:11:41,334 - INFO - 📊 Using latest autonomous agent data from console logs as fallback
+2025-09-13 05:11:41,341 - ERROR - ⚠️ Agent initialization failed: cannot access local variable 'agent' where it is not associated with a value
+2025-09-13 05:11:41,343 - INFO - 📊 Using latest autonomous agent data from console logs as fallback
+2025-09-13 05:11:42,484 - INFO - 172.31.75.194 - - [13/Sep/2025 05:11:42] "GET /api/console HTTP/1.1" 200 -
+2025-09-13 05:11:44,353 - ERROR - ⚠️ Agent initialization failed: cannot access local variable 'agent' where it is not associated with a value
+2025-09-13 05:11:44,355 - INFO - 📊 Using latest autonomous agent data from console logs as fallback
+2025-09-13 05:11:44,362 - ERROR - ⚠️ Agent initialization failed: cannot access local variable 'agent' where it is not associated with a value
+2025-09-13 05:11:44,364 - INFO - 📊 Using latest autonomous agent data from console logs as fallback
+2025-09-13 05:11:44,481 - INFO - 172.31.75.194 - - [13/Sep/2025 05:11:44] "GET /api/console HTTP/1.1" 200 -
+2025-09-13 05:11:46,486 - INFO - 172.31.75.194 - - [13/Sep/2025 05:11:46] "GET /api/console HTTP/1.1" 200 -
+2025-09-13 05:11:47,375 - ERROR - ⚠️ Agent initialization failed: cannot access local variable 'agent' where it is not associated with a value
+2025-09-13 05:11:47,376 - INFO - 📊 Using latest autonomous agent data from console logs as fallback
+2025-09-13 05:11:47,384 - ERROR - ⚠️ Agent initialization failed: cannot access local variable 'agent' where it is not associated with a value
+2025-09-13 05:11:47,386 - INFO - 📊 Using latest autonomous agent data from console logs as fallback
+2025-09-13 05:11:47,487 - ERROR - Error fetching agent system metrics: cannot access local variable 'agent' where it is not associated with a value
+2025-09-13 05:11:47,490 - ERROR - ⚠️ Agent initialization failed: cannot access local variable 'agent' where it is not associated with a value
+2025-09-13 05:11:47,493 - INFO - 📊 Using latest autonomous agent data from console logs as fallback
+✅ Cost Optimization Manager initialized
+   Daily limit: 833 credits
+   Hourly limit: 35 credits
+   Current interval: 300s
+🔍 DEBUG Environment Variables:
+   COIN_API: SET
+   COINMARKETCAP_API_KEY: SET
+   MARKET_SIGNAL_ENABLED: true
+🔍 All market-related environment variables found:
+   MARKET_SIGNAL_ENABLED: true
+   COIN_API: 07554c7b-645d-44ed-a4f2-78bb7b2a31d5
+   COINMARKETCAP_API_KEY: [REDACTED]
+   COINGECKO_API_KEY: [REDACTED]
+2025-09-13 05:11:47,771 - INFO - 🎯 PRIMARY: CoinAPI initialized successfully with key: 07554c7b...
+2025-09-13 05:11:47,771 - INFO - ✅ CoinAPI confirmed as PRIMARY market data source
+2025-09-13 05:11:47,771 - INFO - ✅ Enhanced Market Analyzer initialized successfully with coinapi
+2025-09-13 05:11:47,771 - INFO -    Primary: coinapi | Secondary: None | Mock Mode: False
+2025-09-13 05:11:47,902 - INFO - API call recorded: coinapi, cost: 1, hourly: 15/35
+2025-09-13 05:11:47,903 - INFO - 📊 Stored data point for BTC: 1 total points
+2025-09-13 05:11:47,903 - INFO - 🎯 Using PRIMARY CoinAPI data for BTC: $115788.2117
+2025-09-13 05:11:48,496 - INFO - 172.31.75.194 - - [13/Sep/2025 05:11:48] "GET /api/console HTTP/1.1" 200 -
+2025-09-13 05:11:48,601 - ERROR - Error fetching agent system metrics: cannot access local variable 'agent' where it is not associated with a value
+2025-09-13 05:11:48,609 - ERROR - ⚠️ Agent initialization failed: cannot access local variable 'agent' where it is not associated with a value
+2025-09-13 05:11:48,616 - INFO - 📊 Using latest autonomous agent data from console logs as fallback
+✅ Cost Optimization Manager initialized
+   Daily limit: 833 credits
+   Hourly limit: 35 credits
+   Current interval: 300s
+🔍 DEBUG Environment Variables:
+   COIN_API: SET
+   COINMARKETCAP_API_KEY: SET
+   MARKET_SIGNAL_ENABLED: true
+🔍 All market-related environment variables found:
+   MARKET_SIGNAL_ENABLED: true
+   COIN_API: 07554c7b-645d-44ed-a4f2-78bb7b2a31d5
+   COINMARKETCAP_API_KEY: [REDACTED]
+   COINGECKO_API_KEY: [REDACTED]
+2025-09-13 05:11:48,886 - INFO - 🎯 PRIMARY: CoinAPI initialized successfully with key: 07554c7b...
+2025-09-13 05:11:48,886 - INFO - ✅ CoinAPI confirmed as PRIMARY market data source
+2025-09-13 05:11:48,886 - INFO - ✅ Enhanced Market Analyzer initialized successfully with coinapi
+2025-09-13 05:11:48,886 - INFO -    Primary: coinapi | Secondary: None | Mock Mode: False
+2025-09-13 05:11:49,019 - INFO - API call recorded: coinapi, cost: 1, hourly: 16/35
+2025-09-13 05:11:49,019 - INFO - 📊 Stored data point for BTC: 1 total points
+2025-09-13 05:11:49,019 - INFO - 🎯 Using PRIMARY CoinAPI data for BTC: $115786.7808
+2025-09-13 05:11:50,397 - ERROR - ⚠️ Agent initialization failed: cannot access local variable 'agent' where it is not associated with a value
+2025-09-13 05:11:50,399 - INFO - 📊 Using latest autonomous agent data from console logs as fallback
+2025-09-13 05:11:50,405 - ERROR - ⚠️ Agent initialization failed: cannot access local variable 'agent' where it is not associated with a value
+2025-09-13 05:11:50,407 - INFO - 📊 Using latest autonomous agent data from console logs as fallback
+2025-09-13 05:11:50,784 - ERROR - Error fetching agent system metrics: cannot access local variable 'agent' where it is not associated with a value
+2025-09-13 05:11:50,787 - ERROR - ⚠️ Agent initialization failed: cannot access local variable 'agent' where it is not associated with a value
+2025-09-13 05:11:50,790 - INFO - 📊 Using latest autonomous agent data from console logs as fallback
+✅ Cost Optimization Manager initialized
+   Daily limit: 833 credits
+   Hourly limit: 35 credits
+   Current interval: 300s
+🔍 DEBUG Environment Variables:
+   COIN_API: SET
+   COINMARKETCAP_API_KEY: SET
+   MARKET_SIGNAL_ENABLED: true
+🔍 All market-related environment variables found:
+   MARKET_SIGNAL_ENABLED: true
+   COIN_API: 07554c7b-645d-44ed-a4f2-78bb7b2a31d5
+   COINMARKETCAP_API_KEY: [REDACTED]
+   COINGECKO_API_KEY: [REDACTED]
+2025-09-13 05:11:50,884 - INFO - 172.31.75.194 - - [13/Sep/2025 05:11:50] "GET /api/console HTTP/1.1" 200 -
+2025-09-13 05:11:51,070 - INFO - 🎯 PRIMARY: CoinAPI initialized successfully with key: 07554c7b...
+2025-09-13 05:11:51,070 - INFO - ✅ CoinAPI confirmed as PRIMARY market data source
+2025-09-13 05:11:51,070 - INFO - ✅ Enhanced Market Analyzer initialized successfully with coinapi
+2025-09-13 05:11:51,070 - INFO -    Primary: coinapi | Secondary: None | Mock Mode: False
+2025-09-13 05:11:51,205 - INFO - API call recorded: coinapi, cost: 1, hourly: 17/35
+2025-09-13 05:11:51,205 - INFO - 📊 Stored data point for BTC: 1 total points
+2025-09-13 05:11:51,205 - INFO - 🎯 Using PRIMARY CoinAPI data for BTC: $115788.2117
+2025-09-13 05:11:52,500 - INFO - 172.31.75.194 - - [13/Sep/2025 05:11:52] "GET /api/console HTTP/1.1" 200 -
+2025-09-13 05:11:52,577 - ERROR - Error fetching agent system metrics: cannot access local variable 'agent' where it is not associated with a value
+2025-09-13 05:11:52,581 - ERROR - ⚠️ Agent initialization failed: cannot access local variable 'agent' where it is not associated with a value
+2025-09-13 05:11:52,584 - INFO - 📊 Using latest autonomous agent data from console logs as fallback
+✅ Cost Optimization Manager initialized
+   Daily limit: 833 credits
+   Hourly limit: 35 credits
+   Current interval: 300s
+🔍 DEBUG Environment Variables:
+   COIN_API: SET
+   COINMARKETCAP_API_KEY: SET
+   MARKET_SIGNAL_ENABLED: true
+🔍 All market-related environment variables found:
+   MARKET_SIGNAL_ENABLED: true
+   COIN_API: 07554c7b-645d-44ed-a4f2-78bb7b2a31d5
+   COINMARKETCAP_API_KEY: [REDACTED]
+   COINGECKO_API_KEY: [REDACTED]
+2025-09-13 05:11:52,852 - INFO - 🎯 PRIMARY: CoinAPI initialized successfully with key: 07554c7b...
+2025-09-13 05:11:52,852 - INFO - ✅ CoinAPI confirmed as PRIMARY market data source
+2025-09-13 05:11:52,852 - INFO - ✅ Enhanced Market Analyzer initialized successfully with coinapi
+2025-09-13 05:11:52,852 - INFO -    Primary: coinapi | Secondary: None | Mock Mode: False
+2025-09-13 05:11:52,984 - INFO - API call recorded: coinapi, cost: 1, hourly: 18/35
+2025-09-13 05:11:52,985 - INFO - 📊 Stored data point for BTC: 1 total points
+2025-09-13 05:11:52,985 - INFO - 🎯 Using PRIMARY CoinAPI data for BTC: $115787.1500
+2025-09-13 05:11:53,423 - ERROR - ⚠️ Agent initialization failed: cannot access local variable 'agent' where it is not associated with a value
+2025-09-13 05:11:53,428 - INFO - 📊 Using latest autonomous agent data from console logs as fallback
+2025-09-13 05:11:53,435 - ERROR - ⚠️ Agent initialization failed: cannot access local variable 'agent' where it is not associated with a value
+2025-09-13 05:11:53,437 - INFO - 📊 Using latest autonomous agent data from console logs as fallback
+2025-09-13 05:11:54,487 - INFO - 172.31.75.194 - - [13/Sep/2025 05:11:54] "GET /api/console HTTP/1.1" 200 -
+2025-09-13 05:11:54,568 - ERROR - Error fetching agent system metrics: cannot access local variable 'agent' where it is not associated with a value
+2025-09-13 05:11:54,569 - ERROR - ⚠️ Agent initialization failed: cannot access local variable 'agent' where it is not associated with a value
+2025-09-13 05:11:54,572 - INFO - 📊 Using latest autonomous agent data from console logs as fallback
+✅ Cost Optimization Manager initialized
+   Daily limit: 833 credits
+   Hourly limit: 35 credits
+   Current interval: 300s
+🔍 DEBUG Environment Variables:
+   COIN_API: SET
+   COINMARKETCAP_API_KEY: SET
+   MARKET_SIGNAL_ENABLED: true
+🔍 All market-related environment variables found:
+   MARKET_SIGNAL_ENABLED: true
+   COIN_API: 07554c7b-645d-44ed-a4f2-78bb7b2a31d5
+   COINMARKETCAP_API_KEY: [REDACTED]
+   COINGECKO_API_KEY: [REDACTED]
+2025-09-13 05:11:54,834 - INFO - 🎯 PRIMARY: CoinAPI initialized successfully with key: 07554c7b...
+2025-09-13 05:11:54,834 - INFO - ✅ CoinAPI confirmed as PRIMARY market data source
+2025-09-13 05:11:54,834 - INFO - ✅ Enhanced Market Analyzer initialized successfully with coinapi
+2025-09-13 05:11:54,834 - INFO -    Primary: coinapi | Secondary: None | Mock Mode: False
+2025-09-13 05:11:54,974 - INFO - API call recorded: coinapi, cost: 1, hourly: 19/35
+2025-09-13 05:11:54,974 - INFO - 📊 Stored data point for BTC: 1 total points
+2025-09-13 05:11:54,974 - INFO - 🎯 Using PRIMARY CoinAPI data for BTC: $115787.1479
+2025-09-13 05:11:56,447 - ERROR - ⚠️ Agent initialization failed: cannot access local variable 'agent' where it is not associated with a value
+2025-09-13 05:11:56,449 - INFO - 📊 Using latest autonomous agent data from console logs as fallback
+2025-09-13 05:11:56,456 - ERROR - ⚠️ Agent initialization failed: cannot access local variable 'agent' where it is not associated with a value
+2025-09-13 05:11:56,457 - INFO - 📊 Using latest autonomous agent data from console logs as fallback
+2025-09-13 05:11:59,465 - ERROR - ⚠️ Agent initialization failed: cannot access local variable 'agent' where it is not associated with a value
+2025-09-13 05:11:59,467 - INFO - 📊 Using latest autonomous agent data from console logs as fallback
+2025-09-13 05:11:59,473 - ERROR - ⚠️ Agent initialization failed: cannot access local variable 'agent' where it is not associated with a value
+2025-09-13 05:11:59,475 - INFO - 📊 Using latest autonomous agent data from console logs as fallback
+2025-09-13 05:12:02,487 - ERROR - ⚠️ Agent initialization failed: cannot access local variable 'agent' where it is not associated with a value
+2025-09-13 05:12:02,488 - INFO - 📊 Using latest autonomous agent data from console logs as fallback
+2025-09-13 05:12:02,494 - ERROR - ⚠️ Agent initialization failed: cannot access local variable 'agent' where it is not associated with a value
+2025-09-13 05:12:02,495 - INFO - 📊 Using latest autonomous agent data from console logs as fallback
+2025-09-13 05:12:05,504 - ERROR - ⚠️ Agent initialization failed: cannot access local variable 'agent' where it is not associated with a value
+2025-09-13 05:12:05,507 - INFO - 📊 Using latest autonomous agent data from console logs as fallback
+2025-09-13 05:12:05,517 - ERROR - ⚠️ Agent initialization failed: cannot access local variable 'agent' where it is not associated with a value
+2025-09-13 05:12:05,520 - INFO - 📊 Using latest autonomous agent data from console logs as fallback
+2025-09-13 05:12:08,534 - ERROR - ⚠️ Agent initialization failed: cannot access local variable 'agent' where it is not associated with a value
+2025-09-13 05:12:08,536 - INFO - 📊 Using latest autonomous agent data from console logs as fallback
+2025-09-13 05:12:08,559 - ERROR - ⚠️ Agent initialization failed: cannot access local variable 'agent' where it is not associated with a value
+2025-09-13 05:12:08,566 - INFO - 📊 Using latest autonomous agent data from console logs as fallback
+2025-09-13 05:12:11,576 - ERROR - ⚠️ Agent initialization failed: cannot access local variable 'agent' where it is not associated with a value
+2025-09-13 05:12:11,577 - INFO - 📊 Using latest autonomous agent data from console logs as fallback
+2025-09-13 05:12:11,584 - ERROR - ⚠️ Agent initialization failed: cannot access local variable 'agent' where it is not associated with a value
+2025-09-13 05:12:11,585 - INFO - 📊 Using latest autonomous agent data from console logs as fallback
+2025-09-13 05:12:14,602 - ERROR - ⚠️ Agent initialization failed: cannot access local variable 'agent' where it is not associated with a value
+2025-09-13 05:12:14,603 - INFO - 📊 Using latest autonomous agent data from console logs as fallback
+2025-09-13 05:12:14,610 - ERROR - ⚠️ Agent initialization failed: cannot access local variable 'agent' where it is not associated with a value
+2025-09-13 05:12:14,611 - INFO - 📊 Using latest autonomous agent data from console logs as fallback
+2025-09-13 05:12:17,621 - ERROR - ⚠️ Agent initialization failed: cannot access local variable 'agent' where it is not associated with a value
+2025-09-13 05:12:17,622 - INFO - 📊 Using latest autonomous agent data from console logs as fallback
+2025-09-13 05:12:17,628 - ERROR - ⚠️ Agent initialization failed: cannot access local variable 'agent' where it is not associated with a value
+2025-09-13 05:12:17,629 - INFO - 📊 Using latest autonomous agent data from console logs as fallback
+2025-09-13 05:12:20,643 - ERROR - ⚠️ Agent initialization failed: cannot access local variable 'agent' where it is not associated with a value
+2025-09-13 05:12:20,645 - INFO - 📊 Using latest autonomous agent data from console logs as fallback
+2025-09-13 05:12:20,652 - ERROR - ⚠️ Agent initialization failed: cannot access local variable 'agent' where it is not associated with a value
+2025-09-13 05:12:20,654 - INFO - 📊 Using latest autonomous agent data from console logs as fallback
+2025-09-13 05:12:23,670 - ERROR - ⚠️ Agent initialization failed: cannot access local variable 'agent' where it is not associated with a value
+2025-09-13 05:12:23,672 - INFO - 📊 Using latest autonomous agent data from console logs as fallback
+2025-09-13 05:12:23,681 - ERROR - ⚠️ Agent initialization failed: cannot access local variable 'agent' where it is not associated with a value
+2025-09-13 05:12:23,684 - INFO - 📊 Using latest autonomous agent data from console logs as fallback
+2025-09-13 05:12:26,699 - ERROR - ⚠️ Agent initialization failed: cannot access local variable 'agent' where it is not associated with a value
+2025-09-13 05:12:26,701 - INFO - 📊 Using latest autonomous agent data from console logs as fallback
+2025-09-13 05:12:26,709 - ERROR - ⚠️ Agent initialization failed: cannot access local variable 'agent' where it is not associated with a value
+2025-09-13 05:12:26,710 - INFO - 📊 Using latest autonomous agent data from console logs as fallback
+2025-09-13 05:12:28,553 - INFO - API call recorded: coinapi, cost: 1, hourly: 15/35
+2025-09-13 05:12:28,553 - INFO - 📊 Stored data point for ETH: 1 total points
+2025-09-13 05:12:28,553 - INFO - 🎯 Using PRIMARY CoinAPI data for ETH: $4732.6365
+2025-09-13 05:12:29,718 - ERROR - ⚠️ Agent initialization failed: cannot access local variable 'agent' where it is not associated with a value
+2025-09-13 05:12:29,720 - INFO - 📊 Using latest autonomous agent data from console logs as fallback
+2025-09-13 05:12:29,726 - ERROR - ⚠️ Agent initialization failed: cannot access local variable 'agent' where it is not associated with a value
+2025-09-13 05:12:29,728 - INFO - 📊 Using latest autonomous agent data from console logs as fallback
+2025-09-13 05:12:32,737 - ERROR - ⚠️ Agent initialization failed: cannot access local variable 'agent' where it is not associated with a value
+2025-09-13 05:12:32,739 - INFO - 📊 Using latest autonomous agent data from console logs as fallback
+2025-09-13 05:12:32,744 - ERROR - ⚠️ Agent initialization failed: cannot access local variable 'agent' where it is not associated with a value
+2025-09-13 05:12:32,746 - INFO - 📊 Using latest autonomous agent data from console logs as fallback
+2025-09-13 05:12:35,760 - ERROR - ⚠️ Agent initialization failed: cannot access local variable 'agent' where it is not associated with a value
+2025-09-13 05:12:35,762 - INFO - 📊 Using latest autonomous agent data from console logs as fallback
+2025-09-13 05:12:35,775 - ERROR - ⚠️ Agent initialization failed: cannot access local variable 'agent' where it is not associated with a value
+2025-09-13 05:12:35,777 - INFO - 📊 Using latest autonomous agent data from console logs as fallback
+2025-09-13 05:12:38,797 - ERROR - ⚠️ Agent initialization failed: cannot access local variable 'agent' where it is not associated with a value
+2025-09-13 05:12:38,800 - INFO - 📊 Using latest autonomous agent data from console logs as fallback
+2025-09-13 05:12:38,813 - ERROR - ⚠️ Agent initialization failed: cannot access local variable 'agent' where it is not associated with a value
+2025-09-13 05:12:38,816 - INFO - 📊 Using latest autonomous agent data from console logs as fallback
+2025-09-13 05:12:41,824 - ERROR - ⚠️ Agent initialization failed: cannot access local variable 'agent' where it is not associated with a value
+2025-09-13 05:12:41,826 - INFO - 📊 Using latest autonomous agent data from console logs as fallback
+2025-09-13 05:12:41,834 - ERROR - ⚠️ Agent initialization failed: cannot access local variable 'agent' where it is not associated with a value
+2025-09-13 05:12:41,836 - INFO - 📊 Using latest autonomous agent data from console logs as fallback
+2025-09-13 05:12:44,847 - ERROR - ⚠️ Agent initialization failed: cannot access local variable 'agent' where it is not associated with a value
+2025-09-13 05:12:44,849 - INFO - 📊 Using latest autonomous agent data from console logs as fallback
+2025-09-13 05:12:44,857 - ERROR - ⚠️ Agent initialization failed: cannot access local variable 'agent' where it is not associated with a value
+2025-09-13 05:12:44,858 - INFO - 📊 Using latest autonomous agent data from console logs as fallback
+2025-09-13 05:12:47,867 - ERROR - ⚠️ Agent initialization failed: cannot access local variable 'agent' where it is not associated with a value
+2025-09-13 05:12:47,869 - INFO - 📊 Using latest autonomous agent data from console logs as fallback
+2025-09-13 05:12:47,892 - ERROR - ⚠️ Agent initialization failed: cannot access local variable 'agent' where it is not associated with a value
+2025-09-13 05:12:47,894 - INFO - 📊 Using latest autonomous agent data from console logs as fallback
+2025-09-13 05:12:48,036 - INFO - API call recorded: coinapi, cost: 1, hourly: 16/35
+2025-09-13 05:12:48,036 - INFO - 📊 Stored data point for ETH: 1 total points
+2025-09-13 05:12:48,036 - INFO - 🎯 Using PRIMARY CoinAPI data for ETH: $4732.7926
+2025-09-13 05:12:49,165 - INFO - API call recorded: coinapi, cost: 1, hourly: 17/35
+2025-09-13 05:12:49,165 - INFO - 📊 Stored data point for ETH: 1 total points
+2025-09-13 05:12:49,165 - INFO - 🎯 Using PRIMARY CoinAPI data for ETH: $4732.7916
+2025-09-13 05:12:50,915 - ERROR - ⚠️ Agent initialization failed: cannot access local variable 'agent' where it is not associated with a value
+2025-09-13 05:12:50,917 - INFO - 📊 Using latest autonomous agent data from console logs as fallback
+2025-09-13 05:12:50,926 - ERROR - ⚠️ Agent initialization failed: cannot access local variable 'agent' where it is not associated with a value
+2025-09-13 05:12:50,928 - INFO - 📊 Using latest autonomous agent data from console logs as fallback
+2025-09-13 05:12:51,341 - INFO - API call recorded: coinapi, cost: 1, hourly: 18/35
+2025-09-13 05:12:51,341 - INFO - 📊 Stored data point for ETH: 1 total points
+2025-09-13 05:12:51,341 - INFO - 🎯 Using PRIMARY CoinAPI data for ETH: $4732.7976
+2025-09-13 05:12:53,117 - INFO - API call recorded: coinapi, cost: 1, hourly: 19/35
+2025-09-13 05:12:53,117 - INFO - 📊 Stored data point for ETH: 1 total points
+2025-09-13 05:12:53,117 - INFO - 🎯 Using PRIMARY CoinAPI data for ETH: $4732.7921
+2025-09-13 05:12:53,937 - ERROR - ⚠️ Agent initialization failed: cannot access local variable 'agent' where it is not associated with a value
+2025-09-13 05:12:53,938 - INFO - 📊 Using latest autonomous agent data from console logs as fallback
+2025-09-13 05:12:53,944 - ERROR - ⚠️ Agent initialization failed: cannot access local variable 'agent' where it is not associated with a value
+2025-09-13 05:12:53,946 - INFO - 📊 Using latest autonomous agent data from console logs as fallback
+2025-09-13 05:12:55,116 - INFO - API call recorded: coinapi, cost: 1, hourly: 20/35
+2025-09-13 05:12:55,116 - INFO - 📊 Stored data point for ETH: 1 total points
+2025-09-13 05:12:55,116 - INFO - 🎯 Using PRIMARY CoinAPI data for ETH: $4732.6076
+2025-09-13 05:12:56,960 - ERROR - ⚠️ Agent initialization failed: cannot access local variable 'agent' where it is not associated with a value
+2025-09-13 05:12:56,963 - INFO - 📊 Using latest autonomous agent data from console logs as fallback
+2025-09-13 05:12:56,977 - ERROR - ⚠️ Agent initialization failed: cannot access local variable 'agent' where it is not associated with a value
+2025-09-13 05:12:56,980 - INFO - 📊 Using latest autonomous agent data from console logs as fallback
+2025-09-13 05:12:59,990 - ERROR - ⚠️ Agent initialization failed: cannot access local variable 'agent' where it is not associated with a value
+2025-09-13 05:12:59,992 - INFO - 📊 Using latest autonomous agent data from console logs as fallback
+2025-09-13 05:12:59,998 - ERROR - ⚠️ Agent initialization failed: cannot access local variable 'agent' where it is not associated with a value
