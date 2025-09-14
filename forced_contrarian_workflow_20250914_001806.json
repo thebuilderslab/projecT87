@@ -1,0 +1,304 @@
+{
+  "workflow_id": "forced_contrarian_1757808594",
+  "start_time": "2025-09-14T00:09:54.730437",
+  "steps": {
+    "step1": {
+      "step": 1,
+      "name": "DAI_BORROWING_ANALYSIS",
+      "start_time": "2025-09-14T00:13:00.510343",
+      "transactions": [],
+      "success": true,
+      "initial_position": {
+        "total_collateral": 293.41321406,
+        "total_debt": 126.07875085,
+        "available_borrows": 94.42127951,
+        "liquidation_threshold": 79.84,
+        "ltv": 75.15,
+        "health_factor": 1.8582032565815194
+      },
+      "initial_balances": {
+        "ARB": 0.003267956181442199
+      },
+      "initial_health_factor": 1.8582032565815194,
+      "borrow_error": "borrow_dai method not available",
+      "final_position": {
+        "total_collateral": 293.41321406,
+        "total_debt": 126.07875085,
+        "available_borrows": 94.42127951,
+        "liquidation_threshold": 79.84,
+        "ltv": 75.15,
+        "health_factor": 1.8582032565815194
+      },
+      "final_balances": {
+        "ARB": 0.003267956181442199
+      },
+      "final_health_factor": 1.8582032565815194,
+      "end_time": "2025-09-14T00:13:00.896778"
+    },
+    "step2": {
+      "step": 2,
+      "name": "DAI_TO_ARB_SWAP",
+      "start_time": "2025-09-14T00:13:00.900221",
+      "transactions": [],
+      "success": false,
+      "initial_balances": {
+        "ARB": 0.003267956181442199
+      },
+      "initial_health_factor": 1.8582032565815194,
+      "error": "Insufficient DAI balance for swap: 0.000000",
+      "error_details": "Traceback (most recent call last):\n  File \"/home/runner/workspace/force_contrarian_comprehensive.py\", line 295, in execute_step_2_dai_to_arb_swap\n    raise Exception(f\"Insufficient DAI balance for swap: {available_dai:.6f}\")\nException: Insufficient DAI balance for swap: 0.000000\n",
+      "end_time": "2025-09-14T00:13:00.999736"
+    },
+    "step3": {
+      "step": 3,
+      "name": "HOLD_PERIOD_MONITORING",
+      "start_time": "2025-09-14T00:13:00.999901",
+      "hold_duration": 300,
+      "monitoring_data": [
+        {
+          "timestamp": "2025-09-14T00:13:31.361030",
+          "elapsed_seconds": 30,
+          "remaining_seconds": 269,
+          "balances": {
+            "ARB": 0.003267956181442199
+          },
+          "health_factor": 1.8582031644157087,
+          "debt_position": {
+            "total_collateral": 293.4132158,
+            "total_debt": 126.07875789,
+            "available_borrows": 94.42127378,
+            "liquidation_threshold": 79.84,
+            "ltv": 75.15,
+            "health_factor": 1.8582031644157087
+          }
+        },
+        {
+          "timestamp": "2025-09-14T00:14:01.530259",
+          "elapsed_seconds": 60,
+          "remaining_seconds": 239,
+          "balances": {
+            "ARB": 0.003267956181442199
+          },
+          "health_factor": 1.8582030694072038,
+          "debt_position": {
+            "total_collateral": 293.4132176,
+            "total_debt": 126.07876515,
+            "available_borrows": 94.42126787,
+            "liquidation_threshold": 79.84,
+            "ltv": 75.15,
+            "health_factor": 1.8582030694072038
+          }
+        },
+        {
+          "timestamp": "2025-09-14T00:14:31.726714",
+          "elapsed_seconds": 90,
+          "remaining_seconds": 209,
+          "balances": {
+            "ARB": 0.003267956181442199
+          },
+          "health_factor": 1.8582029772414141,
+          "debt_position": {
+            "total_collateral": 293.41321934,
+            "total_debt": 126.07877219,
+            "available_borrows": 94.42126214,
+            "liquidation_threshold": 79.84,
+            "ltv": 75.15,
+            "health_factor": 1.8582029772414141
+          }
+        },
+        {
+          "timestamp": "2025-09-14T00:15:01.901996",
+          "elapsed_seconds": 120,
+          "remaining_seconds": 179,
+          "balances": {
+            "ARB": 0.003267956181442199
+          },
+          "health_factor": 1.858202885156394,
+          "debt_position": {
+            "total_collateral": 293.41322107,
+            "total_debt": 126.07877922,
+            "available_borrows": 94.42125641,
+            "liquidation_threshold": 79.84,
+            "ltv": 75.15,
+            "health_factor": 1.858202885156394
+          }
+        },
+        {
+          "timestamp": "2025-09-14T00:15:32.105066",
+          "elapsed_seconds": 150,
+          "remaining_seconds": 149,
+          "balances": {
+            "ARB": 0.003267956181442199
+          },
+          "health_factor": 1.8582027931380092,
+          "debt_position": {
+            "total_collateral": 293.41322281,
+            "total_debt": 126.07878625,
+            "available_borrows": 94.42125069,
+            "liquidation_threshold": 79.84,
+            "ltv": 75.15,
+            "health_factor": 1.8582027931380092
+          }
+        },
+        {
+          "timestamp": "2025-09-14T00:16:02.327097",
+          "elapsed_seconds": 181,
+          "remaining_seconds": 118,
+          "balances": {
+            "ARB": 0.003267956181442199
+          },
+          "health_factor": 1.8585270976603687,
+          "debt_position": {
+            "total_collateral": 293.46191446,
+            "total_debt": 126.07879328,
+            "available_borrows": 94.45783543,
+            "liquidation_threshold": 79.84,
+            "ltv": 75.15,
+            "health_factor": 1.8585270976603687
+          }
+        },
+        {
+          "timestamp": "2025-09-14T00:16:32.506219",
+          "elapsed_seconds": 211,
+          "remaining_seconds": 88,
+          "balances": {
+            "ARB": 0.003267956181442199
+          },
+          "health_factor": 1.8585270024192027,
+          "debt_position": {
+            "total_collateral": 293.46191625,
+            "total_debt": 126.07880055,
+            "available_borrows": 94.45782951,
+            "liquidation_threshold": 79.84,
+            "ltv": 75.15,
+            "health_factor": 1.8585270024192027
+          }
+        },
+        {
+          "timestamp": "2025-09-14T00:17:02.671995",
+          "elapsed_seconds": 241,
+          "remaining_seconds": 58,
+          "balances": {
+            "ARB": 0.003267956181442199
+          },
+          "health_factor": 1.8585269103827606,
+          "debt_position": {
+            "total_collateral": 293.46191799,
+            "total_debt": 126.07880758,
+            "available_borrows": 94.45782378,
+            "liquidation_threshold": 79.84,
+            "ltv": 75.15,
+            "health_factor": 1.8585269103827606
+          }
+        },
+        {
+          "timestamp": "2025-09-14T00:17:33.060998",
+          "elapsed_seconds": 271,
+          "remaining_seconds": 28,
+          "balances": {
+            "ARB": 0.003267956181442199
+          },
+          "health_factor": 1.8585268183463293,
+          "debt_position": {
+            "total_collateral": 293.46191973,
+            "total_debt": 126.07881461,
+            "available_borrows": 94.45781806,
+            "liquidation_threshold": 79.84,
+            "ltv": 75.15,
+            "health_factor": 1.8585268183463293
+          }
+        }
+      ],
+      "success": true,
+      "initial_state": {
+        "balances": {
+          "ARB": 0.003267956181442199
+        },
+        "health_factor": 1.8582032565815194,
+        "debt_position": {
+          "total_collateral": 293.41321406,
+          "total_debt": 126.07875085,
+          "available_borrows": 94.42127951,
+          "liquidation_threshold": 79.84,
+          "ltv": 75.15,
+          "health_factor": 1.8582032565815194
+        }
+      },
+      "final_state": {
+        "balances": {
+          "ARB": 0.003267956181442199
+        },
+        "health_factor": 1.858526732291264,
+        "debt_position": {
+          "total_collateral": 293.46192135,
+          "total_debt": 126.07882118,
+          "available_borrows": 94.45781271,
+          "liquidation_threshold": 79.84,
+          "ltv": 75.15,
+          "health_factor": 1.858526732291264
+        }
+      },
+      "total_changes": {
+        "health_factor_change": 0.0003234757097445584,
+        "arb_balance_change": 0.0,
+        "monitoring_snapshots": 9
+      },
+      "end_time": "2025-09-14T00:18:01.269218"
+    },
+    "step4": {
+      "step": 4,
+      "name": "ARB_TO_DAI_SWAP",
+      "start_time": "2025-09-14T00:18:01.269399",
+      "transactions": [],
+      "success": false,
+      "initial_balances": {
+        "ARB": 0.003267956181442199
+      },
+      "initial_health_factor": 1.858526732291264,
+      "final_balances": {
+        "ARB": 0.003267956181442199
+      },
+      "final_health_factor": 1.8585267139857518,
+      "error": "No significant balance changes detected. ARB change: 0.000000, DAI change: 0.000000",
+      "swap_result": "False",
+      "end_time": "2025-09-14T00:18:06.480460"
+    }
+  },
+  "success": false,
+  "round_trip_analysis": {
+    "start_time": "2025-09-14T00:13:00.510343",
+    "end_time": "2025-09-14T00:18:06.480460",
+    "total_transactions": 0,
+    "gas_costs_total": 0,
+    "profit_loss_analysis": {},
+    "all_transactions": [],
+    "estimated_gas_cost_arb": 0,
+    "balance_changes": {
+      "DAI": {
+        "start": 0,
+        "end": 0,
+        "change": 0
+      },
+      "ARB": {
+        "start": 0.003267956181442199,
+        "end": 0.003267956181442199,
+        "change": 0.0
+      },
+      "WETH": {
+        "start": 0,
+        "end": 0,
+        "change": 0
+      }
+    },
+    "health_factor_analysis": {
+      "start": 1.8582032565815194,
+      "end": 1.8585267139857518,
+      "change": 0.00032345740423234126,
+      "maintained_safety": true
+    },
+    "successful_steps": 2,
+    "overall_success": false
+  },
+  "successful_critical_steps": 0,
+  "end_time": "2025-09-14T00:18:06.482176"
+}
