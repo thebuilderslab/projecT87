@@ -238,14 +238,16 @@ class ArbitrumTestnetAgent:
         if self.network_mode == 'mainnet':
             # Get Alchemy RPC URL from Replit secrets first
             alchemy_rpc_url = os.getenv('ALCHEMY_RPC_URL')
-            print(f"🔍 DEBUG: ALCHEMY_RPC_URL from env: {alchemy_rpc_url}")
+            # SECURITY: Never print full RPC URLs as they contain API keys
+            rpc_status = "loaded" if alchemy_rpc_url else "not found"
+            print(f"🔍 DEBUG: ALCHEMY_RPC_URL status: {rpc_status}")
 
             # Multiple RPC endpoints for reliability - prioritizing Alchemy if available
             self.rpc_endpoints = []
 
             if alchemy_rpc_url:
                 self.rpc_endpoints.append(alchemy_rpc_url)
-                print(f"🔗 DEBUG: Added Alchemy RPC to endpoints list: {alchemy_rpc_url[:50]}...")
+                print(f"🔗 DEBUG: Added Alchemy RPC to endpoints list (endpoint secured)")
             else:
                 print("⚠️ DEBUG: No ALCHEMY_RPC_URL found in environment variables")
 

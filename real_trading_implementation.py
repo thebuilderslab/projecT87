@@ -239,6 +239,63 @@ def initialize_uniswap_v3_router(agent):
         print(f"❌ Failed to initialize Uniswap V3 router: {e}")
         return None
 
+def initialize_uniswap_v3_quoter(agent):
+    """Initialize Uniswap V3 Quoter for price quotes"""
+    print("🔧 INITIALIZING UNISWAP V3 QUOTER...")
+    
+    try:
+        # Uniswap V3 Quoter address on Arbitrum
+        quoter_address = "0xb27308f9F90D607463bb33eA1BeBb41C27CE5AB6"
+        
+        # Quoter ABI for quoteExactInputSingle
+        quoter_abi = [
+            {
+                "inputs": [
+                    {"name": "tokenIn", "type": "address"},
+                    {"name": "tokenOut", "type": "address"},
+                    {"name": "fee", "type": "uint24"},
+                    {"name": "amountIn", "type": "uint256"},
+                    {"name": "sqrtPriceLimitX96", "type": "uint160"}
+                ],
+                "name": "quoteExactInputSingle",
+                "outputs": [{"name": "amountOut", "type": "uint256"}],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            }
+        ]
+        
+        # Create quoter contract instance
+        quoter_contract = agent.w3.eth.contract(address=quoter_address, abi=quoter_abi)
+        
+        print(f"✅ Uniswap V3 Quoter Initialized:")
+        print(f"   Address: {quoter_address}")
+        
+        return quoter_contract
+        
+    except Exception as e:
+        print(f"❌ Failed to initialize Uniswap V3 quoter: {e}")
+        return None
+
+def get_swap_quote(agent, quoter_contract, token_in: str, token_out: str, amount_in: int, fee: int = 3000) -> int:
+    """Get swap quote from Uniswap V3 Quoter"""
+    try:
+        quote = quoter_contract.functions.quoteExactInputSingle(
+            token_in,
+            token_out, 
+            fee,
+            amount_in,
+            0  # sqrtPriceLimitX96
+        ).call()
+        return quote
+    except Exception as e:
+        print(f"⚠️ Quote failed: {e}")
+        return 0
+
+def calculate_minimum_output(quote_amount: int, slippage_tolerance: float = 0.005) -> int:
+    """Calculate minimum output amount with slippage protection (default 0.5%)"""
+    slippage_multiplier = 1.0 - slippage_tolerance
+    return int(quote_amount * slippage_multiplier)
+
 def get_current_health_factor(agent) -> float:
     """Get current health factor from Aave"""
     try:
@@ -364,6 +421,21 @@ def execute_eth_to_arb_swap(agent, router_contract, arb_contract, swap_amount_et
         print(f"   Deadline: {deadline}")
         print(f"   Fee Tier: 3000 (0.3%)")
         
+        # Get price quote for slippage protection
+        quoter_contract = initialize_uniswap_v3_quoter(agent)
+        if quoter_contract:
+            try:
+                quote = get_swap_quote(agent, quoter_contract, weth_address, arb_address, swap_amount_wei)
+                min_amount_out = calculate_minimum_output(quote, 0.01)  # 1% slippage tolerance
+                print(f"   Quote: {quote / 1e18:.6f} ARB")
+                print(f"   Min Output (1% slippage): {min_amount_out / 1e18:.6f} ARB")
+            except Exception as e:
+                print(f"   ⚠️ Quote failed, using 0 minimum: {e}")
+                min_amount_out = 0
+        else:
+            print(f"   ⚠️ No quoter available, using 0 minimum")
+            min_amount_out = 0
+
         # Build swap transaction (ETH is handled as WETH automatically by router)
         swap_params = {
             'tokenIn': weth_address,
@@ -372,7 +444,7 @@ def execute_eth_to_arb_swap(agent, router_contract, arb_contract, swap_amount_et
             'recipient': agent.address,
             'deadline': deadline,
             'amountIn': swap_amount_wei,
-            'amountOutMinimum': 0,  # Accept any amount of ARB out (high slippage tolerance for test)
+            'amountOutMinimum': min_amount_out,  # Slippage protection
             'sqrtPriceLimitX96': 0
         }
         
@@ -497,6 +569,21 @@ def execute_arb_to_eth_swap(agent, router_contract, arb_contract, swap_amount_ar
         if not approve_token_if_needed(agent, arb_contract, router_address, swap_amount_wei, "ARB"):
             raise Exception("Failed to approve ARB spending")
         
+        # Get price quote for slippage protection
+        quoter_contract = initialize_uniswap_v3_quoter(agent)
+        if quoter_contract:
+            try:
+                quote = get_swap_quote(agent, quoter_contract, arb_address, weth_address, swap_amount_wei)
+                min_amount_out = calculate_minimum_output(quote, 0.01)  # 1% slippage tolerance
+                print(f"   Quote: {quote / 1e18:.6f} WETH")
+                print(f"   Min Output (1% slippage): {min_amount_out / 1e18:.6f} WETH")
+            except Exception as e:
+                print(f"   ⚠️ Quote failed, using 0 minimum: {e}")
+                min_amount_out = 0
+        else:
+            print(f"   ⚠️ No quoter available, using 0 minimum")
+            min_amount_out = 0
+
         # Build swap transaction
         swap_params = {
             'tokenIn': arb_address,
@@ -505,7 +592,7 @@ def execute_arb_to_eth_swap(agent, router_contract, arb_contract, swap_amount_ar
             'recipient': agent.address,
             'deadline': deadline,
             'amountIn': swap_amount_wei,
-            'amountOutMinimum': 0,  # Accept any amount of WETH out
+            'amountOutMinimum': min_amount_out,  # Slippage protection
             'sqrtPriceLimitX96': 0
         }
         
@@ -534,35 +621,47 @@ def execute_arb_to_eth_swap(agent, router_contract, arb_contract, swap_amount_ar
         print("⏳ Waiting for confirmation...")
         swap_receipt = agent.w3.eth.wait_for_transaction_receipt(swap_tx_hash, timeout=180)
         
-        # Get final state  
+        # Get final state including WETH (since ARB→WETH swap outputs WETH, not native ETH)
         final_eth = agent.w3.eth.get_balance(agent.address) / 1e18
         final_arb = arb_contract.functions.balanceOf(agent.address).call() / 1e18
         final_hf = get_current_health_factor(agent)
         
+        # Get WETH balance to properly account for swap output
+        weth_address = "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1"
+        weth_abi = [{"constant": True, "inputs": [{"name": "_owner", "type": "address"}], "name": "balanceOf", "outputs": [{"name": "balance", "type": "uint256"}], "type": "function"}]
+        weth_contract = agent.w3.eth.contract(address=weth_address, abi=weth_abi)
+        initial_weth = 0  # Assume 0 initial WETH for simplicity
+        final_weth = weth_contract.functions.balanceOf(agent.address).call() / 1e18
+        
         swap_result['final_balances'] = {
             'ETH': final_eth,
-            'ARB': final_arb
+            'ARB': final_arb,
+            'WETH': final_weth
         }
         swap_result['final_health_factor'] = final_hf
         
-        # Calculate results
+        # Calculate results - properly account for WETH output
         arb_spent = initial_arb - final_arb
-        eth_received = final_eth - initial_eth
+        weth_received = final_weth - initial_weth
+        # ETH change is just gas costs (negative)
+        eth_change = final_eth - initial_eth
         
         swap_result['arb_spent'] = arb_spent
-        swap_result['eth_received'] = eth_received
+        swap_result['weth_received'] = weth_received
+        swap_result['eth_change'] = eth_change  # Gas costs
         swap_result['gas_used'] = swap_receipt['gasUsed']
         swap_result['gas_cost_eth'] = (swap_receipt['gasUsed'] * swap_receipt['effectiveGasPrice']) / 1e18
         
         if swap_receipt['status'] == 1 and arb_spent > 0:
             swap_result['success'] = True
             
-            print(f"\n✅ ARB → ETH SWAP SUCCESSFUL!")
+            print(f"\n✅ ARB → WETH SWAP SUCCESSFUL!")
             print(f"🔗 Arbiscan: https://arbiscan.io/tx/{swap_tx_hash.hex()}")
             print(f"📊 RESULTS:")
             print(f"   ARB Spent: {arb_spent:.6f}")  
-            print(f"   ETH Received: {eth_received:.6f}")
-            print(f"   Exchange Rate: {eth_received/arb_spent if arb_spent > 0 else 0:.6f} ETH/ARB")
+            print(f"   WETH Received: {weth_received:.6f}")
+            print(f"   ETH Change (gas): {eth_change:.8f}")
+            print(f"   Exchange Rate: {weth_received/arb_spent if arb_spent > 0 else 0:.6f} WETH/ARB")
             print(f"   Gas Used: {swap_receipt['gasUsed']:,}")
             print(f"   Gas Cost: {swap_result['gas_cost_eth']:.8f} ETH")
             print(f"   Health Factor: {initial_hf:.6f} → {final_hf:.6f}")
@@ -621,7 +720,7 @@ def main():
             raise Exception("Failed to initialize DAI contract")
         
         # Initialize WETH contract
-        weth_address = "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1"
+        weth_address = agent.w3.to_checksum_address("0x82aF49447D8a07e3bd95BD0d56f35241523fBab1")
         weth_abi = [{"constant": True, "inputs": [{"name": "_owner", "type": "address"}], "name": "balanceOf", "outputs": [{"name": "balance", "type": "uint256"}], "type": "function"}]
         weth_contract = agent.w3.eth.contract(address=weth_address, abi=weth_abi)
         
