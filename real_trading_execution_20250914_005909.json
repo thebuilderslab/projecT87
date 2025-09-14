@@ -1,0 +1,78 @@
+{
+  "implementation_phase": "REAL_TRADING_DAI_ARB",
+  "start_time": "2025-09-14T00:55:50.074160",
+  "operations": {
+    "eth_to_arb_swap": {
+      "operation": "ETH_TO_ARB_SWAP",
+      "start_time": "2025-09-14T00:58:58.603776",
+      "input_amount_eth": 0.0001,
+      "success": true,
+      "initial_balances": {
+        "ETH": 0.003266932121442199,
+        "ARB": 4.3e-17
+      },
+      "initial_health_factor": 1.85731056264465,
+      "transaction_hash": "0xb9aec27a379fec50c293042bfa63e374e4f7c3357d106534ea8cce1148fa9739",
+      "final_balances": {
+        "ETH": 0.003165601721442199,
+        "ARB": 0.8649889736833578
+      },
+      "final_health_factor": 1.857310556520446,
+      "eth_spent": 0.00010133039999999987,
+      "arb_received": 0.8649889736833578,
+      "gas_used": 133040,
+      "gas_cost_eth": 1.3304e-06,
+      "end_time": "2025-09-14T00:59:01.361388"
+    },
+    "arb_to_eth_swap": {
+      "operation": "ARB_TO_ETH_SWAP",
+      "start_time": "2025-09-14T00:59:06.361799",
+      "input_amount_arb": 0.4324944868416789,
+      "success": true,
+      "initial_balances": {
+        "ETH": 0.003165601721442199,
+        "ARB": 0.8649889736833578
+      },
+      "initial_health_factor": 1.857310538228522,
+      "transaction_hash": "0xba54337acc4bf867ff7673468162c025e59617fba42d931628284eda5e5a443e",
+      "final_balances": {
+        "ETH": 0.003164154861442199,
+        "ARB": 0.4324944868416789
+      },
+      "final_health_factor": 1.8573105320376935,
+      "arb_spent": 0.4324944868416789,
+      "eth_received": -1.4468600000000324e-06,
+      "gas_used": 144686,
+      "gas_cost_eth": 1.44686e-06,
+      "end_time": "2025-09-14T00:59:09.153566"
+    }
+  },
+  "overall_success": true,
+  "initial_state": {
+    "balances": {
+      "ETH": 0.003266932121442199,
+      "DAI": 0.0,
+      "ARB": 4.3e-17,
+      "WETH": 0.0
+    },
+    "health_factor": 1.85731056264465
+  },
+  "final_state": {
+    "balances": {
+      "ETH": 0.003164154861442199,
+      "DAI": 0.0,
+      "ARB": 0.4324944868416789,
+      "WETH": 4.9700453130701e-05
+    },
+    "health_factor": 1.8573105320376935
+  },
+  "successful_operations": 2,
+  "total_operations": 2,
+  "net_balance_changes": {
+    "ETH": -0.0001027772599999999,
+    "DAI": 0.0,
+    "ARB": 0.43249448684167885,
+    "WETH": 4.9700453130701e-05
+  },
+  "end_time": "2025-09-14T00:59:09.450429"
+}
