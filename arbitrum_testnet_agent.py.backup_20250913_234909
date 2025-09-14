@@ -549,16 +549,16 @@ class ArbitrumTestnetAgent:
 
         # Growth-Triggered System Configuration
         self.growth_trigger_threshold = 50.0  # $50 growth threshold
-        self.growth_health_factor_threshold = 1.5  # Minimum health factor for growth operations
+        self.growth_health_factor_threshold = 2.0  # Minimum health factor for growth operations
         self.re_leverage_percentage = 0.15  # 15% re-leverage percentage
         self.min_borrow_releverage = 5.0  # Minimum borrow amount for re-leverage
         self.max_borrow_releverage = 100.0  # Maximum borrow amount for re-leverage
 
         # Capacity-Based System Configuration
         self.capacity_available_threshold = 25.0  # $25 minimum available capacity
-        self.capacity_health_factor_threshold = 1.5  # Minimum health factor for capacity operations
+        self.capacity_health_factor_threshold = 1.8  # Minimum health factor for capacity operations
         self.capacity_optimization_threshold = 0.85  # 85% maximum utilization
-        self.target_health_factor = 1.5  # Target health factor to maintain
+        self.target_health_factor = 2.5  # Target health factor to maintain
 
         # Display Hybrid System Configuration
         self._display_hybrid_system_config()
@@ -1795,8 +1795,8 @@ class ArbitrumTestnetAgent:
                 account_data = self.get_user_account_data()
                 if account_data:
                     health_factor = account_data.get('healthFactor', 0)
-                    if health_factor < 1.5:
-                        print(f"❌ Health factor {health_factor:.3f} below market signal threshold 1.5")
+                    if health_factor < 1.8:
+                        print(f"❌ Health factor {health_factor:.3f} below market signal threshold 1.8")
                         return False
                     print(f"✅ Health factor {health_factor:.3f} meets market signal requirement")
             except Exception as hf_error:
@@ -2726,8 +2726,8 @@ class ArbitrumTestnetAgent:
                     account_data = self.aave.get_user_account_data()
                     if account_data:
                         health_factor = account_data.get('healthFactor', 0)
-                        if health_factor < 1.5:
-                            return False, f"Health factor too low: {health_factor:.3f} (need >1.5)"
+                        if health_factor < 1.8:
+                            return False, f"Health factor too low: {health_factor:.3f} (need >1.8)"
                     else:
                         return False, "Cannot retrieve account data"
                 except Exception as hf_error:
@@ -2919,8 +2919,8 @@ class ArbitrumTestnetAgent:
                     account_data = self.aave.get_user_account_data()
                     if account_data:
                         health_factor = account_data.get('healthFactor', 0)
-                        if health_factor < 1.5:
-                            return False, f"Health factor too low: {health_factor:.3f} (need >1.5)"
+                        if health_factor < 1.8:
+                            return False, f"Health factor too low: {health_factor:.3f} (need >1.8)"
                     else:
                         return False, "Cannot retrieve account data"
                 except Exception as hf_error:
@@ -3103,8 +3103,8 @@ class ArbitrumTestnetAgent:
                     account_data = self.aave.get_user_account_data()
                     if account_data:
                         health_factor = account_data.get('healthFactor', 0)
-                        if health_factor < 1.5:
-                            return False, f"Health factor too low: {health_factor:.3f} (need >1.5)"
+                        if health_factor < 1.8:
+                            return False, f"Health factor too low: {health_factor:.3f} (need >1.8)"
                     else:
                         return False, "Cannot retrieve account data"
                 except Exception as hf_error:

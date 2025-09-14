@@ -1,0 +1,19 @@
+{
+  "test_id": "force_contrarian_1757791251",
+  "start_time": "2025-09-13T19:20:51.521610",
+  "operations": [],
+  "balances_before": {
+    "dai": 0.0,
+    "arb": 0.0,
+    "health_factor": 0,
+    "timestamp": "2025-09-13T19:23:57.545260"
+  },
+  "balances_after": {},
+  "transaction_logs": [],
+  "verification_results": [],
+  "total_gas_used": 0,
+  "success": false,
+  "error": "'ArbitrumTestnetAgent' object has no attribute 'aave'",
+  "error_details": "Traceback (most recent call last):\n  File \"/home/runner/workspace/force_contrarian_test.py\", line 160, in force_contrarian_swap_sequence\n    borrow_result = agent.aave.borrow_dai(borrow_amount)\n                    ^^^^^^^^^^\nAttributeError: 'ArbitrumTestnetAgent' object has no attribute 'aave'\n",
+  "end_time": "2025-09-13T19:23:57.546899"
+}

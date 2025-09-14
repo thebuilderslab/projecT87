@@ -17,7 +17,7 @@ ARB_TO_DAI_THRESHOLD = float(os.getenv('ARB_TO_DAI_THRESHOLD', '0.4'))  # 40% co
 OPERATION_COOLDOWN = 300  # CONFIRMED: 5 minutes (300 seconds) between operations
 MIN_SWAP_AMOUNT = 1.0    # CONFIRMED: $1 minimum swap
 MAX_SWAP_AMOUNT = 10.0   # CONFIRMED: $10 maximum swap
-TARGET_HEALTH_FACTOR = float(os.getenv('TARGET_HEALTH_FACTOR', '1.5'))  # Conservative health factor
+TARGET_HEALTH_FACTOR = float(os.getenv('TARGET_HEALTH_FACTOR', '2.0'))  # Conservative health factor
 
 # FORCE HIGH-FREQUENCY PARAMETERS VALIDATION
 print("🔥 HIGH-FREQUENCY PARAMETERS VALIDATION:")

@@ -62,7 +62,7 @@ class TransactionSafetyChecker:
             # Check 3: Health factor validation
             if health_factor < 1.5:
                 safety_report['critical_issues'].append(f"Health factor too low: {health_factor:.4f} < 1.5")
-            elif health_factor < 1.5:
+            elif health_factor < 2.0:
                 safety_report['warnings'].append(f"Health factor marginal: {health_factor:.4f}")
                 
             # Check 4: Borrowing capacity

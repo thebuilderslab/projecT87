@@ -1,0 +1,129 @@
+{
+  "test_session_id": "debt_verification_1757806247",
+  "start_time": "2025-09-13T23:30:47.305914",
+  "debt_tracking_results": {
+    "timestamp": "2025-09-13T23:34:01.979905",
+    "raw_account_data": {
+      "totalCollateralBase_wei": 28792373608,
+      "totalDebtBase_wei": 12607820257,
+      "availableBorrowsBase_wei": 9038286221,
+      "currentLiquidationThreshold_bp": 7987,
+      "ltv_bp": 7518,
+      "healthFactor_wei": 1824105284607881604
+    },
+    "processed_debt_info": {
+      "total_collateral_usd": 287.92373608,
+      "total_debt_usd": 126.07820257,
+      "available_borrows_usd": 90.38286221,
+      "liquidation_threshold_percent": 0.7987,
+      "ltv_percent": 0.7518,
+      "health_factor": 1.8241052846078818,
+      "debt_utilization_percent": 43.788749162024274
+    },
+    "internal_tracking": {
+      "health_factor_method": {
+        "available": true,
+        "value": 0,
+        "matches_direct": false
+      },
+      "dai_balance_method": {
+        "available": true,
+        "value": 0.0
+      },
+      "arb_balance_method": {
+        "available": true,
+        "value": 0.0
+      },
+      "debt_swap_conditions": {
+        "available": true,
+        "conditions_met": false,
+        "message": "Insufficient data points (ARB: 0, BTC: 0, need: 5)"
+      }
+    },
+    "data_structures": {
+      "agent_attributes": [
+        "aave_pool_address",
+        "check_debt_swap_conditions",
+        "debt_swap_active",
+        "get_arb_balance",
+        "get_dai_balance",
+        "get_eth_balance",
+        "get_token_balance",
+        "get_wbtc_balance",
+        "get_weth_balance"
+      ],
+      "aave_integration_available": false,
+      "uniswap_integration_available": false,
+      "market_signal_strategy_available": true,
+      "debt_swap_active": true
+    },
+    "verification_status": "SUCCESS"
+  },
+  "function_testing_results": {
+    "timestamp": "2025-09-13T23:34:02.198740",
+    "swap_functions": {
+      "_execute_debt_swap_dai_to_arb": {
+        "available": true,
+        "callable": true,
+        "method_type": "<class 'method'>"
+      },
+      "_execute_debt_swap_arb_to_dai": {
+        "available": true,
+        "callable": true,
+        "method_type": "<class 'method'>"
+      },
+      "force_swap_dai_to_arb": {
+        "available": false
+      },
+      "force_swap_arb_to_dai": {
+        "available": false
+      }
+    },
+    "repayment_functions": {
+      "check_debt_swap_conditions": {
+        "available": true
+      },
+      "_calculate_optimal_swap_amount": {
+        "available": true
+      },
+      "validate_transaction_safety": {
+        "available": false
+      }
+    },
+    "integration_tests": {
+      "uniswap_available": false,
+      "direct_aave": {
+        "available": false
+      },
+      "enhanced_borrow_manager": {
+        "available": false
+      }
+    },
+    "test_status": "SUCCESS"
+  },
+  "transaction_testing_results": {
+    "timestamp": "2025-09-13T23:34:02.199385",
+    "pre_transaction_state": {
+      "debt_usd": 126.07820257,
+      "health_factor": 1.8241052846078818,
+      "available_borrows": 90.38286221,
+      "block_number": 378873677
+    },
+    "transaction_details": {
+      "type": "balance_verification_only",
+      "reason": "insufficient_capacity_or_health"
+    },
+    "post_transaction_state": {
+      "debt_usd": 126.07820257,
+      "health_factor": 1.8241052846078818,
+      "available_borrows": 90.38286221,
+      "block_number": 378873677
+    },
+    "verification_results": {},
+    "test_status": "FAILED",
+    "error": "cannot access local variable 'borrow_success' where it is not associated with a value",
+    "error_details": "Traceback (most recent call last):\n  File \"/home/runner/workspace/debt_management_verification.py\", line 493, in execute_test_transaction\n    'debt_tracking_accurate': abs(debt_change) > 0.01 if borrow_success else True,\n                                                         ^^^^^^^^^^^^^^\nUnboundLocalError: cannot access local variable 'borrow_success' where it is not associated with a value\n"
+  },
+  "overall_status": "PARTIAL_SUCCESS",
+  "end_time": "2025-09-13T23:34:02.367153"
+}

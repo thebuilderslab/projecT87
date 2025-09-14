@@ -1,0 +1,38 @@
+{
+  "test_session_id": "health_factor_verification_1757807427",
+  "start_time": "2025-09-13T23:50:27.362689",
+  "debt_swap_tests": {
+    "timestamp": "2025-09-13T23:53:33.223838",
+    "current_health_factor": 1.8561975961278956,
+    "debt_swap_conditions": {
+      "method_available": true,
+      "conditions_met": false,
+      "message": "Insufficient data points (ARB: 0, BTC: 0, need: 5)",
+      "health_factor_at_test": 1.8561975961278956
+    },
+    "configuration_verification": {
+      "growth_health_factor_threshold": 1.5,
+      "capacity_health_factor_threshold": 1.5,
+      "target_health_factor": 1.5
+    },
+    "operation_acceptance_test": {
+      "market_signal_eligible": {
+        "eligible": true,
+        "reason": "Health factor 1.8562 >= 1.5 threshold"
+      },
+      "_execute_debt_swap_dai_to_arb": {
+        "would_be_eligible": true,
+        "reason": "Health factor 1.8562 >= 1.5 threshold"
+      },
+      "_execute_debt_swap_arb_to_dai": {
+        "would_be_eligible": true,
+        "reason": "Health factor 1.8562 >= 1.5 threshold"
+      }
+    },
+    "verification_success": true,
+    "operations_would_be_accepted": true
+  },
+  "operation_simulation": false,
+  "overall_success": true,
+  "end_time": "2025-09-13T23:53:33.332334"
+}
