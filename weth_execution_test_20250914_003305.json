@@ -1,0 +1,27 @@
+{
+  "test_suite": "WETH_EXECUTION_VERIFICATION",
+  "start_time": "2025-09-14T00:29:58.278689",
+  "tests": {
+    "wrap_unwrap_test": {
+      "test_name": "WETH_WRAP_TEST",
+      "start_time": "2025-09-14T00:33:04.826281",
+      "test_amount_eth": 2e-05,
+      "transactions": [],
+      "success": false,
+      "initial_balances": {
+        "ETH": 0.003267956181442199,
+        "WETH": 0.0
+      },
+      "initial_health_factor": 1.8584326677182352,
+      "error": "'SignedTransaction' object has no attribute 'raw_transaction'",
+      "error_details": "Traceback (most recent call last):\n  File \"/home/runner/workspace/weth_wrap_test.py\", line 210, in execute_weth_wrap_test\n    wrap_tx_hash = agent.w3.eth.send_raw_transaction(signed_wrap.raw_transaction)\n                                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAttributeError: 'SignedTransaction' object has no attribute 'raw_transaction'\n",
+      "end_time": "2025-09-14T00:33:05.201055"
+    }
+  },
+  "overall_success": false,
+  "successful_tests": 0,
+  "total_tests": 1,
+  "total_transactions": 0,
+  "total_gas_cost_eth": 0,
+  "end_time": "2025-09-14T00:33:05.201466"
+}

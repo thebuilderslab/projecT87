@@ -1,0 +1,42 @@
+{
+  "test_suite": "WETH_EXECUTION_VERIFICATION",
+  "start_time": "2025-09-14T00:33:36.348196",
+  "tests": {
+    "wrap_unwrap_test": {
+      "test_name": "WETH_WRAP_TEST",
+      "start_time": "2025-09-14T00:36:42.474047",
+      "test_amount_eth": 2e-05,
+      "transactions": [
+        {
+          "transaction_hash": "0x262abe3099155a5f77592a40ce04146808ca0e3cc893cc2a29a984cbedbce979",
+          "error": "'Eth' object has no attribute 'get_receipt'",
+          "timestamp": "2025-09-14T00:36:44.863403"
+        },
+        {
+          "transaction_hash": "0x8293d0d72bfc163a146ca6ca57911ba0b7c5e4e3df6dd3e13ddb4b5a37cb8f33",
+          "error": "'Eth' object has no attribute 'get_receipt'",
+          "timestamp": "2025-09-14T00:36:49.170930"
+        }
+      ],
+      "success": true,
+      "initial_balances": {
+        "ETH": 0.003267956181442199,
+        "WETH": 0.0
+      },
+      "initial_health_factor": 1.8587650236166238,
+      "final_balances": {
+        "ETH": 0.003266932121442199,
+        "WETH": 0.0
+      },
+      "final_health_factor": 1.8587650051610751,
+      "total_gas_cost_eth": 0,
+      "end_time": "2025-09-14T00:36:49.171174"
+    }
+  },
+  "overall_success": true,
+  "successful_tests": 1,
+  "total_tests": 1,
+  "total_transactions": 2,
+  "total_gas_cost_eth": 0,
+  "end_time": "2025-09-14T00:36:49.171421"
+}
