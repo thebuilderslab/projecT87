@@ -1,0 +1,105 @@
+## 🔧 AAVE PARASWAPDEBTSWAP ADAPTER INTEGRATION SPECIFICATION
+
+### Contract Details
+**ParaSwapDebtSwapAdapter Address (Arbitrum):** `0x94d3E62151b12A12A4976F60EdC18459538FaF5` 
+**Aave Pool Address (Arbitrum):** `0x794a61358D6845594F94dc1DB02A252b5b4814aD`
+**Augustus Swapper (Arbitrum):** `0xDEF171Fe48CF0115B1d80b88dc8eAB59176FEe57`
+
+### Core Function Signature
+```solidity
+function swapDebt(
+    address assetToSwapFrom,
+    address assetToSwapTo, 
+    uint256 amountToSwap,
+    bytes calldata paraswapData,
+    DataTypes.PermitInput calldata creditDelegationPermit
+) external
+```
+
+### Required Data Structures
+```solidity
+struct PermitInput {
+    IERC20 token;
+    address delegatee;
+    uint256 value;
+    uint256 deadline;
+    uint8 v;
+    bytes32 r;
+    bytes32 s;
+}
+```
+
+### Implementation Workflow
+
+#### Step 1: Fetch ParaSwap Calldata
+- **Endpoint:** `GET https://apiv5.paraswap.io/transactions/137?from={userAddress}&to={augustusSwapper}&value=0&data={swapCalldata}`
+- **Critical:** Use REVERSE routing (newDebtAsset → oldDebtAsset)
+- **Example:** For DAI→ARB debt swap, route ARB→DAI
+- **Required params:** srcToken, destToken, srcAmount, destAmount, userAddress, receiver (ParaSwapDebtSwapAdapter)
+
+#### Step 2: Generate EIP-712 Credit Delegation Signature
+```typescript
+const domain = {
+    name: "Aave debt token",
+    version: "1", 
+    chainId: 42161,
+    verifyingContract: debtTokenAddress // Variable debt token of new asset
+};
+
+const types = {
+    DelegationWithSig: [
+        { name: "delegatee", type: "address" },
+        { name: "value", type: "uint256" },
+        { name: "nonce", type: "uint256" },
+        { name: "deadline", type: "uint256" }
+    ]
+};
+```
+
+#### Step 3: Build Transaction Payload
+```typescript
+const txData = {
+    to: "0x94d3E62151b12A12A4976F60EdC18459538FaF5",
+    data: encodeFunctionData({
+        abi: ParaSwapDebtSwapAdapterABI,
+        functionName: "swapDebt",
+        args: [
+            assetToSwapFrom, // Current debt token (DAI: 0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1)
+            assetToSwapTo,   // Target debt token (ARB: 0x912CE59144191C1204E64559FE8253a0e49E6548)
+            amountToSwap,    // Amount in wei
+            paraswapCalldata, // From Step 1
+            {
+                token: newDebtTokenAddress,
+                delegatee: paraSwapDebtSwapAdapter,
+                value: amountToSwap,
+                deadline: deadline,
+                v: signature.v,
+                r: signature.r,
+                s: signature.s
+            }
+        ]
+    })
+};
+```
+
+### Key Integration Points for Agent
+1. **Debt Token Discovery:** Query Aave Protocol Data Provider for variable debt token addresses
+2. **Health Factor Validation:** Ensure post-swap health factor > minimum threshold
+3. **Slippage Protection:** Include acceptable slippage in ParaSwap routing
+4. **Error Handling:** Implement comprehensive transaction failure recovery
+5. **Balance Verification:** Confirm debt position changes post-execution
+
+### Required Contract ABIs
+- ParaSwapDebtSwapAdapter ABI (swapDebt function)
+- VariableDebtToken ABI (for permit signature verification)
+- AaveProtocolDataProvider ABI (for debt token addresses)
+
+### Execution Flow Summary
+1. Fetch current debt positions from Aave
+2. Generate ParaSwap routing calldata (REVERSE direction)
+3. Create EIP-712 credit delegation signature
+4. Build and sign swapDebt transaction
+5. Execute on-chain with gas payment
+6. Verify debt position changes and health factor
+
+Agent: This specification provides the complete technical framework for implementing real DAI↔ARB debt swaps matching your Aave interface functionality. The key is the reverse routing logic and proper credit delegation handling.

@@ -1,0 +1,64 @@
+{
+  "demonstration": "debt_swap_functionality",
+  "timestamp": "2025-09-14T03:07:47.300897",
+  "concept": "contrarian_debt_position_swapping",
+  "operations": {
+    "swap_1": {
+      "operation": "DAI_debt_to_ARB_debt",
+      "debt_swap_amount": 10.0,
+      "mechanism": "aave_paraswap_debt_swap_adapter",
+      "contract_address": "0x32FdC26aFFA1eB331263Bcdd59F2e46eCbCC2E24",
+      "process": [
+        "1. Flash borrow $10 worth of ARB from Aave",
+        "2. Swap ARB \u2192 DAI via ParaSwap integration",
+        "3. Repay $10 DAI debt with swapped DAI",
+        "4. Keep $10 ARB debt from flash loan",
+        "5. Net result: $10 less DAI debt, $10 more ARB debt"
+      ]
+    },
+    "swap_2": {
+      "operation": "ARB_debt_to_DAI_debt",
+      "debt_swap_amount": 10.0,
+      "mechanism": "aave_paraswap_debt_swap_adapter",
+      "contract_address": "0x32FdC26aFFA1eB331263Bcdd59F2e46eCbCC2E24",
+      "process": [
+        "1. Flash borrow $10 worth of DAI from Aave",
+        "2. Swap DAI \u2192 ARB via ParaSwap integration",
+        "3. Repay $10 ARB debt with swapped ARB",
+        "4. Keep $10 DAI debt from flash loan",
+        "5. Net result: $10 less ARB debt, $10 more DAI debt"
+      ]
+    }
+  },
+  "strategy_benefits": {
+    "collateral_preservation": "Collateral position completely unchanged",
+    "health_factor_maintenance": "Health factor maintained throughout cycle",
+    "debt_composition_flexibility": "Can adjust debt exposure without affecting collateral",
+    "contrarian_trading": "Profit from asset price recovery while maintaining leverage",
+    "gas_efficiency": "Single transaction per debt swap operation",
+    "slippage_protection": "Built-in slippage protection via ParaSwap",
+    "capital_efficiency": "No need to close/reopen positions"
+  },
+  "implementation_requirements": {
+    "aave_v3_integration": "ParaSwapDebtSwapAdapter contract integration",
+    "flash_loan_capability": "Built into Aave debt swap mechanism",
+    "paraswap_routing": "Automatic DEX routing for optimal swap execution",
+    "credit_delegation": "May require credit delegation setup",
+    "slippage_limits": "Configure maximum acceptable slippage",
+    "health_factor_monitoring": "Continuous health factor monitoring"
+  },
+  "system_comparison": {
+    "current_system": {
+      "method": "Borrow DAI \u2192 Swap DAI to ARB \u2192 Hold ARB",
+      "collateral_impact": "Must add ARB as collateral or hold externally",
+      "debt_management": "DAI debt remains, ARB exposure via token holding",
+      "complexity": "Requires collateral management and token custody"
+    },
+    "debt_swap_system": {
+      "method": "Swap DAI debt \u2192 ARB debt directly",
+      "collateral_impact": "No change to collateral position",
+      "debt_management": "Direct debt composition change",
+      "complexity": "Single transaction, no additional custody needed"
+    }
+  }
+}
