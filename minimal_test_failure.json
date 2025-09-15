@@ -1,0 +1,32 @@
+{
+  "operation": "DAI_debt_to_ARB_debt_swap",
+  "start_time": "2025-09-15T05:37:21.375353",
+  "swap_amount_usd": 2.0,
+  "success": false,
+  "preflight_validation": {},
+  "transaction_hash": null,
+  "transaction_receipt": null,
+  "gas_used": 0,
+  "gas_cost_eth": 0,
+  "position_before": {
+    "total_collateral_usd": 294.15965275,
+    "total_debt_usd": 126.11944116,
+    "available_borrows_usd": 94.88270595,
+    "health_factor": 1.8619085394130048,
+    "debt_balances": {
+      "DAI": 126.13460150936777,
+      "ARB": 0.0
+    },
+    "debt_values_usd": {
+      "DAI": 126.13460150936777,
+      "ARB": 0.0
+    },
+    "prices": {
+      "DAI": 1.0,
+      "ARB": 0.55
+    },
+    "timestamp": "2025-09-15T05:37:22.465289"
+  },
+  "position_after": {},
+  "error": "Gas estimation failed: execution reverted"
+}

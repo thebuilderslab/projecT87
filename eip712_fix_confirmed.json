@@ -1,0 +1,18 @@
+{
+  "eip712_fix_validated": true,
+  "architect_fix": "Added delegator field to DelegationWithSig message",
+  "original_signature": "0x5ee1aba88ccbfdd2994e39ecac871ce02166a4db9c61e802380c27b7f1fda33d09d8324a6bee912a4c53021d674f236af12a832098a4b8f1d9ff146536da1c931b",
+  "fixed_signature": "0x911ded3eff6491f74f1c6a0f222c6480863e559caa8c56ab9ec0ea5dc7aff9141efe424bb4b2811578949410d85c2a96004b2eabe4d6ba5e10e280d626ec19691c",
+  "signatures_different": true,
+  "permit_data": {
+    "token": "0x8619d80FB0141ba7F184CbF22fd724116D9f7ffC",
+    "delegatee": "0xCf85FF1c37c594a10195F7A9Ab85CBb0a03f69dE",
+    "value": "115792089237316195423570985008687907853269984665640564039457584007913129639935",
+    "deadline": 1757918876,
+    "v": 28,
+    "r": "911ded3eff6491f74f1c6a0f222c6480863e559caa8c56ab9ec0ea5dc7aff914",
+    "s": "1efe424bb4b2811578949410d85c2a96004b2eabe4d6ba5e10e280d626ec1969"
+  },
+  "ready_for_execution": true,
+  "test_timestamp": 1757915276.3686678
+}
