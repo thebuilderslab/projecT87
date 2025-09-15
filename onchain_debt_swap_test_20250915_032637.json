@@ -1,0 +1,26 @@
+{
+  "test_name": "onchain_debt_swap_cycle_test",
+  "start_time": "2025-09-15T03:26:34.535059",
+  "test_amount_usd": 2.0,
+  "wait_time_minutes": 5,
+  "phases": {
+    "phase_1_dai_to_arb": {
+      "operation": "DAI_debt_to_ARB_debt_swap",
+      "start_time": "2025-09-15T03:26:34.626288",
+      "swap_amount_usd": 2.0,
+      "success": false,
+      "real_execution_enabled": true,
+      "transaction_prepared": {
+        "gas_limit": 800000,
+        "gas_price": 10000000,
+        "estimated_cost_eth": 8e-06
+      },
+      "error": "Transaction reverted",
+      "tx_hash": "0xe585238244f1f626c0fe52e0ac8c7efaf57708490b5ca04fa299087501943e34",
+      "end_time": "2025-09-15T03:26:37.808044"
+    }
+  },
+  "overall_success": false,
+  "error": "Phase 1 failed: Transaction reverted",
+  "end_time": "2025-09-15T03:26:37.808125"
+}

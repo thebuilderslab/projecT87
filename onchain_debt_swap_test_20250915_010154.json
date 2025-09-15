@@ -1,0 +1,10 @@
+{
+  "test_name": "onchain_debt_swap_cycle_test",
+  "start_time": "2025-09-15T01:01:54.359661",
+  "test_amount_usd": 10.0,
+  "wait_time_minutes": 5,
+  "phases": {},
+  "overall_success": false,
+  "error": "Position validation failed - cannot proceed with test",
+  "end_time": "2025-09-15T01:01:54.483877"
+}

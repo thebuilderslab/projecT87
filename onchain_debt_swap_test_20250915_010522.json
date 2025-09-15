@@ -1,0 +1,20 @@
+{
+  "test_name": "onchain_debt_swap_cycle_test",
+  "start_time": "2025-09-15T01:05:21.298827",
+  "test_amount_usd": 10.0,
+  "wait_time_minutes": 5,
+  "phases": {
+    "phase_1_dai_to_arb": {
+      "operation": "DAI_debt_to_ARB_debt_swap",
+      "start_time": "2025-09-15T01:05:21.420300",
+      "swap_amount_usd": 10.0,
+      "success": false,
+      "real_execution_enabled": true,
+      "error": "Failed to get ParaSwap calldata",
+      "end_time": "2025-09-15T01:05:22.219074"
+    }
+  },
+  "overall_success": false,
+  "error": "Phase 1 failed: Failed to get ParaSwap calldata",
+  "end_time": "2025-09-15T01:05:22.219143"
+}
