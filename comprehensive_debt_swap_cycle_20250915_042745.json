@@ -1,0 +1,13 @@
+{
+  "cycle_name": "comprehensive_debt_swap_cycle",
+  "start_time": "2025-09-15T04:27:45.288910",
+  "swap_amount_usd": 10.0,
+  "wait_minutes": 5,
+  "phases": {},
+  "overall_success": false,
+  "pnl_report": {
+    "error": "Insufficient position data for analysis"
+  },
+  "error": "Initial position validation failed",
+  "end_time": "2025-09-15T04:27:45.696446"
+}

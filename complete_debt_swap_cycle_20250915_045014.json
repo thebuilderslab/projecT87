@@ -1,0 +1,19 @@
+{
+  "cycle_name": "complete_debt_swap_cycle",
+  "start_time": "2025-09-15T04:50:13.517842",
+  "swap_amount_usd": 5.0,
+  "wait_minutes": 5,
+  "phases": {
+    "phase_1": {
+      "operation": "DAI_to_ARB_debt_swap",
+      "start_time": "2025-09-15T04:50:13.972543",
+      "success": false,
+      "error": "Failed to generate required components",
+      "end_time": "2025-09-15T04:50:14.823321"
+    }
+  },
+  "pnl_analysis": {},
+  "overall_success": false,
+  "error": "Phase 1 failed: Failed to generate required components",
+  "end_time": "2025-09-15T04:50:14.823399"
+}

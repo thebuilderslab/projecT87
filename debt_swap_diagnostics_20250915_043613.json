@@ -1,0 +1,47 @@
+{
+  "component_tests": {
+    "component_tests": {
+      "account_data": {
+        "success": true,
+        "total_collateral": 293.460153,
+        "total_debt": 126.118578,
+        "health_factor": 1.8575327224265088
+      },
+      "dai_debt_token": {
+        "success": true,
+        "address": "0x8619d80FB0141ba7F184CbF22fd724116D9f7ffC"
+      },
+      "arb_debt_token": {
+        "success": true,
+        "address": "0x44705f578135cC5d703b4c9c122528C73Eb87145"
+      },
+      "paraswap_calldata": {
+        "success": false,
+        "error": "No calldata generated"
+      },
+      "credit_permit": {
+        "success": true,
+        "permit_token": "0x44705f578135cC5d703b4c9c122528C73Eb87145",
+        "permit_delegatee": "0xCf85FF1c37c594a10195F7A9Ab85CBb0a03f69dE"
+      },
+      "contract_exists": {
+        "success": true,
+        "code_size": 10162
+      },
+      "abi_compatibility": {
+        "success": true
+      }
+    },
+    "overall_diagnosis": "Failed components: paraswap_calldata",
+    "recommended_fixes": [
+      "Fix paraswap_calldata component before proceeding"
+    ]
+  },
+  "minimal_call_test": {
+    "test_name": "minimal_debt_swap_call",
+    "success": false,
+    "revert_reason": "",
+    "detailed_diagnosis": "Failed to generate required components"
+  },
+  "timestamp": "2025-09-15T04:36:13.541773"
+}

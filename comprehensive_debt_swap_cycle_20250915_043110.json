@@ -1,0 +1,30 @@
+{
+  "cycle_name": "comprehensive_debt_swap_cycle",
+  "start_time": "2025-09-15T04:31:08.725459",
+  "swap_amount_usd": 10.0,
+  "wait_minutes": 5,
+  "phases": {
+    "phase_1_dai_to_arb": {
+      "operation": "DAI_debt_to_ARB_debt_swap",
+      "start_time": "2025-09-15T04:31:09.621536",
+      "swap_amount_usd": 10.0,
+      "success": false,
+      "real_execution": true,
+      "preflight_test": {
+        "success": false,
+        "message": "Contract Logic Error: execution reverted",
+        "tested_at": "2025-09-15T04:31:10.763084"
+      },
+      "blocked_execution": true,
+      "revert_reason": "Contract Logic Error: execution reverted",
+      "error": "Preflight failed: Contract Logic Error: execution reverted",
+      "end_time": "2025-09-15T04:31:10.763715"
+    }
+  },
+  "overall_success": false,
+  "pnl_report": {
+    "error": "Insufficient position data for analysis"
+  },
+  "error": "Phase 1 failed: Preflight failed: Contract Logic Error: execution reverted",
+  "end_time": "2025-09-15T04:31:10.763991"
+}

@@ -602,30 +602,43 @@ class CorrectedDebtSwapExecutor:
             print(f"   Gas Limit: {gas_limit:,}")
             print(f"   Gas Price: {self.w3.eth.gas_price / 1e9:.2f} gwei")
             
-            # 🚀 REAL EXECUTION SECTION
-            print(f"\n🚀 READY FOR ON-CHAIN EXECUTION")
+            # 🚀 REAL EXECUTION SECTION - NOW ENABLED
+            print(f"\n🚀 EXECUTING ON-CHAIN TRANSACTION")
             print(f"   Preflight: ✅ PASSED")
             print(f"   Transaction: ✅ PREPARED")
             print(f"   Parameters: ✅ VALIDATED")
             
-            # ENABLE REAL EXECUTION (commented for safety)
-            # print(f"\n🌐 Executing on-chain transaction...")
-            # user_account = self.w3.eth.account.from_key(private_key)
-            # signed_tx = user_account.sign_transaction(transaction)
-            # tx_hash = self.w3.eth.send_raw_transaction(signed_tx.rawTransaction)
-            # print(f"🚀 Transaction sent: {tx_hash.hex()}")
-            # execution_result['tx_hash'] = tx_hash.hex()
+            # REAL EXECUTION ENABLED
+            print(f"\n🌐 Executing on-chain transaction...")
+            user_account = self.w3.eth.account.from_key(private_key)
+            signed_tx = user_account.sign_transaction(transaction)
             
-            # FOR SAFETY: Still in simulation mode until fully tested
-            print(f"\n⚠️ PRODUCTION-READY WITH PREFLIGHT VALIDATION")
-            print(f"   ✅ ETH_CALL preflight test passed")
-            print(f"   ✅ All corrections applied per specification")
-            print(f"   ✅ Revert reason capture implemented")
-            print(f"   🚀 Ready for real execution - uncomment send_raw_transaction")
+            tx_hash = self.w3.eth.send_raw_transaction(signed_tx.rawTransaction)
+            tx_hash_hex = tx_hash.hex()
+            
+            print(f"🚀 TRANSACTION SENT: {tx_hash_hex}")
+            execution_result['tx_hash'] = tx_hash_hex
+            
+            # Wait for confirmation
+            print(f"⏳ Waiting for transaction confirmation...")
+            receipt = self.w3.eth.wait_for_transaction_receipt(tx_hash, timeout=120)
+            
+            if receipt['status'] == 1:
+                print(f"✅ TRANSACTION CONFIRMED!")
+                print(f"   Block: {receipt['blockNumber']}")
+                print(f"   Gas Used: {receipt['gasUsed']:,}")
+                print(f"   Arbiscan: https://arbiscan.io/tx/{tx_hash_hex}")
+                
+                execution_result['success'] = True
+                execution_result['block_number'] = receipt['blockNumber']
+                execution_result['gas_used'] = receipt['gasUsed']
+            else:
+                print(f"❌ TRANSACTION FAILED")
+                execution_result['error'] = 'Transaction reverted'
+                execution_result['success'] = False
             
             execution_result['corrected_implementation'] = True
             execution_result['production_ready'] = True
-            execution_result['success'] = True
             
             return execution_result
             

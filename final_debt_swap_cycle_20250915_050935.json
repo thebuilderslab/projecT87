@@ -1,0 +1,39 @@
+{
+  "cycle_name": "complete_debt_swap_cycle",
+  "start_time": "2025-09-15T05:09:32.571978",
+  "swap_amount_usd": 10.0,
+  "wait_minutes": 5,
+  "phases": {
+    "phase_1_dai_to_arb": {
+      "operation": "DAI_to_ARB_debt_swap",
+      "start_time": "2025-09-15T05:09:33.490404",
+      "swap_amount_usd": 10.0,
+      "success": false,
+      "components_generated": true,
+      "transaction_executed": false,
+      "error": "Preflight failed: execution reverted",
+      "error_trace": "Traceback (most recent call last):\n  File \"/home/runner/workspace/final_working_cycle_executor.py\", line 447, in execute_single_debt_swap\n    self.w3.eth.call(transaction, 'latest')\n  File \"/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/web3/eth/eth.py\", line 259, in call\n    return self._durin_call(transaction, block_identifier, state_override)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/web3/eth/eth.py\", line 278, in _durin_call\n    return self._call(transaction, block_identifier, state_override)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/web3/module.py\", line 75, in caller\n    result = w3.manager.request_blocking(\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/web3/manager.py\", line 326, in request_blocking\n    return self.formatted_response(\n           ^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/web3/manager.py\", line 287, in formatted_response\n    apply_error_formatters(error_formatters, response)\n  File \"/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/web3/manager.py\", line 104, in apply_error_formatters\n    formatted_resp = pipe(response, error_formatters)\n                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"cytoolz/functoolz.pyx\", line 685, in cytoolz.functoolz.pipe\n  File \"cytoolz/functoolz.pyx\", line 660, in cytoolz.functoolz.c_pipe\n  File \"/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/web3/_utils/error_formatters_utils.py\", line 162, in raise_contract_logic_error_on_revert\n    raise ContractLogicError(message, data=data)\nweb3.exceptions.ContractLogicError: execution reverted\n\nDuring handling of the above exception, another exception occurred:\n\nTraceback (most recent call last):\n  File \"/home/runner/workspace/final_working_cycle_executor.py\", line 450, in execute_single_debt_swap\n    raise Exception(f\"Preflight failed: {call_error}\")\nException: Preflight failed: execution reverted\n",
+      "end_time": "2025-09-15T05:09:35.365829"
+    }
+  },
+  "snapshots": [
+    {
+      "timestamp": "2025-09-15T05:09:33.490170",
+      "event": "cycle_start",
+      "prices": {
+        "DAI": 1.0,
+        "ARB": 0.55
+      },
+      "debt_balances": {
+        "DAI": 126.13420881505965,
+        "ARB": 0.0
+      },
+      "total_debt_usd": 126.13420881505965
+    }
+  ],
+  "pnl_analyses": [],
+  "overall_success": false,
+  "error": "Phase 1 failed: Preflight failed: execution reverted",
+  "error_trace": "Traceback (most recent call last):\n  File \"/home/runner/workspace/final_working_cycle_executor.py\", line 595, in execute_complete_cycle\n    raise Exception(f\"Phase 1 failed: {phase1_result.get('error', 'Unknown error')}\")\nException: Phase 1 failed: Preflight failed: execution reverted\n",
+  "end_time": "2025-09-15T05:09:35.366719"
+}
