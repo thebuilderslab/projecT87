@@ -103,27 +103,9 @@ class OnChainDebtSwapTest:
             print(f"Amount: ${swap_amount_usd:.2f}")
             print("=" * 60)
             
-            # Convert USD to token amount
-            if from_asset.upper() == 'DAI':
-                amount_to_swap = int(swap_amount_usd * 1e18)  # DAI = $1
-            elif from_asset.upper() == 'ARB':
-                amount_to_swap = int(swap_amount_usd / 0.55 * 1e18)  # ARB ≈ $0.55
-            else:
-                raise Exception(f"Unsupported asset: {from_asset}")
-            
-            # Get debt token addresses
-            new_debt_token = self.executor.get_debt_token_address(to_asset)
-            
-            if not new_debt_token:
-                raise Exception(f"Failed to get {to_asset} debt token address")
-            
-            # Get ParaSwap calldata with correct reverse routing
-            paraswap_data = self.executor.get_paraswap_calldata_reverse_routing(
-                from_asset, to_asset, amount_to_swap
-            )
-            
-            if not paraswap_data:
-                raise Exception("Failed to get ParaSwap calldata")
+            # CRITICAL FIX: Use corrected executor method instead of duplicate broken logic
+            print(f"🔄 DELEGATING TO CORRECTED EXECUTOR (with amount binding fix)")
+            return self.executor.execute_real_debt_swap(private_key, from_asset, to_asset, swap_amount_usd)
             
             # Create credit delegation permit
             credit_permit = self.executor.create_correct_credit_delegation_permit(

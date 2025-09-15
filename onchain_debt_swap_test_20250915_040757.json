@@ -1,0 +1,27 @@
+{
+  "test_name": "onchain_debt_swap_cycle_test",
+  "start_time": "2025-09-15T04:07:55.997891",
+  "test_amount_usd": 2.0,
+  "wait_time_minutes": 5,
+  "phases": {
+    "phase_1_dai_to_arb": {
+      "operation": "DAI_debt_to_ARB_debt_swap",
+      "start_time": "2025-09-15T04:07:56.108211",
+      "swap_amount_usd": 2.0,
+      "success": false,
+      "real_execution": true,
+      "preflight_test": {
+        "success": false,
+        "message": "ETH_CALL failed: {'code': -32000, 'message': 'err: max fee per gas less than block base fee: address 0x5B823270e3719CDe8669e5e5326B455EaA8a350b, maxFeePerGas: 10801000, baseFee: 10809000 (supplied gas 800000)'}",
+        "tested_at": "2025-09-15T04:07:57.469013"
+      },
+      "blocked_execution": true,
+      "revert_reason": "ETH_CALL failed: {'code': -32000, 'message': 'err: max fee per gas less than block base fee: address 0x5B823270e3719CDe8669e5e5326B455EaA8a350b, maxFeePerGas: 10801000, baseFee: 10809000 (supplied gas 800000)'}",
+      "error": "Preflight failed: ETH_CALL failed: {'code': -32000, 'message': 'err: max fee per gas less than block base fee: address 0x5B823270e3719CDe8669e5e5326B455EaA8a350b, maxFeePerGas: 10801000, baseFee: 10809000 (supplied gas 800000)'}",
+      "end_time": "2025-09-15T04:07:57.469195"
+    }
+  },
+  "overall_success": false,
+  "error": "Phase 1 failed: Preflight failed: ETH_CALL failed: {'code': -32000, 'message': 'err: max fee per gas less than block base fee: address 0x5B823270e3719CDe8669e5e5326B455EaA8a350b, maxFeePerGas: 10801000, baseFee: 10809000 (supplied gas 800000)'}",
+  "end_time": "2025-09-15T04:07:57.469267"
+}

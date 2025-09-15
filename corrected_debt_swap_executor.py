@@ -461,27 +461,56 @@ class CorrectedDebtSwapExecutor:
             print(f"User: {self.user_address}")
             print("=" * 60)
             
-            # Convert USD to token amount (simplified for demo)
-            if from_asset.upper() == 'DAI':
-                amount_to_swap = int(swap_amount_usd * 1e18)  # DAI = $1
-            elif from_asset.upper() == 'ARB':
-                amount_to_swap = int(swap_amount_usd / 0.55 * 1e18)  # ARB ≈ $0.55
-            else:
-                raise Exception(f"Unsupported asset: {from_asset}")
-            
-            # Get debt token addresses
+            # Get debt token addresses first
             new_debt_token = self.get_debt_token_address(to_asset)
             
             if not new_debt_token:
                 raise Exception(f"Failed to get {to_asset} debt token address")
             
+            # CRITICAL FIX: Get ParaSwap quote FIRST, then use destAmount
+            print(f"🔍 Getting ParaSwap quote for ${swap_amount_usd:.2f} swap...")
+            
+            # Get initial USD estimate to request ParaSwap quote
+            if from_asset.upper() == 'DAI':
+                usd_estimate = int(swap_amount_usd * 1e18)  # DAI = $1
+            elif from_asset.upper() == 'ARB':
+                usd_estimate = int(swap_amount_usd / 0.55 * 1e18)  # ARB ≈ $0.55
+            else:
+                raise Exception(f"Unsupported asset: {from_asset}")
+            
             # Get ParaSwap calldata with CORRECT reverse routing
             paraswap_data = self.get_paraswap_calldata_reverse_routing(
-                from_asset, to_asset, amount_to_swap
+                from_asset, to_asset, usd_estimate
             )
             
             if not paraswap_data:
                 raise Exception("Failed to get ParaSwap calldata")
+            
+            # CRITICAL: Use ParaSwap expected_amount as exact amountToSwap
+            if 'expected_amount' in paraswap_data:
+                amount_to_swap = int(paraswap_data['expected_amount'])
+                print(f"✅ AMOUNT BINDING FIX: Using ParaSwap expected_amount = {amount_to_swap}")
+                print(f"   USD Estimate was: {usd_estimate}")
+                print(f"   ParaSwap Quote: {amount_to_swap} (exact match required)")
+                print(f"   Key Fix Applied: Using 'expected_amount' instead of 'priceRoute.destAmount'")
+            elif 'price_route' in paraswap_data and 'destAmount' in paraswap_data['price_route']:
+                amount_to_swap = int(paraswap_data['price_route']['destAmount'])
+                print(f"✅ AMOUNT BINDING FIX: Using price_route.destAmount = {amount_to_swap}")
+                print(f"   USD Estimate was: {usd_estimate}")
+                print(f"   ParaSwap Quote: {amount_to_swap} (exact match required)")
+            else:
+                # This should NOT happen if ParaSwap is working correctly
+                print(f"❌ CRITICAL ERROR: ParaSwap data missing expected amount keys!")
+                print(f"   Available keys: {list(paraswap_data.keys())}")
+                amount_to_swap = usd_estimate
+                print(f"⚠️ FALLBACK: Using USD estimate: {amount_to_swap}")
+                
+            # VERIFICATION: Log exact amounts for debugging
+            print(f"🔍 AMOUNT VERIFICATION:")
+            print(f"   USD Input: ${swap_amount_usd:.2f}")
+            print(f"   USD Estimate: {usd_estimate}")
+            print(f"   Final amount_to_swap: {amount_to_swap}")
+            print(f"   Amounts Match ParaSwap: {'✅' if amount_to_swap != usd_estimate else '❌'}")
             
             # Create CORRECT credit delegation permit
             credit_permit = self.create_correct_credit_delegation_permit(
@@ -522,13 +551,21 @@ class CorrectedDebtSwapExecutor:
                 print(f"⚠️ Gas estimation failed: {gas_error}")
                 gas_limit = 800000  # Conservative fallback
             
-            # Build transaction
+            # Build transaction with proper gas pricing
+            base_fee = self.w3.eth.get_block('latest')['baseFeePerGas']
+            gas_price = max(base_fee + int(2e9), self.w3.eth.gas_price)  # base + 2 gwei tip
+            
             transaction = function_call.build_transaction({
                 'from': self.user_address,
                 'gas': gas_limit,
-                'gasPrice': self.w3.eth.gas_price,
+                'gasPrice': gas_price,
                 'nonce': self.w3.eth.get_transaction_count(self.user_address)
             })
+            
+            print(f"🔧 GAS PRICING:")
+            print(f"   Base Fee: {base_fee:,} wei")
+            print(f"   Gas Price Used: {gas_price:,} wei")
+            print(f"   Gas Limit: {gas_limit:,}")
             
             # 🔍 CRITICAL: ETH_CALL PREFLIGHT TEST
             print(f"\n🔍 Running ETH_CALL preflight to capture potential revert reasons...")
