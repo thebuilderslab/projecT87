@@ -695,8 +695,8 @@ class AaveHealthMonitor:
         except Exception as e:
             print(f"❌ Failed to get ARB balance: {e}")
             print(f"   Exception type: {type(e).__name__}")
-            print(f"   User address: {user_address}")
-            print(f"   ARB address: {arb_address}")
+            print(f"   User address: {self.user_address}")
+            print(f"   ARB address: {self.arb_address}")
             return 0.0
 
     def calculate_optimal_usdc_borrow(self, target_health_factor=1.19):
@@ -718,7 +718,7 @@ class AaveHealthMonitor:
                 current_hf = 0.0
 
             try:
-                total_collateral_eth = float(total_collateral_eth) if total_collateraleth is not None else 0.0
+                total_collateral_eth = float(total_collateral_eth) if total_collateral_eth is not None else 0.0
             except (TypeError, ValueError):
                 total_collateral_eth = 0.0
 

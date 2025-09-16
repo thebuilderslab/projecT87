@@ -7,6 +7,7 @@ Enhanced market analysis for debt swap decisions
 
 import os
 import time
+import json
 import logging
 from typing import Dict, Optional, List
 
