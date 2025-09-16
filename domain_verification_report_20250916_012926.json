@@ -1,0 +1,77 @@
+{
+  "verification_timestamp": "20250916_012926",
+  "chain_id": 42161,
+  "results": {
+    "DAI": {
+      "debt_token_address": "0x8619d80FB0141ba7F184CbF22fd724116D9f7ffC",
+      "token_parameters": {
+        "debt_token_address": "0x8619d80FB0141ba7F184CbF22fd724116D9f7ffC",
+        "chain_id": 42161,
+        "name": "Aave Arbitrum Variable Debt DAI",
+        "symbol": "variableDebtArbDAI",
+        "version": null,
+        "domain_separator": "b'z\\xddeF\\xc2\\x85D\\xdb.41\\x88/\\xdf\\x8a\\t\\xba\\xe1\\xdc?ge\\x82Z\\x03\\xaen\\xbf\\xa8\\xb2\\x8e\\xb0'",
+        "delegation_typehash": "b'2=\\xb0A\\x0f\\xec\\xc1\\x07\\xe3\\x9e*\\xf5\\x90\\x86q\\xf4\\xc8\\xd1\\x06\\x12;5\\xa5\\x15\\x01\\xbb\\x80\\\\_\\xa3j\\xa0'",
+        "nonces": "nonces",
+        "delegation_nonces": null
+      },
+      "domain_verification": {
+        "token_address": "0x8619d80FB0141ba7F184CbF22fd724116D9f7ffC",
+        "verification_passed": true,
+        "parameter_matches": {},
+        "calculated_domain_separator": "b'z\\xddeF\\xc2\\x85D\\xdb.41\\x88/\\xdf\\x8a\\t\\xba\\xe1\\xdc?ge\\x82Z\\x03\\xaen\\xbf\\xa8\\xb2\\x8e\\xb0'",
+        "contract_domain_separator": "b'z\\xddeF\\xc2\\x85D\\xdb.41\\x88/\\xdf\\x8a\\t\\xba\\xe1\\xdc?ge\\x82Z\\x03\\xaen\\xbf\\xa8\\xb2\\x8e\\xb0'",
+        "recommended_parameters": {
+          "name": "Aave Arbitrum Variable Debt DAI",
+          "version": "1",
+          "chainId": 42161,
+          "verifyingContract": "0x8619d80FB0141ba7F184CbF22fd724116D9f7ffC"
+        }
+      },
+      "typehash_verification": {
+        "typehash_verified": true,
+        "recommended_type": "standard",
+        "type_string": "DelegationWithSig(address delegatee,uint256 value,uint256 nonce,uint256 deadline)",
+        "calculated_hash": "b'2=\\xb0A\\x0f\\xec\\xc1\\x07\\xe3\\x9e*\\xf5\\x90\\x86q\\xf4\\xc8\\xd1\\x06\\x12;5\\xa5\\x15\\x01\\xbb\\x80\\\\_\\xa3j\\xa0'"
+      }
+    },
+    "ARB": {
+      "debt_token_address": "0x44705f578135cC5d703b4c9c122528C73Eb87145",
+      "token_parameters": {
+        "debt_token_address": "0x44705f578135cC5d703b4c9c122528C73Eb87145",
+        "chain_id": 42161,
+        "name": "Aave Arbitrum Variable Debt ARB",
+        "symbol": "variableDebtArbARB",
+        "version": null,
+        "domain_separator": "b'\\xbf<+{\\x82\\x94\\xe0\\x0b\\x8be\\x8a\\x94\\xc2\\x03\\xea\\x9cM\\x92;\\x92\\x8b\\xa2@n|j\\x87\\x92\\xaa\\x92\\xf2\\xc8'",
+        "delegation_typehash": "b'2=\\xb0A\\x0f\\xec\\xc1\\x07\\xe3\\x9e*\\xf5\\x90\\x86q\\xf4\\xc8\\xd1\\x06\\x12;5\\xa5\\x15\\x01\\xbb\\x80\\\\_\\xa3j\\xa0'",
+        "nonces": "nonces",
+        "delegation_nonces": null
+      },
+      "domain_verification": {
+        "token_address": "0x44705f578135cC5d703b4c9c122528C73Eb87145",
+        "verification_passed": true,
+        "parameter_matches": {},
+        "calculated_domain_separator": "b'\\xbf<+{\\x82\\x94\\xe0\\x0b\\x8be\\x8a\\x94\\xc2\\x03\\xea\\x9cM\\x92;\\x92\\x8b\\xa2@n|j\\x87\\x92\\xaa\\x92\\xf2\\xc8'",
+        "contract_domain_separator": "b'\\xbf<+{\\x82\\x94\\xe0\\x0b\\x8be\\x8a\\x94\\xc2\\x03\\xea\\x9cM\\x92;\\x92\\x8b\\xa2@n|j\\x87\\x92\\xaa\\x92\\xf2\\xc8'",
+        "recommended_parameters": {
+          "name": "Aave Arbitrum Variable Debt ARB",
+          "version": "1",
+          "chainId": 42161,
+          "verifyingContract": "0x44705f578135cC5d703b4c9c122528C73Eb87145"
+        }
+      },
+      "typehash_verification": {
+        "typehash_verified": true,
+        "recommended_type": "standard",
+        "type_string": "DelegationWithSig(address delegatee,uint256 value,uint256 nonce,uint256 deadline)",
+        "calculated_hash": "b'2=\\xb0A\\x0f\\xec\\xc1\\x07\\xe3\\x9e*\\xf5\\x90\\x86q\\xf4\\xc8\\xd1\\x06\\x12;5\\xa5\\x15\\x01\\xbb\\x80\\\\_\\xa3j\\xa0'"
+      }
+    }
+  },
+  "summary": {
+    "total_tokens_tested": 2,
+    "successful_verifications": 2,
+    "failed_verifications": 0
+  }
+}
