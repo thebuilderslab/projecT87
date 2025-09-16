@@ -45,8 +45,8 @@ class FinalWorkingDebtSwapExecutor:
         self.account = self.w3.eth.account.from_key(self.private_key)
         self.user_address = self.account.address
         
-        # Contract addresses
-        self.paraswap_debt_swap_adapter = "0xCf85FF1c37c594a10195F7A9Ab85CBb0a03f69dE"
+        # Contract addresses - Using canonical Aave ParaSwapDebtSwapAdapter V3
+        self.paraswap_debt_swap_adapter = "0xAE9f94BD98eC2831a1330e0418bE0fDb5C95C2B9"
         self.aave_pool = "0x794a61358D6845594F94dc1DB02A252b5b4814aD"
         self.aave_data_provider = "0x69FA688f1Dc47d4B5d8029D5a35FB7a548310654"
         

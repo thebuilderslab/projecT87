@@ -26,9 +26,9 @@ class AaveDebtSwapAdapter:
         self.address = agent.address
         self.private_key = agent.private_key
         
-        # Aave V3 Contract Addresses (Arbitrum Mainnet)
+        # Aave V3 Contract Addresses (Arbitrum Mainnet) - Using canonical addresses
         self.aave_pool_address = "0x794a61358D6845594F94dc1DB02A252b5b4814aD"
-        self.paraswap_debt_swap_adapter = "0x32FdC26aFFA1eB331263Bcdd59F2e46eCbCC2E24"
+        self.paraswap_debt_swap_adapter = "0xAE9f94BD98eC2831a1330e0418bE0fDb5C95C2B9"
         
         # Token Addresses (Arbitrum Mainnet)
         self.dai_address = "0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1"

@@ -30,8 +30,8 @@ class FinalDebtSwapExecutor:
         self.private_key = self.agent.private_key
         self.account = self.agent.account
         
-        # Verified contract addresses
-        self.paraswap_debt_swap_adapter = "0xCf85FF1c37c594a10195F7A9Ab85CBb0a03f69dE"
+        # Verified contract addresses - Canonical Aave ParaSwapDebtSwapAdapter V3
+        self.paraswap_debt_swap_adapter = "0xAE9f94BD98eC2831a1330e0418bE0fDb5C95C2B9"
         self.aave_pool = "0x794a61358D6845594F94dc1DB02A252b5b4814aD"
         self.augustus_swapper = "0xDEF171Fe48CF0115B1d80b88dc8eAB59176FEe57"
         self.aave_data_provider = "0x69FA688f1Dc47d4B5d8029D5a35FB7a548310654"
@@ -234,6 +234,12 @@ class FinalDebtSwapExecutor:
                 "type": "function"
             }, {
                 "inputs": [{"name": "owner", "type": "address"}],
+                "name": "delegationNonces",
+                "outputs": [{"name": "", "type": "uint256"}],
+                "stateMutability": "view",
+                "type": "function"
+            }, {
+                "inputs": [{"name": "owner", "type": "address"}],
                 "name": "nonces",
                 "outputs": [{"name": "", "type": "uint256"}],
                 "stateMutability": "view",
@@ -245,9 +251,19 @@ class FinalDebtSwapExecutor:
                 abi=debt_token_abi
             )
             
-            # Get token info
+            # Get token info with fallback nonce handling
             token_name = debt_token_contract.functions.name().call()
-            nonce = debt_token_contract.functions.nonces(self.user_address).call()
+            
+            # Try delegationNonces first, fallback to nonces for compatibility
+            try:
+                nonce = debt_token_contract.functions.delegationNonces(self.user_address).call()
+                print(f"   Using delegationNonces: {nonce}")
+            except Exception as e:
+                print(f"   delegationNonces failed: {e}")
+                print(f"   Falling back to standard nonces...")
+                nonce = debt_token_contract.functions.nonces(self.user_address).call()
+                print(f"   Using standard nonces: {nonce}")
+            
             deadline = int(time.time()) + 3600
             
             print(f"   Token Name: {token_name}")
@@ -312,7 +328,7 @@ class FinalDebtSwapExecutor:
                 'delegatee': self.paraswap_debt_swap_adapter,
                 'value': 2**256 - 1,
                 'deadline': deadline,
-                'v': signature.v,
+                'v': signature.v if signature.v >= 27 else signature.v + 27,  # EIP-155 fix
                 'r': signature.r.to_bytes(32, 'big'),
                 's': signature.s.to_bytes(32, 'big')
             }

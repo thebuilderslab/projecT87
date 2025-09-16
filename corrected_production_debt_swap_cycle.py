@@ -45,7 +45,7 @@ class CorrectedProductionDebtSwapCycle:
             'ARB': "0x912CE59144191C1204E64559FE8253a0e49E6548"
         }
         
-        self.swap_amount = 3.0  # $3 for production execution
+        self.swap_amount = 0.10  # $0.10 for liquidity testing
         self.slippage_bps = 75  # 75 basis points = 0.75% slippage
         
         self.cycle_data = {

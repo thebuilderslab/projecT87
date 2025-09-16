@@ -36,8 +36,8 @@ class StreamlinedProductionCycle:
         self.account = self.w3.eth.account.from_key(self.private_key)
         self.user_address = self.account.address
         
-        # Contract addresses
-        self.paraswap_debt_swap_adapter = "0x63dfa7c09Dc2Ff4030d6B8Dc2ce6262BF898C8A4"
+        # Contract addresses - Using canonical Aave ParaSwapDebtSwapAdapter V3
+        self.paraswap_debt_swap_adapter = "0xAE9f94BD98eC2831a1330e0418bE0fDb5C95C2B9"
         self.aave_pool = "0x794a61358D6845594F94dc1DB02A252b5b4814aD"
         self.aave_data_provider = "0x69FA688f1Dc47d4B5d8029D5a35FB7a548310654"
         
@@ -138,12 +138,23 @@ class StreamlinedProductionCycle:
             # Get token info
             debt_token_abi = [
                 {"inputs": [], "name": "name", "outputs": [{"name": "", "type": "string"}], "stateMutability": "view", "type": "function"},
+                {"inputs": [{"name": "owner", "type": "address"}], "name": "delegationNonces", "outputs": [{"name": "", "type": "uint256"}], "stateMutability": "view", "type": "function"},
                 {"inputs": [{"name": "owner", "type": "address"}], "name": "nonces", "outputs": [{"name": "", "type": "uint256"}], "stateMutability": "view", "type": "function"}
             ]
             
             debt_token_contract = self.w3.eth.contract(address=debt_token_address, abi=debt_token_abi)
             token_name = debt_token_contract.functions.name().call()
-            nonce = debt_token_contract.functions.nonces(self.user_address).call()
+            
+            # Try delegationNonces first, fallback to nonces for compatibility
+            try:
+                nonce = debt_token_contract.functions.delegationNonces(self.user_address).call()
+                print(f"   Using delegationNonces: {nonce}")
+            except Exception as e:
+                print(f"   delegationNonces failed: {e}")
+                print(f"   Falling back to standard nonces...")
+                nonce = debt_token_contract.functions.nonces(self.user_address).call()
+                print(f"   Using standard nonces: {nonce}")
+            
             deadline = int(time.time()) + 3600
             
             # EIP-712 domain
@@ -190,7 +201,7 @@ class StreamlinedProductionCycle:
                 'delegatee': self.paraswap_debt_swap_adapter,
                 'value': 2**256 - 1,
                 'deadline': deadline,
-                'v': signature.v,
+                'v': signature.v if signature.v >= 27 else signature.v + 27,  # EIP-155 fix
                 'r': signature.r.to_bytes(32, 'big'),
                 's': signature.s.to_bytes(32, 'big')
             }

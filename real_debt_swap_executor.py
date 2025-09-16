@@ -58,7 +58,7 @@ class RealDebtSwapExecutor:
             "type": "function"
         }]
         
-        self.debt_swap_adapter_address = "0x32FdC26aFFA1eB331263Bcdd59F2e46eCbCC2E24"
+        self.debt_swap_adapter_address = "0xAE9f94BD98eC2831a1330e0418bE0fDb5C95C2B9"
         
         print(f"🚀 Real Debt Swap Executor initialized")
         print(f"   Adapter Address: {self.debt_swap_adapter_address}")
