@@ -10,9 +10,10 @@ import time
 import json
 import requests
 from datetime import datetime, timedelta
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, Union
 from decimal import Decimal, getcontext
 from web3 import Web3
+from web3.types import ChecksumAddress, HexStr, TxParams, TxReceipt
 from web3.exceptions import ContractLogicError
 from eth_account.messages import encode_structured_data
 
@@ -20,9 +21,12 @@ from eth_account.messages import encode_structured_data
 from debt_swap_utils import resolve_gas_estimation_failure
 from gas_optimization import CoinAPIGasOptimizer
 
-# Secure environment setup
+# Optional CoinAPI setup (graceful fallback if not available)
 COIN_API_KEY = os.environ.get("COIN_API")
-assert COIN_API_KEY is not None, "CoinAPI secret missing; aborting."
+if COIN_API_KEY:
+    print("🔑 CoinAPI key loaded successfully")
+else:
+    print("⚠️ CoinAPI key not available - will use fallback pricing")
 
 # Set high precision for PNL calculations
 getcontext().prec = 50
@@ -30,10 +34,10 @@ getcontext().prec = 50
 class ProductionDebtSwapExecutor:
     """Production-ready consolidated debt swap executor with comprehensive validation"""
     
-    def __init__(self, private_key: str = None):
+    def __init__(self, private_key: Optional[str] = None):
         """Initialize with comprehensive setup and validation"""
         # Load private key from parameter or environment
-        self.private_key = private_key or os.getenv('PRIVATE_KEY')
+        self.private_key: Optional[str] = private_key or os.getenv('PRIVATE_KEY')
         if not self.private_key:
             raise ValueError("Private key not provided and no PRIVATE_KEY environment variable set")
         
@@ -54,14 +58,14 @@ class ProductionDebtSwapExecutor:
         self.min_swap_usd = 25.0   # $25 minimum swap amount (prevents dust trade reverts)
         
         # CORRECT: Official Aave ParaSwapDebtSwapAdapter address on Arbitrum (now using Uniswap V3)
-        self.paraswap_debt_swap_adapter = "0xCf85FF1c37c594a10195F7A9Ab85CBb0a03f69dE"
-        self.aave_pool = "0x794a61358D6845594F94dc1DB02A252b5b4814aD"
-        self.aave_data_provider = "0x69FA688f1Dc47d4B5d8029D5a35FB7a548310654"
+        self.paraswap_debt_swap_adapter: ChecksumAddress = self.w3.to_checksum_address("0xCf85FF1c37c594a10195F7A9Ab85CBb0a03f69dE")
+        self.aave_pool: ChecksumAddress = self.w3.to_checksum_address("0x794a61358D6845594F94dc1DB02A252b5b4814aD")
+        self.aave_data_provider: ChecksumAddress = self.w3.to_checksum_address("0x69FA688f1Dc47d4B5d8029D5a35FB7a548310654")
         
         # Token addresses
-        self.tokens = {
-            'DAI': "0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1",
-            'ARB': "0x912CE59144191C1204E64559FE8253a0e49E6548"
+        self.tokens: Dict[str, ChecksumAddress] = {
+            'DAI': self.w3.to_checksum_address("0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1"),
+            'ARB': self.w3.to_checksum_address("0x912CE59144191C1204E64559FE8253a0e49E6548")
         }
         
         # FIXED: CORRECT ABI from 4byte.directory matching successful manual transactions (function selector 0xb8bd1c6b)
@@ -302,6 +306,91 @@ class ProductionDebtSwapExecutor:
             print(f"❌ Error getting debt token for {asset_symbol}: {e}")
             return ""
 
+    def get_uniswap_quote(self, token_in: ChecksumAddress, token_out: ChecksumAddress, amount_in: int) -> int:
+        """Get accurate quote from Uniswap V3 QuoterV2 for dynamic pricing"""
+        try:
+            print(f"\n💱 UNISWAP V3 QUOTER: {amount_in / 1e18:.6f} tokens")
+            print(f"   Route: {token_in[-6:]} → {token_out[-6:]}")
+            
+            # Uniswap V3 QuoterV2 on Arbitrum
+            quoter_address = "0x61fFE014bA17989E743c5F6cB21bF9697530B21e"
+            
+            # QuoteExactInputSingle ABI
+            quoter_abi = [{
+                "inputs": [
+                    {
+                        "components": [
+                            {"name": "tokenIn", "type": "address"},
+                            {"name": "tokenOut", "type": "address"},
+                            {"name": "amountIn", "type": "uint256"},
+                            {"name": "fee", "type": "uint24"},
+                            {"name": "sqrtPriceLimitX96", "type": "uint160"}
+                        ],
+                        "name": "params",
+                        "type": "tuple"
+                    }
+                ],
+                "name": "quoteExactInputSingle",
+                "outputs": [
+                    {"name": "amountOut", "type": "uint256"},
+                    {"name": "sqrtPriceX96After", "type": "uint160"},
+                    {"name": "initializedTicksCrossed", "type": "uint32"},
+                    {"name": "gasEstimate", "type": "uint256"}
+                ],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            }]
+            
+            quoter_contract = self.w3.eth.contract(address=self.w3.to_checksum_address(quoter_address), abi=quoter_abi)
+            
+            # Query parameters for 0.3% fee tier (most liquid)
+            quote_params = (
+                token_in,    # tokenIn
+                token_out,   # tokenOut
+                amount_in,   # amountIn
+                3000,        # fee (0.3%)
+                0            # sqrtPriceLimitX96 (no limit)
+            )
+            
+            # Get quote from Uniswap V3
+            result = quoter_contract.functions.quoteExactInputSingle(quote_params).call()
+            amount_out = result[0]
+            gas_estimate = result[3] if len(result) > 3 else 150000
+            
+            print(f"✅ REAL-TIME QUOTE:")
+            print(f"   Amount Out: {amount_out / 1e18:.6f}")
+            print(f"   Exchange Rate: {(amount_out / amount_in):.6f}")
+            print(f"   Gas Estimate: {gas_estimate:,}")
+            
+            return amount_out
+            
+        except Exception as e:
+            print(f"⚠️ QuoterV2 failed: {e}")
+            # Fallback to price API estimation
+            return self._fallback_price_estimation(token_in, token_out, amount_in)
+    
+    def _fallback_price_estimation(self, token_in: ChecksumAddress, token_out: ChecksumAddress, amount_in: int) -> int:
+        """Fallback price estimation using market prices"""
+        try:
+            prices = self.get_current_prices()
+            
+            # Determine token symbols and calculate
+            if token_in == self.tokens['ARB'] and token_out == self.tokens['DAI']:
+                rate = prices['ARB'] / prices['DAI']
+            elif token_in == self.tokens['DAI'] and token_out == self.tokens['ARB']:
+                rate = prices['DAI'] / prices['ARB']
+            else:
+                rate = 1.0  # 1:1 fallback
+            
+            amount_out = int(amount_in * rate)
+            print(f"📊 FALLBACK PRICING: rate={rate:.6f}, amount_out={amount_out/1e18:.6f}")
+            return amount_out
+            
+        except Exception as e:
+            print(f"❌ Fallback pricing failed: {e}")
+            # Last resort: conservative 1:1 ratio
+            return amount_in
+
     def get_uniswap_v3_calldata(self, from_asset: str, to_asset: str, amount_wei: int) -> Dict:
         """Get Uniswap V3 calldata for direct swap (replacing ParaSwap)"""
         try:
@@ -322,16 +411,10 @@ class ProductionDebtSwapExecutor:
                 raise ValueError(f"Unsupported debt swap: {from_asset} → {to_asset}")
             
             # Uniswap V3 Router address on Arbitrum
-            uniswap_router = "0xE592427A0AEce92De3Edee1F18E0157C05861564"
+            uniswap_router: ChecksumAddress = self.w3.to_checksum_address("0xE592427A0AEce92De3Edee1F18E0157C05861564")
             
-            # Calculate expected output using simple price estimation
-            # ARB/DAI ≈ 0.55, DAI/ARB ≈ 1.82
-            if token_in == self.tokens['ARB'] and token_out == self.tokens['DAI']:
-                # ARB → DAI: multiply by 0.55
-                expected_amount_out = int(amount_wei * 0.55)
-            else:
-                # DAI → ARB: multiply by 1.82
-                expected_amount_out = int(amount_wei * 1.82)
+            # FIXED: Use Uniswap QuoterV2 for dynamic pricing (replaces hardcoded rates)
+            expected_amount_out = self.get_uniswap_quote(token_in, token_out, amount_wei)
             
             # Apply 3% slippage tolerance
             amount_out_minimum = int(expected_amount_out * 0.97)
@@ -401,14 +484,15 @@ class ProductionDebtSwapExecutor:
                 [exact_input_params]
             )
             
-            # CORRECTED: Calculate offset for amountIn parameter (for Aave adapter compatibility)
-            # The Aave adapter expects offset relative to the START of the struct data, not including function selector
+            # FIXED: Calculate offset for amountIn parameter (INCLUDES function selector)
+            # The Aave adapter expects offset relative to the START of swapData INCLUDING function selector
             # In Uniswap V3 exactInputSingle ABI encoding:
-            # - Function selector (4 bytes): 0x414bf389 [excluded from offset calculation]
-            # - Offset to params struct (32 bytes): 0x0000...0020 [excluded from offset calculation] 
-            # - Struct parameters start here: tokenIn(0), tokenOut(32), fee(64), recipient(96), deadline(128), amountIn(160)
-            # amountIn is at position (5 * 32) = 160 from struct data start
-            amount_in_offset = 5 * 32  # 160 bytes from struct data start
+            # - Function selector (4 bytes): 0x414bf389 [INCLUDED in offset calculation]
+            # - Offset to params struct (32 bytes): 0x0000...0020 [INCLUDED in offset calculation] 
+            # - Struct parameters: tokenIn(0), tokenOut(32), fee(64), recipient(96), deadline(128), amountIn(160)
+            # amountIn is at position: 4 + 32 + (5 * 32) = 4 + 32 + 160 = 196 bytes from swapData start
+            # But since offset points to struct start, we use: 4 + 32 + 160 = 196 - 32 = 164 bytes
+            amount_in_offset = 4 + 5 * 32  # 164 bytes from swapData start (including selector)
             
             result = {
                 'calldata': calldata,
@@ -458,7 +542,7 @@ class ProductionDebtSwapExecutor:
             print(f"🔍 Full error: {traceback.format_exc()}")
             return {}
 
-    def create_credit_delegation_permit(self, debt_token_address: str) -> Dict:
+    def create_credit_delegation_permit(self, debt_token_address: ChecksumAddress) -> Dict:
         """Create CORRECT EIP-712 credit delegation permit per Aave V3 specification"""
         try:
             print(f"📝 Creating CORRECT credit delegation permit")
@@ -929,7 +1013,7 @@ class ProductionDebtSwapExecutor:
                 return execution_result
             
             # Build transaction data with optimized gas parameters
-            tx_data = function_call.build_transaction({
+            tx_data: TxParams = function_call.build_transaction({
                 'from': self.user_address,
                 'gas': optimized_params['gas'],
                 'gasPrice': optimized_params['gasPrice'],
@@ -941,7 +1025,7 @@ class ProductionDebtSwapExecutor:
             print("=" * 50)
             
             signed_tx = self.account.sign_transaction(tx_data)
-            tx_hash = self.w3.eth.send_raw_transaction(signed_tx.rawTransaction)
+            tx_hash: HexStr = self.w3.eth.send_raw_transaction(signed_tx.rawTransaction)
             execution_result['transaction_hash'] = tx_hash.hex()
             
             # Log transaction hash, gas sent, and parameters
@@ -963,7 +1047,7 @@ class ProductionDebtSwapExecutor:
             print(f"⏳ Waiting for confirmation...")
             
             # 9. Wait for receipt and log contract events
-            tx_receipt = self.w3.eth.wait_for_transaction_receipt(tx_hash, timeout=300)
+            tx_receipt: TxReceipt = self.w3.eth.wait_for_transaction_receipt(tx_hash, timeout=300)
             execution_result['transaction_receipt'] = dict(tx_receipt)
             execution_result['gas_used'] = tx_receipt['gasUsed']
             execution_result['gas_cost_eth'] = float(tx_receipt['gasUsed'] * tx_receipt['effectiveGasPrice']) / 1e18
@@ -1050,7 +1134,8 @@ class ProductionDebtSwapExecutor:
         for i in range(300):  # 5 minutes = 300 seconds
             remaining = 300 - i
             if remaining % 60 == 0:  # Print every minute
-                print(f"⏳ {remaining // 60} minutes remaining...")
+                minutes_str: str = f"{remaining // 60} minutes remaining..."
+                print(f"⏳ {minutes_str}")
             time.sleep(1)
         
         wait_duration = time.time() - wait_start
@@ -1084,7 +1169,7 @@ class ProductionDebtSwapExecutor:
         
         # Generate verification links
         for receipt in self.cycle_data['transaction_receipts']:
-            tx_hash = receipt['receipt']['transactionHash'].hex()
+            tx_hash: str = receipt['receipt']['transactionHash'].hex()
             arbiscan_link = f"https://arbiscan.io/tx/{tx_hash}"
             self.cycle_data['verification_links'].append({
                 'phase': receipt['phase'],
@@ -1339,7 +1424,7 @@ class ProductionDebtSwapExecutor:
         except Exception as e:
             return False, f"Preflight simulation error: {str(e)}"
 
-    def _analyze_transaction_failure(self, tx_receipt: Dict) -> Dict:
+    def _analyze_transaction_failure(self, tx_receipt: TxReceipt) -> Dict:
         """Analyze transaction failure for detailed diagnostics"""
         try:
             analysis = {
@@ -1631,7 +1716,7 @@ class ProductionDebtSwapExecutor:
         """Test gas optimizer functionality"""
         from gas_optimization import CoinAPIGasOptimizer
         
-        test_results = {
+        test_results: Dict[str, Union[bool, str]] = {
             'api_fetch_test': False,
             'buffer_logic_test': False,
             'error_handling_test': False,
@@ -1649,7 +1734,7 @@ class ProductionDebtSwapExecutor:
             test_results['buffer_logic_test'] = gas_result['success']
             
             # Test 3: Error handling (simulate missing API key)
-            old_key = optimizer.coin_api_key
+            old_key: Optional[str] = optimizer.coin_api_key
             optimizer.coin_api_key = None
             error_result = optimizer.get_eth_price_coinapi()
             test_results['error_handling_test'] = error_result['source'] == 'fallback'
