@@ -40,7 +40,7 @@ def diagnose_debt_swap_strategy():
             if signal:
                 print(f"      Signal Type: {signal.signal_type}")
                 print(f"      Confidence: {signal.confidence:.2f}")
-                print(f"      BTC 1h Change: {signal.btc_price_change:.2f}%")
+                print(f"      BTC 1h Change: {getattr(signal, 'btc_price_change', signal.get('btc_price_change', 0.0)) if hasattr(signal, 'get') else getattr(signal, 'btc_price_change', 0.0):.2f}%")
                 print(f"      ARB Technical Score: {signal.arb_technical_score:.1f}")
                 
                 should_execute, strategy_type = mss.should_execute_market_strategy(signal)

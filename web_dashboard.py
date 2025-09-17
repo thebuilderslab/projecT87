@@ -83,13 +83,16 @@ class WorkingAgent:
         return True
 
 def initialize_agent():
-    """Initialize agent safely"""
+    """Initialize agent safely with robust error handling"""
     global agent
     try:
         logger.info("🔄 Dashboard: Connecting to running autonomous agent...")
 
-        # Always create agent since autonomous mainnet is running
-        agent = WorkingAgent()
+        # Create agent with initialization lock to prevent race conditions
+        if agent is None:
+            logger.info("📦 Dashboard: Creating WorkingAgent instance...")
+            agent = WorkingAgent()
+            logger.info("✅ Dashboard: WorkingAgent instance created successfully")
 
         # Check if autonomous agent is running
         if check_autonomous_agent_running():
@@ -330,6 +333,9 @@ def get_live_agent_data():
     """Get live data from unified Aave fetcher - eliminates cached data issues"""
     global agent
     try:
+        # Safe agent access with initialization check
+        if agent is None:
+            logger.warning("⚠️ Agent not yet initialized for live data fetch")
         # Try to get agent instance for live data
         try:
             from arbitrum_testnet_agent import ArbitrumTestnetAgent
@@ -858,6 +864,7 @@ def get_console_output():
 @app.route('/api/system_metrics')
 def get_system_metrics():
     """Get comprehensive system metrics for enhanced dashboard display"""
+    global agent  # Fix scope issue
     try:
         agent_running = check_autonomous_agent_running()
 
@@ -1860,7 +1867,11 @@ def check_market_signals():
         if not os.path.exists('market_signal_strategy.py'):
             return f"[{timestamp}] ❌ MARKET SIGNALS: Strategy file missing | market_signal_strategy.py not found"
 
-        if agent is None or not hasattr(agent, 'market_signal_strategy') or not agent.market_signal_strategy:
+        # Safe agent check with fallback
+        if agent is None:
+            return f"[{timestamp}] ❌ MARKET SIGNALS: Agent not initialized | Waiting for agent startup"
+            
+        if not hasattr(agent, 'market_signal_strategy') or not getattr(agent, 'market_signal_strategy', None):
             return f"[{timestamp}] ❌ MARKET SIGNALS: Agent strategy not initialized or failed to load"
 
         # Try to get market analysis from the agent's strategy
@@ -1874,9 +1885,21 @@ def check_market_signals():
                 # Get current market status
                 signal = strategy.analyze_market_signals()
                 if signal:
-                    btc_change = signal.btc_price_change
-                    arb_rsi = signal.arb_technical_score
-                    confidence = signal.confidence
+                    # Safe access for both dict and object types
+                    def safe_get(obj, *keys, default=0):
+                        """Safely get value from dict or object with fallback keys"""
+                        for key in keys:
+                            if isinstance(obj, dict):
+                                if key in obj:
+                                    return obj[key]
+                            else:
+                                if hasattr(obj, key):
+                                    return getattr(obj, key)
+                        return default
+                    
+                    btc_change = safe_get(signal, 'btc_price_change', 'btc_change', 'change_24h', default=0)
+                    arb_rsi = safe_get(signal, 'arb_technical_score', 'arb_rsi', 'rsi', default=50)
+                    confidence = safe_get(signal, 'confidence', default=0.5)
 
                     status = f"[{timestamp}] 📊 MARKET ANALYSIS: BTC {btc_change:+.2f}% | ARB RSI {arb_rsi:.1f} | Confidence {confidence:.0%}"
 

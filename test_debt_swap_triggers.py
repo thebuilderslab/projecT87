@@ -49,7 +49,7 @@ def test_debt_swap_triggers():
             signal = agent.market_signal_strategy.analyze_market_signals()
             if signal:
                 print(f"\n📊 Current Market Analysis:")
-                print(f"   BTC Price Change: {signal.btc_price_change:.2f}%")
+                print(f"   BTC Price Change: {getattr(signal, 'btc_price_change', signal.get('btc_price_change', 0.0)) if hasattr(signal, 'get') else getattr(signal, 'btc_price_change', 0.0):.2f}%")
                 print(f"   ARB RSI: {signal.arb_rsi:.1f}")
                 print(f"   Confidence: {signal.confidence:.1%}")
                 print(f"   Should Execute: {signal.should_execute}")

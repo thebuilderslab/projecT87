@@ -41,7 +41,7 @@ def test_threshold_sensitivity():
                 print(f"✅ SIGNAL DETECTED:")
                 print(f"   Type: {signal.signal_type}")
                 print(f"   Confidence: {signal.confidence:.2f}")
-                print(f"   BTC Change: {signal.btc_price_change:.2f}%")
+                print(f"   BTC Change: {getattr(signal, 'btc_price_change', signal.get('btc_price_change', 0.0)) if hasattr(signal, 'get') else getattr(signal, 'btc_price_change', 0.0):.2f}%")
                 print(f"   ARB RSI: {signal.arb_technical_score:.1f}")
                 
                 # Test execution decision
@@ -49,10 +49,11 @@ def test_threshold_sensitivity():
                 print(f"   Execution: {strategy} ({'YES' if should_execute else 'NO'})")
                 
                 # Simulate what would happen with current market data
-                if signal.btc_price_change <= -0.3:  # -0.43% from your chart
-                    print(f"✅ WOULD TRIGGER: BTC down {signal.btc_price_change:.2f}% > 0.3% threshold")
+                btc_change = getattr(signal, 'btc_price_change', signal.get('btc_price_change', 0.0)) if hasattr(signal, 'get') else getattr(signal, 'btc_price_change', 0.0)
+                if btc_change <= -0.3:  # -0.43% from your chart
+                    print(f"✅ WOULD TRIGGER: BTC down {btc_change:.2f}% > 0.3% threshold")
                 else:
-                    print(f"⚠️ Would not trigger: BTC {signal.btc_price_change:.2f}% < 0.3% threshold")
+                    print(f"⚠️ Would not trigger: BTC {btc_change:.2f}% < 0.3% threshold")
                     
                 return True
             else:

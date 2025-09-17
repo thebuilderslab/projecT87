@@ -149,7 +149,7 @@ def test_signal_generation_with_validation():
             print(f"✅ Signal Generated:")
             print(f"   Type: {signal.signal_type}")
             print(f"   Confidence: {signal.confidence:.2f}")
-            print(f"   BTC Change: {signal.btc_price_change:.2f}%")
+            print(f"   BTC Change: {getattr(signal, 'btc_price_change', signal.get('btc_price_change', 0.0)) if hasattr(signal, 'get') else getattr(signal, 'btc_price_change', 0.0):.2f}%")
             print(f"   ARB RSI: {signal.arb_technical_score:.1f}")
             
             # Test 90% confidence validation
