@@ -1,0 +1,28 @@
+================================================================================
+UNIFIED DEBT SWAP SYSTEM - DIAGNOSTIC REPORT
+================================================================================
+Generated: 2025-09-17T05:49:24.246166
+Execution ID: None
+
+📋 ROOT-CAUSE VALIDATION:
+   Overall Success: False
+   Signature Valid: False
+   Calldata Valid: False
+   Amount Valid: False
+
+⛽ GAS OPTIMIZATION:
+   Optimization Success: False
+
+🚀 TRANSACTION EXECUTION:
+   Success: False
+   Hash: None
+   Gas Used: 0
+   Gas Cost: 0.000000 ETH
+
+❌ FINAL STATUS: ISSUES DETECTED
+   Error: Execution failed: 
+Could not identify the intended function with name `swapDebt`, positional arguments with type(s) `bytes,(address,int,int,address,int,address,int,int),(address,int,int,int,bytes,bytes),(address,int,int,int,bytes,bytes)` and keyword arguments with type(s) `{}`.
+Found 1 function(s) with the name `swapDebt`: ['swapDebt((address,uint256,uint256,address,uint256,address,uint256,uint256,bytes),(address,uint256,uint256,uint8,bytes32,bytes32),(address,uint256,uint256,uint8,bytes32,bytes32))']
+Function invocation failed due to improper number of arguments.
+
+================================================================================

@@ -1,0 +1,29 @@
+================================================================================
+UNIFIED DEBT SWAP SYSTEM - DIAGNOSTIC REPORT
+================================================================================
+Generated: 2025-09-17T05:56:37.257143
+Execution ID: 0xe54f64826beb930516ad5bd04fc7f25edc34e6b120cb6195a126994c54f6bf53
+
+📋 ROOT-CAUSE VALIDATION:
+   Overall Success: True
+   Signature Valid: True
+   Calldata Valid: True
+   Amount Valid: True
+
+⛽ GAS OPTIMIZATION:
+   Optimization Success: True
+   Gas Limit: 350,000
+   Gas Price: 12,544,980 wei
+   Estimated Cost: $0.0198
+   Budget Capped: False
+
+🚀 TRANSACTION EXECUTION:
+   Success: False
+   Hash: 0xe54f64826beb930516ad5bd04fc7f25edc34e6b120cb6195a126994c54f6bf53
+   Gas Used: 40,588
+   Gas Cost: 0.000000 ETH
+
+❌ FINAL STATUS: ISSUES DETECTED
+   Error: Transaction failed on-chain
+
+================================================================================

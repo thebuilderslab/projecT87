@@ -1,0 +1,94 @@
+You are tasked with unifying two critical systems in the production_debt_swap_executor.py bot:
+
+Root-cause failure prevention (resolve execution reverts, esp. signature mismatch and calldata issues)
+
+Dynamic gas cost optimization using secured CoinAPI integration (live gas prices + buffer)
+
+Your job is to implement, test, and verify this unified system in the safest, most modular way possible, using secure secrets management, isolated logic, and comprehensive error/output logging.
+
+Step 1: Secure Environment Setup
+Confirm COIN_API is set as a secure environment variable in Replit's secrets management.
+
+In all code, load it using:
+
+python
+import os
+COIN_API_KEY = os.environ.get("COIN_API")
+assert COIN_API_KEY is not None, "CoinAPI secret missing; aborting."
+Step 2: Modular Imports and Structure
+At the top of production_debt_swap_executor.py, ensure imports:
+
+python
+from debt_swap_utils import resolve_gas_estimation_failure
+from gas_optimization import CoinAPIGasOptimizer
+import os
+In the main executor class or namespace, define all new functions at the end (before if __name__ == "__main__":).
+
+Step 3: Logic Integration in Debt Swap Execution
+In the main debt swap execution method or execute_debt_swap() function, follow this exact sequence:
+
+Call resolve_gas_estimation_failure() (or equivalent) with all current parameters.
+
+Log all return values.
+
+If failure, log the error, abort the swap, and output full mismatch diagnostics, including function selector, calldata tokens, parameters, and expected signature.
+
+If function signature or calldata tokens mismatch detected, automatically search contract ABI for incorrect selectors and log possible alternatives; output verification evidence.
+
+Next, instantiate CoinAPIGasOptimizer with the API key.
+
+Query the latest gas price plus buffer (default buffer: 1-2%).
+
+Log all inputs, API responses, gas used, and buffer logic (table of values: manual, optimized, final).
+
+On pass, proceed to send the debt swap transaction with validated parameters and computed optimal gas.
+
+Log transaction hash, gas sent, and contract event logs.
+
+Error Handling:
+
+If any step fails, abort and output—all logs, parameter states, txn calldata, full revert messages, function selectors/callers (both expected and actual).
+
+Step 4: Testing and Verification Suite
+Add/expand automated tests for both:
+
+Signature/call simulation: include at least three cases for
+
+Success (correct function and calldata)
+
+Function selector mismatch (should be caught)
+
+Token/parameter mismatch (should be caught and detailed)
+
+Gas optimizer: test API fetch, parse, buffer logic, and error catching if the secret is missing or API fails.
+
+Add a manual test script or test mode flag (--dry-run or simulate_only=True) so logic can be executed and all errors/output can be reviewed before live mainnet gas is spent.
+
+Output all test logs for review.
+
+Include a summary function that aggregates all key logs/errors into a single diagnostic report, ready for human review.
+
+Step 5: Verification and Logging
+Every swap execution MUST produce a structured, timestamped execution log including:
+
+Function selector called, matched selector from ABI, calldata tokens (in/out)
+
+API gas inputs, buffer calculation logic, final gas sent
+
+Transaction status (success/fail), revert messages, error details if any
+
+Final output for each run/test should state explicitly:
+
+"ALL ROOT-CAUSE FAILURES, GAS MISMATCHES, AND SIGNATURE ERRORS RESOLVED" if successful, with confirming log evidence;
+OR
+
+Detailed report on which stage failed, including suggestions for further investigation or escalation.
+
+Step 6: Resilience and Troubleshooting
+If execution ever "gets too complex" or runs into session/resource limits:
+
+Abort current step, commit all diagnostic logs, and clearly instruct the engineer which isolated function should be tested next.
+
+Auto-detect for signature drift or ABI mismatch in future contract upgrades—always alert if function selector/calldata diverges from current deployment.
+
+END PROMPT

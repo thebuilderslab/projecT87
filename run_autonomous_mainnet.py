@@ -10,6 +10,7 @@ import sys
 import time
 import json
 from datetime import datetime
+import pytz
 from arbitrum_testnet_agent import ArbitrumTestnetAgent
 
 # Force mainnet mode
@@ -17,7 +18,8 @@ os.environ['NETWORK_MODE'] = 'mainnet'
 
 def log_agent_activity(message, level="INFO"):
     """Log agent activity with timestamp"""
-    timestamp = datetime.now().strftime("%H:%M:%S")
+    eastern = pytz.timezone('US/Eastern')
+    timestamp = datetime.now(eastern).strftime("%H:%M:%S EST")
     print(f"[{timestamp}] {level}: {message}")
 
 def check_emergency_stop():

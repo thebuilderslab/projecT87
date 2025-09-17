@@ -45,6 +45,7 @@ except ImportError:
 import json
 import traceback
 from datetime import datetime
+import pytz
 
 try:
     from config import MIN_ETH_FOR_OPERATIONS, MIN_ETH_FOR_GAS_BUFFER
@@ -87,7 +88,8 @@ def save_config():
 
 def log_performance(run_id, iteration, performance_metric, timestamp, metadata=None):
     """Logs performance metrics for a given run."""
-    formatted_timestamp = datetime.fromtimestamp(timestamp).strftime('%Y-%m-%d %H:%M:%S UTC')
+    eastern = pytz.timezone('US/Eastern')
+    formatted_timestamp = datetime.fromtimestamp(timestamp, eastern).strftime('%Y-%m-%d %H:%M:%S EST')
     log_entry = {
         'run_id': run_id,
         'iteration': iteration,
@@ -203,7 +205,8 @@ def autonomous_agent_loop():
 
         try:
             # Add timestamp to iteration start
-            iteration_timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S UTC')
+            eastern = pytz.timezone('US/Eastern')
+            iteration_timestamp = datetime.now(eastern).strftime('%Y-%m-%d %H:%M:%S EST')
             print(f"\n⏰ ITERATION {iteration} STARTED AT: {iteration_timestamp}")
 
             # Check if agent needs initialization or reinitialization
@@ -317,7 +320,8 @@ def autonomous_agent_loop():
                             print(f"🟢 Auto-implementing low-risk proposal: {proposal['id']}")
                             strategy_manager.implement_approved_strategy(proposal['id'])
 
-            completion_timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S UTC')
+            eastern = pytz.timezone('US/Eastern')
+            completion_timestamp = datetime.now(eastern).strftime('%Y-%m-%d %H:%M:%S EST')
             print(f"✅ [{completion_timestamp}] Iteration {iteration} completed successfully. Waiting for next cycle.")
 
         except Exception as e:

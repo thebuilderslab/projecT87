@@ -1,0 +1,27 @@
+================================================================================
+UNIFIED DEBT SWAP SYSTEM - DIAGNOSTIC REPORT
+================================================================================
+Generated: 2025-09-17T05:23:17.351955
+Execution ID: None
+
+📋 ROOT-CAUSE VALIDATION:
+   Overall Success: False
+   Signature Valid: True
+   Calldata Valid: True
+   Amount Valid: True
+   Errors:
+     - Unexpected static call revert: execution reverted
+
+⛽ GAS OPTIMIZATION:
+   Optimization Success: False
+
+🚀 TRANSACTION EXECUTION:
+   Success: False
+   Hash: None
+   Gas Used: 0
+   Gas Cost: 0.000000 ETH
+
+❌ FINAL STATUS: ISSUES DETECTED
+   Error: Root-cause validation failed: Unexpected static call revert: execution reverted
+
+================================================================================

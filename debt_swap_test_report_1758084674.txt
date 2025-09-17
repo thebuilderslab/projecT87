@@ -1,0 +1,27 @@
+================================================================================
+UNIFIED DEBT SWAP SYSTEM - DIAGNOSTIC REPORT
+================================================================================
+Generated: 2025-09-17T04:51:14.707631
+Execution ID: None
+
+📋 ROOT-CAUSE VALIDATION:
+   Overall Success: False
+   Signature Valid: False
+   Calldata Valid: False
+   Amount Valid: True
+   Errors:
+     - Failed to extract function signature: 'str' object has no attribute 'hex'
+
+⛽ GAS OPTIMIZATION:
+   Optimization Success: False
+
+🚀 TRANSACTION EXECUTION:
+   Success: False
+   Hash: None
+   Gas Used: 0
+   Gas Cost: 0.000000 ETH
+
+❌ FINAL STATUS: ISSUES DETECTED
+   Error: Root-cause validation failed: Failed to extract function signature: 'str' object has no attribute 'hex'
+
+================================================================================

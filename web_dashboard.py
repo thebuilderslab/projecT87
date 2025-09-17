@@ -28,9 +28,43 @@ class WorkingAgent:
     def __init__(self):
         self.address = '0x5B823270e3719CDe8669e5e5326B455EaA8a350b'
         self.network_mode = 'mainnet'
-        self.w3 = None
-
-        # Live data from your autonomous agent
+        
+        # Initialize working Web3 connection using same endpoints as autonomous agent
+        self.w3 = self._create_working_web3_connection()
+    
+    def _create_working_web3_connection(self):
+        """Create working Web3 connection using proven RPC endpoints"""
+        from web3 import Web3
+        
+        # Use same proven working endpoints as autonomous agent
+        working_rpcs = [
+            "https://arbitrum-one.public.blastapi.io",  # Fastest: 0.16s
+            "https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-bM9XgIIU",  # Alchemy
+            "https://arb1.arbitrum.io/rpc",  # Official
+            "https://arbitrum-one.publicnode.com"
+        ]
+        
+        for rpc_url in working_rpcs:
+            try:
+                w3 = Web3(Web3.HTTPProvider(rpc_url, request_kwargs={'timeout': 10}))
+                if w3.is_connected() and w3.eth.chain_id == 42161:
+                    print(f"✅ Dashboard WorkingAgent: Connected to {rpc_url}")
+                    return w3
+            except Exception as e:
+                print(f"⚠️ Dashboard: RPC {rpc_url} failed: {e}")
+                continue
+        
+        print("❌ Dashboard: All RPC endpoints failed")
+        return None
+    
+    def __init__(self):
+        self.address = '0x5B823270e3719CDe8669e5e5326B455EaA8a350b'
+        self.network_mode = 'mainnet'
+        
+        # Initialize working Web3 connection using same endpoints as autonomous agent
+        self.w3 = self._create_working_web3_connection()
+        
+        # Initialize live data
         self.live_data = {
             'eth_balance': 0.001918,
             'health_factor': 6.8952,
@@ -300,10 +334,36 @@ def get_live_agent_data():
         try:
             from arbitrum_testnet_agent import ArbitrumTestnetAgent
             from web3 import Web3
-            # Create a minimal RPC manager mock for the agent
-            class MockRPCManager:
+            # Create enhanced RPC manager using same system as working autonomous agent
+            class EnhancedRPCManager:
+                def __init__(self):
+                    # Use the same working RPC endpoints as autonomous agent
+                    self.rpc_endpoints = [
+                        "https://arbitrum-one.public.blastapi.io",  # Fastest working RPC
+                        "https://arb1.arbitrum.io/rpc",
+                        "https://arbitrum-one.publicnode.com",
+                        "https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-bM9XgIIU"
+                    ]
+                    self.working_rpc = None
+                    self.w3 = None
+                    self._find_working_rpc()
+                
+                def _find_working_rpc(self):
+                    """Find a working RPC endpoint"""
+                    for rpc_url in self.rpc_endpoints:
+                        try:
+                            test_w3 = Web3(Web3.HTTPProvider(rpc_url, request_kwargs={'timeout': 10}))
+                            if test_w3.is_connected() and test_w3.eth.chain_id == 42161:
+                                self.working_rpc = rpc_url
+                                self.w3 = test_w3
+                                print(f"✅ Dashboard: Connected to {rpc_url}")
+                                return True
+                        except:
+                            continue
+                    return False
+                
                 def get_web3(self):
-                    return Web3(Web3.HTTPProvider("https://arb1.arbitrum.io/rpc"))
+                    return self.w3 if self.w3 else Web3(Web3.HTTPProvider(self.rpc_endpoints[0]))
 
             private_key = os.getenv('PRIVATE_KEY') or os.getenv('Wallet_PRIVATE_KEY')
             if private_key:
@@ -318,7 +378,8 @@ def get_live_agent_data():
 
                 # Instantiate agent if it hasn't been already (e.g., in initialize_agent)
                 if agent is None or not hasattr(agent, 'w3'):
-                    agent = ArbitrumTestnetAgent(MockRPCManager(), private_key)
+                    enhanced_rpc = EnhancedRPCManager()
+                    agent = ArbitrumTestnetAgent(enhanced_rpc, private_key)
 
                 # Get live Aave data directly from contracts
                 # This call should ideally be refactored to a separate function to avoid duplication

@@ -1,0 +1,74 @@
+2025-09-16 05:15:30,393 - INFO - 🎯 Using PRIMARY CoinAPI data for BTC: $115878.5135
+2025-09-16 05:15:30,535 - WARNING - ⚠️ Agent or agent.w3 not initialized properly for contract data fetch.
+2025-09-16 05:15:30,537 - INFO - 📊 Using latest autonomous agent data from console logs as fallback
+2025-09-16 05:15:30,543 - WARNING - ⚠️ Agent or agent.w3 not initialized properly for contract data fetch.
+2025-09-16 05:15:30,545 - INFO - 📊 Using latest autonomous agent data from console logs as fallback
+2025-09-16 05:15:33,552 - WARNING - ⚠️ Agent or agent.w3 not initialized properly for contract data fetch.
+2025-09-16 05:15:33,554 - INFO - 📊 Using latest autonomous agent data from console logs as fallback
+2025-09-16 05:15:33,560 - WARNING - ⚠️ Agent or agent.w3 not initialized properly for contract data fetch.
+2025-09-16 05:15:33,561 - INFO - 📊 Using latest autonomous agent data from console logs as fallback
+2025-09-16 05:15:36,571 - WARNING - ⚠️ Agent or agent.w3 not initialized properly for contract data fetch.
+2025-09-16 05:15:36,573 - INFO - 📊 Using latest autonomous agent data from console logs as fallback
+2025-09-16 05:15:36,580 - WARNING - ⚠️ Agent or agent.w3 not initialized properly for contract data fetch.
+2025-09-16 05:15:36,583 - INFO - 📊 Using latest autonomous agent data from console logs as fallback
+2025-09-16 05:15:39,597 - WARNING - ⚠️ Agent or agent.w3 not initialized properly for contract data fetch.
+2025-09-16 05:15:39,600 - INFO - 📊 Using latest autonomous agent data from console logs as fallback
+2025-09-16 05:15:39,607 - WARNING - ⚠️ Agent or agent.w3 not initialized properly for contract data fetch.
+2025-09-16 05:15:39,610 - INFO - 📊 Using latest autonomous agent data from console logs as fallback
+2025-09-16 05:15:42,619 - WARNING - ⚠️ Agent or agent.w3 not initialized properly for contract data fetch.
+2025-09-16 05:15:42,621 - INFO - 📊 Using latest autonomous agent data from console logs as fallback
+2025-09-16 05:15:42,626 - WARNING - ⚠️ Agent or agent.w3 not initialized properly for contract data fetch.
+2025-09-16 05:15:42,628 - INFO - 📊 Using latest autonomous agent data from console logs as fallback
+2025-09-16 05:15:43,315 - INFO - API call recorded: coinapi, cost: 1, hourly: 2/35
+2025-09-16 05:15:43,315 - INFO - 📊 Stored data point for ETH: 1 total points
+2025-09-16 05:15:43,315 - INFO - 🎯 Using PRIMARY CoinAPI data for ETH: $4532.0528
+2025-09-16 05:15:45,638 - WARNING - ⚠️ Agent or agent.w3 not initialized properly for contract data fetch.
+2025-09-16 05:15:45,640 - INFO - 📊 Using latest autonomous agent data from console logs as fallback
+2025-09-16 05:15:45,647 - WARNING - ⚠️ Agent or agent.w3 not initialized properly for contract data fetch.
+2025-09-16 05:15:45,648 - INFO - 📊 Using latest autonomous agent data from console logs as fallback
+2025-09-16 05:15:48,658 - WARNING - ⚠️ Agent or agent.w3 not initialized properly for contract data fetch.
+2025-09-16 05:15:48,660 - INFO - 📊 Using latest autonomous agent data from console logs as fallback
+2025-09-16 05:15:48,666 - WARNING - ⚠️ Agent or agent.w3 not initialized properly for contract data fetch.
+2025-09-16 05:15:48,667 - INFO - 📊 Using latest autonomous agent data from console logs as fallback
+2025-09-16 05:15:49,766 - INFO - API call recorded: coinapi, cost: 1, hourly: 3/35
+2025-09-16 05:15:49,766 - INFO - 📊 Stored data point for ETH: 1 total points
+2025-09-16 05:15:49,766 - INFO - 🎯 Using PRIMARY CoinAPI data for ETH: $4530.9832
+2025-09-16 05:15:51,680 - WARNING - ⚠️ Agent or agent.w3 not initialized properly for contract data fetch.
+2025-09-16 05:15:51,681 - INFO - 📊 Using latest autonomous agent data from console logs as fallback
+2025-09-16 05:15:51,687 - WARNING - ⚠️ Agent or agent.w3 not initialized properly for contract data fetch.
+2025-09-16 05:15:51,688 - INFO - 📊 Using latest autonomous agent data from console logs as fallback
+2025-09-16 05:15:54,696 - WARNING - ⚠️ Agent or agent.w3 not initialized properly for contract data fetch.
+2025-09-16 05:15:54,697 - INFO - 📊 Using latest autonomous agent data from console logs as fallback
+2025-09-16 05:15:54,703 - WARNING - ⚠️ Agent or agent.w3 not initialized properly for contract data fetch.
+2025-09-16 05:15:54,704 - INFO - 📊 Using latest autonomous agent data from console logs as fallback
+2025-09-16 05:15:57,713 - WARNING - ⚠️ Agent or agent.w3 not initialized properly for contract data fetch.
+2025-09-16 05:15:57,714 - INFO - 📊 Using latest autonomous agent data from console logs as fallback
+2025-09-16 05:15:57,721 - WARNING - ⚠️ Agent or agent.w3 not initialized properly for contract data fetch.
+2025-09-16 05:15:57,723 - INFO - 📊 Using latest autonomous agent data from console logs as fallback
+2025-09-16 05:16:00,734 - WARNING - ⚠️ Agent or agent.w3 not initialized properly for contract data fetch.
+2025-09-16 05:16:00,736 - INFO - 📊 Using latest autonomous agent data from console logs as fallback
+2025-09-16 05:16:00,746 - WARNING - ⚠️ Agent or agent.w3 not initialized properly for contract data fetch.
+2025-09-16 05:16:00,747 - INFO - 📊 Using latest autonomous agent data from console logs as fallback
+2025-09-16 05:16:02,020 - INFO - API call recorded: coinapi, cost: 1, hourly: 4/35
+2025-09-16 05:16:02,021 - INFO - 📊 Stored data point for ETH: 1 total points
+2025-09-16 05:16:02,021 - INFO - 🎯 Using PRIMARY CoinAPI data for ETH: $4530.6933
+2025-09-16 05:16:03,760 - WARNING - ⚠️ Agent or agent.w3 not initialized properly for contract data fetch.
+2025-09-16 05:16:03,762 - INFO - 📊 Using latest autonomous agent data from console logs as fallback
+2025-09-16 05:16:03,767 - WARNING - ⚠️ Agent or agent.w3 not initialized properly for contract data fetch.
+2025-09-16 05:16:03,768 - INFO - 📊 Using latest autonomous agent data from console logs as fallback
+2025-09-16 05:16:06,776 - WARNING - ⚠️ Agent or agent.w3 not initialized properly for contract data fetch.
+2025-09-16 05:16:06,778 - INFO - 📊 Using latest autonomous agent data from console logs as fallback
+2025-09-16 05:16:06,783 - WARNING - ⚠️ Agent or agent.w3 not initialized properly for contract data fetch.
+2025-09-16 05:16:06,784 - INFO - 📊 Using latest autonomous agent data from console logs as fallback
+2025-09-16 05:16:09,793 - WARNING - ⚠️ Agent or agent.w3 not initialized properly for contract data fetch.
+2025-09-16 05:16:09,794 - INFO - 📊 Using latest autonomous agent data from console logs as fallback
+2025-09-16 05:16:09,800 - WARNING - ⚠️ Agent or agent.w3 not initialized properly for contract data fetch.
+2025-09-16 05:16:09,802 - INFO - 📊 Using latest autonomous agent data from console logs as fallback
+2025-09-16 05:16:12,812 - WARNING - ⚠️ Agent or agent.w3 not initialized properly for contract data fetch.
+2025-09-16 05:16:12,814 - INFO - 📊 Using latest autonomous agent data from console logs as fallback
+2025-09-16 05:16:12,828 - WARNING - ⚠️ Agent or agent.w3 not initialized properly for contract data fetch.
+2025-09-16 05:16:12,830 - INFO - 📊 Using latest autonomous agent data from console logs as fallback
+2025-09-16 05:16:15,842 - WARNING - ⚠️ Agent or agent.w3 not initialized properly for contract data fetch.
+2025-09-16 05:16:15,843 - INFO - 📊 Using latest autonomous agent data from console logs as fallback
+2025-09-16 05:16:15,850 - WARNING - ⚠️ Agent or agent.w3 not initialized properly for contract data fetch.
+2025-09-16 05:16:15,852 - INFO - 📊 Using latest autonomous agent data from console logs as fallback

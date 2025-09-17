@@ -1,0 +1,27 @@
+================================================================================
+UNIFIED DEBT SWAP SYSTEM - DIAGNOSTIC REPORT
+================================================================================
+Generated: 2025-09-17T04:51:45.692395
+Execution ID: None
+
+📋 ROOT-CAUSE VALIDATION:
+   Overall Success: False
+   Signature Valid: True
+   Calldata Valid: True
+   Amount Valid: True
+   Errors:
+     - Static call simulation FAILED: 0x3bf95ba7
+
+⛽ GAS OPTIMIZATION:
+   Optimization Success: False
+
+🚀 TRANSACTION EXECUTION:
+   Success: False
+   Hash: None
+   Gas Used: 0
+   Gas Cost: 0.000000 ETH
+
+❌ FINAL STATUS: ISSUES DETECTED
+   Error: Root-cause validation failed: Static call simulation FAILED: 0x3bf95ba7
+
+================================================================================
