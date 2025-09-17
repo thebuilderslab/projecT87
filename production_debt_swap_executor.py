@@ -57,8 +57,9 @@ class ProductionDebtSwapExecutor:
         self.max_usd_per_tx = 10.0  # $10 USD maximum per transaction
         self.min_swap_usd = 25.0   # $25 minimum swap amount (prevents dust trade reverts)
         
-        # CORRECT: Official Aave ParaSwapDebtSwapAdapter address on Arbitrum (now using Uniswap V3)
+        # CORRECT: Official Aave ParaSwapDebtSwapAdapter address on Arbitrum (using ParaSwap Augustus)
         self.paraswap_debt_swap_adapter: ChecksumAddress = self.w3.to_checksum_address("0xCf85FF1c37c594a10195F7A9Ab85CBb0a03f69dE")
+        self.augustus_swapper: ChecksumAddress = self.w3.to_checksum_address("0xDEF171Fe48CF0115B1d80b88dc8eAB59176FEe57")
         self.aave_pool: ChecksumAddress = self.w3.to_checksum_address("0x794a61358D6845594F94dc1DB02A252b5b4814aD")
         self.aave_data_provider: ChecksumAddress = self.w3.to_checksum_address("0x69FA688f1Dc47d4B5d8029D5a35FB7a548310654")
         
@@ -391,150 +392,111 @@ class ProductionDebtSwapExecutor:
             # Last resort: conservative 1:1 ratio
             return amount_in
 
-    def get_uniswap_v3_calldata(self, from_asset: str, to_asset: str, amount_wei: int) -> Dict:
-        """Get Uniswap V3 calldata for direct swap (replacing ParaSwap)"""
+    def get_paraswap_calldata_reverse_routing(self, from_asset: str, to_asset: str, amount_wei: int) -> Dict:
+        """Get ParaSwap Augustus calldata for debt swap with reverse routing"""
         try:
-            print(f"\n🦄 UNISWAP V3 INTEGRATION")
+            print(f"\n🔄 PARASWAP AUGUSTUS INTEGRATION")
             print("=" * 50)
             
             # CRITICAL: For debt swaps, routing is REVERSED
             # DAI debt → ARB debt requires ARB → DAI routing (to get DAI to repay the debt)
             if from_asset.upper() == 'DAI' and to_asset.upper() == 'ARB':
-                token_in = self.tokens['ARB']   # Route FROM ARB
-                token_out = self.tokens['DAI']  # Route TO DAI
+                src_token = self.tokens['ARB']   # Route FROM ARB
+                dest_token = self.tokens['DAI']  # Route TO DAI
                 print(f"🔄 REVERSE ROUTING: ARB → DAI (for DAI debt → ARB debt swap)")
             elif from_asset.upper() == 'ARB' and to_asset.upper() == 'DAI':
-                token_in = self.tokens['DAI']   # Route FROM DAI  
-                token_out = self.tokens['ARB']  # Route TO ARB
+                src_token = self.tokens['DAI']   # Route FROM DAI  
+                dest_token = self.tokens['ARB']  # Route TO ARB
                 print(f"🔄 REVERSE ROUTING: DAI → ARB (for ARB debt → DAI debt swap)")
             else:
                 raise ValueError(f"Unsupported debt swap: {from_asset} → {to_asset}")
             
-            # Uniswap V3 Router address on Arbitrum
-            uniswap_router: ChecksumAddress = self.w3.to_checksum_address("0xE592427A0AEce92De3Edee1F18E0157C05861564")
-            
-            # FIXED: Use Uniswap QuoterV2 for dynamic pricing (replaces hardcoded rates)
-            expected_amount_out = self.get_uniswap_quote(token_in, token_out, amount_wei)
-            
-            # Apply 3% slippage tolerance
-            amount_out_minimum = int(expected_amount_out * 0.97)
-            
-            print(f"📊 Uniswap V3 Route Calculation:")
-            print(f"   Input: {amount_wei / 1e18:.6f} {from_asset.upper()}")
-            print(f"   Expected Output: {expected_amount_out / 1e18:.6f} {to_asset.upper()}")
-            print(f"   Minimum Output (3% slippage): {amount_out_minimum / 1e18:.6f}")
-            
-            # Uniswap V3 exactInputSingle parameters
-            swap_params = {
-                'tokenIn': token_in,
-                'tokenOut': token_out,
-                'fee': 3000,  # 0.3% fee tier (most liquid)
-                'recipient': self.paraswap_debt_swap_adapter,  # Aave adapter receives tokens
-                'deadline': int(time.time()) + 1800,  # 30 minutes
-                'amountIn': amount_wei,
-                'amountOutMinimum': amount_out_minimum,
-                'sqrtPriceLimitX96': 0  # No price limit
+            # DEBT SWAP ParaSwap price API - CORRECT approach
+            price_url = "https://apiv5.paraswap.io/prices"
+            price_params = {
+                'srcToken': src_token,      # ARB (new debt asset)
+                'destToken': dest_token,    # DAI (old debt asset to repay)
+                'amount': str(amount_wei),  # DAI amount to repay
+                'srcDecimals': 18,
+                'destDecimals': 18,
+                'side': 'BUY',              # FIXED: BUY DAI by selling ARB
+                'network': 42161,           # Arbitrum
+                # FIXED: Omit userAddress to avoid balance checks
+                'partner': 'aave',          # Partner for debt swap routing
+                'maxImpact': '15'           # Max price impact 15%
             }
             
-            # Encode exactInputSingle function call
-            uniswap_abi = [{
-                "inputs": [
-                    {
-                        "components": [
-                            {"name": "tokenIn", "type": "address"},
-                            {"name": "tokenOut", "type": "address"},
-                            {"name": "fee", "type": "uint24"},
-                            {"name": "recipient", "type": "address"},
-                            {"name": "deadline", "type": "uint256"},
-                            {"name": "amountIn", "type": "uint256"},
-                            {"name": "amountOutMinimum", "type": "uint256"},
-                            {"name": "sqrtPriceLimitX96", "type": "uint160"}
-                        ],
-                        "name": "params",
-                        "type": "tuple"
-                    }
-                ],
-                "name": "exactInputSingle",
-                "outputs": [{"name": "amountOut", "type": "uint256"}],
-                "stateMutability": "payable",
-                "type": "function"
-            }]
+            print(f"🌐 Getting ParaSwap price for reverse routing...")
+            price_response = requests.get(price_url, params=price_params, timeout=10)
             
-            # Create contract instance
-            uniswap_contract = self.w3.eth.contract(
-                address=uniswap_router,
-                abi=uniswap_abi
-            )
+            if price_response.status_code != 200:
+                error_text = price_response.text if price_response.text else 'No error details'
+                print(f"❌ ParaSwap price API error {price_response.status_code}: {error_text}")
+                raise Exception(f"ParaSwap price API failed: {price_response.status_code} - {error_text}")
             
-            # FIXED: Encode function call with explicit parameter order
-            # The exactInputSingle function expects parameters in this exact order:
-            exact_input_params = (
-                swap_params['tokenIn'],         # address tokenIn
-                swap_params['tokenOut'],        # address tokenOut  
-                swap_params['fee'],             # uint24 fee
-                swap_params['recipient'],       # address recipient
-                swap_params['deadline'],        # uint256 deadline
-                swap_params['amountIn'],        # uint256 amountIn
-                swap_params['amountOutMinimum'], # uint256 amountOutMinimum
-                swap_params['sqrtPriceLimitX96'] # uint160 sqrtPriceLimitX96
-            )
+            price_data = price_response.json()
             
-            calldata = uniswap_contract.encodeABI(
-                'exactInputSingle',
-                [exact_input_params]
-            )
+            if 'priceRoute' not in price_data:
+                print(f"❌ No price route in response: {price_data}")
+                raise Exception("No price route found")
             
-            # FIXED: Calculate offset for amountIn parameter (INCLUDES function selector)
-            # The Aave adapter expects offset relative to the START of swapData INCLUDING function selector
-            # In Uniswap V3 exactInputSingle ABI encoding:
-            # - Function selector (4 bytes): 0x414bf389 [INCLUDED in offset calculation]
-            # - Offset to params struct (32 bytes): 0x0000...0020 [INCLUDED in offset calculation] 
-            # - Struct parameters: tokenIn(0), tokenOut(32), fee(64), recipient(96), deadline(128), amountIn(160)
-            # amountIn is at position: 4 + 32 + (5 * 32) = 4 + 32 + 160 = 196 bytes from swapData start
-            # But since offset points to struct start, we use: 4 + 32 + 160 = 196 - 32 = 164 bytes
-            amount_in_offset = 4 + 5 * 32  # 164 bytes from swapData start (including selector)
+            print(f"✅ Price route obtained:")
+            print(f"   ARB amount needed: {price_data['priceRoute']['srcAmount']}")
+            print(f"   DAI amount out: {price_data['priceRoute']['destAmount']}")
             
-            result = {
-                'calldata': calldata,
-                'expected_amount': str(expected_amount_out),
-                'src_amount': str(amount_wei),
-                'router_address': uniswap_router,
-                'offset': amount_in_offset,  # CRITICAL: Uniswap amountIn offset for Aave adapter
-                'token_in': token_in,
-                'token_out': token_out,
-                'fee_tier': 3000
+            # Get transaction data for DEBT SWAP
+            tx_url = "https://apiv5.paraswap.io/transactions/42161"
+            # DEBT SWAP: Use ignoreChecks to bypass balance validation
+            tx_params = {
+                'deadline': str(int(time.time()) + 1800),  # 30 min deadline
+                'ignoreChecks': 'true'  # CRITICAL: Bypass balance checks for debt swaps
+                # REMOVED: slippage (conflicts with srcAmount/destAmount from priceRoute)
             }
             
-            # DEBUGGING: Analyze calldata structure to verify offset
-            calldata_bytes = bytes.fromhex(calldata[2:])  # Remove '0x' prefix
-            print(f"\n🔍 CALLDATA STRUCTURE ANALYSIS:")
-            print(f"   Total Length: {len(calldata_bytes)} bytes ({len(calldata)} chars)")
-            print(f"   Function Selector: {calldata[:10]} (4 bytes)")
-            print(f"   Struct Offset: {calldata[10:74]} (32 bytes)")
+            # Ensure addresses are properly checksummed
+            user_addr = self.w3.to_checksum_address(self.user_address)
+            adapter_addr = self.w3.to_checksum_address(self.paraswap_debt_swap_adapter)
             
-            # Check amountIn at calculated offset
-            amount_in_start = amount_in_offset * 2 + 2  # Convert to hex position (each byte = 2 chars, +2 for '0x')
-            amount_in_end = amount_in_start + 64        # 32 bytes = 64 hex chars
-            amount_in_hex = calldata[amount_in_start:amount_in_end]
-            amount_in_value = int(amount_in_hex, 16) if amount_in_hex else 0
+            print(f"📋 Transaction addresses:")
+            print(f"   User: {user_addr}")
+            print(f"   Adapter: {adapter_addr}")
             
-            print(f"   AmountIn Offset: {amount_in_offset} bytes")
-            print(f"   AmountIn Hex Position: {amount_in_start}-{amount_in_end}")
-            print(f"   AmountIn Hex Value: {amount_in_hex}")
-            print(f"   AmountIn Decoded: {amount_in_value}")
-            print(f"   Expected AmountIn: {amount_wei}")
-            print(f"   AmountIn Match: {'✅' if amount_in_value == amount_wei else '❌'}")
+            tx_payload = {
+                'srcToken': src_token,
+                'destToken': dest_token,
+                'srcAmount': price_data['priceRoute']['srcAmount'],   # Computed ARB amount
+                'destAmount': price_data['priceRoute']['destAmount'], # ADDED: Required DAI amount
+                'priceRoute': price_data['priceRoute'],
+                'userAddress': adapter_addr,  # Adapter executes the swap
+                'receiver': adapter_addr,    # Adapter receives the DAI
+                'partner': 'aave',           # Partner specification for debt swap
+                'partnerAddress': adapter_addr,  # Partner address
+                'partnerFeeBps': '0',        # No partner fee
+                'takeSurplus': False         # Don't take surplus
+            }
             
-            # Show first 200 chars of calldata for manual inspection
-            print(f"   Calldata Preview: {calldata[:200]}...")
+            print(f"🌐 Getting ParaSwap transaction data...")
+            tx_response = requests.post(tx_url, params=tx_params, json=tx_payload,
+                                      timeout=15, headers={'Content-Type': 'application/json'})
             
-            print(f"✅ UNISWAP V3 SUCCESS!")
-            print(f"   Expected Amount: {result['expected_amount']}")
-            print(f"   AmountIn Offset Validated: {amount_in_offset} bytes")
-            print(f"   Router: {uniswap_router}")
-            print(f"   Fee Tier: 0.3%")
+            if tx_response.status_code != 200:
+                error_text = tx_response.text if tx_response.text else 'No error details'
+                print(f"❌ ParaSwap transaction API error {tx_response.status_code}: {error_text}")
+                raise Exception(f"ParaSwap transaction API failed: {tx_response.status_code} - {error_text}")
             
-            return result
+            tx_data = tx_response.json()
+            
+            swap_data = {
+                'calldata': tx_data.get('data', '0x'),
+                'expected_amount': price_data['priceRoute']['destAmount'],
+                'price_route': price_data['priceRoute']
+            }
+            
+            print(f"✅ REVERSE ParaSwap routing obtained")
+            print(f"   Expected Amount: {swap_data['expected_amount']}")
+            print(f"   Calldata Length: {len(swap_data['calldata'])} chars")
+            
+            return swap_data
             
         except Exception as e:
             print(f"❌ Uniswap V3 error: {e}")
@@ -844,15 +806,15 @@ class ProductionDebtSwapExecutor:
                 execution_result['error'] = f"Unsupported asset: {from_asset}"
                 return execution_result
             
-            # 4. Get Uniswap V3 calldata (replacing ParaSwap)
-            uniswap_data = self.get_uniswap_v3_calldata(from_asset, to_asset, amount_wei)
-            if not uniswap_data:
-                execution_result['error'] = "Failed to get Uniswap V3 calldata"
+            # 4. Get ParaSwap Augustus calldata (CORRECT interface)
+            paraswap_data = self.get_paraswap_calldata_reverse_routing(from_asset, to_asset, amount_wei)
+            if not paraswap_data:
+                execution_result['error'] = "Failed to get ParaSwap Augustus calldata"
                 return execution_result
             
-            # Use exact amount from Uniswap V3
-            if 'expected_amount' in uniswap_data:
-                amount_to_swap = int(uniswap_data['expected_amount'])
+            # Use exact amount from ParaSwap
+            if 'expected_amount' in paraswap_data:
+                amount_to_swap = int(paraswap_data['expected_amount'])
             else:
                 amount_to_swap = amount_wei
             
@@ -887,8 +849,8 @@ class ProductionDebtSwapExecutor:
                     int(amount_to_swap * 2.1),                            # maxNewDebtAmount (2.1x ratio for ARB debt)
                     zero_address,                                          # extraCollateralAsset
                     0,                                                     # extraCollateralAmount
-                    uniswap_data.get('offset', 0),                       # offset (CRITICAL: Uniswap calldata offset)
-                    bytes.fromhex(uniswap_data['calldata'][2:])           # uniswapData (INSIDE the tuple)
+                    0,                                                     # offset (not needed for ParaSwap)
+                    bytes.fromhex(paraswap_data['calldata'][2:])          # paraswapData (INSIDE the tuple)
                 ),
                 (
                     credit_permit['token'],                               # debtToken
