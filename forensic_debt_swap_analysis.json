@@ -1,0 +1,383 @@
+{
+  "forensic_analysis_metadata": {
+    "analysis_timestamp": "2025-09-18T00:43:16.148113",
+    "analyzer_version": "1.0.0",
+    "target_transactions": [
+      "0x988cd8ad6df4f4557ddef352f42fe7e9ca9909553efe0abe2b4f36d6fad3e663",
+      "0xdb1da3add62b0736c862ca7bc63e22afa9e1b85e0d06750b35dbe514b00deb2f"
+    ],
+    "network": "arbitrum_mainnet",
+    "purpose": "debt_swap_automation_pattern_extraction"
+  },
+  "individual_analyses": [
+    {
+      "transaction_hash": "0x988cd8ad6df4f4557ddef352f42fe7e9ca9909553efe0abe2b4f36d6fad3e663",
+      "block_number": 379862073,
+      "timestamp": "2025-09-16T20:14:03",
+      "from_address": "0x5B823270e3719CDe8669e5e5326B455EaA8a350b",
+      "to_address": "0x63dfa7c09Dc2Ff4030d6B8Dc2ce6262BF898C8A4",
+      "value": 0,
+      "gas_used": 782827,
+      "gas_price": 10000000,
+      "status": 1,
+      "input_data": "b\"\\xb8\\xbd\\x1ck\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x01\\xa0\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x86\\x19\\xd8\\x0f\\xb0\\x14\\x1b\\xa7\\xf1\\x84\\xcb\\xf2/\\xd7$\\x11m\\x9f\\x7f\\xfc\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x91,\\xe5\\x91D\\x19\\x1c\\x12\\x04\\xe6EY\\xfe\\x82S\\xa0\\xe4\\x9eeH\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\xff\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x02\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\xda\\x10\\x00\\x9c\\xbd]\\x07\\xdd\\x0c\\xec\\xc6aa\\xfc\\x93\\xd7\\xc9\\x00\\r\\xa1\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\r\\xf9\\xb3\\xe0)\\xbdh\\xe5\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x84\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x01 \\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x03\\xe0\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00@\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00j\\x00\\x0f \\x00Y\\x80 \\x02Y\\xb8\\x0cQ\\x02\\x000@\\x00\\x10h\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x03d\\x7fEvu\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x0eX\\x91\\x85\\x0b\\xb3\\xf00\\x90\\xf00\\x10\\x00\\x08\\x06\\xf0\\x80\\x04\\x01\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\xda\\x10\\x00\\x9c\\xbd]\\x07\\xdd\\x0c\\xec\\xc6aa\\xfc\\x93\\xd7\\xc9\\x00\\r\\xa1\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x91,\\xe5\\x91D\\x19\\x1c\\x12\\x04\\xe6EY\\xfe\\x82S\\xa0\\xe4\\x9eeH\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\r\\xf9\\xb3\\xe0)\\xbdh\\xe5\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x1c\\x06\\x1e\\tD{\\x1fm\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\r\\xf6 \\xe6\\x13\\xb4D\\xfc!+T[\\xf2sA>\\xb1\\ng\\xc0R\\x0f\\xd4\\xd4\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x16\\xa4<$\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x05=U\\xf9\\xb5\\xaf\\x86\\x94\\xc5\\x03\\xeb(\\x8a\\x1b~U/Y\\x07\\x10\\x98\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x01`\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x01\\x80\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x01\\xc0\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00 \\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x01\\xe0\\x00\\x00\\x01`\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x01 \\x00\\x00\\x00\\x00\\x00\\x00\\x017\\x00\\x00\\x00\\x00\\x00\\x00'\\x10\\xe5\\x92Bz\\n\\xec\\xe9-\\xe3\\xed\\xee\\x1f\\x18\\xe0\\x15|\\x05\\x86\\x15d\\x01@\\x00\\x84\\x00\\xa4\\x00\\x00\\x00\\x00\\x00\\x03\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\xf2\\x8c\\x04\\x98\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00 \\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\xa0\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x0eX\\x91\\x85\\x0b\\xb3\\xf00\\x90\\xf00\\x10\\x00\\x08\\x06\\xf0\\x80\\x04\\x01\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00h\\xd2\\xff\\x88\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x1c\\x06\\x1e\\tD{\\x1fm\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\r\\xf6 \\xe6\\x13\\xb4D\\xfc\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00+\\x91,\\xe5\\x91D\\x19\\x1c\\x12\\x04\\xe6EY\\xfe\\x82S\\xa0\\xe4\\x9eeH\\x00\\x0b\\xb8\\xda\\x10\\x00\\x9c\\xbd]\\x07\\xdd\\x0c\\xec\\xc6aa\\xfc\\x93\\xd7\\xc9\\x00\\r\\xa1\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\"",
+      "logs": [
+        "AttributeDict({'address': '0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1', 'topics': [HexBytes('0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef'), HexBytes('0x00000000000000000000000082e64f49ed5ec1bc6e43dad4fc8af9bb3a2312ee'), HexBytes('0x00000000000000000000000063dfa7c09dc2ff4030d6b8dc2ce6262bf898c8a4')], 'data': HexBytes('0x0000000000000000000000000000000000000000000000000df9b3e029bd68e5'), 'blockNumber': 379862073, 'transactionHash': HexBytes('0x988cd8ad6df4f4557ddef352f42fe7e9ca9909553efe0abe2b4f36d6fad3e663'), 'transactionIndex': 4, 'blockHash': HexBytes('0x0bc1b94cd1916b62a3e496f1ef2ad3db281b359381ac56cd316eae989cac99c5'), 'logIndex': 2, 'removed': False})",
+        "AttributeDict({'address': '0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1', 'topics': [HexBytes('0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925'), HexBytes('0x00000000000000000000000063dfa7c09dc2ff4030d6b8dc2ce6262bf898c8a4'), HexBytes('0x0000000000000000000000006a000f20005980200259b80c5102003040001068')], 'data': HexBytes('0x0000000000000000000000000000000000000000000000000df9b3e029bd68e5'), 'blockNumber': 379862073, 'transactionHash': HexBytes('0x988cd8ad6df4f4557ddef352f42fe7e9ca9909553efe0abe2b4f36d6fad3e663'), 'transactionIndex': 4, 'blockHash': HexBytes('0x0bc1b94cd1916b62a3e496f1ef2ad3db281b359381ac56cd316eae989cac99c5'), 'logIndex': 3, 'removed': False})",
+        "AttributeDict({'address': '0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1', 'topics': [HexBytes('0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef'), HexBytes('0x00000000000000000000000063dfa7c09dc2ff4030d6b8dc2ce6262bf898c8a4'), HexBytes('0x0000000000000000000000000e5891850bb3f03090f03010000806f080040100')], 'data': HexBytes('0x0000000000000000000000000000000000000000000000000df9b3e029bd68e5'), 'blockNumber': 379862073, 'transactionHash': HexBytes('0x988cd8ad6df4f4557ddef352f42fe7e9ca9909553efe0abe2b4f36d6fad3e663'), 'transactionIndex': 4, 'blockHash': HexBytes('0x0bc1b94cd1916b62a3e496f1ef2ad3db281b359381ac56cd316eae989cac99c5'), 'logIndex': 4, 'removed': False})",
+        "AttributeDict({'address': '0x912CE59144191C1204E64559FE8253a0e49E6548', 'topics': [HexBytes('0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef'), HexBytes('0x000000000000000000000000c051405edef0e64ebfc501cfe1158eb0d74f3208'), HexBytes('0x0000000000000000000000000e5891850bb3f03090f03010000806f080040100')], 'data': HexBytes('0x0000000000000000000000000000000000000000000000001c061e0ca916ffd8'), 'blockNumber': 379862073, 'transactionHash': HexBytes('0x988cd8ad6df4f4557ddef352f42fe7e9ca9909553efe0abe2b4f36d6fad3e663'), 'transactionIndex': 4, 'blockHash': HexBytes('0x0bc1b94cd1916b62a3e496f1ef2ad3db281b359381ac56cd316eae989cac99c5'), 'logIndex': 5, 'removed': False})",
+        "AttributeDict({'address': '0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1', 'topics': [HexBytes('0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef'), HexBytes('0x0000000000000000000000000e5891850bb3f03090f03010000806f080040100'), HexBytes('0x000000000000000000000000c051405edef0e64ebfc501cfe1158eb0d74f3208')], 'data': HexBytes('0x0000000000000000000000000000000000000000000000000df620e7c471b7be'), 'blockNumber': 379862073, 'transactionHash': HexBytes('0x988cd8ad6df4f4557ddef352f42fe7e9ca9909553efe0abe2b4f36d6fad3e663'), 'transactionIndex': 4, 'blockHash': HexBytes('0x0bc1b94cd1916b62a3e496f1ef2ad3db281b359381ac56cd316eae989cac99c5'), 'logIndex': 6, 'removed': False})",
+        "AttributeDict({'address': '0xC051405EdeF0E64eBfc501cFe1158Eb0D74F3208', 'topics': [HexBytes('0xc42079f94a6350d7e6235f29174924f928cc2ac818eb64fed8004e115fbcca67'), HexBytes('0x000000000000000000000000e592427a0aece92de3edee1f18e0157c05861564'), HexBytes('0x0000000000000000000000000e5891850bb3f03090f03010000806f080040100')], 'data': HexBytes('0xffffffffffffffffffffffffffffffffffffffffffffffffe3f9e1f356e900280000000000000000000000000000000000000000000000000df620e7c471b7be0000000000000000000000000000000000000000b46bf9499ddd622e29b029c300000000000000000000000000000000000000000000759cb8c3cebe847fcfe5ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe4aa'), 'blockNumber': 379862073, 'transactionHash': HexBytes('0x988cd8ad6df4f4557ddef352f42fe7e9ca9909553efe0abe2b4f36d6fad3e663'), 'transactionIndex': 4, 'blockHash': HexBytes('0x0bc1b94cd1916b62a3e496f1ef2ad3db281b359381ac56cd316eae989cac99c5'), 'logIndex': 7, 'removed': False})",
+        "AttributeDict({'address': '0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1', 'topics': [HexBytes('0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef'), HexBytes('0x0000000000000000000000000e5891850bb3f03090f03010000806f080040100'), HexBytes('0x0000000000000000000000006a000f20005980200259b80c5102003040001068')], 'data': HexBytes('0x000000000000000000000000000000000000000000000000000392f8654bb127'), 'blockNumber': 379862073, 'transactionHash': HexBytes('0x988cd8ad6df4f4557ddef352f42fe7e9ca9909553efe0abe2b4f36d6fad3e663'), 'transactionIndex': 4, 'blockHash': HexBytes('0x0bc1b94cd1916b62a3e496f1ef2ad3db281b359381ac56cd316eae989cac99c5'), 'logIndex': 8, 'removed': False})",
+        "AttributeDict({'address': '0x912CE59144191C1204E64559FE8253a0e49E6548', 'topics': [HexBytes('0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef'), HexBytes('0x0000000000000000000000000e5891850bb3f03090f03010000806f080040100'), HexBytes('0x0000000000000000000000006a000f20005980200259b80c5102003040001068')], 'data': HexBytes('0x0000000000000000000000000000000000000000000000001c061e0ca916ffd8'), 'blockNumber': 379862073, 'transactionHash': HexBytes('0x988cd8ad6df4f4557ddef352f42fe7e9ca9909553efe0abe2b4f36d6fad3e663'), 'transactionIndex': 4, 'blockHash': HexBytes('0x0bc1b94cd1916b62a3e496f1ef2ad3db281b359381ac56cd316eae989cac99c5'), 'logIndex': 9, 'removed': False})",
+        "AttributeDict({'address': '0x912CE59144191C1204E64559FE8253a0e49E6548', 'topics': [HexBytes('0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef'), HexBytes('0x0000000000000000000000006a000f20005980200259b80c5102003040001068'), HexBytes('0x00000000000000000000000063dfa7c09dc2ff4030d6b8dc2ce6262bf898c8a4')], 'data': HexBytes('0x0000000000000000000000000000000000000000000000001c061e0ca916ffd8'), 'blockNumber': 379862073, 'transactionHash': HexBytes('0x988cd8ad6df4f4557ddef352f42fe7e9ca9909553efe0abe2b4f36d6fad3e663'), 'transactionIndex': 4, 'blockHash': HexBytes('0x0bc1b94cd1916b62a3e496f1ef2ad3db281b359381ac56cd316eae989cac99c5'), 'logIndex': 10, 'removed': False})",
+        "AttributeDict({'address': '0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1', 'topics': [HexBytes('0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef'), HexBytes('0x0000000000000000000000006a000f20005980200259b80c5102003040001068'), HexBytes('0x00000000000000000000000063dfa7c09dc2ff4030d6b8dc2ce6262bf898c8a4')], 'data': HexBytes('0x000000000000000000000000000000000000000000000000000392f8654bb127'), 'blockNumber': 379862073, 'transactionHash': HexBytes('0x988cd8ad6df4f4557ddef352f42fe7e9ca9909553efe0abe2b4f36d6fad3e663'), 'transactionIndex': 4, 'blockHash': HexBytes('0x0bc1b94cd1916b62a3e496f1ef2ad3db281b359381ac56cd316eae989cac99c5'), 'logIndex': 11, 'removed': False})",
+        "AttributeDict({'address': '0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1', 'topics': [HexBytes('0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925'), HexBytes('0x00000000000000000000000063dfa7c09dc2ff4030d6b8dc2ce6262bf898c8a4'), HexBytes('0x0000000000000000000000006a000f20005980200259b80c5102003040001068')], 'data': HexBytes('0x0000000000000000000000000000000000000000000000000000000000000000'), 'blockNumber': 379862073, 'transactionHash': HexBytes('0x988cd8ad6df4f4557ddef352f42fe7e9ca9909553efe0abe2b4f36d6fad3e663'), 'transactionIndex': 4, 'blockHash': HexBytes('0x0bc1b94cd1916b62a3e496f1ef2ad3db281b359381ac56cd316eae989cac99c5'), 'logIndex': 12, 'removed': False})",
+        "AttributeDict({'address': '0x63dfa7c09Dc2Ff4030d6B8Dc2ce6262BF898C8A4', 'topics': [HexBytes('0xbf77fd13a39d14dc0da779342c14105c38d9a5d0c60f2caa22f5fd1d5525416d'), HexBytes('0x000000000000000000000000da10009cbd5d07dd0cecc66161fc93d7c9000da1'), HexBytes('0x000000000000000000000000912ce59144191c1204e64559fe8253a0e49e6548')], 'data': HexBytes('0x0000000000000000000000000000000000000000000000000df620e7c471b7be0000000000000000000000000000000000000000000000001c061e0ca916ffd8'), 'blockNumber': 379862073, 'transactionHash': HexBytes('0x988cd8ad6df4f4557ddef352f42fe7e9ca9909553efe0abe2b4f36d6fad3e663'), 'transactionIndex': 4, 'blockHash': HexBytes('0x0bc1b94cd1916b62a3e496f1ef2ad3db281b359381ac56cd316eae989cac99c5'), 'logIndex': 13, 'removed': False})",
+        "AttributeDict({'address': '0x44705f578135cC5d703b4c9c122528C73Eb87145', 'topics': [HexBytes('0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef'), HexBytes('0x0000000000000000000000005b823270e3719cde8669e5e5326b455eaa8a350b'), HexBytes('0x0000000000000000000000000000000000000000000000000000000000000000')], 'data': HexBytes('0x0000000000000000000000000000000000000000000000001c061ce60860fb49'), 'blockNumber': 379862073, 'transactionHash': HexBytes('0x988cd8ad6df4f4557ddef352f42fe7e9ca9909553efe0abe2b4f36d6fad3e663'), 'transactionIndex': 4, 'blockHash': HexBytes('0x0bc1b94cd1916b62a3e496f1ef2ad3db281b359381ac56cd316eae989cac99c5'), 'logIndex': 14, 'removed': False})",
+        "AttributeDict({'address': '0x44705f578135cC5d703b4c9c122528C73Eb87145', 'topics': [HexBytes('0x4cf25bc1d991c17529c25213d3cc0cda295eeaad5f13f361969b12ea48015f90'), HexBytes('0x0000000000000000000000005b823270e3719cde8669e5e5326b455eaa8a350b'), HexBytes('0x0000000000000000000000000000000000000000000000000000000000000000')], 'data': HexBytes('0x0000000000000000000000000000000000000000000000001c061ce60860fb4900000000000000000000000000000000000000000000000000000126a0b6048f000000000000000000000000000000000000000003647db05708d2a44a06fdb3'), 'blockNumber': 379862073, 'transactionHash': HexBytes('0x988cd8ad6df4f4557ddef352f42fe7e9ca9909553efe0abe2b4f36d6fad3e663'), 'transactionIndex': 4, 'blockHash': HexBytes('0x0bc1b94cd1916b62a3e496f1ef2ad3db281b359381ac56cd316eae989cac99c5'), 'logIndex': 15, 'removed': False})",
+        "AttributeDict({'address': '0x794a61358D6845594F94dc1DB02A252b5b4814aD', 'topics': [HexBytes('0x804c9b842b2748a22bb64b345453a3de7ca54a6ca45ce00d415894979e22897a'), HexBytes('0x000000000000000000000000912ce59144191c1204e64559fe8253a0e49e6548')], 'data': HexBytes('0x000000000000000000000000000000000000000000023410cf3f756d0d7b5c04000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000012d34960ad8fd323195b3e000000000000000000000000000000000000000003416b1f911cc0501e26ee77000000000000000000000000000000000000000003647db05708d2a44a06fdb3'), 'blockNumber': 379862073, 'transactionHash': HexBytes('0x988cd8ad6df4f4557ddef352f42fe7e9ca9909553efe0abe2b4f36d6fad3e663'), 'transactionIndex': 4, 'blockHash': HexBytes('0x0bc1b94cd1916b62a3e496f1ef2ad3db281b359381ac56cd316eae989cac99c5'), 'logIndex': 16, 'removed': False})",
+        "AttributeDict({'address': '0x912CE59144191C1204E64559FE8253a0e49E6548', 'topics': [HexBytes('0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef'), HexBytes('0x00000000000000000000000063dfa7c09dc2ff4030d6b8dc2ce6262bf898c8a4'), HexBytes('0x0000000000000000000000006533afac2e7bccb20dca161449a13a32d391fb00')], 'data': HexBytes('0x0000000000000000000000000000000000000000000000001c061e0ca916ffd8'), 'blockNumber': 379862073, 'transactionHash': HexBytes('0x988cd8ad6df4f4557ddef352f42fe7e9ca9909553efe0abe2b4f36d6fad3e663'), 'transactionIndex': 4, 'blockHash': HexBytes('0x0bc1b94cd1916b62a3e496f1ef2ad3db281b359381ac56cd316eae989cac99c5'), 'logIndex': 17, 'removed': False})",
+        "AttributeDict({'address': '0x794a61358D6845594F94dc1DB02A252b5b4814aD', 'topics': [HexBytes('0xa534c8dbe71f871f9f3530e97a74601fea17b426cae02e1c5aee42c96c784051'), HexBytes('0x000000000000000000000000912ce59144191c1204e64559fe8253a0e49e6548'), HexBytes('0x0000000000000000000000005b823270e3719cde8669e5e5326b455eaa8a350b'), HexBytes('0x00000000000000000000000063dfa7c09dc2ff4030d6b8dc2ce6262bf898c8a4')], 'data': HexBytes('0x0000000000000000000000000000000000000000000000001c061e0ca916ffd80000000000000000000000000000000000000000000000000000000000000000'), 'blockNumber': 379862073, 'transactionHash': HexBytes('0x988cd8ad6df4f4557ddef352f42fe7e9ca9909553efe0abe2b4f36d6fad3e663'), 'transactionIndex': 4, 'blockHash': HexBytes('0x0bc1b94cd1916b62a3e496f1ef2ad3db281b359381ac56cd316eae989cac99c5'), 'logIndex': 18, 'removed': False})",
+        "AttributeDict({'address': '0x8619d80FB0141ba7F184CbF22fd724116D9f7ffC', 'topics': [HexBytes('0xda919360433220e13b51e8c211e490d148e61a3bd53de8c097194e458b97f3e1'), HexBytes('0x0000000000000000000000005b823270e3719cde8669e5e5326b455eaa8a350b'), HexBytes('0x00000000000000000000000063dfa7c09dc2ff4030d6b8dc2ce6262bf898c8a4'), HexBytes('0x000000000000000000000000da10009cbd5d07dd0cecc66161fc93d7c9000da1')], 'data': HexBytes('0x0000000000000000000000000000000000000000000000006cd68a44aa54c983'), 'blockNumber': 379862073, 'transactionHash': HexBytes('0x988cd8ad6df4f4557ddef352f42fe7e9ca9909553efe0abe2b4f36d6fad3e663'), 'transactionIndex': 4, 'blockHash': HexBytes('0x0bc1b94cd1916b62a3e496f1ef2ad3db281b359381ac56cd316eae989cac99c5'), 'logIndex': 19, 'removed': False})",
+        "AttributeDict({'address': '0x8619d80FB0141ba7F184CbF22fd724116D9f7ffC', 'topics': [HexBytes('0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef'), HexBytes('0x0000000000000000000000000000000000000000000000000000000000000000'), HexBytes('0x0000000000000000000000005b823270e3719cde8669e5e5326b455eaa8a350b')], 'data': HexBytes('0x0000000000000000000000000000000000000000000000000dfa6b3be2364ef8'), 'blockNumber': 379862073, 'transactionHash': HexBytes('0x988cd8ad6df4f4557ddef352f42fe7e9ca9909553efe0abe2b4f36d6fad3e663'), 'transactionIndex': 4, 'blockHash': HexBytes('0x0bc1b94cd1916b62a3e496f1ef2ad3db281b359381ac56cd316eae989cac99c5'), 'logIndex': 20, 'removed': False})",
+        "AttributeDict({'address': '0x8619d80FB0141ba7F184CbF22fd724116D9f7ffC', 'topics': [HexBytes('0x458f5fa412d0f69b08dd84872b0215675cc67bc1d5b6fd93300a1c3878b86196'), HexBytes('0x00000000000000000000000063dfa7c09dc2ff4030d6b8dc2ce6262bf898c8a4'), HexBytes('0x0000000000000000000000005b823270e3719cde8669e5e5326b455eaa8a350b')], 'data': HexBytes('0x0000000000000000000000000000000000000000000000000dfa6b3be2364ef80000000000000000000000000000000000000000000000000000b75bb878e6120000000000000000000000000000000000000000041313eb8eafef30b8e2f681'), 'blockNumber': 379862073, 'transactionHash': HexBytes('0x988cd8ad6df4f4557ddef352f42fe7e9ca9909553efe0abe2b4f36d6fad3e663'), 'transactionIndex': 4, 'blockHash': HexBytes('0x0bc1b94cd1916b62a3e496f1ef2ad3db281b359381ac56cd316eae989cac99c5'), 'logIndex': 21, 'removed': False})",
+        "AttributeDict({'address': '0x794a61358D6845594F94dc1DB02A252b5b4814aD', 'topics': [HexBytes('0x804c9b842b2748a22bb64b345453a3de7ca54a6ca45ce00d415894979e22897a'), HexBytes('0x000000000000000000000000da10009cbd5d07dd0cecc66161fc93d7c9000da1')], 'data': HexBytes('0x0000000000000000000000000000000000000000001d6a7f69666bd3a8def67b00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000003067e531d760fc74b73fd2000000000000000000000000000000000000000003c4ed33c1b2137143b6923b0000000000000000000000000000000000000000041313eb8eafef30b8e2f681'), 'blockNumber': 379862073, 'transactionHash': HexBytes('0x988cd8ad6df4f4557ddef352f42fe7e9ca9909553efe0abe2b4f36d6fad3e663'), 'transactionIndex': 4, 'blockHash': HexBytes('0x0bc1b94cd1916b62a3e496f1ef2ad3db281b359381ac56cd316eae989cac99c5'), 'logIndex': 22, 'removed': False})",
+        "AttributeDict({'address': '0x794a61358D6845594F94dc1DB02A252b5b4814aD', 'topics': [HexBytes('0xb3d084820fb1a9decffb176436bd02558d15fac9b0ddfed8c465bc7359d7dce0'), HexBytes('0x000000000000000000000000da10009cbd5d07dd0cecc66161fc93d7c9000da1'), HexBytes('0x0000000000000000000000005b823270e3719cde8669e5e5326b455eaa8a350b'), HexBytes('0x0000000000000000000000000000000000000000000000000000000000001730')], 'data': HexBytes('0x00000000000000000000000063dfa7c09dc2ff4030d6b8dc2ce6262bf898c8a40000000000000000000000000000000000000000000000000df9b3e029bd68e500000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000003067e531d760fc74b73fd2'), 'blockNumber': 379862073, 'transactionHash': HexBytes('0x988cd8ad6df4f4557ddef352f42fe7e9ca9909553efe0abe2b4f36d6fad3e663'), 'transactionIndex': 4, 'blockHash': HexBytes('0x0bc1b94cd1916b62a3e496f1ef2ad3db281b359381ac56cd316eae989cac99c5'), 'logIndex': 23, 'removed': False})",
+        "AttributeDict({'address': '0x794a61358D6845594F94dc1DB02A252b5b4814aD', 'topics': [HexBytes('0xefefaba5e921573100900a3ad9cf29f222d995fb3b6045797eaea7521bd8d6f0'), HexBytes('0x00000000000000000000000063dfa7c09dc2ff4030d6b8dc2ce6262bf898c8a4'), HexBytes('0x000000000000000000000000da10009cbd5d07dd0cecc66161fc93d7c9000da1'), HexBytes('0x0000000000000000000000000000000000000000000000000000000000001730')], 'data': HexBytes('0x00000000000000000000000063dfa7c09dc2ff4030d6b8dc2ce6262bf898c8a40000000000000000000000000000000000000000000000000df9b3e029bd68e500000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000'), 'blockNumber': 379862073, 'transactionHash': HexBytes('0x988cd8ad6df4f4557ddef352f42fe7e9ca9909553efe0abe2b4f36d6fad3e663'), 'transactionIndex': 4, 'blockHash': HexBytes('0x0bc1b94cd1916b62a3e496f1ef2ad3db281b359381ac56cd316eae989cac99c5'), 'logIndex': 24, 'removed': False})",
+        "AttributeDict({'address': '0x8619d80FB0141ba7F184CbF22fd724116D9f7ffC', 'topics': [HexBytes('0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef'), HexBytes('0x0000000000000000000000005b823270e3719cde8669e5e5326b455eaa8a350b'), HexBytes('0x0000000000000000000000000000000000000000000000000000000000000000')], 'data': HexBytes('0x000000000000000000000000000000000000000000000000000392f8654bb126'), 'blockNumber': 379862073, 'transactionHash': HexBytes('0x988cd8ad6df4f4557ddef352f42fe7e9ca9909553efe0abe2b4f36d6fad3e663'), 'transactionIndex': 4, 'blockHash': HexBytes('0x0bc1b94cd1916b62a3e496f1ef2ad3db281b359381ac56cd316eae989cac99c5'), 'logIndex': 25, 'removed': False})",
+        "AttributeDict({'address': '0x8619d80FB0141ba7F184CbF22fd724116D9f7ffC', 'topics': [HexBytes('0x4cf25bc1d991c17529c25213d3cc0cda295eeaad5f13f361969b12ea48015f90'), HexBytes('0x0000000000000000000000005b823270e3719cde8669e5e5326b455eaa8a350b'), HexBytes('0x0000000000000000000000000000000000000000000000000000000000000000')], 'data': HexBytes('0x000000000000000000000000000000000000000000000000000392f8654bb12600000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000041313eb8eafef30b8e2f681'), 'blockNumber': 379862073, 'transactionHash': HexBytes('0x988cd8ad6df4f4557ddef352f42fe7e9ca9909553efe0abe2b4f36d6fad3e663'), 'transactionIndex': 4, 'blockHash': HexBytes('0x0bc1b94cd1916b62a3e496f1ef2ad3db281b359381ac56cd316eae989cac99c5'), 'logIndex': 26, 'removed': False})",
+        "AttributeDict({'address': '0x794a61358D6845594F94dc1DB02A252b5b4814aD', 'topics': [HexBytes('0x804c9b842b2748a22bb64b345453a3de7ca54a6ca45ce00d415894979e22897a'), HexBytes('0x000000000000000000000000da10009cbd5d07dd0cecc66161fc93d7c9000da1')], 'data': HexBytes('0x0000000000000000000000000000000000000000001d6a7f6937f94eaf94647800000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000003067e531b129b27421d22f000000000000000000000000000000000000000003c4ed33c1b2137143b6923b0000000000000000000000000000000000000000041313eb8eafef30b8e2f681'), 'blockNumber': 379862073, 'transactionHash': HexBytes('0x988cd8ad6df4f4557ddef352f42fe7e9ca9909553efe0abe2b4f36d6fad3e663'), 'transactionIndex': 4, 'blockHash': HexBytes('0x0bc1b94cd1916b62a3e496f1ef2ad3db281b359381ac56cd316eae989cac99c5'), 'logIndex': 27, 'removed': False})",
+        "AttributeDict({'address': '0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1', 'topics': [HexBytes('0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef'), HexBytes('0x00000000000000000000000063dfa7c09dc2ff4030d6b8dc2ce6262bf898c8a4'), HexBytes('0x00000000000000000000000082e64f49ed5ec1bc6e43dad4fc8af9bb3a2312ee')], 'data': HexBytes('0x000000000000000000000000000000000000000000000000000392f8654bb127'), 'blockNumber': 379862073, 'transactionHash': HexBytes('0x988cd8ad6df4f4557ddef352f42fe7e9ca9909553efe0abe2b4f36d6fad3e663'), 'transactionIndex': 4, 'blockHash': HexBytes('0x0bc1b94cd1916b62a3e496f1ef2ad3db281b359381ac56cd316eae989cac99c5'), 'logIndex': 28, 'removed': False})",
+        "AttributeDict({'address': '0x794a61358D6845594F94dc1DB02A252b5b4814aD', 'topics': [HexBytes('0xa534c8dbe71f871f9f3530e97a74601fea17b426cae02e1c5aee42c96c784051'), HexBytes('0x000000000000000000000000da10009cbd5d07dd0cecc66161fc93d7c9000da1'), HexBytes('0x0000000000000000000000005b823270e3719cde8669e5e5326b455eaa8a350b'), HexBytes('0x00000000000000000000000063dfa7c09dc2ff4030d6b8dc2ce6262bf898c8a4')], 'data': HexBytes('0x000000000000000000000000000000000000000000000000000392f8654bb1270000000000000000000000000000000000000000000000000000000000000000'), 'blockNumber': 379862073, 'transactionHash': HexBytes('0x988cd8ad6df4f4557ddef352f42fe7e9ca9909553efe0abe2b4f36d6fad3e663'), 'transactionIndex': 4, 'blockHash': HexBytes('0x0bc1b94cd1916b62a3e496f1ef2ad3db281b359381ac56cd316eae989cac99c5'), 'logIndex': 29, 'removed': False})"
+      ],
+      "decoded_data": {
+        "error": "Wrong function selector: b'\\xb8\\xbd\\x1ck\\x00\\x00\\x00\\x00\\x00\\x00', expected 0xb8bd1c6b"
+      },
+      "approval_analysis": {
+        "erc20_approvals": [],
+        "atoken_approvals": [],
+        "debt_token_approvals": [],
+        "total_approvals": 0
+      },
+      "permit_analysis": {
+        "credit_delegation_permits": [],
+        "atoken_permits": [],
+        "erc20_permits": [],
+        "permit_usage": "none"
+      },
+      "paraswap_analysis": {},
+      "contract_interactions": {
+        "main_contract": "0x63dfa7c09Dc2Ff4030d6B8Dc2ce6262BF898C8A4",
+        "is_aave_debt_switch_v3": true,
+        "paraswap_interactions": [],
+        "token_interactions": [
+          {
+            "contract": "0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1",
+            "topics": [
+              "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+              "0x00000000000000000000000082e64f49ed5ec1bc6e43dad4fc8af9bb3a2312ee",
+              "0x00000000000000000000000063dfa7c09dc2ff4030d6b8dc2ce6262bf898c8a4"
+            ],
+            "data": "b'\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\r\\xf9\\xb3\\xe0)\\xbdh\\xe5'"
+          },
+          {
+            "contract": "0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1",
+            "topics": [
+              "0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925",
+              "0x00000000000000000000000063dfa7c09dc2ff4030d6b8dc2ce6262bf898c8a4",
+              "0x0000000000000000000000006a000f20005980200259b80c5102003040001068"
+            ],
+            "data": "b'\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\r\\xf9\\xb3\\xe0)\\xbdh\\xe5'"
+          },
+          {
+            "contract": "0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1",
+            "topics": [
+              "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+              "0x00000000000000000000000063dfa7c09dc2ff4030d6b8dc2ce6262bf898c8a4",
+              "0x0000000000000000000000000e5891850bb3f03090f03010000806f080040100"
+            ],
+            "data": "b'\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\r\\xf9\\xb3\\xe0)\\xbdh\\xe5'"
+          },
+          {
+            "contract": "0x912CE59144191C1204E64559FE8253a0e49E6548",
+            "topics": [
+              "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+              "0x000000000000000000000000c051405edef0e64ebfc501cfe1158eb0d74f3208",
+              "0x0000000000000000000000000e5891850bb3f03090f03010000806f080040100"
+            ],
+            "data": "b'\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x1c\\x06\\x1e\\x0c\\xa9\\x16\\xff\\xd8'"
+          },
+          {
+            "contract": "0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1",
+            "topics": [
+              "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+              "0x0000000000000000000000000e5891850bb3f03090f03010000806f080040100",
+              "0x000000000000000000000000c051405edef0e64ebfc501cfe1158eb0d74f3208"
+            ],
+            "data": "b'\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\r\\xf6 \\xe7\\xc4q\\xb7\\xbe'"
+          },
+          {
+            "contract": "0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1",
+            "topics": [
+              "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+              "0x0000000000000000000000000e5891850bb3f03090f03010000806f080040100",
+              "0x0000000000000000000000006a000f20005980200259b80c5102003040001068"
+            ],
+            "data": "b\"\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x03\\x92\\xf8eK\\xb1'\""
+          },
+          {
+            "contract": "0x912CE59144191C1204E64559FE8253a0e49E6548",
+            "topics": [
+              "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+              "0x0000000000000000000000000e5891850bb3f03090f03010000806f080040100",
+              "0x0000000000000000000000006a000f20005980200259b80c5102003040001068"
+            ],
+            "data": "b'\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x1c\\x06\\x1e\\x0c\\xa9\\x16\\xff\\xd8'"
+          },
+          {
+            "contract": "0x912CE59144191C1204E64559FE8253a0e49E6548",
+            "topics": [
+              "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+              "0x0000000000000000000000006a000f20005980200259b80c5102003040001068",
+              "0x00000000000000000000000063dfa7c09dc2ff4030d6b8dc2ce6262bf898c8a4"
+            ],
+            "data": "b'\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x1c\\x06\\x1e\\x0c\\xa9\\x16\\xff\\xd8'"
+          },
+          {
+            "contract": "0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1",
+            "topics": [
+              "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+              "0x0000000000000000000000006a000f20005980200259b80c5102003040001068",
+              "0x00000000000000000000000063dfa7c09dc2ff4030d6b8dc2ce6262bf898c8a4"
+            ],
+            "data": "b\"\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x03\\x92\\xf8eK\\xb1'\""
+          },
+          {
+            "contract": "0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1",
+            "topics": [
+              "0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925",
+              "0x00000000000000000000000063dfa7c09dc2ff4030d6b8dc2ce6262bf898c8a4",
+              "0x0000000000000000000000006a000f20005980200259b80c5102003040001068"
+            ],
+            "data": "b'\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00'"
+          },
+          {
+            "contract": "0x912CE59144191C1204E64559FE8253a0e49E6548",
+            "topics": [
+              "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+              "0x00000000000000000000000063dfa7c09dc2ff4030d6b8dc2ce6262bf898c8a4",
+              "0x0000000000000000000000006533afac2e7bccb20dca161449a13a32d391fb00"
+            ],
+            "data": "b'\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x1c\\x06\\x1e\\x0c\\xa9\\x16\\xff\\xd8'"
+          },
+          {
+            "contract": "0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1",
+            "topics": [
+              "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+              "0x00000000000000000000000063dfa7c09dc2ff4030d6b8dc2ce6262bf898c8a4",
+              "0x00000000000000000000000082e64f49ed5ec1bc6e43dad4fc8af9bb3a2312ee"
+            ],
+            "data": "b\"\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x03\\x92\\xf8eK\\xb1'\""
+          }
+        ]
+      },
+      "error_details": []
+    },
+    {
+      "transaction_hash": "0xdb1da3add62b0736c862ca7bc63e22afa9e1b85e0d06750b35dbe514b00deb2f",
+      "block_number": 379858606,
+      "timestamp": "2025-09-16T19:59:35",
+      "from_address": "0x5B823270e3719CDe8669e5e5326B455EaA8a350b",
+      "to_address": "0x63dfa7c09Dc2Ff4030d6B8Dc2ce6262BF898C8A4",
+      "value": 0,
+      "gas_used": 750812,
+      "gas_price": 10000000,
+      "status": 1,
+      "input_data": "b\"\\xb8\\xbd\\x1ck\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x01\\xa0\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00Dp_W\\x815\\xcc]p;L\\x9c\\x12%(\\xc7>\\xb8qE\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\xda\\x10\\x00\\x9c\\xbd]\\x07\\xdd\\x0c\\xec\\xc6aa\\xfc\\x93\\xd7\\xc9\\x00\\r\\xa1\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\r\\xe0\\xb6\\xb3\\xa7d\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x02\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x91,\\xe5\\x91D\\x19\\x1c\\x12\\x04\\xe6EY\\xfe\\x82S\\xa0\\xe4\\x9eeH\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x1c\\rIx\\xb1\\xdb\\xf5d\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x01 \\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x02\\x80\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00@\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00j\\x00\\x0f \\x00Y\\x80 \\x02Y\\xb8\\x0cQ\\x02\\x000@\\x00\\x10h\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x02\\x04^\\x94\\xe2\\x8d\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00`\\x05=U\\xf9\\xb5\\xaf\\x86\\x94\\xc5\\x03\\xeb(\\x8a\\x1b~U/Y\\x07\\x10\\x98\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x01\\xe0\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x91,\\xe5\\x91D\\x19\\x1c\\x12\\x04\\xe6EY\\xfe\\x82S\\xa0\\xe4\\x9eeH\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\xda\\x10\\x00\\x9c\\xbd]\\x07\\xdd\\x0c\\xec\\xc6aa\\xfc\\x93\\xd7\\xc9\\x00\\r\\xa1\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x1c\\rIx\\xb1\\xdb\\xf5d\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\r\\xe0\\xb6\\xb3\\xa7d\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x1c\\x06\\x1c\\xe6\\x08`\\xfbH\\x190'\\xd4\\xe4pD\\x8a\\x97\\x06\\x96\\xeb\\xd5\\xf4\\x85!\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x16\\xa4.\\x94\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x01\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00`\\x80\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x91,\\xe5\\x91D\\x19\\x1c\\x12\\x04\\xe6EY\\xfe\\x82S\\xa0\\xe4\\x9eeH\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\xda\\x10\\x00\\x9c\\xbd]\\x07\\xdd\\x0c\\xec\\xc6aa\\xfc\\x93\\xd7\\xc9\\x00\\r\\xa1\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x0b\\xb8\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\"",
+      "logs": [
+        "AttributeDict({'address': '0x912CE59144191C1204E64559FE8253a0e49E6548', 'topics': [HexBytes('0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef'), HexBytes('0x0000000000000000000000006533afac2e7bccb20dca161449a13a32d391fb00'), HexBytes('0x00000000000000000000000063dfa7c09dc2ff4030d6b8dc2ce6262bf898c8a4')], 'data': HexBytes('0x0000000000000000000000000000000000000000000000001c0d4978b1dbf564'), 'blockNumber': 379858606, 'transactionHash': HexBytes('0xdb1da3add62b0736c862ca7bc63e22afa9e1b85e0d06750b35dbe514b00deb2f'), 'transactionIndex': 14, 'blockHash': HexBytes('0x6732be38b9d55bdb4b5eb744c8084c151cf3c887a66700382c80afdddace4d1f'), 'logIndex': 33, 'removed': False})",
+        "AttributeDict({'address': '0x912CE59144191C1204E64559FE8253a0e49E6548', 'topics': [HexBytes('0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925'), HexBytes('0x00000000000000000000000063dfa7c09dc2ff4030d6b8dc2ce6262bf898c8a4'), HexBytes('0x0000000000000000000000006a000f20005980200259b80c5102003040001068')], 'data': HexBytes('0x0000000000000000000000000000000000000000000000001c0d4978b1dbf564'), 'blockNumber': 379858606, 'transactionHash': HexBytes('0xdb1da3add62b0736c862ca7bc63e22afa9e1b85e0d06750b35dbe514b00deb2f'), 'transactionIndex': 14, 'blockHash': HexBytes('0x6732be38b9d55bdb4b5eb744c8084c151cf3c887a66700382c80afdddace4d1f'), 'logIndex': 34, 'removed': False})",
+        "AttributeDict({'address': '0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1', 'topics': [HexBytes('0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef'), HexBytes('0x000000000000000000000000c051405edef0e64ebfc501cfe1158eb0d74f3208'), HexBytes('0x0000000000000000000000006a000f20005980200259b80c5102003040001068')], 'data': HexBytes('0x0000000000000000000000000000000000000000000000000de0b6b3a7640000'), 'blockNumber': 379858606, 'transactionHash': HexBytes('0xdb1da3add62b0736c862ca7bc63e22afa9e1b85e0d06750b35dbe514b00deb2f'), 'transactionIndex': 14, 'blockHash': HexBytes('0x6732be38b9d55bdb4b5eb744c8084c151cf3c887a66700382c80afdddace4d1f'), 'logIndex': 35, 'removed': False})",
+        "AttributeDict({'address': '0x912CE59144191C1204E64559FE8253a0e49E6548', 'topics': [HexBytes('0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925'), HexBytes('0x00000000000000000000000063dfa7c09dc2ff4030d6b8dc2ce6262bf898c8a4'), HexBytes('0x0000000000000000000000006a000f20005980200259b80c5102003040001068')], 'data': HexBytes('0x00000000000000000000000000000000000000000000000000072c92a97afa1c'), 'blockNumber': 379858606, 'transactionHash': HexBytes('0xdb1da3add62b0736c862ca7bc63e22afa9e1b85e0d06750b35dbe514b00deb2f'), 'transactionIndex': 14, 'blockHash': HexBytes('0x6732be38b9d55bdb4b5eb744c8084c151cf3c887a66700382c80afdddace4d1f'), 'logIndex': 36, 'removed': False})",
+        "AttributeDict({'address': '0x912CE59144191C1204E64559FE8253a0e49E6548', 'topics': [HexBytes('0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef'), HexBytes('0x00000000000000000000000063dfa7c09dc2ff4030d6b8dc2ce6262bf898c8a4'), HexBytes('0x000000000000000000000000c051405edef0e64ebfc501cfe1158eb0d74f3208')], 'data': HexBytes('0x0000000000000000000000000000000000000000000000001c061ce60860fb48'), 'blockNumber': 379858606, 'transactionHash': HexBytes('0xdb1da3add62b0736c862ca7bc63e22afa9e1b85e0d06750b35dbe514b00deb2f'), 'transactionIndex': 14, 'blockHash': HexBytes('0x6732be38b9d55bdb4b5eb744c8084c151cf3c887a66700382c80afdddace4d1f'), 'logIndex': 37, 'removed': False})",
+        "AttributeDict({'address': '0xC051405EdeF0E64eBfc501cFe1158Eb0D74F3208', 'topics': [HexBytes('0xc42079f94a6350d7e6235f29174924f928cc2ac818eb64fed8004e115fbcca67'), HexBytes('0x0000000000000000000000006a000f20005980200259b80c5102003040001068'), HexBytes('0x0000000000000000000000006a000f20005980200259b80c5102003040001068')], 'data': HexBytes('0x0000000000000000000000000000000000000000000000001c061ce60860fb48fffffffffffffffffffffffffffffffffffffffffffffffff21f494c589c00000000000000000000000000000000000000000000b46bdafd58a8221ca9775a2700000000000000000000000000000000000000000000759cb8c3cebe847fcfe5ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe4a9'), 'blockNumber': 379858606, 'transactionHash': HexBytes('0xdb1da3add62b0736c862ca7bc63e22afa9e1b85e0d06750b35dbe514b00deb2f'), 'transactionIndex': 14, 'blockHash': HexBytes('0x6732be38b9d55bdb4b5eb744c8084c151cf3c887a66700382c80afdddace4d1f'), 'logIndex': 38, 'removed': False})",
+        "AttributeDict({'address': '0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1', 'topics': [HexBytes('0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef'), HexBytes('0x0000000000000000000000006a000f20005980200259b80c5102003040001068'), HexBytes('0x00000000000000000000000063dfa7c09dc2ff4030d6b8dc2ce6262bf898c8a4')], 'data': HexBytes('0x0000000000000000000000000000000000000000000000000de0b6b3a7640000'), 'blockNumber': 379858606, 'transactionHash': HexBytes('0xdb1da3add62b0736c862ca7bc63e22afa9e1b85e0d06750b35dbe514b00deb2f'), 'transactionIndex': 14, 'blockHash': HexBytes('0x6732be38b9d55bdb4b5eb744c8084c151cf3c887a66700382c80afdddace4d1f'), 'logIndex': 39, 'removed': False})",
+        "AttributeDict({'address': '0x912CE59144191C1204E64559FE8253a0e49E6548', 'topics': [HexBytes('0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925'), HexBytes('0x00000000000000000000000063dfa7c09dc2ff4030d6b8dc2ce6262bf898c8a4'), HexBytes('0x0000000000000000000000006a000f20005980200259b80c5102003040001068')], 'data': HexBytes('0x0000000000000000000000000000000000000000000000000000000000000000'), 'blockNumber': 379858606, 'transactionHash': HexBytes('0xdb1da3add62b0736c862ca7bc63e22afa9e1b85e0d06750b35dbe514b00deb2f'), 'transactionIndex': 14, 'blockHash': HexBytes('0x6732be38b9d55bdb4b5eb744c8084c151cf3c887a66700382c80afdddace4d1f'), 'logIndex': 40, 'removed': False})",
+        "AttributeDict({'address': '0x63dfa7c09Dc2Ff4030d6B8Dc2ce6262BF898C8A4', 'topics': [HexBytes('0xbf77fd13a39d14dc0da779342c14105c38d9a5d0c60f2caa22f5fd1d5525416d'), HexBytes('0x000000000000000000000000912ce59144191c1204e64559fe8253a0e49e6548'), HexBytes('0x000000000000000000000000da10009cbd5d07dd0cecc66161fc93d7c9000da1')], 'data': HexBytes('0x0000000000000000000000000000000000000000000000001c061ce60860fb480000000000000000000000000000000000000000000000000de0b6b3a7640000'), 'blockNumber': 379858606, 'transactionHash': HexBytes('0xdb1da3add62b0736c862ca7bc63e22afa9e1b85e0d06750b35dbe514b00deb2f'), 'transactionIndex': 14, 'blockHash': HexBytes('0x6732be38b9d55bdb4b5eb744c8084c151cf3c887a66700382c80afdddace4d1f'), 'logIndex': 41, 'removed': False})",
+        "AttributeDict({'address': '0x8619d80FB0141ba7F184CbF22fd724116D9f7ffC', 'topics': [HexBytes('0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef'), HexBytes('0x0000000000000000000000005b823270e3719cde8669e5e5326b455eaa8a350b'), HexBytes('0x0000000000000000000000000000000000000000000000000000000000000000')], 'data': HexBytes('0x0000000000000000000000000000000000000000000000000ad993eaa7730503'), 'blockNumber': 379858606, 'transactionHash': HexBytes('0xdb1da3add62b0736c862ca7bc63e22afa9e1b85e0d06750b35dbe514b00deb2f'), 'transactionIndex': 14, 'blockHash': HexBytes('0x6732be38b9d55bdb4b5eb744c8084c151cf3c887a66700382c80afdddace4d1f'), 'logIndex': 42, 'removed': False})",
+        "AttributeDict({'address': '0x8619d80FB0141ba7F184CbF22fd724116D9f7ffC', 'topics': [HexBytes('0x4cf25bc1d991c17529c25213d3cc0cda295eeaad5f13f361969b12ea48015f90'), HexBytes('0x0000000000000000000000005b823270e3719cde8669e5e5326b455eaa8a350b'), HexBytes('0x0000000000000000000000000000000000000000000000000000000000000000')], 'data': HexBytes('0x0000000000000000000000000000000000000000000000000ad993eaa7730503000000000000000000000000000000000000000000000000030722c8fff0fafc00000000000000000000000000000000000000000413137d73d5b363335a409d'), 'blockNumber': 379858606, 'transactionHash': HexBytes('0xdb1da3add62b0736c862ca7bc63e22afa9e1b85e0d06750b35dbe514b00deb2f'), 'transactionIndex': 14, 'blockHash': HexBytes('0x6732be38b9d55bdb4b5eb744c8084c151cf3c887a66700382c80afdddace4d1f'), 'logIndex': 43, 'removed': False})",
+        "AttributeDict({'address': '0x794a61358D6845594F94dc1DB02A252b5b4814aD', 'topics': [HexBytes('0x804c9b842b2748a22bb64b345453a3de7ca54a6ca45ce00d415894979e22897a'), HexBytes('0x000000000000000000000000da10009cbd5d07dd0cecc66161fc93d7c9000da1')], 'data': HexBytes('0x0000000000000000000000000000000000000000001d6a7d8622dd28c4c0e88000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000003067e3a4392e6ad0c5f300000000000000000000000000000000000000000003c4ecf5dc0e1dfeca9e64c100000000000000000000000000000000000000000413137d73d5b363335a409d'), 'blockNumber': 379858606, 'transactionHash': HexBytes('0xdb1da3add62b0736c862ca7bc63e22afa9e1b85e0d06750b35dbe514b00deb2f'), 'transactionIndex': 14, 'blockHash': HexBytes('0x6732be38b9d55bdb4b5eb744c8084c151cf3c887a66700382c80afdddace4d1f'), 'logIndex': 44, 'removed': False})",
+        "AttributeDict({'address': '0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1', 'topics': [HexBytes('0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef'), HexBytes('0x00000000000000000000000063dfa7c09dc2ff4030d6b8dc2ce6262bf898c8a4'), HexBytes('0x00000000000000000000000082e64f49ed5ec1bc6e43dad4fc8af9bb3a2312ee')], 'data': HexBytes('0x0000000000000000000000000000000000000000000000000de0b6b3a7640000'), 'blockNumber': 379858606, 'transactionHash': HexBytes('0xdb1da3add62b0736c862ca7bc63e22afa9e1b85e0d06750b35dbe514b00deb2f'), 'transactionIndex': 14, 'blockHash': HexBytes('0x6732be38b9d55bdb4b5eb744c8084c151cf3c887a66700382c80afdddace4d1f'), 'logIndex': 45, 'removed': False})",
+        "AttributeDict({'address': '0x794a61358D6845594F94dc1DB02A252b5b4814aD', 'topics': [HexBytes('0xa534c8dbe71f871f9f3530e97a74601fea17b426cae02e1c5aee42c96c784051'), HexBytes('0x000000000000000000000000da10009cbd5d07dd0cecc66161fc93d7c9000da1'), HexBytes('0x0000000000000000000000005b823270e3719cde8669e5e5326b455eaa8a350b'), HexBytes('0x00000000000000000000000063dfa7c09dc2ff4030d6b8dc2ce6262bf898c8a4')], 'data': HexBytes('0x0000000000000000000000000000000000000000000000000de0b6b3a76400000000000000000000000000000000000000000000000000000000000000000000'), 'blockNumber': 379858606, 'transactionHash': HexBytes('0xdb1da3add62b0736c862ca7bc63e22afa9e1b85e0d06750b35dbe514b00deb2f'), 'transactionIndex': 14, 'blockHash': HexBytes('0x6732be38b9d55bdb4b5eb744c8084c151cf3c887a66700382c80afdddace4d1f'), 'logIndex': 46, 'removed': False})",
+        "AttributeDict({'address': '0x44705f578135cC5d703b4c9c122528C73Eb87145', 'topics': [HexBytes('0xda919360433220e13b51e8c211e490d148e61a3bd53de8c097194e458b97f3e1'), HexBytes('0x0000000000000000000000005b823270e3719cde8669e5e5326b455eaa8a350b'), HexBytes('0x00000000000000000000000063dfa7c09dc2ff4030d6b8dc2ce6262bf898c8a4'), HexBytes('0x000000000000000000000000912ce59144191c1204e64559fe8253a0e49e6548')], 'data': HexBytes('0x00000000000000000000000000000000000000000000003619bc644d2cc40a9b'), 'blockNumber': 379858606, 'transactionHash': HexBytes('0xdb1da3add62b0736c862ca7bc63e22afa9e1b85e0d06750b35dbe514b00deb2f'), 'transactionIndex': 14, 'blockHash': HexBytes('0x6732be38b9d55bdb4b5eb744c8084c151cf3c887a66700382c80afdddace4d1f'), 'logIndex': 47, 'removed': False})",
+        "AttributeDict({'address': '0x44705f578135cC5d703b4c9c122528C73Eb87145', 'topics': [HexBytes('0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef'), HexBytes('0x0000000000000000000000000000000000000000000000000000000000000000'), HexBytes('0x0000000000000000000000005b823270e3719cde8669e5e5326b455eaa8a350b')], 'data': HexBytes('0x0000000000000000000000000000000000000000000000001c0d4978b1dbf565'), 'blockNumber': 379858606, 'transactionHash': HexBytes('0xdb1da3add62b0736c862ca7bc63e22afa9e1b85e0d06750b35dbe514b00deb2f'), 'transactionIndex': 14, 'blockHash': HexBytes('0x6732be38b9d55bdb4b5eb744c8084c151cf3c887a66700382c80afdddace4d1f'), 'logIndex': 48, 'removed': False})",
+        "AttributeDict({'address': '0x44705f578135cC5d703b4c9c122528C73Eb87145', 'topics': [HexBytes('0x458f5fa412d0f69b08dd84872b0215675cc67bc1d5b6fd93300a1c3878b86196'), HexBytes('0x00000000000000000000000063dfa7c09dc2ff4030d6b8dc2ce6262bf898c8a4'), HexBytes('0x0000000000000000000000005b823270e3719cde8669e5e5326b455eaa8a350b')], 'data': HexBytes('0x0000000000000000000000000000000000000000000000001c0d4978b1dbf5650000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000003647d8cac331dc7a530141d'), 'blockNumber': 379858606, 'transactionHash': HexBytes('0xdb1da3add62b0736c862ca7bc63e22afa9e1b85e0d06750b35dbe514b00deb2f'), 'transactionIndex': 14, 'blockHash': HexBytes('0x6732be38b9d55bdb4b5eb744c8084c151cf3c887a66700382c80afdddace4d1f'), 'logIndex': 49, 'removed': False})",
+        "AttributeDict({'address': '0x794a61358D6845594F94dc1DB02A252b5b4814aD', 'topics': [HexBytes('0x804c9b842b2748a22bb64b345453a3de7ca54a6ca45ce00d415894979e22897a'), HexBytes('0x000000000000000000000000912ce59144191c1204e64559fe8253a0e49e6548')], 'data': HexBytes('0x0000000000000000000000000000000000000000000234c47c200a27754532da000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000012d648b2910a2cf3bee2cf000000000000000000000000000000000000000003416b1b8f2a2827b6bc9cb8000000000000000000000000000000000000000003647d8cac331dc7a530141d'), 'blockNumber': 379858606, 'transactionHash': HexBytes('0xdb1da3add62b0736c862ca7bc63e22afa9e1b85e0d06750b35dbe514b00deb2f'), 'transactionIndex': 14, 'blockHash': HexBytes('0x6732be38b9d55bdb4b5eb744c8084c151cf3c887a66700382c80afdddace4d1f'), 'logIndex': 50, 'removed': False})",
+        "AttributeDict({'address': '0x794a61358D6845594F94dc1DB02A252b5b4814aD', 'topics': [HexBytes('0xb3d084820fb1a9decffb176436bd02558d15fac9b0ddfed8c465bc7359d7dce0'), HexBytes('0x000000000000000000000000912ce59144191c1204e64559fe8253a0e49e6548'), HexBytes('0x0000000000000000000000005b823270e3719cde8669e5e5326b455eaa8a350b'), HexBytes('0x0000000000000000000000000000000000000000000000000000000000001730')], 'data': HexBytes('0x00000000000000000000000063dfa7c09dc2ff4030d6b8dc2ce6262bf898c8a40000000000000000000000000000000000000000000000001c0d4978b1dbf564000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000012d648b2910a2cf3bee2cf'), 'blockNumber': 379858606, 'transactionHash': HexBytes('0xdb1da3add62b0736c862ca7bc63e22afa9e1b85e0d06750b35dbe514b00deb2f'), 'transactionIndex': 14, 'blockHash': HexBytes('0x6732be38b9d55bdb4b5eb744c8084c151cf3c887a66700382c80afdddace4d1f'), 'logIndex': 51, 'removed': False})",
+        "AttributeDict({'address': '0x794a61358D6845594F94dc1DB02A252b5b4814aD', 'topics': [HexBytes('0xefefaba5e921573100900a3ad9cf29f222d995fb3b6045797eaea7521bd8d6f0'), HexBytes('0x00000000000000000000000063dfa7c09dc2ff4030d6b8dc2ce6262bf898c8a4'), HexBytes('0x000000000000000000000000912ce59144191c1204e64559fe8253a0e49e6548'), HexBytes('0x0000000000000000000000000000000000000000000000000000000000001730')], 'data': HexBytes('0x00000000000000000000000063dfa7c09dc2ff4030d6b8dc2ce6262bf898c8a40000000000000000000000000000000000000000000000001c0d4978b1dbf56400000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000'), 'blockNumber': 379858606, 'transactionHash': HexBytes('0xdb1da3add62b0736c862ca7bc63e22afa9e1b85e0d06750b35dbe514b00deb2f'), 'transactionIndex': 14, 'blockHash': HexBytes('0x6732be38b9d55bdb4b5eb744c8084c151cf3c887a66700382c80afdddace4d1f'), 'logIndex': 52, 'removed': False})",
+        "AttributeDict({'address': '0x44705f578135cC5d703b4c9c122528C73Eb87145', 'topics': [HexBytes('0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef'), HexBytes('0x0000000000000000000000005b823270e3719cde8669e5e5326b455eaa8a350b'), HexBytes('0x0000000000000000000000000000000000000000000000000000000000000000')], 'data': HexBytes('0x00000000000000000000000000000000000000000000000000072c92a97afa1c'), 'blockNumber': 379858606, 'transactionHash': HexBytes('0xdb1da3add62b0736c862ca7bc63e22afa9e1b85e0d06750b35dbe514b00deb2f'), 'transactionIndex': 14, 'blockHash': HexBytes('0x6732be38b9d55bdb4b5eb744c8084c151cf3c887a66700382c80afdddace4d1f'), 'logIndex': 53, 'removed': False})",
+        "AttributeDict({'address': '0x44705f578135cC5d703b4c9c122528C73Eb87145', 'topics': [HexBytes('0x4cf25bc1d991c17529c25213d3cc0cda295eeaad5f13f361969b12ea48015f90'), HexBytes('0x0000000000000000000000005b823270e3719cde8669e5e5326b455eaa8a350b'), HexBytes('0x0000000000000000000000000000000000000000000000000000000000000000')], 'data': HexBytes('0x00000000000000000000000000000000000000000000000000072c92a97afa1c0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000003647d8cac331dc7a530141d'), 'blockNumber': 379858606, 'transactionHash': HexBytes('0xdb1da3add62b0736c862ca7bc63e22afa9e1b85e0d06750b35dbe514b00deb2f'), 'transactionIndex': 14, 'blockHash': HexBytes('0x6732be38b9d55bdb4b5eb744c8084c151cf3c887a66700382c80afdddace4d1f'), 'logIndex': 54, 'removed': False})",
+        "AttributeDict({'address': '0x794a61358D6845594F94dc1DB02A252b5b4814aD', 'topics': [HexBytes('0x804c9b842b2748a22bb64b345453a3de7ca54a6ca45ce00d415894979e22897a'), HexBytes('0x000000000000000000000000912ce59144191c1204e64559fe8253a0e49e6548')], 'data': HexBytes('0x0000000000000000000000000000000000000000000234c47c1a3dffee726572000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000012d648b27849ed7ef78ad2000000000000000000000000000000000000000003416b1b8f2a2827b6bc9cb8000000000000000000000000000000000000000003647d8cac331dc7a530141d'), 'blockNumber': 379858606, 'transactionHash': HexBytes('0xdb1da3add62b0736c862ca7bc63e22afa9e1b85e0d06750b35dbe514b00deb2f'), 'transactionIndex': 14, 'blockHash': HexBytes('0x6732be38b9d55bdb4b5eb744c8084c151cf3c887a66700382c80afdddace4d1f'), 'logIndex': 55, 'removed': False})",
+        "AttributeDict({'address': '0x912CE59144191C1204E64559FE8253a0e49E6548', 'topics': [HexBytes('0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef'), HexBytes('0x00000000000000000000000063dfa7c09dc2ff4030d6b8dc2ce6262bf898c8a4'), HexBytes('0x0000000000000000000000006533afac2e7bccb20dca161449a13a32d391fb00')], 'data': HexBytes('0x00000000000000000000000000000000000000000000000000072c92a97afa1c'), 'blockNumber': 379858606, 'transactionHash': HexBytes('0xdb1da3add62b0736c862ca7bc63e22afa9e1b85e0d06750b35dbe514b00deb2f'), 'transactionIndex': 14, 'blockHash': HexBytes('0x6732be38b9d55bdb4b5eb744c8084c151cf3c887a66700382c80afdddace4d1f'), 'logIndex': 56, 'removed': False})",
+        "AttributeDict({'address': '0x794a61358D6845594F94dc1DB02A252b5b4814aD', 'topics': [HexBytes('0xa534c8dbe71f871f9f3530e97a74601fea17b426cae02e1c5aee42c96c784051'), HexBytes('0x000000000000000000000000912ce59144191c1204e64559fe8253a0e49e6548'), HexBytes('0x0000000000000000000000005b823270e3719cde8669e5e5326b455eaa8a350b'), HexBytes('0x00000000000000000000000063dfa7c09dc2ff4030d6b8dc2ce6262bf898c8a4')], 'data': HexBytes('0x00000000000000000000000000000000000000000000000000072c92a97afa1c0000000000000000000000000000000000000000000000000000000000000000'), 'blockNumber': 379858606, 'transactionHash': HexBytes('0xdb1da3add62b0736c862ca7bc63e22afa9e1b85e0d06750b35dbe514b00deb2f'), 'transactionIndex': 14, 'blockHash': HexBytes('0x6732be38b9d55bdb4b5eb744c8084c151cf3c887a66700382c80afdddace4d1f'), 'logIndex': 57, 'removed': False})"
+      ],
+      "decoded_data": {
+        "error": "Wrong function selector: b'\\xb8\\xbd\\x1ck\\x00\\x00\\x00\\x00\\x00\\x00', expected 0xb8bd1c6b"
+      },
+      "approval_analysis": {
+        "erc20_approvals": [],
+        "atoken_approvals": [],
+        "debt_token_approvals": [],
+        "total_approvals": 0
+      },
+      "permit_analysis": {
+        "credit_delegation_permits": [],
+        "atoken_permits": [],
+        "erc20_permits": [],
+        "permit_usage": "none"
+      },
+      "paraswap_analysis": {},
+      "contract_interactions": {
+        "main_contract": "0x63dfa7c09Dc2Ff4030d6B8Dc2ce6262BF898C8A4",
+        "is_aave_debt_switch_v3": true,
+        "paraswap_interactions": [],
+        "token_interactions": [
+          {
+            "contract": "0x912CE59144191C1204E64559FE8253a0e49E6548",
+            "topics": [
+              "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+              "0x0000000000000000000000006533afac2e7bccb20dca161449a13a32d391fb00",
+              "0x00000000000000000000000063dfa7c09dc2ff4030d6b8dc2ce6262bf898c8a4"
+            ],
+            "data": "b'\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x1c\\rIx\\xb1\\xdb\\xf5d'"
+          },
+          {
+            "contract": "0x912CE59144191C1204E64559FE8253a0e49E6548",
+            "topics": [
+              "0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925",
+              "0x00000000000000000000000063dfa7c09dc2ff4030d6b8dc2ce6262bf898c8a4",
+              "0x0000000000000000000000006a000f20005980200259b80c5102003040001068"
+            ],
+            "data": "b'\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x1c\\rIx\\xb1\\xdb\\xf5d'"
+          },
+          {
+            "contract": "0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1",
+            "topics": [
+              "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+              "0x000000000000000000000000c051405edef0e64ebfc501cfe1158eb0d74f3208",
+              "0x0000000000000000000000006a000f20005980200259b80c5102003040001068"
+            ],
+            "data": "b'\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\r\\xe0\\xb6\\xb3\\xa7d\\x00\\x00'"
+          },
+          {
+            "contract": "0x912CE59144191C1204E64559FE8253a0e49E6548",
+            "topics": [
+              "0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925",
+              "0x00000000000000000000000063dfa7c09dc2ff4030d6b8dc2ce6262bf898c8a4",
+              "0x0000000000000000000000006a000f20005980200259b80c5102003040001068"
+            ],
+            "data": "b'\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x07,\\x92\\xa9z\\xfa\\x1c'"
+          },
+          {
+            "contract": "0x912CE59144191C1204E64559FE8253a0e49E6548",
+            "topics": [
+              "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+              "0x00000000000000000000000063dfa7c09dc2ff4030d6b8dc2ce6262bf898c8a4",
+              "0x000000000000000000000000c051405edef0e64ebfc501cfe1158eb0d74f3208"
+            ],
+            "data": "b'\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x1c\\x06\\x1c\\xe6\\x08`\\xfbH'"
+          },
+          {
+            "contract": "0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1",
+            "topics": [
+              "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+              "0x0000000000000000000000006a000f20005980200259b80c5102003040001068",
+              "0x00000000000000000000000063dfa7c09dc2ff4030d6b8dc2ce6262bf898c8a4"
+            ],
+            "data": "b'\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\r\\xe0\\xb6\\xb3\\xa7d\\x00\\x00'"
+          },
+          {
+            "contract": "0x912CE59144191C1204E64559FE8253a0e49E6548",
+            "topics": [
+              "0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925",
+              "0x00000000000000000000000063dfa7c09dc2ff4030d6b8dc2ce6262bf898c8a4",
+              "0x0000000000000000000000006a000f20005980200259b80c5102003040001068"
+            ],
+            "data": "b'\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00'"
+          },
+          {
+            "contract": "0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1",
+            "topics": [
+              "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+              "0x00000000000000000000000063dfa7c09dc2ff4030d6b8dc2ce6262bf898c8a4",
+              "0x00000000000000000000000082e64f49ed5ec1bc6e43dad4fc8af9bb3a2312ee"
+            ],
+            "data": "b'\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\r\\xe0\\xb6\\xb3\\xa7d\\x00\\x00'"
+          },
+          {
+            "contract": "0x912CE59144191C1204E64559FE8253a0e49E6548",
+            "topics": [
+              "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+              "0x00000000000000000000000063dfa7c09dc2ff4030d6b8dc2ce6262bf898c8a4",
+              "0x0000000000000000000000006533afac2e7bccb20dca161449a13a32d391fb00"
+            ],
+            "data": "b'\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x07,\\x92\\xa9z\\xfa\\x1c'"
+          }
+        ]
+      },
+      "error_details": []
+    }
+  ],
+  "comparative_analysis": {
+    "timestamp": "2025-09-18T00:43:16.147511",
+    "transaction_1": "0x988cd8ad6df4f4557ddef352f42fe7e9ca9909553efe0abe2b4f36d6fad3e663",
+    "transaction_2": "0xdb1da3add62b0736c862ca7bc63e22afa9e1b85e0d06750b35dbe514b00deb2f",
+    "common_patterns": {
+      "uses_aave_debt_switch_v3": true,
+      "same_function": null,
+      "paraswap_function": null
+    },
+    "differences": {},
+    "automation_requirements": {
+      "required_contract": "0x63dfa7c09Dc2Ff4030d6B8Dc2ce6262BF898C8A4",
+      "required_function": "0xb8bd1c6b",
+      "min_approvals_needed": 0,
+      "paraswap_integration": true,
+      "permit_signatures": {
+        "credit_delegation_required": false,
+        "atoken_permit_required": false,
+        "permit_vs_approval": "approval"
+      }
+    },
+    "critical_findings": []
+  },
+  "automation_blueprint": {
+    "required_steps": [
+      "1. Connect to Aave Debt Switch V3: 0x63dfa7c09Dc2Ff4030d6B8Dc2ce6262BF898C8A4",
+      "2. Ensure proper ERC20/aToken approvals are in place",
+      "3. Construct swapDebt calldata with correct offset calculation",
+      "4. Handle permit signatures if required (EIP-2612)",
+      "5. Encode ParaSwap routing data correctly",
+      "6. Execute with appropriate gas estimation"
+    ],
+    "critical_parameters": {
+      "required_contract": "0x63dfa7c09Dc2Ff4030d6B8Dc2ce6262BF898C8A4",
+      "required_function": "0xb8bd1c6b",
+      "min_approvals_needed": 0,
+      "paraswap_integration": true,
+      "permit_signatures": {
+        "credit_delegation_required": false,
+        "atoken_permit_required": false,
+        "permit_vs_approval": "approval"
+      }
+    },
+    "verification_checklist": [
+      "Function selector == 0xb8bd1c6b",
+      "Contract address == Aave Debt Switch V3",
+      "Offset calculation matches ParaSwap data length",
+      "Approval events present in transaction logs",
+      "ParaSwap routing data properly encoded"
+    ]
+  }
+}
