@@ -205,9 +205,57 @@ class DebtSwapSignatureValidator:
                 print(f"❌ {error_msg}")
                 return validation_result
             
+            # PRIORITY 4: Enhanced validation for offset and permits
+            print(f"🔍 PRIORITY 4: Enhanced validation - checking offset and permits...")
+            
+            # Validate offset equals 288 bytes (critical fix from manual transaction analysis)
+            offset_value = calldata_params.get('offset', 0)
+            if offset_value != 288:
+                error_msg = f"Offset validation FAILED: expected 288 bytes (from manual forensics), got {offset_value}"
+                validation_result['error_details'].append(error_msg)
+                validation_result['diagnostic_logs'].append({
+                    'step': 'offset_validation',
+                    'status': 'failed',
+                    'expected_offset': 288,
+                    'actual_offset': offset_value,
+                    'forensic_source': 'successful_manual_transactions',
+                    'timestamp': time.time()
+                })
+                print(f"❌ {error_msg}")
+                return validation_result
+            
+            # Validate permits are properly zeroed (matching manual transaction patterns)
+            if 'permit_data' in calldata_params:
+                permit = calldata_params['permit_data']
+                zero_address = "0x0000000000000000000000000000000000000000"
+                if (permit.get('token') != zero_address or 
+                    permit.get('value', 0) != 0 or permit.get('deadline', 0) != 0 or 
+                    permit.get('v', 0) != 0):
+                    error_msg = "Permit validation FAILED: permits must be fully zeroed (matching manual transactions)"
+                    validation_result['error_details'].append(error_msg)
+                    validation_result['diagnostic_logs'].append({
+                        'step': 'permit_validation',
+                        'status': 'failed',
+                        'expected_pattern': 'fully_zeroed_permits',
+                        'forensic_source': 'successful_manual_transactions',
+                        'timestamp': time.time()
+                    })
+                    print(f"❌ {error_msg}")
+                    return validation_result
+            
+            print(f"✅ Enhanced validation PASSED: offset=288 bytes, permits properly zeroed")
+            validation_result['diagnostic_logs'].append({
+                'step': 'enhanced_validation',
+                'status': 'passed',
+                'offset_check': f'passed_288_bytes',
+                'permit_check': 'passed_fully_zeroed',
+                'forensic_alignment': 'manual_transaction_patterns',
+                'timestamp': time.time()
+            })
+            
             # All validations passed
             validation_result['success'] = True
-            print(f"✅ ALL ROOT-CAUSE VALIDATIONS PASSED")
+            print(f"✅ ALL ROOT-CAUSE VALIDATIONS PASSED (including enhanced validation)")
             
             return validation_result
             

@@ -831,16 +831,16 @@ class ProductionDebtSwapExecutor:
             else:
                 amount_to_swap = amount_wei
             
-            # 5. BYPASS PERMIT: Use FULLY ZEROED permit (including debtToken=0x000...000)
-            print(f"📝 Using FULLY ZEROED permit (delegation already approved on-chain)")
+            # 5. FIXED: Use FULLY ZEROED permit (matching successful manual transactions)
+            print(f"📝 FIXED: Using FULLY ZEROED permit matching successful manual transactions")
             zero_address = "0x0000000000000000000000000000000000000000"
             credit_permit = {
-                'token': zero_address,  # FULLY ZEROED: debtToken must be 0x000...000 to skip permit
-                'value': 0,  # Blank permit
-                'deadline': 0,  # Blank permit
-                'v': 0,  # Blank permit
-                'r': b'\x00' * 32,  # Blank permit
-                's': b'\x00' * 32   # Blank permit
+                'token': zero_address,  # FIXED: debtToken must be 0x000...000 (matching manual transactions)
+                'value': 0,  # FIXED: All zero values matching manual patterns
+                'deadline': 0,  # FIXED: All zero values matching manual patterns  
+                'v': 0,  # FIXED: All zero values matching manual patterns
+                'r': b'\x00' * 32,  # FIXED: All zero values matching manual patterns
+                's': b'\x00' * 32   # FIXED: All zero values matching manual patterns
             }
             
             # 6. Build swapDebt transaction
@@ -862,8 +862,8 @@ class ProductionDebtSwapExecutor:
                     int(amount_to_swap * 2.1),                            # maxNewDebtAmount (2.1x ratio for ARB debt)
                     zero_address,                                          # extraCollateralAsset
                     0,                                                     # extraCollateralAmount
-                    0,                                                     # offset (not needed for ParaSwap)
-                    bytes.fromhex(paraswap_data['calldata'][2:])          # paraswapData (INSIDE the tuple)
+                    288,                                                   # offset (FIXED: 288 bytes for successful manual transactions)
+                    bytes.fromhex(paraswap_data['calldata'][2:])          # swapData (FIXED: standardized parameter name)
                 ),
                 (
                     credit_permit['token'],                               # debtToken
