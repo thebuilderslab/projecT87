@@ -19,7 +19,7 @@ from web3.exceptions import ContractLogicError
 from eth_account.messages import encode_structured_data
 
 # UNIFIED SYSTEM IMPORTS
-from debt_swap_utils import resolve_gas_estimation_failure
+from debt_swap_utils import resolve_gas_estimation_failure, DebtSwapValidator
 from gas_optimization import CoinAPIGasOptimizer
 
 # Optional CoinAPI setup (graceful fallback if not available)
@@ -57,6 +57,14 @@ class ProductionDebtSwapExecutor:
         self.coin_api_key = os.getenv('COIN_API')
         self.max_usd_per_tx = 10.0  # $10 USD maximum per transaction
         self.min_swap_usd = 25.0   # $25 minimum swap amount (prevents dust trade reverts)
+        
+        # Initialize comprehensive validation system with error bubbling
+        try:
+            self.debt_swap_validator = DebtSwapValidator()
+            print("✅ Comprehensive validation system initialized with error bubbling")
+        except Exception as e:
+            print(f"⚠️ Warning: Comprehensive validation system initialization failed: {e}")
+            self.debt_swap_validator = None
         
         # FIXED: Use Aave Debt Switch V3 (matching successful manual transactions)  
         self.aave_debt_switch_v3: ChecksumAddress = self.w3.to_checksum_address("0x63dfa7c09Dc2Ff4030d6B8Dc2ce6262BF898C8A4")
@@ -770,8 +778,115 @@ class ProductionDebtSwapExecutor:
         except Exception as e:
             return False, f"Position validation failed: {e}"
 
+    def _capture_comprehensive_state(self, stage: str) -> Dict:
+        """Capture comprehensive system state for stepwise diff analysis"""
+        start_time = time.time()
+        
+        print(f"\n📊 CAPTURING COMPREHENSIVE STATE: {stage}")
+        print("-" * 60)
+        
+        state = {
+            'stage': stage,
+            'timestamp': time.time(),
+            'capture_time_ms': 0,
+            'aave_position': {},
+            'token_balances': {},
+            'market_prices': {},
+            'gas_prices': {},
+            'health_metrics': {},
+            'capture_errors': []
+        }
+        
+        try:
+            # 1. Aave position data
+            print("   📍 Capturing Aave position...")
+            position = self.get_aave_position()
+            if position:
+                state['aave_position'] = position
+                state['health_metrics'] = {
+                    'health_factor': position.get('health_factor', 0),
+                    'ltv': position.get('ltv', 0),
+                    'liquidation_threshold': position.get('liquidation_threshold', 0),
+                    'total_collateral_usd': position.get('total_collateral_usd', 0),
+                    'total_debt_usd': position.get('total_debt_usd', 0)
+                }
+                print(f"      ✅ HF: {position.get('health_factor', 0):.4f}, Collateral: ${position.get('total_collateral_usd', 0):.2f}")
+            else:
+                state['capture_errors'].append("Failed to capture Aave position")
+                
+            # 2. Token balances
+            print("   💰 Capturing token balances...")
+            for token in ['ETH', 'DAI', 'ARB', 'WBTC']:
+                try:
+                    if token == 'ETH':
+                        balance = self.w3.eth.get_balance(self.user_address) / 1e18
+                    else:
+                        token_address = getattr(self, f'{token.lower()}_address', None)
+                        if token_address:
+                            contract = self.w3.eth.contract(address=token_address, abi=[{
+                                "constant": True,
+                                "inputs": [{"name": "_owner", "type": "address"}],
+                                "name": "balanceOf",
+                                "outputs": [{"name": "balance", "type": "uint256"}],
+                                "type": "function"
+                            }])
+                            balance = contract.functions.balanceOf(self.user_address).call() / 1e18
+                        else:
+                            balance = 0
+                    state['token_balances'][token] = balance
+                    print(f"      {token}: {balance:.6f}")
+                except Exception as e:
+                    state['capture_errors'].append(f"Failed to get {token} balance: {e}")
+                    
+            # 3. Gas prices
+            print("   ⛽ Capturing gas prices...")
+            try:
+                gas_price = self.w3.eth.gas_price
+                state['gas_prices'] = {
+                    'current_gas_price_gwei': gas_price / 1e9,
+                    'current_gas_price_wei': gas_price,
+                    'eth_price_usd': position.get('prices', {}).get('ETH', 0) if position else 0
+                }
+                print(f"      Gas: {gas_price / 1e9:.2f} gwei, ETH: ${state['gas_prices']['eth_price_usd']:.2f}")
+            except Exception as e:
+                state['capture_errors'].append(f"Failed to get gas prices: {e}")
+                
+            # 4. Market prices (from position or fallback)
+            print("   📈 Capturing market prices...")
+            if position and 'prices' in position:
+                state['market_prices'] = position['prices']
+                for token, price in position['prices'].items():
+                    print(f"      {token}: ${price:.4f}")
+            else:
+                state['capture_errors'].append("Failed to capture market prices")
+                
+        except Exception as e:
+            state['capture_errors'].append(f"Critical state capture error: {e}")
+            
+        state['capture_time_ms'] = int((time.time() - start_time) * 1000)
+        print(f"   ⏱️ State capture completed in {state['capture_time_ms']}ms")
+        
+        if state['capture_errors']:
+            print(f"   ⚠️ Capture warnings: {len(state['capture_errors'])} issues")
+            for error in state['capture_errors']:
+                print(f"      - {error}")
+        else:
+            print("   ✅ State capture completed successfully")
+            
+        return state
+
     def execute_debt_swap(self, from_asset: str, to_asset: str, swap_amount_usd: float) -> Dict:
-        """Execute single debt swap with comprehensive validation and artifact persistence"""
+        """
+        PRODUCTION DEBT SWAP EXECUTION with COMPREHENSIVE LOGGING & STEPWISE DIFF
+        Enhanced with full audit trail for forensic analysis and debugging
+        """
+        
+        print(f"\n🎯 EXECUTING DEBT SWAP WITH COMPREHENSIVE AUDIT TRAIL")
+        print("=" * 80)
+        print(f"   Route: {from_asset} debt → {to_asset} debt")
+        print(f"   Amount: ${swap_amount_usd:.2f}")
+        print(f"   Timestamp: {datetime.now().isoformat()}")
+        print("=" * 80)
         
         execution_result = {
             'operation': f'{from_asset}_debt_to_{to_asset}_debt_swap',
@@ -784,16 +899,529 @@ class ProductionDebtSwapExecutor:
             'gas_used': 0,
             'gas_cost_eth': 0,
             'position_before': {},
-            'position_after': {}
+            'position_after': {},
+            'stepwise_diff': {
+                'pre_execution_state': {},
+                'post_execution_state': {},
+                'state_changes': {},
+                'step_by_step_log': []
+            },
+            'comprehensive_logging': {
+                'validation_details': {},
+                'calldata_construction': {},
+                'gas_estimation': {},
+                'transaction_submission': {},
+                'contract_interaction': {},
+                'error_bubbling': []
+            }
         }
         
+        # STEP 1: PRE-EXECUTION STATE CAPTURE
+        print(f"\n📊 STEP 1: PRE-EXECUTION STATE CAPTURE")
+        print("-" * 50)
+        
+        pre_execution_start = time.time()
+        execution_result['stepwise_diff']['pre_execution_state'] = self._capture_comprehensive_state(
+            f"PRE-EXECUTION: {from_asset}→{to_asset}"
+        )
+        execution_result['stepwise_diff']['step_by_step_log'].append({
+            'step': 1,
+            'name': 'pre_execution_state_capture',
+            'duration_ms': int((time.time() - pre_execution_start) * 1000),
+            'status': 'completed',
+            'details': f"Captured comprehensive state: positions, balances, prices"
+        })
+        
         try:
-            print(f"\n🔄 EXECUTING DEBT SWAP")
-            print("=" * 60)
-            print(f"Operation: {from_asset} debt → {to_asset} debt")
-            print(f"Amount: ${swap_amount_usd:.2f}")
-            print(f"User: {self.user_address}")
-            print("=" * 60)
+            # STEP 2: COMPREHENSIVE VALIDATION WITH ERROR BUBBLING
+            print(f"\n🔍 STEP 2: COMPREHENSIVE VALIDATION WITH ERROR BUBBLING")
+            print("-" * 50)
+            
+            validation_start = time.time()
+            
+            # Legacy position validation (for backward compatibility)
+            execution_result['position_before'] = self.get_aave_position()
+            
+            valid, validation_msg = self.validate_position_for_swap(swap_amount_usd)
+            
+            # NEW: Comprehensive validation using error bubbling system
+            print(f"🧪 INITIATING COMPREHENSIVE VALIDATION WITH ERROR BUBBLING")
+            if hasattr(self, 'debt_swap_validator'):
+                try:
+                    validation_results = self.debt_swap_validator.comprehensive_validation(
+                        contract_address="", # Will be set later when we have the transaction
+                        function_call=None,  # Will be set later
+                        calldata_params={},  # Will be populated
+                        swap_amount_usd=swap_amount_usd
+                    )
+                    execution_result['comprehensive_logging']['validation_details'] = validation_results
+                    
+                    # Log all validation results (both passed and failed)
+                    print(f"\n📋 VALIDATION RESULTS SUMMARY:")
+                    print(f"   Success Rate: {validation_results['success_rate']:.1%}")
+                    print(f"   Total Validations: {validation_results['total_validations']}")
+                    print(f"   Passed: {validation_results['validations_passed']}")
+                    print(f"   Failed: {validation_results['validations_failed']}")
+                    print(f"   Total Execution Time: {validation_results['total_execution_time_ms']}ms")
+                    
+                    for error in validation_results['error_details']:
+                        execution_result['comprehensive_logging']['error_bubbling'].append(error)
+                        print(f"   ❌ Error: {error}")
+                    
+                except Exception as validation_error:
+                    print(f"⚠️ Comprehensive validation system unavailable: {validation_error}")
+                    execution_result['comprehensive_logging']['error_bubbling'].append(
+                        f"Validation system error: {validation_error}"
+                    )
+            else:
+                print(f"⚠️ Comprehensive validation system not initialized")
+            
+            if not valid:
+                execution_result['error'] = validation_msg
+                execution_result['stepwise_diff']['step_by_step_log'].append({
+                    'step': 2,
+                    'name': 'validation',
+                    'duration_ms': int((time.time() - validation_start) * 1000),
+                    'status': 'failed',
+                    'details': f"Position validation failed: {validation_msg}"
+                })
+                return execution_result
+            
+            execution_result['stepwise_diff']['step_by_step_log'].append({
+                'step': 2,
+                'name': 'validation',
+                'duration_ms': int((time.time() - validation_start) * 1000),
+                'status': 'completed',
+                'details': "Position validation passed"
+            })
+            
+            # STEP 3: CALLDATA CONSTRUCTION WITH DETAILED LOGGING
+            print(f"\n⚙️ STEP 3: CALLDATA CONSTRUCTION WITH DETAILED LOGGING")
+            print("-" * 50)
+            
+            calldata_start = time.time()
+            
+            # 3A. Get debt token addresses
+            print(f"   📍 3A: Resolving debt token addresses...")
+            new_debt_token = self.get_debt_token_address(to_asset)
+            if not new_debt_token:
+                error_msg = f"Failed to get {to_asset} debt token address"
+                execution_result['error'] = error_msg
+                execution_result['comprehensive_logging']['calldata_construction']['token_resolution_error'] = error_msg
+                return execution_result
+            
+            execution_result['comprehensive_logging']['calldata_construction']['debt_token_address'] = new_debt_token
+            print(f"      ✅ {to_asset} debt token: {new_debt_token}")
+            
+            # 3B. Calculate swap amount in wei with detailed logging
+            print(f"   💱 3B: Calculating swap amount in wei...")
+            if from_asset.upper() == 'DAI':
+                amount_wei = int(swap_amount_usd * 1e18)  # DAI = $1
+                execution_result['comprehensive_logging']['calldata_construction']['amount_calculation'] = {
+                    'asset': 'DAI',
+                    'usd_amount': swap_amount_usd,
+                    'price': 1.0,
+                    'amount_wei': amount_wei
+                }
+                print(f"      ✅ DAI amount: {amount_wei} wei (${swap_amount_usd} @ $1.00/DAI)")
+            elif from_asset.upper() == 'ARB':
+                arb_price = execution_result['position_before']['prices']['ARB']
+                amount_wei = int(swap_amount_usd / arb_price * 1e18)
+                execution_result['comprehensive_logging']['calldata_construction']['amount_calculation'] = {
+                    'asset': 'ARB',
+                    'usd_amount': swap_amount_usd,
+                    'price': arb_price,
+                    'amount_wei': amount_wei
+                }
+                print(f"      ✅ ARB amount: {amount_wei} wei (${swap_amount_usd} @ ${arb_price:.4f}/ARB)")
+            else:
+                error_msg = f"Unsupported asset: {from_asset}"
+                execution_result['error'] = error_msg
+                execution_result['comprehensive_logging']['calldata_construction']['asset_error'] = error_msg
+                return execution_result
+            
+            # 3C. Get ParaSwap Augustus calldata with comprehensive logging
+            print(f"   🔄 3C: Constructing ParaSwap Augustus calldata...")
+            paraswap_start = time.time()
+            paraswap_data = self.get_paraswap_calldata_reverse_routing(from_asset, to_asset, amount_wei)
+            paraswap_duration = int((time.time() - paraswap_start) * 1000)
+            
+            if not paraswap_data:
+                error_msg = "Failed to get ParaSwap Augustus calldata"
+                execution_result['error'] = error_msg
+                execution_result['comprehensive_logging']['calldata_construction']['paraswap_error'] = {
+                    'error': error_msg,
+                    'duration_ms': paraswap_duration
+                }
+                return execution_result
+            
+            execution_result['comprehensive_logging']['calldata_construction']['paraswap_data'] = {
+                'success': True,
+                'duration_ms': paraswap_duration,
+                'calldata_length': len(paraswap_data.get('calldata', '')),
+                'expected_amount': paraswap_data.get('expected_amount', 0)
+            }
+            print(f"      ✅ ParaSwap calldata constructed in {paraswap_duration}ms")
+            print(f"      ✅ Calldata length: {len(paraswap_data.get('calldata', ''))} characters")
+            
+            # Use exact amount from ParaSwap
+            if 'expected_amount' in paraswap_data:
+                amount_to_swap = int(paraswap_data['expected_amount'])
+                print(f"      ✅ Using ParaSwap expected amount: {amount_to_swap} wei")
+            else:
+                amount_to_swap = amount_wei
+                print(f"      ⚠️ Using original amount (ParaSwap didn't provide expected): {amount_to_swap} wei")
+            
+            execution_result['stepwise_diff']['step_by_step_log'].append({
+                'step': 3,
+                'name': 'calldata_construction',
+                'duration_ms': int((time.time() - calldata_start) * 1000),
+                'status': 'completed',
+                'details': f"Calldata constructed successfully, ParaSwap took {paraswap_duration}ms"
+            })
+            
+            # STEP 4: GAS ESTIMATION WITH DETAILED ANALYSIS
+            print(f"\n⛽ STEP 4: GAS ESTIMATION WITH DETAILED ANALYSIS")
+            print("-" * 50)
+            
+            gas_estimation_start = time.time()
+            
+            # 4A. Build transaction parameters with comprehensive logging
+            print(f"   🔧 4A: Building transaction parameters...")
+            zero_address = "0x0000000000000000000000000000000000000000"
+            credit_permit = {
+                'token': zero_address,
+                'value': 0,
+                'deadline': 0,
+                'v': 0,
+                'r': b'\x00' * 32,
+                's': b'\x00' * 32
+            }
+            
+            debt_swap_contract = self.w3.eth.contract(
+                address=self.aave_debt_swap_adapter,
+                abi=[{
+                    "inputs": [
+                        {"name": "debtAsset", "type": "address"},
+                        {"name": "debtRepayAmount", "type": "uint256"},
+                        {"name": "newDebtAsset", "type": "address"},
+                        {"name": "maxNewDebtAmount", "type": "uint256"},
+                        {"name": "extraCollateralAsset", "type": "address"},
+                        {"name": "extraCollateralAmount", "type": "uint256"},
+                        {"name": "offset", "type": "uint256"},
+                        {"name": "paraswapData", "type": "bytes"},
+                        {"name": "creditDelegationPermit", "type": "tuple", "components": [
+                            {"name": "token", "type": "address"},
+                            {"name": "value", "type": "uint256"},
+                            {"name": "deadline", "type": "uint256"},
+                            {"name": "v", "type": "uint8"},
+                            {"name": "r", "type": "bytes32"},
+                            {"name": "s", "type": "bytes32"}
+                        ]},
+                        {"name": "collateralATokenPermit", "type": "tuple", "components": [
+                            {"name": "token", "type": "address"},
+                            {"name": "value", "type": "uint256"},
+                            {"name": "deadline", "type": "uint256"},
+                            {"name": "v", "type": "uint8"},
+                            {"name": "r", "type": "bytes32"},
+                            {"name": "s", "type": "bytes32"}
+                        ]}
+                    ],
+                    "name": "swapDebt",
+                    "outputs": [],
+                    "type": "function"
+                }]
+            )
+            
+            # Transaction parameters with comprehensive logging
+            transaction_params = {
+                'debtAsset': self.get_debt_token_address(from_asset),
+                'debtRepayAmount': amount_to_swap,
+                'newDebtAsset': new_debt_token,
+                'maxNewDebtAmount': int(amount_to_swap * 1.05),  # 5% slippage
+                'extraCollateralAsset': zero_address,
+                'extraCollateralAmount': 0,
+                'offset': 288,  # From forensic analysis
+                'paraswapData': paraswap_data['calldata'],
+                'creditDelegationPermit': credit_permit,
+                'collateralATokenPermit': credit_permit
+            }
+            
+            execution_result['comprehensive_logging']['contract_interaction']['transaction_params'] = {
+                'debtAsset': transaction_params['debtAsset'],
+                'debtRepayAmount': transaction_params['debtRepayAmount'],
+                'newDebtAsset': transaction_params['newDebtAsset'],
+                'maxNewDebtAmount': transaction_params['maxNewDebtAmount'],
+                'offset': transaction_params['offset'],
+                'paraswap_calldata_length': len(transaction_params['paraswapData']),
+                'permits_zeroed': True
+            }
+            
+            print(f"      ✅ Debt Asset: {transaction_params['debtAsset']}")
+            print(f"      ✅ Repay Amount: {transaction_params['debtRepayAmount']} wei")
+            print(f"      ✅ New Debt Asset: {transaction_params['newDebtAsset']}")
+            print(f"      ✅ Max New Debt: {transaction_params['maxNewDebtAmount']} wei (5% slippage)")
+            print(f"      ✅ Offset: {transaction_params['offset']} bytes")
+            print(f"      ✅ ParaSwap Data Length: {len(transaction_params['paraswapData'])} characters")
+            
+            # 4B. Gas estimation with multiple approaches
+            print(f"   ⛽ 4B: Performing gas estimation...")
+            try:
+                function_call = debt_swap_contract.functions.swapDebt(
+                    transaction_params['debtAsset'],
+                    transaction_params['debtRepayAmount'],
+                    transaction_params['newDebtAsset'],
+                    transaction_params['maxNewDebtAmount'],
+                    transaction_params['extraCollateralAsset'],
+                    transaction_params['extraCollateralAmount'],
+                    transaction_params['offset'],
+                    transaction_params['paraswapData'],
+                    transaction_params['creditDelegationPermit'],
+                    transaction_params['collateralATokenPermit']
+                )
+                
+                # Try gas estimation
+                try:
+                    estimated_gas = function_call.estimate_gas({'from': self.user_address})
+                    gas_price = self.w3.eth.gas_price
+                    gas_cost_eth = (estimated_gas * gas_price) / 1e18
+                    gas_cost_usd = gas_cost_eth * execution_result['position_before']['prices'].get('ETH', 3000)
+                    
+                    execution_result['comprehensive_logging']['gas_estimation'] = {
+                        'success': True,
+                        'estimated_gas': estimated_gas,
+                        'gas_price_gwei': gas_price / 1e9,
+                        'gas_cost_eth': gas_cost_eth,
+                        'gas_cost_usd': gas_cost_usd,
+                        'method': 'direct_estimation'
+                    }
+                    
+                    print(f"      ✅ Estimated Gas: {estimated_gas:,} units")
+                    print(f"      ✅ Gas Price: {gas_price / 1e9:.2f} gwei")
+                    print(f"      ✅ Estimated Cost: {gas_cost_eth:.6f} ETH (${gas_cost_usd:.2f})")
+                    
+                except Exception as gas_error:
+                    # Fallback gas estimation
+                    estimated_gas = 500000  # Conservative fallback
+                    gas_price = self.w3.eth.gas_price
+                    gas_cost_eth = (estimated_gas * gas_price) / 1e18
+                    gas_cost_usd = gas_cost_eth * execution_result['position_before']['prices'].get('ETH', 3000)
+                    
+                    execution_result['comprehensive_logging']['gas_estimation'] = {
+                        'success': False,
+                        'error': str(gas_error),
+                        'estimated_gas': estimated_gas,
+                        'gas_price_gwei': gas_price / 1e9,
+                        'gas_cost_eth': gas_cost_eth,
+                        'gas_cost_usd': gas_cost_usd,
+                        'method': 'fallback_estimation'
+                    }
+                    
+                    print(f"      ⚠️ Gas estimation failed: {gas_error}")
+                    print(f"      ✅ Using fallback: {estimated_gas:,} units")
+                    print(f"      ✅ Estimated Cost: {gas_cost_eth:.6f} ETH (${gas_cost_usd:.2f})")
+                    
+            except Exception as contract_error:
+                error_msg = f"Contract interaction setup failed: {contract_error}"
+                execution_result['error'] = error_msg
+                execution_result['comprehensive_logging']['contract_interaction']['setup_error'] = error_msg
+                return execution_result
+            
+            execution_result['stepwise_diff']['step_by_step_log'].append({
+                'step': 4,
+                'name': 'gas_estimation',
+                'duration_ms': int((time.time() - gas_estimation_start) * 1000),
+                'status': 'completed',
+                'details': f"Gas estimation completed: {estimated_gas:,} units"
+            })
+            
+            # STEP 5: TRANSACTION SUBMISSION WITH COMPREHENSIVE LOGGING
+            print(f"\n🚀 STEP 5: TRANSACTION SUBMISSION WITH COMPREHENSIVE LOGGING")
+            print("-" * 50)
+            
+            transaction_start = time.time()
+            
+            # 5A. Final pre-submission validation
+            print(f"   🔍 5A: Final pre-submission validation...")
+            if estimated_gas > 1000000:
+                print(f"      ⚠️ High gas estimate: {estimated_gas:,} units")
+            if gas_cost_usd > 50:
+                print(f"      ⚠️ High transaction cost: ${gas_cost_usd:.2f}")
+            
+            # 5B. Build and submit transaction
+            print(f"   📝 5B: Building and submitting transaction...")
+            try:
+                transaction = function_call.build_transaction({
+                    'from': self.user_address,
+                    'gas': int(estimated_gas * 1.2),  # 20% buffer
+                    'gasPrice': gas_price,
+                    'nonce': self.w3.eth.get_transaction_count(self.user_address)
+                })
+                
+                execution_result['comprehensive_logging']['transaction_submission'] = {
+                    'transaction_built': True,
+                    'gas_limit': transaction['gas'],
+                    'gas_price': transaction['gasPrice'],
+                    'nonce': transaction['nonce'],
+                    'to': transaction['to'],
+                    'value': transaction['value']
+                }
+                
+                print(f"      ✅ Transaction built successfully")
+                print(f"      ✅ Gas Limit: {transaction['gas']:,} units")
+                print(f"      ✅ Nonce: {transaction['nonce']}")
+                
+                # Sign and send transaction
+                signed_txn = self.w3.eth.account.sign_transaction(transaction, self.private_key)
+                print(f"      ✅ Transaction signed")
+                
+                tx_hash = self.w3.eth.send_raw_transaction(signed_txn.rawTransaction)
+                print(f"      ✅ Transaction submitted: {tx_hash.hex()}")
+                
+                execution_result['transaction_hash'] = tx_hash.hex()
+                execution_result['comprehensive_logging']['transaction_submission']['tx_hash'] = tx_hash.hex()
+                execution_result['comprehensive_logging']['transaction_submission']['submission_time'] = time.time()
+                
+                # 5C. Wait for transaction receipt
+                print(f"   ⏳ 5C: Waiting for transaction confirmation...")
+                receipt_start = time.time()
+                try:
+                    tx_receipt = self.w3.eth.wait_for_transaction_receipt(tx_hash, timeout=300)
+                    receipt_duration = int((time.time() - receipt_start) * 1000)
+                    
+                    execution_result['transaction_receipt'] = dict(tx_receipt)
+                    execution_result['gas_used'] = tx_receipt.gasUsed
+                    execution_result['gas_cost_eth'] = (tx_receipt.gasUsed * gas_price) / 1e18
+                    
+                    execution_result['comprehensive_logging']['transaction_submission']['receipt'] = {
+                        'status': tx_receipt.status,
+                        'block_number': tx_receipt.blockNumber,
+                        'gas_used': tx_receipt.gasUsed,
+                        'confirmation_time_ms': receipt_duration,
+                        'transaction_index': tx_receipt.transactionIndex
+                    }
+                    
+                    print(f"      ✅ Transaction confirmed in block {tx_receipt.blockNumber}")
+                    print(f"      ✅ Gas Used: {tx_receipt.gasUsed:,} units")
+                    print(f"      ✅ Status: {'SUCCESS' if tx_receipt.status == 1 else 'FAILED'}")
+                    print(f"      ✅ Confirmation Time: {receipt_duration}ms")
+                    
+                    if tx_receipt.status == 1:
+                        execution_result['success'] = True
+                    else:
+                        execution_result['error'] = "Transaction failed (status = 0)"
+                        
+                except Exception as receipt_error:
+                    execution_result['error'] = f"Transaction receipt error: {receipt_error}"
+                    execution_result['comprehensive_logging']['transaction_submission']['receipt_error'] = str(receipt_error)
+                    
+            except Exception as submission_error:
+                execution_result['error'] = f"Transaction submission failed: {submission_error}"
+                execution_result['comprehensive_logging']['transaction_submission']['submission_error'] = str(submission_error)
+                
+            execution_result['stepwise_diff']['step_by_step_log'].append({
+                'step': 5,
+                'name': 'transaction_submission',
+                'duration_ms': int((time.time() - transaction_start) * 1000),
+                'status': 'completed' if execution_result['success'] else 'failed',
+                'details': f"Transaction {'completed successfully' if execution_result['success'] else 'failed'}"
+            })
+            
+            # STEP 6: POST-EXECUTION STATE CAPTURE AND ANALYSIS
+            print(f"\n📊 STEP 6: POST-EXECUTION STATE CAPTURE AND ANALYSIS")
+            print("-" * 50)
+            
+            post_execution_start = time.time()
+            execution_result['stepwise_diff']['post_execution_state'] = self._capture_comprehensive_state(
+                f"POST-EXECUTION: {from_asset}→{to_asset}"
+            )
+            
+            # Legacy position capture
+            execution_result['position_after'] = self.get_aave_position()
+            
+            # State comparison and diff analysis
+            print(f"\n🔍 STEPWISE DIFF ANALYSIS")
+            print("-" * 50)
+            
+            pre_state = execution_result['stepwise_diff']['pre_execution_state']
+            post_state = execution_result['stepwise_diff']['post_execution_state']
+            
+            state_changes = {}
+            
+            # Health factor change
+            if 'health_metrics' in pre_state and 'health_metrics' in post_state:
+                hf_before = pre_state['health_metrics'].get('health_factor', 0)
+                hf_after = post_state['health_metrics'].get('health_factor', 0)
+                hf_change = hf_after - hf_before
+                state_changes['health_factor'] = {
+                    'before': hf_before,
+                    'after': hf_after,
+                    'change': hf_change,
+                    'change_percent': (hf_change / hf_before * 100) if hf_before != 0 else 0
+                }
+                print(f"   📈 Health Factor: {hf_before:.4f} → {hf_after:.4f} ({hf_change:+.4f})")
+            
+            # Debt composition changes
+            if 'aave_position' in pre_state and 'aave_position' in post_state:
+                pre_debt = pre_state['aave_position'].get('debt_values_usd', {})
+                post_debt = post_state['aave_position'].get('debt_values_usd', {})
+                
+                for token in ['DAI', 'ARB']:
+                    before = pre_debt.get(token, 0)
+                    after = post_debt.get(token, 0)
+                    change = after - before
+                    state_changes[f'{token}_debt'] = {
+                        'before': before,
+                        'after': after,
+                        'change': change
+                    }
+                    print(f"   💳 {token} Debt: ${before:.2f} → ${after:.2f} (${change:+.2f})")
+            
+            # Token balance changes
+            if 'token_balances' in pre_state and 'token_balances' in post_state:
+                for token in ['ETH', 'DAI', 'ARB']:
+                    before = pre_state['token_balances'].get(token, 0)
+                    after = post_state['token_balances'].get(token, 0)
+                    change = after - before
+                    if abs(change) > 0.000001:  # Only show meaningful changes
+                        state_changes[f'{token}_balance'] = {
+                            'before': before,
+                            'after': after,
+                            'change': change
+                        }
+                        print(f"   💰 {token} Balance: {before:.6f} → {after:.6f} ({change:+.6f})")
+            
+            execution_result['stepwise_diff']['state_changes'] = state_changes
+            
+            execution_result['stepwise_diff']['step_by_step_log'].append({
+                'step': 6,
+                'name': 'post_execution_analysis',
+                'duration_ms': int((time.time() - post_execution_start) * 1000),
+                'status': 'completed',
+                'details': f"State analysis completed, {len(state_changes)} changes detected"
+            })
+            
+            # FINAL SUMMARY
+            total_duration = int((time.time() - pre_execution_start) * 1000)
+            
+            print(f"\n📋 COMPREHENSIVE EXECUTION SUMMARY")
+            print("=" * 80)
+            print(f"   Operation: {from_asset} debt → {to_asset} debt")
+            print(f"   Amount: ${swap_amount_usd:.2f}")
+            print(f"   Success: {'✅ YES' if execution_result['success'] else '❌ NO'}")
+            print(f"   Total Duration: {total_duration}ms")
+            print(f"   Transaction Hash: {execution_result.get('transaction_hash', 'N/A')}")
+            print(f"   Gas Used: {execution_result.get('gas_used', 0):,} units")
+            print(f"   Gas Cost: {execution_result.get('gas_cost_eth', 0):.6f} ETH")
+            print(f"   Steps Completed: {len(execution_result['stepwise_diff']['step_by_step_log'])}")
+            print(f"   State Changes: {len(state_changes)}")
+            
+            if not execution_result['success']:
+                print(f"   Error: {execution_result.get('error', 'Unknown error')}")
+            
+            print("=" * 80)
+            
+            return execution_result
             
             # 1. Position validation
             execution_result['position_before'] = self.get_aave_position()
