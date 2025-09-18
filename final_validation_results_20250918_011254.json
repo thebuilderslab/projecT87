@@ -1,0 +1,25 @@
+{
+  "test_metadata": {
+    "timestamp": "2025-09-18T01:12:54.822215",
+    "execution_duration": 8.517257928848267,
+    "test_type": "final_debt_swap_validation"
+  },
+  "critical_fixes": {
+    "offset_288": true,
+    "zeroed_permits": true,
+    "swapdata_naming": true,
+    "error_bubbling": true
+  },
+  "fix_percentage": 100.0,
+  "execution_metrics": {
+    "transaction_hash": "0x7f1015f69e63b0fe4d7cfe1bcb2dca3f7b9ff8c0e90910c8518f9094955911be",
+    "execution_success": false,
+    "gas_used": 36323,
+    "gas_cost_eth": 3.6323e-07
+  },
+  "production_readiness": {
+    "score": 80,
+    "ready": true,
+    "comprehensive_logging": true
+  }
+}

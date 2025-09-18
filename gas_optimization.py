@@ -11,8 +11,12 @@ from typing import Dict, Optional
 from decimal import Decimal
 from web3 import Web3
 
+# Optional CoinAPI setup - graceful fallback if not available
 COIN_API_KEY = os.environ.get("COIN_API")
-assert COIN_API_KEY is not None, "CoinAPI secret missing; aborting."
+if COIN_API_KEY:
+    print("🔑 CoinAPI key loaded for gas optimization")
+else:
+    print("⚠️ CoinAPI key not available - using fallback ETH pricing for gas optimization")
 
 class CoinAPIGasOptimizer:
     """Dynamic gas optimization using real-time ETH prices from CoinAPI"""
@@ -36,6 +40,14 @@ class CoinAPIGasOptimizer:
             'api_status': 0,
             'timestamp': time.time()
         }
+        
+        # Check if API key is available
+        if not self.coin_api_key:
+            print(f"\n💰 ETH PRICE - USING FALLBACK")
+            print("=" * 40)
+            print(f"⚠️ CoinAPI key not available - using fallback price: ${api_result['price']:.2f}")
+            api_result['source'] = 'fallback_no_api_key'
+            return api_result
         
         try:
             print(f"\n💰 FETCHING REAL-TIME ETH PRICE")

@@ -10,8 +10,12 @@ import time
 from typing import Dict, Tuple, Optional, List
 from web3 import Web3
 
+# Optional CoinAPI setup - graceful fallback if not available
 COIN_API_KEY = os.environ.get("COIN_API")
-assert COIN_API_KEY is not None, "CoinAPI secret missing; aborting."
+if COIN_API_KEY:
+    print("🔑 CoinAPI key loaded for enhanced validation features")
+else:
+    print("⚠️ CoinAPI key not available - using fallback validation (core functionality intact)")
 
 class DebtSwapSignatureValidator:
     """Validates function signatures and calldata for debt swap operations"""

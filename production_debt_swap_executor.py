@@ -19,7 +19,7 @@ from web3.exceptions import ContractLogicError
 from eth_account.messages import encode_structured_data
 
 # UNIFIED SYSTEM IMPORTS
-from debt_swap_utils import resolve_gas_estimation_failure, DebtSwapValidator
+from debt_swap_utils import resolve_gas_estimation_failure, DebtSwapSignatureValidator
 from gas_optimization import CoinAPIGasOptimizer
 
 # Optional CoinAPI setup (graceful fallback if not available)
@@ -60,14 +60,14 @@ class ProductionDebtSwapExecutor:
         
         # Initialize comprehensive validation system with error bubbling
         try:
-            self.debt_swap_validator = DebtSwapValidator()
+            self.debt_swap_validator = DebtSwapSignatureValidator(self.w3)
             print("✅ Comprehensive validation system initialized with error bubbling")
         except Exception as e:
             print(f"⚠️ Warning: Comprehensive validation system initialization failed: {e}")
             self.debt_swap_validator = None
         
-        # FIXED: Use Aave Debt Switch V3 (matching successful manual transactions)  
-        self.aave_debt_switch_v3: ChecksumAddress = self.w3.to_checksum_address("0x63dfa7c09Dc2Ff4030d6B8Dc2ce6262BF898C8A4")
+        # FIXED: Use correct Aave Debt Switch V3 contract address as specified by architect
+        self.aave_debt_switch_v3: ChecksumAddress = self.w3.to_checksum_address("0x8761e0370f94f68Db8EaA731f4fC581f6AD0Bd68")
         # Keep backward compatibility
         self.paraswap_debt_swap_adapter: ChecksumAddress = self.aave_debt_switch_v3
         self.augustus_swapper: ChecksumAddress = self.w3.to_checksum_address("0xDEF171Fe48CF0115B1d80b88dc8eAB59176FEe57")
@@ -944,37 +944,9 @@ class ProductionDebtSwapExecutor:
             
             valid, validation_msg = self.validate_position_for_swap(swap_amount_usd)
             
-            # NEW: Comprehensive validation using error bubbling system
-            print(f"🧪 INITIATING COMPREHENSIVE VALIDATION WITH ERROR BUBBLING")
-            if hasattr(self, 'debt_swap_validator'):
-                try:
-                    validation_results = self.debt_swap_validator.comprehensive_validation(
-                        contract_address="", # Will be set later when we have the transaction
-                        function_call=None,  # Will be set later
-                        calldata_params={},  # Will be populated
-                        swap_amount_usd=swap_amount_usd
-                    )
-                    execution_result['comprehensive_logging']['validation_details'] = validation_results
-                    
-                    # Log all validation results (both passed and failed)
-                    print(f"\n📋 VALIDATION RESULTS SUMMARY:")
-                    print(f"   Success Rate: {validation_results['success_rate']:.1%}")
-                    print(f"   Total Validations: {validation_results['total_validations']}")
-                    print(f"   Passed: {validation_results['validations_passed']}")
-                    print(f"   Failed: {validation_results['validations_failed']}")
-                    print(f"   Total Execution Time: {validation_results['total_execution_time_ms']}ms")
-                    
-                    for error in validation_results['error_details']:
-                        execution_result['comprehensive_logging']['error_bubbling'].append(error)
-                        print(f"   ❌ Error: {error}")
-                    
-                except Exception as validation_error:
-                    print(f"⚠️ Comprehensive validation system unavailable: {validation_error}")
-                    execution_result['comprehensive_logging']['error_bubbling'].append(
-                        f"Validation system error: {validation_error}"
-                    )
-            else:
-                print(f"⚠️ Comprehensive validation system not initialized")
+            # REMOVED: Early validation call with placeholder data
+            # Comprehensive validation will be performed later when real function call and parameters are available
+            print(f"🧪 Comprehensive validation will be performed with real function call data")
             
             if not valid:
                 execution_result['error'] = validation_msg
@@ -1099,7 +1071,7 @@ class ProductionDebtSwapExecutor:
             }
             
             debt_swap_contract = self.w3.eth.contract(
-                address=self.aave_debt_swap_adapter,
+                address=self.aave_debt_switch_v3,
                 abi=[{
                     "inputs": [
                         {"name": "debtAsset", "type": "address"},
@@ -1235,6 +1207,88 @@ class ProductionDebtSwapExecutor:
                 'details': f"Gas estimation completed: {estimated_gas:,} units"
             })
             
+            # STEP 4.5: COMPREHENSIVE VALIDATION GATE WITH REAL DATA
+            print(f"\n🔧 STEP 4.5: COMPREHENSIVE VALIDATION GATE WITH REAL DATA")
+            print("-" * 80)
+            
+            validation_gate_start = time.time()
+            
+            # Build real calldata parameters for validation
+            calldata_params = {
+                'debtAsset': transaction_params['debtAsset'],
+                'debtRepayAmount': transaction_params['debtRepayAmount'],
+                'debtRateMode': 2,  # Variable rate
+                'newDebtAsset': transaction_params['newDebtAsset'],
+                'maxNewDebtAmount': transaction_params['maxNewDebtAmount'],
+                'extraCollateralAsset': transaction_params['extraCollateralAsset'],
+                'extraCollateralAmount': transaction_params['extraCollateralAmount'],
+                'offset': transaction_params['offset'],
+                'swapData': transaction_params['paraswapData'],
+                'creditDelegationPermit': transaction_params['creditDelegationPermit'],
+                'collateralATokenPermit': transaction_params['collateralATokenPermit']
+            }
+            
+            print(f"🔍 COMPREHENSIVE VALIDATION WITH REAL EXECUTION DATA:")
+            print(f"   Contract Address: {self.aave_debt_switch_v3}")
+            print(f"   Function: swapDebt (0xb8bd1c6b)")
+            print(f"   Amount: ${swap_amount_usd:.2f}")
+            print(f"   Offset: {transaction_params['offset']} bytes")
+            print(f"   Permits: Zeroed")
+            
+            # Call comprehensive validation with REAL function call and parameters
+            validation_result = resolve_gas_estimation_failure(
+                contract_address=self.aave_debt_switch_v3,
+                function_call=function_call,
+                calldata_params=calldata_params,
+                swap_amount_usd=swap_amount_usd,
+                w3=self.w3
+            )
+            
+            # Store validation results in comprehensive logging
+            execution_result['comprehensive_logging']['validation'] = validation_result
+            execution_result['comprehensive_logging']['validation']['validation_gate_applied'] = True
+            execution_result['comprehensive_logging']['validation']['validation_timing'] = 'before_transaction_submission'
+            
+            print(f"\n📊 COMPREHENSIVE VALIDATION RESULTS:")
+            print(f"   Overall Success: {'✅' if validation_result['success'] else '❌'}")
+            print(f"   Signature Valid: {'✅' if validation_result.get('signature_valid', False) else '❌'}")
+            print(f"   Calldata Valid: {'✅' if validation_result.get('calldata_valid', False) else '❌'}")
+            print(f"   Amount Valid: {'✅' if validation_result.get('amount_valid', False) else '❌'}")
+            print(f"   Offset=288 Valid: {'✅' if validation_result.get('offset_valid', False) else '❌'}")
+            print(f"   Permits Valid: {'✅' if validation_result.get('permit_valid', False) else '❌'}")
+            print(f"   Static Call Valid: {'✅' if validation_result.get('static_call_valid', False) else '❌'}")
+            
+            # HARD GATE: Abort execution if validation fails
+            if not validation_result['success']:
+                error_details = validation_result.get('error_details', [])
+                validation_summary = validation_result.get('validation_summary', {})
+                
+                execution_result['error'] = f"VALIDATION GATE FAILED: {'; '.join(error_details)}"
+                execution_result['validation_gate_failure'] = {
+                    'validation_result': validation_result,
+                    'failed_at': 'pre_transaction_submission',
+                    'validation_summary': validation_summary,
+                    'timestamp': time.time()
+                }
+                
+                print(f"\n❌ VALIDATION GATE FAILED - ABORTING TRANSACTION")
+                print(f"   Success Rate: {validation_summary.get('success_rate', 0):.1f}%")
+                print(f"   Failed Steps: {validation_summary.get('failed_steps', 0)}")
+                print(f"   Error Details: {error_details}")
+                print(f"   🚫 TRANSACTION ABORTED FOR SAFETY")
+                
+                return execution_result
+            
+            print(f"✅ VALIDATION GATE PASSED - PROCEEDING WITH TRANSACTION")
+            
+            execution_result['stepwise_diff']['step_by_step_log'].append({
+                'step': '4.5',
+                'name': 'comprehensive_validation_gate',
+                'duration_ms': int((time.time() - validation_gate_start) * 1000),
+                'status': 'completed',
+                'details': f"Validation gate passed with {validation_result['passed_validations']}/{validation_result['total_validations']} steps"
+            })
+            
             # STEP 5: TRANSACTION SUBMISSION WITH COMPREHENSIVE LOGGING
             print(f"\n🚀 STEP 5: TRANSACTION SUBMISSION WITH COMPREHENSIVE LOGGING")
             print("-" * 50)
@@ -1290,23 +1344,23 @@ class ProductionDebtSwapExecutor:
                     receipt_duration = int((time.time() - receipt_start) * 1000)
                     
                     execution_result['transaction_receipt'] = dict(tx_receipt)
-                    execution_result['gas_used'] = tx_receipt.gasUsed
-                    execution_result['gas_cost_eth'] = (tx_receipt.gasUsed * gas_price) / 1e18
+                    execution_result['gas_used'] = tx_receipt['gasUsed']
+                    execution_result['gas_cost_eth'] = (tx_receipt['gasUsed'] * gas_price) / 1e18
                     
                     execution_result['comprehensive_logging']['transaction_submission']['receipt'] = {
-                        'status': tx_receipt.status,
-                        'block_number': tx_receipt.blockNumber,
-                        'gas_used': tx_receipt.gasUsed,
+                        'status': tx_receipt['status'],
+                        'block_number': tx_receipt['blockNumber'],
+                        'gas_used': tx_receipt['gasUsed'],
                         'confirmation_time_ms': receipt_duration,
-                        'transaction_index': tx_receipt.transactionIndex
+                        'transaction_index': tx_receipt['transactionIndex']
                     }
                     
-                    print(f"      ✅ Transaction confirmed in block {tx_receipt.blockNumber}")
-                    print(f"      ✅ Gas Used: {tx_receipt.gasUsed:,} units")
-                    print(f"      ✅ Status: {'SUCCESS' if tx_receipt.status == 1 else 'FAILED'}")
+                    print(f"      ✅ Transaction confirmed in block {tx_receipt['blockNumber']}")
+                    print(f"      ✅ Gas Used: {tx_receipt['gasUsed']:,} units")
+                    print(f"      ✅ Status: {'SUCCESS' if tx_receipt['status'] == 1 else 'FAILED'}")
                     print(f"      ✅ Confirmation Time: {receipt_duration}ms")
                     
-                    if tx_receipt.status == 1:
+                    if tx_receipt['status'] == 1:
                         execution_result['success'] = True
                     else:
                         execution_result['error'] = "Transaction failed (status = 0)"
@@ -1527,6 +1581,13 @@ class ProductionDebtSwapExecutor:
                     'maxNewDebtAmount': int(amount_to_swap * 2.1)
                 }
                 
+                # FIXED: Call resolve_gas_estimation_failure with REAL function call and parameters
+                print(f"📋 COMPREHENSIVE VALIDATION WITH REAL DATA:")
+                print(f"   Contract Address: {self.paraswap_debt_swap_adapter}")
+                print(f"   Function Selector: 0xb8bd1c6b (swapDebt)")
+                print(f"   Amount: ${swap_amount_usd:.2f}")
+                print(f"   Offset: 288 bytes")
+                
                 root_cause_result = resolve_gas_estimation_failure(
                     contract_address=self.paraswap_debt_swap_adapter,
                     function_call=function_call,
@@ -1535,35 +1596,60 @@ class ProductionDebtSwapExecutor:
                     w3=self.w3
                 )
                 
-                # Log all return values
+                # Enhanced logging and integration with execution result
                 execution_result['root_cause_validation'] = root_cause_result
-                print(f"📊 Root-cause validation result: {root_cause_result['success']}")
+                execution_result['comprehensive_logging']['validation_details'] = root_cause_result
                 
-                for log_entry in root_cause_result.get('diagnostic_logs', []):
-                    print(f"   {log_entry['step']}: {log_entry.get('status', 'completed')}")
+                print(f"\n📊 COMPREHENSIVE VALIDATION RESULTS:")
+                print(f"   Overall Success: {'✅' if root_cause_result['success'] else '❌'}")
+                print(f"   Contract Address Valid: {'✅' if root_cause_result.get('signature_valid', False) else '❌'}")
+                print(f"   Function Call Valid: {'✅' if root_cause_result.get('calldata_valid', False) else '❌'}")
+                print(f"   Amount Valid: {'✅' if root_cause_result.get('amount_valid', False) else '❌'}")
+                print(f"   Offset=288 Valid: {'✅' if root_cause_result.get('offset_valid', False) else '❌'}")
+                print(f"   Permits Valid: {'✅' if root_cause_result.get('permit_valid', False) else '❌'}")
                 
-                # If failure, log error and abort with full diagnostics
+                # Enhanced diagnostic logging
+                if root_cause_result.get('diagnostic_logs'):
+                    print(f"\n📋 DETAILED VALIDATION STEPS:")
+                    for log_entry in root_cause_result['diagnostic_logs']:
+                        status_icon = '✅' if log_entry.get('status') == 'passed' else '❌'
+                        print(f"   {status_icon} {log_entry['step']}: {log_entry.get('status', 'completed')}")
+                        if log_entry.get('errors'):
+                            for error in log_entry['errors']:
+                                execution_result['comprehensive_logging']['error_bubbling'].append(error)
+                                print(f"      ⚠️ {error}")
+                
+                # Enhanced error handling with validation summary
                 if not root_cause_result['success']:
                     error_details = root_cause_result.get('error_details', [])
+                    validation_summary = root_cause_result.get('validation_summary', {})
+                    
                     full_diagnostic = {
                         'function_selector': '0xb8bd1c6b',
-                        'expected_signature': '0xb8bd1c6b',
+                        'expected_signature': '0xb8bd1c6b', 
+                        'contract_address': self.paraswap_debt_swap_adapter,
                         'calldata_tokens': calldata_params,
                         'error_details': error_details,
                         'diagnostic_logs': root_cause_result.get('diagnostic_logs', []),
+                        'validation_summary': validation_summary,
                         'mismatch_analysis': {
                             'signature_valid': root_cause_result.get('signature_valid', False),
                             'calldata_valid': root_cause_result.get('calldata_valid', False),
-                            'amount_valid': root_cause_result.get('amount_valid', False)
+                            'amount_valid': root_cause_result.get('amount_valid', False),
+                            'static_call_valid': root_cause_result.get('static_call_valid', False),
+                            'offset_valid': root_cause_result.get('offset_valid', False),
+                            'permit_valid': root_cause_result.get('permit_valid', False)
                         }
                     }
                     
-                    execution_result['error'] = f"Root-cause validation failed: {'; '.join(error_details)}"
+                    execution_result['error'] = f"Comprehensive validation failed: {'; '.join(error_details)}"
                     execution_result['full_mismatch_diagnostics'] = full_diagnostic
                     
-                    print(f"❌ ROOT-CAUSE VALIDATION FAILED")
+                    print(f"\n❌ COMPREHENSIVE VALIDATION FAILED")
+                    print(f"   Success Rate: {validation_summary.get('success_rate', 0):.1f}%")
+                    print(f"   Failed Steps: {validation_summary.get('failed_steps', 0)}")
                     print(f"   Errors: {error_details}")
-                    print(f"   Full diagnostics logged for review")
+                    print(f"   Full diagnostics saved for review")
                     
                     return execution_result
                 

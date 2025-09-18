@@ -1,0 +1,296 @@
+{
+  "test_id": "direct_test_1758163966",
+  "start_time": "2025-09-18T02:52:46.049120",
+  "test_parameters": {
+    "from_asset": "DAI",
+    "to_asset": "ARB",
+    "swap_amount_usd": 25.0
+  },
+  "execution_results": {
+    "operation": "DAI_debt_to_ARB_debt_swap",
+    "start_time": "2025-09-18T02:52:49.899124",
+    "swap_amount_usd": 25.0,
+    "success": true,
+    "preflight_validation": {},
+    "transaction_hash": "0x5f5d8e9b2ddd18cb3ee46a1e1f27d84d10725d61fa965ab272786ceac47f8996",
+    "transaction_receipt": {
+      "blockHash": "b'\\xb0Y\\x95\\xf4\\xb9\\x0bJ\\xef\\xe8W3\\xe60\\x1b\\xb1\\xdb2|I4\\xc1\\xce\\r\\x7f\\xb2\\xf4\\x9ar\\x04Y\\xb4\\xd1'",
+      "blockNumber": 380303450,
+      "contractAddress": null,
+      "cumulativeGasUsed": 402451,
+      "effectiveGasPrice": 10000000,
+      "from": "0x5B823270e3719CDe8669e5e5326B455EaA8a350b",
+      "gasUsed": 35236,
+      "gasUsedForL1": "0xba4",
+      "l1BlockNumber": "0x164dbdc",
+      "logs": [],
+      "logsBloom": "b'\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00'",
+      "status": 1,
+      "timeboosted": false,
+      "to": "0x8761e0370f94f68Db8EaA731f4fC581f6AD0Bd68",
+      "transactionHash": "b\"_]\\x8e\\x9b-\\xdd\\x18\\xcb>\\xe4j\\x1e\\x1f'\\xd8M\\x10r]a\\xfa\\x96Z\\xb2rxl\\xea\\xc4\\x7f\\x89\\x96\"",
+      "transactionIndex": 4,
+      "type": 0
+    },
+    "gas_used": 35236,
+    "gas_cost_eth": 3.5236e-07,
+    "position_before": {
+      "total_collateral_usd": 294.21143991,
+      "total_debt_usd": 126.16815667,
+      "available_borrows_usd": 94.81405584,
+      "health_factor": 1.8611084579706256,
+      "debt_balances": {
+        "DAI": 126.19872474460963,
+        "ARB": 0.0
+      },
+      "debt_values_usd": {
+        "DAI": 126.19872474460963,
+        "ARB": 0.0
+      },
+      "prices": {
+        "DAI": 1.0,
+        "ARB": 0.55
+      },
+      "timestamp": "2025-09-18T02:52:53.370569"
+    },
+    "position_after": {
+      "total_collateral_usd": 294.21144031,
+      "total_debt_usd": 126.16815827,
+      "available_borrows_usd": 94.81405454,
+      "health_factor": 1.8611084370321134,
+      "debt_balances": {
+        "DAI": 126.19872634846753,
+        "ARB": 0.0
+      },
+      "debt_values_usd": {
+        "DAI": 126.19872634846753,
+        "ARB": 0.0
+      },
+      "prices": {
+        "DAI": 1.0,
+        "ARB": 0.55
+      },
+      "timestamp": "2025-09-18T02:53:01.204650"
+    },
+    "stepwise_diff": {
+      "pre_execution_state": {
+        "stage": "PRE-EXECUTION: DAI\u2192ARB",
+        "timestamp": 1758163969.8994365,
+        "capture_time_ms": 2267,
+        "aave_position": {
+          "total_collateral_usd": 294.01514376,
+          "total_debt_usd": 126.16815621,
+          "available_borrows_usd": 94.66661826,
+          "health_factor": 1.8598949176282016,
+          "debt_balances": {
+            "DAI": 126.19872405724196,
+            "ARB": 0.0
+          },
+          "debt_values_usd": {
+            "DAI": 126.19872405724196,
+            "ARB": 0.0
+          },
+          "prices": {
+            "DAI": 1.0,
+            "ARB": 0.55
+          },
+          "timestamp": "2025-09-18T02:52:51.930500"
+        },
+        "token_balances": {
+          "ETH": 0.003103300197694199,
+          "DAI": 0,
+          "ARB": 0,
+          "WBTC": 0
+        },
+        "market_prices": {
+          "DAI": 1.0,
+          "ARB": 0.55
+        },
+        "gas_prices": {
+          "current_gas_price_gwei": 0.01,
+          "current_gas_price_wei": 10000000,
+          "eth_price_usd": 0
+        },
+        "health_metrics": {
+          "health_factor": 1.8598949176282016,
+          "ltv": 0,
+          "liquidation_threshold": 0,
+          "total_collateral_usd": 294.01514376,
+          "total_debt_usd": 126.16815621
+        },
+        "capture_errors": []
+      },
+      "post_execution_state": {
+        "stage": "POST-EXECUTION: DAI\u2192ARB",
+        "timestamp": 1758163978.5642326,
+        "capture_time_ms": 1406,
+        "aave_position": {
+          "total_collateral_usd": 294.21144025,
+          "total_debt_usd": 126.16815804,
+          "available_borrows_usd": 94.81405473,
+          "health_factor": 1.86110844002538,
+          "debt_balances": {
+            "DAI": 126.19872611934498,
+            "ARB": 0.0
+          },
+          "debt_values_usd": {
+            "DAI": 126.19872611934498,
+            "ARB": 0.0
+          },
+          "prices": {
+            "DAI": 1.0,
+            "ARB": 0.55
+          },
+          "timestamp": "2025-09-18T02:52:59.756195"
+        },
+        "token_balances": {
+          "ETH": 0.003102947837694199,
+          "DAI": 0,
+          "ARB": 0,
+          "WBTC": 0
+        },
+        "market_prices": {
+          "DAI": 1.0,
+          "ARB": 0.55
+        },
+        "gas_prices": {
+          "current_gas_price_gwei": 0.01,
+          "current_gas_price_wei": 10000000,
+          "eth_price_usd": 0
+        },
+        "health_metrics": {
+          "health_factor": 1.86110844002538,
+          "ltv": 0,
+          "liquidation_threshold": 0,
+          "total_collateral_usd": 294.21144025,
+          "total_debt_usd": 126.16815804
+        },
+        "capture_errors": []
+      },
+      "state_changes": {
+        "health_factor": {
+          "before": 1.8598949176282016,
+          "after": 1.86110844002538,
+          "change": 0.0012135223971783127,
+          "change_percent": 0.06524682581131173
+        },
+        "DAI_debt": {
+          "before": 126.19872405724196,
+          "after": 126.19872611934498,
+          "change": 2.0621030216716463e-06
+        },
+        "ARB_debt": {
+          "before": 0.0,
+          "after": 0.0,
+          "change": 0.0
+        }
+      },
+      "step_by_step_log": [
+        {
+          "step": 1,
+          "name": "pre_execution_state_capture",
+          "duration_ms": 2267,
+          "status": "completed",
+          "details": "Captured comprehensive state: positions, balances, prices"
+        },
+        {
+          "step": 2,
+          "name": "validation",
+          "duration_ms": 2537,
+          "status": "completed",
+          "details": "Position validation passed"
+        },
+        {
+          "step": 3,
+          "name": "calldata_construction",
+          "duration_ms": 1304,
+          "status": "completed",
+          "details": "Calldata constructed successfully, ParaSwap took 1095ms"
+        },
+        {
+          "step": 4,
+          "name": "gas_estimation",
+          "duration_ms": 548,
+          "status": "completed",
+          "details": "Gas estimation completed: 36,080 units"
+        },
+        {
+          "step": 5,
+          "name": "transaction_submission",
+          "duration_ms": 2006,
+          "status": "completed",
+          "details": "Transaction completed successfully"
+        },
+        {
+          "step": 6,
+          "name": "post_execution_analysis",
+          "duration_ms": 2641,
+          "status": "completed",
+          "details": "State analysis completed, 3 changes detected"
+        }
+      ]
+    },
+    "comprehensive_logging": {
+      "validation_details": {},
+      "calldata_construction": {
+        "debt_token_address": "0x44705f578135cC5d703b4c9c122528C73Eb87145",
+        "amount_calculation": {
+          "asset": "DAI",
+          "usd_amount": 25.0,
+          "price": 1.0,
+          "amount_wei": 25000000000000000000
+        },
+        "paraswap_data": {
+          "success": true,
+          "duration_ms": 1095,
+          "calldata_length": 2314,
+          "expected_amount": "25000000000000000000"
+        }
+      },
+      "gas_estimation": {
+        "success": true,
+        "estimated_gas": 36080,
+        "gas_price_gwei": 0.01,
+        "gas_cost_eth": 3.608e-07,
+        "gas_cost_usd": 0.0010824,
+        "method": "direct_estimation"
+      },
+      "transaction_submission": {
+        "transaction_built": true,
+        "gas_limit": 43296,
+        "gas_price": 10000000,
+        "nonce": 2328,
+        "to": "0x8761e0370f94f68Db8EaA731f4fC581f6AD0Bd68",
+        "value": 0,
+        "tx_hash": "0x5f5d8e9b2ddd18cb3ee46a1e1f27d84d10725d61fa965ab272786ceac47f8996",
+        "submission_time": 1758163977.3625758,
+        "receipt": {
+          "status": 1,
+          "block_number": 380303450,
+          "gas_used": 35236,
+          "confirmation_time_ms": 1200,
+          "transaction_index": 4
+        }
+      },
+      "contract_interaction": {
+        "transaction_params": {
+          "debtAsset": "0x8619d80FB0141ba7F184CbF22fd724116D9f7ffC",
+          "debtRepayAmount": 25000000000000000000,
+          "newDebtAsset": "0x44705f578135cC5d703b4c9c122528C73Eb87145",
+          "maxNewDebtAmount": 26250000000000000000,
+          "offset": 288,
+          "paraswap_calldata_length": 2314,
+          "permits_zeroed": true
+        }
+      },
+      "error_bubbling": []
+    }
+  },
+  "critical_fixes_validated": false,
+  "production_ready": false,
+  "execution_duration_ms": 11308,
+  "production_readiness_score": 20,
+  "verification_link": "https://arbiscan.io/tx/0x5f5d8e9b2ddd18cb3ee46a1e1f27d84d10725d61fa965ab272786ceac47f8996",
+  "end_time": "2025-09-18T02:53:01.208355",
+  "test_success": true
+}

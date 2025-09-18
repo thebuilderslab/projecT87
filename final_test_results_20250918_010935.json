@@ -1,0 +1,156 @@
+{
+  "test_metadata": {
+    "timestamp": "2025-09-18T01:09:35.803156",
+    "test_type": "final_debt_swap_validation",
+    "from_asset": "DAI",
+    "to_asset": "ARB",
+    "amount_usd": 30.0,
+    "execution_duration_seconds": 4.63114070892334
+  },
+  "success_metrics": {
+    "overall_execution": false,
+    "offset_288": false,
+    "zeroed_permits": false,
+    "swapdata_naming": true,
+    "error_bubbling": false,
+    "six_step_logging": false,
+    "transaction_submitted": false,
+    "comprehensive_audit_trail": false
+  },
+  "success_percentage": 12.5,
+  "execution_result": {
+    "operation": "DAI_debt_to_ARB_debt_swap",
+    "start_time": "2025-09-18T01:09:31.171690",
+    "swap_amount_usd": 30.0,
+    "success": false,
+    "preflight_validation": {},
+    "transaction_hash": null,
+    "transaction_receipt": null,
+    "gas_used": 0,
+    "gas_cost_eth": 0,
+    "position_before": {
+      "total_collateral_usd": 293.36070028,
+      "total_debt_usd": 126.16673663,
+      "available_borrows_usd": 94.17648535,
+      "health_factor": 1.8557602844791914,
+      "debt_balances": {
+        "DAI": 126.19730436676798,
+        "ARB": 0.0
+      },
+      "debt_values_usd": {
+        "DAI": 126.19730436676798,
+        "ARB": 0.0
+      },
+      "prices": {
+        "DAI": 1.0,
+        "ARB": 0.55
+      },
+      "timestamp": "2025-09-18T01:09:33.716578"
+    },
+    "position_after": {},
+    "stepwise_diff": {
+      "pre_execution_state": {
+        "stage": "PRE-EXECUTION: DAI\u2192ARB",
+        "timestamp": 1758157771.1719553,
+        "capture_time_ms": 1359,
+        "aave_position": {
+          "total_collateral_usd": 293.36070022,
+          "total_debt_usd": 126.1667364,
+          "available_borrows_usd": 94.17648553,
+          "health_factor": 1.855760287462742,
+          "debt_balances": {
+            "DAI": 126.19730390870437,
+            "ARB": 0.0
+          },
+          "debt_values_usd": {
+            "DAI": 126.19730390870437,
+            "ARB": 0.0
+          },
+          "prices": {
+            "DAI": 1.0,
+            "ARB": 0.55
+          },
+          "timestamp": "2025-09-18T01:09:32.346704"
+        },
+        "token_balances": {
+          "ETH": 0.003103663427694199,
+          "DAI": 0,
+          "ARB": 0,
+          "WBTC": 0
+        },
+        "market_prices": {
+          "DAI": 1.0,
+          "ARB": 0.55
+        },
+        "gas_prices": {
+          "current_gas_price_gwei": 0.01,
+          "current_gas_price_wei": 10000000,
+          "eth_price_usd": 0
+        },
+        "health_metrics": {
+          "health_factor": 1.855760287462742,
+          "ltv": 0,
+          "liquidation_threshold": 0,
+          "total_collateral_usd": 293.36070022,
+          "total_debt_usd": 126.1667364
+        },
+        "capture_errors": []
+      },
+      "post_execution_state": {},
+      "state_changes": {},
+      "step_by_step_log": [
+        {
+          "step": 1,
+          "name": "pre_execution_state_capture",
+          "duration_ms": 1359,
+          "status": "completed",
+          "details": "Captured comprehensive state: positions, balances, prices"
+        },
+        {
+          "step": 2,
+          "name": "validation",
+          "duration_ms": 2416,
+          "status": "completed",
+          "details": "Position validation passed"
+        },
+        {
+          "step": 3,
+          "name": "calldata_construction",
+          "duration_ms": 850,
+          "status": "completed",
+          "details": "Calldata constructed successfully, ParaSwap took 649ms"
+        }
+      ]
+    },
+    "comprehensive_logging": {
+      "validation_details": {},
+      "calldata_construction": {
+        "debt_token_address": "0x44705f578135cC5d703b4c9c122528C73Eb87145",
+        "amount_calculation": {
+          "asset": "DAI",
+          "usd_amount": 30.0,
+          "price": 1.0,
+          "amount_wei": 30000000000000000000
+        },
+        "paraswap_data": {
+          "success": true,
+          "duration_ms": 649,
+          "calldata_length": 2314,
+          "expected_amount": "30000000000000000000"
+        }
+      },
+      "gas_estimation": {},
+      "transaction_submission": {},
+      "contract_interaction": {},
+      "error_bubbling": [
+        "Validation system error: 'DebtSwapSignatureValidator' object has no attribute 'comprehensive_validation'"
+      ]
+    },
+    "error": "Execution failed: 'ProductionDebtSwapExecutor' object has no attribute 'aave_debt_swap_adapter'"
+  },
+  "validation_summary": {
+    "production_ready": false,
+    "critical_fixes_applied": false,
+    "comprehensive_logging_active": false
+  }
+}
