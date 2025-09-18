@@ -58,8 +58,10 @@ class ProductionDebtSwapExecutor:
         self.max_usd_per_tx = 10.0  # $10 USD maximum per transaction
         self.min_swap_usd = 25.0   # $25 minimum swap amount (prevents dust trade reverts)
         
-        # CORRECT: Official Aave ParaSwapDebtSwapAdapter address on Arbitrum (using ParaSwap Augustus)
-        self.paraswap_debt_swap_adapter: ChecksumAddress = self.w3.to_checksum_address("0xCf85FF1c37c594a10195F7A9Ab85CBb0a03f69dE")
+        # FIXED: Use Aave Debt Switch V3 (matching successful manual transactions)  
+        self.aave_debt_switch_v3: ChecksumAddress = self.w3.to_checksum_address("0x63dfa7c09Dc2Ff4030d6B8Dc2ce6262BF898C8A4")
+        # Keep backward compatibility
+        self.paraswap_debt_swap_adapter: ChecksumAddress = self.aave_debt_switch_v3
         self.augustus_swapper: ChecksumAddress = self.w3.to_checksum_address("0xDEF171Fe48CF0115B1d80b88dc8eAB59176FEe57")
         self.aave_pool: ChecksumAddress = self.w3.to_checksum_address("0x794a61358D6845594F94dc1DB02A252b5b4814aD")
         self.aave_data_provider: ChecksumAddress = self.w3.to_checksum_address("0x69FA688f1Dc47d4B5d8029D5a35FB7a548310654")
