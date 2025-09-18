@@ -13,7 +13,8 @@ from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Tuple, Union
 from decimal import Decimal, getcontext
 from web3 import Web3
-from web3.types import ChecksumAddress, HexStr, TxParams, TxReceipt
+from web3.types import TxParams, TxReceipt
+from eth_typing import ChecksumAddress, HexStr
 from web3.exceptions import ContractLogicError
 from eth_account.messages import encode_structured_data
 
@@ -621,7 +622,17 @@ class ProductionDebtSwapExecutor:
                 try:
                     # Decode as ABI-encoded string
                     from web3 import Web3
-                    decoded = Web3.to_text(hexstr='0x' + revert_data[8:])
+                    # Use Web3 keccak method instead to avoid parameter issues
+                    message_hex = revert_data[8+64:]
+                    try:
+                        # Direct hex decode approach
+                        length = int(revert_data[8+64:8+128], 16) * 2
+                        if length > 0 and length < len(message_hex):
+                            decoded = bytes.fromhex(message_hex[:length]).decode('utf-8', errors='ignore')
+                        else:
+                            decoded = 'Unable to decode revert string'
+                    except:
+                        decoded = 'Decode failed'
                     return f"Error(string): {decoded}"
                 except:
                     try:
@@ -682,7 +693,7 @@ class ProductionDebtSwapExecutor:
             
             # Execute eth_call (static call)
             try:
-                result = self.w3.eth.call(call_params, 'latest')
+                result = self.w3.eth.call(call_params, 'latest')  # type: ignore
                 print(f"✅ ETH_CALL SUCCESS")
                 print(f"   Return Data: {result.hex() if result else '0x'}")
                 print(f"   Transaction would succeed on-chain")
@@ -975,7 +986,7 @@ class ProductionDebtSwapExecutor:
                 return execution_result
             
             # Build transaction data with optimized gas parameters
-            tx_data: TxParams = function_call.build_transaction({
+            tx_data = function_call.build_transaction({
                 'from': self.user_address,
                 'gas': optimized_params['gas'],
                 'gasPrice': optimized_params['gasPrice'],
@@ -987,7 +998,7 @@ class ProductionDebtSwapExecutor:
             print("=" * 50)
             
             signed_tx = self.account.sign_transaction(tx_data)
-            tx_hash: HexStr = self.w3.eth.send_raw_transaction(signed_tx.rawTransaction)
+            tx_hash = self.w3.eth.send_raw_transaction(signed_tx.rawTransaction)
             execution_result['transaction_hash'] = tx_hash.hex()
             
             # Log transaction hash, gas sent, and parameters
@@ -1217,7 +1228,7 @@ class ProductionDebtSwapExecutor:
         except:
             return 0.0
 
-    def save_cycle_artifacts(self, filename: str = None) -> str:
+    def save_cycle_artifacts(self, filename: Optional[str] = None) -> str:
         """Save complete cycle artifacts to JSON file"""
         try:
             if not filename:
@@ -1696,8 +1707,8 @@ class ProductionDebtSwapExecutor:
             test_results['buffer_logic_test'] = gas_result['success']
             
             # Test 3: Error handling (simulate missing API key)
-            old_key: Optional[str] = optimizer.coin_api_key
-            optimizer.coin_api_key = None
+            old_key = optimizer.coin_api_key
+            optimizer.coin_api_key = None  # type: ignore
             error_result = optimizer.get_eth_price_coinapi()
             test_results['error_handling_test'] = error_result['source'] == 'fallback'
             optimizer.coin_api_key = old_key
@@ -1713,7 +1724,7 @@ class ProductionDebtSwapExecutor:
         
         return test_results
 
-    def generate_diagnostic_report(self, execution_result: Dict, test_results: Dict = None) -> str:
+    def generate_diagnostic_report(self, execution_result: Dict, test_results: Optional[Dict] = None) -> str:
         """
         Generate comprehensive diagnostic report for human review
         """

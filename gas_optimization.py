@@ -27,6 +27,16 @@ class CoinAPIGasOptimizer:
     
     def get_eth_price_coinapi(self) -> Dict:
         """Get real-time ETH price using CoinAPI with comprehensive logging"""
+        # Initialize api_result first
+        api_result = {
+            'success': False,
+            'price': 2500.0,  # Fallback
+            'source': 'fallback',
+            'response_time': 0.0,
+            'api_status': 0,
+            'timestamp': time.time()
+        }
+        
         try:
             print(f"\n💰 FETCHING REAL-TIME ETH PRICE")
             print("=" * 40)
@@ -38,14 +48,10 @@ class CoinAPIGasOptimizer:
             response = requests.get(url, headers=headers, timeout=10)
             response_time = time.time() - start_time
             
-            api_result = {
-                'success': False,
-                'price': 2500.0,  # Fallback
-                'source': 'fallback',
+            api_result.update({
                 'response_time': response_time,
-                'api_status': response.status_code,
-                'timestamp': time.time()
-            }
+                'api_status': response.status_code
+            })
             
             if response.status_code == 200:
                 data = response.json()

@@ -166,7 +166,8 @@ class DebtSwapSignatureValidator:
                             'timestamp': time.time()
                         })
                         print(f"❌ Static call failed - aborting transaction")
-                        return False  # Fail fast instead of proceeding
+                        validation_result['success'] = False
+                        return validation_result  # Fail fast instead of proceeding
                     elif "execution reverted" in error_code.lower():
                         print(f"⚠️ Generic execution revert - trying live transaction (static calls can fail due to state)")
                         print(f"🔄 All major fixes applied: correct contract, offset, approvals confirmed")
