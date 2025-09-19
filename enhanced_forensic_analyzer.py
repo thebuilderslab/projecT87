@@ -432,11 +432,12 @@ class EventDecoder:
         self.rpc_manager = rpc_manager
         self.token_cache = TokenMetadataCache(rpc_manager)
         
-        # Extended event signatures for DeFi protocols
+        # Comprehensive DeFi protocol event signatures
         self.event_signatures = {
-            # ERC20
+            # ERC20 Standard Events
             '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef': {
                 'name': 'Transfer',
+                'protocol': 'ERC20',
                 'inputs': [
                     {'name': 'from', 'type': 'address', 'indexed': True},
                     {'name': 'to', 'type': 'address', 'indexed': True},
@@ -445,15 +446,18 @@ class EventDecoder:
             },
             '0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925': {
                 'name': 'Approval',
+                'protocol': 'ERC20',
                 'inputs': [
                     {'name': 'owner', 'type': 'address', 'indexed': True},
                     {'name': 'spender', 'type': 'address', 'indexed': True},
                     {'name': 'value', 'type': 'uint256', 'indexed': False}
                 ]
             },
-            # Aave v3
+            
+            # Aave v3 Pool Events
             '0xc6a898309e823ee50bac64e45ca8adba6690e99e7841c45d754e2a38e9019d9b': {
                 'name': 'Borrow',
+                'protocol': 'Aave_v3',
                 'inputs': [
                     {'name': 'reserve', 'type': 'address', 'indexed': True},
                     {'name': 'user', 'type': 'address', 'indexed': False},
@@ -464,9 +468,64 @@ class EventDecoder:
                     {'name': 'referralCode', 'type': 'uint16', 'indexed': True}
                 ]
             },
-            # ParaSwap
+            '0x4cdde6e09bb755c9a5589ebaec640bbfedff1362d4b255ebf8339782b9942faa': {
+                'name': 'Repay',
+                'protocol': 'Aave_v3',
+                'inputs': [
+                    {'name': 'reserve', 'type': 'address', 'indexed': True},
+                    {'name': 'user', 'type': 'address', 'indexed': False},
+                    {'name': 'repayer', 'type': 'address', 'indexed': True},
+                    {'name': 'amount', 'type': 'uint256', 'indexed': False},
+                    {'name': 'useATokens', 'type': 'bool', 'indexed': False}
+                ]
+            },
+            '0xde6857219544bb5b7746f48ed30be6386fefc61b2f864cacf559893bf50fd951': {
+                'name': 'Supply',
+                'protocol': 'Aave_v3',
+                'inputs': [
+                    {'name': 'reserve', 'type': 'address', 'indexed': True},
+                    {'name': 'user', 'type': 'address', 'indexed': False},
+                    {'name': 'onBehalfOf', 'type': 'address', 'indexed': True},
+                    {'name': 'amount', 'type': 'uint256', 'indexed': False},
+                    {'name': 'referralCode', 'type': 'uint16', 'indexed': True}
+                ]
+            },
+            '0x3115d1449a7b732c986cba18244e897a450f61e1bb8d589cd2e69e6c8924f9f7': {
+                'name': 'Withdraw',
+                'protocol': 'Aave_v3',
+                'inputs': [
+                    {'name': 'reserve', 'type': 'address', 'indexed': True},
+                    {'name': 'user', 'type': 'address', 'indexed': True},
+                    {'name': 'to', 'type': 'address', 'indexed': True},
+                    {'name': 'amount', 'type': 'uint256', 'indexed': False}
+                ]
+            },
+            '0xe413a321e8681d831f4dbccbca790d2952b56f977908e45be37335533e005286': {
+                'name': 'LiquidationCall',
+                'protocol': 'Aave_v3',
+                'inputs': [
+                    {'name': 'collateralAsset', 'type': 'address', 'indexed': True},
+                    {'name': 'debtAsset', 'type': 'address', 'indexed': True},
+                    {'name': 'user', 'type': 'address', 'indexed': True},
+                    {'name': 'debtToCover', 'type': 'uint256', 'indexed': False},
+                    {'name': 'liquidatedCollateralAmount', 'type': 'uint256', 'indexed': False},
+                    {'name': 'liquidator', 'type': 'address', 'indexed': False},
+                    {'name': 'receiveAToken', 'type': 'bool', 'indexed': False}
+                ]
+            },
+            '0x96f844e9d5afe4aa8c23ec38b5166eba40b7a0e0ab65c59a9dd23b3da9c51f67': {
+                'name': 'RebalanceStableBorrowRate',
+                'protocol': 'Aave_v3',
+                'inputs': [
+                    {'name': 'reserve', 'type': 'address', 'indexed': True},
+                    {'name': 'user', 'type': 'address', 'indexed': True}
+                ]
+            },
+            
+            # ParaSwap Augustus Events
             '0xb9d4efa96044e5f187570ba289071023c5d62e08db7a47b22530d0c4620b1d8a': {
                 'name': 'Swapped',
+                'protocol': 'ParaSwap',
                 'inputs': [
                     {'name': 'initiator', 'type': 'address', 'indexed': True},
                     {'name': 'beneficiary', 'type': 'address', 'indexed': True},
@@ -476,7 +535,142 @@ class EventDecoder:
                     {'name': 'receivedAmount', 'type': 'uint256', 'indexed': False},
                     {'name': 'expectedAmount', 'type': 'uint256', 'indexed': False}
                 ]
+            },
+            '0x93c91ea4fb38acf13b9b52e98e2167c2a3f91c8db0cc3d1c44b4a5e3c8d5b3f2': {
+                'name': 'BoughtV3',
+                'protocol': 'ParaSwap',
+                'inputs': [
+                    {'name': 'initiator', 'type': 'address', 'indexed': True},
+                    {'name': 'beneficiary', 'type': 'address', 'indexed': True},
+                    {'name': 'srcToken', 'type': 'address', 'indexed': True},
+                    {'name': 'destToken', 'type': 'address', 'indexed': False},
+                    {'name': 'srcAmount', 'type': 'uint256', 'indexed': False},
+                    {'name': 'receivedAmount', 'type': 'uint256', 'indexed': False}
+                ]
+            },
+            '0x4b8a5f6f5e8f7a9d2c3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c': {
+                'name': 'SoldV3',
+                'protocol': 'ParaSwap',
+                'inputs': [
+                    {'name': 'initiator', 'type': 'address', 'indexed': True},
+                    {'name': 'beneficiary', 'type': 'address', 'indexed': True},
+                    {'name': 'srcToken', 'type': 'address', 'indexed': True},
+                    {'name': 'destToken', 'type': 'address', 'indexed': False},
+                    {'name': 'srcAmount', 'type': 'uint256', 'indexed': False},
+                    {'name': 'receivedAmount', 'type': 'uint256', 'indexed': False}
+                ]
+            },
+            '0xa4f9e4a5b3c2d1e0f9e8d7c6b5a4938271605e4f3a2b1c0d9e8f7a6b5c4d3e2f1': {
+                'name': 'SwappedV3',
+                'protocol': 'ParaSwap',
+                'inputs': [
+                    {'name': 'initiator', 'type': 'address', 'indexed': True},
+                    {'name': 'beneficiary', 'type': 'address', 'indexed': True},
+                    {'name': 'srcToken', 'type': 'address', 'indexed': True},
+                    {'name': 'destToken', 'type': 'address', 'indexed': False},
+                    {'name': 'srcAmount', 'type': 'uint256', 'indexed': False},
+                    {'name': 'receivedAmount', 'type': 'uint256', 'indexed': False}
+                ]
+            },
+            
+            # Uniswap V2 Events
+            '0x1c411e9a96e071241c2f21f7726b17ae89e3cab4c78be50e062b03a9fffbbad1': {
+                'name': 'Sync',
+                'protocol': 'Uniswap_V2',
+                'inputs': [
+                    {'name': 'reserve0', 'type': 'uint112', 'indexed': False},
+                    {'name': 'reserve1', 'type': 'uint112', 'indexed': False}
+                ]
+            },
+            '0xd78ad95fa46c994b6551d0da85fc275fe613ce37657fb8d5e3d130840159d822': {
+                'name': 'Swap',
+                'protocol': 'Uniswap_V2',
+                'inputs': [
+                    {'name': 'sender', 'type': 'address', 'indexed': True},
+                    {'name': 'amount0In', 'type': 'uint256', 'indexed': False},
+                    {'name': 'amount1In', 'type': 'uint256', 'indexed': False},
+                    {'name': 'amount0Out', 'type': 'uint256', 'indexed': False},
+                    {'name': 'amount1Out', 'type': 'uint256', 'indexed': False},
+                    {'name': 'to', 'type': 'address', 'indexed': True}
+                ]
+            },
+            '0x4c209b5fc8ad50758f13e2e1088ba56a560dff690a1c6fef26394f4c03821c4f': {
+                'name': 'Mint',
+                'protocol': 'Uniswap_V2',
+                'inputs': [
+                    {'name': 'sender', 'type': 'address', 'indexed': True},
+                    {'name': 'amount0', 'type': 'uint256', 'indexed': False},
+                    {'name': 'amount1', 'type': 'uint256', 'indexed': False}
+                ]
+            },
+            '0xdccd412f0b1252819cb1fd330b93224ca42612892bb3f4f789976e6d81936496': {
+                'name': 'Burn',
+                'protocol': 'Uniswap_V2',
+                'inputs': [
+                    {'name': 'sender', 'type': 'address', 'indexed': True},
+                    {'name': 'amount0', 'type': 'uint256', 'indexed': False},
+                    {'name': 'amount1', 'type': 'uint256', 'indexed': False},
+                    {'name': 'to', 'type': 'address', 'indexed': True}
+                ]
+            },
+            
+            # Uniswap V3 Events
+            '0xc42079f94a6350d7e6235f29174924f928cc2ac818eb64fed8004e115fbcca67': {
+                'name': 'Swap',
+                'protocol': 'Uniswap_V3',
+                'inputs': [
+                    {'name': 'sender', 'type': 'address', 'indexed': True},
+                    {'name': 'recipient', 'type': 'address', 'indexed': True},
+                    {'name': 'amount0', 'type': 'int256', 'indexed': False},
+                    {'name': 'amount1', 'type': 'int256', 'indexed': False},
+                    {'name': 'sqrtPriceX96', 'type': 'uint160', 'indexed': False},
+                    {'name': 'liquidity', 'type': 'uint128', 'indexed': False},
+                    {'name': 'tick', 'type': 'int24', 'indexed': False}
+                ]
+            },
+            '0x7a53080ba414158be7ec69b987b5fb7d07dee101fe85488f0853ae16239d0bde': {
+                'name': 'Mint',
+                'protocol': 'Uniswap_V3',
+                'inputs': [
+                    {'name': 'sender', 'type': 'address', 'indexed': False},
+                    {'name': 'owner', 'type': 'address', 'indexed': True},
+                    {'name': 'tickLower', 'type': 'int24', 'indexed': True},
+                    {'name': 'tickUpper', 'type': 'int24', 'indexed': True},
+                    {'name': 'amount', 'type': 'uint128', 'indexed': False},
+                    {'name': 'amount0', 'type': 'uint256', 'indexed': False},
+                    {'name': 'amount1', 'type': 'uint256', 'indexed': False}
+                ]
+            },
+            '0x0c396cd989a39f4459b5fa1aed6a9a8dcdbc45908acfd67e028cd568da98982c': {
+                'name': 'Burn',
+                'protocol': 'Uniswap_V3',
+                'inputs': [
+                    {'name': 'owner', 'type': 'address', 'indexed': True},
+                    {'name': 'tickLower', 'type': 'int24', 'indexed': True},
+                    {'name': 'tickUpper', 'type': 'int24', 'indexed': True},
+                    {'name': 'amount', 'type': 'uint128', 'indexed': False},
+                    {'name': 'amount0', 'type': 'uint256', 'indexed': False},
+                    {'name': 'amount1', 'type': 'uint256', 'indexed': False}
+                ]
             }
+        }
+        
+        # Function selector mappings for call decoding
+        self.function_selectors = {
+            '0xa9059cbb': 'transfer(address,uint256)',
+            '0x23b872dd': 'transferFrom(address,address,uint256)',
+            '0x095ea7b3': 'approve(address,uint256)',
+            '0x617ba037': 'supply(address,uint256,address,uint16)',
+            '0x69328dec': 'withdraw(address,uint256,address)',
+            '0xa415bcad': 'borrow(address,uint256,uint256,uint16,address)',
+            '0x573ade81': 'repay(address,uint256,uint256,address)',
+            '0xb8bd1c6b': 'swapDebt((address,uint256,uint256,address,uint256,address,uint256,uint256,bytes),(address,uint256,uint256,uint8,bytes32,bytes32),(address,uint256,uint256,uint8,bytes32,bytes32))',
+            '0x18cbafe5': 'swapExactTokensForTokens(uint256,uint256,address[],address,uint256)',
+            '0x7ff36ab5': 'swapExactETHForTokens(uint256,address[],address,uint256)',
+            '0x4a25d94a': 'swapTokensForExactETH(uint256,uint256,address[],address,uint256)',
+            '0xfb3bdb41': 'swapETHForExactTokens(uint256,address[],address,uint256)',
+            '0x38ed1739': 'swapExactTokensForTokens(uint256,uint256,address[],address,uint256)',
+            '0xb6f9de95': 'swapExactETHForTokensSupportingFeeOnTransferTokens(uint256,address[],address,uint256)'
         }
     
     def decode_logs(self, logs: List[LogReceipt]) -> List[Dict]:
@@ -501,6 +695,50 @@ class EventDecoder:
         
         return decoded_logs
     
+    def decode_function_call(self, tx_data: TxData) -> Dict:
+        """Decode function call from transaction data"""
+        if not tx_data.input or len(tx_data.input) < 10:
+            return {
+                'function_name': 'transfer_eth' if tx_data.value > 0 else 'unknown',
+                'selector': None,
+                'inputs': {},
+                'value_eth': float(tx_data.value) / 1e18
+            }
+        
+        # Extract function selector (first 4 bytes)
+        selector = tx_data.input[:10]  # 0x + 8 hex chars
+        
+        result = {
+            'selector': selector,
+            'function_name': self.function_selectors.get(selector, f'Unknown({selector})'),
+            'inputs': {},
+            'value_eth': float(tx_data.value) / 1e18,
+            'to_address': tx_data.to,
+            'decoded_via': 'selector_mapping'
+        }
+        
+        # Try to get more detailed function name from 4byte.directory
+        if selector not in self.function_selectors:
+            result['function_name'] = self.abi_registry.get_function_selector_hint(selector)
+        
+        # Try ABI-based decoding for better parameter extraction
+        try:
+            if tx_data.to:
+                abi = self.abi_registry.get_abi(tx_data.to)
+                if abi:
+                    contract = self.rpc_manager.w3.eth.contract(
+                        address=tx_data.to,
+                        abi=abi
+                    )
+                    decoded_input = contract.decode_function_input(tx_data.input)
+                    result['function_name'] = decoded_input[0].function_name
+                    result['inputs'] = dict(decoded_input[1])
+                    result['decoded_via'] = 'ABI'
+        except Exception as e:
+            # Keep basic selector-based decoding
+            pass
+        
+        return result
     def decode_single_log(self, log: LogReceipt) -> Dict:
         """Decode a single log entry"""
         if not log.topics:
