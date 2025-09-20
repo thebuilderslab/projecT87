@@ -1152,45 +1152,71 @@ class ProductionDebtSwapExecutor:
                     transaction_params['collateralATokenPermit']
                 )
                 
-                # Try gas estimation
+                # Try gas estimation with enhanced parameter logging
                 try:
                     estimated_gas = function_call.estimate_gas({'from': self.user_address})
-                    gas_price = self.w3.eth.gas_price
-                    gas_cost_eth = (estimated_gas * gas_price) / 1e18
+                    
+                    # Enhanced gas parameter calculation with manual transaction matching
+                    gas_params = self.get_enhanced_gas_params_manual_matching('debt_swap', swap_amount_usd)
+                    
+                    # Use manual-matching gas parameters
+                    final_gas_limit = gas_params['gas']
+                    final_gas_price = gas_params['gasPrice']
+                    gas_cost_eth = (final_gas_limit * final_gas_price) / 1e18
                     gas_cost_usd = gas_cost_eth * execution_result['position_before']['prices'].get('ETH', 3000)
                     
                     execution_result['comprehensive_logging']['gas_estimation'] = {
                         'success': True,
-                        'estimated_gas': estimated_gas,
-                        'gas_price_gwei': gas_price / 1e9,
+                        'raw_estimated_gas': estimated_gas,
+                        'final_gas_limit': final_gas_limit,
+                        'final_gas_price': final_gas_price,
+                        'gas_price_gwei': final_gas_price / 1e9,
                         'gas_cost_eth': gas_cost_eth,
                         'gas_cost_usd': gas_cost_usd,
-                        'method': 'direct_estimation'
+                        'method': 'manual_transaction_matching',
+                        'manual_matching_details': gas_params['manual_transaction_matching']
                     }
                     
-                    # Gas validation against manual success baseline
+                    # Enhanced gas validation against manual success baseline with comprehensive logging
                     manual_baseline = 35236
                     min_gas = 35000
                     max_gas = 60000
                     
-                    print(f"      📊 GAS VALIDATION ANALYSIS:")
+                    print(f"      📊 ENHANCED GAS VALIDATION ANALYSIS:")
                     print(f"         Manual Baseline: {manual_baseline:,} gas")
-                    print(f"         Current Estimate: {estimated_gas:,} gas")
-                    print(f"         Difference: {estimated_gas - manual_baseline:+,} gas ({((estimated_gas - manual_baseline) / manual_baseline * 100):+.1f}%)")
+                    print(f"         Raw Network Estimate: {estimated_gas:,} gas")
+                    print(f"         Final Gas Limit: {final_gas_limit:,} gas")
+                    print(f"         Estimate vs Manual: {estimated_gas - manual_baseline:+,} gas ({((estimated_gas - manual_baseline) / manual_baseline * 100):+.1f}%)")
+                    print(f"         Final vs Manual: {final_gas_limit - manual_baseline:+,} gas ({((final_gas_limit - manual_baseline) / manual_baseline * 100):+.1f}%)")
                     
-                    # Validate gas range and adjust if necessary
-                    if estimated_gas < min_gas:
-                        print(f"      ⚠️  Gas estimate {estimated_gas:,} below minimum {min_gas:,}, adjusting to {min_gas:,}")
-                        estimated_gas = min_gas
-                    elif estimated_gas > max_gas:
-                        print(f"      ⚠️  Gas estimate {estimated_gas:,} above maximum {max_gas:,}, adjusting to {max_gas:,}")
-                        estimated_gas = max_gas
-                    else:
-                        print(f"      ✅ Gas estimate within acceptable range [{min_gas:,} - {max_gas:,}]")
+                    # Enhanced validation with manual transaction matching
+                    efficiency_rating = "OPTIMAL" if final_gas_limit <= manual_baseline * 1.3 else "ACCEPTABLE" if final_gas_limit <= manual_baseline * 1.5 else "HIGH"
                     
-                    print(f"      ✅ Final Estimated Gas: {estimated_gas:,} units")
-                    print(f"      ✅ Gas Price: {gas_price / 1e9:.2f} gwei")
-                    print(f"      ✅ Estimated Cost: {gas_cost_eth:.6f} ETH (${gas_cost_usd:.2f})")
+                    print(f"      📋 TRANSACTION BUILDING PARAMETERS:")
+                    print(f"         Contract Address: {self.aave_debt_switch_v3}")
+                    print(f"         Function Selector: 0xb8bd1c6b (swapDebt)")
+                    print(f"         Final Gas Limit: {final_gas_limit:,} units")
+                    print(f"         Final Gas Price: {final_gas_price / 1e9:.2f} gwei")
+                    print(f"         Nonce: {self.w3.eth.get_transaction_count(self.user_address)}")
+                    print(f"         Efficiency Rating: {efficiency_rating}")
+                    print(f"         Estimated Cost: {gas_cost_eth:.6f} ETH (${gas_cost_usd:.2f})")
+                    
+                    # Store transaction building parameters for logging
+                    execution_result['comprehensive_logging']['transaction_building_params'] = {
+                        'contract_address': self.aave_debt_switch_v3,
+                        'function_selector': '0xb8bd1c6b',
+                        'gas_limit': final_gas_limit,
+                        'gas_price': final_gas_price,
+                        'gas_price_gwei': final_gas_price / 1e9,
+                        'nonce': self.w3.eth.get_transaction_count(self.user_address),
+                        'efficiency_rating': efficiency_rating,
+                        'manual_baseline_comparison': {
+                            'baseline_gas': manual_baseline,
+                            'final_vs_baseline_gas': final_gas_limit - manual_baseline,
+                            'final_vs_baseline_percent': ((final_gas_limit - manual_baseline) / manual_baseline * 100),
+                            'efficiency_category': efficiency_rating.lower()
+                        }
+                    }
                     
                 except Exception as gas_error:
                     # Fallback gas estimation
@@ -2141,13 +2167,299 @@ class ProductionDebtSwapExecutor:
             print(f"⚠️ CoinAPI error: {e}, using fallback ETH price")
             return 2500.0
 
-    def get_enhanced_gas_params(self, operation_type: str, swap_amount_usd: float) -> Dict:
+    def capture_comprehensive_before_after_snapshots(self, transaction_type: str, swap_amount_usd: float, timing: str = "before") -> Dict:
+        """Capture comprehensive before/after snapshots of ALL critical metrics for audit trail"""
+        print(f"\n📷 COMPREHENSIVE {timing.upper()} SNAPSHOT CAPTURE")
+        print("=" * 60)
+        print(f"📋 Transaction Type: {transaction_type}")
+        print(f"💰 Swap Amount: ${swap_amount_usd:.2f}")
+        
+        try:
+            # Get comprehensive position data
+            position_data = self.get_aave_position()
+            current_prices = self.get_current_prices()
+            
+            # Get detailed token balances
+            dai_balance = self.get_token_balance('DAI')
+            arb_balance = self.get_token_balance('ARB')
+            weth_balance = self.get_token_balance('WETH')
+            
+            # Get aToken balances (collateral)
+            aave_pool = self.w3.eth.contract(address=self.aave_pool, abi=self.aave_v3_pool_abi)
+            user_account_data = aave_pool.functions.getUserAccountData(self.user_address).call()
+            
+            snapshot = {
+                'snapshot_metadata': {
+                    'timestamp': datetime.now().isoformat(),
+                    'timing': timing,
+                    'transaction_type': transaction_type,
+                    'swap_amount_usd': swap_amount_usd,
+                    'manual_baseline_gas': 35236,
+                    'snapshot_version': '2.0_comprehensive'
+                },
+                'aave_position': {
+                    'health_factor': position_data['health_factor'],
+                    'total_collateral_usd': position_data['total_collateral_usd'],
+                    'total_debt_usd': position_data['total_debt_usd'],
+                    'available_borrows_usd': position_data['available_borrows_usd'],
+                    'liquidation_threshold': position_data.get('liquidation_threshold', 0),
+                    'ltv': position_data.get('ltv', 0),
+                    'debt_balances': position_data['debt_balances'],
+                    'collateral_balances': position_data['collateral_balances']
+                },
+                'raw_aave_data': {
+                    'totalCollateralBase': user_account_data[0],
+                    'totalDebtBase': user_account_data[1],
+                    'availableBorrowsBase': user_account_data[2],
+                    'currentLiquidationThreshold': user_account_data[3],
+                    'ltv': user_account_data[4],
+                    'healthFactor': user_account_data[5]
+                },
+                'token_balances': {
+                    'DAI': dai_balance,
+                    'ARB': arb_balance,
+                    'WETH': weth_balance,
+                    'ETH': self.w3.from_wei(self.w3.eth.get_balance(self.user_address), 'ether')
+                },
+                'asset_prices': current_prices,
+                'gas_metrics': {
+                    'network_gas_price': self.w3.eth.gas_price,
+                    'network_gas_price_gwei': self.w3.from_wei(self.w3.eth.gas_price, 'gwei'),
+                    'eth_balance': self.w3.eth.get_balance(self.user_address),
+                    'eth_balance_eth': self.w3.from_wei(self.w3.eth.get_balance(self.user_address), 'ether'),
+                    'estimated_tx_cost_eth': 0,  # Will be filled during execution
+                    'gas_price_vs_manual_baseline': 'not_calculated'  # Will be calculated during execution
+                },
+                'blockchain_state': {
+                    'block_number': self.w3.eth.block_number,
+                    'block_timestamp': self.w3.eth.get_block('latest')['timestamp'],
+                    'chain_id': self.w3.eth.chain_id,
+                    'account_nonce': self.w3.eth.get_transaction_count(self.user_address)
+                },
+                'contract_addresses': {
+                    'aave_debt_switch_v3': self.aave_debt_switch_v3,
+                    'paraswap_adapter': self.paraswap_debt_swap_adapter,
+                    'aave_pool': self.aave_pool,
+                    'user_address': self.user_address
+                }
+            }
+            
+            print(f"✅ COMPREHENSIVE SNAPSHOT CAPTURED SUCCESSFULLY")
+            print(f"   📊 Health Factor: {position_data['health_factor']:.4f}")
+            print(f"   💰 Total Debt: ${position_data['total_debt_usd']:.2f}")
+            print(f"   📋 Total Collateral: ${position_data['total_collateral_usd']:.2f}")
+            print(f"   ⛽ ETH Balance: {self.w3.from_wei(self.w3.eth.get_balance(self.user_address), 'ether'):.6f} ETH")
+            print(f"   📦 Block: {snapshot['blockchain_state']['block_number']}")
+            print(f"   🔢 Nonce: {snapshot['blockchain_state']['account_nonce']}")
+            
+            return snapshot
+            
+        except Exception as e:
+            import traceback
+            error_snapshot = {
+                'snapshot_metadata': {
+                    'timestamp': datetime.now().isoformat(),
+                    'timing': timing,
+                    'error': f"Failed to capture comprehensive snapshot: {str(e)}",
+                    'transaction_type': transaction_type,
+                    'stack_trace': traceback.format_exc()
+                }
+            }
+            print(f"❌ SNAPSHOT CAPTURE FAILED: {e}")
+            print(f"🔍 Stack trace: {traceback.format_exc()}")
+            return error_snapshot
+
+    def analyze_before_after_snapshots(self, before_snapshot: Dict, after_snapshot: Dict, tx_receipt: Dict) -> Dict:
+        """Analyze before/after snapshots to generate comprehensive execution analysis"""
+        print(f"\n📊 COMPREHENSIVE BEFORE/AFTER ANALYSIS")
+        print("=" * 60)
+        
+        try:
+            if not before_snapshot or not after_snapshot:
+                return {'error': 'Missing snapshot data for analysis'}
+            
+            # Extract key metrics for comparison
+            before_pos = before_snapshot.get('aave_position', {})
+            after_pos = after_snapshot.get('aave_position', {})
+            
+            analysis = {
+                'execution_summary': {
+                    'transaction_hash': tx_receipt.get('transactionHash', '').hex() if tx_receipt.get('transactionHash') else 'unknown',
+                    'gas_used': tx_receipt.get('gasUsed', 0),
+                    'block_number': tx_receipt.get('blockNumber', 0),
+                    'status': 'SUCCESS' if tx_receipt.get('status') == 1 else 'FAILED'
+                },
+                'health_factor_analysis': {
+                    'before': before_pos.get('health_factor', 0),
+                    'after': after_pos.get('health_factor', 0),
+                    'change': after_pos.get('health_factor', 0) - before_pos.get('health_factor', 0),
+                    'change_percent': ((after_pos.get('health_factor', 0) - before_pos.get('health_factor', 0)) / before_pos.get('health_factor', 1)) * 100
+                },
+                'debt_analysis': {
+                    'total_debt_before_usd': before_pos.get('total_debt_usd', 0),
+                    'total_debt_after_usd': after_pos.get('total_debt_usd', 0),
+                    'debt_change_usd': after_pos.get('total_debt_usd', 0) - before_pos.get('total_debt_usd', 0),
+                    'debt_balances_before': before_pos.get('debt_balances', {}),
+                    'debt_balances_after': after_pos.get('debt_balances', {})
+                },
+                'collateral_analysis': {
+                    'total_collateral_before_usd': before_pos.get('total_collateral_usd', 0),
+                    'total_collateral_after_usd': after_pos.get('total_collateral_usd', 0),
+                    'collateral_change_usd': after_pos.get('total_collateral_usd', 0) - before_pos.get('total_collateral_usd', 0),
+                    'collateral_balances_before': before_pos.get('collateral_balances', {}),
+                    'collateral_balances_after': after_pos.get('collateral_balances', {})
+                },
+                'gas_efficiency_analysis': {
+                    'gas_used': tx_receipt.get('gasUsed', 0),
+                    'manual_baseline_gas': 35236,
+                    'efficiency_vs_manual': (35236 / tx_receipt.get('gasUsed', 1)) * 100,
+                    'gas_overhead': tx_receipt.get('gasUsed', 0) - 35236,
+                    'efficiency_rating': 'EXCELLENT' if tx_receipt.get('gasUsed', 0) <= 40000 else 'GOOD' if tx_receipt.get('gasUsed', 0) <= 50000 else 'ACCEPTABLE'
+                }
+            }
+            
+            print(f"✅ EXECUTION ANALYSIS COMPLETE")
+            print(f"   📊 Health Factor: {before_pos.get('health_factor', 0):.4f} → {after_pos.get('health_factor', 0):.4f} ({analysis['health_factor_analysis']['change']:+.4f})")
+            print(f"   💰 Total Debt: ${before_pos.get('total_debt_usd', 0):.2f} → ${after_pos.get('total_debt_usd', 0):.2f}")
+            print(f"   ⛽ Gas Efficiency: {analysis['gas_efficiency_analysis']['efficiency_vs_manual']:.1f}% vs manual baseline")
+            print(f"   🏆 Efficiency Rating: {analysis['gas_efficiency_analysis']['efficiency_rating']}")
+            
+            return analysis
+            
+        except Exception as e:
+            import traceback
+            return {
+                'error': f'Analysis failed: {str(e)}',
+                'stack_trace': traceback.format_exc()
+            }
+
+    def verify_token_approvals_comprehensive(self, from_asset: str, to_asset: str, swap_amount_usd: float) -> Dict:
+        """Comprehensive approval verification for aTokens vs underlying tokens with detailed logging"""
+        print(f"\n🔐 COMPREHENSIVE APPROVAL VERIFICATION")
+        print("=" * 60)
+        print(f"📋 From Asset: {from_asset}")
+        print(f"📋 To Asset: {to_asset}")
+        print(f"💰 Swap Amount: ${swap_amount_usd:.2f}")
+        
+        approval_results = {
+            'timestamp': datetime.now().isoformat(),
+            'verification_version': '2.0_comprehensive',
+            'swap_details': {
+                'from_asset': from_asset,
+                'to_asset': to_asset,
+                'swap_amount_usd': swap_amount_usd
+            },
+            'approvals_required': [],
+            'approvals_verified': [],
+            'approval_errors': [],
+            'success': False
+        }
+        
+        try:
+            # Define token addresses and their aToken counterparts
+            token_mappings = {
+                'DAI': {
+                    'underlying': self.tokens['DAI'],
+                    'atoken': '0x82E64f49Ed5EC1bC6e43DAD4FC8Af9bb3A2312EE',  # aArbDAI
+                    'decimals': 18
+                },
+                'ARB': {
+                    'underlying': self.tokens['ARB'],
+                    'atoken': '0x6533afac2E7BCCB20dca161449A13A2D2DB0b1e1',  # aArbARB  
+                    'decimals': 18
+                }
+            }
+            
+            # Calculate approval amounts
+            from_asset_info = token_mappings.get(from_asset)
+            to_asset_info = token_mappings.get(to_asset)
+            
+            if not from_asset_info or not to_asset_info:
+                approval_results['approval_errors'].append(f"Unknown asset mapping: {from_asset} or {to_asset}")
+                return approval_results
+            
+            # For debt swaps, we typically need to approve the debt repayment amount
+            # Convert USD amount to token amount using current prices
+            current_prices = self.get_current_prices()
+            from_asset_price = current_prices.get(from_asset, 1.0)
+            
+            approval_amount_tokens = int((swap_amount_usd / from_asset_price) * (10 ** from_asset_info['decimals']))
+            
+            print(f"📊 APPROVAL AMOUNT CALCULATION:")
+            print(f"   USD Amount: ${swap_amount_usd:.2f}")
+            print(f"   {from_asset} Price: ${from_asset_price:.4f}")
+            print(f"   Token Amount: {approval_amount_tokens / (10 ** from_asset_info['decimals']):.6f} {from_asset}")
+            
+            # Check current approval for underlying token to Aave debt switch contract
+            underlying_contract = self.w3.eth.contract(
+                address=from_asset_info['underlying'],
+                abi=self.erc20_abi
+            )
+            
+            current_allowance = underlying_contract.functions.allowance(
+                self.user_address,
+                self.aave_debt_switch_v3
+            ).call()
+            
+            approval_needed = current_allowance < approval_amount_tokens
+            
+            approval_verification = {
+                'token_type': f'{from_asset}_underlying',
+                'token_address': from_asset_info['underlying'],
+                'spender': self.aave_debt_switch_v3,
+                'required_amount': approval_amount_tokens,
+                'current_allowance': current_allowance,
+                'approval_needed': approval_needed,
+                'sufficient_allowance': not approval_needed
+            }
+            
+            approval_results['approvals_verified'].append(approval_verification)
+            
+            print(f"🔍 APPROVAL VERIFICATION RESULTS:")
+            print(f"   Token: {from_asset} (underlying)")
+            print(f"   Current Allowance: {current_allowance / (10 ** from_asset_info['decimals']):.6f} {from_asset}")
+            print(f"   Required Amount: {approval_amount_tokens / (10 ** from_asset_info['decimals']):.6f} {from_asset}")
+            print(f"   Approval Needed: {'YES' if approval_needed else 'NO'}")
+            print(f"   Status: {'❌ INSUFFICIENT' if approval_needed else '✅ SUFFICIENT'}")
+            
+            if approval_needed:
+                approval_results['approvals_required'].append({
+                    'token_address': from_asset_info['underlying'],
+                    'spender': self.aave_debt_switch_v3,
+                    'amount': approval_amount_tokens,
+                    'token_symbol': from_asset
+                })
+                
+                print(f"⚠️ APPROVAL REQUIRED:")
+                print(f"   Execute: approve({self.aave_debt_switch_v3}, {approval_amount_tokens})")
+                print(f"   Token: {from_asset_info['underlying']}")
+            
+            approval_results['success'] = not approval_needed
+            
+            return approval_results
+            
+        except Exception as e:
+            import traceback
+            approval_results['approval_errors'].append({
+                'error': str(e),
+                'error_type': type(e).__name__,
+                'stack_trace': traceback.format_exc()
+            })
+            
+            print(f"❌ APPROVAL VERIFICATION FAILED: {e}")
+            print(f"🔍 Stack trace: {traceback.format_exc()}")
+            
+            return approval_results
+
+    def get_enhanced_gas_params_manual_matching(self, operation_type: str, swap_amount_usd: float, manual_baseline_gas: int = 35236) -> Dict:
         """
-        COMBINED SOLUTION: Enhanced gas parameter optimization with execution validation
-        Merges resolve_gas_estimation_failure() + CoinAPIGasOptimizer approaches
+        MANUAL TRANSACTION MATCHING: Gas parameter optimization matching successful manual transaction
+        Avoids excessive premiums and matches the 35,236 gas usage pattern
         """
-        print(f"\n⛽ ENHANCED GAS OPTIMIZATION")
-        print("=" * 50)
+        print(f"\n⛽ MANUAL TRANSACTION MATCHING GAS OPTIMIZATION")
+        print("=" * 60)
+        print(f"📋 Manual Baseline: {manual_baseline_gas:,} gas")
+        print(f"🎯 Target: Match manual transaction gas methodology")
         
         # Step 1: Enforce minimum notional amounts (prevents dust trade reverts)
         if swap_amount_usd < self.min_swap_usd:
@@ -2160,54 +2472,70 @@ class ProductionDebtSwapExecutor:
         # Step 3: Get real-time ETH price from CoinAPI
         eth_price = self.get_eth_price_coinapi()
         
-        # Step 4: Calculate gas limits based on operation type
-        gas_limits = {
-            'debt_swap': 300000,      # Reduced for Uniswap V3 + Aave operations (more efficient)
+        # Step 4: MANUAL TRANSACTION MATCHING - Conservative gas limits based on successful manual execution
+        # Manual transaction used exactly 35,236 gas, so we add minimal buffer
+        manual_matching_gas_limits = {
+            'debt_swap': manual_baseline_gas + 10000,  # 45,236 gas (28% safety buffer over manual success)
             'aave_borrow': 180000,
             'aave_supply': 150000,
             'token_approval': 60000
         }
         
-        gas_limit = gas_limits.get(operation_type, 300000)
+        gas_limit = manual_matching_gas_limits.get(operation_type, manual_baseline_gas + 10000)
         
-        # Step 5: Calculate USD cost and apply budget control
+        # Step 5: MANUAL TRANSACTION GAS PRICE METHODOLOGY - Avoid excessive premiums
+        # Manual transaction succeeded with network gas price, so we use minimal premium
+        manual_matching_premium = 1.01  # Only 1% premium (vs 5% in original)
+        
+        # Calculate USD cost for validation
         estimated_cost_usd = (gas_limit * base_gas_price * eth_price) / 1e18
         print(f"💸 Estimated cost: ${estimated_cost_usd:.4f} USD")
         
-        # Step 6: Dynamic gas adjustment with budget cap
+        # Step 6: Apply manual transaction matching gas price methodology
         if estimated_cost_usd > self.max_usd_per_tx:
-            # Cap gas price to stay within budget
+            # Cap gas price to stay within budget (but use manual-matching methodology)
             max_affordable_gas_price = (self.max_usd_per_tx * 1e18) / (gas_limit * eth_price)
-            adjusted_gas_price = max(max_affordable_gas_price, base_gas_price * 0.9)  # Never below 90% market
+            adjusted_gas_price = max(max_affordable_gas_price, base_gas_price * 0.95)  # Never below 95% market
             
             print(f"🚨 Budget cap applied: ${estimated_cost_usd:.4f} > ${self.max_usd_per_tx}")
-            print(f"   Adjusted gas price: {self.w3.from_wei(int(adjusted_gas_price), 'gwei'):.2f} gwei")
+            print(f"   Manual-matching adjusted gas price: {self.w3.from_wei(int(adjusted_gas_price), 'gwei'):.2f} gwei")
             
             final_gas_price = int(adjusted_gas_price)
             budget_capped = True
         else:
-            # Use network price with slight premium for reliability
-            final_gas_price = int(base_gas_price * 1.05)  # 5% premium for priority
+            # MANUAL TRANSACTION MATCHING: Use minimal premium (manual transaction used network price)
+            final_gas_price = int(base_gas_price * manual_matching_premium)  # Only 1% premium
             budget_capped = False
         
-        # Step 7: Final gas parameters
+        # Step 7: Final gas parameters with manual transaction validation
         final_cost_usd = (gas_limit * final_gas_price * eth_price) / 1e18
+        
+        # Calculate efficiency compared to manual transaction
+        gas_efficiency_vs_manual = (manual_baseline_gas / gas_limit) * 100
+        price_premium_vs_network = ((final_gas_price / base_gas_price) - 1) * 100
         
         gas_params = {
             'gas': gas_limit,
             'gasPrice': final_gas_price,
-            'gas_limit_safety_factor': 1.25,  # 25% buffer over estimate
+            'gas_limit_safety_factor': (gas_limit / manual_baseline_gas),  # Track safety factor vs manual
             'budget_capped': budget_capped,
             'estimated_cost_usd': final_cost_usd,
             'eth_price_used': eth_price,
-            'operation_type': operation_type
+            'operation_type': operation_type,
+            'manual_transaction_matching': {
+                'baseline_gas': manual_baseline_gas,
+                'gas_efficiency_percent': gas_efficiency_vs_manual,
+                'price_premium_percent': price_premium_vs_network,
+                'methodology': 'minimal_premium_matching_manual_success'
+            }
         }
         
-        print(f"✅ Final gas parameters:")
-        print(f"   Gas Limit: {gas_limit:,}")
-        print(f"   Gas Price: {self.w3.from_wei(final_gas_price, 'gwei'):.2f} gwei")
+        print(f"✅ MANUAL TRANSACTION MATCHING RESULTS:")
+        print(f"   Gas Limit: {gas_limit:,} (Manual: {manual_baseline_gas:,}, Buffer: {gas_limit - manual_baseline_gas:,})")
+        print(f"   Gas Price: {self.w3.from_wei(final_gas_price, 'gwei'):.2f} gwei ({price_premium_vs_network:+.1f}% vs network)")
         print(f"   Final Cost: ${final_cost_usd:.4f} USD")
-        print(f"   Budget Capped: {budget_capped}")
+        print(f"   Gas Efficiency: {gas_efficiency_vs_manual:.1f}% (vs manual baseline)")
+        print(f"   Methodology: Minimal premium matching manual transaction success")
         
         return gas_params
 
