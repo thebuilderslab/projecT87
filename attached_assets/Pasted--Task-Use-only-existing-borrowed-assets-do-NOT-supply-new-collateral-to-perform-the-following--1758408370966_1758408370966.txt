@@ -1,0 +1,18 @@
+**Task:** Use only existing borrowed assets (do NOT supply new collateral) to perform the following operations on Arbitrum Mainnet:
+  
+1. Allocate exactly 10 DAI (already borrowed) to swap for ARB using the best-available onchain swap (ParaSwap, Uniswap V3, or an equivalent router), using market pricing at execution time. Log the received ARB amount, quote source, router contract, and transaction hash.
+2. Hold the ARB in the wallet for exactly 5 minutes (300 seconds) using a deterministic wait (e.g., `time.sleep()` or job scheduler).
+3. After 5 minutes, swap the entire ARB balance (from step 1) back to DAI on the same or the best-available swap router for optimal pricing. Log the DAI returned, router, and transaction hash.
+4. **Record the full wallet onchain balance before and after the cycle (for DAI, ARB, and total borrowed asset value)**, and calculate:
+   - Net DAI delta (after both swaps)
+   - Net gas fees paid in DAI or USD equivalent
+   - Net change in "Borrowed Asset Value" (wallet net-of-fees PnL for the cycle)
+   - Output whether this round-trip cycle reduced, increased, or left unchanged the total value of borrowed assets in the wallet.
+5. **Provide onchain evidence** (transaction hashes, swap receipts, logs) for both swaps and approval events.
+6. Before executing, output a detailed breakdown ("How I understand this task") summarizing each step, the contracts involved, files and ABIs accessed, market parameters checked, and how the cycle will be documented.
+
+**Additional Notes:**
+- Use only files from this codebase. Typical files likely needed: `production_debt_swap_executor.py`, `swap_utils.py`, `arb_market_agent.py`, and config/ABI files for swap/execution/gas logic.
+- Optimize swap route for lowest slippage and lowest gas. Use live market data for quoting/execution.
+- Document the exact wait logic and ensure only existing borrowed funds (no re-supply or fresh borrow during the cycle).
+- The goal is to produce onchain-arbitrum proof for every step, a written sequence of contract calls, and a summary establishing if the cycle is net gain/loss for borrowed asset value—enabling future parametric automation.

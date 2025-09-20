@@ -1168,13 +1168,33 @@ class ProductionDebtSwapExecutor:
                         'method': 'direct_estimation'
                     }
                     
-                    print(f"      ✅ Estimated Gas: {estimated_gas:,} units")
+                    # Gas validation against manual success baseline
+                    manual_baseline = 35236
+                    min_gas = 35000
+                    max_gas = 60000
+                    
+                    print(f"      📊 GAS VALIDATION ANALYSIS:")
+                    print(f"         Manual Baseline: {manual_baseline:,} gas")
+                    print(f"         Current Estimate: {estimated_gas:,} gas")
+                    print(f"         Difference: {estimated_gas - manual_baseline:+,} gas ({((estimated_gas - manual_baseline) / manual_baseline * 100):+.1f}%)")
+                    
+                    # Validate gas range and adjust if necessary
+                    if estimated_gas < min_gas:
+                        print(f"      ⚠️  Gas estimate {estimated_gas:,} below minimum {min_gas:,}, adjusting to {min_gas:,}")
+                        estimated_gas = min_gas
+                    elif estimated_gas > max_gas:
+                        print(f"      ⚠️  Gas estimate {estimated_gas:,} above maximum {max_gas:,}, adjusting to {max_gas:,}")
+                        estimated_gas = max_gas
+                    else:
+                        print(f"      ✅ Gas estimate within acceptable range [{min_gas:,} - {max_gas:,}]")
+                    
+                    print(f"      ✅ Final Estimated Gas: {estimated_gas:,} units")
                     print(f"      ✅ Gas Price: {gas_price / 1e9:.2f} gwei")
                     print(f"      ✅ Estimated Cost: {gas_cost_eth:.6f} ETH (${gas_cost_usd:.2f})")
                     
                 except Exception as gas_error:
                     # Fallback gas estimation
-                    estimated_gas = 500000  # Conservative fallback
+                    estimated_gas = 45000  # Realistic fallback based on manual success baseline (35,236 gas)
                     gas_price = self.w3.eth.gas_price
                     gas_cost_eth = (estimated_gas * gas_price) / 1e18
                     gas_cost_usd = gas_cost_eth * execution_result['position_before']['prices'].get('ETH', 3000)
@@ -1189,8 +1209,15 @@ class ProductionDebtSwapExecutor:
                         'method': 'fallback_estimation'
                     }
                     
+                    # Gas validation for fallback gas
+                    manual_baseline = 35236
+                    
                     print(f"      ⚠️ Gas estimation failed: {gas_error}")
-                    print(f"      ✅ Using fallback: {estimated_gas:,} units")
+                    print(f"      📊 FALLBACK GAS ANALYSIS:")
+                    print(f"         Manual Baseline: {manual_baseline:,} gas")
+                    print(f"         Fallback Estimate: {estimated_gas:,} gas")
+                    print(f"         Difference: {estimated_gas - manual_baseline:+,} gas ({((estimated_gas - manual_baseline) / manual_baseline * 100):+.1f}%)")
+                    print(f"      ✅ Using realistic fallback: {estimated_gas:,} units (based on manual success pattern)")
                     print(f"      ✅ Estimated Cost: {gas_cost_eth:.6f} ETH (${gas_cost_usd:.2f})")
                     
             except Exception as contract_error:
@@ -1305,9 +1332,20 @@ class ProductionDebtSwapExecutor:
             # 5B. Build and submit transaction
             print(f"   📝 5B: Building and submitting transaction...")
             try:
+                # Calculate final gas limit with validation
+                base_gas_limit = min(int(estimated_gas * 1.1), 50000)  # 10% buffer, capped at 50k
+                manual_baseline = 35236
+                
+                print(f"      📊 FINAL GAS LIMIT ANALYSIS:")
+                print(f"         Original Estimate: {estimated_gas:,} gas")
+                print(f"         With 10% Buffer: {int(estimated_gas * 1.1):,} gas")
+                print(f"         Final Limit (capped): {base_gas_limit:,} gas")
+                print(f"         Manual Baseline: {manual_baseline:,} gas")
+                print(f"         Efficiency vs Manual: {((base_gas_limit - manual_baseline) / manual_baseline * 100):+.1f}%")
+                
                 transaction = function_call.build_transaction({
                     'from': self.user_address,
-                    'gas': int(estimated_gas * 1.2),  # 20% buffer
+                    'gas': base_gas_limit,
                     'gasPrice': gas_price,
                     'nonce': self.w3.eth.get_transaction_count(self.user_address)
                 })
@@ -1318,7 +1356,13 @@ class ProductionDebtSwapExecutor:
                     'gas_price': transaction['gasPrice'],
                     'nonce': transaction['nonce'],
                     'to': transaction['to'],
-                    'value': transaction['value']
+                    'value': transaction['value'],
+                    'gas_analysis': {
+                        'manual_baseline': 35236,
+                        'original_estimate': estimated_gas,
+                        'final_gas_limit': transaction['gas'],
+                        'efficiency_vs_manual_percent': ((transaction['gas'] - 35236) / 35236 * 100)
+                    }
                 }
                 
                 print(f"      ✅ Transaction built successfully")
