@@ -4,13 +4,14 @@ ParaSwap Debt Swap Integration - Real On-Chain Implementation
 Implements the exact debt swap functionality shown in Aave interface (ARB ↔ GHO style swaps)
 """
 
-import os
-import time
 import json
+import os
 import requests
-from typing import Dict, Tuple, Optional
-from web3 import Web3
+import time
+from typing import Any, Dict, Optional, Tuple
+
 from eth_account.messages import encode_structured_data
+from web3 import Web3
 
 class ParaSwapDebtSwapIntegration:
     """Real ParaSwap integration for Aave debt swaps"""
@@ -25,7 +26,7 @@ class ParaSwapDebtSwapIntegration:
         
         # Aave V3 contracts on Arbitrum
         self.aave_pool = "0x794a61358D6845594F94dc1DB02A252b5b4814aD"
-        self.paraswap_debt_swap_adapter = "0x32FdC26aFFA1eB331263Bcdd59F2e46eCbCC2E24"
+        self.paraswap_debt_swap_adapter = "0x63dfa7c09Dc2Ff4030d6B8Dc2ce6262BF898C8A4"  # Official Aave Debt Switch V3
         self.aave_data_provider = "0x69FA688f1Dc47d4B5d8029D5a35FB7a548310654"
         
         # Token addresses
@@ -127,7 +128,7 @@ class ParaSwapDebtSwapIntegration:
             return 0.0
 
     def get_paraswap_swap_data(self, from_token: str, to_token: str, 
-                              amount: int, user_address: str) -> Dict:
+                              amount: int, user_address: str) -> Dict[str, Any]:
         """Get ParaSwap swap data for debt swap"""
         try:
             print(f"🔍 Getting ParaSwap swap data:")
@@ -208,7 +209,7 @@ class ParaSwapDebtSwapIntegration:
 
     def create_credit_delegation_permit(self, delegator_private_key: str, 
                                       debt_token_address: str, delegatee: str,
-                                      value: int, deadline: int) -> Dict:
+                                      value: int, deadline: int) -> Dict[str, Any]:
         """Create EIP-712 credit delegation permit"""
         try:
             print(f"📝 Creating credit delegation permit:")
@@ -316,7 +317,7 @@ class ParaSwapDebtSwapIntegration:
 
     def prepare_debt_swap_transaction(self, user_private_key: str, 
                                     from_asset: str, to_asset: str,
-                                    swap_amount_usd: float) -> Dict:
+                                    swap_amount_usd: float) -> Dict[str, Any]:
         """Prepare complete debt swap transaction"""
         try:
             user_account = self.w3.eth.account.from_key(user_private_key)

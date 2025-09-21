@@ -5,18 +5,19 @@ Consolidated implementation with deterministic validation and comprehensive PNL 
 Verifiable execution: DAI debt → ARB debt → wait 5min → ARB debt → DAI debt.
 """
 
-import os
-import time
 import json
+import os
 import requests
+import time
 from datetime import datetime, timedelta
-from typing import Dict, List, Optional, Tuple, Union
 from decimal import Decimal, getcontext
-from web3 import Web3
-from web3.types import TxParams, TxReceipt
-from eth_typing import ChecksumAddress, HexStr
-from web3.exceptions import ContractLogicError
+from typing import Any, Dict, List, Optional, Tuple, Union
+
 from eth_account.messages import encode_structured_data
+from eth_typing import ChecksumAddress, HexStr
+from web3 import Web3
+from web3.exceptions import ContractLogicError
+from web3.types import TxParams, TxReceipt
 
 # UNIFIED SYSTEM IMPORTS
 from debt_swap_utils import DebtSwapSignatureValidator
@@ -84,8 +85,8 @@ class ProductionDebtSwapExecutor:
             print(f"⚠️ Warning: Comprehensive validation system initialization failed: {e}")
             self.debt_swap_validator = None
         
-        # FIXED: Use correct Aave Debt Switch V3 contract address as specified by architect
-        self.aave_debt_switch_v3: ChecksumAddress = self.w3.to_checksum_address("0x8761e0370f94f68Db8EaA731f4fC581f6AD0Bd68")
+        # UPDATED: Use official Aave Debt Switch V3 contract address
+        self.aave_debt_switch_v3: ChecksumAddress = self.w3.to_checksum_address("0x63dfa7c09Dc2Ff4030d6B8Dc2ce6262BF898C8A4")
         # Keep backward compatibility
         self.paraswap_debt_swap_adapter: ChecksumAddress = self.aave_debt_switch_v3
         self.augustus_swapper: ChecksumAddress = self.w3.to_checksum_address("0xDEF171Fe48CF0115B1d80b88dc8eAB59176FEe57")
@@ -98,54 +99,118 @@ class ProductionDebtSwapExecutor:
             'ARB': self.w3.to_checksum_address("0x912CE59144191C1204E64559FE8253a0e49E6548")
         }
         
-        # FIXED: CORRECT ABI from 4byte.directory matching successful manual transactions (function selector 0xb8bd1c6b)
-        self.debt_swap_abi = [{
-            "inputs": [
-                {
-                    "components": [
-                        {"name": "debtAsset", "type": "address"},
-                        {"name": "debtRepayAmount", "type": "uint256"},
-                        {"name": "debtRateMode", "type": "uint256"},
-                        {"name": "newDebtAsset", "type": "address"},
-                        {"name": "maxNewDebtAmount", "type": "uint256"},
-                        {"name": "extraCollateralAsset", "type": "address"},
-                        {"name": "extraCollateralAmount", "type": "uint256"},
-                        {"name": "offset", "type": "uint256"},
-                        {"name": "swapData", "type": "bytes"}
-                    ],
-                    "name": "debtSwapParams",
-                    "type": "tuple"
-                },
-                {
-                    "components": [
-                        {"name": "debtToken", "type": "address"},
-                        {"name": "value", "type": "uint256"},
-                        {"name": "deadline", "type": "uint256"},
-                        {"name": "v", "type": "uint8"},
-                        {"name": "r", "type": "bytes32"},
-                        {"name": "s", "type": "bytes32"}
-                    ],
-                    "name": "creditDelegationPermit",
-                    "type": "tuple"
-                },
-                {
-                    "components": [
-                        {"name": "aToken", "type": "address"},
-                        {"name": "value", "type": "uint256"},
-                        {"name": "deadline", "type": "uint256"},
-                        {"name": "v", "type": "uint8"},
-                        {"name": "r", "type": "bytes32"},
-                        {"name": "s", "type": "bytes32"}
-                    ],
-                    "name": "collateralATokenPermit",
-                    "type": "tuple"
-                }
-            ],
-            "name": "swapDebt",
-            "outputs": [],
-            "stateMutability": "nonpayable",
-            "type": "function"
-        }]
+        # ENHANCED: Complete ABI with swapDebt() and executeOperation() functions for official Aave Debt Switch V3
+        self.debt_swap_abi = [
+            {
+                "inputs": [
+                    {
+                        "components": [
+                            {"name": "debtAsset", "type": "address"},
+                            {"name": "debtRepayAmount", "type": "uint256"},
+                            {"name": "debtRateMode", "type": "uint256"},
+                            {"name": "newDebtAsset", "type": "address"},
+                            {"name": "maxNewDebtAmount", "type": "uint256"},
+                            {"name": "extraCollateralAsset", "type": "address"},
+                            {"name": "extraCollateralAmount", "type": "uint256"},
+                            {"name": "offset", "type": "uint256"},
+                            {"name": "swapData", "type": "bytes"}
+                        ],
+                        "name": "debtSwapParams",
+                        "type": "tuple"
+                    },
+                    {
+                        "components": [
+                            {"name": "debtToken", "type": "address"},
+                            {"name": "value", "type": "uint256"},
+                            {"name": "deadline", "type": "uint256"},
+                            {"name": "v", "type": "uint8"},
+                            {"name": "r", "type": "bytes32"},
+                            {"name": "s", "type": "bytes32"}
+                        ],
+                        "name": "creditDelegationPermit",
+                        "type": "tuple"
+                    },
+                    {
+                        "components": [
+                            {"name": "aToken", "type": "address"},
+                            {"name": "value", "type": "uint256"},
+                            {"name": "deadline", "type": "uint256"},
+                            {"name": "v", "type": "uint8"},
+                            {"name": "r", "type": "bytes32"},
+                            {"name": "s", "type": "bytes32"}
+                        ],
+                        "name": "collateralATokenPermit",
+                        "type": "tuple"
+                    }
+                ],
+                "name": "swapDebt",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {"name": "assets", "type": "address[]"},
+                    {"name": "amounts", "type": "uint256[]"},
+                    {"name": "premiums", "type": "uint256[]"},
+                    {"name": "initiator", "type": "address"},
+                    {"name": "params", "type": "bytes"}
+                ],
+                "name": "executeOperation",
+                "outputs": [
+                    {"name": "", "type": "bool"}
+                ],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "anonymous": False,
+                "inputs": [
+                    {"indexed": True, "name": "reserve", "type": "address"},
+                    {"indexed": False, "name": "user", "type": "address"},
+                    {"indexed": True, "name": "onBehalfOf", "type": "address"},
+                    {"indexed": False, "name": "amount", "type": "uint256"},
+                    {"indexed": False, "name": "borrowRateMode", "type": "uint256"},
+                    {"indexed": False, "name": "borrowRate", "type": "uint256"},
+                    {"indexed": True, "name": "referral", "type": "uint16"}
+                ],
+                "name": "Borrow",
+                "type": "event"
+            },
+            {
+                "anonymous": False,
+                "inputs": [
+                    {"indexed": True, "name": "reserve", "type": "address"},
+                    {"indexed": True, "name": "user", "type": "address"},
+                    {"indexed": True, "name": "repayer", "type": "address"},
+                    {"indexed": False, "name": "amount", "type": "uint256"}
+                ],
+                "name": "Repay",
+                "type": "event"
+            },
+            {
+                "anonymous": False,
+                "inputs": [
+                    {"indexed": True, "name": "target", "type": "address"},
+                    {"indexed": True, "name": "initiator", "type": "address"},
+                    {"indexed": True, "name": "asset", "type": "address"},
+                    {"indexed": False, "name": "amount", "type": "uint256"},
+                    {"indexed": False, "name": "premium", "type": "uint256"},
+                    {"indexed": False, "name": "referralCode", "type": "uint16"}
+                ],
+                "name": "FlashLoan",
+                "type": "event"
+            }
+        ]
+        
+        # Initialize transaction verification system
+        try:
+            from transaction_verifier import TransactionVerifier
+            self.transaction_verifier = TransactionVerifier(self.w3)
+            print("✅ Transaction verification system initialized")
+        except Exception as e:
+            print(f"⚠️ Warning: Transaction verification system initialization failed: {e}")
+            self.transaction_verifier = None
         
         # Initialize PNL tracking
         self.cycle_data = {
@@ -174,6 +239,51 @@ class ProductionDebtSwapExecutor:
         print(f"   Controlled Test Mode: {'✅ ENABLED' if self.controlled_test_mode else '❌ DISABLED'}")
         print(f"   Gas Validation: {'✅ ENABLED' if self.gas_validation_enabled else '❌ DISABLED'}")
         print(f"   Gas Target Range: {self.gas_range_min:,} - {self.gas_range_max:,} (baseline: {self.baseline_gas_target:,})")
+
+    def _execute_debt_swap_transaction(self, from_asset: str, to_asset: str, swap_amount_usd: float) -> Dict[str, Any]:
+        """
+        Execute single debt swap transaction for enhanced verification integration
+        Bridges to the main execute_debt_swap method
+        """
+        start_time = time.time()
+        
+        result = {
+            'success': False,
+            'tx_hash': None,
+            'gas_used': 0,
+            'gas_price': 0,
+            'execution_time': 0,
+            'error': None,
+            'execution_details': {}
+        }
+        
+        try:
+            print(f"🔄 Enhanced execution bridge: {from_asset} → {to_asset} (${swap_amount_usd:.2f})")
+            
+            # Call the main production debt swap method
+            execution_result = self.execute_debt_swap(from_asset, to_asset, swap_amount_usd)
+            
+            # Extract relevant information for enhanced executor
+            if execution_result.get('success', False):
+                result['success'] = True
+                result['tx_hash'] = execution_result.get('transaction_hash') or execution_result.get('tx_hash')
+                result['gas_used'] = execution_result.get('gas_used', 0)
+                result['gas_price'] = execution_result.get('gas_price', 0)
+                result['execution_details'] = execution_result
+                
+                print(f"✅ Bridge execution successful: {result['tx_hash']}")
+            else:
+                result['error'] = execution_result.get('error', 'Execution failed')
+                result['execution_details'] = execution_result
+                print(f"❌ Bridge execution failed: {result['error']}")
+                
+        except Exception as e:
+            result['error'] = f"Bridge execution error: {str(e)}"
+            print(f"❌ Bridge execution exception: {e}")
+        finally:
+            result['execution_time'] = time.time() - start_time
+            
+        return result
 
     def get_current_prices(self) -> Dict[str, float]:
         """Get current token prices from CoinMarketCap"""
@@ -208,7 +318,7 @@ class ProductionDebtSwapExecutor:
             print(f"❌ Price error: {e}, using fallback: {fallback_prices}")
             return fallback_prices
 
-    def get_aave_position(self) -> Dict:
+    def get_aave_position(self) -> Dict[str, Any]:
         """Get comprehensive Aave position data"""
         try:
             print(f"📊 VALIDATING AAVE POSITION")
@@ -463,7 +573,7 @@ class ProductionDebtSwapExecutor:
         
         return log_entry
     
-    def validate_gas_estimation(self, gas_estimate: int, operation_type: str) -> Dict:
+    def validate_gas_estimation(self, gas_estimate: int, operation_type: str) -> Dict[str, Any]:
         """Validate gas estimation against expected ranges and baseline"""
         
         validation_result = {
@@ -519,7 +629,7 @@ class ProductionDebtSwapExecutor:
         
         return validation_result
     
-    def analyze_transaction_receipt(self, receipt: TxReceipt, estimated_gas: int, operation_type: str) -> Dict:
+    def analyze_transaction_receipt(self, receipt: TxReceipt, estimated_gas: int, operation_type: str) -> Dict[str, Any]:
         """Analyze transaction receipt and compare actual vs estimated gas usage"""
         
         actual_gas = receipt['gasUsed']
@@ -587,7 +697,7 @@ class ProductionDebtSwapExecutor:
         # In production, would check actual market conditions
         return True, "Market conditions check passed"
 
-    def get_paraswap_calldata_reverse_routing(self, from_asset: str, to_asset: str, amount_wei: int) -> Dict:
+    def get_paraswap_calldata_reverse_routing(self, from_asset: str, to_asset: str, amount_wei: int) -> Dict[str, Any]:
         """Get ParaSwap Augustus calldata for debt swap with reverse routing"""
         try:
             print(f"\n🔄 PARASWAP AUGUSTUS INTEGRATION")
@@ -650,24 +760,25 @@ class ProductionDebtSwapExecutor:
             
             # Ensure addresses are properly checksummed
             user_addr = self.w3.to_checksum_address(self.user_address)
-            adapter_addr = self.w3.to_checksum_address(self.paraswap_debt_swap_adapter)
+            aave_debt_switch_addr = self.w3.to_checksum_address(self.aave_debt_switch_v3)
             
             print(f"📋 Transaction addresses:")
             print(f"   User: {user_addr}")
-            print(f"   Adapter: {adapter_addr}")
+            print(f"   Aave Debt Switch V3: {aave_debt_switch_addr}")
             
+            # CRITICAL FIX: Use Aave Debt Switch V3 as receiver to get correct function selector
             tx_payload = {
                 'srcToken': src_token,
                 'destToken': dest_token,
                 'srcAmount': price_data['priceRoute']['srcAmount'],   # Computed ARB amount
-                'destAmount': price_data['priceRoute']['destAmount'], # ADDED: Required DAI amount
+                'destAmount': price_data['priceRoute']['destAmount'], # Required DAI amount
                 'priceRoute': price_data['priceRoute'],
-                'userAddress': adapter_addr,  # Adapter executes the swap
-                'receiver': adapter_addr,    # Adapter receives the DAI
-                'partner': 'aave',           # Partner specification for debt swap
-                'partnerAddress': adapter_addr,  # Partner address
-                'partnerFeeBps': '0',        # No partner fee
-                'takeSurplus': False         # Don't take surplus
+                'userAddress': user_addr,                  # User address
+                'receiver': aave_debt_switch_addr,         # FIXED: Aave Debt Switch V3 receives tokens
+                'partner': 'aave',                         # Partner specification for debt swap
+                'partnerAddress': aave_debt_switch_addr,   # FIXED: Aave Debt Switch V3 as partner
+                'partnerFeeBps': '0',                      # No partner fee
+                'takeSurplus': False                       # Don't take surplus
             }
             
             print(f"🌐 Getting ParaSwap transaction data...")
@@ -699,7 +810,7 @@ class ProductionDebtSwapExecutor:
             print(f"🔍 Full error: {traceback.format_exc()}")
             return {}
 
-    def create_credit_delegation_permit(self, debt_token_address: ChecksumAddress) -> Dict:
+    def create_credit_delegation_permit(self, debt_token_address: ChecksumAddress) -> Dict[str, Any]:
         """Create CORRECT EIP-712 credit delegation permit per Aave V3 specification"""
         try:
             print(f"📝 Creating CORRECT credit delegation permit")
@@ -962,7 +1073,7 @@ class ProductionDebtSwapExecutor:
         except Exception as e:
             return False, f"Position validation failed: {e}"
 
-    def _capture_comprehensive_state(self, stage: str) -> Dict:
+    def _capture_comprehensive_state(self, stage: str) -> Dict[str, Any]:
         """Capture comprehensive system state for stepwise diff analysis"""
         start_time = time.time()
         
@@ -1059,7 +1170,7 @@ class ProductionDebtSwapExecutor:
             
         return state
 
-    def execute_debt_swap(self, from_asset: str, to_asset: str, swap_amount_usd: float) -> Dict:
+    def execute_debt_swap(self, from_asset: str, to_asset: str, swap_amount_usd: float) -> Dict[str, Any]:
         """
         PRODUCTION DEBT SWAP EXECUTION with COMPREHENSIVE LOGGING & STEPWISE DIFF
         Enhanced with full audit trail for forensic analysis and debugging
@@ -1660,7 +1771,7 @@ class ProductionDebtSwapExecutor:
                 transaction = function_call.build_transaction({
                     'from': self.user_address,
                     'gas': base_gas_limit,
-                    'gasPrice': gas_price,
+                    'gasPrice': final_gas_price,
                     'nonce': self.w3.eth.get_transaction_count(self.user_address)
                 })
                 
@@ -1703,7 +1814,7 @@ class ProductionDebtSwapExecutor:
                     
                     execution_result['transaction_receipt'] = dict(tx_receipt)
                     execution_result['gas_used'] = tx_receipt['gasUsed']
-                    execution_result['gas_cost_eth'] = (tx_receipt['gasUsed'] * gas_price) / 1e18
+                    execution_result['gas_cost_eth'] = (tx_receipt['gasUsed'] * final_gas_price) / 1e18
                     
                     execution_result['comprehensive_logging']['transaction_submission']['receipt'] = {
                         'status': tx_receipt['status'],
@@ -2143,7 +2254,7 @@ class ProductionDebtSwapExecutor:
             print(f"❌ Execution error: {traceback.format_exc()}")
             return execution_result
 
-    def execute_full_cycle(self, swap_amount_usd: float = 2.0) -> Dict:
+    def execute_full_cycle(self, swap_amount_usd: float = 2.0) -> Dict[str, Any]:
         """Execute complete DAI→ARB→wait 5min→ARB→DAI cycle with comprehensive tracking"""
         
         print(f"\n🎯 STARTING COMPLETE DEBT SWAP CYCLE")
@@ -2232,7 +2343,7 @@ class ProductionDebtSwapExecutor:
         
         return self.cycle_data
 
-    def calculate_cycle_pnl(self) -> Dict:
+    def calculate_cycle_pnl(self) -> Dict[str, Any]:
         """Calculate comprehensive PNL analysis for the complete cycle"""
         try:
             initial = self.cycle_data['initial_positions']
@@ -2355,7 +2466,7 @@ class ProductionDebtSwapExecutor:
             print(f"⚠️ CoinAPI error: {e}, using fallback ETH price")
             return 2500.0
 
-    def capture_comprehensive_before_after_snapshots(self, transaction_type: str, swap_amount_usd: float, timing: str = "before") -> Dict:
+    def capture_comprehensive_before_after_snapshots(self, transaction_type: str, swap_amount_usd: float, timing: str = "before") -> Dict[str, Any]:
         """Capture comprehensive before/after snapshots of ALL critical metrics for audit trail"""
         print(f"\n📷 COMPREHENSIVE {timing.upper()} SNAPSHOT CAPTURE")
         print("=" * 60)
@@ -2457,7 +2568,7 @@ class ProductionDebtSwapExecutor:
             print(f"🔍 Stack trace: {traceback.format_exc()}")
             return error_snapshot
 
-    def analyze_before_after_snapshots(self, before_snapshot: Dict, after_snapshot: Dict, tx_receipt: Dict) -> Dict:
+    def analyze_before_after_snapshots(self, before_snapshot: Dict[str, Any], after_snapshot: Dict[str, Any], tx_receipt: Dict[str, Any]) -> Dict[str, Any]:
         """Analyze before/after snapshots to generate comprehensive execution analysis"""
         print(f"\n📊 COMPREHENSIVE BEFORE/AFTER ANALYSIS")
         print("=" * 60)
@@ -2521,7 +2632,7 @@ class ProductionDebtSwapExecutor:
                 'stack_trace': traceback.format_exc()
             }
 
-    def verify_token_approvals_comprehensive(self, from_asset: str, to_asset: str, swap_amount_usd: float) -> Dict:
+    def verify_token_approvals_comprehensive(self, from_asset: str, to_asset: str, swap_amount_usd: float) -> Dict[str, Any]:
         """Comprehensive approval verification for aTokens vs underlying tokens with detailed logging"""
         print(f"\n🔐 COMPREHENSIVE APPROVAL VERIFICATION")
         print("=" * 60)
@@ -2639,7 +2750,7 @@ class ProductionDebtSwapExecutor:
             
             return approval_results
 
-    def get_enhanced_gas_params_manual_matching(self, operation_type: str, swap_amount_usd: float, manual_baseline_gas: int = 35236) -> Dict:
+    def get_enhanced_gas_params_manual_matching(self, operation_type: str, swap_amount_usd: float, manual_baseline_gas: int = 35236) -> Dict[str, Any]:
         """
         MANUAL TRANSACTION MATCHING: Gas parameter optimization matching successful manual transaction
         Avoids excessive premiums and matches the 35,236 gas usage pattern
@@ -2775,7 +2886,7 @@ class ProductionDebtSwapExecutor:
         except Exception as e:
             return False, f"Preflight simulation error: {str(e)}"
 
-    def _analyze_transaction_failure(self, tx_receipt: TxReceipt) -> Dict:
+    def _analyze_transaction_failure(self, tx_receipt: TxReceipt) -> Dict[str, Any]:
         """Analyze transaction failure for detailed diagnostics"""
         try:
             analysis = {
@@ -2800,7 +2911,7 @@ class ProductionDebtSwapExecutor:
         except Exception as e:
             return {'error': f"Failed to analyze transaction failure: {e}"}
 
-    def generate_execution_log(self, execution_result: Dict) -> Dict:
+    def generate_execution_log(self, execution_result: Dict[str, Any]) -> Dict[str, Any]:
         """
         Generate structured, timestamped execution log
         Every swap execution MUST produce this comprehensive log
@@ -2840,7 +2951,7 @@ class ProductionDebtSwapExecutor:
         
         return structured_log
 
-    def run_automated_tests(self, simulate_only: bool = True) -> Dict:
+    def run_automated_tests(self, simulate_only: bool = True) -> Dict[str, Any]:
         """
         Automated test suite for signature/call simulation and gas optimizer
         """
@@ -2964,7 +3075,7 @@ class ProductionDebtSwapExecutor:
         
         return test_results
 
-    def _test_success_case(self, simulate_only: bool) -> Dict:
+    def _test_success_case(self, simulate_only: bool) -> Dict[str, Any]:
         """Test success case with correct function and calldata"""
         
         # Create mock successful parameters
@@ -2998,7 +3109,7 @@ class ProductionDebtSwapExecutor:
             'test_type': 'success_case'
         }
 
-    def _test_selector_mismatch(self) -> Dict:
+    def _test_selector_mismatch(self) -> Dict[str, Any]:
         """Test function selector mismatch detection"""
         
         # Create mock with wrong selector
@@ -3032,7 +3143,7 @@ class ProductionDebtSwapExecutor:
             'test_type': 'selector_mismatch'
         }
 
-    def _test_parameter_mismatch(self) -> Dict:
+    def _test_parameter_mismatch(self) -> Dict[str, Any]:
         """Test parameter validation"""
         
         mock_function_call = type('MockFunction', (), {
@@ -3066,7 +3177,7 @@ class ProductionDebtSwapExecutor:
             'test_type': 'parameter_mismatch'
         }
 
-    def _test_gas_optimizer(self) -> Dict:
+    def _test_gas_optimizer(self) -> Dict[str, Any]:
         """Test gas optimizer functionality"""
         from gas_optimization import CoinAPIGasOptimizer
         

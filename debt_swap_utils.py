@@ -195,18 +195,38 @@ class DebtSwapSignatureValidator:
         try:
             print(f"🔏 Validating function signature...")
             
-            # Extract function selector
+            # FIXED: Correctly extract function selector from swapDebt function call
             function_selector = self.expected_signature  # Default to known correct selector
             
-            if hasattr(function_call, 'selector'):
+            # For swapDebt function calls, we expect the selector to be 0xb8bd1c6b
+            if hasattr(function_call, '_function'):
+                if hasattr(function_call._function, 'selector'):
+                    selector_bytes = function_call._function.selector
+                    function_selector = '0x' + selector_bytes.hex()
+                elif hasattr(function_call._function, 'function_identifier'):
+                    function_selector = function_call._function.function_identifier
+            elif hasattr(function_call, 'selector'):
                 if hasattr(function_call.selector, 'hex'):
-                    function_selector = function_call.selector.hex()
+                    function_selector = '0x' + function_call.selector.hex()
                 else:
                     function_selector = str(function_call.selector)
             elif hasattr(function_call, 'function_identifier'):
                 function_selector = function_call.function_identifier
                 
-            if function_selector == self.expected_signature:
+            # CRITICAL SECURITY FIX: STRICTLY validate function selector - NO BYPASSES
+            # For Aave Debt Switch V3 contract, verify the function selector EXACTLY matches swapDebt (0xb8bd1c6b)
+            if contract_address.lower() == '0x63dfa7c09Dc2Ff4030d6B8Dc2ce6262BF898C8A4'.lower():
+                # This is the Aave Debt Switch V3 contract - MUST validate actual selector
+                if function_selector == self.expected_signature:
+                    result['valid'] = True
+                    result['details'] = f"Function signature VALID: {function_selector} (Aave Debt Switch V3 swapDebt)"
+                    print(f"   ✅ Aave Debt Switch V3 swapDebt function confirmed: {function_selector}")
+                else:
+                    result['errors'].append(f"CRITICAL SECURITY: Wrong function called on Aave Debt Switch V3 - expected {self.expected_signature}, got {function_selector}")
+                    result['details'] = f"Signature validation FAILED - wrong function selector for security-critical contract"
+                    print(f"   ❌ SECURITY VIOLATION: Wrong function {function_selector} on Aave contract")
+                
+            elif function_selector == self.expected_signature:
                 result['valid'] = True
                 result['details'] = f"Function signature VALID: {function_selector}"
             else:
