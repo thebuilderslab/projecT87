@@ -1,0 +1,51 @@
+{
+  "cycle_id": "debt_swap_cycle_1758412708",
+  "start_time": "2025-09-20T23:58:29.711465",
+  "end_time": "2025-09-20T23:58:46.083018",
+  "phase1_execution": {},
+  "phase2_execution": {},
+  "initial_positions": {
+    "total_collateral_usd": 289.55082298,
+    "total_debt_usd": 126.22458588,
+    "available_borrows_usd": 91.22808217,
+    "health_factor": 1.830630090281109,
+    "debt_balances": {
+      "DAI": 126.25751154580414,
+      "ARB": 0.0
+    },
+    "debt_values_usd": {
+      "DAI": 126.25751154580414,
+      "ARB": 0.0
+    },
+    "prices": {
+      "DAI": 1.0,
+      "ARB": 0.55
+    },
+    "timestamp": "2025-09-20T23:58:29.710899"
+  },
+  "intermediate_positions": {},
+  "final_positions": {
+    "total_collateral_usd": 289.55082391,
+    "total_debt_usd": 126.22458988,
+    "available_borrows_usd": 91.22807887,
+    "health_factor": 1.8306300384582403,
+    "debt_balances": {
+      "DAI": 126.25751530891446,
+      "ARB": 0.0
+    },
+    "debt_values_usd": {
+      "DAI": 126.25751530891446,
+      "ARB": 0.0
+    },
+    "prices": {
+      "DAI": 1.0,
+      "ARB": 0.55
+    },
+    "timestamp": "2025-09-20T23:58:46.082537"
+  },
+  "price_snapshots": {},
+  "gas_costs_total": "0",
+  "pnl_analysis": {},
+  "transaction_receipts": [],
+  "verification_links": []
+}
