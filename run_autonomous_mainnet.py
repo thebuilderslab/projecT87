@@ -36,9 +36,21 @@ def run_autonomous_mainnet_agent():
     print("=" * 60)
     
     try:
-        # Initialize the agent
+        # Initialize the agent for mainnet
         log_agent_activity("Initializing Arbitrum Mainnet Agent...")
-        agent = ArbitrumTestnetAgent()
+        
+        # Import the correct agent class
+        try:
+            from arbitrum_testnet_agent import ArbitrumTestnetAgent
+            agent = ArbitrumTestnetAgent()
+            
+            # Ensure it's connected to mainnet
+            if not agent or not hasattr(agent, 'w3'):
+                raise Exception("Agent initialization failed - no web3 connection")
+                
+        except Exception as init_error:
+            log_agent_activity(f"❌ Agent initialization failed: {init_error}")
+            raise Exception(f"Failed to initialize agent: {init_error}")
         
         # Verify mainnet connection
         actual_chain_id = agent.w3.eth.chain_id

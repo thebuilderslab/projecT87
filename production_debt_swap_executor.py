@@ -1433,6 +1433,8 @@ class ProductionDebtSwapExecutor:
             
             # 4B. Gas estimation with multiple approaches
             print(f"   ⛽ 4B: Performing gas estimation...")
+            # Initialize final_gas_price at function scope to prevent scoping issues
+            final_gas_price = None
             try:
                 function_call = debt_swap_contract.functions.swapDebt(
                     transaction_params['debtAsset'],
@@ -1514,9 +1516,10 @@ class ProductionDebtSwapExecutor:
                     }
                     
                 except Exception as gas_error:
-                    # Fallback gas estimation
+                    # Fallback gas estimation with proper gas price scoping
                     estimated_gas = 45000  # Realistic fallback based on manual success baseline (35,236 gas)
                     gas_price = self.w3.eth.gas_price
+                    final_gas_price = gas_price  # FIX: Ensure final_gas_price is always defined
                     gas_cost_eth = (estimated_gas * gas_price) / 1e18
                     gas_cost_usd = gas_cost_eth * execution_result['position_before']['prices'].get('ETH', 3000)
                     
