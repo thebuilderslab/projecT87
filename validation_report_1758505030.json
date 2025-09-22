@@ -1,0 +1,212 @@
+{
+  "validation_report": {
+    "validation_timestamp": "2025-09-22T01:37:08.144884",
+    "user_address": "0x5B823270e3719CDe8669e5e5326B455EaA8a350b",
+    "transaction_params": {
+      "transaction_type": "debt_swap",
+      "from_token": "DAI",
+      "to_token": "ARB",
+      "amount": "50.0",
+      "contract_address": "0x63dfa7c09Dc2Ff4030d6B8Dc2ce6262BF898C8A4",
+      "function_data": "0xb8bd1c6b000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+      "gas_limit": 500000,
+      "gas_price": 100000000,
+      "max_slippage": 0.01,
+      "deadline": 1758508628
+    },
+    "validation_steps": {
+      "step_1_parameter_validation": {
+        "status": "PASS",
+        "message": "All parameters validated successfully",
+        "details": {
+          "contract_address_valid": true,
+          "from_token_resolved": "0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1",
+          "to_token_resolved": "0x912CE59144191C1204E64559FE8253a0e49E6548",
+          "amount_valid": true,
+          "amount_decimal": "50.0",
+          "gas_limit_valid": true,
+          "gas_price_gwei": 0.1
+        },
+        "errors": [],
+        "warnings": [],
+        "execution_time_ms": 0.025272369384765625
+      },
+      "step_2_simulation": {
+        "status": "FAIL",
+        "message": "Simulation detected transaction revert",
+        "details": {
+          "revert_reason": "execution reverted"
+        },
+        "errors": [
+          "Transaction would revert: execution reverted"
+        ],
+        "warnings": [],
+        "execution_time_ms": 269.76537704467773
+      },
+      "step_3_balances_allowances": {
+        "status": "FAIL",
+        "message": "Balance/allowance validation failed: 2 errors",
+        "details": {
+          "eth_balance": 0.003099765576574199,
+          "estimated_tx_cost_eth": 5e-05,
+          "token_balance": {
+            "token": "DAI",
+            "balance_raw": 0,
+            "balance_formatted": 0.0,
+            "decimals": 18
+          },
+          "token_allowance": {
+            "token": "DAI",
+            "spender": "0x63dfa7c09Dc2Ff4030d6B8Dc2ce6262BF898C8A4",
+            "allowance_raw": 50000000000000000000,
+            "allowance_formatted": 50.0
+          }
+        },
+        "errors": [
+          "Insufficient ETH for gas: 0.003100 ETH (minimum: 0.01)",
+          "Insufficient DAI balance: need 50.0, have 0.000000"
+        ],
+        "warnings": [],
+        "execution_time_ms": 732.0363521575928
+      },
+      "step_4_health_factor": {
+        "status": "PASS",
+        "message": "Health factor validation successful",
+        "details": {
+          "current_position": {
+            "total_collateral_usd": 285.34305087,
+            "total_debt_usd": 126.24890355,
+            "available_borrows_usd": 87.95812473,
+            "current_liquidation_threshold": 0.7977,
+            "ltv": 0.7507,
+            "health_factor": 1.8030481504169864
+          },
+          "estimated_post_tx_health_factor": 1.7669871874086467
+        },
+        "errors": [],
+        "warnings": [],
+        "execution_time_ms": 195.6315040588379
+      },
+      "step_5_network_fees": {
+        "status": "WARN",
+        "message": "Network fee validation passed with 1 warnings",
+        "details": {
+          "network_gas_price_gwei": 0.01,
+          "eth_price_usd": 4345.62137688669,
+          "proposed_gas_price_gwei": 0.1,
+          "proposed_gas_limit": 500000,
+          "estimated_tx_cost_usd": 0.2172810688443345
+        },
+        "errors": [],
+        "warnings": [
+          "Gas price significantly above network rate: 0.10 gwei vs 0.01 gwei"
+        ],
+        "execution_time_ms": 451.2648582458496
+      },
+      "step_6_contract_abi": {
+        "status": "PASS",
+        "message": "Contract verified: Aave Debt Switch V3",
+        "details": {
+          "contract_has_code": true,
+          "code_size_bytes": 11185,
+          "verified_contract": "Aave Debt Switch V3",
+          "function_selector": "0xb8bd1c6b",
+          "verified_function": "swapDebt (Aave Debt Switch)",
+          "debt_switch_functional": true
+        },
+        "errors": [],
+        "warnings": [],
+        "execution_time_ms": 93.10579299926758
+      },
+      "step_7_error_handling": {
+        "status": "FAIL",
+        "message": "High-risk error scenarios detected: 1",
+        "details": {
+          "error_handling_capabilities": {
+            "revert_reason_extraction": true,
+            "gas_estimation_error_handling": true,
+            "network_error_recovery": true,
+            "contract_call_error_handling": true
+          },
+          "error_scenarios_detected": [
+            {
+              "scenario": "low_eth_balance",
+              "risk": "high",
+              "description": "Insufficient ETH for gas fees"
+            }
+          ],
+          "network_connectivity": {
+            "connected": true,
+            "latest_block": 381668084,
+            "chain_id": 42161
+          },
+          "diagnostic_info": {
+            "timestamp": "2025-09-22T01:37:10.265394",
+            "user_address": "0x5B823270e3719CDe8669e5e5326B455EaA8a350b",
+            "chain_id": 42161,
+            "web3_provider": "<class 'web3.providers.rpc.HTTPProvider'>",
+            "validation_version": "1.0.0"
+          }
+        },
+        "errors": [
+          "Insufficient ETH for gas fees"
+        ],
+        "warnings": [],
+        "execution_time_ms": 462.4006748199463
+      }
+    },
+    "overall_status": "FAIL",
+    "final_recommendation": "HALT",
+    "risk_assessment": {
+      "total_steps": 7,
+      "passed_steps": 3,
+      "warning_steps": 1,
+      "failed_steps": 3,
+      "success_rate": 42.857142857142854,
+      "total_errors": 4,
+      "total_warnings": 1
+    },
+    "errors": [
+      "Transaction would revert: execution reverted",
+      "Insufficient ETH for gas: 0.003100 ETH (minimum: 0.01)",
+      "Insufficient DAI balance: need 50.0, have 0.000000",
+      "Insufficient ETH for gas fees"
+    ],
+    "warnings": [
+      "Gas price significantly above network rate: 0.10 gwei vs 0.01 gwei"
+    ],
+    "execution_time_ms": 2205.982446670532
+  },
+  "detailed_analysis": {
+    "validation_summary": {
+      "total_steps": 7,
+      "passed_steps": 3,
+      "failed_steps": 3,
+      "warning_steps": 1,
+      "execution_time_ms": 2205.982446670532,
+      "recommendation": "HALT"
+    },
+    "key_findings": [
+      "Transaction would revert: execution reverted",
+      "Insufficient ETH for gas: 0.003100 ETH (minimum: 0.01)",
+      "Insufficient DAI balance: need 50.0, have 0.000000",
+      "Insufficient ETH for gas fees"
+    ],
+    "warnings": [
+      "Gas price significantly above network rate: 0.10 gwei vs 0.01 gwei"
+    ],
+    "critical_success": true
+  },
+  "test_parameters": {
+    "transaction_type": "debt_swap",
+    "from_token": "DAI",
+    "to_token": "ARB",
+    "amount": "50.0",
+    "contract_address": "0x63dfa7c09Dc2Ff4030d6B8Dc2ce6262BF898C8A4",
+    "function_data": "0xb8bd1c6b000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+    "gas_limit": 500000,
+    "gas_price": 100000000,
+    "max_slippage": 0.01,
+    "deadline": 1758508628
+  }
+}
