@@ -14,6 +14,7 @@ from collections import deque
 import re
 import logging
 import queue
+import os
 
 # Import PnL converter for dynamic parameter management
 try:
@@ -38,13 +39,6 @@ pnl_event_queue = queue.Queue()  # Queue for PnL events
 
 class WorkingAgent:
     """Working agent with live mainnet data"""
-    def __init__(self):
-        self.address = '0x5B823270e3719CDe8669e5e5326B455EaA8a350b'
-        self.network_mode = 'mainnet'
-        
-        # Initialize working Web3 connection using same endpoints as autonomous agent
-        self.w3 = self._create_working_web3_connection()
-    
     def _create_working_web3_connection(self):
         """Create working Web3 connection using proven RPC endpoints"""
         from web3 import Web3
@@ -52,7 +46,7 @@ class WorkingAgent:
         # Use same proven working endpoints as autonomous agent
         working_rpcs = [
             "https://arbitrum-one.public.blastapi.io",  # Fastest: 0.16s
-            "https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-bM9XgIIU",  # Alchemy
+            os.getenv('ALCHEMY_RPC_URL', "https://arb1.arbitrum.io/rpc"),  # Alchemy from env
             "https://arb1.arbitrum.io/rpc",  # Official
             "https://arbitrum-one.publicnode.com"
         ]
@@ -361,7 +355,7 @@ def get_live_agent_data():
                         "https://arbitrum-one.public.blastapi.io",  # Fastest working RPC
                         "https://arb1.arbitrum.io/rpc",
                         "https://arbitrum-one.publicnode.com",
-                        "https://arb-mainnet.g.alchemy.com/v2/6ZvYzOV1E80R-bM9XgIIU"
+                        os.getenv('ALCHEMY_RPC_URL', "https://arb1.arbitrum.io/rpc")  # Alchemy from secrets
                     ]
                     self.working_rpc = None
                     self.w3 = None

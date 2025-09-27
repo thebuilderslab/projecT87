@@ -238,6 +238,110 @@
             </div>
         </div>
 
+        <!-- ============================================================================ -->
+        <!-- PNL-CENTRIC THRESHOLD METER COMPONENTS - Phase 2.3 -->
+        <!-- ============================================================================ -->
+        <div class="pnl-dashboard" style="margin-bottom: 30px;">
+            <div class="header" style="margin-bottom: 20px;">
+                <h2 style="margin: 0; color: #00d4ff; font-size: 1.8rem; display: flex; align-items: center; gap: 10px;">
+                    📊 PnL Threshold Monitoring
+                    <span style="font-size: 0.9rem; color: rgba(255,255,255,0.6);" id="pnl-status">Live Synchronization</span>
+                </h2>
+                <p style="color: rgba(255,255,255,0.8); margin-top: 8px;">
+                    Real-time PnL tracking vs Growth (5.0%), Capacity (2.0%), and Debt Swap (1.5%) targets
+                </p>
+            </div>
+
+            <!-- Current PnL Performance Overview -->
+            <div class="current-pnl-card" style="background: rgba(0,212,255,0.1); border-radius: 15px; padding: 25px; margin-bottom: 25px; border: 2px solid #00d4ff;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <h3 style="color: #00d4ff; margin: 0; font-size: 1.3rem;">📈 Current Performance</h3>
+                    <div id="pnl-connection-status" style="color: #22c55e; font-size: 0.9rem;">🟢 Live</div>
+                </div>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px;">
+                    <div>
+                        <div style="color: rgba(255,255,255,0.7); font-size: 0.9rem; margin-bottom: 5px;">Current PnL</div>
+                        <div id="current-pnl" style="color: #00d4ff; font-size: 2.2rem; font-weight: bold;">58.16%</div>
+                    </div>
+                    <div>
+                        <div style="color: rgba(255,255,255,0.7); font-size: 0.9rem; margin-bottom: 5px;">Collateral Value</div>
+                        <div id="current-collateral" style="color: #22c55e; font-size: 1.4rem; font-weight: bold;">$268.87</div>
+                    </div>
+                    <div>
+                        <div style="color: rgba(255,255,255,0.7); font-size: 0.9rem; margin-bottom: 5px;">Health Factor</div>
+                        <div id="current-health-factor" style="color: #ffc107; font-size: 1.4rem; font-weight: bold;">1.696</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PnL Threshold Meters -->
+            <div class="threshold-meters" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
+                
+                <!-- Growth Target Meter (5.0%) -->
+                <div class="meter-card" style="background: rgba(34,197,94,0.1); border-radius: 12px; padding: 20px; border-left: 5px solid #22c55e;">
+                    <div class="meter-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <h4 style="color: #22c55e; margin: 0; font-size: 1.1rem;">🎯 Growth Target</h4>
+                        <span id="growth-status" style="font-size: 0.8rem; color: #22c55e;">✅ ACHIEVED</span>
+                    </div>
+                    
+                    <div class="target-info" style="margin-bottom: 15px;">
+                        <div style="color: rgba(255,255,255,0.7); font-size: 0.8rem;">Target: 5.0%</div>
+                        <div style="color: rgba(255,255,255,0.7); font-size: 0.8rem;">Current: <span id="growth-current" style="color: #22c55e; font-weight: bold;">58.16%</span></div>
+                    </div>
+                    
+                    <div class="progress-bar" style="background: rgba(255,255,255,0.1); border-radius: 10px; height: 20px; overflow: hidden; margin-bottom: 10px;">
+                        <div id="growth-progress" style="background: linear-gradient(90deg, #22c55e, #16a34a); height: 100%; width: 100%; border-radius: 10px; transition: width 0.5s ease;"></div>
+                    </div>
+                    
+                    <div style="font-size: 0.75rem; color: rgba(255,255,255,0.6);">
+                        Excess: <span id="growth-excess" style="color: #22c55e;">+53.16%</span> above target
+                    </div>
+                </div>
+
+                <!-- Capacity Target Meter (2.0%) -->
+                <div class="meter-card" style="background: rgba(255,193,7,0.1); border-radius: 12px; padding: 20px; border-left: 5px solid #ffc107;">
+                    <div class="meter-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <h4 style="color: #ffc107; margin: 0; font-size: 1.1rem;">💰 Capacity Target</h4>
+                        <span id="capacity-status" style="font-size: 0.8rem; color: #22c55e;">✅ ACHIEVED</span>
+                    </div>
+                    
+                    <div class="target-info" style="margin-bottom: 15px;">
+                        <div style="color: rgba(255,255,255,0.7); font-size: 0.8rem;">Target: 2.0%</div>
+                        <div style="color: rgba(255,255,255,0.7); font-size: 0.8rem;">Current: <span id="capacity-current" style="color: #22c55e; font-weight: bold;">58.16%</span></div>
+                    </div>
+                    
+                    <div class="progress-bar" style="background: rgba(255,255,255,0.1); border-radius: 10px; height: 20px; overflow: hidden; margin-bottom: 10px;">
+                        <div id="capacity-progress" style="background: linear-gradient(90deg, #ffc107, #f59e0b); height: 100%; width: 100%; border-radius: 10px; transition: width 0.5s ease;"></div>
+                    </div>
+                    
+                    <div style="font-size: 0.75rem; color: rgba(255,255,255,0.6);">
+                        Excess: <span id="capacity-excess" style="color: #22c55e;">+56.16%</span> above target
+                    </div>
+                </div>
+
+                <!-- Debt Swap Target Meter (1.5%) -->
+                <div class="meter-card" style="background: rgba(139,92,246,0.1); border-radius: 12px; padding: 20px; border-left: 5px solid #8b5cf6;">
+                    <div class="meter-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <h4 style="color: #8b5cf6; margin: 0; font-size: 1.1rem;">🔄 Debt Swap Target</h4>
+                        <span id="swap-status" style="font-size: 0.8rem; color: #22c55e;">✅ ACHIEVED</span>
+                    </div>
+                    
+                    <div class="target-info" style="margin-bottom: 15px;">
+                        <div style="color: rgba(255,255,255,0.7); font-size: 0.8rem;">Target: 1.5%</div>
+                        <div style="color: rgba(255,255,255,0.7); font-size: 0.8rem;">Current: <span id="swap-current" style="color: #22c55e; font-weight: bold;">58.16%</span></div>
+                    </div>
+                    
+                    <div class="progress-bar" style="background: rgba(255,255,255,0.1); border-radius: 10px; height: 20px; overflow: hidden; margin-bottom: 10px;">
+                        <div id="swap-progress" style="background: linear-gradient(90deg, #8b5cf6, #7c3aed); height: 100%; width: 100%; border-radius: 10px; transition: width 0.5s ease;"></div>
+                    </div>
+                    
+                    <div style="font-size: 0.75rem; color: rgba(255,255,255,0.6);">
+                        Excess: <span id="swap-excess" style="color: #22c55e;">+56.66%</span> above target
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div class="console-container" style="margin-bottom: 30px;">
             <div class="console-header">
                 <h2 style="margin: 0; color: #00d4ff; font-size: 1.3rem; display: flex; align-items: center; gap: 10px;">
@@ -584,10 +688,149 @@
             }
         }
 
+        // ============================================================================
+        // SSE REAL-TIME SYNCHRONIZATION - Phase 2.2 Integration
+        // ============================================================================
+        
+        let sseConnection = null;
+        let sseReconnectAttempts = 0;
+        const maxReconnectAttempts = 5;
+        
+        function initializeSSE() {
+            try {
+                sseConnection = new EventSource('/api/events');
+                
+                sseConnection.onopen = function(event) {
+                    console.log('📡 SSE connection established');
+                    document.getElementById('pnl-connection-status').innerHTML = '🟢 Live';
+                    document.getElementById('pnl-status').textContent = 'Live Synchronization';
+                    sseReconnectAttempts = 0;
+                };
+                
+                sseConnection.onmessage = function(event) {
+                    try {
+                        const data = JSON.parse(event.data);
+                        handleSSEEvent(data);
+                    } catch (error) {
+                        console.error('Error parsing SSE data:', error);
+                    }
+                };
+                
+                sseConnection.onerror = function(error) {
+                    console.warn('SSE connection error:', error);
+                    document.getElementById('pnl-connection-status').innerHTML = '🟡 Reconnecting';
+                    
+                    if (sseReconnectAttempts < maxReconnectAttempts) {
+                        sseReconnectAttempts++;
+                        setTimeout(() => {
+                            console.log(`Attempting SSE reconnection (${sseReconnectAttempts}/${maxReconnectAttempts})`);
+                            initializeSSE();
+                        }, 3000 * sseReconnectAttempts);
+                    } else {
+                        document.getElementById('pnl-connection-status').innerHTML = '🔴 Offline';
+                        document.getElementById('pnl-status').textContent = 'Connection Failed';
+                    }
+                };
+                
+            } catch (error) {
+                console.error('Failed to initialize SSE:', error);
+                document.getElementById('pnl-connection-status').innerHTML = '🔴 Error';
+            }
+        }
+        
+        function handleSSEEvent(data) {
+            switch(data.type) {
+                case 'connected':
+                    console.log('📡 SSE connected at', new Date(data.timestamp * 1000).toLocaleTimeString());
+                    break;
+                    
+                case 'pnl_update':
+                    updatePnLDashboard(data);
+                    break;
+                    
+                case 'system_update':
+                    updateSystemStatus(data);
+                    break;
+                    
+                default:
+                    console.log('SSE event:', data.type, data);
+            }
+        }
+        
+        function updatePnLDashboard(data) {
+            const currentPnL = data.current_pnl || 0;
+            const collateralUSD = data.collateral_usd || 0;
+            const healthFactor = data.health_factor || 0;
+            const targets = data.pnl_targets || {};
+            
+            // Update current performance overview
+            document.getElementById('current-pnl').textContent = `${currentPnL.toFixed(2)}%`;
+            document.getElementById('current-collateral').textContent = `$${collateralUSD.toFixed(2)}`;
+            document.getElementById('current-health-factor').textContent = healthFactor.toFixed(3);
+            
+            // Update Growth Target Meter (5.0%)
+            const growthTarget = targets.pnl_growth_target || 5.0;
+            const growthProgress = Math.min((currentPnL / growthTarget) * 100, 100);
+            const growthExcess = currentPnL - growthTarget;
+            
+            document.getElementById('growth-current').textContent = `${currentPnL.toFixed(2)}%`;
+            document.getElementById('growth-progress').style.width = `${growthProgress}%`;
+            document.getElementById('growth-excess').textContent = growthExcess > 0 ? 
+                `+${growthExcess.toFixed(2)}%` : `${growthExcess.toFixed(2)}%`;
+            document.getElementById('growth-status').innerHTML = currentPnL >= growthTarget ? 
+                '✅ ACHIEVED' : '⏳ PENDING';
+            
+            // Update Capacity Target Meter (2.0%)
+            const capacityTarget = targets.pnl_capacity_target || 2.0;
+            const capacityProgress = Math.min((currentPnL / capacityTarget) * 100, 100);
+            const capacityExcess = currentPnL - capacityTarget;
+            
+            document.getElementById('capacity-current').textContent = `${currentPnL.toFixed(2)}%`;
+            document.getElementById('capacity-progress').style.width = `${capacityProgress}%`;
+            document.getElementById('capacity-excess').textContent = capacityExcess > 0 ? 
+                `+${capacityExcess.toFixed(2)}%` : `${capacityExcess.toFixed(2)}%`;
+            document.getElementById('capacity-status').innerHTML = currentPnL >= capacityTarget ? 
+                '✅ ACHIEVED' : '⏳ PENDING';
+            
+            // Update Debt Swap Target Meter (1.5%)
+            const swapTarget = targets.pnl_debt_swap_target || 1.5;
+            const swapProgress = Math.min((currentPnL / swapTarget) * 100, 100);
+            const swapExcess = currentPnL - swapTarget;
+            
+            document.getElementById('swap-current').textContent = `${currentPnL.toFixed(2)}%`;
+            document.getElementById('swap-progress').style.width = `${swapProgress}%`;
+            document.getElementById('swap-excess').textContent = swapExcess > 0 ? 
+                `+${swapExcess.toFixed(2)}%` : `${swapExcess.toFixed(2)}%`;
+            document.getElementById('swap-status').innerHTML = currentPnL >= swapTarget ? 
+                '✅ ACHIEVED' : '⏳ PENDING';
+            
+            // Update overall PnL status color based on performance
+            const pnlElement = document.getElementById('current-pnl');
+            if (currentPnL >= growthTarget) {
+                pnlElement.style.color = '#22c55e'; // Green for excellent performance
+            } else if (currentPnL >= capacityTarget) {
+                pnlElement.style.color = '#ffc107'; // Yellow for good performance
+            } else if (currentPnL >= swapTarget) {
+                pnlElement.style.color = '#8b5cf6'; // Purple for basic performance
+            } else {
+                pnlElement.style.color = '#ef4444'; // Red for below target
+            }
+            
+            console.log(`📊 PnL updated: ${currentPnL.toFixed(2)}% (Growth: ${growthProgress.toFixed(1)}%)`);
+        }
+        
+        function updateSystemStatus(data) {
+            // Update system status from SSE if needed
+            console.log('🔧 System update:', data);
+        }
+
         // Initialize dashboard
         document.addEventListener('DOMContentLoaded', function() {
             console.log('Dashboard loaded, fetching initial data...');
             fetchData();
+
+            // Initialize SSE real-time synchronization for PnL monitoring
+            initializeSSE();
 
             // Auto-refresh wallet data every 30 seconds
             updateInterval = setInterval(fetchData, 30000);
