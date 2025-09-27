@@ -79,3 +79,198 @@ The system is built around several key architectural components:
 **Flask Framework**: REST API server for system monitoring, diagnostics, and external integrations.
 
 **Replit Environment**: Cloud deployment platform with integrated secrets management and environment variable handling.
+
+# Autonomous Decision-Making Architecture
+
+## Decision Engine Overview
+
+The autonomous system operates through a sophisticated decision-making engine that continuously monitors market conditions, health factors, and capacity constraints to execute optimal debt swapping strategies. The system runs in perpetual monitoring cycles, analyzing data every 5 seconds and making trading decisions based on predefined triggers and thresholds.
+
+## Core Decision Framework
+
+### Monitoring Cycle Structure
+
+The autonomous agent operates on a continuous monitoring cycle:
+- **Health Factor Check**: Every 5 seconds - monitors Aave position safety
+- **Market Analysis**: Every 30 seconds - processes BTC/ARB/DAI market signals
+- **Debt Swap Execution**: When triggered - executes swaps based on conditions
+- **Operation Cooldown**: 300 seconds between major operations
+
+### Decision Trigger Matrix
+
+The system uses a three-tier trigger matrix to determine when to execute trades:
+
+**1. Health Factor Trigger**
+- **Safe Zone**: Health Factor > 1.50 → Monitor for decline
+- **Caution Zone**: Health Factor 1.20-1.50 → Consider risk reduction
+- **Critical Zone**: Health Factor < 1.20 → Emergency deleveraging
+- **Current Threshold**: 1.50 (configurable in cost_optimization_config.json)
+
+**2. Market Signal Trigger**
+- **ARB RSI Analysis**: 
+  - RSI < 30 or > 70 → Strong signal, execute swap
+  - RSI 45-65 → Neutral zone, monitor for patterns
+  - RSI < 45 or > 65 → Watch zone, monitor for confirmation
+- **BTC Movement Correlation**: 
+  - BTC drop > 0.3% → May indicate ARB opportunity
+  - Threshold configurable via market analysis parameters
+
+**3. Capacity Trigger**
+- **Ready Status**: Available capacity > $25 → Full operations enabled
+- **Limited Status**: Available capacity $10-25 → Reduced capacity operations
+- **Low Status**: Available capacity < $10 → Operations restricted
+- **Current Capacity**: ~$75 (based on Aave position)
+
+## System Phases and States
+
+### Operating States
+
+**Monitoring Phase**
+- Continuous data collection and analysis
+- No active trading positions
+- Evaluating market conditions and health factors
+- Ready to transition to execution when triggers activate
+
+**Execution Phase**
+- Active debt swap in progress
+- Transaction construction and validation
+- Gas estimation and optimization
+- Post-execution verification
+
+**Cooldown Phase**
+- Post-execution monitoring period (300 seconds)
+- Prevents rapid-fire trading
+- Allows position to stabilize
+- System returns to monitoring after cooldown expires
+
+## Decision Process Transparency
+
+### Real-Time Monitoring Dashboard
+
+The system provides complete transparency through the Decision Process Monitor section:
+
+**Current Decision State**
+- Live monitoring cycle count
+- Operation cooldown remaining time
+- Current system phase (Monitoring/Execution/Cooldown)
+- Next check ETA (typically 5 seconds)
+
+**Trigger Conditions Matrix**
+- Health Factor: Current value vs 1.50 threshold with status indicators
+- Market Signals: BTC drop percentage and ARB RSI with analysis state
+- Capacity: Available borrows vs $25 threshold with operational readiness
+
+**Scheduled Operations Display**
+- Monitor Health Factor: Every 5s - Continuous position safety checks
+- Analyze Market Signals: Every 30s - BTC/ARB/DAI market data processing  
+- Execute Debt Swap: When triggered - Ready state based on capacity and health
+
+## Integration Architecture
+
+### Market Data Integration
+
+**Primary Data Source**: CoinAPI
+- Real-time price feeds for BTC, ARB, DAI, ETH
+- 5-minute and 30-second price change calculations
+- Cost optimization with hourly API call limits (100 calls/hour)
+- Automatic fallback to secondary sources on failure
+
+**Secondary Data Sources**: CoinMarketCap API
+- Backup price feeds when primary source unavailable
+- Enhanced market analysis data
+- Cross-validation of price movements
+
+**Emergency Fallback**: Static/Mock Data
+- Prevents system shutdown during API outages
+- Limited functionality mode with basic operations only
+- Automatic restoration when APIs become available
+
+### Blockchain Integration
+
+**Aave V3 Protocol Integration**
+- Real-time health factor monitoring via data provider
+- Debt swap execution through ParaSwapDebtSwapAdapter
+- Position analysis and risk assessment
+- Automated liquidation protection
+
+**Transaction Management**
+- Pre-flight validation and gas estimation
+- Multi-RPC endpoint failover (4 active endpoints)
+- Transaction verification and status monitoring
+- Comprehensive error handling and retry logic
+
+## Risk Management Architecture
+
+### Multi-Layer Safety System
+
+**Layer 1: Health Factor Protection**
+- Continuous monitoring with 5-second intervals
+- Automatic position adjustment when HF approaches thresholds
+- Emergency deleveraging protocols for critical situations
+- Configurable safety margins and alert systems
+
+**Layer 2: Operation Limits**
+- Maximum swap amounts: $1-10 per operation
+- Cooldown periods between major operations (300s)
+- Daily and hourly API call budgets
+- Position size limits based on available capacity
+
+**Layer 3: Emergency Controls**
+- File-based emergency stop (EMERGENCY_STOP_ACTIVE.flag)
+- Manual intervention endpoints via dashboard
+- Automatic system shutdown on repeated failures
+- Comprehensive logging for failure analysis
+
+## Performance Optimization
+
+### Cost Management
+
+**API Budget Optimization**
+- Daily limit: 833 credits (CoinAPI)
+- Hourly limit: 100 calls
+- Intelligent request batching
+- Priority-based data fetching (health factor > market data)
+
+**Gas Optimization**
+- Dynamic gas price estimation
+- Transaction batching when possible
+- RPC endpoint selection based on response time
+- Retry logic with exponential backoff
+
+### System Monitoring
+
+**Performance Metrics**
+- Monitoring cycle completion time
+- API response latencies
+- Transaction success rates
+- Health factor trend analysis
+
+**Diagnostic Capabilities**
+- Real-time system status via dashboard
+- Comprehensive logging to performance_log.json
+- Failed transaction analysis and debugging
+- Network connectivity monitoring
+
+## Configuration Management
+
+### Dynamic Parameters
+
+All system parameters are configurable through JSON files:
+
+**pnl_config.json**
+- Growth target: 55%
+- Capacity target: 22%
+- Debt swap target: 1.5%
+
+**cost_optimization_config.json**
+- API call limits and budgets
+- Operation cooldown periods
+- Safety thresholds and margins
+
+**High-Frequency Trading Parameters**
+- BTC drop threshold: 0.3%
+- ARB RSI ranges: 25-70 (oversold/overbought)
+- DAI→ARB confidence threshold: 90%
+- Min/Max swap amounts: $1-10
+
+This autonomous architecture ensures reliable, transparent, and profitable debt position management while maintaining strict risk controls and operational safety.
