@@ -2169,6 +2169,153 @@ def get_pnl_status():
             'success': False
         }), 500
 
+# ============================================================================
+# COST OPTIMIZATION CONFIG ENDPOINTS - API Limit Management
+# ============================================================================
+
+@app.route('/api/cost-optimization-config', methods=['GET'])
+def get_cost_optimization_config():
+    """Get current cost optimization configuration and limits"""
+    try:
+        # Check if agent and cost_manager are available
+        if not hasattr(agent, 'cost_manager') or not agent.cost_manager:
+            return jsonify({
+                'error': 'Cost optimization manager not available',
+                'success': False
+            }), 503
+        
+        # Get current configuration from cost manager
+        config = agent.cost_manager.get_configuration()
+        usage_summary = agent.cost_manager.get_usage_summary()
+        
+        return jsonify({
+            'configuration': config,
+            'current_usage': usage_summary,
+            'timestamp': time.time(),
+            'success': True
+        })
+    
+    except Exception as e:
+        logger.error(f"Error getting cost optimization config: {e}")
+        return jsonify({
+            'error': str(e),
+            'success': False
+        }), 500
+
+@app.route('/api/cost-optimization-config', methods=['PUT'])
+def update_cost_optimization_config():
+    """Update cost optimization configuration with new limits"""
+    try:
+        # Check if agent and cost_manager are available
+        if not hasattr(agent, 'cost_manager') or not agent.cost_manager:
+            return jsonify({
+                'error': 'Cost optimization manager not available',
+                'success': False
+            }), 503
+        
+        data = request.get_json()
+        if not data:
+            return jsonify({
+                'error': 'No configuration data provided',
+                'success': False
+            }), 400
+        
+        # Update configuration
+        update_success = agent.cost_manager.update_configuration(data)
+        
+        if not update_success:
+            return jsonify({
+                'error': 'Failed to update configuration',
+                'success': False
+            }), 500
+        
+        # Get updated configuration
+        updated_config = agent.cost_manager.get_configuration()
+        usage_summary = agent.cost_manager.get_usage_summary()
+        
+        logger.info(f"✅ Cost optimization configuration updated via dashboard")
+        
+        # Broadcast configuration change to all SSE clients for real-time dashboard sync
+        config_change_event = {
+            'type': 'cost_config_update',
+            'updated_config': updated_config,
+            'current_usage': usage_summary,
+            'message': 'API limits updated via dashboard',
+            'timestamp': time.time()
+        }
+        
+        # Use existing broadcast mechanism if available, otherwise skip
+        try:
+            broadcast_pnl_event('cost_config_update', config_change_event)
+            logger.info(f"📡 Broadcasted cost config change to SSE clients")
+        except:
+            logger.info("SSE broadcast not available, config updated locally only")
+        
+        return jsonify({
+            'message': 'Cost optimization configuration updated successfully',
+            'updated_config': updated_config,
+            'current_usage': usage_summary,
+            'timestamp': time.time(),
+            'success': True
+        })
+    
+    except Exception as e:
+        logger.error(f"Error updating cost optimization config: {e}")
+        return jsonify({
+            'error': str(e),
+            'success': False
+        }), 500
+
+@app.route('/api/cost-optimization-status', methods=['GET'])
+def get_cost_optimization_status():
+    """Get comprehensive cost optimization status and API usage"""
+    try:
+        # Check if agent and cost_manager are available
+        if not hasattr(agent, 'cost_manager') or not agent.cost_manager:
+            return jsonify({
+                'error': 'Cost optimization manager not available',
+                'success': False
+            }), 503
+        
+        # Get current usage and configuration
+        usage_summary = agent.cost_manager.get_usage_summary()
+        config = agent.cost_manager.get_configuration()
+        
+        # Check current API call allowance
+        can_make_call = agent.cost_manager.can_make_api_call()
+        
+        # Calculate remaining budget
+        remaining_hourly = config['api_limits']['hourly_credit_limit'] - usage_summary['hourly_usage']
+        remaining_daily = config['api_limits']['daily_credit_limit'] - usage_summary['daily_usage']
+        
+        status = {
+            'current_usage': usage_summary,
+            'api_limits': config['api_limits'],
+            'call_allowance': can_make_call,
+            'remaining_budget': {
+                'hourly_remaining': remaining_hourly,
+                'daily_remaining': remaining_daily,
+                'can_make_calls': can_make_call['allowed']
+            },
+            'interval_settings': config['interval_settings'],
+            'system_status': 'healthy' if can_make_call['allowed'] else 'blocked',
+            'next_reset': {
+                'hourly_reset_in_seconds': 3600 - (time.time() % 3600),
+                'daily_reset_in_seconds': 86400 - (time.time() % 86400)
+            },
+            'timestamp': time.time(),
+            'success': True
+        }
+        
+        return jsonify(status)
+    
+    except Exception as e:
+        logger.error(f"Error getting cost optimization status: {e}")
+        return jsonify({
+            'error': str(e),
+            'success': False
+        }), 500
+
 
 # ============================================================================
 # REAL-TIME SSE ENDPOINTS - Phase 2.2: WebSocket-style Synchronization
