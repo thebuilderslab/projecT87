@@ -1,0 +1,49 @@
+Symptoms:
+
+When I press "Autonomous", I get this JSON error pop-up from the embedded preview window.
+
+Growth, Capacity, and Debt Swap metrics all say "achieved," but there is no real on-chain activity or transactions.
+
+Inspecting logs and UI shows mock data or placeholders are being used for asset prices, PnL, and trigger checks.
+
+The process state for triggers (next target, next execution time, pending actions) is completely unclear—no feedback about when/if the agent will perform a real operation.
+
+Questions for diagnosis:
+
+Where is the actual trigger/decision logic executed?
+
+Which file/process makes autonomous market/trade decisions based on live config/settings?
+
+Is it currently using mock data, and if so, what is blocking real network/API calls?
+
+What does "achieved" really mean for Growth, Capacity, and Debt Swap?
+
+Is this status just UI logic, or does it mean a real agent action was performed?
+
+How can we display the next target/action (including timing) and the true internal state of the decision process—so the dashboard communicates exactly what will happen next?
+
+Why do REST/PUT/API/dashboard calls fail with invalid JSON?
+
+Is the backend returning HTML error pages instead of JSON—URL routing/404/etc? Which endpoint is mapped to mode switching?
+
+What triggers the next decision/operation and when will it occur?
+
+How does the scheduling work— is there a queue listed anywhere (with timestamps) so I can see when the system plans to run any real operations based on triggers and thresholds?
+
+What file/function controls the loop or execution cadence?
+
+How do we guarantee the system is running on real (LIVE) data and not generating mock placeholders?
+
+What is the gating condition or config variable that enables real execution and disables mock mode across all modules?
+
+Action items:
+
+Identify and fix the broken JSON mode switching endpoint—ensure backend returns valid JSON, not HTML, for dashboard/preview events.
+
+Audit all places where "mock data" is substituted—fix cost manager, market analyzer, and agent to fully respect live config, PnL, and trading triggers.
+
+Implement or expose a dashboard component showing the actual decision process state: next targets, scheduled actions, time until next autonomous execution, and exact logic for each trigger.
+
+Ensure "achieved" state in the UI means real system activity and not just placeholder status or a mock update.
+
+Document all relevant code files for system monitoring, config reload, agent execution, and REST endpoint handling—confirm the live data flow and error handling behavior.

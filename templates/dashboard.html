@@ -599,7 +599,7 @@
 
         async function switchMode(mode) {
             try {
-                const response = await fetch('/api/system_mode', {
+                const response = await fetch('/api/set_system_mode', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'

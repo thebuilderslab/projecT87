@@ -1,7 +1,7 @@
 {
   "api_limits": {
     "daily_credit_limit": 833,
-    "hourly_credit_limit": 35,
+    "hourly_credit_limit": 100,
     "coinapi_cost_per_call": 1,
     "coinmarketcap_cost_per_call": 1
   },
@@ -22,7 +22,7 @@
     "usage_file": "api_usage_tracking.json"
   },
   "metadata": {
-    "last_updated": 1758998429.0,
+    "last_updated": 1758999299.762012,
     "version": "1.0.0",
     "description": "Cost optimization configuration for API budget management",
     "created_by": "system_configuration_update"
