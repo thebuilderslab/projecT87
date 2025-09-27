@@ -1,0 +1,39 @@
+We need detailed help diagnosing why automation triggers and dashboard parameters are NOT updating core system behavior, and why CoinAPI call limit changes have no effect.
+
+Observed Issues:
+
+No real on-chain activity or trading triggers today.
+
+Dashboard parameters (thresholds, modes, limits) update in the UI but system execution does not reflect these changes.
+
+CoinAPI is “initialized,” but actual API calls are always throttled at hourly_limit (35) even after supposed parameter edits.
+
+Mock data is generated for all live asset feeds after cost optimization triggers (“API call blocked by cost optimization… Generating mock data for BTC/ETH/DAI/etc.”).
+
+Please investigate and answer the following (be specific about filenames and code lines):
+
+Which files define and persist each key trigger and parameter?
+
+Are pnl_config.json (or similar), and cost_optimization_manager config, both used for runtime monitoring AND execution logic?
+
+Is there a flow or mapping where frontend/dashboard writes overwrite the correct config file that the backend loader reads?
+
+Why does increasing the CoinAPI hourly_limit (via dashboard or .env/config) have NO effect on live cost optimization?
+
+Is there a caching or environment var bug forcing fallback to a default even after edits?
+
+Which file (and line) does cost_optimization_manager actually read the hourly_limit from, on every run?
+
+Is it possible that monitoring logic still points at a “stale” config or default constant not affected by dashboard changes?
+
+Are monitoring and execution files fully synchronized for these triggers?
+
+Is the same config file imported by both real trading (execution) and dashboard system monitoring?
+
+If not, how can we map them so dashboard edits impact actual execution triggers/risk logic?
+
+What immediate changes can we make to ensure config edits (from dashboard or API) take effect instantly for execution, not just UI?
+
+Should we rework file watchers, reload logic, or use a publish/subscribe for state changes?
+
+Please list all relevant config.json, .env, Python modules for monitoring/execution, and confirm if any parameter mapping is broken or ignored at runtime.
