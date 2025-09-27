@@ -2332,6 +2332,7 @@ def sse_events():
             
             last_pnl_check = 0
             last_status_check = 0
+            last_cost_check = 0
             
             while True:
                 current_time = time.time()
@@ -2363,14 +2364,59 @@ def sse_events():
                     except Exception as e:
                         logger.error(f"Error in PnL status update: {e}")
                 
+                # Send cost optimization status updates every 12 seconds
+                if current_time - last_cost_check >= 12:
+                    try:
+                        if hasattr(agent, 'cost_manager') and agent.cost_manager:
+                            usage_summary = agent.cost_manager.get_usage_summary()
+                            can_make_call = agent.cost_manager.can_make_api_call()
+                            
+                            cost_status = {
+                                'type': 'cost_optimization_update',
+                                'usage_summary': usage_summary,
+                                'can_make_calls': can_make_call['allowed'],
+                                'hourly_remaining': can_make_call['hourly_limit'] - can_make_call['hourly_usage'],
+                                'daily_remaining': can_make_call['daily_limit'] - can_make_call['daily_usage'],
+                                'next_allowed_time': can_make_call.get('next_allowed_time'),
+                                'recommended_interval': can_make_call.get('recommended_interval'),
+                                'timestamp': current_time
+                            }
+                            
+                            yield f"data: {json.dumps(cost_status)}\n\n"
+                        
+                        last_cost_check = current_time
+                    except Exception as e:
+                        logger.error(f"Error in cost optimization status update: {e}")
+                
                 # Send system status updates every 15 seconds
                 if current_time - last_status_check >= 15:
                     try:
+                        # Get dynamic API budget status
+                        api_budget_status = 'unknown'
+                        try:
+                            if hasattr(agent, 'cost_manager') and agent.cost_manager:
+                                can_make_call = agent.cost_manager.can_make_api_call()
+                                usage_summary = agent.cost_manager.get_usage_summary()
+                                if can_make_call['allowed']:
+                                    if usage_summary['hourly_percentage'] < 70:
+                                        api_budget_status = 'healthy'
+                                    elif usage_summary['hourly_percentage'] < 90:
+                                        api_budget_status = 'warning'
+                                    else:
+                                        api_budget_status = 'near_limit'
+                                else:
+                                    api_budget_status = 'blocked'
+                            else:
+                                api_budget_status = 'manager_unavailable'
+                        except Exception as budget_error:
+                            logger.warning(f"Error getting API budget status: {budget_error}")
+                            api_budget_status = 'error'
+                        
                         system_status = {
                             'type': 'system_update',
                             'agent_running': check_autonomous_agent_running(),
                             'network_mode': 'mainnet',
-                            'api_budget_status': 'within_limits',  # Should be dynamic
+                            'api_budget_status': api_budget_status,
                             'timestamp': current_time
                         }
                         
