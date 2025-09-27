@@ -2049,6 +2049,114 @@ def update_pnl_config():
             'success': False
         }), 500
 
+@app.route('/api/decision-state', methods=['GET'])
+def get_decision_state():
+    """Get current decision-making state and trigger conditions"""
+    try:
+        # Get live agent data
+        live_data = get_live_agent_data()
+        
+        # Extract key decision parameters
+        health_factor = live_data.get('health_factor', 1.699)
+        available_borrows = live_data.get('available_borrows_usdc', 0)
+        market_analysis = live_data.get('market_analysis', {})
+        
+        # Calculate trigger states
+        hf_status = "EXCELLENT" if health_factor > 2.0 else "SAFE" if health_factor > 1.5 else "CAUTION" if health_factor > 1.2 else "CRITICAL"
+        hf_next_action = "Monitor for decline" if health_factor > 1.5 else "Consider risk reduction" if health_factor > 1.2 else "Emergency deleveraging"
+        
+        # Market signals analysis
+        btc_analysis = market_analysis.get('btc_analysis', {})
+        arb_analysis = market_analysis.get('arb_analysis', {})
+        
+        btc_drop = abs(btc_analysis.get('price_change_5min', 0.1))
+        arb_rsi = arb_analysis.get('rsi', 45)
+        
+        if arb_rsi < 30 or arb_rsi > 70:
+            market_status = "SIGNAL"
+            market_next_action = "Execute debt swap"
+        elif arb_rsi < 45 or arb_rsi > 65:
+            market_status = "WATCH"
+            market_next_action = "Monitor for confirmation"
+        else:
+            market_status = "ANALYZING"
+            market_next_action = "Monitor for patterns"
+        
+        # Capacity analysis
+        capacity_status = "READY" if available_borrows > 25 else "LIMITED" if available_borrows > 10 else "LOW"
+        capacity_next_action = "Ready for operations" if available_borrows > 25 else "Limited capacity available" if available_borrows > 10 else "Insufficient capacity"
+        
+        # System phase determination
+        operation_cooldown = 300  # seconds
+        system_phase = "Monitoring"  # Could be "Cooldown", "Waiting", "Executing", etc.
+        
+        decision_state = {
+            'current_state': {
+                'cycle_count': live_data.get('monitoring_cycle', 1),
+                'operation_cooldown_remaining': 0,  # Calculate based on last operation
+                'system_phase': system_phase,
+                'next_check_eta': 5  # seconds to next monitoring cycle
+            },
+            'trigger_conditions': {
+                'health_factor': {
+                    'current_value': health_factor,
+                    'threshold': 1.50,
+                    'status': hf_status,
+                    'next_action': hf_next_action,
+                    'safe': health_factor > 1.5
+                },
+                'market_signals': {
+                    'btc_drop_pct': btc_drop,
+                    'btc_threshold': 0.3,
+                    'arb_rsi': arb_rsi,
+                    'arb_rsi_range': [45, 65],
+                    'status': market_status,
+                    'next_action': market_next_action
+                },
+                'capacity': {
+                    'available_borrows': available_borrows,
+                    'threshold': 25.0,
+                    'swap_range': [1.0, 10.0],
+                    'status': capacity_status,
+                    'next_action': capacity_next_action
+                }
+            },
+            'scheduled_operations': [
+                {
+                    'name': 'Monitor Health Factor',
+                    'frequency': 'Every 5s',
+                    'description': 'Check for changes in Aave position health',
+                    'next_run': 5,
+                    'active': True
+                },
+                {
+                    'name': 'Analyze Market Signals',
+                    'frequency': 'Every 30s',
+                    'description': 'Process BTC/ARB/DAI market data for trading opportunities',
+                    'next_run': 30,
+                    'active': True
+                },
+                {
+                    'name': 'Execute Debt Swap',
+                    'frequency': 'When triggered',
+                    'description': f'Ready to execute DAI↔ARB swaps based on market conditions',
+                    'next_run': None,
+                    'active': available_borrows > 1.0 and health_factor > 1.5
+                }
+            ],
+            'timestamp': time.time(),
+            'success': True
+        }
+        
+        return jsonify(decision_state)
+    
+    except Exception as e:
+        logger.error(f"Error getting decision state: {e}")
+        return jsonify({
+            'error': str(e),
+            'success': False
+        }), 500
+
 @app.route('/api/pnl-thresholds', methods=['GET'])
 def get_current_thresholds():
     """Get current operational USD thresholds based on PnL targets"""

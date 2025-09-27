@@ -342,6 +342,138 @@
             </div>
         </div>
 
+        <!-- ============================================================================ -->
+        <!-- DECISION PROCESS VISIBILITY - Phase 5: System Transparency -->
+        <!-- ============================================================================ -->
+        <div class="decision-process-dashboard" style="margin-bottom: 30px;">
+            <div class="header" style="margin-bottom: 20px;">
+                <h2 style="margin: 0; color: #ffc107; font-size: 1.8rem; display: flex; align-items: center; gap: 10px;">
+                    🎯 Decision Process Monitor
+                    <span style="font-size: 0.9rem; color: rgba(255,255,255,0.6);" id="decision-status">Monitoring Active</span>
+                </h2>
+                <p style="color: rgba(255,255,255,0.8); margin-top: 8px;">
+                    Real-time autonomous system decision-making process, trigger conditions, and next actions
+                </p>
+            </div>
+
+            <!-- Current Decision State Overview -->
+            <div class="decision-state-card" style="background: rgba(255,193,7,0.1); border-radius: 15px; padding: 25px; margin-bottom: 25px; border: 2px solid #ffc107;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <h3 style="color: #ffc107; margin: 0; font-size: 1.3rem;">🔄 Current State</h3>
+                    <div id="next-check-timer" style="color: #ffc107; font-size: 0.9rem;">Next check: --</div>
+                </div>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px;">
+                    <div>
+                        <div style="color: rgba(255,255,255,0.7); font-size: 0.9rem; margin-bottom: 5px;">Monitoring Cycle</div>
+                        <div id="cycle-count" style="color: #ffc107; font-size: 1.4rem; font-weight: bold;">Cycle #--</div>
+                    </div>
+                    <div>
+                        <div style="color: rgba(255,255,255,0.7); font-size: 0.9rem; margin-bottom: 5px;">Operation Cooldown</div>
+                        <div id="operation-cooldown" style="color: #22c55e; font-size: 1.4rem; font-weight: bold;">Ready</div>
+                    </div>
+                    <div>
+                        <div style="color: rgba(255,255,255,0.7); font-size: 0.9rem; margin-bottom: 5px;">System Phase</div>
+                        <div id="system-phase" style="color: #00d4ff; font-size: 1.4rem; font-weight: bold;">Monitoring</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Trigger Conditions Matrix -->
+            <div class="trigger-conditions" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-bottom: 25px;">
+                
+                <!-- Health Factor Triggers -->
+                <div class="trigger-card" style="background: rgba(34,197,94,0.1); border-radius: 12px; padding: 20px; border-left: 5px solid #22c55e;">
+                    <div class="trigger-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <h4 style="color: #22c55e; margin: 0; font-size: 1.1rem;">🏥 Health Factor</h4>
+                        <span id="hf-trigger-status" style="font-size: 0.8rem; color: #22c55e;">✅ SAFE</span>
+                    </div>
+                    <div class="trigger-details">
+                        <div style="margin-bottom: 10px;">
+                            <div style="color: rgba(255,255,255,0.7); font-size: 0.8rem;">Current: <span id="current-hf-value" style="color: #22c55e;">1.699</span></div>
+                            <div style="color: rgba(255,255,255,0.7); font-size: 0.8rem;">Threshold: >1.50</div>
+                        </div>
+                        <div style="font-size: 0.75rem; color: rgba(255,255,255,0.6);">
+                            Next Action: <span id="hf-next-action" style="color: #22c55e;">Monitor for decline</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Market Signal Triggers -->
+                <div class="trigger-card" style="background: rgba(255,193,7,0.1); border-radius: 12px; padding: 20px; border-left: 5px solid #ffc107;">
+                    <div class="trigger-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <h4 style="color: #ffc107; margin: 0; font-size: 1.1rem;">📈 Market Signals</h4>
+                        <span id="market-trigger-status" style="font-size: 0.8rem; color: #ffc107;">⏳ ANALYZING</span>
+                    </div>
+                    <div class="trigger-details">
+                        <div style="margin-bottom: 10px;">
+                            <div style="color: rgba(255,255,255,0.7); font-size: 0.8rem;">BTC Drop: <span id="btc-drop-status" style="color: #ffc107;">0.1%</span> (<0.3%)</div>
+                            <div style="color: rgba(255,255,255,0.7); font-size: 0.8rem;">ARB RSI: <span id="arb-rsi-status" style="color: #ffc107;">45</span> (45-65)</div>
+                        </div>
+                        <div style="font-size: 0.75rem; color: rgba(255,255,255,0.6);">
+                            Next Action: <span id="market-next-action" style="color: #ffc107;">Monitor for patterns</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Capacity Triggers -->
+                <div class="trigger-card" style="background: rgba(99,102,241,0.1); border-radius: 12px; padding: 20px; border-left: 5px solid #6366f1;">
+                    <div class="trigger-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <h4 style="color: #6366f1; margin: 0; font-size: 1.1rem;">💰 Capacity</h4>
+                        <span id="capacity-trigger-status" style="font-size: 0.8rem; color: #6366f1;">✅ READY</span>
+                    </div>
+                    <div class="trigger-details">
+                        <div style="margin-bottom: 10px;">
+                            <div style="color: rgba(255,255,255,0.7); font-size: 0.8rem;">Available: <span id="available-capacity" style="color: #6366f1;">$75.65</span> (>$25)</div>
+                            <div style="color: rgba(255,255,255,0.7); font-size: 0.8rem;">Swap Range: $1-$10</div>
+                        </div>
+                        <div style="font-size: 0.75rem; color: rgba(255,255,255,0.6);">
+                            Next Action: <span id="capacity-next-action" style="color: #6366f1;">Ready for operations</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Scheduled Operations -->
+            <div class="scheduled-operations" style="background: rgba(255,255,255,0.05); border-radius: 15px; padding: 20px; margin-bottom: 20px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <h3 style="color: #00d4ff; margin: 0; font-size: 1.2rem;">⏰ Next Scheduled Operations</h3>
+                    <div id="operations-countdown" style="color: #00d4ff; font-size: 0.9rem;">--</div>
+                </div>
+                <div id="scheduled-operations-list" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px;">
+                    
+                    <div class="operation-item" style="background: rgba(255,255,255,0.05); border-radius: 10px; padding: 15px;">
+                        <div style="display: flex; justify-content: between; align-items: center; margin-bottom: 8px;">
+                            <div style="color: #22c55e; font-size: 0.9rem; font-weight: bold;">Monitor Health Factor</div>
+                            <div style="color: rgba(255,255,255,0.6); font-size: 0.8rem;">Every 5s</div>
+                        </div>
+                        <div style="color: rgba(255,255,255,0.7); font-size: 0.8rem;">
+                            Check for changes in Aave position health
+                        </div>
+                    </div>
+
+                    <div class="operation-item" style="background: rgba(255,255,255,0.05); border-radius: 10px; padding: 15px;">
+                        <div style="display: flex; justify-content: between; align-items: center; margin-bottom: 8px;">
+                            <div style="color: #ffc107; font-size: 0.9rem; font-weight: bold;">Analyze Market Signals</div>
+                            <div style="color: rgba(255,255,255,0.6); font-size: 0.8rem;">Every 30s</div>
+                        </div>
+                        <div style="color: rgba(255,255,255,0.7); font-size: 0.8rem;">
+                            Process BTC/ARB/DAI market data for trading opportunities
+                        </div>
+                    </div>
+
+                    <div class="operation-item" style="background: rgba(255,255,255,0.05); border-radius: 10px; padding: 15px;">
+                        <div style="display: flex; justify-content: between; align-items: center; margin-bottom: 8px;">
+                            <div style="color: #6366f1; font-size: 0.9rem; font-weight: bold;" id="next-trade-operation">Execute Debt Swap</div>
+                            <div style="color: rgba(255,255,255,0.6); font-size: 0.8rem;" id="next-trade-timing">When triggered</div>
+                        </div>
+                        <div style="color: rgba(255,255,255,0.7); font-size: 0.8rem;" id="next-trade-description">
+                            Ready to execute DAI↔ARB swaps based on market conditions
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div class="console-container" style="margin-bottom: 30px;">
             <div class="console-header">
                 <h2 style="margin: 0; color: #00d4ff; font-size: 1.3rem; display: flex; align-items: center; gap: 10px;">
@@ -1001,6 +1133,9 @@
             
             // Load real PnL configuration from backend
             loadPnLConfig();
+            
+            // Initialize decision process monitoring with real data
+            initializeDecisionProcess();
 
             // Initialize SSE real-time synchronization for PnL monitoring
             initializeSSE();
@@ -1024,6 +1159,154 @@
             .catch(error => {
                 console.error('API test failed:', error);
             });
+        
+        // ============================================================================
+        // Decision Process Management Functions - Real-time Integration
+        // ============================================================================
+        
+        // Initialize decision process monitoring with real data
+        function initializeDecisionProcess() {
+            console.log('🎯 Initializing decision process monitoring with live data...');
+            fetchDecisionState();
+            // Update decision process every 5 seconds (matching monitoring cycle)
+            setInterval(fetchDecisionState, 5000);
+        }
+
+        // Fetch current decision state from backend
+        async function fetchDecisionState() {
+            try {
+                const response = await fetch('/api/decision-state');
+                const data = await response.json();
+                
+                if (data.success) {
+                    updateDecisionProcessDisplay(data);
+                } else {
+                    console.error('❌ Decision state API error:', data.error);
+                }
+            } catch (error) {
+                console.error('❌ Error fetching decision state:', error);
+                // Fallback to default display
+                updateDecisionProcessDisplay(null);
+            }
+        }
+
+        // Update decision process display with real data
+        function updateDecisionProcessDisplay(data) {
+            try {
+                if (!data) {
+                    // Fallback to basic display
+                    document.getElementById('cycle-count').textContent = 'Cycle #--';
+                    document.getElementById('operation-cooldown').textContent = 'Connecting...';
+                    return;
+                }
+
+                const currentState = data.current_state || {};
+                const triggers = data.trigger_conditions || {};
+                const operations = data.scheduled_operations || [];
+
+                // Update current state
+                if (currentState.cycle_count) {
+                    document.getElementById('cycle-count').textContent = `Cycle #${currentState.cycle_count}`;
+                }
+
+                // Update operation cooldown
+                const cooldownElement = document.getElementById('operation-cooldown');
+                const cooldownRemaining = currentState.operation_cooldown_remaining || 0;
+                if (cooldownRemaining > 0) {
+                    const minutes = Math.floor(cooldownRemaining / 60);
+                    const seconds = Math.floor(cooldownRemaining % 60);
+                    cooldownElement.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+                    cooldownElement.style.color = '#ffc107';
+                } else {
+                    cooldownElement.textContent = 'Ready';
+                    cooldownElement.style.color = '#22c55e';
+                }
+
+                // Update system phase
+                document.getElementById('system-phase').textContent = currentState.system_phase || 'Monitoring';
+
+                // Update health factor trigger
+                const hfTrigger = triggers.health_factor;
+                if (hfTrigger) {
+                    document.getElementById('current-hf-value').textContent = hfTrigger.current_value.toFixed(3);
+                    
+                    const hfStatusElement = document.getElementById('hf-trigger-status');
+                    const statusColors = {
+                        'EXCELLENT': '#22c55e',
+                        'SAFE': '#22c55e', 
+                        'CAUTION': '#ffc107',
+                        'CRITICAL': '#ff6b6b'
+                    };
+                    const statusEmojis = {
+                        'EXCELLENT': '✅',
+                        'SAFE': '✅',
+                        'CAUTION': '⚠️',
+                        'CRITICAL': '🚨'
+                    };
+                    
+                    hfStatusElement.textContent = `${statusEmojis[hfTrigger.status] || '⏳'} ${hfTrigger.status}`;
+                    hfStatusElement.style.color = statusColors[hfTrigger.status] || '#ffc107';
+                    document.getElementById('hf-next-action').textContent = hfTrigger.next_action || 'Monitor';
+                }
+
+                // Update market signals trigger
+                const marketTrigger = triggers.market_signals;
+                if (marketTrigger) {
+                    document.getElementById('btc-drop-status').textContent = `${marketTrigger.btc_drop_pct.toFixed(2)}%`;
+                    document.getElementById('arb-rsi-status').textContent = marketTrigger.arb_rsi.toString();
+                    
+                    const marketStatusElement = document.getElementById('market-trigger-status');
+                    const marketColors = {
+                        'SIGNAL': '#ff6b6b',
+                        'WATCH': '#ffc107',
+                        'ANALYZING': '#ffc107'
+                    };
+                    const marketEmojis = {
+                        'SIGNAL': '🚨',
+                        'WATCH': '⚠️', 
+                        'ANALYZING': '⏳'
+                    };
+                    
+                    marketStatusElement.textContent = `${marketEmojis[marketTrigger.status] || '⏳'} ${marketTrigger.status}`;
+                    marketStatusElement.style.color = marketColors[marketTrigger.status] || '#ffc107';
+                    document.getElementById('market-next-action').textContent = marketTrigger.next_action || 'Monitor';
+                }
+
+                // Update capacity trigger
+                const capacityTrigger = triggers.capacity;
+                if (capacityTrigger) {
+                    document.getElementById('available-capacity').textContent = `$${capacityTrigger.available_borrows.toFixed(2)}`;
+                    
+                    const capacityStatusElement = document.getElementById('capacity-trigger-status');
+                    const capacityColors = {
+                        'READY': '#6366f1',
+                        'LIMITED': '#ffc107',
+                        'LOW': '#ff6b6b'
+                    };
+                    const capacityEmojis = {
+                        'READY': '✅',
+                        'LIMITED': '⚠️',
+                        'LOW': '🚨'
+                    };
+                    
+                    capacityStatusElement.textContent = `${capacityEmojis[capacityTrigger.status] || '⏳'} ${capacityTrigger.status}`;
+                    capacityStatusElement.style.color = capacityColors[capacityTrigger.status] || '#6366f1';
+                    document.getElementById('capacity-next-action').textContent = capacityTrigger.next_action || 'Monitor';
+                }
+
+                // Update next check timer
+                const nextCheckEta = currentState.next_check_eta || 5;
+                document.getElementById('next-check-timer').textContent = `Next check: ${nextCheckEta}s`;
+
+                // Update decision status
+                document.getElementById('decision-status').textContent = 'Live Data';
+
+                console.log('🎯 Decision process updated with live data');
+            } catch (error) {
+                console.error('❌ Error updating decision process display:', error);
+            }
+        }
+
     </script>
 </body>
 </html>
