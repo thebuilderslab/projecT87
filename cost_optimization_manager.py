@@ -16,9 +16,9 @@ logger = logging.getLogger(__name__)
 class CostOptimizationManager:
     def __init__(self):
         """Initialize cost optimization for starter plan"""
-        # Starter Plan Limits
+        # Starter Plan Limits - Hybrid Architecture
         self.daily_credit_limit = 833  # $25/month ÷ 30 days = 833 credits/day
-        self.hourly_credit_limit = 35   # 833 ÷ 24 hours ≈ 35 credits/hour
+        self.hourly_credit_limit = 35   # ~34.7/hour average - requires intelligent scheduling
         
         # API Cost per call (based on CoinAPI pricing)
         self.coinapi_cost_per_call = 1  # 1 credit per API call
