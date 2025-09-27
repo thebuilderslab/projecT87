@@ -17,6 +17,7 @@ class CostOptimizationManager:
     def __init__(self, config_file='cost_optimization_config.json'):
         """Initialize cost optimization with configurable limits"""
         self.config_file = config_file
+        self.config_file_mtime = 0  # Track file modification time for auto-reload
         
         # Load configuration from file
         self._load_configuration()
@@ -41,6 +42,9 @@ class CostOptimizationManager:
         """Load configuration from JSON file"""
         try:
             if os.path.exists(self.config_file):
+                # Update file modification time for auto-reload tracking
+                self.config_file_mtime = os.path.getmtime(self.config_file)
+                
                 with open(self.config_file, 'r') as f:
                     self.config = json.load(f)
             else:
@@ -164,8 +168,30 @@ class CostOptimizationManager:
         except Exception as e:
             logger.error(f"Could not save usage data: {e}")
     
+    def _check_and_reload_config(self):
+        """Check if config file was modified and reload if needed"""
+        try:
+            if os.path.exists(self.config_file):
+                current_mtime = os.path.getmtime(self.config_file)
+                if current_mtime > self.config_file_mtime:
+                    logger.info(f"Configuration file updated, reloading: {self.config_file}")
+                    old_hourly = self.hourly_credit_limit
+                    old_daily = self.daily_credit_limit
+                    
+                    self._load_configuration()
+                    
+                    if old_hourly != self.hourly_credit_limit or old_daily != self.daily_credit_limit:
+                        logger.info(f"🔄 API limits updated: Hourly {old_hourly}→{self.hourly_credit_limit}, Daily {old_daily}→{self.daily_credit_limit}")
+                        return True
+        except Exception as e:
+            logger.warning(f"Error checking config file: {e}")
+        return False
+    
     def can_make_api_call(self, api_type='coinapi') -> Dict:
         """Check if we can make an API call within budget"""
+        # Auto-reload configuration if file changed
+        self._check_and_reload_config()
+        
         current_time = time.time()
         current_hour = int(current_time // 3600)
         current_day = int(current_time // 86400)
