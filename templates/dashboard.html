@@ -752,6 +752,10 @@
                     updateSystemStatus(data);
                     break;
                     
+                case 'config_update':
+                    updatePnLConfiguration(data);
+                    break;
+                    
                 default:
                     console.log('SSE event:', data.type, data);
             }
@@ -822,6 +826,129 @@
         function updateSystemStatus(data) {
             // Update system status from SSE if needed
             console.log('🔧 System update:', data);
+        }
+        
+        function updatePnLConfiguration(data) {
+            // Handle real-time PnL configuration updates
+            console.log('⚙️ Configuration update received:', data);
+            console.log('🔍 DEBUG: updatePnLConfiguration function called!');
+            
+            // Check nested data structure - SSE events have data.data.updated_config
+            const configData = data.data || data;
+            if (configData.updated_config && configData.updated_config.pnl_targets) {
+                const newTargets = configData.updated_config.pnl_targets;
+                console.log('🔍 DEBUG: Processing new targets:', newTargets);
+                
+                // Update target display values using robust pattern matching
+                if (newTargets.pnl_growth_target) {
+                    console.log('🔍 DEBUG: Starting Growth Target update...');
+                    const growthTargetElements = document.querySelectorAll('*');
+                    console.log(`🔍 DEBUG: Scanning ${growthTargetElements.length} elements`);
+                    
+                    let targetMatches = 0;
+                    for (let element of growthTargetElements) {
+                        if (element.textContent && element.textContent.match(/Target:\s*\d+(\.\d+)?%/)) {
+                            targetMatches++;
+                            console.log(`🔍 DEBUG: Found target match ${targetMatches}: "${element.textContent}"`);
+                            
+                            // Check if this is the growth target section by looking for nearby "Growth Target" text
+                            const parent = element.closest('.meter-card') || element.parentElement;
+                            console.log(`🔍 DEBUG: Parent found:`, parent ? 'YES' : 'NO');
+                            
+                            if (parent) {
+                                const hasGrowthTarget = parent.innerHTML.includes('Growth Target');
+                                console.log(`🔍 DEBUG: Contains "Growth Target":`, hasGrowthTarget);
+                                console.log(`🔍 DEBUG: Parent innerHTML preview:`, parent.innerHTML.substring(0, 200) + '...');
+                                
+                                if (hasGrowthTarget) {
+                                    element.textContent = `Target: ${newTargets.pnl_growth_target.toFixed(1)}%`;
+                                    console.log(`✅ Updated Growth Target to: ${newTargets.pnl_growth_target.toFixed(1)}%`);
+                                }
+                            }
+                        }
+                    }
+                    console.log(`🔍 DEBUG: Total target matches found: ${targetMatches}`);
+                }
+                
+                if (newTargets.pnl_capacity_target) {
+                    const capacityTargetElements = document.querySelectorAll('*');
+                    for (let element of capacityTargetElements) {
+                        if (element.textContent && element.textContent.match(/Target:\s*\d+(\.\d+)?%/)) {
+                            // Check if this is the capacity target section by looking for nearby "Capacity Target" text
+                            const parent = element.closest('.meter-card') || element.parentElement;
+                            if (parent && parent.innerHTML.includes('Capacity Target')) {
+                                element.textContent = `Target: ${newTargets.pnl_capacity_target.toFixed(1)}%`;
+                                console.log(`Updated Capacity Target to: ${newTargets.pnl_capacity_target.toFixed(1)}%`);
+                            }
+                        }
+                    }
+                }
+                
+                if (newTargets.pnl_debt_swap_target) {
+                    const swapTargetElements = document.querySelectorAll('*');
+                    for (let element of swapTargetElements) {
+                        if (element.textContent && element.textContent.match(/Target:\s*\d+(\.\d+)?%/)) {
+                            // Check if this is the debt swap target section by looking for nearby "Debt Swap Target" text
+                            const parent = element.closest('.meter-card') || element.parentElement;
+                            if (parent && parent.innerHTML.includes('Debt Swap Target')) {
+                                element.textContent = `Target: ${newTargets.pnl_debt_swap_target.toFixed(1)}%`;
+                                console.log(`Updated Debt Swap Target to: ${newTargets.pnl_debt_swap_target.toFixed(1)}%`);
+                            }
+                        }
+                    }
+                }
+                
+                // Re-calculate progress bars and status with new targets
+                // Get current PnL from the display
+                const currentPnLElement = document.getElementById('current-pnl');
+                if (currentPnLElement) {
+                    const currentPnL = parseFloat(currentPnLElement.textContent.replace('%', ''));
+                    
+                    // Update Growth Target calculations
+                    if (newTargets.pnl_growth_target) {
+                        const growthProgress = Math.min((currentPnL / newTargets.pnl_growth_target) * 100, 100);
+                        const growthExcess = currentPnL - newTargets.pnl_growth_target;
+                        
+                        document.getElementById('growth-progress').style.width = `${growthProgress}%`;
+                        document.getElementById('growth-excess').textContent = growthExcess > 0 ? 
+                            `+${growthExcess.toFixed(2)}%` : `${growthExcess.toFixed(2)}%`;
+                        document.getElementById('growth-status').innerHTML = currentPnL >= newTargets.pnl_growth_target ? 
+                            '✅ ACHIEVED' : '⏳ PENDING';
+                    }
+                    
+                    // Update Capacity Target calculations
+                    if (newTargets.pnl_capacity_target) {
+                        const capacityProgress = Math.min((currentPnL / newTargets.pnl_capacity_target) * 100, 100);
+                        const capacityExcess = currentPnL - newTargets.pnl_capacity_target;
+                        
+                        document.getElementById('capacity-progress').style.width = `${capacityProgress}%`;
+                        document.getElementById('capacity-excess').textContent = capacityExcess > 0 ? 
+                            `+${capacityExcess.toFixed(2)}%` : `${capacityExcess.toFixed(2)}%`;
+                        document.getElementById('capacity-status').innerHTML = currentPnL >= newTargets.pnl_capacity_target ? 
+                            '✅ ACHIEVED' : '⏳ PENDING';
+                    }
+                    
+                    // Update Debt Swap Target calculations
+                    if (newTargets.pnl_debt_swap_target) {
+                        const swapProgress = Math.min((currentPnL / newTargets.pnl_debt_swap_target) * 100, 100);
+                        const swapExcess = currentPnL - newTargets.pnl_debt_swap_target;
+                        
+                        document.getElementById('swap-progress').style.width = `${swapProgress}%`;
+                        document.getElementById('swap-excess').textContent = swapExcess > 0 ? 
+                            `+${swapExcess.toFixed(2)}%` : `${swapExcess.toFixed(2)}%`;
+                        document.getElementById('swap-status').innerHTML = currentPnL >= newTargets.pnl_debt_swap_target ? 
+                            '✅ ACHIEVED' : '⏳ PENDING';
+                    }
+                }
+                
+                // Show visual confirmation of config update
+                document.getElementById('pnl-status').textContent = 'Configuration Updated!';
+                setTimeout(() => {
+                    document.getElementById('pnl-status').textContent = 'Live Synchronization';
+                }, 3000);
+                
+                console.log(`⚙️ PnL targets updated: Growth ${newTargets.pnl_growth_target}%, Capacity ${newTargets.pnl_capacity_target}%, Swap ${newTargets.pnl_debt_swap_target}%`);
+            }
         }
 
         // Initialize dashboard

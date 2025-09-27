@@ -2025,6 +2025,16 @@ def update_pnl_config():
         
         logger.info(f"✅ PnL configuration updated via dashboard")
         
+        # Broadcast configuration change to all SSE clients for real-time dashboard sync
+        config_change_event = {
+            'type': 'config_update',
+            'updated_config': updated_config,
+            'message': 'PnL targets updated via dashboard',
+            'timestamp': time.time()
+        }
+        broadcast_pnl_event('config_update', config_change_event)
+        logger.info(f"📡 Broadcasted PnL config change to SSE clients")
+        
         return jsonify({
             'message': 'PnL configuration updated successfully',
             'updated_config': updated_config,

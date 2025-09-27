@@ -166,22 +166,32 @@ class PnLConverter:
             Updated configuration with new operational threshold
         """
         try:
-            # Update PnL target
-            pnl_key = f"pnl_{operation_type}_target"
+            # Normalize operation_type to handle pre-prefixed field names
+            # If operation_type is already formatted like "pnl_growth_target", use it directly
+            # If it's a clean operation type like "growth", format it properly
+            if operation_type.startswith("pnl_") and operation_type.endswith("_target"):
+                pnl_key = operation_type  # Already properly formatted
+                # Extract base operation type for threshold calculation
+                base_operation_type = operation_type.replace("pnl_", "").replace("_target", "")
+            else:
+                pnl_key = f"pnl_{operation_type}_target"
+                base_operation_type = operation_type
+            
+            # Update PnL target in config
             self.config["pnl_targets"][pnl_key] = new_pnl_target
             
-            # Recalculate operational threshold
-            new_threshold = self.convert_pnl_to_usd_threshold(new_pnl_target, operation_type)
-            threshold_key = f"{operation_type}_threshold_usd"
+            # Recalculate operational threshold using base operation type
+            new_threshold = self.convert_pnl_to_usd_threshold(new_pnl_target, base_operation_type)
+            threshold_key = f"{pnl_key}_threshold_usd"  # Use pnl_key + threshold_usd
             self.config["operational_thresholds"][threshold_key] = new_threshold
             
             # Save updated configuration
             self._save_config()
             
-            logger.info(f"✅ Updated {operation_type}: PnL ${new_pnl_target} → USD ${new_threshold}")
+            logger.info(f"✅ Updated {base_operation_type}: PnL ${new_pnl_target} → USD ${new_threshold}")
             
             return {
-                "operation_type": operation_type,
+                "operation_type": base_operation_type,
                 "pnl_target": new_pnl_target,
                 "operational_threshold_usd": new_threshold,
                 "success": True,
