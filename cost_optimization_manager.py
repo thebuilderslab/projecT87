@@ -14,18 +14,15 @@ from typing import Dict, Optional
 logger = logging.getLogger(__name__)
 
 class CostOptimizationManager:
-    def __init__(self):
-        """Initialize cost optimization for starter plan"""
-        # Starter Plan Limits - Hybrid Architecture
-        self.daily_credit_limit = 833  # $25/month ÷ 30 days = 833 credits/day
-        self.hourly_credit_limit = 35   # ~34.7/hour average - requires intelligent scheduling
+    def __init__(self, config_file='cost_optimization_config.json'):
+        """Initialize cost optimization with configurable limits"""
+        self.config_file = config_file
         
-        # API Cost per call (based on CoinAPI pricing)
-        self.coinapi_cost_per_call = 1  # 1 credit per API call
-        self.coinmarketcap_cost_per_call = 1  # 1 credit per call
+        # Load configuration from file
+        self._load_configuration()
         
         # Usage tracking
-        self.usage_file = 'api_usage_tracking.json'
+        self.usage_file = self.config.get('usage_tracking', {}).get('usage_file', 'api_usage_tracking.json')
         self.current_hour_usage = 0
         self.current_day_usage = 0
         self.last_reset_hour = int(time.time() // 3600)
@@ -34,15 +31,110 @@ class CostOptimizationManager:
         # Load existing usage data
         self._load_usage_data()
         
-        # Adaptive intervals based on usage
-        self.base_interval = 300  # 5 minutes base
-        self.max_interval = 1800  # 30 minutes max
-        self.current_interval = self.base_interval
-        
         print(f"✅ Cost Optimization Manager initialized")
         print(f"   Daily limit: {self.daily_credit_limit} credits")
         print(f"   Hourly limit: {self.hourly_credit_limit} credits")
         print(f"   Current interval: {self.current_interval}s")
+        print(f"   Configuration loaded from: {self.config_file}")
+    
+    def _load_configuration(self):
+        """Load configuration from JSON file"""
+        try:
+            if os.path.exists(self.config_file):
+                with open(self.config_file, 'r') as f:
+                    self.config = json.load(f)
+            else:
+                logger.warning(f"Configuration file {self.config_file} not found, using defaults")
+                self._create_default_config()
+            
+            # Extract configuration values
+            api_limits = self.config.get('api_limits', {})
+            self.daily_credit_limit = api_limits.get('daily_credit_limit', 833)
+            self.hourly_credit_limit = api_limits.get('hourly_credit_limit', 35)
+            self.coinapi_cost_per_call = api_limits.get('coinapi_cost_per_call', 1)
+            self.coinmarketcap_cost_per_call = api_limits.get('coinmarketcap_cost_per_call', 1)
+            
+            interval_settings = self.config.get('interval_settings', {})
+            self.base_interval = interval_settings.get('base_interval', 300)
+            self.max_interval = interval_settings.get('max_interval', 1800)
+            self.current_interval = interval_settings.get('current_interval', self.base_interval)
+            
+            logger.info(f"Configuration loaded: Daily={self.daily_credit_limit}, Hourly={self.hourly_credit_limit}")
+            
+        except Exception as e:
+            logger.error(f"Error loading configuration: {e}")
+            self._create_default_config()
+    
+    def _create_default_config(self):
+        """Create default configuration"""
+        self.config = {
+            "api_limits": {
+                "daily_credit_limit": 833,
+                "hourly_credit_limit": 35,
+                "coinapi_cost_per_call": 1,
+                "coinmarketcap_cost_per_call": 1
+            },
+            "interval_settings": {
+                "base_interval": 300,
+                "max_interval": 1800,
+                "current_interval": 300
+            },
+            "usage_tracking": {
+                "usage_file": "api_usage_tracking.json"
+            }
+        }
+        
+        # Set instance variables from defaults
+        self.daily_credit_limit = 833
+        self.hourly_credit_limit = 35
+        self.coinapi_cost_per_call = 1
+        self.coinmarketcap_cost_per_call = 1
+        self.base_interval = 300
+        self.max_interval = 1800
+        self.current_interval = 300
+        
+        logger.warning("Using default configuration values")
+    
+    def reload_configuration(self):
+        """Reload configuration from file for runtime updates"""
+        logger.info("Reloading cost optimization configuration...")
+        old_hourly = self.hourly_credit_limit
+        old_daily = self.daily_credit_limit
+        
+        self._load_configuration()
+        
+        if old_hourly != self.hourly_credit_limit or old_daily != self.daily_credit_limit:
+            logger.info(f"Configuration updated: Hourly {old_hourly}→{self.hourly_credit_limit}, Daily {old_daily}→{self.daily_credit_limit}")
+            return True
+        return False
+    
+    def update_configuration(self, new_config: Dict) -> bool:
+        """Update configuration and save to file"""
+        try:
+            # Update configuration dictionary
+            if 'api_limits' in new_config:
+                self.config['api_limits'].update(new_config['api_limits'])
+            if 'interval_settings' in new_config:
+                self.config['interval_settings'].update(new_config['interval_settings'])
+            
+            # Update metadata
+            if 'metadata' not in self.config:
+                self.config['metadata'] = {}
+            self.config['metadata']['last_updated'] = time.time()
+            
+            # Save to file
+            with open(self.config_file, 'w') as f:
+                json.dump(self.config, f, indent=2)
+            
+            # Reload configuration to apply changes
+            self.reload_configuration()
+            
+            logger.info("Configuration updated and saved successfully")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Error updating configuration: {e}")
+            return False
     
     def _load_usage_data(self):
         """Load usage tracking data"""
@@ -164,4 +256,22 @@ class CostOptimizationManager:
             'current_interval': self.current_interval,
             'recommended_interval': self._calculate_optimal_interval(),
             'budget_status': 'healthy' if usage_percentage_hourly < 80 else 'warning' if usage_percentage_hourly < 95 else 'critical'
+        }
+    
+    def get_configuration(self) -> Dict:
+        """Get current configuration settings"""
+        return {
+            'api_limits': {
+                'daily_credit_limit': self.daily_credit_limit,
+                'hourly_credit_limit': self.hourly_credit_limit,
+                'coinapi_cost_per_call': self.coinapi_cost_per_call,
+                'coinmarketcap_cost_per_call': self.coinmarketcap_cost_per_call
+            },
+            'interval_settings': {
+                'base_interval': self.base_interval,
+                'max_interval': self.max_interval,
+                'current_interval': self.current_interval
+            },
+            'config_file': self.config_file,
+            'last_config_update': self.config.get('metadata', {}).get('last_updated', 'unknown')
         }
