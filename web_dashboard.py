@@ -13,6 +13,15 @@ from datetime import datetime
 from collections import deque
 import re
 import logging
+import queue
+
+# Import PnL converter for dynamic parameter management
+try:
+    from pnl_converter import PnLConverter
+    PNL_CONVERTER_AVAILABLE = True
+except ImportError:
+    print("WARNING: PnLConverter not available - PnL endpoints will be disabled")
+    PNL_CONVERTER_AVAILABLE = False
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -22,6 +31,10 @@ app = Flask(__name__)
 agent = None
 console_buffer = deque(maxlen=100)  # Store last 100 console lines
 system_mode = None  # Track current system mode
+
+# SSE Infrastructure for real-time synchronization
+sse_clients = []  # Store SSE client connections
+pnl_event_queue = queue.Queue()  # Queue for PnL events
 
 class WorkingAgent:
     """Working agent with live mainnet data"""
@@ -1926,6 +1939,334 @@ def check_market_signals():
     except Exception as e:
         logger.error(f"General error in check_market_signals: {e}")
         return f"[{timestamp}] ❌ MARKET SIGNALS: Check failed | {str(e)[:40]}"
+
+
+# ============================================================================
+# PnL CONFIGURATION ENDPOINTS - Phase 2.1: Dynamic Parameter Control
+# ============================================================================
+
+@app.route('/api/pnl-config', methods=['GET'])
+def get_pnl_config():
+    """Get current PnL configuration and targets"""
+    if not PNL_CONVERTER_AVAILABLE:
+        return jsonify({
+            'error': 'PnL converter not available',
+            'success': False
+        }), 503
+    
+    try:
+        converter = PnLConverter()
+        
+        return jsonify({
+            'pnl_targets': converter.get_pnl_targets(),
+            'operational_thresholds': converter.get_operational_thresholds(),
+            'system_parameters': converter.get_system_parameters(),
+            'conversion_coefficients': converter.config.get('conversion_coefficients', {}),
+            'timestamp': time.time(),
+            'success': True
+        })
+    
+    except Exception as e:
+        logger.error(f"Error fetching PnL config: {e}")
+        return jsonify({
+            'error': str(e),
+            'success': False
+        }), 500
+
+@app.route('/api/pnl-config', methods=['PUT'])
+def update_pnl_config():
+    """Update PnL configuration with new targets"""
+    if not PNL_CONVERTER_AVAILABLE:
+        return jsonify({
+            'error': 'PnL converter not available',
+            'success': False
+        }), 503
+    
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({
+                'error': 'No data provided',
+                'success': False
+            }), 400
+        
+        converter = PnLConverter()
+        
+        # Update specific targets if provided
+        if 'pnl_targets' in data:
+            for operation_type, value in data['pnl_targets'].items():
+                if isinstance(value, (int, float)) and value > 0:
+                    converter.update_pnl_target(operation_type, value)
+        
+        # Update coefficients if provided
+        if 'conversion_coefficients' in data:
+            for key, value in data['conversion_coefficients'].items():
+                if isinstance(value, (int, float)) and value > 0:
+                    converter.config['conversion_coefficients'][key] = value
+        
+        # Update system parameters if provided
+        if 'system_parameters' in data:
+            for key, value in data['system_parameters'].items():
+                if isinstance(value, (int, float)) and value > 0:
+                    converter.config['system_parameters'][key] = value
+        
+        # Save changes
+        try:
+            converter.config.setdefault("metadata", {})
+            converter._save_config()
+        except Exception as save_error:
+            logger.error(f"Failed to save PnL config: {save_error}")
+            return jsonify({
+                'error': 'Failed to save configuration changes',
+                'success': False
+            }), 500
+        
+        # Return updated configuration
+        updated_config = {
+            'pnl_targets': converter.get_pnl_targets(),
+            'operational_thresholds': converter.get_operational_thresholds(),
+            'system_parameters': converter.get_system_parameters(),
+            'conversion_coefficients': converter.config.get('conversion_coefficients', {})
+        }
+        
+        logger.info(f"✅ PnL configuration updated via dashboard")
+        
+        return jsonify({
+            'message': 'PnL configuration updated successfully',
+            'updated_config': updated_config,
+            'timestamp': time.time(),
+            'success': True
+        })
+    
+    except Exception as e:
+        logger.error(f"Error updating PnL config: {e}")
+        return jsonify({
+            'error': str(e),
+            'success': False
+        }), 500
+
+@app.route('/api/pnl-thresholds', methods=['GET'])
+def get_current_thresholds():
+    """Get current operational USD thresholds based on PnL targets"""
+    if not PNL_CONVERTER_AVAILABLE:
+        return jsonify({
+            'error': 'PnL converter not available',
+            'success': False
+        }), 503
+    
+    try:
+        converter = PnLConverter()
+        
+        # Get current market data for conversion
+        current_btc_price = 109356.43  # Should be fetched from live data
+        current_collateral = 174.99    # Should be fetched from live agent data
+        
+        # Convert PnL targets to operational thresholds
+        thresholds = {}
+        pnl_targets = converter.get_pnl_targets()
+        operational_thresholds = converter.get_operational_thresholds()
+        
+        for target_name, pnl_target in pnl_targets.items():
+            try:
+                # Map target names to operation types
+                operation_type_map = {
+                    'pnl_growth_target': 'growth',
+                    'pnl_capacity_target': 'capacity', 
+                    'pnl_debt_swap_target': 'debt_swap'
+                }
+                operation_type = operation_type_map.get(target_name, 'growth')
+                
+                threshold_usd = converter.convert_pnl_to_usd_threshold(
+                    pnl_target, 
+                    operation_type
+                )
+                thresholds[target_name] = {
+                    'pnl_target': pnl_target,
+                    'threshold_usd': threshold_usd,
+                    'coefficient': converter.config.get('conversion_coefficients', {}).get(f'{operation_type}_multiplier', 1.0)
+                }
+            except Exception as conversion_error:
+                logger.warning(f"Error converting {target_name}: {conversion_error}")
+                thresholds[target_name] = {
+                    'pnl_target': pnl_target,
+                    'threshold_usd': None,
+                    'error': str(conversion_error)
+                }
+        
+        return jsonify({
+            'thresholds': thresholds,
+            'market_context': {
+                'btc_price': current_btc_price,
+                'collateral_usd': current_collateral,
+                'operational_thresholds': operational_thresholds
+            },
+            'timestamp': time.time(),
+            'success': True
+        })
+    
+    except Exception as e:
+        logger.error(f"Error calculating thresholds: {e}")
+        return jsonify({
+            'error': str(e),
+            'success': False
+        }), 500
+
+@app.route('/api/pnl-status', methods=['GET'])
+def get_pnl_status():
+    """Get comprehensive PnL system status"""
+    if not PNL_CONVERTER_AVAILABLE:
+        return jsonify({
+            'error': 'PnL converter not available',
+            'success': False
+        }), 503
+    
+    try:
+        converter = PnLConverter()
+        
+        # Get live agent data
+        live_data = get_live_agent_data()
+        current_collateral = live_data.get('total_collateral_usdc', 174.99)
+        health_factor = live_data.get('health_factor', 6.89)
+        
+        # Calculate current PnL performance
+        baseline_collateral = 170.0  # Should be tracked dynamically
+        current_pnl = ((current_collateral - baseline_collateral) / baseline_collateral) * 100
+        
+        status = {
+            'current_performance': {
+                'collateral_usd': current_collateral,
+                'baseline_collateral': baseline_collateral,
+                'pnl_percent': current_pnl,
+                'health_factor': health_factor
+            },
+            'pnl_targets': converter.get_pnl_targets(),
+            'threshold_proximity': {},
+            'system_status': 'operational' if health_factor > 2.0 else 'caution',
+            'timestamp': time.time(),
+            'success': True
+        }
+        
+        # Calculate proximity to each target
+        for target_name, target_pnl in status['pnl_targets'].items():
+            distance = abs(current_pnl - target_pnl)
+            proximity = max(0, 100 - (distance * 10))  # Simple proximity calculation
+            status['threshold_proximity'][target_name] = {
+                'distance': distance,
+                'proximity_percent': proximity,
+                'status': 'near' if proximity > 70 else 'far'
+            }
+        
+        return jsonify(status)
+    
+    except Exception as e:
+        logger.error(f"Error getting PnL status: {e}")
+        return jsonify({
+            'error': str(e),
+            'success': False
+        }), 500
+
+
+# ============================================================================
+# REAL-TIME SSE ENDPOINTS - Phase 2.2: WebSocket-style Synchronization
+# ============================================================================
+
+@app.route('/api/events')
+def sse_events():
+    """Server-Sent Events endpoint for real-time dashboard updates"""
+    def event_stream():
+        """Generate real-time events for dashboard synchronization"""
+        try:
+            # Send initial connection event
+            yield f"data: {json.dumps({'type': 'connected', 'timestamp': time.time()})}\n\n"
+            
+            last_pnl_check = 0
+            last_status_check = 0
+            
+            while True:
+                current_time = time.time()
+                
+                # Send PnL status updates every 10 seconds
+                if current_time - last_pnl_check >= 10:
+                    try:
+                        if PNL_CONVERTER_AVAILABLE:
+                            converter = PnLConverter()
+                            live_data = get_live_agent_data()
+                            
+                            # Get current PnL performance
+                            current_collateral = live_data.get('total_collateral_usdc', 174.99)
+                            baseline_collateral = 170.0  # Should be tracked dynamically
+                            current_pnl = ((current_collateral - baseline_collateral) / baseline_collateral) * 100
+                            
+                            pnl_status = {
+                                'type': 'pnl_update',
+                                'current_pnl': current_pnl,
+                                'collateral_usd': current_collateral,
+                                'pnl_targets': converter.get_pnl_targets(),
+                                'health_factor': live_data.get('health_factor', 6.89),
+                                'timestamp': current_time
+                            }
+                            
+                            yield f"data: {json.dumps(pnl_status)}\n\n"
+                        
+                        last_pnl_check = current_time
+                    except Exception as e:
+                        logger.error(f"Error in PnL status update: {e}")
+                
+                # Send system status updates every 15 seconds
+                if current_time - last_status_check >= 15:
+                    try:
+                        system_status = {
+                            'type': 'system_update',
+                            'agent_running': check_autonomous_agent_running(),
+                            'network_mode': 'mainnet',
+                            'api_budget_status': 'within_limits',  # Should be dynamic
+                            'timestamp': current_time
+                        }
+                        
+                        yield f"data: {json.dumps(system_status)}\n\n"
+                        last_status_check = current_time
+                    except Exception as e:
+                        logger.error(f"Error in system status update: {e}")
+                
+                # Check for queued events
+                try:
+                    event_data = pnl_event_queue.get_nowait()
+                    yield f"data: {json.dumps(event_data)}\n\n"
+                except queue.Empty:
+                    pass
+                
+                time.sleep(2)  # Check every 2 seconds for responsiveness
+                
+        except GeneratorExit:
+            logger.info("SSE client disconnected")
+        except Exception as e:
+            logger.error(f"SSE stream error: {e}")
+            yield f"data: {json.dumps({'type': 'error', 'message': str(e)})}\n\n"
+    
+    response = app.response_class(
+        event_stream(),
+        mimetype='text/event-stream',
+        headers={
+            'Cache-Control': 'no-cache',
+            'Connection': 'keep-alive',
+            'Access-Control-Allow-Origin': '*'
+        }
+    )
+    return response
+
+def broadcast_pnl_event(event_type: str, data: dict):
+    """Broadcast PnL events to all connected SSE clients"""
+    event_data = {
+        'type': event_type,
+        'data': data,
+        'timestamp': time.time()
+    }
+    
+    try:
+        pnl_event_queue.put_nowait(event_data)
+        logger.info(f"📡 Broadcasted PnL event: {event_type}")
+    except queue.Full:
+        logger.warning("PnL event queue full - dropping event")
 
 
 def get_available_port(start_port=5000):
