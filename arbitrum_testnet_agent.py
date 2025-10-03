@@ -590,10 +590,14 @@ class ArbitrumTestnetAgent:
         self.max_borrow_releverage = 100.0  # Maximum borrow amount for re-leverage
 
         # Capacity-Based System Configuration
-        self.capacity_available_threshold = 25.0  # $25 minimum available capacity
+        self.capacity_available_threshold = 10.0  # $10 minimum available capacity (optimized for small wallets)
+        self.capacity_trigger_threshold = 15.0  # $15 capacity trigger activation threshold
         self.capacity_health_factor_threshold = 1.5  # Minimum health factor for capacity operations
         self.capacity_optimization_threshold = 0.85  # 85% maximum utilization
         self.target_health_factor = 1.5  # Target health factor to maintain
+        
+        # Growth Trigger Configuration
+        self.growth_percentage_threshold = 0.10  # 10% relative growth threshold
 
         # Display Hybrid System Configuration
         self._display_hybrid_system_config()
@@ -775,17 +779,17 @@ class ArbitrumTestnetAgent:
         """Display the current Hybrid System configuration"""
         print(f"\n🔄 HYBRID SYSTEM CONFIGURATION:")
         print(f"═══════════════════════════════════════")
-        print(f"🚀 GROWTH-TRIGGERED SYSTEM:")
-        print(f"   • Growth Threshold: ${self.growth_trigger_threshold:.0f}")
+        print(f"🚀 GROWTH-TRIGGERED SYSTEM (INDEPENDENT):")
+        print(f"   • Absolute Threshold: ${self.growth_trigger_threshold:.0f}")
+        print(f"   • Relative Threshold: {self.growth_percentage_threshold:.0%}")
         print(f"   • Health Factor: > {self.growth_health_factor_threshold:.1f}")
         print(f"   • Re-leverage %: {self.re_leverage_percentage:.1%}")
         print(f"   • Min/Max Borrow: ${self.min_borrow_releverage:.0f} - ${self.max_borrow_releverage:.0f}")
-        print(f"⚡ CAPACITY-BASED SYSTEM:")
-        print(f"   • Available Capacity: > ${self.capacity_available_threshold:.0f}")
+        print(f"⚡ CAPACITY-BASED SYSTEM (INDEPENDENT):")
+        print(f"   • Min Capacity: > ${self.capacity_available_threshold:.0f}")
+        print(f"   • Trigger Threshold: > ${self.capacity_trigger_threshold:.0f}")
         print(f"   • Health Factor: > {self.capacity_health_factor_threshold:.1f}")
         print(f"   • Max Utilization: < {self.capacity_optimization_threshold:.0%}")
-        print(f"   • Current Available: ${85.21:.2f} (MEETS THRESHOLD)")
-        print(f"   • Current Utilization: ~15% (MEETS THRESHOLD)")
         print(f"🔧 SYSTEM SETTINGS:")
         print(f"   • Operation Cooldown: {self.operation_cooldown_seconds}s")
         print(f"   • Target Health Factor: {self.target_health_factor:.1f}")
@@ -1769,23 +1773,33 @@ class ArbitrumTestnetAgent:
             pass
     
     def _should_execute_growth_triggered_operation(self, current_collateral, health_factor, available_borrows):
-        """Check if growth-triggered operation should execute"""
+        """
+        Check if growth-triggered operation should execute.
+        
+        INDEPENDENT TRIGGER: Only checks collateral growth and health factor.
+        Does NOT require minimum capacity - supports small wallets.
+        
+        Triggers on EITHER:
+        - Absolute: $50 growth from baseline OR
+        - Relative: 10% growth from baseline
+        """
         try:
             # Check health factor threshold
             if health_factor < self.growth_health_factor_threshold:
                 print(f"⚠️ Health factor {health_factor:.3f} below growth threshold {self.growth_health_factor_threshold}")
                 return False
 
-            # Check available borrowing capacity
-            if available_borrows < self.capacity_available_threshold:
-                print(f"⚠️ Available borrows ${available_borrows:.2f} below threshold ${self.capacity_available_threshold}")
-                return False
-
-            # Check growth since last baseline
+            # Check growth since last baseline (INDEPENDENT - no capacity requirement)
             if hasattr(self, 'last_collateral_value_usd') and self.last_collateral_value_usd > 0:
-                growth = current_collateral - self.last_collateral_value_usd
-                if growth >= self.growth_trigger_threshold:
-                    print(f"✅ Growth trigger met: ${growth:.2f} >= ${self.growth_trigger_threshold}")
+                absolute_growth = current_collateral - self.last_collateral_value_usd
+                relative_growth = absolute_growth / self.last_collateral_value_usd if self.last_collateral_value_usd > 0 else 0
+                
+                # Trigger on EITHER absolute OR relative threshold
+                if absolute_growth >= self.growth_trigger_threshold:
+                    print(f"✅ Growth trigger met (ABSOLUTE): ${absolute_growth:.2f} >= ${self.growth_trigger_threshold}")
+                    return True
+                elif relative_growth >= self.growth_percentage_threshold:
+                    print(f"✅ Growth trigger met (RELATIVE): {relative_growth*100:.1f}% >= {self.growth_percentage_threshold*100:.0f}%")
                     return True
 
             return False
@@ -1795,7 +1809,12 @@ class ArbitrumTestnetAgent:
             return False
 
     def _should_execute_capacity_operation(self, available_borrows, health_factor):
-        """Check if capacity-based operation should execute"""
+        """
+        Check if capacity-based operation should execute.
+        
+        INDEPENDENT TRIGGER: Only checks available capacity and health factor.
+        Optimized for small wallets with $15 threshold.
+        """
         try:
             if health_factor < self.capacity_health_factor_threshold:
                 return False
@@ -1803,9 +1822,9 @@ class ArbitrumTestnetAgent:
             if available_borrows < self.capacity_available_threshold:
                 return False
 
-            # Simple capacity check - if we have significant unused capacity
-            if available_borrows > 50:  # $50 available capacity
-                print(f"✅ Capacity operation triggered: ${available_borrows:.2f} available")
+            # Capacity check - optimized for accessibility ($15 threshold)
+            if available_borrows >= self.capacity_trigger_threshold:
+                print(f"✅ Capacity operation triggered: ${available_borrows:.2f} available (threshold: ${self.capacity_trigger_threshold})")
                 return True
 
             return False
