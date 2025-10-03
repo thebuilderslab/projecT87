@@ -493,7 +493,8 @@ class ArbitrumTestnetAgent:
             self.weth_address = self.w3.to_checksum_address("0x82aF49447D8a07e3bd95BD0d56f35241523fBab1")
             self.wbtc_address = self.w3.to_checksum_address("0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f")
             self.dai_address = self.w3.to_checksum_address("0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1")
-            self.gho_address = self.w3.to_checksum_address("0x7dfF72693f6A4149b17e7C6314655f6A9F7c8B33")  # GHO stablecoin
+            # Official GHO token address - Arbitrum One mainnet
+            self.gho_address = self.w3.to_checksum_address("0x7dfF72693f6A4149b17e7C6314655f6A9F7c8B33")
             self.arb_address = "0x912CE59144191C1204E64559FE8253a0e49E6548"
             self.aave_pool_address = "0x794a61358D6845594F94dc1DB02A252b5b4814aD"
 
@@ -2418,10 +2419,11 @@ class ArbitrumTestnetAgent:
                         print("❌ WBTC supply failed")
                         sequence_successful = False
             
-            # STEP 7: Resupply 10% DAI to Aave (no swap needed)
+            # STEP 7: Resupply DAI to Aave (10% mainnet, 15% testnet - no swap needed)
             if 'DAI' in self.ALLOCATION_CONFIG and self.ALLOCATION_CONFIG['DAI']['action'] == 'supply':
                 dai_to_supply = allocation_amounts['DAI']
-                print(f"🏦 Step {step_number}: Resupplying {dai_to_supply:.6f} DAI to Aave...")
+                dai_percentage = int(self.ALLOCATION_CONFIG['DAI']['percentage'] * 100)
+                print(f"🏦 Step {step_number}: Resupplying {dai_to_supply:.6f} DAI ({dai_percentage}%) to Aave...")
                 step_number += 1
                 try:
                     if self._resupply_dai_to_aave(dai_to_supply):
