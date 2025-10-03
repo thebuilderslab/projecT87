@@ -489,22 +489,24 @@ class ArbitrumTestnetAgent:
 
         # Contract addresses based on network
         if self.network_mode == 'mainnet':
-            # Token addresses for Arbitrum Mainnet - DAI COMPLIANCE ENFORCED
+            # Token addresses for Arbitrum Mainnet
             self.weth_address = self.w3.to_checksum_address("0x82aF49447D8a07e3bd95BD0d56f35241523fBab1")
             self.wbtc_address = self.w3.to_checksum_address("0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f")
-            self.dai_address = self.w3.to_checksum_address("0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1")  # Primary token for all operations
+            self.dai_address = self.w3.to_checksum_address("0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1")
+            self.gho_address = self.w3.to_checksum_address("0x7dfF72693f6A4149b17e7C6314655f6A9F7c8B33")  # GHO stablecoin
             self.arb_address = "0x912CE59144191C1204E64559FE8253a0e49E6548"
             self.aave_pool_address = "0x794a61358D6845594F94dc1DB02A252b5b4814aD"
 
-            # Mainnet aToken addresses (properly checksummed) - DAI-only operations
+            # Mainnet aToken addresses (properly checksummed)
             self.aWBTC_address = "0x6533afac2E7BCCB20dca161449A13A2D2d5B739A"
             self.aWETH_address = "0xe50fA9b4c56454E2edF6BFf7c81b50c5F05aBE61"
-            self.aDAI_address = "0x82E64f49Ed5EC1bC6e43DAD4FC8Af9bb3A2312EE"  # DAI aToken for lending
+            self.aDAI_address = "0x82E64f49Ed5EC1bC6e43DAD4FC8Af9bb3A2312EE"
 
-            print(f"📋 Mainnet Token addresses verified (DAI-ONLY COMPLIANCE):")
-            print(f"   DAI: {self.dai_address}")  # Primary token for all operations
-            print(f"   WBTC: {self.wbtc_address}")  # Target token for swaps
-            print(f"   WETH: {self.weth_address}")  # Target token for swaps
+            print(f"📋 Mainnet Token addresses verified:")
+            print(f"   DAI: {self.dai_address}")
+            print(f"   WBTC: {self.wbtc_address}")
+            print(f"   WETH: {self.weth_address}")
+            print(f"   GHO: {self.gho_address}")
             print(f"   Aave Pool: {self.aave_pool_address}")
         else:
             # Testnet mode (Arbitrum Sepolia)
@@ -512,12 +514,41 @@ class ArbitrumTestnetAgent:
             self.rpc_url = "https://sepolia-rollup.arbitrum.io/rpc"
             print("🧪 Initializing for Arbitrum Sepolia Testnet")
 
-            # Testnet token addresses (properly checksummed) - DAI-only operations
+            # Testnet token addresses (properly checksummed)
             self.wbtc_address = "0xA2d460Bc966F6C4D5527a6ba35C6cB57c15c8F96"
             self.weth_address = "0x980B62Da83eFf3D4576C647993b0c1D7faf17c73"
             self.dai_address = "0x5f6bB460B6d0bdA2CCaDdd7A19B5F6E7b5b8E1DB"
+            self.gho_address = None  # GHO not available on Arbitrum Sepolia testnet
             self.arb_address = "0x1b20e6a3B2a86618C32A37ffcD5E98C0d20a6E42"
             self.aave_pool_address = "0x18cd499E3d7ed42FebA981ac9236A278E4Cdc2ee"
+        
+        # CONFIGURABLE ALLOCATION STRATEGY
+        # Network-aware: GHO only available on mainnet
+        # Easily modify percentages and supply/hold rules here
+        if self.network_mode == 'mainnet':
+            # Mainnet allocation: includes GHO
+            self.ALLOCATION_CONFIG = {
+                'WETH': {'percentage': 0.30, 'action': 'supply', 'description': 'Swap to WETH and supply as collateral'},
+                'WBTC': {'percentage': 0.50, 'action': 'supply', 'description': 'Swap to WBTC and supply as collateral'},
+                'DAI': {'percentage': 0.10, 'action': 'supply', 'description': 'Resupply DAI directly (no swap)'},
+                'GHO': {'percentage': 0.05, 'action': 'hold', 'description': 'Swap to GHO and hold in wallet'},
+                'ETH': {'percentage': 0.05, 'action': 'hold', 'description': 'Swap to ETH and hold in wallet'}
+            }
+        else:
+            # Testnet allocation: GHO not available, redistribute to DAI
+            self.ALLOCATION_CONFIG = {
+                'WETH': {'percentage': 0.30, 'action': 'supply', 'description': 'Swap to WETH and supply as collateral'},
+                'WBTC': {'percentage': 0.50, 'action': 'supply', 'description': 'Swap to WBTC and supply as collateral'},
+                'DAI': {'percentage': 0.15, 'action': 'supply', 'description': 'Resupply DAI directly (no swap - 15% on testnet)'},
+                'ETH': {'percentage': 0.05, 'action': 'hold', 'description': 'Swap to ETH and hold in wallet'}
+            }
+        
+        # Validate allocation sums to 100%
+        total_allocation = sum(config['percentage'] for config in self.ALLOCATION_CONFIG.values())
+        if abs(total_allocation - 1.0) > 0.001:
+            raise Exception(f"Allocation configuration error: total = {total_allocation * 100}% (must be 100%)")
+        
+        print(f"✅ Allocation strategy configured: {sum(1 for c in self.ALLOCATION_CONFIG.values() if c['action'] == 'supply')} supply, {sum(1 for c in self.ALLOCATION_CONFIG.values() if c['action'] == 'hold')} hold")
 
         # Initialize collateral tracking for autonomous triggers
         # Start with 0.0 but will sync with actual position on first run
@@ -2226,110 +2257,346 @@ class ArbitrumTestnetAgent:
 
     def _execute_complete_defi_sequence(self, dai_amount):
         """
-        Execute complete DeFi sequence with strict error handling.
+        Execute CONFIGURABLE allocation sequence with ATOMIC execution guarantee.
         
-        ATOMIC EXECUTION SEQUENCE:
-        ==========================
-        1. Split DAI 50/50 for WBTC and WETH swaps
-        2. Swap 50% DAI → WBTC via Uniswap
-        3. Swap 50% DAI → WETH via Uniswap
-        4. Supply received WBTC to Aave as collateral
-        5. Supply received WETH to Aave as collateral
+        ALLOCATION STRATEGY (Configurable via self.ALLOCATION_CONFIG):
+        ================================================================
+        - 30% WETH: Swap DAI → WETH, supply as collateral
+        - 50% WBTC: Swap DAI → WBTC, supply as collateral  
+        - 10% DAI: Resupply DAI directly (no swap needed)
+        - 5% GHO: Swap DAI → GHO, hold in wallet
+        - 5% ETH: Swap WETH → ETH (unwrap), hold in wallet
+        
+        ATOMIC EXECUTION GUARANTEE:
+        ===========================
+        - ALL operations must succeed or entire sequence fails
+        - If any swap fails → sequence fails → parent operation fails
+        - If any supply fails → sequence fails → parent operation fails
+        - NO SKIP PATHS: borrowed DAI MUST be fully allocated
         
         ERROR HANDLING:
-        - If any swap fails, mark sequence as unsuccessful
-        - If any supply fails, mark sequence as unsuccessful
-        - Return False to trigger failure in parent method
-        - This ensures borrowed DAI is NEVER left unswapped/unsupplied
+        ===============
+        - Track each operation success/failure
+        - Return False on any failure to enforce atomicity
+        - Comprehensive logging for debugging
         
         Args:
-            dai_amount: Amount of DAI to swap and supply
+            dai_amount: Total amount of borrowed DAI to allocate
             
         Returns:
-            bool: True only if ALL swaps and supplies succeed, False otherwise
+            bool: True only if ALL operations succeed, False otherwise
         """
         try:
-            print(f"\n🔄 EXECUTING COMPLETE DEFI SEQUENCE")
-            print(f"═══════════════════════════════════════")
-            print(f"💰 Starting with {dai_amount:.6f} DAI")
-
-            # Split DAI between WBTC and WETH (50/50)
-            dai_for_wbtc = dai_amount * 0.5
-            dai_for_weth = dai_amount * 0.5
-
+            print(f"\n🔄 EXECUTING CONFIGURABLE ALLOCATION SEQUENCE")
+            print(f"═══════════════════════════════════════════════")
+            print(f"💰 Total DAI to allocate: {dai_amount:.6f}")
+            print(f"📊 Allocation Strategy:")
+            for asset, config in self.ALLOCATION_CONFIG.items():
+                amount = dai_amount * config['percentage']
+                print(f"   {asset}: {config['percentage']*100:.0f}% (${amount:.2f}) → {config['action']}")
+            print(f"═══════════════════════════════════════════════\n")
+            
             sequence_successful = True
-
-            # Step 1: Swap DAI for WBTC
-            print(f"📈 Step 1: Swapping {dai_for_wbtc:.6f} DAI for WBTC...")
-            try:
-                wbtc_swap_result = self.uniswap.swap_dai_for_wbtc(dai_for_wbtc)
-                if wbtc_swap_result and 'tx_hash' in wbtc_swap_result:
-                    print(f"✅ WBTC swap successful: {wbtc_swap_result['tx_hash']}")
-                    # Get WBTC received
-                    wbtc_received = self.get_wbtc_balance() - (self.aave.get_token_balance(self.wbtc_address) if self.aave else 0) # Approximate, better to use actual swap output
-                else:
-                    print("⚠️ WBTC swap failed, continuing with remaining operations")
+            step_number = 1
+            
+            # Calculate allocation amounts based on configuration
+            allocation_amounts = {
+                asset: dai_amount * config['percentage']
+                for asset, config in self.ALLOCATION_CONFIG.items()
+            }
+            
+            # Track received amounts for supply operations
+            received_assets = {}
+            
+            # STEP 1: Swap 30% DAI → WETH
+            if 'WETH' in self.ALLOCATION_CONFIG:
+                weth_amount = allocation_amounts['WETH']
+                print(f"📈 Step {step_number}: Swapping {weth_amount:.6f} DAI → WETH...")
+                step_number += 1
+                try:
+                    weth_swap_result = self.uniswap.swap_dai_for_weth(weth_amount)
+                    if weth_swap_result and 'tx_hash' in weth_swap_result:
+                        print(f"✅ WETH swap successful: {weth_swap_result['tx_hash']}")
+                        import time
+                        time.sleep(3)
+                        received_assets['WETH'] = self.get_weth_balance()
+                    else:
+                        print("❌ WETH swap failed")
+                        sequence_successful = False
+                except Exception as e:
+                    print(f"❌ WETH swap error: {e}")
                     sequence_successful = False
-                    wbtc_received = 0
-            except Exception as e:
-                print(f"❌ WBTC swap error: {e}")
-                sequence_successful = False
-                wbtc_received = 0
-
-            # Step 2: Swap DAI for WETH
-            print(f"📈 Step 2: Swapping {dai_for_weth:.6f} DAI for WETH...")
-            try:
-                weth_swap_result = self.uniswap.swap_dai_for_weth(dai_for_weth)
-                if weth_swap_result and 'tx_hash' in weth_swap_result:
-                    print(f"✅ WETH swap successful: {weth_swap_result['tx_hash']}")
-                    # Get WETH received
-                    weth_received = self.get_weth_balance() - (self.aave.get_token_balance(self.weth_address) if self.aave else 0) # Approximate
-                else:
-                    print("⚠️ WETH swap failed")
+                    received_assets['WETH'] = 0
+            
+            # STEP 2: Swap 50% DAI → WBTC
+            if 'WBTC' in self.ALLOCATION_CONFIG:
+                wbtc_amount = allocation_amounts['WBTC']
+                print(f"📈 Step {step_number}: Swapping {wbtc_amount:.6f} DAI → WBTC...")
+                step_number += 1
+                try:
+                    wbtc_swap_result = self.uniswap.swap_dai_for_wbtc(wbtc_amount)
+                    if wbtc_swap_result and 'tx_hash' in wbtc_swap_result:
+                        print(f"✅ WBTC swap successful: {wbtc_swap_result['tx_hash']}")
+                        import time
+                        time.sleep(3)
+                        received_assets['WBTC'] = self.get_wbtc_balance()
+                    else:
+                        print("❌ WBTC swap failed")
+                        sequence_successful = False
+                except Exception as e:
+                    print(f"❌ WBTC swap error: {e}")
                     sequence_successful = False
-                    weth_received = 0
-            except Exception as e:
-                print(f"❌ WETH swap error: {e}")
-                sequence_successful = False
-                weth_received = 0
-
-            # Step 3: Supply WBTC to Aave
-            wbtc_supplied = False
-            if wbtc_received > 0:
-                print(f"🏦 Step 3: Supplying {wbtc_received:.8f} WBTC to Aave...")
-                wbtc_supplied = self._supply_wbtc_to_aave(wbtc_received)
-                if wbtc_supplied:
-                    print("✅ WBTC supplied to Aave successfully")
-                else:
-                    print("❌ WBTC supply failed")
+                    received_assets['WBTC'] = 0
+            
+            # STEP 3: Swap 5% DAI → GHO (hold in wallet)
+            if 'GHO' in self.ALLOCATION_CONFIG:
+                gho_amount = allocation_amounts['GHO']
+                print(f"📈 Step {step_number}: Swapping {gho_amount:.6f} DAI → GHO (hold in wallet)...")
+                step_number += 1
+                try:
+                    gho_swap_result = self._swap_dai_for_gho(gho_amount)
+                    if gho_swap_result:
+                        print(f"✅ GHO swap successful - holding in wallet")
+                        received_assets['GHO'] = self._get_gho_balance()
+                    else:
+                        print("❌ GHO swap failed")
+                        sequence_successful = False
+                except Exception as e:
+                    print(f"❌ GHO swap error: {e}")
                     sequence_successful = False
-            else:
-                print("ℹ️ Skipping WBTC supply due to zero WBTC received.")
-
-            # Step 4: Supply WETH to Aave
-            weth_supplied = False
-            if weth_received > 0:
-                print(f"🏦 Step 4: Supplying {weth_received:.8f} WETH to Aave...")
-                weth_supplied = self._supply_weth_to_aave(weth_received)
-                if weth_supplied:
-                    print("✅ WETH supplied to Aave successfully")
-                else:
-                    print("❌ WETH supply failed")
+                    received_assets['GHO'] = 0
+            
+            # STEP 4: Unwrap 5% WETH → ETH (hold in wallet)
+            if 'ETH' in self.ALLOCATION_CONFIG:
+                eth_amount = allocation_amounts['ETH']
+                print(f"📈 Step {step_number}: Converting {eth_amount:.6f} DAI worth to ETH (hold in wallet)...")
+                step_number += 1
+                try:
+                    # First swap DAI to WETH, then unwrap WETH to ETH
+                    weth_for_eth_result = self.uniswap.swap_dai_for_weth(eth_amount)
+                    if weth_for_eth_result and 'tx_hash' in weth_for_eth_result:
+                        import time
+                        time.sleep(3)
+                        weth_to_unwrap = self.get_weth_balance()
+                        # Unwrap WETH to ETH
+                        unwrap_result = self._unwrap_weth_to_eth(weth_to_unwrap)
+                        if unwrap_result:
+                            print(f"✅ ETH conversion successful - holding in wallet")
+                            received_assets['ETH'] = self.get_eth_balance()
+                        else:
+                            print("❌ WETH unwrap failed")
+                            sequence_successful = False
+                    else:
+                        print("❌ DAI→WETH (for ETH) swap failed")
+                        sequence_successful = False
+                except Exception as e:
+                    print(f"❌ ETH conversion error: {e}")
                     sequence_successful = False
-            else:
-                print("ℹ️ Skipping WETH supply due to zero WETH received.")
-
+                    received_assets['ETH'] = 0
+            
+            # STEP 5: Supply 30% WETH to Aave
+            if 'WETH' in self.ALLOCATION_CONFIG and self.ALLOCATION_CONFIG['WETH']['action'] == 'supply':
+                weth_to_supply = received_assets.get('WETH', 0)
+                if weth_to_supply > 0:
+                    print(f"🏦 Step {step_number}: Supplying {weth_to_supply:.8f} WETH to Aave...")
+                    step_number += 1
+                    if self._supply_weth_to_aave(weth_to_supply):
+                        print("✅ WETH supplied to Aave")
+                    else:
+                        print("❌ WETH supply failed")
+                        sequence_successful = False
+            
+            # STEP 6: Supply 50% WBTC to Aave
+            if 'WBTC' in self.ALLOCATION_CONFIG and self.ALLOCATION_CONFIG['WBTC']['action'] == 'supply':
+                wbtc_to_supply = received_assets.get('WBTC', 0)
+                if wbtc_to_supply > 0:
+                    print(f"🏦 Step {step_number}: Supplying {wbtc_to_supply:.8f} WBTC to Aave...")
+                    step_number += 1
+                    if self._supply_wbtc_to_aave(wbtc_to_supply):
+                        print("✅ WBTC supplied to Aave")
+                    else:
+                        print("❌ WBTC supply failed")
+                        sequence_successful = False
+            
+            # STEP 7: Resupply 10% DAI to Aave (no swap needed)
+            if 'DAI' in self.ALLOCATION_CONFIG and self.ALLOCATION_CONFIG['DAI']['action'] == 'supply':
+                dai_to_supply = allocation_amounts['DAI']
+                print(f"🏦 Step {step_number}: Resupplying {dai_to_supply:.6f} DAI to Aave...")
+                step_number += 1
+                try:
+                    if self._resupply_dai_to_aave(dai_to_supply):
+                        print("✅ DAI resupplied to Aave")
+                    else:
+                        print("❌ DAI resupply failed")
+                        sequence_successful = False
+                except Exception as e:
+                    print(f"❌ DAI resupply error: {e}")
+                    sequence_successful = False
+            
+            # Final status
+            supplied_assets = [asset for asset, config in self.ALLOCATION_CONFIG.items() if config['action'] == 'supply']
+            held_assets = [asset for asset, config in self.ALLOCATION_CONFIG.items() if config['action'] == 'hold']
+            
+            print(f"\n{'═'*50}")
             if sequence_successful:
-                print("✅ Complete DeFi sequence executed successfully")
+                print("✅ ATOMIC ALLOCATION SEQUENCE COMPLETE")
+                print(f"   Supplied to Aave: {', '.join(supplied_assets)}")
+                if held_assets:
+                    print(f"   Held in wallet: {', '.join(held_assets)}")
             else:
-                print("⚠️ DeFi sequence completed with some failures")
-
+                print("❌ ATOMIC GUARANTEE VIOLATED - SEQUENCE FAILED")
+                print("   Operation will be marked as failed")
+            print(f"{'═'*50}\n")
+            
             return sequence_successful
-
+            
         except Exception as e:
-            print(f"❌ Complete DeFi sequence failed: {e}")
+            print(f"❌ Allocation sequence failed: {e}")
             import traceback
             traceback.print_exc()
+            return False
+    
+    def _swap_dai_for_gho(self, dai_amount):
+        """
+        Swap DAI for GHO via Uniswap.
+        GHO is held in wallet (not supplied to Aave).
+        
+        NETWORK-AWARE: GHO only available on mainnet.
+        
+        Args:
+            dai_amount: Amount of DAI to swap
+            
+        Returns:
+            bool: True if swap succeeded, False otherwise
+        """
+        try:
+            # Guard: Check if GHO is available on this network
+            if not self.gho_address:
+                print("⚠️ GHO not available on this network - operation N/A (not a failure)")
+                return True  # Return True since this is not an error, just N/A
+            
+            if not self.uniswap:
+                print("❌ Uniswap integration not available")
+                return False
+            
+            print(f"🔄 Swapping {dai_amount:.6f} DAI → GHO via Uniswap...")
+            
+            # GHO swap uses generic token swap method
+            swap_result = self.uniswap.swap_tokens(
+                self.dai_address,
+                self.gho_address,
+                dai_amount
+            )
+            
+            if swap_result and 'tx_hash' in swap_result:
+                print(f"✅ GHO swap successful: {swap_result['tx_hash']}")
+                return True
+            else:
+                print("❌ GHO swap failed")
+                return False
+                
+        except Exception as e:
+            print(f"❌ GHO swap error: {e}")
+            return False
+    
+    def _get_gho_balance(self):
+        """
+        Get GHO balance from wallet.
+        
+        NETWORK-AWARE: Returns 0 if GHO not available on this network.
+        """
+        try:
+            # Guard: Check if GHO is available on this network
+            if not self.gho_address:
+                return 0.0
+            
+            if not hasattr(self, 'aave') or not self.aave:
+                return 0.0
+            return self.aave.get_token_balance(self.gho_address)
+        except Exception as e:
+            print(f"❌ Failed to get GHO balance: {e}")
+            return 0.0
+    
+    def _unwrap_weth_to_eth(self, weth_amount):
+        """
+        Unwrap WETH to native ETH.
+        ETH is held in wallet (not supplied to Aave).
+        
+        Args:
+            weth_amount: Amount of WETH to unwrap
+            
+        Returns:
+            bool: True if unwrap succeeded, False otherwise
+        """
+        try:
+            print(f"🔄 Unwrapping {weth_amount:.8f} WETH → ETH...")
+            
+            # WETH contract ABI for withdraw function
+            weth_abi = [{
+                "constant": False,
+                "inputs": [{"name": "wad", "type": "uint256"}],
+                "name": "withdraw",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            }]
+            
+            weth_contract = self.w3.eth.contract(
+                address=self.weth_address,
+                abi=weth_abi
+            )
+            
+            # Convert to wei
+            weth_wei = int(weth_amount * 1e18)
+            
+            # Build transaction
+            tx = weth_contract.functions.withdraw(weth_wei).build_transaction({
+                'from': self.address,
+                'gas': 50000,
+                'gasPrice': self.w3.eth.gas_price,
+                'nonce': self.w3.eth.get_transaction_count(self.address)
+            })
+            
+            # Sign and send
+            signed_tx = self.w3.eth.account.sign_transaction(tx, self.account.key)
+            tx_hash = self.w3.eth.send_raw_transaction(signed_tx.rawTransaction)
+            
+            print(f"✅ WETH unwrapped to ETH: {self.w3.to_hex(tx_hash)}")
+            return True
+            
+        except Exception as e:
+            print(f"❌ WETH unwrap error: {e}")
+            return False
+    
+    def _resupply_dai_to_aave(self, dai_amount):
+        """
+        Resupply DAI directly to Aave as collateral (no swap needed).
+        
+        Args:
+            dai_amount: Amount of DAI to supply
+            
+        Returns:
+            bool: True if supply succeeded, False otherwise
+        """
+        try:
+            if not self.aave:
+                print("❌ Aave integration not available")
+                return False
+            
+            print(f"🏦 Resupplying {dai_amount:.6f} DAI to Aave...")
+            
+            # Use Aave integration to supply DAI
+            supply_result = self.aave.supply_dai_to_aave(dai_amount)
+            
+            if supply_result:
+                print(f"✅ DAI resupply completed: {supply_result}")
+                return True
+            else:
+                print("❌ DAI resupply failed")
+                return False
+                
+        except Exception as e:
+            print(f"❌ DAI resupply error: {e}")
             return False
 
     def _execute_dai_to_wbtc_swap(self, dai_amount):
