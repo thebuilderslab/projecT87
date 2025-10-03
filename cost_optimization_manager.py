@@ -59,7 +59,7 @@ class CostOptimizationManager:
             self.coinmarketcap_cost_per_call = api_limits.get('coinmarketcap_cost_per_call', 1)
             
             interval_settings = self.config.get('interval_settings', {})
-            self.base_interval = interval_settings.get('base_interval', 300)
+            self.base_interval = interval_settings.get('base_interval', 130)
             self.max_interval = interval_settings.get('max_interval', 1800)
             self.current_interval = interval_settings.get('current_interval', self.base_interval)
             
@@ -79,9 +79,9 @@ class CostOptimizationManager:
                 "coinmarketcap_cost_per_call": 1
             },
             "interval_settings": {
-                "base_interval": 300,
+                "base_interval": 130,
                 "max_interval": 1800,
-                "current_interval": 300
+                "current_interval": 130
             },
             "usage_tracking": {
                 "usage_file": "api_usage_tracking.json"
@@ -93,9 +93,9 @@ class CostOptimizationManager:
         self.hourly_credit_limit = 35
         self.coinapi_cost_per_call = 1
         self.coinmarketcap_cost_per_call = 1
-        self.base_interval = 300
+        self.base_interval = 130
         self.max_interval = 1800
-        self.current_interval = 300
+        self.current_interval = 130
         
         logger.warning("Using default configuration values")
     

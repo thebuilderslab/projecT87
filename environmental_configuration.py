@@ -14,7 +14,7 @@ DAI_TO_ARB_THRESHOLD = float(os.getenv('DAI_TO_ARB_THRESHOLD', '0.4'))  # 40% co
 ARB_TO_DAI_THRESHOLD = float(os.getenv('ARB_TO_DAI_THRESHOLD', '0.4'))  # 40% confidence for ARB→DAI (sell high)
 
 # HIGH-FREQUENCY TRADING OPERATION PARAMETERS (CONFIRMED ACTIVE)
-OPERATION_COOLDOWN = 300  # CONFIRMED: 5 minutes (300 seconds) between operations
+OPERATION_COOLDOWN = 130  # CONFIRMED: 130 seconds between operations
 MIN_SWAP_AMOUNT = 1.0    # CONFIRMED: $1 minimum swap
 MAX_SWAP_AMOUNT = 10.0   # CONFIRMED: $10 maximum swap
 TARGET_HEALTH_FACTOR = float(os.getenv('TARGET_HEALTH_FACTOR', '1.5'))  # Conservative health factor
@@ -27,8 +27,8 @@ print(f"   ✅ Max Swap Amount: ${MAX_SWAP_AMOUNT} (TARGET: $10)")
 print(f"   ✅ Target Health Factor: {TARGET_HEALTH_FACTOR}")
 
 # Validate parameters match requirements
-if OPERATION_COOLDOWN != 30:
-    print(f"❌ WARNING: Operation cooldown is {OPERATION_COOLDOWN}s, expected 30s")
+if OPERATION_COOLDOWN != 130:
+    print(f"❌ WARNING: Operation cooldown is {OPERATION_COOLDOWN}s, expected 130s")
 if MIN_SWAP_AMOUNT != 1.0:
     print(f"❌ WARNING: Min swap amount is ${MIN_SWAP_AMOUNT}, expected $1")
 if MAX_SWAP_AMOUNT != 10.0:

@@ -6,9 +6,9 @@
     "coinmarketcap_cost_per_call": 1
   },
   "interval_settings": {
-    "base_interval": 300,
+    "base_interval": 130,
     "max_interval": 1800,
-    "current_interval": 300
+    "current_interval": 130
   },
   "budget_thresholds": {
     "warning_threshold_percent": 80,

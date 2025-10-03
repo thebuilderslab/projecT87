@@ -6,7 +6,7 @@ DEFAULT_GAS_PRICE_GWEI = 0.1
 HEALTH_FACTOR_THRESHOLD = 1.5  # Universal minimum health factor
 TARGET_HEALTH_FACTOR = 1.5  # Universal minimum health factor
 MAX_SLIPPAGE_PERCENT = 2.0
-OPERATION_COOLDOWN_SECONDS = 60
+OPERATION_COOLDOWN_SECONDS = 130
 """
 Configuration Constants for Arbitrum Agent
 """
@@ -21,7 +21,7 @@ TARGET_HEALTH_FACTOR = 1.5  # Universal minimum health factor
 
 # Operational limits
 MAX_CONSECUTIVE_FAILURES = 3
-OPERATION_COOLDOWN_SECONDS = 60
+OPERATION_COOLDOWN_SECONDS = 130
 
 # Gas optimization settings
 DEFAULT_GAS_MULTIPLIER = 1.2

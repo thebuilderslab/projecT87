@@ -561,7 +561,7 @@ class ArbitrumTestnetAgent:
 
         # STARTER PLAN OPTIMIZED COOLDOWN SETTINGS
         self.last_successful_operation_time = 0  # Unix timestamp of last op
-        self.operation_cooldown_seconds = 300  # STARTER PLAN: 5 minute cooldown to preserve API credits
+        self.operation_cooldown_seconds = 130  # STARTER PLAN: 130 second cooldown to preserve API credits
         self.last_operation_type = None  # Track type of last operation
         
         # Initialize cost optimization

@@ -28,7 +28,7 @@ MIN_ETH_GAS_THRESHOLD = 0.005  # Minimum ETH balance required for gas operations
                                # This covers multiple transactions to prevent running out of gas
 
 # Cooldown periods (in seconds)
-OPERATION_COOLDOWN = 60  # Cooldown between operations
+OPERATION_COOLDOWN = 130  # Cooldown between operations
 EMERGENCY_COOLDOWN = 300  # Extended cooldown after emergencies
 
 # API settings
