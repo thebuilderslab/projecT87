@@ -171,15 +171,18 @@ class UniswapIntegration:
             token_in_lower = token_in.lower()
             token_out_lower = token_out.lower()
 
-            # Validate allowed swap combinations including ARB
+            # Validate allowed swap combinations including ARB and GHO
             arb_address = "0x912CE59144191C1204E64559FE8253a0e49E6548"
             arb_address_lower = arb_address.lower()
+            gho_address = "0x7dfF72693f6A4149b17e7C6314655f6A9F7c8B33"  # GHO on Arbitrum
+            gho_address_lower = gho_address.lower()
 
             allowed_swaps = [
                 (dai_address_lower, wbtc_address_lower),  # DAI → WBTC
                 (dai_address_lower, weth_address_lower),  # DAI → WETH
                 (dai_address_lower, arb_address_lower),   # DAI → ARB
                 (arb_address_lower, dai_address_lower),   # ARB → DAI
+                (dai_address_lower, gho_address_lower),   # DAI → GHO
             ]
 
             current_swap = (token_in_lower, token_out_lower)
@@ -195,6 +198,8 @@ class UniswapIntegration:
                 token_out_name = "WETH"
             elif token_out_lower == arb_address_lower:
                 token_out_name = "ARB"
+            elif token_out_lower == gho_address_lower:
+                token_out_name = "GHO"
             elif token_in_lower == arb_address_lower:
                 token_out_name = "DAI (from ARB)"
             else:
