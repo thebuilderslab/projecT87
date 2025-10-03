@@ -128,6 +128,7 @@ from uniswap_integration import UniswapIntegration
 from aave_health_monitor import AaveHealthMonitor as HealthMonitor
 from gas_fee_calculator import ArbitrumGasCalculator
 from config_constants import MIN_ETH_FOR_OPERATIONS, MIN_ETH_FOR_GAS_BUFFER
+from block_event_monitor import BlockEventMonitor
 import requests
 import sys
 import traceback
@@ -1637,6 +1638,17 @@ class ArbitrumTestnetAgent:
             self.gas_calculator = ArbitrumGasCalculator(self.w3)
             print("✅ Gas calculator initialized")
 
+            # Initialize block event monitor with predictive analytics
+            try:
+                self.block_monitor = BlockEventMonitor(self.w3, callback_function=self._on_new_block)
+                self.block_monitor.start_monitoring()
+                print("✅ Block event monitor initialized and started")
+                print("📡 Real-time block monitoring: ACTIVE")
+                print("📊 Predictive analytics: ENABLED")
+            except Exception as monitor_error:
+                print(f"⚠️ Block monitor initialization failed: {monitor_error}")
+                self.block_monitor = None
+
             # Final validation check
             if self.aave and self.uniswap:
                 print("🎉 All critical integrations successfully initialized")
@@ -1673,6 +1685,59 @@ class ArbitrumTestnetAgent:
             print(f"❌ DAI compliance validation error: {e}")
             return False
 
+    def _on_new_block(self, block_number, block_data):
+        """
+        Callback function for block event monitor - evaluates triggers on each block
+        
+        Args:
+            block_number: Current block number
+            block_data: Block data from Web3
+        """
+        try:
+            # Only process every 5th block to avoid excessive API calls (still ~1.25s response time)
+            if block_number % 5 != 0:
+                return
+            
+            # Fetch fresh data from Aave
+            if not hasattr(self, 'health_monitor') or not self.health_monitor:
+                return
+            
+            health_data = self.health_monitor.get_current_health_factor()
+            if not health_data:
+                return
+            
+            # Extract metrics
+            total_collateral = health_data.get('total_collateral_usdc', 0)
+            available_borrows = health_data.get('available_borrows_usdc', 0)
+            health_factor = health_data.get('health_factor', 0)
+            
+            # Record metrics in block monitor for prediction
+            if hasattr(self, 'block_monitor') and self.block_monitor:
+                self.block_monitor.record_metric('collateral', total_collateral, block_number)
+                self.block_monitor.record_metric('capacity', available_borrows, block_number)
+                self.block_monitor.record_metric('health_factor', health_factor, block_number)
+            
+            # Evaluate triggers instantly
+            growth_triggered = self._should_execute_growth_triggered_operation(
+                total_collateral, health_factor, available_borrows
+            )
+            capacity_triggered = self._should_execute_capacity_operation(
+                available_borrows, health_factor
+            )
+            
+            # Execute if triggered (only if not on cooldown)
+            if not self.is_operation_on_cooldown():
+                if growth_triggered:
+                    print(f"🎯 BLOCK {block_number}: Growth trigger activated!")
+                    self._execute_growth_triggered_operation(available_borrows)
+                elif capacity_triggered:
+                    print(f"⚡ BLOCK {block_number}: Capacity trigger activated!")
+                    self._execute_capacity_operation(available_borrows)
+            
+        except Exception as e:
+            # Silent fail - don't spam logs on every block
+            pass
+    
     def _should_execute_growth_triggered_operation(self, current_collateral, health_factor, available_borrows):
         """Check if growth-triggered operation should execute"""
         try:
@@ -1718,6 +1783,68 @@ class ArbitrumTestnetAgent:
         except Exception as e:
             print(f"❌ Capacity check failed: {e}")
             return False
+    
+    def get_trigger_predictions(self):
+        """
+        Get comprehensive trigger predictions with time-to-trigger analytics
+        
+        Returns:
+            Dictionary with predictions for all triggers
+        """
+        try:
+            if not hasattr(self, 'block_monitor') or not self.block_monitor:
+                return {'status': 'unavailable', 'reason': 'Block monitor not initialized'}
+            
+            if not hasattr(self, 'health_monitor') or not self.health_monitor:
+                return {'status': 'unavailable', 'reason': 'Health monitor not initialized'}
+            
+            # Get current metrics
+            health_data = self.health_monitor.get_current_health_factor()
+            if not health_data:
+                return {'status': 'unavailable', 'reason': 'No health data available'}
+            
+            current_collateral = health_data.get('total_collateral_usdc', 0)
+            current_capacity = health_data.get('available_borrows_usdc', 0)
+            current_health_factor = health_data.get('health_factor', 0)
+            
+            # Calculate trigger thresholds
+            growth_threshold = self.last_collateral_value_usd + self.growth_trigger_threshold if self.last_collateral_value_usd > 0 else 0
+            capacity_threshold = 50.0  # $50 capacity trigger
+            
+            # Get predictions from block monitor
+            triggers_config = {
+                'collateral': {
+                    'current': current_collateral,
+                    'threshold': growth_threshold
+                },
+                'capacity': {
+                    'current': current_capacity,
+                    'threshold': capacity_threshold
+                },
+                'health_factor': {
+                    'current': current_health_factor,
+                    'threshold': self.growth_health_factor_threshold
+                }
+            }
+            
+            predictions = self.block_monitor.get_comprehensive_predictions(triggers_config)
+            
+            # Add status summary
+            monitor_status = self.block_monitor.get_status()
+            
+            return {
+                'status': 'active',
+                'current_block': monitor_status.get('current_block'),
+                'avg_block_time': monitor_status.get('avg_block_time'),
+                'predictions': predictions,
+                'formatted_predictions': {
+                    metric: self.block_monitor.format_prediction_display(pred)
+                    for metric, pred in predictions.items()
+                }
+            }
+            
+        except Exception as e:
+            return {'status': 'error', 'reason': str(e)}
 
     def _execute_growth_triggered_operation(self, available_borrows):
         """Execute growth-triggered borrowing operation - DAI only"""

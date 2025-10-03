@@ -433,6 +433,93 @@
                 </div>
             </div>
 
+            <!-- 🎯 Predictive Analytics Section -->
+            <div class="predictions-section" style="background: linear-gradient(135deg, rgba(99,102,241,0.15), rgba(168,85,247,0.15)); border-radius: 15px; padding: 25px; margin-bottom: 25px; border: 2px solid #a855f7;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <div>
+                        <h3 style="color: #a855f7; margin: 0; font-size: 1.3rem; display: flex; align-items: center; gap: 10px;">
+                            🔮 Trigger Predictions & Countdowns
+                            <span id="prediction-status" style="font-size: 0.8rem; color: rgba(255,255,255,0.6);">Analyzing...</span>
+                        </h3>
+                        <p style="color: rgba(255,255,255,0.7); font-size: 0.85rem; margin-top: 5px;">
+                            Real-time predictive analytics: When will triggers activate?
+                        </p>
+                    </div>
+                    <div id="current-block-info" style="text-align: right;">
+                        <div style="color: rgba(255,255,255,0.6); font-size: 0.75rem;">Block</div>
+                        <div id="current-block" style="color: #a855f7; font-weight: bold;">--</div>
+                    </div>
+                </div>
+
+                <!-- Prediction Cards -->
+                <div id="predictions-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 15px;">
+                    
+                    <!-- Growth Trigger Prediction -->
+                    <div class="prediction-card" style="background: rgba(34,197,94,0.1); border-radius: 12px; padding: 18px; border: 2px solid #22c55e;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                            <h4 style="color: #22c55e; margin: 0; font-size: 1rem;">📈 Growth Trigger</h4>
+                            <span id="growth-prediction-status" style="font-size: 0.75rem; padding: 4px 8px; border-radius: 4px; background: rgba(34,197,94,0.2); color: #22c55e;">Loading...</span>
+                        </div>
+                        <div id="growth-prediction-details" style="color: rgba(255,255,255,0.8); font-size: 0.85rem;">
+                            <div style="margin-bottom: 8px;">
+                                <div style="color: rgba(255,255,255,0.6); font-size: 0.75rem;">Time to trigger:</div>
+                                <div id="growth-time-to-trigger" style="color: #22c55e; font-size: 1.1rem; font-weight: bold;">--</div>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: rgba(255,255,255,0.6);">
+                                <span>Predicted block: <span id="growth-predicted-block">--</span></span>
+                                <span>Rate: <span id="growth-rate">--</span>/min</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Capacity Trigger Prediction -->
+                    <div class="prediction-card" style="background: rgba(99,102,241,0.1); border-radius: 12px; padding: 18px; border: 2px solid #6366f1;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                            <h4 style="color: #6366f1; margin: 0; font-size: 1rem;">💰 Capacity Trigger</h4>
+                            <span id="capacity-prediction-status" style="font-size: 0.75rem; padding: 4px 8px; border-radius: 4px; background: rgba(99,102,241,0.2); color: #6366f1;">Loading...</span>
+                        </div>
+                        <div id="capacity-prediction-details" style="color: rgba(255,255,255,0.8); font-size: 0.85rem;">
+                            <div style="margin-bottom: 8px;">
+                                <div style="color: rgba(255,255,255,0.6); font-size: 0.75rem;">Time to trigger:</div>
+                                <div id="capacity-time-to-trigger" style="color: #6366f1; font-size: 1.1rem; font-weight: bold;">--</div>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: rgba(255,255,255,0.6);">
+                                <span>Predicted block: <span id="capacity-predicted-block">--</span></span>
+                                <span>Rate: <span id="capacity-rate">--</span>/min</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Health Factor Prediction -->
+                    <div class="prediction-card" style="background: rgba(255,193,7,0.1); border-radius: 12px; padding: 18px; border: 2px solid #ffc107;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                            <h4 style="color: #ffc107; margin: 0; font-size: 1rem;">🏥 Health Factor</h4>
+                            <span id="hf-prediction-status" style="font-size: 0.75rem; padding: 4px 8px; border-radius: 4px; background: rgba(255,193,7,0.2); color: #ffc107;">Monitoring</span>
+                        </div>
+                        <div id="hf-prediction-details" style="color: rgba(255,255,255,0.8); font-size: 0.85rem;">
+                            <div style="margin-bottom: 8px;">
+                                <div style="color: rgba(255,255,255,0.6); font-size: 0.75rem;">Change rate:</div>
+                                <div id="hf-change-rate" style="color: #ffc107; font-size: 1.1rem; font-weight: bold;">--</div>
+                            </div>
+                            <div style="font-size: 0.75rem; color: rgba(255,255,255,0.6);">
+                                Current trend: <span id="hf-trend">Stable</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Warning Banner for Imminent Triggers -->
+                <div id="trigger-warning" style="display: none; margin-top: 15px; background: rgba(239,68,68,0.2); border: 2px solid #ef4444; border-radius: 10px; padding: 15px;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <span style="font-size: 1.5rem;">⚠️</span>
+                        <div>
+                            <div style="color: #ef4444; font-weight: bold; margin-bottom: 4px;">Trigger Imminent!</div>
+                            <div id="trigger-warning-text" style="color: rgba(255,255,255,0.9); font-size: 0.85rem;">--</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Scheduled Operations -->
             <div class="scheduled-operations" style="background: rgba(255,255,255,0.05); border-radius: 15px; padding: 20px; margin-bottom: 20px;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
@@ -683,6 +770,110 @@
             }
         }
 
+        function updateTriggerPredictions(data) {
+            try {
+                const predictions = data.trigger_predictions;
+                if (!predictions || predictions.status !== 'active') {
+                    document.getElementById('prediction-status').textContent = predictions?.reason || 'Initializing...';
+                    return;
+                }
+
+                // Update current block
+                document.getElementById('current-block').textContent = predictions.current_block?.toLocaleString() || '--';
+                document.getElementById('prediction-status').textContent = 'Active';
+
+                // Helper function to format time
+                function formatTime(seconds) {
+                    if (!seconds || seconds <= 0) return 'Now';
+                    if (seconds < 60) return `${Math.round(seconds)}s`;
+                    if (seconds < 3600) return `${Math.floor(seconds/60)}m ${Math.round(seconds%60)}s`;
+                    const hours = Math.floor(seconds / 3600);
+                    const mins = Math.floor((seconds % 3600) / 60);
+                    return `${hours}h ${mins}m`;
+                }
+
+                // Update growth trigger prediction
+                if (predictions.predictions?.collateral?.prediction) {
+                    const pred = predictions.predictions.collateral.prediction;
+                    if (pred.status === 'triggered') {
+                        document.getElementById('growth-prediction-status').textContent = '✅ TRIGGERED';
+                        document.getElementById('growth-time-to-trigger').textContent = 'Active Now!';
+                        document.getElementById('growth-predicted-block').textContent = 'Current';
+                        document.getElementById('growth-rate').textContent = '--';
+                    } else if (pred.status === 'approaching') {
+                        const timeStr = formatTime(pred.time_remaining_seconds);
+                        document.getElementById('growth-prediction-status').textContent = `⏱️ ${timeStr}`;
+                        document.getElementById('growth-time-to-trigger').textContent = timeStr;
+                        document.getElementById('growth-predicted-block').textContent = pred.predicted_block?.toLocaleString() || '--';
+                        document.getElementById('growth-rate').textContent = `$${Math.abs(pred.rate_per_minute || 0).toFixed(2)}`;
+
+                        // Show warning if within 30 minutes
+                        if (pred.time_remaining_seconds < 1800) {
+                            showTriggerWarning(`Growth trigger predicted in ${timeStr}!`);
+                        }
+                    }
+                } else {
+                    document.getElementById('growth-prediction-status').textContent = 'No data';
+                    document.getElementById('growth-time-to-trigger').textContent = 'Insufficient data';
+                }
+
+                // Update capacity trigger prediction
+                if (predictions.predictions?.capacity?.prediction) {
+                    const pred = predictions.predictions.capacity.prediction;
+                    if (pred.status === 'triggered') {
+                        document.getElementById('capacity-prediction-status').textContent = '✅ TRIGGERED';
+                        document.getElementById('capacity-time-to-trigger').textContent = 'Active Now!';
+                        document.getElementById('capacity-predicted-block').textContent = 'Current';
+                        document.getElementById('capacity-rate').textContent = '--';
+                    } else if (pred.status === 'approaching') {
+                        const timeStr = formatTime(pred.time_remaining_seconds);
+                        document.getElementById('capacity-prediction-status').textContent = `⏱️ ${timeStr}`;
+                        document.getElementById('capacity-time-to-trigger').textContent = timeStr;
+                        document.getElementById('capacity-predicted-block').textContent = pred.predicted_block?.toLocaleString() || '--';
+                        document.getElementById('capacity-rate').textContent = `$${Math.abs(pred.rate_per_minute || 0).toFixed(2)}`;
+
+                        // Show warning if within 30 minutes
+                        if (pred.time_remaining_seconds < 1800) {
+                            showTriggerWarning(`Capacity trigger predicted in ${timeStr}!`);
+                        }
+                    }
+                } else {
+                    document.getElementById('capacity-prediction-status').textContent = 'No data';
+                    document.getElementById('capacity-time-to-trigger').textContent = 'Insufficient data';
+                }
+
+                // Update health factor trend
+                if (predictions.predictions?.health_factor?.rate_of_change) {
+                    const rate = predictions.predictions.health_factor.rate_of_change;
+                    const ratePerMin = rate * 60 / (predictions.avg_block_time || 0.25);
+                    document.getElementById('hf-change-rate').textContent = `${ratePerMin > 0 ? '+' : ''}${ratePerMin.toFixed(4)}/min`;
+                    
+                    if (ratePerMin > 0.01) {
+                        document.getElementById('hf-trend').textContent = '📈 Improving';
+                    } else if (ratePerMin < -0.01) {
+                        document.getElementById('hf-trend').textContent = '📉 Declining';
+                    } else {
+                        document.getElementById('hf-trend').textContent = '➡️ Stable';
+                    }
+                } else {
+                    document.getElementById('hf-change-rate').textContent = 'Monitoring';
+                    document.getElementById('hf-trend').textContent = 'Stable';
+                }
+
+            } catch (error) {
+                console.error('Error updating predictions:', error);
+            }
+        }
+
+        function showTriggerWarning(message) {
+            const warningDiv = document.getElementById('trigger-warning');
+            const warningText = document.getElementById('trigger-warning-text');
+            if (warningDiv && warningText) {
+                warningText.textContent = message;
+                warningDiv.style.display = 'block';
+            }
+        }
+
         function updateConsoleOutput(lines) {
             const consoleDiv = document.getElementById('console-output');
             if (lines && lines.length > 0) {
@@ -776,6 +967,9 @@
                 // Apply status classes
                 const systemStatus = document.getElementById('system-status');
                 systemStatus.className = data.success ? 'success' : 'error';
+
+                // Update trigger predictions
+                updateTriggerPredictions(data);
 
             } catch (error) {
                 console.error('Error updating UI:', error);

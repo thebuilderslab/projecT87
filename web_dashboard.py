@@ -642,6 +642,15 @@ def wallet_status():
             logger.error(f"Error getting cost optimization data: {e}")
             data['cost_optimization'] = {'error': str(e)}
 
+        # Get trigger predictions with time-to-trigger analytics
+        try:
+            if agent and hasattr(agent, 'get_trigger_predictions'):
+                predictions = agent.get_trigger_predictions()
+                data['trigger_predictions'] = predictions
+                logger.info(f"📊 Trigger predictions: {predictions.get('status', 'unknown')}")
+        except Exception as e:
+            logger.error(f"Error getting trigger predictions: {e}")
+            data['trigger_predictions'] = {'status': 'error', 'reason': str(e)}
 
         logger.info(f"✅ Wallet status retrieved: HF {data['health_factor']:.4f}, Agent Running: {agent_is_running}")
         return jsonify(data)
