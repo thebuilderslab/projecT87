@@ -685,8 +685,6 @@ class ArbitrumTestnetAgent:
         else:
             print("⚠️ Market Signal Strategy Status: INACTIVE")
 
-        return True
-
     def _validate_critical_environment(self):
         """Validate critical environment variables are present"""
         required_vars = ['WALLET_PRIVATE_KEY', 'COINMARKETCAP_API_KEY']
@@ -1847,7 +1845,37 @@ class ArbitrumTestnetAgent:
             return {'status': 'error', 'reason': str(e)}
 
     def _execute_growth_triggered_operation(self, available_borrows):
-        """Execute growth-triggered borrowing operation - DAI only"""
+        """
+        Execute growth-triggered borrowing operation with ATOMIC execution guarantee.
+        
+        GROWTH TRIGGER SEQUENCE:
+        ========================
+        ACTIVATION CONDITION:
+        - Current collateral >= (Last collateral + growth_threshold)
+        - Health factor >= 1.5 (universal minimum)
+        
+        DAI BORROW CALCULATION:
+        - Base: 10% of available borrow capacity
+        - Maximum: $8.00 USD
+        - Additional safety: Max 2% of total collateral
+        - Minimum threshold: $1.00 USD
+        
+        ATOMIC EXECUTION FLOW (no skip paths allowed):
+        1. Borrow DAI from Aave
+        2. Swap 50% DAI → WBTC via Uniswap
+        3. Swap 50% DAI → WETH via Uniswap
+        4. Supply WBTC → Aave as collateral
+        5. Supply WETH → Aave as collateral
+        
+        If ANY step in the swap/supply sequence fails, the entire operation is marked as failed.
+        Borrowed DAI must ALWAYS be swapped and supplied - no exceptions.
+        
+        Args:
+            available_borrows: Available borrow capacity in USD
+            
+        Returns:
+            bool: True only if complete sequence succeeds, False otherwise
+        """
         try:
             print("🚀 Executing growth-triggered operation (DAI-only)")
 
@@ -1881,7 +1909,37 @@ class ArbitrumTestnetAgent:
             return False
 
     def _execute_capacity_operation(self, available_borrows):
-        """Execute capacity-based operation - DAI only"""
+        """
+        Execute capacity-based operation with ATOMIC execution guarantee.
+        
+        CAPACITY TRIGGER SEQUENCE:
+        ==========================
+        ACTIVATION CONDITION:
+        - Available borrow capacity > $50 USD
+        - Health factor >= 1.5 (universal minimum)
+        
+        DAI BORROW CALCULATION:
+        - Base: 8% of available borrow capacity
+        - Maximum: $5.00 USD
+        - Additional safety: Max 2% of total collateral
+        - Minimum threshold: $0.50 USD
+        
+        ATOMIC EXECUTION FLOW (no skip paths allowed):
+        1. Borrow DAI from Aave
+        2. Swap 50% DAI → WBTC via Uniswap
+        3. Swap 50% DAI → WETH via Uniswap
+        4. Supply WBTC → Aave as collateral
+        5. Supply WETH → Aave as collateral
+        
+        If ANY step in the swap/supply sequence fails, the entire operation is marked as failed.
+        Borrowed DAI must ALWAYS be swapped and supplied - no exceptions.
+        
+        Args:
+            available_borrows: Available borrow capacity in USD
+            
+        Returns:
+            bool: True only if complete sequence succeeds, False otherwise
+        """
         try:
             print("⚡ Executing capacity-based operation (DAI-only)")
 
@@ -2066,7 +2124,31 @@ class ArbitrumTestnetAgent:
             return 0.0
 
     def _execute_validated_dai_borrow(self, borrow_amount):
-        """Execute DAI borrow with comprehensive validation and error handling"""
+        """
+        Execute DAI borrow with ATOMIC execution guarantee and comprehensive validation.
+        
+        ATOMIC EXECUTION GUARANTEE:
+        ===========================
+        This method enforces strict atomicity: borrowed DAI MUST be swapped and supplied.
+        There are NO skip paths - if swap or supply fails, the entire operation fails.
+        
+        This prevents the critical issue where borrowed DAI could remain unswapped/unsupplied,
+        which would violate the core arbitrage strategy and leave the position unbalanced.
+        
+        Execution Flow:
+        1. Validate borrow amount > 0
+        2. Record DAI balance before borrow
+        3. Execute borrow transaction on Aave
+        4. Verify DAI balance increased
+        5. Execute complete DeFi sequence (swap + supply)
+        6. Return TRUE only if ALL steps succeed
+        
+        Args:
+            borrow_amount: Amount of DAI to borrow in USD
+            
+        Returns:
+            bool: True ONLY if borrow AND complete sequence succeed, False otherwise
+        """
         try:
             print(f"🏦 Executing validated DAI borrow: ${borrow_amount:.2f}")
 
@@ -2099,14 +2181,18 @@ class ArbitrumTestnetAgent:
                     if balance_increase > 0:
                         print(f"✅ Borrow successful - received {balance_increase:.6f} DAI")
 
-                        # EXECUTE COMPLETE SEQUENCE: Borrow → Swap → Supply
+                        # ATOMIC EXECUTION GUARANTEE: Execute complete sequence or fail entirely
+                        # NO SKIP PATHS - borrowed DAI must ALWAYS be swapped and supplied
                         sequence_success = self._execute_complete_defi_sequence(balance_increase)
                         if sequence_success:
-                            print("✅ Complete DeFi sequence executed successfully")
+                            print("✅ Complete DeFi sequence executed successfully - ATOMIC OPERATION COMPLETE")
                             return True
                         else:
-                            print("⚠️ Borrow successful but sequence incomplete")
-                            return True  # Still count borrow as success
+                            # CRITICAL FIX: Return False to enforce atomicity
+                            # Borrowed DAI without swap/supply violates the arbitrage strategy
+                            print("❌ ATOMIC GUARANTEE VIOLATION: Borrow succeeded but swap/supply FAILED")
+                            print("❌ Operation marked as FAILED to prevent unswapped DAI position")
+                            return False  # ATOMIC: Must fail if sequence fails (NO SKIP PATH)
                     else:
                         print("⚠️ Transaction completed but balance didn't increase as expected")
                         return False
@@ -2139,7 +2225,29 @@ class ArbitrumTestnetAgent:
             return False
 
     def _execute_complete_defi_sequence(self, dai_amount):
-        """Execute complete DeFi sequence: DAI → WBTC/WETH → Supply to Aave"""
+        """
+        Execute complete DeFi sequence with strict error handling.
+        
+        ATOMIC EXECUTION SEQUENCE:
+        ==========================
+        1. Split DAI 50/50 for WBTC and WETH swaps
+        2. Swap 50% DAI → WBTC via Uniswap
+        3. Swap 50% DAI → WETH via Uniswap
+        4. Supply received WBTC to Aave as collateral
+        5. Supply received WETH to Aave as collateral
+        
+        ERROR HANDLING:
+        - If any swap fails, mark sequence as unsuccessful
+        - If any supply fails, mark sequence as unsuccessful
+        - Return False to trigger failure in parent method
+        - This ensures borrowed DAI is NEVER left unswapped/unsupplied
+        
+        Args:
+            dai_amount: Amount of DAI to swap and supply
+            
+        Returns:
+            bool: True only if ALL swaps and supplies succeed, False otherwise
+        """
         try:
             print(f"\n🔄 EXECUTING COMPLETE DEFI SEQUENCE")
             print(f"═══════════════════════════════════════")

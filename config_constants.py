@@ -3,8 +3,8 @@ MIN_ETH_FOR_OPERATIONS = 0.01  # Minimum ETH needed for operations
 MIN_ETH_FOR_GAS_BUFFER = 0.005  # Minimum ETH buffer for gas fees
 DEFAULT_GAS_LIMIT = 300000
 DEFAULT_GAS_PRICE_GWEI = 0.1
-HEALTH_FACTOR_THRESHOLD = 1.5
-TARGET_HEALTH_FACTOR = 2.5
+HEALTH_FACTOR_THRESHOLD = 1.5  # Universal minimum health factor
+TARGET_HEALTH_FACTOR = 1.5  # Universal minimum health factor
 MAX_SLIPPAGE_PERCENT = 2.0
 OPERATION_COOLDOWN_SECONDS = 60
 """
@@ -15,9 +15,9 @@ Configuration Constants for Arbitrum Agent
 MIN_ETH_FOR_OPERATIONS = 0.001  # 0.001 ETH minimum for gas operations
 MIN_ETH_FOR_GAS_BUFFER = 0.0005  # 0.0005 ETH buffer for gas fees
 
-# Health factor thresholds
-MIN_HEALTH_FACTOR = 1.05  # Emergency threshold
-TARGET_HEALTH_FACTOR = 1.25  # Conservative target
+# Health factor thresholds - Universal minimum: 1.5
+MIN_HEALTH_FACTOR = 1.5  # Universal minimum health factor
+TARGET_HEALTH_FACTOR = 1.5  # Universal minimum health factor
 
 # Operational limits
 MAX_CONSECUTIVE_FAILURES = 3
@@ -47,10 +47,10 @@ Centralized configuration management
 MIN_ETH_FOR_OPERATIONS = 0.002  # Minimum ETH for gas operations
 MIN_ETH_FOR_GAS_BUFFER = 0.001  # Additional buffer for safety
 
-# Health factor thresholds
-MIN_HEALTH_FACTOR = 1.05  # Emergency threshold
-TARGET_HEALTH_FACTOR = 1.25  # Conservative target
-SAFE_HEALTH_FACTOR = 2.0  # Safe borrowing threshold
+# Health factor thresholds - Universal minimum: 1.5
+MIN_HEALTH_FACTOR = 1.5  # Universal minimum health factor
+TARGET_HEALTH_FACTOR = 1.5  # Universal minimum health factor
+SAFE_HEALTH_FACTOR = 1.5  # Universal minimum health factor
 
 # Borrowing configuration
 MAX_BORROW_PERCENTAGE = 0.8  # Max 80% of available capacity

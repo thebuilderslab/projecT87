@@ -96,8 +96,8 @@ class StreamlinedProductionCycle:
         if not position:
             return False, "Failed to get position"
         
-        if position['health_factor'] < 1.8:
-            return False, f"Health factor too low: {position['health_factor']:.3f}"
+        if position['health_factor'] < 1.5:
+            return False, f"Health factor too low: {position['health_factor']:.3f} < 1.5 (universal minimum)"
         
         if position['total_debt_usd'] < self.swap_amount:
             return False, f"Insufficient debt: ${position['total_debt_usd']:.2f}"

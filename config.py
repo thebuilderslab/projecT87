@@ -6,10 +6,10 @@
 MIN_ETH_FOR_OPERATIONS = 0.001  # Minimum ETH needed for gas fees
 MIN_ETH_FOR_GAS_BUFFER = 0.0005  # Buffer amount for gas fee fluctuations
 
-# Health factor thresholds
-MIN_HEALTH_FACTOR = 1.1  # Minimum safe health factor
+# Health factor thresholds - Universal minimum: 1.5
+MIN_HEALTH_FACTOR = 1.5  # Minimum safe health factor (universal threshold)
 TARGET_HEALTH_FACTOR = 1.5  # Target health factor for operations
-EMERGENCY_HEALTH_FACTOR = 1.05  # Emergency threshold
+EMERGENCY_HEALTH_FACTOR = 1.5  # Emergency threshold (universal minimum)
 
 # Autonomous trigger thresholds
 COLLATERAL_GROWTH_TRIGGER_USD = 13.0  # USD growth trigger for autonomous sequence
