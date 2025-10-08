@@ -11,16 +11,25 @@ class TransactionSafetyChecker:
         self.agent = agent
         self.w3 = agent.w3
         
-    def validate_borrow_transaction(self, amount_usd, token_address):
-        """Comprehensive borrow transaction validation"""
+    def validate_borrow_transaction(self, amount_usd, token_address, min_health_factor_override=None, override_reason=None):
+        """Comprehensive borrow transaction validation with optional health factor override"""
+        # Determine minimum health factor to use
+        min_hf = min_health_factor_override if min_health_factor_override is not None else 1.5
+        
         print(f"🔒 TRANSACTION SAFETY CHECK: Borrow ${amount_usd:.2f}")
+        if min_health_factor_override is not None:
+            print(f"⚠️  HEALTH FACTOR OVERRIDE ACTIVE: {min_hf} (default: 1.5)")
+            if override_reason:
+                print(f"📝 OVERRIDE_REASON: {override_reason}")
         print("=" * 50)
         
         safety_report = {
             'safe_to_proceed': False,
             'warnings': [],
             'critical_issues': [],
-            'recommendations': []
+            'recommendations': [],
+            'override_active': min_health_factor_override is not None,
+            'min_health_factor': min_hf
         }
         
         try:
@@ -59,10 +68,10 @@ class TransactionSafetyChecker:
             print(f"   Available: ${available_borrows_usd:.2f}")
             print(f"   Health Factor: {health_factor:.4f}")
             
-            # Check 3: Health factor validation
-            if health_factor < 1.5:
-                safety_report['critical_issues'].append(f"Health factor too low: {health_factor:.4f} < 1.5")
-            elif health_factor < 1.5:
+            # Check 3: Health factor validation (using override if provided)
+            if health_factor < min_hf:
+                safety_report['critical_issues'].append(f"Health factor too low: {health_factor:.4f} < {min_hf}")
+            elif health_factor < min_hf + 0.2:
                 safety_report['warnings'].append(f"Health factor marginal: {health_factor:.4f}")
                 
             # Check 4: Borrowing capacity
