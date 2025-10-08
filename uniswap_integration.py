@@ -268,10 +268,13 @@ class UniswapIntegration:
                         base_gas_price = self.w3.eth.gas_price
                         chain_id = self.w3.eth.chain_id
 
+                        # Apply 2x multiplier for Arbitrum mainnet to handle variable gas costs
                         if chain_id == 42161:  # Arbitrum Mainnet
-                            optimized_gas_price = max(base_gas_price, int(0.01 * 10**9))  # Min 0.01 gwei
+                            optimized_gas_price = int(base_gas_price * 2.0)
+                            print(f"⛽ Arbitrum approval: base {base_gas_price} → optimized {optimized_gas_price} (2.0x)")
                         else:
-                            optimized_gas_price = int(base_gas_price * 1.2)  # 20% higher for testnet
+                            optimized_gas_price = int(base_gas_price * 1.3)  # 30% buffer for testnet
+                            print(f"⛽ Testnet approval: base {base_gas_price} → optimized {optimized_gas_price} (1.3x)")
 
                         approve_tx = token_contract.functions.approve(
                             self.router_address, 
@@ -309,17 +312,20 @@ class UniswapIntegration:
                 'sqrtPriceLimitX96': 0
             }
 
-            # Build swap transaction
+            # Build swap transaction with Arbitrum multiplier
             nonce = self.w3.eth.get_transaction_count(self.address)
             base_gas_price = self.w3.eth.gas_price
             chain_id = self.w3.eth.chain_id
 
+            # Apply 2x multiplier for Arbitrum mainnet to handle variable gas costs
             if chain_id == 42161:  # Arbitrum Mainnet
-                swap_gas_price = max(base_gas_price, int(0.1 * 10**9))  # Min 0.1 gwei
+                swap_gas_price = int(base_gas_price * 2.0)
                 gas_limit = 500000
+                print(f"⛽ Arbitrum swap: base {base_gas_price} → optimized {swap_gas_price} (2.0x)")
             else:
-                swap_gas_price = int(base_gas_price * 1.5)  # 50% higher for testnet
+                swap_gas_price = int(base_gas_price * 1.5)  # 50% buffer for testnet
                 gas_limit = 450000
+                print(f"⛽ Testnet swap: base {base_gas_price} → optimized {swap_gas_price} (1.5x)")
 
             swap_tx = self.router_contract.functions.exactInputSingle(
                 swap_params
@@ -369,10 +375,13 @@ class UniswapIntegration:
                         base_gas_price = self.w3.eth.gas_price
                         chain_id = self.w3.eth.chain_id
 
+                        # Apply 2x multiplier for Arbitrum mainnet to handle variable gas costs
                         if chain_id == 42161:  # Arbitrum Mainnet
-                            optimized_gas_price = max(base_gas_price, int(0.01 * 10**9))  # Min 0.01 gwei
+                            optimized_gas_price = int(base_gas_price * 2.0)
+                            print(f"⛽ Arbitrum approval (2nd): base {base_gas_price} → optimized {optimized_gas_price} (2.0x)")
                         else:
-                            optimized_gas_price = int(base_gas_price * 1.2)  # 20% higher for testnet
+                            optimized_gas_price = int(base_gas_price * 1.3)  # 30% buffer for testnet
+                            print(f"⛽ Testnet approval (2nd): base {base_gas_price} → optimized {optimized_gas_price} (1.3x)")
 
                         approve_tx = token_contract.functions.approve(
                             self.router_address, 
@@ -465,16 +474,19 @@ class UniswapIntegration:
             # Build swap transaction with enhanced gas optimization
             nonce = self.w3.eth.get_transaction_count(self.address)
 
-            # Enhanced gas calculation for swap
+            # Enhanced gas calculation for swap with Arbitrum multiplier
             base_gas_price = self.w3.eth.gas_price
             chain_id = self.w3.eth.chain_id
 
+            # Apply 2x multiplier for Arbitrum mainnet to handle variable gas costs
             if chain_id == 42161:  # Arbitrum Mainnet
-                swap_gas_price = max(base_gas_price, int(0.1 * 10**9))  # Min 0.1 gwei
+                swap_gas_price = int(base_gas_price * 2.0)
                 gas_limit = 500000  # Increased gas limit for complex swaps
+                print(f"⛽ Arbitrum swap (2nd): base {base_gas_price} → optimized {swap_gas_price} (2.0x)")
             else:
-                swap_gas_price = int(base_gas_price * 1.5)  # 50% higher for testnet
+                swap_gas_price = int(base_gas_price * 1.5)  # 50% buffer for testnet
                 gas_limit = 450000
+                print(f"⛽ Testnet swap (2nd): base {base_gas_price} → optimized {swap_gas_price} (1.5x)")
 
             swap_tx = self.router_contract.functions.exactInputSingle(
                 swap_params

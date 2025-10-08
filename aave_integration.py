@@ -194,9 +194,18 @@ class AaveArbitrumIntegration:
             max_retries = 3
             for attempt in range(max_retries):
                 try:
-                    # Get fresh nonce and gas price
+                    # Get fresh nonce and gas price with Arbitrum multiplier
                     nonce = self.w3.eth.get_transaction_count(self.account.address)
-                    gas_price = self.w3.eth.gas_price
+                    base_gas_price = self.w3.eth.gas_price
+                    chain_id = self.w3.eth.chain_id
+                    
+                    # Apply 2x multiplier for Arbitrum mainnet to handle variable gas costs
+                    if chain_id == 42161:  # Arbitrum Mainnet
+                        gas_price = int(base_gas_price * 2.0)
+                        print(f"⛽ Arbitrum mainnet: base {base_gas_price} → optimized {gas_price} (2.0x)")
+                    else:
+                        gas_price = int(base_gas_price * 1.3)  # 30% buffer for testnet
+                        print(f"⛽ Testnet: base {base_gas_price} → optimized {gas_price} (1.3x)")
 
                     print(f"📊 Transaction params - Nonce: {nonce}, Gas Price: {gas_price}")
 
@@ -317,9 +326,18 @@ class AaveArbitrumIntegration:
 
             print(f"✅ {token_name} approval successful")
 
-            # Step 4: Get fresh nonce and gas price
+            # Step 4: Get fresh nonce and gas price with Arbitrum multiplier
             nonce = self.w3.eth.get_transaction_count(self.account.address)
-            gas_price = self.w3.eth.gas_price
+            base_gas_price = self.w3.eth.gas_price
+            chain_id = self.w3.eth.chain_id
+            
+            # Apply 2x multiplier for Arbitrum mainnet to handle variable gas costs
+            if chain_id == 42161:  # Arbitrum Mainnet
+                gas_price = int(base_gas_price * 2.0)
+                print(f"⛽ Arbitrum mainnet supply: base {base_gas_price} → optimized {gas_price} (2.0x)")
+            else:
+                gas_price = int(base_gas_price * 1.3)  # 30% buffer for testnet
+                print(f"⛽ Testnet supply: base {base_gas_price} → optimized {gas_price} (1.3x)")
 
             # Step 5: Estimate gas for supply transaction
             try:
@@ -505,9 +523,18 @@ class AaveArbitrumIntegration:
             except Exception as allowance_err:
                 print(f"⚠️ Could not check allowance: {allowance_err}")
 
-            # Get fresh transaction parameters
+            # Get fresh transaction parameters with Arbitrum multiplier
             nonce = self.w3.eth.get_transaction_count(self.account.address)
-            gas_price = self.w3.eth.gas_price
+            base_gas_price = self.w3.eth.gas_price
+            chain_id = self.w3.eth.chain_id
+            
+            # Apply 2x multiplier for Arbitrum mainnet to handle variable gas costs
+            if chain_id == 42161:  # Arbitrum Mainnet
+                gas_price = int(base_gas_price * 2.0)
+                print(f"⛽ Arbitrum mainnet approval: base {base_gas_price} → optimized {gas_price} (2.0x)")
+            else:
+                gas_price = int(base_gas_price * 1.3)  # 30% buffer for testnet
+                print(f"⛽ Testnet approval: base {base_gas_price} → optimized {gas_price} (1.3x)")
 
             # Estimate gas for approval
             try:
