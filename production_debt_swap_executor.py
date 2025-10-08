@@ -1043,7 +1043,7 @@ class ProductionDebtSwapExecutor:
         finally:
             print("=" * 50)
 
-    def validate_position_for_swap(self, swap_amount_usd: float) -> Tuple[bool, str]:
+    def validate_position_for_swap(self, swap_amount_usd: float, min_health_factor_override: Optional[float] = None) -> Tuple[bool, str]:
         """Validate that position has adequate DAI debt for swapping"""
         try:
             position = self.get_aave_position()
@@ -1056,7 +1056,10 @@ class ProductionDebtSwapExecutor:
             
             # Minimum requirements
             min_dai_debt = swap_amount_usd * 1.1  # 10% buffer
-            min_health_factor = 1.5  # Safety margin
+            min_health_factor = min_health_factor_override if min_health_factor_override is not None else 1.5
+            
+            if min_health_factor_override is not None:
+                print(f"⚠️  Using health factor override: {min_health_factor} (standard: 1.5)")
             
             if dai_debt_usd < min_dai_debt:
                 return False, f"Insufficient DAI debt: ${dai_debt_usd:.2f} < ${min_dai_debt:.2f} required"
@@ -1170,10 +1173,19 @@ class ProductionDebtSwapExecutor:
             
         return state
 
-    def execute_debt_swap(self, from_asset: str, to_asset: str, swap_amount_usd: float) -> Dict[str, Any]:
+    def execute_debt_swap(self, from_asset: str, to_asset: str, swap_amount_usd: float, 
+                          min_health_factor_override: Optional[float] = None,
+                          override_reason: Optional[str] = None) -> Dict[str, Any]:
         """
         PRODUCTION DEBT SWAP EXECUTION with COMPREHENSIVE LOGGING & STEPWISE DIFF
         Enhanced with full audit trail for forensic analysis and debugging
+        
+        Args:
+            from_asset: Asset to swap from (e.g., 'DAI')
+            to_asset: Asset to swap to (e.g., 'ARB')
+            swap_amount_usd: Amount in USD to swap
+            min_health_factor_override: Optional override for minimum health factor (default: 1.5)
+            override_reason: Reason for health factor override (required if override set)
         """
         
         print(f"\n🎯 EXECUTING DEBT SWAP WITH COMPREHENSIVE AUDIT TRAIL")
@@ -1181,6 +1193,9 @@ class ProductionDebtSwapExecutor:
         print(f"   Route: {from_asset} debt → {to_asset} debt")
         print(f"   Amount: ${swap_amount_usd:.2f}")
         print(f"   Timestamp: {datetime.now().isoformat()}")
+        if min_health_factor_override is not None:
+            print(f"   ⚠️  HEALTH FACTOR OVERRIDE: {min_health_factor_override} (standard: 1.5)")
+            print(f"   📝 Override Reason: {override_reason or 'Not specified'}")
         print("=" * 80)
         
         execution_result = {
@@ -1237,7 +1252,15 @@ class ProductionDebtSwapExecutor:
             # Legacy position validation (for backward compatibility)
             execution_result['position_before'] = self.get_aave_position()
             
-            valid, validation_msg = self.validate_position_for_swap(swap_amount_usd)
+            # Add override info to execution result
+            if min_health_factor_override is not None:
+                execution_result['health_factor_override'] = {
+                    'override_value': min_health_factor_override,
+                    'standard_value': 1.5,
+                    'reason': override_reason or 'Not specified'
+                }
+            
+            valid, validation_msg = self.validate_position_for_swap(swap_amount_usd, min_health_factor_override)
             
             # REMOVED: Early validation call with placeholder data
             # Comprehensive validation will be performed later when real function call and parameters are available

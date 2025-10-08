@@ -39,8 +39,8 @@ def execute_debt_swap_with_override():
         position = executor.get_aave_position()
         
         current_hf = position.get('health_factor', 0)
-        dai_debt = position.get('dai_debt', 0)
-        arb_debt = position.get('arb_debt', 0)
+        dai_debt = position.get('debt_values_usd', {}).get('DAI', 0)
+        arb_debt = position.get('debt_values_usd', {}).get('ARB', 0)
         collateral = position.get('total_collateral_usd', 0)
         total_debt = position.get('total_debt_usd', 0)
         
@@ -130,8 +130,8 @@ def execute_debt_swap_with_override():
         new_position = executor.get_aave_position()
         
         new_hf = new_position.get('health_factor', 0)
-        new_dai_debt = new_position.get('dai_debt', 0)
-        new_arb_debt = new_position.get('arb_debt', 0)
+        new_dai_debt = new_position.get('debt_values_usd', {}).get('DAI', 0)
+        new_arb_debt = new_position.get('debt_values_usd', {}).get('ARB', 0)
         
         print(f"📊 UPDATED POSITION:")
         print(f"   DAI Debt: ${dai_debt:.2f} → ${new_dai_debt:.2f} (Change: ${new_dai_debt - dai_debt:+.2f})")
