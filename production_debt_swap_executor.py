@@ -22,6 +22,7 @@ from web3.types import TxParams, TxReceipt
 # UNIFIED SYSTEM IMPORTS
 from debt_swap_utils import DebtSwapSignatureValidator
 from gas_optimization import CoinAPIGasOptimizer
+from augustus_v5_multiswap_builder import AugustusV5MultiSwapBuilder
 
 # Optional CoinAPI setup (graceful fallback if not available)
 COIN_API_KEY = os.environ.get("COIN_API")
@@ -858,17 +859,16 @@ class ProductionDebtSwapExecutor:
         except Exception as e:
             print(f"⚠️  ParaSwap API failed: {e}")
             
-            # FALLBACK: Direct Augustus V6.2 swapExactAmountIn (PROVEN method on Arbitrum)
+            # FALLBACK: Augustus V5 multiSwap (DEBT SWITCH COMPATIBLE)
             if "simpleBuy" in str(e) or "incompatible" in str(e):
-                print(f"\n🔄 TRIGGERING AUGUSTUS V6.2 swapExactAmountIn FALLBACK")
+                print(f"\n🔄 TRIGGERING AUGUSTUS V5 multiSwap FALLBACK")
                 print(f"=" * 60)
                 print(f"   Reason: ParaSwap API returned incompatible method")
-                print(f"   Strategy: Build swapExactAmountIn calldata directly (PROVEN on Arbitrum)")
+                print(f"   Strategy: Build multiSwap calldata for Augustus V5 (Debt Switch compatible)")
                 
                 try:
-                    from augustus_v6_swap_exact_in import AugustusV6SwapExactIn
-                    
-                    augustus_direct = AugustusV6SwapExactIn()
+                    # Initialize Augustus V5 multiSwap builder
+                    multiswap_builder = AugustusV5MultiSwapBuilder(self.w3, network="arbitrum")
                     
                     # Calculate ARB amount needed using ParaSwap price (if available)
                     # Otherwise use 2.5x multiplier as safety margin
@@ -904,21 +904,25 @@ class ProductionDebtSwapExecutor:
                     # Min DAI out with 4% slippage
                     min_dai_out = int(amount_wei * 0.96)
                     
-                    # Build direct Augustus V6.2 swapExactAmountIn calldata
-                    fallback_data = augustus_direct.build_swap_exact_amount_in_calldata(
-                        token_in=src_token,      # ARB
-                        token_out=dest_token,    # DAI
-                        amount_in=arb_amount_in_buffered,
-                        min_amount_out=min_dai_out,
-                        beneficiary=aave_debt_switch_addr
+                    # Build Augustus V5 multiSwap calldata
+                    fallback_data = multiswap_builder.build_multiswap_calldata(
+                        from_token='ARB',
+                        to_token='DAI',
+                        from_amount=arb_amount_in_buffered,
+                        min_to_amount=min_dai_out,
+                        beneficiary=aave_debt_switch_addr,
+                        slippage_bps=400  # 4% slippage
                     )
                     
-                    print(f"\n✅ AUGUSTUS V6.2 swapExactAmountIn CALLDATA SUCCESSFUL!")
+                    if not fallback_data:
+                        raise Exception("multiSwap builder returned None")
+                    
+                    print(f"\n✅ AUGUSTUS V5 multiSwap CALLDATA SUCCESSFUL!")
                     print(f"   Router: {fallback_data['augustus_router']}")
-                    print(f"   Method: {fallback_data['method_name']} (PROVEN on Arbitrum)")
+                    print(f"   Method: {fallback_data['method_name']} (DEBT SWITCH COMPATIBLE)")
                     print(f"   Selector: {fallback_data['method_selector']}")
-                    print(f"   ARB In: {fallback_data['amount_in'] / 1e18}")
-                    print(f"   Min DAI Out: {fallback_data['min_amount_out'] / 1e18}")
+                    print(f"   ARB In: {fallback_data['from_amount'] / 1e18}")
+                    print(f"   Min DAI Out: {fallback_data['min_to_amount'] / 1e18}")
                     
                     # Return fallback data in same format
                     return {
@@ -928,7 +932,7 @@ class ProductionDebtSwapExecutor:
                         'method_selector': fallback_data['method_selector'],
                         'method_name': fallback_data['method_name'],
                         'price_route': {
-                            'srcAmount': str(fallback_data['amount_in']),
+                            'srcAmount': str(fallback_data['from_amount']),
                             'destAmount': str(amount_wei),
                             'srcToken': src_token,
                             'destToken': dest_token
@@ -937,7 +941,7 @@ class ProductionDebtSwapExecutor:
                     }
                     
                 except Exception as fallback_error:
-                    print(f"❌ Augustus V6.2 swapExactAmountIn fallback failed: {fallback_error}")
+                    print(f"❌ Augustus V5 multiSwap fallback failed: {fallback_error}")
                     import traceback
                     print(f"🔍 Fallback error: {traceback.format_exc()}")
                     return {}
