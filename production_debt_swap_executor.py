@@ -89,7 +89,8 @@ class ProductionDebtSwapExecutor:
         self.aave_debt_switch_v3: ChecksumAddress = self.w3.to_checksum_address("0x63dfa7c09Dc2Ff4030d6B8Dc2ce6262BF898C8A4")
         # Keep backward compatibility
         self.paraswap_debt_swap_adapter: ChecksumAddress = self.aave_debt_switch_v3
-        self.augustus_swapper: ChecksumAddress = self.w3.to_checksum_address("0xDEF171Fe48CF0115B1d80b88dc8eAB59176FEe57")
+        # CRITICAL FIX: Official Augustus V6.2 contract (verified Arbitrum deployment)
+        self.augustus_swapper: ChecksumAddress = self.w3.to_checksum_address("0x6a000f20005980200259b80c5102003040001068")
         self.aave_pool: ChecksumAddress = self.w3.to_checksum_address("0x794a61358D6845594F94dc1DB02A252b5b4814aD")
         self.aave_data_provider: ChecksumAddress = self.w3.to_checksum_address("0x69FA688f1Dc47d4B5d8029D5a35FB7a548310654")
         
@@ -781,6 +782,7 @@ class ProductionDebtSwapExecutor:
                 'partnerAddress': aave_debt_switch_addr,   # FIXED: Aave Debt Switch V3 as partner
                 'partnerFeeBps': '0',                      # No partner fee
                 'takeSurplus': False                       # Don't take surplus
+                # NOTE: version parameter not supported by ParaSwap API - router determined by API endpoint
             }
             
             print(f"🌐 Getting ParaSwap transaction data...")
@@ -794,15 +796,62 @@ class ProductionDebtSwapExecutor:
             
             tx_data = tx_response.json()
             
-            swap_data = {
-                'calldata': tx_data.get('data', '0x'),
-                'expected_amount': price_data['priceRoute']['destAmount'],
-                'price_route': price_data['priceRoute']
+            # CRITICAL: Validate Augustus router (V5 or V6.2 both valid on Arbitrum)
+            valid_augustus_routers = {
+                "0xdef171fe48cf0115b1d80b88dc8eab59176fee57": "Augustus V5",
+                "0x6a000f20005980200259b80c5102003040001068": "Augustus V6.2"
             }
             
-            print(f"✅ REVERSE ParaSwap routing obtained")
+            returned_router = tx_data.get('to', '').lower()
+            
+            print(f"\n🔍 AUGUSTUS ROUTER VALIDATION:")
+            print(f"   Returned Router: {tx_data.get('to', 'None')}")
+            
+            if returned_router in valid_augustus_routers:
+                router_version = valid_augustus_routers[returned_router]
+                print(f"   ✅ Valid Augustus Router: {router_version}")
+            else:
+                error_msg = f"ParaSwap returned unknown router: {tx_data.get('to')} (expected Augustus V5 or V6.2)"
+                print(f"   ❌ {error_msg}")
+                raise Exception(error_msg)
+            
+            # Validate method selector (first 4 bytes of calldata)
+            calldata = tx_data.get('data', '0x')
+            method_selector = calldata[:10] if len(calldata) >= 10 else '0x00000000'
+            
+            # Aave-compatible methods
+            VALID_METHODS = {
+                '0x0863b7ac': 'multiSwap',
+                '0x46c67b6d': 'megaSwap',
+                '0x5e94e28d': 'swapExactAmountOutOnUniswapV3'
+            }
+            
+            print(f"\n🔍 METHOD SELECTOR VALIDATION:")
+            print(f"   Selector: {method_selector}")
+            
+            if method_selector in VALID_METHODS:
+                print(f"   ✅ Compatible Method: {VALID_METHODS[method_selector]}")
+            elif method_selector == '0x2298207a':
+                error_msg = "ParaSwap returned incompatible simpleBuy method - rejecting"
+                print(f"   ❌ {error_msg}")
+                raise Exception(error_msg)
+            else:
+                print(f"   ⚠️ Unknown method: {method_selector} (proceeding with caution)")
+            
+            swap_data = {
+                'calldata': calldata,
+                'expected_amount': price_data['priceRoute']['destAmount'],
+                'price_route': price_data['priceRoute'],
+                'augustus_router': tx_data.get('to'),
+                'method_selector': method_selector,
+                'method_name': VALID_METHODS.get(method_selector, 'unknown')
+            }
+            
+            print(f"\n✅ REVERSE ParaSwap routing obtained")
             print(f"   Expected Amount: {swap_data['expected_amount']}")
             print(f"   Calldata Length: {len(swap_data['calldata'])} chars")
+            print(f"   Augustus Router: {swap_data['augustus_router']}")
+            print(f"   Method: {swap_data['method_name']}")
             
             return swap_data
             
@@ -1862,6 +1911,44 @@ class ProductionDebtSwapExecutor:
                 
                 print(f"         Fresh Gas Price: {fresh_gas_price / 1e9:.4f} gwei")
                 print(f"         Safe Gas Price (20% buffer): {safe_gas_price / 1e9:.4f} gwei")
+                
+                # COMPREHENSIVE PRE-SUBMISSION AUDIT LOGGING
+                print(f"\n" + "=" * 80)
+                print(f"📋 COMPREHENSIVE PRE-SUBMISSION AUDIT LOG")
+                print(f"=" * 80)
+                
+                print(f"\n🏛️  CONTRACT ADDRESSES:")
+                print(f"   Aave Debt Switch V3: {self.aave_debt_switch_v3}")
+                print(f"   Augustus V6.2 Router: {self.augustus_swapper}")
+                print(f"   ARB Debt Token: {arb_debt_token}")
+                print(f"   User Address: {self.user_address}")
+                
+                print(f"\n🔐 EIP-712 CREDIT DELEGATION PERMIT:")
+                print(f"   Token: {credit_permit['token']}")
+                print(f"   Delegatee: {self.aave_debt_switch_v3}")
+                print(f"   Value: {credit_permit['value']} wei ({credit_permit['value'] / 1e18} ARB)")
+                print(f"   Deadline: {credit_permit['deadline']} (Unix timestamp)")
+                print(f"   Current Time: {int(time.time())}")
+                print(f"   Validity: {credit_permit['deadline'] - int(time.time())} seconds remaining")
+                print(f"   v: {credit_permit['v']}")
+                print(f"   r: 0x{credit_permit['r'].hex()}")
+                print(f"   s: 0x{credit_permit['s'].hex()}")
+                
+                print(f"\n🔄 PARASWAP AUGUSTUS CALLDATA:")
+                print(f"   Augustus Router: {paraswap_data.get('augustus_router', 'N/A')}")
+                print(f"   Method Selector: {paraswap_data.get('method_selector', 'N/A')}")
+                print(f"   Method Name: {paraswap_data.get('method_name', 'N/A')}")
+                print(f"   Calldata Length: {len(paraswap_data.get('calldata', '0x'))} chars")
+                print(f"   Calldata (first 200 chars): {paraswap_data.get('calldata', '0x')[:200]}...")
+                
+                print(f"\n⛽ GAS PARAMETERS:")
+                print(f"   Gas Limit: {base_gas_limit:,}")
+                print(f"   Gas Price: {safe_gas_price / 1e9:.4f} gwei")
+                print(f"   Estimated Cost: {(base_gas_limit * safe_gas_price) / 1e18:.6f} ETH")
+                
+                print(f"\n" + "=" * 80)
+                print(f"✅ PRE-SUBMISSION AUDIT COMPLETE - PROCEEDING WITH TRANSACTION")
+                print(f"=" * 80 + "\n")
                 
                 transaction = function_call.build_transaction({
                     'from': self.user_address,
