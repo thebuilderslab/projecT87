@@ -1,0 +1,37 @@
+Should the metadata include token_out address or just padding?
+
+Answer:
+The metadata should include the token_out address. For a single-hop Uniswap V3 swap, structure the metadata as:
+
+text
+[token_in (20 bytes)] + [fee (3 bytes)] + [token_out (20 bytes)] + [padding (9 bytes)]
+Not just padding after the fee! Both input and output tokens must be present and packed correctly.
+
+Who should be the beneficiary in Augustus swap - User or Debt Switch?
+
+Answer:
+Usually, the Debt Switch Adapter contract should be the beneficiary. This is because the adapter coordinates the swap and needs to receive the output (or flash loan return). However, confirm against a successful, similar mainnet Augustus V6.2 transaction to be fully certain for your flow.
+
+Are there any approval transactions needed before the swap?
+
+Answer:
+Yes.
+
+The token being swapped must be approved for the Augustus router by the contract that will send it (usually the Debt Switch contract for adapter flows, not the end user).
+
+Double-check that this approval covers the exact asset and contract address, and is in place before swap attempt.
+
+Do you have a working Augustus V6.2 transaction hash we can reverse-engineer?
+
+Answer:
+You should provide the agent with a hash of a successful DAI→ARB (or your tokens) Augustus V6.2 swap from Arbiscan/Etherscan with the same method (e.g. swapExactAmountOutOnUniswapV3, multiSwap, or megaSwap on Arbitrum) so the agent can byte-by-byte match the calldata and struct packing. If you don’t have one, ask the agent to search for a recent mainnet hash and reference that.
+
+Which troubleshooting path would you like me to pursue first?
+
+Answer:
+First, prioritize fixing the UniswapV3Data metadata field encoding, since this is most often the source of such “calldata/parameter” silent reverts and is necessary for Augustus V6.2 compatibility.
+Next, audit approvals and beneficiary logic, then simulate and proceed to method diversification (multiSwap/megaSwap) if single-hop still fails with correct metadata.
+
+Summary for agent chat:
+
+Please update metadata to include the token_out address, use the Debt Switch Adapter as beneficiary, confirm all approvals, and compare to a successful Augustus V6.2 transaction hash for byte alignment. Troubleshoot metadata packing first, then move to second options if required.

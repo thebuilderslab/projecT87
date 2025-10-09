@@ -27,6 +27,29 @@ class AugustusV6DirectIntegration:
         # Method selector for swapExactAmountOutOnUniswapV3
         self.method_selector = "0x5e94e28d"
     
+    def encode_uniswap_v3_path(
+        self,
+        token_in: str,
+        token_out: str,
+        fee: int = 3000
+    ) -> bytes:
+        """
+        Encode Uniswap V3 path as bytes for single-hop swap
+        Format: [token_in (20)] + [fee (3)] + [token_out (20)]
+        Total: 43 bytes
+        """
+        from eth_abi import encode
+        
+        # Remove 0x prefix
+        token_in_clean = token_in[2:] if token_in.startswith('0x') else token_in
+        token_out_clean = token_out[2:] if token_out.startswith('0x') else token_out
+        
+        # Build path: tokenA (20 bytes) + fee (3 bytes) + tokenB (20 bytes)
+        path_hex = token_in_clean.lower() + fee.to_bytes(3, 'big').hex() + token_out_clean.lower()
+        path_bytes = bytes.fromhex(path_hex)
+        
+        return path_bytes
+    
     def encode_uniswap_v3_metadata(
         self,
         token_in: str,
@@ -34,24 +57,22 @@ class AugustusV6DirectIntegration:
         fee: int = 3000
     ) -> int:
         """
-        Encode Uniswap V3 pool metadata as bytes32 (uint256)
+        Encode Uniswap V3 pool metadata as uint256 for Augustus V6.2
         
-        For single-hop swap:
-        - First 20 bytes: token_in address
-        - Next 3 bytes: pool fee
-        - Last 9 bytes: reserved/padding
+        Format: [token_in (20)] + [fee (3)] + [token_out (20)] + [padding (9)]
+        Total: 52 bytes → truncate to first 32 bytes (uint256)
         
-        The token_out is derived from the path, not stored in metadata
+        Note: The full path is 43 bytes, but uint256 only holds 32 bytes.
+        Augustus contract knows how to decode this format.
         """
         
-        # Remove '0x' prefix
-        token_in_clean = token_in[2:].lower()
+        # Build full path
+        path_bytes = self.encode_uniswap_v3_path(token_in, token_out, fee)
         
-        # Build metadata: token_in (20 bytes) + fee (3 bytes) + padding (9 bytes)
-        metadata_hex = token_in_clean + fee.to_bytes(3, 'big').hex() + '00' * 9
-        
-        # Convert to uint256
-        metadata_int = int(metadata_hex, 16)
+        # For metadata uint256: Take first 32 bytes and convert to integer
+        # If path is longer than 32 bytes, it gets truncated
+        metadata_bytes = path_bytes[:32] if len(path_bytes) > 32 else path_bytes + b'\x00' * (32 - len(path_bytes))
+        metadata_int = int.from_bytes(metadata_bytes, byteorder='big')
         
         return metadata_int
     
@@ -111,18 +132,19 @@ class AugustusV6DirectIntegration:
         # Build UniswapV3Data struct
         deadline = int(time.time()) + 1800  # 30 minutes
         
-        # Encode metadata (pool path)
-        metadata_bytes32 = self.encode_uniswap_v3_metadata(token_in, token_out, self.pool_fee)
+        # FIXED: Use full Uniswap V3 path as bytes (43 bytes), not truncated uint256
+        full_path_bytes = self.encode_uniswap_v3_path(token_in, token_out, self.pool_fee)
         
         # Pack beneficiary and approve flag
-        beneficiary_packed = self.pack_beneficiary_and_approve_flag(beneficiary, approve_flag=False)
+        # CRITICAL: approve_flag=True triggers Augustus to handle token approval automatically
+        beneficiary_packed = self.pack_beneficiary_and_approve_flag(beneficiary, approve_flag=True)
         
-        # UniswapV3Data struct (tuple)
+        # UniswapV3Data struct (tuple) - FIXED with bytes path
         uni_data = (
             max_amount_in,          # fromAmount (max ARB in)
             amount_out,             # toAmount (exact DAI out)
             max_amount_in,          # quotedAmount (for validation, use max)
-            metadata_bytes32,       # metadata (pool path)
+            full_path_bytes,        # poolData (FULL 43-byte Uniswap V3 path as bytes)
             beneficiary_packed      # beneficiaryAndApproveFlag
         )
         
@@ -132,20 +154,32 @@ class AugustusV6DirectIntegration:
         # permit: empty bytes (no permit)
         permit = b''
         
-        print(f"\n📦 STRUCT PARAMETERS:")
+        # Decode poolData (bytes path) for validation logging
+        path_hex = full_path_bytes.hex()
+        logged_token_in = '0x' + path_hex[:40]
+        logged_fee_hex = path_hex[40:46]
+        logged_fee = int(logged_fee_hex, 16) if logged_fee_hex else 0
+        logged_token_out = '0x' + path_hex[46:86]
+        
+        print(f"\n📦 STRUCT PARAMETERS (FIXED with full bytes path):")
         print(f"   UniswapV3Data:")
-        print(f"     fromAmount: {max_amount_in}")
-        print(f"     toAmount: {amount_out}")
+        print(f"     fromAmount: {max_amount_in} ({max_amount_in / 1e18:.6f} tokens)")
+        print(f"     toAmount: {amount_out} ({amount_out / 1e18:.6f} tokens)")
         print(f"     quotedAmount: {max_amount_in}")
-        print(f"     metadata: 0x{hex(metadata_bytes32)[2:].zfill(64)}")
+        print(f"     poolData (FULL 43-byte Uniswap V3 path): 0x{path_hex}")
+        print(f"       ├─ Token In: {logged_token_in} {'✅' if logged_token_in.lower() == token_in.lower() else '❌'}")
+        print(f"       ├─ Pool Fee: {logged_fee} bps ({logged_fee / 10000}%) {'✅' if logged_fee == self.pool_fee else '❌'}")
+        print(f"       └─ Token Out: {logged_token_out} {'✅' if logged_token_out.lower() == token_out.lower() else '❌'}")
         print(f"     beneficiaryAndApproveFlag: {beneficiary_packed}")
+        print(f"       ├─ Beneficiary: {beneficiary}")
+        print(f"       └─ Approve Flag: True (Augustus will handle token approval)")
         print(f"   partnerAndFee: {partner_and_fee}")
-        print(f"   permit: 0x{permit.hex()}")
+        print(f"   permit: 0x{permit.hex()} (empty)")
         
         # Encode function call
-        # Note: metadata is uint256 (bytes32 in Solidity maps to uint256 in ABI)
+        # FIXED: poolData is bytes (full Uniswap V3 path), not uint256
         encoded_params = encode(
-            ['(uint256,uint256,uint256,uint256,uint256)', 'uint256', 'bytes'],
+            ['(uint256,uint256,uint256,bytes,uint256)', 'uint256', 'bytes'],
             [uni_data, partner_and_fee, permit]
         )
         
