@@ -832,8 +832,8 @@ class ProductionDebtSwapExecutor:
             if method_selector in VALID_METHODS:
                 print(f"   ✅ Compatible Method: {VALID_METHODS[method_selector]}")
             elif method_selector == '0x2298207a':
-                error_msg = "ParaSwap returned incompatible simpleBuy method - rejecting"
-                print(f"   ❌ {error_msg}")
+                error_msg = "ParaSwap returned incompatible simpleBuy method - triggering Augustus V6.2 direct fallback"
+                print(f"   ⚠️  {error_msg}")
                 raise Exception(error_msg)
             else:
                 print(f"   ⚠️ Unknown method: {method_selector} (proceeding with caution)")
@@ -856,10 +856,59 @@ class ProductionDebtSwapExecutor:
             return swap_data
             
         except Exception as e:
-            print(f"❌ Uniswap V3 error: {e}")
-            import traceback
-            print(f"🔍 Full error: {traceback.format_exc()}")
-            return {}
+            print(f"⚠️  ParaSwap API failed: {e}")
+            
+            # FALLBACK: Direct Augustus V6.2 Integration
+            if "simpleBuy" in str(e) or "incompatible" in str(e):
+                print(f"\n🔄 TRIGGERING AUGUSTUS V6.2 DIRECT FALLBACK")
+                print(f"=" * 60)
+                print(f"   Reason: ParaSwap API returned incompatible method")
+                print(f"   Strategy: Build swapExactAmountOutOnUniswapV3 calldata directly")
+                
+                try:
+                    from augustus_v6_direct_integration import AugustusV6DirectIntegration
+                    
+                    augustus_direct = AugustusV6DirectIntegration()
+                    
+                    # Build direct Augustus V6.2 calldata
+                    fallback_data = augustus_direct.build_arb_to_dai_swap(
+                        dai_amount_out=amount_wei,
+                        beneficiary=aave_debt_switch_addr,
+                        slippage_bps=300  # 3% slippage
+                    )
+                    
+                    print(f"\n✅ AUGUSTUS V6.2 DIRECT CALLDATA SUCCESSFUL!")
+                    print(f"   Router: {fallback_data['augustus_router']}")
+                    print(f"   Method: {fallback_data['method_name']}")
+                    print(f"   Selector: {fallback_data['method_selector']}")
+                    print(f"   DAI Out: {fallback_data['amount_out'] / 1e18}")
+                    print(f"   Max ARB In: {fallback_data['max_amount_in'] / 1e18}")
+                    
+                    # Return fallback data in same format
+                    return {
+                        'calldata': fallback_data['calldata'],
+                        'expected_amount': fallback_data['amount_out'],
+                        'augustus_router': fallback_data['augustus_router'],
+                        'method_selector': fallback_data['method_selector'],
+                        'method_name': fallback_data['method_name'],
+                        'price_route': {
+                            'srcAmount': str(fallback_data['max_amount_in']),
+                            'destAmount': str(fallback_data['amount_out']),
+                            'srcToken': src_token,
+                            'destToken': dest_token
+                        },
+                        'fallback_used': True
+                    }
+                    
+                except Exception as fallback_error:
+                    print(f"❌ Augustus V6.2 fallback also failed: {fallback_error}")
+                    import traceback
+                    print(f"🔍 Fallback error: {traceback.format_exc()}")
+                    return {}
+            else:
+                import traceback
+                print(f"🔍 Full error: {traceback.format_exc()}")
+                return {}
 
     def create_credit_delegation_permit(self, debt_token_address: ChecksumAddress) -> Dict[str, Any]:
         """Create CORRECT EIP-712 credit delegation permit per Aave V3 specification"""
@@ -1924,15 +1973,33 @@ class ProductionDebtSwapExecutor:
                 print(f"   User Address: {self.user_address}")
                 
                 print(f"\n🔐 EIP-712 CREDIT DELEGATION PERMIT:")
-                print(f"   Token: {credit_permit['token']}")
+                # Handle both tuple and dict formats
+                if isinstance(credit_permit, tuple):
+                    # Tuple format: (token, value, deadline, v, r, s)
+                    permit_token = credit_permit[0]
+                    permit_value = credit_permit[1]
+                    permit_deadline = credit_permit[2]
+                    permit_v = credit_permit[3]
+                    permit_r = credit_permit[4]
+                    permit_s = credit_permit[5]
+                else:
+                    # Dict format
+                    permit_token = credit_permit.get('token', '0x0')
+                    permit_value = credit_permit.get('value', 0)
+                    permit_deadline = credit_permit.get('deadline', 0)
+                    permit_v = credit_permit.get('v', 0)
+                    permit_r = credit_permit.get('r', b'\x00' * 32)
+                    permit_s = credit_permit.get('s', b'\x00' * 32)
+                
+                print(f"   Token: {permit_token}")
                 print(f"   Delegatee: {self.aave_debt_switch_v3}")
-                print(f"   Value: {credit_permit['value']} wei ({credit_permit['value'] / 1e18} ARB)")
-                print(f"   Deadline: {credit_permit['deadline']} (Unix timestamp)")
+                print(f"   Value: {permit_value} wei ({permit_value / 1e18 if permit_value > 0 else 0} ARB)")
+                print(f"   Deadline: {permit_deadline} (Unix timestamp)")
                 print(f"   Current Time: {int(time.time())}")
-                print(f"   Validity: {credit_permit['deadline'] - int(time.time())} seconds remaining")
-                print(f"   v: {credit_permit['v']}")
-                print(f"   r: 0x{credit_permit['r'].hex()}")
-                print(f"   s: 0x{credit_permit['s'].hex()}")
+                print(f"   Validity: {permit_deadline - int(time.time()) if permit_deadline > 0 else 0} seconds remaining")
+                print(f"   v: {permit_v}")
+                print(f"   r: 0x{permit_r.hex() if isinstance(permit_r, bytes) else permit_r}")
+                print(f"   s: 0x{permit_s.hex() if isinstance(permit_s, bytes) else permit_s}")
                 
                 print(f"\n🔄 PARASWAP AUGUSTUS CALLDATA:")
                 print(f"   Augustus Router: {paraswap_data.get('augustus_router', 'N/A')}")
