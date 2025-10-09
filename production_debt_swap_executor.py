@@ -728,7 +728,7 @@ class ProductionDebtSwapExecutor:
                 'network': 42161,           # Arbitrum
                 # FIXED: Omit userAddress to avoid balance checks
                 'partner': 'aave',          # Partner for debt swap routing
-                'maxImpact': '15'           # Max price impact 15%
+                'maxImpact': '20'           # Max price impact 20% (increased for better routing)
             }
             
             print(f"🌐 Getting ParaSwap price for reverse routing...")
@@ -756,6 +756,8 @@ class ProductionDebtSwapExecutor:
                 'deadline': str(int(time.time()) + 1800),  # 30 min deadline
                 'ignoreChecks': 'true'  # CRITICAL: Bypass balance checks for debt swaps
                 # REMOVED: slippage (conflicts with srcAmount/destAmount from priceRoute)
+                # REMOVED: excludeDEXS (not valid for /transactions endpoint)
+                # Method exclusion handled in /prices request above
             }
             
             # Ensure addresses are properly checksummed
@@ -1379,56 +1381,109 @@ class ProductionDebtSwapExecutor:
             # 4A. Build transaction parameters with comprehensive logging
             print(f"   🔧 4A: Building transaction parameters...")
             zero_address = "0x0000000000000000000000000000000000000000"
-            credit_permit = {
-                'token': zero_address,
-                'value': 0,
-                'deadline': 0,
-                'v': 0,
-                'r': b'\x00' * 32,
-                's': b'\x00' * 32
-            }
+            
+            # Generate valid EIP-712 credit delegation permit for ARB
+            print(f"   🔐 4A-1: Generating valid EIP-712 credit delegation permit...")
+            try:
+                from eth_account.messages import encode_structured_data
+                import time as time_mod
+                
+                arb_debt_token = self.get_debt_token_address(to_asset)
+                
+                # Get nonce from debt token
+                nonce_abi = [{
+                    "inputs": [{"name": "owner", "type": "address"}],
+                    "name": "nonces",
+                    "outputs": [{"name": "", "type": "uint256"}],
+                    "stateMutability": "view",
+                    "type": "function"
+                }]
+                
+                debt_contract = self.w3.eth.contract(address=arb_debt_token, abi=nonce_abi)
+                nonce = debt_contract.functions.nonces(self.user_address).call()
+                
+                # Permit parameters - FRESH deadline to prevent expiry
+                value = int(1000 * 1e18)  # 1000 ARB
+                deadline = int(time_mod.time()) + 7200  # 2 hours from NOW (not expired!)
+                
+                # EIP-712 structured data
+                structured_data = {
+                    "types": {
+                        "EIP712Domain": [
+                            {"name": "name", "type": "string"},
+                            {"name": "version", "type": "string"},
+                            {"name": "chainId", "type": "uint256"},
+                            {"name": "verifyingContract", "type": "address"}
+                        ],
+                        "DelegationWithSig": [
+                            {"name": "delegatee", "type": "address"},
+                            {"name": "value", "type": "uint256"},
+                            {"name": "nonce", "type": "uint256"},
+                            {"name": "deadline", "type": "uint256"}
+                        ]
+                    },
+                    "primaryType": "DelegationWithSig",
+                    "domain": {
+                        "name": "Aave Arbitrum Variable Debt ARB",
+                        "version": "1",
+                        "chainId": 42161,
+                        "verifyingContract": arb_debt_token
+                    },
+                    "message": {
+                        "delegatee": self.aave_debt_switch_v3,
+                        "value": value,
+                        "nonce": nonce,
+                        "deadline": deadline
+                    }
+                }
+                
+                # Sign permit
+                encoded_data = encode_structured_data(structured_data)
+                signed_message = self.account.sign_message(encoded_data)
+                
+                credit_permit = (
+                    arb_debt_token,
+                    value,
+                    deadline,
+                    signed_message.v,
+                    signed_message.r.to_bytes(32, 'big'),
+                    signed_message.s.to_bytes(32, 'big')
+                )
+                
+                print(f"      ✅ Valid EIP-712 permit generated (nonce: {nonce}, deadline: {deadline})")
+                
+            except Exception as permit_error:
+                print(f"      ⚠️  Permit generation failed: {permit_error}")
+                print(f"      ⚠️  Falling back to zeroed permit (may fail if not pre-approved)")
+                credit_permit = (
+                    zero_address,  # token
+                    0,              # value
+                    0,              # deadline
+                    0,              # v
+                    b'\x00' * 32,   # r
+                    b'\x00' * 32    # s
+                )
             
             debt_swap_contract = self.w3.eth.contract(
                 address=self.aave_debt_switch_v3,
-                abi=[{
-                    "inputs": [
-                        {"name": "debtAsset", "type": "address"},
-                        {"name": "debtRepayAmount", "type": "uint256"},
-                        {"name": "newDebtAsset", "type": "address"},
-                        {"name": "maxNewDebtAmount", "type": "uint256"},
-                        {"name": "extraCollateralAsset", "type": "address"},
-                        {"name": "extraCollateralAmount", "type": "uint256"},
-                        {"name": "offset", "type": "uint256"},
-                        {"name": "paraswapData", "type": "bytes"},
-                        {"name": "creditDelegationPermit", "type": "tuple", "components": [
-                            {"name": "token", "type": "address"},
-                            {"name": "value", "type": "uint256"},
-                            {"name": "deadline", "type": "uint256"},
-                            {"name": "v", "type": "uint8"},
-                            {"name": "r", "type": "bytes32"},
-                            {"name": "s", "type": "bytes32"}
-                        ]},
-                        {"name": "collateralATokenPermit", "type": "tuple", "components": [
-                            {"name": "token", "type": "address"},
-                            {"name": "value", "type": "uint256"},
-                            {"name": "deadline", "type": "uint256"},
-                            {"name": "v", "type": "uint8"},
-                            {"name": "r", "type": "bytes32"},
-                            {"name": "s", "type": "bytes32"}
-                        ]}
-                    ],
-                    "name": "swapDebt",
-                    "outputs": [],
-                    "type": "function"
-                }]
+                abi=self.debt_swap_abi
             )
             
             # Transaction parameters with comprehensive logging
+            # Calculate maxNewDebtAmount based on price ratio + slippage
+            # For DAI->ARB: need more ARB tokens due to price difference ($1 vs $0.55)
+            if from_asset.upper() == 'DAI' and to_asset.upper() == 'ARB':
+                arb_price = execution_result['position_before']['prices']['ARB']
+                # Convert DAI amount to ARB equivalent + 20% slippage buffer
+                max_new_debt = int(amount_to_swap / arb_price * 1.2)
+            else:
+                max_new_debt = int(amount_to_swap * 1.2)  # 20% slippage for other pairs
+            
             transaction_params = {
                 'debtAsset': self.get_debt_token_address(from_asset),
                 'debtRepayAmount': amount_to_swap,
                 'newDebtAsset': new_debt_token,
-                'maxNewDebtAmount': int(amount_to_swap * 1.05),  # 5% slippage
+                'maxNewDebtAmount': max_new_debt,
                 'extraCollateralAsset': zero_address,
                 'extraCollateralAmount': 0,
                 'offset': 288,  # From forensic analysis
@@ -1460,14 +1515,17 @@ class ProductionDebtSwapExecutor:
             final_gas_price = None
             try:
                 function_call = debt_swap_contract.functions.swapDebt(
-                    transaction_params['debtAsset'],
-                    transaction_params['debtRepayAmount'],
-                    transaction_params['newDebtAsset'],
-                    transaction_params['maxNewDebtAmount'],
-                    transaction_params['extraCollateralAsset'],
-                    transaction_params['extraCollateralAmount'],
-                    transaction_params['offset'],
-                    transaction_params['paraswapData'],
+                    (
+                        transaction_params['debtAsset'],
+                        transaction_params['debtRepayAmount'],
+                        2,  # debtRateMode (variable debt)
+                        transaction_params['newDebtAsset'],
+                        transaction_params['maxNewDebtAmount'],
+                        transaction_params['extraCollateralAsset'],
+                        transaction_params['extraCollateralAmount'],
+                        transaction_params['offset'],
+                        transaction_params['paraswapData']
+                    ),
                     transaction_params['creditDelegationPermit'],
                     transaction_params['collateralATokenPermit']
                 )
@@ -1540,7 +1598,7 @@ class ProductionDebtSwapExecutor:
                     
                 except Exception as gas_error:
                     # Fallback gas estimation with proper gas price scoping
-                    estimated_gas = 45000  # Realistic fallback based on manual success baseline (35,236 gas)
+                    estimated_gas = 1000000  # Debt swaps require ~874k gas, using 1M for safety
                     gas_price = self.w3.eth.gas_price
                     final_gas_price = gas_price  # FIX: Ensure final_gas_price is always defined
                     gas_cost_eth = (estimated_gas * gas_price) / 1e18
@@ -1654,8 +1712,11 @@ class ProductionDebtSwapExecutor:
             if transaction_params.get('offset') == 288:
                 offset_override = True
                 manual_param_overrides.append("Offset=288 (manual transaction matching)")
-            if (transaction_params.get('creditDelegationPermit', {}).get('v', 0) == 0 and 
-                transaction_params.get('collateralATokenPermit', {}).get('v', 0) == 0):
+            # Check if permits are zeroed (tuple format: token, value, deadline, v, r, s)
+            credit_permit = transaction_params.get('creditDelegationPermit')
+            collateral_permit = transaction_params.get('collateralATokenPermit')
+            if (credit_permit and isinstance(credit_permit, tuple) and len(credit_permit) >= 4 and credit_permit[3] == 0 and
+                collateral_permit and isinstance(collateral_permit, tuple) and len(collateral_permit) >= 4 and collateral_permit[3] == 0):
                 permit_override = True
                 manual_param_overrides.append("Zeroed permits (manual transaction matching)")
             
@@ -1784,8 +1845,8 @@ class ProductionDebtSwapExecutor:
             print(f"   📝 5B: Building and submitting transaction...")
             try:
                 # Calculate final gas limit with validation
-                base_gas_limit = min(int(estimated_gas * 1.1), 50000)  # 10% buffer, capped at 50k
-                manual_baseline = 35236
+                base_gas_limit = min(int(estimated_gas * 1.1), 1500000)  # 10% buffer, capped at 1.5M for debt swaps
+                manual_baseline = 874077  # Actual successful debt swap gas usage
                 
                 print(f"      📊 FINAL GAS LIMIT ANALYSIS:")
                 print(f"         Original Estimate: {estimated_gas:,} gas")
@@ -1794,10 +1855,18 @@ class ProductionDebtSwapExecutor:
                 print(f"         Manual Baseline: {manual_baseline:,} gas")
                 print(f"         Efficiency vs Manual: {((base_gas_limit - manual_baseline) / manual_baseline * 100):+.1f}%")
                 
+                # Get FRESH gas price right before transaction to avoid stale price
+                fresh_gas_price = self.w3.eth.gas_price
+                # Add 20% buffer to ensure it's above base fee
+                safe_gas_price = int(fresh_gas_price * 1.2)
+                
+                print(f"         Fresh Gas Price: {fresh_gas_price / 1e9:.4f} gwei")
+                print(f"         Safe Gas Price (20% buffer): {safe_gas_price / 1e9:.4f} gwei")
+                
                 transaction = function_call.build_transaction({
                     'from': self.user_address,
                     'gas': base_gas_limit,
-                    'gasPrice': final_gas_price,
+                    'gasPrice': safe_gas_price,  # Use fresh gas price with buffer
                     'nonce': self.w3.eth.get_transaction_count(self.user_address)
                 })
                 

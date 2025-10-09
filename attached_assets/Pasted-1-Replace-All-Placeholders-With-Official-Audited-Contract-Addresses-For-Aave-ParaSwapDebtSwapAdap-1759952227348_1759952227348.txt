@@ -1,0 +1,84 @@
+1. Replace All Placeholders With Official, Audited Contract Addresses
+For Aave ParaSwapDebtSwapAdapterV3 (Arbitrum):
+
+Always use the address from the official deployments or Aave’s documentation or github.
+
+Double-check the adapter address used for the swap. Avoid any hard-coded “test” values or placeholder addresses in mainnet transactions.
+
+Common Arbitrum deployment (confirm for V3!): 0x5b4ddd71635040bb3cf5c36ae9c42c168658134b (cross-verify with pool version and current Aave UI).
+
+For ParaSwap Augustus V6.2:
+
+The verified Augustus V6.2 contract (used for swap routers) is:
+0x6a000f20005980200259b80c5102003040001068
+
+Source: Etherscan Augustus V6.2
+
+Ensure this contract is referenced in your swapData and integrations, and immediately remove any testnet, v6.0, or outdated router references from the DEX request.
+
+2. Parameter & Call Struct Audit
+For swapDebt call (Aave V3):
+
+DebtSwapParams:
+
+All asset fields, rate modes, and values must match exactly.
+
+Parameters:
+
+debtAsset: address of the token you are paying off (e.g., DAI)
+
+debtRepayAmount: amount being swapped out
+
+debtRateMode: 2 for variable debt
+
+newDebtAsset: address of new asset
+
+maxNewDebtAmount: allow high enough for slippage
+
+extraCollateralAsset/extraCollateralAmount: 0 unless you are flash supplying
+
+paraswapData: raw call from ParaSwap for the exact out swap using the AUGUSTUS V6.2 router
+
+CreditDelegationInput:
+
+debtToken: variable debt token contract for ARB (check address)
+
+value: equals at least maxNewDebtAmount
+
+deadline: in the future
+
+v,r,s: output from valid EIP-712 signature using wallet and non-reused nonce
+
+Remove all template/dummy fields or defaults:
+
+No hardcoded zeroes or expired deadlines
+
+Do not use any “placeholder” signature or router
+
+All fields must be specific and current
+
+3. Concrete Questions for Agent
+Are you using the verified, current contract addresses for:
+
+ParaSwapDebtSwapAdapterV3 (Aave Arbitrum)?
+
+Augustus V6.2 (for swapData via ParaSwap)?
+
+ARB variable debt token (credit delegation)?
+
+Are all permits (credit delegation) generated for the actual nonce and with a non-expired deadline?
+
+Is your Paraswap “swapData” (call for router) encoded for Augustus V6.2 and using real-time route/amounts (no sample call data)?
+
+Did you cross-check that your struct for swapDebt matches the expected order and types from the official GitHub ABI definition?
+
+Are there any remaining “TODO”, “temp”, “test”, or “default” fields in your call or script?
+
+4. Suggestions
+Remove all code comments or values like // TODO, address(0), “Insert here”, etc., from your transaction parameters.
+
+Always query current nonce/approve and re-sign before each swap, as nonces can be used only once.
+
+Use only official published contract addresses and ABIs for all transaction and permit parameters.
+
+For debugging, print and compare the full calldata/permit struct you compose with the ones shown in successful Aave/ParaSwap examples.

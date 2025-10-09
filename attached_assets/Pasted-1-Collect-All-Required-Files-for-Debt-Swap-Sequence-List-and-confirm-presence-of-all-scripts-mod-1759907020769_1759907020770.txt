@@ -1,0 +1,71 @@
+1. Collect All Required Files for Debt Swap Sequence
+
+List and confirm presence of all scripts/modules related to debt swap: debt swap executors, permit generators, transaction safety checkers, logging, configuration, and monitoring files.
+
+If any module is missing (e.g., EIP-712 permit generation), create or download from Aave/ParaSwap repos.
+
+2. Generate Valid EIP-712 Credit Delegation Permit
+
+Call the permit creation function (typically called create_credit_delegation_permit).
+
+Populate with:
+
+Delegator (your wallet address)
+
+Delegatee (ParaSwapDebtSwapAdapter contract address)
+
+Debt token (ARB address on Arbitrum)
+
+Amount: $25 worth of ARB
+
+Expiry: recommended minimum (e.g., 1 hour from now, Unix timestamp)
+
+Nonce: fetch the current Aave nonce for the delegator
+
+Private key: use securely loaded ENV variable
+
+Sign the permit using your private key. Result: a correct EIP-712 signature tuple for the debt swap transaction.
+
+Log the details of the built permit for audit.
+
+3. Build and Submit Debt Swap Transaction
+
+Pass the signed permit tuple(s) into the swapDebt function call as required by Aave.
+
+Set transaction parameters:
+
+Repay: 25 DAI
+
+Borrow: $25 equivalent in ARB
+
+Slippage buffer: 20% (set maxNewDebtAmount equal to at least 1.2x expected ARB)
+
+Health factor limit: enforce abort if projected < 1.3 at any step
+
+Ensure the correct function selector (0xb8bd1c6b) is used. Confirm ABI loading is correct.
+
+Execute on Arbitrum mainnet. Wait for network confirmation.
+
+Log tx hash, block number, gas usage, and confirmation status.
+
+4. Post-Execution Safety Validation
+
+Fetch updated wallet/account state:
+
+Confirm DAI debt is reduced by $25
+
+Confirm ARB debt increased by the swap amount
+
+Confirm health factor is above 1.3
+
+Inspect for leftover assets/dust and ensure all are swept or handled as needed.
+
+Archive logs and confirmation for future audit.
+
+5. Troubleshoot if Transaction Fails
+
+If reverted: Print raw error, internal logs, and try to decode revert reason using receipt + eth_call.
+
+Confirm that the permit tuple was built with non-zero values, corresponds to the session nonce, and matches the debt token and delegatee.
+
+If you run into ParaSwap route failures, re-query quotes and adjust slippage accordingly.
