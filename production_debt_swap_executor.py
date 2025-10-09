@@ -858,42 +858,78 @@ class ProductionDebtSwapExecutor:
         except Exception as e:
             print(f"⚠️  ParaSwap API failed: {e}")
             
-            # FALLBACK: Direct Augustus V6.2 Integration
+            # FALLBACK: Direct Augustus V6.2 swapExactAmountIn (PROVEN method on Arbitrum)
             if "simpleBuy" in str(e) or "incompatible" in str(e):
-                print(f"\n🔄 TRIGGERING AUGUSTUS V6.2 DIRECT FALLBACK")
+                print(f"\n🔄 TRIGGERING AUGUSTUS V6.2 swapExactAmountIn FALLBACK")
                 print(f"=" * 60)
                 print(f"   Reason: ParaSwap API returned incompatible method")
-                print(f"   Strategy: Build swapExactAmountOutOnUniswapV3 calldata directly")
+                print(f"   Strategy: Build swapExactAmountIn calldata directly (PROVEN on Arbitrum)")
                 
                 try:
-                    from augustus_v6_direct_integration import AugustusV6DirectIntegration
+                    from augustus_v6_swap_exact_in import AugustusV6SwapExactIn
                     
-                    augustus_direct = AugustusV6DirectIntegration()
+                    augustus_direct = AugustusV6SwapExactIn()
                     
-                    # Build direct Augustus V6.2 calldata
-                    fallback_data = augustus_direct.build_arb_to_dai_swap(
-                        dai_amount_out=amount_wei,
-                        beneficiary=aave_debt_switch_addr,
-                        slippage_bps=300  # 3% slippage
+                    # Calculate ARB amount needed using ParaSwap price (if available)
+                    # Otherwise use 2.5x multiplier as safety margin
+                    try:
+                        # Try to get price from ParaSwap API
+                        price_url = "https://apiv5.paraswap.io/prices"
+                        price_params = {
+                            'srcToken': src_token,
+                            'destToken': dest_token,
+                            'amount': str(amount_wei),
+                            'srcDecimals': 18,
+                            'destDecimals': 18,
+                            'side': 'BUY',
+                            'network': 42161
+                        }
+                        price_response = requests.get(price_url, params=price_params, timeout=5)
+                        
+                        if price_response.status_code == 200:
+                            price_data = price_response.json()
+                            arb_amount_in = int(price_data['priceRoute']['srcAmount'])
+                            print(f"   📊 ParaSwap price obtained: {arb_amount_in / 1e18:.6f} ARB for {amount_wei / 1e18} DAI")
+                        else:
+                            # Fallback: Use 2.5x multiplier (ARB ~$0.55, DAI ~$1.0)
+                            arb_amount_in = int(amount_wei * 2.5)
+                            print(f"   ⚠️  Using fallback calculation: {arb_amount_in / 1e18:.6f} ARB")
+                    except:
+                        arb_amount_in = int(amount_wei * 2.5)
+                        print(f"   ⚠️  Using fallback calculation: {arb_amount_in / 1e18:.6f} ARB")
+                    
+                    # Add 1.6% buffer for price movement
+                    arb_amount_in_buffered = int(arb_amount_in * 1.016)
+                    
+                    # Min DAI out with 4% slippage
+                    min_dai_out = int(amount_wei * 0.96)
+                    
+                    # Build direct Augustus V6.2 swapExactAmountIn calldata
+                    fallback_data = augustus_direct.build_swap_exact_amount_in_calldata(
+                        token_in=src_token,      # ARB
+                        token_out=dest_token,    # DAI
+                        amount_in=arb_amount_in_buffered,
+                        min_amount_out=min_dai_out,
+                        beneficiary=aave_debt_switch_addr
                     )
                     
-                    print(f"\n✅ AUGUSTUS V6.2 DIRECT CALLDATA SUCCESSFUL!")
+                    print(f"\n✅ AUGUSTUS V6.2 swapExactAmountIn CALLDATA SUCCESSFUL!")
                     print(f"   Router: {fallback_data['augustus_router']}")
-                    print(f"   Method: {fallback_data['method_name']}")
+                    print(f"   Method: {fallback_data['method_name']} (PROVEN on Arbitrum)")
                     print(f"   Selector: {fallback_data['method_selector']}")
-                    print(f"   DAI Out: {fallback_data['amount_out'] / 1e18}")
-                    print(f"   Max ARB In: {fallback_data['max_amount_in'] / 1e18}")
+                    print(f"   ARB In: {fallback_data['amount_in'] / 1e18}")
+                    print(f"   Min DAI Out: {fallback_data['min_amount_out'] / 1e18}")
                     
                     # Return fallback data in same format
                     return {
                         'calldata': fallback_data['calldata'],
-                        'expected_amount': fallback_data['amount_out'],
+                        'expected_amount': amount_wei,  # Expected DAI amount
                         'augustus_router': fallback_data['augustus_router'],
                         'method_selector': fallback_data['method_selector'],
                         'method_name': fallback_data['method_name'],
                         'price_route': {
-                            'srcAmount': str(fallback_data['max_amount_in']),
-                            'destAmount': str(fallback_data['amount_out']),
+                            'srcAmount': str(fallback_data['amount_in']),
+                            'destAmount': str(amount_wei),
                             'srcToken': src_token,
                             'destToken': dest_token
                         },
@@ -901,7 +937,7 @@ class ProductionDebtSwapExecutor:
                     }
                     
                 except Exception as fallback_error:
-                    print(f"❌ Augustus V6.2 fallback also failed: {fallback_error}")
+                    print(f"❌ Augustus V6.2 swapExactAmountIn fallback failed: {fallback_error}")
                     import traceback
                     print(f"🔍 Fallback error: {traceback.format_exc()}")
                     return {}
