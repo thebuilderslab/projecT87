@@ -8,7 +8,7 @@ import json
 import time
 import requests
 from typing import Any, Dict, List, Optional
-from eth_abi import encode
+from eth_abi.abi import encode
 from web3 import Web3
 
 class AugustusV5MultiSwapBuilder:
@@ -240,19 +240,7 @@ class AugustusV5MultiSwapBuilder:
             best_route = price_route.get('bestRoute', [])
             
             if not best_route:
-                print("   ⚠️  No bestRoute in ParaSwap response, using fallback simple path")
-                # Fallback: create simple single-hop path with ArbitrumAdapter01
-                return [{
-                    'to': to_token,
-                    'totalNetworkFee': 0,
-                    'routes': [{
-                        'exchange': self.arbitrum_adapter,  # ArbitrumAdapter01 for ALL DEXs
-                        'targetExchange': to_token,  # Destination token
-                        'percent': 10000,  # 100%
-                        'payload': b'',
-                        'networkFee': 0
-                    }]
-                }]
+                raise ValueError("No bestRoute in ParaSwap response - cannot build paths without routing data")
             
             # Build paths from ParaSwap bestRoute
             for i, route_segment in enumerate(best_route):
@@ -263,56 +251,60 @@ class AugustusV5MultiSwapBuilder:
                     swap_exchanges = swap.get('swapExchanges', [])
                     
                     for exchange_data in swap_exchanges:
-                        # CRITICAL FIX: Always use ArbitrumAdapter01 for adapter field
-                        # The actual DEX routing happens internally via the payload
-                        target_exchange = exchange_data.get('exchange', to_token)
+                        # CRITICAL: Extract router and payload from ParaSwap data
+                        # exchange_data['exchange'] is symbolic name ("UniswapV2") NOT an address
+                        # Real router address is in exchange_data['data']['router']
+                        # Payload for DEX swap is in exchange_data['data'].get('payload')
+                        
+                        exchange_name = exchange_data.get('exchange', 'Unknown')
+                        data_field = exchange_data.get('data', {})
+                        
+                        # Safely extract and validate router address
+                        router_address = data_field.get('router')
+                        if not router_address or not isinstance(router_address, str):
+                            raise ValueError(f"Missing or invalid router address in ParaSwap data for {exchange_name}")
+                        
+                        # Validate router is a hex address
+                        if not router_address.startswith('0x') or len(router_address) != 42:
+                            raise ValueError(f"Invalid router address format: {router_address}")
+                        
+                        # Extract payload (may be empty string or missing)
+                        payload_hex = data_field.get('payload', '')
+                        if payload_hex and isinstance(payload_hex, str) and payload_hex.startswith('0x'):
+                            payload_bytes = bytes.fromhex(payload_hex[2:])
+                        else:
+                            payload_bytes = b''
                         
                         routes.append({
                             'exchange': self.arbitrum_adapter,  # Always use ArbitrumAdapter01
-                            'targetExchange': self.w3.to_checksum_address(target_exchange),
+                            'targetExchange': self.w3.to_checksum_address(router_address),
                             'percent': int(exchange_data.get('percent', 10000)),
-                            'payload': bytes.fromhex(exchange_data.get('data', '')[2:]) if exchange_data.get('data') else b'',
+                            'payload': payload_bytes,  # Forward ParaSwap payload
                             'networkFee': int(exchange_data.get('networkFee', 0))
                         })
                         
-                        print(f"      Route: ArbitrumAdapter01 → {target_exchange[:10]}... ({exchange_data.get('percent', 100)}%)")
+                        payload_info = f"{len(payload_bytes)} bytes" if payload_bytes else "empty"
+                        print(f"      Route: {exchange_name} → ArbitrumAdapter01 → {router_address[:10]}... (payload: {payload_info}, {exchange_data.get('percent', 100)}%)")
                 
                 if routes:
+                    dest_token = route_segment.get('destToken', to_token)
                     paths.append({
-                        'to': self.w3.to_checksum_address(route_segment.get('destToken', to_token)),
+                        'to': self.w3.to_checksum_address(dest_token),
                         'totalNetworkFee': int(route_segment.get('networkFee', 0)),
                         'routes': routes
                     })
             
+            if not paths:
+                raise ValueError("Failed to build any valid paths from ParaSwap route data")
+            
             print(f"   ✅ Built {len(paths)} path(s) with {sum(len(p['routes']) for p in paths)} route(s)")
             print(f"      All routes use ArbitrumAdapter01: {self.arbitrum_adapter}")
             
-            return paths if paths else [{
-                'to': to_token,
-                'totalNetworkFee': 0,
-                'routes': [{
-                    'exchange': self.arbitrum_adapter,  # ArbitrumAdapter01 for fallback too
-                    'targetExchange': to_token,
-                    'percent': 10000,
-                    'payload': b'',
-                    'networkFee': 0
-                }]
-            }]
+            return paths
             
         except Exception as e:
             print(f"   ❌ Error building paths: {e}")
-            # Return simple fallback path with ArbitrumAdapter01
-            return [{
-                'to': to_token,
-                'totalNetworkFee': 0,
-                'routes': [{
-                    'exchange': self.arbitrum_adapter,  # ArbitrumAdapter01 for error fallback
-                    'targetExchange': to_token,
-                    'percent': 10000,
-                    'payload': b'',
-                    'networkFee': 0
-                }]
-            }]
+            raise  # Re-raise instead of returning invalid fallback
     
     def _encode_multiswap_struct(self, sell_data: Dict[str, Any]) -> Optional[str]:
         """Encode SellData struct using eth_abi"""
