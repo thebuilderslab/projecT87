@@ -45,6 +45,10 @@ class AugustusV5MultiSwapBuilder:
         # Augustus V5 on Arbitrum
         self.augustus_v5 = self.w3.to_checksum_address("0xDEF171Fe48CF0115B1d80b88dc8eAB59176FEe57")
         
+        # ArbitrumAdapter01 - Generic adapter for ALL DEXs on Arbitrum
+        # This single adapter handles UniswapV3, Sushi, Camelot, etc. internally
+        self.arbitrum_adapter = self.w3.to_checksum_address("0x369A2FDb910d432f0a07381a5E3d27572c876713")
+        
         # ParaSwap API
         self.paraswap_api_base = "https://apiv5.paraswap.io"
         
@@ -60,6 +64,7 @@ class AugustusV5MultiSwapBuilder:
         
         print(f"🔧 Augustus V5 multiSwap Builder initialized")
         print(f"   Augustus V5: {self.augustus_v5}")
+        print(f"   ArbitrumAdapter01: {self.arbitrum_adapter} (generic adapter for ALL DEXs)")
         print(f"   Chain: {self.network} (ID: {self.chain_id})")
     
     def get_paraswap_price_route(self, from_token: str, to_token: str, amount: int) -> Optional[Dict[str, Any]]:
@@ -223,20 +228,26 @@ class AugustusV5MultiSwapBuilder:
             return None
     
     def _build_paths_from_paraswap(self, price_route: Dict[str, Any], to_token: str) -> List[Dict[str, Any]]:
-        """Build path array from ParaSwap price route"""
+        """
+        Build path array from ParaSwap price route
+        
+        CRITICAL: Uses ArbitrumAdapter01 (0x369A2FDb910d432f0a07381a5E3d27572c876713) 
+        as the adapter for ALL routes. This single generic adapter handles all DEX 
+        swaps on Arbitrum (UniswapV3, Sushi, Camelot, etc.) internally via payload routing.
+        """
         try:
             paths = []
             best_route = price_route.get('bestRoute', [])
             
             if not best_route:
                 print("   ⚠️  No bestRoute in ParaSwap response, using fallback simple path")
-                # Fallback: create simple single-hop path
+                # Fallback: create simple single-hop path with ArbitrumAdapter01
                 return [{
                     'to': to_token,
                     'totalNetworkFee': 0,
                     'routes': [{
-                        'exchange': self.augustus_v5,  # Use Augustus as placeholder
-                        'targetExchange': '0x0000000000000000000000000000000000000000',
+                        'exchange': self.arbitrum_adapter,  # ArbitrumAdapter01 for ALL DEXs
+                        'targetExchange': to_token,  # Destination token
                         'percent': 10000,  # 100%
                         'payload': b'',
                         'networkFee': 0
@@ -252,13 +263,19 @@ class AugustusV5MultiSwapBuilder:
                     swap_exchanges = swap.get('swapExchanges', [])
                     
                     for exchange_data in swap_exchanges:
+                        # CRITICAL FIX: Always use ArbitrumAdapter01 for adapter field
+                        # The actual DEX routing happens internally via the payload
+                        target_exchange = exchange_data.get('exchange', to_token)
+                        
                         routes.append({
-                            'exchange': self.w3.to_checksum_address(exchange_data.get('exchange', self.augustus_v5)),
-                            'targetExchange': self.w3.to_checksum_address(exchange_data.get('destToken', to_token)),
+                            'exchange': self.arbitrum_adapter,  # Always use ArbitrumAdapter01
+                            'targetExchange': self.w3.to_checksum_address(target_exchange),
                             'percent': int(exchange_data.get('percent', 10000)),
                             'payload': bytes.fromhex(exchange_data.get('data', '')[2:]) if exchange_data.get('data') else b'',
                             'networkFee': int(exchange_data.get('networkFee', 0))
                         })
+                        
+                        print(f"      Route: ArbitrumAdapter01 → {target_exchange[:10]}... ({exchange_data.get('percent', 100)}%)")
                 
                 if routes:
                     paths.append({
@@ -268,13 +285,14 @@ class AugustusV5MultiSwapBuilder:
                     })
             
             print(f"   ✅ Built {len(paths)} path(s) with {sum(len(p['routes']) for p in paths)} route(s)")
+            print(f"      All routes use ArbitrumAdapter01: {self.arbitrum_adapter}")
             
             return paths if paths else [{
                 'to': to_token,
                 'totalNetworkFee': 0,
                 'routes': [{
-                    'exchange': self.augustus_v5,
-                    'targetExchange': '0x0000000000000000000000000000000000000000',
+                    'exchange': self.arbitrum_adapter,  # ArbitrumAdapter01 for fallback too
+                    'targetExchange': to_token,
                     'percent': 10000,
                     'payload': b'',
                     'networkFee': 0
@@ -283,13 +301,13 @@ class AugustusV5MultiSwapBuilder:
             
         except Exception as e:
             print(f"   ❌ Error building paths: {e}")
-            # Return simple fallback path
+            # Return simple fallback path with ArbitrumAdapter01
             return [{
                 'to': to_token,
                 'totalNetworkFee': 0,
                 'routes': [{
-                    'exchange': self.augustus_v5,
-                    'targetExchange': '0x0000000000000000000000000000000000000000',
+                    'exchange': self.arbitrum_adapter,  # ArbitrumAdapter01 for error fallback
+                    'targetExchange': to_token,
                     'percent': 10000,
                     'payload': b'',
                     'networkFee': 0
