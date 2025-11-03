@@ -279,8 +279,17 @@ class AugustusV5MultiSwapBuilder:
                         
                         # Safely extract and validate router address
                         router_address = data_field.get('router')
+                        
+                        # Fallback to known DEX routers on Arbitrum if not provided
                         if not router_address or not isinstance(router_address, str):
-                            raise ValueError(f"Missing or invalid router address in ParaSwap data for {exchange_name}")
+                            known_routers = {
+                                'UniswapV3': '0xE592427A0AEce92De3Edee1F18E0157C05861564',  # Uniswap V3 SwapRouter
+                                'UniswapV2': '0x1b02dA8Cb0d097eB8D57A175b88c7D8b47997506',  # Sushiswap Router
+                                'Camelot': '0xc873fEcbd354f5A56E00E710B90EF4201db2448d'   # Camelot Router
+                            }
+                            router_address = known_routers.get(exchange_name)
+                            if not router_address:
+                                raise ValueError(f"Missing router address in ParaSwap data for {exchange_name} and no known fallback")
                         
                         # Validate router is a hex address
                         if not router_address.startswith('0x') or len(router_address) != 42:

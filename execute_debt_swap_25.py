@@ -191,8 +191,11 @@ def main():
     max_new_debt_amount = int(arb_amount_wei * 1.05)  # 5% buffer
     extra_collateral_asset = "0x0000000000000000000000000000000000000000"
     extra_collateral_amount = 0
-    offset = 4  # Skip selector bytes
-    paraswap_data = bytes.fromhex(multiswap_calldata[2:])  # Remove 0x
+    # offset points to SellData.fromAmount in Augustus V5 multiSwap calldata
+    # Byte position: 4 (selector) + 32 (fromToken) + 32 (fromAmount start) = 68 (0x44)
+    offset = 68  # Correct offset for fromAmount in multiSwap SellData struct
+    # Pass complete calldata INCLUDING selector (Debt Switch will call Augustus V5 with this)
+    paraswap_data = bytes.fromhex(multiswap_calldata[2:])  # Remove 0x prefix only
     
     print(f"   Debt Asset (DAI): {debt_asset}")
     print(f"   Debt Repay Amount: {dai_amount:.6f} DAI")
