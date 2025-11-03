@@ -67,8 +67,12 @@ class AugustusV5MultiSwapBuilder:
         print(f"   ArbitrumAdapter01: {self.arbitrum_adapter} (generic adapter for ALL DEXs)")
         print(f"   Chain: {self.network} (ID: {self.chain_id})")
     
-    def get_paraswap_price_route(self, from_token: str, to_token: str, amount: int) -> Optional[Dict[str, Any]]:
-        """Get price and route data from ParaSwap API"""
+    def get_paraswap_price_route(self, from_token: str, to_token: str, amount: int, side: str = 'SELL') -> Optional[Dict[str, Any]]:
+        """Get price and route data from ParaSwap API
+        
+        Args:
+            side: 'SELL' (specify src amount) or 'BUY' (specify dest amount - for exact output debt swaps)
+        """
         try:
             from_token_addr = self.tokens.get(from_token.upper())
             to_token_addr = self.tokens.get(to_token.upper())
@@ -84,13 +88,16 @@ class AugustusV5MultiSwapBuilder:
                 'amount': str(amount),
                 'srcDecimals': '18',
                 'destDecimals': '18',
-                'side': 'SELL',
+                'side': side,  # Use BUY for exact output (debt swaps)
                 'network': str(self.chain_id),
                 'excludeDirectContractMethods': 'true'  # Force multi-hop routing
             }
             
             print(f"\n🌐 Fetching ParaSwap price route for {from_token} → {to_token}...")
-            print(f"   Amount: {amount / 1e18:.6f} {from_token}")
+            if side == 'BUY':
+                print(f"   Mode: BUY (exact output) - Want to receive: {amount / 1e18:.6f} {to_token}")
+            else:
+                print(f"   Mode: SELL - Selling: {amount / 1e18:.6f} {from_token}")
             
             response = requests.get(url, params=params, timeout=10)
             
@@ -119,7 +126,8 @@ class AugustusV5MultiSwapBuilder:
         min_to_amount: int,
         beneficiary: str,
         deadline: Optional[int] = None,
-        slippage_bps: int = 400  # 4% slippage
+        slippage_bps: int = 400,  # 4% slippage
+        use_buy_mode: bool = False  # Use BUY mode for exact output (debt swaps)
     ) -> Optional[Dict[str, Any]]:
         """
         Build multiSwap calldata for Augustus V5
@@ -127,11 +135,12 @@ class AugustusV5MultiSwapBuilder:
         Args:
             from_token: Source token symbol (e.g., 'ARB')
             to_token: Destination token symbol (e.g., 'DAI')
-            from_amount: Exact amount to swap (in wei)
+            from_amount: Amount to swap (srcAmount in SELL mode, destAmount in BUY mode)
             min_to_amount: Minimum amount to receive (in wei)
             beneficiary: Address to receive swapped tokens
             deadline: Unix timestamp deadline (default: 30 mins from now)
             slippage_bps: Slippage tolerance in basis points (default: 400 = 4%)
+            use_buy_mode: If True, use BUY mode (exact output) for debt swaps
         
         Returns:
             Dict with calldata, method info, and parameters
@@ -148,14 +157,23 @@ class AugustusV5MultiSwapBuilder:
                 raise ValueError(f"Unknown tokens: {from_token} or {to_token}")
             
             # Get ParaSwap price route for routing data
-            price_route = self.get_paraswap_price_route(from_token, to_token, from_amount)
+            side = 'BUY' if use_buy_mode else 'SELL'
+            price_route = self.get_paraswap_price_route(from_token, to_token, from_amount, side=side)
             
             if not price_route:
                 raise Exception("Failed to get ParaSwap price route")
             
-            # Calculate expected amount with slippage
-            expected_amount = int(price_route['destAmount'])
-            min_amount = min_to_amount if min_to_amount > 0 else int(expected_amount * (10000 - slippage_bps) / 10000)
+            # In BUY mode: from_amount is destAmount, srcAmount comes from API
+            # In SELL mode: from_amount is srcAmount, destAmount comes from API
+            if use_buy_mode:
+                actual_from_amount = int(price_route['srcAmount'])  # ARB needed
+                exact_to_amount = from_amount  # DAI wanted (exact)
+                expected_amount = exact_to_amount
+                min_amount = exact_to_amount  # Must receive exact amount in BUY mode
+            else:
+                actual_from_amount = from_amount
+                expected_amount = int(price_route['destAmount'])
+                min_amount = min_to_amount if min_to_amount > 0 else int(expected_amount * (10000 - slippage_bps) / 10000)
             
             # Set deadline (30 minutes from now if not provided)
             if deadline is None:
@@ -170,8 +188,8 @@ class AugustusV5MultiSwapBuilder:
             # Build SellData struct
             sell_data = {
                 'fromToken': from_token_addr,
-                'fromAmount': from_amount,
-                'toAmount': min_amount,  # Min amount out (slippage protection)
+                'fromAmount': actual_from_amount,  # Use actual amount (from API in BUY mode)
+                'toAmount': min_amount,  # Min amount out (exact in BUY mode)
                 'expectedAmount': expected_amount,
                 'beneficiary': self.w3.to_checksum_address(beneficiary),
                 'path': paths,
