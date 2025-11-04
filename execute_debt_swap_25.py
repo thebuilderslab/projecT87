@@ -25,17 +25,53 @@ AAVE_POOL = "0x794a61358D6845594F94dc1DB02A252b5b4814aD"
 DEBT_SWITCH_ABI = [
     {
         "inputs": [
-            {"name": "debtAsset", "type": "address"},
-            {"name": "debtRepayAmount", "type": "uint256"},
-            {"name": "debtRateMode", "type": "uint256"},
-            {"name": "newDebtAsset", "type": "address"},
-            {"name": "maxNewDebtAmount", "type": "uint256"},
-            {"name": "extraCollateralAsset", "type": "address"},
-            {"name": "extraCollateralAmount", "type": "uint256"},
-            {"name": "offset", "type": "uint256"},
-            {"name": "paraswapData", "type": "bytes"}
+            {
+                "components": [
+                    {"name": "debtAsset", "type": "address"},
+                    {"name": "debtRepayAmount", "type": "uint256"}
+                ],
+                "name": "assets",
+                "type": "tuple"
+            },
+            {
+                "components": [
+                    {"name": "debtRateMode", "type": "uint256"},
+                    {"name": "newDebtAsset", "type": "address"},
+                    {"name": "maxNewDebtAmount", "type": "uint256"},
+                    {"name": "extraCollateralAsset", "type": "address"},
+                    {"name": "extraCollateralAmount", "type": "uint256"},
+                    {"name": "offset", "type": "uint256"},
+                    {"name": "paraswapData", "type": "bytes"}
+                ],
+                "name": "params",
+                "type": "tuple"
+            },
+            {
+                "components": [
+                    {"name": "debtToken", "type": "address"},
+                    {"name": "value", "type": "uint256"},
+                    {"name": "deadline", "type": "uint256"},
+                    {"name": "v", "type": "uint8"},
+                    {"name": "r", "type": "bytes32"},
+                    {"name": "s", "type": "bytes32"}
+                ],
+                "name": "creditDelegationPermits",
+                "type": "tuple[]"
+            },
+            {
+                "components": [
+                    {"name": "aToken", "type": "address"},
+                    {"name": "value", "type": "uint256"},
+                    {"name": "deadline", "type": "uint256"},
+                    {"name": "v", "type": "uint8"},
+                    {"name": "r", "type": "bytes32"},
+                    {"name": "s", "type": "bytes32"}
+                ],
+                "name": "collateralATokenPermits",
+                "type": "tuple[]"
+            }
         ],
-        "name": "swapDebt",
+        "name": "debtSwitch",
         "outputs": [],
         "stateMutability": "nonpayable",
         "type": "function"
@@ -191,11 +227,12 @@ def main():
     max_new_debt_amount = int(arb_amount_wei * 1.05)  # 5% buffer
     extra_collateral_asset = "0x0000000000000000000000000000000000000000"
     extra_collateral_amount = 0
-    # offset points to SellData.fromAmount in Augustus V5 multiSwap calldata
-    # Byte position: 4 (selector) + 32 (fromToken) + 32 (fromAmount start) = 68 (0x44)
-    offset = 68  # Correct offset for fromAmount in multiSwap SellData struct
-    # Pass complete calldata INCLUDING selector (Debt Switch will call Augustus V5 with this)
-    paraswap_data = bytes.fromhex(multiswap_calldata[2:])  # Remove 0x prefix only
+    # offset points to fromAmount in ABI-encoded multiSwap calldata
+    # ABI layout: selector (4 bytes) + fromToken (32 bytes) + fromAmount (32 bytes)
+    # fromAmount starts at byte 36 (0x24)
+    offset = 36  # 0x24 - Verified correct position for fromAmount in ABI encoding
+    # Pass COMPLETE calldata including selector
+    paraswap_data = bytes.fromhex(multiswap_calldata[2:])  # Remove only 0x prefix
     
     print(f"   Debt Asset (DAI): {debt_asset}")
     print(f"   Debt Repay Amount: {dai_amount:.6f} DAI")
@@ -208,9 +245,9 @@ def main():
     max_priority_fee = w3.to_wei(0.01, 'gwei')  # 0.01 gwei tip
     max_fee = int(base_fee * 1.5) + max_priority_fee  # 1.5x base fee + tip
     
-    swap_tx = debt_switch.functions.swapDebt(
-        debt_asset,
-        debt_repay_amount,
+    # Construct structured parameters for debtSwitch function
+    assets = (debt_asset, debt_repay_amount)
+    params = (
         debt_rate_mode,
         new_debt_asset,
         max_new_debt_amount,
@@ -218,6 +255,15 @@ def main():
         extra_collateral_amount,
         offset,
         paraswap_data
+    )
+    credit_delegation_permits = []  # Empty array - we use on-chain approvals
+    collateral_atoken_permits = []  # Empty array - no collateral permits needed
+    
+    swap_tx = debt_switch.functions.debtSwitch(
+        assets,
+        params,
+        credit_delegation_permits,
+        collateral_atoken_permits
     ).build_transaction({
         'from': wallet,
         'gas': 1_000_000,  # Conservative gas limit
