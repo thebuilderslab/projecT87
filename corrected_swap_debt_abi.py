@@ -3,9 +3,11 @@
 Corrected Aave Debt Switch V3 ABI for swapDebt() function
 Based on successful on-chain transactions analysis
 Contract: 0x63dfa7c09Dc2Ff4030d6B8Dc2ce6262BF898C8A4
+Function Selector: 0xb8bd1c6b
 """
 
-# CORRECT ABI for swapDebt function (selector: 0xb8bd1c6b)
+# CORRECT ABI for swapDebt function
+# Signature: swapDebt((address,uint256,uint256,address,uint256,address,uint256,uint256,bytes),(address,uint256,uint256,uint8,bytes32,bytes32),(address,uint256,uint256,uint8,bytes32,bytes32))
 DEBT_SWITCH_SWAP_DEBT_ABI = [{
     "inputs": [
         {
@@ -18,20 +20,7 @@ DEBT_SWITCH_SWAP_DEBT_ABI = [{
                 {"internalType": "address", "name": "extraCollateralAsset", "type": "address"},
                 {"internalType": "uint256", "name": "extraCollateralAmount", "type": "uint256"},
                 {"internalType": "uint256", "name": "offset", "type": "uint256"},
-                {"internalType": "bytes", "name": "paraswapData", "type": "bytes"},
-                {
-                    "components": [
-                        {"internalType": "address", "name": "aToken", "type": "address"},
-                        {"internalType": "uint256", "name": "value", "type": "uint256"},
-                        {"internalType": "uint256", "name": "deadline", "type": "uint256"},
-                        {"internalType": "uint8", "name": "v", "type": "uint8"},
-                        {"internalType": "bytes32", "name": "r", "type": "bytes32"},
-                        {"internalType": "bytes32", "name": "s", "type": "bytes32"}
-                    ],
-                    "internalType": "struct IBaseParaSwapAdapter.PermitInput[]",
-                    "name": "permitParams",
-                    "type": "tuple[]"
-                }
+                {"internalType": "bytes", "name": "paraswapData", "type": "bytes"}
             ],
             "internalType": "struct IParaSwapDebtSwapAdapter.DebtSwapParams",
             "name": "debtSwapParams",
@@ -118,43 +107,44 @@ if __name__ == "__main__":
     from web3 import Web3
     
     w3 = Web3()
-    contract = w3.eth.contract(
-        address=Web3.to_checksum_address(DEBT_SWITCH_V3_ADDRESS),
-        abi=DEBT_SWITCH_SWAP_DEBT_ABI
-    )
     
     # Verify function selector
-    func = contract.functions.swapDebt
-    selector = w3.keccak(text="swapDebt((address,uint256,uint256,address,uint256,address,uint256,uint256,bytes,(address,uint256,uint256,uint8,bytes32,bytes32)[]),(address,uint256,uint256,uint8,bytes32,bytes32),(address,uint256,uint256,uint8,bytes32,bytes32))")[:4].hex()
+    signature = "swapDebt((address,uint256,uint256,address,uint256,address,uint256,uint256,bytes),(address,uint256,uint256,uint8,bytes32,bytes32),(address,uint256,uint256,uint8,bytes32,bytes32))"
+    selector = w3.keccak(text=signature)[:4].hex()
     
     print("=" * 80)
     print("CORRECTED DEBT SWITCH ABI VERIFICATION")
     print("=" * 80)
     print(f"Contract: {DEBT_SWITCH_V3_ADDRESS}")
-    print(f"Function: swapDebt()")
+    print(f"Function Signature:")
+    print(f"  {signature}")
+    print()
     print(f"Expected Selector: 0xb8bd1c6b")
     print(f"Computed Selector: {selector}")
-    print(f"Match: {'✅ YES' if selector == '0xb8bd1c6b' else '❌ NO'}")
+    print(f"Match: {'✅ YES - CORRECT!' if selector == '0xb8bd1c6b' else '❌ NO'}")
     print()
-    print("Function Parameters:")
-    print("  1. debtSwapParams (tuple):")
-    print("     - debtAsset: address of debt to repay")
-    print("     - debtRepayAmount: amount to repay")
-    print("     - debtRateMode: 2 for variable")
-    print("     - newDebtAsset: address of new debt")
-    print("     - maxNewDebtAmount: max amount of new debt")
-    print("     - extraCollateralAsset: address (0x0 if none)")
-    print("     - extraCollateralAmount: uint256")
-    print("     - offset: uint256 (usually 0)")
-    print("     - paraswapData: bytes (swap calldata)")
-    print("     - permitParams: array of permits")
+    print("=" * 80)
+    print("PARAMETER STRUCTURE:")
+    print("=" * 80)
+    print("1. debtSwapParams (tuple with 9 fields):")
+    print("   - debtAsset: address of debt to repay (e.g., DAI)")
+    print("   - debtRepayAmount: amount to repay in wei")
+    print("   - debtRateMode: 2 for variable rate")
+    print("   - newDebtAsset: address of new debt (e.g., WETH)")
+    print("   - maxNewDebtAmount: maximum new debt amount in wei")
+    print("   - extraCollateralAsset: 0x0 (not used)")
+    print("   - extraCollateralAmount: 0 (not used)")
+    print("   - offset: 0 (not used)")
+    print("   - paraswapData: encoded swap calldata from ParaSwap API")
     print()
-    print("  2. creditDelegationPermit (tuple):")
-    print("     - debtToken: variable debt token address")
-    print("     - value: delegation amount")
-    print("     - deadline: timestamp")
-    print("     - v, r, s: signature")
+    print("2. creditDelegationPermit (tuple with 6 fields):")
+    print("   - debtToken: variable debt token address")
+    print("   - value: credit delegation amount")
+    print("   - deadline: permit deadline timestamp")
+    print("   - v: signature v")
+    print("   - r: signature r")
+    print("   - s: signature s")
     print()
-    print("  3. collateralATokenPermit (tuple):")
-    print("     - Usually all zeros (no collateral permit needed)")
+    print("3. collateralATokenPermit (tuple with 6 fields):")
+    print("   - All zeros (not needed for debt swaps)")
     print("=" * 80)
