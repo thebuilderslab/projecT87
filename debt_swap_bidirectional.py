@@ -239,7 +239,7 @@ class BidirectionalDebtSwapper:
             signed_tx = self.account.sign_transaction(tx)
             
             print(f"📡 Broadcasting...")
-            tx_hash = self.w3.eth.send_raw_transaction(signed_tx.raw_transaction)
+            tx_hash = self.w3.eth.send_raw_transaction(signed_tx.rawTransaction)
             tx_hash_hex = tx_hash.hex()
             
             print(f"\n✅ Transaction sent!")

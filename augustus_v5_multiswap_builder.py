@@ -231,7 +231,7 @@ class AugustusV5MultiSwapBuilder:
                 'augustus_router': self.augustus_v5,
                 'from_token': from_token_addr,
                 'to_token': to_token_addr,
-                'from_amount': from_amount,
+                'from_amount': actual_from_amount,  # CRITICAL: Return actual calculated amount, not input
                 'min_to_amount': min_amount,
                 'expected_amount': expected_amount,
                 'beneficiary': beneficiary,
