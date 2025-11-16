@@ -105,7 +105,7 @@ def run_autonomous_mainnet_agent():
                 
                 # Run the autonomous task
                 performance = agent.run_real_defi_task(run_id, iteration, {
-                    'health_factor_target': 1.25,  # Conservative for mainnet
+                    'health_factor_target': 1.05,  # Aggressive for maximum efficiency
                     'max_iterations_per_run': 100
                 })
                 

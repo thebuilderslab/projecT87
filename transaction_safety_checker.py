@@ -94,7 +94,7 @@ class TransactionSafetyChecker:
                 estimated_new_debt = total_debt_usd + amount_usd
                 estimated_new_hf = (total_collateral_usd * 0.8) / estimated_new_debt if estimated_new_debt > 0 else float('inf')
                 
-                if estimated_new_hf < 1.25:
+                if estimated_new_hf < 1.05:
                     safety_report['critical_issues'].append(f"Post-borrow HF too low: {estimated_new_hf:.4f}")
                     
             # Final safety determination

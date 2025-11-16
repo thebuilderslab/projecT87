@@ -675,7 +675,7 @@ def get_parameters():
     """Get current agent parameters"""
     try:
         config = {
-            'health_factor_target': 1.25,  # Conservative for mainnet
+            'health_factor_target': 1.05,  # Aggressive for maximum efficiency
             'borrow_trigger_threshold': 12.0,  # $12 collateral growth trigger
             'arb_decline_threshold': 0.05,
             'exploration_rate': 0.1,

@@ -1,0 +1,81 @@
+Task 1: Verify Contract Addresses
+
+Compare the contract addresses I provided from my manual MetaMask swaps against what the system currently has in its configuration:
+
+Manual Swap Contracts (Both DAI→WETH and WETH→DAI):
+
+WETH Variable Debt Token (InitializableImmutableAdminUpgradeabilityProxy): 0x0c84331e39d6658Cd6e6b9ba04736cC4c4734351
+
+ParaSwapDebtSwapAdapterV3: 0x63dfa7c09Dc2Ff4030d6B8Dc2ce6262BF898C8A4
+
+Verification Steps:
+
+Locate all contract address definitions in the codebase (check config files, constants, ABI files)
+
+Confirm these addresses match exactly what I provided from manual swaps
+
+Verify these are the correct Arbitrum mainnet addresses for:
+
+Aave V3 WETH variable debt token
+
+ParaSwap Debt Swap Adapter V3
+
+Check if any other related contract addresses (DAI debt token, Aave Pool, Augustus router) are also correct
+
+Report any mismatches or discrepancies found
+
+Task 2: Execute New Test Swap
+
+After verifying contracts are correct, run a new test with the following parameters:
+
+Test Configuration:
+
+Direction: DAI → WETH (repay DAI debt, borrow WETH)
+
+Amount: 10 DAI
+
+Mode: Dry run first, then ask for approval for live execution
+
+Pre-checks required:
+
+Current health factor (must be >1.15 for safety)
+
+Current DAI debt balance
+
+Current WETH debt balance
+
+Verify credit delegation approval status for WETH borrowing
+
+Verify any required ERC20 approvals
+
+Test Output Required:
+
+Contract addresses being used
+
+Current account position (debts, collateral, HF)
+
+ParaSwap quote (how much WETH will be borrowed)
+
+Built transaction parameters (debtSwapParams, permits)
+
+Function selector being called
+
+Estimated gas costs
+
+Dry run result with any errors/warnings
+
+If dry run succeeds, ask for permission to execute live
+
+Task 3: Document Findings
+
+Create a summary report showing:
+
+Contract verification results (✅ correct or ❌ mismatch)
+
+Any configuration updates made
+
+Test execution results
+
+Next recommended actions
+
+Execute these tasks in order and provide detailed output for each step.
