@@ -187,11 +187,14 @@ class BidirectionalDebtSwapper:
                 raise Exception("Failed to build ParaSwap swap route")
             
             # Max new debt amount from ParaSwap
-            max_new_debt = int(paraswap_data['from_amount'])
+            max_new_debt_base = int(paraswap_data['from_amount'])
+            # CRITICAL: Add 3% buffer for interest accrual, slippage, and health factor fluctuations
+            # Aave debt swaps require this buffer to prevent transaction reverts
+            max_new_debt = int(max_new_debt_base * 1.03)
             max_new_debt_decimal = Decimal(max_new_debt) / Decimal(1e18)
             
             print(f"   ✅ Route found")
-            print(f"   Will borrow: {max_new_debt_decimal:.6f} {to_asset}")
+            print(f"   Will borrow: {max_new_debt_decimal:.6f} {to_asset} (includes 3% safety buffer)")
             print(f"   To repay: {amount:.6f} {from_asset}")
             
             # Build swapDebt parameters
@@ -218,6 +221,9 @@ class BidirectionalDebtSwapper:
             
             # Build transaction
             print(f"\n📝 Building transaction...")
+            base_fee = self.w3.eth.gas_price
+            max_fee = int(base_fee * 2)  # 2x base fee to ensure it goes through
+            
             tx = self.debt_switch.functions.swapDebt(
                 debt_swap_params,
                 credit_delegation_permit,
@@ -226,7 +232,7 @@ class BidirectionalDebtSwapper:
                 'from': self.address,
                 'nonce': self.w3.eth.get_transaction_count(self.address),
                 'gas': 2000000,
-                'maxFeePerGas': self.w3.eth.gas_price,
+                'maxFeePerGas': max_fee,
                 'maxPriorityFeePerGas': self.w3.to_wei('0.01', 'gwei'),
                 'chainId': 42161
             })
