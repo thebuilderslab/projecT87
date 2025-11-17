@@ -77,7 +77,7 @@ class BidirectionalDebtSwapper:
         from_token: str,
         to_token: str,
         dest_amount: int,
-        slippage_bps: int = 100
+        slippage_bps: int = 300  # 3% slippage default for safer swaps
     ) -> Optional[Dict[str, Any]]:
         """
         Build ParaSwap swap data using official API (following Velora docs)
@@ -94,6 +94,8 @@ class BidirectionalDebtSwapper:
             # Step 1: Get price route (BUY mode for exact output)
             # CRITICAL: Use version=6.2 AND exclude UniswapV3 to get swapOnUniswapV2Fork (0x7f457675)
             # This is the exact method used in working debt swap transactions
+            # Get price route WITHOUT slippage parameter to use specific UniswapV2 method
+            # (passing slippage forces generic routing which needs GenericAdapter wrapper)
             price_url = "https://api.paraswap.io/prices"
             price_params = {
                 'srcToken': from_token_addr,
@@ -104,8 +106,8 @@ class BidirectionalDebtSwapper:
                 'side': 'BUY',  # Exact output
                 'network': '42161',
                 'version': '6.2',  # Force Augustus V6.2
-                'excludeDEXS': 'UniswapV3,CurveV1,CurveV2',  # Force swapOnUniswapV2Fork method
-                'slippage': str(slippage_bps * 10)  # Convert bps to ParaSwap format (300 for 3%)
+                'excludeDEXS': 'UniswapV3,CurveV1,CurveV2'  # Force specific UniswapV2 method
+                # Note: Don't pass slippage here - it changes routing to generic method
             }
             
             print(f"   Fetching ParaSwap price route...")
@@ -124,6 +126,7 @@ class BidirectionalDebtSwapper:
             
             print(f"   ✅ Route found: {src_amount / 1e18:.6f} {from_token} → {dest_amount_actual / 1e18:.6f} {to_token}")
             print(f"      Method: {price_route.get('contractMethod', 'N/A')}")
+            print(f"      Slippage will be applied to maxNewDebtAmount only (keeps working routing)")
             
             # Step 2: Build transaction using /transactions API
             # CRITICAL: Set receiver to Debt Switch Adapter so swap proceeds go there for repayment
@@ -139,13 +142,12 @@ class BidirectionalDebtSwapper:
                 'priceRoute': price_route,  # MUST pass exact priceRoute object
                 'srcToken': price_route['srcToken'],
                 'destToken': price_route['destToken'],
-                'srcAmount': price_route['srcAmount'],
+                'srcAmount': price_route['srcAmount'],  # Use original srcAmount to keep working routing
                 'destAmount': price_route['destAmount'],
                 'userAddress': self.address,  # User who signs the swapDebt transaction
                 'receiver': DEBT_SWITCH_V3_ADDRESS,  # Swap proceeds go to Debt Switch for repayment
                 'ignoreChecks': True,  # Skip balance checks (Debt Switch gets funds via flash loan)
                 'ignoreGasEstimate': True  # Skip gas estimation
-                # Note: Don't pass slippage - it's already factored into srcAmount from price route
             }
             
             print(f"   Building ParaSwap transaction...")
@@ -241,7 +243,7 @@ class BidirectionalDebtSwapper:
         from_asset: DebtAsset,
         to_asset: DebtAsset,
         amount: Decimal,
-        slippage_bps: int = 100,
+        slippage_bps: int = 300,  # 3% slippage (changed from 100/1% for safer debt swaps)
         dry_run: bool = False,
         eth_price_usd: Optional[Decimal] = None
     ) -> Optional[str]:
@@ -319,11 +321,16 @@ class BidirectionalDebtSwapper:
             if not paraswap_result:
                 raise Exception("Failed to build ParaSwap swap route")
             
-            # Max new debt amount from ParaSwap (includes slippage)
+            # Max new debt amount from ParaSwap
             max_new_debt_base = int(paraswap_result['src_amount'])
-            # CRITICAL: Add 3% buffer for interest accrual and health factor fluctuations
-            # Aave debt swaps require this buffer to prevent transaction reverts
-            max_new_debt = int(max_new_debt_base * 1.03)
+            
+            # CRITICAL: Apply slippage tolerance + 3% buffer for safety
+            # - slippage_bps tolerance for price movement during execution
+            # - Additional 3% buffer for interest accrual and health factor fluctuations
+            slippage_multiplier = 1 + (slippage_bps / 10000)  # 300 bps = 1.03
+            buffer_multiplier = 1.03  # Extra 3% safety buffer
+            total_multiplier = slippage_multiplier * buffer_multiplier
+            max_new_debt = int(max_new_debt_base * total_multiplier)
             max_new_debt_decimal = Decimal(max_new_debt) / Decimal(1e18)
             
             print(f"   ✅ Route found")
@@ -355,7 +362,7 @@ class BidirectionalDebtSwapper:
             # Build transaction
             print(f"\n📝 Building transaction...")
             base_fee = self.w3.eth.gas_price
-            max_fee = int(base_fee * 2)  # 2x base fee to ensure it goes through
+            max_fee = int(base_fee * 1.2)  # 1.2x base fee (reduced from 2x for affordability)
             
             tx = self.debt_switch.functions.swapDebt(
                 debt_swap_params,
