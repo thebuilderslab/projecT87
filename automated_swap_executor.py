@@ -3,6 +3,7 @@
 Automated Swap Executor - Fully automated debt swaps with HF monitoring
 """
 
+import os
 from web3 import Web3
 from decimal import Decimal
 from datetime import datetime
@@ -18,19 +19,53 @@ class AutomatedSwapExecutor:
     def __init__(self):
         self.agent = ArbitrumTestnetAgent()
         self.delegation_mgr = SmartDelegationManager(self.agent.w3, self.agent.private_key)
-        self.swapper = BidirectionalDebtSwapper(
-            self.agent.w3,
-            self.agent.wallet_address,
-            self.agent.private_key
-        )
+        self.swapper = BidirectionalDebtSwapper(self.agent.w3, self.agent.private_key)
         
-        # Safety limits
+        # Safety limits - bidirectional
         self.MAX_SWAP_SIZE_DAI = Decimal('20')  # Max 20 DAI per swap
+        self.MAX_SWAP_SIZE_WETH_USD = Decimal('60')  # Max ~$60 worth of WETH per swap
         self.MIN_SWAP_INTERVAL = 300  # 5 minutes between swaps
         self.last_swap_time = 0
         
+        # CoinAPI integration for real-time ETH price
+        import requests
+        self.coinapi_key = os.getenv('COIN_API')
+        self.coinapi_base_url = "https://rest.coinapi.io/v1"
+        
+        # Current ETH price (updated before each swap)
+        self.eth_price_usd = self._fetch_eth_price()  # Real-time price on init
+        
         # Audit log
         self.log_file = 'swap_audit.log'
+    
+    def _fetch_eth_price(self):
+        """Fetch current ETH price from CoinAPI"""
+        try:
+            import requests
+            
+            if not self.coinapi_key:
+                print(f"⚠️ CoinAPI key not found, using fallback")
+                return Decimal('3100')
+            
+            # CoinAPI endpoint for ETH/USD price
+            url = f"{self.coinapi_base_url}/exchangerate/ETH/USD"
+            headers = {'X-CoinAPI-Key': self.coinapi_key}
+            
+            response = requests.get(url, headers=headers, timeout=5)
+            
+            if response.status_code == 200:
+                data = response.json()
+                price = Decimal(str(data['rate']))
+                print(f"📊 CoinAPI: ETH = ${price:.2f}")
+                return price
+            else:
+                print(f"⚠️ CoinAPI returned {response.status_code}, using fallback")
+                return Decimal('3100')
+                
+        except Exception as e:
+            print(f"⚠️ Failed to fetch ETH price from CoinAPI: {e}")
+            print(f"   Using fallback price: $3100")
+            return Decimal('3100')  # Fallback
         
     def log_swap(self, event_type, message, hf=None):
         """Log swap events"""
@@ -47,22 +82,80 @@ class AutomatedSwapExecutor:
         except Exception as e:
             print(f"⚠️ Failed to write to log: {e}")
     
+    def _check_swap_size_limit(self, amount, direction):
+        """Check if swap amount is within safety limits"""
+        if direction == 'DAI_TO_WETH':
+            if amount > self.MAX_SWAP_SIZE_DAI:
+                return False, f"DAI amount {amount} exceeds max {self.MAX_SWAP_SIZE_DAI}"
+        else:  # WETH_TO_DAI
+            weth_value_usd = amount * self.eth_price_usd
+            if weth_value_usd > self.MAX_SWAP_SIZE_WETH_USD:
+                return False, f"WETH value ${weth_value_usd:.2f} exceeds max ${self.MAX_SWAP_SIZE_WETH_USD}"
+        return True, "OK"
+    
+    def _needs_delegation(self, direction):
+        """Check if this swap direction requires WETH credit delegation"""
+        # Only DAI→WETH needs delegation (we're borrowing WETH)
+        # WETH→DAI borrows DAI directly without delegation
+        return direction == 'DAI_TO_WETH'
+    
+    def get_suggested_direction(self, refresh_price=True):
+        """
+        Suggest swap direction based on current debt composition
+        
+        Args:
+            refresh_price: If True, fetch latest ETH price before analysis
+        
+        Returns:
+            (direction, reason) tuple
+        """
+        try:
+            # Refresh ETH price for accurate debt valuation
+            if refresh_price:
+                self.eth_price_usd = self._fetch_eth_price()
+            
+            summary = self.swapper.get_account_summary(eth_price_usd=self.eth_price_usd)
+            dai_debt_usd = summary['dai_debt'] * Decimal('1.0')  # DAI ≈ $1
+            weth_debt_usd = summary['weth_debt'] * self.eth_price_usd
+            
+            if dai_debt_usd > weth_debt_usd * Decimal('1.2'):
+                return 'DAI_TO_WETH', f"DAI debt (${dai_debt_usd:.2f}) > WETH debt (${weth_debt_usd:.2f}) @ ${self.eth_price_usd:.2f}/ETH"
+            elif weth_debt_usd > dai_debt_usd * Decimal('1.2'):
+                return 'WETH_TO_DAI', f"WETH debt (${weth_debt_usd:.2f}) > DAI debt (${dai_debt_usd:.2f}) @ ${self.eth_price_usd:.2f}/ETH"
+            else:
+                return 'BALANCED', f"Debts roughly equal (DAI: ${dai_debt_usd:.2f}, WETH: ${weth_debt_usd:.2f}) @ ${self.eth_price_usd:.2f}/ETH"
+        except Exception as e:
+            return 'UNKNOWN', f"Could not determine: {e}"
+    
     def execute_automated_swap(self, amount, direction='DAI_TO_WETH'):
         """
         Execute fully automated debt swap with all safety checks
+        BIDIRECTIONAL: Supports both DAI→WETH and WETH→DAI
         
         Args:
-            amount: Decimal, amount to swap (DAI or WETH depending on direction)
-            direction: 'DAI_TO_WETH' or 'WETH_TO_DAI'
+            amount: Decimal, amount to swap
+                   - For DAI_TO_WETH: amount in DAI
+                   - For WETH_TO_DAI: amount in WETH
+            direction: 'DAI_TO_WETH' or 'WETH_TO_DAI' (required)
         
         Returns:
             swap_tx_hash or None if aborted
         """
         print(f"\n{'='*80}")
-        print(f"🔄 EXECUTING AUTOMATED SWAP")
+        print(f"🔄 EXECUTING AUTOMATED SWAP - BIDIRECTIONAL SYSTEM")
         print(f"{'='*80}")
-        print(f"Amount: {amount} {direction}")
+        print(f"Direction: {direction}")
+        print(f"Amount: {amount} {'DAI' if direction == 'DAI_TO_WETH' else 'WETH'}")
         print(f"Time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+        
+        # Validate direction
+        if direction not in ['DAI_TO_WETH', 'WETH_TO_DAI']:
+            print(f"\n🚫 ABORT: Invalid direction '{direction}'")
+            return None
+        
+        # Update ETH price before swap (critical for accurate limits & delegation)
+        self.eth_price_usd = self._fetch_eth_price()
+        print(f"💵 Current ETH Price: ${self.eth_price_usd:.2f} (from CoinAPI)")
         
         # Check rate limiting
         time_since_last = time.time() - self.last_swap_time
@@ -72,10 +165,11 @@ class AutomatedSwapExecutor:
             print(f"\n⏸️ RATE LIMIT: Wait {wait_time:.0f}s before next swap")
             return None
         
-        # Check swap size limit
-        if direction == 'DAI_TO_WETH' and amount > self.MAX_SWAP_SIZE_DAI:
-            self.log_swap("SIZE_LIMIT", f"Amount {amount} exceeds max {self.MAX_SWAP_SIZE_DAI} DAI")
-            print(f"\n🚫 ABORT: Swap size exceeds maximum ({self.MAX_SWAP_SIZE_DAI} DAI)")
+        # Check swap size limit (direction-specific)
+        is_valid, size_msg = self._check_swap_size_limit(amount, direction)
+        if not is_valid:
+            self.log_swap("SIZE_LIMIT", f"{direction}: {size_msg}")
+            print(f"\n🚫 ABORT: {size_msg}")
             return None
         
         # STEP 1: Pre-swap health check
@@ -100,38 +194,42 @@ class AutomatedSwapExecutor:
         print(f"📊 STEP 2: CURRENT POSITION")
         print(f"{'='*80}")
         
-        summary = self.swapper.get_account_summary()
+        summary = self.swapper.get_account_summary(eth_price_usd=self.eth_price_usd)
         print(f"DAI Debt: {summary['dai_debt']:.6f} DAI")
         print(f"WETH Debt: {summary['weth_debt']:.6f} WETH")
-        print(f"Collateral: ${summary['total_collateral_usd']:.2f}")
-        print(f"Total Debt: ${summary['total_debt_usd']:.2f}")
+        print(f"Collateral: ${summary.get('total_collateral_usd', 0):.2f}")
+        print(f"Total Debt: ${summary.get('total_debt_usd', 0):.2f}")
         
-        # STEP 3: Check/approve delegation
+        # STEP 3: Check/approve delegation (only for DAI→WETH)
         print(f"\n{'='*80}")
         print(f"🔐 STEP 3: CREDIT DELEGATION CHECK")
         print(f"{'='*80}")
         
-        current_delegation = self.delegation_mgr.get_current_delegation()
-        print(f"Current delegation: {current_delegation:.6f} WETH")
-        
-        # For DAI->WETH swaps, we need WETH delegation
-        if direction == 'DAI_TO_WETH':
-            # Estimate WETH needed (rough estimate: amount / 3000)
-            estimated_weth = amount / Decimal('3000')
-            print(f"Estimated WETH needed: ~{estimated_weth:.6f} WETH")
+        if self._needs_delegation(direction):
+            print(f"Direction {direction} requires WETH credit delegation")
+            current_delegation = self.delegation_mgr.get_current_delegation()
+            print(f"Current delegation: {current_delegation:.6f} WETH")
+            
+            # Estimate WETH needed
+            estimated_weth = amount / self.eth_price_usd
+            print(f"Estimated WETH needed: ~{estimated_weth:.6f} WETH (@ ${self.eth_price_usd:.0f}/ETH)")
             
             if current_delegation < estimated_weth * Decimal('1.2'):
                 print(f"\nInsufficient delegation - approving exact amount...")
                 approval_tx = self.delegation_mgr.approve_exact_delegation(estimated_weth)
                 
                 if approval_tx is None:
-                    self.log_swap("ABORT", "Delegation approval failed HF check")
+                    self.log_swap("ABORT", f"{direction}: Delegation approval failed HF check")
                     print(f"\n🚫 SWAP ABORTED: Could not approve delegation")
                     return None
                 
+                self.log_swap("DELEGATION", f"{direction}: Approved {approval_tx}")
                 print(f"✅ Delegation approved: {approval_tx}")
             else:
                 print(f"✅ Sufficient delegation already exists")
+        else:
+            print(f"Direction {direction} does not require delegation")
+            print(f"✅ WETH→DAI borrows DAI directly (no delegation needed)")
         
         # STEP 4: Execute swap
         print(f"\n{'='*80}")
@@ -139,31 +237,35 @@ class AutomatedSwapExecutor:
         print(f"{'='*80}")
         
         try:
+            # Map direction to swap parameters
             if direction == 'DAI_TO_WETH':
-                swap_tx = self.swapper.swap_debt(
-                    from_asset='DAI',
-                    to_asset='WETH',
-                    amount=amount,
-                    slippage_bps=100
-                )
-            else:
-                swap_tx = self.swapper.swap_debt(
-                    from_asset='WETH',
-                    to_asset='DAI',
-                    amount=amount,
-                    slippage_bps=100
-                )
+                from_asset, to_asset = 'DAI', 'WETH'
+                borrowing_asset = 'WETH'
+            else:  # WETH_TO_DAI
+                from_asset, to_asset = 'WETH', 'DAI'
+                borrowing_asset = 'DAI'
+            
+            print(f"Swapping: Repay {amount} {from_asset}, Borrow {to_asset}")
+            
+            swap_tx = self.swapper.swap_debt(
+                from_asset=from_asset,
+                to_asset=to_asset,
+                amount=amount,
+                slippage_bps=100,
+                eth_price_usd=self.eth_price_usd  # Pass CoinAPI price for accurate routing
+            )
             
             if swap_tx:
-                self.log_swap("SWAP_SUCCESS", f"TX: {swap_tx} | Amount: {amount} {direction}")
+                self.log_swap("SWAP_SUCCESS", f"{direction} | TX: {swap_tx} | Amount: {amount} | Borrowed: {borrowing_asset}")
                 print(f"\n✅ SWAP EXECUTED: {swap_tx}")
+                print(f"   Arbiscan: https://arbiscan.io/tx/{swap_tx}")
                 self.last_swap_time = time.time()
             else:
-                self.log_swap("SWAP_FAILED", f"Swap returned None | Amount: {amount}")
+                self.log_swap("SWAP_FAILED", f"{direction} | Swap returned None | Amount: {amount}")
                 return None
                 
         except Exception as e:
-            self.log_swap("SWAP_ERROR", f"Exception: {str(e)}")
+            self.log_swap("SWAP_ERROR", f"{direction} | Exception: {str(e)}")
             print(f"\n❌ SWAP FAILED: {e}")
             return None
         
@@ -194,7 +296,7 @@ class AutomatedSwapExecutor:
         print(f"📊 STEP 6: FINAL POSITION")
         print(f"{'='*80}")
         
-        final_summary = self.swapper.get_account_summary()
+        final_summary = self.swapper.get_account_summary(eth_price_usd=self.eth_price_usd)
         print(f"DAI Debt: {summary['dai_debt']:.6f} → {final_summary['dai_debt']:.6f}")
         print(f"WETH Debt: {summary['weth_debt']:.6f} → {final_summary['weth_debt']:.6f}")
         print(f"Health Factor: {initial_hf:.4f} → {final_hf:.4f}")
@@ -206,23 +308,52 @@ class AutomatedSwapExecutor:
         return swap_tx
 
 def main():
-    """Test automated swap execution"""
+    """Test automated swap execution - BIDIRECTIONAL"""
     executor = AutomatedSwapExecutor()
     
     print("="*80)
-    print("AUTOMATED SWAP EXECUTOR - READY")
+    print("AUTOMATED SWAP EXECUTOR - BIDIRECTIONAL SYSTEM")
     print("="*80)
     
-    # Execute a 5 DAI test swap
-    result = executor.execute_automated_swap(
+    # Get suggested direction
+    suggested, reason = executor.get_suggested_direction()
+    print(f"\n💡 Suggested direction: {suggested}")
+    print(f"   Reason: {reason}")
+    
+    # Show both options
+    print(f"\n📊 Available swap directions:")
+    print(f"   1. DAI→WETH: Repay DAI debt, borrow WETH (requires delegation)")
+    print(f"   2. WETH→DAI: Repay WETH debt, borrow DAI (no delegation needed)")
+    
+    # Example: Execute a 5 DAI → WETH swap
+    print(f"\n{'='*80}")
+    print(f"TEST 1: DAI → WETH (5 DAI)")
+    print(f"{'='*80}")
+    
+    result1 = executor.execute_automated_swap(
         amount=Decimal('5'),
         direction='DAI_TO_WETH'
     )
     
-    if result:
-        print(f"\n🎉 Success! Transaction: {result}")
+    if result1:
+        print(f"\n✅ Test 1 Success! Transaction: {result1}")
     else:
-        print(f"\n❌ Swap was aborted or failed")
+        print(f"\n⚠️ Test 1 was aborted or failed")
+    
+    # Example: Execute a 0.002 WETH → DAI swap
+    print(f"\n{'='*80}")
+    print(f"TEST 2: WETH → DAI (0.002 WETH)")
+    print(f"{'='*80}")
+    
+    result2 = executor.execute_automated_swap(
+        amount=Decimal('0.002'),
+        direction='WETH_TO_DAI'
+    )
+    
+    if result2:
+        print(f"\n✅ Test 2 Success! Transaction: {result2}")
+    else:
+        print(f"\n⚠️ Test 2 was aborted or failed")
 
 if __name__ == "__main__":
     main()

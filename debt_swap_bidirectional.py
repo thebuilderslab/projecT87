@@ -87,17 +87,34 @@ class BidirectionalDebtSwapper:
         data = self.aave_pool.functions.getUserAccountData(self.address).call()
         return Decimal(data[5]) / Decimal(1e18)
     
-    def get_account_summary(self) -> Dict[str, Any]:
-        """Get comprehensive account summary"""
+    def get_account_summary(self, eth_price_usd: Optional[Decimal] = None) -> Dict[str, Any]:
+        """
+        Get comprehensive account summary
+        
+        Args:
+            eth_price_usd: Current ETH price in USD (if None, uses rough estimate)
+        """
         dai_debt = self.get_debt_balance('DAI')
         weth_debt = self.get_debt_balance('WETH')
         hf = self.get_health_factor()
+        
+        # Get Aave account data for collateral value
+        data = self.aave_pool.functions.getUserAccountData(self.address).call()
+        total_collateral_base = Decimal(data[0]) / Decimal(1e8)  # USD value with 8 decimals
+        total_debt_base = Decimal(data[1]) / Decimal(1e8)
+        
+        # Calculate total debt USD (use provided price or fallback)
+        if eth_price_usd:
+            total_debt_usd = float(dai_debt) + float(weth_debt) * float(eth_price_usd)
+        else:
+            total_debt_usd = float(total_debt_base)  # Use Aave's calculation
         
         return {
             'dai_debt': dai_debt,
             'weth_debt': weth_debt,
             'health_factor': hf,
-            'total_debt_usd': float(dai_debt) + float(weth_debt) * 3000  # Rough estimate
+            'total_collateral_usd': float(total_collateral_base),
+            'total_debt_usd': total_debt_usd
         }
     
     def swap_debt(
@@ -106,7 +123,8 @@ class BidirectionalDebtSwapper:
         to_asset: DebtAsset,
         amount: Decimal,
         slippage_bps: int = 100,
-        dry_run: bool = False
+        dry_run: bool = False,
+        eth_price_usd: Optional[Decimal] = None
     ) -> Optional[str]:
         """
         Swap debt from one asset to another
@@ -148,8 +166,8 @@ class BidirectionalDebtSwapper:
             from_debt_token = ARBITRUM_ADDRESSES[f"variableDebtArb{from_asset}"]
             to_debt_token = ARBITRUM_ADDRESSES[f"variableDebtArb{to_asset}"]
             
-            # Check current state
-            summary = self.get_account_summary()
+            # Check current state (use provided price for accurate valuation)
+            summary = self.get_account_summary(eth_price_usd=eth_price_usd)
             print(f"\n📊 Current Position:")
             print(f"   DAI debt: {summary['dai_debt']:.6f}")
             print(f"   WETH debt: {summary['weth_debt']:.6f}")
@@ -257,8 +275,8 @@ class BidirectionalDebtSwapper:
             receipt = self.w3.eth.wait_for_transaction_receipt(tx_hash, timeout=300)
             
             if receipt['status'] == 1:
-                # Get new state
-                new_summary = self.get_account_summary()
+                # Get new state (use provided price for accurate valuation)
+                new_summary = self.get_account_summary(eth_price_usd=eth_price_usd)
                 
                 print(f"\n🎉 SUCCESS!")
                 print(f"   Block: {receipt['blockNumber']}")
