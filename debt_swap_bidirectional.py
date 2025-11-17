@@ -72,6 +72,109 @@ class BidirectionalDebtSwapper:
         print(f"   Wallet: {self.address}")
         print(f"   Supports: DAI ↔ WETH debt swaps")
     
+    def _build_paraswap_transaction(
+        self,
+        from_token: str,
+        to_token: str,
+        dest_amount: int,
+        slippage_bps: int = 100
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Build ParaSwap swap data for Aave Debt Switch
+        Returns ABI-encoded (bytes calldata, address augustus) structure
+        """
+        import requests
+        from eth_abi import encode
+        
+        try:
+            # Token addresses
+            from_token_addr = ARBITRUM_ADDRESSES[from_token]
+            to_token_addr = ARBITRUM_ADDRESSES[to_token]
+            augustus_v62 = "0x6A000F20005980200259B80c5102003040001068"
+            
+            # Get price route (BUY mode for exact output)
+            price_url = "https://apiv5.paraswap.io/prices"
+            price_params = {
+                'srcToken': from_token_addr,
+                'destToken': to_token_addr,
+                'amount': str(dest_amount),
+                'side': 'BUY',
+                'network': '42161',
+                'partner': 'aave'
+            }
+            
+            print(f"   Fetching ParaSwap price route...")
+            price_resp = requests.get(price_url, params=price_params, timeout=10)
+            
+            if price_resp.status_code != 200:
+                print(f"   ❌ Price route failed: {price_resp.status_code}")
+                print(f"      {price_resp.text}")
+                return None
+            
+            price_data = price_resp.json()
+            price_route = price_data['priceRoute']
+            
+            src_amount = int(price_route['srcAmount'])
+            print(f"   ✅ Route found: {src_amount / 1e18:.6f} {from_token} → {dest_amount / 1e18:.6f} {to_token}")
+            
+            # Get swap calldata from priceRoute's contract call data
+            # ParaSwap returns the raw calldata to execute on Augustus router
+            if 'contractMethod' not in price_route:
+                print(f"   ❌ No contractMethod in price route")
+                return None
+            
+            contract_method = price_route['contractMethod']
+            contract_address = price_route.get('contractAddress', augustus_v62)
+            
+            print(f"   Contract method: {contract_method}")
+            print(f"   Contract address: {contract_address}")
+            
+            # ParaSwap /transactions API doesn't work for debt swaps (requires balance)
+            # Instead, use our multiSwap builder with the price route
+            print(f"   Building multiSwap calldata...")
+            paraswap_result = self.paraswap.build_multiswap_calldata(
+                from_token=from_token,
+                to_token=to_token,
+                from_amount=dest_amount,
+                min_to_amount=dest_amount,
+                beneficiary=DEBT_SWITCH_V3_ADDRESS,
+                slippage_bps=slippage_bps,
+                use_buy_mode=True
+            )
+            
+            if not paraswap_result:
+                print(f"   ❌ Failed to build multiSwap calldata")
+                return None
+            
+            swap_calldata = bytes.fromhex(paraswap_result['calldata'][2:])  # Remove 0x
+            augustus_address = paraswap_result['augustus_router']
+            
+            # Encode as (bytes calldata, address augustus) for Aave Debt Switch
+            paraswap_data = encode(
+                ['bytes', 'address'],
+                [swap_calldata, Web3.to_checksum_address(augustus_address)]
+            )
+            
+            paraswap_data_hex = '0x' + paraswap_data.hex()
+            
+            print(f"   ✅ ParaSwap data encoded")
+            print(f"      Augustus: {augustus_address}")
+            print(f"      Swap calldata: {len(swap_calldata)} bytes")
+            print(f"      Total paraswapData: {len(paraswap_data_hex)} chars ({len(paraswap_data)} bytes)")
+            
+            return {
+                'src_amount': src_amount,
+                'dest_amount': dest_amount,
+                'calldata': paraswap_data_hex,
+                'router': augustus_address
+            }
+            
+        except Exception as e:
+            print(f"   ❌ Error building ParaSwap transaction: {e}")
+            import traceback
+            traceback.print_exc()
+            return None
+    
     def get_debt_balance(self, asset: DebtAsset) -> Decimal:
         """Get current variable debt balance for asset"""
         debt_token_addr = ARBITRUM_ADDRESSES[f"variableDebtArb{asset}"]
@@ -187,26 +290,22 @@ class BidirectionalDebtSwapper:
             print(f"   Repaying: {amount:.6f} {from_asset}")
             print(f"   Borrowing: {to_asset} (amount TBD from ParaSwap)")
             
-            # Build ParaSwap calldata
-            # We sell to_asset (newly borrowed) to buy from_asset (to repay)
-            # Use BUY mode for exact output (exact repayment amount)
-            print(f"\n🔄 Fetching swap route from ParaSwap...")
-            paraswap_data = self.paraswap.build_multiswap_calldata(
+            # Get ParaSwap transaction data using /transactions API
+            # This returns the EXACT calldata format expected by Aave Debt Switch
+            print(f"\n🔄 Building ParaSwap swap via /transactions API...")
+            paraswap_result = self._build_paraswap_transaction(
                 from_token=to_asset,
                 to_token=from_asset,
-                from_amount=repay_amount_wei,  # Exact amount we need to receive
-                min_to_amount=repay_amount_wei,
-                beneficiary=DEBT_SWITCH_V3_ADDRESS,
-                slippage_bps=slippage_bps,
-                use_buy_mode=True  # BUY mode for exact output
+                dest_amount=repay_amount_wei,
+                slippage_bps=slippage_bps
             )
             
-            if not paraswap_data:
+            if not paraswap_result:
                 raise Exception("Failed to build ParaSwap swap route")
             
-            # Max new debt amount from ParaSwap
-            max_new_debt_base = int(paraswap_data['from_amount'])
-            # CRITICAL: Add 3% buffer for interest accrual, slippage, and health factor fluctuations
+            # Max new debt amount from ParaSwap (includes slippage)
+            max_new_debt_base = int(paraswap_result['src_amount'])
+            # CRITICAL: Add 3% buffer for interest accrual and health factor fluctuations
             # Aave debt swaps require this buffer to prevent transaction reverts
             max_new_debt = int(max_new_debt_base * 1.03)
             max_new_debt_decimal = Decimal(max_new_debt) / Decimal(1e18)
@@ -225,7 +324,7 @@ class BidirectionalDebtSwapper:
                 "extraCollateralAsset": "0x0000000000000000000000000000000000000000",
                 "extraCollateralAmount": 0,
                 "offset": 0,
-                "paraswapData": paraswap_data['calldata']
+                "paraswapData": paraswap_result['calldata']
             }
             
             credit_delegation_permit = get_empty_credit_delegation_permit()
