@@ -127,6 +127,12 @@ class BidirectionalDebtSwapper:
             # Step 2: Build transaction using /transactions API
             # CRITICAL: Set receiver to Debt Switch Adapter so swap proceeds go there for repayment
             # Without this, funds go to EOA and adapter has zero balance, causing revert 0x1bbb4abe
+            #
+            # KNOWN LIMITATION: ParaSwap REST API returns 836-byte calldata but working debt swaps
+            # use 3332-byte calldata with GenericAdapter wrapper. The API cannot generate this wrapper
+            # with any known parameter combination (tested: receiver, partner, partnerAddress, takeSurplus).
+            # Working transactions likely use ParaSwap TypeScript SDK or custom integration.
+            # Manual calldata replication would require reverse-engineering GenericAdapter ABI structure.
             tx_url = f"https://api.paraswap.io/transactions/42161"
             tx_payload = {
                 'priceRoute': price_route,  # MUST pass exact priceRoute object
@@ -135,7 +141,7 @@ class BidirectionalDebtSwapper:
                 'srcAmount': price_route['srcAmount'],
                 'destAmount': price_route['destAmount'],
                 'userAddress': self.address,  # User who signs the swapDebt transaction
-                'receiver': DEBT_SWITCH_V3_ADDRESS,  # CRITICAL: Swap proceeds go to Debt Switch for repayment
+                'receiver': DEBT_SWITCH_V3_ADDRESS,  # Swap proceeds go to Debt Switch for repayment
                 'ignoreChecks': True,  # Skip balance checks (Debt Switch gets funds via flash loan)
                 'ignoreGasEstimate': True  # Skip gas estimation
                 # Note: Don't pass slippage - it's already factored into srcAmount from price route
