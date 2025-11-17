@@ -104,7 +104,8 @@ class BidirectionalDebtSwapper:
                 'side': 'BUY',  # Exact output
                 'network': '42161',
                 'version': '6.2',  # Force Augustus V6.2
-                'excludeDEXS': 'UniswapV3,CurveV1,CurveV2'  # Force swapOnUniswapV2Fork method
+                'excludeDEXS': 'UniswapV3,CurveV1,CurveV2',  # Force swapOnUniswapV2Fork method
+                'slippage': str(slippage_bps * 10)  # Convert bps to ParaSwap format (300 for 3%)
             }
             
             print(f"   Fetching ParaSwap price route...")
@@ -363,7 +364,7 @@ class BidirectionalDebtSwapper:
             ).build_transaction({
                 'from': self.address,
                 'nonce': self.w3.eth.get_transaction_count(self.address),
-                'gas': 400000,  # Based on actual usage: ~200K, 2x buffer for safety
+                'gas': 800000,  # Increased from 400K to prevent gas exhaustion (was hitting 95% at 381K)
                 'maxFeePerGas': max_fee,
                 'maxPriorityFeePerGas': self.w3.to_wei('0.01', 'gwei'),
                 'chainId': 42161
