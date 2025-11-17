@@ -125,7 +125,8 @@ class BidirectionalDebtSwapper:
             print(f"      Method: {price_route.get('contractMethod', 'N/A')}")
             
             # Step 2: Build transaction using /transactions API
-            # CRITICAL: Pass priceRoute EXACTLY as returned, use ignoreChecks AND ignoreGasEstimate
+            # CRITICAL: Set receiver to Debt Switch Adapter so swap proceeds go there for repayment
+            # Without this, funds go to EOA and adapter has zero balance, causing revert 0x1bbb4abe
             tx_url = f"https://api.paraswap.io/transactions/42161"
             tx_payload = {
                 'priceRoute': price_route,  # MUST pass exact priceRoute object
@@ -134,6 +135,7 @@ class BidirectionalDebtSwapper:
                 'srcAmount': price_route['srcAmount'],
                 'destAmount': price_route['destAmount'],
                 'userAddress': self.address,  # User who signs the swapDebt transaction
+                'receiver': DEBT_SWITCH_V3_ADDRESS,  # CRITICAL: Swap proceeds go to Debt Switch for repayment
                 'ignoreChecks': True,  # Skip balance checks (Debt Switch gets funds via flash loan)
                 'ignoreGasEstimate': True  # Skip gas estimation
                 # Note: Don't pass slippage - it's already factored into srcAmount from price route
