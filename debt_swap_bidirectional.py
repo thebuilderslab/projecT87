@@ -80,7 +80,7 @@ class BidirectionalDebtSwapper:
         slippage_bps: int = 100
     ) -> Optional[Dict[str, Any]]:
         """
-        Build ParaSwap swap data for Aave Debt Switch
+        Build ParaSwap swap data using official API (following Velora docs)
         Returns ABI-encoded (bytes calldata, address augustus) structure
         """
         import requests
@@ -90,17 +90,21 @@ class BidirectionalDebtSwapper:
             # Token addresses
             from_token_addr = ARBITRUM_ADDRESSES[from_token]
             to_token_addr = ARBITRUM_ADDRESSES[to_token]
-            augustus_v62 = "0x6A000F20005980200259B80c5102003040001068"
             
-            # Get price route (BUY mode for exact output)
-            price_url = "https://apiv5.paraswap.io/prices"
+            # Step 1: Get price route (BUY mode for exact output)
+            # CRITICAL: Use version=6.2 AND exclude UniswapV3 to get swapOnUniswapV2Fork (0x7f457675)
+            # This is the exact method used in working debt swap transactions
+            price_url = "https://api.paraswap.io/prices"
             price_params = {
                 'srcToken': from_token_addr,
                 'destToken': to_token_addr,
+                'srcDecimals': '18',
+                'destDecimals': '18',
                 'amount': str(dest_amount),
-                'side': 'BUY',
+                'side': 'BUY',  # Exact output
                 'network': '42161',
-                'partner': 'aave'
+                'version': '6.2',  # Force Augustus V6.2
+                'excludeDEXS': 'UniswapV3,CurveV1,CurveV2'  # Force swapOnUniswapV2Fork method
             }
             
             print(f"   Fetching ParaSwap price route...")
@@ -115,39 +119,44 @@ class BidirectionalDebtSwapper:
             price_route = price_data['priceRoute']
             
             src_amount = int(price_route['srcAmount'])
-            print(f"   ✅ Route found: {src_amount / 1e18:.6f} {from_token} → {dest_amount / 1e18:.6f} {to_token}")
+            dest_amount_actual = int(price_route['destAmount'])
             
-            # Get swap calldata from priceRoute's contract call data
-            # ParaSwap returns the raw calldata to execute on Augustus router
-            if 'contractMethod' not in price_route:
-                print(f"   ❌ No contractMethod in price route")
+            print(f"   ✅ Route found: {src_amount / 1e18:.6f} {from_token} → {dest_amount_actual / 1e18:.6f} {to_token}")
+            print(f"      Method: {price_route.get('contractMethod', 'N/A')}")
+            
+            # Step 2: Build transaction using /transactions API
+            # CRITICAL: Pass priceRoute EXACTLY as returned, use ignoreChecks AND ignoreGasEstimate
+            tx_url = f"https://api.paraswap.io/transactions/42161"
+            tx_payload = {
+                'priceRoute': price_route,  # MUST pass exact priceRoute object
+                'srcToken': price_route['srcToken'],
+                'destToken': price_route['destToken'],
+                'srcAmount': price_route['srcAmount'],
+                'destAmount': price_route['destAmount'],
+                'userAddress': self.address,  # User who signs the swapDebt transaction
+                'ignoreChecks': True,  # Skip balance checks (Debt Switch gets funds via flash loan)
+                'ignoreGasEstimate': True  # Skip gas estimation
+                # Note: Don't pass slippage - it's already factored into srcAmount from price route
+            }
+            
+            print(f"   Building ParaSwap transaction...")
+            tx_resp = requests.post(tx_url, json=tx_payload, timeout=10)
+            
+            if tx_resp.status_code != 200:
+                print(f"   ❌ Transaction build failed: {tx_resp.status_code}")
+                print(f"      {tx_resp.text}")
                 return None
             
-            contract_method = price_route['contractMethod']
-            contract_address = price_route.get('contractAddress', augustus_v62)
+            tx_data = tx_resp.json()
             
-            print(f"   Contract method: {contract_method}")
-            print(f"   Contract address: {contract_address}")
+            # Extract calldata and augustus address
+            swap_calldata = bytes.fromhex(tx_data['data'][2:])  # Remove 0x
+            augustus_address = tx_data['to']
             
-            # ParaSwap /transactions API doesn't work for debt swaps (requires balance)
-            # Instead, use our multiSwap builder with the price route
-            print(f"   Building multiSwap calldata...")
-            paraswap_result = self.paraswap.build_multiswap_calldata(
-                from_token=from_token,
-                to_token=to_token,
-                from_amount=dest_amount,
-                min_to_amount=dest_amount,
-                beneficiary=DEBT_SWITCH_V3_ADDRESS,
-                slippage_bps=slippage_bps,
-                use_buy_mode=True
-            )
-            
-            if not paraswap_result:
-                print(f"   ❌ Failed to build multiSwap calldata")
-                return None
-            
-            swap_calldata = bytes.fromhex(paraswap_result['calldata'][2:])  # Remove 0x
-            augustus_address = paraswap_result['augustus_router']
+            print(f"   ✅ ParaSwap transaction built!")
+            print(f"      Augustus: {augustus_address}")
+            print(f"      Calldata: {len(swap_calldata)} bytes")
+            print(f"      Method selector: 0x{swap_calldata[:4].hex()}")
             
             # Encode as (bytes calldata, address augustus) for Aave Debt Switch
             paraswap_data = encode(
@@ -157,14 +166,12 @@ class BidirectionalDebtSwapper:
             
             paraswap_data_hex = '0x' + paraswap_data.hex()
             
-            print(f"   ✅ ParaSwap data encoded")
-            print(f"      Augustus: {augustus_address}")
-            print(f"      Swap calldata: {len(swap_calldata)} bytes")
+            print(f"   ✅ Encoded for Aave Debt Switch")
             print(f"      Total paraswapData: {len(paraswap_data_hex)} chars ({len(paraswap_data)} bytes)")
             
             return {
                 'src_amount': src_amount,
-                'dest_amount': dest_amount,
+                'dest_amount': dest_amount_actual,
                 'calldata': paraswap_data_hex,
                 'router': augustus_address
             }
