@@ -42,8 +42,8 @@ class AugustusV5MultiSwapBuilder:
         self.network = network
         self.chain_id = 42161 if network == "arbitrum" else 1
         
-        # Augustus V5 on Arbitrum
-        self.augustus_v5 = self.w3.to_checksum_address("0xDEF171Fe48CF0115B1d80b88dc8eAB59176FEe57")
+        # Augustus V6.2 on Arbitrum (latest version for best routing)
+        self.augustus_v5 = self.w3.to_checksum_address("0x6A000F20005980200259B80c5102003040001068")
         
         # ArbitrumAdapter01 - Generic adapter for ALL DEXs on Arbitrum
         # This single adapter handles UniswapV3, Sushi, Camelot, etc. internally
@@ -89,8 +89,8 @@ class AugustusV5MultiSwapBuilder:
                 'srcDecimals': '18',
                 'destDecimals': '18',
                 'side': side,  # Use BUY for exact output (debt swaps)
-                'network': str(self.chain_id),
-                'excludeDirectContractMethods': 'true'  # Force multi-hop routing
+                'network': str(self.chain_id)
+                # Note: Contract method restrictions removed - caused 500 errors
             }
             
             print(f"\n🌐 Fetching ParaSwap price route for {from_token} → {to_token}...")
