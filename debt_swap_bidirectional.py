@@ -231,7 +231,7 @@ class BidirectionalDebtSwapper:
             ).build_transaction({
                 'from': self.address,
                 'nonce': self.w3.eth.get_transaction_count(self.address),
-                'gas': 2000000,
+                'gas': 400000,  # Based on actual usage: ~200K, 2x buffer for safety
                 'maxFeePerGas': max_fee,
                 'maxPriorityFeePerGas': self.w3.to_wei('0.01', 'gwei'),
                 'chainId': 42161
