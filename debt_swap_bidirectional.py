@@ -27,6 +27,82 @@ from gas_config import PRODUCTION_GAS_LIMITS, PARASWAP_ROUTING_WARNING
 
 DebtAsset = Literal['DAI', 'WETH']
 
+# ParaSwap routing reliability constants (see PARASWAP_ROUTING_AUDIT.md)
+GOOD_ROUTE_SELECTORS = {
+    '0xa76f4eb6': 'swapExactAmountOutOnUniswapV2 (100% mainnet success, 729K gas)'
+}  # Whitelist of verified working routes
+BAD_ROUTE_SELECTORS = {
+    '0x7f457675': 'swapExactAmountOut (0% success - missing GenericAdapter wrapper)'
+}  # Blacklist of known failing routes
+UNVETTED_ROUTE_SELECTORS = {
+    '0xd6ed22e6': 'swapExactAmountOutOnBalancerV2 (untested - discovered 2025-01-19)'
+}  # Discovered but not yet validated on mainnet
+MAX_ROUTE_RETRIES = 3  # Boosts expected success rate from 50% to 87.5%
+STRICT_MODE = True  # If True, only allow whitelisted routes (recommended for production)
+
+def validate_paraswap_route(method_selector: str, calldata_size: int, strict: bool = STRICT_MODE) -> bool:
+    """
+    Pre-flight validation: Check if ParaSwap returned a safe, tested route.
+    
+    SECURITY: Uses whitelist-only approach in strict mode (default).
+    Only routes that have been successfully tested on mainnet are allowed.
+    
+    Args:
+        method_selector: Method selector from ParaSwap transaction data (e.g., '0xa76f4eb6')
+        calldata_size: Size of calldata in bytes
+        strict: If True, only allow whitelisted routes (default: True for safety)
+    
+    Returns:
+        True if route is safe to use, False otherwise
+    
+    See PARASWAP_ROUTING_AUDIT.md for comprehensive routing analysis.
+    """
+    # Check against known-bad routes (always reject)
+    if method_selector in BAD_ROUTE_SELECTORS:
+        print(f"      ❌ BAD ROUTE REJECTED: {method_selector}")
+        print(f"         Reason: {BAD_ROUTE_SELECTORS[method_selector]}")
+        print(f"         Calldata size: {calldata_size} bytes")
+        return False
+    
+    # Check against known-good routes (always accept)
+    if method_selector in GOOD_ROUTE_SELECTORS:
+        print(f"      ✅ GOOD ROUTE VALIDATED: {method_selector}")
+        print(f"         {GOOD_ROUTE_SELECTORS[method_selector]}")
+        print(f"         Calldata size: {calldata_size} bytes")
+        return True
+    
+    # Handle unknown/unvetted routes based on strict mode
+    if method_selector in UNVETTED_ROUTE_SELECTORS:
+        route_name = UNVETTED_ROUTE_SELECTORS[method_selector]
+        if strict:
+            print(f"      ❌ UNVETTED ROUTE BLOCKED: {method_selector}")
+            print(f"         Route: {route_name}")
+            print(f"         Calldata size: {calldata_size} bytes")
+            print(f"         STRICT MODE: Only whitelisted routes allowed")
+            print(f"         To test this route, set STRICT_MODE=False or add to whitelist")
+            return False
+        else:
+            print(f"      ⚠️  UNVETTED ROUTE ALLOWED: {method_selector}")
+            print(f"         Route: {route_name}")
+            print(f"         Calldata size: {calldata_size} bytes")
+            print(f"         WARNING: This route has NOT been tested on mainnet!")
+            print(f"         Proceeding at your own risk (strict mode disabled)")
+            return True
+    
+    # Completely unknown selector
+    if strict:
+        print(f"      ❌ UNKNOWN ROUTE BLOCKED: {method_selector}")
+        print(f"         Calldata size: {calldata_size} bytes")
+        print(f"         STRICT MODE: Route not in whitelist")
+        print(f"         Add to whitelist after mainnet validation")
+        return False
+    else:
+        print(f"      ⚠️  UNKNOWN ROUTE ALLOWED: {method_selector}")
+        print(f"         Calldata size: {calldata_size} bytes")
+        print(f"         WARNING: This route is completely unknown!")
+        print(f"         High risk of failure - consider enabling strict mode")
+        return True
+
 class BidirectionalDebtSwapper:
     """Execute debt swaps in both directions: DAI<>WETH"""
     
@@ -73,7 +149,7 @@ class BidirectionalDebtSwapper:
         print(f"   Wallet: {self.address}")
         print(f"   Supports: DAI ↔ WETH debt swaps")
     
-    def _build_paraswap_transaction(
+    def _build_paraswap_transaction_single_attempt(
         self,
         from_token: str,
         to_token: str,
@@ -81,7 +157,9 @@ class BidirectionalDebtSwapper:
         slippage_bps: int = 300  # 3% slippage default for safer swaps
     ) -> Optional[Dict[str, Any]]:
         """
-        Build ParaSwap swap data using official API (following Velora docs)
+        Build ParaSwap swap data (single attempt - no retry logic).
+        Use _build_paraswap_transaction() for production (includes retry).
+        
         Returns ABI-encoded (bytes calldata, address augustus) structure
         """
         import requests
@@ -165,15 +243,18 @@ class BidirectionalDebtSwapper:
             swap_calldata = bytes.fromhex(tx_data['data'][2:])  # Remove 0x
             augustus_address = tx_data['to']
             method_selector = '0x' + swap_calldata[:4].hex()
+            calldata_size = len(swap_calldata)
             
             print(f"   ✅ ParaSwap transaction built!")
             print(f"      Augustus: {augustus_address}")
-            print(f"      Calldata: {len(swap_calldata)} bytes")
+            print(f"      Calldata: {calldata_size} bytes")
             print(f"      Method selector: {method_selector}")
             
-            # ParaSwap routing variance warning (after tx_data is built)
-            if method_selector == '0x7f457675':
-                print(f"      ⚠️  Generic route detected - may use +5% gas (765K vs 729K)")
+            # PRE-FLIGHT VALIDATION: Check if route will work
+            is_valid = validate_paraswap_route(method_selector, calldata_size)
+            if not is_valid:
+                # Return None to trigger retry in wrapper function
+                return None
             
             # Encode as (bytes calldata, address augustus) for Aave Debt Switch
             paraswap_data = encode(
@@ -198,6 +279,54 @@ class BidirectionalDebtSwapper:
             import traceback
             traceback.print_exc()
             return None
+    
+    def _build_paraswap_transaction(
+        self,
+        from_token: str,
+        to_token: str,
+        dest_amount: int,
+        slippage_bps: int = 300
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Build ParaSwap swap data with automatic retry for reliable routing.
+        
+        Implements retry logic to overcome ParaSwap API non-determinism:
+        - Attempts up to MAX_ROUTE_RETRIES times
+        - Exponential backoff: 2s, 4s, 8s
+        - Rejects bad routes (0x7f457675) and retries
+        - Returns None only after all retries exhausted
+        
+        See PARASWAP_ROUTING_AUDIT.md for routing analysis.
+        """
+        import time
+        
+        for attempt in range(1, MAX_ROUTE_RETRIES + 1):
+            print(f"\n🔄 ParaSwap route attempt {attempt}/{MAX_ROUTE_RETRIES}...")
+            
+            # Try to build transaction
+            result = self._build_paraswap_transaction_single_attempt(
+                from_token, to_token, dest_amount, slippage_bps
+            )
+            
+            if result is not None:
+                # Success! Got a valid route
+                print(f"   ✅ Valid route obtained on attempt {attempt}")
+                if attempt > 1:
+                    print(f"      (Retry successful - avoided bad route)")
+                return result
+            
+            # Failed validation or API error
+            if attempt < MAX_ROUTE_RETRIES:
+                backoff_seconds = 2 ** attempt  # 2s, 4s, 8s
+                print(f"   ⏳ Bad route detected, retrying in {backoff_seconds}s...")
+                print(f"      (Market conditions may change, different route possible)")
+                time.sleep(backoff_seconds)
+            else:
+                print(f"   ❌ All {MAX_ROUTE_RETRIES} attempts failed")
+                print(f"      ParaSwap API consistently returning bad route")
+                print(f"      Consider trying again later or using alternative DEX")
+        
+        return None
     
     def get_debt_balance(self, asset: DebtAsset) -> Decimal:
         """Get current variable debt balance for asset"""

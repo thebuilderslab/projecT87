@@ -1,0 +1,52 @@
+Please conduct a comprehensive audit of all smart contract and deployment/test files in this project that interact with ParaSwap as part of the debt switch integration (—including, but not limited to, swapDebt and associated execution flows).
+
+The goals are:
+
+To diagnose whether ParaSwap routing is the source of unreliability or hidden API limitations.
+
+To build a data-driven map of ParaSwap route success/failure, calldata patterns, and dependencies, similar to our previous gas utilization audit.
+
+For each relevant file/function, provide:
+
+Routing Metrics and Outcomes
+
+List ParaSwap method(s) / adapter(s) used (e.g., UniswapV2, UniswapV3, 0x, generic).
+
+Log the status of each route attempt: success, failure, or error code.
+
+Record accompanying transaction hashes and calldata size for both successful and failed executions.
+
+API Interactions and Error Handling
+
+Document all ParaSwap API calls, responses, and error codes encountered.
+
+Note differences in wrapper/adapter requirements for each route—including when missing adapters or unsupported routes cause failures.
+
+Success Rate and Failure Patterns
+
+Calculate overall success rate for ParaSwap swaps/routes per method/adapter.
+
+Identify patterns in failures (e.g., “missing GenericAdapter” or specific network conditions).
+
+Compare network-approved manual/test executions vs. automated/scripted routines to catch edge cases missed by approval/simulation alone.
+
+Recommendations and Mitigations
+
+List actionable steps to prefer more reliable routes, improve error handling, and mitigate inconsistent API behavior.
+
+Suggest which route selection logic can be optimized to maximize reliability, and how to alert/log when an API limitation is detected.
+
+Deliverable Requirements:
+
+Provide summary tables per file/function similar to the previous gas audit (including method, outcome, error, calldata size, etc.).
+
+Add code comments and runbook/documentation updates to highlight ParaSwap quirks and where future devs need caution.
+
+If possible, automate ongoing route analysis and flagging via CI/test scripts.
+
+Optional:
+
+Engage with ParaSwap support or the dev community if platform issues appear systemic or unresolved by code/config changes.
+
+Objective:
+Bring ParaSwap routing reliability and failure analysis up to the same standard as gas auditing, so every contract/script is future-proofed against API or routing changes, maximizing prod stability and developer clarity.
