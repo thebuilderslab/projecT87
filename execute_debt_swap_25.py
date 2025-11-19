@@ -266,7 +266,7 @@ def main():
         collateral_atoken_permits
     ).build_transaction({
         'from': wallet,
-        'gas': 1_000_000,  # Conservative gas limit
+        'gas': 800_000,  # Optimized from 1M (actual usage ~730K + 10% buffer)
         'maxFeePerGas': max_fee,
         'maxPriorityFeePerGas': max_priority_fee,
         'nonce': w3.eth.get_transaction_count(wallet),

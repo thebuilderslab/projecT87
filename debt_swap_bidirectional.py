@@ -23,6 +23,7 @@ from corrected_swap_debt_abi import (
     get_empty_credit_delegation_permit
 )
 from augustus_v5_multiswap_builder import AugustusV5MultiSwapBuilder
+from gas_config import PRODUCTION_GAS_LIMITS, PARASWAP_ROUTING_WARNING
 
 DebtAsset = Literal['DAI', 'WETH']
 
@@ -163,11 +164,16 @@ class BidirectionalDebtSwapper:
             # Extract calldata and augustus address
             swap_calldata = bytes.fromhex(tx_data['data'][2:])  # Remove 0x
             augustus_address = tx_data['to']
+            method_selector = '0x' + swap_calldata[:4].hex()
             
             print(f"   ✅ ParaSwap transaction built!")
             print(f"      Augustus: {augustus_address}")
             print(f"      Calldata: {len(swap_calldata)} bytes")
-            print(f"      Method selector: 0x{swap_calldata[:4].hex()}")
+            print(f"      Method selector: {method_selector}")
+            
+            # ParaSwap routing variance warning (after tx_data is built)
+            if method_selector == '0x7f457675':
+                print(f"      ⚠️  Generic route detected - may use +5% gas (765K vs 729K)")
             
             # Encode as (bytes calldata, address augustus) for Aave Debt Switch
             paraswap_data = encode(
@@ -359,10 +365,13 @@ class BidirectionalDebtSwapper:
                 print(f"   Would borrow: {max_new_debt_decimal:.6f} {to_asset}")
                 return "DRY_RUN"
             
-            # Build transaction
+            # Build transaction with production-optimized gas limits
             print(f"\n📝 Building transaction...")
             base_fee = self.w3.eth.gas_price
             max_fee = int(base_fee * 1.2)  # 1.2x base fee (reduced from 2x for affordability)
+            
+            # Use production gas limit (800K proven safe on mainnet: 729K actual + 71K buffer)
+            gas_limit = PRODUCTION_GAS_LIMITS['debt_swap']
             
             tx = self.debt_switch.functions.swapDebt(
                 debt_swap_params,
@@ -371,7 +380,7 @@ class BidirectionalDebtSwapper:
             ).build_transaction({
                 'from': self.address,
                 'nonce': self.w3.eth.get_transaction_count(self.address),
-                'gas': 800000,  # Increased from 400K to prevent gas exhaustion (was hitting 95% at 381K)
+                'gas': gas_limit,  # Dynamic from gas_config (800K for debt swaps)
                 'maxFeePerGas': max_fee,
                 'maxPriorityFeePerGas': self.w3.to_wei('0.01', 'gwei'),
                 'chainId': 42161

@@ -3,6 +3,15 @@
 PRODUCTION DEBT SWAP CYCLE EXECUTOR
 Consolidated implementation with deterministic validation and comprehensive PNL tracking.
 Verifiable execution: DAI debt → ARB debt → wait 5min → ARB debt → DAI debt.
+
+GAS OPTIMIZATION NOTES (Based on Mainnet Profiling - 2025-01-19):
+⚠️  PARASWAP ROUTING GAS VARIANCE
+ParaSwap routing algorithm is non-deterministic and gas usage varies by route:
+- Specific route (0xa76f4eb6): 729,485 gas ✅ (swapExactAmountOutOnUniswapV2)
+- Generic route (0x7f457675): 765,583 gas (+5%) ⚠️  (swapExactAmountOut)
+
+Gas limits configured for worst-case routing. Monitor selector in logs for actual method.
+Production limits: debt_swap=800K-1M, delegation=100K, simple_approval=75K
 """
 
 import json
@@ -1736,7 +1745,7 @@ class ProductionDebtSwapExecutor:
                     
                 except Exception as gas_error:
                     # Fallback gas estimation with proper gas price scoping
-                    estimated_gas = 1000000  # Debt swaps require ~874k gas, using 1M for safety
+                    estimated_gas = 1000000  # Debt swaps: actual 730K-766K, using 1M (30% buffer)
                     gas_price = self.w3.eth.gas_price
                     final_gas_price = gas_price  # FIX: Ensure final_gas_price is always defined
                     gas_cost_eth = (estimated_gas * gas_price) / 1e18
@@ -1983,7 +1992,7 @@ class ProductionDebtSwapExecutor:
             print(f"   📝 5B: Building and submitting transaction...")
             try:
                 # Calculate final gas limit with validation
-                base_gas_limit = min(int(estimated_gas * 1.1), 1500000)  # 10% buffer, capped at 1.5M for debt swaps
+                base_gas_limit = min(int(estimated_gas * 1.1), 1000000)  # 10% buffer, capped at 1M (optimized from 1.5M)
                 manual_baseline = 874077  # Actual successful debt swap gas usage
                 
                 print(f"      📊 FINAL GAS LIMIT ANALYSIS:")
@@ -2437,7 +2446,7 @@ class ProductionDebtSwapExecutor:
                 
                 # Generate comparison table
                 manual_params = {
-                    'gas': 350000,
+                    'gas': 100000,  # Optimized from 350K (delegation actual: ~70K)
                     'gasPrice': self.w3.eth.gas_price
                 }
                 

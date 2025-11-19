@@ -104,7 +104,7 @@ def main():
     ).build_transaction({
         'from': account.address,
         'nonce': w3.eth.get_transaction_count(account.address),
-        'gas': 200000,
+        'gas': 100000,  # Reduced from 200K to 100K (actual usage ~60-80K + 25% buffer)
         'maxFeePerGas': max_fee,
         'maxPriorityFeePerGas': priority_fee,
         'chainId': 42161

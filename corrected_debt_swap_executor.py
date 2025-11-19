@@ -188,6 +188,7 @@ class CorrectedDebtSwapExecutor:
             print(f"   Health factor before: {hf_before:.4f}")
             
             # Build the swapDebt call
+            # Gas limit optimized based on mainnet profiling: actual usage ~730K, using 1M for safety
             tx = self.debt_switch.functions.swapDebt(
                 debt_swap_params,
                 credit_delegation_permit,
@@ -195,7 +196,7 @@ class CorrectedDebtSwapExecutor:
             ).build_transaction({
                 'from': self.address,
                 'nonce': self.w3.eth.get_transaction_count(self.address),
-                'gas': 2000000,
+                'gas': 1000000,  # Reduced from 2M to 1M (actual usage ~730K + 37% buffer)
                 'maxFeePerGas': self.w3.eth.gas_price,
                 'maxPriorityFeePerGas': self.w3.to_wei('0.01', 'gwei'),
                 'chainId': 42161

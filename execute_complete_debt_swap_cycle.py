@@ -305,7 +305,7 @@ class ProductionDebtSwapExecutor:
                 print(f"✅ Gas estimate: {gas_estimate:,}")
             except Exception as e:
                 print(f"⚠️ Gas estimation failed: {e}")
-                gas_limit = 800000
+                gas_limit = 800000  # Production limit (actual usage ~730K + 10% buffer)
             
             # Build transaction
             transaction = function_call.build_transaction({
