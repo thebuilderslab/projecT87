@@ -27,15 +27,17 @@ DebtAsset = Literal['DAI', 'WETH']
 # ParaSwap routing reliability constants (see PARASWAP_ROUTING_AUDIT.md)
 GOOD_ROUTE_SELECTORS = {
     '0xa76f4eb6':
-    'swapExactAmountOutOnUniswapV2 (100% mainnet success, 729K gas)'
+    'swapExactAmountOutOnUniswapV2 (100% mainnet success, 729K gas)',
+    '0xd6ed22e6':
+    'swapExactAmountOutOnBalancerV2 (testing - promoted 2025-01-20)',
+    '0x5e94e28d':
+    'swapExactAmountOutOnUniswapV3 (testing - added 2025-01-20)'
 }  # Whitelist of verified working routes
 BAD_ROUTE_SELECTORS = {
     '0x7f457675':
     'swapExactAmountOut (0% success - missing GenericAdapter wrapper)'
-}  # Blacklist of known failing routes
+}  # Blacklist of known failing routes - blocked via excludeContractMethods
 UNVETTED_ROUTE_SELECTORS = {
-    '0xd6ed22e6':
-    'swapExactAmountOutOnBalancerV2 (untested - discovered 2025-01-19)'
 }  # Discovered but not yet validated on mainnet
 MAX_ROUTE_RETRIES = 3  # Boosts expected success rate from 50% to 87.5%
 STRICT_MODE = True  # If True, only allow whitelisted routes (recommended for production)
@@ -206,10 +208,9 @@ class BidirectionalDebtSwapper:
             to_token_addr = ARBITRUM_ADDRESSES[to_token]
 
             # Step 1: Get price route (BUY mode for exact output)
-            # CRITICAL: Use version=6.2 AND exclude UniswapV3 to get swapOnUniswapV2Fork (0x7f457675)
-            # This is the exact method used in working debt swap transactions
-            # Get price route WITHOUT slippage parameter to use specific UniswapV2 method
-            # (passing slippage forces generic routing which needs GenericAdapter wrapper)
+            # RELIABILITY FIX: Use excludeContractMethods to block the failing generic method
+            # This forces ParaSwap to use specific adapter methods (UniswapV2/V3, BalancerV2)
+            # The generic swapExactAmountOut (0x7f457675) always fails with Aave Debt Switch
             price_url = "https://api.paraswap.io/prices"
             price_params = {
                 'srcToken': from_token_addr,
@@ -220,9 +221,8 @@ class BidirectionalDebtSwapper:
                 'side': 'BUY',  # Exact output
                 'network': '42161',
                 'version': '6.2',  # Force Augustus V6.2
-                'excludeDEXS':
-                'UniswapV3,CurveV1,CurveV2'  # Force specific UniswapV2 method
-                # Note: Don't pass slippage here - it changes routing to generic method
+                'excludeContractMethods':
+                'swapExactAmountOut'  # Block the failing generic method
             }
 
             print(f"   Fetching ParaSwap price route...")
