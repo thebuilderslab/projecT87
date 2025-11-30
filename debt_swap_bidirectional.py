@@ -29,14 +29,14 @@ GOOD_ROUTE_SELECTORS = {
     '0xa76f4eb6':
     'swapExactAmountOutOnUniswapV2 (100% mainnet success, 729K gas)',
     '0xd6ed22e6':
-    'swapExactAmountOutOnBalancerV2 (testing - promoted 2025-01-20)',
+    'swapExactAmountOutOnBalancerV2 (testing)',
     '0x5e94e28d':
-    'swapExactAmountOutOnUniswapV3 (testing - added 2025-01-20)'
-}  # Whitelist of verified working routes
+    'swapExactAmountOutOnUniswapV3 (testing)',
+}  # Whitelist of routes to try (health factor may still cause failures)
 BAD_ROUTE_SELECTORS = {
     '0x7f457675':
-    'swapExactAmountOut (0% success - missing GenericAdapter wrapper)'
-}  # Blacklist of known failing routes - blocked via excludeContractMethods
+    'swapExactAmountOut (0% success - missing GenericAdapter wrapper)',
+}  # Blacklist of known failing routes - NEVER use this generic method
 UNVETTED_ROUTE_SELECTORS = {
 }  # Discovered but not yet validated on mainnet
 MAX_ROUTE_RETRIES = 3  # Boosts expected success rate from 50% to 87.5%
@@ -208,9 +208,8 @@ class BidirectionalDebtSwapper:
             to_token_addr = ARBITRUM_ADDRESSES[to_token]
 
             # Step 1: Get price route (BUY mode for exact output)
-            # RELIABILITY FIX: Use excludeContractMethods to block the failing generic method
-            # This forces ParaSwap to use specific adapter methods (UniswapV2/V3, BalancerV2)
-            # The generic swapExactAmountOut (0x7f457675) always fails with Aave Debt Switch
+            # RELIABILITY FIX: Block only the failing generic method
+            # Let ParaSwap choose the best available route
             price_url = "https://api.paraswap.io/prices"
             price_params = {
                 'srcToken': from_token_addr,
@@ -221,8 +220,7 @@ class BidirectionalDebtSwapper:
                 'side': 'BUY',  # Exact output
                 'network': '42161',
                 'version': '6.2',  # Force Augustus V6.2
-                'excludeContractMethods':
-                'swapExactAmountOut'  # Block the failing generic method
+                'excludeContractMethods': 'swapExactAmountOut',  # Block only the failing generic method
             }
 
             print(f"   Fetching ParaSwap price route...")
