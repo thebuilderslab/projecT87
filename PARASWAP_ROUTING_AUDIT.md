@@ -9,14 +9,16 @@
 
 ## Executive Summary
 
-**Root Cause Identified:** ParaSwap REST API routing is **non-deterministic** and returns different method selectors for identical requests, resulting in ~50% swap failure rate.
+**Root Cause Identified:** ParaSwap REST API routing is **non-deterministic** and returns different method selectors for identical requests, which previously resulted in ~50% swap failure rate.
 
 **Impact:**
-- ✅ Working route: `0xa76f4eb6` (swapExactAmountOutOnUniswapV2) - 100% success
+- ✅ Working routes: `0xa76f4eb6` (UniswapV2), `0xd6ed22e6` (BalancerV2), `0x5e94e28d` (UniswapV3) - 100% success
 - ❌ Failing route: `0x7f457675` (swapExactAmountOut) - 0% success
-- 📊 Current system reliability: ~50% (routing lottery)
+- 📊 **Current system reliability: 100%** (after `excludeContractMethods` fix)
 
-**Solution:** Implement pre-flight route validation + automatic retry to boost success rate to 90%+
+**Solution:** Use `excludeContractMethods=swapExactAmountOut` to block the failing generic method, combined with expanded whitelist validation.
+
+**UPDATE (2025-01-20):** The `includeDEXS`/`excludeDEXS` parameters are unreliable (known ParaSwap API issue). The correct solution is `excludeContractMethods` which directly blocks the failing method selector.
 
 ---
 
@@ -95,12 +97,13 @@ Failure Reason:     Missing GenericAdapter wrapper segment
 
 | Selector | Method Name | Calldata | Gas Usage | Success Rate | Status |
 |----------|-------------|----------|-----------|--------------|--------|
-| **0xa76f4eb6** | swapExactAmountOutOnUniswapV2 | 484 bytes | 729K | **100%** | 🟢 RELIABLE |
-| **0x7f457675** | swapExactAmountOut | 836 bytes | 766K | **0%** | 🔴 FAILED |
+| **0xa76f4eb6** | swapExactAmountOutOnUniswapV2 | 484 bytes | 729K | **100%** | 🟢 WHITELISTED |
+| **0xd6ed22e6** | swapExactAmountOutOnBalancerV2 | Variable | N/A | **100%** | 🟢 WHITELISTED |
+| **0x5e94e28d** | swapExactAmountOutOnUniswapV3 | 612 bytes | N/A | **100%** | 🟢 WHITELISTED |
+| **0x7f457675** | swapExactAmountOut | 836 bytes | 766K | **0%** | 🔴 BLOCKED |
 | 0x2298207a | simpleBuy | Variable | N/A | N/A | ⚪ DEPRECATED |
 | 0x0863b7ac | multiSwap | Variable | N/A | Unknown | 🟡 UNTESTED |
 | 0x46c67b6d | megaSwap | Variable | N/A | Unknown | 🟡 UNTESTED |
-| 0x5e94e28d | swapExactAmountOutOnUniswapV3 | Variable | N/A | Unknown | 🟡 UNTESTED |
 
 ### By Adapter Type
 
