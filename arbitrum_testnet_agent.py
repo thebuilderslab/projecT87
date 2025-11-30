@@ -584,7 +584,7 @@ class ArbitrumTestnetAgent:
 
         # Growth-Triggered System Configuration
         self.growth_trigger_threshold = 50.0  # $50 growth threshold
-        self.growth_health_factor_threshold = 1.5  # Minimum health factor for growth operations
+        self.growth_health_factor_threshold = 1.35  # Minimum health factor for growth operations
         self.re_leverage_percentage = 0.15  # 15% re-leverage percentage
         self.min_borrow_releverage = 5.0  # Minimum borrow amount for re-leverage
         self.max_borrow_releverage = 100.0  # Maximum borrow amount for re-leverage
@@ -592,9 +592,9 @@ class ArbitrumTestnetAgent:
         # Capacity-Based System Configuration
         self.capacity_available_threshold = 10.0  # $10 minimum available capacity (optimized for small wallets)
         self.capacity_trigger_threshold = 15.0  # $15 capacity trigger activation threshold
-        self.capacity_health_factor_threshold = 1.5  # Minimum health factor for capacity operations
+        self.capacity_health_factor_threshold = 1.35  # Minimum health factor for capacity operations
         self.capacity_optimization_threshold = 0.85  # 85% maximum utilization
-        self.target_health_factor = 1.5  # Target health factor to maintain
+        self.target_health_factor = 1.35  # Target health factor to maintain
         
         # Growth Trigger Configuration
         self.growth_percentage_threshold = 0.10  # 10% relative growth threshold
