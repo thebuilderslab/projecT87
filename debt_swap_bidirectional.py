@@ -379,6 +379,73 @@ class BidirectionalDebtSwapper:
 
         return None
 
+    def _build_multiswap_calldata(
+            self,
+            from_token: str,
+            to_token: str,
+            dest_amount: int,
+            slippage_bps: int = 300) -> Optional[Dict[str, Any]]:
+        """
+        Build multiSwap calldata using AugustusV5MultiSwapBuilder.
+        
+        This method generates GenericAdapter-wrapped multiSwap calldata that matches
+        the structure of successful debt swap transactions (2698 bytes vs 612 bytes REST API).
+        
+        Uses BUY mode (exact output) for precise debt repayment amounts.
+        """
+        from eth_abi import encode
+        
+        try:
+            print(f"\n🏗️  Building multiSwap calldata for debt swap...")
+            
+            # Use the multiswap builder in BUY mode (exact output)
+            result = self.paraswap.build_multiswap_calldata(
+                from_token=to_token,  # WETH (what we borrow and swap FROM)
+                to_token=from_token,  # DAI (what we want to receive to repay)
+                from_amount=dest_amount,  # Amount of DAI we need (exact output)
+                min_to_amount=dest_amount,  # Must receive at least this much
+                beneficiary=DEBT_SWITCH_V3_ADDRESS,  # Swap proceeds go to Debt Switch
+                slippage_bps=slippage_bps,
+                use_buy_mode=True  # BUY mode for exact output
+            )
+            
+            if not result:
+                print(f"   ❌ multiSwap build failed")
+                return None
+            
+            # Get the calldata bytes
+            swap_calldata = bytes.fromhex(result['calldata'][2:])
+            augustus_address = result['augustus_router']
+            calldata_size = len(swap_calldata)
+            
+            print(f"   ✅ multiSwap calldata built!")
+            print(f"      Augustus: {augustus_address}")
+            print(f"      Calldata: {calldata_size} bytes")
+            print(f"      Method: {result['method_name']} ({result['method_selector']})")
+            
+            # Encode as (bytes calldata, address augustus) for Aave Debt Switch
+            paraswap_data = encode(
+                ['bytes', 'address'],
+                [swap_calldata, Web3.to_checksum_address(augustus_address)])
+            
+            paraswap_data_hex = '0x' + paraswap_data.hex()
+            
+            print(f"   ✅ Encoded for Aave Debt Switch")
+            print(f"      Total paraswapData: {len(paraswap_data_hex)} chars ({len(paraswap_data)} bytes)")
+            
+            return {
+                'src_amount': result['from_amount'],  # WETH needed
+                'dest_amount': result['min_to_amount'],  # DAI to receive
+                'calldata': paraswap_data_hex,
+                'router': augustus_address
+            }
+            
+        except Exception as e:
+            print(f"   ❌ Error building multiSwap calldata: {e}")
+            import traceback
+            traceback.print_exc()
+            return None
+
     def get_debt_balance(self, asset: DebtAsset) -> Decimal:
         """Get current variable debt balance for asset"""
         debt_token_addr = ARBITRUM_ADDRESSES[f"variableDebtArb{asset}"]
@@ -511,7 +578,17 @@ class BidirectionalDebtSwapper:
                 slippage_bps=slippage_bps)
 
             if not paraswap_result:
-                raise Exception("Failed to build ParaSwap swap route")
+                # REST API failed (V3 route keeps reverting or 500 errors)
+                # Fall back to multiSwap builder with GenericAdapter wrapper
+                print(f"\n🔄 REST API failed, trying multiSwap fallback...")
+                paraswap_result = self._build_multiswap_calldata(
+                    from_token=from_asset,
+                    to_token=to_asset,
+                    dest_amount=repay_amount_wei,
+                    slippage_bps=slippage_bps)
+                
+                if not paraswap_result:
+                    raise Exception("Failed to build ParaSwap swap route")
 
             # Max new debt amount from ParaSwap
             max_new_debt_base = int(paraswap_result['src_amount'])
