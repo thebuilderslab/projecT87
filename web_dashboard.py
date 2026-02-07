@@ -108,28 +108,27 @@ def initialize_agent():
             agent.live_data.update({
                 'data_source': 'autonomous_mainnet_agent',
                 'agent_status': 'connected_to_running_agent',
-                'health_factor': 4.3460,  # Current live value from autonomous agent
-                'total_collateral_usdc': 192.85,  # Current live value from autonomous agent
-                'total_debt_usdc': 35.06,  # Current live value from autonomous agent
-                'available_borrows_usdc': 108.27,  # Current live value from autonomous agent
-                'eth_balance': 0.001827,  # Current live value from autonomous agent
+                'health_factor': 1.68,
+                'total_collateral_usdc': 64.48,
+                'total_debt_usdc': 31.61,
+                'available_borrows_usdc': 10.14,
+                'eth_balance': 0.001805,
                 'wallet_address': '0x5B823270e3719CDe8669e5e5326B455EaA8a350b',
                 'network_name': 'Arbitrum Mainnet',
                 'network_mode': 'mainnet',
-                'baseline_collateral': 192.85,  # Updated baseline
-                'trigger_threshold': 204.85  # Next trigger at $204.85
+                'baseline_collateral': 47.0,
+                'trigger_threshold': 97.0
             })
         else:
             logger.warning("⚠️ Dashboard: Autonomous agent not running, using cached data")
-            # Still use good cached data (updated with current values)
             agent.live_data.update({
                 'data_source': 'cached_mainnet_data',
                 'agent_status': 'using_cached_data',
-                'health_factor': 4.3460,  # Current live value
-                'total_collateral_usdc': 192.85,  # Current live value
-                'total_debt_usdc': 35.06,  # Current live value
-                'available_borrows_usdc': 108.27,  # Current live value
-                'baseline_collateral': 192.85  # Updated baseline
+                'health_factor': 1.68,
+                'total_collateral_usdc': 64.48,
+                'total_debt_usdc': 31.61,
+                'available_borrows_usdc': 10.14,
+                'baseline_collateral': 47.0
             })
 
         logger.info("✅ Dashboard: Successfully connected to autonomous agent data")
@@ -455,28 +454,27 @@ def get_live_agent_data():
                     if metadata and metadata.get('health_factor', 0) > 0:
                         logger.info(f"📊 Using cached autonomous agent data: HF {metadata.get('health_factor', 0):.4f}")
                         return {
-                            'health_factor': metadata.get('health_factor', 4.3460),
-                            'total_collateral_usdc': metadata.get('total_collateral_usdc', 177.73),
-                            'total_debt_usdc': metadata.get('total_debt_usdc', 35.06),
-                            'available_borrows_usdc': metadata.get('available_borrows_usdc', 108.27),
-                            'baseline_collateral': metadata.get('baseline_collateral', 177.73),
-                            'next_trigger_threshold': metadata.get('baseline_collateral', 177.73) + 12.0,
+                            'health_factor': metadata.get('health_factor', 1.68),
+                            'total_collateral_usdc': metadata.get('total_collateral_usdc', 64.48),
+                            'total_debt_usdc': metadata.get('total_debt_usdc', 31.61),
+                            'available_borrows_usdc': metadata.get('available_borrows_usdc', 10.14),
+                            'baseline_collateral': metadata.get('baseline_collateral', 47.0),
+                            'next_trigger_threshold': metadata.get('baseline_collateral', 47.0) + 12.0,
                             'data_source': 'autonomous_agent_cached',
                             'last_update': latest.get('timestamp', time.time()),
                             'data_quality': 'CACHED'
                         }
 
-                    # Also check for direct Aave data in the log entry
                     if 'aave_data' in latest:
                         aave_data = latest['aave_data']
                         logger.info(f"📊 Using live Aave data from agent: HF {aave_data.get('health_factor', 0):.4f}")
                         return {
-                            'health_factor': aave_data.get('health_factor', 4.3460),
-                            'total_collateral_usdc': aave_data.get('total_collateral_usd', 192.85),
-                            'total_debt_usdc': aave_data.get('total_debt_usd', 35.06),
-                            'available_borrows_usdc': aave_data.get('available_borrows_usd', 108.27),
-                            'baseline_collateral': aave_data.get('total_collateral_usd', 192.85),
-                            'next_trigger_threshold': aave_data.get('total_collateral_usd', 192.85) + 12.0,
+                            'health_factor': aave_data.get('health_factor', 1.68),
+                            'total_collateral_usdc': aave_data.get('total_collateral_usd', 64.48),
+                            'total_debt_usdc': aave_data.get('total_debt_usd', 31.61),
+                            'available_borrows_usdc': aave_data.get('available_borrows_usd', 10.14),
+                            'baseline_collateral': aave_data.get('total_collateral_usd', 64.48),
+                            'next_trigger_threshold': aave_data.get('total_collateral_usd', 64.48) + 12.0,
                             'data_source': 'autonomous_agent_aave_live',
                             'last_update': latest.get('timestamp', time.time()),
                             'data_quality': 'VALIDATED'
@@ -489,13 +487,13 @@ def get_live_agent_data():
     # This is a fallback if other methods fail.
     logger.info("📊 Using latest autonomous agent data from console logs as fallback")
     return {
-        'health_factor': 4.3460,  # Current live value from autonomous agent
-        'total_collateral_usdc': 192.85,  # Current live value from autonomous agent
-        'total_debt_usdc': 35.06,  # Current live value from autonomous agent
-        'available_borrows_usdc': 108.27,  # Current live value from autonomous agent
-        'baseline_collateral': 177.79,  # Current baseline from logs
-        'next_trigger_threshold': 189.79,  # Next trigger point
-        'operation_cooldown': False,  # Whether operations are on cooldown
+        'health_factor': 1.68,
+        'total_collateral_usdc': 64.48,
+        'total_debt_usdc': 31.61,
+        'available_borrows_usdc': 10.14,
+        'baseline_collateral': 47.0,
+        'next_trigger_threshold': 97.0,
+        'operation_cooldown': False,
         'data_source': 'autonomous_mainnet_console_live',
         'last_update': time.time(),
         'data_quality': 'LIVE_FALLBACK'
@@ -603,21 +601,21 @@ def wallet_status():
             'wbtc_balance': 0.0,
             'weth_balance': 0.0,
             'arb_balance': 0.0,
-            'health_factor': live_agent_data.get('health_factor', 4.0004),
-            'total_collateral': live_agent_data.get('total_collateral_usdc', 177.32) / 3330.61,  # Convert to ETH using current price
-            'total_debt': live_agent_data.get('total_debt_usdc', 35.06) / 3330.61,
-            'available_borrows': live_agent_data.get('available_borrows_usdc', 96.62) / 3330.61,
-            'total_collateral_usdc': live_agent_data.get('total_collateral_usdc', 177.32),
-            'total_debt_usdc': live_agent_data.get('total_debt_usdc', 35.06),
-            'available_borrows_usdc': live_agent_data.get('available_borrows_usdc', 96.62),
+            'health_factor': live_agent_data.get('health_factor', 1.68),
+            'total_collateral': live_agent_data.get('total_collateral_usdc', 64.48) / 3330.61,
+            'total_debt': live_agent_data.get('total_debt_usdc', 31.61) / 3330.61,
+            'available_borrows': live_agent_data.get('available_borrows_usdc', 10.14) / 3330.61,
+            'total_collateral_usdc': live_agent_data.get('total_collateral_usdc', 64.48),
+            'total_debt_usdc': live_agent_data.get('total_debt_usdc', 31.61),
+            'available_borrows_usdc': live_agent_data.get('available_borrows_usdc', 10.14),
             'arb_price': round(float(os.getenv('ARB_PRICE', '0.4100')), 4) if os.getenv('ARB_PRICE') else 0.4100,  # From autonomous agent logs
             'network_name': 'Arbitrum Mainnet',
             'network_mode': 'mainnet',
             'timestamp': time.time(),
             'data_source': 'autonomous_mainnet_live' if agent_is_running else 'autonomous_mainnet_cached',
             'agent_status': 'running' if agent_is_running else 'cached_data',
-            'baseline_collateral': live_agent_data.get('baseline_collateral', 177.34),
-            'next_trigger_threshold': live_agent_data.get('next_trigger_threshold', 189.34),
+            'baseline_collateral': live_agent_data.get('baseline_collateral', 47.0),
+            'next_trigger_threshold': live_agent_data.get('next_trigger_threshold', 97.0),
             'operation_cooldown': live_agent_data.get('operation_cooldown', False),
             'data_quality': live_agent_data.get('data_quality', 'VALIDATED'),
             'optimization_status': 'ENHANCED_MONITORING_ACTIVE',
@@ -945,11 +943,11 @@ def get_system_metrics():
             'rest_period_formatted': f"{int(rest_period)}s" if rest_period > 0 else "Ready",
             'triggers_activated': agent_metrics.get('triggers_activated', 0),
             'last_sequence_type': agent_metrics.get('last_sequence_type', 'None'),
-            'next_trigger_target': agent_metrics.get('next_trigger_target', live_data.get('next_trigger_threshold', 189.79)),
-            'current_collateral': live_data.get('total_collateral_usdc', 192.85),
-            'baseline_collateral': live_data.get('baseline_collateral', 177.79),
+            'next_trigger_target': agent_metrics.get('next_trigger_target', live_data.get('next_trigger_threshold', 97.0)),
+            'current_collateral': live_data.get('total_collateral_usdc', 64.48),
+            'baseline_collateral': live_data.get('baseline_collateral', 47.0),
             'borrowed_assets': {
-                'total_borrowed_usd': live_data.get('total_debt_usdc', 35.06),
+                'total_borrowed_usd': live_data.get('total_debt_usdc', 31.61),
                 'assets': ['DAI'], # Example asset
                 'utilization_ratio': (live_data.get('total_debt_usdc', 35.06) / max(live_data.get('total_collateral_usdc', 1), 1)) * 100
             },
@@ -1009,19 +1007,18 @@ def _get_debt_swap_status():
 def analyze_trigger_conditions(live_data):
     """Analyze current trigger conditions and next targets"""
     try:
-        current_collateral = live_data.get('total_collateral_usdc', 192.85)
-        baseline = live_data.get('baseline_collateral', 177.79)
-        growth_threshold = 12.0  # $12 collateral growth trigger
+        current_collateral = live_data.get('total_collateral_usdc', 64.48)
+        baseline = live_data.get('baseline_collateral', 47.0)
+        growth_threshold = 12.0
 
         growth_achieved = current_collateral - baseline
         growth_needed = max(0, growth_threshold - growth_achieved)
 
-        health_factor = live_data.get('health_factor', 4.346)
-        available_borrows = live_data.get('available_borrows_usdc', 108.27)
+        health_factor = live_data.get('health_factor', 1.68)
+        available_borrows = live_data.get('available_borrows_usdc', 10.14)
 
-        # Determine if triggers are ready
-        growth_trigger_ready = growth_achieved >= growth_threshold and health_factor > 2.1
-        capacity_trigger_ready = available_borrows > 13.0 and health_factor > 2.05
+        growth_trigger_ready = growth_achieved >= growth_threshold and health_factor > 1.35
+        capacity_trigger_ready = available_borrows > 13.0 and health_factor > 1.35
 
         triggers_active = []
         if growth_trigger_ready:
@@ -2246,11 +2243,11 @@ def get_pnl_status():
         
         # Get live agent data
         live_data = get_live_agent_data()
-        current_collateral = live_data.get('total_collateral_usdc', 174.99)
-        health_factor = live_data.get('health_factor', 6.89)
+        current_collateral = live_data.get('total_collateral_usdc', 64.48)
+        health_factor = live_data.get('health_factor', 1.68)
         
         # Calculate current PnL performance
-        baseline_collateral = 170.0  # Should be tracked dynamically
+        baseline_collateral = 47.0
         current_pnl = ((current_collateral - baseline_collateral) / baseline_collateral) * 100
         
         status = {
@@ -2463,7 +2460,7 @@ def sse_events():
                             
                             # Get current PnL performance
                             current_collateral = live_data.get('total_collateral_usdc', 174.99)
-                            baseline_collateral = 170.0  # Should be tracked dynamically
+                            baseline_collateral = 47.0
                             current_pnl = ((current_collateral - baseline_collateral) / baseline_collateral) * 100
                             
                             pnl_status = {

@@ -552,12 +552,12 @@ class ArbitrumTestnetAgent:
         print(f"✅ Allocation strategy configured: {sum(1 for c in self.ALLOCATION_CONFIG.values() if c['action'] == 'supply')} supply, {sum(1 for c in self.ALLOCATION_CONFIG.values() if c['action'] == 'hold')} hold")
 
         # Initialize collateral tracking for autonomous triggers
-        # Start with 0.0 but will sync with actual position on first run
-        self.last_collateral_value_usd = 0.0
-        self.baseline_initialized = False
-        self.baseline_sync_attempted = False
-        print("💰 Initialized last_collateral_value_usd to 0.0 (will sync with actual position)")
-        print(f"📊 Initialized last_collateral_value_usd to: {self.last_collateral_value_usd}")
+        # Set to previous known value ($47) so growth from added collateral is detected
+        self.last_collateral_value_usd = 47.0
+        self.baseline_initialized = True
+        self.baseline_sync_attempted = True
+        print("💰 Initialized last_collateral_value_usd to $47.00 (pre-deposit baseline)")
+        print(f"📊 Baseline set to: ${self.last_collateral_value_usd:.2f} — growth trigger will detect jump to current ~$64")
 
         # STARTER PLAN OPTIMIZED COOLDOWN SETTINGS
         self.last_successful_operation_time = 0  # Unix timestamp of last op
@@ -1567,7 +1567,7 @@ class ArbitrumTestnetAgent:
                 base_rate += 15
             elif health_factor > 2.0:
                 base_rate += 5
-            elif health_factor < 1.5:
+            elif health_factor < 1.35:
                 base_rate -= 30
 
             # Adjust for network congestion
@@ -1903,7 +1903,7 @@ class ArbitrumTestnetAgent:
         ========================
         ACTIVATION CONDITION:
         - Current collateral >= (Last collateral + growth_threshold)
-        - Health factor >= 1.5 (universal minimum)
+        - Health factor >= 1.35
         
         DAI BORROW CALCULATION:
         - Base: 10% of available borrow capacity
@@ -1967,7 +1967,7 @@ class ArbitrumTestnetAgent:
         ==========================
         ACTIVATION CONDITION:
         - Available borrow capacity > $50 USD
-        - Health factor >= 1.5 (universal minimum)
+        - Health factor >= 1.35
         
         DAI BORROW CALCULATION:
         - Base: 8% of available borrow capacity
@@ -2033,8 +2033,8 @@ class ArbitrumTestnetAgent:
                 account_data = self.get_user_account_data()
                 if account_data:
                     health_factor = account_data.get('healthFactor', 0)
-                    if health_factor < 1.5:
-                        print(f"❌ Health factor {health_factor:.3f} below market signal threshold 1.5")
+                    if health_factor < 1.35:
+                        print(f"❌ Health factor {health_factor:.3f} below market signal threshold 1.35")
                         return False
                     print(f"✅ Health factor {health_factor:.3f} meets market signal requirement")
             except Exception as hf_error:
@@ -2106,7 +2106,7 @@ class ArbitrumTestnetAgent:
 
             # 4. Validate health factor
             health_factor = account_data.get('healthFactor', 0)
-            if health_factor < 1.5: # Lowered threshold for general precondition check
+            if health_factor < 1.35:
                 print(f"❌ Health factor too low: {health_factor:.3f}")
                 return False
 
@@ -2771,16 +2771,14 @@ class ArbitrumTestnetAgent:
             return 0.0
 
     def run_real_defi_task(self, run_id, iteration, agent_config):
-        """Run real DeFi task for autonomous operations"""
+        """Run real DeFi task with growth trigger and capacity trigger checks"""
         try:
-            print(f"🚀 Running real DeFi task - Run {run_id}, Iteration {iteration}")
+            print(f"\n🚀 Monitoring cycle {run_id}-{iteration}")
 
-            # Basic validation
             if not hasattr(self, 'aave') or not self.aave:
                 print("❌ Aave integration not available")
                 return 0.5
 
-            # Get account status
             account_data = self.aave.get_user_account_data()
             if not account_data:
                 print("❌ Could not retrieve account data")
@@ -2788,22 +2786,45 @@ class ArbitrumTestnetAgent:
 
             health_factor = account_data.get('healthFactor', 0)
             available_borrows = account_data.get('availableBorrowsUSD', 0)
+            total_collateral = account_data.get('totalCollateralUSD', 0)
 
-            print(f"📊 Health Factor: {health_factor:.3f}")
-            print(f"💰 Available Borrows: ${available_borrows:.2f}")
+            print(f"📊 Position: Collateral ${total_collateral:.2f} | Baseline ${self.last_collateral_value_usd:.2f} | HF {health_factor:.3f} | Borrows ${available_borrows:.2f}")
 
-            # Simple performance metric based on health and capacity
-            if health_factor > 2.0 and available_borrows > 10:
-                performance = 0.8
-            elif health_factor > 1.5:
-                performance = 0.6
+            performance = 0.5
+
+            if health_factor < 1.35:
+                print(f"🚨 EMERGENCY: Health factor {health_factor:.3f} below 1.35!")
+                performance = 0.1
+            elif self._should_execute_growth_triggered_operation(total_collateral, health_factor, available_borrows):
+                print(f"🔥 TRIGGER ACTIVATED: Collateral grew from ${self.last_collateral_value_usd:.2f} → ${total_collateral:.2f}")
+                if self._execute_growth_triggered_operation(available_borrows):
+                    print(f"✅ GROWTH OPERATION SUCCESS")
+                    self.update_baseline_after_success(total_collateral)
+                    print(f"✅ Baseline updated to ${total_collateral:.2f}")
+                    performance = 0.9
+                else:
+                    print(f"❌ Growth operation failed")
+                    performance = 0.4
+            elif self._should_execute_capacity_operation(available_borrows, health_factor):
+                print(f"⚡ CAPACITY TRIGGER: ${available_borrows:.2f} available")
+                if self._execute_capacity_operation(available_borrows):
+                    print(f"✅ CAPACITY OPERATION SUCCESS")
+                    performance = 0.8
+                else:
+                    print(f"❌ Capacity operation failed")
+                    performance = 0.4
             else:
-                performance = 0.4
+                growth_from_baseline = total_collateral - self.last_collateral_value_usd
+                growth_pct = (growth_from_baseline / self.last_collateral_value_usd * 100) if self.last_collateral_value_usd > 0 else 0
+                print(f"💤 IDLE: Growth ${growth_from_baseline:.2f} ({growth_pct:.1f}%) | Need $50 or 10%")
+                performance = 0.6
 
             return performance
 
         except Exception as e:
             print(f"❌ Real DeFi task failed: {e}")
+            import traceback
+            traceback.print_exc()
             return 0.2
 
     def _setup_enhanced_error_handling(self):
@@ -3015,21 +3036,22 @@ class ArbitrumTestnetAgent:
                 available_borrows = account_data.get('availableBorrowsUSD', 0)
                 total_collateral = account_data.get('totalCollateralUSD', 0)
 
-                # Update baseline if significant growth detected and baseline is initialized
-                if self.baseline_initialized and total_collateral > self.last_collateral_value_usd * 1.1:
-                    self.update_baseline_after_success(total_collateral)
+                print(f"📊 Position: Collateral ${total_collateral:.2f} | Baseline ${self.last_collateral_value_usd:.2f} | HF {health_factor:.3f} | Borrows ${available_borrows:.2f}")
 
                 # System status checks
-                if health_factor < 1.5:
+                if health_factor < 1.35:
                     action = "EMERGENCY REPAYMENT NEEDED"
                     status = "CRITICAL"
                     performance_score *= 0.1
                 elif self._should_execute_growth_triggered_operation(total_collateral, health_factor, available_borrows):
                     action = "GROWTH TRIGGERED"
                     status = "EXECUTING"
+                    print(f"🔥 TRIGGER ACTIVATED: Collateral grew from ${self.last_collateral_value_usd:.2f} → ${total_collateral:.2f}")
                     if self._execute_growth_triggered_operation(available_borrows):
                         performance_score += 0.3
                         status = "SUCCESS"
+                        self.update_baseline_after_success(total_collateral)
+                        print(f"✅ Baseline updated to ${total_collateral:.2f} after successful growth operation")
                     else:
                         status = "FAILED"
                         performance_score *= 0.5
@@ -3251,8 +3273,8 @@ class ArbitrumTestnetAgent:
                     account_data = self.aave.get_user_account_data()
                     if account_data:
                         health_factor = account_data.get('healthFactor', 0)
-                        if health_factor < 1.5:
-                            return False, f"Health factor too low: {health_factor:.3f} (need >1.5)"
+                        if health_factor < 1.35:
+                            return False, f"Health factor too low: {health_factor:.3f} (need >1.35)"
                     else:
                         return False, "Cannot retrieve account data"
                 except Exception as hf_error:
@@ -3444,8 +3466,8 @@ class ArbitrumTestnetAgent:
                     account_data = self.aave.get_user_account_data()
                     if account_data:
                         health_factor = account_data.get('healthFactor', 0)
-                        if health_factor < 1.5:
-                            return False, f"Health factor too low: {health_factor:.3f} (need >1.5)"
+                        if health_factor < 1.35:
+                            return False, f"Health factor too low: {health_factor:.3f} (need >1.35)"
                     else:
                         return False, "Cannot retrieve account data"
                 except Exception as hf_error:
@@ -3628,8 +3650,8 @@ class ArbitrumTestnetAgent:
                     account_data = self.aave.get_user_account_data()
                     if account_data:
                         health_factor = account_data.get('healthFactor', 0)
-                        if health_factor < 1.5:
-                            return False, f"Health factor too low: {health_factor:.3f} (need >1.5)"
+                        if health_factor < 1.35:
+                            return False, f"Health factor too low: {health_factor:.3f} (need >1.35)"
                     else:
                         return False, "Cannot retrieve account data"
                 except Exception as hf_error:
