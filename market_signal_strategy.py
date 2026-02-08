@@ -79,13 +79,8 @@ class MarketSignalStrategy:
             logger.info("   Primary: CoinAPI | Secondary: CoinMarketCap | Fallback: Mock Data")
             logger.info(f"✅ initialization_successful = {self.initialization_successful}")
 
-            try:
-                self.enhanced_strategy = EnhancedMarketSignalStrategy(agent)
-                logger.info("✅ Enhanced strategy component loaded successfully")
-            except Exception as strategy_error:
-                logger.warning(f"Enhanced strategy component issue: {strategy_error}")
-                self.enhanced_strategy = None
-                # Don't fail initialization for this - strategy is still operational
+            self.enhanced_strategy = None
+            logger.info("✅ Skipped redundant EnhancedMarketSignalStrategy init (analyzer already active)")
 
         except ImportError as e:
             logger.warning(f"enhanced_market_analyzer not found: {e}")

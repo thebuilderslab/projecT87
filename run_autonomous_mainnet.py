@@ -71,14 +71,18 @@ def run_autonomous_mainnet_agent():
         eth_balance = agent.get_eth_balance()
         log_agent_activity(f"💰 ETH Balance: {eth_balance:.6f} ETH")
         
-        # Check initial health factor
+        import concurrent.futures
         try:
-            health_data = agent.health_monitor.get_current_health_factor()
-            if health_data:
-                hf = health_data.get('health_factor', 0)
-                log_agent_activity(f"❤️ Initial Health Factor: {hf:.4f}")
-            else:
-                log_agent_activity("⚠️ Could not retrieve initial health factor")
+            with concurrent.futures.ThreadPoolExecutor() as executor:
+                future = executor.submit(agent.health_monitor.get_current_health_factor)
+                health_data = future.result(timeout=15)
+                if health_data:
+                    hf = health_data.get('health_factor', 0)
+                    log_agent_activity(f"❤️ Initial Health Factor: {hf:.4f}")
+                else:
+                    log_agent_activity("⚠️ Could not retrieve initial health factor")
+        except concurrent.futures.TimeoutError:
+            log_agent_activity("⚠️ Health factor check timed out (15s) — skipping")
         except Exception as e:
             log_agent_activity(f"⚠️ Health factor check error: {e}")
         

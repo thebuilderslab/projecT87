@@ -619,14 +619,27 @@ class UniswapIntegration:
                 print(f"❌ Pre-validation failed: {validation_error}")
                 return None
 
-            # Sign and send
-            signed_swap = self.w3.eth.account.sign_transaction(swap_tx, self.account.key)
-            tx_hash = self.w3.eth.send_raw_transaction(signed_swap.rawTransaction)
+            for nonce_attempt in range(3):
+                try:
+                    fresh_nonce = self.w3.eth.get_transaction_count(self.address, 'pending')
+                    swap_tx['nonce'] = fresh_nonce
+                    print(f"🔄 Fresh nonce before signing: {fresh_nonce} (attempt {nonce_attempt + 1}/3)")
 
-            print(f"✅ Swap executed successfully: {tx_hash.hex()}")
+                    signed_swap = self.w3.eth.account.sign_transaction(swap_tx, self.account.key)
+                    tx_hash = self.w3.eth.send_raw_transaction(signed_swap.rawTransaction)
 
-            # Return transaction hash for tracking
-            return tx_hash.hex()
+                    print(f"✅ Swap executed successfully: {tx_hash.hex()}")
+                    return tx_hash.hex()
+
+                except ValueError as nonce_err:
+                    err_msg = str(nonce_err)
+                    if 'nonce too low' in err_msg and nonce_attempt < 2:
+                        print(f"⚠️ Nonce conflict (attempt {nonce_attempt + 1}/3), retrying with fresh nonce...")
+                        import time as _time
+                        _time.sleep(1)
+                        continue
+                    else:
+                        raise
 
         except Exception as e:
             print(f"❌ Swap failed with error: {e}")

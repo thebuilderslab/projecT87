@@ -91,3 +91,12 @@ Autonomous Aave V3 debt management system on Arbitrum Mainnet with two distinct 
 - Startup recovery: agent detects interrupted sequences and resumes from last completed step
 - Fixed Uniswap slippage: both swap paths now use 1% (was 5% on second path)
 - Cooldown timer in finally block ensures lock releases even on failure
+
+### Feb 8, 2026 - Stability Fixes
+- Fixed nonce conflicts: Added 3-retry loop with 1s delay for `nonce too low` errors in uniswap_integration.py
+- Fixed dashboard creating full ArbitrumTestnetAgent instances (caused nonce races with main agent). Dashboard now uses read-only WorkingAgent only
+- Added DAI balance pre-check before recovery attempts — prevents futile retry loops when wallet has insufficient DAI for remaining steps
+- Added `_save_raw_execution_state()` method for preserving recovery metadata (attempt count)
+- Block monitor now checks execution_state.json before triggering new executions (prevents double-borrows)
+- Recovery auto-clears stale state after 3 failed attempts
+- Health factor emergency detection: agent blocks all borrows when HF < 1.35

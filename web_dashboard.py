@@ -388,15 +388,13 @@ def get_live_agent_data():
                     globals()['AAVE_POOL_ADDRESS'] = AAVE_POOL_ADDRESS
                     globals()['AAVE_POOL_DATA_PROVIDER'] = AAVE_POOL_DATA_PROVIDER
 
-                # Instantiate agent if it hasn't been already (e.g., in initialize_agent)
-                if agent is None or not hasattr(agent, 'w3'):
+                if agent is None or not hasattr(agent, 'w3') or agent.w3 is None:
                     enhanced_rpc = EnhancedRPCManager()
-                    agent = ArbitrumTestnetAgent(enhanced_rpc, private_key)
+                    if agent is None:
+                        agent = WorkingAgent()
+                    if agent.w3 is None:
+                        agent.w3 = enhanced_rpc.get_web3()
 
-                # Get live Aave data directly from contracts
-                # This call should ideally be refactored to a separate function to avoid duplication
-                # and ensure it's only called when necessary.
-                # For now, we assume the agent is correctly initialized if we reach this point.
                 if agent and agent.w3:
                     # Use hardcoded Aave pool address for Arbitrum Mainnet
                     aave_pool_address = "0x794a61358D6845594F94dc1DB02A252b5b4814aD"
@@ -895,12 +893,7 @@ def get_system_metrics():
 
                 private_key = os.getenv('PRIVATE_KEY') or os.getenv('Wallet_PRIVATE_KEY')
                 if private_key:
-                    # Ensure agent is initialized if not already
-                    if agent is None or not hasattr(agent, 'get_system_metrics'):
-                        temp_agent = ArbitrumTestnetAgent(MockRPCManager(), private_key)
-                        agent = temp_agent
-
-                    if hasattr(agent, 'get_system_metrics'):
+                    if hasattr(agent, 'get_system_metrics') and agent is not None:
                         agent_metrics = agent.get_system_metrics()
                     else:
                         logger.warning("Agent does not have get_system_metrics method.")

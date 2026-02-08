@@ -1828,6 +1828,11 @@ class ArbitrumTestnetAgent:
                 self.block_monitor.record_metric('capacity', available_borrows, block_number)
                 self.block_monitor.record_metric('health_factor', health_factor, block_number)
             
+            pending_state = self.load_execution_state()
+            if pending_state and pending_state.get("step") != "wallet_s_transferred":
+                print(f"🔒 RECOVERY PENDING: Interrupted at step '{pending_state['step']}' — will resume")
+                return
+
             if not self._is_execution_locked():
                 growth_met, _, _, _ = self._check_collateral_growth(total_collateral, health_factor)
                 if growth_met and available_borrows >= self.growth_min_capacity:
@@ -1870,6 +1875,14 @@ class ArbitrumTestnetAgent:
             print(f"💾 State saved: step={step} path={path_name}")
         except Exception as e:
             print(f"⚠️ Failed to save execution state: {e}")
+
+    def _save_raw_execution_state(self, state_dict):
+        """Save a raw state dict (with extra fields like recovery_attempts) to execution_state.json"""
+        try:
+            with open(self.EXECUTION_STATE_FILE, "w") as f:
+                json.dump(state_dict, f, indent=2)
+        except Exception as e:
+            print(f"⚠️ Failed to save raw execution state: {e}")
 
     def load_execution_state(self):
         """Load execution state from file. Returns dict or None if no pending state."""
@@ -2831,11 +2844,49 @@ class ArbitrumTestnetAgent:
                 path_name = pending_state['path_name']
                 resume_step = pending_state['step']
 
+                recovery_attempts = pending_state.get('recovery_attempts', 0) + 1
+                pending_state['recovery_attempts'] = recovery_attempts
+                if recovery_attempts > 3:
+                    print(f"⚠️ Recovery failed {recovery_attempts} times — clearing stale state")
+                    self.save_execution_state("wallet_s_transferred", path_name, saved_dist)
+                    return 0.5
+
+                try:
+                    dai_balance = self.w3.eth.call({
+                        'to': self.dai_address,
+                        'data': '0x70a08231' + self.address[2:].zfill(64)
+                    })
+                    dai_balance_float = int(dai_balance.hex(), 16) / 1e18
+                    remaining_steps = []
+                    step_order = ['borrowed', 'dai_supplied', 'wbtc_supplied', 'weth_supplied', 'eth_reserved']
+                    past_resume = False
+                    total_dai_needed = 0.0
+                    for s in step_order:
+                        if s == resume_step:
+                            past_resume = True
+                            continue
+                        if past_resume:
+                            if s == 'wbtc_supplied':
+                                total_dai_needed += saved_dist.get('wbtc_swap_supply', 0)
+                            elif s == 'weth_supplied':
+                                total_dai_needed += saved_dist.get('weth_swap_supply', 0)
+                            elif s == 'eth_reserved':
+                                total_dai_needed += saved_dist.get('dai_transfer', 0)
+                    if total_dai_needed > 0 and dai_balance_float < total_dai_needed * 0.9:
+                        print(f"⚠️ Insufficient DAI for recovery: have ${dai_balance_float:.2f}, need ~${total_dai_needed:.2f}")
+                        print(f"   Clearing stale state to avoid retry loop")
+                        self.save_execution_state("wallet_s_transferred", path_name, saved_dist)
+                        return 0.5
+                    print(f"💰 Recovery DAI balance check: ${dai_balance_float:.2f} available, ~${total_dai_needed:.2f} needed")
+                except Exception as bal_err:
+                    print(f"⚠️ Could not check DAI balance for recovery: {bal_err}")
+
                 if self._execute_fixed_distribution(path_name, saved_dist, resume_after=resume_step):
                     print(f"✅ RECOVERY COMPLETE: {path_name.upper()} path finished successfully")
                     return 0.9
                 else:
-                    print(f"❌ Recovery failed — state preserved for next attempt")
+                    self._save_raw_execution_state(pending_state)
+                    print(f"❌ Recovery failed (attempt {recovery_attempts}/3) — state preserved for next attempt")
                     return 0.4
 
             if self._is_execution_locked():
