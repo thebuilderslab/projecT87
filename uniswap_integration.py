@@ -297,9 +297,37 @@ class UniswapIntegration:
                     print(f"❌ Approval failed: {approve_error}")
                     return None
 
-            # Build swap parameters
-            deadline = int(time.time()) + 600  # 10 minutes from now
-            min_output_amount = 1  # Minimal output requirement for safety
+            deadline = int(time.time()) + 120  # 120 seconds from now
+
+            min_output_amount = 1
+            try:
+                quoter_contract = self.w3.eth.contract(
+                    address='0xb27308f9F90D607463bb33eA1BeBb41C27CE5AB6',
+                    abi=[{
+                        "inputs": [
+                            {"name": "tokenIn", "type": "address"},
+                            {"name": "tokenOut", "type": "address"},
+                            {"name": "fee", "type": "uint24"},
+                            {"name": "amountIn", "type": "uint256"},
+                            {"name": "sqrtPriceLimitX96", "type": "uint160"}
+                        ],
+                        "name": "quoteExactInputSingle",
+                        "outputs": [{"name": "amountOut", "type": "uint256"}],
+                        "stateMutability": "view",
+                        "type": "function"
+                    }]
+                )
+                expected_output = quoter_contract.functions.quoteExactInputSingle(
+                    self.w3.to_checksum_address(token_in),
+                    self.w3.to_checksum_address(token_out),
+                    fee, amount_in_wei, 0
+                ).call()
+                if expected_output > 0:
+                    min_output_amount = max(1, int(expected_output * 0.99))
+                    print(f"✅ Quote: expected {expected_output}, min (1% slippage): {min_output_amount}")
+            except Exception as quote_err:
+                print(f"⚠️ Quote failed, using minimal output: {quote_err}")
+                min_output_amount = 1
 
             swap_params = {
                 'tokenIn': self.w3.to_checksum_address(token_in),
@@ -403,7 +431,7 @@ class UniswapIntegration:
                     return None
 
             # Build swap parameters with proper wei amounts
-            deadline = int(time.time()) + 600  # 10 minutes from now (more time)
+            deadline = int(time.time()) + 120  # 120 seconds from now
 
             # Calculate minimum output with enhanced error handling and fallback mechanisms
             min_output_amount = 1  # Start with minimal requirement

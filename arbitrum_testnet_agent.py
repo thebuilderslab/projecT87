@@ -2014,8 +2014,10 @@ class ArbitrumTestnetAgent:
         Execute a fixed-value distribution path with ATOMIC execution guarantee.
         Shared by both Growth and Capacity paths.
         
-        GLOBAL LOCK is set at entry, cleared at exit (success or failure).
+        GLOBAL LOCK is set at entry, cleared in finally block (success or failure).
+        Cooldown timer ALWAYS engages to prevent block-listener spam.
         """
+        sequence_ok = False
         try:
             self.is_transacting = True
             borrow_amount = distribution['total_borrow']
@@ -2030,25 +2032,19 @@ class ArbitrumTestnetAgent:
             print(f"   DAI Transfer:     ${distribution['dai_transfer']:.2f}")
             print(f"{'='*60}\n")
 
-            # PRE-CHECK: Validate preconditions
             if not self._validate_transaction_preconditions(borrow_amount):
                 print("❌ Transaction preconditions not met")
-                self.is_transacting = False
                 return False
 
-            # STEP 0: Verify IERC20 approvals for Aave Pool and Swap Router
             if not self._verify_all_approvals(borrow_amount):
                 print("❌ IERC20 approval verification failed")
-                self.is_transacting = False
                 return False
 
-            # STEP 1: Borrow fixed DAI amount from Aave
             print(f"\n📋 STEP 1: Borrowing ${borrow_amount:.2f} DAI from Aave V3...")
             dai_balance_before = self.get_dai_balance()
             result = self.aave.borrow_dai(borrow_amount)
             if not result:
                 print("❌ DAI borrow failed")
-                self.is_transacting = False
                 return False
 
             time.sleep(3)
@@ -2058,19 +2054,16 @@ class ArbitrumTestnetAgent:
 
             if borrowed < borrow_amount * 0.5:
                 print(f"❌ Received too little DAI: {borrowed:.4f} vs expected {borrow_amount:.2f}")
-                self.is_transacting = False
                 return False
 
             sequence_ok = True
 
-            # STEP 2: Supply DAI back to Aave
             dai_supply_amt = distribution['dai_supply']
             print(f"\n📋 STEP 2: Supplying ${dai_supply_amt:.2f} DAI to Aave...")
             if not self._resupply_dai_to_aave(dai_supply_amt):
                 print("❌ DAI resupply failed")
                 sequence_ok = False
 
-            # STEP 3: Swap DAI -> WBTC, supply to Aave
             if sequence_ok:
                 wbtc_dai = distribution['wbtc_swap_supply']
                 print(f"\n📋 STEP 3: Swapping ${wbtc_dai:.2f} DAI -> WBTC and supplying...")
@@ -2083,7 +2076,6 @@ class ArbitrumTestnetAgent:
                     print("❌ DAI -> WBTC swap failed")
                     sequence_ok = False
 
-            # STEP 4: Swap DAI -> WETH, supply to Aave
             if sequence_ok:
                 weth_dai = distribution['weth_swap_supply']
                 print(f"\n📋 STEP 4: Swapping ${weth_dai:.2f} DAI -> WETH and supplying...")
@@ -2096,7 +2088,6 @@ class ArbitrumTestnetAgent:
                     print("❌ DAI -> WETH swap failed")
                     sequence_ok = False
 
-            # STEP 5: Swap DAI -> ETH for gas reserve (hold in wallet)
             if sequence_ok:
                 eth_dai = distribution['eth_gas_reserve']
                 print(f"\n📋 STEP 5: Swapping ${eth_dai:.2f} DAI -> ETH (gas reserve)...")
@@ -2122,17 +2113,12 @@ class ArbitrumTestnetAgent:
                     print(f"❌ ETH conversion error: {e}")
                     sequence_ok = False
 
-            # STEP 6: Transfer DAI to WALLET_S_ADDRESS
             if sequence_ok:
                 transfer_amt = distribution['dai_transfer']
                 print(f"\n📋 STEP 6: Transferring ${transfer_amt:.2f} DAI to WALLET_S_ADDRESS...")
                 if not self._transfer_dai_to_wallet_s(transfer_amt):
                     print("❌ DAI transfer to WALLET_S failed")
                     sequence_ok = False
-
-            # RELEASE GLOBAL LOCK
-            self.is_transacting = False
-            self.last_transaction_complete_time = time.time()
 
             print(f"\n{'='*60}")
             if sequence_ok:
@@ -2148,9 +2134,12 @@ class ArbitrumTestnetAgent:
             print(f"❌ {path_name.upper()} path failed with exception: {e}")
             import traceback
             traceback.print_exc()
+            return False
+
+        finally:
             self.is_transacting = False
             self.last_transaction_complete_time = time.time()
-            return False
+            print(f"⏳ Cooldown initiated for {self.operation_cooldown_seconds}s")
 
     def _execute_market_signal_operation(self, available_borrows_usd=None):
         """Execute market signal-triggered operation - DAI debt swaps only"""

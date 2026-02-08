@@ -186,7 +186,7 @@ class AaveArbitrumIntegration:
                 return False
 
             health_factor = account_data.get('healthFactor', 0)
-            if health_factor < 1.5:
+            if health_factor < 1.35:
                 logger.error(f"Health factor too low for borrowing: {health_factor:.3f}")
                 return False
 
