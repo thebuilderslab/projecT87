@@ -1828,21 +1828,16 @@ class ArbitrumTestnetAgent:
                 self.block_monitor.record_metric('capacity', available_borrows, block_number)
                 self.block_monitor.record_metric('health_factor', health_factor, block_number)
             
-            # Evaluate triggers instantly
-            growth_triggered = self._should_execute_growth_triggered_operation(
-                total_collateral, health_factor, available_borrows
-            )
-            capacity_triggered = self._should_execute_capacity_operation(
-                available_borrows, health_factor
-            )
-            
-            # Execute if triggered (only if global lock is not active)
             if not self._is_execution_locked():
-                if growth_triggered:
+                growth_met, _, _, _ = self._check_collateral_growth(total_collateral, health_factor)
+                if growth_met and available_borrows >= self.growth_min_capacity:
                     print(f"🎯 BLOCK {block_number}: Growth trigger activated!")
                     self._execute_growth_triggered_operation(available_borrows)
-                elif capacity_triggered:
-                    print(f"⚡ BLOCK {block_number}: Capacity trigger activated!")
+                elif self._should_execute_capacity_operation(available_borrows, health_factor):
+                    if growth_met:
+                        print(f"⚡ BLOCK {block_number}: Growth blocked (capacity), falling through to Capacity!")
+                    else:
+                        print(f"⚡ BLOCK {block_number}: Capacity trigger activated!")
                     self._execute_capacity_operation(available_borrows)
             
         except Exception as e:
@@ -1919,6 +1914,30 @@ class ArbitrumTestnetAgent:
 
         return False
 
+    def _check_collateral_growth(self, current_collateral, health_factor):
+        """
+        Check ONLY the collateral growth condition (not capacity).
+        Returns (growth_met: bool, reason: str, absolute_growth: float, relative_growth: float)
+        """
+        try:
+            if health_factor < self.growth_health_factor_threshold:
+                return False, "health_factor_low", 0, 0
+
+            if hasattr(self, 'last_collateral_value_usd') and self.last_collateral_value_usd > 0:
+                absolute_growth = current_collateral - self.last_collateral_value_usd
+                relative_growth = absolute_growth / self.last_collateral_value_usd if self.last_collateral_value_usd > 0 else 0
+
+                if absolute_growth >= self.growth_trigger_threshold:
+                    return True, "absolute", absolute_growth, relative_growth
+                elif relative_growth >= self.growth_percentage_threshold:
+                    return True, "relative", absolute_growth, relative_growth
+
+            return False, "no_growth", 0, 0
+
+        except Exception as e:
+            print(f"❌ Growth condition check failed: {e}")
+            return False, "error", 0, 0
+
     def _should_execute_growth_triggered_operation(self, current_collateral, health_factor, available_borrows):
         """
         Check if growth-triggered operation should execute.
@@ -1929,24 +1948,19 @@ class ArbitrumTestnetAgent:
         - Collateral growth >= 10% relative OR $50 absolute from baseline
         """
         try:
-            if health_factor < self.growth_health_factor_threshold:
+            growth_met, reason, abs_growth, rel_growth = self._check_collateral_growth(current_collateral, health_factor)
+
+            if not growth_met:
                 return False
 
             if available_borrows < self.growth_min_capacity:
                 return False
 
-            if hasattr(self, 'last_collateral_value_usd') and self.last_collateral_value_usd > 0:
-                absolute_growth = current_collateral - self.last_collateral_value_usd
-                relative_growth = absolute_growth / self.last_collateral_value_usd if self.last_collateral_value_usd > 0 else 0
-                
-                if absolute_growth >= self.growth_trigger_threshold:
-                    print(f"✅ Growth trigger met (ABSOLUTE): ${absolute_growth:.2f} >= ${self.growth_trigger_threshold}")
-                    return True
-                elif relative_growth >= self.growth_percentage_threshold:
-                    print(f"✅ Growth trigger met (RELATIVE): {relative_growth*100:.1f}% >= {self.growth_percentage_threshold*100:.0f}%")
-                    return True
-
-            return False
+            if reason == "absolute":
+                print(f"✅ Growth trigger met (ABSOLUTE): ${abs_growth:.2f} >= ${self.growth_trigger_threshold}")
+            elif reason == "relative":
+                print(f"✅ Growth trigger met (RELATIVE): {rel_growth*100:.1f}% >= {self.growth_percentage_threshold*100:.0f}%")
+            return True
 
         except Exception as e:
             print(f"❌ Growth trigger check failed: {e}")
@@ -2849,7 +2863,16 @@ class ArbitrumTestnetAgent:
             if health_factor < 1.35:
                 print(f"🚨 EMERGENCY: Health factor {health_factor:.3f} below 1.35!")
                 performance = 0.1
-            elif self._should_execute_growth_triggered_operation(total_collateral, health_factor, available_borrows):
+                return performance
+
+            growth_met, growth_reason, abs_growth, rel_growth = self._check_collateral_growth(total_collateral, health_factor)
+            executed = False
+
+            if growth_met and available_borrows >= self.growth_min_capacity:
+                if growth_reason == "absolute":
+                    print(f"✅ Growth trigger met (ABSOLUTE): ${abs_growth:.2f} >= ${self.growth_trigger_threshold}")
+                else:
+                    print(f"✅ Growth trigger met (RELATIVE): {rel_growth*100:.1f}% >= {self.growth_percentage_threshold*100:.0f}%")
                 print(f"🔥 GROWTH TRIGGER ACTIVATED: Collateral grew from ${self.last_collateral_value_usd:.2f} -> ${total_collateral:.2f}")
                 print(f"   Executing Growth Path: Borrow ${self.GROWTH_DISTRIBUTION['total_borrow']:.2f} DAI")
                 if self._execute_growth_triggered_operation(available_borrows):
@@ -2860,19 +2883,42 @@ class ArbitrumTestnetAgent:
                 else:
                     print(f"❌ Growth operation failed")
                     performance = 0.4
-            elif self._should_execute_capacity_operation(available_borrows, health_factor):
-                print(f"⚡ CAPACITY TRIGGER ACTIVATED: ${available_borrows:.2f} available")
-                print(f"   Executing Capacity Path: Borrow ${self.CAPACITY_DISTRIBUTION['total_borrow']:.2f} DAI")
-                if self._execute_capacity_operation(available_borrows):
-                    print(f"✅ CAPACITY OPERATION SUCCESS")
-                    performance = 0.8
+                executed = True
+
+            elif growth_met and available_borrows < self.growth_min_capacity:
+                growth_pct = rel_growth * 100
+                print(f"📊 GROWTH CONDITIONS MET ({growth_pct:.1f}% growth) but CAPACITY BLOCKED: ${available_borrows:.2f} < ${self.growth_min_capacity:.0f} needed")
+                print(f"   ➡️ FALLING THROUGH to Capacity Path evaluation...")
+
+                if self._should_execute_capacity_operation(available_borrows, health_factor):
+                    print(f"⚡ CAPACITY TRIGGER ACTIVATED (via fall-through): ${available_borrows:.2f} available >= ${self.capacity_min_capacity:.0f}")
+                    print(f"   Executing Capacity Path: Borrow ${self.CAPACITY_DISTRIBUTION['total_borrow']:.2f} DAI")
+                    if self._execute_capacity_operation(available_borrows):
+                        print(f"✅ CAPACITY OPERATION SUCCESS (Growth was blocked, Capacity executed)")
+                        performance = 0.8
+                    else:
+                        print(f"❌ Capacity operation failed")
+                        performance = 0.4
+                    executed = True
                 else:
-                    print(f"❌ Capacity operation failed")
-                    performance = 0.4
-            else:
+                    print(f"   ❌ Capacity Path also not met: ${available_borrows:.2f} < ${self.capacity_min_capacity:.0f}")
+
+            if not executed:
+                if self._should_execute_capacity_operation(available_borrows, health_factor):
+                    print(f"⚡ CAPACITY TRIGGER ACTIVATED: ${available_borrows:.2f} available")
+                    print(f"   Executing Capacity Path: Borrow ${self.CAPACITY_DISTRIBUTION['total_borrow']:.2f} DAI")
+                    if self._execute_capacity_operation(available_borrows):
+                        print(f"✅ CAPACITY OPERATION SUCCESS")
+                        performance = 0.8
+                    else:
+                        print(f"❌ Capacity operation failed")
+                        performance = 0.4
+                    executed = True
+
+            if not executed:
                 growth_from_baseline = total_collateral - self.last_collateral_value_usd
                 growth_pct = (growth_from_baseline / self.last_collateral_value_usd * 100) if self.last_collateral_value_usd > 0 else 0
-                print(f"💤 IDLE: Growth ${growth_from_baseline:.2f} ({growth_pct:.1f}%) from $47 baseline")
+                print(f"💤 IDLE: Growth ${growth_from_baseline:.2f} ({growth_pct:.1f}%) from ${self.last_collateral_value_usd:.0f} baseline")
                 print(f"   Growth Path: needs ${self.growth_min_capacity:.0f} capacity + 10% growth (have ${available_borrows:.2f} + {growth_pct:.1f}%)")
                 print(f"   Capacity Path: needs ${self.capacity_min_capacity:.0f} capacity (have ${available_borrows:.2f})")
                 performance = 0.6
@@ -3091,30 +3137,49 @@ class ArbitrumTestnetAgent:
                     action = "EMERGENCY"
                     status = "CRITICAL"
                     performance_score *= 0.1
-                elif self._should_execute_growth_triggered_operation(total_collateral, health_factor, available_borrows):
-                    action = "GROWTH PATH"
-                    status = "EXECUTING"
-                    print(f"🔥 GROWTH TRIGGER: ${self.last_collateral_value_usd:.2f} -> ${total_collateral:.2f}")
-                    if self._execute_growth_triggered_operation(available_borrows):
-                        performance_score += 0.3
-                        status = "SUCCESS"
-                        self.update_baseline_after_success(total_collateral)
-                    else:
-                        status = "FAILED"
-                        performance_score *= 0.5
-                elif self._should_execute_capacity_operation(available_borrows, health_factor):
-                    action = "CAPACITY PATH"
-                    status = "EXECUTING"
-                    if self._execute_capacity_operation(available_borrows):
-                        performance_score += 0.2
-                        status = "SUCCESS"
-                    else:
-                        status = "FAILED"
-                        performance_score *= 0.5
                 else:
-                    action = "IDLE / MONITORING"
-                    status = "HEALTHY"
-                    performance_score += 0.05
+                    growth_met, g_reason, g_abs, g_rel = self._check_collateral_growth(total_collateral, health_factor)
+                    run_executed = False
+
+                    if growth_met and available_borrows >= self.growth_min_capacity:
+                        action = "GROWTH PATH"
+                        status = "EXECUTING"
+                        print(f"🔥 GROWTH TRIGGER: ${self.last_collateral_value_usd:.2f} -> ${total_collateral:.2f}")
+                        if self._execute_growth_triggered_operation(available_borrows):
+                            performance_score += 0.3
+                            status = "SUCCESS"
+                            self.update_baseline_after_success(total_collateral)
+                        else:
+                            status = "FAILED"
+                            performance_score *= 0.5
+                        run_executed = True
+                    elif growth_met and available_borrows < self.growth_min_capacity:
+                        print(f"📊 Growth met but capacity blocked: ${available_borrows:.2f} < ${self.growth_min_capacity:.0f} → falling through to Capacity")
+                        if self._should_execute_capacity_operation(available_borrows, health_factor):
+                            action = "CAPACITY PATH (FALL-THROUGH)"
+                            status = "EXECUTING"
+                            if self._execute_capacity_operation(available_borrows):
+                                performance_score += 0.2
+                                status = "SUCCESS"
+                            else:
+                                status = "FAILED"
+                                performance_score *= 0.5
+                            run_executed = True
+
+                    if not run_executed:
+                        if self._should_execute_capacity_operation(available_borrows, health_factor):
+                            action = "CAPACITY PATH"
+                            status = "EXECUTING"
+                            if self._execute_capacity_operation(available_borrows):
+                                performance_score += 0.2
+                                status = "SUCCESS"
+                            else:
+                                status = "FAILED"
+                                performance_score *= 0.5
+                        else:
+                            action = "IDLE / MONITORING"
+                            status = "HEALTHY"
+                            performance_score += 0.05
 
                 performance_score = self._perform_debt_swap_operations(performance_score)
 
