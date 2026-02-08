@@ -82,7 +82,13 @@ def run_autonomous_mainnet_agent():
         except Exception as e:
             log_agent_activity(f"⚠️ Health factor check error: {e}")
         
-        # Start autonomous loop
+        pending_state = agent.load_execution_state()
+        if pending_state and pending_state.get("step") != "wallet_s_transferred":
+            log_agent_activity(f"🔄 RECOVERY DETECTED: Interrupted '{pending_state['path_name']}' path at step '{pending_state['step']}'")
+            log_agent_activity("   Will resume on first monitoring cycle")
+        else:
+            log_agent_activity("✅ No pending execution state — clean start")
+
         log_agent_activity("🎯 Starting autonomous monitoring loop...")
         print("\n" + "="*60)
         print("🔍 MONITORING AAVE POSITIONS FOR TRIGGERS")

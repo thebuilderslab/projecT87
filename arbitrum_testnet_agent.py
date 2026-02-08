@@ -1849,11 +1849,66 @@ class ArbitrumTestnetAgent:
             # Silent fail - don't spam logs on every block
             pass
     
+    EXECUTION_STATE_FILE = "execution_state.json"
+
+    STEP_ORDER = [
+        "borrowed",
+        "dai_supplied",
+        "wbtc_supplied",
+        "weth_supplied",
+        "eth_converted",
+        "wallet_s_transferred",
+    ]
+
+    def save_execution_state(self, step, path_name, distribution):
+        """Persist current execution step to execution_state.json for crash recovery"""
+        state = {
+            "step": step,
+            "path_name": path_name,
+            "distribution": distribution,
+            "timestamp": time.time(),
+            "timestamp_human": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        }
+        try:
+            with open(self.EXECUTION_STATE_FILE, "w") as f:
+                json.dump(state, f, indent=2)
+            print(f"💾 State saved: step={step} path={path_name}")
+        except Exception as e:
+            print(f"⚠️ Failed to save execution state: {e}")
+
+    def load_execution_state(self):
+        """Load execution state from file. Returns dict or None if no pending state."""
+        try:
+            if not os.path.exists(self.EXECUTION_STATE_FILE):
+                return None
+            with open(self.EXECUTION_STATE_FILE, "r") as f:
+                state = json.load(f)
+            if state.get("step") and state.get("path_name") and state.get("distribution"):
+                return state
+            return None
+        except (json.JSONDecodeError, IOError) as e:
+            print(f"⚠️ Corrupted execution state file: {e}")
+            return None
+
+    def clear_execution_state(self):
+        """Wipe execution_state.json after successful completion of final step"""
+        try:
+            if os.path.exists(self.EXECUTION_STATE_FILE):
+                os.remove(self.EXECUTION_STATE_FILE)
+                print("🗑️ execution_state.json wiped — ready for next cycle")
+        except Exception as e:
+            print(f"⚠️ Failed to clear execution state: {e}")
+
     def _is_execution_locked(self):
         """Check if the Global Execution Lock is active (transaction in progress or cooldown)"""
         if self.is_transacting:
             print("🔒 GLOBAL LOCK: Transaction cycle in progress")
             return True
+
+        pending_state = self.load_execution_state()
+        if pending_state and pending_state.get("step") != "wallet_s_transferred":
+            print(f"🔒 RECOVERY PENDING: Interrupted at step '{pending_state['step']}' — will resume")
+            return False
 
         if self.last_transaction_complete_time > 0:
             elapsed = time.time() - self.last_transaction_complete_time
@@ -2009,62 +2064,93 @@ class ArbitrumTestnetAgent:
         """
         return self._execute_fixed_distribution('capacity', self.CAPACITY_DISTRIBUTION)
 
-    def _execute_fixed_distribution(self, path_name, distribution):
+    def _execute_fixed_distribution(self, path_name, distribution, resume_after=None):
         """
-        Execute a fixed-value distribution path with ATOMIC execution guarantee.
+        Execute a fixed-value distribution path with crash-resistant state persistence.
         Shared by both Growth and Capacity paths.
+        
+        After each successful on-chain step, execution_state.json is updated.
+        On crash/restart, resume_after indicates the last completed step so
+        already-finished steps are skipped.
         
         GLOBAL LOCK is set at entry, cleared in finally block (success or failure).
         Cooldown timer ALWAYS engages to prevent block-listener spam.
+        State file is wiped ONLY after successful final WALLET_S transfer.
         """
         sequence_ok = False
+        dist_serializable = {k: v for k, v in distribution.items()}
         try:
             self.is_transacting = True
             borrow_amount = distribution['total_borrow']
 
-            print(f"\n{'='*60}")
-            print(f"🚀 EXECUTING {path_name.upper()} PATH: ${borrow_amount:.2f} DAI")
-            print(f"{'='*60}")
-            print(f"   DAI Supply:    ${distribution['dai_supply']:.2f}")
-            print(f"   WBTC Swap+Supply: ${distribution['wbtc_swap_supply']:.2f}")
-            print(f"   WETH Swap+Supply: ${distribution['weth_swap_supply']:.2f}")
-            print(f"   ETH Gas Reserve:  ${distribution['eth_gas_reserve']:.2f}")
-            print(f"   DAI Transfer:     ${distribution['dai_transfer']:.2f}")
-            print(f"{'='*60}\n")
+            already_done = set()
+            if resume_after:
+                if resume_after not in self.STEP_ORDER:
+                    print(f"⚠️ Unknown resume step '{resume_after}' — starting fresh execution")
+                    self.clear_execution_state()
+                    resume_after = None
+                else:
+                    idx = self.STEP_ORDER.index(resume_after)
+                    already_done = set(self.STEP_ORDER[:idx + 1])
+                    print(f"\n{'='*60}")
+                    print(f"🔄 RESUMING {path_name.upper()} PATH after '{resume_after}'")
+                    print(f"   Skipping completed steps: {already_done}")
+                    print(f"{'='*60}\n")
 
-            if not self._validate_transaction_preconditions(borrow_amount):
-                print("❌ Transaction preconditions not met")
-                return False
+            if not resume_after:
+                print(f"\n{'='*60}")
+                print(f"🚀 EXECUTING {path_name.upper()} PATH: ${borrow_amount:.2f} DAI")
+                print(f"{'='*60}")
+                print(f"   DAI Supply:    ${distribution['dai_supply']:.2f}")
+                print(f"   WBTC Swap+Supply: ${distribution['wbtc_swap_supply']:.2f}")
+                print(f"   WETH Swap+Supply: ${distribution['weth_swap_supply']:.2f}")
+                print(f"   ETH Gas Reserve:  ${distribution['eth_gas_reserve']:.2f}")
+                print(f"   DAI Transfer:     ${distribution['dai_transfer']:.2f}")
+                print(f"{'='*60}\n")
 
-            if not self._verify_all_approvals(borrow_amount):
-                print("❌ IERC20 approval verification failed")
-                return False
+            if "borrowed" not in already_done:
+                if not self._validate_transaction_preconditions(borrow_amount):
+                    print("❌ Transaction preconditions not met")
+                    return False
 
-            print(f"\n📋 STEP 1: Borrowing ${borrow_amount:.2f} DAI from Aave V3...")
-            dai_balance_before = self.get_dai_balance()
-            result = self.aave.borrow_dai(borrow_amount)
-            if not result:
-                print("❌ DAI borrow failed")
-                return False
+                if not self._verify_all_approvals(borrow_amount):
+                    print("❌ IERC20 approval verification failed")
+                    return False
 
-            time.sleep(3)
-            dai_balance_after = self.get_dai_balance()
-            borrowed = dai_balance_after - dai_balance_before
-            print(f"✅ Borrowed {borrowed:.4f} DAI (balance: {dai_balance_before:.4f} -> {dai_balance_after:.4f})")
+                print(f"\n📋 STEP 1: Borrowing ${borrow_amount:.2f} DAI from Aave V3...")
+                dai_balance_before = self.get_dai_balance()
+                result = self.aave.borrow_dai(borrow_amount)
+                if not result:
+                    print("❌ DAI borrow failed")
+                    return False
 
-            if borrowed < borrow_amount * 0.5:
-                print(f"❌ Received too little DAI: {borrowed:.4f} vs expected {borrow_amount:.2f}")
-                return False
+                time.sleep(3)
+                dai_balance_after = self.get_dai_balance()
+                borrowed = dai_balance_after - dai_balance_before
+                print(f"✅ Borrowed {borrowed:.4f} DAI (balance: {dai_balance_before:.4f} -> {dai_balance_after:.4f})")
+
+                if borrowed < borrow_amount * 0.5:
+                    print(f"❌ Received too little DAI: {borrowed:.4f} vs expected {borrow_amount:.2f}")
+                    return False
+
+                self.save_execution_state("borrowed", path_name, dist_serializable)
+            else:
+                print("⏭️ STEP 1 (Borrow): Already completed — skipping")
 
             sequence_ok = True
 
-            dai_supply_amt = distribution['dai_supply']
-            print(f"\n📋 STEP 2: Supplying ${dai_supply_amt:.2f} DAI to Aave...")
-            if not self._resupply_dai_to_aave(dai_supply_amt):
-                print("❌ DAI resupply failed")
-                sequence_ok = False
+            if "dai_supplied" not in already_done:
+                dai_supply_amt = distribution['dai_supply']
+                print(f"\n📋 STEP 2: Supplying ${dai_supply_amt:.2f} DAI to Aave...")
+                if not self._resupply_dai_to_aave(dai_supply_amt):
+                    print("❌ DAI resupply failed")
+                    sequence_ok = False
+                else:
+                    self.save_execution_state("dai_supplied", path_name, dist_serializable)
+            else:
+                print("⏭️ STEP 2 (DAI Supply): Already completed — skipping")
 
-            if sequence_ok:
+            if sequence_ok and "wbtc_supplied" not in already_done:
                 wbtc_dai = distribution['wbtc_swap_supply']
                 print(f"\n📋 STEP 3: Swapping ${wbtc_dai:.2f} DAI -> WBTC and supplying...")
                 wbtc_received = self._execute_dai_to_wbtc_swap(wbtc_dai)
@@ -2072,11 +2158,15 @@ class ArbitrumTestnetAgent:
                     if not self._supply_wbtc_to_aave(wbtc_received):
                         print("❌ WBTC supply to Aave failed")
                         sequence_ok = False
+                    else:
+                        self.save_execution_state("wbtc_supplied", path_name, dist_serializable)
                 else:
                     print("❌ DAI -> WBTC swap failed")
                     sequence_ok = False
+            elif "wbtc_supplied" in already_done:
+                print("⏭️ STEP 3 (WBTC Swap+Supply): Already completed — skipping")
 
-            if sequence_ok:
+            if sequence_ok and "weth_supplied" not in already_done:
                 weth_dai = distribution['weth_swap_supply']
                 print(f"\n📋 STEP 4: Swapping ${weth_dai:.2f} DAI -> WETH and supplying...")
                 weth_received = self._execute_dai_to_weth_swap(weth_dai)
@@ -2084,11 +2174,15 @@ class ArbitrumTestnetAgent:
                     if not self._supply_weth_to_aave(weth_received):
                         print("❌ WETH supply to Aave failed")
                         sequence_ok = False
+                    else:
+                        self.save_execution_state("weth_supplied", path_name, dist_serializable)
                 else:
                     print("❌ DAI -> WETH swap failed")
                     sequence_ok = False
+            elif "weth_supplied" in already_done:
+                print("⏭️ STEP 4 (WETH Swap+Supply): Already completed — skipping")
 
-            if sequence_ok:
+            if sequence_ok and "eth_converted" not in already_done:
                 eth_dai = distribution['eth_gas_reserve']
                 print(f"\n📋 STEP 5: Swapping ${eth_dai:.2f} DAI -> ETH (gas reserve)...")
                 try:
@@ -2100,6 +2194,7 @@ class ArbitrumTestnetAgent:
                             unwrap_ok = self._unwrap_weth_to_eth(weth_balance)
                             if unwrap_ok:
                                 print(f"✅ ETH gas reserve: holding in wallet")
+                                self.save_execution_state("eth_converted", path_name, dist_serializable)
                             else:
                                 print("❌ WETH unwrap to ETH failed")
                                 sequence_ok = False
@@ -2112,20 +2207,28 @@ class ArbitrumTestnetAgent:
                 except Exception as e:
                     print(f"❌ ETH conversion error: {e}")
                     sequence_ok = False
+            elif "eth_converted" in already_done:
+                print("⏭️ STEP 5 (ETH Gas Reserve): Already completed — skipping")
 
-            if sequence_ok:
+            if sequence_ok and "wallet_s_transferred" not in already_done:
                 transfer_amt = distribution['dai_transfer']
                 print(f"\n📋 STEP 6: Transferring ${transfer_amt:.2f} DAI to WALLET_S_ADDRESS...")
                 if not self._transfer_dai_to_wallet_s(transfer_amt):
                     print("❌ DAI transfer to WALLET_S failed")
                     sequence_ok = False
+                else:
+                    self.save_execution_state("wallet_s_transferred", path_name, dist_serializable)
+            elif "wallet_s_transferred" in already_done:
+                print("⏭️ STEP 6 (WALLET_S Transfer): Already completed — skipping")
 
             print(f"\n{'='*60}")
             if sequence_ok:
                 print(f"✅ {path_name.upper()} PATH COMPLETE - All steps succeeded")
+                self.clear_execution_state()
                 self.record_successful_operation(operation_type=path_name)
             else:
-                print(f"❌ {path_name.upper()} PATH FAILED - One or more steps failed")
+                print(f"❌ {path_name.upper()} PATH FAILED - State preserved for recovery")
+                print(f"   execution_state.json retained for next restart")
             print(f"{'='*60}\n")
 
             return sequence_ok
@@ -2139,7 +2242,10 @@ class ArbitrumTestnetAgent:
         finally:
             self.is_transacting = False
             self.last_transaction_complete_time = time.time()
-            print(f"⏳ Cooldown initiated for {self.operation_cooldown_seconds}s")
+            if not os.path.exists(self.EXECUTION_STATE_FILE):
+                print(f"⏳ Cooldown initiated for {self.operation_cooldown_seconds}s")
+            else:
+                print(f"⏳ Cooldown initiated for {self.operation_cooldown_seconds}s (state file retained for recovery)")
 
     def _execute_market_signal_operation(self, available_borrows_usd=None):
         """Execute market signal-triggered operation - DAI debt swaps only"""
@@ -2693,11 +2799,31 @@ class ArbitrumTestnetAgent:
             return 0.0
 
     def run_real_defi_task(self, run_id, iteration, agent_config):
-        """Run real DeFi task with Global Execution Lock, growth trigger first, then capacity trigger"""
+        """Run real DeFi task with Global Execution Lock, growth trigger first, then capacity trigger.
+        On startup, checks execution_state.json for interrupted sequences and resumes them."""
         try:
             print(f"\n🚀 Monitoring cycle {run_id}-{iteration}")
 
-            # CHECK GLOBAL EXECUTION LOCK FIRST
+            pending_state = self.load_execution_state()
+            if pending_state and pending_state.get("step") != "wallet_s_transferred":
+                print(f"\n🔄 CRASH RECOVERY: Found interrupted '{pending_state['path_name']}' path at step '{pending_state['step']}'")
+                print(f"   Resuming execution from after '{pending_state['step']}'...")
+
+                if not hasattr(self, 'aave') or not self.aave:
+                    print("❌ Aave integration not available — cannot resume")
+                    return 0.5
+
+                saved_dist = pending_state['distribution']
+                path_name = pending_state['path_name']
+                resume_step = pending_state['step']
+
+                if self._execute_fixed_distribution(path_name, saved_dist, resume_after=resume_step):
+                    print(f"✅ RECOVERY COMPLETE: {path_name.upper()} path finished successfully")
+                    return 0.9
+                else:
+                    print(f"❌ Recovery failed — state preserved for next attempt")
+                    return 0.4
+
             if self._is_execution_locked():
                 print("🔒 Skipping cycle - execution locked")
                 return 0.5

@@ -478,8 +478,8 @@ class UniswapIntegration:
                 if best_quote > 0:
                     # Use best fee tier found
                     fee = best_fee
-                    # 5% slippage tolerance for better success rate
-                    min_output_amount = max(1, int(best_quote * 0.95))
+                    min_output_amount = max(1, int(best_quote * 0.99))
+                    print(f"   Min output (1% slippage): {min_output_amount}")
                     print(f"✅ Using fee tier: {fee}, Expected: {best_quote}, Min: {min_output_amount}")
                 else:
                     print(f"⚠️ No quotes available, using minimal output requirement")

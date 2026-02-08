@@ -33,6 +33,14 @@ Autonomous Aave V3 debt management system on Arbitrum Mainnet with two distinct 
 - `is_transacting` flag prevents double-borrowing against same collateral jump
 - 130s cooldown between operations (`operation_cooldown_seconds`)
 - Lock set on entry to `_execute_fixed_distribution()`, cleared on exit
+- Lock stays active while `execution_state.json` has incomplete steps
+
+### Crash Recovery (execution_state.json)
+- After each successful on-chain step, state is persisted to `execution_state.json`
+- Steps tracked: borrowed → dai_supplied → wbtc_supplied → weth_supplied → eth_converted → wallet_s_transferred
+- On startup, agent checks for interrupted sequences and resumes from next incomplete step
+- State file is wiped ONLY after successful confirmation of final WALLET_S transfer
+- Helper methods: `save_execution_state()`, `load_execution_state()`, `clear_execution_state()`
 
 ### Health Factor Thresholds
 - TARGET_HEALTH_FACTOR = 1.40
@@ -79,3 +87,7 @@ Autonomous Aave V3 debt management system on Arbitrum Mainnet with two distinct 
 - Removed manual override and forced execution code
 - Removed duplicate method definitions
 - Baseline updates only after successful Growth Path cycle
+- Added crash-resistant execution_state.json persistence for multi-step transactions
+- Startup recovery: agent detects interrupted sequences and resumes from last completed step
+- Fixed Uniswap slippage: both swap paths now use 1% (was 5% on second path)
+- Cooldown timer in finally block ensures lock releases even on failure
