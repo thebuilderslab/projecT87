@@ -42,6 +42,22 @@ Autonomous Aave V3 debt management system on Arbitrum Mainnet with two distinct 
 - State file is wiped ONLY after successful confirmation of final WALLET_S transfer
 - Helper methods: `save_execution_state()`, `load_execution_state()`, `clear_execution_state()`
 
+### Proportional Recovery (`_execute_proportional_recovery`)
+- Activated when DAI in wallet is insufficient for all remaining steps after a crash
+- Nonce sync: calls `eth.get_transaction_count` before first recovery tx to clear dashboard conflicts
+- Scaling factor: `scaling = current_dai / original_remaining_need` (capped at 1.0)
+- Dust guard: any step scaled below $1.00 is skipped, its amount rolled into WALLET_S transfer
+- Steps execute individually — failed swaps don't block remaining steps
+- Leftover DAI from failed swaps gets supplied as Aave collateral (safety net)
+- State only cleared after WALLET_S transfer confirmed on-chain
+- Max 5 recovery attempts before force-clearing stale state
+
+### Non-Blocking Step Execution
+- In `_execute_fixed_distribution`, failed swap steps (WBTC, WETH, ETH) no longer block subsequent steps
+- WALLET_S transfer always attempted regardless of swap failures
+- Steps that fail are tracked in `steps_failed` list and reported at completion
+- If WALLET_S transfer succeeds but some swaps failed, path is marked as "partial" success
+
 ### Health Factor Thresholds
 - TARGET_HEALTH_FACTOR = 1.40
 - MIN_HEALTH_FACTOR = 1.35 (unified across all checks)

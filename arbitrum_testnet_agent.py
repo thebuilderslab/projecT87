@@ -1884,6 +1884,218 @@ class ArbitrumTestnetAgent:
         except Exception as e:
             print(f"⚠️ Failed to save raw execution state: {e}")
 
+    def _execute_proportional_recovery(self, pending_state):
+        """Proportional recovery with persistent step-journal.
+        
+        Instead of all-or-nothing, this method:
+        1. Syncs nonce before first tx to avoid dashboard conflicts
+        2. Calculates scaling = current_dai / original_remaining_need
+        3. Applies dust guard: skip swaps < $1.00, roll into WALLET_S transfer
+        4. Executes each affordable step, saving state after each
+        5. Supplies any un-swappable leftover DAI directly as collateral
+        6. Only deletes execution_state.json after WALLET_S transfer confirmation
+        """
+        saved_dist = pending_state['distribution']
+        path_name = pending_state['path_name']
+        resume_step = pending_state['step']
+        dist_serializable = {k: v for k, v in saved_dist.items()}
+
+        print(f"\n{'='*60}")
+        print(f"🔧 PROPORTIONAL RECOVERY: {path_name.upper()} path")
+        print(f"   Last completed step: '{resume_step}'")
+        print(f"{'='*60}")
+
+        nonce = self.w3.eth.get_transaction_count(self.address)
+        print(f"🔗 Nonce synced: {nonce}")
+
+        dai_balance = self.get_dai_balance()
+        print(f"💰 Current DAI in wallet: ${dai_balance:.4f}")
+
+        if dai_balance < 0.01:
+            print(f"⚠️ No DAI available for recovery — clearing state")
+            self.clear_execution_state()
+            return False
+
+        remaining_steps = []
+        step_dai_map = {
+            'wbtc_supplied': saved_dist.get('wbtc_swap_supply', 0),
+            'weth_supplied': saved_dist.get('weth_swap_supply', 0),
+            'eth_converted': saved_dist.get('eth_gas_reserve', 0),
+            'wallet_s_transferred': saved_dist.get('dai_transfer', 0),
+        }
+
+        past_resume = False
+        original_remaining_need = 0.0
+        for s in self.STEP_ORDER:
+            if s == resume_step:
+                past_resume = True
+                continue
+            if past_resume and s in step_dai_map:
+                remaining_steps.append(s)
+                original_remaining_need += step_dai_map[s]
+
+        if not remaining_steps:
+            print(f"✅ No remaining steps — clearing state")
+            self.clear_execution_state()
+            return True
+
+        if original_remaining_need <= 0:
+            original_remaining_need = dai_balance
+
+        scaling = min(dai_balance / original_remaining_need, 1.0) if original_remaining_need > 0 else 0.0
+        print(f"📊 Scaling factor: {scaling:.4f} (have ${dai_balance:.2f} / need ${original_remaining_need:.2f})")
+
+        scaled_amounts = {}
+        dust_rollover = 0.0
+        for step in remaining_steps:
+            original_amt = step_dai_map[step]
+            scaled_amt = original_amt * scaling
+
+            if step == 'wallet_s_transferred':
+                scaled_amounts[step] = scaled_amt + dust_rollover
+            elif scaled_amt < 1.00:
+                print(f"   🧹 Dust guard: {step} scaled to ${scaled_amt:.2f} (< $1.00) — rolling ${scaled_amt:.2f} into WALLET_S")
+                dust_rollover += scaled_amt
+                scaled_amounts[step] = 0.0
+            else:
+                scaled_amounts[step] = scaled_amt
+
+        print(f"\n📋 Recovery plan:")
+        for step in remaining_steps:
+            amt = scaled_amounts.get(step, 0)
+            status = "SKIP (dust)" if amt == 0 else f"${amt:.2f}"
+            print(f"   {step}: {status}")
+        if dust_rollover > 0:
+            print(f"   Dust rolled into WALLET_S: ${dust_rollover:.2f}")
+
+        self.is_transacting = True
+        leftover_for_supply = 0.0
+        try:
+            for step in remaining_steps:
+                amt = scaled_amounts.get(step, 0)
+
+                if step == 'wbtc_supplied' and amt >= 1.00:
+                    print(f"\n📋 RECOVERY STEP: Swapping ${amt:.2f} DAI -> WBTC and supplying...")
+                    current_dai = self.get_dai_balance()
+                    if current_dai < amt:
+                        print(f"   ⚠️ Only ${current_dai:.2f} DAI available, adjusting")
+                        amt = current_dai
+                    if amt >= 1.00:
+                        wbtc_received = self._execute_dai_to_wbtc_swap(amt)
+                        if wbtc_received > 0:
+                            if self._supply_wbtc_to_aave(wbtc_received):
+                                self.save_execution_state("wbtc_supplied", path_name, dist_serializable)
+                                print(f"   ✅ WBTC swap+supply complete")
+                            else:
+                                print(f"   ⚠️ WBTC supply failed — continuing")
+                        else:
+                            print(f"   ⚠️ DAI->WBTC swap failed — rolling ${amt:.2f} to leftover supply")
+                            leftover_for_supply += amt
+                    else:
+                        leftover_for_supply += amt
+
+                elif step == 'weth_supplied' and amt >= 1.00:
+                    print(f"\n📋 RECOVERY STEP: Swapping ${amt:.2f} DAI -> WETH and supplying...")
+                    current_dai = self.get_dai_balance()
+                    if current_dai < amt:
+                        print(f"   ⚠️ Only ${current_dai:.2f} DAI available, adjusting")
+                        amt = current_dai
+                    if amt >= 1.00:
+                        weth_received = self._execute_dai_to_weth_swap(amt)
+                        if weth_received > 0:
+                            if self._supply_weth_to_aave(weth_received):
+                                self.save_execution_state("weth_supplied", path_name, dist_serializable)
+                                print(f"   ✅ WETH swap+supply complete")
+                            else:
+                                print(f"   ⚠️ WETH supply failed — continuing")
+                        else:
+                            print(f"   ⚠️ DAI->WETH swap failed — rolling ${amt:.2f} to leftover supply")
+                            leftover_for_supply += amt
+                    else:
+                        leftover_for_supply += amt
+
+                elif step == 'eth_converted' and amt >= 1.00:
+                    print(f"\n📋 RECOVERY STEP: Converting ${amt:.2f} DAI -> ETH (gas reserve)...")
+                    current_dai = self.get_dai_balance()
+                    if current_dai < amt:
+                        amt = current_dai
+                    if amt >= 1.00:
+                        try:
+                            weth_for_eth = self.uniswap.swap_dai_for_weth(amt)
+                            if weth_for_eth and 'tx_hash' in weth_for_eth:
+                                time.sleep(3)
+                                weth_balance = self.get_weth_balance()
+                                if weth_balance > 0:
+                                    if self._unwrap_weth_to_eth(weth_balance):
+                                        self.save_execution_state("eth_converted", path_name, dist_serializable)
+                                        print(f"   ✅ ETH gas reserve complete")
+                                    else:
+                                        print(f"   ⚠️ WETH unwrap failed — continuing")
+                                else:
+                                    print(f"   ⚠️ No WETH received — continuing")
+                            else:
+                                print(f"   ⚠️ DAI->WETH swap failed for ETH — rolling to leftover")
+                                leftover_for_supply += amt
+                        except Exception as e:
+                            print(f"   ⚠️ ETH conversion error: {e} — continuing")
+                    else:
+                        leftover_for_supply += amt
+
+                elif step == 'wallet_s_transferred':
+                    current_dai = self.get_dai_balance()
+                    transfer_amt = min(amt, current_dai)
+                    if transfer_amt >= 0.10:
+                        print(f"\n📋 RECOVERY STEP: Transferring ${transfer_amt:.2f} DAI to WALLET_S...")
+                        if self._transfer_dai_to_wallet_s(transfer_amt):
+                            self.save_execution_state("wallet_s_transferred", path_name, dist_serializable)
+                            print(f"   ✅ WALLET_S transfer confirmed — state cleared")
+                            self.clear_execution_state()
+                            self.record_successful_operation(operation_type=f"{path_name}_recovery")
+                            print(f"\n{'='*60}")
+                            print(f"✅ PROPORTIONAL RECOVERY COMPLETE: {path_name.upper()} path")
+                            print(f"{'='*60}\n")
+                            return True
+                        else:
+                            print(f"   ⚠️ WALLET_S transfer failed — state preserved")
+                    elif current_dai >= 0.50:
+                        print(f"\n📋 RECOVERY: Insufficient for WALLET_S (${transfer_amt:.2f}), supplying ${current_dai:.2f} DAI as collateral instead")
+                        if self._resupply_dai_to_aave(current_dai * 0.95):
+                            print(f"   ✅ Leftover DAI supplied as collateral")
+                        self.save_execution_state("wallet_s_transferred", path_name, dist_serializable)
+                        self.clear_execution_state()
+                        return True
+                    else:
+                        print(f"   ⚠️ Only ${current_dai:.2f} DAI left — too small, clearing state")
+                        self.clear_execution_state()
+                        return True
+
+                elif amt == 0:
+                    print(f"\n⏭️ RECOVERY STEP: {step} — skipped (dust guard)")
+                    if step in ('wbtc_supplied', 'weth_supplied', 'eth_converted'):
+                        self.save_execution_state(step, path_name, dist_serializable)
+
+            final_dai = self.get_dai_balance()
+            if final_dai >= 0.50 and leftover_for_supply > 0:
+                supply_amt = min(final_dai * 0.95, leftover_for_supply)
+                print(f"\n📋 RECOVERY SAFETY NET: Supplying ${supply_amt:.2f} leftover DAI as collateral")
+                if self._resupply_dai_to_aave(supply_amt):
+                    print(f"   ✅ Leftover DAI supplied to Aave")
+
+            if not os.path.exists(self.EXECUTION_STATE_FILE):
+                return True
+            self.save_execution_state("wallet_s_transferred", path_name, dist_serializable)
+            self.clear_execution_state()
+            return True
+
+        except Exception as e:
+            print(f"❌ Proportional recovery error: {e}")
+            import traceback
+            traceback.print_exc()
+            return False
+        finally:
+            self.is_transacting = False
+            self.last_transaction_complete_time = time.time()
+
     def load_execution_state(self):
         """Load execution state from file. Returns dict or None if no pending state."""
         try:
@@ -2119,9 +2331,11 @@ class ArbitrumTestnetAgent:
                 else:
                     idx = self.STEP_ORDER.index(resume_after)
                     already_done = set(self.STEP_ORDER[:idx + 1])
+                    nonce = self.w3.eth.get_transaction_count(self.address)
                     print(f"\n{'='*60}")
                     print(f"🔄 RESUMING {path_name.upper()} PATH after '{resume_after}'")
                     print(f"   Skipping completed steps: {already_done}")
+                    print(f"   Nonce synced: {nonce}")
                     print(f"{'='*60}\n")
 
             if not resume_after:
@@ -2177,19 +2391,21 @@ class ArbitrumTestnetAgent:
             else:
                 print("⏭️ STEP 2 (DAI Supply): Already completed — skipping")
 
+            steps_failed = []
+
             if sequence_ok and "wbtc_supplied" not in already_done:
                 wbtc_dai = distribution['wbtc_swap_supply']
                 print(f"\n📋 STEP 3: Swapping ${wbtc_dai:.2f} DAI -> WBTC and supplying...")
                 wbtc_received = self._execute_dai_to_wbtc_swap(wbtc_dai)
                 if wbtc_received > 0:
                     if not self._supply_wbtc_to_aave(wbtc_received):
-                        print("❌ WBTC supply to Aave failed")
-                        sequence_ok = False
+                        print("⚠️ WBTC supply to Aave failed — continuing to next step")
+                        steps_failed.append("wbtc_supplied")
                     else:
                         self.save_execution_state("wbtc_supplied", path_name, dist_serializable)
                 else:
-                    print("❌ DAI -> WBTC swap failed")
-                    sequence_ok = False
+                    print("⚠️ DAI -> WBTC swap failed — continuing to next step")
+                    steps_failed.append("wbtc_supplied")
             elif "wbtc_supplied" in already_done:
                 print("⏭️ STEP 3 (WBTC Swap+Supply): Already completed — skipping")
 
@@ -2199,13 +2415,13 @@ class ArbitrumTestnetAgent:
                 weth_received = self._execute_dai_to_weth_swap(weth_dai)
                 if weth_received > 0:
                     if not self._supply_weth_to_aave(weth_received):
-                        print("❌ WETH supply to Aave failed")
-                        sequence_ok = False
+                        print("⚠️ WETH supply to Aave failed — continuing to next step")
+                        steps_failed.append("weth_supplied")
                     else:
                         self.save_execution_state("weth_supplied", path_name, dist_serializable)
                 else:
-                    print("❌ DAI -> WETH swap failed")
-                    sequence_ok = False
+                    print("⚠️ DAI -> WETH swap failed — continuing to next step")
+                    steps_failed.append("weth_supplied")
             elif "weth_supplied" in already_done:
                 print("⏭️ STEP 4 (WETH Swap+Supply): Already completed — skipping")
 
@@ -2223,39 +2439,56 @@ class ArbitrumTestnetAgent:
                                 print(f"✅ ETH gas reserve: holding in wallet")
                                 self.save_execution_state("eth_converted", path_name, dist_serializable)
                             else:
-                                print("❌ WETH unwrap to ETH failed")
-                                sequence_ok = False
+                                print("⚠️ WETH unwrap to ETH failed — continuing to next step")
+                                steps_failed.append("eth_converted")
                         else:
-                            print("❌ No WETH received for ETH conversion")
-                            sequence_ok = False
+                            print("⚠️ No WETH received for ETH conversion — continuing")
+                            steps_failed.append("eth_converted")
                     else:
-                        print("❌ DAI -> WETH (for ETH) swap failed")
-                        sequence_ok = False
+                        print("⚠️ DAI -> WETH (for ETH) swap failed — continuing")
+                        steps_failed.append("eth_converted")
                 except Exception as e:
-                    print(f"❌ ETH conversion error: {e}")
-                    sequence_ok = False
+                    print(f"⚠️ ETH conversion error: {e} — continuing")
+                    steps_failed.append("eth_converted")
             elif "eth_converted" in already_done:
                 print("⏭️ STEP 5 (ETH Gas Reserve): Already completed — skipping")
 
-            if sequence_ok and "wallet_s_transferred" not in already_done:
+            if "wallet_s_transferred" not in already_done:
                 transfer_amt = distribution['dai_transfer']
-                print(f"\n📋 STEP 6: Transferring ${transfer_amt:.2f} DAI to WALLET_S_ADDRESS...")
-                if not self._transfer_dai_to_wallet_s(transfer_amt):
-                    print("❌ DAI transfer to WALLET_S failed")
-                    sequence_ok = False
+                current_dai = self.get_dai_balance()
+                actual_transfer = min(transfer_amt, current_dai)
+                if actual_transfer >= 0.10:
+                    print(f"\n📋 STEP 6: Transferring ${actual_transfer:.2f} DAI to WALLET_S_ADDRESS...")
+                    if not self._transfer_dai_to_wallet_s(actual_transfer):
+                        print("❌ DAI transfer to WALLET_S failed")
+                        steps_failed.append("wallet_s_transferred")
+                    else:
+                        self.save_execution_state("wallet_s_transferred", path_name, dist_serializable)
                 else:
+                    print(f"⚠️ STEP 6: Only ${current_dai:.2f} DAI left — too small for WALLET_S transfer")
+                    if current_dai >= 0.50:
+                        print(f"   Supplying ${current_dai * 0.95:.2f} leftover DAI as collateral instead")
+                        self._resupply_dai_to_aave(current_dai * 0.95)
                     self.save_execution_state("wallet_s_transferred", path_name, dist_serializable)
             elif "wallet_s_transferred" in already_done:
                 print("⏭️ STEP 6 (WALLET_S Transfer): Already completed — skipping")
 
             print(f"\n{'='*60}")
-            if sequence_ok:
+            if not steps_failed:
                 print(f"✅ {path_name.upper()} PATH COMPLETE - All steps succeeded")
                 self.clear_execution_state()
                 self.record_successful_operation(operation_type=path_name)
+                sequence_ok = True
+            elif "wallet_s_transferred" not in steps_failed:
+                print(f"⚠️ {path_name.upper()} PATH PARTIAL - WALLET_S confirmed, {len(steps_failed)} step(s) had issues: {steps_failed}")
+                self.clear_execution_state()
+                self.record_successful_operation(operation_type=f"{path_name}_partial")
+                sequence_ok = True
             else:
                 print(f"❌ {path_name.upper()} PATH FAILED - State preserved for recovery")
+                print(f"   Failed steps: {steps_failed}")
                 print(f"   execution_state.json retained for next restart")
+                sequence_ok = False
             print(f"{'='*60}\n")
 
             return sequence_ok
@@ -2846,48 +3079,38 @@ class ArbitrumTestnetAgent:
 
                 recovery_attempts = pending_state.get('recovery_attempts', 0) + 1
                 pending_state['recovery_attempts'] = recovery_attempts
-                if recovery_attempts > 3:
+                if recovery_attempts > 5:
                     print(f"⚠️ Recovery failed {recovery_attempts} times — clearing stale state")
                     self.save_execution_state("wallet_s_transferred", path_name, saved_dist)
+                    self.clear_execution_state()
                     return 0.5
 
-                try:
-                    dai_balance = self.w3.eth.call({
-                        'to': self.dai_address,
-                        'data': '0x70a08231' + self.address[2:].zfill(64)
-                    })
-                    dai_balance_float = int(dai_balance.hex(), 16) / 1e18
-                    remaining_steps = []
-                    step_order = ['borrowed', 'dai_supplied', 'wbtc_supplied', 'weth_supplied', 'eth_reserved']
-                    past_resume = False
-                    total_dai_needed = 0.0
-                    for s in step_order:
-                        if s == resume_step:
-                            past_resume = True
-                            continue
-                        if past_resume:
-                            if s == 'wbtc_supplied':
-                                total_dai_needed += saved_dist.get('wbtc_swap_supply', 0)
-                            elif s == 'weth_supplied':
-                                total_dai_needed += saved_dist.get('weth_swap_supply', 0)
-                            elif s == 'eth_reserved':
-                                total_dai_needed += saved_dist.get('dai_transfer', 0)
-                    if total_dai_needed > 0 and dai_balance_float < total_dai_needed * 0.9:
-                        print(f"⚠️ Insufficient DAI for recovery: have ${dai_balance_float:.2f}, need ~${total_dai_needed:.2f}")
-                        print(f"   Clearing stale state to avoid retry loop")
-                        self.save_execution_state("wallet_s_transferred", path_name, saved_dist)
-                        return 0.5
-                    print(f"💰 Recovery DAI balance check: ${dai_balance_float:.2f} available, ~${total_dai_needed:.2f} needed")
-                except Exception as bal_err:
-                    print(f"⚠️ Could not check DAI balance for recovery: {bal_err}")
+                self._save_raw_execution_state(pending_state)
 
-                if self._execute_fixed_distribution(path_name, saved_dist, resume_after=resume_step):
-                    print(f"✅ RECOVERY COMPLETE: {path_name.upper()} path finished successfully")
-                    return 0.9
+                dai_balance = self.get_dai_balance()
+                print(f"💰 Recovery DAI balance: ${dai_balance:.4f}")
+
+                if dai_balance >= 0.90 * sum([
+                    saved_dist.get('wbtc_swap_supply', 0),
+                    saved_dist.get('weth_swap_supply', 0),
+                    saved_dist.get('eth_gas_reserve', 0),
+                    saved_dist.get('dai_transfer', 0),
+                ]):
+                    print(f"✅ Sufficient DAI for full recovery — executing standard resume")
+                    if self._execute_fixed_distribution(path_name, saved_dist, resume_after=resume_step):
+                        print(f"✅ RECOVERY COMPLETE: {path_name.upper()} path finished successfully")
+                        return 0.9
+                    else:
+                        print(f"❌ Full recovery failed (attempt {recovery_attempts}/5) — trying proportional next cycle")
+                        return 0.4
                 else:
-                    self._save_raw_execution_state(pending_state)
-                    print(f"❌ Recovery failed (attempt {recovery_attempts}/3) — state preserved for next attempt")
-                    return 0.4
+                    print(f"📉 Insufficient DAI for full recovery — using PROPORTIONAL RECOVERY")
+                    if self._execute_proportional_recovery(pending_state):
+                        print(f"✅ PROPORTIONAL RECOVERY COMPLETE: {path_name.upper()} path")
+                        return 0.9
+                    else:
+                        print(f"❌ Proportional recovery failed (attempt {recovery_attempts}/5) — state preserved")
+                        return 0.4
 
             if self._is_execution_locked():
                 print("🔒 Skipping cycle - execution locked")
