@@ -105,7 +105,7 @@ def run_autonomous_mainnet_agent():
                 
                 # Run the autonomous task
                 performance = agent.run_real_defi_task(run_id, iteration, {
-                    'health_factor_target': 1.05,  # Aggressive for maximum efficiency
+                    'health_factor_target': 1.40,
                     'max_iterations_per_run': 100
                 })
                 
@@ -129,8 +129,8 @@ def run_autonomous_mainnet_agent():
                 log_agent_activity(f"❌ Error in monitoring cycle: {e}", "ERROR")
                 log_agent_activity("⏸️ Continuing monitoring after error...")
             
-            # Wait before next cycle (shorter for mainnet responsiveness)
-            time.sleep(30)  # 30 seconds between checks
+            # Wait before next cycle - 130s matches the cooldown period
+            time.sleep(130)
             
     except KeyboardInterrupt:
         log_agent_activity("👋 Autonomous agent stopped by user (Ctrl+C)", "INFO")

@@ -523,33 +523,43 @@ class ArbitrumTestnetAgent:
             self.arb_address = "0x1b20e6a3B2a86618C32A37ffcD5E98C0d20a6E42"
             self.aave_pool_address = "0x18cd499E3d7ed42FebA981ac9236A278E4Cdc2ee"
         
-        # CONFIGURABLE ALLOCATION STRATEGY
-        # Network-aware: GHO only available on mainnet
-        # Easily modify percentages and supply/hold rules here
-        if self.network_mode == 'mainnet':
-            # Mainnet allocation: includes GHO
-            self.ALLOCATION_CONFIG = {
-                'WETH': {'percentage': 0.30, 'action': 'supply', 'description': 'Swap to WETH and supply as collateral'},
-                'WBTC': {'percentage': 0.50, 'action': 'supply', 'description': 'Swap to WBTC and supply as collateral'},
-                'DAI': {'percentage': 0.10, 'action': 'supply', 'description': 'Resupply DAI directly (no swap)'},
-                'GHO': {'percentage': 0.05, 'action': 'hold', 'description': 'Swap to GHO and hold in wallet'},
-                'ETH': {'percentage': 0.05, 'action': 'hold', 'description': 'Swap to ETH and hold in wallet'}
-            }
+        # PHASE 1: FIXED-VALUE DISTRIBUTION PATHS
+        # Two distinct execution paths with exact dollar amounts
+        self.GROWTH_DISTRIBUTION = {
+            'total_borrow': 10.20,
+            'dai_supply': 3.00,
+            'wbtc_swap_supply': 3.00,
+            'weth_swap_supply': 2.00,
+            'eth_gas_reserve': 1.10,
+            'dai_transfer': 1.10,
+            'min_capacity': 12.0,
+        }
+        self.CAPACITY_DISTRIBUTION = {
+            'total_borrow': 5.50,
+            'dai_supply': 1.10,
+            'wbtc_swap_supply': 1.10,
+            'weth_swap_supply': 1.10,
+            'eth_gas_reserve': 1.10,
+            'dai_transfer': 1.10,
+            'min_capacity': 7.0,
+        }
+
+        # GLOBAL EXECUTION LOCK - prevents double-borrowing
+        self.is_transacting = False
+        self.last_transaction_complete_time = 0
+
+        # WALLET_S_ADDRESS for DAI transfers (REQUIRED for mainnet)
+        self.wallet_s_address = os.getenv('WALLET_S_ADDRESS')
+        if self.wallet_s_address:
+            self.wallet_s_address = self.w3.to_checksum_address(self.wallet_s_address.strip())
+            print(f"✅ WALLET_S_ADDRESS configured: {self.wallet_s_address[:10]}...")
         else:
-            # Testnet allocation: GHO not available, redistribute to DAI
-            self.ALLOCATION_CONFIG = {
-                'WETH': {'percentage': 0.30, 'action': 'supply', 'description': 'Swap to WETH and supply as collateral'},
-                'WBTC': {'percentage': 0.50, 'action': 'supply', 'description': 'Swap to WBTC and supply as collateral'},
-                'DAI': {'percentage': 0.15, 'action': 'supply', 'description': 'Resupply DAI directly (no swap - 15% on testnet)'},
-                'ETH': {'percentage': 0.05, 'action': 'hold', 'description': 'Swap to ETH and hold in wallet'}
-            }
-        
-        # Validate allocation sums to 100%
-        total_allocation = sum(config['percentage'] for config in self.ALLOCATION_CONFIG.values())
-        if abs(total_allocation - 1.0) > 0.001:
-            raise Exception(f"Allocation configuration error: total = {total_allocation * 100}% (must be 100%)")
-        
-        print(f"✅ Allocation strategy configured: {sum(1 for c in self.ALLOCATION_CONFIG.values() if c['action'] == 'supply')} supply, {sum(1 for c in self.ALLOCATION_CONFIG.values() if c['action'] == 'hold')} hold")
+            print("🚨 WALLET_S_ADDRESS not set - REQUIRED for Phase 1 execution")
+            print("   Both Growth and Capacity paths include DAI transfer step")
+
+        print(f"✅ Fixed-value distribution paths configured:")
+        print(f"   Growth Path: ${self.GROWTH_DISTRIBUTION['total_borrow']:.2f} total borrow (requires ${self.GROWTH_DISTRIBUTION['min_capacity']:.0f} capacity)")
+        print(f"   Capacity Path: ${self.CAPACITY_DISTRIBUTION['total_borrow']:.2f} total borrow (requires ${self.CAPACITY_DISTRIBUTION['min_capacity']:.0f} capacity)")
 
         # Initialize collateral tracking for autonomous triggers
         # Set to previous known value ($47) so growth from added collateral is detected
@@ -583,21 +593,15 @@ class ArbitrumTestnetAgent:
         print(f"   System ready for high-frequency debt swapping")
 
         # Growth-Triggered System Configuration
-        self.growth_trigger_threshold = 50.0  # $50 growth threshold
-        self.growth_health_factor_threshold = 1.35  # Minimum health factor for growth operations
-        self.re_leverage_percentage = 0.15  # 15% re-leverage percentage
-        self.min_borrow_releverage = 5.0  # Minimum borrow amount for re-leverage
-        self.max_borrow_releverage = 100.0  # Maximum borrow amount for re-leverage
+        self.growth_trigger_threshold = 50.0  # $50 absolute growth threshold
+        self.growth_health_factor_threshold = 1.35  # MIN_HEALTH_FACTOR for growth operations
+        self.growth_percentage_threshold = 0.10  # 10% relative growth threshold
+        self.growth_min_capacity = 12.0  # $12 minimum available capacity for growth path
 
         # Capacity-Based System Configuration
-        self.capacity_available_threshold = 10.0  # $10 minimum available capacity (optimized for small wallets)
-        self.capacity_trigger_threshold = 15.0  # $15 capacity trigger activation threshold
-        self.capacity_health_factor_threshold = 1.35  # Minimum health factor for capacity operations
-        self.capacity_optimization_threshold = 0.85  # 85% maximum utilization
-        self.target_health_factor = 1.35  # Target health factor to maintain
-        
-        # Growth Trigger Configuration
-        self.growth_percentage_threshold = 0.10  # 10% relative growth threshold
+        self.capacity_min_capacity = 7.0  # $7 minimum available capacity for capacity path
+        self.capacity_health_factor_threshold = 1.35  # MIN_HEALTH_FACTOR for capacity operations
+        self.target_health_factor = 1.40  # TARGET_HEALTH_FACTOR to maintain
 
         # Display Hybrid System Configuration
         self._display_hybrid_system_config()
@@ -776,31 +780,29 @@ class ArbitrumTestnetAgent:
             return False
 
     def _display_hybrid_system_config(self):
-        """Display the current Hybrid System configuration"""
-        print(f"\n🔄 HYBRID SYSTEM CONFIGURATION:")
+        """Display the current Phase 1 system configuration"""
+        print(f"\n🔄 PHASE 1 DUAL-PATH SYSTEM CONFIGURATION:")
         print(f"═══════════════════════════════════════")
-        print(f"🚀 GROWTH-TRIGGERED SYSTEM (INDEPENDENT):")
-        print(f"   • Absolute Threshold: ${self.growth_trigger_threshold:.0f}")
-        print(f"   • Relative Threshold: {self.growth_percentage_threshold:.0%}")
-        print(f"   • Health Factor: > {self.growth_health_factor_threshold:.1f}")
-        print(f"   • Re-leverage %: {self.re_leverage_percentage:.1%}")
-        print(f"   • Min/Max Borrow: ${self.min_borrow_releverage:.0f} - ${self.max_borrow_releverage:.0f}")
-        print(f"⚡ CAPACITY-BASED SYSTEM (INDEPENDENT):")
-        print(f"   • Min Capacity: > ${self.capacity_available_threshold:.0f}")
-        print(f"   • Trigger Threshold: > ${self.capacity_trigger_threshold:.0f}")
-        print(f"   • Health Factor: > {self.capacity_health_factor_threshold:.1f}")
-        print(f"   • Max Utilization: < {self.capacity_optimization_threshold:.0%}")
+        print(f"🚀 GROWTH PATH ($10.20 Borrow):")
+        print(f"   • Trigger: 10% relative OR $50 absolute growth from $47 baseline")
+        print(f"   • Min Capacity Required: ${self.growth_min_capacity:.0f}")
+        print(f"   • Health Factor: > {self.growth_health_factor_threshold:.2f}")
+        print(f"   • Distribution: $3.00 DAI supply, $3.00 WBTC, $2.00 WETH, $1.10 ETH gas, $1.10 DAI transfer")
+        print(f"⚡ CAPACITY PATH ($5.50 Borrow):")
+        print(f"   • Trigger: Available capacity >= ${self.capacity_min_capacity:.0f}")
+        print(f"   • Health Factor: > {self.capacity_health_factor_threshold:.2f}")
+        print(f"   • Distribution: $1.10 DAI supply, $1.10 WBTC, $1.10 WETH, $1.10 ETH gas, $1.10 DAI transfer")
         print(f"🔧 SYSTEM SETTINGS:")
+        print(f"   • Global Execution Lock: {'LOCKED' if self.is_transacting else 'UNLOCKED'}")
         print(f"   • Operation Cooldown: {self.operation_cooldown_seconds}s")
-        print(f"   • Target Health Factor: {self.target_health_factor:.1f}")
+        print(f"   • Target Health Factor: {self.target_health_factor:.2f}")
+        print(f"   • Min Health Factor: {self.growth_health_factor_threshold:.2f}")
+        print(f"   • Baseline Collateral: ${self.last_collateral_value_usd:.2f}")
+        print(f"   • WALLET_S_ADDRESS: {'Configured' if self.wallet_s_address else 'NOT SET'}")
 
-        # Display debt swap thresholds
         self._display_debt_swap_thresholds()
-
-        # Display integrated market indicators
         self._display_integrated_market_indicators()
 
-        # Display bearish chart patterns if market signal strategy is available
         if hasattr(self, 'market_signal_strategy') and self.market_signal_strategy:
             self._display_bearish_chart_patterns()
 
@@ -1204,34 +1206,109 @@ class ArbitrumTestnetAgent:
             print(f"❌ Safe borrow calculation failed: {e}")
             return 0.0
 
-    def detect_manual_override(self):
-        """
-        Detect when manual override is active"""
-        import os
+    def _ensure_dai_approval(self, spender_address, amount_wei):
+        """Verify and set IERC20 DAI approval for a spender (Aave Pool or Swap Router)"""
+        try:
+            dai_contract = self.w3.eth.contract(
+                address=self.dai_address,
+                abi=DAI_ABI
+            )
+            current_allowance = dai_contract.functions.allowance(self.address, spender_address).call()
 
-        # Check for manual trigger files
-        manual_files = ['trigger_test.flag', 'manual_override.flag', 'force_borrow.flag']
-        for file_path in manual_files:
-            if os.path.exists(file_path):
-                print(f"🔧 Manual override detected: {file_path}")
+            if current_allowance >= amount_wei:
+                print(f"✅ DAI allowance sufficient for {spender_address[:10]}... ({current_allowance / 1e18:.2f} DAI)")
                 return True
 
-        # Check if manual_override_active attribute is set
-        if hasattr(self, 'manual_override_active') and self.manual_override_active:
-            print(f"🔧 Manual override detected: manual_override_active = True")
-            return True
+            print(f"🔄 Approving DAI for {spender_address[:10]}... (current: {current_allowance / 1e18:.2f}, need: {amount_wei / 1e18:.2f})")
+            max_approval = 2**256 - 1
+            tx = dai_contract.functions.approve(spender_address, max_approval).build_transaction({
+                'from': self.address,
+                'gas': 100000,
+                'gasPrice': self.w3.eth.gas_price,
+                'nonce': self.w3.eth.get_transaction_count(self.address)
+            })
+            signed_tx = self.w3.eth.account.sign_transaction(tx, self.account.key)
+            tx_hash = self.w3.eth.send_raw_transaction(signed_tx.rawTransaction)
+            receipt = self.w3.eth.wait_for_transaction_receipt(tx_hash, timeout=60)
+            if receipt.status == 1:
+                print(f"✅ DAI approval confirmed: {self.w3.to_hex(tx_hash)}")
+                return True
+            else:
+                print(f"❌ DAI approval transaction failed")
+                return False
+        except Exception as e:
+            print(f"❌ DAI approval error: {e}")
+            return False
 
-        # Check for test mode
-        if os.path.exists('test_mode.flag'):
-            print(f"🧪 Test mode detected - treating as manual override")
-            return True
+    def _verify_all_approvals(self, borrow_amount_dai):
+        """Verify IERC20 approvals for both Aave Pool and Swap Router before execution"""
+        try:
+            amount_wei = int(borrow_amount_dai * 1e18)
+            pool_address = self.w3.to_checksum_address(self.aave_pool_address)
 
-        # Check environment variable
-        if os.getenv('MANUAL_OVERRIDE', '').lower() in ['true', '1', 'yes']:
-            print(f"🔧 Manual override detected: MANUAL_OVERRIDE environment variable")
-            return True
+            print("🔒 Verifying IERC20 approvals...")
 
-        return False
+            pool_ok = self._ensure_dai_approval(pool_address, amount_wei)
+            if not pool_ok:
+                print("❌ Failed to approve DAI for Aave Pool")
+                return False
+
+            if hasattr(self, 'uniswap') and self.uniswap and hasattr(self.uniswap, 'router_address'):
+                router_ok = self._ensure_dai_approval(self.uniswap.router_address, amount_wei)
+                if not router_ok:
+                    print("❌ Failed to approve DAI for Swap Router")
+                    return False
+
+            print("✅ All IERC20 approvals verified")
+            return True
+        except Exception as e:
+            print(f"❌ Approval verification failed: {e}")
+            return False
+
+    def _transfer_dai_to_wallet_s(self, dai_amount):
+        """Transfer DAI to WALLET_S_ADDRESS"""
+        try:
+            if not self.wallet_s_address:
+                print("⚠️ WALLET_S_ADDRESS not configured - skipping transfer")
+                return False
+
+            print(f"💸 Transferring ${dai_amount:.2f} DAI to WALLET_S_ADDRESS ({self.wallet_s_address[:10]}...)")
+
+            dai_contract = self.w3.eth.contract(
+                address=self.dai_address,
+                abi=DAI_ABI + [{
+                    "inputs": [
+                        {"name": "to", "type": "address"},
+                        {"name": "amount", "type": "uint256"}
+                    ],
+                    "name": "transfer",
+                    "outputs": [{"name": "", "type": "bool"}],
+                    "stateMutability": "nonpayable",
+                    "type": "function"
+                }]
+            )
+
+            amount_wei = int(dai_amount * 1e18)
+
+            tx = dai_contract.functions.transfer(self.wallet_s_address, amount_wei).build_transaction({
+                'from': self.address,
+                'gas': 100000,
+                'gasPrice': self.w3.eth.gas_price,
+                'nonce': self.w3.eth.get_transaction_count(self.address)
+            })
+            signed_tx = self.w3.eth.account.sign_transaction(tx, self.account.key)
+            tx_hash = self.w3.eth.send_raw_transaction(signed_tx.rawTransaction)
+            receipt = self.w3.eth.wait_for_transaction_receipt(tx_hash, timeout=60)
+
+            if receipt.status == 1:
+                print(f"✅ DAI transfer confirmed: {self.w3.to_hex(tx_hash)}")
+                return True
+            else:
+                print(f"❌ DAI transfer failed on-chain")
+                return False
+        except Exception as e:
+            print(f"❌ DAI transfer error: {e}")
+            return False
 
     def is_operation_on_cooldown(self, allow_sequence_continuation=False):
         """Check if any operation is in cooldown period"""
@@ -1759,8 +1836,8 @@ class ArbitrumTestnetAgent:
                 available_borrows, health_factor
             )
             
-            # Execute if triggered (only if not on cooldown)
-            if not self.is_operation_on_cooldown():
+            # Execute if triggered (only if global lock is not active)
+            if not self._is_execution_locked():
                 if growth_triggered:
                     print(f"🎯 BLOCK {block_number}: Growth trigger activated!")
                     self._execute_growth_triggered_operation(available_borrows)
@@ -1772,29 +1849,41 @@ class ArbitrumTestnetAgent:
             # Silent fail - don't spam logs on every block
             pass
     
+    def _is_execution_locked(self):
+        """Check if the Global Execution Lock is active (transaction in progress or cooldown)"""
+        if self.is_transacting:
+            print("🔒 GLOBAL LOCK: Transaction cycle in progress")
+            return True
+
+        if self.last_transaction_complete_time > 0:
+            elapsed = time.time() - self.last_transaction_complete_time
+            if elapsed < self.operation_cooldown_seconds:
+                remaining = self.operation_cooldown_seconds - elapsed
+                print(f"🔒 COOLDOWN: {remaining:.0f}s remaining after last cycle")
+                return True
+
+        return False
+
     def _should_execute_growth_triggered_operation(self, current_collateral, health_factor, available_borrows):
         """
         Check if growth-triggered operation should execute.
         
-        INDEPENDENT TRIGGER: Only checks collateral growth and health factor.
-        Does NOT require minimum capacity - supports small wallets.
-        
-        Triggers on EITHER:
-        - Absolute: $50 growth from baseline OR
-        - Relative: 10% growth from baseline
+        PRIORITY 1 (checked first):
+        - Health factor >= 1.35
+        - Available capacity >= $12
+        - Collateral growth >= 10% relative OR $50 absolute from baseline
         """
         try:
-            # Check health factor threshold
             if health_factor < self.growth_health_factor_threshold:
-                print(f"⚠️ Health factor {health_factor:.3f} below growth threshold {self.growth_health_factor_threshold}")
                 return False
 
-            # Check growth since last baseline (INDEPENDENT - no capacity requirement)
+            if available_borrows < self.growth_min_capacity:
+                return False
+
             if hasattr(self, 'last_collateral_value_usd') and self.last_collateral_value_usd > 0:
                 absolute_growth = current_collateral - self.last_collateral_value_usd
                 relative_growth = absolute_growth / self.last_collateral_value_usd if self.last_collateral_value_usd > 0 else 0
                 
-                # Trigger on EITHER absolute OR relative threshold
                 if absolute_growth >= self.growth_trigger_threshold:
                     print(f"✅ Growth trigger met (ABSOLUTE): ${absolute_growth:.2f} >= ${self.growth_trigger_threshold}")
                     return True
@@ -1812,19 +1901,16 @@ class ArbitrumTestnetAgent:
         """
         Check if capacity-based operation should execute.
         
-        INDEPENDENT TRIGGER: Only checks available capacity and health factor.
-        Optimized for small wallets with $15 threshold.
+        PRIORITY 2 (checked only if growth trigger did NOT fire):
+        - Health factor >= 1.35
+        - Available capacity >= $7
         """
         try:
             if health_factor < self.capacity_health_factor_threshold:
                 return False
 
-            if available_borrows < self.capacity_available_threshold:
-                return False
-
-            # Capacity check - optimized for accessibility ($15 threshold)
-            if available_borrows >= self.capacity_trigger_threshold:
-                print(f"✅ Capacity operation triggered: ${available_borrows:.2f} available (threshold: ${self.capacity_trigger_threshold})")
+            if available_borrows >= self.capacity_min_capacity:
+                print(f"✅ Capacity operation triggered: ${available_borrows:.2f} available (threshold: ${self.capacity_min_capacity})")
                 return True
 
             return False
@@ -1897,130 +1983,173 @@ class ArbitrumTestnetAgent:
 
     def _execute_growth_triggered_operation(self, available_borrows):
         """
-        Execute growth-triggered borrowing operation with ATOMIC execution guarantee.
+        Execute GROWTH PATH: Fixed $10.20 borrow with specific distribution.
         
-        GROWTH TRIGGER SEQUENCE:
-        ========================
-        ACTIVATION CONDITION:
-        - Current collateral >= (Last collateral + growth_threshold)
-        - Health factor >= 1.35
-        
-        DAI BORROW CALCULATION:
-        - Base: 10% of available borrow capacity
-        - Maximum: $8.00 USD
-        - Additional safety: Max 2% of total collateral
-        - Minimum threshold: $1.00 USD
-        
-        ATOMIC EXECUTION FLOW (no skip paths allowed):
-        1. Borrow DAI from Aave
-        2. Swap 50% DAI → WBTC via Uniswap
-        3. Swap 50% DAI → WETH via Uniswap
-        4. Supply WBTC → Aave as collateral
-        5. Supply WETH → Aave as collateral
-        
-        If ANY step in the swap/supply sequence fails, the entire operation is marked as failed.
-        Borrowed DAI must ALWAYS be swapped and supplied - no exceptions.
-        
-        Args:
-            available_borrows: Available borrow capacity in USD
-            
-        Returns:
-            bool: True only if complete sequence succeeds, False otherwise
+        DISTRIBUTION:
+        1. Borrow $10.20 DAI from Aave
+        2. Supply $3.00 DAI back to Aave
+        3. Swap $3.00 DAI -> WBTC, supply to Aave
+        4. Swap $2.00 DAI -> WETH, supply to Aave
+        5. Swap $1.10 DAI -> ETH, hold in wallet for gas
+        6. Transfer $1.10 DAI to WALLET_S_ADDRESS
         """
-        try:
-            print("🚀 Executing growth-triggered operation (DAI-only)")
-
-            # Comprehensive pre-transaction validation
-            if not self._validate_transaction_preconditions(available_borrows):
-                print("❌ Transaction preconditions not met")
-                return False
-
-            # Calculate safe borrow amount with enhanced validation
-            borrow_amount = self._calculate_validated_borrow_amount(available_borrows, "growth")
-
-            if borrow_amount < 1.0:
-                print("⚠️ Borrow amount too small after validation")
-                return False
-
-            print(f"💰 Validated borrow amount: ${borrow_amount:.2f} DAI")
-
-            # Execute DAI borrow with enhanced error handling
-            result = self._execute_validated_dai_borrow(borrow_amount)
-            if result:
-                print(f"✅ Successfully borrowed ${borrow_amount:.2f} DAI")
-                return True
-            else:
-                print(f"❌ Failed to borrow DAI")
-                return False
-
-        except Exception as e:
-            print(f"❌ Growth-triggered operation failed: {e}")
-            import traceback
-            traceback.print_exc()
-            return False
+        return self._execute_fixed_distribution('growth', self.GROWTH_DISTRIBUTION)
 
     def _execute_capacity_operation(self, available_borrows):
         """
-        Execute capacity-based operation with ATOMIC execution guarantee.
+        Execute CAPACITY PATH: Fixed $5.50 borrow with specific distribution.
         
-        CAPACITY TRIGGER SEQUENCE:
-        ==========================
-        ACTIVATION CONDITION:
-        - Available borrow capacity > $50 USD
-        - Health factor >= 1.35
+        DISTRIBUTION:
+        1. Borrow $5.50 DAI from Aave
+        2. Supply $1.10 DAI back to Aave
+        3. Swap $1.10 DAI -> WBTC, supply to Aave
+        4. Swap $1.10 DAI -> WETH, supply to Aave
+        5. Swap $1.10 DAI -> ETH, hold in wallet for gas
+        6. Transfer $1.10 DAI to WALLET_S_ADDRESS
+        """
+        return self._execute_fixed_distribution('capacity', self.CAPACITY_DISTRIBUTION)
+
+    def _execute_fixed_distribution(self, path_name, distribution):
+        """
+        Execute a fixed-value distribution path with ATOMIC execution guarantee.
+        Shared by both Growth and Capacity paths.
         
-        DAI BORROW CALCULATION:
-        - Base: 8% of available borrow capacity
-        - Maximum: $5.00 USD
-        - Additional safety: Max 2% of total collateral
-        - Minimum threshold: $0.50 USD
-        
-        ATOMIC EXECUTION FLOW (no skip paths allowed):
-        1. Borrow DAI from Aave
-        2. Swap 50% DAI → WBTC via Uniswap
-        3. Swap 50% DAI → WETH via Uniswap
-        4. Supply WBTC → Aave as collateral
-        5. Supply WETH → Aave as collateral
-        
-        If ANY step in the swap/supply sequence fails, the entire operation is marked as failed.
-        Borrowed DAI must ALWAYS be swapped and supplied - no exceptions.
-        
-        Args:
-            available_borrows: Available borrow capacity in USD
-            
-        Returns:
-            bool: True only if complete sequence succeeds, False otherwise
+        GLOBAL LOCK is set at entry, cleared at exit (success or failure).
         """
         try:
-            print("⚡ Executing capacity-based operation (DAI-only)")
+            self.is_transacting = True
+            borrow_amount = distribution['total_borrow']
 
-            # Comprehensive pre-transaction validation
-            if not self._validate_transaction_preconditions(available_borrows):
+            print(f"\n{'='*60}")
+            print(f"🚀 EXECUTING {path_name.upper()} PATH: ${borrow_amount:.2f} DAI")
+            print(f"{'='*60}")
+            print(f"   DAI Supply:    ${distribution['dai_supply']:.2f}")
+            print(f"   WBTC Swap+Supply: ${distribution['wbtc_swap_supply']:.2f}")
+            print(f"   WETH Swap+Supply: ${distribution['weth_swap_supply']:.2f}")
+            print(f"   ETH Gas Reserve:  ${distribution['eth_gas_reserve']:.2f}")
+            print(f"   DAI Transfer:     ${distribution['dai_transfer']:.2f}")
+            print(f"{'='*60}\n")
+
+            # PRE-CHECK: Validate preconditions
+            if not self._validate_transaction_preconditions(borrow_amount):
                 print("❌ Transaction preconditions not met")
+                self.is_transacting = False
                 return False
 
-            # Calculate safe borrow amount with enhanced validation
-            borrow_amount = self._calculate_validated_borrow_amount(available_borrows, "capacity")
-
-            if borrow_amount < 0.5:
-                print("⚠️ Capacity borrow amount too small after validation")
+            # STEP 0: Verify IERC20 approvals for Aave Pool and Swap Router
+            if not self._verify_all_approvals(borrow_amount):
+                print("❌ IERC20 approval verification failed")
+                self.is_transacting = False
                 return False
 
-            print(f"💰 Validated capacity borrow: ${borrow_amount:.2f} DAI")
+            # STEP 1: Borrow fixed DAI amount from Aave
+            print(f"\n📋 STEP 1: Borrowing ${borrow_amount:.2f} DAI from Aave V3...")
+            dai_balance_before = self.get_dai_balance()
+            result = self.aave.borrow_dai(borrow_amount)
+            if not result:
+                print("❌ DAI borrow failed")
+                self.is_transacting = False
+                return False
 
-            # Execute DAI borrow with enhanced error handling
-            result = self._execute_validated_dai_borrow(borrow_amount)
-            if result:
-                print(f"✅ Successfully executed capacity operation: ${borrow_amount:.2f} DAI")
-                return True
+            time.sleep(3)
+            dai_balance_after = self.get_dai_balance()
+            borrowed = dai_balance_after - dai_balance_before
+            print(f"✅ Borrowed {borrowed:.4f} DAI (balance: {dai_balance_before:.4f} -> {dai_balance_after:.4f})")
+
+            if borrowed < borrow_amount * 0.5:
+                print(f"❌ Received too little DAI: {borrowed:.4f} vs expected {borrow_amount:.2f}")
+                self.is_transacting = False
+                return False
+
+            sequence_ok = True
+
+            # STEP 2: Supply DAI back to Aave
+            dai_supply_amt = distribution['dai_supply']
+            print(f"\n📋 STEP 2: Supplying ${dai_supply_amt:.2f} DAI to Aave...")
+            if not self._resupply_dai_to_aave(dai_supply_amt):
+                print("❌ DAI resupply failed")
+                sequence_ok = False
+
+            # STEP 3: Swap DAI -> WBTC, supply to Aave
+            if sequence_ok:
+                wbtc_dai = distribution['wbtc_swap_supply']
+                print(f"\n📋 STEP 3: Swapping ${wbtc_dai:.2f} DAI -> WBTC and supplying...")
+                wbtc_received = self._execute_dai_to_wbtc_swap(wbtc_dai)
+                if wbtc_received > 0:
+                    if not self._supply_wbtc_to_aave(wbtc_received):
+                        print("❌ WBTC supply to Aave failed")
+                        sequence_ok = False
+                else:
+                    print("❌ DAI -> WBTC swap failed")
+                    sequence_ok = False
+
+            # STEP 4: Swap DAI -> WETH, supply to Aave
+            if sequence_ok:
+                weth_dai = distribution['weth_swap_supply']
+                print(f"\n📋 STEP 4: Swapping ${weth_dai:.2f} DAI -> WETH and supplying...")
+                weth_received = self._execute_dai_to_weth_swap(weth_dai)
+                if weth_received > 0:
+                    if not self._supply_weth_to_aave(weth_received):
+                        print("❌ WETH supply to Aave failed")
+                        sequence_ok = False
+                else:
+                    print("❌ DAI -> WETH swap failed")
+                    sequence_ok = False
+
+            # STEP 5: Swap DAI -> ETH for gas reserve (hold in wallet)
+            if sequence_ok:
+                eth_dai = distribution['eth_gas_reserve']
+                print(f"\n📋 STEP 5: Swapping ${eth_dai:.2f} DAI -> ETH (gas reserve)...")
+                try:
+                    weth_for_eth = self.uniswap.swap_dai_for_weth(eth_dai)
+                    if weth_for_eth and 'tx_hash' in weth_for_eth:
+                        time.sleep(3)
+                        weth_balance = self.get_weth_balance()
+                        if weth_balance > 0:
+                            unwrap_ok = self._unwrap_weth_to_eth(weth_balance)
+                            if unwrap_ok:
+                                print(f"✅ ETH gas reserve: holding in wallet")
+                            else:
+                                print("❌ WETH unwrap to ETH failed")
+                                sequence_ok = False
+                        else:
+                            print("❌ No WETH received for ETH conversion")
+                            sequence_ok = False
+                    else:
+                        print("❌ DAI -> WETH (for ETH) swap failed")
+                        sequence_ok = False
+                except Exception as e:
+                    print(f"❌ ETH conversion error: {e}")
+                    sequence_ok = False
+
+            # STEP 6: Transfer DAI to WALLET_S_ADDRESS
+            if sequence_ok:
+                transfer_amt = distribution['dai_transfer']
+                print(f"\n📋 STEP 6: Transferring ${transfer_amt:.2f} DAI to WALLET_S_ADDRESS...")
+                if not self._transfer_dai_to_wallet_s(transfer_amt):
+                    print("❌ DAI transfer to WALLET_S failed")
+                    sequence_ok = False
+
+            # RELEASE GLOBAL LOCK
+            self.is_transacting = False
+            self.last_transaction_complete_time = time.time()
+
+            print(f"\n{'='*60}")
+            if sequence_ok:
+                print(f"✅ {path_name.upper()} PATH COMPLETE - All steps succeeded")
+                self.record_successful_operation(operation_type=path_name)
             else:
-                print(f"❌ Failed capacity operation")
-                return False
+                print(f"❌ {path_name.upper()} PATH FAILED - One or more steps failed")
+            print(f"{'='*60}\n")
+
+            return sequence_ok
 
         except Exception as e:
-            print(f"❌ Capacity operation failed: {e}")
+            print(f"❌ {path_name.upper()} path failed with exception: {e}")
             import traceback
             traceback.print_exc()
+            self.is_transacting = False
+            self.last_transaction_complete_time = time.time()
             return False
 
     def _execute_market_signal_operation(self, available_borrows_usd=None):
@@ -2082,14 +2211,14 @@ class ArbitrumTestnetAgent:
             return False
 
 
-    def _validate_transaction_preconditions(self, available_borrows):
+    def _validate_transaction_preconditions(self, required_borrow_amount):
         """Validate all preconditions before attempting any transaction"""
         try:
             print("🔍 Validating transaction preconditions...")
 
             # 1. Check ETH balance for gas
             eth_balance = self.get_eth_balance()
-            if eth_balance < 0.001:  # Minimum 0.001 ETH for gas
+            if eth_balance < 0.001:
                 print(f"❌ Insufficient ETH for gas: {eth_balance:.6f} ETH")
                 return False
 
@@ -2098,30 +2227,35 @@ class ArbitrumTestnetAgent:
                 print("❌ Aave integration not initialized")
                 return False
 
-            # 3. Get fresh account data
+            # 3. Get fresh account data from Aave contract (not cache)
             account_data = self.aave.get_user_account_data()
             if not account_data:
                 print("❌ Cannot retrieve account data from Aave")
                 return False
 
-            # 4. Validate health factor
+            # 4. Validate health factor >= MIN_HEALTH_FACTOR (1.35)
             health_factor = account_data.get('healthFactor', 0)
             if health_factor < 1.35:
-                print(f"❌ Health factor too low: {health_factor:.3f}")
+                print(f"❌ Health factor too low: {health_factor:.3f} (need >= 1.35)")
                 return False
 
-            # 5. Validate available borrows
+            # 5. Validate available borrows >= required borrow amount
             actual_available = account_data.get('availableBorrowsUSD', 0)
-            if actual_available < 1.0:
-                print(f"❌ Insufficient borrowing capacity: ${actual_available:.2f}")
+            if actual_available < required_borrow_amount:
+                print(f"❌ Insufficient borrowing capacity: ${actual_available:.2f} (need ${required_borrow_amount:.2f})")
                 return False
 
-            # 6. Check if borrows match expected
-            if abs(actual_available - available_borrows) > 5.0:  # 5% tolerance
-                print(f"⚠️ Borrow capacity mismatch: expected ${available_borrows:.2f}, actual ${actual_available:.2f}")
-                available_borrows = actual_available  # Use actual value
+            # 6. Verify Uniswap integration
+            if not hasattr(self, 'uniswap') or not self.uniswap:
+                print("❌ Uniswap integration not initialized")
+                return False
 
-            print(f"✅ All preconditions met - ETH: {eth_balance:.6f}, HF: {health_factor:.3f}, Available: ${actual_available:.2f}")
+            # 7. Verify WALLET_S_ADDRESS is configured (required for DAI transfer step)
+            if not self.wallet_s_address:
+                print("❌ WALLET_S_ADDRESS not configured - required for execution")
+                return False
+
+            print(f"✅ All preconditions met - ETH: {eth_balance:.6f}, HF: {health_factor:.3f}, Available: ${actual_available:.2f}, Need: ${required_borrow_amount:.2f}")
             return True
 
         except Exception as e:
@@ -2275,207 +2409,6 @@ class ArbitrumTestnetAgent:
             traceback.print_exc()
             return False
 
-    def _execute_complete_defi_sequence(self, dai_amount):
-        """
-        Execute CONFIGURABLE allocation sequence with ATOMIC execution guarantee.
-        
-        ALLOCATION STRATEGY (Configurable via self.ALLOCATION_CONFIG):
-        ================================================================
-        - 30% WETH: Swap DAI → WETH, supply as collateral
-        - 50% WBTC: Swap DAI → WBTC, supply as collateral  
-        - 10% DAI: Resupply DAI directly (no swap needed)
-        - 5% GHO: Swap DAI → GHO, hold in wallet
-        - 5% ETH: Swap WETH → ETH (unwrap), hold in wallet
-        
-        ATOMIC EXECUTION GUARANTEE:
-        ===========================
-        - ALL operations must succeed or entire sequence fails
-        - If any swap fails → sequence fails → parent operation fails
-        - If any supply fails → sequence fails → parent operation fails
-        - NO SKIP PATHS: borrowed DAI MUST be fully allocated
-        
-        ERROR HANDLING:
-        ===============
-        - Track each operation success/failure
-        - Return False on any failure to enforce atomicity
-        - Comprehensive logging for debugging
-        
-        Args:
-            dai_amount: Total amount of borrowed DAI to allocate
-            
-        Returns:
-            bool: True only if ALL operations succeed, False otherwise
-        """
-        try:
-            print(f"\n🔄 EXECUTING CONFIGURABLE ALLOCATION SEQUENCE")
-            print(f"═══════════════════════════════════════════════")
-            print(f"💰 Total DAI to allocate: {dai_amount:.6f}")
-            print(f"📊 Allocation Strategy:")
-            for asset, config in self.ALLOCATION_CONFIG.items():
-                amount = dai_amount * config['percentage']
-                print(f"   {asset}: {config['percentage']*100:.0f}% (${amount:.2f}) → {config['action']}")
-            print(f"═══════════════════════════════════════════════\n")
-            
-            sequence_successful = True
-            step_number = 1
-            
-            # Calculate allocation amounts based on configuration
-            allocation_amounts = {
-                asset: dai_amount * config['percentage']
-                for asset, config in self.ALLOCATION_CONFIG.items()
-            }
-            
-            # Track received amounts for supply operations
-            received_assets = {}
-            
-            # STEP 1: Swap 30% DAI → WETH
-            if 'WETH' in self.ALLOCATION_CONFIG:
-                weth_amount = allocation_amounts['WETH']
-                print(f"📈 Step {step_number}: Swapping {weth_amount:.6f} DAI → WETH...")
-                step_number += 1
-                try:
-                    weth_swap_result = self.uniswap.swap_dai_for_weth(weth_amount)
-                    if weth_swap_result and 'tx_hash' in weth_swap_result:
-                        print(f"✅ WETH swap successful: {weth_swap_result['tx_hash']}")
-                        import time
-                        time.sleep(3)
-                        received_assets['WETH'] = self.get_weth_balance()
-                    else:
-                        print("❌ WETH swap failed")
-                        sequence_successful = False
-                except Exception as e:
-                    print(f"❌ WETH swap error: {e}")
-                    sequence_successful = False
-                    received_assets['WETH'] = 0
-            
-            # STEP 2: Swap 50% DAI → WBTC
-            if 'WBTC' in self.ALLOCATION_CONFIG:
-                wbtc_amount = allocation_amounts['WBTC']
-                print(f"📈 Step {step_number}: Swapping {wbtc_amount:.6f} DAI → WBTC...")
-                step_number += 1
-                try:
-                    wbtc_swap_result = self.uniswap.swap_dai_for_wbtc(wbtc_amount)
-                    if wbtc_swap_result and 'tx_hash' in wbtc_swap_result:
-                        print(f"✅ WBTC swap successful: {wbtc_swap_result['tx_hash']}")
-                        import time
-                        time.sleep(3)
-                        received_assets['WBTC'] = self.get_wbtc_balance()
-                    else:
-                        print("❌ WBTC swap failed")
-                        sequence_successful = False
-                except Exception as e:
-                    print(f"❌ WBTC swap error: {e}")
-                    sequence_successful = False
-                    received_assets['WBTC'] = 0
-            
-            # STEP 3: Swap 5% DAI → GHO (hold in wallet)
-            if 'GHO' in self.ALLOCATION_CONFIG:
-                gho_amount = allocation_amounts['GHO']
-                print(f"📈 Step {step_number}: Swapping {gho_amount:.6f} DAI → GHO (hold in wallet)...")
-                step_number += 1
-                try:
-                    gho_swap_result = self._swap_dai_for_gho(gho_amount)
-                    if gho_swap_result:
-                        print(f"✅ GHO swap successful - holding in wallet")
-                        received_assets['GHO'] = self._get_gho_balance()
-                    else:
-                        print("❌ GHO swap failed")
-                        sequence_successful = False
-                except Exception as e:
-                    print(f"❌ GHO swap error: {e}")
-                    sequence_successful = False
-                    received_assets['GHO'] = 0
-            
-            # STEP 4: Unwrap 5% WETH → ETH (hold in wallet)
-            if 'ETH' in self.ALLOCATION_CONFIG:
-                eth_amount = allocation_amounts['ETH']
-                print(f"📈 Step {step_number}: Converting {eth_amount:.6f} DAI worth to ETH (hold in wallet)...")
-                step_number += 1
-                try:
-                    # First swap DAI to WETH, then unwrap WETH to ETH
-                    weth_for_eth_result = self.uniswap.swap_dai_for_weth(eth_amount)
-                    if weth_for_eth_result and 'tx_hash' in weth_for_eth_result:
-                        import time
-                        time.sleep(3)
-                        weth_to_unwrap = self.get_weth_balance()
-                        # Unwrap WETH to ETH
-                        unwrap_result = self._unwrap_weth_to_eth(weth_to_unwrap)
-                        if unwrap_result:
-                            print(f"✅ ETH conversion successful - holding in wallet")
-                            received_assets['ETH'] = self.get_eth_balance()
-                        else:
-                            print("❌ WETH unwrap failed")
-                            sequence_successful = False
-                    else:
-                        print("❌ DAI→WETH (for ETH) swap failed")
-                        sequence_successful = False
-                except Exception as e:
-                    print(f"❌ ETH conversion error: {e}")
-                    sequence_successful = False
-                    received_assets['ETH'] = 0
-            
-            # STEP 5: Supply 30% WETH to Aave
-            if 'WETH' in self.ALLOCATION_CONFIG and self.ALLOCATION_CONFIG['WETH']['action'] == 'supply':
-                weth_to_supply = received_assets.get('WETH', 0)
-                if weth_to_supply > 0:
-                    print(f"🏦 Step {step_number}: Supplying {weth_to_supply:.8f} WETH to Aave...")
-                    step_number += 1
-                    if self._supply_weth_to_aave(weth_to_supply):
-                        print("✅ WETH supplied to Aave")
-                    else:
-                        print("❌ WETH supply failed")
-                        sequence_successful = False
-            
-            # STEP 6: Supply 50% WBTC to Aave
-            if 'WBTC' in self.ALLOCATION_CONFIG and self.ALLOCATION_CONFIG['WBTC']['action'] == 'supply':
-                wbtc_to_supply = received_assets.get('WBTC', 0)
-                if wbtc_to_supply > 0:
-                    print(f"🏦 Step {step_number}: Supplying {wbtc_to_supply:.8f} WBTC to Aave...")
-                    step_number += 1
-                    if self._supply_wbtc_to_aave(wbtc_to_supply):
-                        print("✅ WBTC supplied to Aave")
-                    else:
-                        print("❌ WBTC supply failed")
-                        sequence_successful = False
-            
-            # STEP 7: Resupply DAI to Aave (10% mainnet, 15% testnet - no swap needed)
-            if 'DAI' in self.ALLOCATION_CONFIG and self.ALLOCATION_CONFIG['DAI']['action'] == 'supply':
-                dai_to_supply = allocation_amounts['DAI']
-                dai_percentage = int(self.ALLOCATION_CONFIG['DAI']['percentage'] * 100)
-                print(f"🏦 Step {step_number}: Resupplying {dai_to_supply:.6f} DAI ({dai_percentage}%) to Aave...")
-                step_number += 1
-                try:
-                    if self._resupply_dai_to_aave(dai_to_supply):
-                        print("✅ DAI resupplied to Aave")
-                    else:
-                        print("❌ DAI resupply failed")
-                        sequence_successful = False
-                except Exception as e:
-                    print(f"❌ DAI resupply error: {e}")
-                    sequence_successful = False
-            
-            # Final status
-            supplied_assets = [asset for asset, config in self.ALLOCATION_CONFIG.items() if config['action'] == 'supply']
-            held_assets = [asset for asset, config in self.ALLOCATION_CONFIG.items() if config['action'] == 'hold']
-            
-            print(f"\n{'═'*50}")
-            if sequence_successful:
-                print("✅ ATOMIC ALLOCATION SEQUENCE COMPLETE")
-                print(f"   Supplied to Aave: {', '.join(supplied_assets)}")
-                if held_assets:
-                    print(f"   Held in wallet: {', '.join(held_assets)}")
-            else:
-                print("❌ ATOMIC GUARANTEE VIOLATED - SEQUENCE FAILED")
-                print("   Operation will be marked as failed")
-            print(f"{'═'*50}\n")
-            
-            return sequence_successful
-            
-        except Exception as e:
-            print(f"❌ Allocation sequence failed: {e}")
-            import traceback
-            traceback.print_exc()
-            return False
     
     def _swap_dai_for_gho(self, dai_amount):
         """
@@ -2771,9 +2704,14 @@ class ArbitrumTestnetAgent:
             return 0.0
 
     def run_real_defi_task(self, run_id, iteration, agent_config):
-        """Run real DeFi task with growth trigger and capacity trigger checks"""
+        """Run real DeFi task with Global Execution Lock, growth trigger first, then capacity trigger"""
         try:
             print(f"\n🚀 Monitoring cycle {run_id}-{iteration}")
+
+            # CHECK GLOBAL EXECUTION LOCK FIRST
+            if self._is_execution_locked():
+                print("🔒 Skipping cycle - execution locked")
+                return 0.5
 
             if not hasattr(self, 'aave') or not self.aave:
                 print("❌ Aave integration not available")
@@ -2788,7 +2726,8 @@ class ArbitrumTestnetAgent:
             available_borrows = account_data.get('availableBorrowsUSD', 0)
             total_collateral = account_data.get('totalCollateralUSD', 0)
 
-            print(f"📊 Position: Collateral ${total_collateral:.2f} | Baseline ${self.last_collateral_value_usd:.2f} | HF {health_factor:.3f} | Borrows ${available_borrows:.2f}")
+            print(f"📊 Position: Collateral ${total_collateral:.2f} | Baseline ${self.last_collateral_value_usd:.2f} | HF {health_factor:.3f} | Available ${available_borrows:.2f}")
+            print(f"🔒 Lock: {'TRANSACTING' if self.is_transacting else 'UNLOCKED'} | Growth needs ${self.growth_min_capacity:.0f} cap | Capacity needs ${self.capacity_min_capacity:.0f} cap")
 
             performance = 0.5
 
@@ -2796,17 +2735,19 @@ class ArbitrumTestnetAgent:
                 print(f"🚨 EMERGENCY: Health factor {health_factor:.3f} below 1.35!")
                 performance = 0.1
             elif self._should_execute_growth_triggered_operation(total_collateral, health_factor, available_borrows):
-                print(f"🔥 TRIGGER ACTIVATED: Collateral grew from ${self.last_collateral_value_usd:.2f} → ${total_collateral:.2f}")
+                print(f"🔥 GROWTH TRIGGER ACTIVATED: Collateral grew from ${self.last_collateral_value_usd:.2f} -> ${total_collateral:.2f}")
+                print(f"   Executing Growth Path: Borrow ${self.GROWTH_DISTRIBUTION['total_borrow']:.2f} DAI")
                 if self._execute_growth_triggered_operation(available_borrows):
                     print(f"✅ GROWTH OPERATION SUCCESS")
                     self.update_baseline_after_success(total_collateral)
-                    print(f"✅ Baseline updated to ${total_collateral:.2f}")
+                    print(f"✅ Baseline updated: ${self.last_collateral_value_usd:.2f} -> ${total_collateral:.2f}")
                     performance = 0.9
                 else:
                     print(f"❌ Growth operation failed")
                     performance = 0.4
             elif self._should_execute_capacity_operation(available_borrows, health_factor):
-                print(f"⚡ CAPACITY TRIGGER: ${available_borrows:.2f} available")
+                print(f"⚡ CAPACITY TRIGGER ACTIVATED: ${available_borrows:.2f} available")
+                print(f"   Executing Capacity Path: Borrow ${self.CAPACITY_DISTRIBUTION['total_borrow']:.2f} DAI")
                 if self._execute_capacity_operation(available_borrows):
                     print(f"✅ CAPACITY OPERATION SUCCESS")
                     performance = 0.8
@@ -2816,7 +2757,9 @@ class ArbitrumTestnetAgent:
             else:
                 growth_from_baseline = total_collateral - self.last_collateral_value_usd
                 growth_pct = (growth_from_baseline / self.last_collateral_value_usd * 100) if self.last_collateral_value_usd > 0 else 0
-                print(f"💤 IDLE: Growth ${growth_from_baseline:.2f} ({growth_pct:.1f}%) | Need $50 or 10%")
+                print(f"💤 IDLE: Growth ${growth_from_baseline:.2f} ({growth_pct:.1f}%) from $47 baseline")
+                print(f"   Growth Path: needs ${self.growth_min_capacity:.0f} capacity + 10% growth (have ${available_borrows:.2f} + {growth_pct:.1f}%)")
+                print(f"   Capacity Path: needs ${self.capacity_min_capacity:.0f} capacity (have ${available_borrows:.2f})")
                 performance = 0.6
 
             return performance
@@ -2989,30 +2932,16 @@ class ArbitrumTestnetAgent:
             print(f"❌ Failed to get ARB balance: {e}")
             return 0.0
 
-    def get_health_factor(self):
-        """Get health factor from Aave"""
-        try:
-            account_data = self.get_user_account_data()
-            if account_data:
-                return account_data.get('healthFactor', 0)
-            else:
-                return 0
-        except Exception as e:
-            print(f"❌ Failed to get health factor: {e}")
-            return 0
-
     def run(self):
-        """Main loop for the agent"""
+        """Main loop for the agent with Global Execution Lock"""
         print("\n" + "="*60)
         print("🚀 STARTING AUTONOMOUS TRADING AGENT 🚀")
         print("="*60 + "\n")
 
-        # Initialize integrations early
         if not self.initialize_integrations():
             print("❌ Failed to initialize critical integrations. Exiting.")
             sys.exit(1)
 
-        # Initialize baseline if not already done
         if not self.baseline_initialized:
             self._auto_initialize_baseline()
 
@@ -3022,10 +2951,15 @@ class ArbitrumTestnetAgent:
             print(f"\n{'Iter.':<10} | {'Health Factor':<15} | {'Action':<25} | {'Status':<15}")
             print("-" * 70)
 
-            performance_score = 0.5  # Base performance score
+            performance_score = 0.5
 
             try:
-                # Get current account data
+                # CHECK GLOBAL EXECUTION LOCK
+                if self._is_execution_locked():
+                    print(f"{iteration:<10} | {'N/A':<15} | {'LOCKED':<25} | {'COOLDOWN':<15}")
+                    time.sleep(30)
+                    continue
+
                 account_data = self.get_user_account_data()
                 if not account_data:
                     print("❌ Failed to get account data. Skipping iteration.")
@@ -3036,27 +2970,25 @@ class ArbitrumTestnetAgent:
                 available_borrows = account_data.get('availableBorrowsUSD', 0)
                 total_collateral = account_data.get('totalCollateralUSD', 0)
 
-                print(f"📊 Position: Collateral ${total_collateral:.2f} | Baseline ${self.last_collateral_value_usd:.2f} | HF {health_factor:.3f} | Borrows ${available_borrows:.2f}")
+                print(f"📊 Position: Collateral ${total_collateral:.2f} | Baseline ${self.last_collateral_value_usd:.2f} | HF {health_factor:.3f} | Available ${available_borrows:.2f}")
 
-                # System status checks
                 if health_factor < 1.35:
-                    action = "EMERGENCY REPAYMENT NEEDED"
+                    action = "EMERGENCY"
                     status = "CRITICAL"
                     performance_score *= 0.1
                 elif self._should_execute_growth_triggered_operation(total_collateral, health_factor, available_borrows):
-                    action = "GROWTH TRIGGERED"
+                    action = "GROWTH PATH"
                     status = "EXECUTING"
-                    print(f"🔥 TRIGGER ACTIVATED: Collateral grew from ${self.last_collateral_value_usd:.2f} → ${total_collateral:.2f}")
+                    print(f"🔥 GROWTH TRIGGER: ${self.last_collateral_value_usd:.2f} -> ${total_collateral:.2f}")
                     if self._execute_growth_triggered_operation(available_borrows):
                         performance_score += 0.3
                         status = "SUCCESS"
                         self.update_baseline_after_success(total_collateral)
-                        print(f"✅ Baseline updated to ${total_collateral:.2f} after successful growth operation")
                     else:
                         status = "FAILED"
                         performance_score *= 0.5
                 elif self._should_execute_capacity_operation(available_borrows, health_factor):
-                    action = "CAPACITY OPTIMIZATION"
+                    action = "CAPACITY PATH"
                     status = "EXECUTING"
                     if self._execute_capacity_operation(available_borrows):
                         performance_score += 0.2
@@ -3069,41 +3001,22 @@ class ArbitrumTestnetAgent:
                     status = "HEALTHY"
                     performance_score += 0.05
 
-                # Add debt swap operations
                 performance_score = self._perform_debt_swap_operations(performance_score)
 
-                # Record operation attempt
-                self.track_operation_attempt()
-
-                # Update operation stats and record success
-                if status in ["SUCCESS", "HEALTHY", "EXECUTING"]: # Consider executing as potential success for cooldown
-                    self.record_successful_operation(operation_type=action.split()[0].lower() if action != "IDLE / MONITORING" else "monitoring")
-                else:
-                    pass # Failure is handled implicitly by lack of success recording
+                if hasattr(self, 'track_operation_attempt'):
+                    self.track_operation_attempt()
 
                 print(f"{iteration:<10} | {health_factor:<15.3f} | {action:<25} | {status:<15}")
 
-                # Cooldown logic
-                if not self.is_operation_on_cooldown(allow_sequence_continuation=True):
-                    # Add a small sleep to prevent hammering the RPCs
-                    time.sleep(15)
-                else:
-                    # If on cooldown, sleep for remaining time
-                    remaining = self.operation_cooldown_seconds - (time.time() - self.last_successful_operation_time)
-                    time.sleep(max(0, remaining + 5)) # Sleep a bit longer to be safe
-
+                # 130s cooldown sleep managed by global lock
+                time.sleep(30)
 
             except Exception as e:
                 print(f"\n❌ UNEXPECTED ERROR IN MAIN LOOP: {e}")
                 print("🔄 Attempting to recover and continue...")
                 import traceback
                 traceback.print_exc()
-                time.sleep(10) # Wait before next attempt
-
-            # Safety break for testing
-            # if iteration > 5:
-            #     print("🚀 Reached iteration limit. Stopping agent.")
-            #     break
+                time.sleep(10)
 
     def _perform_debt_swap_operations(self, performance_score):
         """ Execute debt swap operations based on market signals """
@@ -3482,195 +3395,3 @@ class ArbitrumTestnetAgent:
         except Exception as e:
             return False, f"Debt swap condition check failed: {e}"
 
-    def _perform_debt_swap_operations(self, performance_score):
-        """ Execute debt swap operations based on market signals """
-        # 🎯 OPTIMIZED DEBT SWAP SYSTEM WITH MACD AND ENHANCED TRIGGERS
-        if self.debt_swap_active and hasattr(self, 'market_signal_strategy') and self.market_signal_strategy:
-            try:
-                # Get market analysis for debt swap decisions
-                signals = self.market_signal_strategy.analyze_market_signals()
-
-                if signals and signals.get('status') == 'success':
-                    action = signals.get('action', 'hold')
-                    confidence = signals.get('confidence_level', 0)
-                    signals_detected = signals.get('signals_detected', [])
-
-                    # Enhanced logging for transparency
-                    from swap_console_reporter import SwapConsoleReporter
-                    reporter = SwapConsoleReporter()
-
-                    # CORRECTED HIGH-FREQUENCY EXECUTION LOGIC
-                    if action == 'dai_to_arb':
-                        # Check for MACD bearish crossover (buy low trigger)
-                        macd_bearish_trigger = any('MACD Bearish Crossover' in signal for signal in signals_detected)
-
-                        # High-frequency threshold (0.4 for faster execution)
-                        if confidence >= 0.4 or macd_bearish_trigger:
-                            print(f"📉 EXECUTING DAI→ARB SWAP (buy low strategy)")
-                            print(f"   Confidence: {confidence:.2f} (threshold: 0.4)")
-                            print(f"   MACD Bearish: {'✅ DETECTED' if macd_bearish_trigger else '❌'}")
-                            print(f"   Strategy: BUY LOW when ARB is oversold/bearish")
-                            print(f"   Signals: {', '.join(signals_detected)}")
-
-                            # Get decision reasons
-                            reasons = self.market_signal_strategy.get_swap_decision_reasons('dai_to_arb')
-
-                            # Execute high-frequency swap
-                            swap_amount = self._calculate_optimal_swap_amount('dai_to_arb')
-                            result = self._execute_debt_swap_dai_to_arb(confidence)
-
-                            # Report swap execution
-                            reporter.report_swap_execution('dai_to_arb', swap_amount, reasons, confidence)
-
-                            if result:
-                                print("✅ DAI→ARB (buy low) swap completed successfully")
-                                performance_score += 0.3  # Moderate reward for high-frequency
-                            else:
-                                print("❌ DAI→ARB (buy low) swap failed")
-                        else:
-                            print(f"⏸️ DAI→ARB confidence {confidence:.2f} below high-frequency threshold (0.4)")
-
-                    elif action == 'arb_to_dai':
-                        # Check for MACD bullish crossover (sell high trigger)
-                        macd_bullish_trigger = any('MACD Bullish Crossover' in signal for signal in signals_detected)
-
-                        # High-frequency threshold (0.4 for faster execution)
-                        if confidence >= 0.4 or macd_bullish_trigger:
-                            print(f"🚀 EXECUTING ARB→DAI SWAP (sell high strategy)")
-                            print(f"   Confidence: {confidence:.2f} (threshold: 0.4)")
-                            print(f"   MACD Bullish: {'✅ DETECTED' if macd_bullish_trigger else '❌'}")
-                            print(f"   Strategy: SELL HIGH when ARB is overbought/bullish")
-                            print(f"   Signals: {', '.join(signals_detected)}")
-
-                            # Get decision reasons
-                            reasons = self.market_signal_strategy.get_swap_decision_reasons('arb_to_dai')
-
-                            # Execute high-frequency swap
-                            swap_amount = self._calculate_optimal_swap_amount('arb_to_dai')
-                            result = self._execute_debt_swap_arb_to_dai(confidence)
-
-                            # Report swap execution
-                            reporter.report_swap_execution('arb_to_dai', swap_amount, reasons, confidence)
-
-                            if result:
-                                print("✅ ARB→DAI (sell high) swap completed successfully")
-                                performance_score += 0.3  # Moderate reward for high-frequency
-                            else:
-                                print("❌ ARB→DAI (sell high) swap failed")
-                        else:
-                            print(f"⏸️ ARB→DAI confidence {confidence:.2f} below high-frequency threshold (0.4)")
-                    else:
-                        # HOLD decision with reasons
-                        reasons = self.market_signal_strategy.get_swap_decision_reasons('hold')
-                        print(f"💰 HOLDING POSITION - Market Analysis:")
-                        print(f"   Action: {action.upper()}")
-                        print(f"   Confidence: {confidence:.2f}")
-                        print(f"   Reasons:")
-                        for i, reason in enumerate(reasons, 1):
-                            print(f"      {i}. {reason}")
-
-                else:
-                    print("⚠️ Market signal analysis failed - using conservative strategy")
-            except Exception as e:
-                print(f"❌ Error during debt swap operations: {e}")
-                import traceback
-                traceback.print_exc()
-
-        return performance_score # Return the potentially modified performance_score
-
-    def _calculate_optimal_swap_amount(self, swap_type: str) -> float:
-        """Calculate optimal swap amount for high-frequency trading (small, frequent swaps)"""
-        try:
-            if not self.aave:
-                return 0.0
-
-            account_data = self.aave.get_user_account_data()
-            if not account_data:
-                return 0.0
-
-            available_borrows = account_data.get('availableBorrowsUSD', 0)
-            health_factor = account_data.get('healthFactor', 0)
-
-            if swap_type == 'dai_to_arb':
-                # High-frequency: small, safe DAI swaps (buy low strategy)
-                if health_factor > 2.5:
-                    return min(available_borrows * 0.05, 10.0)  # 5% or $10 max
-                elif health_factor > 2.0:
-                    return min(available_borrows * 0.03, 5.0)   # 3% or $5 max
-                elif health_factor > 1.8:
-                    return min(available_borrows * 0.02, 2.0)   # 2% or $2 max
-                else:
-                    return 0.0
-            elif swap_type == 'arb_to_dai':
-                # High-frequency: small ARB sales (sell high strategy)
-                arb_balance = self.get_arb_balance()
-
-                if arb_balance > 10.0:
-                    return min(arb_balance * 0.3, 10.0)  # 30% or $10 max
-                elif arb_balance > 5.0:
-                    return min(arb_balance * 0.4, 5.0)   # 40% or $5 max
-                elif arb_balance > 1.0:
-                    return min(arb_balance * 0.5, 2.0)   # 50% or $2 max
-                else:
-                    return arb_balance  # Swap all if very small amount
-
-            return 0.0
-
-        except Exception as e:
-            logger.error(f"Error calculating high-frequency swap amount: {e}")
-            return 0.0
-
-    def check_debt_swap_conditions(self):
-        """Check if debt swap conditions are met"""
-        try:
-            # Check if market signal strategy is available
-            if not hasattr(self, 'market_signal_strategy') or not self.market_signal_strategy:
-                return False, "Market signal strategy not available"
-
-            # Check if strategy is properly initialized
-            if not hasattr(self.market_signal_strategy, 'initialization_successful'):
-                return False, "Market signal strategy not initialized"
-
-            if not self.market_signal_strategy.initialization_successful:
-                return False, "Market signal strategy initialization failed"
-
-            # Check technical indicators readiness
-            status = self.market_signal_strategy.get_strategy_status()
-            tech_ready = status.get('technical_indicators_ready', False)
-
-            if not tech_ready:
-                arb_points = status.get('enhanced_arb_points', 0)
-                btc_points = status.get('enhanced_btc_points', 0)
-                min_points = status.get('min_points_for_basic', 5)
-                return False, f"Insufficient data points (ARB: {arb_points}, BTC: {btc_points}, need: {min_points})"
-
-            # Check health factor if Aave is available
-            if hasattr(self, 'aave') and self.aave:
-                try:
-                    account_data = self.aave.get_user_account_data()
-                    if account_data:
-                        health_factor = account_data.get('healthFactor', 0)
-                        if health_factor < 1.35:
-                            return False, f"Health factor too low: {health_factor:.3f} (need >1.35)"
-                    else:
-                        return False, "Cannot retrieve account data"
-                except Exception as hf_error:
-                    return False, f"Health factor check failed: {hf_error}"
-
-            # Check debt swap activation
-            if not getattr(self, 'debt_swap_active', False):
-                return False, "Debt swap system not activated"
-
-            return True, "All debt swap conditions met - system ready"
-
-        except Exception as e:
-            return False, f"Debt swap condition check failed: {e}"
-
-    def get_dai_balance(self):
-        """Get current DAI balance"""
-        try:
-            if hasattr(self, 'aave') and self.aave:
-                return self.aave.get_dai_balance()
-            return 0.0
-        except:
-            return 0.0
