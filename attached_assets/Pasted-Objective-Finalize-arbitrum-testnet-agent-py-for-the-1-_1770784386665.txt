@@ -1,0 +1,45 @@
+Objective: Finalize arbitrum_testnet_agent.py for the 1-Hour Autonomous Prototype Run by implementing per-step permission audits, universal dust guards, and hyper-verbose logging.
+
+1. The "Per-Step" Permission Upgrade:
+
+Current State: The bot checks approvals once at the beginning. This is insufficient for a 1-hour run where nonces or sessions might shift.
+
+Requirement: In _execute_fixed_distribution, insert an explicit allowance() check immediately before every single supply(), swap(), and transfer() action.
+
+Logic: if allowance < $15.00: execute approve(). This ensures that even if the bot has been running for 59 minutes, the final step will have fresh permissions.
+
+2. Universal "Dust Guard" & Fallback:
+
+Current State: Only the "Recovery" mode handles dust. Normal execution might revert on small swaps.
+
+Requirement: Wrap every Swap action (WBTC, WETH) in the main execution loop with a Try/Except block.
+
+Logic: If a swap fails (Revert) OR if the calculated swap amount is < $1.00:
+
+Log: "⚠️ Swap failed/dust detected. Falling back to DAI Supply."
+
+Action: Immediately call supply_dai() with those funds instead. This guarantees the transaction sequence always finishes and improves the Health Factor, rather than crashing.
+
+3. The "Fall-Through" Priority Logic (Verification):
+
+Requirement: Explicitly verify the trigger logic in run_autonomous_mainnet:
+
+Step A: Check Growth Trigger (Collateral > 10%).
+
+Step B: If Growth is True but Available Capacity < $12.00, do NOT abort.
+
+Step C: Immediately fall through to check the Capacity Trigger (Available Capacity > $7.00).
+
+Goal: Ensure the bot utilizes the current ~$9.72 capacity for the $5.50 path instead of idling.
+
+4. Hyper-Logging & Audit:
+
+Requirement: Every successful on-chain action must log a clickable link: ✅ Success: https://arbiscan.io/tx/{tx_hash}.
+
+Startup: On launch, print a "Pre-Flight Audit" block showing the current settings (HF Threshold: 1.35, Slippage: 1%, State File: Cleared).
+
+5. Execution Plan:
+
+Action: Delete execution_state.json on startup to force a "Clean Run."
+
+Goal: The bot must run autonomously for 1 hour. If it successfully executes a $5.50 or $10.20 path, it must wipe the state file, update the baseline, and return to monitoring.
