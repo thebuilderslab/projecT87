@@ -1553,7 +1553,7 @@ class ArbitrumTestnetAgent:
             # 4. Account Health (25 points)
             try:
                 eth_balance = self.get_eth_balance()
-                if eth_balance >= 0.001:
+                if eth_balance >= 0.0002:
                     readiness_score += 15
                     print(f"✅ ETH balance sufficient: {eth_balance:.6f} ETH (+15)")
                 else:
@@ -2946,7 +2946,7 @@ class ArbitrumTestnetAgent:
         try:
             print("🚑 Nurse Mode: Scanning wallet for idle assets...")
             MIN_USD_THRESHOLD = 1.10
-            ETH_GAS_RESERVE = 0.001
+            ETH_GAS_RESERVE = 0.0002
             ETH_PRICE_FALLBACK = 2000.0
             BTC_PRICE_FALLBACK = 67000.0
 
