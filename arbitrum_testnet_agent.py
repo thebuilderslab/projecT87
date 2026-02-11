@@ -2941,6 +2941,62 @@ class ArbitrumTestnetAgent:
             print(f"❌ WETH unwrap error: {e}")
             return False
     
+    def _perform_safety_sweep(self):
+        """Nurse Mode: Detect and supply idle WETH, WBTC, DAI to Aave when balance > $1.10 USD"""
+        try:
+            print("🚑 Nurse Mode: Scanning wallet for idle assets...")
+            MIN_USD_THRESHOLD = 1.10
+            ETH_GAS_RESERVE = 0.001
+            ETH_PRICE_FALLBACK = 2000.0
+            BTC_PRICE_FALLBACK = 67000.0
+
+            eth_balance = self.get_eth_balance()
+            weth_balance = self.get_weth_balance()
+            wbtc_balance = self.get_wbtc_balance()
+            dai_balance = self.get_dai_balance()
+
+            print(f"   WETH: {weth_balance:.8f} | WBTC: {wbtc_balance:.8f} | DAI: {dai_balance:.6f} | ETH (gas): {eth_balance:.6f}")
+
+            supplied_any = False
+
+            weth_usd = weth_balance * ETH_PRICE_FALLBACK
+            if weth_usd > MIN_USD_THRESHOLD:
+                if eth_balance > ETH_GAS_RESERVE:
+                    print(f"🚑 Nurse Mode: Found ${weth_usd:.2f} of WETH. Supplying to Aave to boost Health Factor.")
+                    if self._supply_weth_to_aave(weth_balance):
+                        supplied_any = True
+                    else:
+                        print("   ⚠️ WETH supply failed")
+                else:
+                    print(f"   ⚠️ WETH detected (${weth_usd:.2f}) but ETH gas too low ({eth_balance:.6f} < {ETH_GAS_RESERVE}). Skipping.")
+
+            wbtc_usd = wbtc_balance * BTC_PRICE_FALLBACK
+            if wbtc_usd > MIN_USD_THRESHOLD:
+                print(f"🚑 Nurse Mode: Found ${wbtc_usd:.2f} of WBTC. Supplying to Aave to boost Health Factor.")
+                if self._supply_wbtc_to_aave(wbtc_balance):
+                    supplied_any = True
+                else:
+                    print("   ⚠️ WBTC supply failed")
+
+            if dai_balance > MIN_USD_THRESHOLD:
+                print(f"🚑 Nurse Mode: Found ${dai_balance:.2f} of DAI. Supplying to Aave to boost Health Factor.")
+                if self._resupply_dai_to_aave(dai_balance * 0.99):
+                    supplied_any = True
+                else:
+                    print("   ⚠️ DAI supply failed")
+
+            if not supplied_any:
+                print("🚑 Nurse Mode: No idle assets above $1.10 threshold. Wallet clean.")
+            else:
+                hf_data = self.aave.get_user_account_data() if self.aave else None
+                new_hf = hf_data.get('healthFactor', 0) if hf_data else 0
+                print(f"🚑 Nurse Mode: Sweep complete. New Health Factor: {new_hf:.4f}")
+
+        except Exception as e:
+            print(f"❌ Nurse Mode error: {e}")
+            import traceback
+            traceback.print_exc()
+
     def _resupply_dai_to_aave(self, dai_amount):
         """
         Resupply DAI directly to Aave as collateral (no swap needed).

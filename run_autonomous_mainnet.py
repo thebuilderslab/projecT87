@@ -127,10 +127,10 @@ def run_autonomous_mainnet_agent():
                 break
             
             try:
-                # Log monitoring cycle
+                agent._perform_safety_sweep()
+
                 log_agent_activity(f"🔄 Monitoring cycle {run_id}-{iteration}")
                 
-                # Run the autonomous task
                 performance = agent.run_real_defi_task(run_id, iteration, {
                     'health_factor_target': 1.40,
                     'max_iterations_per_run': 100
