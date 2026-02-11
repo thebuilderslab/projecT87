@@ -54,7 +54,7 @@ class UniswapIntegration:
         print(f"🔄 Uniswap V3 integration initialized")
 
     def _get_router_abi(self):
-        """Uniswap V3 SwapRouter ABI"""
+        """Uniswap V3 SwapRouter ABI with single-hop and multi-hop support"""
         return [
             {
                 "inputs": [
@@ -75,6 +75,26 @@ class UniswapIntegration:
                     }
                 ],
                 "name": "exactInputSingle",
+                "outputs": [{"internalType": "uint256", "name": "amountOut", "type": "uint256"}],
+                "stateMutability": "payable",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "components": [
+                            {"internalType": "bytes", "name": "path", "type": "bytes"},
+                            {"internalType": "address", "name": "recipient", "type": "address"},
+                            {"internalType": "uint256", "name": "deadline", "type": "uint256"},
+                            {"internalType": "uint256", "name": "amountIn", "type": "uint256"},
+                            {"internalType": "uint256", "name": "amountOutMinimum", "type": "uint256"}
+                        ],
+                        "internalType": "struct ISwapRouter.ExactInputParams",
+                        "name": "params",
+                        "type": "tuple"
+                    }
+                ],
+                "name": "exactInput",
                 "outputs": [{"internalType": "uint256", "name": "amountOut", "type": "uint256"}],
                 "stateMutability": "payable",
                 "type": "function"
@@ -250,7 +270,7 @@ class UniswapIntegration:
 
             # Check ETH balance for gas
             eth_balance = self.w3.eth.get_balance(self.address)
-            min_eth_needed = self.w3.to_wei(0.001, 'ether')  # 0.001 ETH minimum
+            min_eth_needed = self.w3.to_wei(0.0002, 'ether')  # 0.0002 ETH minimum (Arbitrum L2 gas is cheap)
             if eth_balance < min_eth_needed:
                 print(f"❌ Insufficient ETH for gas: {self.w3.from_wei(eth_balance, 'ether'):.6f} ETH")
                 return None
@@ -438,7 +458,7 @@ class UniswapIntegration:
 
             try:
                 # Try multiple fee tiers for better liquidity
-                fee_tiers = [500, 3000, 10000]  # 0.05%, 0.3%, 1%
+                fee_tiers = [500, 3000, 10000]  # 0.05% (most liquid on Arbitrum), 0.3%, 1%
                 best_quote = 0
                 best_fee = fee
 
@@ -561,20 +581,11 @@ class UniswapIntegration:
                 for attempt in range(max_retries):
                     try:
                         if attempt == 0:
-                            # First attempt: normal estimation
                             estimated_gas = self.w3.eth.estimate_gas(swap_tx)
                         elif attempt == 1:
-                            # Second attempt: simplified transaction
-                            simple_tx = {
-                                'from': self.address,
-                                'to': self.router_address,
-                                'gas': 400000,
-                                'gasPrice': swap_gas_price,
-                                'value': 0
-                            }
-                            estimated_gas = self.w3.eth.estimate_gas(simple_tx)
+                            swap_tx['gas'] = 600000
+                            estimated_gas = self.w3.eth.estimate_gas(swap_tx)
                         else:
-                            # Final attempt: skip estimation, use conservative limit
                             estimated_gas = 500000
 
                         print(f"💰 Gas estimation attempt {attempt + 1}: {estimated_gas}")
@@ -591,21 +602,22 @@ class UniswapIntegration:
                         error_msg = str(gas_error).lower()
                         print(f"⚠️ Gas estimation attempt {attempt + 1} failed: {gas_error}")
 
-                        # Analyze error for specific issues
                         if "execution reverted" in error_msg and "stf" in error_msg:
-                            print("❌ Slippage Too Forward - adjusting parameters")
-                            # Try with higher slippage tolerance
+                            print("⚠️ Slippage Too Forward - adjusting parameters")
                             min_output_amount = max(1, int(min_output_amount * 0.9))
                             swap_params['amountOutMinimum'] = min_output_amount
                             print(f"🔄 Reduced min output to: {min_output_amount}")
                             continue
                         elif "execution reverted" in error_msg:
                             if attempt < max_retries - 1:
-                                print("🔄 Trying different approach...")
+                                print(f"⚠️ Gas estimate reverted (attempt {attempt + 1}), retrying...")
+                                swap_params['amountOutMinimum'] = 1
                                 continue
                             else:
-                                print("❌ Transaction would consistently revert - skipping swap")
-                                return None
+                                print("⚠️ Gas estimation reverted — sending with fallback gas limit anyway")
+                                estimated_gas = 500000
+                                gas_estimation_success = True
+                                break
                         elif "insufficient funds" in error_msg:
                             print("❌ Insufficient ETH for gas fees")
                             return None
@@ -705,26 +717,146 @@ class UniswapIntegration:
             print(f"🔍 Full error: {traceback.format_exc()}")
             return False
 
-    def swap_dai_for_wbtc(self, dai_amount):
-        """Swap DAI for WBTC on Uniswap V3 - DAI compliance enforced with TX confirmation"""
-        try:
-            print(f"🔄 Swapping {dai_amount:.6f} DAI for WBTC...")
+    def _encode_path(self, tokens, fees):
+        """Encode multi-hop path for Uniswap V3 exactInput
+        Path format: token0 (20 bytes) + fee (3 bytes) + token1 (20 bytes) + fee (3 bytes) + token2 (20 bytes)
+        """
+        path = b''
+        for i, token in enumerate(tokens):
+            path += bytes.fromhex(token[2:])
+            if i < len(fees):
+                path += fees[i].to_bytes(3, 'big')
+        return path
 
-            # DAI compliance check
+    def _execute_multihop_swap(self, path_bytes, amount_in, amount_in_wei, token_in, description):
+        """Execute a multi-hop swap using exactInput"""
+        try:
+            print(f"🔄 Multi-hop swap: {description}")
+
+            eth_balance = self.w3.eth.get_balance(self.address)
+            min_eth_needed = self.w3.to_wei(0.0002, 'ether')
+            if eth_balance < min_eth_needed:
+                print(f"❌ Insufficient ETH for gas: {self.w3.from_wei(eth_balance, 'ether'):.6f} ETH")
+                return None
+
+            if token_in != "0x0000000000000000000000000000000000000000":
+                token_contract = self.w3.eth.contract(address=token_in, abi=self.erc20_abi)
+                try:
+                    current_allowance = token_contract.functions.allowance(self.address, self.router_address).call()
+                    if current_allowance < amount_in_wei:
+                        nonce = self.w3.eth.get_transaction_count(self.address)
+                        base_gas_price = self.w3.eth.gas_price
+                        chain_id = self.w3.eth.chain_id
+                        gas_price = int(base_gas_price * 2.0) if chain_id == 42161 else int(base_gas_price * 1.3)
+                        approve_tx = token_contract.functions.approve(
+                            self.router_address, amount_in_wei * 2
+                        ).build_transaction({
+                            'chainId': chain_id, 'gas': 100000,
+                            'gasPrice': gas_price, 'nonce': nonce,
+                        })
+                        signed_approve = self.w3.eth.account.sign_transaction(approve_tx, self.account.key)
+                        approve_hash = self.w3.eth.send_raw_transaction(signed_approve.rawTransaction)
+                        print(f"✅ Multi-hop approval sent: {approve_hash.hex()}")
+                        time.sleep(8)
+                except Exception as approve_error:
+                    print(f"❌ Multi-hop approval failed: {approve_error}")
+                    return None
+
+            deadline = int(time.time()) + 120
+            nonce = self.w3.eth.get_transaction_count(self.address)
+            base_gas_price = self.w3.eth.gas_price
+            chain_id = self.w3.eth.chain_id
+            swap_gas_price = int(base_gas_price * 2.0) if chain_id == 42161 else int(base_gas_price * 1.5)
+            gas_limit = 600000
+
+            swap_params = {
+                'path': path_bytes,
+                'recipient': self.w3.to_checksum_address(self.address),
+                'deadline': deadline,
+                'amountIn': amount_in_wei,
+                'amountOutMinimum': 1
+            }
+
+            swap_tx = self.router_contract.functions.exactInput(
+                swap_params
+            ).build_transaction({
+                'chainId': chain_id,
+                'gas': gas_limit,
+                'gasPrice': swap_gas_price,
+                'nonce': nonce,
+                'value': 0
+            })
+
+            print(f"⛽ Multi-hop gas: {self.w3.from_wei(swap_gas_price, 'gwei'):.4f} gwei, limit: {gas_limit}")
+
+            try:
+                estimated_gas = self.w3.eth.estimate_gas(swap_tx)
+                swap_tx['gas'] = min(int(estimated_gas * 1.8), 800000)
+                print(f"💰 Multi-hop gas estimate: {estimated_gas} → using {swap_tx['gas']}")
+            except Exception as gas_err:
+                print(f"⚠️ Multi-hop gas estimation failed: {gas_err}, using {gas_limit}")
+
+            fresh_nonce = self.w3.eth.get_transaction_count(self.address, 'pending')
+            swap_tx['nonce'] = fresh_nonce
+            signed_swap = self.w3.eth.account.sign_transaction(swap_tx, self.account.key)
+            tx_hash = self.w3.eth.send_raw_transaction(signed_swap.rawTransaction)
+            print(f"✅ Multi-hop swap sent: {tx_hash.hex()}")
+
+            receipt = self.w3.eth.wait_for_transaction_receipt(tx_hash, timeout=120)
+            if receipt.status == 1:
+                print(f"✅ Multi-hop swap confirmed!")
+                return tx_hash.hex()
+            else:
+                print(f"❌ Multi-hop swap reverted on-chain")
+                return None
+
+        except Exception as e:
+            print(f"❌ Multi-hop swap error: {e}")
+            import traceback
+            traceback.print_exc()
+            return None
+
+    def swap_dai_for_wbtc(self, dai_amount):
+        """Swap DAI for WBTC on Uniswap V3 — uses multi-hop DAI→WETH→WBTC for better liquidity"""
+        try:
+            print(f"🔄 Swapping {dai_amount:.6f} DAI for WBTC (multi-hop via WETH)...")
+
             if dai_amount <= 0:
                 print("❌ Invalid DAI amount for swap")
                 return False
 
-            swap_result = self._execute_swap(
-                self.dai_address,
-                self.wbtc_address, 
-                dai_amount,
-                "DAI",
-                "WBTC"
+            amount_in_wei = int(dai_amount * 1e18)
+
+            path_bytes = self._encode_path(
+                [self.dai_address, self.weth_address, self.wbtc_address],
+                [500, 500]
             )
 
+            swap_result = self._execute_multihop_swap(
+                path_bytes, dai_amount, amount_in_wei,
+                self.dai_address, f"{dai_amount:.4f} DAI → WETH → WBTC"
+            )
+
+            if not swap_result:
+                print("⚠️ Multi-hop 500/500 failed, trying 3000/500 fee tiers...")
+                path_bytes = self._encode_path(
+                    [self.dai_address, self.weth_address, self.wbtc_address],
+                    [3000, 500]
+                )
+                swap_result = self._execute_multihop_swap(
+                    path_bytes, dai_amount, amount_in_wei,
+                    self.dai_address, f"{dai_amount:.4f} DAI →(3000)→ WETH →(500)→ WBTC"
+                )
+
+            if not swap_result:
+                print("⚠️ Multi-hop failed, trying direct DAI→WBTC single-hop...")
+                swap_result_direct = self._execute_swap(
+                    self.dai_address, self.wbtc_address, dai_amount, "DAI", "WBTC"
+                )
+                if swap_result_direct and isinstance(swap_result_direct, str):
+                    swap_result = swap_result_direct
+
             if swap_result and isinstance(swap_result, str):
-                # Return transaction hash for verification
                 return {
                     'success': True,
                     'tx_hash': swap_result,
@@ -733,6 +865,7 @@ class UniswapIntegration:
                     'token_out': 'WBTC'
                 }
             else:
+                print("❌ All WBTC swap attempts failed")
                 return False
 
         except Exception as e:
@@ -740,11 +873,10 @@ class UniswapIntegration:
             return False
 
     def swap_dai_for_weth(self, dai_amount):
-        """Swap DAI for WETH on Uniswap V3 - DAI compliance enforced"""
+        """Swap DAI for WETH on Uniswap V3 — prefers 500 fee tier (most liquid on Arbitrum)"""
         try:
             print(f"🔄 Swapping {dai_amount:.6f} DAI for WETH...")
 
-            # DAI compliance check
             if dai_amount <= 0:
                 print("❌ Invalid DAI amount for swap")
                 return False

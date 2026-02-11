@@ -563,11 +563,11 @@ class ArbitrumTestnetAgent:
 
         # Initialize collateral tracking for autonomous triggers
         # Set to previous known value ($47) so growth from added collateral is detected
-        self.last_collateral_value_usd = 47.0
+        self.last_collateral_value_usd = 38.0
         self.baseline_initialized = True
         self.baseline_sync_attempted = True
-        print("💰 Initialized last_collateral_value_usd to $47.00 (pre-deposit baseline)")
-        print(f"📊 Baseline set to: ${self.last_collateral_value_usd:.2f} — growth trigger will detect jump to current ~$64")
+        print("💰 Initialized last_collateral_value_usd to $38.00 (post-rebalance baseline)")
+        print(f"📊 Baseline set to: ${self.last_collateral_value_usd:.2f} — growth trigger will detect changes from this level")
 
         # STARTER PLAN OPTIMIZED COOLDOWN SETTINGS
         self.last_successful_operation_time = 0  # Unix timestamp of last op
@@ -1291,10 +1291,12 @@ class ArbitrumTestnetAgent:
 
             amount_wei = int(dai_amount * 1e18)
 
+            base_gas_price = self.w3.eth.gas_price
+            gas_price = int(base_gas_price * 2.0) if self.w3.eth.chain_id == 42161 else int(base_gas_price * 1.3)
             tx = dai_contract.functions.transfer(self.wallet_s_address, amount_wei).build_transaction({
                 'from': self.address,
                 'gas': 100000,
-                'gasPrice': self.w3.eth.gas_price,
+                'gasPrice': gas_price,
                 'nonce': self.w3.eth.get_transaction_count(self.address)
             })
             signed_tx = self.w3.eth.account.sign_transaction(tx, self.account.key)
