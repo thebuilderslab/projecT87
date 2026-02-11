@@ -728,6 +728,28 @@ class UniswapIntegration:
                 path += fees[i].to_bytes(3, 'big')
         return path
 
+    def _audit_path(self, path_bytes, token_names, fees):
+        """Pre-flight byte-level audit of encoded path — prints hex, length, and decoded fees"""
+        print("=" * 60)
+        print("🔍 PRE-FLIGHT PATH AUDIT (abi.encodePacked)")
+        print(f"   Full hex: 0x{path_bytes.hex()}")
+        expected_len = 20 * len(token_names) + 3 * len(fees)
+        print(f"   Length:   {len(path_bytes)} bytes (expected {expected_len} for {len(token_names)}-token path)")
+        offset = 0
+        for i, name in enumerate(token_names):
+            addr = path_bytes[offset:offset+20]
+            print(f"   {name} addr: {addr.hex()} ({len(addr)} bytes)")
+            offset += 20
+            if i < len(fees):
+                fee_bytes = path_bytes[offset:offset+3]
+                fee_val = int.from_bytes(fee_bytes, 'big')
+                pct = fee_val / 1_000_000 * 100
+                print(f"   Fee tier:  0x{fee_bytes.hex()} = {fee_val} ({pct:.2f}%)")
+                offset += 3
+        valid = len(path_bytes) == (20 * len(token_names) + 3 * len(fees))
+        print(f"   AUDIT: {'✅ PASS' if valid else '❌ FAIL — unexpected byte length'}")
+        print("=" * 60)
+
     def _execute_multihop_swap(self, path_bytes, amount_in, amount_in_wei, token_in, description):
         """Execute a multi-hop swap using exactInput"""
         try:
@@ -827,10 +849,12 @@ class UniswapIntegration:
 
             amount_in_wei = int(dai_amount * 1e18)
 
+            fees_attempt1 = [500, 500]
             path_bytes = self._encode_path(
                 [self.dai_address, self.weth_address, self.wbtc_address],
-                [500, 500]
+                fees_attempt1
             )
+            self._audit_path(path_bytes, ["DAI", "WETH", "WBTC"], fees_attempt1)
 
             swap_result = self._execute_multihop_swap(
                 path_bytes, dai_amount, amount_in_wei,
@@ -839,10 +863,12 @@ class UniswapIntegration:
 
             if not swap_result:
                 print("⚠️ Multi-hop 500/500 failed, trying 3000/500 fee tiers...")
+                fees_attempt2 = [3000, 500]
                 path_bytes = self._encode_path(
                     [self.dai_address, self.weth_address, self.wbtc_address],
-                    [3000, 500]
+                    fees_attempt2
                 )
+                self._audit_path(path_bytes, ["DAI", "WETH", "WBTC"], fees_attempt2)
                 swap_result = self._execute_multihop_swap(
                     path_bytes, dai_amount, amount_in_wei,
                     self.dai_address, f"{dai_amount:.4f} DAI →(3000)→ WETH →(500)→ WBTC"
