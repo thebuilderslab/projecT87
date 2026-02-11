@@ -2381,27 +2381,26 @@ class ArbitrumTestnetAgent:
                 print("⏭️ STEP 1 (Borrow): Already completed — skipping")
 
             sequence_ok = True
+            steps_failed = []
 
             if "dai_supplied" not in already_done:
                 dai_supply_amt = distribution['dai_supply']
                 print("🔒 STEP 2 PRE-CHECK: Verifying Aave Pool DAI allowance...")
                 pool_addr = self.w3.to_checksum_address(self.aave_pool_address)
                 if not self._ensure_dai_approval(pool_addr, int(15 * 1e18)):
-                    print("❌ Aave Pool approval failed — aborting step")
-                    sequence_ok = False
+                    print("❌ Aave Pool approval failed — continuing to next step")
+                    steps_failed.append("dai_supplied")
                 else:
                     print(f"\n📋 STEP 2: Supplying ${dai_supply_amt:.2f} DAI to Aave...")
                     if not self._resupply_dai_to_aave(dai_supply_amt):
-                        print("❌ DAI resupply failed")
-                        sequence_ok = False
+                        print("❌ DAI resupply failed — continuing to next step")
+                        steps_failed.append("dai_supplied")
                     else:
                         self.save_execution_state("dai_supplied", path_name, dist_serializable)
             else:
                 print("⏭️ STEP 2 (DAI Supply): Already completed — skipping")
 
-            steps_failed = []
-
-            if sequence_ok and "wbtc_supplied" not in already_done:
+            if "wbtc_supplied" not in already_done:
                 wbtc_dai = distribution['wbtc_swap_supply']
                 if wbtc_dai < 1.00:
                     print(f"⚠️ STEP 3: Dust detected (${wbtc_dai:.2f} < $1.00). Falling back to DAI Supply.")
@@ -2431,7 +2430,7 @@ class ArbitrumTestnetAgent:
             elif "wbtc_supplied" in already_done:
                 print("⏭️ STEP 3 (WBTC Swap+Supply): Already completed — skipping")
 
-            if sequence_ok and "weth_supplied" not in already_done:
+            if "weth_supplied" not in already_done:
                 weth_dai = distribution['weth_swap_supply']
                 if weth_dai < 1.00:
                     print(f"⚠️ STEP 4: Dust detected (${weth_dai:.2f} < $1.00). Falling back to DAI Supply.")
@@ -2461,7 +2460,7 @@ class ArbitrumTestnetAgent:
             elif "weth_supplied" in already_done:
                 print("⏭️ STEP 4 (WETH Swap+Supply): Already completed — skipping")
 
-            if sequence_ok and "eth_converted" not in already_done:
+            if "eth_converted" not in already_done:
                 eth_dai = distribution['eth_gas_reserve']
                 if eth_dai < 1.00:
                     print(f"⚠️ STEP 5: Dust detected (${eth_dai:.2f} < $1.00). Falling back to DAI Supply.")
@@ -2520,6 +2519,15 @@ class ArbitrumTestnetAgent:
                     self.save_execution_state("wallet_s_transferred", path_name, dist_serializable)
             elif "wallet_s_transferred" in already_done:
                 print("⏭️ STEP 6 (WALLET_S Transfer): Already completed — skipping")
+
+            remaining_dai = self.get_dai_balance()
+            if remaining_dai >= 0.50:
+                print(f"\n🛡️ SAFETY SWEEP: ${remaining_dai:.2f} DAI still in wallet — supplying to Aave as collateral")
+                sweep_amount = remaining_dai * 0.99
+                if self._resupply_dai_to_aave(sweep_amount):
+                    print(f"   ✅ Swept ${sweep_amount:.2f} DAI to Aave collateral")
+                else:
+                    print(f"   ❌ Sweep failed — ${remaining_dai:.2f} DAI remains in wallet")
 
             print(f"\n{'='*60}")
             if not steps_failed:
@@ -2621,7 +2629,7 @@ class ArbitrumTestnetAgent:
 
             # 1. Check ETH balance for gas
             eth_balance = self.get_eth_balance()
-            if eth_balance < 0.001:
+            if eth_balance < 0.0002:
                 print(f"❌ Insufficient ETH for gas: {eth_balance:.6f} ETH")
                 return False
 
@@ -3207,7 +3215,19 @@ class ArbitrumTestnetAgent:
 
             if health_factor < 1.35:
                 print(f"🚨 EMERGENCY: Health factor {health_factor:.3f} below 1.35!")
-                performance = 0.1
+                dai_balance = self.aave.get_token_balance(self.dai_address) if self.aave else 0
+                if dai_balance > 0.5:
+                    safe_amount = dai_balance * 0.99
+                    print(f"🛡️ EMERGENCY RECOVERY: Found {dai_balance:.4f} DAI in wallet — supplying {safe_amount:.4f} to Aave to restore HF")
+                    if self._resupply_dai_to_aave(safe_amount):
+                        print(f"✅ EMERGENCY RECOVERY SUCCESS: Supplied {dai_balance:.4f} DAI as collateral")
+                        performance = 0.6
+                    else:
+                        print(f"❌ EMERGENCY RECOVERY FAILED: Could not supply DAI")
+                        performance = 0.1
+                else:
+                    print(f"   No recoverable DAI in wallet ({dai_balance:.4f} DAI)")
+                    performance = 0.1
                 return performance
 
             growth_met, growth_reason, abs_growth, rel_growth = self._check_collateral_growth(total_collateral, health_factor)

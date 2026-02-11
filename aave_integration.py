@@ -314,7 +314,7 @@ class AaveArbitrumIntegration:
 
             # Step 2: Check ETH balance for gas
             eth_balance = self.w3.eth.get_balance(self.account.address) / 1e18
-            if eth_balance < 0.001:
+            if eth_balance < 0.0002:
                 raise ValueError(f"Insufficient ETH for gas: {eth_balance:.6f}")
 
             # Step 3: Approve token spending (critical step that was missing)
