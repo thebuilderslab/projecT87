@@ -66,6 +66,13 @@ def run_autonomous_mainnet_agent():
             raise Exception("❌ Failed to initialize DeFi integrations")
         log_agent_activity("✅ DeFi integrations initialized successfully")
         
+        state_file = "execution_state.json"
+        if os.path.exists(state_file):
+            os.remove(state_file)
+            log_agent_activity(f"🗑️ {state_file} deleted — forcing clean start")
+        else:
+            log_agent_activity(f"✅ {state_file} not found — already clean")
+        
         # Initial status check
         log_agent_activity("📊 Performing initial status check...")
         eth_balance = agent.get_eth_balance()
@@ -86,12 +93,22 @@ def run_autonomous_mainnet_agent():
         except Exception as e:
             log_agent_activity(f"⚠️ Health factor check error: {e}")
         
-        pending_state = agent.load_execution_state()
-        if pending_state and pending_state.get("step") != "wallet_s_transferred":
-            log_agent_activity(f"🔄 RECOVERY DETECTED: Interrupted '{pending_state['path_name']}' path at step '{pending_state['step']}'")
-            log_agent_activity("   Will resume on first monitoring cycle")
-        else:
-            log_agent_activity("✅ No pending execution state — clean start")
+        log_agent_activity("✅ Clean start confirmed — no pending execution state")
+
+        print("\n" + "="*60)
+        print("📋 PRE-FLIGHT AUDIT")
+        print("="*60)
+        print(f"   Health Factor Threshold: 1.35 (MIN) / 1.40 (TARGET)")
+        print(f"   Slippage Tolerance: 1%")
+        print(f"   State File: CLEARED (clean run)")
+        print(f"   Growth Path: $10.20 borrow (needs $12 capacity)")
+        print(f"   Capacity Path: $5.50 borrow (needs $7 capacity)")
+        print(f"   Dust Guard: Active ($1.00 minimum swap)")
+        print(f"   Per-Step Approvals: Active ($15 DAI threshold)")
+        print(f"   Proportional Recovery: Enabled")
+        print(f"   Max Recovery Attempts: 5")
+        print(f"   Operation Cooldown: 130s")
+        print("="*60 + "\n")
 
         log_agent_activity("🎯 Starting autonomous monitoring loop...")
         print("\n" + "="*60)

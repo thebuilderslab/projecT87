@@ -1231,7 +1231,8 @@ class ArbitrumTestnetAgent:
             tx_hash = self.w3.eth.send_raw_transaction(signed_tx.rawTransaction)
             receipt = self.w3.eth.wait_for_transaction_receipt(tx_hash, timeout=60)
             if receipt.status == 1:
-                print(f"✅ DAI approval confirmed: {self.w3.to_hex(tx_hash)}")
+                print(f"✅ DAI approval confirmed")
+                print(f"   ✅ Success: https://arbiscan.io/tx/{self.w3.to_hex(tx_hash)}")
                 return True
             else:
                 print(f"❌ DAI approval transaction failed")
@@ -1301,7 +1302,8 @@ class ArbitrumTestnetAgent:
             receipt = self.w3.eth.wait_for_transaction_receipt(tx_hash, timeout=60)
 
             if receipt.status == 1:
-                print(f"✅ DAI transfer confirmed: {self.w3.to_hex(tx_hash)}")
+                print(f"✅ DAI transfer confirmed")
+                print(f"   ✅ Success: https://arbiscan.io/tx/{self.w3.to_hex(tx_hash)}")
                 return True
             else:
                 print(f"❌ DAI transfer failed on-chain")
@@ -2382,12 +2384,18 @@ class ArbitrumTestnetAgent:
 
             if "dai_supplied" not in already_done:
                 dai_supply_amt = distribution['dai_supply']
-                print(f"\n📋 STEP 2: Supplying ${dai_supply_amt:.2f} DAI to Aave...")
-                if not self._resupply_dai_to_aave(dai_supply_amt):
-                    print("❌ DAI resupply failed")
+                print("🔒 STEP 2 PRE-CHECK: Verifying Aave Pool DAI allowance...")
+                pool_addr = self.w3.to_checksum_address(self.aave_pool_address)
+                if not self._ensure_dai_approval(pool_addr, int(15 * 1e18)):
+                    print("❌ Aave Pool approval failed — aborting step")
                     sequence_ok = False
                 else:
-                    self.save_execution_state("dai_supplied", path_name, dist_serializable)
+                    print(f"\n📋 STEP 2: Supplying ${dai_supply_amt:.2f} DAI to Aave...")
+                    if not self._resupply_dai_to_aave(dai_supply_amt):
+                        print("❌ DAI resupply failed")
+                        sequence_ok = False
+                    else:
+                        self.save_execution_state("dai_supplied", path_name, dist_serializable)
             else:
                 print("⏭️ STEP 2 (DAI Supply): Already completed — skipping")
 
@@ -2395,61 +2403,101 @@ class ArbitrumTestnetAgent:
 
             if sequence_ok and "wbtc_supplied" not in already_done:
                 wbtc_dai = distribution['wbtc_swap_supply']
-                print(f"\n📋 STEP 3: Swapping ${wbtc_dai:.2f} DAI -> WBTC and supplying...")
-                wbtc_received = self._execute_dai_to_wbtc_swap(wbtc_dai)
-                if wbtc_received > 0:
-                    if not self._supply_wbtc_to_aave(wbtc_received):
-                        print("⚠️ WBTC supply to Aave failed — continuing to next step")
-                        steps_failed.append("wbtc_supplied")
-                    else:
-                        self.save_execution_state("wbtc_supplied", path_name, dist_serializable)
+                if wbtc_dai < 1.00:
+                    print(f"⚠️ STEP 3: Dust detected (${wbtc_dai:.2f} < $1.00). Falling back to DAI Supply.")
+                    if self._resupply_dai_to_aave(wbtc_dai):
+                        print(f"   ✅ Dust guard: ${wbtc_dai:.2f} DAI supplied to Aave instead")
+                    self.save_execution_state("wbtc_supplied", path_name, dist_serializable)
                 else:
-                    print("⚠️ DAI -> WBTC swap failed — continuing to next step")
-                    steps_failed.append("wbtc_supplied")
+                    print("🔒 STEP 3 PRE-CHECK: Verifying Uniswap Router DAI allowance...")
+                    if hasattr(self, 'uniswap') and self.uniswap and not self._ensure_dai_approval(self.uniswap.router_address, int(15 * 1e18)):
+                        print("❌ Uniswap Router approval failed — falling back to DAI supply")
+                        self._resupply_dai_to_aave(wbtc_dai)
+                        self.save_execution_state("wbtc_supplied", path_name, dist_serializable)
+                    else:
+                        print(f"\n📋 STEP 3: Swapping ${wbtc_dai:.2f} DAI -> WBTC and supplying...")
+                        wbtc_received = self._execute_dai_to_wbtc_swap(wbtc_dai)
+                        if wbtc_received > 0:
+                            if not self._supply_wbtc_to_aave(wbtc_received):
+                                print("⚠️ WBTC supply to Aave failed — continuing to next step")
+                                steps_failed.append("wbtc_supplied")
+                            else:
+                                self.save_execution_state("wbtc_supplied", path_name, dist_serializable)
+                        else:
+                            print("⚠️ Swap failed/dust detected. Falling back to DAI Supply.")
+                            if self._resupply_dai_to_aave(wbtc_dai):
+                                print(f"   ✅ Fallback: ${wbtc_dai:.2f} DAI supplied to Aave")
+                            self.save_execution_state("wbtc_supplied", path_name, dist_serializable)
             elif "wbtc_supplied" in already_done:
                 print("⏭️ STEP 3 (WBTC Swap+Supply): Already completed — skipping")
 
             if sequence_ok and "weth_supplied" not in already_done:
                 weth_dai = distribution['weth_swap_supply']
-                print(f"\n📋 STEP 4: Swapping ${weth_dai:.2f} DAI -> WETH and supplying...")
-                weth_received = self._execute_dai_to_weth_swap(weth_dai)
-                if weth_received > 0:
-                    if not self._supply_weth_to_aave(weth_received):
-                        print("⚠️ WETH supply to Aave failed — continuing to next step")
-                        steps_failed.append("weth_supplied")
-                    else:
-                        self.save_execution_state("weth_supplied", path_name, dist_serializable)
+                if weth_dai < 1.00:
+                    print(f"⚠️ STEP 4: Dust detected (${weth_dai:.2f} < $1.00). Falling back to DAI Supply.")
+                    if self._resupply_dai_to_aave(weth_dai):
+                        print(f"   ✅ Dust guard: ${weth_dai:.2f} DAI supplied to Aave instead")
+                    self.save_execution_state("weth_supplied", path_name, dist_serializable)
                 else:
-                    print("⚠️ DAI -> WETH swap failed — continuing to next step")
-                    steps_failed.append("weth_supplied")
+                    print("🔒 STEP 4 PRE-CHECK: Verifying Uniswap Router DAI allowance...")
+                    if hasattr(self, 'uniswap') and self.uniswap and not self._ensure_dai_approval(self.uniswap.router_address, int(15 * 1e18)):
+                        print("❌ Uniswap Router approval failed — falling back to DAI supply")
+                        self._resupply_dai_to_aave(weth_dai)
+                        self.save_execution_state("weth_supplied", path_name, dist_serializable)
+                    else:
+                        print(f"\n📋 STEP 4: Swapping ${weth_dai:.2f} DAI -> WETH and supplying...")
+                        weth_received = self._execute_dai_to_weth_swap(weth_dai)
+                        if weth_received > 0:
+                            if not self._supply_weth_to_aave(weth_received):
+                                print("⚠️ WETH supply to Aave failed — continuing to next step")
+                                steps_failed.append("weth_supplied")
+                            else:
+                                self.save_execution_state("weth_supplied", path_name, dist_serializable)
+                        else:
+                            print("⚠️ Swap failed/dust detected. Falling back to DAI Supply.")
+                            if self._resupply_dai_to_aave(weth_dai):
+                                print(f"   ✅ Fallback: ${weth_dai:.2f} DAI supplied to Aave")
+                            self.save_execution_state("weth_supplied", path_name, dist_serializable)
             elif "weth_supplied" in already_done:
                 print("⏭️ STEP 4 (WETH Swap+Supply): Already completed — skipping")
 
             if sequence_ok and "eth_converted" not in already_done:
                 eth_dai = distribution['eth_gas_reserve']
-                print(f"\n📋 STEP 5: Swapping ${eth_dai:.2f} DAI -> ETH (gas reserve)...")
-                try:
-                    weth_for_eth = self.uniswap.swap_dai_for_weth(eth_dai)
-                    if weth_for_eth and 'tx_hash' in weth_for_eth:
-                        time.sleep(3)
-                        weth_balance = self.get_weth_balance()
-                        if weth_balance > 0:
-                            unwrap_ok = self._unwrap_weth_to_eth(weth_balance)
-                            if unwrap_ok:
-                                print(f"✅ ETH gas reserve: holding in wallet")
-                                self.save_execution_state("eth_converted", path_name, dist_serializable)
-                            else:
-                                print("⚠️ WETH unwrap to ETH failed — continuing to next step")
-                                steps_failed.append("eth_converted")
-                        else:
-                            print("⚠️ No WETH received for ETH conversion — continuing")
-                            steps_failed.append("eth_converted")
+                if eth_dai < 1.00:
+                    print(f"⚠️ STEP 5: Dust detected (${eth_dai:.2f} < $1.00). Falling back to DAI Supply.")
+                    if self._resupply_dai_to_aave(eth_dai):
+                        print(f"   ✅ Dust guard: ${eth_dai:.2f} DAI supplied to Aave instead")
+                    self.save_execution_state("eth_converted", path_name, dist_serializable)
+                else:
+                    print("🔒 STEP 5 PRE-CHECK: Verifying Uniswap Router DAI allowance...")
+                    if hasattr(self, 'uniswap') and self.uniswap and not self._ensure_dai_approval(self.uniswap.router_address, int(15 * 1e18)):
+                        print("❌ Uniswap Router approval failed — falling back to DAI supply")
+                        self._resupply_dai_to_aave(eth_dai)
+                        self.save_execution_state("eth_converted", path_name, dist_serializable)
                     else:
-                        print("⚠️ DAI -> WETH (for ETH) swap failed — continuing")
-                        steps_failed.append("eth_converted")
-                except Exception as e:
-                    print(f"⚠️ ETH conversion error: {e} — continuing")
-                    steps_failed.append("eth_converted")
+                        print(f"\n📋 STEP 5: Swapping ${eth_dai:.2f} DAI -> ETH (gas reserve)...")
+                        try:
+                            weth_for_eth = self.uniswap.swap_dai_for_weth(eth_dai)
+                            if weth_for_eth and 'tx_hash' in weth_for_eth:
+                                time.sleep(3)
+                                weth_balance = self.get_weth_balance()
+                                if weth_balance > 0:
+                                    unwrap_ok = self._unwrap_weth_to_eth(weth_balance)
+                                    if unwrap_ok:
+                                        print(f"✅ ETH gas reserve: holding in wallet")
+                                        self.save_execution_state("eth_converted", path_name, dist_serializable)
+                                    else:
+                                        print("⚠️ WETH unwrap to ETH failed — continuing to next step")
+                                        steps_failed.append("eth_converted")
+                                else:
+                                    print("⚠️ No WETH received for ETH conversion — continuing")
+                                    steps_failed.append("eth_converted")
+                            else:
+                                print("⚠️ DAI -> WETH (for ETH) swap failed — continuing")
+                                steps_failed.append("eth_converted")
+                        except Exception as e:
+                            print(f"⚠️ ETH conversion error: {e} — continuing")
+                            steps_failed.append("eth_converted")
             elif "eth_converted" in already_done:
                 print("⏭️ STEP 5 (ETH Gas Reserve): Already completed — skipping")
 
@@ -2870,7 +2918,13 @@ class ArbitrumTestnetAgent:
             signed_tx = self.w3.eth.account.sign_transaction(tx, self.account.key)
             tx_hash = self.w3.eth.send_raw_transaction(signed_tx.rawTransaction)
             
-            print(f"✅ WETH unwrapped to ETH: {self.w3.to_hex(tx_hash)}")
+            receipt = self.w3.eth.wait_for_transaction_receipt(tx_hash, timeout=60)
+            if receipt.status == 1:
+                print(f"✅ WETH unwrapped to ETH")
+                print(f"   ✅ Success: https://arbiscan.io/tx/{self.w3.to_hex(tx_hash)}")
+            else:
+                print(f"❌ WETH unwrap transaction failed on-chain")
+                return False
             return True
             
         except Exception as e:
@@ -2898,7 +2952,12 @@ class ArbitrumTestnetAgent:
             supply_result = self.aave.supply_dai_to_aave(dai_amount)
             
             if supply_result:
-                print(f"✅ DAI resupply completed: {supply_result}")
+                tx_str = str(supply_result)
+                print(f"✅ DAI resupply completed")
+                if tx_str.startswith("0x"):
+                    print(f"   ✅ Success: https://arbiscan.io/tx/{tx_str}")
+                else:
+                    print(f"   TX: {tx_str}")
                 return True
             else:
                 print("❌ DAI resupply failed")
@@ -2924,7 +2983,8 @@ class ArbitrumTestnetAgent:
             swap_result = self.uniswap.swap_dai_for_wbtc(dai_amount)
 
             if swap_result and 'tx_hash' in swap_result:
-                print(f"✅ WBTC swap completed: {swap_result['tx_hash']}")
+                print(f"✅ WBTC swap tx sent")
+                print(f"   ✅ Success: https://arbiscan.io/tx/{swap_result['tx_hash']}")
                 # Wait for confirmation
                 import time
                 time.sleep(5)
@@ -2959,7 +3019,8 @@ class ArbitrumTestnetAgent:
             swap_result = self.uniswap.swap_dai_for_weth(dai_amount)
 
             if swap_result and 'tx_hash' in swap_result:
-                print(f"✅ WETH swap completed: {swap_result['tx_hash']}")
+                print(f"✅ WETH swap tx sent")
+                print(f"   ✅ Success: https://arbiscan.io/tx/{swap_result['tx_hash']}")
                 # Wait for confirmation
                 import time
                 time.sleep(5)
@@ -2991,7 +3052,12 @@ class ArbitrumTestnetAgent:
             supply_result = self.aave.supply_wbtc_to_aave(wbtc_amount)
 
             if supply_result:
-                print(f"✅ WBTC supply completed: {supply_result}")
+                tx_str = str(supply_result)
+                print(f"✅ WBTC supply completed")
+                if tx_str.startswith("0x"):
+                    print(f"   ✅ Success: https://arbiscan.io/tx/{tx_str}")
+                else:
+                    print(f"   TX: {tx_str}")
                 return True
             else:
                 print("❌ WBTC supply failed")
@@ -3014,7 +3080,12 @@ class ArbitrumTestnetAgent:
             supply_result = self.aave.supply_weth_to_aave(weth_amount)
 
             if supply_result:
-                print(f"✅ WETH supply completed: {supply_result}")
+                tx_str = str(supply_result)
+                print(f"✅ WETH supply completed")
+                if tx_str.startswith("0x"):
+                    print(f"   ✅ Success: https://arbiscan.io/tx/{tx_str}")
+                else:
+                    print(f"   TX: {tx_str}")
                 return True
             else:
                 print("❌ WETH supply failed")
