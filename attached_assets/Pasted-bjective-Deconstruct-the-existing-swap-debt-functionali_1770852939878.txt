@@ -1,0 +1,58 @@
+bjective: Deconstruct the existing swap_debt functionality to validate the "Short Debt" strategy, implement a Fixed-Value Phase 1 (similar to Growth/Capacity), and architect a Dual-Trigger Phase 2.
+
+Part 1: Strategy Deconstruction & Forensic Audit
+1. The Strategy Context: The "Debt Swap" strategy is defined as a Liability Short:
+
+Step A (Entry/Hedge): Borrow funds (Stable/DAI), swap the debt liability to a variable asset (ETH) via Flash Loan when ETH price drops are anticipated.
+
+Step B (Hold): Hold the ETH debt while the asset value drops (effectively lowering the USD value of the liability).
+
+Step C (Exit/Profit): Swap the variable debt (ETH) back to Stable (DAI or GHO) to "lock in" the reduced liability value.
+
+Routing: To avoid liquidity slippage, the route often requires DAI Debt -> ETH Debt -> GHO Debt -> DAI Debt.
+
+2. Forensic Log Analysis: Analyze the swap_debt function in debt_swap_bidirectional.py and cross-reference it with these successful Arbiscan transactions to validate the logic:
+
+0x4f687403c83bec9d3b88c2baac355f3ca081793ce09d31a2a44cf25e3d87911c
+
+0x203debe4ec2f0205f1fe90676b22ea68eaf0d4df15c362f5af53c38185f979b2
+
+Extract the following "Anatomy" from these logs:
+
+Route Verification: Did the bot use the Multi-Hop GHO route?
+
+Execution Method: Was it a native Aave swapDebt or a custom Flash Loan adapter?
+
+Net Result: Calculate the "Cost of Carry" (Gas + Flash Loan Fee) vs. "Value Saved." Was the net debt reduced?
+
+Part 2: Phase 1 Implementation (Fixed-Value System)
+Goal: We need to operate the Debt Swap using Fixed Dollar Amounts immediately, mirroring the $10.20 Growth and $5.50 Capacity functions.
+
+Requirements:
+
+Identify Variables: Which specific variables in the code must be hardcoded to enable a manual trigger for a Fixed $20 Debt Swap?
+
+Parameter Locking: Based on the forensic audit, what are the exact gas limits and slippage settings that led to the successful transactions above?
+
+Actionable Output: Provide the code snippet to enable a manual_debt_swap(amount=20, currency="DAI") function that uses the validated GHO route.
+
+Part 3: Phase 2 Architecture (Dual-Trigger System)
+Goal: Architect a "Hybrid" automation system that runs two distinct logic loops simultaneously.
+
+1. System A: The "Macro" Entry Trigger (Hedge)
+
+Logic: Detects large collateral drops.
+
+Proposed Logic: If Collateral Value drops > 5% in 1 hour AND Health Factor > 1.5 -> Swap $Fixed_Amount DAI Debt to ETH Debt.
+
+2. System B: The "Micro" Exit Trigger (Profit)
+
+Logic: Detects profit taking opportunities.
+
+Proposed Logic: If ETH Debt Value drops > 2% below Entry Price -> Swap ETH Debt back to DAI/GHO.
+
+3. The Roadmap:
+
+Outline the logic flow for running these two systems without conflict.
+
+How do we store the "Entry Price" of the ETH debt so System B knows when to fire?
