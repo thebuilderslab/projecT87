@@ -725,6 +725,29 @@ class ArbitrumTestnetAgent:
         else:
             print("⚠️ Market Signal Strategy Status: INACTIVE")
 
+        self.liability_short_strategy = None
+        try:
+            from liability_short_strategy import LiabilityShortStrategy, MACRO_DISTRIBUTION, MICRO_DISTRIBUTION
+            self.liability_short_strategy = LiabilityShortStrategy(self)
+            self.MACRO_DISTRIBUTION = MACRO_DISTRIBUTION
+            self.MICRO_DISTRIBUTION = MICRO_DISTRIBUTION
+            self.LIABILITY_SHORT_STEP_ORDER = [
+                "weth_borrowed",
+                "wbtc_swapped_supplied",
+                "weth_supplied",
+                "dai_swapped",
+                "dai_supplied",
+                "eth_gas_converted",
+                "dai_transferred",
+                "part_a_complete",
+                "debt_swap_complete",
+            ]
+            print("✅ Liability Short Strategy initialized")
+            print(f"   Macro: ${MACRO_DISTRIBUTION['total_borrow_usd']:.2f} WETH borrow + ${MACRO_DISTRIBUTION['debt_swap_amount']:.2f} debt swap")
+            print(f"   Micro: ${MICRO_DISTRIBUTION['total_borrow_usd']:.2f} WETH borrow + ${MICRO_DISTRIBUTION['debt_swap_amount']:.2f} debt swap")
+        except Exception as e:
+            print(f"⚠️ Liability Short Strategy not loaded: {e}")
+
     def _validate_critical_environment(self):
         """Validate critical environment variables are present"""
         required_vars = ['WALLET_PRIVATE_KEY', 'COINMARKETCAP_API_KEY']
@@ -2623,6 +2646,317 @@ class ArbitrumTestnetAgent:
             traceback.print_exc()
             return False
 
+
+    def _execute_liability_short_entry(self, tier, distribution, health_factor, total_collateral):
+        """
+        Execute Liability Short composite entry:
+        Part A: Borrow WETH → distribute (WBTC supply, WETH supply, DAI swap+supply, DAI transfer, ETH gas)
+        Part B: Swap DAI debt → WETH debt via BidirectionalDebtSwapper
+        
+        Crash-resistant with state save between each step.
+        """
+        if not self.liability_short_strategy:
+            print("❌ Liability Short Strategy not initialized")
+            return False
+
+        path_name = f"liability_short_{tier}"
+        steps_failed = []
+        sequence_ok = False
+
+        try:
+            self.is_transacting = True
+            eth_price = self.liability_short_strategy.get_eth_price()
+            if not eth_price or eth_price <= 0:
+                print("❌ Cannot determine ETH price for Liability Short entry")
+                return False
+
+            borrow_usd = distribution['total_borrow_usd']
+            weth_to_borrow = borrow_usd / eth_price
+
+            print(f"\n{'='*60}")
+            print(f"🔻 EXECUTING LIABILITY SHORT ({tier.upper()}) ENTRY")
+            print(f"{'='*60}")
+            print(f"   ETH Price:     ${eth_price:.2f}")
+            print(f"   WETH Borrow:   {weth_to_borrow:.8f} WETH (${borrow_usd:.2f})")
+            print(f"   WBTC Supply:   ${distribution['wbtc_swap_supply']:.2f}")
+            print(f"   WETH Supply:   ${distribution['weth_supply']:.2f}")
+            print(f"   DAI Split:     ${distribution['dai_swap_total']:.2f} (supply ${distribution['dai_supply']:.2f} + transfer ${distribution['dai_transfer']:.2f})")
+            print(f"   ETH Gas:       ${distribution['eth_gas_reserve']:.2f}")
+            print(f"   Debt Swap:     ${distribution['debt_swap_amount']:.2f}")
+            print(f"   Health Factor: {health_factor:.3f}")
+            print(f"{'='*60}\n")
+
+            if not self._validate_transaction_preconditions(borrow_usd):
+                print("❌ Transaction preconditions not met for Liability Short")
+                return False
+
+            print(f"\n📋 PART A STEP 1: Borrowing {weth_to_borrow:.8f} WETH from Aave V3...")
+            weth_balance_before = self.get_weth_balance()
+            result = self.aave.borrow_weth(weth_to_borrow)
+            if not result:
+                print("❌ WETH borrow failed — aborting Liability Short")
+                return False
+
+            time.sleep(3)
+            weth_balance_after = self.get_weth_balance()
+            weth_received = weth_balance_after - weth_balance_before
+            print(f"✅ Borrowed {weth_received:.8f} WETH (balance: {weth_balance_before:.8f} → {weth_balance_after:.8f})")
+
+            if weth_received < weth_to_borrow * 0.5:
+                print(f"❌ Received too little WETH: {weth_received:.8f} vs expected {weth_to_borrow:.8f}")
+                return False
+
+            self.save_execution_state("weth_borrowed", path_name, {"tier": tier, "eth_price": eth_price, "weth_borrowed": weth_to_borrow})
+
+            wbtc_usd = distribution['wbtc_swap_supply']
+            weth_for_wbtc = wbtc_usd / eth_price
+            if weth_for_wbtc > 0.0001:
+                print(f"\n📋 PART A STEP 2: Swapping {weth_for_wbtc:.8f} WETH → WBTC (${wbtc_usd:.2f}) + Supply...")
+                wbtc_before = self.get_wbtc_balance()
+                swap_result = self.uniswap.swap_weth_for_wbtc(weth_for_wbtc)
+                if swap_result and 'tx_hash' in swap_result:
+                    time.sleep(5)
+                    wbtc_after = self.get_wbtc_balance()
+                    wbtc_received = wbtc_after - wbtc_before
+                    print(f"✅ WBTC swap: {wbtc_received:.8f} WBTC received")
+                    if wbtc_received > 0:
+                        self._supply_wbtc_to_aave(wbtc_received)
+                else:
+                    print(f"⚠️ WETH→WBTC swap failed — falling back to WETH supply")
+                    self._supply_weth_to_aave(weth_for_wbtc)
+                    steps_failed.append("wbtc_swapped_supplied")
+            self.save_execution_state("wbtc_swapped_supplied", path_name, {"tier": tier})
+
+            weth_supply_usd = distribution['weth_supply']
+            weth_for_supply = weth_supply_usd / eth_price
+            if weth_for_supply > 0.0001:
+                print(f"\n📋 PART A STEP 3: Supplying {weth_for_supply:.8f} WETH to Aave (${weth_supply_usd:.2f})...")
+                if not self._supply_weth_to_aave(weth_for_supply):
+                    print(f"⚠️ WETH supply failed — continuing")
+                    steps_failed.append("weth_supplied")
+            self.save_execution_state("weth_supplied", path_name, {"tier": tier})
+
+            dai_total_usd = distribution['dai_swap_total']
+            weth_for_dai = dai_total_usd / eth_price
+            if weth_for_dai > 0.0001:
+                print(f"\n📋 PART A STEP 4: Swapping {weth_for_dai:.8f} WETH → DAI (${dai_total_usd:.2f})...")
+                dai_before = self.get_dai_balance()
+                swap_result = self.uniswap.swap_weth_for_dai(weth_for_dai)
+                if swap_result and 'tx_hash' in swap_result:
+                    time.sleep(5)
+                    dai_after = self.get_dai_balance()
+                    dai_received = dai_after - dai_before
+                    print(f"✅ DAI swap: {dai_received:.4f} DAI received")
+
+                    dai_supply_amt = distribution['dai_supply']
+                    if dai_received >= dai_supply_amt and dai_supply_amt >= 0.50:
+                        print(f"\n📋 PART A STEP 5: Supplying ${dai_supply_amt:.2f} DAI to Aave...")
+                        if self._resupply_dai_to_aave(dai_supply_amt):
+                            print(f"   ✅ DAI supply complete")
+                        else:
+                            steps_failed.append("dai_supplied")
+                    self.save_execution_state("dai_supplied", path_name, {"tier": tier})
+
+                    dai_transfer_amt = distribution['dai_transfer']
+                    current_dai = self.get_dai_balance()
+                    actual_transfer = min(dai_transfer_amt, current_dai)
+                    if actual_transfer >= 0.10 and self.wallet_s_address:
+                        print(f"\n📋 PART A STEP 6: Transferring ${actual_transfer:.2f} DAI to WALLET_S...")
+                        if not self._transfer_dai_to_wallet_s(actual_transfer):
+                            steps_failed.append("dai_transferred")
+                    self.save_execution_state("dai_transferred", path_name, {"tier": tier})
+                else:
+                    print(f"⚠️ WETH→DAI swap failed — continuing without DAI split")
+                    steps_failed.append("dai_swapped")
+            self.save_execution_state("dai_swapped", path_name, {"tier": tier})
+
+            gas_reserve_usd = distribution['eth_gas_reserve']
+            weth_for_gas = gas_reserve_usd / eth_price
+            remaining_weth = self.get_weth_balance()
+            if remaining_weth >= weth_for_gas * 0.5:
+                print(f"\n📋 PART A STEP 7: Unwrapping {min(remaining_weth, weth_for_gas):.8f} WETH → ETH for gas...")
+                if self._unwrap_weth_to_eth(min(remaining_weth, weth_for_gas)):
+                    print(f"✅ ETH gas reserve secured")
+                else:
+                    steps_failed.append("eth_gas_converted")
+            elif remaining_weth > 0:
+                print(f"⚠️ Remaining WETH {remaining_weth:.8f} too small for gas — supplying to Aave instead")
+                self._supply_weth_to_aave(remaining_weth)
+            self.save_execution_state("eth_gas_converted", path_name, {"tier": tier})
+            self.save_execution_state("part_a_complete", path_name, {"tier": tier})
+
+            print(f"\n{'='*60}")
+            print(f"✅ PART A COMPLETE — WETH borrowed and distributed")
+            print(f"{'='*60}")
+
+            debt_swap_usd = distribution['debt_swap_amount']
+            print(f"\n📋 PART B: DAI → WETH Debt Swap (${debt_swap_usd:.2f})...")
+            debt_swap_success = self._execute_liability_debt_swap(debt_swap_usd, eth_price)
+
+            if debt_swap_success:
+                self.save_execution_state("debt_swap_complete", path_name, {"tier": tier})
+                self.liability_short_strategy.open_position(tier, eth_price, borrow_usd, debt_swap_usd)
+                print(f"\n{'='*60}")
+                print(f"✅ LIABILITY SHORT ({tier.upper()}) FULLY EXECUTED")
+                print(f"   Entry ETH Price: ${eth_price:.2f}")
+                print(f"   WETH Borrowed: {weth_to_borrow:.8f}")
+                print(f"   Debt Swapped: ${debt_swap_usd:.2f}")
+                print(f"{'='*60}\n")
+                self.clear_execution_state()
+                self.record_successful_operation(operation_type=path_name)
+                sequence_ok = True
+            else:
+                print(f"⚠️ Part B (Debt Swap) failed — marking position as PARTIAL")
+                self.liability_short_strategy.mark_partial(tier, eth_price, borrow_usd, debt_swap_usd, "Part B debt swap failed")
+                self.clear_execution_state()
+                self.record_successful_operation(operation_type=f"{path_name}_partial")
+                sequence_ok = True
+
+            return sequence_ok
+
+        except Exception as e:
+            print(f"❌ Liability Short ({tier}) failed with exception: {e}")
+            import traceback
+            traceback.print_exc()
+            return False
+
+        finally:
+            self.is_transacting = False
+            self.last_transaction_complete_time = time.time()
+            print(f"⏳ Cooldown initiated for {self.operation_cooldown_seconds}s")
+
+    def _execute_liability_debt_swap(self, debt_swap_usd, eth_price):
+        """Execute Part B: DAI→WETH debt swap via BidirectionalDebtSwapper"""
+        try:
+            from decimal import Decimal
+
+            dai_amount = Decimal(str(debt_swap_usd))
+
+            try:
+                from debt_swap_bidirectional import BidirectionalDebtSwapper
+                swapper = BidirectionalDebtSwapper(self.w3, self.account)
+                print(f"🔄 Executing DAI→WETH debt swap: {dai_amount} DAI debt → WETH debt")
+                tx_hash = swapper.swap_debt('DAI', 'WETH', dai_amount, slippage_bps=300, eth_price_usd=Decimal(str(eth_price)))
+                if tx_hash:
+                    print(f"✅ Debt swap complete: {tx_hash}")
+                    return True
+                else:
+                    print(f"❌ Debt swap returned no tx hash")
+                    return False
+            except ImportError:
+                print("❌ BidirectionalDebtSwapper not available — debt swap skipped")
+                return False
+            except Exception as e:
+                print(f"❌ Debt swap execution error: {e}")
+                import traceback
+                traceback.print_exc()
+                return False
+
+        except Exception as e:
+            print(f"❌ Liability debt swap failed: {e}")
+            return False
+
+    def _execute_liability_short_exit(self):
+        """Execute Liability Short exit: WETH→DAI debt swap to lock gains on ETH recovery"""
+        if not self.liability_short_strategy:
+            return False
+
+        active = self.liability_short_strategy.get_active_position()
+        if not active:
+            return False
+
+        try:
+            self.is_transacting = True
+            eth_price = self.liability_short_strategy.get_eth_price()
+            if not eth_price:
+                print("❌ Cannot determine ETH price for exit")
+                return False
+
+            debt_swap_amount = active.get('debt_swap_amount', 0)
+            entry_price = active.get('entry_eth_price', 0)
+            recovery_pct = ((eth_price - entry_price) / entry_price) * 100 if entry_price > 0 else 0
+
+            print(f"\n{'='*60}")
+            print(f"🔺 EXECUTING LIABILITY SHORT EXIT")
+            print(f"{'='*60}")
+            print(f"   Entry ETH: ${entry_price:.2f} → Current: ${eth_price:.2f} ({recovery_pct:+.1f}%)")
+            print(f"   Debt Swap: ${debt_swap_amount:.2f} WETH debt → DAI debt")
+            print(f"{'='*60}\n")
+
+            from decimal import Decimal
+            weth_debt_amount = Decimal(str(debt_swap_amount)) / Decimal(str(eth_price))
+
+            try:
+                from debt_swap_bidirectional import BidirectionalDebtSwapper
+                swapper = BidirectionalDebtSwapper(self.w3, self.account)
+                print(f"🔄 Executing WETH→DAI debt swap: {weth_debt_amount:.8f} WETH debt → DAI debt")
+                tx_hash = swapper.swap_debt('WETH', 'DAI', weth_debt_amount, slippage_bps=300, eth_price_usd=Decimal(str(eth_price)))
+                if tx_hash:
+                    print(f"✅ Exit debt swap complete: {tx_hash}")
+                    self.liability_short_strategy.close_position(eth_price)
+                    print(f"✅ Position closed at ETH ${eth_price:.2f}")
+                    self.record_successful_operation(operation_type="liability_short_exit")
+                    return True
+                else:
+                    print(f"❌ Exit debt swap returned no tx hash")
+                    return False
+            except Exception as e:
+                print(f"❌ Exit debt swap error: {e}")
+                import traceback
+                traceback.print_exc()
+                return False
+
+        except Exception as e:
+            print(f"❌ Liability Short exit failed: {e}")
+            return False
+
+        finally:
+            self.is_transacting = False
+            self.last_transaction_complete_time = time.time()
+            print(f"⏳ Cooldown initiated for {self.operation_cooldown_seconds}s")
+
+    def _check_liability_short_triggers(self, total_collateral, health_factor, available_borrows):
+        """Check and execute Liability Short triggers (called from autonomous monitor)"""
+        if not self.liability_short_strategy:
+            return False
+
+        if self._is_execution_locked():
+            return False
+
+        if self.liability_short_strategy.has_active_position():
+            exit_ok, exit_msg = self.liability_short_strategy.check_exit_trigger()
+            if exit_ok:
+                print(f"🔺 {exit_msg}")
+                return self._execute_liability_short_exit()
+            else:
+                active = self.liability_short_strategy.get_active_position()
+                if active:
+                    entry_price = active.get('entry_eth_price', 0)
+                    current_eth = self.liability_short_strategy.get_eth_price()
+                    if current_eth and entry_price:
+                        change_pct = ((current_eth - entry_price) / entry_price) * 100
+                        print(f"📊 Liability Short: Holding position (ETH {change_pct:+.1f}% from ${entry_price:.2f})")
+            return False
+
+        self.liability_short_strategy.record_collateral_snapshot(total_collateral)
+
+        macro_ok, macro_msg = self.liability_short_strategy.check_macro_entry(total_collateral, health_factor)
+        if macro_ok:
+            if available_borrows >= self.MACRO_DISTRIBUTION['min_capacity']:
+                print(f"🔻 {macro_msg}")
+                return self._execute_liability_short_entry("macro", self.MACRO_DISTRIBUTION, health_factor, total_collateral)
+            else:
+                print(f"📊 Macro conditions met but capacity blocked: ${available_borrows:.2f} < ${self.MACRO_DISTRIBUTION['min_capacity']:.0f}")
+
+        micro_ok, micro_msg = self.liability_short_strategy.check_micro_entry(total_collateral, health_factor)
+        if micro_ok:
+            if available_borrows >= self.MICRO_DISTRIBUTION['min_capacity']:
+                print(f"🔻 {micro_msg}")
+                return self._execute_liability_short_entry("micro", self.MICRO_DISTRIBUTION, health_factor, total_collateral)
+            else:
+                print(f"📊 Micro conditions met but capacity blocked: ${available_borrows:.2f} < ${self.MICRO_DISTRIBUTION['min_capacity']:.0f}")
+
+        return False
 
     def _validate_transaction_preconditions(self, required_borrow_amount):
         """Validate all preconditions before attempting any transaction"""

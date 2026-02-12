@@ -281,6 +281,107 @@ class AaveArbitrumIntegration:
             print(f"❌ DAI borrow failed with error: {e}")
             return False
 
+    def borrow_weth(self, amount_weth):
+        """Borrow WETH from Aave — used by Liability Short strategy"""
+        try:
+            print(f"🏦 Initiating WETH borrow: {amount_weth:.8f} WETH")
+            amount_wei = int(amount_weth * 10**18)
+
+            account_data = self.get_user_account_data()
+            if not account_data:
+                logger.error("Cannot retrieve account data for validation")
+                return False
+
+            available_borrows = account_data.get('availableBorrowsUSD', 0)
+            health_factor = account_data.get('healthFactor', 0)
+            if health_factor < 1.35:
+                logger.error(f"Health factor too low for WETH borrowing: {health_factor:.3f}")
+                return False
+
+            max_retries = 3
+            for attempt in range(max_retries):
+                try:
+                    nonce = self.w3.eth.get_transaction_count(self.account.address)
+                    base_gas_price = self.w3.eth.gas_price
+                    chain_id = self.w3.eth.chain_id
+
+                    if chain_id == 42161:
+                        gas_price = int(base_gas_price * 2.0)
+                        print(f"⛽ Arbitrum mainnet: base {base_gas_price} → optimized {gas_price} (2.0x)")
+                    else:
+                        gas_price = int(base_gas_price * 1.3)
+                        print(f"⛽ Testnet: base {base_gas_price} → optimized {gas_price} (1.3x)")
+
+                    print(f"📊 WETH Borrow params - Nonce: {nonce}, Gas Price: {gas_price}")
+
+                    try:
+                        estimated_gas = self.pool_contract.functions.borrow(
+                            self.weth_address,
+                            amount_wei,
+                            2,
+                            0,
+                            self.account.address
+                        ).estimate_gas({'from': self.account.address})
+
+                        gas_limit = int(estimated_gas * 1.2)
+                        print(f"⛽ Estimated gas: {estimated_gas}, Using: {gas_limit}")
+
+                    except Exception as gas_error:
+                        print(f"⚠️ Gas estimation failed: {gas_error}")
+                        gas_limit = 400000
+
+                    tx = self.pool_contract.functions.borrow(
+                        self.weth_address,
+                        amount_wei,
+                        2,
+                        0,
+                        self.account.address
+                    ).build_transaction({
+                        'from': self.account.address,
+                        'gas': gas_limit,
+                        'gasPrice': gas_price,
+                        'nonce': nonce
+                    })
+
+                    signed_tx = self.w3.eth.account.sign_transaction(tx, self.account.key)
+                    tx_hash = self.w3.eth.send_raw_transaction(signed_tx.rawTransaction)
+
+                    print(f"✅ WETH borrow transaction sent: {tx_hash.hex()}")
+
+                    receipt = self.w3.eth.wait_for_transaction_receipt(tx_hash, timeout=120)
+
+                    if receipt.status == 1:
+                        print(f"✅ WETH borrow confirmed: {amount_weth:.8f} WETH")
+                        return tx_hash.hex()
+                    else:
+                        print(f"❌ WETH borrow transaction failed on-chain")
+                        return False
+
+                except ValueError as ve:
+                    error_msg = str(ve)
+                    if "execution reverted" in error_msg:
+                        logger.error(f"WETH borrow reverted: {ve}")
+                        print("💡 Contract rejected — likely insufficient collateral or WETH borrow limit")
+                        return False
+                    else:
+                        logger.warning(f"ValueError on WETH borrow attempt {attempt + 1}: {ve}")
+                        if attempt < max_retries - 1:
+                            time.sleep(2)
+                            continue
+                        raise
+
+                except (OSError, ConnectionError, ProcessLookupError) as sys_error:
+                    logger.warning(f"System call error on WETH borrow attempt {attempt + 1}: {sys_error}")
+                    if attempt < max_retries - 1:
+                        time.sleep(2)
+                        continue
+                    raise
+
+        except Exception as e:
+            logger.error(f"WETH borrow failed: {e}")
+            print(f"❌ WETH borrow failed with error: {e}")
+            return False
+
     def borrow(self, amount_dai, dai_address):
         """Legacy method - redirects to borrow_dai for DAI compliance"""
         if dai_address != self.dai_address:

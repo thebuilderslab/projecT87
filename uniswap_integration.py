@@ -930,6 +930,70 @@ class UniswapIntegration:
             print(f"❌ DAI to WETH swap failed: {e}")
             return False
 
+    def swap_weth_for_wbtc(self, weth_amount):
+        """Swap WETH for WBTC on Uniswap V3 — direct swap (most liquid pair on Arbitrum)"""
+        try:
+            print(f"🔄 Swapping {weth_amount:.8f} WETH for WBTC...")
+
+            if weth_amount <= 0:
+                print("❌ Invalid WETH amount for swap")
+                return False
+
+            swap_result = self._execute_swap(
+                self.weth_address,
+                self.wbtc_address,
+                weth_amount,
+                "WETH",
+                "WBTC"
+            )
+
+            if swap_result and isinstance(swap_result, str):
+                return {
+                    'success': True,
+                    'tx_hash': swap_result,
+                    'amount_in': weth_amount,
+                    'token_in': 'WETH',
+                    'token_out': 'WBTC'
+                }
+            else:
+                return False
+
+        except Exception as e:
+            print(f"❌ WETH to WBTC swap failed: {e}")
+            return False
+
+    def swap_weth_for_dai(self, weth_amount):
+        """Swap WETH for DAI on Uniswap V3 — prefers 500 fee tier"""
+        try:
+            print(f"🔄 Swapping {weth_amount:.8f} WETH for DAI...")
+
+            if weth_amount <= 0:
+                print("❌ Invalid WETH amount for swap")
+                return False
+
+            swap_result = self._execute_swap(
+                self.weth_address,
+                self.dai_address,
+                weth_amount,
+                "WETH",
+                "DAI"
+            )
+
+            if swap_result and isinstance(swap_result, str):
+                return {
+                    'success': True,
+                    'tx_hash': swap_result,
+                    'amount_in': weth_amount,
+                    'token_in': 'WETH',
+                    'token_out': 'DAI'
+                }
+            else:
+                return False
+
+        except Exception as e:
+            print(f"❌ WETH to DAI swap failed: {e}")
+            return False
+
     def swap_dai_for_arb(self, dai_amount):
         """Swap DAI for ARB on Uniswap V3 - Extended for ARB token swaps with profit tracking"""
         try:
