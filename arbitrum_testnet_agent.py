@@ -3672,12 +3672,28 @@ class ArbitrumTestnetAgent:
                         performance = 0.4
                     executed = True
 
+            if not executed and hasattr(self, 'liability_short_strategy') and self.liability_short_strategy:
+                ls_executed = self._check_liability_short_triggers(total_collateral, health_factor, available_borrows)
+                if ls_executed:
+                    performance = 0.9
+                    executed = True
+
             if not executed:
                 growth_from_baseline = total_collateral - self.last_collateral_value_usd
                 growth_pct = (growth_from_baseline / self.last_collateral_value_usd * 100) if self.last_collateral_value_usd > 0 else 0
                 print(f"💤 IDLE: Growth ${growth_from_baseline:.2f} ({growth_pct:.1f}%) from ${self.last_collateral_value_usd:.0f} baseline")
                 print(f"   Growth Path: needs ${self.growth_min_capacity:.0f} capacity + 10% growth (have ${available_borrows:.2f} + {growth_pct:.1f}%)")
                 print(f"   Capacity Path: needs ${self.capacity_min_capacity:.0f} capacity (have ${available_borrows:.2f})")
+                ls_status = ""
+                if hasattr(self, 'liability_short_strategy') and self.liability_short_strategy:
+                    ls = self.liability_short_strategy
+                    if ls.has_active_position():
+                        active = ls.get_active_position()
+                        ls_status = f" | LS: {active.get('tier','?')} position active"
+                    else:
+                        drop_pct = ls.get_collateral_drop_pct(total_collateral)
+                        ls_status = f" | LS: watching (drop {drop_pct:.1f}%)"
+                print(f"   Liability Short: needs >2% collateral drop + HF>1.47{ls_status}")
                 performance = 0.6
 
             return performance

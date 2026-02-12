@@ -203,6 +203,8 @@ class UniswapIntegration:
                 (dai_address_lower, arb_address_lower),   # DAI → ARB
                 (arb_address_lower, dai_address_lower),   # ARB → DAI
                 (dai_address_lower, gho_address_lower),   # DAI → GHO
+                (weth_address_lower, wbtc_address_lower), # WETH → WBTC (Liability Short)
+                (weth_address_lower, dai_address_lower),  # WETH → DAI (Liability Short)
             ]
 
             current_swap = (token_in_lower, token_out_lower)
@@ -222,6 +224,8 @@ class UniswapIntegration:
                 token_out_name = "GHO"
             elif token_in_lower == arb_address_lower:
                 token_out_name = "DAI (from ARB)"
+            elif token_in_lower == weth_address_lower and token_out_lower == dai_address_lower:
+                token_out_name = "DAI (from WETH)"
             else:
                 token_out_name = "UNKNOWN"
 

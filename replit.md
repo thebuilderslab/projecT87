@@ -58,30 +58,64 @@ Autonomous Aave V3 debt management system on Arbitrum Mainnet with two distinct 
 - Steps that fail are tracked in `steps_failed` list and reported at completion
 - If WALLET_S transfer succeeds but some swaps failed, path is marked as "partial" success
 
+### Liability Short Strategy — PRIORITY 3 (checked after Growth/Capacity, before IDLE)
+**Purpose:** Short ETH debt to hedge against market drops. Composite two-part action.
+
+**Macro Entry ($10.90 WETH borrow + $10.80 debt swap)**
+- Activates on: >5% collateral drop from baseline + HF >1.52
+- Requires: Available capacity >= $13
+- Part A Distribution (borrow WETH, distribute):
+  - $2.10 WETH → WBTC swap + supply to Aave
+  - $2.10 WETH supply to Aave
+  - $5.60 WETH → DAI swap (supply $4.50 + transfer $1.10 to WALLET_S)
+  - $1.10 WETH → ETH (gas reserve)
+- Part B: Swap $10.80 DAI debt → WETH debt via BidirectionalDebtSwapper
+
+**Micro Entry ($7.20 WETH borrow + $10.10 debt swap)**
+- Activates on: >2% collateral drop from baseline + HF >1.47
+- Requires: Available capacity >= $9
+- Part A Distribution:
+  - $1.10 WETH → WBTC swap + supply
+  - $1.10 WETH supply
+  - $3.90 WETH → DAI swap (supply $2.80 + transfer $1.10)
+  - $1.10 WETH → ETH (gas reserve)
+- Part B: Swap $10.10 DAI debt → WETH debt
+
+**Exit Trigger:** ETH recovers >2% from entry price → WETH→DAI debt swap to lock gains
+
+**Position Tracking:** `debt_swap_positions.json` tracks active/historical positions
+**Cooldown:** 600s between debt swap operations
+
 ### Health Factor Thresholds
 - TARGET_HEALTH_FACTOR = 1.40
-- MIN_HEALTH_FACTOR = 1.35 (unified across all checks)
+- MIN_HEALTH_FACTOR = 1.35 (absolute floor, unified across all checks)
+- MACRO_ENTRY = 1.52 (Liability Short macro tier)
+- MICRO_ENTRY = 1.47 (Liability Short micro tier)
 
 ### Baseline Management
-- Initial baseline: $47.00
+- Initial baseline: $38.00 (post-rebalance)
 - Updates only after successful Growth Path completion
 - Does NOT update on Capacity Path completion
 
 ## Key Files
-- `arbitrum_testnet_agent.py` - Main agent class with dual-path execution
+- `arbitrum_testnet_agent.py` - Main agent class with tri-path execution (Growth/Capacity/Liability Short)
+- `liability_short_strategy.py` - Liability Short trigger evaluation, position tracking, ETH price monitoring
+- `debt_swap_bidirectional.py` - BidirectionalDebtSwapper for on-chain DAI⇄WETH debt position swaps
 - `config_constants.py` - Configuration constants
 - `run_autonomous_mainnet.py` - Mainnet autonomous runner (130s cycle)
 - `web_dashboard.py` - Web dashboard on port 5000
-- `aave_integration.py` - Aave V3 protocol integration
-- `uniswap_integration.py` - Uniswap V3 swap integration
+- `aave_integration.py` - Aave V3 protocol integration (DAI borrow + WETH borrow)
+- `uniswap_integration.py` - Uniswap V3 swap integration (DAI/WETH→WBTC/WETH/DAI)
 - `aave_health_monitor.py` - Health factor monitoring
 - `environmental_configuration.py` - Environment and network config
 
 ## Contracts (Arbitrum Mainnet)
 - Aave Pool: `0x794a61358D6845594F94dc1DB02A252b5b4814aD`
+- ParaSwap Debt Swap Adapter V3: `0x63dfa7c09Dc2Ff4030d6B8Dc2ce6262BF898C8A4`
 - DAI: `0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1`
 - WETH: `0x82aF49447D8a07e3bd95BD0d56f35241523fBab1`
 - WBTC: `0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f`
+- WETH Variable Debt Token: `0x0c84331e39d6658Cd6e6b9ba04736cC4c4734351`
 
 ## Workflows
 - **Dashboard** (`python web_dashboard.py`) - Web UI on port 5000
@@ -116,3 +150,14 @@ Autonomous Aave V3 debt management system on Arbitrum Mainnet with two distinct 
 - Block monitor now checks execution_state.json before triggering new executions (prevents double-borrows)
 - Recovery auto-clears stale state after 3 failed attempts
 - Health factor emergency detection: agent blocks all borrows when HF < 1.35
+
+### Feb 12, 2026 - Liability Short Strategy
+- Added `liability_short_strategy.py` with position tracking, dual-tier entry (Macro/Micro), exit trigger
+- Added `borrow_weth()` to `aave_integration.py` for WETH borrowing from Aave V3
+- Added `swap_weth_for_wbtc()` and `swap_weth_for_dai()` to `uniswap_integration.py`
+- Whitelisted WETH→WBTC and WETH→DAI swaps in Uniswap allowlist
+- Built `_execute_liability_short_entry()` composite executor (Part A borrow+distribute + Part B debt swap)
+- Built `_execute_liability_short_exit()` for WETH→DAI debt swap on ETH recovery
+- Wired `_check_liability_short_triggers()` into autonomous monitor (Priority 3, after Growth/Capacity)
+- IDLE status now shows Liability Short position state and collateral drop monitoring
+- Confirmed correct adapter address: `0x63dfa7c09Dc2Ff4030d6B8Dc2ce6262BF898C8A4`
