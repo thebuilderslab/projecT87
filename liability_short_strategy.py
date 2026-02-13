@@ -166,6 +166,18 @@ class LiabilityShortStrategy:
             return 0.0
         return (drop / baseline) * 100.0
 
+    def get_trigger_levels(self) -> Dict:
+        baseline = getattr(self.agent, 'last_collateral_value_usd', 0)
+        if baseline <= 0:
+            return {"micro_trigger_usd": 0, "macro_trigger_usd": 0, "baseline": 0}
+        micro_trigger_usd = baseline * (1.0 - MICRO_TRIGGER['collateral_drop_pct'] / 100.0)
+        macro_trigger_usd = baseline * (1.0 - MACRO_TRIGGER['collateral_drop_pct'] / 100.0)
+        return {
+            "micro_trigger_usd": round(micro_trigger_usd, 2),
+            "macro_trigger_usd": round(macro_trigger_usd, 2),
+            "baseline": round(baseline, 2),
+        }
+
     def check_macro_entry(self, current_collateral: float, health_factor: float) -> Tuple[bool, str]:
         if self.has_active_position():
             return False, "Position already active — cannot open new entry"
@@ -173,9 +185,14 @@ class LiabilityShortStrategy:
         if self._is_on_cooldown():
             return False, "Debt swap on cooldown"
 
-        drop_pct = self.get_collateral_drop_pct(current_collateral)
-        if drop_pct < MACRO_TRIGGER['collateral_drop_pct']:
-            return False, f"Collateral drop {drop_pct:.1f}% < {MACRO_TRIGGER['collateral_drop_pct']}% threshold"
+        levels = self.get_trigger_levels()
+        macro_target = levels["macro_trigger_usd"]
+        if macro_target <= 0:
+            return False, "Baseline not set — cannot evaluate macro trigger"
+
+        if current_collateral >= macro_target:
+            drop_pct = self.get_collateral_drop_pct(current_collateral)
+            return False, f"Collateral ${current_collateral:.2f} above macro target ${macro_target:.2f} (drop {drop_pct:.1f}%)"
 
         if health_factor < MACRO_TRIGGER['min_health_factor']:
             return False, f"HF {health_factor:.3f} < {MACRO_TRIGGER['min_health_factor']} minimum"
@@ -183,7 +200,8 @@ class LiabilityShortStrategy:
         if health_factor < 1.35:
             return False, f"HF {health_factor:.3f} below absolute floor 1.35"
 
-        return True, f"MACRO ENTRY: Collateral dropped {drop_pct:.1f}% (>{MACRO_TRIGGER['collateral_drop_pct']}%), HF {health_factor:.3f} (>{MACRO_TRIGGER['min_health_factor']})"
+        drop_pct = self.get_collateral_drop_pct(current_collateral)
+        return True, f"MACRO ENTRY: Collateral ${current_collateral:.2f} < ${macro_target:.2f} target (drop {drop_pct:.1f}%), HF {health_factor:.3f} (>{MACRO_TRIGGER['min_health_factor']})"
 
     def check_micro_entry(self, current_collateral: float, health_factor: float) -> Tuple[bool, str]:
         if self.has_active_position():
@@ -192,9 +210,14 @@ class LiabilityShortStrategy:
         if self._is_on_cooldown():
             return False, "Debt swap on cooldown"
 
-        drop_pct = self.get_collateral_drop_pct(current_collateral)
-        if drop_pct < MICRO_TRIGGER['collateral_drop_pct']:
-            return False, f"Collateral drop {drop_pct:.1f}% < {MICRO_TRIGGER['collateral_drop_pct']}% threshold"
+        levels = self.get_trigger_levels()
+        micro_target = levels["micro_trigger_usd"]
+        if micro_target <= 0:
+            return False, "Baseline not set — cannot evaluate micro trigger"
+
+        if current_collateral >= micro_target:
+            drop_pct = self.get_collateral_drop_pct(current_collateral)
+            return False, f"Collateral ${current_collateral:.2f} above micro target ${micro_target:.2f} (drop {drop_pct:.1f}%)"
 
         if health_factor < MICRO_TRIGGER['min_health_factor']:
             return False, f"HF {health_factor:.3f} < {MICRO_TRIGGER['min_health_factor']} minimum"
@@ -202,7 +225,8 @@ class LiabilityShortStrategy:
         if health_factor < 1.35:
             return False, f"HF {health_factor:.3f} below absolute floor 1.35"
 
-        return True, f"MICRO ENTRY: Collateral dropped {drop_pct:.1f}% (>{MICRO_TRIGGER['collateral_drop_pct']}%), HF {health_factor:.3f} (>{MICRO_TRIGGER['min_health_factor']})"
+        drop_pct = self.get_collateral_drop_pct(current_collateral)
+        return True, f"MICRO ENTRY: Collateral ${current_collateral:.2f} < ${micro_target:.2f} target (drop {drop_pct:.1f}%), HF {health_factor:.3f} (>{MICRO_TRIGGER['min_health_factor']})"
 
     def check_exit_trigger(self) -> Tuple[bool, str]:
         active = self.get_active_position()
@@ -303,6 +327,7 @@ class LiabilityShortStrategy:
         current_eth = self.get_eth_price()
         baseline = getattr(self.agent, 'last_collateral_value_usd', 0)
 
+        levels = self.get_trigger_levels()
         summary = {
             "strategy_active": True,
             "has_position": self.has_active_position(),
@@ -311,6 +336,8 @@ class LiabilityShortStrategy:
             "entry_eth_price": active.get("entry_eth_price") if active else None,
             "current_eth_price": current_eth,
             "collateral_baseline": baseline,
+            "micro_trigger_usd": levels["micro_trigger_usd"],
+            "macro_trigger_usd": levels["macro_trigger_usd"],
             "on_cooldown": self._is_on_cooldown(),
             "total_positions_history": len(self.positions.get("positions", [])),
         }

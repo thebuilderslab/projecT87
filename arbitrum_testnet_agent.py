@@ -3684,16 +3684,24 @@ class ArbitrumTestnetAgent:
                 print(f"💤 IDLE: Growth ${growth_from_baseline:.2f} ({growth_pct:.1f}%) from ${self.last_collateral_value_usd:.0f} baseline")
                 print(f"   Growth Path: needs ${self.growth_min_capacity:.0f} capacity + 10% growth (have ${available_borrows:.2f} + {growth_pct:.1f}%)")
                 print(f"   Capacity Path: needs ${self.capacity_min_capacity:.0f} capacity (have ${available_borrows:.2f})")
-                ls_status = ""
                 if hasattr(self, 'liability_short_strategy') and self.liability_short_strategy:
                     ls = self.liability_short_strategy
                     if ls.has_active_position():
                         active = ls.get_active_position()
-                        ls_status = f" | LS: {active.get('tier','?')} position active"
+                        entry_price = active.get('entry_eth_price', 0)
+                        current_eth = ls.get_eth_price()
+                        eth_info = ""
+                        if current_eth and entry_price:
+                            change_pct = ((current_eth - entry_price) / entry_price) * 100
+                            eth_info = f" | ETH {change_pct:+.1f}% from ${entry_price:.2f}"
+                        print(f"   📊 Liability Short: {active.get('tier','?').upper()} position active{eth_info}")
                     else:
-                        drop_pct = ls.get_collateral_drop_pct(total_collateral)
-                        ls_status = f" | LS: watching (drop {drop_pct:.1f}%)"
-                print(f"   Liability Short: needs >2% collateral drop + HF>1.47{ls_status}")
+                        levels = ls.get_trigger_levels()
+                        micro_t = levels["micro_trigger_usd"]
+                        macro_t = levels["macro_trigger_usd"]
+                        print(f"   📉 Liability Short Targets: Micro < ${micro_t:.2f} | Macro < ${macro_t:.2f} (Current: ${total_collateral:.2f})")
+                else:
+                    print(f"   Liability Short: strategy not loaded")
                 performance = 0.6
 
             return performance
