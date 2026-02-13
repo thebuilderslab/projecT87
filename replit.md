@@ -127,6 +127,18 @@ Autonomous Aave V3 debt management system on Arbitrum Mainnet with two distinct 
 - `WALLET_S_ADDRESS` - Destination for DAI transfers
 - `ARBITRUM_RPC_URL` - Arbitrum RPC endpoint
 
+## Web Dashboard — 5-Zone Command Center
+- Psychology-first UI with anxiety-reducing terminology
+- Zone 1: Safety Rating (circular SVG gauge with traffic light glow)
+- Zone 2: Active Wealth (net value, collateral, debt breakdown)
+- Zone 3: Defensive Guardrails (Micro/Macro trigger targets from Liability Short)
+- Zone 4: Engine Room (cooldown timers, capacity meter)
+- Zone 5: Intelligence Feed (color-coded log with jargon translation)
+- Traffic light system: green (HF>1.52), amber (1.35-1.52), pulsing red (<1.35)
+- API: `/api/command-center` consolidates all zone data, refreshes every 5s
+- Agent writes `system_status.json` each cycle with HF, triggers, cooldowns
+- Jargon translation: swap→Rebalancing Assets, borrow→Expanding Position, repay→Reducing Risk
+
 ## Recent Changes (Feb 2026)
 - Implemented fixed-value dual-path system (Growth: $10.20, Capacity: $5.50)
 - Added Global Execution Lock with 130s cooldown
