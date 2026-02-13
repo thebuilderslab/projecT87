@@ -1,0 +1,15 @@
+{
+  "step": "weth_supplied",
+  "path_name": "growth",
+  "distribution": {
+    "total_borrow": 10.2,
+    "dai_supply": 3.0,
+    "wbtc_swap_supply": 3.0,
+    "weth_swap_supply": 2.0,
+    "eth_gas_reserve": 1.1,
+    "dai_transfer": 1.1,
+    "min_capacity": 12.0
+  },
+  "timestamp": 1770952019.8030834,
+  "timestamp_human": "2026-02-13 03:06:59"
+}

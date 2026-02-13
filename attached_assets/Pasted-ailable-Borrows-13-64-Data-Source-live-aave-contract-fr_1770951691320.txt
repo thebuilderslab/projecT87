@@ -1,0 +1,111 @@
+ailable Borrows: $13.64
+   Data Source: live_aave_contract_fresh
+   Data Quality: ✅ VALIDATED
+   Using fallback ETH price: $2980.00
+⚠️ Missed 1 blocks
+⚠️ Missed 1 blocks
+🔍 Enhanced dashboard data fetching with validation...
+INFO:web_dashboard:📊 Using LIVE AAVE CONTRACT data: HF 1.2418
+   ✅ Data validation passed
+✅ Dashboard method successful with validated data!
+   Health Factor: 1.2418
+   Collateral: $115.23
+   Debt: $76.63
+   Available Borrows: $13.64
+   Data Source: live_aave_contract_fresh
+   Data Quality: ✅ VALIDATED
+   Using fallback ETH price: $2980.00
+⚠️ Missed 1 blocks
+⚠️ Missed 1 blocks
+🔍 Enhanced dashboard data fetching with validation...
+INFO:web_dashboard:📊 Using LIVE AAVE CONTRACT data: HF 1.2418
+   ✅ Data validation passed
+✅ Dashboard method successful with validated data!
+   Health Factor: 1.2418
+   Collateral: $115.23
+   Debt: $76.63
+   Available Borrows: $13.64
+   Data Source: live_aave_contract_fresh
+   Data Quality: ✅ VALIDATED
+INFO:web_dashboard:📊 Using LIVE AAVE CONTRACT data: HF 1.2418
+   Using fallback ETH price: $2980.00
+INFO:web_dashboard:📊 Using LIVE AAVE CONTRACT data: HF 1.2418
+⚠️ Missed 2 blocks
+🔍 Enhanced dashboard data fetching with validation...
+INFO:web_dashboard:📊 Using LIVE AAVE CONTRACT data: HF 1.2418
+   ✅ Data validation passed
+✅ Dashboard method successful with validated data!
+   Health Factor: 1.2418
+   Collateral: $115.23
+   Debt: $76.63
+   Available Borrows: $13.64
+   Data Source: live_aave_contract_fresh
+   Data Quality: ✅ VALIDATED
+   Using fallback ETH price: $2980.00
+⚠️ Missed 1 blocks
+🔍 Enhanced dashboard data fetching with validation...
+INFO:web_dashboard:📊 Using LIVE AAVE CONTRACT data: HF 1.2418
+   ✅ Data validation passed
+✅ Dashboard method successful with validated data!
+   Health Factor: 1.2418
+   Collateral: $115.23
+   Debt: $76.63
+   Available Borrows: $13.64
+   Data Source: live_aave_contract_fresh
+   Data Quality: ✅ VALIDATED
+   Using fallback ETH price: $2980.00
+⚠️ Missed 1 blocks
+⚠️ Missed 1 blocks
+INFO:web_dashboard:📊 Using LIVE AAVE CONTRACT data: HF 1.2418
+🔍 Enhanced dashboard data fetching with validation...
+INFO:web_dashboard:📊 Using LIVE AAVE CONTRACT data: HF 1.2418
+INFO:web_dashboard:📊 Using LIVE AAVE CONTRACT data: HF 1.2418
+   ✅ Data validation passed
+✅ Dashboard method successful with validated data!
+   Health Factor: 1.2418
+   Collateral: $115.23
+   Debt: $76.63
+   Available Borrows: $13.64
+   Data Source: live_aave_contract_fresh
+   Data Quality: ✅ VALIDATED
+   Using fallback ETH price: $2980.00
+⚠️ Missed 1 blocks
+⚠️ Missed 1 blocks
+🔍 Enhanced dashboard data fetching with validation...
+INFO:web_dashboard:📊 Using LIVE AAVE CONTRACT data: HF 1.2418
+   ✅ Data validation passed
+✅ Dashboard method successful with validated data!
+   Health Factor: 1.2418
+   Collateral: $115.23
+   Debt: $76.63
+   Available Borrows: $13.64
+   Data Source: live_aave_contract_fresh
+   Data Quality: ✅ VALIDATED
+   Using fallback ETH price: $2980.00
+⚠️ Missed 2 blocks
+🔍 Enhanced dashboard data fetching with validation...
+INFO:web_dashboard:📊 Using LIVE AAVE CONTRACT data: HF 1.2418
+   ✅ Data validation passed
+✅ Dashboard method successful with validated data!
+   Health Factor: 1.2418
+   Collateral: $115.23
+   Debt: $76.63
+   Available Borrows: $13.64
+   Data Source: live_aave_contract_fresh
+   Data Quality: ✅ VALIDATED
+   Using fallback ETH price: $2980.00
+INFO:web_dashboard:📊 Using LIVE AAVE CONTRACT data: HF 1.2418
+INFO:web_dashboard:📊 Using LIVE AAVE CONTRACT data: HF 1.2418
+⚠️ Missed 2 blocks
+🔍 Enhanced dashboard data fetching with validation...
+INFO:web_dashboard:📊 Using LIVE AAVE CONTRACT data: HF 1.2418
+   ✅ Data validation passed
+✅ Dashboard method successful with validated data!
+   Health Factor: 1.2418
+   Collateral: $115.23
+   Debt: $76.63
+   Available Borrows: $13.64
+   Data Source: live_aave_contract_fresh
+   Data Quality: ✅ VALIDATED
+   Using fallback ETH price: $2980.00
+⚠️ Missed 2 blocks
