@@ -566,7 +566,9 @@ class ArbitrumTestnetAgent:
         self.last_collateral_value_usd = 38.0
         self.baseline_initialized = True
         self.baseline_sync_attempted = True
+        self.qa_mode = True
         print("💰 Initialized last_collateral_value_usd to $38.00 (post-rebalance baseline)")
+        print("⚠️ QA MODE ENABLED: Growth/Capacity execution globally blocked")
         print(f"📊 Baseline set to: ${self.last_collateral_value_usd:.2f} — growth trigger will detect changes from this level")
 
         # STARTER PLAN OPTIMIZED COOLDOWN SETTINGS
@@ -2314,6 +2316,9 @@ class ArbitrumTestnetAgent:
         5. Swap $1.10 DAI -> ETH, hold in wallet for gas
         6. Transfer $1.10 DAI to WALLET_S_ADDRESS
         """
+        if self.qa_mode:
+            print("⚠️ QA MODE BLOCK: Growth execution attempted but BLOCKED.")
+            return False
         return self._execute_fixed_distribution('growth', self.GROWTH_DISTRIBUTION)
 
     def _execute_capacity_operation(self, available_borrows):
@@ -2328,6 +2333,9 @@ class ArbitrumTestnetAgent:
         5. Swap $1.10 DAI -> ETH, hold in wallet for gas
         6. Transfer $1.10 DAI to WALLET_S_ADDRESS
         """
+        if self.qa_mode:
+            print("⚠️ QA MODE BLOCK: Capacity execution attempted but BLOCKED.")
+            return False
         return self._execute_fixed_distribution('capacity', self.CAPACITY_DISTRIBUTION)
 
     def _execute_fixed_distribution(self, path_name, distribution, resume_after=None):
@@ -3537,9 +3545,15 @@ class ArbitrumTestnetAgent:
 
             pending_state = self.load_execution_state()
             if pending_state and pending_state.get("step") != "wallet_s_transferred":
-                print(f"\n🔄 CRASH RECOVERY: Found interrupted '{pending_state['path_name']}' path at step '{pending_state['step']}'")
-                print(f"   Resuming execution from after '{pending_state['step']}'...")
+                if self.qa_mode:
+                    print(f"⚠️ QA MODE BLOCK: Crash recovery for '{pending_state['path_name']}' attempted but BLOCKED.")
+                    self._clear_execution_state()
+                    pending_state = None
+                else:
+                    print(f"\n🔄 CRASH RECOVERY: Found interrupted '{pending_state['path_name']}' path at step '{pending_state['step']}'")
+                    print(f"   Resuming execution from after '{pending_state['step']}'...")
 
+            if pending_state and pending_state.get("step") != "wallet_s_transferred":
                 if not hasattr(self, 'aave') or not self.aave:
                     print("❌ Aave integration not available — cannot resume")
                     return 0.5
