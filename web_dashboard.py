@@ -819,6 +819,130 @@ def clear_emergency_stop():
         logger.error(f"Clear emergency stop API error: {e}")
         return jsonify({'error': str(e)}), 500
 
+@app.route('/api/command-center')
+def command_center():
+    """Consolidated endpoint for the 5-zone command center dashboard"""
+    try:
+        live_data = get_live_agent_data()
+        agent_running = check_autonomous_agent_running()
+
+        health_factor = live_data.get('health_factor', 0)
+        total_collateral = live_data.get('total_collateral_usdc', 0)
+        total_debt = live_data.get('total_debt_usdc', 0)
+        available_borrows = live_data.get('available_borrows_usdc', 0)
+
+        if health_factor > 1.52:
+            hf_status = "HEALTHY"
+        elif health_factor >= 1.35:
+            hf_status = "CAUTION"
+        else:
+            hf_status = "EMERGENCY"
+
+        ls_data = {"micro_trigger_usd": 0, "macro_trigger_usd": 0, "has_active_position": False, "position_tier": None, "entry_eth_price": None, "current_eth_price": None}
+        growth_cooldown = 0
+        ls_cooldown = 0
+
+        status_file = {}
+        try:
+            if os.path.exists('system_status.json'):
+                with open('system_status.json', 'r') as f:
+                    status_file = json.loads(f.read())
+                ls_data = status_file.get('liability_short', ls_data)
+                growth_cooldown = status_file.get('growth_cooldown_remaining', 0)
+                ls_cooldown = status_file.get('ls_cooldown_remaining', 0)
+        except Exception:
+            pass
+
+        if not ls_data.get('micro_trigger_usd') and agent and hasattr(agent, 'liability_short_strategy') and agent.liability_short_strategy:
+            try:
+                levels = agent.liability_short_strategy.get_trigger_levels()
+                ls_data["micro_trigger_usd"] = levels.get("micro_trigger_usd", 0)
+                ls_data["macro_trigger_usd"] = levels.get("macro_trigger_usd", 0)
+                ls_data["has_active_position"] = agent.liability_short_strategy.has_active_position()
+                ls_data["current_eth_price"] = agent.liability_short_strategy.get_eth_price()
+            except Exception:
+                pass
+
+        baseline = 47.0
+        value_change = total_collateral - baseline
+        value_change_pct = (value_change / baseline * 100) if baseline > 0 else 0
+
+        intel_lines = []
+        try:
+            raw_lines = list(console_buffer)[-30:] if console_buffer else []
+            translation_map = {
+                "swap": "Rebalancing Assets",
+                "Swap": "Rebalancing Assets",
+                "SWAP": "REBALANCING ASSETS",
+                "borrow": "Expanding Position",
+                "Borrow": "Expanding Position",
+                "BORROW": "EXPANDING POSITION",
+                "repay": "Reducing Risk",
+                "Repay": "Reducing Risk",
+                "REPAY": "REDUCING RISK",
+                "supply": "Strengthened Position",
+                "Supply": "Strengthened Position",
+                "SUPPLY": "STRENGTHENED POSITION",
+                "execute": "Action Taken",
+                "Execute": "Action Taken",
+            }
+            decision_keywords = [
+                "TRIGGER", "IDLE", "EMERGENCY", "GROWTH", "CAPACITY", "LIABILITY",
+                "SUCCESS", "FAILED", "ACTIVATED", "Monitoring cycle", "Position:",
+                "Waiting", "HF", "Health factor", "RECOVERY", "defense", "hedge",
+                "Liability Short", "Defensive", "EXECUTING", "Operation",
+            ]
+            for line in raw_lines:
+                if any(kw in line for kw in decision_keywords):
+                    translated = line
+                    for old_term, new_term in translation_map.items():
+                        translated = translated.replace(old_term, new_term)
+                    for prefix in ["INFO:", "WARNING:", "ERROR:", "DEBUG:", "INFO:web_dashboard:", "INFO:market_signal_strategy:", "INFO:enhanced_market_analyzer:", "INFO:cost_optimization_manager:", "INFO:liability_short_strategy:"]:
+                        translated = translated.replace(prefix, "")
+                    intel_lines.append(translated.strip())
+        except Exception:
+            intel_lines = ["Intelligence Feed initializing..."]
+
+        result = {
+            "zone1_safety": {
+                "health_factor": round(health_factor, 4),
+                "hf_status": hf_status,
+                "agent_running": agent_running,
+            },
+            "zone2_wealth": {
+                "total_value_usd": round(total_collateral, 2),
+                "total_debt_usd": round(total_debt, 2),
+                "net_value_usd": round(total_collateral - total_debt, 2),
+                "change_24h_usd": round(value_change, 2),
+                "change_24h_pct": round(value_change_pct, 1),
+            },
+            "zone3_guardrails": {
+                "micro_trigger_usd": ls_data.get("micro_trigger_usd", 0),
+                "macro_trigger_usd": ls_data.get("macro_trigger_usd", 0),
+                "has_active_position": ls_data.get("has_active_position", False),
+                "position_tier": ls_data.get("position_tier"),
+                "current_eth_price": ls_data.get("current_eth_price"),
+                "entry_eth_price": ls_data.get("entry_eth_price"),
+                "current_collateral": round(total_collateral, 2),
+            },
+            "zone4_engine": {
+                "growth_cooldown_sec": round(max(0, growth_cooldown), 0),
+                "ls_cooldown_sec": round(max(0, ls_cooldown), 0),
+                "available_borrows": round(available_borrows, 2),
+                "total_debt": round(total_debt, 2),
+                "borrow_capacity": round(total_collateral * 0.8, 2),
+            },
+            "zone5_intel": {
+                "lines": intel_lines[-15:],
+            },
+            "timestamp": time.time(),
+            "success": True,
+        }
+        return jsonify(result)
+    except Exception as e:
+        logger.error(f"Command center API error: {e}")
+        return jsonify({"error": str(e), "success": False}), 500
+
 @app.route('/api/test')
 def api_test():
     """Simple API test"""

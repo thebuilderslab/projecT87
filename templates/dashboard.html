@@ -3,1504 +3,735 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DeFi Agent Dashboard</title>
+    <title>Jovan Bot — Command Center</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+        :root {
+            --bg-primary: #0a0e1a;
+            --bg-card: #111827;
+            --bg-card-hover: #1a2236;
+            --signal-white: #FFFFFF;
+            --muted-slate: #7a8ba7;
+            --label-slate: #5a6a80;
+            --green-glow: #22c55e;
+            --green-soft: rgba(34,197,94,0.15);
+            --amber-glow: #f59e0b;
+            --amber-soft: rgba(245,158,11,0.15);
+            --red-glow: #ef4444;
+            --red-soft: rgba(239,68,68,0.15);
+            --accent-blue: #3b82f6;
+            --border-default: #1e293b;
         }
 
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #1a1a2e, #16213e, #0f3460);
-            color: white;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+            background: var(--bg-primary);
+            color: var(--signal-white);
             min-height: 100vh;
             overflow-x: hidden;
         }
 
-        .dashboard-container {
-            max-width: 1400px;
+        .command-center {
+            max-width: 1280px;
             margin: 0 auto;
-            padding: 20px;
+            padding: 16px;
         }
 
-        .header {
-            text-align: center;
-            margin-bottom: 40px;
-            padding: 20px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 15px;
-            backdrop-filter: blur(10px);
-        }
-
-        .header h1 {
-            font-size: 2.5rem;
-            margin-bottom: 10px;
-            background: linear-gradient(45deg, #00d4ff, #ff6b6b, #4ecdc4);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-
-        .status-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 10px;
-            margin-bottom: 15px;
-        }
-
-        .status-card {
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 10px;
-            padding: 10px;
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-        }
-
-        .status-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-        }
-
-        .card-title {
-            font-size: 0.85rem;
-            margin-bottom: 6px;
-            color: #00d4ff;
+        .header-bar {
             display: flex;
             align-items: center;
-            gap: 6px;
+            justify-content: space-between;
+            padding: 12px 20px;
+            margin-bottom: 16px;
+            background: var(--bg-card);
+            border-radius: 12px;
+            border: 1px solid var(--border-default);
         }
 
-        .card-value {
+        .header-bar h1 {
             font-size: 1.1rem;
-            font-weight: bold;
-            margin-bottom: 5px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
         }
 
-        .card-subtitle {
-            font-size: 0.75rem;
-            color: rgba(255, 255, 255, 0.7);
+        .header-bar .conn-badge {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.8rem;
+            color: var(--muted-slate);
         }
 
-        .loading {
-            display: inline-block;
-            width: 20px;
-            height: 20px;
-            border: 3px solid rgba(255, 255, 255, 0.3);
+        .conn-dot {
+            width: 8px; height: 8px;
             border-radius: 50%;
-            border-top-color: #00d4ff;
-            animation: spin 1s ease-in-out infinite;
+            background: var(--green-glow);
+            animation: pulse-dot 2s infinite;
+        }
+        .conn-dot.offline { background: var(--red-glow); }
+
+        @keyframes pulse-dot {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
         }
 
-        @keyframes spin {
-            to { transform: rotate(360deg); }
+        .grid-layout {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: auto auto auto;
+            gap: 14px;
         }
 
-        .network-status {
-            background: rgba(0, 212, 255, 0.1);
-            border-left: 4px solid #00d4ff;
+        .zone-card {
+            background: var(--bg-card);
+            border-radius: 14px;
+            padding: 22px;
+            border: 1.5px solid var(--border-default);
+            transition: border-color 0.6s ease, box-shadow 0.6s ease;
+            position: relative;
         }
 
-        .wallet-info {
-            background: rgba(255, 107, 107, 0.1);
-            border-left: 4px solid #ff6b6b;
+        .zone-card.glow-green {
+            border-color: var(--green-glow);
+            box-shadow: 0 0 20px rgba(34,197,94,0.12), inset 0 0 20px rgba(34,197,94,0.03);
+        }
+        .zone-card.glow-amber {
+            border-color: var(--amber-glow);
+            box-shadow: 0 0 20px rgba(245,158,11,0.12), inset 0 0 20px rgba(245,158,11,0.03);
+        }
+        .zone-card.glow-red {
+            border-color: var(--red-glow);
+            box-shadow: 0 0 25px rgba(239,68,68,0.2), inset 0 0 25px rgba(239,68,68,0.05);
+            animation: pulse-red 1.5s infinite;
         }
 
-        .aave-status {
-            background: rgba(78, 205, 196, 0.1);
-            border-left: 4px solid #4ecdc4;
+        @keyframes pulse-red {
+            0%, 100% { box-shadow: 0 0 25px rgba(239,68,68,0.2); }
+            50% { box-shadow: 0 0 40px rgba(239,68,68,0.35); }
         }
 
-        .controls {
-            margin-top: 30px;
+        .zone-label {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: var(--label-slate);
+            margin-bottom: 14px;
+            font-weight: 600;
+        }
+
+        .zone-title {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--muted-slate);
+            margin-bottom: 4px;
+        }
+
+        .zone-center { grid-column: 1 / -1; }
+
+        /* ZONE 1: Safety Rating */
+        .safety-row {
+            display: flex;
+            align-items: center;
+            gap: 24px;
+        }
+
+        .hf-gauge-container {
+            flex: 0 0 auto;
+            position: relative;
+            width: 120px;
+            height: 120px;
+        }
+
+        .hf-gauge-svg {
+            width: 120px;
+            height: 120px;
+            transform: rotate(-90deg);
+        }
+
+        .hf-gauge-bg {
+            fill: none;
+            stroke: #1e293b;
+            stroke-width: 8;
+        }
+
+        .hf-gauge-fill {
+            fill: none;
+            stroke-width: 8;
+            stroke-linecap: round;
+            transition: stroke-dashoffset 1s ease, stroke 0.6s ease;
+        }
+
+        .hf-gauge-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
             text-align: center;
         }
 
-        .btn {
-            background: linear-gradient(45deg, #00d4ff, #0099cc);
-            border: none;
-            color: white;
-            padding: 12px 24px;
-            border-radius: 25px;
-            cursor: pointer;
-            font-size: 1rem;
-            margin: 0 10px;
-            transition: all 0.3s ease;
+        .hf-value {
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: var(--signal-white);
+            line-height: 1;
         }
 
-        .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0, 212, 255, 0.4);
+        .hf-sublabel {
+            font-size: 0.6rem;
+            color: var(--muted-slate);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-top: 2px;
         }
 
-        .btn.emergency {
-            background: linear-gradient(45deg, #ff6b6b, #cc0000);
+        .safety-info {
+            flex: 1;
         }
 
-        .btn.emergency:hover {
-            box-shadow: 0 5px 15px rgba(255, 107, 107, 0.4);
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            margin-bottom: 10px;
         }
 
-        .footer {
+        .status-badge.healthy {
+            background: var(--green-soft);
+            color: var(--green-glow);
+            border: 1px solid rgba(34,197,94,0.3);
+        }
+        .status-badge.caution {
+            background: var(--amber-soft);
+            color: var(--amber-glow);
+            border: 1px solid rgba(245,158,11,0.3);
+        }
+        .status-badge.emergency {
+            background: var(--red-soft);
+            color: var(--red-glow);
+            border: 1px solid rgba(239,68,68,0.3);
+        }
+
+        .safety-detail {
+            font-size: 0.8rem;
+            color: var(--muted-slate);
+            line-height: 1.6;
+        }
+
+        /* ZONE 2: Active Wealth */
+        .wealth-main {
+            font-size: 2.4rem;
+            font-weight: 700;
+            color: var(--signal-white);
+            line-height: 1.1;
+            margin-bottom: 6px;
+        }
+
+        .wealth-change {
+            font-size: 0.95rem;
+            font-weight: 500;
+            margin-bottom: 12px;
+        }
+        .wealth-change.positive { color: var(--green-glow); }
+        .wealth-change.negative { color: var(--red-glow); }
+
+        .wealth-breakdown {
+            display: flex;
+            gap: 24px;
+            margin-top: 10px;
+        }
+
+        .wealth-stat {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .wealth-stat-label {
+            font-size: 0.7rem;
+            color: var(--label-slate);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .wealth-stat-value {
+            font-size: 1.05rem;
+            font-weight: 600;
+            color: var(--signal-white);
+        }
+
+        /* ZONE 3: Defensive Guardrails */
+        .guardrails-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        .guardrail-card {
+            background: rgba(255,255,255,0.03);
+            border-radius: 10px;
+            padding: 16px;
+            border: 1px solid var(--border-default);
+        }
+
+        .guardrail-tier {
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: var(--label-slate);
+            margin-bottom: 4px;
+        }
+
+        .guardrail-label {
+            font-size: 0.8rem;
+            color: var(--muted-slate);
+            margin-bottom: 8px;
+            line-height: 1.4;
+        }
+
+        .guardrail-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--signal-white);
+        }
+
+        .guardrail-status {
+            margin-top: 8px;
+            font-size: 0.75rem;
+        }
+        .guardrail-status.armed { color: var(--green-glow); }
+        .guardrail-status.active { color: var(--amber-glow); }
+
+        .guardrails-current {
+            grid-column: 1 / -1;
             text-align: center;
-            margin-top: 40px;
-            padding: 20px;
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 15px;
-            font-size: 0.9rem;
-            color: rgba(255, 255, 255, 0.7);
+            padding: 10px;
+            background: rgba(255,255,255,0.02);
+            border-radius: 8px;
+            margin-top: 4px;
         }
 
-        .error {
-            color: #ff6b6b;
+        .guardrails-current-label {
+            font-size: 0.7rem;
+            color: var(--label-slate);
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
 
-        .success {
-            color: #4ecdc4;
+        .guardrails-current-value {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--signal-white);
         }
 
-        .warning {
-            color: #ffa726;
+        /* ZONE 4: Engine Room */
+        .engine-section {
+            margin-bottom: 16px;
+        }
+
+        .engine-section:last-child { margin-bottom: 0; }
+
+        .engine-section-title {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--label-slate);
+            margin-bottom: 8px;
+        }
+
+        .cooldown-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 12px;
+            background: rgba(255,255,255,0.03);
+            border-radius: 8px;
+            margin-bottom: 6px;
+        }
+
+        .cooldown-name {
+            font-size: 0.8rem;
+            color: var(--muted-slate);
+        }
+
+        .cooldown-value {
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+        .cooldown-value.ready { color: var(--green-glow); }
+        .cooldown-value.waiting { color: var(--amber-glow); }
+
+        .capacity-bar-bg {
+            width: 100%;
+            height: 10px;
+            background: #1e293b;
+            border-radius: 5px;
+            overflow: hidden;
+            margin-top: 6px;
+        }
+
+        .capacity-bar-fill {
+            height: 100%;
+            border-radius: 5px;
+            transition: width 1s ease, background 0.6s ease;
+        }
+
+        .capacity-text {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.75rem;
+            margin-top: 4px;
+        }
+
+        .capacity-text .used { color: var(--signal-white); font-weight: 600; }
+        .capacity-text .cap { color: var(--label-slate); }
+
+        /* ZONE 5: Intelligence Feed */
+        .intel-feed {
+            height: 260px;
+            overflow-y: auto;
+            font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+            font-size: 0.75rem;
+            line-height: 1.7;
+            padding-right: 6px;
+        }
+
+        .intel-feed::-webkit-scrollbar {
+            width: 4px;
+        }
+        .intel-feed::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .intel-feed::-webkit-scrollbar-thumb {
+            background: var(--border-default);
+            border-radius: 2px;
+        }
+
+        .intel-line {
+            padding: 3px 0;
+            color: var(--muted-slate);
+            border-bottom: 1px solid rgba(255,255,255,0.03);
+        }
+
+        .intel-line.event-success { color: var(--green-glow); }
+        .intel-line.event-warning { color: var(--amber-glow); }
+        .intel-line.event-error { color: var(--red-glow); }
+        .intel-line.event-trigger { color: var(--accent-blue); }
+        .intel-line.event-idle { color: var(--label-slate); }
+
+        .last-updated {
+            text-align: center;
+            font-size: 0.65rem;
+            color: var(--label-slate);
+            margin-top: 12px;
+            letter-spacing: 0.5px;
         }
 
         @media (max-width: 768px) {
-            .dashboard-container {
-                padding: 10px;
-            }
-
-            .header h1 {
-                font-size: 2rem;
-            }
-
-            .status-grid {
+            .grid-layout {
                 grid-template-columns: 1fr;
             }
+            .zone-center { grid-column: 1; }
+            .guardrails-grid { grid-template-columns: 1fr; }
+            .wealth-main { font-size: 1.8rem; }
         }
     </style>
 </head>
 <body>
-    <div class="dashboard-container">
-        <div class="header">
-            <h1>🤖 DeFi Agent Dashboard</h1>
-            <p>Autonomous Arbitrum DeFi Operations</p>
-        </div>
-
-        <div class="status-grid">
-            <div class="status-card network-status">
-                <div class="card-title">
-                    🌐 Network Status
-                </div>
-                <div class="card-value" id="network-name">
-                    <span class="loading"></span> Loading...
-                </div>
-                <div class="card-subtitle" id="network-details">
-                    Connecting to blockchain...
-                </div>
-            </div>
-
-            <div class="status-card wallet-info">
-                <div class="card-title">
-                    💰 Wallet Info
-                </div>
-                <div class="card-value" id="wallet-address">
-                    <span class="loading"></span> Loading...
-                </div>
-                <div class="card-subtitle" id="wallet-balance">
-                    ETH: -- | USDC: --
-                </div>
-            </div>
-
-            <div class="status-card aave-status">
-                <div class="card-title">
-                    🏦 Aave Protocol
-                </div>
-                <div class="card-value" id="health-factor">
-                    <span class="loading"></span> Loading...
-                </div>
-                <div class="card-subtitle" id="aave-details">
-                    Collateral: -- | Debt: --
-                </div>
-            </div>
-
-            <div class="status-card" style="grid-column: 1 / -1;">
-                <div class="card-title">
-                    🎛️ System Mode
-                </div>
-                <div class="card-value" id="system-mode">
-                    <span class="loading"></span> Loading...
-                </div>
-                <div class="card-subtitle">
-                    <button class="btn" onclick="switchMode('autonomous')" id="auto-btn">🤖 Autonomous</button>
-                    <button class="btn" onclick="switchMode('manual')" id="manual-btn">🎛️ Manual</button>
-                </div>
+    <div class="command-center">
+        <div class="header-bar">
+            <h1>JOVAN BOT — COMMAND CENTER</h1>
+            <div class="conn-badge">
+                <div class="conn-dot" id="connDot"></div>
+                <span id="connText">Connecting...</span>
             </div>
         </div>
 
-        <!-- ============================================================================ -->
-        <!-- PNL-CENTRIC THRESHOLD METER COMPONENTS - Phase 2.3 -->
-        <!-- ============================================================================ -->
-        <div class="pnl-dashboard" style="margin-bottom: 30px;">
-            <div class="header" style="margin-bottom: 20px;">
-                <h2 style="margin: 0; color: #00d4ff; font-size: 1.8rem; display: flex; align-items: center; gap: 10px;">
-                    📊 PnL Threshold Monitoring
-                    <span style="font-size: 0.9rem; color: rgba(255,255,255,0.6);" id="pnl-status">Live Synchronization</span>
-                </h2>
-                <p style="color: rgba(255,255,255,0.8); margin-top: 8px;">
-                    Real-time PnL tracking vs Growth (5.0%), Capacity (2.0%), and Debt Swap (1.5%) targets
-                </p>
-            </div>
-
-            <!-- Current PnL Performance Overview -->
-            <div class="current-pnl-card" style="background: rgba(0,212,255,0.1); border-radius: 15px; padding: 25px; margin-bottom: 25px; border: 2px solid #00d4ff;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                    <h3 style="color: #00d4ff; margin: 0; font-size: 1.3rem;">📈 Current Performance</h3>
-                    <div id="pnl-connection-status" style="color: #22c55e; font-size: 0.9rem;">🟢 Live</div>
-                </div>
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px;">
-                    <div>
-                        <div style="color: rgba(255,255,255,0.7); font-size: 0.9rem; margin-bottom: 5px;">Current PnL</div>
-                        <div id="current-pnl" style="color: #00d4ff; font-size: 2.2rem; font-weight: bold;">58.16%</div>
+        <div class="grid-layout">
+            <!-- ZONE 1: Safety Rating (Top-Left) -->
+            <div class="zone-card" id="zone1">
+                <div class="zone-label">Zone 1 — Safety Anchor</div>
+                <div class="safety-row">
+                    <div class="hf-gauge-container">
+                        <svg class="hf-gauge-svg" viewBox="0 0 120 120">
+                            <circle class="hf-gauge-bg" cx="60" cy="60" r="50" />
+                            <circle class="hf-gauge-fill" id="hfGaugeFill" cx="60" cy="60" r="50"
+                                stroke-dasharray="314.16"
+                                stroke-dashoffset="314.16" />
+                        </svg>
+                        <div class="hf-gauge-text">
+                            <div class="hf-value" id="hfValue">—</div>
+                            <div class="hf-sublabel">Safety Rating</div>
+                        </div>
                     </div>
-                    <div>
-                        <div style="color: rgba(255,255,255,0.7); font-size: 0.9rem; margin-bottom: 5px;">Collateral Value</div>
-                        <div id="current-collateral" style="color: #22c55e; font-size: 1.4rem; font-weight: bold;">$268.87</div>
-                    </div>
-                    <div>
-                        <div style="color: rgba(255,255,255,0.7); font-size: 0.9rem; margin-bottom: 5px;">Health Factor</div>
-                        <div id="current-health-factor" style="color: #ffc107; font-size: 1.4rem; font-weight: bold;">1.696</div>
+                    <div class="safety-info">
+                        <div class="status-badge" id="statusBadge">
+                            <span id="statusIcon">⏳</span>
+                            <span id="statusText">LOADING</span>
+                        </div>
+                        <div class="safety-detail" id="safetyDetail">
+                            Initializing safety monitoring...
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <!-- PnL Threshold Meters -->
-            <div class="threshold-meters" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
-                
-                <!-- Growth Target Meter (5.0%) -->
-                <div class="meter-card" style="background: rgba(34,197,94,0.1); border-radius: 12px; padding: 20px; border-left: 5px solid #22c55e;">
-                    <div class="meter-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                        <h4 style="color: #22c55e; margin: 0; font-size: 1.1rem;">🎯 Growth Target</h4>
-                        <span id="growth-status" style="font-size: 0.8rem; color: #22c55e;">✅ ACHIEVED</span>
+            <!-- ZONE 2: Active Wealth (Top-Right) -->
+            <div class="zone-card" id="zone2">
+                <div class="zone-label">Zone 2 — Active Wealth</div>
+                <div class="wealth-main" id="totalValue">$—</div>
+                <div class="wealth-change positive" id="valueChange">Calculating...</div>
+                <div class="wealth-breakdown">
+                    <div class="wealth-stat">
+                        <span class="wealth-stat-label">Collateral</span>
+                        <span class="wealth-stat-value" id="collateralVal">$—</span>
                     </div>
-                    
-                    <div class="target-info" style="margin-bottom: 15px;">
-                        <div style="color: rgba(255,255,255,0.7); font-size: 0.8rem;">Target: 5.0%</div>
-                        <div style="color: rgba(255,255,255,0.7); font-size: 0.8rem;">Current: <span id="growth-current" style="color: #22c55e; font-weight: bold;">58.16%</span></div>
+                    <div class="wealth-stat">
+                        <span class="wealth-stat-label">Debt</span>
+                        <span class="wealth-stat-value" id="debtVal">$—</span>
                     </div>
-                    
-                    <div class="progress-bar" style="background: rgba(255,255,255,0.1); border-radius: 10px; height: 20px; overflow: hidden; margin-bottom: 10px;">
-                        <div id="growth-progress" style="background: linear-gradient(90deg, #22c55e, #16a34a); height: 100%; width: 100%; border-radius: 10px; transition: width 0.5s ease;"></div>
+                    <div class="wealth-stat">
+                        <span class="wealth-stat-label">Available</span>
+                        <span class="wealth-stat-value" id="availVal">$—</span>
                     </div>
-                    
-                    <div style="font-size: 0.75rem; color: rgba(255,255,255,0.6);">
-                        Excess: <span id="growth-excess" style="color: #22c55e;">+53.16%</span> above target
+                </div>
+            </div>
+
+            <!-- ZONE 3: Defensive Guardrails (Center, full-width) -->
+            <div class="zone-card zone-center" id="zone3">
+                <div class="zone-label">Zone 3 — Defensive Guardrails · Predictive Targets</div>
+                <div class="guardrails-grid">
+                    <div class="guardrail-card">
+                        <div class="guardrail-tier">Target 1 — Micro Defense</div>
+                        <div class="guardrail-label">Defense activates if Market drops below</div>
+                        <div class="guardrail-value" id="microTarget">$—</div>
+                        <div class="guardrail-status armed" id="microStatus">ARMED — Monitoring</div>
+                    </div>
+                    <div class="guardrail-card">
+                        <div class="guardrail-tier">Target 2 — Macro Hedge</div>
+                        <div class="guardrail-label">Hedge activates if Market drops below</div>
+                        <div class="guardrail-value" id="macroTarget">$—</div>
+                        <div class="guardrail-status armed" id="macroStatus">ARMED — Monitoring</div>
+                    </div>
+                    <div class="guardrails-current">
+                        <div class="guardrails-current-label">Current Market Position</div>
+                        <div class="guardrails-current-value" id="currentCollateral">$—</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ZONE 4: Engine Room (Bottom-Left) -->
+            <div class="zone-card" id="zone4">
+                <div class="zone-label">Zone 4 — Engine Room</div>
+
+                <div class="engine-section">
+                    <div class="engine-section-title">Cooldown Timers</div>
+                    <div class="cooldown-row">
+                        <span class="cooldown-name">Growth Engine</span>
+                        <span class="cooldown-value ready" id="growthCooldown">Ready</span>
+                    </div>
+                    <div class="cooldown-row">
+                        <span class="cooldown-name">Liability Short</span>
+                        <span class="cooldown-value ready" id="lsCooldown">Ready</span>
                     </div>
                 </div>
 
-                <!-- Capacity Target Meter (2.0%) -->
-                <div class="meter-card" style="background: rgba(255,193,7,0.1); border-radius: 12px; padding: 20px; border-left: 5px solid #ffc107;">
-                    <div class="meter-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                        <h4 style="color: #ffc107; margin: 0; font-size: 1.1rem;">💰 Capacity Target</h4>
-                        <span id="capacity-status" style="font-size: 0.8rem; color: #22c55e;">✅ ACHIEVED</span>
+                <div class="engine-section">
+                    <div class="engine-section-title">Capacity Meter</div>
+                    <div class="capacity-bar-bg">
+                        <div class="capacity-bar-fill" id="capacityBar" style="width: 0%; background: var(--green-glow);"></div>
                     </div>
-                    
-                    <div class="target-info" style="margin-bottom: 15px;">
-                        <div style="color: rgba(255,255,255,0.7); font-size: 0.8rem;">Target: 2.0%</div>
-                        <div style="color: rgba(255,255,255,0.7); font-size: 0.8rem;">Current: <span id="capacity-current" style="color: #22c55e; font-weight: bold;">58.16%</span></div>
-                    </div>
-                    
-                    <div class="progress-bar" style="background: rgba(255,255,255,0.1); border-radius: 10px; height: 20px; overflow: hidden; margin-bottom: 10px;">
-                        <div id="capacity-progress" style="background: linear-gradient(90deg, #ffc107, #f59e0b); height: 100%; width: 100%; border-radius: 10px; transition: width 0.5s ease;"></div>
-                    </div>
-                    
-                    <div style="font-size: 0.75rem; color: rgba(255,255,255,0.6);">
-                        Excess: <span id="capacity-excess" style="color: #22c55e;">+56.16%</span> above target
+                    <div class="capacity-text">
+                        <span class="used" id="capacityUsed">$0.00 used</span>
+                        <span class="cap" id="capacityCap">/ $25.00 daily cap</span>
                     </div>
                 </div>
+            </div>
 
-                <!-- Debt Swap Target Meter (1.5%) -->
-                <div class="meter-card" style="background: rgba(139,92,246,0.1); border-radius: 12px; padding: 20px; border-left: 5px solid #8b5cf6;">
-                    <div class="meter-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                        <h4 style="color: #8b5cf6; margin: 0; font-size: 1.1rem;">🔄 Debt Swap Target</h4>
-                        <span id="swap-status" style="font-size: 0.8rem; color: #22c55e;">✅ ACHIEVED</span>
-                    </div>
-                    
-                    <div class="target-info" style="margin-bottom: 15px;">
-                        <div style="color: rgba(255,255,255,0.7); font-size: 0.8rem;">Target: 1.5%</div>
-                        <div style="color: rgba(255,255,255,0.7); font-size: 0.8rem;">Current: <span id="swap-current" style="color: #22c55e; font-weight: bold;">58.16%</span></div>
-                    </div>
-                    
-                    <div class="progress-bar" style="background: rgba(255,255,255,0.1); border-radius: 10px; height: 20px; overflow: hidden; margin-bottom: 10px;">
-                        <div id="swap-progress" style="background: linear-gradient(90deg, #8b5cf6, #7c3aed); height: 100%; width: 100%; border-radius: 10px; transition: width 0.5s ease;"></div>
-                    </div>
-                    
-                    <div style="font-size: 0.75rem; color: rgba(255,255,255,0.6);">
-                        Excess: <span id="swap-excess" style="color: #22c55e;">+56.66%</span> above target
-                    </div>
+            <!-- ZONE 5: Intelligence Feed (Bottom-Right) -->
+            <div class="zone-card" id="zone5">
+                <div class="zone-label">Zone 5 — Intelligence Feed</div>
+                <div class="intel-feed" id="intelFeed">
+                    <div class="intel-line event-idle">Connecting to intelligence stream...</div>
                 </div>
             </div>
         </div>
 
-        <!-- ============================================================================ -->
-        <!-- DECISION PROCESS VISIBILITY - Phase 5: System Transparency -->
-        <!-- ============================================================================ -->
-        <div class="decision-process-dashboard" style="margin-bottom: 30px;">
-            <div class="header" style="margin-bottom: 20px;">
-                <h2 style="margin: 0; color: #ffc107; font-size: 1.8rem; display: flex; align-items: center; gap: 10px;">
-                    🎯 Decision Process Monitor
-                    <span style="font-size: 0.9rem; color: rgba(255,255,255,0.6);" id="decision-status">Monitoring Active</span>
-                </h2>
-                <p style="color: rgba(255,255,255,0.8); margin-top: 8px;">
-                    Real-time autonomous system decision-making process, trigger conditions, and next actions
-                </p>
-            </div>
-
-            <!-- Current Decision State Overview -->
-            <div class="decision-state-card" style="background: rgba(255,193,7,0.1); border-radius: 15px; padding: 25px; margin-bottom: 25px; border: 2px solid #ffc107;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                    <h3 style="color: #ffc107; margin: 0; font-size: 1.3rem;">🔄 Current State</h3>
-                    <div id="next-check-timer" style="color: #ffc107; font-size: 0.9rem;">Next check: --</div>
-                </div>
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px;">
-                    <div>
-                        <div style="color: rgba(255,255,255,0.7); font-size: 0.9rem; margin-bottom: 5px;">Monitoring Cycle</div>
-                        <div id="cycle-count" style="color: #ffc107; font-size: 1.4rem; font-weight: bold;">Cycle #--</div>
-                    </div>
-                    <div>
-                        <div style="color: rgba(255,255,255,0.7); font-size: 0.9rem; margin-bottom: 5px;">Operation Cooldown</div>
-                        <div id="operation-cooldown" style="color: #22c55e; font-size: 1.4rem; font-weight: bold;">Ready</div>
-                    </div>
-                    <div>
-                        <div style="color: rgba(255,255,255,0.7); font-size: 0.9rem; margin-bottom: 5px;">System Phase</div>
-                        <div id="system-phase" style="color: #00d4ff; font-size: 1.4rem; font-weight: bold;">Monitoring</div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Trigger Conditions Matrix -->
-            <div class="trigger-conditions" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-bottom: 25px;">
-                
-                <!-- Health Factor Triggers -->
-                <div class="trigger-card" style="background: rgba(34,197,94,0.1); border-radius: 12px; padding: 20px; border-left: 5px solid #22c55e;">
-                    <div class="trigger-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                        <h4 style="color: #22c55e; margin: 0; font-size: 1.1rem;">🏥 Health Factor</h4>
-                        <span id="hf-trigger-status" style="font-size: 0.8rem; color: #22c55e;">✅ SAFE</span>
-                    </div>
-                    <div class="trigger-details">
-                        <div style="margin-bottom: 10px;">
-                            <div style="color: rgba(255,255,255,0.7); font-size: 0.8rem;">Current: <span id="current-hf-value" style="color: #22c55e;">1.699</span></div>
-                            <div style="color: rgba(255,255,255,0.7); font-size: 0.8rem;">Threshold: >1.50</div>
-                        </div>
-                        <div style="font-size: 0.75rem; color: rgba(255,255,255,0.6);">
-                            Next Action: <span id="hf-next-action" style="color: #22c55e;">Monitor for decline</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Market Signal Triggers -->
-                <div class="trigger-card" style="background: rgba(255,193,7,0.1); border-radius: 12px; padding: 20px; border-left: 5px solid #ffc107;">
-                    <div class="trigger-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                        <h4 style="color: #ffc107; margin: 0; font-size: 1.1rem;">📈 Market Signals</h4>
-                        <span id="market-trigger-status" style="font-size: 0.8rem; color: #ffc107;">⏳ ANALYZING</span>
-                    </div>
-                    <div class="trigger-details">
-                        <div style="margin-bottom: 10px;">
-                            <div style="color: rgba(255,255,255,0.7); font-size: 0.8rem;">BTC Drop: <span id="btc-drop-status" style="color: #ffc107;">0.1%</span> (<0.3%)</div>
-                            <div style="color: rgba(255,255,255,0.7); font-size: 0.8rem;">ARB RSI: <span id="arb-rsi-status" style="color: #ffc107;">45</span> (45-65)</div>
-                        </div>
-                        <div style="font-size: 0.75rem; color: rgba(255,255,255,0.6);">
-                            Next Action: <span id="market-next-action" style="color: #ffc107;">Monitor for patterns</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Capacity Triggers -->
-                <div class="trigger-card" style="background: rgba(99,102,241,0.1); border-radius: 12px; padding: 20px; border-left: 5px solid #6366f1;">
-                    <div class="trigger-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                        <h4 style="color: #6366f1; margin: 0; font-size: 1.1rem;">💰 Capacity</h4>
-                        <span id="capacity-trigger-status" style="font-size: 0.8rem; color: #6366f1;">✅ READY</span>
-                    </div>
-                    <div class="trigger-details">
-                        <div style="margin-bottom: 10px;">
-                            <div style="color: rgba(255,255,255,0.7); font-size: 0.8rem;">Available: <span id="available-capacity" style="color: #6366f1;">$75.65</span> (>$25)</div>
-                            <div style="color: rgba(255,255,255,0.7); font-size: 0.8rem;">Swap Range: $1-$10</div>
-                        </div>
-                        <div style="font-size: 0.75rem; color: rgba(255,255,255,0.6);">
-                            Next Action: <span id="capacity-next-action" style="color: #6366f1;">Ready for operations</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 🎯 Predictive Analytics Section -->
-            <div class="predictions-section" style="background: linear-gradient(135deg, rgba(99,102,241,0.15), rgba(168,85,247,0.15)); border-radius: 15px; padding: 25px; margin-bottom: 25px; border: 2px solid #a855f7;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                    <div>
-                        <h3 style="color: #a855f7; margin: 0; font-size: 1.3rem; display: flex; align-items: center; gap: 10px;">
-                            🔮 Trigger Predictions & Countdowns
-                            <span id="prediction-status" style="font-size: 0.8rem; color: rgba(255,255,255,0.6);">Analyzing...</span>
-                        </h3>
-                        <p style="color: rgba(255,255,255,0.7); font-size: 0.85rem; margin-top: 5px;">
-                            Real-time predictive analytics: When will triggers activate?
-                        </p>
-                    </div>
-                    <div id="current-block-info" style="text-align: right;">
-                        <div style="color: rgba(255,255,255,0.6); font-size: 0.75rem;">Block</div>
-                        <div id="current-block" style="color: #a855f7; font-weight: bold;">--</div>
-                    </div>
-                </div>
-
-                <!-- Prediction Cards -->
-                <div id="predictions-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 15px;">
-                    
-                    <!-- Growth Trigger Prediction -->
-                    <div class="prediction-card" style="background: rgba(34,197,94,0.1); border-radius: 12px; padding: 18px; border: 2px solid #22c55e;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                            <h4 style="color: #22c55e; margin: 0; font-size: 1rem;">📈 Growth Trigger</h4>
-                            <span id="growth-prediction-status" style="font-size: 0.75rem; padding: 4px 8px; border-radius: 4px; background: rgba(34,197,94,0.2); color: #22c55e;">Loading...</span>
-                        </div>
-                        <div id="growth-prediction-details" style="color: rgba(255,255,255,0.8); font-size: 0.85rem;">
-                            <div style="margin-bottom: 8px;">
-                                <div style="color: rgba(255,255,255,0.6); font-size: 0.75rem;">Time to trigger:</div>
-                                <div id="growth-time-to-trigger" style="color: #22c55e; font-size: 1.1rem; font-weight: bold;">--</div>
-                            </div>
-                            <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: rgba(255,255,255,0.6);">
-                                <span>Predicted block: <span id="growth-predicted-block">--</span></span>
-                                <span>Rate: <span id="growth-rate">--</span>/min</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Capacity Trigger Prediction -->
-                    <div class="prediction-card" style="background: rgba(99,102,241,0.1); border-radius: 12px; padding: 18px; border: 2px solid #6366f1;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                            <h4 style="color: #6366f1; margin: 0; font-size: 1rem;">💰 Capacity Trigger</h4>
-                            <span id="capacity-prediction-status" style="font-size: 0.75rem; padding: 4px 8px; border-radius: 4px; background: rgba(99,102,241,0.2); color: #6366f1;">Loading...</span>
-                        </div>
-                        <div id="capacity-prediction-details" style="color: rgba(255,255,255,0.8); font-size: 0.85rem;">
-                            <div style="margin-bottom: 8px;">
-                                <div style="color: rgba(255,255,255,0.6); font-size: 0.75rem;">Time to trigger:</div>
-                                <div id="capacity-time-to-trigger" style="color: #6366f1; font-size: 1.1rem; font-weight: bold;">--</div>
-                            </div>
-                            <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: rgba(255,255,255,0.6);">
-                                <span>Predicted block: <span id="capacity-predicted-block">--</span></span>
-                                <span>Rate: <span id="capacity-rate">--</span>/min</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Health Factor Prediction -->
-                    <div class="prediction-card" style="background: rgba(255,193,7,0.1); border-radius: 12px; padding: 18px; border: 2px solid #ffc107;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                            <h4 style="color: #ffc107; margin: 0; font-size: 1rem;">🏥 Health Factor</h4>
-                            <span id="hf-prediction-status" style="font-size: 0.75rem; padding: 4px 8px; border-radius: 4px; background: rgba(255,193,7,0.2); color: #ffc107;">Monitoring</span>
-                        </div>
-                        <div id="hf-prediction-details" style="color: rgba(255,255,255,0.8); font-size: 0.85rem;">
-                            <div style="margin-bottom: 8px;">
-                                <div style="color: rgba(255,255,255,0.6); font-size: 0.75rem;">Change rate:</div>
-                                <div id="hf-change-rate" style="color: #ffc107; font-size: 1.1rem; font-weight: bold;">--</div>
-                            </div>
-                            <div style="font-size: 0.75rem; color: rgba(255,255,255,0.6);">
-                                Current trend: <span id="hf-trend">Stable</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Warning Banner for Imminent Triggers -->
-                <div id="trigger-warning" style="display: none; margin-top: 15px; background: rgba(239,68,68,0.2); border: 2px solid #ef4444; border-radius: 10px; padding: 15px;">
-                    <div style="display: flex; align-items: center; gap: 10px;">
-                        <span style="font-size: 1.5rem;">⚠️</span>
-                        <div>
-                            <div style="color: #ef4444; font-weight: bold; margin-bottom: 4px;">Trigger Imminent!</div>
-                            <div id="trigger-warning-text" style="color: rgba(255,255,255,0.9); font-size: 0.85rem;">--</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Scheduled Operations -->
-            <div class="scheduled-operations" style="background: rgba(255,255,255,0.05); border-radius: 15px; padding: 20px; margin-bottom: 20px;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                    <h3 style="color: #00d4ff; margin: 0; font-size: 1.2rem;">⏰ Next Scheduled Operations</h3>
-                    <div id="operations-countdown" style="color: #00d4ff; font-size: 0.9rem;">--</div>
-                </div>
-                <div id="scheduled-operations-list" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px;">
-                    
-                    <div class="operation-item" style="background: rgba(255,255,255,0.05); border-radius: 10px; padding: 15px;">
-                        <div style="display: flex; justify-content: between; align-items: center; margin-bottom: 8px;">
-                            <div style="color: #22c55e; font-size: 0.9rem; font-weight: bold;">Monitor Health Factor</div>
-                            <div style="color: rgba(255,255,255,0.6); font-size: 0.8rem;">Every 5s</div>
-                        </div>
-                        <div style="color: rgba(255,255,255,0.7); font-size: 0.8rem;">
-                            Check for changes in Aave position health
-                        </div>
-                    </div>
-
-                    <div class="operation-item" style="background: rgba(255,255,255,0.05); border-radius: 10px; padding: 15px;">
-                        <div style="display: flex; justify-content: between; align-items: center; margin-bottom: 8px;">
-                            <div style="color: #ffc107; font-size: 0.9rem; font-weight: bold;">Analyze Market Signals</div>
-                            <div style="color: rgba(255,255,255,0.6); font-size: 0.8rem;">Every 30s</div>
-                        </div>
-                        <div style="color: rgba(255,255,255,0.7); font-size: 0.8rem;">
-                            Process BTC/ARB/DAI market data for trading opportunities
-                        </div>
-                    </div>
-
-                    <div class="operation-item" style="background: rgba(255,255,255,0.05); border-radius: 10px; padding: 15px;">
-                        <div style="display: flex; justify-content: between; align-items: center; margin-bottom: 8px;">
-                            <div style="color: #6366f1; font-size: 0.9rem; font-weight: bold;" id="next-trade-operation">Execute Debt Swap</div>
-                            <div style="color: rgba(255,255,255,0.6); font-size: 0.8rem;" id="next-trade-timing">When triggered</div>
-                        </div>
-                        <div style="color: rgba(255,255,255,0.7); font-size: 0.8rem;" id="next-trade-description">
-                            Ready to execute DAI↔ARB swaps based on market conditions
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="console-container" style="margin-bottom: 30px;">
-            <div class="console-header">
-                <h2 style="margin: 0; color: #00d4ff; font-size: 1.3rem; display: flex; align-items: center; gap: 10px;">
-                    📟 Enhanced System Console - Real-time Metrics & Activity
-                    <span style="font-size: 0.8rem; color: rgba(255,255,255,0.6);" id="console-status">Monitoring...</span>
-                </h2>
-            </div>
-            
-            <!-- System Metrics Dashboard -->
-            <div id="metrics-dashboard" style="background: #1a1a2e; border-radius: 12px; padding: 20px; margin-bottom: 15px; border: 2px solid #16213e;">
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px;">
-                    <div class="metric-card" style="background: rgba(0,212,255,0.1); padding: 12px; border-radius: 8px; border-left: 4px solid #00d4ff;">
-                        <div style="color: #00d4ff; font-size: 0.8rem; margin-bottom: 4px;">⏱️ SYSTEM STATUS</div>
-                        <div id="system-timestamp" style="color: white; font-weight: bold;">Loading...</div>
-                        <div id="iteration-info" style="color: rgba(255,255,255,0.7); font-size: 0.8rem;">Iteration: --</div>
-                    </div>
-                    
-                    <div class="metric-card" style="background: rgba(255,107,107,0.1); padding: 12px; border-radius: 8px; border-left: 4px solid #ff6b6b;">
-                        <div style="color: #ff6b6b; font-size: 0.8rem; margin-bottom: 4px;">🛌 REST PERIOD</div>
-                        <div id="rest-period" style="color: white; font-weight: bold;">--</div>
-                        <div id="next-execution" style="color: rgba(255,255,255,0.7); font-size: 0.8rem;">Next: Ready</div>
-                    </div>
-                    
-                    <div class="metric-card" style="background: rgba(78,205,196,0.1); padding: 12px; border-radius: 8px; border-left: 4px solid #4ecdc4;">
-                        <div style="color: #4ecdc4; font-size: 0.8rem; margin-bottom: 4px;">🎯 TRIGGERS</div>
-                        <div id="triggers-status" style="color: white; font-weight: bold;">Monitoring</div>
-                        <div id="trigger-count" style="color: rgba(255,255,255,0.7); font-size: 0.8rem;">Activated: 0</div>
-                    </div>
-                    
-                    <div class="metric-card" style="background: rgba(255,193,7,0.1); padding: 12px; border-radius: 8px; border-left: 4px solid #ffc107;">
-                        <div style="color: #ffc107; font-size: 0.8rem; margin-bottom: 4px;">🎯 NEXT TARGET</div>
-                        <div id="next-target" style="color: white; font-weight: bold;">$189.79</div>
-                        <div id="target-progress" style="color: rgba(255,255,255,0.7); font-size: 0.8rem;">Progress: --</div>
-                    </div>
-                </div>
-                
-                <!-- Expanded Metrics Row -->
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px;">
-                    <div class="metric-card" style="background: rgba(138,43,226,0.1); padding: 10px; border-radius: 6px; border-left: 3px solid #8a2be2;">
-                        <div style="color: #8a2be2; font-size: 0.75rem; margin-bottom: 3px;">💰 BORROWED ASSETS</div>
-                        <div id="borrowed-total" style="color: white; font-size: 0.9rem; font-weight: bold;">$35.06</div>
-                        <div id="utilization-ratio" style="color: rgba(255,255,255,0.7); font-size: 0.7rem;">Utilization: 18%</div>
-                    </div>
-                    
-                    <div class="metric-card" style="background: rgba(34,197,94,0.1); padding: 10px; border-radius: 6px; border-left: 3px solid #22c55e;">
-                        <div style="color: #22c55e; font-size: 0.75rem; margin-bottom: 3px;">✅ NETWORK STATUS</div>
-                        <div id="network-approval" style="color: white; font-size: 0.9rem; font-weight: bold;">Ready</div>
-                        <div id="approval-probability" style="color: rgba(255,255,255,0.7); font-size: 0.7rem;">Approval: 85%</div>
-                    </div>
-                    
-                    <div class="metric-card" style="background: rgba(239,68,68,0.1); padding: 10px; border-radius: 6px; border-left: 3px solid #ef4444;">
-                        <div style="color: #ef4444; font-size: 0.75rem; margin-bottom: 3px;">⚠️ APPROVALS</div>
-                        <div id="pending-approvals" style="color: white; font-size: 0.9rem; font-weight: bold;">None</div>
-                        <div id="approval-details" style="color: rgba(255,255,255,0.7); font-size: 0.7rem;">All clear</div>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Self-Improvement Proposals -->
-            <div id="improvement-section" style="background: rgba(0,0,0,0.3); border-radius: 8px; padding: 15px; margin-bottom: 15px; border-left: 4px solid #6366f1;">
-                <div style="color: #6366f1; font-size: 0.9rem; margin-bottom: 8px; font-weight: bold;">🧠 SELF-IMPROVEMENT PROPOSALS</div>
-                <div id="improvement-proposals" style="color: rgba(255,255,255,0.8); font-size: 0.8rem;">
-                    Loading improvement suggestions...
-                </div>
-            </div>
-            
-            <!-- Console Output -->
-            <div id="console-output" style="background: #0d1117; color: #58a6ff; font-family: 'Consolas', 'Monaco', 'Courier New', monospace; padding: 20px; border-radius: 12px; height: 400px; overflow-y: auto; font-size: 0.8rem; line-height: 1.5; border: 2px solid #21262d; box-shadow: inset 0 0 20px rgba(0,0,0,0.5); white-space: pre-wrap;">
-                <div style="color: #7c3aed;">🚀 Enhanced console monitoring initialized</div>
-                <div style="color: #10b981;">✅ Real-time metrics and activity tracking active</div>
-            </div>
-        </div>
-
-        <div class="controls">
-            <button class="btn" onclick="refreshData()">🔄 Refresh</button>
-            <button class="btn emergency" onclick="emergencyStop()">🚨 Emergency Stop</button>
-        </div>
-
-        <div class="footer">
-            <p>🛡️ System Status: <span id="system-status">Operational</span></p>
-            <p>Last Updated: <span id="last-updated">--</span></p>
-        </div>
+        <div class="last-updated" id="lastUpdated">Awaiting first data cycle...</div>
     </div>
 
     <script>
-        let updateInterval;
+        let refreshInterval = null;
+        let lastData = null;
 
-        function formatNumber(num, decimals = 6) {
-            if (typeof num !== 'number' || isNaN(num)) return '0.000000';
-            return num.toFixed(decimals);
+        function applyGlowClass(el, hfStatus) {
+            el.classList.remove('glow-green', 'glow-amber', 'glow-red');
+            if (hfStatus === 'HEALTHY') el.classList.add('glow-green');
+            else if (hfStatus === 'CAUTION') el.classList.add('glow-amber');
+            else el.classList.add('glow-red');
         }
 
-        function formatAddress(address) {
-            if (!address || address === 'Unknown' || address === 'Error') return address;
-            return `${address.slice(0, 6)}...${address.slice(-4)}`;
+        function updateGauge(hf) {
+            const maxHF = 3.0;
+            const pct = Math.min(hf / maxHF, 1.0);
+            const circumference = 314.16;
+            const offset = circumference * (1 - pct);
+            const fill = document.getElementById('hfGaugeFill');
+            fill.style.strokeDashoffset = offset;
+
+            if (hf > 1.52) fill.style.stroke = 'var(--green-glow)';
+            else if (hf >= 1.35) fill.style.stroke = 'var(--amber-glow)';
+            else fill.style.stroke = 'var(--red-glow)';
         }
 
-        async function fetchData() {
+        function classifyIntelLine(text) {
+            const t = text.toUpperCase();
+            if (t.includes('SUCCESS') || t.includes('STRENGTHENED') || t.includes('RECOVERY SUCCESS')) return 'event-success';
+            if (t.includes('EMERGENCY') || t.includes('FAILED') || t.includes('ERROR')) return 'event-error';
+            if (t.includes('TRIGGER') || t.includes('ACTIVATED') || t.includes('DEFENSE') || t.includes('HEDGE')) return 'event-trigger';
+            if (t.includes('CAUTION') || t.includes('WARNING') || t.includes('BLOCKED')) return 'event-warning';
+            if (t.includes('IDLE') || t.includes('MONITORING')) return 'event-idle';
+            return '';
+        }
+
+        function formatCooldown(seconds) {
+            if (seconds <= 0) return 'Ready';
+            const m = Math.floor(seconds / 60);
+            const s = Math.floor(seconds % 60);
+            return m > 0 ? `${m}m ${s}s` : `${s}s`;
+        }
+
+        async function fetchCommandCenter() {
             try {
-                console.log('Fetching wallet status...');
+                const resp = await fetch('/api/command-center');
+                if (!resp.ok) throw new Error('API error');
+                const data = await resp.json();
+                if (!data.success) throw new Error(data.error || 'Unknown error');
+                lastData = data;
+                renderData(data);
 
-                const response = await fetch('/api/wallet_status');
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                }
-
-                const data = await response.json();
-                console.log('Received data:', data);
-
-                updateUI(data);
-                
-                // Also fetch console output
-                fetchConsoleOutput();
-
-            } catch (error) {
-                console.error('Error fetching data:', error);
-                showError('Connection failed: ' + error.message);
+                document.getElementById('connDot').classList.remove('offline');
+                document.getElementById('connText').textContent = 'Live · Arbitrum Mainnet';
+            } catch (err) {
+                console.error('Fetch error:', err);
+                document.getElementById('connDot').classList.add('offline');
+                document.getElementById('connText').textContent = 'Reconnecting...';
             }
         }
 
-        async function fetchConsoleOutput() {
-            try {
-                const response = await fetch('/api/console');
-                const data = await response.json();
-                
-                if (data.success) {
-                    updateConsoleOutput(data.console_lines);
-                    updateSystemMode(data.system_mode);
-                }
-                
-                // Also fetch detailed system metrics
-                await fetchSystemMetrics();
-            } catch (error) {
-                console.error('Error fetching console:', error);
-            }
-        }
+        function renderData(data) {
+            const z1 = data.zone1_safety;
+            const z2 = data.zone2_wealth;
+            const z3 = data.zone3_guardrails;
+            const z4 = data.zone4_engine;
+            const z5 = data.zone5_intel;
+            const hf = z1.health_factor;
+            const hfStatus = z1.hf_status;
 
-        async function fetchSystemMetrics() {
-            try {
-                const response = await fetch('/api/system_metrics');
-                const data = await response.json();
-                
-                if (data.success) {
-                    updateSystemMetrics(data);
-                }
-            } catch (error) {
-                console.error('Error fetching system metrics:', error);
-            }
-        }
+            // ZONE 1: Safety Rating
+            document.getElementById('hfValue').textContent = hf.toFixed(2);
+            updateGauge(hf);
+            applyGlowClass(document.getElementById('zone1'), hfStatus);
 
-        function updateSystemMetrics(metrics) {
-            try {
-                // Update timestamp and iteration
-                document.getElementById('system-timestamp').textContent = metrics.formatted_timestamp || 'Unknown';
-                document.getElementById('iteration-info').textContent = `Iteration: ${metrics.current_iteration || 0}`;
-                
-                // Update rest period
-                const restPeriod = metrics.rest_period_formatted || 'Ready';
-                document.getElementById('rest-period').textContent = restPeriod;
-                document.getElementById('next-execution').textContent = restPeriod === 'Ready' ? 'Next: Immediate' : `Cooldown: ${restPeriod}`;
-                
-                // Update triggers
-                const triggersReady = metrics.trigger_analysis?.triggers_ready || [];
-                document.getElementById('triggers-status').textContent = triggersReady.length > 0 ? triggersReady.join(', ') : 'Monitoring';
-                document.getElementById('trigger-count').textContent = `Activated: ${metrics.triggers_activated || 0}`;
-                
-                // Update targets
-                document.getElementById('next-target').textContent = `$${(metrics.next_trigger_target || 189.79).toFixed(2)}`;
-                const currentCollateral = metrics.current_collateral || 192.85;
-                const baseline = metrics.baseline_collateral || 177.79;
-                const progress = ((currentCollateral - baseline) / 12 * 100).toFixed(1);
-                document.getElementById('target-progress').textContent = `Progress: ${progress}%`;
-                
-                // Update borrowed assets
-                const borrowed = metrics.borrowed_assets || {};
-                document.getElementById('borrowed-total').textContent = `$${(borrowed.total_borrowed_usd || 35.06).toFixed(2)}`;
-                document.getElementById('utilization-ratio').textContent = `Utilization: ${(borrowed.utilization_ratio || 18).toFixed(0)}%`;
-                
-                // Update network status
-                const networkStatus = metrics.network_status || {};
-                document.getElementById('network-approval').textContent = networkStatus.execution_status || 'Ready';
-                document.getElementById('approval-probability').textContent = `Approval: ${networkStatus.approval_probability || 85}%`;
-                
-                // Update approvals
-                const approvals = metrics.pending_approvals || {};
-                document.getElementById('pending-approvals').textContent = approvals.pending ? `${approvals.count} Pending` : 'None';
-                document.getElementById('approval-details').textContent = approvals.pending ? 
-                    approvals.items[0]?.type || 'Review needed' : 'All clear';
-                
-                // Update improvement proposals
-                const proposals = metrics.self_improvement_proposals || [];
-                const proposalHtml = proposals.length > 0 ? 
-                    proposals.map(p => `<div style="margin-bottom: 5px;">• ${p}</div>`).join('') :
-                    '<div>No improvement proposals at this time</div>';
-                document.getElementById('improvement-proposals').innerHTML = proposalHtml;
-                
-                // Update console status with more details
-                const statusEl = document.getElementById('console-status');
-                if (statusEl) {
-                    const agentStatus = metrics.agent_running ? '🟢 Active' : '🟡 Standby';
-                    const networkStatus = metrics.network_status?.execution_status || 'Ready';
-                    statusEl.textContent = `${agentStatus} | Network: ${networkStatus}`;
-                }
-                
-            } catch (error) {
-                console.error('Error updating system metrics:', error);
-            }
-        }
-
-        function updateTriggerPredictions(data) {
-            try {
-                const predictions = data.trigger_predictions;
-                if (!predictions || predictions.status !== 'active') {
-                    document.getElementById('prediction-status').textContent = predictions?.reason || 'Initializing...';
-                    return;
-                }
-
-                // Update current block
-                document.getElementById('current-block').textContent = predictions.current_block?.toLocaleString() || '--';
-                document.getElementById('prediction-status').textContent = 'Active';
-
-                // Helper function to format time
-                function formatTime(seconds) {
-                    if (!seconds || seconds <= 0) return 'Now';
-                    if (seconds < 60) return `${Math.round(seconds)}s`;
-                    if (seconds < 3600) return `${Math.floor(seconds/60)}m ${Math.round(seconds%60)}s`;
-                    const hours = Math.floor(seconds / 3600);
-                    const mins = Math.floor((seconds % 3600) / 60);
-                    return `${hours}h ${mins}m`;
-                }
-
-                // Update growth trigger prediction
-                if (predictions.predictions?.collateral?.prediction) {
-                    const pred = predictions.predictions.collateral.prediction;
-                    if (pred.status === 'triggered') {
-                        document.getElementById('growth-prediction-status').textContent = '✅ TRIGGERED';
-                        document.getElementById('growth-time-to-trigger').textContent = 'Active Now!';
-                        document.getElementById('growth-predicted-block').textContent = 'Current';
-                        document.getElementById('growth-rate').textContent = '--';
-                    } else if (pred.status === 'approaching') {
-                        const timeStr = formatTime(pred.time_remaining_seconds);
-                        document.getElementById('growth-prediction-status').textContent = `⏱️ ${timeStr}`;
-                        document.getElementById('growth-time-to-trigger').textContent = timeStr;
-                        document.getElementById('growth-predicted-block').textContent = pred.predicted_block?.toLocaleString() || '--';
-                        document.getElementById('growth-rate').textContent = `$${Math.abs(pred.rate_per_minute || 0).toFixed(2)}`;
-
-                        // Show warning if within 30 minutes
-                        if (pred.time_remaining_seconds < 1800) {
-                            showTriggerWarning(`Growth trigger predicted in ${timeStr}!`);
-                        }
-                    }
-                } else {
-                    document.getElementById('growth-prediction-status').textContent = 'No data';
-                    document.getElementById('growth-time-to-trigger').textContent = 'Insufficient data';
-                }
-
-                // Update capacity trigger prediction
-                if (predictions.predictions?.capacity?.prediction) {
-                    const pred = predictions.predictions.capacity.prediction;
-                    if (pred.status === 'triggered') {
-                        document.getElementById('capacity-prediction-status').textContent = '✅ TRIGGERED';
-                        document.getElementById('capacity-time-to-trigger').textContent = 'Active Now!';
-                        document.getElementById('capacity-predicted-block').textContent = 'Current';
-                        document.getElementById('capacity-rate').textContent = '--';
-                    } else if (pred.status === 'approaching') {
-                        const timeStr = formatTime(pred.time_remaining_seconds);
-                        document.getElementById('capacity-prediction-status').textContent = `⏱️ ${timeStr}`;
-                        document.getElementById('capacity-time-to-trigger').textContent = timeStr;
-                        document.getElementById('capacity-predicted-block').textContent = pred.predicted_block?.toLocaleString() || '--';
-                        document.getElementById('capacity-rate').textContent = `$${Math.abs(pred.rate_per_minute || 0).toFixed(2)}`;
-
-                        // Show warning if within 30 minutes
-                        if (pred.time_remaining_seconds < 1800) {
-                            showTriggerWarning(`Capacity trigger predicted in ${timeStr}!`);
-                        }
-                    }
-                } else {
-                    document.getElementById('capacity-prediction-status').textContent = 'No data';
-                    document.getElementById('capacity-time-to-trigger').textContent = 'Insufficient data';
-                }
-
-                // Update health factor trend
-                if (predictions.predictions?.health_factor?.rate_of_change) {
-                    const rate = predictions.predictions.health_factor.rate_of_change;
-                    const ratePerMin = rate * 60 / (predictions.avg_block_time || 0.25);
-                    document.getElementById('hf-change-rate').textContent = `${ratePerMin > 0 ? '+' : ''}${ratePerMin.toFixed(4)}/min`;
-                    
-                    if (ratePerMin > 0.01) {
-                        document.getElementById('hf-trend').textContent = '📈 Improving';
-                    } else if (ratePerMin < -0.01) {
-                        document.getElementById('hf-trend').textContent = '📉 Declining';
-                    } else {
-                        document.getElementById('hf-trend').textContent = '➡️ Stable';
-                    }
-                } else {
-                    document.getElementById('hf-change-rate').textContent = 'Monitoring';
-                    document.getElementById('hf-trend').textContent = 'Stable';
-                }
-
-            } catch (error) {
-                console.error('Error updating predictions:', error);
-            }
-        }
-
-        function showTriggerWarning(message) {
-            const warningDiv = document.getElementById('trigger-warning');
-            const warningText = document.getElementById('trigger-warning-text');
-            if (warningDiv && warningText) {
-                warningText.textContent = message;
-                warningDiv.style.display = 'block';
-            }
-        }
-
-        function updateConsoleOutput(lines) {
-            const consoleDiv = document.getElementById('console-output');
-            if (lines && lines.length > 0) {
-                // Show many more lines in the larger console window with color coding
-                const coloredLines = lines.slice(-50).map(line => {
-                    let colorClass = 'color: #58a6ff;'; // Default blue
-                    
-                    if (line.includes('✅') || line.includes('SUCCESS')) colorClass = 'color: #10b981;'; // Green
-                    else if (line.includes('❌') || line.includes('ERROR') || line.includes('FAILED')) colorClass = 'color: #f87171;'; // Red
-                    else if (line.includes('⚠️') || line.includes('WARNING')) colorClass = 'color: #fbbf24;'; // Yellow
-                    else if (line.includes('🔍') || line.includes('DEBUG')) colorClass = 'color: #a78bfa;'; // Purple
-                    else if (line.includes('📊') || line.includes('Data') || line.includes('HF')) colorClass = 'color: #34d399;'; // Cyan
-                    else if (line.includes('🤖') || line.includes('Agent') || line.includes('System')) colorClass = 'color: #60a5fa;'; // Light blue
-                    else if (line.includes('🌐') || line.includes('RPC') || line.includes('Network')) colorClass = 'color: #8b5cf6;'; // Violet
-                    
-                    return `<div style="margin-bottom: 3px; ${colorClass} padding: 2px 0;">${line}</div>`;
-                });
-                
-                consoleDiv.innerHTML = coloredLines.join('');
-                consoleDiv.scrollTop = consoleDiv.scrollHeight;
-                
-                // Update console status
-                const statusEl = document.getElementById('console-status');
-                if (statusEl) {
-                    statusEl.textContent = `${lines.length} lines | Last: ${new Date().toLocaleTimeString()}`;
-                }
-            }
-        }
-
-        function updateSystemMode(mode) {
-            const modeElement = document.getElementById('system-mode');
-            const autoBtn = document.getElementById('auto-btn');
-            const manualBtn = document.getElementById('manual-btn');
-            
-            modeElement.textContent = mode ? mode.toUpperCase() : 'UNKNOWN';
-            
-            // Update button styles
-            if (mode === 'autonomous') {
-                autoBtn.style.background = 'linear-gradient(45deg, #4ecdc4, #44a08d)';
-                manualBtn.style.background = 'linear-gradient(45deg, #666, #888)';
+            const badge = document.getElementById('statusBadge');
+            badge.className = 'status-badge';
+            const icon = document.getElementById('statusIcon');
+            const text = document.getElementById('statusText');
+            if (hfStatus === 'HEALTHY') {
+                badge.classList.add('healthy');
+                icon.textContent = '🟢';
+                text.textContent = 'SYSTEM HEALTHY';
+            } else if (hfStatus === 'CAUTION') {
+                badge.classList.add('caution');
+                icon.textContent = '🟡';
+                text.textContent = 'CAUTION';
             } else {
-                autoBtn.style.background = 'linear-gradient(45deg, #666, #888)';
-                manualBtn.style.background = 'linear-gradient(45deg, #4ecdc4, #44a08d)';
+                badge.classList.add('emergency');
+                icon.textContent = '🔴';
+                text.textContent = 'EMERGENCY';
             }
-        }
 
-        async function switchMode(mode) {
-            try {
-                const response = await fetch('/api/set_system_mode', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ mode: mode })
-                });
+            const detail = document.getElementById('safetyDetail');
+            if (hfStatus === 'HEALTHY') detail.textContent = `Safety Rating ${hf.toFixed(2)} — All systems operating normally. Defensive and growth strategies active.`;
+            else if (hfStatus === 'CAUTION') detail.textContent = `Safety Rating ${hf.toFixed(2)} — Approaching threshold. Growth operations paused until rating improves above 1.52.`;
+            else detail.textContent = `Safety Rating ${hf.toFixed(2)} — Below safe threshold. Emergency protocols active. Waiting for rating recovery above 1.35.`;
 
-                const data = await response.json();
-                if (data.success) {
-                    updateSystemMode(mode);
-                    setTimeout(fetchConsoleOutput, 1000); // Refresh console after mode change
-                } else {
-                    alert('Failed to change mode: ' + data.error);
-                }
-            } catch (error) {
-                alert('Error changing mode: ' + error.message);
-            }
-        }
+            // ZONE 2: Active Wealth
+            document.getElementById('totalValue').textContent = '$' + z2.net_value_usd.toFixed(2);
+            const changeEl = document.getElementById('valueChange');
+            const sign = z2.change_24h_usd >= 0 ? '+' : '';
+            changeEl.textContent = `${sign}$${z2.change_24h_usd.toFixed(2)} (${sign}${z2.change_24h_pct.toFixed(1)}%) from baseline`;
+            changeEl.className = 'wealth-change ' + (z2.change_24h_usd >= 0 ? 'positive' : 'negative');
+            document.getElementById('collateralVal').textContent = '$' + z2.total_value_usd.toFixed(2);
+            document.getElementById('debtVal').textContent = '$' + z2.total_debt_usd.toFixed(2);
+            document.getElementById('availVal').textContent = '$' + (data.zone4_engine.available_borrows || 0).toFixed(2);
 
-        function updateUI(data) {
-            try {
-                // Network Status
-                document.getElementById('network-name').textContent = data.network_name || 'Unknown Network';
-                document.getElementById('network-details').textContent = `Mode: ${data.network_mode || 'unknown'}`;
+            // ZONE 3: Defensive Guardrails
+            applyGlowClass(document.getElementById('zone3'), hfStatus);
+            const micro = z3.micro_trigger_usd;
+            const macro = z3.macro_trigger_usd;
+            document.getElementById('microTarget').textContent = micro > 0 ? '$' + micro.toFixed(2) : 'Calculating...';
+            document.getElementById('macroTarget').textContent = macro > 0 ? '$' + macro.toFixed(2) : 'Calculating...';
+            document.getElementById('currentCollateral').textContent = '$' + z3.current_collateral.toFixed(2);
 
-                // Wallet Info
-                document.getElementById('wallet-address').textContent = formatAddress(data.wallet_address) || 'Not Connected';
-                document.getElementById('wallet-balance').textContent = 
-                    `ETH: ${formatNumber(data.eth_balance, 6)} | USDC: ${formatNumber(data.usdc_balance, 2)}`;
-
-                // Aave Protocol
-                const healthFactor = data.health_factor || 0;
-                document.getElementById('health-factor').textContent = 
-                    healthFactor > 0 ? formatNumber(healthFactor, 4) : 'No Position';
-                document.getElementById('aave-details').textContent = 
-                    `Collateral: $${formatNumber(data.total_collateral_usdc, 2)} | Debt: $${formatNumber(data.total_debt_usdc, 2)}`;
-
-                // System Status
-                document.getElementById('system-status').textContent = data.success ? 'Operational' : 'Degraded';
-                document.getElementById('last-updated').textContent = new Date().toLocaleTimeString();
-
-                // Apply status classes
-                const systemStatus = document.getElementById('system-status');
-                systemStatus.className = data.success ? 'success' : 'error';
-
-                // Update trigger predictions
-                updateTriggerPredictions(data);
-
-            } catch (error) {
-                console.error('Error updating UI:', error);
-                showError('UI update failed');
-            }
-        }
-
-        function showError(message) {
-            document.getElementById('network-name').innerHTML = '<span class="error">Error</span>';
-            document.getElementById('wallet-address').innerHTML = '<span class="error">Connection Failed</span>';
-            document.getElementById('health-factor').innerHTML = '<span class="error">--</span>';
-            document.getElementById('system-status').innerHTML = '<span class="error">Error</span>';
-            console.error('Dashboard Error:', message);
-        }
-
-        function refreshData() {
-            fetchData();
-        }
-
-        function emergencyStop() {
-            if (confirm('Are you sure you want to trigger an emergency stop?')) {
-                fetch('/api/emergency_stop', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        reason: 'Manual emergency stop via dashboard'
-                    })
-                })
-                .then(response => response.json())
-                .then(data => {
-                    alert(data.success ? 'Emergency stop activated!' : 'Failed to activate emergency stop');
-                    if (data.success) {
-                        refreshData();
-                    }
-                })
-                .catch(error => {
-                    console.error('Emergency stop error:', error);
-                    alert('Error activating emergency stop');
-                });
-            }
-        }
-
-        // ============================================================================
-        // SSE REAL-TIME SYNCHRONIZATION - Phase 2.2 Integration
-        // ============================================================================
-        
-        let sseConnection = null;
-        let sseReconnectAttempts = 0;
-        const maxReconnectAttempts = 5;
-        
-        function initializeSSE() {
-            try {
-                sseConnection = new EventSource('/api/events');
-                
-                sseConnection.onopen = function(event) {
-                    console.log('📡 SSE connection established');
-                    document.getElementById('pnl-connection-status').innerHTML = '🟢 Live';
-                    document.getElementById('pnl-status').textContent = 'Live Synchronization';
-                    sseReconnectAttempts = 0;
-                };
-                
-                sseConnection.onmessage = function(event) {
-                    try {
-                        const data = JSON.parse(event.data);
-                        handleSSEEvent(data);
-                    } catch (error) {
-                        console.error('Error parsing SSE data:', error);
-                    }
-                };
-                
-                sseConnection.onerror = function(error) {
-                    console.warn('SSE connection error:', error);
-                    document.getElementById('pnl-connection-status').innerHTML = '🟡 Reconnecting';
-                    
-                    if (sseReconnectAttempts < maxReconnectAttempts) {
-                        sseReconnectAttempts++;
-                        setTimeout(() => {
-                            console.log(`Attempting SSE reconnection (${sseReconnectAttempts}/${maxReconnectAttempts})`);
-                            initializeSSE();
-                        }, 3000 * sseReconnectAttempts);
-                    } else {
-                        document.getElementById('pnl-connection-status').innerHTML = '🔴 Offline';
-                        document.getElementById('pnl-status').textContent = 'Connection Failed';
-                    }
-                };
-                
-            } catch (error) {
-                console.error('Failed to initialize SSE:', error);
-                document.getElementById('pnl-connection-status').innerHTML = '🔴 Error';
-            }
-        }
-        
-        function handleSSEEvent(data) {
-            switch(data.type) {
-                case 'connected':
-                    console.log('📡 SSE connected at', new Date(data.timestamp * 1000).toLocaleTimeString());
-                    break;
-                    
-                case 'pnl_update':
-                    updatePnLDashboard(data);
-                    break;
-                    
-                case 'system_update':
-                    updateSystemStatus(data);
-                    break;
-                    
-                case 'config_update':
-                    updatePnLConfiguration(data);
-                    break;
-                    
-                default:
-                    console.log('SSE event:', data.type, data);
-            }
-        }
-        
-        function updatePnLDashboard(data) {
-            const currentPnL = data.current_pnl || 0;
-            const collateralUSD = data.collateral_usd || 0;
-            const healthFactor = data.health_factor || 0;
-            const targets = data.pnl_targets || {};
-            
-            // Update current performance overview
-            document.getElementById('current-pnl').textContent = `${currentPnL.toFixed(2)}%`;
-            document.getElementById('current-collateral').textContent = `$${collateralUSD.toFixed(2)}`;
-            document.getElementById('current-health-factor').textContent = healthFactor.toFixed(3);
-            
-            // Update Growth Target Meter (5.0%)
-            const growthTarget = targets.pnl_growth_target || 5.0;
-            const growthProgress = Math.min((currentPnL / growthTarget) * 100, 100);
-            const growthExcess = currentPnL - growthTarget;
-            
-            document.getElementById('growth-current').textContent = `${currentPnL.toFixed(2)}%`;
-            document.getElementById('growth-progress').style.width = `${growthProgress}%`;
-            document.getElementById('growth-excess').textContent = growthExcess > 0 ? 
-                `+${growthExcess.toFixed(2)}%` : `${growthExcess.toFixed(2)}%`;
-            document.getElementById('growth-status').innerHTML = currentPnL >= growthTarget ? 
-                '✅ ACHIEVED' : '⏳ PENDING';
-            
-            // Update Capacity Target Meter (2.0%)
-            const capacityTarget = targets.pnl_capacity_target || 2.0;
-            const capacityProgress = Math.min((currentPnL / capacityTarget) * 100, 100);
-            const capacityExcess = currentPnL - capacityTarget;
-            
-            document.getElementById('capacity-current').textContent = `${currentPnL.toFixed(2)}%`;
-            document.getElementById('capacity-progress').style.width = `${capacityProgress}%`;
-            document.getElementById('capacity-excess').textContent = capacityExcess > 0 ? 
-                `+${capacityExcess.toFixed(2)}%` : `${capacityExcess.toFixed(2)}%`;
-            document.getElementById('capacity-status').innerHTML = currentPnL >= capacityTarget ? 
-                '✅ ACHIEVED' : '⏳ PENDING';
-            
-            // Update Debt Swap Target Meter (1.5%)
-            const swapTarget = targets.pnl_debt_swap_target || 1.5;
-            const swapProgress = Math.min((currentPnL / swapTarget) * 100, 100);
-            const swapExcess = currentPnL - swapTarget;
-            
-            document.getElementById('swap-current').textContent = `${currentPnL.toFixed(2)}%`;
-            document.getElementById('swap-progress').style.width = `${swapProgress}%`;
-            document.getElementById('swap-excess').textContent = swapExcess > 0 ? 
-                `+${swapExcess.toFixed(2)}%` : `${swapExcess.toFixed(2)}%`;
-            document.getElementById('swap-status').innerHTML = currentPnL >= swapTarget ? 
-                '✅ ACHIEVED' : '⏳ PENDING';
-            
-            // Update overall PnL status color based on performance
-            const pnlElement = document.getElementById('current-pnl');
-            if (currentPnL >= growthTarget) {
-                pnlElement.style.color = '#22c55e'; // Green for excellent performance
-            } else if (currentPnL >= capacityTarget) {
-                pnlElement.style.color = '#ffc107'; // Yellow for good performance
-            } else if (currentPnL >= swapTarget) {
-                pnlElement.style.color = '#8b5cf6'; // Purple for basic performance
+            if (z3.has_active_position) {
+                const tier = (z3.position_tier || '').toUpperCase();
+                document.getElementById('microStatus').textContent = tier === 'MICRO' ? 'ACTIVE — Position Open' : 'ARMED — Monitoring';
+                document.getElementById('microStatus').className = 'guardrail-status ' + (tier === 'MICRO' ? 'active' : 'armed');
+                document.getElementById('macroStatus').textContent = tier === 'MACRO' ? 'ACTIVE — Position Open' : 'ARMED — Monitoring';
+                document.getElementById('macroStatus').className = 'guardrail-status ' + (tier === 'MACRO' ? 'active' : 'armed');
             } else {
-                pnlElement.style.color = '#ef4444'; // Red for below target
+                document.getElementById('microStatus').textContent = 'ARMED — Monitoring';
+                document.getElementById('microStatus').className = 'guardrail-status armed';
+                document.getElementById('macroStatus').textContent = 'ARMED — Monitoring';
+                document.getElementById('macroStatus').className = 'guardrail-status armed';
             }
-            
-            console.log(`📊 PnL updated: ${currentPnL.toFixed(2)}% (Growth: ${growthProgress.toFixed(1)}%)`);
-        }
-        
-        function updateSystemStatus(data) {
-            // Update system status from SSE if needed
-            console.log('🔧 System update:', data);
-        }
-        
-        function updatePnLConfiguration(data) {
-            // Handle real-time PnL configuration updates
-            console.log('⚙️ Configuration update received:', data);
-            console.log('🔍 DEBUG: updatePnLConfiguration function called!');
-            
-            // Check nested data structure - SSE events have data.data.updated_config
-            const configData = data.data || data;
-            if (configData.updated_config && configData.updated_config.pnl_targets) {
-                const newTargets = configData.updated_config.pnl_targets;
-                console.log('🔍 DEBUG: Processing new targets:', newTargets);
-                
-                // Update target display values using robust pattern matching
-                if (newTargets.pnl_growth_target) {
-                    console.log('🔍 DEBUG: Starting Growth Target update...');
-                    const growthTargetElements = document.querySelectorAll('*');
-                    console.log(`🔍 DEBUG: Scanning ${growthTargetElements.length} elements`);
-                    
-                    let targetMatches = 0;
-                    for (let element of growthTargetElements) {
-                        if (element.textContent && element.textContent.match(/Target:\s*\d+(\.\d+)?%/)) {
-                            targetMatches++;
-                            console.log(`🔍 DEBUG: Found target match ${targetMatches}: "${element.textContent}"`);
-                            
-                            // Check if this is the growth target section by looking for nearby "Growth Target" text
-                            const parent = element.closest('.meter-card') || element.parentElement;
-                            console.log(`🔍 DEBUG: Parent found:`, parent ? 'YES' : 'NO');
-                            
-                            if (parent) {
-                                const hasGrowthTarget = parent.innerHTML.includes('Growth Target');
-                                console.log(`🔍 DEBUG: Contains "Growth Target":`, hasGrowthTarget);
-                                console.log(`🔍 DEBUG: Parent innerHTML preview:`, parent.innerHTML.substring(0, 200) + '...');
-                                
-                                if (hasGrowthTarget) {
-                                    element.textContent = `Target: ${newTargets.pnl_growth_target.toFixed(1)}%`;
-                                    console.log(`✅ Updated Growth Target to: ${newTargets.pnl_growth_target.toFixed(1)}%`);
-                                }
-                            }
-                        }
-                    }
-                    console.log(`🔍 DEBUG: Total target matches found: ${targetMatches}`);
-                }
-                
-                if (newTargets.pnl_capacity_target) {
-                    const capacityTargetElements = document.querySelectorAll('*');
-                    for (let element of capacityTargetElements) {
-                        if (element.textContent && element.textContent.match(/Target:\s*\d+(\.\d+)?%/)) {
-                            // Check if this is the capacity target section by looking for nearby "Capacity Target" text
-                            const parent = element.closest('.meter-card') || element.parentElement;
-                            if (parent && parent.innerHTML.includes('Capacity Target')) {
-                                element.textContent = `Target: ${newTargets.pnl_capacity_target.toFixed(1)}%`;
-                                console.log(`Updated Capacity Target to: ${newTargets.pnl_capacity_target.toFixed(1)}%`);
-                            }
-                        }
-                    }
-                }
-                
-                if (newTargets.pnl_debt_swap_target) {
-                    const swapTargetElements = document.querySelectorAll('*');
-                    for (let element of swapTargetElements) {
-                        if (element.textContent && element.textContent.match(/Target:\s*\d+(\.\d+)?%/)) {
-                            // Check if this is the debt swap target section by looking for nearby "Debt Swap Target" text
-                            const parent = element.closest('.meter-card') || element.parentElement;
-                            if (parent && parent.innerHTML.includes('Debt Swap Target')) {
-                                element.textContent = `Target: ${newTargets.pnl_debt_swap_target.toFixed(1)}%`;
-                                console.log(`Updated Debt Swap Target to: ${newTargets.pnl_debt_swap_target.toFixed(1)}%`);
-                            }
-                        }
-                    }
-                }
-                
-                // Re-calculate progress bars and status with new targets
-                // Get current PnL from the display
-                const currentPnLElement = document.getElementById('current-pnl');
-                if (currentPnLElement) {
-                    const currentPnL = parseFloat(currentPnLElement.textContent.replace('%', ''));
-                    
-                    // Update Growth Target calculations
-                    if (newTargets.pnl_growth_target) {
-                        const growthProgress = Math.min((currentPnL / newTargets.pnl_growth_target) * 100, 100);
-                        const growthExcess = currentPnL - newTargets.pnl_growth_target;
-                        
-                        document.getElementById('growth-progress').style.width = `${growthProgress}%`;
-                        document.getElementById('growth-excess').textContent = growthExcess > 0 ? 
-                            `+${growthExcess.toFixed(2)}%` : `${growthExcess.toFixed(2)}%`;
-                        document.getElementById('growth-status').innerHTML = currentPnL >= newTargets.pnl_growth_target ? 
-                            '✅ ACHIEVED' : '⏳ PENDING';
-                    }
-                    
-                    // Update Capacity Target calculations
-                    if (newTargets.pnl_capacity_target) {
-                        const capacityProgress = Math.min((currentPnL / newTargets.pnl_capacity_target) * 100, 100);
-                        const capacityExcess = currentPnL - newTargets.pnl_capacity_target;
-                        
-                        document.getElementById('capacity-progress').style.width = `${capacityProgress}%`;
-                        document.getElementById('capacity-excess').textContent = capacityExcess > 0 ? 
-                            `+${capacityExcess.toFixed(2)}%` : `${capacityExcess.toFixed(2)}%`;
-                        document.getElementById('capacity-status').innerHTML = currentPnL >= newTargets.pnl_capacity_target ? 
-                            '✅ ACHIEVED' : '⏳ PENDING';
-                    }
-                    
-                    // Update Debt Swap Target calculations
-                    if (newTargets.pnl_debt_swap_target) {
-                        const swapProgress = Math.min((currentPnL / newTargets.pnl_debt_swap_target) * 100, 100);
-                        const swapExcess = currentPnL - newTargets.pnl_debt_swap_target;
-                        
-                        document.getElementById('swap-progress').style.width = `${swapProgress}%`;
-                        document.getElementById('swap-excess').textContent = swapExcess > 0 ? 
-                            `+${swapExcess.toFixed(2)}%` : `${swapExcess.toFixed(2)}%`;
-                        document.getElementById('swap-status').innerHTML = currentPnL >= newTargets.pnl_debt_swap_target ? 
-                            '✅ ACHIEVED' : '⏳ PENDING';
-                    }
-                }
-                
-                // Show visual confirmation of config update
-                document.getElementById('pnl-status').textContent = 'Configuration Updated!';
-                setTimeout(() => {
-                    document.getElementById('pnl-status').textContent = 'Live Synchronization';
-                }, 3000);
-                
-                console.log(`⚙️ PnL targets updated: Growth ${newTargets.pnl_growth_target}%, Capacity ${newTargets.pnl_capacity_target}%, Swap ${newTargets.pnl_debt_swap_target}%`);
+
+            // ZONE 4: Engine Room
+            const gc = z4.growth_cooldown_sec;
+            const lc = z4.ls_cooldown_sec;
+            const gcEl = document.getElementById('growthCooldown');
+            gcEl.textContent = formatCooldown(gc);
+            gcEl.className = 'cooldown-value ' + (gc <= 0 ? 'ready' : 'waiting');
+            const lcEl = document.getElementById('lsCooldown');
+            lcEl.textContent = formatCooldown(lc);
+            lcEl.className = 'cooldown-value ' + (lc <= 0 ? 'ready' : 'waiting');
+
+            const debt = z4.total_debt || 0;
+            const cap = z4.borrow_capacity || z4.capacity_cap || 1;
+            const pct = cap > 0 ? Math.min((debt / cap) * 100, 100) : 0;
+            const bar = document.getElementById('capacityBar');
+            bar.style.width = pct + '%';
+            if (pct > 80) bar.style.background = 'var(--red-glow)';
+            else if (pct > 50) bar.style.background = 'var(--amber-glow)';
+            else bar.style.background = 'var(--green-glow)';
+            document.getElementById('capacityUsed').textContent = '$' + debt.toFixed(2) + ' debt';
+            document.getElementById('capacityCap').textContent = '/ $' + cap.toFixed(2) + ' max capacity';
+
+            // ZONE 5: Intelligence Feed
+            const feed = document.getElementById('intelFeed');
+            if (z5.lines && z5.lines.length > 0) {
+                feed.innerHTML = '';
+                z5.lines.forEach(line => {
+                    const div = document.createElement('div');
+                    div.className = 'intel-line ' + classifyIntelLine(line);
+                    div.textContent = line;
+                    feed.appendChild(div);
+                });
+                feed.scrollTop = feed.scrollHeight;
             }
+
+            // Timestamp
+            const now = new Date();
+            document.getElementById('lastUpdated').textContent = 'Last updated: ' + now.toLocaleTimeString() + ' · Data age: ' + Math.round((Date.now()/1000 - data.timestamp)) + 's';
         }
 
-        // Load PnL configuration from backend
-        async function loadPnLConfig() {
-            try {
-                console.log('🎯 Loading PnL configuration from backend...');
-                const response = await fetch('/api/pnl-config');
-                const data = await response.json();
-                
-                if (data.success && data.pnl_targets) {
-                    console.log('✅ PnL config loaded:', data.pnl_targets);
-                    
-                    // Update the static HTML elements with real config values
-                    const growthTarget = data.pnl_targets.pnl_growth_target || 55.0;
-                    const capacityTarget = data.pnl_targets.pnl_capacity_target || 22.0;
-                    const swapTarget = data.pnl_targets.pnl_debt_swap_target || 1.5;
-                    
-                    // Update description header
-                    document.querySelector('p[style*="margin-top: 8px"]').innerHTML = 
-                        `Real-time PnL tracking vs Growth (${growthTarget.toFixed(1)}%), Capacity (${capacityTarget.toFixed(1)}%), and Debt Swap (${swapTarget.toFixed(1)}%) targets`;
-                    
-                    // Update Growth Target display
-                    const growthTargetElements = document.querySelectorAll('div[style*="color: rgba(255,255,255,0.7)"]');
-                    growthTargetElements.forEach(el => {
-                        if (el.textContent.includes('Target: 5.0%')) {
-                            el.textContent = `Target: ${growthTarget.toFixed(1)}%`;
-                        } else if (el.textContent.includes('Target: 2.0%')) {
-                            el.textContent = `Target: ${capacityTarget.toFixed(1)}%`;
-                        } else if (el.textContent.includes('Target: 1.5%')) {
-                            el.textContent = `Target: ${swapTarget.toFixed(1)}%`;
-                        }
-                    });
-                    
-                    // Force update PnL calculations with real targets
-                    updatePnLTargets(data.pnl_targets);
-                    
-                    console.log(`✅ Dashboard initialized with real PnL targets: Growth ${growthTarget}%, Capacity ${capacityTarget}%, Debt Swap ${swapTarget}%`);
-                } else {
-                    console.warn('⚠️ Could not load PnL config, using defaults');
-                }
-            } catch (error) {
-                console.error('❌ Error loading PnL config:', error);
-            }
-        }
-
-        // Initialize dashboard
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('Dashboard loaded, fetching initial data...');
-            fetchData();
-            
-            // Load real PnL configuration from backend
-            loadPnLConfig();
-            
-            // Initialize decision process monitoring with real data
-            initializeDecisionProcess();
-
-            // Initialize SSE real-time synchronization for PnL monitoring
-            initializeSSE();
-
-            // Auto-refresh wallet data every 30 seconds
-            updateInterval = setInterval(fetchData, 30000);
-            
-            // Refresh console and metrics more frequently for real-time updates
-            setInterval(fetchConsoleOutput, 2000);  // Every 2 seconds for responsiveness
-            
-            // Initial metrics fetch
-            setTimeout(fetchSystemMetrics, 1000);
-        });
-
-        // Test API connectivity
-        fetch('/api/test')
-            .then(response => response.json())
-            .then(data => {
-                console.log('API test successful:', data);
-            })
-            .catch(error => {
-                console.error('API test failed:', error);
-            });
-        
-        // ============================================================================
-        // Decision Process Management Functions - Real-time Integration
-        // ============================================================================
-        
-        // Initialize decision process monitoring with real data
-        function initializeDecisionProcess() {
-            console.log('🎯 Initializing decision process monitoring with live data...');
-            fetchDecisionState();
-            // Update decision process every 5 seconds (matching monitoring cycle)
-            setInterval(fetchDecisionState, 5000);
-        }
-
-        // Fetch current decision state from backend
-        async function fetchDecisionState() {
-            try {
-                const response = await fetch('/api/decision-state');
-                const data = await response.json();
-                
-                if (data.success) {
-                    updateDecisionProcessDisplay(data);
-                } else {
-                    console.error('❌ Decision state API error:', data.error);
-                }
-            } catch (error) {
-                console.error('❌ Error fetching decision state:', error);
-                // Fallback to default display
-                updateDecisionProcessDisplay(null);
-            }
-        }
-
-        // Update decision process display with real data
-        function updateDecisionProcessDisplay(data) {
-            try {
-                if (!data) {
-                    // Fallback to basic display
-                    document.getElementById('cycle-count').textContent = 'Cycle #--';
-                    document.getElementById('operation-cooldown').textContent = 'Connecting...';
-                    return;
-                }
-
-                const currentState = data.current_state || {};
-                const triggers = data.trigger_conditions || {};
-                const operations = data.scheduled_operations || [];
-
-                // Update current state
-                if (currentState.cycle_count) {
-                    document.getElementById('cycle-count').textContent = `Cycle #${currentState.cycle_count}`;
-                }
-
-                // Update operation cooldown
-                const cooldownElement = document.getElementById('operation-cooldown');
-                const cooldownRemaining = currentState.operation_cooldown_remaining || 0;
-                if (cooldownRemaining > 0) {
-                    const minutes = Math.floor(cooldownRemaining / 60);
-                    const seconds = Math.floor(cooldownRemaining % 60);
-                    cooldownElement.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
-                    cooldownElement.style.color = '#ffc107';
-                } else {
-                    cooldownElement.textContent = 'Ready';
-                    cooldownElement.style.color = '#22c55e';
-                }
-
-                // Update system phase
-                document.getElementById('system-phase').textContent = currentState.system_phase || 'Monitoring';
-
-                // Update health factor trigger
-                const hfTrigger = triggers.health_factor;
-                if (hfTrigger) {
-                    document.getElementById('current-hf-value').textContent = hfTrigger.current_value.toFixed(3);
-                    
-                    const hfStatusElement = document.getElementById('hf-trigger-status');
-                    const statusColors = {
-                        'EXCELLENT': '#22c55e',
-                        'SAFE': '#22c55e', 
-                        'CAUTION': '#ffc107',
-                        'CRITICAL': '#ff6b6b'
-                    };
-                    const statusEmojis = {
-                        'EXCELLENT': '✅',
-                        'SAFE': '✅',
-                        'CAUTION': '⚠️',
-                        'CRITICAL': '🚨'
-                    };
-                    
-                    hfStatusElement.textContent = `${statusEmojis[hfTrigger.status] || '⏳'} ${hfTrigger.status}`;
-                    hfStatusElement.style.color = statusColors[hfTrigger.status] || '#ffc107';
-                    document.getElementById('hf-next-action').textContent = hfTrigger.next_action || 'Monitor';
-                }
-
-                // Update market signals trigger
-                const marketTrigger = triggers.market_signals;
-                if (marketTrigger) {
-                    document.getElementById('btc-drop-status').textContent = `${marketTrigger.btc_drop_pct.toFixed(2)}%`;
-                    document.getElementById('arb-rsi-status').textContent = marketTrigger.arb_rsi.toString();
-                    
-                    const marketStatusElement = document.getElementById('market-trigger-status');
-                    const marketColors = {
-                        'SIGNAL': '#ff6b6b',
-                        'WATCH': '#ffc107',
-                        'ANALYZING': '#ffc107'
-                    };
-                    const marketEmojis = {
-                        'SIGNAL': '🚨',
-                        'WATCH': '⚠️', 
-                        'ANALYZING': '⏳'
-                    };
-                    
-                    marketStatusElement.textContent = `${marketEmojis[marketTrigger.status] || '⏳'} ${marketTrigger.status}`;
-                    marketStatusElement.style.color = marketColors[marketTrigger.status] || '#ffc107';
-                    document.getElementById('market-next-action').textContent = marketTrigger.next_action || 'Monitor';
-                }
-
-                // Update capacity trigger
-                const capacityTrigger = triggers.capacity;
-                if (capacityTrigger) {
-                    document.getElementById('available-capacity').textContent = `$${capacityTrigger.available_borrows.toFixed(2)}`;
-                    
-                    const capacityStatusElement = document.getElementById('capacity-trigger-status');
-                    const capacityColors = {
-                        'READY': '#6366f1',
-                        'LIMITED': '#ffc107',
-                        'LOW': '#ff6b6b'
-                    };
-                    const capacityEmojis = {
-                        'READY': '✅',
-                        'LIMITED': '⚠️',
-                        'LOW': '🚨'
-                    };
-                    
-                    capacityStatusElement.textContent = `${capacityEmojis[capacityTrigger.status] || '⏳'} ${capacityTrigger.status}`;
-                    capacityStatusElement.style.color = capacityColors[capacityTrigger.status] || '#6366f1';
-                    document.getElementById('capacity-next-action').textContent = capacityTrigger.next_action || 'Monitor';
-                }
-
-                // Update next check timer
-                const nextCheckEta = currentState.next_check_eta || 5;
-                document.getElementById('next-check-timer').textContent = `Next check: ${nextCheckEta}s`;
-
-                // Update decision status
-                document.getElementById('decision-status').textContent = 'Live Data';
-
-                console.log('🎯 Decision process updated with live data');
-            } catch (error) {
-                console.error('❌ Error updating decision process display:', error);
-            }
-        }
-
+        fetchCommandCenter();
+        refreshInterval = setInterval(fetchCommandCenter, 5000);
     </script>
 </body>
 </html>

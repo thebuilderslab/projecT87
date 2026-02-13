@@ -3721,6 +3721,9 @@ class ArbitrumTestnetAgent:
                     print(f"   Liability Short: strategy not loaded")
                 performance = 0.6
 
+            total_debt = account_data.get('totalDebtUSD', 0)
+            self._write_system_status(health_factor, total_collateral, total_debt, available_borrows, executed, performance)
+
             return performance
 
         except Exception as e:
@@ -3728,6 +3731,52 @@ class ArbitrumTestnetAgent:
             import traceback
             traceback.print_exc()
             return 0.2
+
+    def _write_system_status(self, health_factor, total_collateral, total_debt, available_borrows, executed, performance):
+        try:
+            import json as _json
+            status = {
+                "timestamp": time.time(),
+                "health_factor": round(health_factor, 4),
+                "total_collateral_usd": round(total_collateral, 2),
+                "total_debt_usd": round(total_debt, 2),
+                "available_borrows_usd": round(available_borrows, 2),
+                "baseline_collateral_usd": round(self.last_collateral_value_usd, 2),
+                "executed_this_cycle": executed,
+                "performance_score": performance,
+                "system_phase": "EXECUTING" if executed else "MONITORING",
+                "hf_status": "HEALTHY" if health_factor > 1.52 else "CAUTION" if health_factor >= 1.35 else "EMERGENCY",
+                "growth_cooldown_remaining": max(0, self.operation_cooldown_seconds - (time.time() - self.last_successful_operation_time)) if self.last_successful_operation_time > 0 else 0,
+                "ls_cooldown_remaining": 0,
+                "liability_short": {},
+                "last_event": "",
+            }
+
+            if hasattr(self, 'liability_short_strategy') and self.liability_short_strategy:
+                ls = self.liability_short_strategy
+                levels = ls.get_trigger_levels()
+                status["liability_short"] = {
+                    "micro_trigger_usd": levels.get("micro_trigger_usd", 0),
+                    "macro_trigger_usd": levels.get("macro_trigger_usd", 0),
+                    "has_active_position": ls.has_active_position(),
+                    "position_tier": None,
+                    "entry_eth_price": None,
+                    "current_eth_price": ls.get_eth_price(),
+                }
+                if ls.has_active_position():
+                    active = ls.get_active_position()
+                    status["liability_short"]["position_tier"] = active.get("tier")
+                    status["liability_short"]["entry_eth_price"] = active.get("entry_eth_price")
+                last_op = getattr(self, 'last_successful_operation_time', 0)
+                if last_op > 0:
+                    elapsed = time.time() - last_op
+                    ls_cd = 600
+                    status["ls_cooldown_remaining"] = max(0, ls_cd - elapsed)
+
+            with open('system_status.json', 'w') as f:
+                _json.dump(status, f)
+        except Exception as e:
+            print(f"⚠️ Status writer error: {e}")
 
     def _setup_enhanced_error_handling(self):
         """Setup enhanced error handling for the agent"""
