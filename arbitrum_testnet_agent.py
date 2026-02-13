@@ -3602,6 +3602,7 @@ class ArbitrumTestnetAgent:
 
             print(f"📊 Position: Collateral ${total_collateral:.2f} | Baseline ${self.last_collateral_value_usd:.2f} | HF {health_factor:.3f} | Available ${available_borrows:.2f}")
             print(f"🔒 Lock: {'TRANSACTING' if self.is_transacting else 'UNLOCKED'} | Growth needs ${self.growth_min_capacity:.0f} cap | Capacity needs ${self.capacity_min_capacity:.0f} cap")
+            print(f"⚠️ QA MODE: Growth/Capacity DISABLED — Liability Short Only")
 
             performance = 0.5
 
@@ -3622,61 +3623,67 @@ class ArbitrumTestnetAgent:
                     performance = 0.1
                 return performance
 
-            growth_met, growth_reason, abs_growth, rel_growth = self._check_collateral_growth(total_collateral, health_factor)
+            print(f"⚠️ QA MODE ACTIVE: Growth/Capacity logic DISABLED. Monitoring for Liability Short Only.")
             executed = False
-
-            if growth_met and available_borrows >= self.growth_min_capacity:
-                if growth_reason == "absolute":
-                    print(f"✅ Growth trigger met (ABSOLUTE): ${abs_growth:.2f} >= ${self.growth_trigger_threshold}")
-                else:
-                    print(f"✅ Growth trigger met (RELATIVE): {rel_growth*100:.1f}% >= {self.growth_percentage_threshold*100:.0f}%")
-                print(f"🔥 GROWTH TRIGGER ACTIVATED: Collateral grew from ${self.last_collateral_value_usd:.2f} -> ${total_collateral:.2f}")
-                print(f"   Executing Growth Path: Borrow ${self.GROWTH_DISTRIBUTION['total_borrow']:.2f} DAI")
-                if self._execute_growth_triggered_operation(available_borrows):
-                    print(f"✅ GROWTH OPERATION SUCCESS")
-                    self.update_baseline_after_success(total_collateral)
-                    print(f"✅ Baseline updated: ${self.last_collateral_value_usd:.2f} -> ${total_collateral:.2f}")
-                    performance = 0.9
-                else:
-                    print(f"❌ Growth operation failed")
-                    performance = 0.4
-                executed = True
-
-            elif growth_met and available_borrows < self.growth_min_capacity:
-                growth_pct = rel_growth * 100
-                print(f"📊 GROWTH CONDITIONS MET ({growth_pct:.1f}% growth) but CAPACITY BLOCKED: ${available_borrows:.2f} < ${self.growth_min_capacity:.0f} needed")
-                print(f"   ➡️ FALLING THROUGH to Capacity Path evaluation...")
-
-                if self._should_execute_capacity_operation(available_borrows, health_factor):
-                    print(f"⚡ CAPACITY TRIGGER ACTIVATED (via fall-through): ${available_borrows:.2f} available >= ${self.capacity_min_capacity:.0f}")
-                    print(f"   Executing Capacity Path: Borrow ${self.CAPACITY_DISTRIBUTION['total_borrow']:.2f} DAI")
-                    if self._execute_capacity_operation(available_borrows):
-                        print(f"✅ CAPACITY OPERATION SUCCESS (Growth was blocked, Capacity executed)")
-                        performance = 0.8
-                    else:
-                        print(f"❌ Capacity operation failed")
-                        performance = 0.4
-                    executed = True
-                else:
-                    print(f"   ❌ Capacity Path also not met: ${available_borrows:.2f} < ${self.capacity_min_capacity:.0f}")
-
-            if not executed:
-                if self._should_execute_capacity_operation(available_borrows, health_factor):
-                    print(f"⚡ CAPACITY TRIGGER ACTIVATED: ${available_borrows:.2f} available")
-                    print(f"   Executing Capacity Path: Borrow ${self.CAPACITY_DISTRIBUTION['total_borrow']:.2f} DAI")
-                    if self._execute_capacity_operation(available_borrows):
-                        print(f"✅ CAPACITY OPERATION SUCCESS")
-                        performance = 0.8
-                    else:
-                        print(f"❌ Capacity operation failed")
-                        performance = 0.4
-                    executed = True
 
             if not executed and hasattr(self, 'liability_short_strategy') and self.liability_short_strategy:
                 ls_executed = self._check_liability_short_triggers(total_collateral, health_factor, available_borrows)
                 if ls_executed:
                     performance = 0.9
                     executed = True
+
+            # === QA MODE: GROWTH PATH DISABLED ===
+            # growth_met, growth_reason, abs_growth, rel_growth = self._check_collateral_growth(total_collateral, health_factor)
+            #
+            # if growth_met and available_borrows >= self.growth_min_capacity:
+            #     if growth_reason == "absolute":
+            #         print(f"✅ Growth trigger met (ABSOLUTE): ${abs_growth:.2f} >= ${self.growth_trigger_threshold}")
+            #     else:
+            #         print(f"✅ Growth trigger met (RELATIVE): {rel_growth*100:.1f}% >= {self.growth_percentage_threshold*100:.0f}%")
+            #     print(f"🔥 GROWTH TRIGGER ACTIVATED: Collateral grew from ${self.last_collateral_value_usd:.2f} -> ${total_collateral:.2f}")
+            #     print(f"   Executing Growth Path: Borrow ${self.GROWTH_DISTRIBUTION['total_borrow']:.2f} DAI")
+            #     if self._execute_growth_triggered_operation(available_borrows):
+            #         print(f"✅ GROWTH OPERATION SUCCESS")
+            #         self.update_baseline_after_success(total_collateral)
+            #         print(f"✅ Baseline updated: ${self.last_collateral_value_usd:.2f} -> ${total_collateral:.2f}")
+            #         performance = 0.9
+            #     else:
+            #         print(f"❌ Growth operation failed")
+            #         performance = 0.4
+            #     executed = True
+            #
+            # elif growth_met and available_borrows < self.growth_min_capacity:
+            #     growth_pct = rel_growth * 100
+            #     print(f"📊 GROWTH CONDITIONS MET ({growth_pct:.1f}% growth) but CAPACITY BLOCKED: ${available_borrows:.2f} < ${self.growth_min_capacity:.0f} needed")
+            #     print(f"   ➡️ FALLING THROUGH to Capacity Path evaluation...")
+            #
+            #     if self._should_execute_capacity_operation(available_borrows, health_factor):
+            #         print(f"⚡ CAPACITY TRIGGER ACTIVATED (via fall-through): ${available_borrows:.2f} available >= ${self.capacity_min_capacity:.0f}")
+            #         print(f"   Executing Capacity Path: Borrow ${self.CAPACITY_DISTRIBUTION['total_borrow']:.2f} DAI")
+            #         if self._execute_capacity_operation(available_borrows):
+            #             print(f"✅ CAPACITY OPERATION SUCCESS (Growth was blocked, Capacity executed)")
+            #             performance = 0.8
+            #         else:
+            #             print(f"❌ Capacity operation failed")
+            #             performance = 0.4
+            #         executed = True
+            #     else:
+            #         print(f"   ❌ Capacity Path also not met: ${available_borrows:.2f} < ${self.capacity_min_capacity:.0f}")
+            # === END QA MODE: GROWTH PATH DISABLED ===
+
+            # === QA MODE: CAPACITY PATH DISABLED ===
+            # if not executed:
+            #     if self._should_execute_capacity_operation(available_borrows, health_factor):
+            #         print(f"⚡ CAPACITY TRIGGER ACTIVATED: ${available_borrows:.2f} available")
+            #         print(f"   Executing Capacity Path: Borrow ${self.CAPACITY_DISTRIBUTION['total_borrow']:.2f} DAI")
+            #         if self._execute_capacity_operation(available_borrows):
+            #             print(f"✅ CAPACITY OPERATION SUCCESS")
+            #             performance = 0.8
+            #         else:
+            #             print(f"❌ Capacity operation failed")
+            #             performance = 0.4
+            #         executed = True
+            # === END QA MODE: CAPACITY PATH DISABLED ===
 
             if not executed:
                 growth_from_baseline = total_collateral - self.last_collateral_value_usd
