@@ -846,6 +846,107 @@ def clear_emergency_stop():
         logger.error(f"Clear emergency stop API error: {e}")
         return jsonify({'error': str(e)}), 500
 
+def _get_engine_room_state(health_factor, total_collateral, total_debt, available_borrows, agent_running):
+    """Compute Zone 4 Engine Room state: avatar state, countdown, blocking reasons."""
+    import time as _time
+
+    growth_hf_min = 3.10
+    capacity_hf_min = 2.90
+    min_capacity_growth = 13.0
+    min_capacity_cap = 8.0
+    cooldown_seconds = 130
+
+    last_op_time = 0
+    last_action = None
+    cooldown_remaining = 0
+    bot_state = "idle"
+    blocking_reasons = []
+    conditions_met = False
+
+    if agent and hasattr(agent, 'last_successful_operation_time'):
+        last_op_time = getattr(agent, 'last_successful_operation_time', 0)
+    if agent and hasattr(agent, 'last_operation_type'):
+        last_action = getattr(agent, 'last_operation_type', None)
+    if agent and hasattr(agent, 'operation_cooldown_seconds'):
+        cooldown_seconds = getattr(agent, 'operation_cooldown_seconds', 130)
+
+    if last_op_time > 0:
+        elapsed = _time.time() - last_op_time
+        if elapsed < cooldown_seconds:
+            cooldown_remaining = round(cooldown_seconds - elapsed, 0)
+
+    if not agent_running:
+        bot_state = "offline"
+        blocking_reasons.append("Agent not running")
+    elif cooldown_remaining > 0:
+        bot_state = "cooling"
+        if last_action and "growth" in str(last_action).lower():
+            bot_state = "growth_cooldown"
+        elif last_action and ("macro" in str(last_action).lower() or "micro" in str(last_action).lower() or "liability" in str(last_action).lower()):
+            bot_state = "shield_cooldown"
+    else:
+        growth_ok = health_factor >= growth_hf_min and available_borrows >= min_capacity_growth
+        capacity_ok = health_factor >= capacity_hf_min and available_borrows >= min_capacity_cap
+
+        if health_factor < capacity_hf_min:
+            blocking_reasons.append(f"HF too low: {health_factor:.2f} < {capacity_hf_min}")
+            bot_state = "paused"
+        elif available_borrows < min_capacity_cap:
+            blocking_reasons.append(f"Capacity too low: ${available_borrows:.2f} < ${min_capacity_cap}")
+            bot_state = "idle"
+        else:
+            if growth_ok:
+                bot_state = "ready_growth"
+                conditions_met = True
+            elif capacity_ok:
+                bot_state = "ready_capacity"
+                conditions_met = True
+            else:
+                bot_state = "idle"
+
+    avatar_video = "idle"
+    if bot_state in ("growth_cooldown", "ready_growth"):
+        avatar_video = "growth"
+    elif bot_state in ("shield_cooldown",):
+        avatar_video = "shield"
+    elif bot_state == "paused":
+        avatar_video = "idle"
+
+    if bot_state == "cooling":
+        smart_text = f"RECHARGING: {int(cooldown_remaining // 60):02d}:{int(cooldown_remaining % 60):02d}"
+        smart_icon = "battery"
+    elif bot_state in ("growth_cooldown",):
+        smart_text = f"RECHARGING: {int(cooldown_remaining // 60):02d}:{int(cooldown_remaining % 60):02d}"
+        smart_icon = "battery"
+    elif bot_state in ("shield_cooldown",):
+        smart_text = f"RECHARGING: {int(cooldown_remaining // 60):02d}:{int(cooldown_remaining % 60):02d}"
+        smart_icon = "battery"
+    elif bot_state == "paused":
+        smart_text = "HOLDING POSITION: LOW HF"
+        smart_icon = "stop"
+    elif bot_state in ("ready_growth", "ready_capacity"):
+        smart_text = "TARGET ACQUIRED: EXECUTING SOON"
+        smart_icon = "crosshair"
+    elif bot_state == "offline":
+        smart_text = "SYSTEMS OFFLINE"
+        smart_icon = "power"
+    else:
+        smart_text = "SENTINEL: SCANNING MARKET..."
+        smart_icon = "eye"
+
+    return {
+        "bot_state": bot_state,
+        "avatar_video": avatar_video,
+        "smart_text": smart_text,
+        "smart_icon": smart_icon,
+        "cooldown_remaining": cooldown_remaining,
+        "cooldown_total": cooldown_seconds,
+        "last_action": last_action or "none",
+        "last_execution_time": last_op_time,
+        "conditions_met": conditions_met,
+        "blocking_reasons": blocking_reasons,
+    }
+
 @app.route('/api/command-center')
 def command_center():
     """Consolidated endpoint for the 5-zone command center dashboard.
@@ -962,6 +1063,7 @@ def command_center():
                 "borrow_capacity": round(total_collateral * 0.8, 2),
                 "gho_balance": round(getattr(agent, '_get_gho_balance', lambda: 0)() if agent else 0, 4),
                 "gho_target": getattr(agent, 'GHO_HARVEST_TARGET', 22.0) if agent else 22.0,
+                "engine_room": _get_engine_room_state(health_factor, total_collateral, total_debt, available_borrows, agent_running),
             },
             "zone5_intel": {
                 "lines": intel_lines[-15:],

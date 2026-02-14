@@ -18,8 +18,7 @@ class UniswapIntegration:
 
         if chain_id == 42161:  # Arbitrum Mainnet
             print(f"🌐 Initializing Uniswap for Arbitrum Mainnet (Chain ID: {chain_id})")
-            # Uniswap V3 Arbitrum Mainnet addresses
-            self.router_address = self.w3.to_checksum_address("0xE592427A0AEce92De3Edee1F18E0157C05861564")  # SwapRouter
+            self.router_address = self.w3.to_checksum_address("0x68b3465833fb72A70ecDF485E0e4C7bD8665Fc45")  # SwapRouter02
             self.factory_address = self.w3.to_checksum_address("0x1F98431c8aD98523631AE4a59f267346ea31F984")  # V3 Factory
             self.quoter_address = self.w3.to_checksum_address("0xb27308f9F90D607463bb33eA1BeBb41C27CE5AB6")   # Quoter V2
 
@@ -52,7 +51,7 @@ class UniswapIntegration:
         print(f"🔄 Uniswap V3 integration initialized")
 
     def _get_router_abi(self):
-        """Uniswap V3 SwapRouter ABI with single-hop and multi-hop support"""
+        """Uniswap V3 SwapRouter02 ABI — deadline is NOT in the struct (handled separately)"""
         return [
             {
                 "inputs": [
@@ -62,12 +61,11 @@ class UniswapIntegration:
                             {"internalType": "address", "name": "tokenOut", "type": "address"},
                             {"internalType": "uint24", "name": "fee", "type": "uint24"},
                             {"internalType": "address", "name": "recipient", "type": "address"},
-                            {"internalType": "uint256", "name": "deadline", "type": "uint256"},
                             {"internalType": "uint256", "name": "amountIn", "type": "uint256"},
                             {"internalType": "uint256", "name": "amountOutMinimum", "type": "uint256"},
                             {"internalType": "uint160", "name": "sqrtPriceLimitX96", "type": "uint160"}
                         ],
-                        "internalType": "struct ISwapRouter.ExactInputSingleParams",
+                        "internalType": "struct IV3SwapRouter.ExactInputSingleParams",
                         "name": "params",
                         "type": "tuple"
                     }
@@ -83,17 +81,26 @@ class UniswapIntegration:
                         "components": [
                             {"internalType": "bytes", "name": "path", "type": "bytes"},
                             {"internalType": "address", "name": "recipient", "type": "address"},
-                            {"internalType": "uint256", "name": "deadline", "type": "uint256"},
                             {"internalType": "uint256", "name": "amountIn", "type": "uint256"},
                             {"internalType": "uint256", "name": "amountOutMinimum", "type": "uint256"}
                         ],
-                        "internalType": "struct ISwapRouter.ExactInputParams",
+                        "internalType": "struct IV3SwapRouter.ExactInputParams",
                         "name": "params",
                         "type": "tuple"
                     }
                 ],
                 "name": "exactInput",
                 "outputs": [{"internalType": "uint256", "name": "amountOut", "type": "uint256"}],
+                "stateMutability": "payable",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {"internalType": "uint256", "name": "deadline", "type": "uint256"},
+                    {"internalType": "bytes[]", "name": "data", "type": "bytes[]"}
+                ],
+                "name": "multicall",
+                "outputs": [{"internalType": "bytes[]", "name": "", "type": "bytes[]"}],
                 "stateMutability": "payable",
                 "type": "function"
             }
@@ -334,14 +341,11 @@ class UniswapIntegration:
                     min_output = 1
                     print(f"⚠️ No quote available, using amountOutMinimum = 1")
 
-                deadline = int(time.time()) + 120
-
                 swap_params = {
                     'tokenIn': self.w3.to_checksum_address(token_in),
                     'tokenOut': self.w3.to_checksum_address(token_out),
                     'fee': fee,
                     'recipient': self.w3.to_checksum_address(self.address),
-                    'deadline': deadline,
                     'amountIn': amount_in_wei,
                     'amountOutMinimum': min_output,
                     'sqrtPriceLimitX96': 0
@@ -609,7 +613,6 @@ class UniswapIntegration:
                     print(f"❌ Cannot proceed without token approval for Router")
                     return None
 
-            deadline = int(time.time()) + 120
             nonce = self.w3.eth.get_transaction_count(self.address)
             base_gas_price = self.w3.eth.gas_price
             chain_id = self.w3.eth.chain_id
@@ -619,7 +622,6 @@ class UniswapIntegration:
             swap_params = {
                 'path': path_bytes,
                 'recipient': self.w3.to_checksum_address(self.address),
-                'deadline': deadline,
                 'amountIn': amount_in_wei,
                 'amountOutMinimum': 1
             }

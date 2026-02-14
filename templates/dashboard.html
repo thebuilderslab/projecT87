@@ -370,67 +370,137 @@
             color: var(--signal-white);
         }
 
-        /* ZONE 4: Engine Room */
-        .engine-section {
-            margin-bottom: 16px;
+        /* ZONE 4: Engine Room — Video Avatar Card */
+        #zone4 {
+            padding: 0 !important;
+            overflow: hidden;
+            position: relative;
         }
-
-        .engine-section:last-child { margin-bottom: 0; }
-
-        .engine-section-title {
-            font-size: 0.7rem;
+        #zone4 .zone-label {
+            position: absolute;
+            top: 10px;
+            left: 14px;
+            z-index: 10;
+            background: rgba(0,0,0,0.5);
+            padding: 2px 10px;
+            border-radius: 6px;
+        }
+        .avatar-video-wrap {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            min-height: 340px;
+        }
+        .avatar-video-wrap video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+            position: absolute;
+            top: 0; left: 0;
+        }
+        .avatar-hud {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(to top, rgba(2,6,23,0.92) 60%, rgba(2,6,23,0.0) 100%);
+            padding: 18px 16px 14px;
+            z-index: 5;
+        }
+        .hud-smart-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+        .hud-smart-icon {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            flex-shrink: 0;
+        }
+        .hud-smart-icon.eye { background: rgba(56,189,248,0.25); color: #38bdf8; }
+        .hud-smart-icon.battery { background: rgba(250,204,21,0.25); color: #facc15; }
+        .hud-smart-icon.stop { background: rgba(239,68,68,0.25); color: #ef4444; }
+        .hud-smart-icon.crosshair { background: rgba(52,211,153,0.25); color: #34d399; }
+        .hud-smart-icon.power { background: rgba(100,116,139,0.25); color: #64748b; }
+        .hud-smart-text {
+            font-size: 0.72rem;
+            font-weight: 700;
+            letter-spacing: 1.5px;
             text-transform: uppercase;
-            letter-spacing: 1px;
-            color: var(--label-slate);
-            margin-bottom: 8px;
+            color: var(--signal-white);
         }
-
-        .cooldown-row {
+        .hud-data-row {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 8px 12px;
-            background: rgba(255,255,255,0.03);
-            border-radius: 8px;
             margin-bottom: 6px;
         }
-
-        .cooldown-name {
-            font-size: 0.8rem;
-            color: var(--muted-slate);
+        .hud-data-label {
+            font-size: 0.65rem;
+            color: var(--label-slate);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
-
-        .cooldown-value {
-            font-size: 0.85rem;
-            font-weight: 600;
-        }
-        .cooldown-value.ready { color: var(--green-glow); }
-        .cooldown-value.waiting { color: var(--amber-glow); }
-
-        .capacity-bar-bg {
-            width: 100%;
-            height: 10px;
-            background: #1e293b;
-            border-radius: 5px;
-            overflow: hidden;
-            margin-top: 6px;
-        }
-
-        .capacity-bar-fill {
-            height: 100%;
-            border-radius: 5px;
-            transition: width 1s ease, background 0.6s ease;
-        }
-
-        .capacity-text {
-            display: flex;
-            justify-content: space-between;
+        .hud-data-value {
             font-size: 0.75rem;
-            margin-top: 4px;
+            font-weight: 600;
+            color: var(--signal-white);
         }
-
-        .capacity-text .used { color: var(--signal-white); font-weight: 600; }
-        .capacity-text .cap { color: var(--label-slate); }
+        .hud-bar-bg {
+            width: 100%;
+            height: 4px;
+            background: rgba(255,255,255,0.08);
+            border-radius: 2px;
+            overflow: hidden;
+            margin: 4px 0 8px;
+        }
+        .hud-bar-fill {
+            height: 100%;
+            border-radius: 2px;
+            transition: width 1s ease, background 0.5s ease;
+        }
+        .hud-cooldown-ring {
+            width: 100%;
+            height: 3px;
+            background: rgba(255,255,255,0.06);
+            border-radius: 2px;
+            overflow: hidden;
+            margin-bottom: 8px;
+        }
+        .hud-cooldown-ring-fill {
+            height: 100%;
+            background: var(--accent-blue);
+            border-radius: 2px;
+            transition: width 0.5s linear;
+        }
+        .hud-harvest-btn {
+            width: 100%;
+            padding: 5px;
+            border: 1px solid #a78bfa;
+            background: transparent;
+            color: #a78bfa;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            transition: all 0.3s ease;
+        }
+        .hud-harvest-btn:not(:disabled):hover {
+            background: rgba(167,139,250,0.15);
+        }
+        .hud-harvest-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
 
         /* ZONE 5: Intelligence Feed */
         .intel-feed {
@@ -571,49 +641,35 @@
                 </div>
             </div>
 
-            <!-- ZONE 4: Engine Room (Bottom-Left) -->
+            <!-- ZONE 4: Engine Room — Video Avatar Card -->
             <div class="zone-card" id="zone4">
                 <div class="zone-label">Zone 4 — Engine Room</div>
-
-                <div class="engine-section">
-                    <div class="engine-section-title">Cooldown Timers</div>
-                    <div class="cooldown-row">
-                        <span class="cooldown-name">Growth Engine</span>
-                        <span class="cooldown-value ready" id="growthCooldown">Ready</span>
+                <div class="avatar-video-wrap">
+                    <video id="avatarVideo" muted playsinline autoplay loop src="/static/assets/avatar_idle.mp4"></video>
+                    <div class="avatar-hud">
+                        <div class="hud-cooldown-ring">
+                            <div class="hud-cooldown-ring-fill" id="hudCooldownRing" style="width:0%"></div>
+                        </div>
+                        <div class="hud-smart-status">
+                            <div class="hud-smart-icon eye" id="hudIcon">👁️</div>
+                            <div class="hud-smart-text" id="hudSmartText">SENTINEL: SCANNING MARKET...</div>
+                        </div>
+                        <div class="hud-data-row">
+                            <span class="hud-data-label">Capacity</span>
+                            <span class="hud-data-value" id="hudCapacity">$0.00</span>
+                        </div>
+                        <div class="hud-bar-bg">
+                            <div class="hud-bar-fill" id="hudCapBar" style="width:0%;background:var(--green-glow)"></div>
+                        </div>
+                        <div class="hud-data-row">
+                            <span class="hud-data-label">GHO Farm</span>
+                            <span class="hud-data-value" id="hudGho">0.00 / 22.00</span>
+                        </div>
+                        <div class="hud-bar-bg">
+                            <div class="hud-bar-fill" id="hudGhoBar" style="width:0%;background:#a78bfa"></div>
+                        </div>
+                        <button id="harvestBtn" class="hud-harvest-btn" onclick="harvestGho()" disabled>CLAIM USDC (Locked until target)</button>
                     </div>
-                    <div class="cooldown-countdown-bar">
-                        <div class="cooldown-countdown-fill" id="growthCooldownBar"></div>
-                    </div>
-                    <div class="cooldown-row" style="margin-top:6px;">
-                        <span class="cooldown-name">Liability Short</span>
-                        <span class="cooldown-value ready" id="lsCooldown">Ready</span>
-                    </div>
-                    <div class="cooldown-countdown-bar">
-                        <div class="cooldown-countdown-fill" id="lsCooldownBar"></div>
-                    </div>
-                </div>
-
-                <div class="engine-section">
-                    <div class="engine-section-title">Capacity Meter</div>
-                    <div class="capacity-bar-bg">
-                        <div class="capacity-bar-fill" id="capacityBar" style="width: 0%; background: var(--green-glow);"></div>
-                    </div>
-                    <div class="capacity-text">
-                        <span class="used" id="capacityUsed">$0.00 used</span>
-                        <span class="cap" id="capacityCap">/ $25.00 daily cap</span>
-                    </div>
-                </div>
-
-                <div class="engine-section">
-                    <div class="engine-section-title">🛡️ GHO Yield Farm</div>
-                    <div class="capacity-bar-bg">
-                        <div class="capacity-bar-fill" id="ghoBar" style="width: 0%; background: #a78bfa;"></div>
-                    </div>
-                    <div class="capacity-text">
-                        <span class="used" id="ghoBalance">0.00 GHO</span>
-                        <span class="cap" id="ghoTarget">/ 22.00 target</span>
-                    </div>
-                    <button id="harvestBtn" onclick="harvestGho()" disabled style="margin-top:6px;width:100%;padding:6px;border:1px solid #a78bfa;background:transparent;color:#a78bfa;border-radius:4px;cursor:pointer;font-size:12px;opacity:0.5;">CLAIM USDC (Locked until target)</button>
                 </div>
             </div>
 
@@ -668,23 +724,59 @@
             }, 1000);
         }
 
-        function tickCooldowns() {
-            if (growthCooldownSec > 0) growthCooldownSec = Math.max(0, growthCooldownSec - 1);
-            if (lsCooldownSec > 0) lsCooldownSec = Math.max(0, lsCooldownSec - 1);
-
-            const gcEl = document.getElementById('growthCooldown');
-            gcEl.textContent = formatCooldown(growthCooldownSec);
-            gcEl.className = 'cooldown-value ' + (growthCooldownSec <= 0 ? 'ready' : 'waiting');
-            document.getElementById('growthCooldownBar').style.width = (growthCooldownSec > 0 ? ((growthCooldownSec / COOLDOWN_MAX) * 100) : 0) + '%';
-
-            const lcEl = document.getElementById('lsCooldown');
-            lcEl.textContent = formatCooldown(lsCooldownSec);
-            lcEl.className = 'cooldown-value ' + (lsCooldownSec <= 0 ? 'ready' : 'waiting');
-            document.getElementById('lsCooldownBar').style.width = (lsCooldownSec > 0 ? ((lsCooldownSec / COOLDOWN_MAX) * 100) : 0) + '%';
+        let currentAvatarSrc = 'idle';
+        function updateAvatarState(z4) {
+            const er = z4.engine_room || {};
+            const wantSrc = er.avatar_video || 'idle';
+            if (wantSrc !== currentAvatarSrc) {
+                const vid = document.getElementById('avatarVideo');
+                vid.src = '/static/assets/avatar_' + wantSrc + '.mp4';
+                vid.load();
+                vid.play().catch(()=>{});
+                currentAvatarSrc = wantSrc;
+            }
         }
 
-        if (!cooldownTickInterval) {
-            cooldownTickInterval = setInterval(tickCooldowns, 1000);
+        function updateHUD(z4) {
+            const er = z4.engine_room || {};
+            const iconMap = {eye:'👁️', battery:'🔋', stop:'🛑', crosshair:'🎯', power:'⚡'};
+            const iconClassMap = {eye:'eye', battery:'battery', stop:'stop', crosshair:'crosshair', power:'power'};
+            const smartIcon = er.smart_icon || 'eye';
+            const hudIconEl = document.getElementById('hudIcon');
+            hudIconEl.textContent = iconMap[smartIcon] || '👁️';
+            hudIconEl.className = 'hud-smart-icon ' + (iconClassMap[smartIcon] || 'eye');
+            document.getElementById('hudSmartText').textContent = er.smart_text || 'SENTINEL: SCANNING MARKET...';
+
+            const cdRem = er.cooldown_remaining || 0;
+            const cdTotal = er.cooldown_total || 130;
+            const cdPct = cdTotal > 0 ? Math.min(((cdTotal - cdRem) / cdTotal) * 100, 100) : 0;
+            document.getElementById('hudCooldownRing').style.width = (cdRem > 0 ? cdPct : 0) + '%';
+
+            const avail = z4.available_borrows || 0;
+            const cap = z4.borrow_capacity || z4.capacity_cap || 1;
+            const debt = z4.total_debt || 0;
+            const pct = cap > 0 ? Math.min((debt / cap) * 100, 100) : 0;
+            document.getElementById('hudCapacity').textContent = '$' + avail.toFixed(2) + ' avail';
+            const capBar = document.getElementById('hudCapBar');
+            capBar.style.width = pct + '%';
+            if (pct > 80) capBar.style.background = 'var(--red-glow)';
+            else if (pct > 50) capBar.style.background = 'var(--amber-glow)';
+            else capBar.style.background = 'var(--green-glow)';
+
+            const ghoBal = z4.gho_balance || 0;
+            const ghoTgt = z4.gho_target || 22.0;
+            const ghoPct = ghoTgt > 0 ? Math.min((ghoBal / ghoTgt) * 100, 100) : 0;
+            document.getElementById('hudGho').textContent = ghoBal.toFixed(2) + ' / ' + ghoTgt.toFixed(2);
+            document.getElementById('hudGhoBar').style.width = ghoPct + '%';
+
+            const hBtn = document.getElementById('harvestBtn');
+            if (ghoBal >= ghoTgt) {
+                hBtn.disabled = false;
+                hBtn.textContent = 'CLAIM USDC (' + ghoBal.toFixed(2) + ' GHO ready)';
+            } else {
+                hBtn.disabled = true;
+                hBtn.textContent = 'CLAIM USDC (' + ghoPct.toFixed(0) + '% to target)';
+            }
         }
 
         async function harvestGho() {
@@ -814,38 +906,9 @@
                 document.getElementById('macroStatus').className = 'guardrail-status armed';
             }
 
-            // ZONE 4: Engine Room — sync live countdown from API
-            growthCooldownSec = z4.growth_cooldown_sec || 0;
-            lsCooldownSec = z4.ls_cooldown_sec || 0;
-            tickCooldowns();
-
-            const debt = z4.total_debt || 0;
-            const cap = z4.borrow_capacity || z4.capacity_cap || 1;
-            const pct = cap > 0 ? Math.min((debt / cap) * 100, 100) : 0;
-            const bar = document.getElementById('capacityBar');
-            bar.style.width = pct + '%';
-            if (pct > 80) bar.style.background = 'var(--red-glow)';
-            else if (pct > 50) bar.style.background = 'var(--amber-glow)';
-            else bar.style.background = 'var(--green-glow)';
-            document.getElementById('capacityUsed').textContent = '$' + debt.toFixed(2) + ' debt';
-            document.getElementById('capacityCap').textContent = '/ $' + cap.toFixed(2) + ' max capacity';
-
-            const ghoBal = z4.gho_balance || 0;
-            const ghoTgt = z4.gho_target || 22.0;
-            const ghoPct = ghoTgt > 0 ? Math.min((ghoBal / ghoTgt) * 100, 100) : 0;
-            document.getElementById('ghoBar').style.width = ghoPct + '%';
-            document.getElementById('ghoBalance').textContent = ghoBal.toFixed(2) + ' GHO';
-            document.getElementById('ghoTarget').textContent = '/ ' + ghoTgt.toFixed(2) + ' target';
-            const hBtn = document.getElementById('harvestBtn');
-            if (ghoBal >= ghoTgt) {
-                hBtn.disabled = false;
-                hBtn.style.opacity = '1';
-                hBtn.textContent = 'CLAIM USDC (' + ghoBal.toFixed(2) + ' GHO ready)';
-            } else {
-                hBtn.disabled = true;
-                hBtn.style.opacity = '0.5';
-                hBtn.textContent = 'CLAIM USDC (' + ghoPct.toFixed(0) + '% to target)';
-            }
+            // ZONE 4: Engine Room — Video Avatar + HUD
+            updateAvatarState(z4);
+            updateHUD(z4);
 
             // ZONE 5: Intelligence Feed
             const feed = document.getElementById('intelFeed');
