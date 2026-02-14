@@ -605,7 +605,7 @@ class ArbitrumTestnetAgent:
 
         # Capacity-Based System Configuration
         self.capacity_min_capacity = 7.0  # $7 minimum available capacity for capacity path
-        self.capacity_health_factor_threshold = 2.50  # TEMP: Lowered from 2.90 to test GHO tax — restore after verification
+        self.capacity_health_factor_threshold = 2.90  # Conservative GHO mode: Capacity min HF
         self.target_health_factor = 3.10  # Conservative GHO mode: target HF
 
         # Display Hybrid System Configuration
