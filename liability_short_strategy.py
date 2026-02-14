@@ -28,7 +28,7 @@ logger = logging.getLogger(__name__)
 POSITIONS_FILE = "debt_swap_positions.json"
 
 MACRO_DISTRIBUTION = {
-    'total_borrow_usd': 10.90,
+    'total_borrow_usd': 10.90 + 1.20,
     'wbtc_swap_supply': 2.10,
     'weth_supply': 2.10,
     'dai_swap_total': 5.60,
@@ -36,11 +36,12 @@ MACRO_DISTRIBUTION = {
     'dai_transfer': 1.10,
     'eth_gas_reserve': 1.10,
     'debt_swap_amount': 10.80,
-    'min_capacity': 13.0,
+    'gho_tax': 1.20,
+    'min_capacity': 13.0 + 1.20,
 }
 
 MICRO_DISTRIBUTION = {
-    'total_borrow_usd': 7.20,
+    'total_borrow_usd': 7.20 + 1.20,
     'wbtc_swap_supply': 1.10,
     'weth_supply': 1.10,
     'dai_swap_total': 3.90,
@@ -48,7 +49,8 @@ MICRO_DISTRIBUTION = {
     'dai_transfer': 1.10,
     'eth_gas_reserve': 1.10,
     'debt_swap_amount': 10.10,
-    'min_capacity': 9.0,
+    'gho_tax': 1.20,
+    'min_capacity': 9.0 + 1.20,
 }
 
 MACRO_TRIGGER = {

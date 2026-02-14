@@ -91,4 +91,34 @@ PRICE_CACHE_DURATION = 300
 # GHO Whitelist — Nurse/restore_health must NEVER sweep GHO
 GHO_WHITELIST = True
 
+# Delegation Mode — Dynamic Target Wallet
+import os
+
+def get_target_wallet():
+    """
+    Determine the target wallet for monitoring and operations.
+    
+    Reads TARGET_WALLET_ADDRESS from environment variables.
+    - If set: Delegation Mode — bot operates on behalf of that wallet
+    - If not set: Self-Trade Mode — bot uses its own wallet
+    
+    Returns:
+        str or None: Checksummed target wallet address, or None for Self-Trade
+    """
+    target = os.getenv('TARGET_WALLET_ADDRESS', '').strip()
+    if target and len(target) == 42 and target.startswith('0x'):
+        try:
+            from web3 import Web3
+            return Web3.to_checksum_address(target)
+        except Exception:
+            return target
+    return None
+
+def get_delegation_mode():
+    """Return current delegation mode label."""
+    target = get_target_wallet()
+    if target:
+        return f"DELEGATION MODE (target: {target[:10]}...{target[-4:]})"
+    return "SELF-TRADE MODE (private key)"
+
 print("✅ Configuration constants loaded successfully")

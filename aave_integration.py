@@ -118,15 +118,14 @@ class AaveArbitrumIntegration:
             abi=self.pool_abi
         )
 
-    def get_user_account_data(self):
-        """Get user account data from Aave - DAI-centric compliance - NEVER returns None"""
+    def get_user_account_data(self, target=None):
+        """Get user account data from Aave. If target is provided, fetch that wallet's data instead of the bot's."""
         try:
-            # Add retry mechanism for system call failures
+            query_address = target if target else self.account.address
             max_retries = 3
             for attempt in range(max_retries):
                 try:
-                    # Force latest block to prevent stale data
-                    account_data = self.pool_contract.functions.getUserAccountData(self.account.address).call(block_identifier='latest')
+                    account_data = self.pool_contract.functions.getUserAccountData(query_address).call(block_identifier='latest')
 
                     # Ensure account_data is not None
                     if account_data is None:
@@ -168,14 +167,102 @@ class AaveArbitrumIntegration:
             logger.info(f"Returning fallback safe data: {fallback_data}")
             return fallback_data
 
-    def borrow_dai(self, amount_dai):
-        """Borrow DAI from Aave - DAI-only compliance enforced"""
+    def check_delegation_allowance(self, user_address, asset_address):
+        """
+        Check if the user has delegated credit to the bot for a given asset.
+        Reads borrowAllowance(user, bot) from the Aave V3 variable debt token.
+        
+        Returns:
+            float: Allowance amount in token units (0 = no delegation)
+        """
         try:
-            print(f"🏦 Initiating DAI borrow: ${amount_dai:.2f}")
-            amount_wei = int(amount_dai * 10**18)  # DAI has 18 decimals
+            variable_debt_token_abi = [
+                {
+                    "inputs": [
+                        {"name": "fromUser", "type": "address"},
+                        {"name": "toUser", "type": "address"}
+                    ],
+                    "name": "borrowAllowance",
+                    "outputs": [{"name": "", "type": "uint256"}],
+                    "stateMutability": "view",
+                    "type": "function"
+                }
+            ]
 
-            # Pre-transaction validation
-            account_data = self.get_user_account_data()
+            data_provider_abi = [
+                {
+                    "inputs": [{"name": "asset", "type": "address"}],
+                    "name": "getReserveTokensAddresses",
+                    "outputs": [
+                        {"name": "aTokenAddress", "type": "address"},
+                        {"name": "stableDebtTokenAddress", "type": "address"},
+                        {"name": "variableDebtTokenAddress", "type": "address"}
+                    ],
+                    "stateMutability": "view",
+                    "type": "function"
+                }
+            ]
+
+            chain_id = self.w3.eth.chain_id
+            if chain_id == 42161:
+                data_provider_address = "0x69FA688f1Dc47d4B5d8029D5a35FB7a548310654"
+            elif chain_id == 421614:
+                data_provider_address = "0x69FA688f1Dc47d4B5d8029D5a35FB7a548310654"
+            else:
+                logger.error(f"Unsupported chain ID {chain_id} for delegation allowance check")
+                return 0
+            data_provider = self.w3.eth.contract(
+                address=self.w3.to_checksum_address(data_provider_address),
+                abi=data_provider_abi
+            )
+
+            token_addresses = data_provider.functions.getReserveTokensAddresses(
+                self.w3.to_checksum_address(asset_address)
+            ).call()
+            variable_debt_token_addr = token_addresses[2]
+
+            debt_token_contract = self.w3.eth.contract(
+                address=variable_debt_token_addr,
+                abi=variable_debt_token_abi
+            )
+
+            allowance_raw = debt_token_contract.functions.borrowAllowance(
+                self.w3.to_checksum_address(user_address),
+                self.account.address
+            ).call()
+
+            if asset_address.lower() == self.wbtc_address.lower():
+                allowance = allowance_raw / 10**8
+            else:
+                allowance = allowance_raw / 10**18
+
+            if allowance <= 0:
+                print(f"⏳ Waiting for User Delegation — {user_address[:10]}... has NOT delegated credit for {asset_address[:10]}...")
+            else:
+                print(f"✅ Delegation active: allowance {allowance:.4f} tokens from {user_address[:10]}...")
+
+            return allowance
+
+        except Exception as e:
+            logger.error(f"Delegation allowance check failed: {e}")
+            print(f"❌ Cannot check delegation allowance: {e}")
+            return 0
+
+    def borrow_dai(self, amount_dai, on_behalf_of=None):
+        """Borrow DAI from Aave. If on_behalf_of is set, borrow against that user's collateral (requires delegation)."""
+        try:
+            borrow_target = on_behalf_of if on_behalf_of else self.account.address
+            mode_label = f"DELEGATION ({borrow_target[:10]}...)" if on_behalf_of else "SELF"
+            print(f"🏦 Initiating DAI borrow: ${amount_dai:.2f} [{mode_label}]")
+            amount_wei = int(amount_dai * 10**18)
+
+            if on_behalf_of:
+                allowance = self.check_delegation_allowance(on_behalf_of, self.dai_address)
+                if allowance < amount_dai:
+                    print(f"🚫 DELEGATION ABORT: Allowance {allowance:.2f} < requested {amount_dai:.2f} DAI")
+                    return False
+
+            account_data = self.get_user_account_data(target=on_behalf_of)
             if not account_data:
                 logger.error("Cannot retrieve account data for validation")
                 return False
@@ -186,53 +273,48 @@ class AaveArbitrumIntegration:
                 return False
 
             health_factor = account_data.get('healthFactor', 0)
-            if health_factor < 1.35:
-                logger.error(f"Health factor too low for borrowing: {health_factor:.3f}")
+            if health_factor < 2.90:
+                logger.error(f"Health factor too low for borrowing: {health_factor:.3f} (floor: 2.90)")
                 return False
 
-            # Build transaction with enhanced error handling
             max_retries = 3
             for attempt in range(max_retries):
                 try:
-                    # Get fresh nonce and gas price with Arbitrum multiplier
                     nonce = self.w3.eth.get_transaction_count(self.account.address)
                     base_gas_price = self.w3.eth.gas_price
                     chain_id = self.w3.eth.chain_id
                     
-                    # Apply 2x multiplier for Arbitrum mainnet to handle variable gas costs
-                    if chain_id == 42161:  # Arbitrum Mainnet
+                    if chain_id == 42161:
                         gas_price = int(base_gas_price * 2.0)
                         print(f"⛽ Arbitrum mainnet: base {base_gas_price} → optimized {gas_price} (2.0x)")
                     else:
-                        gas_price = int(base_gas_price * 1.3)  # 30% buffer for testnet
+                        gas_price = int(base_gas_price * 1.3)
                         print(f"⛽ Testnet: base {base_gas_price} → optimized {gas_price} (1.3x)")
 
                     print(f"📊 Transaction params - Nonce: {nonce}, Gas Price: {gas_price}")
 
-                    # Estimate gas first
                     try:
                         estimated_gas = self.pool_contract.functions.borrow(
                             self.dai_address,
                             amount_wei,
-                            2,  # Variable interest rate
-                            0,  # Referral code
-                            self.account.address
+                            2,
+                            0,
+                            borrow_target
                         ).estimate_gas({'from': self.account.address})
 
-                        # Add 20% buffer to estimated gas
                         gas_limit = int(estimated_gas * 1.2)
                         print(f"⛽ Estimated gas: {estimated_gas}, Using: {gas_limit}")
 
                     except Exception as gas_error:
                         print(f"⚠️ Gas estimation failed: {gas_error}")
-                        gas_limit = 400000  # Fallback gas limit
+                        gas_limit = 400000
 
                     tx = self.pool_contract.functions.borrow(
                         self.dai_address,
                         amount_wei,
-                        2,  # Variable interest rate
-                        0,  # Referral code
-                        self.account.address
+                        2,
+                        0,
+                        borrow_target
                     ).build_transaction({
                         'from': self.account.address,
                         'gas': gas_limit,
@@ -281,21 +363,29 @@ class AaveArbitrumIntegration:
             print(f"❌ DAI borrow failed with error: {e}")
             return False
 
-    def borrow_weth(self, amount_weth):
-        """Borrow WETH from Aave — used by Liability Short strategy"""
+    def borrow_weth(self, amount_weth, on_behalf_of=None):
+        """Borrow WETH from Aave. If on_behalf_of is set, borrow against that user's collateral (requires delegation)."""
         try:
-            print(f"🏦 Initiating WETH borrow: {amount_weth:.8f} WETH")
+            borrow_target = on_behalf_of if on_behalf_of else self.account.address
+            mode_label = f"DELEGATION ({borrow_target[:10]}...)" if on_behalf_of else "SELF"
+            print(f"🏦 Initiating WETH borrow: {amount_weth:.8f} WETH [{mode_label}]")
             amount_wei = int(amount_weth * 10**18)
 
-            account_data = self.get_user_account_data()
+            if on_behalf_of:
+                allowance = self.check_delegation_allowance(on_behalf_of, self.weth_address)
+                if allowance < amount_weth:
+                    print(f"🚫 DELEGATION ABORT: Allowance {allowance:.6f} < requested {amount_weth:.6f} WETH")
+                    return False
+
+            account_data = self.get_user_account_data(target=on_behalf_of)
             if not account_data:
                 logger.error("Cannot retrieve account data for validation")
                 return False
 
             available_borrows = account_data.get('availableBorrowsUSD', 0)
             health_factor = account_data.get('healthFactor', 0)
-            if health_factor < 1.35:
-                logger.error(f"Health factor too low for WETH borrowing: {health_factor:.3f}")
+            if health_factor < 2.90:
+                logger.error(f"Health factor too low for WETH borrowing: {health_factor:.3f} (floor: 2.90)")
                 return False
 
             max_retries = 3
@@ -320,7 +410,7 @@ class AaveArbitrumIntegration:
                             amount_wei,
                             2,
                             0,
-                            self.account.address
+                            borrow_target
                         ).estimate_gas({'from': self.account.address})
 
                         gas_limit = int(estimated_gas * 1.2)
@@ -335,7 +425,7 @@ class AaveArbitrumIntegration:
                         amount_wei,
                         2,
                         0,
-                        self.account.address
+                        borrow_target
                     ).build_transaction({
                         'from': self.account.address,
                         'gas': gas_limit,
@@ -388,10 +478,12 @@ class AaveArbitrumIntegration:
             raise ValueError("DAI COMPLIANCE VIOLATION: Only DAI borrowing is permitted")
         return self.borrow_dai(amount_dai)
 
-    def supply_to_aave(self, token_address, amount):
-        """Supply tokens to Aave - DAI-centric operations with proper approval"""
+    def supply_to_aave(self, token_address, amount, on_behalf_of=None):
+        """Supply tokens to Aave. If on_behalf_of is set, supply into that user's position (no delegation needed for supply)."""
         try:
-            print(f"🏦 Initiating supply: {amount:.6f} tokens to Aave")
+            supply_target = on_behalf_of if on_behalf_of else self.account.address
+            mode_label = f"DELEGATION ({supply_target[:10]}...)" if on_behalf_of else "SELF"
+            print(f"🏦 Initiating supply: {amount:.6f} tokens to Aave [{mode_label}]")
 
             # Determine decimals and convert amount
             if token_address == self.dai_address:
@@ -440,28 +532,26 @@ class AaveArbitrumIntegration:
                 gas_price = int(base_gas_price * 1.3)  # 30% buffer for testnet
                 print(f"⛽ Testnet supply: base {base_gas_price} → optimized {gas_price} (1.3x)")
 
-            # Step 5: Estimate gas for supply transaction
             try:
                 estimated_gas = self.pool_contract.functions.supply(
                     token_address,
                     amount_wei,
-                    self.account.address,
-                    0  # Referral code
+                    supply_target,
+                    0
                 ).estimate_gas({'from': self.account.address})
 
-                gas_limit = int(estimated_gas * 1.3)  # Add 30% buffer
+                gas_limit = int(estimated_gas * 1.3)
                 print(f"⛽ Estimated gas: {estimated_gas}, Using: {gas_limit}")
 
             except Exception as gas_error:
                 print(f"⚠️ Gas estimation failed: {gas_error}")
-                gas_limit = 400000  # Fallback gas limit
+                gas_limit = 400000
 
-            # Step 6: Build supply transaction
             tx = self.pool_contract.functions.supply(
                 token_address,
                 amount_wei,
-                self.account.address,
-                0  # Referral code
+                supply_target,
+                0
             ).build_transaction({
                 'from': self.account.address,
                 'gas': gas_limit,

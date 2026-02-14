@@ -2711,8 +2711,11 @@ class ArbitrumTestnetAgent:
             borrow_usd = distribution['total_borrow_usd']
             weth_to_borrow = borrow_usd / eth_price
 
+            gho_tax_usd = distribution.get('gho_tax', 0)
+            gho_tax_weth = gho_tax_usd / eth_price if gho_tax_usd > 0 else 0
+
             print(f"\n{'='*60}")
-            print(f"🔻 EXECUTING LIABILITY SHORT ({tier.upper()}) ENTRY")
+            print(f"🔻 EXECUTING LIABILITY SHORT ({tier.upper()}) ENTRY — GHO TAX ACTIVE")
             print(f"{'='*60}")
             print(f"   ETH Price:     ${eth_price:.2f}")
             print(f"   WETH Borrow:   {weth_to_borrow:.8f} WETH (${borrow_usd:.2f})")
@@ -2720,6 +2723,7 @@ class ArbitrumTestnetAgent:
             print(f"   WETH Supply:   ${distribution['weth_supply']:.2f}")
             print(f"   DAI Split:     ${distribution['dai_swap_total']:.2f} (supply ${distribution['dai_supply']:.2f} + transfer ${distribution['dai_transfer']:.2f})")
             print(f"   ETH Gas:       ${distribution['eth_gas_reserve']:.2f}")
+            print(f"   🛡️ GHO Tax:     ${gho_tax_usd:.2f} ({gho_tax_weth:.8f} WETH → GHO farm)")
             print(f"   Debt Swap:     ${distribution['debt_swap_amount']:.2f}")
             print(f"   Health Factor: {health_factor:.3f}")
             print(f"{'='*60}\n")
@@ -2826,6 +2830,23 @@ class ArbitrumTestnetAgent:
             print(f"\n{'='*60}")
             print(f"✅ PART A COMPLETE — WETH borrowed and distributed")
             print(f"{'='*60}")
+
+            if gho_tax_weth > 0 and self.gho_address:
+                remaining_weth_for_gho = self.get_weth_balance()
+                actual_gho_weth = min(gho_tax_weth, remaining_weth_for_gho)
+                if actual_gho_weth >= 0.0001:
+                    print(f"\n📋 GHO TAX STEP: Swapping {actual_gho_weth:.8f} WETH → GHO (${gho_tax_usd:.2f} farm accumulation)...")
+                    if self._swap_weth_for_gho(actual_gho_weth):
+                        print(f"   ✅ GHO tax collected — WETH→GHO swap complete")
+                    else:
+                        print(f"   ⚠️ GHO tax swap failed — {actual_gho_weth:.8f} WETH remains in wallet")
+                        steps_failed.append("gho_taxed")
+                else:
+                    print(f"   ⚠️ Insufficient WETH for GHO tax ({remaining_weth_for_gho:.8f} available)")
+                    steps_failed.append("gho_taxed")
+                self.save_execution_state("gho_taxed", path_name, {"tier": tier})
+            else:
+                print(f"   ℹ️ GHO tax not applicable (no GHO address or zero tax)")
 
             debt_swap_usd = distribution['debt_swap_amount']
             print(f"\n📋 PART B: DAI → WETH Debt Swap (${debt_swap_usd:.2f})...")
@@ -3251,18 +3272,11 @@ class ArbitrumTestnetAgent:
         GHO is held in wallet (not supplied to Aave).
         
         NETWORK-AWARE: GHO only available on mainnet.
-        
-        Args:
-            dai_amount: Amount of DAI to swap
-            
-        Returns:
-            bool: True if swap succeeded, False otherwise
         """
         try:
-            # Guard: Check if GHO is available on this network
             if not self.gho_address:
                 print("⚠️ GHO not available on this network - operation N/A (not a failure)")
-                return True  # Return True since this is not an error, just N/A
+                return True
             
             if not self.uniswap:
                 print("❌ Uniswap integration not available")
@@ -3270,7 +3284,6 @@ class ArbitrumTestnetAgent:
             
             print(f"🔄 Swapping {dai_amount:.6f} DAI → GHO via Uniswap...")
             
-            # GHO swap uses generic token swap method
             swap_result = self.uniswap.swap_tokens(
                 self.dai_address,
                 self.gho_address,
@@ -3286,6 +3299,42 @@ class ArbitrumTestnetAgent:
                 
         except Exception as e:
             print(f"❌ GHO swap error: {e}")
+            return False
+
+    def _swap_weth_for_gho(self, weth_amount):
+        """
+        Swap WETH for GHO via Uniswap.
+        Used by Liability Short GHO Tax — swaps the extra $1.20 WETH directly to GHO.
+        GHO is held in wallet (not supplied to Aave).
+        
+        NETWORK-AWARE: GHO only available on mainnet.
+        """
+        try:
+            if not self.gho_address:
+                print("⚠️ GHO not available on this network - operation N/A (not a failure)")
+                return True
+
+            if not self.uniswap:
+                print("❌ Uniswap integration not available")
+                return False
+
+            print(f"🔄 Swapping {weth_amount:.8f} WETH → GHO via Uniswap (GHO Tax)...")
+
+            swap_result = self.uniswap.swap_tokens(
+                self.weth_address,
+                self.gho_address,
+                weth_amount
+            )
+
+            if swap_result and 'tx_hash' in swap_result:
+                print(f"✅ WETH→GHO swap successful: {swap_result['tx_hash']}")
+                return True
+            else:
+                print("❌ WETH→GHO swap failed")
+                return False
+
+        except Exception as e:
+            print(f"❌ WETH→GHO swap error: {e}")
             return False
     
     def _get_gho_balance(self):
@@ -3984,10 +4033,12 @@ class ArbitrumTestnetAgent:
 
 
     def get_user_account_data(self):
-        """Get user account data from Aave"""
+        """Get user account data from Aave — auto-routes to delegation target if set"""
         try:
             if hasattr(self, 'aave') and self.aave:
-                return self.aave.get_user_account_data()
+                from config_constants import get_target_wallet
+                target = get_target_wallet()
+                return self.aave.get_user_account_data(target=target)
             else:
                 print("❌ Aave integration not available")
                 return None

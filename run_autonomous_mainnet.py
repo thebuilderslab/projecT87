@@ -12,8 +12,8 @@ import json
 from datetime import datetime
 import pytz
 from arbitrum_testnet_agent import ArbitrumTestnetAgent
+from config_constants import get_target_wallet, get_delegation_mode
 
-# Force mainnet mode
 os.environ['NETWORK_MODE'] = 'mainnet'
 
 def log_agent_activity(message, level="INFO"):
@@ -28,9 +28,16 @@ def check_emergency_stop():
 
 def run_autonomous_mainnet_agent():
     """Run the autonomous agent on Arbitrum Mainnet"""
+    target_wallet = get_target_wallet()
+    delegation_label = get_delegation_mode()
+    
     print("🚀 ARBITRUM MAINNET AUTONOMOUS AGENT")
     print("=" * 60)
     print("🌐 Network: Arbitrum Mainnet (Chain ID: 42161)")
+    print(f"🔑 Operation Mode: {delegation_label}")
+    if target_wallet:
+        print(f"👤 Target Wallet: {target_wallet}")
+        print("📋 Delegation Required: User must approveBorrowAllowance for DAI + WETH")
     print("🤖 Mode: Continuous Autonomous Operation")
     print("🛑 Emergency Stop: Create 'EMERGENCY_STOP_ACTIVE.flag' to halt")
     print("=" * 60)
@@ -98,11 +105,16 @@ def run_autonomous_mainnet_agent():
         print("\n" + "="*60)
         print("📋 PRE-FLIGHT AUDIT — GHO ACCUMULATION MODE")
         print("="*60)
+        print(f"   Operation Mode: {delegation_label}")
+        if target_wallet:
+            print(f"   Target Wallet: {target_wallet}")
         print(f"   HF Thresholds: Growth 3.10 / Macro 3.05 / Micro 3.00 / Capacity 2.90")
         print(f"   Slippage Tolerance: 1%")
         print(f"   State File: CLEARED (clean run)")
         print(f"   Growth Path: $11.40 borrow ($10.20 + $1.20 GHO Tax)")
         print(f"   Capacity Path: $6.70 borrow ($5.50 + $1.20 GHO Tax)")
+        print(f"   Macro Path: $12.10 borrow ($10.90 + $1.20 GHO Tax)")
+        print(f"   Micro Path: $8.40 borrow ($7.20 + $1.20 GHO Tax)")
         print(f"   GHO Tax: $1.20 per borrow → GHO farm")
         print(f"   GHO Harvest Target: $22.00")
         print(f"   Dust Guard: Active ($1.00 minimum swap)")

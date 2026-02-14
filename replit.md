@@ -84,24 +84,26 @@ Conservative HF thresholds with $1.20 GHO Tax on every borrow. Each execution pa
 ### Liability Short Strategy — PRIORITY 3 (checked after Growth/Capacity, before IDLE)
 **Purpose:** Short ETH debt to hedge against market drops. Composite two-part action.
 
-**Macro Entry ($10.90 WETH borrow + $10.80 debt swap)**
-- Activates on: >5% collateral drop from baseline + HF >1.52
+**Macro Entry ($12.10 WETH borrow = $10.90 + $1.20 GHO Tax + $10.80 debt swap)**
+- Activates on: >5% collateral drop from baseline + HF >3.05
 - Requires: Available capacity >= $13
 - Part A Distribution (borrow WETH, distribute):
   - $2.10 WETH → WBTC swap + supply to Aave
   - $2.10 WETH supply to Aave
   - $5.60 WETH → DAI swap (supply $4.50 + transfer $1.10 to WALLET_S)
   - $1.10 WETH → ETH (gas reserve)
+  - $1.20 WETH → GHO swap (held in wallet, farm accumulation)
 - Part B: Swap $10.80 DAI debt → WETH debt via BidirectionalDebtSwapper
 
-**Micro Entry ($7.20 WETH borrow + $10.10 debt swap)**
-- Activates on: >2% collateral drop from baseline + HF >1.47
+**Micro Entry ($8.40 WETH borrow = $7.20 + $1.20 GHO Tax + $10.10 debt swap)**
+- Activates on: >2% collateral drop from baseline + HF >3.00
 - Requires: Available capacity >= $9
 - Part A Distribution:
   - $1.10 WETH → WBTC swap + supply
   - $1.10 WETH supply
   - $3.90 WETH → DAI swap (supply $2.80 + transfer $1.10)
   - $1.10 WETH → ETH (gas reserve)
+  - $1.20 WETH → GHO swap (held in wallet, farm accumulation)
 - Part B: Swap $10.10 DAI debt → WETH debt
 
 **Exit Trigger:** ETH recovers >2% from entry price → WETH→DAI debt swap to lock gains
@@ -109,11 +111,23 @@ Conservative HF thresholds with $1.20 GHO Tax on every borrow. Each execution pa
 **Position Tracking:** `debt_swap_positions.json` tracks active/historical positions
 **Cooldown:** 600s between debt swap operations
 
-### Health Factor Thresholds
-- TARGET_HEALTH_FACTOR = 1.40
-- MIN_HEALTH_FACTOR = 1.35 (absolute floor, unified across all checks)
-- MACRO_ENTRY = 1.52 (Liability Short macro tier)
-- MICRO_ENTRY = 1.47 (Liability Short micro tier)
+### Health Factor Thresholds (Conservative GHO Mode)
+- MIN_HEALTH_FACTOR_GROWTH = 3.10
+- MIN_HEALTH_FACTOR_MACRO = 3.05
+- MIN_HEALTH_FACTOR_MICRO = 3.00
+- MIN_HEALTH_FACTOR_CAPACITY = 2.90 (absolute floor)
+- All borrow methods enforce floor 2.90
+
+### Delegation Mode (Operate on Behalf of User Wallet)
+- **Self-Trade Mode** (default): Bot uses its own private key wallet for all operations
+- **Delegation Mode**: Set `TARGET_WALLET_ADDRESS` env var to a user's wallet address
+  - Bot monitors that wallet's HF/collateral instead of its own
+  - Borrows use `on_behalf_of` parameter against user's collateral
+  - Supplies go into user's Aave position
+  - User must call `approveBorrowAllowance(bot_address, amount)` on Aave V3 variable debt tokens for DAI and WETH
+  - `check_delegation_allowance()` verifies allowance before every delegated borrow — prevents gas waste
+  - `get_user_account_data(target=wallet)` reads any wallet's HF/collateral
+  - Startup banner shows operation mode and target wallet
 
 ### Baseline Management
 - Initial baseline: $38.00 (post-rebalance)
@@ -157,7 +171,7 @@ Conservative HF thresholds with $1.20 GHO Tax on every borrow. Each execution pa
 - Zone 3: Defensive Guardrails (Micro/Macro trigger targets from Liability Short)
 - Zone 4: Engine Room (cooldown timers, capacity meter)
 - Zone 5: Intelligence Feed (color-coded log with jargon translation)
-- Traffic light system: green (HF>1.52), amber (1.35-1.52), pulsing red (<1.35)
+- Traffic light system: green (HF>3.10), amber (2.90-3.10), pulsing red (<2.90)
 - API: `/api/command-center` consolidates all zone data, refreshes every 5s
 - Agent writes `system_status.json` each cycle with HF, triggers, cooldowns
 - Jargon translation: swap→Rebalancing Assets, borrow→Expanding Position, repay→Reducing Risk
@@ -196,3 +210,16 @@ Conservative HF thresholds with $1.20 GHO Tax on every borrow. Each execution pa
 - Wired `_check_liability_short_triggers()` into autonomous monitor (Priority 3, after Growth/Capacity)
 - IDLE status now shows Liability Short position state and collateral drop monitoring
 - Confirmed correct adapter address: `0x63dfa7c09Dc2Ff4030d6B8Dc2ce6262BF898C8A4`
+
+### Feb 14, 2026 - Phase 3: Universal GHO Tax + Delegation Mode
+- **Universal GHO Tax**: All 4 strategies now farm GHO. Macro borrows $12.10 ($10.90+$1.20), Micro $8.40 ($7.20+$1.20)
+- Created `_swap_weth_for_gho()` in arbitrum_testnet_agent.py for Liability Short paths (WETH→GHO via Uniswap)
+- Added `swap_weth_for_gho()` to uniswap_integration.py (WETH→GHO swap with 2% slippage)
+- GHO swap step added after Part A safety position in `_execute_liability_short_entry()`
+- **Delegation Mode**: `get_target_wallet()` and `get_delegation_mode()` in config_constants.py
+- `check_delegation_allowance()` reads Aave V3 variable debt token borrowAllowance before delegated borrows
+- `borrow_dai()`, `borrow_weth()`, `supply_to_aave()` all accept `on_behalf_of` parameter
+- `get_user_account_data(target=wallet)` queries any wallet's Aave position
+- Allowance guard prevents gas waste: delegated borrows abort if allowance insufficient
+- Pre-flight audit in run_autonomous_mainnet.py shows operation mode and all 4 strategy borrow amounts
+- Fixed stale HF floor (1.35 → 2.90) in all borrow methods

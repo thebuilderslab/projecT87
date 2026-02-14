@@ -205,6 +205,7 @@ class UniswapIntegration:
                 (dai_address_lower, gho_address_lower),   # DAI → GHO
                 (weth_address_lower, wbtc_address_lower), # WETH → WBTC (Liability Short)
                 (weth_address_lower, dai_address_lower),  # WETH → DAI (Liability Short)
+                (weth_address_lower, gho_address_lower),  # WETH → GHO (GHO Tax)
             ]
 
             current_swap = (token_in_lower, token_out_lower)
