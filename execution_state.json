@@ -1,0 +1,16 @@
+{
+  "step": "eth_converted",
+  "path_name": "capacity",
+  "distribution": {
+    "total_borrow": 6.7,
+    "dai_supply": 1.1,
+    "wbtc_swap_supply": 1.1,
+    "weth_swap_supply": 1.1,
+    "eth_gas_reserve": 1.1,
+    "dai_transfer": 1.1,
+    "gho_tax": 1.2,
+    "min_capacity": 8.2
+  },
+  "timestamp": 1771052003.9462476,
+  "timestamp_human": "2026-02-14 06:53:23"
+}

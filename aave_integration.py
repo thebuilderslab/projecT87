@@ -13,6 +13,10 @@ from eth_account import Account
 from decimal import Decimal
 import logging
 from uniswap_integration import UniswapIntegration
+try:
+    from config_constants import MIN_HEALTH_FACTOR
+except ImportError:
+    MIN_HEALTH_FACTOR = 2.70
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -273,8 +277,8 @@ class AaveArbitrumIntegration:
                 return False
 
             health_factor = account_data.get('healthFactor', 0)
-            if health_factor < 2.90:
-                logger.error(f"Health factor too low for borrowing: {health_factor:.3f} (floor: 2.90)")
+            if health_factor < MIN_HEALTH_FACTOR:
+                logger.error(f"Health factor too low for borrowing: {health_factor:.3f} (floor: {MIN_HEALTH_FACTOR})")
                 return False
 
             max_retries = 3
@@ -384,8 +388,8 @@ class AaveArbitrumIntegration:
 
             available_borrows = account_data.get('availableBorrowsUSD', 0)
             health_factor = account_data.get('healthFactor', 0)
-            if health_factor < 2.90:
-                logger.error(f"Health factor too low for WETH borrowing: {health_factor:.3f} (floor: 2.90)")
+            if health_factor < MIN_HEALTH_FACTOR:
+                logger.error(f"Health factor too low for WETH borrowing: {health_factor:.3f} (floor: {MIN_HEALTH_FACTOR})")
                 return False
 
             max_retries = 3

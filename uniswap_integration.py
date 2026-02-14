@@ -903,6 +903,72 @@ class UniswapIntegration:
             print(f"❌ DAI to WBTC swap failed: {e}")
             return False
 
+    def swap_dai_for_gho(self, dai_amount):
+        """Swap DAI for GHO on Uniswap V3 — uses multi-hop DAI→WETH→GHO (no direct DAI/GHO pool on Arbitrum)"""
+        try:
+            gho_address = "0x7dfF72693f6A4149b17e7C6314655f6A9F7c8B33"
+            print(f"🔄 Swapping {dai_amount:.6f} DAI for GHO (multi-hop via WETH)...")
+
+            if dai_amount <= 0:
+                print("❌ Invalid DAI amount for GHO swap")
+                return False
+
+            amount_in_wei = int(dai_amount * 1e18)
+
+            fees_attempt1 = [500, 3000]
+            path_bytes = self._encode_path(
+                [self.dai_address, self.weth_address, gho_address],
+                fees_attempt1
+            )
+            self._audit_path(path_bytes, ["DAI", "WETH", "GHO"], fees_attempt1)
+
+            swap_result = self._execute_multihop_swap(
+                path_bytes, dai_amount, amount_in_wei,
+                self.dai_address, f"{dai_amount:.4f} DAI →(500)→ WETH →(3000)→ GHO"
+            )
+
+            if not swap_result:
+                print("⚠️ Multi-hop 500/3000 failed, trying 3000/3000 fee tiers...")
+                fees_attempt2 = [3000, 3000]
+                path_bytes = self._encode_path(
+                    [self.dai_address, self.weth_address, gho_address],
+                    fees_attempt2
+                )
+                self._audit_path(path_bytes, ["DAI", "WETH", "GHO"], fees_attempt2)
+                swap_result = self._execute_multihop_swap(
+                    path_bytes, dai_amount, amount_in_wei,
+                    self.dai_address, f"{dai_amount:.4f} DAI →(3000)→ WETH →(3000)→ GHO"
+                )
+
+            if not swap_result:
+                print("⚠️ Multi-hop 3000/3000 failed, trying 500/10000 fee tiers...")
+                fees_attempt3 = [500, 10000]
+                path_bytes = self._encode_path(
+                    [self.dai_address, self.weth_address, gho_address],
+                    fees_attempt3
+                )
+                self._audit_path(path_bytes, ["DAI", "WETH", "GHO"], fees_attempt3)
+                swap_result = self._execute_multihop_swap(
+                    path_bytes, dai_amount, amount_in_wei,
+                    self.dai_address, f"{dai_amount:.4f} DAI →(500)→ WETH →(10000)→ GHO"
+                )
+
+            if swap_result and isinstance(swap_result, str):
+                return {
+                    'success': True,
+                    'tx_hash': swap_result,
+                    'amount_in': dai_amount,
+                    'token_in': 'DAI',
+                    'token_out': 'GHO'
+                }
+            else:
+                print("❌ All DAI→GHO swap attempts failed")
+                return False
+
+        except Exception as e:
+            print(f"❌ DAI to GHO swap failed: {e}")
+            return False
+
     def swap_dai_for_weth(self, dai_amount):
         """Swap DAI for WETH on Uniswap V3 — prefers 500 fee tier (most liquid on Arbitrum)"""
         try:
