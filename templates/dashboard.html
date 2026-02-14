@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Jovan Bot — Command Center</title>
+    <title>Real Estate Liquidity Hub — COMMAND CENTER</title>
     <style>
         :root {
             --bg-primary: #0a0e1a;
@@ -53,6 +53,48 @@
             font-size: 1.1rem;
             font-weight: 600;
             letter-spacing: 0.5px;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .refresh-btn {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            padding: 6px 12px;
+            background: transparent;
+            border: 1px solid var(--accent-blue);
+            color: var(--accent-blue);
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.75rem;
+            font-weight: 600;
+            letter-spacing: 0.3px;
+            transition: all 0.2s ease;
+        }
+        .refresh-btn:hover { background: rgba(59,130,246,0.15); }
+        .refresh-btn:active { transform: scale(0.96); }
+        .refresh-btn.spinning .refresh-icon { animation: spin 0.8s linear infinite; }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+        .cooldown-countdown-bar {
+            width: 100%;
+            height: 3px;
+            background: #1e293b;
+            border-radius: 2px;
+            overflow: hidden;
+            margin-top: 4px;
+        }
+        .cooldown-countdown-fill {
+            height: 100%;
+            background: var(--accent-blue);
+            border-radius: 2px;
+            transition: width 1s linear;
+            width: 0%;
         }
 
         .header-bar .conn-badge {
@@ -444,10 +486,15 @@
 <body>
     <div class="command-center">
         <div class="header-bar">
-            <h1>JOVAN BOT — COMMAND CENTER</h1>
-            <div class="conn-badge">
-                <div class="conn-dot" id="connDot"></div>
-                <span id="connText">Connecting...</span>
+            <h1>REAL ESTATE LIQUIDITY HUB — COMMAND CENTER</h1>
+            <div class="header-right">
+                <button class="refresh-btn" id="refreshBtn" onclick="manualRefresh()">
+                    <span class="refresh-icon">&#x21bb;</span> REFRESH
+                </button>
+                <div class="conn-badge">
+                    <div class="conn-dot" id="connDot"></div>
+                    <span id="connText">Connecting...</span>
+                </div>
             </div>
         </div>
 
@@ -534,9 +581,15 @@
                         <span class="cooldown-name">Growth Engine</span>
                         <span class="cooldown-value ready" id="growthCooldown">Ready</span>
                     </div>
-                    <div class="cooldown-row">
+                    <div class="cooldown-countdown-bar">
+                        <div class="cooldown-countdown-fill" id="growthCooldownBar"></div>
+                    </div>
+                    <div class="cooldown-row" style="margin-top:6px;">
                         <span class="cooldown-name">Liability Short</span>
                         <span class="cooldown-value ready" id="lsCooldown">Ready</span>
+                    </div>
+                    <div class="cooldown-countdown-bar">
+                        <div class="cooldown-countdown-fill" id="lsCooldownBar"></div>
                     </div>
                 </div>
 
@@ -579,12 +632,59 @@
     <script>
         let refreshInterval = null;
         let lastData = null;
+        let growthCooldownSec = 0;
+        let lsCooldownSec = 0;
+        let cooldownTickInterval = null;
+        const COOLDOWN_MAX = 130;
 
         function applyGlowClass(el, hfStatus) {
             el.classList.remove('glow-green', 'glow-amber', 'glow-red');
             if (hfStatus === 'HEALTHY') el.classList.add('glow-green');
             else if (hfStatus === 'CAUTION') el.classList.add('glow-amber');
             else el.classList.add('glow-red');
+        }
+
+        async function manualRefresh() {
+            const btn = document.getElementById('refreshBtn');
+            btn.classList.add('spinning');
+            btn.disabled = true;
+            try {
+                const resp = await fetch('/api/command-center?force_refresh=true');
+                if (!resp.ok) throw new Error('API error');
+                const data = await resp.json();
+                if (!data.success) throw new Error(data.error || 'Unknown error');
+                lastData = data;
+                renderData(data);
+                document.getElementById('connDot').classList.remove('offline');
+                document.getElementById('connText').textContent = 'Live · Arbitrum Mainnet';
+                document.getElementById('lastUpdated').textContent = 'Manual refresh: ' + new Date().toLocaleTimeString() + ' · Fresh on-chain data';
+            } catch (err) {
+                console.error('Manual refresh error:', err);
+                document.getElementById('lastUpdated').textContent = 'Refresh failed: ' + err.message;
+            }
+            setTimeout(() => {
+                btn.classList.remove('spinning');
+                btn.disabled = false;
+            }, 1000);
+        }
+
+        function tickCooldowns() {
+            if (growthCooldownSec > 0) growthCooldownSec = Math.max(0, growthCooldownSec - 1);
+            if (lsCooldownSec > 0) lsCooldownSec = Math.max(0, lsCooldownSec - 1);
+
+            const gcEl = document.getElementById('growthCooldown');
+            gcEl.textContent = formatCooldown(growthCooldownSec);
+            gcEl.className = 'cooldown-value ' + (growthCooldownSec <= 0 ? 'ready' : 'waiting');
+            document.getElementById('growthCooldownBar').style.width = (growthCooldownSec > 0 ? ((growthCooldownSec / COOLDOWN_MAX) * 100) : 0) + '%';
+
+            const lcEl = document.getElementById('lsCooldown');
+            lcEl.textContent = formatCooldown(lsCooldownSec);
+            lcEl.className = 'cooldown-value ' + (lsCooldownSec <= 0 ? 'ready' : 'waiting');
+            document.getElementById('lsCooldownBar').style.width = (lsCooldownSec > 0 ? ((lsCooldownSec / COOLDOWN_MAX) * 100) : 0) + '%';
+        }
+
+        if (!cooldownTickInterval) {
+            cooldownTickInterval = setInterval(tickCooldowns, 1000);
         }
 
         async function harvestGho() {
@@ -714,15 +814,10 @@
                 document.getElementById('macroStatus').className = 'guardrail-status armed';
             }
 
-            // ZONE 4: Engine Room
-            const gc = z4.growth_cooldown_sec;
-            const lc = z4.ls_cooldown_sec;
-            const gcEl = document.getElementById('growthCooldown');
-            gcEl.textContent = formatCooldown(gc);
-            gcEl.className = 'cooldown-value ' + (gc <= 0 ? 'ready' : 'waiting');
-            const lcEl = document.getElementById('lsCooldown');
-            lcEl.textContent = formatCooldown(lc);
-            lcEl.className = 'cooldown-value ' + (lc <= 0 ? 'ready' : 'waiting');
+            // ZONE 4: Engine Room — sync live countdown from API
+            growthCooldownSec = z4.growth_cooldown_sec || 0;
+            lsCooldownSec = z4.ls_cooldown_sec || 0;
+            tickCooldowns();
 
             const debt = z4.total_debt || 0;
             const cap = z4.borrow_capacity || z4.capacity_cap || 1;

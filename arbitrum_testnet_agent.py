@@ -3415,9 +3415,25 @@ class ArbitrumTestnetAgent:
             print(f"❌ WETH unwrap error: {e}")
             return False
     
+    def _get_reserved_dai(self):
+        """Check if DAI is reserved for pending GHO tax step.
+        Returns the amount of DAI to protect from sweep (0.0 if no reservation)."""
+        try:
+            if os.path.exists(self.EXECUTION_STATE_FILE):
+                with open(self.EXECUTION_STATE_FILE, 'r') as f:
+                    state = json.load(f)
+                current_step = state.get('step', '')
+                if current_step in ['borrowed', 'dai_supplied', 'wbtc_supplied', 'weth_supplied', 'eth_converted', 'wallet_s_transferred']:
+                    from config_constants import GHO_TAX_AMOUNT
+                    print(f"   🔒 DAI RESERVATION: ${GHO_TAX_AMOUNT:.2f} reserved for pending GHO tax (step: {current_step})")
+                    return GHO_TAX_AMOUNT
+        except Exception as e:
+            print(f"   ⚠️ DAI reservation check error: {e}")
+        return 0.0
+
     def _perform_safety_sweep(self):
         """Nurse Mode: Detect and supply idle WETH, WBTC, DAI to Aave when balance > $1.10 USD.
-        GHO is WHITELISTED — never swept. GHO is held for farming."""
+        GHO is WHITELISTED — never swept. DAI reserved for GHO tax is PROTECTED."""
         try:
             print("🚑 Nurse Mode: Scanning wallet for idle assets...")
             MIN_USD_THRESHOLD = 1.10
@@ -3438,6 +3454,8 @@ class ArbitrumTestnetAgent:
                     gho_balance = 0.0
             if gho_balance > 0:
                 print(f"   🛡️ GHO WHITELISTED: {gho_balance:.6f} GHO detected — PROTECTED (farm asset, will NOT sweep)")
+
+            reserved_dai = self._get_reserved_dai()
 
             print(f"   WETH: {weth_balance:.8f} | WBTC: {wbtc_balance:.8f} | DAI: {dai_balance:.6f} | ETH (gas): {eth_balance:.6f}")
 
@@ -3462,12 +3480,18 @@ class ArbitrumTestnetAgent:
                 else:
                     print("   ⚠️ WBTC supply failed")
 
-            if dai_balance > MIN_USD_THRESHOLD:
-                print(f"🚑 Nurse Mode: Found ${dai_balance:.2f} of DAI. Supplying to Aave to boost Health Factor.")
-                if self._resupply_dai_to_aave(dai_balance * 0.99):
+            sweepable_dai = dai_balance - reserved_dai
+            if sweepable_dai > MIN_USD_THRESHOLD:
+                if reserved_dai > 0:
+                    print(f"🚑 Nurse Mode: Found ${dai_balance:.2f} DAI, reserving ${reserved_dai:.2f} for GHO tax. Sweeping ${sweepable_dai:.2f}.")
+                else:
+                    print(f"🚑 Nurse Mode: Found ${dai_balance:.2f} of DAI. Supplying to Aave to boost Health Factor.")
+                if self._resupply_dai_to_aave(sweepable_dai * 0.99):
                     supplied_any = True
                 else:
                     print("   ⚠️ DAI supply failed")
+            elif reserved_dai > 0 and dai_balance > 0:
+                print(f"🚑 Nurse Mode: ${dai_balance:.2f} DAI in wallet — ALL reserved for GHO tax (${reserved_dai:.2f}). Skipping sweep.")
 
             if not supplied_any:
                 print("🚑 Nurse Mode: No idle assets above $1.10 threshold. Wallet clean.")

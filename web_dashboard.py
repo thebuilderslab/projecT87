@@ -821,8 +821,10 @@ def clear_emergency_stop():
 
 @app.route('/api/command-center')
 def command_center():
-    """Consolidated endpoint for the 5-zone command center dashboard"""
+    """Consolidated endpoint for the 5-zone command center dashboard.
+    Pass ?force_refresh=true to bypass any caching and fetch fresh on-chain data."""
     try:
+        force = request.args.get('force_refresh', 'false').lower() == 'true'
         live_data = get_live_agent_data()
         agent_running = check_autonomous_agent_running()
 
