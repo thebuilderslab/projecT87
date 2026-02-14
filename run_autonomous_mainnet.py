@@ -96,18 +96,20 @@ def run_autonomous_mainnet_agent():
         log_agent_activity("✅ Clean start confirmed — no pending execution state")
 
         print("\n" + "="*60)
-        print("📋 PRE-FLIGHT AUDIT")
+        print("📋 PRE-FLIGHT AUDIT — GHO ACCUMULATION MODE")
         print("="*60)
-        print(f"   Health Factor Threshold: 1.35 (MIN) / 1.40 (TARGET)")
+        print(f"   HF Thresholds: Growth 3.10 / Macro 3.05 / Micro 3.00 / Capacity 2.90")
         print(f"   Slippage Tolerance: 1%")
         print(f"   State File: CLEARED (clean run)")
-        print(f"   Growth Path: $10.20 borrow (needs $12 capacity)")
-        print(f"   Capacity Path: $5.50 borrow (needs $7 capacity)")
+        print(f"   Growth Path: $11.40 borrow ($10.20 + $1.20 GHO Tax)")
+        print(f"   Capacity Path: $6.70 borrow ($5.50 + $1.20 GHO Tax)")
+        print(f"   GHO Tax: $1.20 per borrow → GHO farm")
+        print(f"   GHO Harvest Target: $22.00")
         print(f"   Dust Guard: Active ($1.00 minimum swap)")
         print(f"   Per-Step Approvals: Active ($15 DAI threshold)")
         print(f"   Proportional Recovery: Enabled")
         print(f"   Max Recovery Attempts: 5")
-        print(f"   Operation Cooldown: 130s")
+        print(f"   Monitoring Cycle: 45s")
         print("="*60 + "\n")
 
         log_agent_activity("🎯 Starting autonomous monitoring loop...")
@@ -132,7 +134,7 @@ def run_autonomous_mainnet_agent():
                 log_agent_activity(f"🔄 Monitoring cycle {run_id}-{iteration}")
                 
                 performance = agent.run_real_defi_task(run_id, iteration, {
-                    'health_factor_target': 1.40,
+                    'health_factor_target': 3.10,
                     'max_iterations_per_run': 100
                 })
                 
@@ -156,8 +158,7 @@ def run_autonomous_mainnet_agent():
                 log_agent_activity(f"❌ Error in monitoring cycle: {e}", "ERROR")
                 log_agent_activity("⏸️ Continuing monitoring after error...")
             
-            # Wait before next cycle - 130s matches the cooldown period
-            time.sleep(130)
+            time.sleep(45)
             
     except KeyboardInterrupt:
         log_agent_activity("👋 Autonomous agent stopped by user (Ctrl+C)", "INFO")

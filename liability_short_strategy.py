@@ -7,9 +7,9 @@ COMPOSITE SEQUENCE:
   Part A: Leveraged Entry — Borrow WETH, distribute (WBTC supply, WETH supply, DAI supply, DAI transfer, ETH gas)
   Part B: Liability Hedge — Swap existing DAI debt to WETH debt via BidirectionalDebtSwapper
 
-DUAL TRIGGERS:
-  Macro Entry: Collateral drop >5% + HF >1.52 → Full position ($10.90 borrow + $10.80 debt swap)
-  Micro Entry: Collateral drop >2% + HF >1.47 → Partial position ($7.20 borrow + $10.10 debt swap)
+DUAL TRIGGERS (Conservative GHO Mode):
+  Macro Entry: Collateral drop >5% + HF >3.05 → Full position ($10.90 borrow + $10.80 debt swap)
+  Micro Entry: Collateral drop >2% + HF >3.00 → Partial position ($7.20 borrow + $10.10 debt swap)
 
 EXIT:
   ETH price recovers >2% from entry → WETH→DAI debt swap to lock in reduced liability
@@ -53,17 +53,17 @@ MICRO_DISTRIBUTION = {
 
 MACRO_TRIGGER = {
     'collateral_drop_pct': 5.0,
-    'min_health_factor': 1.52,
+    'min_health_factor': 3.05,
 }
 
 MICRO_TRIGGER = {
     'collateral_drop_pct': 2.0,
-    'min_health_factor': 1.47,
+    'min_health_factor': 3.00,
 }
 
 EXIT_TRIGGER = {
     'eth_recovery_pct': 2.0,
-    'min_health_factor': 1.35,
+    'min_health_factor': 2.90,
 }
 
 LIABILITY_SHORT_STEP_ORDER = [
@@ -197,8 +197,8 @@ class LiabilityShortStrategy:
         if health_factor < MACRO_TRIGGER['min_health_factor']:
             return False, f"HF {health_factor:.3f} < {MACRO_TRIGGER['min_health_factor']} minimum"
 
-        if health_factor < 1.35:
-            return False, f"HF {health_factor:.3f} below absolute floor 1.35"
+        if health_factor < 2.90:
+            return False, f"HF {health_factor:.3f} below absolute floor 2.90"
 
         drop_pct = self.get_collateral_drop_pct(current_collateral)
         return True, f"MACRO ENTRY: Collateral ${current_collateral:.2f} < ${macro_target:.2f} target (drop {drop_pct:.1f}%), HF {health_factor:.3f} (>{MACRO_TRIGGER['min_health_factor']})"
@@ -222,8 +222,8 @@ class LiabilityShortStrategy:
         if health_factor < MICRO_TRIGGER['min_health_factor']:
             return False, f"HF {health_factor:.3f} < {MICRO_TRIGGER['min_health_factor']} minimum"
 
-        if health_factor < 1.35:
-            return False, f"HF {health_factor:.3f} below absolute floor 1.35"
+        if health_factor < 2.90:
+            return False, f"HF {health_factor:.3f} below absolute floor 2.90"
 
         drop_pct = self.get_collateral_drop_pct(current_collateral)
         return True, f"MICRO ENTRY: Collateral ${current_collateral:.2f} < ${micro_target:.2f} target (drop {drop_pct:.1f}%), HF {health_factor:.3f} (>{MICRO_TRIGGER['min_health_factor']})"

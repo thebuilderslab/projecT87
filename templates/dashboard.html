@@ -550,6 +550,18 @@
                         <span class="cap" id="capacityCap">/ $25.00 daily cap</span>
                     </div>
                 </div>
+
+                <div class="engine-section">
+                    <div class="engine-section-title">🛡️ GHO Yield Farm</div>
+                    <div class="capacity-bar-bg">
+                        <div class="capacity-bar-fill" id="ghoBar" style="width: 0%; background: #a78bfa;"></div>
+                    </div>
+                    <div class="capacity-text">
+                        <span class="used" id="ghoBalance">0.00 GHO</span>
+                        <span class="cap" id="ghoTarget">/ 22.00 target</span>
+                    </div>
+                    <button id="harvestBtn" onclick="harvestGho()" disabled style="margin-top:6px;width:100%;padding:6px;border:1px solid #a78bfa;background:transparent;color:#a78bfa;border-radius:4px;cursor:pointer;font-size:12px;opacity:0.5;">CLAIM USDC (Locked until target)</button>
+                </div>
             </div>
 
             <!-- ZONE 5: Intelligence Feed (Bottom-Right) -->
@@ -575,16 +587,26 @@
             else el.classList.add('glow-red');
         }
 
+        async function harvestGho() {
+            try {
+                const resp = await fetch('/api/harvest-gho', { method: 'POST' });
+                const data = await resp.json();
+                alert(data.message || data.error || 'Harvest request sent');
+            } catch (err) {
+                alert('Harvest failed: ' + err.message);
+            }
+        }
+
         function updateGauge(hf) {
-            const maxHF = 3.0;
+            const maxHF = 5.0;
             const pct = Math.min(hf / maxHF, 1.0);
             const circumference = 314.16;
             const offset = circumference * (1 - pct);
             const fill = document.getElementById('hfGaugeFill');
             fill.style.strokeDashoffset = offset;
 
-            if (hf > 1.52) fill.style.stroke = 'var(--green-glow)';
-            else if (hf >= 1.35) fill.style.stroke = 'var(--amber-glow)';
+            if (hf > 3.10) fill.style.stroke = 'var(--green-glow)';
+            else if (hf >= 2.90) fill.style.stroke = 'var(--amber-glow)';
             else fill.style.stroke = 'var(--red-glow)';
         }
 
@@ -656,9 +678,9 @@
             }
 
             const detail = document.getElementById('safetyDetail');
-            if (hfStatus === 'HEALTHY') detail.textContent = `Safety Rating ${hf.toFixed(2)} — All systems operating normally. Defensive and growth strategies active.`;
-            else if (hfStatus === 'CAUTION') detail.textContent = `Safety Rating ${hf.toFixed(2)} — Approaching threshold. Growth operations paused until rating improves above 1.52.`;
-            else detail.textContent = `Safety Rating ${hf.toFixed(2)} — Below safe threshold. Emergency protocols active. Waiting for rating recovery above 1.35.`;
+            if (hfStatus === 'HEALTHY') detail.textContent = `Safety Rating ${hf.toFixed(2)} — All systems operating normally. Conservative GHO mode active.`;
+            else if (hfStatus === 'CAUTION') detail.textContent = `Safety Rating ${hf.toFixed(2)} — Approaching threshold. Growth operations paused until rating improves above 3.10.`;
+            else detail.textContent = `Safety Rating ${hf.toFixed(2)} — Below safe threshold. Emergency protocols active. Waiting for rating recovery above 2.90.`;
 
             // ZONE 2: Active Wealth
             document.getElementById('totalValue').textContent = '$' + z2.net_value_usd.toFixed(2);
@@ -674,8 +696,9 @@
             applyGlowClass(document.getElementById('zone3'), hfStatus);
             const micro = z3.micro_trigger_usd;
             const macro = z3.macro_trigger_usd;
-            document.getElementById('microTarget').textContent = micro > 0 ? '$' + micro.toFixed(2) : 'Calculating...';
-            document.getElementById('macroTarget').textContent = macro > 0 ? '$' + macro.toFixed(2) : 'Calculating...';
+            const collateral = z3.current_collateral || 0;
+            document.getElementById('microTarget').textContent = micro > 0 ? '$' + micro.toFixed(2) : (collateral > 0 ? 'Est: $' + (collateral * 0.98).toFixed(2) + ' (-2%)' : 'Initializing...');
+            document.getElementById('macroTarget').textContent = macro > 0 ? '$' + macro.toFixed(2) : (collateral > 0 ? 'Est: $' + (collateral * 0.95).toFixed(2) + ' (-5%)' : 'Initializing...');
             document.getElementById('currentCollateral').textContent = '$' + z3.current_collateral.toFixed(2);
 
             if (z3.has_active_position) {
@@ -711,6 +734,23 @@
             else bar.style.background = 'var(--green-glow)';
             document.getElementById('capacityUsed').textContent = '$' + debt.toFixed(2) + ' debt';
             document.getElementById('capacityCap').textContent = '/ $' + cap.toFixed(2) + ' max capacity';
+
+            const ghoBal = z4.gho_balance || 0;
+            const ghoTgt = z4.gho_target || 22.0;
+            const ghoPct = ghoTgt > 0 ? Math.min((ghoBal / ghoTgt) * 100, 100) : 0;
+            document.getElementById('ghoBar').style.width = ghoPct + '%';
+            document.getElementById('ghoBalance').textContent = ghoBal.toFixed(2) + ' GHO';
+            document.getElementById('ghoTarget').textContent = '/ ' + ghoTgt.toFixed(2) + ' target';
+            const hBtn = document.getElementById('harvestBtn');
+            if (ghoBal >= ghoTgt) {
+                hBtn.disabled = false;
+                hBtn.style.opacity = '1';
+                hBtn.textContent = 'CLAIM USDC (' + ghoBal.toFixed(2) + ' GHO ready)';
+            } else {
+                hBtn.disabled = true;
+                hBtn.style.opacity = '0.5';
+                hBtn.textContent = 'CLAIM USDC (' + ghoPct.toFixed(0) + '% to target)';
+            }
 
             // ZONE 5: Intelligence Feed
             const feed = document.getElementById('intelFeed');

@@ -1,22 +1,27 @@
 """
 Configuration Constants for Arbitrum DeFi Agent
-Centralized configuration management
+Centralized configuration management — GHO Accumulation Mode
 """
 
 # Minimum ETH requirements for operations
-MIN_ETH_FOR_OPERATIONS = 0.001  # 0.001 ETH minimum for gas operations
-MIN_ETH_FOR_GAS_BUFFER = 0.0005  # 0.0005 ETH buffer for gas fees
+MIN_ETH_FOR_OPERATIONS = 0.001
+MIN_ETH_FOR_GAS_BUFFER = 0.0005
 
-# Health factor thresholds
-MIN_HEALTH_FACTOR = 1.35
-TARGET_HEALTH_FACTOR = 1.40
-SAFE_HEALTH_FACTOR = 1.40
-HEALTH_FACTOR_THRESHOLD = 1.35
+# Health factor thresholds — Conservative GHO Farming Mode
+MIN_HEALTH_FACTOR = 2.90
+TARGET_HEALTH_FACTOR = 3.10
+SAFE_HEALTH_FACTOR = 3.10
+HEALTH_FACTOR_THRESHOLD = 2.90
+MIN_HEALTH_FACTOR_GROWTH = 3.10
+MIN_HEALTH_FACTOR_MACRO = 3.05
+MIN_HEALTH_FACTOR_MICRO = 3.00
+MIN_HEALTH_FACTOR_CAPACITY = 2.90
 
 # Operational limits
 MAX_CONSECUTIVE_FAILURES = 3
 OPERATION_COOLDOWN = 130
 OPERATION_COOLDOWN_SECONDS = 130
+MONITORING_CYCLE_SECONDS = 45
 
 # Gas optimization settings
 DEFAULT_GAS_LIMIT = 200000
@@ -41,12 +46,19 @@ CAPACITY_BORROW_AMOUNT = 5.50
 GROWTH_MIN_CAPACITY = 12.0
 CAPACITY_MIN_CAPACITY = 7.0
 
+# GHO Tax — extra $1.20 added to every borrow, swapped to GHO and held in wallet
+GHO_TAX_AMOUNT = 1.20
+GHO_HARVEST_TARGET = 22.00
+
 # Slippage
 MAX_SLIPPAGE_PERCENT = 2.0
 
 # Network configuration
 ARBITRUM_MAINNET_CHAIN_ID = 42161
 ARBITRUM_SEPOLIA_CHAIN_ID = 421614
+
+# Aave Oracle (primary price source)
+AAVE_ORACLE_ADDRESS = "0xb56c2F0B653B2e0b10C9b928C8580Ac5Df02C7C7"
 
 # Token allocation for swaps (percentages) - Growth path
 GROWTH_DAI_SUPPLY = 3.00
@@ -75,5 +87,8 @@ RETRY_DELAY = 2
 # API configuration
 REQUEST_TIMEOUT = 10
 PRICE_CACHE_DURATION = 300
+
+# GHO Whitelist — Nurse/restore_health must NEVER sweep GHO
+GHO_WHITELIST = True
 
 print("✅ Configuration constants loaded successfully")

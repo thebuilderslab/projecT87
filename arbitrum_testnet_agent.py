@@ -525,23 +525,27 @@ class ArbitrumTestnetAgent:
         
         # PHASE 1: FIXED-VALUE DISTRIBUTION PATHS
         # Two distinct execution paths with exact dollar amounts
+        self.GHO_TAX_AMOUNT = 1.20
+        self.GHO_HARVEST_TARGET = 22.00
         self.GROWTH_DISTRIBUTION = {
-            'total_borrow': 10.20,
+            'total_borrow': 10.20 + 1.20,
             'dai_supply': 3.00,
             'wbtc_swap_supply': 3.00,
             'weth_swap_supply': 2.00,
             'eth_gas_reserve': 1.10,
             'dai_transfer': 1.10,
-            'min_capacity': 12.0,
+            'gho_tax': 1.20,
+            'min_capacity': 12.0 + 1.20,
         }
         self.CAPACITY_DISTRIBUTION = {
-            'total_borrow': 5.50,
+            'total_borrow': 5.50 + 1.20,
             'dai_supply': 1.10,
             'wbtc_swap_supply': 1.10,
             'weth_swap_supply': 1.10,
             'eth_gas_reserve': 1.10,
             'dai_transfer': 1.10,
-            'min_capacity': 7.0,
+            'gho_tax': 1.20,
+            'min_capacity': 7.0 + 1.20,
         }
 
         # GLOBAL EXECUTION LOCK - prevents double-borrowing
@@ -595,14 +599,14 @@ class ArbitrumTestnetAgent:
 
         # Growth-Triggered System Configuration
         self.growth_trigger_threshold = 50.0  # $50 absolute growth threshold
-        self.growth_health_factor_threshold = 1.35  # MIN_HEALTH_FACTOR for growth operations
+        self.growth_health_factor_threshold = 3.10  # Conservative GHO mode: Growth min HF
         self.growth_percentage_threshold = 0.10  # 10% relative growth threshold
         self.growth_min_capacity = 12.0  # $12 minimum available capacity for growth path
 
         # Capacity-Based System Configuration
         self.capacity_min_capacity = 7.0  # $7 minimum available capacity for capacity path
-        self.capacity_health_factor_threshold = 1.35  # MIN_HEALTH_FACTOR for capacity operations
-        self.target_health_factor = 1.40  # TARGET_HEALTH_FACTOR to maintain
+        self.capacity_health_factor_threshold = 2.90  # Conservative GHO mode: Capacity min HF
+        self.target_health_factor = 3.10  # Conservative GHO mode: target HF
 
         # Display Hybrid System Configuration
         self._display_hybrid_system_config()
@@ -1672,7 +1676,7 @@ class ArbitrumTestnetAgent:
                 base_rate += 15
             elif health_factor > 2.0:
                 base_rate += 5
-            elif health_factor < 1.35:
+            elif health_factor < 2.90:
                 base_rate -= 30
 
             # Adjust for network congestion
@@ -1754,10 +1758,14 @@ class ArbitrumTestnetAgent:
                 self.aave = None
                 return False
 
-            # Initialize Uniswap integration
             from uniswap_integration import UniswapIntegration
             self.uniswap = UniswapIntegration(self.w3, self.account)
             print("✅ Uniswap integration initialized")
+
+            if self.gho_address and self.uniswap:
+                self._ensure_gho_uniswap_approval()
+
+            self._init_aave_oracle()
 
             # Initialize health monitor with Aave validation
             if self.aave:
@@ -1886,6 +1894,7 @@ class ArbitrumTestnetAgent:
         "weth_supplied",
         "eth_converted",
         "wallet_s_transferred",
+        "gho_taxed",
     ]
 
     def save_execution_state(self, step, path_name, distribution):
@@ -2196,8 +2205,8 @@ class ArbitrumTestnetAgent:
         Check if growth-triggered operation should execute.
         
         PRIORITY 1 (checked first):
-        - Health factor >= 1.35
-        - Available capacity >= $12
+        - Health factor >= 3.10
+        - Available capacity >= $13.20
         - Collateral growth >= 10% relative OR $50 absolute from baseline
         """
         try:
@@ -2224,8 +2233,8 @@ class ArbitrumTestnetAgent:
         Check if capacity-based operation should execute.
         
         PRIORITY 2 (checked only if growth trigger did NOT fire):
-        - Health factor >= 1.35
-        - Available capacity >= $7
+        - Health factor >= 2.90
+        - Available capacity >= $8.20
         """
         try:
             if health_factor < self.capacity_health_factor_threshold:
@@ -2381,6 +2390,9 @@ class ArbitrumTestnetAgent:
                 print(f"   WETH Swap+Supply: ${distribution['weth_swap_supply']:.2f}")
                 print(f"   ETH Gas Reserve:  ${distribution['eth_gas_reserve']:.2f}")
                 print(f"   DAI Transfer:     ${distribution['dai_transfer']:.2f}")
+                gho_tax_display = distribution.get('gho_tax', 0)
+                if gho_tax_display > 0:
+                    print(f"   🛡️ GHO Tax:       ${gho_tax_display:.2f} (→ GHO farm)")
                 print(f"{'='*60}\n")
 
             if "borrowed" not in already_done:
@@ -2552,6 +2564,26 @@ class ArbitrumTestnetAgent:
             elif "wallet_s_transferred" in already_done:
                 print("⏭️ STEP 6 (WALLET_S Transfer): Already completed — skipping")
 
+            if "gho_taxed" not in already_done:
+                gho_tax_amt = distribution.get('gho_tax', 0)
+                if gho_tax_amt >= 1.00 and self.gho_address:
+                    print(f"\n📋 STEP 7 (GHO TAX): Swapping ${gho_tax_amt:.2f} DAI → GHO (farm accumulation)...")
+                    gho_before = self._get_gho_balance()
+                    if self._swap_dai_for_gho(gho_tax_amt):
+                        time.sleep(3)
+                        gho_after = self._get_gho_balance()
+                        print(f"   🛡️ GHO Farm: {gho_before:.4f} → {gho_after:.4f} GHO (target: {self.GHO_HARVEST_TARGET:.2f})")
+                        self.save_execution_state("gho_taxed", path_name, dist_serializable)
+                    else:
+                        print(f"   ⚠️ GHO tax swap failed — ${gho_tax_amt:.2f} DAI remains for safety sweep")
+                        steps_failed.append("gho_taxed")
+                else:
+                    if not self.gho_address:
+                        print(f"   ⏭️ GHO Tax: Not available on this network")
+                    self.save_execution_state("gho_taxed", path_name, dist_serializable)
+            elif "gho_taxed" in already_done:
+                print("⏭️ STEP 7 (GHO Tax): Already completed — skipping")
+
             remaining_dai = self.get_dai_balance()
             if remaining_dai >= 0.50:
                 print(f"\n🛡️ SAFETY SWEEP: ${remaining_dai:.2f} DAI still in wallet — supplying to Aave as collateral")
@@ -2600,13 +2632,12 @@ class ArbitrumTestnetAgent:
         try:
             print("📊 Executing market signal operation (DAI debt swaps)")
 
-            # Check health factor requirement (1.8 minimum)
             try:
                 account_data = self.get_user_account_data()
                 if account_data:
                     health_factor = account_data.get('healthFactor', 0)
-                    if health_factor < 1.35:
-                        print(f"❌ Health factor {health_factor:.3f} below market signal threshold 1.35")
+                    if health_factor < 2.90:
+                        print(f"❌ Health factor {health_factor:.3f} below market signal threshold 2.90")
                         return False
                     print(f"✅ Health factor {health_factor:.3f} meets market signal requirement")
             except Exception as hf_error:
@@ -2987,10 +3018,9 @@ class ArbitrumTestnetAgent:
                 print("❌ Cannot retrieve account data from Aave")
                 return False
 
-            # 4. Validate health factor >= MIN_HEALTH_FACTOR (1.35)
             health_factor = account_data.get('healthFactor', 0)
-            if health_factor < 1.35:
-                print(f"❌ Health factor too low: {health_factor:.3f} (need >= 1.35)")
+            if health_factor < 2.90:
+                print(f"❌ Health factor too low: {health_factor:.3f} (need >= 2.90)")
                 return False
 
             # 5. Validate available borrows >= required borrow amount
@@ -3163,7 +3193,58 @@ class ArbitrumTestnetAgent:
             traceback.print_exc()
             return False
 
-    
+    def _ensure_gho_uniswap_approval(self):
+        """Check and set infinite GHO approval for Uniswap Router on startup"""
+        try:
+            if not self.gho_address or not self.uniswap:
+                return
+            erc20_abi = [{"inputs":[{"name":"spender","type":"address"},{"name":"amount","type":"uint256"}],"name":"approve","outputs":[{"name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"name":"owner","type":"address"},{"name":"spender","type":"address"}],"name":"allowance","outputs":[{"name":"","type":"uint256"}],"stateMutability":"view","type":"function"}]
+            gho_contract = self.w3.eth.contract(address=self.gho_address, abi=erc20_abi)
+            router = self.uniswap.router_address
+            allowance = gho_contract.functions.allowance(self.address, router).call()
+            infinite = 2**256 - 1
+            if allowance < 10**24:
+                print(f"🔑 GHO Uniswap approval low ({allowance}) — setting infinite approval...")
+                tx = gho_contract.functions.approve(router, infinite).build_transaction({
+                    'from': self.address,
+                    'nonce': self.w3.eth.get_transaction_count(self.address),
+                    'gas': 100000,
+                    'gasPrice': self.w3.eth.gas_price,
+                })
+                signed = self.w3.eth.account.sign_transaction(tx, self.account.key)
+                tx_hash = self.w3.eth.send_raw_transaction(signed.raw_transaction)
+                self.w3.eth.wait_for_transaction_receipt(tx_hash, timeout=60)
+                print(f"✅ GHO infinite approval set for Uniswap Router")
+            else:
+                print(f"✅ GHO Uniswap approval already sufficient")
+        except Exception as e:
+            print(f"⚠️ GHO approval check failed (non-fatal): {e}")
+
+    def _init_aave_oracle(self):
+        """Initialize AaveOracle for on-chain ETH/USD pricing"""
+        try:
+            oracle_address = self.w3.to_checksum_address("0xb56c2F0B653B2e0b10C9b928C8580Ac5Df02C7C7")
+            oracle_abi = [{"inputs":[{"name":"asset","type":"address"}],"name":"getAssetPrice","outputs":[{"name":"","type":"uint256"}],"stateMutability":"view","type":"function"}]
+            self.aave_oracle = self.w3.eth.contract(address=oracle_address, abi=oracle_abi)
+            weth_price_raw = self.aave_oracle.functions.getAssetPrice(self.weth_address).call()
+            weth_price = weth_price_raw / 1e8
+            print(f"✅ AaveOracle initialized — ETH/USD: ${weth_price:.2f}")
+            self.oracle_eth_price = weth_price
+        except Exception as e:
+            print(f"⚠️ AaveOracle init failed (will use fallback): {e}")
+            self.aave_oracle = None
+            self.oracle_eth_price = None
+
+    def get_oracle_price(self, token_address):
+        """Get USD price from AaveOracle (8 decimals). Returns None on failure."""
+        try:
+            if not hasattr(self, 'aave_oracle') or not self.aave_oracle:
+                return None
+            price_raw = self.aave_oracle.functions.getAssetPrice(token_address).call()
+            return price_raw / 1e8
+        except Exception:
+            return None
+
     def _swap_dai_for_gho(self, dai_amount):
         """
         Swap DAI for GHO via Uniswap.
@@ -3286,7 +3367,8 @@ class ArbitrumTestnetAgent:
             return False
     
     def _perform_safety_sweep(self):
-        """Nurse Mode: Detect and supply idle WETH, WBTC, DAI to Aave when balance > $1.10 USD"""
+        """Nurse Mode: Detect and supply idle WETH, WBTC, DAI to Aave when balance > $1.10 USD.
+        GHO is WHITELISTED — never swept. GHO is held for farming."""
         try:
             print("🚑 Nurse Mode: Scanning wallet for idle assets...")
             MIN_USD_THRESHOLD = 1.10
@@ -3298,6 +3380,15 @@ class ArbitrumTestnetAgent:
             weth_balance = self.get_weth_balance()
             wbtc_balance = self.get_wbtc_balance()
             dai_balance = self.get_dai_balance()
+
+            gho_balance = 0.0
+            if hasattr(self, 'gho_address') and self.gho_address and hasattr(self, 'aave') and self.aave:
+                try:
+                    gho_balance = self.aave.get_token_balance(self.gho_address)
+                except Exception:
+                    gho_balance = 0.0
+            if gho_balance > 0:
+                print(f"   🛡️ GHO WHITELISTED: {gho_balance:.6f} GHO detected — PROTECTED (farm asset, will NOT sweep)")
 
             print(f"   WETH: {weth_balance:.8f} | WBTC: {wbtc_balance:.8f} | DAI: {dai_balance:.6f} | ETH (gas): {eth_balance:.6f}")
 
@@ -3621,8 +3712,8 @@ class ArbitrumTestnetAgent:
 
             performance = 0.5
 
-            if health_factor < 1.35:
-                print(f"🚨 EMERGENCY: Health factor {health_factor:.3f} below 1.35!")
+            if health_factor < 2.90:
+                print(f"🚨 EMERGENCY: Health factor {health_factor:.3f} below 2.90!")
                 dai_balance = self.aave.get_token_balance(self.dai_address) if self.aave else 0
                 if dai_balance > 0.5:
                     safe_amount = dai_balance * 0.99
@@ -3745,7 +3836,7 @@ class ArbitrumTestnetAgent:
                 "executed_this_cycle": executed,
                 "performance_score": performance,
                 "system_phase": "EXECUTING" if executed else "MONITORING",
-                "hf_status": "HEALTHY" if health_factor > 1.52 else "CAUTION" if health_factor >= 1.35 else "EMERGENCY",
+                "hf_status": "HEALTHY" if health_factor > 3.10 else "CAUTION" if health_factor >= 2.90 else "EMERGENCY",
                 "growth_cooldown_remaining": max(0, self.operation_cooldown_seconds - (time.time() - self.last_successful_operation_time)) if self.last_successful_operation_time > 0 else 0,
                 "ls_cooldown_remaining": 0,
                 "liability_short": {},
@@ -3980,7 +4071,7 @@ class ArbitrumTestnetAgent:
 
                 print(f"📊 Position: Collateral ${total_collateral:.2f} | Baseline ${self.last_collateral_value_usd:.2f} | HF {health_factor:.3f} | Available ${available_borrows:.2f}")
 
-                if health_factor < 1.35:
+                if health_factor < 2.90:
                     action = "EMERGENCY"
                     status = "CRITICAL"
                     performance_score *= 0.1
@@ -4213,8 +4304,8 @@ class ArbitrumTestnetAgent:
                     account_data = self.aave.get_user_account_data()
                     if account_data:
                         health_factor = account_data.get('healthFactor', 0)
-                        if health_factor < 1.35:
-                            return False, f"Health factor too low: {health_factor:.3f} (need >1.35)"
+                        if health_factor < 2.90:
+                            return False, f"Health factor too low: {health_factor:.3f} (need >2.90)"
                     else:
                         return False, "Cannot retrieve account data"
                 except Exception as hf_error:
@@ -4406,8 +4497,8 @@ class ArbitrumTestnetAgent:
                     account_data = self.aave.get_user_account_data()
                     if account_data:
                         health_factor = account_data.get('healthFactor', 0)
-                        if health_factor < 1.35:
-                            return False, f"Health factor too low: {health_factor:.3f} (need >1.35)"
+                        if health_factor < 2.90:
+                            return False, f"Health factor too low: {health_factor:.3f} (need >2.90)"
                     else:
                         return False, "Cannot retrieve account data"
                 except Exception as hf_error:

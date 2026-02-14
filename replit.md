@@ -3,31 +3,54 @@
 ## Project Overview
 Autonomous Aave V3 debt management system on Arbitrum Mainnet with two distinct execution paths. Monitors collateral growth from a $47 baseline and executes fixed-value borrowing operations.
 
-## Current Status: **Phase 1 Finalized** 
+## Current Status: **GHO Accumulation Mode** (Feb 2026)
 
 ## Architecture
 
+### GHO Accumulation Mode
+Conservative HF thresholds with $1.20 GHO Tax on every borrow. Each execution path borrows an extra $1.20, swaps it to GHO, and holds it in wallet. GHO is whitelisted — Nurse Mode and restore_health.py never sweep it.
+
+**HF Thresholds (Conservative):**
+- Growth min: 3.10
+- Macro (Liability Short): 3.05
+- Micro (Liability Short): 3.00
+- Capacity/Emergency: 2.90
+- Monitoring cycle: 45s
+
 ### Dual-Path Execution System
 
-**Growth Path ($10.20 borrow)** - PRIORITY 1 (checked first)
+**Growth Path ($11.40 borrow = $10.20 + $1.20 GHO Tax)** - PRIORITY 1
 - Activates on: 10% relative OR $50 absolute collateral growth from baseline
-- Requires: Health factor >= 1.35, Available capacity >= $12
+- Requires: Health factor >= 3.10, Available capacity >= $13.20
 - Distribution:
   - $3.00 DAI supply to Aave
   - $3.00 DAI -> WBTC swap + supply to Aave
   - $2.00 DAI -> WETH swap + supply to Aave
   - $1.10 DAI -> ETH (gas reserve, held in wallet)
   - $1.10 DAI transfer to WALLET_S_ADDRESS
+  - $1.20 DAI -> GHO swap (held in wallet, farm accumulation)
 
-**Capacity Path ($5.50 borrow)** - PRIORITY 2 (checked only if growth didn't fire)
-- Activates when: Available capacity >= $7
-- Requires: Health factor >= 1.35
+**Capacity Path ($6.70 borrow = $5.50 + $1.20 GHO Tax)** - PRIORITY 2
+- Activates when: Available capacity >= $8.20
+- Requires: Health factor >= 2.90
 - Distribution:
   - $1.10 DAI supply to Aave
   - $1.10 DAI -> WBTC swap + supply to Aave
   - $1.10 DAI -> WETH swap + supply to Aave
   - $1.10 DAI -> ETH (gas reserve, held in wallet)
   - $1.10 DAI transfer to WALLET_S_ADDRESS
+  - $1.20 DAI -> GHO swap (held in wallet, farm accumulation)
+
+### GHO Tax & Yield Farm
+- GHO_TAX_AMOUNT = $1.20 per borrow
+- GHO_HARVEST_TARGET = $22.00 (dashboard CLAIM USDC button unlocks at target)
+- GHO is WHITELISTED in Nurse Mode (_perform_safety_sweep) and restore_health.py
+- Infinite GHO approval for Uniswap Router checked on startup
+
+### AaveOracle Integration
+- Primary price source: AaveOracle at 0xb56c2F0B653B2e0b10C9b928C8580Ac5Df02C7C7
+- getAssetPrice() returns 8-decimal USD prices
+- Fallback: CoinMarketCap API
 
 ### Global Execution Lock
 - `is_transacting` flag prevents double-borrowing against same collateral jump
@@ -37,7 +60,7 @@ Autonomous Aave V3 debt management system on Arbitrum Mainnet with two distinct 
 
 ### Crash Recovery (execution_state.json)
 - After each successful on-chain step, state is persisted to `execution_state.json`
-- Steps tracked: borrowed → dai_supplied → wbtc_supplied → weth_supplied → eth_converted → wallet_s_transferred
+- Steps tracked: borrowed → dai_supplied → wbtc_supplied → weth_supplied → eth_converted → wallet_s_transferred → gho_taxed
 - On startup, agent checks for interrupted sequences and resumes from next incomplete step
 - State file is wiped ONLY after successful confirmation of final WALLET_S transfer
 - Helper methods: `save_execution_state()`, `load_execution_state()`, `clear_execution_state()`

@@ -831,9 +831,9 @@ def command_center():
         total_debt = live_data.get('total_debt_usdc', 0)
         available_borrows = live_data.get('available_borrows_usdc', 0)
 
-        if health_factor > 1.52:
+        if health_factor > 3.10:
             hf_status = "HEALTHY"
-        elif health_factor >= 1.35:
+        elif health_factor >= 2.90:
             hf_status = "CAUTION"
         else:
             hf_status = "EMERGENCY"
@@ -931,6 +931,8 @@ def command_center():
                 "available_borrows": round(available_borrows, 2),
                 "total_debt": round(total_debt, 2),
                 "borrow_capacity": round(total_collateral * 0.8, 2),
+                "gho_balance": round(getattr(agent, '_get_gho_balance', lambda: 0)() if agent else 0, 4),
+                "gho_target": getattr(agent, 'GHO_HARVEST_TARGET', 22.0) if agent else 22.0,
             },
             "zone5_intel": {
                 "lines": intel_lines[-15:],
@@ -1134,8 +1136,8 @@ def analyze_trigger_conditions(live_data):
         health_factor = live_data.get('health_factor', 1.68)
         available_borrows = live_data.get('available_borrows_usdc', 10.14)
 
-        growth_trigger_ready = growth_achieved >= growth_threshold and health_factor > 1.35
-        capacity_trigger_ready = available_borrows > 13.0 and health_factor > 1.35
+        growth_trigger_ready = growth_achieved >= growth_threshold and health_factor > 3.10
+        capacity_trigger_ready = available_borrows > 13.0 and health_factor > 2.90
 
         triggers_active = []
         if growth_trigger_ready:
@@ -2550,6 +2552,31 @@ def get_cost_optimization_status():
 
 # ============================================================================
 # REAL-TIME SSE ENDPOINTS - Phase 2.2: WebSocket-style Synchronization
+@app.route('/api/harvest-gho', methods=['POST'])
+def api_harvest_gho():
+    """Harvest GHO: swap accumulated GHO to USDC and transfer to WALLET_S"""
+    global agent
+    try:
+        if not agent:
+            return jsonify({"error": "Agent not initialized", "success": False}), 503
+        gho_balance = agent._get_gho_balance() if hasattr(agent, '_get_gho_balance') else 0
+        gho_target = getattr(agent, 'GHO_HARVEST_TARGET', 22.0)
+        if gho_balance < gho_target:
+            return jsonify({
+                "error": f"GHO balance {gho_balance:.4f} below harvest target {gho_target:.2f}",
+                "gho_balance": round(gho_balance, 4),
+                "gho_target": gho_target,
+                "success": False
+            }), 400
+        return jsonify({
+            "message": f"GHO harvest ready: {gho_balance:.4f} GHO available. Manual harvest via contract call required.",
+            "gho_balance": round(gho_balance, 4),
+            "gho_target": gho_target,
+            "success": True
+        })
+    except Exception as e:
+        return jsonify({"error": str(e), "success": False}), 500
+
 # ============================================================================
 
 @app.route('/api/events')
