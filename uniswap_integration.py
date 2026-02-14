@@ -1,7 +1,5 @@
-"""Apply fixes for gas estimation failures, missing variable errors, and syntax errors in the enhanced borrow manager."""
-"""
-DAI COMPLIANCE ENFORCED: This file has been modified to use DAI-only operations.
-Only DAI → WBTC and DAI → WETH swaps are permitted.
+"""Uniswap V3 integration for Arbitrum mainnet/testnet.
+DAI-based swaps: DAI → WBTC, DAI → WETH, DAI → GHO (via WETH or USD₮0 hop).
 """
 
 import os
@@ -755,6 +753,40 @@ class UniswapIntegration:
         print(f"   AUDIT: {'✅ PASS' if valid else '❌ FAIL — unexpected byte length'}")
         print("=" * 60)
 
+    def _ensure_token_approval_for_router(self, token_address, amount_in_wei):
+        """Ensure token is approved for Uniswap Router with max allowance. Waits for on-chain confirmation."""
+        try:
+            token_contract = self.w3.eth.contract(address=token_address, abi=self.erc20_abi)
+            current_allowance = token_contract.functions.allowance(self.address, self.router_address).call()
+            if current_allowance >= amount_in_wei:
+                print(f"✅ Router allowance sufficient: {current_allowance}")
+                return True
+
+            max_uint256 = 2**256 - 1
+            nonce = self.w3.eth.get_transaction_count(self.address)
+            base_gas_price = self.w3.eth.gas_price
+            chain_id = self.w3.eth.chain_id
+            gas_price = int(base_gas_price * 2.0) if chain_id == 42161 else int(base_gas_price * 1.3)
+            approve_tx = token_contract.functions.approve(
+                self.router_address, max_uint256
+            ).build_transaction({
+                'chainId': chain_id, 'gas': 100000,
+                'gasPrice': gas_price, 'nonce': nonce,
+            })
+            signed_approve = self.w3.eth.account.sign_transaction(approve_tx, self.account.key)
+            approve_hash = self.w3.eth.send_raw_transaction(signed_approve.rawTransaction)
+            print(f"🔐 Router approval sent: {approve_hash.hex()}")
+            receipt = self.w3.eth.wait_for_transaction_receipt(approve_hash, timeout=60)
+            if receipt.status == 1:
+                print(f"✅ Router approval confirmed on-chain")
+                return True
+            else:
+                print(f"❌ Router approval reverted on-chain")
+                return False
+        except Exception as e:
+            print(f"❌ Router approval error: {e}")
+            return False
+
     def _execute_multihop_swap(self, path_bytes, amount_in, amount_in_wei, token_in, description):
         """Execute a multi-hop swap using exactInput"""
         try:
@@ -767,26 +799,8 @@ class UniswapIntegration:
                 return None
 
             if token_in != "0x0000000000000000000000000000000000000000":
-                token_contract = self.w3.eth.contract(address=token_in, abi=self.erc20_abi)
-                try:
-                    current_allowance = token_contract.functions.allowance(self.address, self.router_address).call()
-                    if current_allowance < amount_in_wei:
-                        nonce = self.w3.eth.get_transaction_count(self.address)
-                        base_gas_price = self.w3.eth.gas_price
-                        chain_id = self.w3.eth.chain_id
-                        gas_price = int(base_gas_price * 2.0) if chain_id == 42161 else int(base_gas_price * 1.3)
-                        approve_tx = token_contract.functions.approve(
-                            self.router_address, amount_in_wei * 2
-                        ).build_transaction({
-                            'chainId': chain_id, 'gas': 100000,
-                            'gasPrice': gas_price, 'nonce': nonce,
-                        })
-                        signed_approve = self.w3.eth.account.sign_transaction(approve_tx, self.account.key)
-                        approve_hash = self.w3.eth.send_raw_transaction(signed_approve.rawTransaction)
-                        print(f"✅ Multi-hop approval sent: {approve_hash.hex()}")
-                        time.sleep(8)
-                except Exception as approve_error:
-                    print(f"❌ Multi-hop approval failed: {approve_error}")
+                if not self._ensure_token_approval_for_router(token_in, amount_in_wei):
+                    print(f"❌ Cannot proceed without token approval for Router")
                     return None
 
             deadline = int(time.time()) + 120
@@ -821,6 +835,10 @@ class UniswapIntegration:
                 swap_tx['gas'] = min(int(estimated_gas * 1.8), 800000)
                 print(f"💰 Multi-hop gas estimate: {estimated_gas} → using {swap_tx['gas']}")
             except Exception as gas_err:
+                err_str = str(gas_err)
+                if 'STF' in err_str or 'execution reverted' in err_str:
+                    print(f"❌ Gas estimation reverted ({err_str}) — skipping this route (would waste gas)")
+                    return None
                 print(f"⚠️ Multi-hop gas estimation failed: {gas_err}, using {gas_limit}")
 
             fresh_nonce = self.w3.eth.get_transaction_count(self.address, 'pending')
@@ -904,10 +922,13 @@ class UniswapIntegration:
             return False
 
     def swap_dai_for_gho(self, dai_amount):
-        """Swap DAI for GHO on Uniswap V3 — uses multi-hop DAI→WETH→GHO (no direct DAI/GHO pool on Arbitrum)"""
+        """Swap DAI for GHO on Uniswap V3.
+        Route 1 (WETH): DAI→WETH→GHO (3 fee tier combos)
+        Route 2 (USD₮0): DAI→USD₮0→GHO (fallback, stablecoin hop)
+        """
         try:
             gho_address = "0x7dfF72693f6A4149b17e7C6314655f6A9F7c8B33"
-            print(f"🔄 Swapping {dai_amount:.6f} DAI for GHO (multi-hop via WETH)...")
+            usdt0_address = self.w3.to_checksum_address("0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9")
 
             if dai_amount <= 0:
                 print("❌ Invalid DAI amount for GHO swap")
@@ -915,42 +936,93 @@ class UniswapIntegration:
 
             amount_in_wei = int(dai_amount * 1e18)
 
+            print(f"🔐 Pre-approving DAI for Uniswap Router before swap...")
+            if not self._ensure_token_approval_for_router(self.dai_address, amount_in_wei):
+                print("❌ DAI approval for Router failed — cannot swap")
+                return False
+
+            print(f"\n🔄 ROUTE 1: DAI → WETH → GHO ({dai_amount:.4f} DAI)")
+            print("=" * 50)
+
             fees_attempt1 = [500, 3000]
             path_bytes = self._encode_path(
                 [self.dai_address, self.weth_address, gho_address],
                 fees_attempt1
             )
-            self._audit_path(path_bytes, ["DAI", "WETH", "GHO"], fees_attempt1)
-
             swap_result = self._execute_multihop_swap(
                 path_bytes, dai_amount, amount_in_wei,
                 self.dai_address, f"{dai_amount:.4f} DAI →(500)→ WETH →(3000)→ GHO"
             )
 
             if not swap_result:
-                print("⚠️ Multi-hop 500/3000 failed, trying 3000/3000 fee tiers...")
+                print("⚠️ WETH route 500/3000 failed, trying 3000/3000...")
                 fees_attempt2 = [3000, 3000]
                 path_bytes = self._encode_path(
                     [self.dai_address, self.weth_address, gho_address],
                     fees_attempt2
                 )
-                self._audit_path(path_bytes, ["DAI", "WETH", "GHO"], fees_attempt2)
                 swap_result = self._execute_multihop_swap(
                     path_bytes, dai_amount, amount_in_wei,
                     self.dai_address, f"{dai_amount:.4f} DAI →(3000)→ WETH →(3000)→ GHO"
                 )
 
             if not swap_result:
-                print("⚠️ Multi-hop 3000/3000 failed, trying 500/10000 fee tiers...")
+                print("⚠️ WETH route 3000/3000 failed, trying 500/10000...")
                 fees_attempt3 = [500, 10000]
                 path_bytes = self._encode_path(
                     [self.dai_address, self.weth_address, gho_address],
                     fees_attempt3
                 )
-                self._audit_path(path_bytes, ["DAI", "WETH", "GHO"], fees_attempt3)
                 swap_result = self._execute_multihop_swap(
                     path_bytes, dai_amount, amount_in_wei,
                     self.dai_address, f"{dai_amount:.4f} DAI →(500)→ WETH →(10000)→ GHO"
+                )
+
+            if not swap_result:
+                print(f"\n🔄 ROUTE 2: DAI → USD₮0 → GHO ({dai_amount:.4f} DAI)")
+                print("=" * 50)
+
+                fees_usdt1 = [100, 500]
+                path_bytes = self._encode_path(
+                    [self.dai_address, usdt0_address, gho_address],
+                    fees_usdt1
+                )
+                swap_result = self._execute_multihop_swap(
+                    path_bytes, dai_amount, amount_in_wei,
+                    self.dai_address, f"{dai_amount:.4f} DAI →(100)→ USD₮0 →(500)→ GHO"
+                )
+
+            if not swap_result:
+                fees_usdt2 = [500, 500]
+                path_bytes = self._encode_path(
+                    [self.dai_address, usdt0_address, gho_address],
+                    fees_usdt2
+                )
+                swap_result = self._execute_multihop_swap(
+                    path_bytes, dai_amount, amount_in_wei,
+                    self.dai_address, f"{dai_amount:.4f} DAI →(500)→ USD₮0 →(500)→ GHO"
+                )
+
+            if not swap_result:
+                fees_usdt3 = [100, 3000]
+                path_bytes = self._encode_path(
+                    [self.dai_address, usdt0_address, gho_address],
+                    fees_usdt3
+                )
+                swap_result = self._execute_multihop_swap(
+                    path_bytes, dai_amount, amount_in_wei,
+                    self.dai_address, f"{dai_amount:.4f} DAI →(100)→ USD₮0 →(3000)→ GHO"
+                )
+
+            if not swap_result:
+                fees_usdt4 = [500, 3000]
+                path_bytes = self._encode_path(
+                    [self.dai_address, usdt0_address, gho_address],
+                    fees_usdt4
+                )
+                swap_result = self._execute_multihop_swap(
+                    path_bytes, dai_amount, amount_in_wei,
+                    self.dai_address, f"{dai_amount:.4f} DAI →(500)→ USD₮0 →(3000)→ GHO"
                 )
 
             if swap_result and isinstance(swap_result, str):
@@ -962,7 +1034,7 @@ class UniswapIntegration:
                     'token_out': 'GHO'
                 }
             else:
-                print("❌ All DAI→GHO swap attempts failed")
+                print("❌ All DAI→GHO swap routes exhausted (WETH + USD₮0)")
                 return False
 
         except Exception as e:
