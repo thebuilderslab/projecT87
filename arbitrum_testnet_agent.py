@@ -2585,13 +2585,15 @@ class ArbitrumTestnetAgent:
                 print("⏭️ STEP 6 (WALLET_S Transfer): Already completed — skipping")
 
             remaining_dai = self.get_dai_balance()
-            if remaining_dai >= 0.50:
+            if remaining_dai >= 2.00:
                 print(f"\n🛡️ SAFETY SWEEP: ${remaining_dai:.2f} DAI still in wallet — supplying to Aave as collateral")
                 sweep_amount = remaining_dai * 0.99
                 if self._resupply_dai_to_aave(sweep_amount):
                     print(f"   ✅ Swept ${sweep_amount:.2f} DAI to Aave collateral")
                 else:
                     print(f"   ❌ Sweep failed — ${remaining_dai:.2f} DAI remains in wallet")
+            elif remaining_dai > 0.01:
+                print(f"\n🛡️ DUST/TAX GUARD: ${remaining_dai:.2f} DAI below $2.00 threshold — skipping sweep (protects stranded GHO tax)")
 
             print(f"\n{'='*60}")
             if not steps_failed:
@@ -3474,18 +3476,21 @@ class ArbitrumTestnetAgent:
                 else:
                     print("   ⚠️ WBTC supply failed")
 
-            sweepable_dai = dai_balance - reserved_dai
-            if sweepable_dai > MIN_USD_THRESHOLD:
-                if reserved_dai > 0:
-                    print(f"🚑 Nurse Mode: Found ${dai_balance:.2f} DAI, reserving ${reserved_dai:.2f} for GHO tax. Sweeping ${sweepable_dai:.2f}.")
-                else:
-                    print(f"🚑 Nurse Mode: Found ${dai_balance:.2f} of DAI. Supplying to Aave to boost Health Factor.")
-                if self._resupply_dai_to_aave(sweepable_dai * 0.99):
-                    supplied_any = True
-                else:
-                    print("   ⚠️ DAI supply failed")
-            elif reserved_dai > 0 and dai_balance > 0:
-                print(f"🚑 Nurse Mode: ${dai_balance:.2f} DAI in wallet — ALL reserved for GHO tax (${reserved_dai:.2f}). Skipping sweep.")
+            if dai_balance > 0.01 and dai_balance < 2.00:
+                print(f"🚑 Nurse Mode: ${dai_balance:.2f} DAI below $2.00 hard threshold — skipping sweep (dust/stranded tax protection)")
+            else:
+                sweepable_dai = dai_balance - reserved_dai
+                if sweepable_dai > MIN_USD_THRESHOLD:
+                    if reserved_dai > 0:
+                        print(f"🚑 Nurse Mode: Found ${dai_balance:.2f} DAI, reserving ${reserved_dai:.2f} for GHO tax. Sweeping ${sweepable_dai:.2f}.")
+                    else:
+                        print(f"🚑 Nurse Mode: Found ${dai_balance:.2f} of DAI. Supplying to Aave to boost Health Factor.")
+                    if self._resupply_dai_to_aave(sweepable_dai * 0.99):
+                        supplied_any = True
+                    else:
+                        print("   ⚠️ DAI supply failed")
+                elif reserved_dai > 0 and dai_balance > 0:
+                    print(f"🚑 Nurse Mode: ${dai_balance:.2f} DAI in wallet — ALL reserved for GHO tax (${reserved_dai:.2f}). Skipping sweep.")
 
             if not supplied_any:
                 print("🚑 Nurse Mode: No idle assets above $1.10 threshold. Wallet clean.")
