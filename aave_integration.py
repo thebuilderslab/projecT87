@@ -588,7 +588,10 @@ class AaveArbitrumIntegration:
 
     def supply_dai_to_aave(self, amount):
         """Supply DAI to Aave - DAI compliance method"""
-        return self.supply_to_aave(self.dai_address, amount)
+        result = self.supply_to_aave(self.dai_address, amount)
+        if result:
+            self.enable_collateral(self.dai_address, "DAI")
+        return result
 
     def supply_wbtc_to_aave(self, amount):
         """Supply WBTC to Aave"""
@@ -597,6 +600,66 @@ class AaveArbitrumIntegration:
     def supply_weth_to_aave(self, amount):
         """Supply WETH to Aave"""
         return self.supply_to_aave(self.weth_address, amount)
+
+    def enable_collateral(self, token_address, token_name="TOKEN"):
+        """Call setUserUseReserveAsCollateral(asset, true) on Aave V3 Pool.
+        This enables a supplied asset to count toward the Health Factor.
+        Works independently of E-Mode — purely a collateral toggle."""
+        try:
+            collateral_abi = [{
+                "inputs": [
+                    {"name": "asset", "type": "address"},
+                    {"name": "useAsCollateral", "type": "bool"}
+                ],
+                "name": "setUserUseReserveAsCollateral",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            }]
+            pool_address = self.pool_contract.address
+            collateral_contract = self.w3.eth.contract(address=pool_address, abi=collateral_abi)
+
+            nonce = self.w3.eth.get_transaction_count(self.account.address)
+            base_gas_price = self.w3.eth.gas_price
+            chain_id = self.w3.eth.chain_id
+            gas_price = int(base_gas_price * (2.0 if chain_id == 42161 else 1.3))
+
+            try:
+                estimated_gas = collateral_contract.functions.setUserUseReserveAsCollateral(
+                    token_address, True
+                ).estimate_gas({'from': self.account.address})
+                gas_limit = int(estimated_gas * 1.3)
+            except Exception:
+                gas_limit = 200000
+
+            tx = collateral_contract.functions.setUserUseReserveAsCollateral(
+                token_address, True
+            ).build_transaction({
+                'from': self.account.address,
+                'gas': gas_limit,
+                'gasPrice': gas_price,
+                'nonce': nonce,
+                'chainId': chain_id
+            })
+
+            signed_tx = self.w3.eth.account.sign_transaction(tx, self.account.key)
+            tx_hash = self.w3.eth.send_raw_transaction(signed_tx.rawTransaction)
+            receipt = self.w3.eth.wait_for_transaction_receipt(tx_hash, timeout=60)
+
+            if receipt.status == 1:
+                print(f"✅ {token_name} collateral ENABLED — now counts toward Health Factor")
+                return True
+            else:
+                print(f"⚠️ {token_name} collateral enable tx failed (status=0)")
+                return False
+
+        except Exception as e:
+            error_msg = str(e).lower()
+            if 'already' in error_msg or 'no change' in error_msg or 'revert' in error_msg:
+                print(f"ℹ️ {token_name} collateral already enabled (no-op)")
+                return True
+            print(f"⚠️ {token_name} enable_collateral error: {e}")
+            return False
 
     def get_token_balance(self, token_address):
         """Get token balance - DAI-centric compliance - NEVER returns None"""

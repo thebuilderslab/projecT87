@@ -2427,6 +2427,26 @@ class ArbitrumTestnetAgent:
             sequence_ok = True
             steps_failed = []
 
+            if "gho_taxed" not in already_done:
+                gho_tax_amt = distribution.get('gho_tax', 0)
+                if gho_tax_amt >= 1.00 and self.gho_address:
+                    print(f"\n📋 STEP 1.5 (PAY YOURSELF FIRST): Swapping ${gho_tax_amt:.2f} DAI → GHO immediately...")
+                    gho_before = self._get_gho_balance()
+                    if self._swap_dai_for_gho(gho_tax_amt):
+                        time.sleep(3)
+                        gho_after = self._get_gho_balance()
+                        print(f"   🛡️ GHO Farm: {gho_before:.4f} → {gho_after:.4f} GHO (target: {self.GHO_HARVEST_TARGET:.2f})")
+                        self.save_execution_state("gho_taxed", path_name, dist_serializable)
+                    else:
+                        print(f"   ⚠️ GHO tax swap failed — ${gho_tax_amt:.2f} DAI remains for distribution steps")
+                        steps_failed.append("gho_taxed")
+                else:
+                    if not self.gho_address:
+                        print(f"   ⏭️ GHO Tax: Not available on this network")
+                    self.save_execution_state("gho_taxed", path_name, dist_serializable)
+            elif "gho_taxed" in already_done:
+                print("⏭️ STEP 1.5 (GHO Tax): Already completed — skipping")
+
             if "dai_supplied" not in already_done:
                 dai_supply_amt = distribution['dai_supply']
                 print("🔒 STEP 2 PRE-CHECK: Verifying Aave Pool DAI allowance...")
@@ -2563,26 +2583,6 @@ class ArbitrumTestnetAgent:
                     self.save_execution_state("wallet_s_transferred", path_name, dist_serializable)
             elif "wallet_s_transferred" in already_done:
                 print("⏭️ STEP 6 (WALLET_S Transfer): Already completed — skipping")
-
-            if "gho_taxed" not in already_done:
-                gho_tax_amt = distribution.get('gho_tax', 0)
-                if gho_tax_amt >= 1.00 and self.gho_address:
-                    print(f"\n📋 STEP 7 (GHO TAX): Swapping ${gho_tax_amt:.2f} DAI → GHO (farm accumulation)...")
-                    gho_before = self._get_gho_balance()
-                    if self._swap_dai_for_gho(gho_tax_amt):
-                        time.sleep(3)
-                        gho_after = self._get_gho_balance()
-                        print(f"   🛡️ GHO Farm: {gho_before:.4f} → {gho_after:.4f} GHO (target: {self.GHO_HARVEST_TARGET:.2f})")
-                        self.save_execution_state("gho_taxed", path_name, dist_serializable)
-                    else:
-                        print(f"   ⚠️ GHO tax swap failed — ${gho_tax_amt:.2f} DAI remains for safety sweep")
-                        steps_failed.append("gho_taxed")
-                else:
-                    if not self.gho_address:
-                        print(f"   ⏭️ GHO Tax: Not available on this network")
-                    self.save_execution_state("gho_taxed", path_name, dist_serializable)
-            elif "gho_taxed" in already_done:
-                print("⏭️ STEP 7 (GHO Tax): Already completed — skipping")
 
             remaining_dai = self.get_dai_balance()
             if remaining_dai >= 0.50:
@@ -2750,6 +2750,17 @@ class ArbitrumTestnetAgent:
 
             self.save_execution_state("weth_borrowed", path_name, {"tier": tier, "eth_price": eth_price, "weth_borrowed": weth_to_borrow})
 
+            if gho_tax_weth > 0 and self.gho_address:
+                print(f"\n📋 STEP 1.5 (PAY YOURSELF FIRST): Swapping {gho_tax_weth:.8f} WETH → GHO (${gho_tax_usd:.2f}) immediately...")
+                if self._swap_weth_for_gho(gho_tax_weth):
+                    print(f"   ✅ GHO tax collected — WETH→GHO swap complete")
+                else:
+                    print(f"   ⚠️ GHO tax swap failed — {gho_tax_weth:.8f} WETH remains for distribution")
+                    steps_failed.append("gho_taxed")
+                self.save_execution_state("gho_taxed", path_name, {"tier": tier})
+            else:
+                print(f"   ℹ️ GHO tax not applicable (no GHO address or zero tax)")
+
             wbtc_usd = distribution['wbtc_swap_supply']
             weth_for_wbtc = wbtc_usd / eth_price
             if weth_for_wbtc > 0.0001:
@@ -2830,23 +2841,6 @@ class ArbitrumTestnetAgent:
             print(f"\n{'='*60}")
             print(f"✅ PART A COMPLETE — WETH borrowed and distributed")
             print(f"{'='*60}")
-
-            if gho_tax_weth > 0 and self.gho_address:
-                remaining_weth_for_gho = self.get_weth_balance()
-                actual_gho_weth = min(gho_tax_weth, remaining_weth_for_gho)
-                if actual_gho_weth >= 0.0001:
-                    print(f"\n📋 GHO TAX STEP: Swapping {actual_gho_weth:.8f} WETH → GHO (${gho_tax_usd:.2f} farm accumulation)...")
-                    if self._swap_weth_for_gho(actual_gho_weth):
-                        print(f"   ✅ GHO tax collected — WETH→GHO swap complete")
-                    else:
-                        print(f"   ⚠️ GHO tax swap failed — {actual_gho_weth:.8f} WETH remains in wallet")
-                        steps_failed.append("gho_taxed")
-                else:
-                    print(f"   ⚠️ Insufficient WETH for GHO tax ({remaining_weth_for_gho:.8f} available)")
-                    steps_failed.append("gho_taxed")
-                self.save_execution_state("gho_taxed", path_name, {"tier": tier})
-            else:
-                print(f"   ℹ️ GHO tax not applicable (no GHO address or zero tax)")
 
             debt_swap_usd = distribution['debt_swap_amount']
             print(f"\n📋 PART B: DAI → WETH Debt Swap (${debt_swap_usd:.2f})...")

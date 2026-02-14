@@ -9,12 +9,22 @@ import time
 import json
 import threading
 import subprocess
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 from collections import deque
 import re
 import logging
 import queue
 import os
+
+try:
+    from zoneinfo import ZoneInfo
+    EASTERN = ZoneInfo('America/New_York')
+except ImportError:
+    EASTERN = timezone(timedelta(hours=-5))
+
+def est_now():
+    """Return current time formatted as HH:MM:SS in Eastern Time (auto-handles EST/EDT)."""
+    return datetime.now(EASTERN).strftime('%H:%M:%S')
 
 # Import PnL converter for dynamic parameter management
 try:
@@ -83,8 +93,25 @@ class WorkingAgent:
             'chain_id': 42161
         }
 
+    GHO_HARVEST_TARGET = 22.0
+
     def get_eth_balance(self):
         return self.live_data['eth_balance']
+
+    def _get_gho_balance(self):
+        """Fetch real GHO balance on-chain for the dashboard wallet"""
+        try:
+            if not self.w3:
+                return 0.0
+            from web3 import Web3
+            gho_address = Web3.to_checksum_address("0x7dfF72693f6A4149b17e7C6314655f6A9F7c8B33")
+            balance_abi = [{"inputs": [{"name": "account", "type": "address"}], "name": "balanceOf", "outputs": [{"name": "", "type": "uint256"}], "stateMutability": "view", "type": "function"}]
+            gho_contract = self.w3.eth.contract(address=gho_address, abi=balance_abi)
+            raw = gho_contract.functions.balanceOf(Web3.to_checksum_address(self.address)).call()
+            return raw / 10**18
+        except Exception as e:
+            logger.debug(f"GHO balance fetch error: {e}")
+            return 0.0
 
     def initialize_integrations(self):
         return True
@@ -158,7 +185,7 @@ def monitor_console_output():
     global console_buffer
 
     # Initialize with current status
-    console_buffer.append(f"[{datetime.now().strftime('%H:%M:%S')}] 🚀 Dashboard console monitoring started")
+    console_buffer.append(f"[{est_now()}] 🚀 Dashboard console monitoring started")
 
     while True:
         try:
@@ -175,11 +202,11 @@ def monitor_console_output():
                             cpu = parts[2]
                             mem = parts[3]
                             pid = parts[1]
-                            status_line = f"[{datetime.now().strftime('%H:%M:%S')}] 🤖 Agent PID:{pid} CPU:{cpu}% MEM:{mem}% - Active"
+                            status_line = f"[{est_now()}] 🤖 Agent PID:{pid} CPU:{cpu}% MEM:{mem}% - Active"
                             if not console_buffer or not any(f"PID:{pid}" in line for line in list(console_buffer)[-3:]):
                                 console_buffer.append(status_line)
             except Exception as e:
-                console_buffer.append(f"[{datetime.now().strftime('%H:%M:%S')}] ⚠️ Process check error: {str(e)[:50]}")
+                console_buffer.append(f"[{est_now()}] ⚠️ Process check error: {str(e)[:50]}")
                 pass
 
             # Method 2: Read from performance log for activity and debt swap operations
@@ -189,7 +216,7 @@ def monitor_console_output():
                         lines = f.readlines()
                         if lines:
                             latest = json.loads(lines[-1])
-                            timestamp = datetime.fromtimestamp(latest.get('timestamp', time.time()))
+                            timestamp = datetime.fromtimestamp(latest.get('timestamp', time.time()), tz=EASTERN)
 
                             # Check for debt swap operations in metadata
                             if latest.get('metadata'):
@@ -222,7 +249,7 @@ def monitor_console_output():
                         with open(file_name, 'r') as f:
                             content = f.read()
                             if content.strip():
-                                timestamp = datetime.now().strftime('%H:%M:%S')
+                                timestamp = est_now()
                                 console_buffer.append(f"[{timestamp}] 🔍 DEBT SWAP: Found activity in {file_name}")
             except Exception as e:
                 logger.error(f"Error checking debt swap logs: {e}")
@@ -232,7 +259,7 @@ def monitor_console_output():
             try:
                 live_data = get_live_agent_data()
                 if live_data and live_data.get('health_factor', 0) > 0:
-                    wallet_line = f"[{datetime.now().strftime('%H:%M:%S')}] 💰 Wallet: HF={live_data['health_factor']:.4f}, ${live_data.get('total_collateral_usdc', 0):.2f} collateral"
+                    wallet_line = f"[{est_now()}] 💰 Wallet: HF={live_data['health_factor']:.4f}, ${live_data.get('total_collateral_usdc', 0):.2f} collateral"
                     if not console_buffer or not any(f"HF={live_data['health_factor']:.4f}" in line for line in list(console_buffer)[-3:]):
                         console_buffer.append(wallet_line)
             except Exception as e:
@@ -241,7 +268,7 @@ def monitor_console_output():
 
             # Method 4: Monitor system health with comprehensive detail including debt swap monitoring
             if check_autonomous_agent_running():
-                system_line = f"[{datetime.now().strftime('%H:%M:%S')}] 🟢 System: Autonomous agent ACTIVE - Real-time Aave monitoring"
+                system_line = f"[{est_now()}] 🟢 System: Autonomous agent ACTIVE - Real-time Aave monitoring"
 
                 # Add comprehensive status every cycle
                 try:
@@ -253,7 +280,7 @@ def monitor_console_output():
                         available = live_data.get('available_borrows_usdc', 0)
 
                         # Detailed status line
-                        detail_line = f"[{datetime.now().strftime('%H:%M:%S')}] 📊 Aave Status: HF={hf:.4f} | Collateral=${collateral:.2f} | Debt=${debt:.2f} | Available=${available:.2f}"
+                        detail_line = f"[{est_now()}] 📊 Aave Status: HF={hf:.4f} | Collateral=${collateral:.2f} | Debt=${debt:.2f} | Available=${available:.2f}"
                         if not console_buffer or console_buffer[-1] != detail_line:
                             console_buffer.append(detail_line)
 
@@ -264,11 +291,11 @@ def monitor_console_output():
 
                         # Health factor assessment
                         if hf > 2.0:
-                            health_status = f"[{datetime.now().strftime('%H:%M:%S')}] ✅ Health Factor: {hf:.4f} - HEALTHY (Good for operations)"
+                            health_status = f"[{est_now()}] ✅ Health Factor: {hf:.4f} - HEALTHY (Good for operations)"
                         elif hf > 1.5:
-                            health_status = f"[{datetime.now().strftime('%H:%M:%S')}] ⚠️ Health Factor: {hf:.4f} - MODERATE (Monitoring required)"
+                            health_status = f"[{est_now()}] ⚠️ Health Factor: {hf:.4f} - MODERATE (Monitoring required)"
                         else:
-                            health_status = f"[{datetime.now().strftime('%H:%M:%S')}] 🚨 Health Factor: {hf:.4f} - LOW RISK (Emergency protocols)"
+                            health_status = f"[{est_now()}] 🚨 Health Factor: {hf:.4f} - LOW RISK (Emergency protocols)"
 
                         # Only add health assessment if significantly different
                         if not console_buffer or not any(f"Health Factor: {hf:.4f}" in line for line in list(console_buffer)[-3:]):
@@ -288,22 +315,22 @@ def monitor_console_output():
                                         console_buffer.append(log)
 
                         # Network status
-                        network_line = f"[{datetime.now().strftime('%H:%M:%S')}] 🌐 Network: Arbitrum Mainnet | Chain ID: 42161 | RPC: Connected"
+                        network_line = f"[{est_now()}] 🌐 Network: Arbitrum Mainnet | Chain ID: 42161 | RPC: Connected"
                         if len(console_buffer) % 8 == 0:  # Every 8th cycle
                             if not console_buffer or console_buffer[-1] != network_line:
                                 console_buffer.append(network_line)
 
                 except Exception as e:
                     logger.error(f"Error fetching live data for system metrics: {e}")
-                    error_line = f"[{datetime.now().strftime('%H:%M:%S')}] ❌ Live data fetch error: {str(e)[:60]}"
+                    error_line = f"[{est_now()}] ❌ Live data fetch error: {str(e)[:60]}"
                     if not console_buffer or console_buffer[-1] != error_line:
                         console_buffer.append(error_line)
             else:
-                system_line = f"[{datetime.now().strftime('%H:%M:%S')}] 🟡 System: Dashboard-only mode - Agent not detected"
+                system_line = f"[{est_now()}] 🟡 System: Dashboard-only mode - Agent not detected"
 
                 # Add more context when agent is not running
                 if len(console_buffer) % 4 == 0:
-                    context_line = f"[{datetime.now().strftime('%H:%M:%S')}] 🔍 Monitoring: Checking for agent processes and log files..."
+                    context_line = f"[{est_now()}] 🔍 Monitoring: Checking for agent processes and log files..."
                     if not console_buffer or console_buffer[-1] != context_line:
                         console_buffer.append(context_line)
 
@@ -319,7 +346,7 @@ def monitor_console_output():
 
         except Exception as e:
             logger.error(f"Critical error in console monitor loop: {e}")
-            error_line = f"[{datetime.now().strftime('%H:%M:%S')}] ⚠️ Console monitor error: {str(e)[:50]}"
+            error_line = f"[{est_now()}] ⚠️ Console monitor error: {str(e)[:50]}"
             if not console_buffer or console_buffer[-1] != error_line:
                 console_buffer.append(error_line)
             time.sleep(15)
@@ -498,8 +525,8 @@ def get_live_agent_data():
     }
 
 # Add initial console messages
-console_buffer.append(f"[{datetime.now().strftime('%H:%M:%S')}] 🚀 Dashboard started")
-console_buffer.append(f"[{datetime.now().strftime('%H:%M:%S')}] 🌐 Running on Arbitrum Mainnet")
+console_buffer.append(f"[{est_now()}] 🚀 Dashboard started")
+console_buffer.append(f"[{est_now()}] 🌐 Running on Arbitrum Mainnet")
 
 # Initialize agent in background
 threading.Thread(target=initialize_agent, daemon=True).start()
@@ -508,7 +535,7 @@ threading.Thread(target=initialize_agent, daemon=True).start()
 threading.Thread(target=monitor_console_output, daemon=True).start()
 
 # Add startup status
-console_buffer.append(f"[{datetime.now().strftime('%H:%M:%S')}] 🔄 Initializing agent connections...")
+console_buffer.append(f"[{est_now()}] 🔄 Initializing agent connections...")
 
 @app.route('/')
 def dashboard():
@@ -983,7 +1010,7 @@ def get_console_output():
 
         # Ensure we have some content
         if not console_buffer:
-            console_buffer.append(f"[{datetime.now().strftime('%H:%M:%S')}] 📱 Dashboard ready - Monitoring system...")
+            console_buffer.append(f"[{est_now()}] 📱 Dashboard ready - Monitoring system...")
 
         return jsonify({
             'console_lines': list(console_buffer),
@@ -997,7 +1024,7 @@ def get_console_output():
         logger.error(f"Console output API error: {e}")
         return jsonify({
             'error': str(e),
-            'console_lines': [f"[{datetime.now().strftime('%H:%M:%S')}] ❌ Console error: {str(e)}"],
+            'console_lines': [f"[{est_now()}] ❌ Console error: {str(e)}"],
             'success': False
         })
 
@@ -1284,7 +1311,7 @@ def get_network_approval_status(live_data):
 def get_market_signal_status():
     """Get enhanced market signal status with CoinMarketCap analysis"""
     try:
-        timestamp = datetime.now().strftime('%H:%M:%S')
+        timestamp = est_now()
 
         # Check if CoinMarketCap API key is available
         api_key = os.getenv('COINMARKETCAP_API_KEY')
@@ -1440,7 +1467,7 @@ def set_system_mode_api():
             return jsonify({'error': 'Invalid mode. Use "autonomous" or "manual"'}), 400
 
         system_mode = mode
-        console_buffer.append(f"[{datetime.now().strftime('%H:%M:%S')}] 🔄 System mode changed to: {mode}")
+        console_buffer.append(f"[{est_now()}] 🔄 System mode changed to: {mode}")
 
         return jsonify({
             'success': True,
@@ -1858,7 +1885,7 @@ def save_parameters():
 def check_debt_swap_conditions(health_factor, available_borrows, total_debt):
     """Check and log debt swap conditions with enhanced monitoring"""
     try:
-        timestamp = datetime.now().strftime('%H:%M:%S')
+        timestamp = est_now()
 
         # Check debt swap triggers
         debt_ratio = (total_debt / (total_debt + available_borrows)) if (total_debt + available_borrows) > 0 else 0
@@ -1911,12 +1938,12 @@ def check_debt_swap_conditions(health_factor, available_borrows, total_debt):
 
     except Exception as e:
         logger.error(f"Error in check_debt_swap_conditions: {e}")
-        return f"[{datetime.now().strftime('%H:%M:%S')}] ❌ DEBT SWAP: Condition check failed: {str(e)[:50]}"
+        return f"[{est_now()}] ❌ DEBT SWAP: Condition check failed: {str(e)[:50]}"
 
 def check_for_debt_swap_activity():
     """Check for recent debt swap activity and log execution"""
     try:
-        timestamp = datetime.now().strftime('%H:%M:%S')
+        timestamp = est_now()
         activity_logs = []
 
         # Check performance log for debt swap operations
@@ -1983,13 +2010,13 @@ def check_for_debt_swap_activity():
 
     except Exception as e:
         logger.error(f"Error in check_for_debt_swap_activity: {e}")
-        return [f"[{datetime.now().strftime('%H:%M:%S')}] ❌ DEBT SWAP: Activity check failed | {str(e)[:40]}"]
+        return [f"[{est_now()}] ❌ DEBT SWAP: Activity check failed | {str(e)[:40]}"]
 
 def check_market_signals():
     """Check current market signals for debt swapping with real-time analysis"""
     global agent
     try:
-        timestamp = datetime.now().strftime('%H:%M:%S')
+        timestamp = est_now()
 
         # Check if market signal strategy is enabled
         market_enabled = os.getenv('MARKET_SIGNAL_ENABLED', 'false').lower() == 'true'
