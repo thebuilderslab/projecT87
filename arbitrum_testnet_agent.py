@@ -604,7 +604,7 @@ class ArbitrumTestnetAgent:
 
         # Capacity-Based System Configuration
         self.capacity_min_capacity = 7.0  # $7 minimum available capacity for capacity path
-        self.capacity_health_factor_threshold = 2.90  # Conservative USDC mode: Capacity min HF
+        self.capacity_health_factor_threshold = 2.50  # Conservative USDC mode: Capacity min HF
         self.target_health_factor = 3.10  # Conservative USDC mode: target HF
 
         # Display Hybrid System Configuration
@@ -1677,7 +1677,7 @@ class ArbitrumTestnetAgent:
                 base_rate += 15
             elif health_factor > 2.0:
                 base_rate += 5
-            elif health_factor < 2.90:
+            elif health_factor < 2.50:
                 base_rate -= 30
 
             # Adjust for network congestion
@@ -2233,7 +2233,7 @@ class ArbitrumTestnetAgent:
         Check if capacity-based operation should execute.
         
         PRIORITY 2 (checked only if growth trigger did NOT fire):
-        - Health factor >= 2.90
+        - Health factor >= 2.50
         - Available capacity >= $8.20
         """
         try:
@@ -2417,8 +2417,14 @@ class ArbitrumTestnetAgent:
                 print(f"✅ Borrowed {borrowed:.4f} DAI (balance: {dai_balance_before:.4f} -> {dai_balance_after:.4f})")
 
                 if borrowed < borrow_amount * 0.5:
-                    print(f"❌ Received too little DAI: {borrowed:.4f} vs expected {borrow_amount:.2f}")
-                    return False
+                    print(f"⚠️ Balance delta low: {borrowed:.4f} vs expected {borrow_amount:.2f} (may be stale RPC after Nurse sweep)")
+                    time.sleep(3)
+                    dai_balance_recheck = self.get_dai_balance()
+                    if dai_balance_recheck < borrow_amount * 0.8:
+                        print(f"❌ DAI balance still too low after recheck: {dai_balance_recheck:.4f}")
+                        return False
+                    else:
+                        print(f"✅ DAI balance confirmed on recheck: {dai_balance_recheck:.4f} — proceeding")
 
                 self.save_execution_state("borrowed", path_name, dist_serializable)
             else:
@@ -3994,7 +4000,7 @@ class ArbitrumTestnetAgent:
                 "executed_this_cycle": executed,
                 "performance_score": performance,
                 "system_phase": "EXECUTING" if executed else "MONITORING",
-                "hf_status": "HEALTHY" if health_factor > 3.10 else "CAUTION" if health_factor >= 2.90 else "EMERGENCY",
+                "hf_status": "HEALTHY" if health_factor > 3.10 else "CAUTION" if health_factor >= 2.50 else "EMERGENCY",
                 "growth_cooldown_remaining": max(0, self.operation_cooldown_seconds - (time.time() - self.last_successful_operation_time)) if self.last_successful_operation_time > 0 else 0,
                 "ls_cooldown_remaining": 0,
                 "liability_short": {},
@@ -4231,7 +4237,7 @@ class ArbitrumTestnetAgent:
 
                 print(f"📊 Position: Collateral ${total_collateral:.2f} | Baseline ${self.last_collateral_value_usd:.2f} | HF {health_factor:.3f} | Available ${available_borrows:.2f}")
 
-                if health_factor < 2.90:
+                if health_factor < 2.50:
                     action = "EMERGENCY"
                     status = "CRITICAL"
                     performance_score *= 0.1
@@ -4464,8 +4470,8 @@ class ArbitrumTestnetAgent:
                     account_data = self.aave.get_user_account_data()
                     if account_data:
                         health_factor = account_data.get('healthFactor', 0)
-                        if health_factor < 2.90:
-                            return False, f"Health factor too low: {health_factor:.3f} (need >2.90)"
+                        if health_factor < 2.50:
+                            return False, f"Health factor too low: {health_factor:.3f} (need >2.50)"
                     else:
                         return False, "Cannot retrieve account data"
                 except Exception as hf_error:
@@ -4657,8 +4663,8 @@ class ArbitrumTestnetAgent:
                     account_data = self.aave.get_user_account_data()
                     if account_data:
                         health_factor = account_data.get('healthFactor', 0)
-                        if health_factor < 2.90:
-                            return False, f"Health factor too low: {health_factor:.3f} (need >2.90)"
+                        if health_factor < 2.50:
+                            return False, f"Health factor too low: {health_factor:.3f} (need >2.50)"
                     else:
                         return False, "Cannot retrieve account data"
                 except Exception as hf_error:

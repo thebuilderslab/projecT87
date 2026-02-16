@@ -18,7 +18,7 @@ class UniswapIntegration:
 
         if chain_id == 42161:  # Arbitrum Mainnet
             print(f"🌐 Initializing Uniswap for Arbitrum Mainnet (Chain ID: {chain_id})")
-            self.router_address = self.w3.to_checksum_address("0x68b3465833fb72A70ecDF485E0e4C7bD8665Fc45")  # SwapRouter02
+            self.router_address = self.w3.to_checksum_address("0xE592427A0AEce92De3Edee1F18E0157C05861564")  # SwapRouter (original V3)
             self.factory_address = self.w3.to_checksum_address("0x1F98431c8aD98523631AE4a59f267346ea31F984")  # V3 Factory
             self.quoter_address = self.w3.to_checksum_address("0xb27308f9F90D607463bb33eA1BeBb41C27CE5AB6")   # Quoter V2
 
@@ -51,7 +51,7 @@ class UniswapIntegration:
         print(f"🔄 Uniswap V3 integration initialized")
 
     def _get_router_abi(self):
-        """Uniswap V3 SwapRouter02 ABI — deadline is NOT in the struct (handled separately)"""
+        """Uniswap V3 SwapRouter (original) ABI — deadline IS in the struct"""
         return [
             {
                 "inputs": [
@@ -61,11 +61,12 @@ class UniswapIntegration:
                             {"internalType": "address", "name": "tokenOut", "type": "address"},
                             {"internalType": "uint24", "name": "fee", "type": "uint24"},
                             {"internalType": "address", "name": "recipient", "type": "address"},
+                            {"internalType": "uint256", "name": "deadline", "type": "uint256"},
                             {"internalType": "uint256", "name": "amountIn", "type": "uint256"},
                             {"internalType": "uint256", "name": "amountOutMinimum", "type": "uint256"},
                             {"internalType": "uint160", "name": "sqrtPriceLimitX96", "type": "uint160"}
                         ],
-                        "internalType": "struct IV3SwapRouter.ExactInputSingleParams",
+                        "internalType": "struct ISwapRouter.ExactInputSingleParams",
                         "name": "params",
                         "type": "tuple"
                     }
@@ -81,26 +82,17 @@ class UniswapIntegration:
                         "components": [
                             {"internalType": "bytes", "name": "path", "type": "bytes"},
                             {"internalType": "address", "name": "recipient", "type": "address"},
+                            {"internalType": "uint256", "name": "deadline", "type": "uint256"},
                             {"internalType": "uint256", "name": "amountIn", "type": "uint256"},
                             {"internalType": "uint256", "name": "amountOutMinimum", "type": "uint256"}
                         ],
-                        "internalType": "struct IV3SwapRouter.ExactInputParams",
+                        "internalType": "struct ISwapRouter.ExactInputParams",
                         "name": "params",
                         "type": "tuple"
                     }
                 ],
                 "name": "exactInput",
                 "outputs": [{"internalType": "uint256", "name": "amountOut", "type": "uint256"}],
-                "stateMutability": "payable",
-                "type": "function"
-            },
-            {
-                "inputs": [
-                    {"internalType": "uint256", "name": "deadline", "type": "uint256"},
-                    {"internalType": "bytes[]", "name": "data", "type": "bytes[]"}
-                ],
-                "name": "multicall",
-                "outputs": [{"internalType": "bytes[]", "name": "", "type": "bytes[]"}],
                 "stateMutability": "payable",
                 "type": "function"
             }
@@ -346,6 +338,7 @@ class UniswapIntegration:
                     'tokenOut': self.w3.to_checksum_address(token_out),
                     'fee': fee,
                     'recipient': self.w3.to_checksum_address(self.address),
+                    'deadline': int(time.time()) + 600,
                     'amountIn': amount_in_wei,
                     'amountOutMinimum': min_output,
                     'sqrtPriceLimitX96': 0
@@ -622,6 +615,7 @@ class UniswapIntegration:
             swap_params = {
                 'path': path_bytes,
                 'recipient': self.w3.to_checksum_address(self.address),
+                'deadline': int(time.time()) + 600,
                 'amountIn': amount_in_wei,
                 'amountOutMinimum': 1
             }
@@ -730,8 +724,10 @@ class UniswapIntegration:
             return False
 
     def swap_dai_for_usdc(self, dai_amount):
-        """Swap DAI for USDC on Uniswap V3 — direct single-hop stablecoin swap.
-        Tries fee tiers: 100 (0.01%), 500 (0.05%), 3000 (0.3%)
+        """Swap DAI for USDC via FORCED multi-hop: DAI → WETH → USDC.
+        Direct DAI→USDC pools have no liquidity on Arbitrum (bridged DAI vs native USDC).
+        Both legs use fee tier 500 (0.05%) where deep liquidity exists.
+        Slippage: 0.5% for multi-hop safety.
         """
         try:
             usdc_address = self.w3.to_checksum_address("0xaf88d065e77c8cC2239327C5EDb3A432268e5831")
@@ -742,93 +738,89 @@ class UniswapIntegration:
 
             amount_in_wei = int(dai_amount * 1e18)
 
-            print(f"🔐 Pre-approving DAI for Uniswap Router before swap...")
+            print(f"🔄 MULTI-HOP: Swapping {dai_amount:.6f} DAI → WETH → USDC")
+            print(f"   Route: DAI -[500]→ WETH -[500]→ USDC (forced multi-hop)")
+
             if not self._ensure_token_approval_for_router(self.dai_address, amount_in_wei):
                 print("❌ DAI approval for Router failed — cannot swap")
                 return False
 
+            tokens = [
+                self.w3.to_checksum_address(self.dai_address),
+                self.w3.to_checksum_address(self.weth_address),
+                usdc_address
+            ]
+            fees = [500, 500]
+
+            path_bytes = self._encode_path(tokens, fees)
+            self._audit_path(path_bytes, ["DAI", "WETH", "USDC"], fees)
+
             usdc_decimals = 6
             expected_usdc_out = dai_amount * (10 ** usdc_decimals)
-            min_output = max(1, int(expected_usdc_out * 0.95))
+            min_output = max(1, int(expected_usdc_out * 0.995))
 
-            fee_tiers = [100, 500, 3000]
+            chain_id = self.w3.eth.chain_id
+            nonce = self.w3.eth.get_transaction_count(self.address, 'pending')
+            base_gas_price = self.w3.eth.gas_price
+            swap_gas_price = int(base_gas_price * 2.5) if chain_id == 42161 else int(base_gas_price * 1.5)
 
-            for fee in fee_tiers:
-                print(f"\n🔄 Trying DAI → USDC direct swap (fee tier {fee})...")
+            swap_params = {
+                'path': path_bytes,
+                'recipient': self.w3.to_checksum_address(self.address),
+                'deadline': int(time.time()) + 600,
+                'amountIn': amount_in_wei,
+                'amountOutMinimum': min_output
+            }
 
-                quote = self._get_fresh_quote(self.dai_address, usdc_address, fee, amount_in_wei)
-                if quote > 0:
-                    min_output = max(1, int(quote * 0.95))
-                    print(f"📊 Quote: {quote} USDC-wei, min output (5% slippage): {min_output}")
+            swap_tx = self.router_contract.functions.exactInput(
+                swap_params
+            ).build_transaction({
+                'chainId': chain_id,
+                'gas': 600000,
+                'gasPrice': swap_gas_price,
+                'nonce': nonce,
+                'value': 0
+            })
 
-                swap_params = {
-                    'tokenIn': self.w3.to_checksum_address(self.dai_address),
-                    'tokenOut': usdc_address,
-                    'fee': fee,
-                    'recipient': self.w3.to_checksum_address(self.address),
-                    'amountIn': amount_in_wei,
-                    'amountOutMinimum': min_output,
-                    'sqrtPriceLimitX96': 0
+            print(f"⛽ Gas price: {self.w3.from_wei(swap_gas_price, 'gwei'):.4f} gwei (2.5x buffer)")
+
+            try:
+                estimated_gas = self.w3.eth.estimate_gas(swap_tx)
+                swap_tx['gas'] = min(int(estimated_gas * 1.8), 800000)
+                print(f"💰 Gas estimate: {estimated_gas} → using {swap_tx['gas']}")
+            except Exception as gas_err:
+                err_str = str(gas_err)
+                if 'STF' in err_str or 'execution reverted' in err_str.lower():
+                    print(f"❌ Multi-hop route unavailable: {err_str}")
+                    return False
+                print(f"⚠️ Gas estimation failed: {gas_err}, using fallback 600000")
+
+            fresh_nonce = self.w3.eth.get_transaction_count(self.address, 'pending')
+            swap_tx['nonce'] = fresh_nonce
+
+            signed_swap = self.w3.eth.account.sign_transaction(swap_tx, self.account.key)
+            tx_hash = self.w3.eth.send_raw_transaction(signed_swap.rawTransaction)
+            tx_hash_hex = tx_hash.hex()
+            print(f"✅ DAI→WETH→USDC swap sent: {tx_hash_hex}")
+
+            receipt = self.w3.eth.wait_for_transaction_receipt(tx_hash, timeout=120)
+            if receipt.status == 1:
+                print(f"✅ DAI→WETH→USDC swap confirmed on-chain!")
+                return {
+                    'success': True,
+                    'tx_hash': tx_hash_hex,
+                    'amount_in': dai_amount,
+                    'token_in': 'DAI',
+                    'token_out': 'USDC'
                 }
-
-                chain_id = self.w3.eth.chain_id
-                nonce = self.w3.eth.get_transaction_count(self.address, 'pending')
-                base_gas_price = self.w3.eth.gas_price
-                swap_gas_price = int(base_gas_price * 2.5) if chain_id == 42161 else int(base_gas_price * 1.5)
-
-                try:
-                    swap_tx = self.router_contract.functions.exactInputSingle(
-                        swap_params
-                    ).build_transaction({
-                        'chainId': chain_id,
-                        'gas': 500000,
-                        'gasPrice': swap_gas_price,
-                        'nonce': nonce,
-                        'value': 0
-                    })
-
-                    try:
-                        estimated_gas = self.w3.eth.estimate_gas(swap_tx)
-                        swap_tx['gas'] = min(int(estimated_gas * 1.8), 800000)
-                        print(f"💰 Gas estimate: {estimated_gas} → using {swap_tx['gas']}")
-                    except Exception as gas_err:
-                        err_str = str(gas_err)
-                        if 'STF' in err_str or 'execution reverted' in err_str.lower():
-                            print(f"⚠️ Fee tier {fee} pool unavailable: {err_str}")
-                            continue
-                        print(f"⚠️ Gas estimation failed: {gas_err}, using fallback 500000")
-
-                    fresh_nonce = self.w3.eth.get_transaction_count(self.address, 'pending')
-                    swap_tx['nonce'] = fresh_nonce
-
-                    signed_swap = self.w3.eth.account.sign_transaction(swap_tx, self.account.key)
-                    tx_hash = self.w3.eth.send_raw_transaction(signed_swap.rawTransaction)
-                    tx_hash_hex = tx_hash.hex()
-                    print(f"✅ DAI→USDC swap sent: {tx_hash_hex}")
-
-                    receipt = self.w3.eth.wait_for_transaction_receipt(tx_hash, timeout=120)
-                    if receipt.status == 1:
-                        print(f"✅ DAI→USDC swap confirmed on-chain!")
-                        return {
-                            'success': True,
-                            'tx_hash': tx_hash_hex,
-                            'amount_in': dai_amount,
-                            'token_in': 'DAI',
-                            'token_out': 'USDC'
-                        }
-                    else:
-                        print(f"❌ DAI→USDC swap reverted on-chain (fee tier {fee})")
-                        continue
-
-                except Exception as swap_err:
-                    print(f"⚠️ Fee tier {fee} swap failed: {swap_err}")
-                    continue
-
-            print("❌ All DAI→USDC fee tiers exhausted (100, 500, 3000)")
-            return False
+            else:
+                print(f"❌ DAI→WETH→USDC swap reverted on-chain")
+                return False
 
         except Exception as e:
-            print(f"❌ DAI to USDC swap failed: {e}")
+            print(f"❌ DAI→WETH→USDC swap failed: {e}")
+            import traceback
+            traceback.print_exc()
             return False
 
     def swap_dai_for_weth(self, dai_amount):
