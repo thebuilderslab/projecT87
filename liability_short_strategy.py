@@ -5,10 +5,10 @@ Liability Short Strategy — Phase 2: Target Profit Engine
 PROFIT-FIRST SYSTEM: Works backwards from a target profit to determine
 the exact ETH price drop needed before entering a short position.
 
-FLOW (Round Trip):
-  Step A (Setup):  Trigger fires → Borrow WETH → Swap to DAI → Supply DAI to Aave
+FLOW (Round Trip — USDT Collateral):
+  Step A (Setup):  Trigger fires → Borrow WETH → Swap to USDT → Supply USDT to Aave
   Step B (Hunt):   Poll every 15s → Wait for target_price OR stop-loss
-  Step C (Close):  Withdraw DAI → Swap to ETH (cheaper) → Repay loan → Distribute profit
+  Step C (Close):  Withdraw USDT → Swap to WETH (cheaper) → Repay loan → Distribute profit
 
 REVERSE CALCULATOR:
   Goal: "I need $10.00 profit"
@@ -82,10 +82,10 @@ POLLING_INTERVALS = {
 
 PHASE2_STEP_ORDER = [
     "weth_borrowed",
-    "dai_swapped",
-    "dai_supplied_as_collateral",
+    "usdt_swapped",
+    "usdt_supplied_as_collateral",
     "short_active",
-    "dai_withdrawn",
+    "usdt_withdrawn",
     "eth_repurchased",
     "loan_repaid",
     "profit_distributed",
@@ -342,7 +342,7 @@ class LiabilityShortStrategy:
             "target_profit_usd": calc.get('target_profit_usd'),
             "required_drop_pct": calc.get('required_drop_pct'),
             "total_costs": calc.get('total_costs'),
-            "dai_collateral_amount": 0,
+            "dai_collateral_amount": 0,  # Legacy field name — stores USDT collateral amount
             "weth_borrowed_amount": 0,
             "opened_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             "opened_timestamp": time.time(),

@@ -88,6 +88,12 @@ RETRY_DELAY = 2
 REQUEST_TIMEOUT = 10
 PRICE_CACHE_DURATION = 300
 
+# USDT Collateral — used as collateral in Liability Short (replaces DAI collateral)
+USDT_ADDRESS = "0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9"
+USDT_DECIMALS = 6
+DAI_DECIMALS = 18
+WETH_DECIMALS = 18
+
 # USDC Whitelist — Nurse/restore_health must NEVER sweep USDC (sent to WALLET_B)
 USDC_WHITELIST = True
 

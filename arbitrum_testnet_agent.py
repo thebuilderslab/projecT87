@@ -494,6 +494,7 @@ class ArbitrumTestnetAgent:
             self.wbtc_address = self.w3.to_checksum_address("0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f")
             self.dai_address = self.w3.to_checksum_address("0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1")
             self.usdc_address = self.w3.to_checksum_address("0xaf88d065e77c8cC2239327C5EDb3A432268e5831")
+            self.usdt_address = self.w3.to_checksum_address("0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9")
             self.arb_address = "0x912CE59144191C1204E64559FE8253a0e49E6548"
             self.aave_pool_address = "0x794a61358D6845594F94dc1DB02A252b5b4814aD"
 
@@ -507,6 +508,7 @@ class ArbitrumTestnetAgent:
             print(f"   WBTC: {self.wbtc_address}")
             print(f"   WETH: {self.weth_address}")
             print(f"   USDC: {self.usdc_address}")
+            print(f"   USDT: {self.usdt_address}")
             print(f"   Aave Pool: {self.aave_pool_address}")
         else:
             # Testnet mode (Arbitrum Sepolia)
@@ -738,8 +740,8 @@ class ArbitrumTestnetAgent:
             self.PROFIT_TARGETS = PROFIT_TARGETS
             self.LIABILITY_SHORT_STEP_ORDER = [
                 "weth_borrowed",
-                "dai_swapped",
-                "dai_supplied_as_collateral",
+                "usdt_swapped",
+                "usdt_supplied_as_collateral",
                 "short_active",
             ]
             print("✅ Liability Short Strategy initialized")
@@ -2692,9 +2694,8 @@ class ArbitrumTestnetAgent:
 
     def _execute_liability_short_entry(self, tier, short_size_usd, health_factor, total_collateral):
         """
-        Phase 2 Liability Short Entry - "Round Trip" model
-        Step A: Borrow WETH -> Swap ALL to DAI -> Supply DAI to Aave (hold as collateral)
-        No scatter distribution, no debt swap. Pure short position.
+        Phase 2 Liability Short Entry - "Round Trip" model (USDT Collateral)
+        Step A: Borrow WETH -> Swap WETH to USDT (direct pool) -> Supply USDT to Aave as collateral
         """
         if not self.liability_short_strategy:
             print("Liability Short Strategy not initialized")
@@ -2715,10 +2716,11 @@ class ArbitrumTestnetAgent:
             weth_to_borrow = short_size_usd / eth_price
 
             print(f"\n{'='*60}")
-            print(f"PHASE 2 SHORT ENTRY ({tier.upper()}) - TARGET PROFIT ENGINE")
+            print(f"PHASE 2 SHORT ENTRY ({tier.upper()}) - USDT COLLATERAL")
             print(f"{'='*60}")
             print(f"   ETH Price:      ${eth_price:.2f}")
             print(f"   WETH Borrow:    {weth_to_borrow:.8f} (${short_size_usd:.2f})")
+            print(f"   Collateral:     USDT (6 decimals)")
             print(f"   Target Price:   ${target_price:.2f} (-{calc['required_drop_pct']:.2f}%)")
             print(f"   Stop Loss:      ${calc['stop_loss_price']:.2f} (+1.5%)")
             print(f"   Target Profit:  ${self.PROFIT_TARGETS['total']:.2f}")
@@ -2747,33 +2749,33 @@ class ArbitrumTestnetAgent:
 
             self.save_execution_state("weth_borrowed", path_name, {"tier": tier, "eth_price": eth_price, "weth_borrowed": weth_to_borrow})
 
-            print(f"\nSTEP 2: Swapping {weth_received:.8f} WETH -> DAI (locking in ${short_size_usd:.2f} value)...")
-            dai_before = self.get_dai_balance()
-            swap_result = self.uniswap.swap_weth_for_dai(weth_received)
+            print(f"\nSTEP 2: Swapping {weth_received:.8f} WETH -> USDT (locking in ${short_size_usd:.2f} value)...")
+            usdt_before = self.get_usdt_balance()
+            swap_result = self.uniswap.swap_weth_for_usdt(weth_received)
             if not swap_result or 'tx_hash' not in swap_result:
-                print("WETH->DAI swap failed - WETH remains in wallet")
+                print("WETH->USDT swap failed - WETH remains in wallet")
                 return False
 
             time.sleep(5)
-            dai_after = self.get_dai_balance()
-            dai_received = dai_after - dai_before
-            print(f"Received {dai_received:.4f} DAI from swap")
-            self.save_execution_state("dai_swapped", path_name, {"tier": tier, "dai_received": dai_received})
+            usdt_after = self.get_usdt_balance()
+            usdt_received = usdt_after - usdt_before
+            print(f"Received {usdt_received:.6f} USDT from swap")
+            self.save_execution_state("usdt_swapped", path_name, {"tier": tier, "usdt_received": usdt_received})
 
-            if dai_received < 1.0:
-                print(f"DAI received too low: {dai_received:.4f}")
+            if usdt_received < 1.0:
+                print(f"USDT received too low: {usdt_received:.6f}")
                 return False
 
-            print(f"\nSTEP 3: Supplying {dai_received:.4f} DAI to Aave as collateral...")
-            if self._resupply_dai_to_aave(dai_received * 0.99):
-                print(f"DAI collateral locked in Aave")
+            print(f"\nSTEP 3: Supplying {usdt_received:.6f} USDT to Aave as collateral...")
+            if self._resupply_usdt_to_aave(usdt_received * 0.99):
+                print(f"USDT collateral locked in Aave")
             else:
-                print(f"DAI supply failed - DAI remains in wallet (still protected)")
+                print(f"USDT supply failed - USDT remains in wallet (still protected)")
 
-            self.save_execution_state("dai_supplied_as_collateral", path_name, {"tier": tier})
+            self.save_execution_state("usdt_supplied_as_collateral", path_name, {"tier": tier})
 
             self.liability_short_strategy.open_position(tier, eth_price, short_size_usd, calc)
-            self.liability_short_strategy.update_position_amounts(dai_received, weth_to_borrow)
+            self.liability_short_strategy.update_position_amounts(usdt_received, weth_to_borrow)
 
             self.save_execution_state("short_active", path_name, {"tier": tier})
             self.clear_execution_state()
@@ -2781,7 +2783,7 @@ class ArbitrumTestnetAgent:
 
             print(f"\n{'='*60}")
             print(f"SHORT POSITION OPENED - NOW HUNTING")
-            print(f"   Waiting for ETH to drop to ${target_price:.2f}")
+            print(f"   USDT collateral locked | Waiting for ETH drop to ${target_price:.2f}")
             print(f"   Polling every 15s in Hunter Mode")
             print(f"{'='*60}\n")
 
@@ -2800,8 +2802,8 @@ class ArbitrumTestnetAgent:
 
     def _execute_liability_short_close(self, close_reason="WIN"):
         """
-        Phase 2 Short Close - "Round Trip" completion
-        Step C: Withdraw DAI from Aave -> Swap to WETH -> Repay WETH loan -> Distribute profit
+        Phase 2 Short Close - "Round Trip" completion (USDT Collateral)
+        Step C: Withdraw USDT from Aave -> Swap USDT to WETH -> Repay WETH loan -> Distribute profit
         """
         if not self.liability_short_strategy:
             return False
@@ -2819,48 +2821,48 @@ class ArbitrumTestnetAgent:
 
             entry_price = active.get('entry_eth_price', 0)
             weth_borrowed = active.get('weth_borrowed_amount', 0)
-            dai_collateral = active.get('dai_collateral_amount', 0)
+            usdt_collateral = active.get('dai_collateral_amount', 0)
             change_pct = ((eth_price - entry_price) / entry_price) * 100 if entry_price > 0 else 0
 
             print(f"\n{'='*60}")
-            print(f"CLOSING SHORT - {close_reason}")
+            print(f"CLOSING SHORT - {close_reason} (USDT COLLATERAL)")
             print(f"{'='*60}")
-            print(f"   Entry ETH:      ${entry_price:.2f}")
-            print(f"   Current ETH:    ${eth_price:.2f} ({change_pct:+.1f}%)")
-            print(f"   DAI Collateral: {dai_collateral:.4f}")
-            print(f"   WETH Owed:      {weth_borrowed:.8f}")
+            print(f"   Entry ETH:       ${entry_price:.2f}")
+            print(f"   Current ETH:     ${eth_price:.2f} ({change_pct:+.1f}%)")
+            print(f"   USDT Collateral: {usdt_collateral:.6f}")
+            print(f"   WETH Owed:       {weth_borrowed:.8f}")
             print(f"{'='*60}\n")
 
-            print(f"STEP 1: Withdrawing DAI from Aave...")
-            withdraw_amount = dai_collateral if dai_collateral > 0 else self.get_dai_balance()
+            print(f"STEP 1: Withdrawing USDT from Aave...")
+            withdraw_amount = usdt_collateral if usdt_collateral > 0 else self.get_usdt_balance()
             if withdraw_amount < 1.0:
-                dai_wallet = self.get_dai_balance()
-                if dai_wallet < 1.0:
-                    print(f"No DAI available to close (collateral: {withdraw_amount:.4f}, wallet: {dai_wallet:.4f})")
-                    self.liability_short_strategy.close_position(eth_price, 0, f"{close_reason}_NO_DAI")
+                usdt_wallet = self.get_usdt_balance()
+                if usdt_wallet < 1.0:
+                    print(f"No USDT available to close (collateral: {withdraw_amount:.6f}, wallet: {usdt_wallet:.6f})")
+                    self.liability_short_strategy.close_position(eth_price, 0, f"{close_reason}_NO_USDT")
                     return False
                 withdraw_amount = 0
-                print(f"DAI already in wallet: {dai_wallet:.4f}")
+                print(f"USDT already in wallet: {usdt_wallet:.6f}")
             else:
-                tx_hash = self.aave.withdraw_dai_from_aave(withdraw_amount)
+                tx_hash = self.aave.withdraw_usdt_from_aave(withdraw_amount)
                 if not tx_hash:
-                    print(f"DAI withdrawal from Aave failed")
+                    print(f"USDT withdrawal from Aave failed")
                     return False
                 time.sleep(3)
-                print(f"Withdrew {withdraw_amount:.4f} DAI from Aave")
+                print(f"Withdrew {withdraw_amount:.6f} USDT from Aave")
 
-            dai_available = self.get_dai_balance()
-            print(f"   DAI in wallet: {dai_available:.4f}")
+            usdt_available = self.get_usdt_balance()
+            print(f"   USDT in wallet: {usdt_available:.6f}")
 
             weth_needed = weth_borrowed * 1.001
-            dai_for_repay = weth_needed * eth_price
+            usdt_for_repay = weth_needed * eth_price
 
-            print(f"\nSTEP 2: Swapping {dai_for_repay:.4f} DAI -> WETH (to repay {weth_needed:.8f} loan)...")
+            print(f"\nSTEP 2: Swapping {usdt_for_repay:.6f} USDT -> WETH (to repay {weth_needed:.8f} loan)...")
             weth_before = self.get_weth_balance()
-            swap_result = self.uniswap.swap_dai_for_weth(min(dai_for_repay, dai_available * 0.95))
+            swap_result = self.uniswap.swap_usdt_for_weth(min(usdt_for_repay, usdt_available * 0.95))
             if not swap_result or 'tx_hash' not in swap_result:
-                print(f"DAI->WETH swap failed - cannot repay loan")
-                print(f"   DAI remains in wallet for manual recovery")
+                print(f"USDT->WETH swap failed - cannot repay loan")
+                print(f"   USDT remains in wallet for manual recovery")
                 self.liability_short_strategy.close_position(eth_price, 0, f"{close_reason}_SWAP_FAILED")
                 return False
 
@@ -2880,44 +2882,28 @@ class ArbitrumTestnetAgent:
             time.sleep(3)
             print(f"WETH loan repaid")
 
-            remaining_dai = self.get_dai_balance()
+            remaining_usdt = self.get_usdt_balance()
             remaining_weth = self.get_weth_balance()
-            realized_profit_dai = remaining_dai
+            realized_profit_usdt = remaining_usdt
             realized_profit_weth_usd = remaining_weth * eth_price
-            total_realized = realized_profit_dai + realized_profit_weth_usd
+            total_realized = realized_profit_usdt + realized_profit_weth_usd
 
             print(f"\n{'='*60}")
             print(f"PROFIT CALCULATION")
             print(f"{'='*60}")
-            print(f"   Remaining DAI:  {remaining_dai:.4f} (${remaining_dai:.2f})")
+            print(f"   Remaining USDT: {remaining_usdt:.6f} (${remaining_usdt:.2f})")
             print(f"   Remaining WETH: {remaining_weth:.8f} (${realized_profit_weth_usd:.2f})")
             print(f"   Total Realized: ${total_realized:.2f}")
             print(f"   Target was:     ${self.PROFIT_TARGETS['total']:.2f}")
             print(f"{'='*60}\n")
 
             if total_realized >= self.PROFIT_TARGETS['total']:
-                print(f"PROFITABLE TRADE - Distributing...")
+                print(f"PROFITABLE TRADE - Recycling profit as collateral...")
+                print(f"   (Short profit recycled to strengthen Aave position)")
 
-                wallet_s_target = self.PROFIT_TARGETS['wallet_s']
-                wallet_b_target = self.PROFIT_TARGETS['wallet_b']
-
-                if remaining_dai >= wallet_s_target and self.wallet_s_address:
-                    print(f"   Sending ${wallet_s_target:.2f} DAI to WALLET_S...")
-                    self._transfer_dai_to_wallet_s(wallet_s_target)
-                    time.sleep(3)
-
-                if remaining_dai >= (wallet_s_target + wallet_b_target):
-                    usdc_tax_dai = wallet_b_target
-                    print(f"   Swapping ${usdc_tax_dai:.2f} DAI -> USDC -> WALLET_B...")
-                    if self._swap_dai_for_usdc(usdc_tax_dai):
-                        print(f"   USDC profit sent to accumulator")
-                    else:
-                        print(f"   USDC swap failed - DAI remains in wallet")
-
-                final_dai = self.get_dai_balance()
-                if final_dai >= 1.0:
-                    print(f"   Supplying ${final_dai:.2f} remaining DAI as Aave collateral...")
-                    self._resupply_dai_to_aave(final_dai * 0.95)
+                if remaining_usdt >= 1.0:
+                    print(f"   Supplying ${remaining_usdt:.2f} USDT profit as Aave collateral...")
+                    self._resupply_usdt_to_aave(remaining_usdt * 0.99)
 
                 if remaining_weth > 0.0001:
                     print(f"   Supplying {remaining_weth:.8f} remaining WETH to Aave...")
@@ -2926,13 +2912,13 @@ class ArbitrumTestnetAgent:
                 self.liability_short_strategy.close_position(eth_price, total_realized, close_reason)
                 if hasattr(self, '_log_yield_event'):
                     self._log_yield_event(total_realized, f"SHORT_{close_reason}", "")
-                print(f"\nSHORT CLOSED PROFITABLY: ${total_realized:.2f} realized")
+                print(f"\nSHORT CLOSED PROFITABLY: ${total_realized:.2f} realized → recycled as collateral")
             else:
                 print(f"Trade Breakeven/Loss. No Distribution.")
                 print(f"   Realized: ${total_realized:.2f} < Target: ${self.PROFIT_TARGETS['total']:.2f}")
 
-                if remaining_dai >= 1.0:
-                    self._resupply_dai_to_aave(remaining_dai * 0.95)
+                if remaining_usdt >= 1.0:
+                    self._resupply_usdt_to_aave(remaining_usdt * 0.95)
                 if remaining_weth > 0.0001:
                     self._supply_weth_to_aave(remaining_weth)
 
@@ -3219,6 +3205,8 @@ class ArbitrumTestnetAgent:
             tokens.append(("WBTC", self.wbtc_address, 8))
         if hasattr(self, 'usdc_address') and self.usdc_address:
             tokens.append(("USDC", self.usdc_address, 6))
+        if hasattr(self, 'usdt_address') and self.usdt_address:
+            tokens.append(("USDT", self.usdt_address, 6))
 
         spenders = []
         if hasattr(self, 'aave_pool_address') and self.aave_pool_address:
@@ -3586,11 +3574,11 @@ class ArbitrumTestnetAgent:
         return 0.0
 
     def _perform_safety_sweep(self):
-        """Nurse Mode Triage: Sweep COLLATERAL ONLY (DAI, WETH, WBTC) to Aave.
+        """Nurse Mode Triage: Sweep COLLATERAL ONLY (DAI, WETH, WBTC, USDT) to Aave.
         Rules:
           1. $2.00 HARD FLOOR — skip any token with USD value < $2.00 (stop burning gas on dust)
           2. NEVER touch USDC — profit token, user claims manually via Dashboard
-          3. Only sweep DAI, WETH, WBTC as collateral to Aave
+          3. Sweep DAI, WETH, WBTC, USDT as collateral to Aave
         """
         try:
             print("🚑 Nurse Mode Triage: Scanning wallet for collateral assets...")
@@ -3620,13 +3608,16 @@ class ArbitrumTestnetAgent:
             wbtc_balance = self.get_wbtc_balance()
             dai_balance = self.get_dai_balance()
             usdc_balance = self._get_usdc_balance()
+            usdt_balance = self.get_usdt_balance()
 
             weth_usd = weth_balance * eth_price
             wbtc_usd = wbtc_balance * btc_price
             dai_usd = dai_balance
+            usdt_usd = usdt_balance
 
             print(f"   WETH: {weth_balance:.8f} (${weth_usd:.2f}) | WBTC: {wbtc_balance:.8f} (${wbtc_usd:.2f})")
-            print(f"   DAI:  {dai_balance:.6f} (${dai_usd:.2f}) | ETH (gas): {eth_balance:.6f}")
+            print(f"   DAI:  {dai_balance:.6f} (${dai_usd:.2f}) | USDT: {usdt_balance:.6f} (${usdt_usd:.2f})")
+            print(f"   ETH (gas): {eth_balance:.6f}")
             if usdc_balance > 0:
                 print(f"   🛡️ USDC: {usdc_balance:.6f} — PROFIT TOKEN (user claims via Dashboard, NEVER swept)")
 
@@ -3673,6 +3664,16 @@ class ArbitrumTestnetAgent:
                 else:
                     print("   ⚠️ DAI supply failed")
 
+            if usdt_usd < HARD_FLOOR_USD:
+                if usdt_balance > 0:
+                    print(f"   ⏭️ USDT ${usdt_usd:.2f} below $2.00 floor — skipping (dust)")
+            else:
+                print(f"🚑 Nurse: Supplying ${usdt_usd:.2f} of USDT to Aave")
+                if self._resupply_usdt_to_aave(usdt_balance * 0.99):
+                    supplied_any = True
+                else:
+                    print("   ⚠️ USDT supply failed")
+
             if not supplied_any:
                 print("🚑 Nurse Mode: All collateral below $2.00 floor or wallet clean.")
             else:
@@ -3688,12 +3689,6 @@ class ArbitrumTestnetAgent:
     def _resupply_dai_to_aave(self, dai_amount):
         """
         Resupply DAI directly to Aave as collateral (no swap needed).
-        
-        Args:
-            dai_amount: Amount of DAI to supply
-            
-        Returns:
-            bool: True if supply succeeded, False otherwise
         """
         try:
             if not self.aave:
@@ -3702,7 +3697,6 @@ class ArbitrumTestnetAgent:
             
             print(f"🏦 Resupplying {dai_amount:.6f} DAI to Aave...")
             
-            # Use Aave integration to supply DAI
             supply_result = self.aave.supply_dai_to_aave(dai_amount)
             
             if supply_result:
@@ -3719,6 +3713,33 @@ class ArbitrumTestnetAgent:
                 
         except Exception as e:
             print(f"❌ DAI resupply error: {e}")
+            return False
+
+    def _resupply_usdt_to_aave(self, usdt_amount):
+        """Supply USDT directly to Aave as collateral (6 decimals)."""
+        try:
+            if not self.aave:
+                print("❌ Aave integration not available")
+                return False
+
+            print(f"🏦 Supplying {usdt_amount:.6f} USDT to Aave as collateral...")
+
+            supply_result = self.aave.supply_usdt_to_aave(usdt_amount)
+
+            if supply_result:
+                tx_str = str(supply_result)
+                print(f"✅ USDT supply completed")
+                if tx_str.startswith("0x"):
+                    print(f"   ✅ Success: https://arbiscan.io/tx/{tx_str}")
+                else:
+                    print(f"   TX: {tx_str}")
+                return True
+            else:
+                print("❌ USDT supply failed")
+                return False
+
+        except Exception as e:
+            print(f"❌ USDT supply error: {e}")
             return False
 
     def _execute_dai_to_wbtc_swap(self, dai_amount):
@@ -3868,6 +3889,19 @@ class ArbitrumTestnetAgent:
                 return 0.0
         except Exception as e:
             print(f"❌ Failed to get DAI balance: {e}")
+            return 0.0
+
+    def get_usdt_balance(self):
+        """Get USDT balance from wallet (6 decimals)."""
+        try:
+            if not hasattr(self, 'usdt_address') or not self.usdt_address:
+                return 0.0
+            erc20_abi = [{"inputs":[{"name":"account","type":"address"}],"name":"balanceOf","outputs":[{"name":"","type":"uint256"}],"stateMutability":"view","type":"function"}]
+            usdt_contract = self.w3.eth.contract(address=self.usdt_address, abi=erc20_abi)
+            raw_balance = usdt_contract.functions.balanceOf(self.address).call()
+            return raw_balance / 1e6
+        except Exception as e:
+            print(f"❌ Failed to get USDT balance: {e}")
             return 0.0
 
     def get_health_factor(self):

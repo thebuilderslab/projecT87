@@ -32,13 +32,14 @@ class AaveArbitrumIntegration:
             self.dai_address = "0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1"
             self.wbtc_address = "0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f"
             self.weth_address = "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1"
+            self.usdt_address = "0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9"
             self.arb_address = "0x912CE59144191C1204E64559FE8253a0e49E6548"
             self.pool_address = "0x794a61358D6845594F94dc1DB02A252b5b4814aD"
         else:
-            # Testnet addresses
             self.dai_address = "0x5f6bB460B6d0bdA2CCaDdd7A19B5F6E7b5b8E1DB"
             self.wbtc_address = "0xA2d460Bc966F6C4D5527a6ba35C6cB57c15c8F96"
             self.weth_address = "0x980B62Da83eFf3D4576C647993b0c1D7faf17c73"
+            self.usdt_address = None
             self.arb_address = "0x1b20e6a3B2a86618C32A37ffcD5E98C0d20a6E42"
             self.pool_address = "0x18cd499E3d7ed42FebA981ac9236A278E4Cdc2ee"
 
@@ -491,14 +492,17 @@ class AaveArbitrumIntegration:
 
             # Determine decimals and convert amount
             if token_address == self.dai_address:
-                amount_wei = int(amount * 10**18)  # DAI has 18 decimals
+                amount_wei = int(amount * 10**18)
                 token_name = "DAI"
             elif token_address == self.wbtc_address:
-                amount_wei = int(amount * 10**8)   # WBTC has 8 decimals
+                amount_wei = int(amount * 10**8)
                 token_name = "WBTC"
             elif token_address == self.weth_address:
-                amount_wei = int(amount * 10**18)  # WETH has 18 decimals
+                amount_wei = int(amount * 10**18)
                 token_name = "WETH"
+            elif hasattr(self, 'usdt_address') and self.usdt_address and token_address.lower() == self.usdt_address.lower():
+                amount_wei = int(amount * 10**6)
+                token_name = "USDT"
             else:
                 raise ValueError(f"Unsupported token for supply: {token_address}")
 
@@ -702,13 +706,15 @@ class AaveArbitrumIntegration:
 
                     # Convert based on token decimals with None protection
                     if token_address == self.dai_address:
-                        result = float(balance_wei) / (10**18)  # DAI has 18 decimals
+                        result = float(balance_wei) / (10**18)
                     elif token_address == self.wbtc_address:
-                        result = float(balance_wei) / (10**8)   # WBTC has 8 decimals
+                        result = float(balance_wei) / (10**8)
                     elif token_address == self.weth_address:
-                        result = float(balance_wei) / (10**18)  # WETH has 18 decimals
+                        result = float(balance_wei) / (10**18)
+                    elif hasattr(self, 'usdt_address') and self.usdt_address and token_address.lower() == self.usdt_address.lower():
+                        result = float(balance_wei) / (10**6)
                     else:
-                        result = float(balance_wei) / (10**18)  # Default to 18 decimals
+                        result = float(balance_wei) / (10**18)
 
                     # Ensure result is not None or NaN
                     if result is None or (isinstance(result, float) and (result != result)):  # NaN check
@@ -849,11 +855,13 @@ class AaveArbitrumIntegration:
         """Withdraw tokens from Aave"""
         try:
             if token_address == self.dai_address:
-                amount_wei = int(amount * 10**18)  # DAI has 18 decimals
+                amount_wei = int(amount * 10**18)
             elif token_address == self.wbtc_address:
-                amount_wei = int(amount * 10**8)   # WBTC has 8 decimals
+                amount_wei = int(amount * 10**8)
             elif token_address == self.weth_address:
-                amount_wei = int(amount * 10**18)  # WETH has 18 decimals
+                amount_wei = int(amount * 10**18)
+            elif hasattr(self, 'usdt_address') and self.usdt_address and token_address.lower() == self.usdt_address.lower():
+                amount_wei = int(amount * 10**6)
             else:
                 raise ValueError("Unsupported token for withdrawal")
 
@@ -883,6 +891,29 @@ class AaveArbitrumIntegration:
     def withdraw_dai_from_aave(self, amount):
         """Withdraw DAI from Aave - DAI compliance method"""
         return self.withdraw_from_aave(self.dai_address, amount)
+
+    def supply_usdt_to_aave(self, amount):
+        """Supply USDT to Aave and enable as collateral"""
+        if not hasattr(self, 'usdt_address') or not self.usdt_address:
+            print("USDT address not configured")
+            return False
+        result = self.supply_to_aave(self.usdt_address, amount)
+        if result:
+            self.enable_collateral(self.usdt_address, "USDT")
+        return result
+
+    def withdraw_usdt_from_aave(self, amount):
+        """Withdraw USDT from Aave"""
+        if not hasattr(self, 'usdt_address') or not self.usdt_address:
+            print("USDT address not configured")
+            return False
+        return self.withdraw_from_aave(self.usdt_address, amount)
+
+    def get_usdt_balance(self):
+        """Get USDT wallet balance (6 decimals)"""
+        if not hasattr(self, 'usdt_address') or not self.usdt_address:
+            return 0.0
+        return self.get_token_balance(self.usdt_address)
 
     def repay_dai(self, amount):
         """Repay DAI debt to Aave"""

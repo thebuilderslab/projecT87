@@ -27,10 +27,10 @@ Conservative Health Factor (HF) thresholds are maintained for different operatio
 - Macro (Liability Short): 3.05
 - Micro (Liability Short): 3.00
 - Capacity/Emergency: 2.90
-A "Nurse Mode" (`_perform_safety_sweep()`) sweeps collateral (DAI, WETH, WBTC) to Aave when necessary, with a $2.00 USD hard floor to prevent gas waste on dust amounts. USDC is explicitly excluded from sweeping.
+A "Nurse Mode" (`_perform_safety_sweep()`) sweeps collateral (DAI, WETH, WBTC, USDT) to Aave when necessary, with a $2.00 USD hard floor to prevent gas waste on dust amounts. USDC is explicitly excluded from sweeping.
 
-### Liability Short Strategy
-This strategy aims to hedge against market downturns by shorting ETH debt. It has two entry points (Macro and Micro) based on collateral drop and health factor. It involves borrowing WETH, distributing it, and then swapping DAI debt for WETH debt using a `BidirectionalDebtSwapper`. An exit trigger is defined for when ETH recovers.
+### Liability Short Strategy (USDT Collateral — Phase 2 Refactor)
+This strategy hedges against market downturns by shorting ETH debt. It has two entry points (Macro and Micro) based on collateral drop and health factor. The flow uses USDT as collateral (6 decimals): Borrow WETH → Swap WETH→USDT (direct pool) → Supply USDT to Aave. On close: Withdraw USDT → Swap USDT→WETH → Repay WETH loan → Distribute profit. USDT replaced DAI as the short collateral token for better stablecoin liquidity on Arbitrum.
 
 ### Execution Control and Recovery
 A global execution lock (`is_transacting`) with a 130s cooldown prevents double-borrowing. For robustness, the system uses `execution_state.json` to persist state after each on-chain step, enabling crash recovery. Upon startup, the agent checks for interrupted sequences and resumes from the last incomplete step. A "Proportional Recovery" mechanism handles scenarios where insufficient DAI remains for all steps, scaling down operations and prioritizing critical transfers. Steps are executed non-blockingly, allowing subsequent steps to proceed even if a swap fails.
@@ -42,7 +42,7 @@ The system supports a "Delegation Mode" where it can operate on behalf of a user
 A web-based dashboard on port 5000 provides a "5-Zone Command Center" with a psychology-first UI. It displays safety ratings, active wealth, defensive guardrails (Liability Short targets), engine room metrics (cooldowns, capacity), and an "Intelligence Feed" with jargon translation. A traffic light system visually indicates health factor status. The dashboard's API (`/api/command-center`) refreshes data every 5 seconds.
 
 ### Technical Implementations
-- **Token Approvals**: On startup, `_force_approve_all_tokens()` checks and sets infinite approvals for DAI, WETH, WBTC, and USDC with Aave Pool and Uniswap Router to prevent transaction failures.
+- **Token Approvals**: On startup, `_force_approve_all_tokens()` checks and sets infinite approvals for DAI, WETH, WBTC, USDC, and USDT with Aave Pool and Uniswap Router to prevent transaction failures.
 - **Price Oracles**: Primary price source is AaveOracle, with CoinMarketCap API as a fallback.
 - **Swap Routing**: Uniswap V3 is used for swaps. Specifically, DAI→USDC swaps are forced through a DAI→WETH→USDC multi-hop route due to lack of direct liquidity.
 - **Profit Accumulation**: USDC collected via the tax accumulates in the agent's wallet until a $22 target is reached, then it is automatically flushed to WALLET_B. A `yield_history.json` tracks payouts.
@@ -66,4 +66,5 @@ A web-based dashboard on port 5000 provides a "5-Zone Command Center" with a psy
   - DAI: `0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1`
   - WETH: `0x82aF49447D8a07e3bd95BD0d56f35241523fBab1`
   - WBTC: `0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f`
+  - USDT: `0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9` (6 decimals — Liability Short collateral)
   - WETH Variable Debt Token: `0x0c84331e39d6658Cd6e6b9ba04736cC4c4734351`
