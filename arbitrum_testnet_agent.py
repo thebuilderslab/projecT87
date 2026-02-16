@@ -530,9 +530,9 @@ class ArbitrumTestnetAgent:
         self.USDC_HARVEST_TARGET = 22.00
         self.GROWTH_DISTRIBUTION = {
             'total_borrow': 10.20 + 1.20,
-            'dai_supply': 3.00,
-            'wbtc_swap_supply': 3.00,
-            'weth_swap_supply': 2.00,
+            'dai_supply': 2.00,
+            'wbtc_swap_supply': 3.20,
+            'weth_swap_supply': 2.80,
             'eth_gas_reserve': 1.10,
             'dai_transfer': 1.10,
             'usdc_tax': 1.20,
@@ -541,8 +541,8 @@ class ArbitrumTestnetAgent:
         self.CAPACITY_DISTRIBUTION = {
             'total_borrow': 5.50 + 1.20,
             'dai_supply': 1.10,
-            'wbtc_swap_supply': 1.10,
-            'weth_swap_supply': 1.10,
+            'wbtc_swap_supply': 1.17,
+            'weth_swap_supply': 1.03,
             'eth_gas_reserve': 1.10,
             'dai_transfer': 1.10,
             'usdc_tax': 1.20,
@@ -740,13 +740,20 @@ class ArbitrumTestnetAgent:
             self.PROFIT_TARGETS = PROFIT_TARGETS
             self.LIABILITY_SHORT_STEP_ORDER = [
                 "weth_borrowed",
-                "usdt_swapped",
-                "usdt_supplied_as_collateral",
+                "wbtc_collateral_supplied",
+                "weth_collateral_supplied",
+                "usdt_collateral_supplied",
                 "short_active",
             ]
+            self.SHORT_COLLATERAL_RATIOS = {
+                'wbtc_pct': 0.40,
+                'weth_pct': 0.35,
+                'usdt_pct': 0.25,
+            }
             print("✅ Liability Short Strategy initialized")
-            print(f"   Macro: ${MACRO_SHORT_SIZE_USD:.2f} WETH short (target profit ${PROFIT_TARGETS['total']:.2f})")
-            print(f"   Micro: ${MICRO_SHORT_SIZE_USD:.2f} WETH short (target profit ${PROFIT_TARGETS['total']:.2f})")
+            print(f"   Macro: ${MACRO_SHORT_SIZE_USD:.2f} WETH short → 40% WBTC / 35% WETH / 25% USDT collateral")
+            print(f"   Micro: ${MICRO_SHORT_SIZE_USD:.2f} WETH short → 40% WBTC / 35% WETH / 25% USDT collateral")
+            print(f"   Target profit: ${PROFIT_TARGETS['total']:.2f} | Close: 20/20/60 split")
         except Exception as e:
             print(f"⚠️ Liability Short Strategy not loaded: {e}")
 
@@ -812,11 +819,11 @@ class ArbitrumTestnetAgent:
         print(f"   • Trigger: 10% relative OR $50 absolute growth from $47 baseline")
         print(f"   • Min Capacity Required: ${self.growth_min_capacity:.0f}")
         print(f"   • Health Factor: > {self.growth_health_factor_threshold:.2f}")
-        print(f"   • Distribution: $3.00 DAI supply, $3.00 WBTC, $2.00 WETH, $1.10 ETH gas, $1.10 DAI transfer")
+        print(f"   • Distribution: $2.00 USDT supply, $3.20 WBTC, $2.80 WETH, $1.10 ETH gas, $1.10 DAI transfer (40/35/25)")
         print(f"⚡ CAPACITY PATH ($5.50 Borrow):")
         print(f"   • Trigger: Available capacity >= ${self.capacity_min_capacity:.0f}")
         print(f"   • Health Factor: > {self.capacity_health_factor_threshold:.2f}")
-        print(f"   • Distribution: $1.10 DAI supply, $1.10 WBTC, $1.10 WETH, $1.10 ETH gas, $1.10 DAI transfer")
+        print(f"   • Distribution: $1.10 USDT supply, $1.17 WBTC, $1.03 WETH, $1.10 ETH gas, $1.10 DAI transfer")
         print(f"🔧 SYSTEM SETTINGS:")
         print(f"   • Global Execution Lock: {'LOCKED' if self.is_transacting else 'UNLOCKED'}")
         print(f"   • Operation Cooldown: {self.operation_cooldown_seconds}s")
@@ -2689,8 +2696,8 @@ class ArbitrumTestnetAgent:
 
     def _execute_liability_short_entry(self, tier, short_size_usd, health_factor, total_collateral):
         """
-        Phase 2 Liability Short Entry - "Round Trip" model (USDT Collateral)
-        Step A: Borrow WETH -> Swap WETH to USDT (direct pool) -> Supply USDT to Aave as collateral
+        Phase 2 Liability Short Entry - Diversified Collateral (40/35/25)
+        Step A: Borrow WETH -> Split 40% WBTC / 35% WETH / 25% USDT -> Supply all to Aave
         """
         if not self.liability_short_strategy:
             print("Liability Short Strategy not initialized")
@@ -2710,12 +2717,19 @@ class ArbitrumTestnetAgent:
             target_price = calc['target_price']
             weth_to_borrow = short_size_usd / eth_price
 
+            ratios = self.SHORT_COLLATERAL_RATIOS
+            weth_for_wbtc = weth_to_borrow * ratios['wbtc_pct']
+            weth_for_weth = weth_to_borrow * ratios['weth_pct']
+            weth_for_usdt = weth_to_borrow * ratios['usdt_pct']
+
             print(f"\n{'='*60}")
-            print(f"PHASE 2 SHORT ENTRY ({tier.upper()}) - USDT COLLATERAL")
+            print(f"PHASE 2 SHORT ENTRY ({tier.upper()}) - DIVERSIFIED 40/35/25")
             print(f"{'='*60}")
             print(f"   ETH Price:      ${eth_price:.2f}")
             print(f"   WETH Borrow:    {weth_to_borrow:.8f} (${short_size_usd:.2f})")
-            print(f"   Collateral:     USDT (6 decimals)")
+            print(f"   40% WBTC:       {weth_for_wbtc:.8f} WETH → WBTC (${short_size_usd * 0.40:.2f})")
+            print(f"   35% WETH:       {weth_for_weth:.8f} WETH direct (${short_size_usd * 0.35:.2f})")
+            print(f"   25% USDT:       {weth_for_usdt:.8f} WETH → USDT (${short_size_usd * 0.25:.2f})")
             print(f"   Target Price:   ${target_price:.2f} (-{calc['required_drop_pct']:.2f}%)")
             print(f"   Stop Loss:      ${calc['stop_loss_price']:.2f} (+1.5%)")
             print(f"   Target Profit:  ${self.PROFIT_TARGETS['total']:.2f}")
@@ -2744,41 +2758,79 @@ class ArbitrumTestnetAgent:
 
             self.save_execution_state("weth_borrowed", path_name, {"tier": tier, "eth_price": eth_price, "weth_borrowed": weth_to_borrow})
 
-            print(f"\nSTEP 2: Swapping {weth_received:.8f} WETH -> USDT (locking in ${short_size_usd:.2f} value)...")
-            usdt_before = self.get_usdt_balance()
-            swap_result = self.uniswap.swap_weth_for_usdt(weth_received)
-            if not swap_result or 'tx_hash' not in swap_result:
-                print("WETH->USDT swap failed - WETH remains in wallet")
-                return False
+            actual_wbtc_weth = weth_received * ratios['wbtc_pct']
+            actual_supply_weth = weth_received * ratios['weth_pct']
+            actual_usdt_weth = weth_received * ratios['usdt_pct']
 
-            time.sleep(5)
-            usdt_after = self.get_usdt_balance()
-            usdt_received = usdt_after - usdt_before
-            print(f"Received {usdt_received:.6f} USDT from swap")
-            self.save_execution_state("usdt_swapped", path_name, {"tier": tier, "usdt_received": usdt_received})
+            total_collateral_supplied = 0
 
-            if usdt_received < 1.0:
-                print(f"USDT received too low: {usdt_received:.6f}")
-                return False
-
-            print(f"\nSTEP 3: Supplying {usdt_received:.6f} USDT to Aave as collateral...")
-            if self._resupply_usdt_to_aave(usdt_received * 0.99):
-                print(f"USDT collateral locked in Aave")
+            print(f"\nSTEP 2A: 40% → Swapping {actual_wbtc_weth:.8f} WETH → WBTC → Aave collateral...")
+            wbtc_before = self.get_wbtc_balance()
+            swap_wbtc = self.uniswap.swap_weth_for_wbtc(actual_wbtc_weth)
+            if swap_wbtc and isinstance(swap_wbtc, dict) and 'tx_hash' in swap_wbtc:
+                time.sleep(4)
+                wbtc_after = self.get_wbtc_balance()
+                wbtc_received = wbtc_after - wbtc_before
+                print(f"   Received {wbtc_received:.8f} WBTC")
+                if wbtc_received > 0.00000001:
+                    if self._supply_wbtc_to_aave(wbtc_received):
+                        total_collateral_supplied += actual_wbtc_weth * eth_price
+                        print(f"   ✅ WBTC collateral supplied")
+                    else:
+                        print(f"   ⚠️ WBTC supply failed — remains in wallet")
+                else:
+                    print(f"   ⚠️ WBTC received too low ({wbtc_received:.8f})")
+            elif swap_wbtc and isinstance(swap_wbtc, str):
+                time.sleep(4)
+                wbtc_after = self.get_wbtc_balance()
+                wbtc_received = wbtc_after - wbtc_before
+                if wbtc_received > 0.00000001:
+                    if self._supply_wbtc_to_aave(wbtc_received):
+                        total_collateral_supplied += actual_wbtc_weth * eth_price
+                        print(f"   ✅ WBTC collateral supplied ({wbtc_received:.8f})")
             else:
-                print(f"USDT supply failed - USDT remains in wallet (still protected)")
+                print(f"   ⚠️ WETH→WBTC swap failed — skipping WBTC collateral")
+            self.save_execution_state("wbtc_collateral_supplied", path_name, {"tier": tier})
 
-            self.save_execution_state("usdt_supplied_as_collateral", path_name, {"tier": tier})
+            print(f"\nSTEP 2B: 35% → Supplying {actual_supply_weth:.8f} WETH directly to Aave...")
+            if self._supply_weth_to_aave(actual_supply_weth):
+                total_collateral_supplied += actual_supply_weth * eth_price
+                print(f"   ✅ WETH collateral supplied")
+            else:
+                print(f"   ⚠️ WETH supply failed — remains in wallet")
+            self.save_execution_state("weth_collateral_supplied", path_name, {"tier": tier})
+
+            print(f"\nSTEP 2C: 25% → Swapping {actual_usdt_weth:.8f} WETH → USDT → Aave collateral...")
+            usdt_before = self.get_usdt_balance()
+            swap_usdt = self.uniswap.swap_weth_for_usdt(actual_usdt_weth)
+            if swap_usdt and 'tx_hash' in swap_usdt:
+                time.sleep(4)
+                usdt_after = self.get_usdt_balance()
+                usdt_received = usdt_after - usdt_before
+                print(f"   Received {usdt_received:.6f} USDT")
+                if usdt_received >= 0.50:
+                    if self._resupply_usdt_to_aave(usdt_received * 0.99):
+                        total_collateral_supplied += usdt_received
+                        print(f"   ✅ USDT collateral supplied")
+                    else:
+                        print(f"   ⚠️ USDT supply failed — remains in wallet")
+                else:
+                    print(f"   ⚠️ USDT received too low ({usdt_received:.6f})")
+            else:
+                print(f"   ⚠️ WETH→USDT swap failed — skipping USDT collateral")
+            self.save_execution_state("usdt_collateral_supplied", path_name, {"tier": tier})
 
             self.liability_short_strategy.open_position(tier, eth_price, short_size_usd, calc)
-            self.liability_short_strategy.update_position_amounts(usdt_received, weth_to_borrow)
+            self.liability_short_strategy.update_position_amounts(total_collateral_supplied, weth_to_borrow)
 
             self.save_execution_state("short_active", path_name, {"tier": tier})
             self.clear_execution_state()
             self.record_successful_operation(operation_type=path_name)
 
             print(f"\n{'='*60}")
-            print(f"SHORT POSITION OPENED - NOW HUNTING")
-            print(f"   USDT collateral locked | Waiting for ETH drop to ${target_price:.2f}")
+            print(f"SHORT POSITION OPENED - DIVERSIFIED COLLATERAL")
+            print(f"   Total collateral: ${total_collateral_supplied:.2f} (40% WBTC / 35% WETH / 25% USDT)")
+            print(f"   Waiting for ETH drop to ${target_price:.2f}")
             print(f"   Polling every 15s in Hunter Mode")
             print(f"{'='*60}\n")
 
