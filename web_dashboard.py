@@ -1010,7 +1010,7 @@ def command_center():
         else:
             hf_status = "EMERGENCY"
 
-        ls_data = {"micro_trigger_usd": 0, "macro_trigger_usd": 0, "has_active_position": False, "position_tier": None, "entry_eth_price": None, "current_eth_price": None}
+        ls_data = {"micro_trigger_drop_usd": 30, "macro_trigger_drop_usd": 50, "velocity_drop_20m": 0, "velocity_drop_30m": 0, "velocity_buffer_size": 0, "has_active_position": False, "position_tier": None, "entry_eth_price": None, "current_eth_price": None}
         growth_cooldown = 0
         ls_cooldown = 0
 
@@ -1029,10 +1029,13 @@ def command_center():
         if agent and hasattr(agent, 'liability_short_strategy') and agent.liability_short_strategy:
             try:
                 short_summary = agent.liability_short_strategy.get_status_summary()
-                if not ls_data.get('micro_trigger_usd'):
+                if not ls_data.get('velocity_drop_20m'):
                     levels = agent.liability_short_strategy.get_trigger_levels()
-                    ls_data["micro_trigger_usd"] = levels.get("micro_trigger_usd", 0)
-                    ls_data["macro_trigger_usd"] = levels.get("macro_trigger_usd", 0)
+                    ls_data["micro_trigger_drop_usd"] = levels.get("micro_trigger_drop_usd", 30)
+                    ls_data["macro_trigger_drop_usd"] = levels.get("macro_trigger_drop_usd", 50)
+                    ls_data["velocity_buffer_size"] = levels.get("buffer_size", 0)
+                    ls_data["velocity_drop_20m"] = short_summary.get("velocity_drop_20m", 0)
+                    ls_data["velocity_drop_30m"] = short_summary.get("velocity_drop_30m", 0)
                 ls_data["has_active_position"] = agent.liability_short_strategy.has_active_position()
                 ls_data["current_eth_price"] = agent.liability_short_strategy.get_eth_price()
             except Exception:
@@ -1092,8 +1095,11 @@ def command_center():
                 "change_24h_pct": round(value_change_pct, 1),
             },
             "zone3_guardrails": {
-                "micro_trigger_usd": ls_data.get("micro_trigger_usd", 0),
-                "macro_trigger_usd": ls_data.get("macro_trigger_usd", 0),
+                "micro_trigger_drop_usd": ls_data.get("micro_trigger_drop_usd", 30),
+                "macro_trigger_drop_usd": ls_data.get("macro_trigger_drop_usd", 50),
+                "velocity_drop_20m": ls_data.get("velocity_drop_20m", 0),
+                "velocity_drop_30m": ls_data.get("velocity_drop_30m", 0),
+                "velocity_buffer_size": ls_data.get("velocity_buffer_size", 0),
                 "has_active_position": ls_data.get("has_active_position", False),
                 "position_tier": ls_data.get("position_tier"),
                 "current_eth_price": ls_data.get("current_eth_price"),

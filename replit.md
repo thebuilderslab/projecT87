@@ -18,63 +18,71 @@ I want the agent to always use its own private key wallet for all operations unl
 
 ## System Architecture — Canonical Spec
 
-### Phase 1: Growth Path (DAI Debt — 40/35/25 Collateral Ratio)
+### Phase 1: Growth Path ($11.40 DAI Borrow)
 
 **Debt token:** DAI (18 decimals)
-**Total borrow:** $11.40 ($10.20 working capital + $1.20 USDC Tax)
+**Total borrow:** $11.40
 **Min capacity required:** $13.20
 **HF threshold:** > 3.10
 
-**Distribution from $10.20 DAI borrow:**
-- $3.20 → Swap DAI→WBTC → Supply WBTC to Aave (40% of $8.00 collateral block)
-- $2.80 → Swap DAI→WETH → Supply WETH to Aave (35% of $8.00 collateral block)
-- $2.00 → Convert DAI→WETH→USDT → Supply USDT to Aave (25% of $8.00 collateral block)
+**Distribution:**
+- $2.80 → Swap DAI→WBTC → Supply WBTC to Aave
+- $2.45 → Swap DAI→WETH → Supply WETH to Aave
+- $2.75 → Convert DAI→WETH→USDT → Supply USDT to Aave
 - $1.10 → ETH gas reserve (DAI→ETH conversion)
 - $1.10 → DAI transfer to Wallet S
+- $1.20 → USDC Tax → Wallet B accumulator
 
-**USDC Tax ($1.20):** DAI→USDC → Wallet B accumulator
-
-### Phase 1: Capacity Path (DAI Debt — USDT Fixed at $1.10)
+### Phase 1: Capacity Path ($6.70 DAI Borrow)
 
 **Debt token:** DAI (18 decimals)
-**Total borrow:** $6.70 ($5.50 working capital + $1.20 USDC Tax)
+**Total borrow:** $6.70
 **Min capacity required:** $8.20
 **HF threshold:** > 2.90
 
-**Distribution from $5.50 DAI borrow:**
-- $1.17 → Swap DAI→WBTC → Supply WBTC to Aave (53.3% of $2.20 remaining)
-- $1.03 → Swap DAI→WETH → Supply WETH to Aave (46.7% of $2.20 remaining)
-- $1.10 → Convert DAI→WETH→USDT → Supply USDT to Aave (fixed)
+**Distribution (equal $1.10 splits):**
+- $1.10 → Swap DAI→WBTC → Supply WBTC to Aave
+- $1.10 → Swap DAI→WETH → Supply WETH to Aave
+- $1.10 → Convert DAI→WETH→USDT → Supply USDT to Aave
 - $1.10 → ETH gas reserve (DAI→ETH conversion)
 - $1.10 → DAI transfer to Wallet S
+- $1.20 → USDC Tax → Wallet B accumulator
 
-**USDC Tax ($1.20):** DAI→USDC → Wallet B accumulator
-
-### Phase 2: Macro Short Entry (WETH Debt — Diversified 40/35/25 Collateral)
+### Phase 2: Macro Short Entry ($10.90 WETH Borrow)
 
 **Debt token:** WETH (18 decimals)
 **Borrow notional:** $10.90 WETH
 **HF threshold:** > 3.05
-**Trigger:** Collateral drop >5%
+**Trigger:** Collateral velocity — $50 drop in 30 minutes (12h cooldown)
 
-**Entry allocation from borrowed WETH:**
+**Entry allocation from borrowed WETH (40/35/25 basket):**
 - 40% ($4.36) → Swap WETH→WBTC → Supply WBTC to Aave as collateral
-- 35% ($3.82) → Retain WETH → Supply WETH directly to Aave as collateral
-- 25% ($2.73) → Swap WETH→USDT → Supply USDT to Aave as collateral
+- 35% ($3.82) → Swap WETH→USDT → Supply USDT to Aave as collateral
+- 25% ($2.73) → Retain WETH → Supply WETH directly to Aave as collateral
 
-**Hedge note:** Diversified collateral (WBTC + WETH) moves with market alongside WETH debt, reducing pure-hedge effect but building a growth-oriented collateral base. USDT slice (25%) provides stable anchor.
+**No USDC on entry.**
 
-### Phase 2: Micro Short Entry (WETH Debt — Diversified 40/35/25 Collateral)
+### Phase 2: Micro Short Entry ($7.20 WETH Borrow)
 
 **Debt token:** WETH (18 decimals)
 **Borrow notional:** $7.20 WETH
 **HF threshold:** > 3.00
-**Trigger:** Collateral drop >2%
+**Trigger:** Collateral velocity — $30 drop in 20 minutes (4h cooldown)
 
-**Entry allocation from borrowed WETH:**
+**Entry allocation from borrowed WETH (40/35/25 basket):**
 - 40% ($2.88) → Swap WETH→WBTC → Supply WBTC to Aave as collateral
-- 35% ($2.52) → Retain WETH → Supply WETH directly to Aave as collateral
-- 25% ($1.80) → Swap WETH→USDT → Supply USDT to Aave as collateral
+- 35% ($2.52) → Swap WETH→USDT → Supply USDT to Aave as collateral
+- 25% ($1.80) → Retain WETH → Supply WETH directly to Aave as collateral
+
+**No USDC on entry.**
+
+### Collateral Velocity Monitor (Panic Detection)
+Rolling 40-minute buffer of total collateral values, sampled every ~60 seconds.
+- **drop_20m** = Value_20_mins_ago - Current_Value
+- **drop_30m** = Value_30_mins_ago - Current_Value
+- Micro Panic: drop_20m >= $30 → Micro Short ($7.20), 4h cooldown
+- Macro Panic: drop_30m >= $50 → Macro Short ($10.90), 12h cooldown
+- Replaces old static percentage-based collateral drop triggers.
 
 ### Short Close — 20/20/60 Profit Distribution (Mandatory)
 

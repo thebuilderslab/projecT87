@@ -1009,12 +1009,13 @@
 
             // ZONE 3: Defensive Guardrails
             applyGlowClass(document.getElementById('zone3'), hfStatus);
-            const micro = z3.micro_trigger_usd;
-            const macro = z3.macro_trigger_usd;
+            const drop20m = z3.velocity_drop_20m || 0;
+            const drop30m = z3.velocity_drop_30m || 0;
+            const bufSize = z3.velocity_buffer_size || 0;
             const collateral = z3.current_collateral || 0;
-            document.getElementById('microTarget').textContent = micro > 0 ? '$' + micro.toFixed(2) : (collateral > 0 ? 'Est: $' + (collateral * 0.98).toFixed(2) + ' (-2%)' : 'Initializing...');
-            document.getElementById('macroTarget').textContent = macro > 0 ? '$' + macro.toFixed(2) : (collateral > 0 ? 'Est: $' + (collateral * 0.95).toFixed(2) + ' (-5%)' : 'Initializing...');
-            document.getElementById('currentCollateral').textContent = '$' + (z3.current_collateral || 0).toFixed(2);
+            document.getElementById('microTarget').textContent = '$' + drop20m.toFixed(2) + ' / $' + (z3.micro_trigger_drop_usd || 30).toFixed(0) + ' (20m)';
+            document.getElementById('macroTarget').textContent = '$' + drop30m.toFixed(2) + ' / $' + (z3.macro_trigger_drop_usd || 50).toFixed(0) + ' (30m)';
+            document.getElementById('currentCollateral').textContent = '$' + collateral.toFixed(2) + ' [' + bufSize + ' samples]';
 
             if (z3.has_active_position) {
                 const tier = (z3.position_tier || '').toUpperCase();
