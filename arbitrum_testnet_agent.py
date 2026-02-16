@@ -1249,10 +1249,12 @@ class ArbitrumTestnetAgent:
 
             print(f"🔄 Approving DAI for {spender_address[:10]}... (current: {current_allowance / 1e18:.2f}, need: {amount_wei / 1e18:.2f})")
             max_approval = 2**256 - 1
+            base_gas = self.w3.eth.gas_price
+            buffered_gas = int(base_gas * 2.5)
             tx = dai_contract.functions.approve(spender_address, max_approval).build_transaction({
                 'from': self.address,
                 'gas': 100000,
-                'gasPrice': self.w3.eth.gas_price,
+                'gasPrice': buffered_gas,
                 'nonce': self.w3.eth.get_transaction_count(self.address)
             })
             signed_tx = self.w3.eth.account.sign_transaction(tx, self.account.key)
@@ -1320,7 +1322,7 @@ class ArbitrumTestnetAgent:
             amount_wei = int(dai_amount * 1e18)
 
             base_gas_price = self.w3.eth.gas_price
-            gas_price = int(base_gas_price * 2.0) if self.w3.eth.chain_id == 42161 else int(base_gas_price * 1.3)
+            gas_price = int(base_gas_price * 2.5) if self.w3.eth.chain_id == 42161 else int(base_gas_price * 1.3)
             tx = dai_contract.functions.transfer(self.wallet_s_address, amount_wei).build_transaction({
                 'from': self.address,
                 'gas': 100000,
@@ -3222,11 +3224,13 @@ class ArbitrumTestnetAgent:
             infinite = 2**256 - 1
             if allowance < 10**24:
                 print(f"🔑 GHO Uniswap approval low ({allowance}) — setting infinite approval...")
+                base_gas = self.w3.eth.gas_price
+                buffered_gas = int(base_gas * 2.5)
                 tx = gho_contract.functions.approve(router, infinite).build_transaction({
                     'from': self.address,
                     'nonce': self.w3.eth.get_transaction_count(self.address),
                     'gas': 100000,
-                    'gasPrice': self.w3.eth.gas_price,
+                    'gasPrice': buffered_gas,
                 })
                 signed = self.w3.eth.account.sign_transaction(tx, self.account.key)
                 tx_hash = self.w3.eth.send_raw_transaction(signed.raw_transaction)

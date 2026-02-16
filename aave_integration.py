@@ -289,8 +289,8 @@ class AaveArbitrumIntegration:
                     chain_id = self.w3.eth.chain_id
                     
                     if chain_id == 42161:
-                        gas_price = int(base_gas_price * 2.0)
-                        print(f"⛽ Arbitrum mainnet: base {base_gas_price} → optimized {gas_price} (2.0x)")
+                        gas_price = int(base_gas_price * 2.5)
+                        print(f"⛽ Arbitrum mainnet: base {base_gas_price} → optimized {gas_price} (2.5x)")
                     else:
                         gas_price = int(base_gas_price * 1.3)
                         print(f"⛽ Testnet: base {base_gas_price} → optimized {gas_price} (1.3x)")
@@ -400,8 +400,8 @@ class AaveArbitrumIntegration:
                     chain_id = self.w3.eth.chain_id
 
                     if chain_id == 42161:
-                        gas_price = int(base_gas_price * 2.0)
-                        print(f"⛽ Arbitrum mainnet: base {base_gas_price} → optimized {gas_price} (2.0x)")
+                        gas_price = int(base_gas_price * 2.5)
+                        print(f"⛽ Arbitrum mainnet: base {base_gas_price} → optimized {gas_price} (2.5x)")
                     else:
                         gas_price = int(base_gas_price * 1.3)
                         print(f"⛽ Testnet: base {base_gas_price} → optimized {gas_price} (1.3x)")
@@ -530,10 +530,10 @@ class AaveArbitrumIntegration:
             
             # Apply 2x multiplier for Arbitrum mainnet to handle variable gas costs
             if chain_id == 42161:  # Arbitrum Mainnet
-                gas_price = int(base_gas_price * 2.0)
-                print(f"⛽ Arbitrum mainnet supply: base {base_gas_price} → optimized {gas_price} (2.0x)")
+                gas_price = int(base_gas_price * 2.5)
+                print(f"⛽ Arbitrum mainnet supply: base {base_gas_price} → optimized {gas_price} (2.5x)")
             else:
-                gas_price = int(base_gas_price * 1.3)  # 30% buffer for testnet
+                gas_price = int(base_gas_price * 1.3)
                 print(f"⛽ Testnet supply: base {base_gas_price} → optimized {gas_price} (1.3x)")
 
             try:
@@ -626,7 +626,7 @@ class AaveArbitrumIntegration:
             nonce = self.w3.eth.get_transaction_count(self.account.address)
             base_gas_price = self.w3.eth.gas_price
             chain_id = self.w3.eth.chain_id
-            gas_price = int(base_gas_price * (2.0 if chain_id == 42161 else 1.3))
+            gas_price = int(base_gas_price * (2.5 if chain_id == 42161 else 1.3))
 
             try:
                 estimated_gas = collateral_contract.functions.setUserUseReserveAsCollateral(
@@ -788,10 +788,10 @@ class AaveArbitrumIntegration:
             
             # Apply 2x multiplier for Arbitrum mainnet to handle variable gas costs
             if chain_id == 42161:  # Arbitrum Mainnet
-                gas_price = int(base_gas_price * 2.0)
-                print(f"⛽ Arbitrum mainnet approval: base {base_gas_price} → optimized {gas_price} (2.0x)")
+                gas_price = int(base_gas_price * 2.5)
+                print(f"⛽ Arbitrum mainnet approval: base {base_gas_price} → optimized {gas_price} (2.5x)")
             else:
-                gas_price = int(base_gas_price * 1.3)  # 30% buffer for testnet
+                gas_price = int(base_gas_price * 1.3)
                 print(f"⛽ Testnet approval: base {base_gas_price} → optimized {gas_price} (1.3x)")
 
             # Estimate gas for approval
@@ -863,7 +863,7 @@ class AaveArbitrumIntegration:
             ).build_transaction({
                 'from': self.account.address,
                 'gas': 300000,
-                'gasPrice': self.w3.eth.gas_price,
+                'gasPrice': int(self.w3.eth.gas_price * 2.5),
                 'nonce': self.w3.eth.get_transaction_count(self.account.address)
             })
 
@@ -896,7 +896,7 @@ class AaveArbitrumIntegration:
             ).build_transaction({
                 'from': self.account.address,
                 'gas': 300000,
-                'gasPrice': self.w3.eth.gas_price,
+                'gasPrice': int(self.w3.eth.gas_price * 2.5),
                 'nonce': self.w3.eth.get_transaction_count(self.account.address)
             })
 
