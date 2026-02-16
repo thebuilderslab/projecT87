@@ -1014,7 +1014,7 @@
             const collateral = z3.current_collateral || 0;
             document.getElementById('microTarget').textContent = micro > 0 ? '$' + micro.toFixed(2) : (collateral > 0 ? 'Est: $' + (collateral * 0.98).toFixed(2) + ' (-2%)' : 'Initializing...');
             document.getElementById('macroTarget').textContent = macro > 0 ? '$' + macro.toFixed(2) : (collateral > 0 ? 'Est: $' + (collateral * 0.95).toFixed(2) + ' (-5%)' : 'Initializing...');
-            document.getElementById('currentCollateral').textContent = '$' + z3.current_collateral.toFixed(2);
+            document.getElementById('currentCollateral').textContent = '$' + (z3.current_collateral || 0).toFixed(2);
 
             if (z3.has_active_position) {
                 const tier = (z3.position_tier || '').toUpperCase();
@@ -1031,19 +1031,20 @@
 
             const se = z3.short_engine || {};
             const modeEl = document.getElementById('shortMode');
+            const pollInt = se.polling_interval || 90;
             if (se.polling_mode === 'HUNTER') {
-                modeEl.textContent = 'HUNTER ' + se.polling_interval + 's';
+                modeEl.textContent = 'HUNTER ' + pollInt + 's';
                 modeEl.className = 'short-engine-mode hunter';
             } else {
-                modeEl.textContent = 'SENTRY ' + se.polling_interval + 's';
+                modeEl.textContent = 'SENTRY ' + pollInt + 's';
                 modeEl.className = 'short-engine-mode sentry';
             }
-            document.getElementById('shortTarget').textContent = se.target_price ? '$' + se.target_price.toFixed(2) : '--';
-            document.getElementById('shortStop').textContent = se.stop_loss_price ? '$' + se.stop_loss_price.toFixed(2) : '--';
+            document.getElementById('shortTarget').textContent = se.target_price ? '$' + Number(se.target_price).toFixed(2) : '--';
+            document.getElementById('shortStop').textContent = se.stop_loss_price ? '$' + Number(se.stop_loss_price).toFixed(2) : '--';
             if (se.distance_to_target_pct != null) {
-                document.getElementById('shortDistance').textContent = se.distance_to_target_pct.toFixed(1) + '%';
+                document.getElementById('shortDistance').textContent = Number(se.distance_to_target_pct).toFixed(1) + '%';
             } else {
-                document.getElementById('shortDistance').textContent = se.position_status === 'IDLE' ? 'IDLE' : '--';
+                document.getElementById('shortDistance').textContent = (se.position_status || 'IDLE') === 'IDLE' ? 'IDLE' : '--';
             }
 
             // ZONE 4: Engine Room — Video Avatar + HUD
