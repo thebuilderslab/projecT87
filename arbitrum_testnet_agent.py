@@ -738,14 +738,9 @@ class ArbitrumTestnetAgent:
             self.PROFIT_TARGETS = PROFIT_TARGETS
             self.LIABILITY_SHORT_STEP_ORDER = [
                 "weth_borrowed",
-                "wbtc_swapped_supplied",
-                "weth_supplied",
                 "dai_swapped",
-                "dai_supplied",
-                "eth_gas_converted",
-                "dai_transferred",
-                "part_a_complete",
-                "debt_swap_complete",
+                "dai_supplied_as_collateral",
+                "short_active",
             ]
             print("✅ Liability Short Strategy initialized")
             print(f"   Macro: ${MACRO_SHORT_SIZE_USD:.2f} WETH short (target profit ${PROFIT_TARGETS['total']:.2f})")

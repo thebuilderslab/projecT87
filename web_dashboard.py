@@ -1025,11 +1025,14 @@ def command_center():
         except Exception:
             pass
 
-        if not ls_data.get('micro_trigger_usd') and agent and hasattr(agent, 'liability_short_strategy') and agent.liability_short_strategy:
+        short_summary = {}
+        if agent and hasattr(agent, 'liability_short_strategy') and agent.liability_short_strategy:
             try:
-                levels = agent.liability_short_strategy.get_trigger_levels()
-                ls_data["micro_trigger_usd"] = levels.get("micro_trigger_usd", 0)
-                ls_data["macro_trigger_usd"] = levels.get("macro_trigger_usd", 0)
+                short_summary = agent.liability_short_strategy.get_status_summary()
+                if not ls_data.get('micro_trigger_usd'):
+                    levels = agent.liability_short_strategy.get_trigger_levels()
+                    ls_data["micro_trigger_usd"] = levels.get("micro_trigger_usd", 0)
+                    ls_data["macro_trigger_usd"] = levels.get("macro_trigger_usd", 0)
                 ls_data["has_active_position"] = agent.liability_short_strategy.has_active_position()
                 ls_data["current_eth_price"] = agent.liability_short_strategy.get_eth_price()
             except Exception:
@@ -1096,6 +1099,21 @@ def command_center():
                 "current_eth_price": ls_data.get("current_eth_price"),
                 "entry_eth_price": ls_data.get("entry_eth_price"),
                 "current_collateral": round(total_collateral, 2),
+                "short_engine": {
+                    "phase": short_summary.get("phase", 2),
+                    "polling_mode": short_summary.get("polling_mode", "SENTRY"),
+                    "polling_interval": short_summary.get("polling_interval", 90),
+                    "position_status": short_summary.get("position_status", "IDLE"),
+                    "target_price": short_summary.get("target_price"),
+                    "stop_loss_price": short_summary.get("stop_loss_price"),
+                    "entry_eth_price": short_summary.get("entry_eth_price"),
+                    "current_eth_price": short_summary.get("current_eth_price"),
+                    "distance_to_target_pct": short_summary.get("distance_to_target_pct"),
+                    "eth_change_pct": short_summary.get("eth_change_pct"),
+                    "profit_target": short_summary.get("profit_targets", {}).get("total", 10.0),
+                    "on_cooldown": short_summary.get("on_cooldown", False),
+                    "total_positions": short_summary.get("total_positions_history", 0),
+                },
             },
             "zone4_engine": {
                 "growth_cooldown_sec": round(max(0, growth_cooldown), 0),

@@ -348,6 +348,69 @@
         .guardrail-status.armed { color: var(--green-glow); }
         .guardrail-status.active { color: var(--amber-glow); }
 
+        .short-engine-panel {
+            grid-column: 1 / -1;
+            background: rgba(0, 200, 255, 0.04);
+            border: 1px solid rgba(0, 200, 255, 0.15);
+            border-radius: 10px;
+            padding: 14px 16px;
+            margin-top: 4px;
+        }
+        .short-engine-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .short-engine-title {
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: var(--label-slate);
+        }
+        .short-engine-mode {
+            font-size: 0.7rem;
+            font-weight: 700;
+            padding: 2px 8px;
+            border-radius: 4px;
+        }
+        .short-engine-mode.sentry {
+            background: rgba(0, 200, 100, 0.15);
+            color: var(--green-glow);
+        }
+        .short-engine-mode.hunter {
+            background: rgba(255, 170, 0, 0.15);
+            color: var(--amber-glow);
+            animation: pulse-glow 1.5s ease-in-out infinite;
+        }
+        @keyframes pulse-glow {
+            0%, 100% { opacity: 0.7; }
+            50% { opacity: 1; }
+        }
+        .short-engine-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 8px;
+        }
+        .short-metric {
+            text-align: center;
+        }
+        .short-metric-label {
+            font-size: 0.6rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--muted-slate);
+            margin-bottom: 2px;
+        }
+        .short-metric-value {
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--signal-white);
+        }
+        .short-metric-value.target { color: var(--green-glow); }
+        .short-metric-value.stop { color: #ff4444; }
+        .short-metric-value.distance { color: var(--amber-glow); }
+
         .guardrails-current {
             grid-column: 1 / -1;
             text-align: center;
@@ -633,6 +696,26 @@
                         <div class="guardrail-label">Hedge activates if Market drops below</div>
                         <div class="guardrail-value" id="macroTarget">$—</div>
                         <div class="guardrail-status armed" id="macroStatus">ARMED — Monitoring</div>
+                    </div>
+                    <div class="short-engine-panel" id="shortEnginePanel">
+                        <div class="short-engine-header">
+                            <span class="short-engine-title">Phase 2 — Target Profit Engine</span>
+                            <span class="short-engine-mode sentry" id="shortMode">SENTRY 90s</span>
+                        </div>
+                        <div class="short-engine-grid">
+                            <div class="short-metric">
+                                <div class="short-metric-label">Target Price</div>
+                                <div class="short-metric-value target" id="shortTarget">--</div>
+                            </div>
+                            <div class="short-metric">
+                                <div class="short-metric-label">Stop Loss</div>
+                                <div class="short-metric-value stop" id="shortStop">--</div>
+                            </div>
+                            <div class="short-metric">
+                                <div class="short-metric-label">Distance</div>
+                                <div class="short-metric-value distance" id="shortDistance">--</div>
+                            </div>
+                        </div>
                     </div>
                     <div class="guardrails-current">
                         <div class="guardrails-current-label">Current Market Position</div>
@@ -944,6 +1027,23 @@
                 document.getElementById('microStatus').className = 'guardrail-status armed';
                 document.getElementById('macroStatus').textContent = 'ARMED — Monitoring';
                 document.getElementById('macroStatus').className = 'guardrail-status armed';
+            }
+
+            const se = z3.short_engine || {};
+            const modeEl = document.getElementById('shortMode');
+            if (se.polling_mode === 'HUNTER') {
+                modeEl.textContent = 'HUNTER ' + se.polling_interval + 's';
+                modeEl.className = 'short-engine-mode hunter';
+            } else {
+                modeEl.textContent = 'SENTRY ' + se.polling_interval + 's';
+                modeEl.className = 'short-engine-mode sentry';
+            }
+            document.getElementById('shortTarget').textContent = se.target_price ? '$' + se.target_price.toFixed(2) : '--';
+            document.getElementById('shortStop').textContent = se.stop_loss_price ? '$' + se.stop_loss_price.toFixed(2) : '--';
+            if (se.distance_to_target_pct != null) {
+                document.getElementById('shortDistance').textContent = se.distance_to_target_pct.toFixed(1) + '%';
+            } else {
+                document.getElementById('shortDistance').textContent = se.position_status === 'IDLE' ? 'IDLE' : '--';
             }
 
             // ZONE 4: Engine Room — Video Avatar + HUD

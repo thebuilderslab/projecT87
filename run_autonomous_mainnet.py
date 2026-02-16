@@ -113,16 +113,18 @@ def run_autonomous_mainnet_agent():
         print(f"   State File: CLEARED (clean run)")
         print(f"   Growth Path: $11.40 borrow ($10.20 + $1.20 USDC Tax)")
         print(f"   Capacity Path: $6.70 borrow ($5.50 + $1.20 USDC Tax)")
-        print(f"   Macro Path: $12.10 borrow ($10.90 + $1.20 USDC Tax)")
-        print(f"   Micro Path: $8.40 borrow ($7.20 + $1.20 USDC Tax)")
-        print(f"   USDC Tax: $1.20 per borrow → DAI→USDC swap → WALLET_B")
+        print(f"   Liability Short: Phase 2 Target Profit Engine (Round Trip)")
+        print(f"   Macro Short: $10.90 WETH → DAI collateral (target $10 profit)")
+        print(f"   Micro Short: $7.20 WETH → DAI collateral (target $10 profit)")
+        print(f"   Short Flow: Borrow WETH → Swap DAI → Supply → Hunt → Close → Repay")
+        print(f"   USDC Tax: $1.20 per Growth/Capacity borrow → DAI→USDC → WALLET_B")
         print(f"   Nurse Mode: $2.00 hard floor, USDC whitelisted (profit)")
         print(f"   Force-Approve: All tokens on startup (Aave + Uniswap)")
         print(f"   Dust Guard: Active ($1.00 minimum swap)")
         print(f"   Per-Step Approvals: Active ($15 DAI threshold)")
         print(f"   Proportional Recovery: Enabled")
         print(f"   Max Recovery Attempts: 5")
-        print(f"   Monitoring Cycle: 45s")
+        print(f"   🎯 Polling: Dynamic (90s Sentry / 15s Hunter Mode)")
         print("="*60 + "\n")
 
         log_agent_activity("🎯 Starting autonomous monitoring loop...")
@@ -181,7 +183,13 @@ def run_autonomous_mainnet_agent():
                 log_agent_activity(f"❌ Error in monitoring cycle: {e}", "ERROR")
                 log_agent_activity("⏸️ Continuing monitoring after error...")
             
-            time.sleep(45)
+            poll_interval = 45
+            try:
+                if hasattr(agent, 'liability_short_strategy') and agent.liability_short_strategy:
+                    poll_interval = agent.liability_short_strategy.get_polling_interval()
+            except Exception:
+                pass
+            time.sleep(poll_interval)
             
     except KeyboardInterrupt:
         log_agent_activity("👋 Autonomous agent stopped by user (Ctrl+C)", "INFO")
