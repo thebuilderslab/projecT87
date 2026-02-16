@@ -49,18 +49,18 @@ def main():
     weth_balance = agent.aave.get_token_balance(weth_address)
     dai_balance = agent.aave.get_token_balance(dai_address)
 
-    gho_balance = 0.0
-    if hasattr(agent, 'gho_address') and agent.gho_address:
+    usdc_balance = 0.0
+    if hasattr(agent, 'usdc_address') and agent.usdc_address:
         try:
-            gho_balance = agent.aave.get_token_balance(agent.gho_address)
+            usdc_balance = agent._get_usdc_balance()
         except Exception:
-            gho_balance = 0.0
+            usdc_balance = 0.0
 
     print(f"\n💰 Wallet balances:")
     print(f"   WETH: {weth_balance:.8f}")
     print(f"   DAI:  {dai_balance:.6f}")
-    if gho_balance > 0:
-        print(f"   🛡️ GHO:  {gho_balance:.6f} — WHITELISTED (farm asset, will NOT be swept)")
+    if usdc_balance > 0:
+        print(f"   🛡️ USDC:  {usdc_balance:.6f} — WHITELISTED (will send to WALLET_B, NOT sweep)")
 
     supplied_any = False
 

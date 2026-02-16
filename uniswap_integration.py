@@ -1,5 +1,5 @@
 """Uniswap V3 integration for Arbitrum mainnet/testnet.
-DAI-based swaps: DAI → WBTC, DAI → WETH, DAI → GHO (via WETH or USD₮0 hop).
+DAI-based swaps: DAI → WBTC, DAI → WETH, DAI → USDC (direct stablecoin swap).
 """
 
 import os
@@ -196,21 +196,21 @@ class UniswapIntegration:
             token_in_lower = token_in.lower()
             token_out_lower = token_out.lower()
 
-            # Validate allowed swap combinations including ARB and GHO
+            # Validate allowed swap combinations including ARB and USDC
             arb_address = "0x912CE59144191C1204E64559FE8253a0e49E6548"
             arb_address_lower = arb_address.lower()
-            gho_address = "0x7dfF72693f6A4149b17e7C6314655f6A9F7c8B33"  # GHO on Arbitrum
-            gho_address_lower = gho_address.lower()
+            usdc_address = "0xaf88d065e77c8cC2239327C5EDb3A432268e5831"  # USDC on Arbitrum
+            usdc_address_lower = usdc_address.lower()
 
             allowed_swaps = [
                 (dai_address_lower, wbtc_address_lower),  # DAI → WBTC
                 (dai_address_lower, weth_address_lower),  # DAI → WETH
                 (dai_address_lower, arb_address_lower),   # DAI → ARB
                 (arb_address_lower, dai_address_lower),   # ARB → DAI
-                (dai_address_lower, gho_address_lower),   # DAI → GHO
+                (dai_address_lower, usdc_address_lower),  # DAI → USDC
                 (weth_address_lower, wbtc_address_lower), # WETH → WBTC (Liability Short)
                 (weth_address_lower, dai_address_lower),  # WETH → DAI (Liability Short)
-                (weth_address_lower, gho_address_lower),  # WETH → GHO (GHO Tax)
+                (weth_address_lower, usdc_address_lower), # WETH → USDC
             ]
 
             current_swap = (token_in_lower, token_out_lower)
@@ -226,8 +226,8 @@ class UniswapIntegration:
                 token_out_name = "WETH"
             elif token_out_lower == arb_address_lower:
                 token_out_name = "ARB"
-            elif token_out_lower == gho_address_lower:
-                token_out_name = "GHO"
+            elif token_out_lower == usdc_address_lower:
+                token_out_name = "USDC"
             elif token_in_lower == arb_address_lower:
                 token_out_name = "DAI (from ARB)"
             elif token_in_lower == weth_address_lower and token_out_lower == dai_address_lower:
@@ -729,17 +729,15 @@ class UniswapIntegration:
             print(f"❌ DAI to WBTC swap failed: {e}")
             return False
 
-    def swap_dai_for_gho(self, dai_amount):
-        """Swap DAI for GHO on Uniswap V3.
-        Route 1 (WETH): DAI→WETH→GHO (3 fee tier combos)
-        Route 2 (USD₮0): DAI→USD₮0→GHO (fallback, stablecoin hop)
+    def swap_dai_for_usdc(self, dai_amount):
+        """Swap DAI for USDC on Uniswap V3 — direct single-hop stablecoin swap.
+        Tries fee tiers: 100 (0.01%), 500 (0.05%), 3000 (0.3%)
         """
         try:
-            gho_address = "0x7dfF72693f6A4149b17e7C6314655f6A9F7c8B33"
-            usdt0_address = self.w3.to_checksum_address("0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9")
+            usdc_address = self.w3.to_checksum_address("0xaf88d065e77c8cC2239327C5EDb3A432268e5831")
 
             if dai_amount <= 0:
-                print("❌ Invalid DAI amount for GHO swap")
+                print("❌ Invalid DAI amount for USDC swap")
                 return False
 
             amount_in_wei = int(dai_amount * 1e18)
@@ -749,104 +747,88 @@ class UniswapIntegration:
                 print("❌ DAI approval for Router failed — cannot swap")
                 return False
 
-            print(f"\n🔄 ROUTE 1: DAI → WETH → GHO ({dai_amount:.4f} DAI)")
-            print("=" * 50)
+            usdc_decimals = 6
+            expected_usdc_out = dai_amount * (10 ** usdc_decimals)
+            min_output = max(1, int(expected_usdc_out * 0.95))
 
-            fees_attempt1 = [500, 3000]
-            path_bytes = self._encode_path(
-                [self.dai_address, self.weth_address, gho_address],
-                fees_attempt1
-            )
-            swap_result = self._execute_multihop_swap(
-                path_bytes, dai_amount, amount_in_wei,
-                self.dai_address, f"{dai_amount:.4f} DAI →(500)→ WETH →(3000)→ GHO"
-            )
+            fee_tiers = [100, 500, 3000]
 
-            if not swap_result:
-                print("⚠️ WETH route 500/3000 failed, trying 3000/3000...")
-                fees_attempt2 = [3000, 3000]
-                path_bytes = self._encode_path(
-                    [self.dai_address, self.weth_address, gho_address],
-                    fees_attempt2
-                )
-                swap_result = self._execute_multihop_swap(
-                    path_bytes, dai_amount, amount_in_wei,
-                    self.dai_address, f"{dai_amount:.4f} DAI →(3000)→ WETH →(3000)→ GHO"
-                )
+            for fee in fee_tiers:
+                print(f"\n🔄 Trying DAI → USDC direct swap (fee tier {fee})...")
 
-            if not swap_result:
-                print("⚠️ WETH route 3000/3000 failed, trying 500/10000...")
-                fees_attempt3 = [500, 10000]
-                path_bytes = self._encode_path(
-                    [self.dai_address, self.weth_address, gho_address],
-                    fees_attempt3
-                )
-                swap_result = self._execute_multihop_swap(
-                    path_bytes, dai_amount, amount_in_wei,
-                    self.dai_address, f"{dai_amount:.4f} DAI →(500)→ WETH →(10000)→ GHO"
-                )
+                quote = self._get_fresh_quote(self.dai_address, usdc_address, fee, amount_in_wei)
+                if quote > 0:
+                    min_output = max(1, int(quote * 0.95))
+                    print(f"📊 Quote: {quote} USDC-wei, min output (5% slippage): {min_output}")
 
-            if not swap_result:
-                print(f"\n🔄 ROUTE 2: DAI → USD₮0 → GHO ({dai_amount:.4f} DAI)")
-                print("=" * 50)
-
-                fees_usdt1 = [100, 500]
-                path_bytes = self._encode_path(
-                    [self.dai_address, usdt0_address, gho_address],
-                    fees_usdt1
-                )
-                swap_result = self._execute_multihop_swap(
-                    path_bytes, dai_amount, amount_in_wei,
-                    self.dai_address, f"{dai_amount:.4f} DAI →(100)→ USD₮0 →(500)→ GHO"
-                )
-
-            if not swap_result:
-                fees_usdt2 = [500, 500]
-                path_bytes = self._encode_path(
-                    [self.dai_address, usdt0_address, gho_address],
-                    fees_usdt2
-                )
-                swap_result = self._execute_multihop_swap(
-                    path_bytes, dai_amount, amount_in_wei,
-                    self.dai_address, f"{dai_amount:.4f} DAI →(500)→ USD₮0 →(500)→ GHO"
-                )
-
-            if not swap_result:
-                fees_usdt3 = [100, 3000]
-                path_bytes = self._encode_path(
-                    [self.dai_address, usdt0_address, gho_address],
-                    fees_usdt3
-                )
-                swap_result = self._execute_multihop_swap(
-                    path_bytes, dai_amount, amount_in_wei,
-                    self.dai_address, f"{dai_amount:.4f} DAI →(100)→ USD₮0 →(3000)→ GHO"
-                )
-
-            if not swap_result:
-                fees_usdt4 = [500, 3000]
-                path_bytes = self._encode_path(
-                    [self.dai_address, usdt0_address, gho_address],
-                    fees_usdt4
-                )
-                swap_result = self._execute_multihop_swap(
-                    path_bytes, dai_amount, amount_in_wei,
-                    self.dai_address, f"{dai_amount:.4f} DAI →(500)→ USD₮0 →(3000)→ GHO"
-                )
-
-            if swap_result and isinstance(swap_result, str):
-                return {
-                    'success': True,
-                    'tx_hash': swap_result,
-                    'amount_in': dai_amount,
-                    'token_in': 'DAI',
-                    'token_out': 'GHO'
+                swap_params = {
+                    'tokenIn': self.w3.to_checksum_address(self.dai_address),
+                    'tokenOut': usdc_address,
+                    'fee': fee,
+                    'recipient': self.w3.to_checksum_address(self.address),
+                    'amountIn': amount_in_wei,
+                    'amountOutMinimum': min_output,
+                    'sqrtPriceLimitX96': 0
                 }
-            else:
-                print("❌ All DAI→GHO swap routes exhausted (WETH + USD₮0)")
-                return False
+
+                chain_id = self.w3.eth.chain_id
+                nonce = self.w3.eth.get_transaction_count(self.address, 'pending')
+                base_gas_price = self.w3.eth.gas_price
+                swap_gas_price = int(base_gas_price * 2.5) if chain_id == 42161 else int(base_gas_price * 1.5)
+
+                try:
+                    swap_tx = self.router_contract.functions.exactInputSingle(
+                        swap_params
+                    ).build_transaction({
+                        'chainId': chain_id,
+                        'gas': 500000,
+                        'gasPrice': swap_gas_price,
+                        'nonce': nonce,
+                        'value': 0
+                    })
+
+                    try:
+                        estimated_gas = self.w3.eth.estimate_gas(swap_tx)
+                        swap_tx['gas'] = min(int(estimated_gas * 1.8), 800000)
+                        print(f"💰 Gas estimate: {estimated_gas} → using {swap_tx['gas']}")
+                    except Exception as gas_err:
+                        err_str = str(gas_err)
+                        if 'STF' in err_str or 'execution reverted' in err_str.lower():
+                            print(f"⚠️ Fee tier {fee} pool unavailable: {err_str}")
+                            continue
+                        print(f"⚠️ Gas estimation failed: {gas_err}, using fallback 500000")
+
+                    fresh_nonce = self.w3.eth.get_transaction_count(self.address, 'pending')
+                    swap_tx['nonce'] = fresh_nonce
+
+                    signed_swap = self.w3.eth.account.sign_transaction(swap_tx, self.account.key)
+                    tx_hash = self.w3.eth.send_raw_transaction(signed_swap.rawTransaction)
+                    tx_hash_hex = tx_hash.hex()
+                    print(f"✅ DAI→USDC swap sent: {tx_hash_hex}")
+
+                    receipt = self.w3.eth.wait_for_transaction_receipt(tx_hash, timeout=120)
+                    if receipt.status == 1:
+                        print(f"✅ DAI→USDC swap confirmed on-chain!")
+                        return {
+                            'success': True,
+                            'tx_hash': tx_hash_hex,
+                            'amount_in': dai_amount,
+                            'token_in': 'DAI',
+                            'token_out': 'USDC'
+                        }
+                    else:
+                        print(f"❌ DAI→USDC swap reverted on-chain (fee tier {fee})")
+                        continue
+
+                except Exception as swap_err:
+                    print(f"⚠️ Fee tier {fee} swap failed: {swap_err}")
+                    continue
+
+            print("❌ All DAI→USDC fee tiers exhausted (100, 500, 3000)")
+            return False
 
         except Exception as e:
-            print(f"❌ DAI to GHO swap failed: {e}")
+            print(f"❌ DAI to USDC swap failed: {e}")
             return False
 
     def swap_dai_for_weth(self, dai_amount):

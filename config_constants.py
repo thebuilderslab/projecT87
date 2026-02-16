@@ -1,13 +1,13 @@
 """
 Configuration Constants for Arbitrum DeFi Agent
-Centralized configuration management — GHO Accumulation Mode
+Centralized configuration management — USDC Tax Mode (Pay Yourself First → WALLET_B)
 """
 
 # Minimum ETH requirements for operations
 MIN_ETH_FOR_OPERATIONS = 0.001
 MIN_ETH_FOR_GAS_BUFFER = 0.0005
 
-# Health factor thresholds — Conservative GHO Farming Mode
+# Health factor thresholds — Conservative USDC Tax Mode
 MIN_HEALTH_FACTOR = 2.90
 TARGET_HEALTH_FACTOR = 3.10
 SAFE_HEALTH_FACTOR = 3.10
@@ -46,9 +46,9 @@ CAPACITY_BORROW_AMOUNT = 5.50
 GROWTH_MIN_CAPACITY = 12.0
 CAPACITY_MIN_CAPACITY = 7.0
 
-# GHO Tax — extra $1.20 added to every borrow, swapped to GHO and held in wallet
-GHO_TAX_AMOUNT = 1.20
-GHO_HARVEST_TARGET = 22.00
+# USDC Tax — extra $1.20 added to every borrow, swapped to USDC and sent to WALLET_B
+USDC_TAX_AMOUNT = 1.20
+USDC_HARVEST_TARGET = 22.00
 
 # Slippage
 MAX_SLIPPAGE_PERCENT = 2.0
@@ -88,8 +88,8 @@ RETRY_DELAY = 2
 REQUEST_TIMEOUT = 10
 PRICE_CACHE_DURATION = 300
 
-# GHO Whitelist — Nurse/restore_health must NEVER sweep GHO
-GHO_WHITELIST = True
+# USDC Whitelist — Nurse/restore_health must NEVER sweep USDC (sent to WALLET_B)
+USDC_WHITELIST = True
 
 # Delegation Mode — Dynamic Target Wallet
 import os

@@ -3,12 +3,12 @@
 ## Project Overview
 Autonomous Aave V3 debt management system on Arbitrum Mainnet with two distinct execution paths. Monitors collateral growth from a $47 baseline and executes fixed-value borrowing operations.
 
-## Current Status: **GHO Accumulation Mode** (Feb 2026)
+## Current Status: **USDC Tax Mode — Pay Yourself First → WALLET_B** (Feb 2026)
 
 ## Architecture
 
-### GHO Accumulation Mode
-Conservative HF thresholds with $1.20 GHO Tax on every borrow. Each execution path borrows an extra $1.20, swaps it to GHO, and holds it in wallet. GHO is whitelisted — Nurse Mode and restore_health.py never sweep it.
+### USDC Tax Mode (formerly GHO Accumulation)
+Conservative HF thresholds with $1.20 USDC Tax on every borrow. Each execution path borrows an extra $1.20 DAI, swaps it to USDC via Uniswap single-hop, then sends the USDC to WALLET_B_ADDRESS (stored in Replit secrets). USDC is whitelisted — Nurse Mode and restore_health.py never sweep it.
 
 **HF Thresholds (Conservative):**
 - Growth min: 3.10
@@ -19,7 +19,7 @@ Conservative HF thresholds with $1.20 GHO Tax on every borrow. Each execution pa
 
 ### Dual-Path Execution System
 
-**Growth Path ($11.40 borrow = $10.20 + $1.20 GHO Tax)** - PRIORITY 1
+**Growth Path ($11.40 borrow = $10.20 + $1.20 USDC Tax)** - PRIORITY 1
 - Activates on: 10% relative OR $50 absolute collateral growth from baseline
 - Requires: Health factor >= 3.10, Available capacity >= $13.20
 - Distribution:
@@ -28,9 +28,9 @@ Conservative HF thresholds with $1.20 GHO Tax on every borrow. Each execution pa
   - $2.00 DAI -> WETH swap + supply to Aave
   - $1.10 DAI -> ETH (gas reserve, held in wallet)
   - $1.10 DAI transfer to WALLET_S_ADDRESS
-  - $1.20 DAI -> GHO swap (held in wallet, farm accumulation)
+  - $1.20 DAI -> USDC swap -> sent to WALLET_B_ADDRESS
 
-**Capacity Path ($6.70 borrow = $5.50 + $1.20 GHO Tax)** - PRIORITY 2
+**Capacity Path ($6.70 borrow = $5.50 + $1.20 USDC Tax)** - PRIORITY 2
 - Activates when: Available capacity >= $8.20
 - Requires: Health factor >= 2.90
 - Distribution:
@@ -39,13 +39,18 @@ Conservative HF thresholds with $1.20 GHO Tax on every borrow. Each execution pa
   - $1.10 DAI -> WETH swap + supply to Aave
   - $1.10 DAI -> ETH (gas reserve, held in wallet)
   - $1.10 DAI transfer to WALLET_S_ADDRESS
-  - $1.20 DAI -> GHO swap (held in wallet, farm accumulation)
+  - $1.20 DAI -> USDC swap -> sent to WALLET_B_ADDRESS
 
-### GHO Tax & Yield Farm
-- GHO_TAX_AMOUNT = $1.20 per borrow
-- GHO_HARVEST_TARGET = $22.00 (dashboard CLAIM USDC button unlocks at target)
-- GHO is WHITELISTED in Nurse Mode (_perform_safety_sweep) and restore_health.py
-- Infinite GHO approval for Uniswap Router checked on startup
+### USDC Tax & WALLET_B Transfer
+- USDC_TAX_AMOUNT = $1.20 per borrow
+- USDC_HARVEST_TARGET = $22.00 (dashboard tracks cumulative USDC sent)
+- USDC address: 0xaf88d065e77c8cC2239327C5EDb3A432268e5831 (native USDC, 6 decimals)
+- DAI→USDC swap: Uniswap V3 single-hop (fee tiers: 100bp, 500bp, 3000bp)
+- WETH→USDC swap: Uniswap V3 for Liability Short path
+- After swap, USDC is immediately transferred to WALLET_B_ADDRESS
+- USDC is WHITELISTED in Nurse Mode (_perform_safety_sweep) and restore_health.py
+- Dashboard Zone 4 shows USDC balance + WALLET_B address + manual "SEND USDC" button
+- API endpoint: POST /api/send-usdc-to-wallet-b
 
 ### AaveOracle Integration
 - Primary price source: AaveOracle at 0xb56c2F0B653B2e0b10C9b928C8580Ac5Df02C7C7

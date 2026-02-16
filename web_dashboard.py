@@ -93,24 +93,24 @@ class WorkingAgent:
             'chain_id': 42161
         }
 
-    GHO_HARVEST_TARGET = 22.0
+    USDC_HARVEST_TARGET = 22.0
 
     def get_eth_balance(self):
         return self.live_data['eth_balance']
 
-    def _get_gho_balance(self):
-        """Fetch real GHO balance on-chain for the dashboard wallet"""
+    def _get_usdc_balance(self):
+        """Fetch real USDC balance on-chain for the dashboard wallet (6 decimals)"""
         try:
             if not self.w3:
                 return 0.0
             from web3 import Web3
-            gho_address = Web3.to_checksum_address("0x7dfF72693f6A4149b17e7C6314655f6A9F7c8B33")
+            usdc_address = Web3.to_checksum_address("0xaf88d065e77c8cC2239327C5EDb3A432268e5831")
             balance_abi = [{"inputs": [{"name": "account", "type": "address"}], "name": "balanceOf", "outputs": [{"name": "", "type": "uint256"}], "stateMutability": "view", "type": "function"}]
-            gho_contract = self.w3.eth.contract(address=gho_address, abi=balance_abi)
-            raw = gho_contract.functions.balanceOf(Web3.to_checksum_address(self.address)).call()
-            return raw / 10**18
+            usdc_contract = self.w3.eth.contract(address=usdc_address, abi=balance_abi)
+            raw = usdc_contract.functions.balanceOf(Web3.to_checksum_address(self.address)).call()
+            return raw / 10**6
         except Exception as e:
-            logger.debug(f"GHO balance fetch error: {e}")
+            logger.debug(f"USDC balance fetch error: {e}")
             return 0.0
 
     def initialize_integrations(self):
@@ -1061,8 +1061,9 @@ def command_center():
                 "available_borrows": round(available_borrows, 2),
                 "total_debt": round(total_debt, 2),
                 "borrow_capacity": round(total_collateral * 0.8, 2),
-                "gho_balance": round(getattr(agent, '_get_gho_balance', lambda: 0)() if agent else 0, 4),
-                "gho_target": getattr(agent, 'GHO_HARVEST_TARGET', 22.0) if agent else 22.0,
+                "usdc_balance": round(getattr(agent, '_get_usdc_balance', lambda: 0)() if agent else 0, 4),
+                "usdc_target": getattr(agent, 'USDC_HARVEST_TARGET', 22.0) if agent else 22.0,
+                "wallet_b": os.getenv('WALLET_B_ADDRESS', 'Not Set')[:10] + '...' if os.getenv('WALLET_B_ADDRESS') else 'Not Set',
                 "engine_room": _get_engine_room_state(health_factor, total_collateral, total_debt, available_borrows, agent_running),
             },
             "zone5_intel": {
@@ -2683,28 +2684,38 @@ def get_cost_optimization_status():
 
 # ============================================================================
 # REAL-TIME SSE ENDPOINTS - Phase 2.2: WebSocket-style Synchronization
-@app.route('/api/harvest-gho', methods=['POST'])
-def api_harvest_gho():
-    """Harvest GHO: swap accumulated GHO to USDC and transfer to WALLET_S"""
+@app.route('/api/send-usdc-to-wallet-b', methods=['POST'])
+def api_send_usdc_to_wallet_b():
+    """Send accumulated USDC to WALLET_B (Pay Yourself First)"""
     global agent
     try:
         if not agent:
             return jsonify({"error": "Agent not initialized", "success": False}), 503
-        gho_balance = agent._get_gho_balance() if hasattr(agent, '_get_gho_balance') else 0
-        gho_target = getattr(agent, 'GHO_HARVEST_TARGET', 22.0)
-        if gho_balance < gho_target:
+        usdc_balance = agent._get_usdc_balance() if hasattr(agent, '_get_usdc_balance') else 0
+        wallet_b = os.getenv('WALLET_B_ADDRESS', '')
+        if not wallet_b:
+            return jsonify({"error": "WALLET_B_ADDRESS not configured", "success": False}), 400
+        if usdc_balance < 0.01:
             return jsonify({
-                "error": f"GHO balance {gho_balance:.4f} below harvest target {gho_target:.2f}",
-                "gho_balance": round(gho_balance, 4),
-                "gho_target": gho_target,
+                "error": f"USDC balance {usdc_balance:.4f} too low to transfer",
+                "usdc_balance": round(usdc_balance, 4),
                 "success": False
             }), 400
+        if hasattr(agent, '_send_usdc_to_wallet_b'):
+            result = agent._send_usdc_to_wallet_b()
+            if result:
+                return jsonify({
+                    "message": f"Sent {usdc_balance:.4f} USDC to WALLET_B ({wallet_b[:10]}...)",
+                    "usdc_balance": round(usdc_balance, 4),
+                    "success": True
+                })
+            else:
+                return jsonify({"error": "USDC transfer failed", "success": False}), 500
         return jsonify({
-            "message": f"GHO harvest ready: {gho_balance:.4f} GHO available. Manual harvest via contract call required.",
-            "gho_balance": round(gho_balance, 4),
-            "gho_target": gho_target,
-            "success": True
-        })
+            "message": f"USDC available: {usdc_balance:.4f}. Agent transfer function not available.",
+            "usdc_balance": round(usdc_balance, 4),
+            "success": False
+        }), 503
     except Exception as e:
         return jsonify({"error": str(e), "success": False}), 500
 

@@ -7,7 +7,7 @@ COMPOSITE SEQUENCE:
   Part A: Leveraged Entry — Borrow WETH, distribute (WBTC supply, WETH supply, DAI supply, DAI transfer, ETH gas)
   Part B: Liability Hedge — Swap existing DAI debt to WETH debt via BidirectionalDebtSwapper
 
-DUAL TRIGGERS (Conservative GHO Mode):
+DUAL TRIGGERS (Conservative USDC Mode):
   Macro Entry: Collateral drop >5% + HF >3.05 → Full position ($10.90 borrow + $10.80 debt swap)
   Micro Entry: Collateral drop >2% + HF >3.00 → Partial position ($7.20 borrow + $10.10 debt swap)
 
@@ -36,7 +36,7 @@ MACRO_DISTRIBUTION = {
     'dai_transfer': 1.10,
     'eth_gas_reserve': 1.10,
     'debt_swap_amount': 10.80,
-    'gho_tax': 1.20,
+    'usdc_tax': 1.20,
     'min_capacity': 13.0 + 1.20,
 }
 
@@ -49,7 +49,7 @@ MICRO_DISTRIBUTION = {
     'dai_transfer': 1.10,
     'eth_gas_reserve': 1.10,
     'debt_swap_amount': 10.10,
-    'gho_tax': 1.20,
+    'usdc_tax': 1.20,
     'min_capacity': 9.0 + 1.20,
 }
 

@@ -662,13 +662,17 @@
                             <div class="hud-bar-fill" id="hudCapBar" style="width:0%;background:var(--green-glow)"></div>
                         </div>
                         <div class="hud-data-row">
-                            <span class="hud-data-label">GHO Farm</span>
-                            <span class="hud-data-value" id="hudGho">0.00 / 22.00</span>
+                            <span class="hud-data-label">USDC → WALLET_B</span>
+                            <span class="hud-data-value" id="hudUsdc">0.00 / 22.00</span>
                         </div>
                         <div class="hud-bar-bg">
-                            <div class="hud-bar-fill" id="hudGhoBar" style="width:0%;background:#a78bfa"></div>
+                            <div class="hud-bar-fill" id="hudUsdcBar" style="width:0%;background:#2775ca"></div>
                         </div>
-                        <button id="harvestBtn" class="hud-harvest-btn" onclick="harvestGho()" disabled>CLAIM USDC (Locked until target)</button>
+                        <div class="hud-data-row" style="margin-top:4px;">
+                            <span class="hud-data-label" style="font-size:0.65rem;opacity:0.7">WALLET_B</span>
+                            <span class="hud-data-value" id="hudWalletB" style="font-size:0.65rem;opacity:0.7">Loading...</span>
+                        </div>
+                        <button id="sendUsdcBtn" class="hud-harvest-btn" onclick="sendUsdcToWalletB()" disabled>SEND USDC → WALLET_B</button>
                     </div>
                 </div>
             </div>
@@ -763,29 +767,30 @@
             else if (pct > 50) capBar.style.background = 'var(--amber-glow)';
             else capBar.style.background = 'var(--green-glow)';
 
-            const ghoBal = z4.gho_balance || 0;
-            const ghoTgt = z4.gho_target || 22.0;
-            const ghoPct = ghoTgt > 0 ? Math.min((ghoBal / ghoTgt) * 100, 100) : 0;
-            document.getElementById('hudGho').textContent = ghoBal.toFixed(2) + ' / ' + ghoTgt.toFixed(2);
-            document.getElementById('hudGhoBar').style.width = ghoPct + '%';
+            const usdcBal = z4.usdc_balance || 0;
+            const usdcTgt = z4.usdc_target || 22.0;
+            const usdcPct = usdcTgt > 0 ? Math.min((usdcBal / usdcTgt) * 100, 100) : 0;
+            document.getElementById('hudUsdc').textContent = '$' + usdcBal.toFixed(2) + ' / $' + usdcTgt.toFixed(2);
+            document.getElementById('hudUsdcBar').style.width = usdcPct + '%';
+            document.getElementById('hudWalletB').textContent = z4.wallet_b || 'Not Set';
 
-            const hBtn = document.getElementById('harvestBtn');
-            if (ghoBal >= ghoTgt) {
-                hBtn.disabled = false;
-                hBtn.textContent = 'CLAIM USDC (' + ghoBal.toFixed(2) + ' GHO ready)';
+            const sBtn = document.getElementById('sendUsdcBtn');
+            if (usdcBal >= 0.01) {
+                sBtn.disabled = false;
+                sBtn.textContent = 'SEND $' + usdcBal.toFixed(2) + ' USDC → WALLET_B';
             } else {
-                hBtn.disabled = true;
-                hBtn.textContent = 'CLAIM USDC (' + ghoPct.toFixed(0) + '% to target)';
+                sBtn.disabled = true;
+                sBtn.textContent = 'SEND USDC → WALLET_B (' + usdcPct.toFixed(0) + '% to target)';
             }
         }
 
-        async function harvestGho() {
+        async function sendUsdcToWalletB() {
             try {
-                const resp = await fetch('/api/harvest-gho', { method: 'POST' });
+                const resp = await fetch('/api/send-usdc-to-wallet-b', { method: 'POST' });
                 const data = await resp.json();
-                alert(data.message || data.error || 'Harvest request sent');
+                alert(data.message || data.error || 'USDC transfer request sent');
             } catch (err) {
-                alert('Harvest failed: ' + err.message);
+                alert('USDC transfer failed: ' + err.message);
             }
         }
 
@@ -870,7 +875,7 @@
             }
 
             const detail = document.getElementById('safetyDetail');
-            if (hfStatus === 'HEALTHY') detail.textContent = `Safety Rating ${hf.toFixed(2)} — All systems operating normally. Conservative GHO mode active.`;
+            if (hfStatus === 'HEALTHY') detail.textContent = `Safety Rating ${hf.toFixed(2)} — All systems operating normally. USDC Tax mode active.`;
             else if (hfStatus === 'CAUTION') detail.textContent = `Safety Rating ${hf.toFixed(2)} — Approaching threshold. Growth operations paused until rating improves above 3.10.`;
             else detail.textContent = `Safety Rating ${hf.toFixed(2)} — Below safe threshold. Emergency protocols active. Waiting for rating recovery above 2.90.`;
 

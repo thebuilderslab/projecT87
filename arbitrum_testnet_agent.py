@@ -493,8 +493,7 @@ class ArbitrumTestnetAgent:
             self.weth_address = self.w3.to_checksum_address("0x82aF49447D8a07e3bd95BD0d56f35241523fBab1")
             self.wbtc_address = self.w3.to_checksum_address("0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f")
             self.dai_address = self.w3.to_checksum_address("0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1")
-            # Official GHO token address - Arbitrum One mainnet
-            self.gho_address = self.w3.to_checksum_address("0x7dfF72693f6A4149b17e7C6314655f6A9F7c8B33")
+            self.usdc_address = self.w3.to_checksum_address("0xaf88d065e77c8cC2239327C5EDb3A432268e5831")
             self.arb_address = "0x912CE59144191C1204E64559FE8253a0e49E6548"
             self.aave_pool_address = "0x794a61358D6845594F94dc1DB02A252b5b4814aD"
 
@@ -507,7 +506,7 @@ class ArbitrumTestnetAgent:
             print(f"   DAI: {self.dai_address}")
             print(f"   WBTC: {self.wbtc_address}")
             print(f"   WETH: {self.weth_address}")
-            print(f"   GHO: {self.gho_address}")
+            print(f"   USDC: {self.usdc_address}")
             print(f"   Aave Pool: {self.aave_pool_address}")
         else:
             # Testnet mode (Arbitrum Sepolia)
@@ -519,14 +518,14 @@ class ArbitrumTestnetAgent:
             self.wbtc_address = "0xA2d460Bc966F6C4D5527a6ba35C6cB57c15c8F96"
             self.weth_address = "0x980B62Da83eFf3D4576C647993b0c1D7faf17c73"
             self.dai_address = "0x5f6bB460B6d0bdA2CCaDdd7A19B5F6E7b5b8E1DB"
-            self.gho_address = None  # GHO not available on Arbitrum Sepolia testnet
+            self.usdc_address = None  # USDC address not set for testnet
             self.arb_address = "0x1b20e6a3B2a86618C32A37ffcD5E98C0d20a6E42"
             self.aave_pool_address = "0x18cd499E3d7ed42FebA981ac9236A278E4Cdc2ee"
         
         # PHASE 1: FIXED-VALUE DISTRIBUTION PATHS
         # Two distinct execution paths with exact dollar amounts
-        self.GHO_TAX_AMOUNT = 1.20
-        self.GHO_HARVEST_TARGET = 22.00
+        self.USDC_TAX_AMOUNT = 1.20
+        self.USDC_HARVEST_TARGET = 22.00
         self.GROWTH_DISTRIBUTION = {
             'total_borrow': 10.20 + 1.20,
             'dai_supply': 3.00,
@@ -534,7 +533,7 @@ class ArbitrumTestnetAgent:
             'weth_swap_supply': 2.00,
             'eth_gas_reserve': 1.10,
             'dai_transfer': 1.10,
-            'gho_tax': 1.20,
+            'usdc_tax': 1.20,
             'min_capacity': 12.0 + 1.20,
         }
         self.CAPACITY_DISTRIBUTION = {
@@ -544,7 +543,7 @@ class ArbitrumTestnetAgent:
             'weth_swap_supply': 1.10,
             'eth_gas_reserve': 1.10,
             'dai_transfer': 1.10,
-            'gho_tax': 1.20,
+            'usdc_tax': 1.20,
             'min_capacity': 7.0 + 1.20,
         }
 
@@ -599,14 +598,14 @@ class ArbitrumTestnetAgent:
 
         # Growth-Triggered System Configuration
         self.growth_trigger_threshold = 50.0  # $50 absolute growth threshold
-        self.growth_health_factor_threshold = 3.10  # Conservative GHO mode: Growth min HF
+        self.growth_health_factor_threshold = 3.10  # Conservative USDC mode: Growth min HF
         self.growth_percentage_threshold = 0.10  # 10% relative growth threshold
         self.growth_min_capacity = 12.0  # $12 minimum available capacity for growth path
 
         # Capacity-Based System Configuration
         self.capacity_min_capacity = 7.0  # $7 minimum available capacity for capacity path
-        self.capacity_health_factor_threshold = 2.90  # Conservative GHO mode: Capacity min HF
-        self.target_health_factor = 3.10  # Conservative GHO mode: target HF
+        self.capacity_health_factor_threshold = 2.90  # Conservative USDC mode: Capacity min HF
+        self.target_health_factor = 3.10  # Conservative USDC mode: target HF
 
         # Display Hybrid System Configuration
         self._display_hybrid_system_config()
@@ -1764,8 +1763,8 @@ class ArbitrumTestnetAgent:
             self.uniswap = UniswapIntegration(self.w3, self.account)
             print("✅ Uniswap integration initialized")
 
-            if self.gho_address and self.uniswap:
-                self._ensure_gho_uniswap_approval()
+            if self.usdc_address and self.uniswap:
+                self._ensure_usdc_uniswap_approval()
 
             self._init_aave_oracle()
 
@@ -1896,7 +1895,7 @@ class ArbitrumTestnetAgent:
         "weth_supplied",
         "eth_converted",
         "wallet_s_transferred",
-        "gho_taxed",
+        "usdc_taxed",
     ]
 
     def save_execution_state(self, step, path_name, distribution):
@@ -2392,9 +2391,9 @@ class ArbitrumTestnetAgent:
                 print(f"   WETH Swap+Supply: ${distribution['weth_swap_supply']:.2f}")
                 print(f"   ETH Gas Reserve:  ${distribution['eth_gas_reserve']:.2f}")
                 print(f"   DAI Transfer:     ${distribution['dai_transfer']:.2f}")
-                gho_tax_display = distribution.get('gho_tax', 0)
-                if gho_tax_display > 0:
-                    print(f"   🛡️ GHO Tax:       ${gho_tax_display:.2f} (→ GHO farm)")
+                usdc_tax_display = distribution.get('usdc_tax', 0)
+                if usdc_tax_display > 0:
+                    print(f"   🛡️ USDC Tax:       ${usdc_tax_display:.2f} (→ USDC farm)")
                 print(f"{'='*60}\n")
 
             if "borrowed" not in already_done:
@@ -2429,25 +2428,26 @@ class ArbitrumTestnetAgent:
             sequence_ok = True
             steps_failed = []
 
-            if "gho_taxed" not in already_done:
-                gho_tax_amt = distribution.get('gho_tax', 0)
-                if gho_tax_amt >= 1.00 and self.gho_address:
-                    print(f"\n📋 STEP 1.5 (PAY YOURSELF FIRST): Swapping ${gho_tax_amt:.2f} DAI → GHO immediately...")
-                    gho_before = self._get_gho_balance()
-                    if self._swap_dai_for_gho(gho_tax_amt):
+            if "usdc_taxed" not in already_done:
+                usdc_tax_amt = distribution.get('usdc_tax', 0)
+                if usdc_tax_amt >= 1.00 and self.usdc_address:
+                    print(f"\n📋 STEP 1.5 (PAY YOURSELF FIRST): Swapping ${usdc_tax_amt:.2f} DAI → USDC immediately...")
+                    usdc_before = self._get_usdc_balance()
+                    if self._swap_dai_for_usdc(usdc_tax_amt):
                         time.sleep(3)
-                        gho_after = self._get_gho_balance()
-                        print(f"   🛡️ GHO Farm: {gho_before:.4f} → {gho_after:.4f} GHO (target: {self.GHO_HARVEST_TARGET:.2f})")
-                        self.save_execution_state("gho_taxed", path_name, dist_serializable)
+                        usdc_after = self._get_usdc_balance()
+                        print(f"   🛡️ USDC Farm: {usdc_before:.4f} → {usdc_after:.4f} USDC (target: {self.USDC_HARVEST_TARGET:.2f})")
+                        self._send_usdc_to_wallet_b()
+                        self.save_execution_state("usdc_taxed", path_name, dist_serializable)
                     else:
-                        print(f"   ⚠️ GHO tax swap failed — ${gho_tax_amt:.2f} DAI remains for distribution steps")
-                        steps_failed.append("gho_taxed")
+                        print(f"   ⚠️ USDC tax swap failed — ${usdc_tax_amt:.2f} DAI remains for distribution steps")
+                        steps_failed.append("usdc_taxed")
                 else:
-                    if not self.gho_address:
-                        print(f"   ⏭️ GHO Tax: Not available on this network")
-                    self.save_execution_state("gho_taxed", path_name, dist_serializable)
-            elif "gho_taxed" in already_done:
-                print("⏭️ STEP 1.5 (GHO Tax): Already completed — skipping")
+                    if not self.usdc_address:
+                        print(f"   ⏭️ USDC Tax: Not available on this network")
+                    self.save_execution_state("usdc_taxed", path_name, dist_serializable)
+            elif "usdc_taxed" in already_done:
+                print("⏭️ STEP 1.5 (USDC Tax): Already completed — skipping")
 
             if "dai_supplied" not in already_done:
                 dai_supply_amt = distribution['dai_supply']
@@ -2595,7 +2595,7 @@ class ArbitrumTestnetAgent:
                 else:
                     print(f"   ❌ Sweep failed — ${remaining_dai:.2f} DAI remains in wallet")
             elif remaining_dai > 0.01:
-                print(f"\n🛡️ DUST/TAX GUARD: ${remaining_dai:.2f} DAI below $2.00 threshold — skipping sweep (protects stranded GHO tax)")
+                print(f"\n🛡️ DUST/TAX GUARD: ${remaining_dai:.2f} DAI below $2.00 threshold — skipping sweep (protects stranded USDC tax)")
 
             print(f"\n{'='*60}")
             if not steps_failed:
@@ -2715,11 +2715,11 @@ class ArbitrumTestnetAgent:
             borrow_usd = distribution['total_borrow_usd']
             weth_to_borrow = borrow_usd / eth_price
 
-            gho_tax_usd = distribution.get('gho_tax', 0)
-            gho_tax_weth = gho_tax_usd / eth_price if gho_tax_usd > 0 else 0
+            usdc_tax_usd = distribution.get('usdc_tax', 0)
+            usdc_tax_weth = usdc_tax_usd / eth_price if usdc_tax_usd > 0 else 0
 
             print(f"\n{'='*60}")
-            print(f"🔻 EXECUTING LIABILITY SHORT ({tier.upper()}) ENTRY — GHO TAX ACTIVE")
+            print(f"🔻 EXECUTING LIABILITY SHORT ({tier.upper()}) ENTRY — USDC TAX ACTIVE")
             print(f"{'='*60}")
             print(f"   ETH Price:     ${eth_price:.2f}")
             print(f"   WETH Borrow:   {weth_to_borrow:.8f} WETH (${borrow_usd:.2f})")
@@ -2727,7 +2727,7 @@ class ArbitrumTestnetAgent:
             print(f"   WETH Supply:   ${distribution['weth_supply']:.2f}")
             print(f"   DAI Split:     ${distribution['dai_swap_total']:.2f} (supply ${distribution['dai_supply']:.2f} + transfer ${distribution['dai_transfer']:.2f})")
             print(f"   ETH Gas:       ${distribution['eth_gas_reserve']:.2f}")
-            print(f"   🛡️ GHO Tax:     ${gho_tax_usd:.2f} ({gho_tax_weth:.8f} WETH → GHO farm)")
+            print(f"   🛡️ USDC Tax:     ${usdc_tax_usd:.2f} ({usdc_tax_weth:.8f} WETH → USDC → WALLET_B)")
             print(f"   Debt Swap:     ${distribution['debt_swap_amount']:.2f}")
             print(f"   Health Factor: {health_factor:.3f}")
             print(f"{'='*60}\n")
@@ -2754,16 +2754,17 @@ class ArbitrumTestnetAgent:
 
             self.save_execution_state("weth_borrowed", path_name, {"tier": tier, "eth_price": eth_price, "weth_borrowed": weth_to_borrow})
 
-            if gho_tax_weth > 0 and self.gho_address:
-                print(f"\n📋 STEP 1.5 (PAY YOURSELF FIRST): Swapping {gho_tax_weth:.8f} WETH → GHO (${gho_tax_usd:.2f}) immediately...")
-                if self._swap_weth_for_gho(gho_tax_weth):
-                    print(f"   ✅ GHO tax collected — WETH→GHO swap complete")
+            if usdc_tax_weth > 0 and self.usdc_address:
+                print(f"\n📋 STEP 1.5 (PAY YOURSELF FIRST): Swapping {usdc_tax_weth:.8f} WETH → USDC (${usdc_tax_usd:.2f}) immediately...")
+                if self._swap_weth_for_usdc(usdc_tax_weth):
+                    print(f"   ✅ USDC tax collected — WETH→USDC swap complete")
+                    self._send_usdc_to_wallet_b()
                 else:
-                    print(f"   ⚠️ GHO tax swap failed — {gho_tax_weth:.8f} WETH remains for distribution")
-                    steps_failed.append("gho_taxed")
-                self.save_execution_state("gho_taxed", path_name, {"tier": tier})
+                    print(f"   ⚠️ USDC tax swap failed — {usdc_tax_weth:.8f} WETH remains for distribution")
+                    steps_failed.append("usdc_taxed")
+                self.save_execution_state("usdc_taxed", path_name, {"tier": tier})
             else:
-                print(f"   ℹ️ GHO tax not applicable (no GHO address or zero tax)")
+                print(f"   ℹ️ USDC tax not applicable (no USDC address or zero tax)")
 
             wbtc_usd = distribution['wbtc_swap_supply']
             weth_for_wbtc = wbtc_usd / eth_price
@@ -3212,21 +3213,21 @@ class ArbitrumTestnetAgent:
             traceback.print_exc()
             return False
 
-    def _ensure_gho_uniswap_approval(self):
-        """Check and set infinite GHO approval for Uniswap Router on startup"""
+    def _ensure_usdc_uniswap_approval(self):
+        """Check and set infinite USDC approval for Uniswap Router on startup"""
         try:
-            if not self.gho_address or not self.uniswap:
+            if not self.usdc_address or not self.uniswap:
                 return
             erc20_abi = [{"inputs":[{"name":"spender","type":"address"},{"name":"amount","type":"uint256"}],"name":"approve","outputs":[{"name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"name":"owner","type":"address"},{"name":"spender","type":"address"}],"name":"allowance","outputs":[{"name":"","type":"uint256"}],"stateMutability":"view","type":"function"}]
-            gho_contract = self.w3.eth.contract(address=self.gho_address, abi=erc20_abi)
+            usdc_contract = self.w3.eth.contract(address=self.usdc_address, abi=erc20_abi)
             router = self.uniswap.router_address
-            allowance = gho_contract.functions.allowance(self.address, router).call()
+            allowance = usdc_contract.functions.allowance(self.address, router).call()
             infinite = 2**256 - 1
-            if allowance < 10**24:
-                print(f"🔑 GHO Uniswap approval low ({allowance}) — setting infinite approval...")
+            if allowance < 10**12:
+                print(f"🔑 USDC Uniswap approval low ({allowance}) — setting infinite approval...")
                 base_gas = self.w3.eth.gas_price
                 buffered_gas = int(base_gas * 2.5)
-                tx = gho_contract.functions.approve(router, infinite).build_transaction({
+                tx = usdc_contract.functions.approve(router, infinite).build_transaction({
                     'from': self.address,
                     'nonce': self.w3.eth.get_transaction_count(self.address),
                     'gas': 100000,
@@ -3235,11 +3236,11 @@ class ArbitrumTestnetAgent:
                 signed = self.w3.eth.account.sign_transaction(tx, self.account.key)
                 tx_hash = self.w3.eth.send_raw_transaction(signed.rawTransaction)
                 self.w3.eth.wait_for_transaction_receipt(tx_hash, timeout=60)
-                print(f"✅ GHO infinite approval set for Uniswap Router")
+                print(f"✅ USDC infinite approval set for Uniswap Router")
             else:
-                print(f"✅ GHO Uniswap approval already sufficient")
+                print(f"✅ USDC Uniswap approval already sufficient")
         except Exception as e:
-            print(f"⚠️ GHO approval check failed (non-fatal): {e}")
+            print(f"⚠️ USDC approval check failed (non-fatal): {e}")
 
     def _init_aave_oracle(self):
         """Initialize AaveOracle for on-chain ETH/USD pricing"""
@@ -3266,91 +3267,123 @@ class ArbitrumTestnetAgent:
         except Exception:
             return None
 
-    def _swap_dai_for_gho(self, dai_amount):
+    def _swap_dai_for_usdc(self, dai_amount):
         """
-        Swap DAI for GHO via Uniswap multi-hop: DAI → WETH → GHO.
-        No direct DAI/GHO pool exists on Arbitrum, so we route through WETH.
-        GHO is held in wallet (not supplied to Aave).
-        
-        NETWORK-AWARE: GHO only available on mainnet.
+        Swap DAI for USDC via Uniswap direct single-hop.
+        USDC is then sent to WALLET_B.
         """
         try:
-            if not self.gho_address:
-                print("⚠️ GHO not available on this network - operation N/A (not a failure)")
+            if not self.usdc_address:
+                print("⚠️ USDC not available on this network - operation N/A (not a failure)")
                 return True
             
             if not self.uniswap:
                 print("❌ Uniswap integration not available")
                 return False
             
-            print(f"🔄 Swapping {dai_amount:.6f} DAI → WETH → GHO via Uniswap multi-hop...")
+            print(f"🔄 Swapping {dai_amount:.6f} DAI → USDC via Uniswap single-hop...")
             
-            swap_result = self.uniswap.swap_dai_for_gho(dai_amount)
+            swap_result = self.uniswap.swap_dai_for_usdc(dai_amount)
             
             if swap_result and isinstance(swap_result, dict) and swap_result.get('tx_hash'):
-                print(f"✅ GHO swap successful: {swap_result['tx_hash']}")
+                print(f"✅ USDC swap successful: {swap_result['tx_hash']}")
                 return True
             else:
-                print("❌ GHO multi-hop swap failed (all fee tier attempts exhausted)")
+                print("❌ DAI→USDC swap failed (all fee tier attempts exhausted)")
                 return False
                 
         except Exception as e:
-            print(f"❌ GHO swap error: {e}")
+            print(f"❌ USDC swap error: {e}")
             return False
 
-    def _swap_weth_for_gho(self, weth_amount):
+    def _swap_weth_for_usdc(self, weth_amount):
         """
-        Swap WETH for GHO via Uniswap.
-        Used by Liability Short GHO Tax — swaps the extra $1.20 WETH directly to GHO.
-        GHO is held in wallet (not supplied to Aave).
-        
-        NETWORK-AWARE: GHO only available on mainnet.
+        Swap WETH for USDC via Uniswap.
+        Used by Liability Short USDC Tax — swaps the extra $1.20 WETH directly to USDC.
+        USDC is then sent to WALLET_B.
         """
         try:
-            if not self.gho_address:
-                print("⚠️ GHO not available on this network - operation N/A (not a failure)")
+            if not self.usdc_address:
+                print("⚠️ USDC not available on this network - operation N/A (not a failure)")
                 return True
 
             if not self.uniswap:
                 print("❌ Uniswap integration not available")
                 return False
 
-            print(f"🔄 Swapping {weth_amount:.8f} WETH → GHO via Uniswap (GHO Tax)...")
+            print(f"🔄 Swapping {weth_amount:.8f} WETH → USDC via Uniswap (USDC Tax)...")
 
             swap_result = self.uniswap.swap_tokens(
                 self.weth_address,
-                self.gho_address,
+                self.usdc_address,
                 weth_amount
             )
 
             if swap_result and 'tx_hash' in swap_result:
-                print(f"✅ WETH→GHO swap successful: {swap_result['tx_hash']}")
+                print(f"✅ WETH→USDC swap successful: {swap_result['tx_hash']}")
                 return True
             else:
-                print("❌ WETH→GHO swap failed")
+                print("❌ WETH→USDC swap failed")
                 return False
 
         except Exception as e:
-            print(f"❌ WETH→GHO swap error: {e}")
+            print(f"❌ WETH→USDC swap error: {e}")
             return False
     
-    def _get_gho_balance(self):
-        """
-        Get GHO balance from wallet.
-        
-        NETWORK-AWARE: Returns 0 if GHO not available on this network.
-        """
+    def _get_usdc_balance(self):
+        """Get USDC balance from wallet (6 decimals)."""
         try:
-            # Guard: Check if GHO is available on this network
-            if not self.gho_address:
+            if not self.usdc_address:
                 return 0.0
-            
-            if not hasattr(self, 'aave') or not self.aave:
-                return 0.0
-            return self.aave.get_token_balance(self.gho_address)
+            erc20_abi = [{"inputs":[{"name":"account","type":"address"}],"name":"balanceOf","outputs":[{"name":"","type":"uint256"}],"stateMutability":"view","type":"function"}]
+            usdc_contract = self.w3.eth.contract(address=self.usdc_address, abi=erc20_abi)
+            raw_balance = usdc_contract.functions.balanceOf(self.address).call()
+            return raw_balance / 1e6
         except Exception as e:
-            print(f"❌ Failed to get GHO balance: {e}")
+            print(f"❌ Failed to get USDC balance: {e}")
             return 0.0
+
+    def _send_usdc_to_wallet_b(self):
+        """Transfer all USDC balance to WALLET_B_ADDRESS (Pay Yourself First)."""
+        try:
+            wallet_b = os.getenv('WALLET_B_ADDRESS', '').strip()
+            if not wallet_b or len(wallet_b) != 42:
+                print("⚠️ WALLET_B_ADDRESS not set — USDC stays in bot wallet")
+                return False
+
+            wallet_b = self.w3.to_checksum_address(wallet_b)
+            usdc_balance = self._get_usdc_balance()
+            if usdc_balance < 0.01:
+                print(f"   ℹ️ USDC balance too low to transfer ({usdc_balance:.6f})")
+                return False
+
+            erc20_abi = [
+                {"inputs":[{"name":"to","type":"address"},{"name":"amount","type":"uint256"}],"name":"transfer","outputs":[{"name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"}
+            ]
+            usdc_contract = self.w3.eth.contract(address=self.usdc_address, abi=erc20_abi)
+            amount_raw = int(usdc_balance * 1e6)
+
+            base_gas = self.w3.eth.gas_price
+            buffered_gas = int(base_gas * 2.5)
+            tx = usdc_contract.functions.transfer(wallet_b, amount_raw).build_transaction({
+                'from': self.address,
+                'nonce': self.w3.eth.get_transaction_count(self.address),
+                'gas': 100000,
+                'gasPrice': buffered_gas,
+            })
+            signed = self.w3.eth.account.sign_transaction(tx, self.account.key)
+            tx_hash = self.w3.eth.send_raw_transaction(signed.rawTransaction)
+            receipt = self.w3.eth.wait_for_transaction_receipt(tx_hash, timeout=60)
+            if receipt.status == 1:
+                print(f"   💸 USDC SENT TO WALLET_B: {usdc_balance:.6f} USDC → {wallet_b[:10]}...{wallet_b[-4:]}")
+                print(f"   📝 TX: {tx_hash.hex()}")
+                return True
+            else:
+                print(f"   ❌ USDC transfer to WALLET_B reverted")
+                return False
+        except Exception as e:
+            print(f"   ❌ USDC transfer to WALLET_B failed: {e}")
+            return False
     
     def _unwrap_weth_to_eth(self, weth_amount):
         """
@@ -3413,7 +3446,7 @@ class ArbitrumTestnetAgent:
             return False
     
     def _get_reserved_dai(self):
-        """Check if DAI is reserved for pending GHO tax step.
+        """Check if DAI is reserved for pending USDC tax step.
         Returns the amount of DAI to protect from sweep (0.0 if no reservation)."""
         try:
             if os.path.exists(self.EXECUTION_STATE_FILE):
@@ -3421,16 +3454,16 @@ class ArbitrumTestnetAgent:
                     state = json.load(f)
                 current_step = state.get('step', '')
                 if current_step in ['borrowed', 'dai_supplied', 'wbtc_supplied', 'weth_supplied', 'eth_converted', 'wallet_s_transferred']:
-                    from config_constants import GHO_TAX_AMOUNT
-                    print(f"   🔒 DAI RESERVATION: ${GHO_TAX_AMOUNT:.2f} reserved for pending GHO tax (step: {current_step})")
-                    return GHO_TAX_AMOUNT
+                    from config_constants import USDC_TAX_AMOUNT
+                    print(f"   🔒 DAI RESERVATION: ${USDC_TAX_AMOUNT:.2f} reserved for pending USDC tax (step: {current_step})")
+                    return USDC_TAX_AMOUNT
         except Exception as e:
             print(f"   ⚠️ DAI reservation check error: {e}")
         return 0.0
 
     def _perform_safety_sweep(self):
         """Nurse Mode: Detect and supply idle WETH, WBTC, DAI to Aave when balance > $1.10 USD.
-        GHO is WHITELISTED — never swept. DAI reserved for GHO tax is PROTECTED."""
+        USDC is WHITELISTED — never swept (sent to WALLET_B). DAI reserved for USDC tax is PROTECTED."""
         try:
             print("🚑 Nurse Mode: Scanning wallet for idle assets...")
             MIN_USD_THRESHOLD = 1.10
@@ -3443,14 +3476,9 @@ class ArbitrumTestnetAgent:
             wbtc_balance = self.get_wbtc_balance()
             dai_balance = self.get_dai_balance()
 
-            gho_balance = 0.0
-            if hasattr(self, 'gho_address') and self.gho_address and hasattr(self, 'aave') and self.aave:
-                try:
-                    gho_balance = self.aave.get_token_balance(self.gho_address)
-                except Exception:
-                    gho_balance = 0.0
-            if gho_balance > 0:
-                print(f"   🛡️ GHO WHITELISTED: {gho_balance:.6f} GHO detected — PROTECTED (farm asset, will NOT sweep)")
+            usdc_balance = self._get_usdc_balance()
+            if usdc_balance > 0:
+                print(f"   🛡️ USDC WHITELISTED: {usdc_balance:.6f} USDC detected — PROTECTED (will send to WALLET_B, NOT sweep)")
 
             reserved_dai = self._get_reserved_dai()
 
@@ -3483,7 +3511,7 @@ class ArbitrumTestnetAgent:
                 sweepable_dai = dai_balance - reserved_dai
                 if sweepable_dai > MIN_USD_THRESHOLD:
                     if reserved_dai > 0:
-                        print(f"🚑 Nurse Mode: Found ${dai_balance:.2f} DAI, reserving ${reserved_dai:.2f} for GHO tax. Sweeping ${sweepable_dai:.2f}.")
+                        print(f"🚑 Nurse Mode: Found ${dai_balance:.2f} DAI, reserving ${reserved_dai:.2f} for USDC tax. Sweeping ${sweepable_dai:.2f}.")
                     else:
                         print(f"🚑 Nurse Mode: Found ${dai_balance:.2f} of DAI. Supplying to Aave to boost Health Factor.")
                     if self._resupply_dai_to_aave(sweepable_dai * 0.99):
@@ -3491,7 +3519,7 @@ class ArbitrumTestnetAgent:
                     else:
                         print("   ⚠️ DAI supply failed")
                 elif reserved_dai > 0 and dai_balance > 0:
-                    print(f"🚑 Nurse Mode: ${dai_balance:.2f} DAI in wallet — ALL reserved for GHO tax (${reserved_dai:.2f}). Skipping sweep.")
+                    print(f"🚑 Nurse Mode: ${dai_balance:.2f} DAI in wallet — ALL reserved for USDC tax (${reserved_dai:.2f}). Skipping sweep.")
 
             if not supplied_any:
                 print("🚑 Nurse Mode: No idle assets above $1.10 threshold. Wallet clean.")
