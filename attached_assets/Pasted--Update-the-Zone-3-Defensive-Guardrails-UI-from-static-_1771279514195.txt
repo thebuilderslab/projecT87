@@ -1,0 +1,59 @@
+“Update the Zone 3 ‘Defensive Guardrails’ UI from static dollar targets to dynamic, portfolio‑linked real‑estate‑themed targets.
+
+Functional changes:
+
+
+Keep the core logic exactly as implemented: Micro triggers on a $30 collateral drop in 20 minutes, Macro on a $50 drop in 30 minutes, using the 40‑minute velocity buffer and existing cooldowns.
+
+
+For each target card, display:
+
+
+Current portfolio collateral value and recent‑window high used for the velocity monitor.
+
+
+The remaining dollar drop needed before trigger (e.g. ‘Needs $18.40 more drop in next 20m’).
+
+
+A progress indicator that goes from 0–100% as the drop accumulates within the time window.
+
+
+
+
+Make sure the underlying trigger thresholds and timing do not change, only how they are visualized.
+
+
+Real‑estate themed visuals:
+
+
+For Target 1 (Micro Defense), show a ‘property security’ motif: e.g. a small building or house icon with floors filling as the buffer is consumed, labeled ‘Front‑door defense’.
+
+
+For Target 2 (Macro Hedge), show a larger building/tower with floors filling as the $50/30m condition is approached, labeled ‘Storm‑shutter hedge’.
+
+
+Use color transitions instead of text spam: green (safe), amber (approaching), red (within 10% of trigger).
+
+
+Data wiring:
+
+
+Reuse the existing velocity‑monitor outputs from liability_short_strategy.py and whatever fields are already feeding the current ‘$0.00 / $30 (20m)’ display; do not introduce new trigger math.
+
+
+Expose in the API/view model for each target: current_value, window_high, dollar_drop_so_far, dollar_drop_required, time_remaining_seconds, and progress_pct.
+
+
+Implementation steps:
+
+
+Update web_dashboard.py to compute and return these fields for Micro and Macro using the current velocity monitor.
+
+
+Update templates/dashboard.html Zone 3 to replace the static text with the new dynamic layout and building‑style progress visualization.
+
+
+Keep the ‘ARMED — Monitoring’ status text, but add a concise line like: ‘Distance: 64% to Micro Defense trigger’.
+
+
+After changes, reload the dashboard and print a short log section showing the JSON payload for Zone 3 so I can verify the numbers driving the UI.”
