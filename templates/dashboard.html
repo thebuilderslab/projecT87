@@ -318,35 +318,115 @@
             border-radius: 10px;
             padding: 16px;
             border: 1px solid var(--border-default);
+            position: relative;
+            overflow: hidden;
         }
+        .guardrail-card.state-safe { border-color: rgba(0,200,100,0.25); }
+        .guardrail-card.state-amber { border-color: rgba(255,170,0,0.35); }
+        .guardrail-card.state-danger { border-color: rgba(255,60,60,0.45); box-shadow: 0 0 12px rgba(255,60,60,0.15); }
 
         .guardrail-tier {
             font-size: 0.65rem;
             text-transform: uppercase;
             letter-spacing: 1.5px;
             color: var(--label-slate);
-            margin-bottom: 4px;
+            margin-bottom: 2px;
         }
 
-        .guardrail-label {
-            font-size: 0.8rem;
-            color: var(--muted-slate);
+        .guardrail-theme-label {
+            font-size: 0.75rem;
+            font-weight: 600;
             margin-bottom: 8px;
-            line-height: 1.4;
         }
+        .guardrail-theme-label.micro { color: rgba(0,200,180,0.9); }
+        .guardrail-theme-label.macro { color: rgba(100,160,255,0.9); }
 
-        .guardrail-value {
-            font-size: 1.5rem;
-            font-weight: 700;
+        .guardrail-context {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4px 12px;
+            margin-bottom: 10px;
+        }
+        .guardrail-ctx-label {
+            font-size: 0.6rem;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            color: var(--muted-slate);
+        }
+        .guardrail-ctx-value {
+            font-size: 0.8rem;
+            font-weight: 600;
             color: var(--signal-white);
         }
 
+        .building-wrap {
+            position: relative;
+            height: 80px;
+            margin-bottom: 8px;
+        }
+        .building-frame {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            height: 100%;
+            border-radius: 6px 6px 0 0;
+            border: 1px solid rgba(255,255,255,0.08);
+            border-bottom: 2px solid rgba(255,255,255,0.15);
+            background: rgba(255,255,255,0.02);
+            overflow: hidden;
+        }
+        .building-fill {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            transition: height 0.8s ease, background 0.6s ease;
+            border-radius: 4px 4px 0 0;
+        }
+        .building-fill.safe { background: linear-gradient(to top, rgba(0,200,100,0.25), rgba(0,200,100,0.08)); }
+        .building-fill.amber { background: linear-gradient(to top, rgba(255,170,0,0.35), rgba(255,170,0,0.10)); }
+        .building-fill.danger { background: linear-gradient(to top, rgba(255,60,60,0.45), rgba(255,60,60,0.12)); }
+        .building-floors {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column-reverse;
+        }
+        .building-floor-line {
+            flex: 1;
+            border-top: 1px solid rgba(255,255,255,0.05);
+        }
+        .building-icon {
+            position: absolute;
+            top: 4px;
+            right: 6px;
+            font-size: 1.1rem;
+            opacity: 0.5;
+        }
+        .building-pct-label {
+            position: absolute;
+            bottom: 4px;
+            left: 8px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            color: var(--signal-white);
+            text-shadow: 0 1px 3px rgba(0,0,0,0.6);
+        }
+
+        .guardrail-distance {
+            font-size: 0.72rem;
+            color: var(--muted-slate);
+            margin-bottom: 4px;
+        }
+        .guardrail-distance .dist-value { font-weight: 700; color: var(--signal-white); }
+
         .guardrail-status {
-            margin-top: 8px;
-            font-size: 0.75rem;
+            font-size: 0.72rem;
         }
         .guardrail-status.armed { color: var(--green-glow); }
         .guardrail-status.active { color: var(--amber-glow); }
+        .guardrail-status.cooldown { color: var(--muted-slate); font-style: italic; }
 
         .short-engine-panel {
             grid-column: 1 / -1;
@@ -683,18 +763,61 @@
 
             <!-- ZONE 3: Defensive Guardrails (Center, full-width) -->
             <div class="zone-card zone-center" id="zone3">
-                <div class="zone-label">Zone 3 — Defensive Guardrails · Predictive Targets</div>
+                <div class="zone-label">Zone 3 — Defensive Guardrails · Velocity Targets</div>
                 <div class="guardrails-grid">
-                    <div class="guardrail-card">
+                    <div class="guardrail-card state-safe" id="microCard">
                         <div class="guardrail-tier">Target 1 — Micro Defense</div>
-                        <div class="guardrail-label">Defense activates if Market drops below</div>
-                        <div class="guardrail-value" id="microTarget">$—</div>
+                        <div class="guardrail-theme-label micro">Front-door Defense · $30 / 20min</div>
+                        <div class="guardrail-context">
+                            <div><span class="guardrail-ctx-label">Portfolio</span><br><span class="guardrail-ctx-value" id="microCurrentVal">$—</span></div>
+                            <div><span class="guardrail-ctx-label">Window High</span><br><span class="guardrail-ctx-value" id="microWindowHigh">$—</span></div>
+                            <div><span class="guardrail-ctx-label">Drop So Far</span><br><span class="guardrail-ctx-value" id="microDropSoFar">$0.00</span></div>
+                            <div><span class="guardrail-ctx-label">Drop Needed</span><br><span class="guardrail-ctx-value" id="microDropNeeded">$30.00</span></div>
+                        </div>
+                        <div class="building-wrap">
+                            <div class="building-frame">
+                                <div class="building-fill safe" id="microBuildingFill" style="height:0%"></div>
+                                <div class="building-floors">
+                                    <div class="building-floor-line"></div>
+                                    <div class="building-floor-line"></div>
+                                    <div class="building-floor-line"></div>
+                                    <div class="building-floor-line"></div>
+                                    <div class="building-floor-line"></div>
+                                </div>
+                                <span class="building-icon">🏠</span>
+                                <span class="building-pct-label" id="microPctLabel">0%</span>
+                            </div>
+                        </div>
+                        <div class="guardrail-distance" id="microDistance">Distance: <span class="dist-value">0%</span> to Micro Defense trigger</div>
                         <div class="guardrail-status armed" id="microStatus">ARMED — Monitoring</div>
                     </div>
-                    <div class="guardrail-card">
+                    <div class="guardrail-card state-safe" id="macroCard">
                         <div class="guardrail-tier">Target 2 — Macro Hedge</div>
-                        <div class="guardrail-label">Hedge activates if Market drops below</div>
-                        <div class="guardrail-value" id="macroTarget">$—</div>
+                        <div class="guardrail-theme-label macro">Storm-shutter Hedge · $50 / 30min</div>
+                        <div class="guardrail-context">
+                            <div><span class="guardrail-ctx-label">Portfolio</span><br><span class="guardrail-ctx-value" id="macroCurrentVal">$—</span></div>
+                            <div><span class="guardrail-ctx-label">Window High</span><br><span class="guardrail-ctx-value" id="macroWindowHigh">$—</span></div>
+                            <div><span class="guardrail-ctx-label">Drop So Far</span><br><span class="guardrail-ctx-value" id="macroDropSoFar">$0.00</span></div>
+                            <div><span class="guardrail-ctx-label">Drop Needed</span><br><span class="guardrail-ctx-value" id="macroDropNeeded">$50.00</span></div>
+                        </div>
+                        <div class="building-wrap">
+                            <div class="building-frame">
+                                <div class="building-fill safe" id="macroBuildingFill" style="height:0%"></div>
+                                <div class="building-floors">
+                                    <div class="building-floor-line"></div>
+                                    <div class="building-floor-line"></div>
+                                    <div class="building-floor-line"></div>
+                                    <div class="building-floor-line"></div>
+                                    <div class="building-floor-line"></div>
+                                    <div class="building-floor-line"></div>
+                                    <div class="building-floor-line"></div>
+                                    <div class="building-floor-line"></div>
+                                </div>
+                                <span class="building-icon">🏢</span>
+                                <span class="building-pct-label" id="macroPctLabel">0%</span>
+                            </div>
+                        </div>
+                        <div class="guardrail-distance" id="macroDistance">Distance: <span class="dist-value">0%</span> to Storm-shutter trigger</div>
                         <div class="guardrail-status armed" id="macroStatus">ARMED — Monitoring</div>
                     </div>
                     <div class="short-engine-panel" id="shortEnginePanel">
@@ -1007,28 +1130,59 @@
             document.getElementById('debtVal').textContent = '$' + z2.total_debt_usd.toFixed(2);
             document.getElementById('availVal').textContent = '$' + (data.zone4_engine.available_borrows || 0).toFixed(2);
 
-            // ZONE 3: Defensive Guardrails
+            // ZONE 3: Defensive Guardrails — Building Visualization
             applyGlowClass(document.getElementById('zone3'), hfStatus);
-            const drop20m = z3.velocity_drop_20m || 0;
-            const drop30m = z3.velocity_drop_30m || 0;
-            const bufSize = z3.velocity_buffer_size || 0;
             const collateral = z3.current_collateral || 0;
-            document.getElementById('microTarget').textContent = '$' + drop20m.toFixed(2) + ' / $' + (z3.micro_trigger_drop_usd || 30).toFixed(0) + ' (20m)';
-            document.getElementById('macroTarget').textContent = '$' + drop30m.toFixed(2) + ' / $' + (z3.macro_trigger_drop_usd || 50).toFixed(0) + ' (30m)';
+            const bufSize = z3.velocity_buffer_size || 0;
             document.getElementById('currentCollateral').textContent = '$' + collateral.toFixed(2) + ' [' + bufSize + ' samples]';
 
-            if (z3.has_active_position) {
-                const tier = (z3.position_tier || '').toUpperCase();
-                document.getElementById('microStatus').textContent = tier === 'MICRO' ? 'ACTIVE — Position Open' : 'ARMED — Monitoring';
-                document.getElementById('microStatus').className = 'guardrail-status ' + (tier === 'MICRO' ? 'active' : 'armed');
-                document.getElementById('macroStatus').textContent = tier === 'MACRO' ? 'ACTIVE — Position Open' : 'ARMED — Monitoring';
-                document.getElementById('macroStatus').className = 'guardrail-status ' + (tier === 'MACRO' ? 'active' : 'armed');
-            } else {
-                document.getElementById('microStatus').textContent = 'ARMED — Monitoring';
-                document.getElementById('microStatus').className = 'guardrail-status armed';
-                document.getElementById('macroStatus').textContent = 'ARMED — Monitoring';
-                document.getElementById('macroStatus').className = 'guardrail-status armed';
+            function updateBuildingTarget(prefix, t, tierLabel, triggerName) {
+                const pct = t.progress_pct || 0;
+                const dropSoFar = t.dollar_drop_so_far || 0;
+                const dropRemaining = t.dollar_drop_remaining || 0;
+                const dropRequired = t.dollar_drop_required || 1;
+                const windowHigh = t.window_high || 0;
+                const currentVal = t.current_value || 0;
+                const onCooldown = t.on_cooldown || false;
+
+                document.getElementById(prefix + 'CurrentVal').textContent = '$' + currentVal.toFixed(2);
+                document.getElementById(prefix + 'WindowHigh').textContent = '$' + windowHigh.toFixed(2);
+                document.getElementById(prefix + 'DropSoFar').textContent = '$' + dropSoFar.toFixed(2);
+                document.getElementById(prefix + 'DropNeeded').textContent = '$' + dropRemaining.toFixed(2);
+
+                const fill = document.getElementById(prefix + 'BuildingFill');
+                fill.style.height = Math.min(100, pct) + '%';
+                let colorClass = 'safe';
+                let stateClass = 'state-safe';
+                if (pct >= 90) { colorClass = 'danger'; stateClass = 'state-danger'; }
+                else if (pct >= 50) { colorClass = 'amber'; stateClass = 'state-amber'; }
+                fill.className = 'building-fill ' + colorClass;
+
+                const card = document.getElementById(prefix + 'Card');
+                card.className = 'guardrail-card ' + stateClass;
+
+                document.getElementById(prefix + 'PctLabel').textContent = pct.toFixed(0) + '%';
+
+                const distEl = document.getElementById(prefix + 'Distance');
+                distEl.innerHTML = 'Distance: <span class="dist-value">' + pct.toFixed(0) + '%</span> to ' + triggerName + ' trigger';
+
+                const statusEl = document.getElementById(prefix + 'Status');
+                if (onCooldown) {
+                    statusEl.textContent = 'COOLDOWN — Recovering';
+                    statusEl.className = 'guardrail-status cooldown';
+                } else if (z3.has_active_position && (z3.position_tier || '').toUpperCase() === tierLabel) {
+                    statusEl.textContent = 'ACTIVE — Position Open';
+                    statusEl.className = 'guardrail-status active';
+                } else {
+                    statusEl.textContent = 'ARMED — Monitoring';
+                    statusEl.className = 'guardrail-status armed';
+                }
             }
+
+            const microT = z3.micro || {};
+            const macroT = z3.macro || {};
+            updateBuildingTarget('micro', microT, 'MICRO', 'Micro Defense');
+            updateBuildingTarget('macro', macroT, 'MACRO', 'Storm-shutter');
 
             const se = z3.short_engine || {};
             const modeEl = document.getElementById('shortMode');
