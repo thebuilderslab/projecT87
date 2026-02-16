@@ -14,7 +14,7 @@ Conservative HF thresholds with $1.20 USDC Tax on every borrow. Each execution p
 - Growth min: 3.10
 - Macro (Liability Short): 3.05
 - Micro (Liability Short): 3.00
-- Capacity/Emergency: 2.50
+- Capacity/Emergency: 2.90
 - Monitoring cycle: 45s
 
 ### Dual-Path Execution System
@@ -32,7 +32,7 @@ Conservative HF thresholds with $1.20 USDC Tax on every borrow. Each execution p
 
 **Capacity Path ($6.70 borrow = $5.50 + $1.20 USDC Tax)** - PRIORITY 2
 - Activates when: Available capacity >= $8.20
-- Requires: Health factor >= 2.50
+- Requires: Health factor >= 2.90
 - Distribution:
   - $1.10 DAI supply to Aave
   - $1.10 DAI -> WBTC swap + supply to Aave
@@ -133,8 +133,8 @@ Conservative HF thresholds with $1.20 USDC Tax on every borrow. Each execution p
 - MIN_HEALTH_FACTOR_GROWTH = 3.10
 - MIN_HEALTH_FACTOR_MACRO = 3.05
 - MIN_HEALTH_FACTOR_MICRO = 3.00
-- MIN_HEALTH_FACTOR_CAPACITY = 2.50 (absolute floor)
-- All borrow methods enforce floor 2.50
+- MIN_HEALTH_FACTOR_CAPACITY = 2.90 (absolute floor)
+- All borrow methods enforce floor 2.90
 
 ### Delegation Mode (Operate on Behalf of User Wallet)
 - **Self-Trade Mode** (default): Bot uses its own private key wallet for all operations
@@ -246,6 +246,6 @@ Conservative HF thresholds with $1.20 USDC Tax on every borrow. Each execution p
 - **Uniswap Router**: Switched from SwapRouter02 (0x68b346...) to original SwapRouter (0xE59242...) — STF errors on all swaps
 - **ABI Update**: Added `deadline` field to exactInputSingle and exactInput structs (required by original SwapRouter)
 - **DAI→USDC**: Forced multi-hop route DAI→WETH→USDC via exactInput (no direct DAI/USDC liquidity on Arbitrum)
-- **HF Threshold**: Lowered capacity_health_factor_threshold from 2.90 to 2.50 (self.capacity_health_factor_threshold at line 610)
+- **HF Threshold**: capacity_health_factor_threshold restored to 2.90 (self.capacity_health_factor_threshold at line 610)
 - **Balance Check**: Fixed stale balance comparison after Nurse Mode sweep — now rechecks if delta looks low
 - **Remaining**: HF dropped to 2.43 after successive capacity borrows — will recover naturally via interest accrual

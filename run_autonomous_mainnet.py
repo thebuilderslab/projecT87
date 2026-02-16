@@ -108,7 +108,7 @@ def run_autonomous_mainnet_agent():
         print(f"   Operation Mode: {delegation_label}")
         if target_wallet:
             print(f"   Target Wallet: {target_wallet}")
-        print(f"   HF Thresholds: Growth 3.10 / Macro 3.05 / Micro 3.00 / Capacity 2.50")
+        print(f"   HF Thresholds: Growth 3.10 / Macro 3.05 / Micro 3.00 / Capacity 2.90")
         print(f"   Slippage Tolerance: 1%")
         print(f"   State File: CLEARED (clean run)")
         print(f"   Growth Path: $11.40 borrow ($10.20 + $1.20 USDC Tax)")

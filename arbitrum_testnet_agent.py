@@ -604,7 +604,7 @@ class ArbitrumTestnetAgent:
 
         # Capacity-Based System Configuration
         self.capacity_min_capacity = 7.0  # $7 minimum available capacity for capacity path
-        self.capacity_health_factor_threshold = 2.50  # Conservative USDC mode: Capacity min HF
+        self.capacity_health_factor_threshold = 2.90  # Conservative USDC mode: Capacity min HF
         self.target_health_factor = 3.10  # Conservative USDC mode: target HF
 
         # Display Hybrid System Configuration
@@ -1677,7 +1677,7 @@ class ArbitrumTestnetAgent:
                 base_rate += 15
             elif health_factor > 2.0:
                 base_rate += 5
-            elif health_factor < 2.50:
+            elif health_factor < 2.90:
                 base_rate -= 30
 
             # Adjust for network congestion
@@ -2233,7 +2233,7 @@ class ArbitrumTestnetAgent:
         Check if capacity-based operation should execute.
         
         PRIORITY 2 (checked only if growth trigger did NOT fire):
-        - Health factor >= 2.50
+        - Health factor >= 2.90
         - Available capacity >= $8.20
         """
         try:
@@ -4000,7 +4000,7 @@ class ArbitrumTestnetAgent:
                 "executed_this_cycle": executed,
                 "performance_score": performance,
                 "system_phase": "EXECUTING" if executed else "MONITORING",
-                "hf_status": "HEALTHY" if health_factor > 3.10 else "CAUTION" if health_factor >= 2.50 else "EMERGENCY",
+                "hf_status": "HEALTHY" if health_factor > 3.10 else "CAUTION" if health_factor >= 2.90 else "EMERGENCY",
                 "growth_cooldown_remaining": max(0, self.operation_cooldown_seconds - (time.time() - self.last_successful_operation_time)) if self.last_successful_operation_time > 0 else 0,
                 "ls_cooldown_remaining": 0,
                 "liability_short": {},
@@ -4237,7 +4237,7 @@ class ArbitrumTestnetAgent:
 
                 print(f"📊 Position: Collateral ${total_collateral:.2f} | Baseline ${self.last_collateral_value_usd:.2f} | HF {health_factor:.3f} | Available ${available_borrows:.2f}")
 
-                if health_factor < 2.50:
+                if health_factor < 2.90:
                     action = "EMERGENCY"
                     status = "CRITICAL"
                     performance_score *= 0.1
@@ -4470,8 +4470,8 @@ class ArbitrumTestnetAgent:
                     account_data = self.aave.get_user_account_data()
                     if account_data:
                         health_factor = account_data.get('healthFactor', 0)
-                        if health_factor < 2.50:
-                            return False, f"Health factor too low: {health_factor:.3f} (need >2.50)"
+                        if health_factor < 2.90:
+                            return False, f"Health factor too low: {health_factor:.3f} (need >2.90)"
                     else:
                         return False, "Cannot retrieve account data"
                 except Exception as hf_error:
@@ -4663,8 +4663,8 @@ class ArbitrumTestnetAgent:
                     account_data = self.aave.get_user_account_data()
                     if account_data:
                         health_factor = account_data.get('healthFactor', 0)
-                        if health_factor < 2.50:
-                            return False, f"Health factor too low: {health_factor:.3f} (need >2.50)"
+                        if health_factor < 2.90:
+                            return False, f"Health factor too low: {health_factor:.3f} (need >2.90)"
                     else:
                         return False, "Cannot retrieve account data"
                 except Exception as hf_error:
