@@ -2764,42 +2764,23 @@ def api_inject_liquidity():
         if not wallet_b or len(wallet_b) != 42:
             return jsonify({"error": "WALLET_B_ADDRESS not configured", "success": False}), 400
 
-        from web3 import Web3
-        wallet_b_cs = Web3.to_checksum_address(wallet_b)
+        trigger = {
+            "action": "inject_liquidity",
+            "amount": injection_amount,
+            "test_mode": INJECTION_TEST_MODE,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "wallet_b": wallet_b,
+        }
+        with open("injection_trigger.json", "w") as f:
+            json.dump(trigger, f, indent=2)
 
-        borrow_result = agent.aave.borrow_token(
-            agent.dai_address, injection_amount, agent.address
-        ) if hasattr(agent, 'aave') else None
-
-        if not borrow_result:
-            return jsonify({"error": "DAI borrow from Aave failed", "success": False}), 500
-
-        import time as _time
-        _time.sleep(3)
-
-        swap_ok = False
-        if hasattr(agent, '_swap_dai_for_usdc'):
-            swap_ok = agent._swap_dai_for_usdc(injection_amount)
-        if not swap_ok:
-            return jsonify({"error": "DAI→USDC swap failed — DAI remains in wallet", "success": False}), 500
-
-        _time.sleep(3)
-        usdc_balance = agent._get_usdc_balance()
-        if usdc_balance < 0.01:
-            return jsonify({"error": "No USDC received from swap", "success": False}), 500
-
-        send_ok = agent._send_usdc_to_wallet_b()
-        if send_ok:
-            if hasattr(agent, '_log_yield_event'):
-                agent._log_yield_event(usdc_balance, "MANUAL_INJECTION", "")
-            return jsonify({
-                "message": f"Injected ${usdc_balance:.4f} USDC to WALLET_B",
-                "amount": round(usdc_balance, 4),
-                "test_mode": INJECTION_TEST_MODE,
-                "success": True
-            })
-        else:
-            return jsonify({"error": "USDC transfer to WALLET_B failed after swap", "success": False}), 500
+        return jsonify({
+            "message": f"Injection queued: ${injection_amount:.2f} DAI → USDC → WALLET_B (will execute next cycle)",
+            "amount": injection_amount,
+            "test_mode": INJECTION_TEST_MODE,
+            "queued": True,
+            "success": True
+        })
 
     except Exception as e:
         return jsonify({"error": str(e), "success": False}), 500

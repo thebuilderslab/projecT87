@@ -168,6 +168,11 @@ def run_autonomous_mainnet_agent():
                     log_agent_activity(f"🔄 Starting new run cycle #{run_id}")
 
                 try:
+                    agent._process_injection_trigger()
+                except Exception as inj_err:
+                    log_agent_activity(f"⚠️ Injection trigger error: {inj_err}", "WARNING")
+
+                try:
                     agent._check_profit_bucket()
                 except Exception as bucket_err:
                     log_agent_activity(f"⚠️ Profit bucket check error: {bucket_err}", "WARNING")

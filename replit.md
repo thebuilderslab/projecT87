@@ -251,3 +251,9 @@ Conservative HF thresholds with $1.20 USDC Tax on every borrow. Each execution p
 - **STF Root Cause**: Missing `'from': self.address` in all Uniswap `build_transaction()` calls — estimate_gas simulated from null address, failing transferFrom
 - **STF Fix**: Added `'from': self.address` to all 4 build_transaction calls in uniswap_integration.py (exactInputSingle, 2x exactInput, approve)
 - **Result**: All swaps now working — DAI→USDC, DAI→WBTC, DAI→WETH confirmed on-chain. Full capacity path completed successfully.
+- **Profit Accumulation Model**: USDC no longer flushed immediately — accumulates in agent wallet until $22 target, then auto-flushes to WALLET_B
+- **Yield Ledger**: yield_history.json tracks all payouts (AUTO_FLUSH, MANUAL_INJECTION) with timestamps
+- **_check_profit_bucket()**: Called at end of each monitoring cycle, checks USDC >= $22 threshold
+- **Manual Injection**: /api/inject_liquidity endpoint — borrows DAI from Aave, swaps to USDC, sends to WALLET_B (52% availability ratio safety gate)
+- **INJECTION_TEST_MODE**: True (uses $11.00 fixed amount); set False for 20% of available borrow
+- **Dashboard Zone 4**: Shows 24h yield stats and injection button (TEST INJECTION / INJECT LIQUIDITY)

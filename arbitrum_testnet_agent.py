@@ -3443,6 +3443,48 @@ class ArbitrumTestnetAgent:
         except Exception as e:
             print(f"   ⚠️ Yield ledger write failed: {e}")
 
+    def _process_injection_trigger(self):
+        trigger_file = "injection_trigger.json"
+        if not os.path.exists(trigger_file):
+            return False
+        try:
+            import json as _json
+            with open(trigger_file, 'r') as f:
+                trigger = _json.load(f)
+            os.remove(trigger_file)
+            amount = trigger.get("amount", 11.0)
+            wallet_b_addr = trigger.get("wallet_b", os.getenv('WALLET_B_ADDRESS', ''))
+            print(f"\n💉 MANUAL INJECTION TRIGGERED: ${amount:.2f} DAI → USDC → WALLET_B")
+
+            result = self.aave.borrow_dai(amount)
+            if not result:
+                print(f"   ❌ Injection borrow failed")
+                return False
+            print(f"   ✅ Borrowed ${amount:.2f} DAI from Aave")
+            time.sleep(3)
+
+            swap_ok = self._swap_dai_for_usdc(amount)
+            if not swap_ok:
+                print(f"   ❌ Injection DAI→USDC swap failed — DAI remains in wallet")
+                return False
+            print(f"   ✅ Swapped DAI → USDC")
+            time.sleep(3)
+
+            send_ok = self._send_usdc_to_wallet_b()
+            if send_ok:
+                usdc_sent = self._get_usdc_balance()
+                self._log_yield_event(amount, "MANUAL_INJECTION", "")
+                print(f"   ✅ INJECTION COMPLETE: ${amount:.2f} → WALLET_B")
+                return True
+            else:
+                print(f"   ❌ USDC transfer to WALLET_B failed after swap")
+                return False
+        except Exception as e:
+            print(f"   ❌ Injection trigger processing failed: {e}")
+            if os.path.exists(trigger_file):
+                os.remove(trigger_file)
+            return False
+
     def _check_profit_bucket(self):
         try:
             usdc_balance = self._get_usdc_balance()
