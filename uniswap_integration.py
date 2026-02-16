@@ -730,7 +730,7 @@ class UniswapIntegration:
         """Swap DAI for USDC via FORCED multi-hop: DAI → WETH → USDC.
         Direct DAI→USDC pools have no liquidity on Arbitrum (bridged DAI vs native USDC).
         Both legs use fee tier 500 (0.05%) where deep liquidity exists.
-        Slippage: 0.5% for multi-hop safety.
+        Slippage: 5% for multi-hop safety (two hops + small amounts).
         """
         try:
             usdc_address = self.w3.to_checksum_address("0xaf88d065e77c8cC2239327C5EDb3A432268e5831")
@@ -760,7 +760,7 @@ class UniswapIntegration:
 
             usdc_decimals = 6
             expected_usdc_out = dai_amount * (10 ** usdc_decimals)
-            min_output = max(1, int(expected_usdc_out * 0.995))
+            min_output = max(1, int(expected_usdc_out * 0.95))
 
             chain_id = self.w3.eth.chain_id
             nonce = self.w3.eth.get_transaction_count(self.address, 'pending')
