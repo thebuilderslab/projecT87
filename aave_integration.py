@@ -608,7 +608,8 @@ class AaveArbitrumIntegration:
     def enable_collateral(self, token_address, token_name="TOKEN"):
         """Call setUserUseReserveAsCollateral(asset, true) on Aave V3 Pool.
         This enables a supplied asset to count toward the Health Factor.
-        Works independently of E-Mode — purely a collateral toggle."""
+        Works independently of E-Mode — purely a collateral toggle.
+        Pre-checks via estimate_gas to avoid wasting gas on reverts."""
         try:
             collateral_abi = [{
                 "inputs": [
@@ -623,18 +624,22 @@ class AaveArbitrumIntegration:
             pool_address = self.pool_contract.address
             collateral_contract = self.w3.eth.contract(address=pool_address, abi=collateral_abi)
 
-            nonce = self.w3.eth.get_transaction_count(self.account.address)
-            base_gas_price = self.w3.eth.gas_price
-            chain_id = self.w3.eth.chain_id
-            gas_price = int(base_gas_price * (2.5 if chain_id == 42161 else 1.3))
-
             try:
                 estimated_gas = collateral_contract.functions.setUserUseReserveAsCollateral(
                     token_address, True
                 ).estimate_gas({'from': self.account.address})
                 gas_limit = int(estimated_gas * 1.3)
-            except Exception:
+            except Exception as est_err:
+                err_str = str(est_err).lower()
+                if 'revert' in err_str or 'execution' in err_str:
+                    print(f"ℹ️ {token_name} collateral already enabled (estimate_gas confirmed no-op)")
+                    return True
                 gas_limit = 200000
+
+            nonce = self.w3.eth.get_transaction_count(self.account.address)
+            base_gas_price = self.w3.eth.gas_price
+            chain_id = self.w3.eth.chain_id
+            gas_price = int(base_gas_price * (2.5 if chain_id == 42161 else 1.3))
 
             tx = collateral_contract.functions.setUserUseReserveAsCollateral(
                 token_address, True
@@ -659,7 +664,7 @@ class AaveArbitrumIntegration:
 
         except Exception as e:
             error_msg = str(e).lower()
-            if 'already' in error_msg or 'no change' in error_msg or 'revert' in error_msg:
+            if 'already' in error_msg or 'no change' in error_msg or 'revert' in error_msg or 'nonce' in error_msg:
                 print(f"ℹ️ {token_name} collateral already enabled (no-op)")
                 return True
             print(f"⚠️ {token_name} enable_collateral error: {e}")
