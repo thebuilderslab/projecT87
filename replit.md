@@ -52,6 +52,19 @@ Conservative HF thresholds with $1.20 USDC Tax on every borrow. Each execution p
 - Dashboard Zone 4 shows USDC balance + WALLET_B address + manual "SEND USDC" button
 - API endpoint: POST /api/send-usdc-to-wallet-b
 
+### Force-Approve All Tokens (Startup)
+- On every agent startup, `_force_approve_all_tokens()` checks allowances for 4 tokens (DAI, WETH, WBTC, USDC) against 2 spenders (Aave Pool, Uniswap Router)
+- Sets infinite approval (2^256-1) for any token below threshold
+- Prevents UNPREDICTABLE_GAS_LIMIT errors during swaps/supplies
+- Idempotent: 2nd boot skips all if approvals already set
+
+### Nurse Mode Triage ($2.00 Hard Floor)
+- `_perform_safety_sweep()` sweeps COLLATERAL ONLY (DAI, WETH, WBTC) to Aave
+- $2.00 USD hard floor: any token with value < $2.00 is skipped (stops burning gas on dust)
+- USDC is NEVER swept — profit token, user claims via Dashboard manual "SEND USDC" button
+- Uses live AaveOracle prices for WETH/WBTC USD valuation (with fallbacks)
+- DAI reserved for USDC tax is protected and not swept
+
 ### AaveOracle Integration
 - Primary price source: AaveOracle at 0xb56c2F0B653B2e0b10C9b928C8580Ac5Df02C7C7
 - getAssetPrice() returns 8-decimal USD prices
@@ -65,7 +78,7 @@ Conservative HF thresholds with $1.20 USDC Tax on every borrow. Each execution p
 
 ### Crash Recovery (execution_state.json)
 - After each successful on-chain step, state is persisted to `execution_state.json`
-- Steps tracked: borrowed → dai_supplied → wbtc_supplied → weth_supplied → eth_converted → wallet_s_transferred → gho_taxed
+- Steps tracked: borrowed → dai_supplied → wbtc_supplied → weth_supplied → eth_converted → wallet_s_transferred → usdc_taxed
 - On startup, agent checks for interrupted sequences and resumes from next incomplete step
 - State file is wiped ONLY after successful confirmation of final WALLET_S transfer
 - Helper methods: `save_execution_state()`, `load_execution_state()`, `clear_execution_state()`
@@ -89,7 +102,7 @@ Conservative HF thresholds with $1.20 USDC Tax on every borrow. Each execution p
 ### Liability Short Strategy — PRIORITY 3 (checked after Growth/Capacity, before IDLE)
 **Purpose:** Short ETH debt to hedge against market drops. Composite two-part action.
 
-**Macro Entry ($12.10 WETH borrow = $10.90 + $1.20 GHO Tax + $10.80 debt swap)**
+**Macro Entry ($12.10 WETH borrow = $10.90 + $1.20 USDC Tax + $10.80 debt swap)**
 - Activates on: >5% collateral drop from baseline + HF >3.05
 - Requires: Available capacity >= $13
 - Part A Distribution (borrow WETH, distribute):
@@ -97,10 +110,10 @@ Conservative HF thresholds with $1.20 USDC Tax on every borrow. Each execution p
   - $2.10 WETH supply to Aave
   - $5.60 WETH → DAI swap (supply $4.50 + transfer $1.10 to WALLET_S)
   - $1.10 WETH → ETH (gas reserve)
-  - $1.20 WETH → GHO swap (held in wallet, farm accumulation)
+  - $1.20 WETH → USDC swap → sent to WALLET_B_ADDRESS
 - Part B: Swap $10.80 DAI debt → WETH debt via BidirectionalDebtSwapper
 
-**Micro Entry ($8.40 WETH borrow = $7.20 + $1.20 GHO Tax + $10.10 debt swap)**
+**Micro Entry ($8.40 WETH borrow = $7.20 + $1.20 USDC Tax + $10.10 debt swap)**
 - Activates on: >2% collateral drop from baseline + HF >3.00
 - Requires: Available capacity >= $9
 - Part A Distribution:
@@ -108,7 +121,7 @@ Conservative HF thresholds with $1.20 USDC Tax on every borrow. Each execution p
   - $1.10 WETH supply
   - $3.90 WETH → DAI swap (supply $2.80 + transfer $1.10)
   - $1.10 WETH → ETH (gas reserve)
-  - $1.20 WETH → GHO swap (held in wallet, farm accumulation)
+  - $1.20 WETH → USDC swap → sent to WALLET_B_ADDRESS
 - Part B: Swap $10.10 DAI debt → WETH debt
 
 **Exit Trigger:** ETH recovers >2% from entry price → WETH→DAI debt swap to lock gains
@@ -116,7 +129,7 @@ Conservative HF thresholds with $1.20 USDC Tax on every borrow. Each execution p
 **Position Tracking:** `debt_swap_positions.json` tracks active/historical positions
 **Cooldown:** 600s between debt swap operations
 
-### Health Factor Thresholds (Conservative GHO Mode)
+### Health Factor Thresholds (Conservative USDC Mode)
 - MIN_HEALTH_FACTOR_GROWTH = 3.10
 - MIN_HEALTH_FACTOR_MACRO = 3.05
 - MIN_HEALTH_FACTOR_MICRO = 3.00
@@ -216,11 +229,11 @@ Conservative HF thresholds with $1.20 USDC Tax on every borrow. Each execution p
 - IDLE status now shows Liability Short position state and collateral drop monitoring
 - Confirmed correct adapter address: `0x63dfa7c09Dc2Ff4030d6B8Dc2ce6262BF898C8A4`
 
-### Feb 14, 2026 - Phase 3: Universal GHO Tax + Delegation Mode
-- **Universal GHO Tax**: All 4 strategies now farm GHO. Macro borrows $12.10 ($10.90+$1.20), Micro $8.40 ($7.20+$1.20)
-- Created `_swap_weth_for_gho()` in arbitrum_testnet_agent.py for Liability Short paths (WETH→GHO via Uniswap)
-- Added `swap_weth_for_gho()` to uniswap_integration.py (WETH→GHO swap with 2% slippage)
-- GHO swap step added after Part A safety position in `_execute_liability_short_entry()`
+### Feb 14, 2026 - Phase 3: Universal USDC Tax + Delegation Mode
+- **Universal USDC Tax**: All 4 strategies now collect USDC. Macro borrows $12.10 ($10.90+$1.20), Micro $8.40 ($7.20+$1.20)
+- DAI→USDC swap via Uniswap V3 single-hop (fee tiers: 100bp, 500bp, 3000bp)
+- WETH→USDC swap for Liability Short paths
+- USDC automatically sent to WALLET_B_ADDRESS after every tax swap
 - **Delegation Mode**: `get_target_wallet()` and `get_delegation_mode()` in config_constants.py
 - `check_delegation_allowance()` reads Aave V3 variable debt token borrowAllowance before delegated borrows
 - `borrow_dai()`, `borrow_weth()`, `supply_to_aave()` all accept `on_behalf_of` parameter

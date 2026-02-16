@@ -1763,8 +1763,7 @@ class ArbitrumTestnetAgent:
             self.uniswap = UniswapIntegration(self.w3, self.account)
             print("✅ Uniswap integration initialized")
 
-            if self.usdc_address and self.uniswap:
-                self._ensure_usdc_uniswap_approval()
+            self._force_approve_all_tokens()
 
             self._init_aave_oracle()
 
@@ -3213,34 +3212,64 @@ class ArbitrumTestnetAgent:
             traceback.print_exc()
             return False
 
-    def _ensure_usdc_uniswap_approval(self):
-        """Check and set infinite USDC approval for Uniswap Router on startup"""
-        try:
-            if not self.usdc_address or not self.uniswap:
-                return
-            erc20_abi = [{"inputs":[{"name":"spender","type":"address"},{"name":"amount","type":"uint256"}],"name":"approve","outputs":[{"name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"name":"owner","type":"address"},{"name":"spender","type":"address"}],"name":"allowance","outputs":[{"name":"","type":"uint256"}],"stateMutability":"view","type":"function"}]
-            usdc_contract = self.w3.eth.contract(address=self.usdc_address, abi=erc20_abi)
-            router = self.uniswap.router_address
-            allowance = usdc_contract.functions.allowance(self.address, router).call()
-            infinite = 2**256 - 1
-            if allowance < 10**12:
-                print(f"🔑 USDC Uniswap approval low ({allowance}) — setting infinite approval...")
-                base_gas = self.w3.eth.gas_price
-                buffered_gas = int(base_gas * 2.5)
-                tx = usdc_contract.functions.approve(router, infinite).build_transaction({
-                    'from': self.address,
-                    'nonce': self.w3.eth.get_transaction_count(self.address),
-                    'gas': 100000,
-                    'gasPrice': buffered_gas,
-                })
-                signed = self.w3.eth.account.sign_transaction(tx, self.account.key)
-                tx_hash = self.w3.eth.send_raw_transaction(signed.rawTransaction)
-                self.w3.eth.wait_for_transaction_receipt(tx_hash, timeout=60)
-                print(f"✅ USDC infinite approval set for Uniswap Router")
-            else:
-                print(f"✅ USDC Uniswap approval already sufficient")
-        except Exception as e:
-            print(f"⚠️ USDC approval check failed (non-fatal): {e}")
+    def _force_approve_all_tokens(self):
+        """Force-approve all tokens for Aave Pool + Uniswap Router on startup.
+        Fixes UNPREDICTABLE_GAS_LIMIT errors by ensuring allowances are set before any operation."""
+        erc20_abi = [
+            {"inputs":[{"name":"spender","type":"address"},{"name":"amount","type":"uint256"}],"name":"approve","outputs":[{"name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"},
+            {"inputs":[{"name":"owner","type":"address"},{"name":"spender","type":"address"}],"name":"allowance","outputs":[{"name":"","type":"uint256"}],"stateMutability":"view","type":"function"}
+        ]
+        infinite = 2**256 - 1
+        min_allowance = 10**24
+
+        tokens = []
+        if hasattr(self, 'dai_address') and self.dai_address:
+            tokens.append(("DAI", self.dai_address, 18))
+        if hasattr(self, 'weth_address') and self.weth_address:
+            tokens.append(("WETH", self.weth_address, 18))
+        if hasattr(self, 'wbtc_address') and self.wbtc_address:
+            tokens.append(("WBTC", self.wbtc_address, 8))
+        if hasattr(self, 'usdc_address') and self.usdc_address:
+            tokens.append(("USDC", self.usdc_address, 6))
+
+        spenders = []
+        if hasattr(self, 'aave_pool_address') and self.aave_pool_address:
+            spenders.append(("Aave Pool", self.w3.to_checksum_address(self.aave_pool_address)))
+        if hasattr(self, 'uniswap') and self.uniswap and hasattr(self.uniswap, 'router_address'):
+            spenders.append(("Uniswap Router", self.uniswap.router_address))
+
+        print(f"\n🔑 FORCE-APPROVE: Checking {len(tokens)} tokens × {len(spenders)} spenders...")
+        approved_count = 0
+        already_ok = 0
+
+        for token_name, token_addr, decimals in tokens:
+            contract = self.w3.eth.contract(address=token_addr, abi=erc20_abi)
+            for spender_name, spender_addr in spenders:
+                try:
+                    allowance = contract.functions.allowance(self.address, spender_addr).call()
+                    threshold = 10**12 if decimals == 6 else min_allowance
+                    if allowance < threshold:
+                        print(f"   🔑 {token_name} → {spender_name}: LOW ({allowance}) — approving...")
+                        base_gas = self.w3.eth.gas_price
+                        buffered_gas = int(base_gas * 2.5)
+                        tx = contract.functions.approve(spender_addr, infinite).build_transaction({
+                            'from': self.address,
+                            'nonce': self.w3.eth.get_transaction_count(self.address),
+                            'gas': 100000,
+                            'gasPrice': buffered_gas,
+                        })
+                        signed = self.w3.eth.account.sign_transaction(tx, self.account.key)
+                        tx_hash = self.w3.eth.send_raw_transaction(signed.rawTransaction)
+                        self.w3.eth.wait_for_transaction_receipt(tx_hash, timeout=60)
+                        print(f"   ✅ {token_name} → {spender_name}: Infinite approval SET")
+                        approved_count += 1
+                        time.sleep(1)
+                    else:
+                        already_ok += 1
+                except Exception as e:
+                    print(f"   ⚠️ {token_name} → {spender_name}: Approval check failed (non-fatal): {e}")
+
+        print(f"🔑 FORCE-APPROVE COMPLETE: {approved_count} new approvals, {already_ok} already sufficient")
 
     def _init_aave_oracle(self):
         """Initialize AaveOracle for on-chain ETH/USD pricing"""
@@ -3462,67 +3491,95 @@ class ArbitrumTestnetAgent:
         return 0.0
 
     def _perform_safety_sweep(self):
-        """Nurse Mode: Detect and supply idle WETH, WBTC, DAI to Aave when balance > $1.10 USD.
-        USDC is WHITELISTED — never swept (sent to WALLET_B). DAI reserved for USDC tax is PROTECTED."""
+        """Nurse Mode Triage: Sweep COLLATERAL ONLY (DAI, WETH, WBTC) to Aave.
+        Rules:
+          1. $2.00 HARD FLOOR — skip any token with USD value < $2.00 (stop burning gas on dust)
+          2. NEVER touch USDC — profit token, user claims manually via Dashboard
+          3. Only sweep DAI, WETH, WBTC as collateral to Aave
+        """
         try:
-            print("🚑 Nurse Mode: Scanning wallet for idle assets...")
-            MIN_USD_THRESHOLD = 1.10
+            print("🚑 Nurse Mode Triage: Scanning wallet for collateral assets...")
+            HARD_FLOOR_USD = 2.00
             ETH_GAS_RESERVE = 0.0002
-            ETH_PRICE_FALLBACK = 2000.0
-            BTC_PRICE_FALLBACK = 67000.0
+
+            eth_price = getattr(self, 'oracle_eth_price', None) or 2000.0
+            if hasattr(self, 'aave_oracle') and self.aave_oracle:
+                try:
+                    fresh = self.aave_oracle.functions.getAssetPrice(self.weth_address).call() / 1e8
+                    if fresh > 0:
+                        eth_price = fresh
+                except Exception:
+                    pass
+
+            btc_price = 67000.0
+            if hasattr(self, 'aave_oracle') and self.aave_oracle:
+                try:
+                    fresh = self.aave_oracle.functions.getAssetPrice(self.wbtc_address).call() / 1e8
+                    if fresh > 0:
+                        btc_price = fresh
+                except Exception:
+                    pass
 
             eth_balance = self.get_eth_balance()
             weth_balance = self.get_weth_balance()
             wbtc_balance = self.get_wbtc_balance()
             dai_balance = self.get_dai_balance()
-
             usdc_balance = self._get_usdc_balance()
+
+            weth_usd = weth_balance * eth_price
+            wbtc_usd = wbtc_balance * btc_price
+            dai_usd = dai_balance
+
+            print(f"   WETH: {weth_balance:.8f} (${weth_usd:.2f}) | WBTC: {wbtc_balance:.8f} (${wbtc_usd:.2f})")
+            print(f"   DAI:  {dai_balance:.6f} (${dai_usd:.2f}) | ETH (gas): {eth_balance:.6f}")
             if usdc_balance > 0:
-                print(f"   🛡️ USDC WHITELISTED: {usdc_balance:.6f} USDC detected — PROTECTED (will send to WALLET_B, NOT sweep)")
+                print(f"   🛡️ USDC: {usdc_balance:.6f} — PROFIT TOKEN (user claims via Dashboard, NEVER swept)")
 
             reserved_dai = self._get_reserved_dai()
-
-            print(f"   WETH: {weth_balance:.8f} | WBTC: {wbtc_balance:.8f} | DAI: {dai_balance:.6f} | ETH (gas): {eth_balance:.6f}")
-
             supplied_any = False
 
-            weth_usd = weth_balance * ETH_PRICE_FALLBACK
-            if weth_usd > MIN_USD_THRESHOLD:
+            if weth_usd < HARD_FLOOR_USD:
+                if weth_balance > 0:
+                    print(f"   ⏭️ WETH ${weth_usd:.2f} below $2.00 floor — skipping (dust)")
+            else:
                 if eth_balance > ETH_GAS_RESERVE:
-                    print(f"🚑 Nurse Mode: Found ${weth_usd:.2f} of WETH. Supplying to Aave to boost Health Factor.")
+                    print(f"🚑 Nurse: Supplying ${weth_usd:.2f} of WETH to Aave")
                     if self._supply_weth_to_aave(weth_balance):
                         supplied_any = True
                     else:
                         print("   ⚠️ WETH supply failed")
                 else:
-                    print(f"   ⚠️ WETH detected (${weth_usd:.2f}) but ETH gas too low ({eth_balance:.6f} < {ETH_GAS_RESERVE}). Skipping.")
+                    print(f"   ⚠️ WETH ${weth_usd:.2f} ready but ETH gas too low ({eth_balance:.6f}). Skipping.")
 
-            wbtc_usd = wbtc_balance * BTC_PRICE_FALLBACK
-            if wbtc_usd > MIN_USD_THRESHOLD:
-                print(f"🚑 Nurse Mode: Found ${wbtc_usd:.2f} of WBTC. Supplying to Aave to boost Health Factor.")
+            if wbtc_usd < HARD_FLOOR_USD:
+                if wbtc_balance > 0:
+                    print(f"   ⏭️ WBTC ${wbtc_usd:.2f} below $2.00 floor — skipping (dust)")
+            else:
+                print(f"🚑 Nurse: Supplying ${wbtc_usd:.2f} of WBTC to Aave")
                 if self._supply_wbtc_to_aave(wbtc_balance):
                     supplied_any = True
                 else:
                     print("   ⚠️ WBTC supply failed")
 
-            if dai_balance > 0.01 and dai_balance < 2.00:
-                print(f"🚑 Nurse Mode: ${dai_balance:.2f} DAI below $2.00 hard threshold — skipping sweep (dust/stranded tax protection)")
-            else:
-                sweepable_dai = dai_balance - reserved_dai
-                if sweepable_dai > MIN_USD_THRESHOLD:
+            sweepable_dai = dai_balance - reserved_dai
+            if sweepable_dai < HARD_FLOOR_USD:
+                if dai_balance > 0:
                     if reserved_dai > 0:
-                        print(f"🚑 Nurse Mode: Found ${dai_balance:.2f} DAI, reserving ${reserved_dai:.2f} for USDC tax. Sweeping ${sweepable_dai:.2f}.")
+                        print(f"   ⏭️ DAI ${dai_balance:.2f} — ${reserved_dai:.2f} reserved for USDC tax, remainder below $2.00 floor")
                     else:
-                        print(f"🚑 Nurse Mode: Found ${dai_balance:.2f} of DAI. Supplying to Aave to boost Health Factor.")
-                    if self._resupply_dai_to_aave(sweepable_dai * 0.99):
-                        supplied_any = True
-                    else:
-                        print("   ⚠️ DAI supply failed")
-                elif reserved_dai > 0 and dai_balance > 0:
-                    print(f"🚑 Nurse Mode: ${dai_balance:.2f} DAI in wallet — ALL reserved for USDC tax (${reserved_dai:.2f}). Skipping sweep.")
+                        print(f"   ⏭️ DAI ${dai_usd:.2f} below $2.00 floor — skipping (dust)")
+            else:
+                if reserved_dai > 0:
+                    print(f"🚑 Nurse: Supplying ${sweepable_dai:.2f} DAI to Aave (reserving ${reserved_dai:.2f} for USDC tax)")
+                else:
+                    print(f"🚑 Nurse: Supplying ${sweepable_dai:.2f} DAI to Aave")
+                if self._resupply_dai_to_aave(sweepable_dai * 0.99):
+                    supplied_any = True
+                else:
+                    print("   ⚠️ DAI supply failed")
 
             if not supplied_any:
-                print("🚑 Nurse Mode: No idle assets above $1.10 threshold. Wallet clean.")
+                print("🚑 Nurse Mode: All collateral below $2.00 floor or wallet clean.")
             else:
                 hf_data = self.aave.get_user_account_data() if self.aave else None
                 new_hf = hf_data.get('healthFactor', 0) if hf_data else 0
