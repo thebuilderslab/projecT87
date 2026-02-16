@@ -518,9 +518,8 @@ class PositionCreator:
             if eth_amount > 0:
                 results['eth_supply'] = self.agent.aave.supply_weth_to_aave(eth_amount)
 
-            # Supply DAI - DAI compliance enforced
             if dai_amount > 0:
-                results['dai_supply'] = self.agent.aave.supply_dai_to_aave(dai_amount)
+                results['dai_supply'] = self.agent._resupply_dai_to_aave(dai_amount)
 
             return results
 

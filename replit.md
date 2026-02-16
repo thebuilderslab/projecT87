@@ -30,7 +30,16 @@ Conservative Health Factor (HF) thresholds are maintained for different operatio
 A "Nurse Mode" (`_perform_safety_sweep()`) sweeps collateral (DAI, WETH, WBTC, USDT) to Aave when necessary, with a $2.00 USD hard floor to prevent gas waste on dust amounts. USDC is explicitly excluded from sweeping.
 
 ### Liability Short Strategy (USDT Collateral — Phase 2 Refactor)
-This strategy hedges against market downturns by shorting ETH debt. It has two entry points (Macro and Micro) based on collateral drop and health factor. The flow uses USDT as collateral (6 decimals): Borrow WETH → Swap WETH→USDT (direct pool) → Supply USDT to Aave. On close: Withdraw USDT → Swap USDT→WETH → Repay WETH loan → Distribute profit. USDT replaced DAI as the short collateral token for better stablecoin liquidity on Arbitrum.
+This strategy hedges against market downturns by shorting ETH debt. It has two entry points (Macro and Micro) based on collateral drop and health factor. The flow uses USDT as collateral (6 decimals): Borrow WETH → Swap WETH→USDT (direct pool) → Supply USDT to Aave. On close: Withdraw USDT → Swap USDT→WETH → Repay WETH loan → 20/20/60 Profit Split. USDT replaced DAI as the short collateral token for better stablecoin liquidity on Arbitrum.
+
+**20/20/60 Profit Distribution (Mandatory):**
+- 20% → Wallet S as DAI (USDT→WETH→DAI→transfer)
+- 20% → Wallet B as USDC (USDT→USDC direct swap, multi-hop fallback)
+- 60% → Recycled as USDT collateral to Aave
+- All USDT split amounts use `int(amount * 0.20 * 1e6) / 1e6` pattern for 6-decimal precision
+
+### DAI→USDT Conversion Rule
+ALL DAI supplies to Aave MUST convert through DAI→WETH→USDT route before supplying USDT to Aave. The `_resupply_dai_to_aave()` method handles this conversion automatically. No raw DAI should ever be supplied directly to Aave. This applies to Nurse Mode sweeps, Capacity Path fallbacks, dust guards, and recovery paths.
 
 ### Execution Control and Recovery
 A global execution lock (`is_transacting`) with a 130s cooldown prevents double-borrowing. For robustness, the system uses `execution_state.json` to persist state after each on-chain step, enabling crash recovery. Upon startup, the agent checks for interrupted sequences and resumes from the last incomplete step. A "Proportional Recovery" mechanism handles scenarios where insufficient DAI remains for all steps, scaling down operations and prioritizing critical transfers. Steps are executed non-blockingly, allowing subsequent steps to proceed even if a swap fails.

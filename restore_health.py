@@ -78,14 +78,14 @@ def main():
 
     if dai_balance > 0.1:
         supply_amount = dai_balance * 0.99
-        print(f"\n🏦 Supplying {supply_amount:.6f} DAI to Aave...")
-        result = agent.aave.supply_dai_to_aave(supply_amount)
+        print(f"\n🏦 Converting {supply_amount:.6f} DAI → USDT → Aave...")
+        result = agent._resupply_dai_to_aave(supply_amount)
         if result:
-            print(f"✅ DAI supply confirmed: {result}")
+            print(f"✅ DAI→USDT→Aave supply confirmed")
             supplied_any = True
             time.sleep(3)
         else:
-            print(f"❌ DAI supply failed")
+            print(f"❌ DAI→USDT conversion/supply failed")
     else:
         print(f"\n⏭️ DAI balance too small to supply ({dai_balance:.6f})")
 
