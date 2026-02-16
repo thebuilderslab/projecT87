@@ -3233,7 +3233,7 @@ class ArbitrumTestnetAgent:
                     'gasPrice': buffered_gas,
                 })
                 signed = self.w3.eth.account.sign_transaction(tx, self.account.key)
-                tx_hash = self.w3.eth.send_raw_transaction(signed.raw_transaction)
+                tx_hash = self.w3.eth.send_raw_transaction(signed.rawTransaction)
                 self.w3.eth.wait_for_transaction_receipt(tx_hash, timeout=60)
                 print(f"✅ GHO infinite approval set for Uniswap Router")
             else:

@@ -353,7 +353,7 @@ class UniswapIntegration:
 
                 nonce = self.w3.eth.get_transaction_count(self.address, 'pending')
                 base_gas_price = self.w3.eth.gas_price
-                swap_gas_price = int(base_gas_price * 2.0) if chain_id == 42161 else int(base_gas_price * 1.5)
+                swap_gas_price = int(base_gas_price * 2.5) if chain_id == 42161 else int(base_gas_price * 1.5)
                 gas_limit = 500000
 
                 swap_tx = self.router_contract.functions.exactInputSingle(
@@ -576,7 +576,7 @@ class UniswapIntegration:
             nonce = self.w3.eth.get_transaction_count(self.address)
             base_gas_price = self.w3.eth.gas_price
             chain_id = self.w3.eth.chain_id
-            gas_price = int(base_gas_price * 2.0) if chain_id == 42161 else int(base_gas_price * 1.3)
+            gas_price = int(base_gas_price * 2.5) if chain_id == 42161 else int(base_gas_price * 1.3)
             approve_tx = token_contract.functions.approve(
                 self.router_address, max_uint256
             ).build_transaction({
@@ -616,7 +616,7 @@ class UniswapIntegration:
             nonce = self.w3.eth.get_transaction_count(self.address)
             base_gas_price = self.w3.eth.gas_price
             chain_id = self.w3.eth.chain_id
-            swap_gas_price = int(base_gas_price * 2.0) if chain_id == 42161 else int(base_gas_price * 1.5)
+            swap_gas_price = int(base_gas_price * 2.5) if chain_id == 42161 else int(base_gas_price * 1.5)
             gas_limit = 600000
 
             swap_params = {
