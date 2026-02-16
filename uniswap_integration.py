@@ -214,6 +214,8 @@ class UniswapIntegration:
                 (weth_address_lower, usdc_address_lower), # WETH → USDC
                 (weth_address_lower, usdt_address_lower), # WETH → USDT (Liability Short collateral)
                 (usdt_address_lower, weth_address_lower), # USDT → WETH (Short close)
+                (usdt_address_lower, usdc_address_lower), # USDT → USDC (Short profit → Wallet B)
+                (dai_address_lower, usdt_address_lower),  # DAI → USDT (Nurse/Capacity conversion)
             ]
 
             current_swap = (token_in_lower, token_out_lower)
@@ -1064,6 +1066,67 @@ class UniswapIntegration:
 
         except Exception as e:
             print(f"❌ USDT to WETH swap failed: {e}")
+            import traceback
+            traceback.print_exc()
+            return False
+
+    def swap_usdt_for_usdc(self, usdt_amount):
+        """Swap USDT for USDC via direct single-hop (both 6 decimals, good Arbitrum liquidity).
+        Falls back to multi-hop USDT→WETH→USDC if direct pool fails."""
+        try:
+            usdc_address = self.w3.to_checksum_address("0xaf88d065e77c8cC2239327C5EDb3A432268e5831")
+
+            if usdt_amount <= 0 or not self.usdt_address:
+                print("❌ Invalid USDT amount or USDT not configured")
+                return False
+
+            print(f"🔄 Swapping {usdt_amount:.6f} USDT → USDC (direct)...")
+
+            swap_result = self._execute_swap(
+                self.usdt_address,
+                usdc_address,
+                usdt_amount,
+                "USDT",
+                "USDC"
+            )
+
+            if swap_result and isinstance(swap_result, str):
+                return {
+                    'success': True,
+                    'tx_hash': swap_result,
+                    'amount_in': usdt_amount,
+                    'token_in': 'USDT',
+                    'token_out': 'USDC'
+                }
+
+            print("⚠️ Direct USDT→USDC failed, trying multi-hop USDT→WETH→USDC...")
+            amount_in_wei = int(usdt_amount * 10**6)
+            fees_attempt = [500, 500]
+            path_bytes = self._encode_path(
+                [self.usdt_address, self.weth_address, usdc_address],
+                fees_attempt
+            )
+            self._audit_path(path_bytes, ["USDT", "WETH", "USDC"], fees_attempt)
+
+            swap_result = self._execute_multihop_swap(
+                path_bytes, usdt_amount, amount_in_wei,
+                self.usdt_address, f"{usdt_amount:.4f} USDT → WETH → USDC"
+            )
+
+            if swap_result and isinstance(swap_result, str):
+                return {
+                    'success': True,
+                    'tx_hash': swap_result,
+                    'amount_in': usdt_amount,
+                    'token_in': 'USDT',
+                    'token_out': 'USDC'
+                }
+            else:
+                print("❌ USDT→USDC swap failed on all attempts")
+                return False
+
+        except Exception as e:
+            print(f"❌ USDT→USDC swap error: {e}")
             import traceback
             traceback.print_exc()
             return False

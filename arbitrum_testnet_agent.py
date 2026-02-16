@@ -1125,20 +1125,15 @@ class ArbitrumTestnetAgent:
                 print(f"✅ SWAP CONFIRMED - TX ID: {swap_result['tx_hash']}")
                 print(f"🔗 Verify on Arbiscan: https://arbiscan.io/tx/{swap_result['tx_hash']}")
 
-                # OPERATION 2: Supply remaining DAI to Aave
                 remaining_dai = dai_amount * 0.3
-                print(f"🏦 Step 2: Supplying remaining {remaining_dai:.6f} DAI to Aave...")
+                print(f"🏦 Step 2: Converting {remaining_dai:.6f} DAI → USDT → Aave collateral...")
                 operations_attempted.append("supply_dai_to_aave")
 
-                supply_result = self.aave.supply_dai_to_aave(remaining_dai)
-
-                if supply_result:
-                    print(f"✅ SUPPLY CONFIRMED - TX ID: {supply_result}")
-                    print(f"🔗 Verify on Arbiscan: https://arbiscan.io/tx/{supply_result}")
+                if self._resupply_dai_to_aave(remaining_dai):
                     print(f"🎉 POST-BORROW OPERATIONS COMPLETED SUCCESSFULLY!")
                     return True
                 else:
-                    print(f"⚠️ DAI supply failed, initiating recovery...")
+                    print(f"⚠️ DAI→USDT→Aave conversion failed, initiating recovery...")
                     return self._initiate_emergency_dai_repayment(remaining_dai, original_health_factor, operations_attempted)
             else:
                 print(f"⚠️ DAI-to-WBTC swap failed, initiating full recovery...")
@@ -2897,30 +2892,87 @@ class ArbitrumTestnetAgent:
             print(f"   Target was:     ${self.PROFIT_TARGETS['total']:.2f}")
             print(f"{'='*60}\n")
 
-            if total_realized >= self.PROFIT_TARGETS['total']:
-                print(f"PROFITABLE TRADE - Recycling profit as collateral...")
-                print(f"   (Short profit recycled to strengthen Aave position)")
+            if remaining_weth > 0.0001:
+                print(f"   Supplying {remaining_weth:.8f} leftover WETH to Aave...")
+                self._supply_weth_to_aave(remaining_weth)
 
-                if remaining_usdt >= 1.0:
-                    print(f"   Supplying ${remaining_usdt:.2f} USDT profit as Aave collateral...")
-                    self._resupply_usdt_to_aave(remaining_usdt * 0.99)
+            if total_realized >= self.PROFIT_TARGETS['total'] and remaining_usdt >= 3.0:
+                print(f"\n{'='*60}")
+                print(f"PROFITABLE TRADE — 20/20/60 SPLIT")
+                print(f"{'='*60}")
 
-                if remaining_weth > 0.0001:
-                    print(f"   Supplying {remaining_weth:.8f} remaining WETH to Aave...")
-                    self._supply_weth_to_aave(remaining_weth)
+                wallet_s_amount = int(remaining_usdt * 0.20 * 1e6) / 1e6
+                wallet_b_amount = int(remaining_usdt * 0.20 * 1e6) / 1e6
+                collateral_amount = int(remaining_usdt * 0.60 * 1e6) / 1e6
+
+                print(f"   20% Wallet S (DAI):  ${wallet_s_amount:.6f}")
+                print(f"   20% Wallet B (USDC): ${wallet_b_amount:.6f}")
+                print(f"   60% Collateral:      ${collateral_amount:.6f}")
+
+                print(f"\n   SPLIT A: 20% → Wallet S (USDT→WETH→DAI→WALLET_S)...")
+                if wallet_s_amount >= 1.0 and self.wallet_s_address:
+                    weth_before_s = self.get_weth_balance()
+                    swap_s1 = self.uniswap.swap_usdt_for_weth(wallet_s_amount)
+                    if swap_s1 and 'tx_hash' in swap_s1:
+                        time.sleep(4)
+                        weth_after_s = self.get_weth_balance()
+                        weth_for_dai = weth_after_s - weth_before_s
+                        if weth_for_dai > 0.000001:
+                            dai_before = self.get_dai_balance()
+                            swap_s2 = self.uniswap.swap_weth_for_dai(weth_for_dai)
+                            if swap_s2 and 'tx_hash' in swap_s2:
+                                time.sleep(4)
+                                dai_after = self.get_dai_balance()
+                                dai_received = dai_after - dai_before
+                                if dai_received >= 0.50:
+                                    self._transfer_dai_to_wallet_s(dai_received)
+                                    time.sleep(3)
+                                    print(f"   ✅ Sent {dai_received:.4f} DAI to Wallet S")
+                                else:
+                                    print(f"   ⚠️ DAI received too low ({dai_received:.4f}) — supplying to Aave")
+                                    if dai_received >= 0.10:
+                                        self._resupply_usdt_to_aave(self.get_usdt_balance() * 0.99) if self.get_usdt_balance() > 0 else None
+                            else:
+                                print(f"   ⚠️ WETH→DAI swap failed — WETH stays in wallet")
+                        else:
+                            print(f"   ⚠️ No WETH from swap — skipping Wallet S")
+                    else:
+                        print(f"   ⚠️ USDT→WETH swap failed — skipping Wallet S")
+                else:
+                    print(f"   ⏭️ Wallet S skipped (amount ${wallet_s_amount:.2f} or address not set)")
+
+                print(f"\n   SPLIT B: 20% → Wallet B (USDT→USDC→WALLET_B)...")
+                if wallet_b_amount >= 1.0:
+                    usdc_before = self._get_usdc_balance()
+                    if self._swap_usdt_for_usdc(wallet_b_amount):
+                        time.sleep(4)
+                        usdc_after = self._get_usdc_balance()
+                        usdc_gained = usdc_after - usdc_before
+                        print(f"   ✅ {usdc_gained:.6f} USDC acquired for Wallet B accumulator")
+                    else:
+                        print(f"   ⚠️ USDT→USDC swap failed — USDT stays in wallet")
+                else:
+                    print(f"   ⏭️ Wallet B skipped (amount ${wallet_b_amount:.2f} too low)")
+
+                print(f"\n   SPLIT C: 60% → Collateral (USDT→Aave)...")
+                final_usdt = self.get_usdt_balance()
+                if final_usdt >= 1.0:
+                    print(f"   Supplying ${final_usdt:.6f} USDT to Aave as collateral...")
+                    self._resupply_usdt_to_aave(final_usdt * 0.99)
+                    print(f"   ✅ Collateral strengthened")
+                else:
+                    print(f"   ⏭️ No USDT remaining for collateral")
 
                 self.liability_short_strategy.close_position(eth_price, total_realized, close_reason)
                 if hasattr(self, '_log_yield_event'):
                     self._log_yield_event(total_realized, f"SHORT_{close_reason}", "")
-                print(f"\nSHORT CLOSED PROFITABLY: ${total_realized:.2f} realized → recycled as collateral")
+                print(f"\nSHORT CLOSED PROFITABLY: ${total_realized:.2f} (20/20/60 split applied)")
             else:
                 print(f"Trade Breakeven/Loss. No Distribution.")
                 print(f"   Realized: ${total_realized:.2f} < Target: ${self.PROFIT_TARGETS['total']:.2f}")
 
                 if remaining_usdt >= 1.0:
                     self._resupply_usdt_to_aave(remaining_usdt * 0.95)
-                if remaining_weth > 0.0001:
-                    self._supply_weth_to_aave(remaining_weth)
 
                 self.liability_short_strategy.close_position(eth_price, total_realized, f"{close_reason}_BREAKEVEN")
 
@@ -3299,6 +3351,32 @@ class ArbitrumTestnetAgent:
                 
         except Exception as e:
             print(f"❌ USDC swap error: {e}")
+            return False
+
+    def _swap_usdt_for_usdc(self, usdt_amount):
+        """Swap USDT for USDC via Uniswap (direct preferred, multi-hop fallback)."""
+        try:
+            if not self.usdc_address:
+                print("⚠️ USDC not available on this network")
+                return False
+
+            if not self.uniswap:
+                print("❌ Uniswap integration not available")
+                return False
+
+            print(f"🔄 Swapping {usdt_amount:.6f} USDT → USDC...")
+
+            swap_result = self.uniswap.swap_usdt_for_usdc(usdt_amount)
+
+            if swap_result and isinstance(swap_result, dict) and swap_result.get('tx_hash'):
+                print(f"✅ USDT→USDC swap successful: {swap_result['tx_hash']}")
+                return True
+            else:
+                print("❌ USDT→USDC swap failed")
+                return False
+
+        except Exception as e:
+            print(f"❌ USDT→USDC swap error: {e}")
             return False
 
     def _swap_weth_for_usdc(self, weth_amount):
@@ -3688,31 +3766,63 @@ class ArbitrumTestnetAgent:
 
     def _resupply_dai_to_aave(self, dai_amount):
         """
-        Resupply DAI directly to Aave as collateral (no swap needed).
+        Convert DAI → WETH → USDT, then supply USDT to Aave as collateral.
+        ALL DAI supplies MUST convert to USDT first (6-decimal collateral standard).
         """
         try:
-            if not self.aave:
-                print("❌ Aave integration not available")
+            if not self.aave or not self.uniswap:
+                print("❌ Aave/Uniswap integration not available")
                 return False
-            
-            print(f"🏦 Resupplying {dai_amount:.6f} DAI to Aave...")
-            
-            supply_result = self.aave.supply_dai_to_aave(dai_amount)
-            
+
+            print(f"🏦 Converting {dai_amount:.6f} DAI → WETH → USDT → Aave...")
+
+            weth_before = self.get_weth_balance()
+            swap_result = self.uniswap.swap_tokens(
+                self.dai_address,
+                self.weth_address,
+                dai_amount
+            )
+            if not swap_result:
+                print("❌ DAI→WETH swap failed in resupply conversion")
+                return False
+
+            time.sleep(4)
+            weth_after = self.get_weth_balance()
+            weth_received = weth_after - weth_before
+            print(f"   DAI→WETH: received {weth_received:.8f} WETH")
+
+            if weth_received < 0.000001:
+                print("❌ No WETH received from DAI swap — aborting conversion")
+                return False
+
+            usdt_before = self.get_usdt_balance()
+            swap_result2 = self.uniswap.swap_weth_for_usdt(weth_received)
+            if not swap_result2 or 'tx_hash' not in swap_result2:
+                print("❌ WETH→USDT swap failed in resupply conversion")
+                return False
+
+            time.sleep(4)
+            usdt_after = self.get_usdt_balance()
+            usdt_received = usdt_after - usdt_before
+            print(f"   WETH→USDT: received {usdt_received:.6f} USDT")
+
+            if usdt_received < 0.10:
+                print(f"⚠️ USDT received too low ({usdt_received:.6f}) — skipping Aave supply")
+                return False
+
+            supply_result = self.aave.supply_usdt_to_aave(usdt_received * 0.99)
             if supply_result:
                 tx_str = str(supply_result)
-                print(f"✅ DAI resupply completed")
+                print(f"✅ USDT supply completed (converted from {dai_amount:.4f} DAI)")
                 if tx_str.startswith("0x"):
                     print(f"   ✅ Success: https://arbiscan.io/tx/{tx_str}")
-                else:
-                    print(f"   TX: {tx_str}")
                 return True
             else:
-                print("❌ DAI resupply failed")
+                print("❌ USDT supply to Aave failed after conversion")
                 return False
-                
+
         except Exception as e:
-            print(f"❌ DAI resupply error: {e}")
+            print(f"❌ DAI→USDT→Aave resupply error: {e}")
             return False
 
     def _resupply_usdt_to_aave(self, usdt_amount):
