@@ -248,4 +248,6 @@ Conservative HF thresholds with $1.20 USDC Tax on every borrow. Each execution p
 - **DAI→USDC**: Forced multi-hop route DAI→WETH→USDC via exactInput (no direct DAI/USDC liquidity on Arbitrum)
 - **HF Threshold**: capacity_health_factor_threshold restored to 2.90 (self.capacity_health_factor_threshold at line 610)
 - **Balance Check**: Fixed stale balance comparison after Nurse Mode sweep — now rechecks if delta looks low
-- **Remaining**: HF dropped to 2.43 after successive capacity borrows — will recover naturally via interest accrual
+- **STF Root Cause**: Missing `'from': self.address` in all Uniswap `build_transaction()` calls — estimate_gas simulated from null address, failing transferFrom
+- **STF Fix**: Added `'from': self.address` to all 4 build_transaction calls in uniswap_integration.py (exactInputSingle, 2x exactInput, approve)
+- **Result**: All swaps now working — DAI→USDC, DAI→WBTC, DAI→WETH confirmed on-chain. Full capacity path completed successfully.

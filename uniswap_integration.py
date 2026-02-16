@@ -352,6 +352,7 @@ class UniswapIntegration:
                 swap_tx = self.router_contract.functions.exactInputSingle(
                     swap_params
                 ).build_transaction({
+                    'from': self.address,
                     'chainId': chain_id,
                     'gas': gas_limit,
                     'gasPrice': swap_gas_price,
@@ -573,6 +574,7 @@ class UniswapIntegration:
             approve_tx = token_contract.functions.approve(
                 self.router_address, max_uint256
             ).build_transaction({
+                'from': self.address,
                 'chainId': chain_id, 'gas': 100000,
                 'gasPrice': gas_price, 'nonce': nonce,
             })
@@ -623,6 +625,7 @@ class UniswapIntegration:
             swap_tx = self.router_contract.functions.exactInput(
                 swap_params
             ).build_transaction({
+                'from': self.address,
                 'chainId': chain_id,
                 'gas': gas_limit,
                 'gasPrice': swap_gas_price,
@@ -775,6 +778,7 @@ class UniswapIntegration:
             swap_tx = self.router_contract.functions.exactInput(
                 swap_params
             ).build_transaction({
+                'from': self.address,
                 'chainId': chain_id,
                 'gas': 600000,
                 'gasPrice': swap_gas_price,
