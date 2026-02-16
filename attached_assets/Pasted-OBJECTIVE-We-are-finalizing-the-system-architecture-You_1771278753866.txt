@@ -1,0 +1,124 @@
+OBJECTIVE
+We are finalizing the system architecture. You must Audit, Correct, and Implement the financial logic to match the exact specifications below.
+Any deviation in dollar amounts, percentages, or routing logic is a failure.
+
+PART 1: The "Financial DNA" (Hard-Code These Values)
+1. GROWTH PATH ($11.40 Borrow)
+
+Total Borrow: $11.40 (DAI).
+
+Distribution:
+
+$1.10 → ETH (Gas Reserve).
+
+$1.10 → DAI (Wallet S).
+
+$1.20 → USDC (Tax → Wallet B).
+
+$2.80 → WBTC (Collateral).
+
+$2.45 → WETH (Collateral).
+
+$2.75 → USDT (Collateral via DAI->WETH->USDT).
+
+2. CAPACITY PATH ($6.70 Borrow)
+
+Total Borrow: $6.70 (DAI).
+
+Distribution:
+
+$1.10 → ETH (Gas Reserve).
+
+$1.10 → DAI (Wallet S).
+
+$1.20 → USDC (Tax → Wallet B).
+
+$1.10 → WBTC (Collateral).
+
+$1.10 → WETH (Collateral).
+
+$1.10 → USDT (Collateral via DAI->WETH->USDT).
+
+3. MACRO SHORT ($10.90 Borrow)
+
+Trigger: Collateral drops $50 in 30 mins.
+
+Basket Allocation:
+
+40% ($4.36) → WBTC.
+
+35% ($3.82) → USDT.
+
+25% ($2.73) → WETH.
+
+4. MICRO SHORT ($7.20 Borrow)
+
+Trigger: Collateral drops $30 in 20 mins.
+
+Basket Allocation:
+
+40% ($2.88) → WBTC.
+
+35% ($2.52) → USDT.
+
+25% ($1.80) → WETH.
+
+5. SHORT CLOSE (Profit Distribution)
+
+Source: Remaining USDT Profit.
+
+Split:
+
+20% → Wallet S (Swap USDT->WETH->DAI).
+
+20% → Wallet B (Swap USDT->USDC).
+
+60% → Collateral (Supply USDT).
+
+PART 2: Collateral Velocity Monitor (New Module)
+Implementation:
+
+Create a separate module/function that tracks a rolling 40-minute price history of Total Collateral Value.
+
+Logic:
+
+Append (timestamp, value) every 60s. Prune entries > 40 mins old.
+
+Calculate drop_20m and drop_30m.
+
+Action: Call the existing Macro/Micro entry functions when thresholds are met.
+
+Constraint: Enforce Cooldowns (Micro: 4h, Macro: 12h).
+
+PART 3: Cleanup & Documentation
+Action:
+
+Scan all files (including replit.md, ALLOCATION_STRATEGY.md, tests, and previews).
+
+Remove/Update any leftover references to:
+
+Old Growth values ($3.20/$2.00).
+
+Old Capacity values ($1.17/$1.03).
+
+Old Short Ratios (where WETH was 35%).
+
+PART 4: Diagnostic Pre-Flight (Required Output)
+Action:
+Before finishing, run a diagnostic routine and PRINT the following for verification:
+
+"GROWTH DISTRIBUTION": List every token and amount.
+
+"CAPACITY DISTRIBUTION": List every token and amount.
+
+"SHORT BASKETS": Print the calculated WBTC/USDT/WETH amounts for both Macro and Micro.
+
+"SAMPLE CLOSE": Simulate a $10.00 USDT profit and print the exact amounts going to Wallet S, Wallet B, and Aave.
+
+Mismatch Handling:
+
+If any mismatch remains between the code and this spec, list the file, function, and current vs expected value.
+
+Auto-Correct the mismatch and rerun diagnostics.
+
+Execute this Plan.

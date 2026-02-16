@@ -1,0 +1,135 @@
+OBJECTIVE
+We are finalizing the bot's financial logic.
+
+Audit: Identify existing structures for Growth and Capacity to avoid rewriting them, but update their values.
+
+Implement: The new Collateral Velocity Monitor (Panic Detection) to replace static price drops.
+
+Hard-Code: The exact financial distributions for all four paths (Growth, Capacity, Macro, Micro).
+
+PART 1: The "Panic Monitor" (Collateral Velocity)
+Concept:
+Instead of watching the ETH price, the bot must watch the Total Collateral Value in Aave. If it drops too fast, it triggers a defensive short.
+
+Requirement:
+
+Buffer: Create a rolling history of collateral values (e.g., store the value every minute for the last 40 minutes).
+
+Velocity Calculation:
+
+Drop_20m = Value_20_mins_ago - Current_Value
+
+Drop_30m = Value_30_mins_ago - Current_Value
+
+New Triggers:
+
+Micro Panic Trigger: IF Drop_20m >= $30.00 → Execute Micro Short ($7.20).
+
+Macro Panic Trigger: IF Drop_30m >= $50.00 → Execute Macro Short ($10.90).
+
+PART 2: Financial Distributions (The "DNA" of the Bot)
+You must update config.py (or the relevant constants file) to match these exact values.
+
+1. GROWTH PATH ($11.40 Borrow)
+
+Source: Borrow $11.40 DAI.
+
+Distribution:
+
+$1.20 → USDC (Tax) → Wallet B.
+
+$1.10 → ETH (Gas Reserve) → Agent Wallet.
+
+$1.10 → DAI → Wallet S.
+
+$2.80 → WBTC → Supply to Aave.
+
+$2.45 → WETH → Supply to Aave.
+
+$2.75 → USDT → Supply to Aave. (Route: DAI->WETH->USDT).
+
+2. CAPACITY PATH ($6.70 Borrow)
+
+Source: Borrow $6.70 DAI.
+
+Distribution:
+
+$1.20 → USDC (Tax) → Wallet B.
+
+$1.10 → ETH (Gas Reserve) → Agent Wallet.
+
+$1.10 → DAI → Wallet S.
+
+$1.10 → WBTC → Supply to Aave.
+
+$1.10 → WETH → Supply to Aave.
+
+$1.10 → USDT → Supply to Aave. (Route: DAI->WETH->USDT).
+
+3. MACRO SHORT ($10.90 Borrow)
+
+Source: Borrow $10.90 WETH.
+
+Distribution (The Hedge Basket):
+
+$4.36 (40%) → WBTC → Supply to Aave.
+
+$3.82 (35%) → USDT → Supply to Aave.
+
+$2.73 (25%) → WETH → Supply to Aave (Direct).
+
+Note: No USDC Tax on entry.
+
+4. MICRO SHORT ($7.20 Borrow)
+
+Source: Borrow $7.20 WETH.
+
+Distribution (The Hedge Basket):
+
+$2.88 (40%) → WBTC → Supply to Aave.
+
+$2.52 (35%) → USDT → Supply to Aave.
+
+$1.80 (25%) → WETH → Supply to Aave (Direct).
+
+Note: No USDC Tax on entry.
+
+5. SHORT CLOSE (The Exit)
+
+Source: Remaining USDT Profit (after repaying loan).
+
+Distribution:
+
+20% → Swap to DAI (via WETH) → Wallet S.
+
+20% → Swap to USDC → Wallet B.
+
+60% → Supply USDT → Aave Collateral.
+
+PART 3: Implementation Instructions
+Audit First:
+
+Check _execute_growth_path and _execute_capacity_path.
+
+Do not delete them. Just update the amounts and ensure the USDT routing (DAI->WETH->USDT) is applied.
+
+Build the Monitor:
+
+Add check_collateral_velocity() to the main loop.
+
+Implement the history buffer logic.
+
+Refactor Shorts:
+
+Update _execute_liability_short_entry to handle the Basket Split (WBTC/USDT/WETH).
+
+Update _execute_liability_short_close to handle the Basket Unwind and 20/20/60 Profit Split.
+
+Output Requirement:
+Please confirm:
+
+The exact code block for DISTRIBUTIONS dictionary.
+
+The logic flow for check_collateral_velocity.
+
+Confirmation that Growth and Capacity paths have been updated with the new numbers.
