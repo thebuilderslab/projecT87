@@ -1,0 +1,108 @@
+We are upgrading the bot's profit management logic. Currently, it flushes profits immediately (preventing accumulation). We will change this to an Accumulation Model (Auto-flush at $22) combined with a Manual Liquidity Injection feature for the dashboard.
+
+OBJECTIVES
+
+Passive Accumulation: Profits stay in the Agent Wallet until they hit $22.00, then auto-flush to WALLET_B.
+
+Manual Injection: Transform the Dashboard "Claim" button into a "Borrow 20% Cash" tool (with a safety check).
+
+Ledger Tracking: Track all payouts (Auto & Manual) in a yield_history.json file to display 24h stats in Zone 4.
+
+TASK 1: Remove Immediate Flushing (Enable Accumulation)
+File: arbitrum_testnet_agent.py
+
+Action: Locate _execute_growth_path, _execute_capacity_path, and _execute_liability_short.
+
+Specifics:
+
+Find the calls to self.transfer_token(self.usdc_address, self.wallet_b, ...) (specifically around lines 2445 and 2766).
+
+DELETE THEM.
+
+Replace with Comment: # Profit accumulates in Agent Wallet towards $22 target.
+
+TASK 2: Implement the Yield Ledger (The Memory)
+File: arbitrum_testnet_agent.py
+
+Action: Add helper method _log_yield_event(amount, type, tx_hash):
+
+Logic: Load yield_history.json (create if missing).
+
+Append new entry: {"timestamp": <iso_time>, "amount": amount, "type": "AUTO"|"MANUAL", "tx": tx_hash}.
+
+Save file.
+
+API Update: In /api/command_center, read this file to return:
+
+last_24h_count: Count of entries where timestamp > (now - 24h).
+
+last_24h_total: Sum of amounts in that window.
+
+TASK 3: Implement Auto-Flush Logic ($22 Bucket)
+File: arbitrum_testnet_agent.py
+
+Action: Add helper method _check_profit_bucket(self):
+
+Logic: Check self.get_token_balance(USDC).
+
+IF balance >= 22.00:
+
+Log: "🌊 BUCKET FULL ($22+)! Flushing to Wallet B..."
+
+Execute: transfer_token(USDC, WALLET_B, balance).
+
+Log Event: _log_yield_event(balance, "AUTO_FLUSH", tx_hash).
+
+ELSE: Log "💧 Accumulating: ${balance} / $22.00".
+
+Placement: Call self._check_profit_bucket() at the very end of run_monitoring_loop, just before the sleep/cooldown cycle.
+
+TASK 4: Implement Manual Injection Logic (The Button)
+File: arbitrum_testnet_agent.py
+
+Config: Add INJECTION_TEST_MODE = True.
+
+Action: Update (or create) endpoint /api/inject_liquidity:
+
+Safety Check: Calculate Availability_Ratio = Available_Borrow / (Debt + Available).
+
+IF < 0.52: ABORT. Return error: "Portfolio too risky (<52% Capacity)."
+
+Calculate Amount:
+
+Max_Safe = 20% of Available_Borrow.
+
+IF INJECTION_TEST_MODE: Use $11.00 USDC.
+
+ELSE: Use Max_Safe.
+
+Execute:
+
+Borrow Amount_in_DAI from Aave.
+
+Swap DAI -> USDC (using the Multi-Hop route).
+
+Transfer USDC -> WALLET_B.
+
+Log Event: _log_yield_event(amount, "MANUAL_INJECTION", tx_hash).
+
+TASK 5: Dashboard & Zone 4 Sync
+API: Ensure /api/command_center returns:
+
+yield_stats (from Task 2).
+
+injection_estimate (The amount calculated in Task 4).
+
+live_usdc_balance (Already exists, verify it feeds the Zone 4 meter).
+
+UI (dashboard.js):
+
+Update Zone 4 to display: "Yield (24h): X Flushes | $YYY Total".
+
+Update Button Label:
+
+Test Mode: "TEST INJECTION ($11.00)"
+
+Live Mode: "INJECT LIQUIDITY ($XX.XX)"
+
+EXECUTE THESE 5 TASKS IMMEDIATELY.
