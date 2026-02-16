@@ -166,7 +166,12 @@ def run_autonomous_mainnet_agent():
                     run_id += 1
                     iteration = 0
                     log_agent_activity(f"🔄 Starting new run cycle #{run_id}")
-                
+
+                try:
+                    agent._check_profit_bucket()
+                except Exception as bucket_err:
+                    log_agent_activity(f"⚠️ Profit bucket check error: {bucket_err}", "WARNING")
+
             except Exception as e:
                 log_agent_activity(f"❌ Error in monitoring cycle: {e}", "ERROR")
                 log_agent_activity("⏸️ Continuing monitoring after error...")

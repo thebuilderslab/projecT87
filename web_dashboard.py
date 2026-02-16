@@ -947,6 +947,48 @@ def _get_engine_room_state(health_factor, total_collateral, total_debt, availabl
         "blocking_reasons": blocking_reasons,
     }
 
+INJECTION_TEST_MODE = True
+
+def _get_yield_stats():
+    try:
+        if not os.path.exists('yield_history.json'):
+            return {"last_24h_count": 0, "last_24h_total": 0.0, "all_time_total": 0.0, "all_time_count": 0}
+        with open('yield_history.json', 'r') as f:
+            history = json.load(f)
+        cutoff = datetime.now(timezone.utc) - timedelta(hours=24)
+        recent = []
+        for entry in history:
+            try:
+                ts = datetime.fromisoformat(entry["timestamp"])
+                if ts > cutoff:
+                    recent.append(entry)
+            except Exception:
+                pass
+        return {
+            "last_24h_count": len(recent),
+            "last_24h_total": round(sum(e.get("amount", 0) for e in recent), 4),
+            "all_time_total": round(sum(e.get("amount", 0) for e in history), 4),
+            "all_time_count": len(history),
+        }
+    except Exception:
+        return {"last_24h_count": 0, "last_24h_total": 0.0, "all_time_total": 0.0, "all_time_count": 0}
+
+def _get_injection_estimate(available_borrows, total_debt):
+    total_capacity = total_debt + available_borrows
+    availability_ratio = available_borrows / total_capacity if total_capacity > 0 else 0
+    max_safe = available_borrows * 0.20
+    if INJECTION_TEST_MODE:
+        amount = 11.00
+    else:
+        amount = round(max_safe, 2)
+    return {
+        "availability_ratio": round(availability_ratio, 4),
+        "ratio_safe": availability_ratio >= 0.52,
+        "max_safe_usd": round(max_safe, 2),
+        "injection_amount": amount,
+        "test_mode": INJECTION_TEST_MODE,
+    }
+
 @app.route('/api/command-center')
 def command_center():
     """Consolidated endpoint for the 5-zone command center dashboard.
@@ -1065,6 +1107,8 @@ def command_center():
                 "usdc_target": getattr(agent, 'USDC_HARVEST_TARGET', 22.0) if agent else 22.0,
                 "wallet_b": os.getenv('WALLET_B_ADDRESS', 'Not Set')[:10] + '...' if os.getenv('WALLET_B_ADDRESS') else 'Not Set',
                 "engine_room": _get_engine_room_state(health_factor, total_collateral, total_debt, available_borrows, agent_running),
+                "yield_stats": _get_yield_stats(),
+                "injection_estimate": _get_injection_estimate(available_borrows, total_debt),
             },
             "zone5_intel": {
                 "lines": intel_lines[-15:],
@@ -2683,6 +2727,83 @@ def get_cost_optimization_status():
 
 
 # ============================================================================
+# ============================================================================
+# MANUAL LIQUIDITY INJECTION ENDPOINT
+@app.route('/api/inject_liquidity', methods=['POST'])
+def api_inject_liquidity():
+    """Manual liquidity injection — borrows DAI, swaps to USDC, sends to WALLET_B.
+    Safety gate: Availability Ratio must be >= 52%."""
+    global agent
+    try:
+        if not agent:
+            return jsonify({"error": "Agent not initialized", "success": False}), 503
+
+        live_data = get_live_agent_data()
+        available_borrows = live_data.get('available_borrows_usdc', 0)
+        total_debt = live_data.get('total_debt_usdc', 0)
+        total_capacity = total_debt + available_borrows
+        availability_ratio = available_borrows / total_capacity if total_capacity > 0 else 0
+
+        if availability_ratio < 0.52:
+            return jsonify({
+                "error": f"Portfolio too risky — Availability Ratio {availability_ratio:.1%} < 52% minimum",
+                "availability_ratio": round(availability_ratio, 4),
+                "success": False
+            }), 400
+
+        max_safe = available_borrows * 0.20
+        if INJECTION_TEST_MODE:
+            injection_amount = 11.00
+        else:
+            injection_amount = round(max_safe, 2)
+
+        if injection_amount < 1.0:
+            return jsonify({"error": f"Injection amount too small: ${injection_amount:.2f}", "success": False}), 400
+
+        wallet_b = os.getenv('WALLET_B_ADDRESS', '').strip()
+        if not wallet_b or len(wallet_b) != 42:
+            return jsonify({"error": "WALLET_B_ADDRESS not configured", "success": False}), 400
+
+        from web3 import Web3
+        wallet_b_cs = Web3.to_checksum_address(wallet_b)
+
+        borrow_result = agent.aave.borrow_token(
+            agent.dai_address, injection_amount, agent.address
+        ) if hasattr(agent, 'aave') else None
+
+        if not borrow_result:
+            return jsonify({"error": "DAI borrow from Aave failed", "success": False}), 500
+
+        import time as _time
+        _time.sleep(3)
+
+        swap_ok = False
+        if hasattr(agent, '_swap_dai_for_usdc'):
+            swap_ok = agent._swap_dai_for_usdc(injection_amount)
+        if not swap_ok:
+            return jsonify({"error": "DAI→USDC swap failed — DAI remains in wallet", "success": False}), 500
+
+        _time.sleep(3)
+        usdc_balance = agent._get_usdc_balance()
+        if usdc_balance < 0.01:
+            return jsonify({"error": "No USDC received from swap", "success": False}), 500
+
+        send_ok = agent._send_usdc_to_wallet_b()
+        if send_ok:
+            if hasattr(agent, '_log_yield_event'):
+                agent._log_yield_event(usdc_balance, "MANUAL_INJECTION", "")
+            return jsonify({
+                "message": f"Injected ${usdc_balance:.4f} USDC to WALLET_B",
+                "amount": round(usdc_balance, 4),
+                "test_mode": INJECTION_TEST_MODE,
+                "success": True
+            })
+        else:
+            return jsonify({"error": "USDC transfer to WALLET_B failed after swap", "success": False}), 500
+
+    except Exception as e:
+        return jsonify({"error": str(e), "success": False}), 500
+
 # REAL-TIME SSE ENDPOINTS - Phase 2.2: WebSocket-style Synchronization
 @app.route('/api/send-usdc-to-wallet-b', methods=['POST'])
 def api_send_usdc_to_wallet_b():

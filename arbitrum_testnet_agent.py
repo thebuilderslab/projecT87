@@ -2442,7 +2442,7 @@ class ArbitrumTestnetAgent:
                         time.sleep(3)
                         usdc_after = self._get_usdc_balance()
                         print(f"   🛡️ USDC Farm: {usdc_before:.4f} → {usdc_after:.4f} USDC (target: {self.USDC_HARVEST_TARGET:.2f})")
-                        self._send_usdc_to_wallet_b()
+                        # Profit accumulates in Agent Wallet towards $22 target
                         self.save_execution_state("usdc_taxed", path_name, dist_serializable)
                     else:
                         print(f"   ⚠️ USDC tax swap failed — ${usdc_tax_amt:.2f} DAI remains for distribution steps")
@@ -2763,7 +2763,7 @@ class ArbitrumTestnetAgent:
                 print(f"\n📋 STEP 1.5 (PAY YOURSELF FIRST): Swapping {usdc_tax_weth:.8f} WETH → USDC (${usdc_tax_usd:.2f}) immediately...")
                 if self._swap_weth_for_usdc(usdc_tax_weth):
                     print(f"   ✅ USDC tax collected — WETH→USDC swap complete")
-                    self._send_usdc_to_wallet_b()
+                    # Profit accumulates in Agent Wallet towards $22 target
                 else:
                     print(f"   ⚠️ USDC tax swap failed — {usdc_tax_weth:.8f} WETH remains for distribution")
                     steps_failed.append("usdc_taxed")
@@ -3419,7 +3419,72 @@ class ArbitrumTestnetAgent:
         except Exception as e:
             print(f"   ❌ USDC transfer to WALLET_B failed: {e}")
             return False
-    
+
+    def _log_yield_event(self, amount, event_type, tx_hash=""):
+        import json as _json
+        from datetime import datetime, timezone
+        history_file = "yield_history.json"
+        try:
+            try:
+                with open(history_file, 'r') as f:
+                    history = _json.load(f)
+            except (FileNotFoundError, _json.JSONDecodeError):
+                history = []
+            entry = {
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "amount": round(amount, 6),
+                "type": event_type,
+                "tx": tx_hash
+            }
+            history.append(entry)
+            with open(history_file, 'w') as f:
+                _json.dump(history, f, indent=2)
+            print(f"   📒 Yield ledger: {event_type} ${amount:.4f} recorded")
+        except Exception as e:
+            print(f"   ⚠️ Yield ledger write failed: {e}")
+
+    def _check_profit_bucket(self):
+        try:
+            usdc_balance = self._get_usdc_balance()
+            bucket_target = self.USDC_HARVEST_TARGET if hasattr(self, 'USDC_HARVEST_TARGET') else 22.0
+            if usdc_balance >= bucket_target:
+                print(f"\n🌊 BUCKET FULL (${usdc_balance:.2f} >= ${bucket_target:.2f})! Flushing profits to Wallet B...")
+                wallet_b = os.getenv('WALLET_B_ADDRESS', '').strip()
+                if not wallet_b or len(wallet_b) != 42:
+                    print("⚠️ WALLET_B_ADDRESS not set — USDC stays in bot wallet")
+                    return False
+                wallet_b = self.w3.to_checksum_address(wallet_b)
+                erc20_abi = [
+                    {"inputs":[{"name":"to","type":"address"},{"name":"amount","type":"uint256"}],"name":"transfer","outputs":[{"name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"}
+                ]
+                usdc_contract = self.w3.eth.contract(address=self.usdc_address, abi=erc20_abi)
+                amount_raw = int(usdc_balance * 1e6)
+                base_gas = self.w3.eth.gas_price
+                buffered_gas = int(base_gas * 2.5)
+                tx = usdc_contract.functions.transfer(wallet_b, amount_raw).build_transaction({
+                    'from': self.address,
+                    'nonce': self.w3.eth.get_transaction_count(self.address),
+                    'gas': 100000,
+                    'gasPrice': buffered_gas,
+                })
+                signed = self.w3.eth.account.sign_transaction(tx, self.account.key)
+                tx_hash = self.w3.eth.send_raw_transaction(signed.rawTransaction)
+                receipt = self.w3.eth.wait_for_transaction_receipt(tx_hash, timeout=60)
+                if receipt.status == 1:
+                    print(f"   💸 AUTO-FLUSH: {usdc_balance:.6f} USDC → {wallet_b[:10]}...{wallet_b[-4:]}")
+                    print(f"   📝 TX: {tx_hash.hex()}")
+                    self._log_yield_event(usdc_balance, "AUTO_FLUSH", tx_hash.hex())
+                    return True
+                else:
+                    print(f"   ❌ Auto-flush transfer reverted")
+                    return False
+            else:
+                print(f"💧 Profit Accumulating: ${usdc_balance:.4f} / ${bucket_target:.2f} Target")
+                return False
+        except Exception as e:
+            print(f"   ❌ Profit bucket check failed: {e}")
+            return False
+
     def _unwrap_weth_to_eth(self, weth_amount):
         """
         Unwrap WETH to native ETH.

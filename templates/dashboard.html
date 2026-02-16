@@ -672,7 +672,11 @@
                             <span class="hud-data-label" style="font-size:0.65rem;opacity:0.7">WALLET_B</span>
                             <span class="hud-data-value" id="hudWalletB" style="font-size:0.65rem;opacity:0.7">Loading...</span>
                         </div>
-                        <button id="sendUsdcBtn" class="hud-harvest-btn" onclick="sendUsdcToWalletB()" disabled>SEND USDC → WALLET_B</button>
+                        <div class="hud-data-row" style="margin-top:4px;">
+                            <span class="hud-data-label" style="font-size:0.65rem;opacity:0.8">Yield (24h)</span>
+                            <span class="hud-data-value" id="hudYieldStats" style="font-size:0.65rem;opacity:0.8;color:#2775ca">0 Flushes | $0.00</span>
+                        </div>
+                        <button id="injectBtn" class="hud-harvest-btn" onclick="injectLiquidity()" disabled>INJECT LIQUIDITY</button>
                     </div>
                 </div>
             </div>
@@ -774,13 +778,23 @@
             document.getElementById('hudUsdcBar').style.width = usdcPct + '%';
             document.getElementById('hudWalletB').textContent = z4.wallet_b || 'Not Set';
 
-            const sBtn = document.getElementById('sendUsdcBtn');
-            if (usdcBal >= 0.01) {
-                sBtn.disabled = false;
-                sBtn.textContent = 'SEND $' + usdcBal.toFixed(2) + ' USDC → WALLET_B';
+            const yieldStats = z4.yield_stats || {};
+            const y24count = yieldStats.last_24h_count || 0;
+            const y24total = yieldStats.last_24h_total || 0;
+            document.getElementById('hudYieldStats').textContent = y24count + ' Flushes | $' + y24total.toFixed(2) + ' Total';
+
+            const inj = z4.injection_estimate || {};
+            const injBtn = document.getElementById('injectBtn');
+            if (inj.ratio_safe) {
+                injBtn.disabled = false;
+                if (inj.test_mode) {
+                    injBtn.textContent = 'TEST INJECTION ($' + (inj.injection_amount || 11).toFixed(2) + ')';
+                } else {
+                    injBtn.textContent = 'INJECT LIQUIDITY ($' + (inj.injection_amount || 0).toFixed(2) + ')';
+                }
             } else {
-                sBtn.disabled = true;
-                sBtn.textContent = 'SEND USDC → WALLET_B (' + usdcPct.toFixed(0) + '% to target)';
+                injBtn.disabled = true;
+                injBtn.textContent = 'INJECTION LOCKED (' + ((inj.availability_ratio || 0) * 100).toFixed(0) + '% < 52%)';
             }
         }
 
@@ -792,6 +806,27 @@
             } catch (err) {
                 alert('USDC transfer failed: ' + err.message);
             }
+        }
+
+        async function injectLiquidity() {
+            const btn = document.getElementById('injectBtn');
+            const origText = btn.textContent;
+            btn.disabled = true;
+            btn.textContent = 'INJECTING...';
+            try {
+                const resp = await fetch('/api/inject_liquidity', { method: 'POST' });
+                const data = await resp.json();
+                if (data.success) {
+                    alert('Injection successful: ' + data.message);
+                } else {
+                    alert('Injection failed: ' + (data.error || 'Unknown error'));
+                }
+                fetchCommandCenter();
+            } catch (err) {
+                alert('Injection error: ' + err.message);
+            }
+            btn.disabled = false;
+            btn.textContent = origText;
         }
 
         function updateGauge(hf) {
