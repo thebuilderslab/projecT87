@@ -1,0 +1,82 @@
+SDC Overhaul, Manual Claim Logic & Safety Fixes
+
+We are finalizing the system to use USDC for profits. The "Nurse" must be updated to stop wasting gas on dust and to IGNORE USDC so the user can manually claim it via the Dashboard.
+
+CONTEXT & OBJECTIVES
+
+Profit Token: Switch all logic from GHO to USDC (Arbitrum Native).
+
+Nurse Triage: The Nurse must strictly sweep Collateral Only (DAI, WETH, WBTC) and enforce a $2.00 hard floor. It must NEVER touch USDC.
+
+Manual Claim: The "Claim" button on the dashboard must trigger the transfer of USDC to WALLET_B.
+
+Fix Crash: Force-approve all tokens on startup to fix UNPREDICTABLE_GAS_LIMIT errors.
+
+TASK 1: Global Configuration Updates
+
+File: config_constants.py / arbitrum_testnet_agent.py
+
+Action: Replace GHO_ADDRESS with Arbitrum USDC: 0xaf88d065e77c8cC2239327C5EDb3A432268e5831.
+
+Action: Verify WALLET_B_ADDRESS is loaded from Environment Variables/Secrets.
+
+TASK 2: The "Passive Nurse" Logic (Triage System)
+
+File: arbitrum_testnet_agent.py (Method: _perform_safety_sweep)
+
+Logic Overhaul: Replace the current loop with this strict logic:
+
+Python
+# Pseudo-code for _perform_safety_sweep logic
+for asset in assets:
+    balance = self.get_token_balance(asset)
+    usd_value = self.get_usd_value(asset, balance)
+
+    # 1. THE FLOOR: Stop burning gas on dust
+    if usd_value < 2.00:
+        continue
+
+    # 2. PROFIT PROTECTION (USDC)
+    if asset == USDC_ADDRESS:
+        # CRITICAL: Do NOT sweep USDC. Leave it for the user to claim via Dashboard.
+        continue
+
+    # 3. COLLATERAL ROUTING (DAI, WETH, WBTC)
+    if asset in [DAI_ADDRESS, WETH_ADDRESS, WBTC_ADDRESS]:
+        # Check Allowance before Supply to fix "UNPREDICTABLE_GAS_LIMIT"
+        if self.check_allowance(asset, AAVE_POOL_ADDRESS) < balance:
+            self.approve_token(asset, AAVE_POOL_ADDRESS)
+            
+        print(f"🛡️ NURSE: Supplying {usd_value} of {asset_name} to Aave")
+        self.supply_to_aave(asset, balance)
+TASK 3: The "Claim Button" Logic (Manual Trigger)
+
+File: web_dashboard.py (or dashboard.py)
+
+Endpoint: Update /api/harvest_gho to /api/harvest_usdc.
+
+Logic:
+
+Check current USDC Balance.
+
+If balance > 0, execute transfer(USDC, WALLET_B_ADDRESS, balance).
+
+Return success message to UI.
+
+UI Update (dashboard.js): Ensure the "CLAIM" button calls this new endpoint.
+
+TASK 4: The Allowance Fix (Startup Sequence)
+
+File: arbitrum_testnet_agent.py (Method: initialize_integrations)
+
+Action: Add a Force-Approval Loop at the very end of initialization.
+
+Logic:
+
+List all tokens: [DAI, WETH, WBTC, USDC]
+
+List all spenders: [AAVE_POOL_ADDRESS, SWAP_ROUTER_ADDRESS]
+
+Loop: For every Token + Spender pair, check allowance.
+
+Fix: If allowance < MaxUint, execute approve(spender, MaxUint) immediately
