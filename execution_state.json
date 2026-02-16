@@ -1,5 +1,5 @@
 {
-  "step": "wbtc_supplied",
+  "step": "weth_supplied",
   "path_name": "growth",
   "distribution": {
     "total_borrow": 11.399999999999999,
@@ -11,6 +11,6 @@
     "usdc_tax": 1.2,
     "min_capacity": 13.2
   },
-  "timestamp": 1771219814.6528666,
-  "timestamp_human": "2026-02-16 05:30:14"
+  "timestamp": 1771219821.7838185,
+  "timestamp_human": "2026-02-16 05:30:21"
 }
