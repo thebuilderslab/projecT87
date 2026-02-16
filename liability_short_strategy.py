@@ -1,18 +1,34 @@
 #!/usr/bin/env python3
 """
-Liability Short Strategy — Phase 1 Implementation
-Shorts ETH debt (borrowed against total wallet collateral) to hedge against market drops.
+Liability Short Strategy — Phase 2: Target Profit Engine
 
-COMPOSITE SEQUENCE:
-  Part A: Leveraged Entry — Borrow WETH, distribute (WBTC supply, WETH supply, DAI supply, DAI transfer, ETH gas)
-  Part B: Liability Hedge — Swap existing DAI debt to WETH debt via BidirectionalDebtSwapper
+PROFIT-FIRST SYSTEM: Works backwards from a target profit to determine
+the exact ETH price drop needed before entering a short position.
 
-DUAL TRIGGERS (Conservative USDC Mode):
-  Macro Entry: Collateral drop >5% + HF >3.05 → Full position ($10.90 borrow + $10.80 debt swap)
-  Micro Entry: Collateral drop >2% + HF >3.00 → Partial position ($7.20 borrow + $10.10 debt swap)
+FLOW (Round Trip):
+  Step A (Setup):  Trigger fires → Borrow WETH → Swap to DAI → Supply DAI to Aave
+  Step B (Hunt):   Poll every 15s → Wait for target_price OR stop-loss
+  Step C (Close):  Withdraw DAI → Swap to ETH (cheaper) → Repay loan → Distribute profit
 
-EXIT:
-  ETH price recovers >2% from entry → WETH→DAI debt swap to lock in reduced liability
+REVERSE CALCULATOR:
+  Goal: "I need $10.00 profit"
+  Calculate: fees (0.3% entry + 0.3% exit + $0.50 gas) + profit target
+  Result: "Market must drop -2.4% to $X price"
+  Safety: Abort if required drop > 4% for Micro
+
+DUAL TRIGGERS:
+  Macro: Collateral drop >5% + HF >3.05 → Full short
+  Micro: Collateral drop >2% + HF >3.00 → Partial short
+
+PROFIT DISTRIBUTION:
+  Target_Wallet_S: $2.00
+  Target_Wallet_B: $2.00
+  Target_Collateral: $6.00
+  Total_Target: $10.00
+
+DYNAMIC POLLING:
+  IDLE → 90s (Sentry Mode)
+  SHORT_ACTIVE → 15s (Hunter Mode)
 """
 
 import os
@@ -27,31 +43,21 @@ logger = logging.getLogger(__name__)
 
 POSITIONS_FILE = "debt_swap_positions.json"
 
-MACRO_DISTRIBUTION = {
-    'total_borrow_usd': 10.90 + 1.20,
-    'wbtc_swap_supply': 2.10,
-    'weth_supply': 2.10,
-    'dai_swap_total': 5.60,
-    'dai_supply': 4.50,
-    'dai_transfer': 1.10,
-    'eth_gas_reserve': 1.10,
-    'debt_swap_amount': 10.80,
-    'usdc_tax': 1.20,
-    'min_capacity': 13.0 + 1.20,
+PROFIT_TARGETS = {
+    'wallet_s': 2.00,
+    'wallet_b': 2.00,
+    'collateral': 6.00,
+    'total': 10.00,
 }
 
-MICRO_DISTRIBUTION = {
-    'total_borrow_usd': 7.20 + 1.20,
-    'wbtc_swap_supply': 1.10,
-    'weth_supply': 1.10,
-    'dai_swap_total': 3.90,
-    'dai_supply': 2.80,
-    'dai_transfer': 1.10,
-    'eth_gas_reserve': 1.10,
-    'debt_swap_amount': 10.10,
-    'usdc_tax': 1.20,
-    'min_capacity': 9.0 + 1.20,
+COST_ESTIMATES = {
+    'swap_entry_fee_pct': 0.003,
+    'swap_exit_fee_pct': 0.003,
+    'gas_buffer_usd': 0.50,
 }
+
+MACRO_SHORT_SIZE_USD = 10.90
+MICRO_SHORT_SIZE_USD = 7.20
 
 MACRO_TRIGGER = {
     'collateral_drop_pct': 5.0,
@@ -63,24 +69,29 @@ MICRO_TRIGGER = {
     'min_health_factor': 3.00,
 }
 
-EXIT_TRIGGER = {
-    'eth_recovery_pct': 2.0,
-    'min_health_factor': 2.90,
+SAFETY_GATES = {
+    'micro_max_required_drop_pct': 4.0,
+    'macro_max_required_drop_pct': 8.0,
+    'stop_loss_pct': 1.5,
 }
 
-LIABILITY_SHORT_STEP_ORDER = [
+POLLING_INTERVALS = {
+    'IDLE': 90,
+    'SHORT_ACTIVE': 15,
+}
+
+PHASE2_STEP_ORDER = [
     "weth_borrowed",
-    "wbtc_swapped_supplied",
-    "weth_supplied",
     "dai_swapped",
-    "dai_supplied",
-    "eth_gas_converted",
-    "dai_transferred",
-    "part_a_complete",
-    "debt_swap_complete",
+    "dai_supplied_as_collateral",
+    "short_active",
+    "dai_withdrawn",
+    "eth_repurchased",
+    "loan_repaid",
+    "profit_distributed",
 ]
 
-DEBT_SWAP_COOLDOWN_SECONDS = 600
+SHORT_COOLDOWN_SECONDS = 600
 
 
 class LiabilityShortStrategy:
@@ -91,7 +102,7 @@ class LiabilityShortStrategy:
         self.last_collateral_snapshot_time = 0
         self.collateral_history = []
         self.max_history = 60
-        logger.info("Liability Short Strategy initialized")
+        logger.info("Liability Short Strategy Phase 2 (Target Profit Engine) initialized")
 
     def _load_positions(self) -> Dict:
         try:
@@ -121,6 +132,18 @@ class LiabilityShortStrategy:
     def get_active_position(self) -> Optional[Dict]:
         return self.positions.get("active_position")
 
+    def get_position_status(self) -> str:
+        active = self.get_active_position()
+        if not active:
+            return "IDLE"
+        return active.get("status", "IDLE").upper()
+
+    def get_polling_interval(self) -> int:
+        status = self.get_position_status()
+        if status == "SHORT_ACTIVE":
+            return POLLING_INTERVALS['SHORT_ACTIVE']
+        return POLLING_INTERVALS['IDLE']
+
     def get_eth_price(self) -> Optional[float]:
         try:
             if hasattr(self.agent, 'market_signal_strategy') and self.agent.market_signal_strategy:
@@ -147,6 +170,59 @@ class LiabilityShortStrategy:
         except Exception as e:
             logger.error(f"Error fetching ETH price: {e}")
         return None
+
+    def _calculate_required_drop(self, short_size_usd: float, target_profit_usd: float) -> Dict:
+        swap_entry_fee = short_size_usd * COST_ESTIMATES['swap_entry_fee_pct']
+        swap_exit_fee = short_size_usd * COST_ESTIMATES['swap_exit_fee_pct']
+        gas_buffer = COST_ESTIMATES['gas_buffer_usd']
+
+        total_costs = swap_entry_fee + swap_exit_fee + gas_buffer
+        gross_revenue_needed = target_profit_usd + total_costs
+        required_drop_pct = (gross_revenue_needed / short_size_usd) * 100.0
+
+        eth_price = self.get_eth_price()
+        target_price = None
+        if eth_price and eth_price > 0:
+            target_price = eth_price * (1.0 - required_drop_pct / 100.0)
+
+        stop_loss_price = None
+        if eth_price and eth_price > 0:
+            stop_loss_price = eth_price * (1.0 + SAFETY_GATES['stop_loss_pct'] / 100.0)
+
+        return {
+            'short_size_usd': short_size_usd,
+            'target_profit_usd': target_profit_usd,
+            'swap_entry_fee': round(swap_entry_fee, 4),
+            'swap_exit_fee': round(swap_exit_fee, 4),
+            'gas_buffer': gas_buffer,
+            'total_costs': round(total_costs, 4),
+            'gross_revenue_needed': round(gross_revenue_needed, 4),
+            'required_drop_pct': round(required_drop_pct, 4),
+            'entry_price': eth_price,
+            'target_price': round(target_price, 2) if target_price else None,
+            'stop_loss_price': round(stop_loss_price, 2) if stop_loss_price else None,
+        }
+
+    def validate_short_entry(self, tier: str, short_size_usd: float) -> Tuple[bool, str, Dict]:
+        calc = self._calculate_required_drop(short_size_usd, PROFIT_TARGETS['total'])
+
+        if calc['entry_price'] is None:
+            return False, "Cannot determine ETH price — aborting", calc
+
+        max_drop = SAFETY_GATES['micro_max_required_drop_pct'] if tier == "micro" else SAFETY_GATES['macro_max_required_drop_pct']
+        if calc['required_drop_pct'] > max_drop:
+            return False, f"SAFETY GATE: Required drop {calc['required_drop_pct']:.2f}% > {max_drop:.1f}% max for {tier} — unrealistic target, ABORT", calc
+
+        print(f"\n📉 SHORT TRIGGERED: Target Net Profit ${PROFIT_TARGETS['total']:.2f}")
+        print(f"🧮 CALCULATION: Market must drop -{calc['required_drop_pct']:.2f}% (${calc['entry_price']:.2f} → ${calc['target_price']:.2f}) to cover fees + profit")
+        print(f"   Entry Fee:    ${calc['swap_entry_fee']:.4f} (0.3%)")
+        print(f"   Exit Fee:     ${calc['swap_exit_fee']:.4f} (0.3%)")
+        print(f"   Gas Buffer:   ${calc['gas_buffer']:.2f}")
+        print(f"   Total Costs:  ${calc['total_costs']:.4f}")
+        print(f"   Gross Needed: ${calc['gross_revenue_needed']:.4f}")
+        print(f"   Stop Loss:    ${calc['stop_loss_price']:.2f} (+{SAFETY_GATES['stop_loss_pct']:.1f}%)")
+
+        return True, f"Short validated: need -{calc['required_drop_pct']:.2f}% drop to ${calc['target_price']:.2f}", calc
 
     def record_collateral_snapshot(self, collateral_usd: float):
         now = time.time()
@@ -185,7 +261,7 @@ class LiabilityShortStrategy:
             return False, "Position already active — cannot open new entry"
 
         if self._is_on_cooldown():
-            return False, "Debt swap on cooldown"
+            return False, "Short on cooldown"
 
         levels = self.get_trigger_levels()
         macro_target = levels["macro_trigger_usd"]
@@ -203,14 +279,14 @@ class LiabilityShortStrategy:
             return False, f"HF {health_factor:.3f} below absolute floor 2.90"
 
         drop_pct = self.get_collateral_drop_pct(current_collateral)
-        return True, f"MACRO ENTRY: Collateral ${current_collateral:.2f} < ${macro_target:.2f} target (drop {drop_pct:.1f}%), HF {health_factor:.3f} (>{MACRO_TRIGGER['min_health_factor']})"
+        return True, f"MACRO ENTRY: Collateral ${current_collateral:.2f} < ${macro_target:.2f} target (drop {drop_pct:.1f}%), HF {health_factor:.3f}"
 
     def check_micro_entry(self, current_collateral: float, health_factor: float) -> Tuple[bool, str]:
         if self.has_active_position():
             return False, "Position already active — cannot open new entry"
 
         if self._is_on_cooldown():
-            return False, "Debt swap on cooldown"
+            return False, "Short on cooldown"
 
         levels = self.get_trigger_levels()
         micro_target = levels["micro_trigger_usd"]
@@ -228,87 +304,78 @@ class LiabilityShortStrategy:
             return False, f"HF {health_factor:.3f} below absolute floor 2.90"
 
         drop_pct = self.get_collateral_drop_pct(current_collateral)
-        return True, f"MICRO ENTRY: Collateral ${current_collateral:.2f} < ${micro_target:.2f} target (drop {drop_pct:.1f}%), HF {health_factor:.3f} (>{MICRO_TRIGGER['min_health_factor']})"
+        return True, f"MICRO ENTRY: Collateral ${current_collateral:.2f} < ${micro_target:.2f} target (drop {drop_pct:.1f}%), HF {health_factor:.3f}"
 
-    def check_exit_trigger(self) -> Tuple[bool, str]:
+    def check_hunt_conditions(self) -> Tuple[str, str]:
         active = self.get_active_position()
-        if not active:
-            return False, "No active position to exit"
+        if not active or active.get("status") != "SHORT_ACTIVE":
+            return "NONE", "No active short to hunt"
 
-        if active.get("status") != "active":
-            return False, f"Position status is '{active.get('status')}', not 'active'"
+        target_price = active.get("target_price", 0)
+        stop_loss_price = active.get("stop_loss_price", 0)
+        entry_price = active.get("entry_eth_price", 0)
 
-        entry_eth_price = active.get("entry_eth_price", 0)
-        if entry_eth_price <= 0:
-            return False, "No entry ETH price recorded"
+        current_eth = self.get_eth_price()
+        if not current_eth:
+            return "WAIT", "Cannot fetch ETH price — holding position"
 
-        current_eth_price = self.get_eth_price()
-        if not current_eth_price:
-            return False, "Cannot fetch current ETH price"
+        if current_eth <= target_price:
+            drop_pct = ((entry_price - current_eth) / entry_price) * 100 if entry_price > 0 else 0
+            return "WIN", f"TARGET HIT: ETH ${current_eth:.2f} <= ${target_price:.2f} (dropped {drop_pct:.1f}%)"
 
-        recovery_pct = ((current_eth_price - entry_eth_price) / entry_eth_price) * 100
-        if recovery_pct < EXIT_TRIGGER['eth_recovery_pct']:
-            return False, f"ETH recovery {recovery_pct:.1f}% < {EXIT_TRIGGER['eth_recovery_pct']}% threshold (entry: ${entry_eth_price:.2f}, current: ${current_eth_price:.2f})"
+        if current_eth >= stop_loss_price:
+            loss_pct = ((current_eth - entry_price) / entry_price) * 100 if entry_price > 0 else 0
+            return "STOP_LOSS", f"STOP LOSS: ETH ${current_eth:.2f} >= ${stop_loss_price:.2f} (rose {loss_pct:.1f}%)"
 
-        return True, f"EXIT TRIGGER: ETH recovered {recovery_pct:.1f}% from ${entry_eth_price:.2f} to ${current_eth_price:.2f}"
+        distance_to_target = ((current_eth - target_price) / current_eth) * 100 if current_eth > 0 else 0
+        return "HUNTING", f"⏳ HUNTING: ETH ${current_eth:.2f} — target ${target_price:.2f} ({distance_to_target:.2f}% away) | stop-loss ${stop_loss_price:.2f}"
 
-    def open_position(self, tier: str, entry_eth_price: float, borrow_amount_usd: float, debt_swap_amount: float):
+    def open_position(self, tier: str, entry_eth_price: float, short_size_usd: float, calc: Dict):
         position = {
             "id": f"ls_{int(time.time())}",
             "tier": tier,
-            "status": "active",
+            "status": "SHORT_ACTIVE",
             "entry_eth_price": entry_eth_price,
-            "borrow_amount_usd": borrow_amount_usd,
-            "debt_swap_amount": debt_swap_amount,
+            "short_size_usd": short_size_usd,
+            "target_price": calc.get('target_price'),
+            "stop_loss_price": calc.get('stop_loss_price'),
+            "target_profit_usd": calc.get('target_profit_usd'),
+            "required_drop_pct": calc.get('required_drop_pct'),
+            "total_costs": calc.get('total_costs'),
+            "dai_collateral_amount": 0,
+            "weth_borrowed_amount": 0,
             "opened_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             "opened_timestamp": time.time(),
             "closed_at": None,
             "exit_eth_price": None,
             "pnl_usd": None,
+            "close_reason": None,
         }
         self.positions["active_position"] = position
         self.positions["positions"].append(position)
         self._save_positions()
-        logger.info(f"Opened {tier} liability short position at ETH ${entry_eth_price:.2f}")
+        print(f"✅ Position opened: {tier.upper()} short at ETH ${entry_eth_price:.2f}")
+        print(f"   Target: ${calc.get('target_price', 0):.2f} | Stop-Loss: ${calc.get('stop_loss_price', 0):.2f}")
+        print(f"⏳ HUNTER MODE: Polling every {POLLING_INTERVALS['SHORT_ACTIVE']}s...")
+        logger.info(f"Opened {tier} Phase 2 short at ETH ${entry_eth_price:.2f}, target ${calc.get('target_price', 0):.2f}")
 
-    def mark_partial(self, tier: str, entry_eth_price: float, borrow_amount_usd: float, debt_swap_amount: float, reason: str):
-        position = {
-            "id": f"ls_{int(time.time())}",
-            "tier": tier,
-            "status": "partial",
-            "entry_eth_price": entry_eth_price,
-            "borrow_amount_usd": borrow_amount_usd,
-            "debt_swap_amount": debt_swap_amount,
-            "opened_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            "opened_timestamp": time.time(),
-            "partial_reason": reason,
-            "closed_at": None,
-            "exit_eth_price": None,
-            "pnl_usd": None,
-        }
-        self.positions["active_position"] = position
-        self.positions["positions"].append(position)
-        self._save_positions()
-        logger.warning(f"Marked {tier} position as PARTIAL: {reason}")
+    def update_position_amounts(self, dai_amount: float, weth_amount: float):
+        active = self.positions.get("active_position")
+        if active:
+            active["dai_collateral_amount"] = dai_amount
+            active["weth_borrowed_amount"] = weth_amount
+            self._save_positions()
 
-    def close_position(self, exit_eth_price: float):
+    def close_position(self, exit_eth_price: float, realized_profit: float, close_reason: str):
         active = self.positions.get("active_position")
         if not active:
             return
 
-        entry_price = active.get("entry_eth_price", 0)
-        debt_swap_amt = active.get("debt_swap_amount", 0)
-
-        if entry_price > 0 and exit_eth_price > 0:
-            price_change_pct = ((exit_eth_price - entry_price) / entry_price)
-            pnl_estimate = debt_swap_amt * price_change_pct
-        else:
-            pnl_estimate = 0
-
         active["status"] = "closed"
         active["closed_at"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         active["exit_eth_price"] = exit_eth_price
-        active["pnl_usd"] = round(pnl_estimate, 4)
+        active["pnl_usd"] = round(realized_profit, 4)
+        active["close_reason"] = close_reason
 
         for p in self.positions["positions"]:
             if p.get("id") == active.get("id"):
@@ -317,12 +384,12 @@ class LiabilityShortStrategy:
 
         self.positions["active_position"] = None
         self._save_positions()
-        logger.info(f"Closed position: entry ${entry_price:.2f} → exit ${exit_eth_price:.2f}, P&L ~${pnl_estimate:.4f}")
+        logger.info(f"Closed position: entry ${active.get('entry_eth_price', 0):.2f} → exit ${exit_eth_price:.2f}, P&L ${realized_profit:.4f}, reason: {close_reason}")
 
     def _is_on_cooldown(self) -> bool:
         last_op_time = getattr(self.agent, 'last_successful_operation_time', 0)
         elapsed = time.time() - last_op_time
-        return elapsed < DEBT_SWAP_COOLDOWN_SECONDS
+        return elapsed < SHORT_COOLDOWN_SECONDS
 
     def get_status_summary(self) -> Dict:
         active = self.get_active_position()
@@ -332,24 +399,31 @@ class LiabilityShortStrategy:
         levels = self.get_trigger_levels()
         summary = {
             "strategy_active": True,
+            "phase": 2,
             "has_position": self.has_active_position(),
-            "position_status": active.get("status") if active else "none",
+            "position_status": active.get("status") if active else "IDLE",
             "position_tier": active.get("tier") if active else None,
             "entry_eth_price": active.get("entry_eth_price") if active else None,
+            "target_price": active.get("target_price") if active else None,
+            "stop_loss_price": active.get("stop_loss_price") if active else None,
             "current_eth_price": current_eth,
             "collateral_baseline": baseline,
             "micro_trigger_usd": levels["micro_trigger_usd"],
             "macro_trigger_usd": levels["macro_trigger_usd"],
             "on_cooldown": self._is_on_cooldown(),
+            "polling_interval": self.get_polling_interval(),
+            "polling_mode": "HUNTER" if self.get_position_status() == "SHORT_ACTIVE" else "SENTRY",
             "total_positions_history": len(self.positions.get("positions", [])),
+            "profit_targets": PROFIT_TARGETS,
         }
 
         if active and active.get("entry_eth_price") and current_eth:
             entry = active["entry_eth_price"]
             change_pct = ((current_eth - entry) / entry) * 100
-            debt_amt = active.get("debt_swap_amount", 0)
-            unrealized_pnl = debt_amt * (change_pct / 100)
             summary["eth_change_pct"] = round(change_pct, 2)
-            summary["unrealized_pnl_usd"] = round(unrealized_pnl, 4)
+            target_p = active.get("target_price", 0)
+            if target_p and current_eth > 0:
+                distance = ((current_eth - target_p) / current_eth) * 100
+                summary["distance_to_target_pct"] = round(distance, 2)
 
         return summary

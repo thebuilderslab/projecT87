@@ -630,11 +630,8 @@ class AaveArbitrumIntegration:
                 ).estimate_gas({'from': self.account.address})
                 gas_limit = int(estimated_gas * 1.3)
             except Exception as est_err:
-                err_str = str(est_err).lower()
-                if 'revert' in err_str or 'execution' in err_str:
-                    print(f"ℹ️ {token_name} collateral already enabled (estimate_gas confirmed no-op)")
-                    return True
-                gas_limit = 200000
+                print(f"ℹ️ {token_name} collateral enable skipped — estimate_gas failed: {est_err}")
+                return True
 
             nonce = self.w3.eth.get_transaction_count(self.account.address)
             base_gas_price = self.w3.eth.gas_price
@@ -914,6 +911,38 @@ class AaveArbitrumIntegration:
 
         except Exception as e:
             logger.error(f"DAI repayment failed: {e}")
+            return False
+
+    def repay_weth(self, amount):
+        """Repay WETH debt to Aave (variable rate)"""
+        try:
+            amount_wei = int(amount * 10**18)
+
+            tx = self.pool_contract.functions.repay(
+                self.weth_address,
+                amount_wei,
+                2,
+                self.account.address
+            ).build_transaction({
+                'from': self.account.address,
+                'gas': 300000,
+                'gasPrice': int(self.w3.eth.gas_price * 2.5),
+                'nonce': self.w3.eth.get_transaction_count(self.account.address)
+            })
+
+            signed_tx = self.w3.eth.account.sign_transaction(tx, self.account.key)
+            tx_hash = self.w3.eth.send_raw_transaction(signed_tx.rawTransaction)
+
+            receipt = self.w3.eth.wait_for_transaction_receipt(tx_hash, timeout=120)
+            if receipt.status == 1:
+                print(f"✅ WETH repayment successful: {amount:.8f}")
+                return tx_hash.hex()
+            else:
+                print(f"❌ WETH repayment reverted on-chain")
+                return False
+
+        except Exception as e:
+            logger.error(f"WETH repayment failed: {e}")
             return False
 
     def swap_borrowed_debt(self, token_in_address, token_out_address, amount_to_swap):
