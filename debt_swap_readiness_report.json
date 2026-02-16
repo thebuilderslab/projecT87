@@ -1,8 +1,7 @@
 {
-  "timestamp": 1756236751.5140123,
-  "datetime": "2025-08-26 19:32:31 UTC",
-  "all_systems_ready": true,
-  "network_approval_score": 70.0,
+  "timestamp": 1771110604.98871,
+  "datetime": "2026-02-14 23:10:04 UTC",
+  "all_systems_ready": false,
   "test_results": {
     "syntax_check": {
       "arbitrum_testnet_agent.py": "\u2705 SYNTAX OK",
@@ -10,12 +9,7 @@
       "aave_integration.py": "\u2705 SYNTAX OK",
       "uniswap_integration.py": "\u2705 SYNTAX OK"
     },
-    "agent_initialization": true,
-    "debt_swap_components": true,
-    "network_approval": {
-      "ready": true,
-      "score": 70.0
-    }
+    "agent_initialization": false
   },
-  "recommendation": "PROCEED_WITH_AUTONOMOUS_EXECUTION"
+  "recommendation": "RESOLVE_ISSUES_BEFORE_EXECUTION"
 }
