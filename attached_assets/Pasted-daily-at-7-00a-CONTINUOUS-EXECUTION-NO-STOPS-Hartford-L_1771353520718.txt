@@ -1,0 +1,51 @@
+daily at 7:00a
+
+
+[CONTINUOUS EXECUTION - NO STOPS]
+
+Hartford Lis Pendens - PHASE 1: Data Collection
+
+Current date: January 22, 2026
+Account: baileygroupservices@gmail.com
+Output folder: https://drive.google.com/drive/folders/128JqjJpDrSkV9ZyylFIICT-MJK5tBxOg
+
+1. Navigate to https://www.searchiqs.com/CTHAR/SearchAdvancedMP.aspx
+2. Login as Guest for Hartford
+3. Search: Document Type = LIS PENDENS, Date range = Last 3 days (1/19/2026 - 1/22/2026)
+4. For EACH Lis Pendens found, extract:
+   - Recording date
+   - Plaintiff (lender/servicer)
+   - Defendant (property owner/seller)
+   - Property address
+   - Book and page reference
+5. For EACH seller name:
+   a. Search Hartford land records for complete property history (original deed, mortgages, refinances, HELOCs, liens, assignments)
+   b. Search https://civilinquiry.jud.ct.gov/ by party name for foreclosure case (case number, filing date, status, debt amount, return date)
+6. Create Google Sheet in output folder:
+   - Title: "Hartford Lis Pendens Raw Data - January 22, 2026"
+   - Columns: Address | Seller | Lender | LP Date | Original Mortgage | Court Case# | Debt Amount | Return Date | Status
+   - Fill in all data for each property
+7. Create LOGIC tracking doc:
+   - Title: "LOGIC - Hartford Lis Pendens - January 22, 2026"
+   - Document: SearchIQS URLs, court docket links, data sources, timestamps
+
+Process ALL properties without interruption. Only respond when Phase 1 complete.
+
+daily at 7:30a
+
+Continuously monitor and analyze all properties listed in the Google Sheet "Hartford Lis Pendens Raw Data - January 22, 2026" associated with Hartford lis pendens cases. For each property, find details on Zillow and Redfin including property type, bedrooms, bathrooms, square footage, estimated market value, and a representative property image. Estimate payoff amounts using court debt if available or, if not, using original mortgage balance, years since origination at 4% annual interest, 5% late fees on the balance, and $10,000 foreclosure costs, clearly documenting the formula and assumptions. Compute equity as market value minus total estimated debt, labeling results as positive, negative, or minimal, and assign an outreach priority (HIGH, MEDIUM, LOW) based on filing recency, equity level, lien complexity, and urgency of court timelines. Compile all findings into a structured master analysis document titled "Hartford Lis Pendens Analysis – January 22, 2026" following the specified per-property template (including address, seller, filing data, lender, case details, debt figures, equity estimate, title search recommendation, outreach priority, and suggested outreach angle). Finally, update the logic documentation with Zillow/Redfin URLs, valuation sources and figures, payoff calculations and formulas, priority assignment reasoning, and the Master Analysis Doc URL. For properties with High outreach priority and recent Lis Pendens, create a separate detailed REVIEW doc following the exact template structure. Process ALL properties without interruption. Only respond when Phase 2 complete.
+
+daily at 8:00a
+
+For each property listed in the Master Analysis Doc "Hartford Lis Pendens Analysis – January 22, 2026" that has been assigned HIGH outreach priority and has a recent Lis Pendens filing: Create a detailed REVIEW document titled "REVIEW [full property address] pre-auction" by copying the exact layout and formatting from the template document at https://docs.google.com/document/d/1loKYjBFEUjfhlfYFwjdZ4SODiU9fMxwcg3N17bIfkIY/edit?tab=t.0. Replace only the highlighted yellow fields with actual property data while preserving all fonts, colors, section titles, and structure. Insert a representative property image at the top. Save all REVIEW docs in the Bailey Group Services Drive folder. Update the LOGIC tracking doc with URLs to all created REVIEW docs. Process without interruption. Only respond when all HIGH priority REVIEW docs are complete.
+
+
+daily at 8:30a
+
+For each HIGH priority property identified in the Master Analysis Doc "Hartford Lis Pendens Analysis – January 22, 2026", create a comprehensive LETTERS document in Google Drive titled "LETTERS TO [full property address]". Pull data from the Hartford Lis Pendens Raw Data sheet and Master Analysis doc to draft two personalized outreach letters using the provided templates:
+
+LETTER #1 - FIRST CONTACT: Use handwritten-style formatting. Personalize with seller first name, property address, years at property, lender name, estimated equity/cash offer amount, court date, and contact information. Maintain empathetic, non-pressure tone focused on offering a fresh start and way out of foreclosure burden.
+
+LETTER #2 - FOLLOW-UP (7 days later): Use same handwritten-style formatting. Reference first letter timing, emphasize urgency of approaching court date (calculate days remaining), reinforce cash offer and clean break benefits, and include final call-to-action with contact information. Maintain respectful, hope-focused tone.
+
+Both letters should be 200-300 words, include all placeholder data filled from property records (seller name, address, lender, court date, years at property, estimated cash offer), and be formatted for printing and mailing. Save all LETTERS docs to Bailey Group Services Drive folder. Update LOGIC tracking doc with URLs to all created LETTERS docs. Process all HIGH priority properties without interruption. Only respond when complete.
