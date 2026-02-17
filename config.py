@@ -1,38 +1,123 @@
 
-# Configuration constants for Arbitrum DeFi Agent
-# This module provides centralized configuration management
+import os
 
-# Minimum ETH requirements for operations
-MIN_ETH_FOR_OPERATIONS = 0.001  # Minimum ETH needed for gas fees
-MIN_ETH_FOR_GAS_BUFFER = 0.0005  # Buffer amount for gas fee fluctuations
+MIN_ETH_FOR_OPERATIONS = 0.001
+MIN_ETH_FOR_GAS_BUFFER = 0.0005
 
-# Health factor thresholds - Universal minimum: 1.5
-MIN_HEALTH_FACTOR = 1.5  # Minimum safe health factor (universal threshold)
-TARGET_HEALTH_FACTOR = 1.5  # Target health factor for operations
-EMERGENCY_HEALTH_FACTOR = 1.5  # Emergency threshold (universal minimum)
+MIN_HEALTH_FACTOR = 1.5
+TARGET_HEALTH_FACTOR = 1.5
+EMERGENCY_HEALTH_FACTOR = 1.5
 
-# Autonomous trigger thresholds
-COLLATERAL_GROWTH_TRIGGER_USD = 13.0  # USD growth trigger for autonomous sequence
-MAIN_TRIGGER_THRESHOLD = 13.0  # Main trigger threshold (same as above for compatibility)
+COLLATERAL_GROWTH_TRIGGER_USD = 13.0
+MAIN_TRIGGER_THRESHOLD = 13.0
 
-# Operation limits
-MAX_BORROW_PERCENTAGE = 0.8  # Maximum percentage of available borrows to use
-MAX_RETRY_ATTEMPTS = 3  # Maximum retry attempts for failed operations
+MAX_BORROW_PERCENTAGE = 0.8
+MAX_RETRY_ATTEMPTS = 3
 
-# Gas price settings
-DEFAULT_GAS_PRICE_GWEI = 0.1  # Default gas price in gwei
-GAS_PRICE_MULTIPLIER = 1.2  # Multiplier for gas price to ensure inclusion
+DEFAULT_GAS_PRICE_GWEI = 0.1
+GAS_PRICE_MULTIPLIER = 1.2
 
-# ETH balance thresholds for strategy execution
-MIN_ETH_GAS_THRESHOLD = 0.005  # Minimum ETH balance required for gas operations
-                               # This covers multiple transactions to prevent running out of gas
+MIN_ETH_GAS_THRESHOLD = 0.005
 
-# Cooldown periods (in seconds)
-OPERATION_COOLDOWN = 130  # Cooldown between operations
-EMERGENCY_COOLDOWN = 300  # Extended cooldown after emergencies
+OPERATION_COOLDOWN = 130
+EMERGENCY_COOLDOWN = 300
 
-# API settings
-DEFAULT_TIMEOUT = 30  # Default timeout for API calls
-MAX_RETRIES = 3  # Maximum retries for API calls
+DEFAULT_TIMEOUT = 30
+MAX_RETRIES = 3
 
-print("✅ Config module loaded successfully")
+DISTRIBUTIONS = {
+    "GROWTH": {
+        "borrow_amount": 11.40,
+        "tax_usdc": 1.20,
+        "gas_reserve_eth": 1.10,
+        "wallet_s_dai": 1.10,
+        "collateral_wbtc": 2.80,
+        "collateral_weth": 2.45,
+        "collateral_usdt": 2.75,
+    },
+    "CAPACITY": {
+        "borrow_amount": 6.70,
+        "tax_usdc": 1.20,
+        "gas_reserve_eth": 1.10,
+        "wallet_s_dai": 1.10,
+        "collateral_wbtc": 1.10,
+        "collateral_weth": 1.10,
+        "collateral_usdt": 1.10,
+    },
+}
+
+SHORT_CONFIG = {
+    "MACRO": {
+        "borrow_amount": 10.90,
+        "allocation": {
+            "wbtc": 0.40,
+            "usdt": 0.35,
+            "weth": 0.25,
+        },
+    },
+    "MICRO": {
+        "borrow_amount": 7.20,
+        "allocation": {
+            "wbtc": 0.40,
+            "usdt": 0.35,
+            "weth": 0.25,
+        },
+    },
+}
+
+SHORT_CLOSE_SPLIT = {
+    "wallet_s_dai_pct": 0.20,
+    "wallet_b_usdc_pct": 0.20,
+    "collateral_usdt_pct": 0.60,
+}
+
+VELOCITY_CONFIG = {
+    "buffer_minutes": 40,
+    "sample_interval_seconds": 60,
+    "micro": {
+        "drop_usd": 30.00,
+        "window_minutes": 20,
+        "cooldown_seconds": 14400,
+    },
+    "macro": {
+        "drop_usd": 50.00,
+        "window_minutes": 30,
+        "cooldown_seconds": 43200,
+    },
+}
+
+REAL_ESTATE_CONFIG = {
+    "schedule_timezone": "US/Eastern",
+    "tasks": {
+        "searchiqs_ingest": {"hour": 7, "minute": 0},
+        "analysis": {"hour": 7, "minute": 30},
+        "reviews": {"hour": 8, "minute": 0},
+        "outreach": {"hour": 8, "minute": 30},
+    },
+    "searchiqs_url": "https://www.searchiqs.com/CTHAR/SearchAdvancedMP.aspx",
+    "searchiqs_county": "Hartford",
+    "lookback_days": 3,
+    "google_drive_folder_id": os.getenv("GOOGLE_DRIVE_FOLDER_ID", "128JqjJpDrSkV9ZyylFIICT-MJK5tBxOg"),
+    "review_template_doc_id": os.getenv("GOOGLE_REVIEW_TEMPLATE_ID", "1loKYjBFEUjfhlfYFwjdZ4SODiU9fMxwcg3N17bIfkIY"),
+    "equity_thresholds": {
+        "high": 50000,
+        "medium": 20000,
+    },
+    "rehab_cost_pct": 0.05,
+    "closing_costs": 10000,
+}
+
+PERPLEXITY_CONFIG = {
+    "api_url": "https://api.perplexity.ai/chat/completions",
+    "model": "llama-3.1-sonar-small-128k-online",
+    "max_tokens": 2048,
+    "temperature": 0.2,
+}
+
+
+def to_token_amount(usd_amount: float, price: float, decimals: int) -> int:
+    raw = usd_amount / price * (10 ** decimals)
+    return int(raw)
+
+
+print("✅ Config module loaded successfully (canonical)")

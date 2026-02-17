@@ -100,3 +100,4 @@ externalPort = 5173
 
 [agent]
 expertMode = true
+integrations = ["perplexity_v0:1.0.0"]
