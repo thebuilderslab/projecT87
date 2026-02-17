@@ -686,6 +686,70 @@
             letter-spacing: 0.5px;
         }
 
+        /* ZONE 6: Real Estate Pipeline */
+        .re-pipeline-grid {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+        .re-metric-card {
+            background: rgba(255,255,255,0.03);
+            border-radius: 8px;
+            padding: 10px 6px;
+            text-align: center;
+            border: 1px solid var(--border-default);
+        }
+        .re-metric-card.re-high { border-color: rgba(34,197,94,0.4); }
+        .re-metric-card.re-med { border-color: rgba(245,158,11,0.4); }
+        .re-metric-card.re-low { border-color: rgba(100,116,139,0.3); }
+        .re-metric-value {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--signal-white);
+        }
+        .re-metric-label {
+            font-size: 0.6rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--muted-slate);
+            margin-top: 2px;
+        }
+        .re-schedule-row {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 8px;
+        }
+        .re-task-pill {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.65rem;
+            font-weight: 600;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid var(--border-default);
+            color: var(--muted-slate);
+        }
+        .re-task-pill.completed { border-color: rgba(34,197,94,0.4); color: var(--green-glow); }
+        .re-task-pill.running { border-color: rgba(59,130,246,0.5); color: var(--accent-blue); animation: pulse-glow 1.5s infinite; }
+        .re-task-pill.error { border-color: rgba(239,68,68,0.4); color: var(--red-glow); }
+        .re-task-dot {
+            width: 6px; height: 6px;
+            border-radius: 50%;
+            background: var(--muted-slate);
+        }
+        .re-task-pill.completed .re-task-dot { background: var(--green-glow); }
+        .re-task-pill.running .re-task-dot { background: var(--accent-blue); animation: pulse-dot 1s infinite; }
+        .re-task-pill.error .re-task-dot { background: var(--red-glow); }
+        .re-last-run {
+            font-size: 0.65rem;
+            color: var(--label-slate);
+            text-align: center;
+        }
+
         @media (max-width: 768px) {
             .command-center {
                 padding: 8px;
@@ -780,6 +844,15 @@
                 font-size: 0.62rem;
                 letter-spacing: 1px;
             }
+
+            .re-pipeline-grid {
+                grid-template-columns: repeat(3, 1fr);
+                gap: 6px;
+            }
+            .re-metric-value { font-size: 1rem; }
+            .re-metric-label { font-size: 0.55rem; }
+            .re-schedule-row { gap: 4px; }
+            .re-task-pill { font-size: 0.58rem; padding: 3px 7px; }
 
             .intel-feed {
                 height: 200px;
@@ -993,6 +1066,44 @@
                         <div class="guardrails-current-value" id="currentCollateral">$—</div>
                     </div>
                 </div>
+            </div>
+
+            <!-- ZONE 6: Real Estate Pipeline -->
+            <div class="zone-card zone-center" id="zone6">
+                <div class="zone-label">Zone 6 — Real Estate Pipeline</div>
+                <div class="re-pipeline-grid">
+                    <div class="re-metric-card">
+                        <div class="re-metric-value" id="reFilings">0</div>
+                        <div class="re-metric-label">Filings (24h)</div>
+                    </div>
+                    <div class="re-metric-card re-high">
+                        <div class="re-metric-value" id="reHigh">0</div>
+                        <div class="re-metric-label">HIGH</div>
+                    </div>
+                    <div class="re-metric-card re-med">
+                        <div class="re-metric-value" id="reMed">0</div>
+                        <div class="re-metric-label">MED</div>
+                    </div>
+                    <div class="re-metric-card re-low">
+                        <div class="re-metric-value" id="reLow">0</div>
+                        <div class="re-metric-label">LOW</div>
+                    </div>
+                    <div class="re-metric-card">
+                        <div class="re-metric-value" id="reReviews">0</div>
+                        <div class="re-metric-label">Reviews</div>
+                    </div>
+                    <div class="re-metric-card">
+                        <div class="re-metric-value" id="reLetters">0</div>
+                        <div class="re-metric-label">Letters</div>
+                    </div>
+                </div>
+                <div class="re-schedule-row">
+                    <div class="re-task-pill" id="reTask1"><span class="re-task-dot"></span>7:00 Scrape</div>
+                    <div class="re-task-pill" id="reTask2"><span class="re-task-dot"></span>7:30 Analysis</div>
+                    <div class="re-task-pill" id="reTask3"><span class="re-task-dot"></span>8:00 Reviews</div>
+                    <div class="re-task-pill" id="reTask4"><span class="re-task-dot"></span>8:30 Outreach</div>
+                </div>
+                <div class="re-last-run" id="reLastRun">Pipeline idle — awaiting next scheduled run</div>
             </div>
 
             <!-- ZONE 5: Intelligence Feed -->
@@ -1313,6 +1424,36 @@
             // ZONE 4: Engine Room — Video Avatar + HUD
             updateAvatarState(z4);
             updateHUD(z4);
+
+            // ZONE 6: Real Estate Pipeline
+            const z6 = data.zone6_real_estate || {};
+            document.getElementById('reFilings').textContent = z6.filings_today || 0;
+            document.getElementById('reHigh').textContent = z6.leads_high || 0;
+            document.getElementById('reMed').textContent = z6.leads_med || 0;
+            document.getElementById('reLow').textContent = z6.leads_low || 0;
+            document.getElementById('reReviews').textContent = z6.reviews_generated || 0;
+            document.getElementById('reLetters').textContent = z6.letters_queued || 0;
+
+            const taskPills = [
+                {el: document.getElementById('reTask1'), key: 'last_ingest'},
+                {el: document.getElementById('reTask2'), key: 'last_analysis'},
+                {el: document.getElementById('reTask3'), key: 'last_reviews'},
+                {el: document.getElementById('reTask4'), key: 'last_outreach'},
+            ];
+            const todayStr = new Date().toISOString().slice(0, 10);
+            taskPills.forEach(tp => {
+                tp.el.classList.remove('completed', 'running', 'error');
+                const lastRun = z6[tp.key];
+                if (lastRun && lastRun.includes(todayStr)) {
+                    tp.el.classList.add('completed');
+                }
+            });
+
+            let reStatus = 'Pipeline idle';
+            if (z6.last_outreach && z6.last_outreach.includes(todayStr)) reStatus = 'All 4 tasks completed today';
+            else if (z6.last_ingest && z6.last_ingest.includes(todayStr)) reStatus = 'Pipeline running — next task pending';
+            const reLastEl = document.getElementById('reLastRun');
+            reLastEl.textContent = reStatus + (z6.last_ingest ? ' | Last scrape: ' + z6.last_ingest.slice(11, 16) + ' ET' : '');
 
             // ZONE 5: Intelligence Feed
             const feed = document.getElementById('intelFeed');

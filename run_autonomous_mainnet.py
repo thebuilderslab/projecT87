@@ -14,6 +14,12 @@ import pytz
 from arbitrum_testnet_agent import ArbitrumTestnetAgent
 from config_constants import get_target_wallet, get_delegation_mode
 
+try:
+    from real_estate_tasks import check_and_run_scheduled_tasks
+    RE_TASKS_AVAILABLE = True
+except ImportError:
+    RE_TASKS_AVAILABLE = False
+
 os.environ['NETWORK_MODE'] = 'mainnet'
 
 def log_agent_activity(message, level="INFO"):
@@ -179,6 +185,14 @@ def run_autonomous_mainnet_agent():
                     agent._check_profit_bucket()
                 except Exception as bucket_err:
                     log_agent_activity(f"⚠️ Profit bucket check error: {bucket_err}", "WARNING")
+
+                if RE_TASKS_AVAILABLE:
+                    try:
+                        re_result = check_and_run_scheduled_tasks()
+                        if re_result:
+                            log_agent_activity(f"🏠 RE Task: {re_result.get('task', 'unknown')} → {re_result.get('status', 'unknown')}: {re_result.get('message', '')}")
+                    except Exception as re_err:
+                        log_agent_activity(f"⚠️ Real estate task error: {re_err}", "WARNING")
 
             except Exception as e:
                 log_agent_activity(f"❌ Error in monitoring cycle: {e}", "ERROR")

@@ -949,6 +949,26 @@ def _get_engine_room_state(health_factor, total_collateral, total_debt, availabl
 
 INJECTION_TEST_MODE = True
 
+def _get_real_estate_data():
+    try:
+        from real_estate_tasks import get_real_estate_status
+        return get_real_estate_status()
+    except ImportError:
+        return {
+            "filings_today": 0, "leads_high": 0, "leads_med": 0, "leads_low": 0,
+            "reviews_generated": 0, "letters_queued": 0,
+            "last_ingest": None, "last_analysis": None,
+            "last_reviews": None, "last_outreach": None,
+            "pipeline_active": False, "errors": [],
+        }
+    except Exception as e:
+        logger.error(f"Real estate data error: {e}")
+        return {
+            "filings_today": 0, "leads_high": 0, "leads_med": 0, "leads_low": 0,
+            "reviews_generated": 0, "letters_queued": 0,
+            "pipeline_active": False, "errors": [str(e)],
+        }
+
 def _get_yield_stats():
     try:
         if not os.path.exists('yield_history.json'):
@@ -1157,6 +1177,7 @@ def command_center():
             "zone5_intel": {
                 "lines": intel_lines[-15:],
             },
+            "zone6_real_estate": _get_real_estate_data(),
             "timestamp": time.time(),
             "success": True,
         }
@@ -1164,6 +1185,78 @@ def command_center():
     except Exception as e:
         logger.error(f"Command center API error: {e}")
         return jsonify({"error": str(e), "success": False}), 500
+
+@app.route('/api/real-estate/status')
+def real_estate_status():
+    return jsonify(_get_real_estate_data())
+
+@app.route('/api/real-estate/run/<task_name>', methods=['POST'])
+def run_real_estate_task(task_name):
+    try:
+        from real_estate_tasks import (
+            run_0700_searchiqs_ingest, run_0730_analysis,
+            run_0800_reviews, run_0830_outreach,
+        )
+        task_map = {
+            "ingest": run_0700_searchiqs_ingest,
+            "analysis": run_0730_analysis,
+            "reviews": run_0800_reviews,
+            "outreach": run_0830_outreach,
+        }
+        if task_name not in task_map:
+            return jsonify({"error": f"Unknown task: {task_name}", "valid_tasks": list(task_map.keys())}), 400
+        result = task_map[task_name]()
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/diagnostics')
+def diagnostics_page():
+    try:
+        from config import DISTRIBUTIONS, SHORT_CONFIG, SHORT_CLOSE_SPLIT, VELOCITY_CONFIG, REAL_ESTATE_CONFIG, PERPLEXITY_CONFIG
+
+        checks = []
+        growth = DISTRIBUTIONS["GROWTH"]
+        growth_total = growth["tax_usdc"] + growth["gas_reserve_eth"] + growth["wallet_s_dai"] + growth["collateral_wbtc"] + growth["collateral_weth"] + growth["collateral_usdt"]
+        growth_match = abs(growth_total - growth["borrow_amount"]) < 0.01
+        checks.append({"name": "Growth Distribution Sum", "expected": growth["borrow_amount"], "actual": round(growth_total, 2), "pass": growth_match})
+
+        capacity = DISTRIBUTIONS["CAPACITY"]
+        cap_total = capacity["tax_usdc"] + capacity["gas_reserve_eth"] + capacity["wallet_s_dai"] + capacity["collateral_wbtc"] + capacity["collateral_weth"] + capacity["collateral_usdt"]
+        cap_match = abs(cap_total - capacity["borrow_amount"]) < 0.01
+        checks.append({"name": "Capacity Distribution Sum", "expected": capacity["borrow_amount"], "actual": round(cap_total, 2), "pass": cap_match})
+
+        for tier in ["MACRO", "MICRO"]:
+            alloc = SHORT_CONFIG[tier]["allocation"]
+            alloc_sum = sum(alloc.values())
+            checks.append({"name": f"{tier} Short Allocation Sum", "expected": 1.0, "actual": round(alloc_sum, 2), "pass": abs(alloc_sum - 1.0) < 0.01})
+
+        close_sum = sum(SHORT_CLOSE_SPLIT.values())
+        checks.append({"name": "Short Close Split Sum", "expected": 1.0, "actual": round(close_sum, 2), "pass": abs(close_sum - 1.0) < 0.01})
+
+        perplexity_key = bool(os.getenv("PERPLEXITY_API_KEY"))
+        checks.append({"name": "Perplexity API Key", "expected": "Set", "actual": "Set" if perplexity_key else "Missing", "pass": perplexity_key})
+
+        google_creds = bool(os.getenv("GOOGLE_SERVICE_ACCOUNT_JSON") or os.getenv("GOOGLE_APPLICATION_CREDENTIALS"))
+        checks.append({"name": "Google Credentials", "expected": "Set", "actual": "Set" if google_creds else "Missing", "pass": google_creds})
+
+        all_pass = all(c["pass"] for c in checks)
+
+        diag = {
+            "FINAL_SPEC_STATUS": "PASS" if all_pass else "FAIL",
+            "checks": checks,
+            "distributions": DISTRIBUTIONS,
+            "short_config": SHORT_CONFIG,
+            "short_close_split": SHORT_CLOSE_SPLIT,
+            "velocity_config": VELOCITY_CONFIG,
+            "real_estate_config": {k: v for k, v in REAL_ESTATE_CONFIG.items() if k != "google_drive_folder_id"},
+            "perplexity_config": PERPLEXITY_CONFIG,
+            "real_estate_status": _get_real_estate_data(),
+            "timestamp": time.time(),
+        }
+        return jsonify(diag)
+    except Exception as e:
+        return jsonify({"error": str(e), "FINAL_SPEC_STATUS": "FAIL"}), 500
 
 @app.route('/api/test')
 def api_test():
