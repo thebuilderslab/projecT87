@@ -126,18 +126,22 @@ class GoogleClient:
             return None
 
         try:
-            body = {"properties": {"title": title}}
+            body = {
+                "name": title,
+                "mimeType": "application/vnd.google-apps.spreadsheet",
+            }
+            if folder_id:
+                body["parents"] = [folder_id]
             resp = requests.post(
-                "https://sheets.googleapis.com/v4/spreadsheets",
+                "https://www.googleapis.com/drive/v3/files",
                 headers=headers, json=body, timeout=30
             )
+            if resp.status_code == 403 and "storageQuotaExceeded" in resp.text:
+                logger.warning(f"Storage quota exceeded - cannot create spreadsheet: {title}")
+                return None
             resp.raise_for_status()
-            spreadsheet_id = resp.json()["spreadsheetId"]
-            logger.info(f"Created spreadsheet: {title} ({spreadsheet_id})")
-
-            if folder_id:
-                self._move_to_folder(spreadsheet_id, folder_id)
-
+            spreadsheet_id = resp.json()["id"]
+            logger.info(f"Created spreadsheet via Drive API: {title} ({spreadsheet_id})")
             return spreadsheet_id
         except Exception as e:
             logger.error(f"Failed to create spreadsheet: {e}")
@@ -183,18 +187,22 @@ class GoogleClient:
             return None
 
         try:
-            body = {"title": title}
+            body = {
+                "name": title,
+                "mimeType": "application/vnd.google-apps.document",
+            }
+            if folder_id:
+                body["parents"] = [folder_id]
             resp = requests.post(
-                "https://docs.googleapis.com/v1/documents",
+                "https://www.googleapis.com/drive/v3/files",
                 headers=headers, json=body, timeout=30
             )
+            if resp.status_code == 403 and "storageQuotaExceeded" in resp.text:
+                logger.warning(f"Storage quota exceeded - cannot create document: {title}")
+                return None
             resp.raise_for_status()
-            doc_id = resp.json()["documentId"]
-            logger.info(f"Created document: {title} ({doc_id})")
-
-            if folder_id:
-                self._move_to_folder(doc_id, folder_id)
-
+            doc_id = resp.json()["id"]
+            logger.info(f"Created document via Drive API: {title} ({doc_id})")
             return doc_id
         except Exception as e:
             logger.error(f"Failed to create document: {e}")
