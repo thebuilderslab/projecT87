@@ -471,7 +471,7 @@ def run_0730_analysis() -> Dict:
                 logic_update += f"  Payoff Calc: Market ${lead['market_value']:,.0f} - Debt ${lead['debt_amount']:,.0f} - Rehab ${lead['rehab_cost']:,.0f} - Closing ${lead['closing_costs']:,.0f} = ${lead['estimated_equity']:,.0f}\n"
                 logic_update += f"  Priority Reasoning: {lead.get('outreach_angle', '')}\n"
 
-            google.write_document_content(logic_doc_id, logic_update)
+            google.append_document_content(logic_doc_id, logic_update)
 
         state["analyzed_leads"] = analyzed
         state["leads_high"] = sum(1 for l in analyzed if l["priority"] == "HIGH")
@@ -526,7 +526,7 @@ def run_0800_reviews() -> Dict:
                 logic_update += f"Property: {rd['address']}\n"
                 logic_update += f"REVIEW Doc: {rd['url']}\n\n"
 
-            google.write_document_content(logic_doc_id, logic_update)
+            google.append_document_content(logic_doc_id, logic_update)
             logger.info(f"Updated LOGIC doc with {len(review_docs)} REVIEW links")
 
         state["last_reviews"] = _now_ts()
@@ -636,7 +636,7 @@ def run_0830_outreach() -> Dict:
             logic_update += f"PIPELINE COMPLETE - {_now_ts()}\n"
             logic_update += f"{'='*60}\n"
 
-            google.write_document_content(logic_doc_id, logic_update)
+            google.append_document_content(logic_doc_id, logic_update)
             logger.info("Updated LOGIC doc with LETTERS links - pipeline complete")
 
         state["letters_queued"] = len(letter_docs)

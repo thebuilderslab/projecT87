@@ -232,6 +232,47 @@ class GoogleClient:
             logger.error(f"Failed to write document: {e}")
             return False
 
+    def append_document_content(self, doc_id: str, content: str) -> bool:
+        headers = self._headers()
+        if not headers:
+            return False
+
+        try:
+            get_resp = requests.get(
+                f"https://docs.googleapis.com/v1/documents/{doc_id}",
+                headers=headers, timeout=30
+            )
+            get_resp.raise_for_status()
+            doc_data = get_resp.json()
+            body_content = doc_data.get("body", {}).get("content", [])
+            end_index = 1
+            if body_content:
+                last_element = body_content[-1]
+                end_index = last_element.get("endIndex", 1) - 1
+            if end_index < 1:
+                end_index = 1
+
+            requests_body = [
+                {
+                    "insertText": {
+                        "location": {"index": end_index},
+                        "text": content
+                    }
+                }
+            ]
+            resp = requests.post(
+                f"https://docs.googleapis.com/v1/documents/{doc_id}:batchUpdate",
+                headers=headers,
+                json={"requests": requests_body},
+                timeout=30
+            )
+            resp.raise_for_status()
+            logger.info(f"Appended content to document {doc_id}")
+            return True
+        except Exception as e:
+            logger.error(f"Failed to append to document: {e}")
+            return False
+
     def copy_document(self, template_doc_id: str, new_title: str, folder_id: str = None) -> Optional[str]:
         headers = self._headers()
         if not headers:
