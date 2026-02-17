@@ -25,6 +25,9 @@ from searchiqs_scraper import get_scraper
 from google_client import get_google_client
 
 RE_STATE_FILE = "real_estate_state.json"
+GDOC_URL = "https://docs.google.com/document/d"
+GSHEET_URL = "https://docs.google.com/spreadsheets/d"
+GDRIVE_URL = "https://drive.google.com/drive/folders"
 
 
 def _load_state() -> Dict:
@@ -34,6 +37,10 @@ def _load_state() -> Dict:
                 return json.load(f)
     except Exception as e:
         logger.error(f"Failed to load RE state: {e}")
+    return _default_state()
+
+
+def _default_state() -> Dict:
     return {
         "last_ingest": None,
         "last_analysis": None,
@@ -48,6 +55,17 @@ def _load_state() -> Dict:
         "raw_filings": [],
         "analyzed_leads": [],
         "errors": [],
+        "documents": {
+            "raw_data_sheet_id": None,
+            "raw_data_sheet_url": None,
+            "logic_doc_id": None,
+            "logic_doc_url": None,
+            "analysis_doc_id": None,
+            "analysis_doc_url": None,
+            "review_docs": [],
+            "letter_docs": [],
+            "drive_folder_url": None,
+        },
     }
 
 
@@ -59,60 +77,120 @@ def _save_state(state: Dict):
         logger.error(f"Failed to save RE state: {e}")
 
 
+def _today_label() -> str:
+    return datetime.now(EASTERN).strftime("%B %d, %Y")
+
+
+def _today_short() -> str:
+    return datetime.now(EASTERN).strftime("%Y-%m-%d")
+
+
+def _now_ts() -> str:
+    return datetime.now(EASTERN).isoformat()
+
+
 def run_0700_searchiqs_ingest() -> Dict:
-    logger.info("=== PHASE 1: Data Collection (7:00 AM) ===")
+    logger.info("=== PHASE 1: SearchIQS Data Collection (7:00 AM) ===")
     state = _load_state()
-    result = {"task": "searchiqs_ingest", "status": "started", "timestamp": datetime.now(EASTERN).isoformat()}
+    result = {"task": "searchiqs_ingest", "status": "started", "timestamp": _now_ts()}
+
+    today = _today_label()
+    folder_id = REAL_ESTATE_CONFIG.get("google_drive_folder_id")
+
+    if "documents" not in state:
+        state["documents"] = _default_state()["documents"]
+    state["documents"]["drive_folder_url"] = f"{GDRIVE_URL}/{folder_id}" if folder_id else None
 
     try:
         scraper = get_scraper()
         lookback = REAL_ESTATE_CONFIG.get("lookback_days", 3)
-        filings = scraper.search_lis_pendens(days_back=lookback)
-
-        state["raw_filings"] = filings
-        state["filings_today"] = len(filings)
-        state["last_ingest"] = datetime.now(EASTERN).isoformat()
-
-        google = get_google_client()
-        spreadsheet_id = os.getenv("RE_RAW_DATA_SHEET_ID")
-        if spreadsheet_id and google.credentials:
-            rows = []
-            for f in filings:
-                rows.append([
-                    f.get("recording_date", ""),
-                    f.get("doc_type", "LIS PENDENS"),
-                    f.get("book_page", ""),
-                    f.get("plaintiff", ""),
-                    f.get("defendant", ""),
-                    f.get("property_address", ""),
-                    f.get("parties", ""),
-                    datetime.now(EASTERN).strftime("%Y-%m-%d %H:%M"),
-                ])
-            if rows:
-                google.append_rows(spreadsheet_id, "RawData", rows)
-                logger.info(f"Wrote {len(rows)} rows to Raw Data sheet")
+        filings = scraper.search_lis_pendens(days_back=lookback, fetch_details=True)
 
         for filing in filings:
-            defendant = filing.get("defendant", "")
-            if defendant:
+            defendant = filing.get("seller", "") or filing.get("defendant", "")
+            if defendant and not filing.get("court_case_number"):
                 court_info = scraper.search_court_case(defendant)
                 if court_info:
-                    filing["court_case"] = court_info
-                    logger.info(f"Found court case for {defendant}: {court_info.get('case_number', 'N/A')}")
+                    filing["court_case_number"] = court_info.get("case_number", "")
+                    filing["court_url"] = court_info.get("court_url", "")
+                    if court_info.get("debt_amount") and court_info["debt_amount"] != "Unknown":
+                        filing["debt_amount"] = court_info["debt_amount"]
+                    if court_info.get("return_date") and court_info["return_date"] != "TBD":
+                        filing["return_date"] = court_info["return_date"]
                 time.sleep(1)
 
         state["raw_filings"] = filings
+        state["filings_today"] = len(filings)
+        state["last_ingest"] = _now_ts()
+
+        google = get_google_client()
+
+        raw_sheet_id = None
+        if google.credentials:
+            sheet_title = f"Hartford Lis Pendens Raw Data - {today}"
+            raw_sheet_id = google.create_spreadsheet(sheet_title, folder_id)
+            if raw_sheet_id:
+                state["documents"]["raw_data_sheet_id"] = raw_sheet_id
+                state["documents"]["raw_data_sheet_url"] = f"{GSHEET_URL}/{raw_sheet_id}"
+
+                header = [["Address", "Seller", "Lender", "LP Date", "Original Mortgage",
+                           "Court Case#", "Debt Amount", "Return Date", "Status"]]
+                google.append_rows(raw_sheet_id, "Sheet1", header)
+
+                rows = []
+                for f in filings:
+                    rows.append(scraper.get_filing_as_row(f))
+                if rows:
+                    google.append_rows(raw_sheet_id, "Sheet1", rows)
+                logger.info(f"Created Raw Data sheet: {sheet_title} ({raw_sheet_id})")
+
+        logic_doc_id = None
+        if google.credentials:
+            logic_title = f"LOGIC - Hartford Lis Pendens - {today}"
+            logic_doc_id = google.create_document(logic_title, folder_id)
+            if logic_doc_id:
+                state["documents"]["logic_doc_id"] = logic_doc_id
+                state["documents"]["logic_doc_url"] = f"{GDOC_URL}/{logic_doc_id}"
+
+                logic_content = f"LOGIC - Hartford Lis Pendens - {today}\n{'='*60}\n\n"
+                logic_content += f"Generated: {_now_ts()}\n"
+                logic_content += f"SearchIQS URL: {REAL_ESTATE_CONFIG['searchiqs_url']}\n"
+                logic_content += f"Lookback Period: {lookback} days\n"
+                logic_content += f"Total Filings Found: {len(filings)}\n\n"
+
+                if raw_sheet_id:
+                    logic_content += f"Raw Data Sheet: {GSHEET_URL}/{raw_sheet_id}\n\n"
+
+                logic_content += f"DATA SOURCES\n{'-'*40}\n"
+                for i, f in enumerate(filings, 1):
+                    addr = f.get("property_address", "") or f.get("seller", "Unknown")
+                    logic_content += f"\n{i}. {addr}\n"
+                    if f.get("searchiqs_url"):
+                        logic_content += f"   SearchIQS: {f['searchiqs_url']}\n"
+                    if f.get("court_url"):
+                        logic_content += f"   Court Docket: {f['court_url']}\n"
+                    if f.get("court_case_number"):
+                        logic_content += f"   Case #: {f['court_case_number']}\n"
+                    logic_content += f"   Recorded: {f.get('recording_date', 'N/A')}\n"
+                    logic_content += f"   Book/Page: {f.get('book_page', 'N/A')}\n"
+                    logic_content += f"   Timestamp: {_now_ts()}\n"
+
+                google.write_document_content(logic_doc_id, logic_content)
+                logger.info(f"Created LOGIC doc: {logic_title} ({logic_doc_id})")
+
         _save_state(state)
 
         result["status"] = "success"
         result["filings_found"] = len(filings)
         result["message"] = f"Scraped {len(filings)} Lis Pendens filings from Hartford"
+        result["raw_data_sheet_url"] = state["documents"].get("raw_data_sheet_url")
+        result["logic_doc_url"] = state["documents"].get("logic_doc_url")
         logger.info(f"Phase 1 complete: {len(filings)} filings found")
 
     except Exception as e:
         result["status"] = "error"
         result["error"] = str(e)
-        state["errors"].append({"task": "ingest", "error": str(e), "time": datetime.now(EASTERN).isoformat()})
+        state.setdefault("errors", []).append({"task": "ingest", "error": str(e), "time": _now_ts()})
         _save_state(state)
         logger.error(f"Phase 1 error: {e}")
 
@@ -120,9 +198,13 @@ def run_0700_searchiqs_ingest() -> Dict:
 
 
 def run_0730_analysis() -> Dict:
-    logger.info("=== PHASE 2: Analysis (7:30 AM) ===")
+    logger.info("=== PHASE 2: Analysis + REVIEW Docs (7:30 AM) ===")
     state = _load_state()
-    result = {"task": "analysis", "status": "started", "timestamp": datetime.now(EASTERN).isoformat()}
+    result = {"task": "analysis", "status": "started", "timestamp": _now_ts()}
+
+    today = _today_label()
+    folder_id = REAL_ESTATE_CONFIG.get("google_drive_folder_id")
+    template_id = REAL_ESTATE_CONFIG.get("review_template_doc_id")
 
     try:
         filings = state.get("raw_filings", [])
@@ -138,31 +220,45 @@ def run_0730_analysis() -> Dict:
 
         analyzed = []
         for filing in filings:
-            address = filing.get("property_address", "")
-            defendant = filing.get("defendant", "")
-            court = filing.get("court_case", {})
-            debt_str = court.get("debt_amount", "0")
-            debt_amount = float(debt_str.replace("$", "").replace(",", "")) if debt_str and debt_str != "Unknown" else 0
+            address = filing.get("property_address", "") or filing.get("property_description", "")
+            seller = filing.get("seller", "") or filing.get("party1_seller", "")
+            lender = filing.get("lender", "") or filing.get("party2_lender", "")
+            case_num = filing.get("court_case_number", "")
+            debt_str = filing.get("debt_amount", "0")
+            if isinstance(debt_str, str):
+                debt_amount = float(debt_str.replace("$", "").replace(",", "")) if debt_str and debt_str not in ("Unknown", "", "0") else 0
+            else:
+                debt_amount = float(debt_str) if debt_str else 0
 
             system_prompt = (
-                "You are a CT real estate data analyst. Given a property address, "
-                "estimate the current market value based on recent comparable sales. "
-                "Return ONLY a JSON object: {\"estimated_value\": NUMBER, \"confidence\": \"high\"|\"medium\"|\"low\", \"comps_summary\": \"brief text\"}"
+                "You are a CT real estate data analyst. Given a property address in Hartford CT, "
+                "estimate the current market value based on recent comparable sales, Zillow estimates, and Redfin data. "
+                "Return ONLY a JSON object: {\"estimated_value\": NUMBER, \"confidence\": \"high\"|\"medium\"|\"low\", "
+                "\"zillow_url\": \"URL or empty\", \"redfin_url\": \"URL or empty\", \"comps_summary\": \"brief text\", "
+                "\"valuation_source\": \"source description\"}"
             )
-            user_prompt = f"Property address: {address or defendant}, Hartford CT. Estimate current market value."
+            search_addr = address if address and address.upper() != "SEE DEED" else f"{seller}, Hartford CT"
+            user_prompt = f"Property: {search_addr}, Hartford, CT. Estimate current market value with sources."
 
+            market_value = 0
+            valuation_data = {}
             try:
                 value_response = perplexity_chat(system_prompt, user_prompt, max_tokens=500)
                 try:
-                    value_data = json.loads(value_response.strip().strip('`').strip())
-                    market_value = value_data.get("estimated_value", 0)
+                    cleaned_resp = value_response.strip().strip('`').strip()
+                    if cleaned_resp.startswith('{'):
+                        valuation_data = json.loads(cleaned_resp)
+                    else:
+                        json_match = __import__('re').search(r'\{[^}]+\}', cleaned_resp)
+                        if json_match:
+                            valuation_data = json.loads(json_match.group(0))
+                    market_value = valuation_data.get("estimated_value", 0)
                 except (json.JSONDecodeError, ValueError):
-                    import re
-                    val_match = re.search(r'\$?([\d,]+)', value_response)
+                    import re as _re
+                    val_match = _re.search(r'\$?([\d,]+)', value_response)
                     market_value = float(val_match.group(1).replace(",", "")) if val_match else 0
             except Exception as e:
-                logger.warning(f"Value estimate failed for {address}: {e}")
-                market_value = 0
+                logger.warning(f"Value estimate failed for {search_addr}: {e}")
 
             rehab_cost = market_value * rehab_pct
             equity = market_value - debt_amount - rehab_cost - closing
@@ -174,10 +270,18 @@ def run_0730_analysis() -> Dict:
             else:
                 priority = "LOW"
 
+            outreach_angle = ""
+            if priority == "HIGH":
+                outreach_angle = "Strong equity position - direct cash offer approach with emphasis on quick closing and debt relief"
+            elif priority == "MED":
+                outreach_angle = "Moderate equity - explore short sale or subject-to options, emphasize timeline pressure"
+            else:
+                outreach_angle = "Low equity - monitor only, may not support acquisition at this time"
+
             lead = {
                 "address": address,
-                "defendant": defendant,
-                "plaintiff": filing.get("plaintiff", ""),
+                "seller": seller,
+                "lender": lender,
                 "recording_date": filing.get("recording_date", ""),
                 "market_value": round(market_value, 2),
                 "debt_amount": round(debt_amount, 2),
@@ -185,14 +289,28 @@ def run_0730_analysis() -> Dict:
                 "closing_costs": closing,
                 "estimated_equity": round(equity, 2),
                 "priority": priority,
-                "court_case": court.get("case_number", "N/A"),
-                "return_date": court.get("return_date", "TBD"),
-                "status": court.get("status", "Pending"),
+                "court_case_number": case_num,
+                "return_date": filing.get("return_date", "TBD"),
+                "status": filing.get("status", "PENDING"),
+                "searchiqs_url": filing.get("searchiqs_url", ""),
+                "court_url": filing.get("court_url", ""),
+                "book_page": filing.get("book_page", ""),
+                "original_mortgage": filing.get("original_mortgage", ""),
+                "zillow_url": valuation_data.get("zillow_url", ""),
+                "redfin_url": valuation_data.get("redfin_url", ""),
+                "valuation_source": valuation_data.get("valuation_source", ""),
+                "comps_summary": valuation_data.get("comps_summary", ""),
+                "outreach_angle": outreach_angle,
+                "title_search_recommendation": "Recommended" if priority in ("HIGH", "MED") else "Not required at this stage",
+                "review_doc_id": None,
+                "review_doc_url": None,
+                "letters_doc_id": None,
+                "letters_doc_url": None,
             }
 
-            if address and priority in ("HIGH", "MED"):
+            if priority in ("HIGH", "MED") and (address or seller):
                 try:
-                    analysis = generate_property_analysis(address, market_value, debt_amount, equity)
+                    analysis = generate_property_analysis(address or seller, market_value, debt_amount, equity)
                     lead["perplexity_analysis"] = analysis
                 except Exception as e:
                     logger.warning(f"Property analysis failed for {address}: {e}")
@@ -201,46 +319,182 @@ def run_0730_analysis() -> Dict:
             analyzed.append(lead)
             time.sleep(2)
 
+        google = get_google_client()
+
+        analysis_doc_id = None
+        if google.credentials:
+            analysis_title = f"Hartford Lis Pendens Analysis - {today}"
+            analysis_doc_id = google.create_document(analysis_title, folder_id)
+            if analysis_doc_id:
+                state.setdefault("documents", {})["analysis_doc_id"] = analysis_doc_id
+                state["documents"]["analysis_doc_url"] = f"{GDOC_URL}/{analysis_doc_id}"
+
+                content = f"Hartford Lis Pendens Analysis - {today}\n{'='*60}\n\n"
+                content += f"Total Filings Analyzed: {len(analyzed)}\n"
+                content += f"HIGH Priority: {sum(1 for l in analyzed if l['priority'] == 'HIGH')}\n"
+                content += f"MED Priority: {sum(1 for l in analyzed if l['priority'] == 'MED')}\n"
+                content += f"LOW Priority: {sum(1 for l in analyzed if l['priority'] == 'LOW')}\n\n"
+
+                for i, lead in enumerate(analyzed, 1):
+                    content += f"\n{'='*50}\n"
+                    content += f"PROPERTY {i}: {lead['address'] or lead['seller']}\n"
+                    content += f"{'='*50}\n"
+                    content += f"Address: {lead['address']}\n"
+                    content += f"Seller: {lead['seller']}\n"
+                    content += f"Lender: {lead['lender']}\n"
+                    content += f"Filing Date: {lead['recording_date']}\n"
+                    content += f"Court Case #: {lead['court_case_number']}\n"
+                    content += f"Book/Page: {lead['book_page']}\n"
+                    content += f"Original Mortgage: {lead['original_mortgage']}\n"
+                    content += f"Return Date: {lead['return_date']}\n"
+                    content += f"Status: {lead['status']}\n\n"
+                    content += f"VALUATION\n{'-'*30}\n"
+                    content += f"Estimated Market Value: ${lead['market_value']:,.0f}\n"
+                    content += f"Known Debt: ${lead['debt_amount']:,.0f}\n"
+                    content += f"Rehab Cost (5%): ${lead['rehab_cost']:,.0f}\n"
+                    content += f"Closing Costs: ${lead['closing_costs']:,.0f}\n"
+                    content += f"ESTIMATED EQUITY: ${lead['estimated_equity']:,.0f}\n"
+                    content += f"Priority: {lead['priority']}\n"
+                    content += f"Valuation Source: {lead['valuation_source']}\n"
+                    content += f"Comps Summary: {lead['comps_summary']}\n\n"
+                    content += f"RECOMMENDATIONS\n{'-'*30}\n"
+                    content += f"Title Search: {lead['title_search_recommendation']}\n"
+                    content += f"Outreach Priority: {lead['priority']}\n"
+                    content += f"Suggested Outreach Angle: {lead['outreach_angle']}\n\n"
+                    if lead.get("perplexity_analysis"):
+                        content += f"DETAILED ANALYSIS\n{'-'*30}\n{lead['perplexity_analysis']}\n\n"
+                    if lead.get("zillow_url"):
+                        content += f"Zillow: {lead['zillow_url']}\n"
+                    if lead.get("redfin_url"):
+                        content += f"Redfin: {lead['redfin_url']}\n"
+                    if lead.get("searchiqs_url"):
+                        content += f"SearchIQS: {lead['searchiqs_url']}\n"
+                    if lead.get("court_url"):
+                        content += f"Court Docket: {lead['court_url']}\n"
+
+                google.write_document_content(analysis_doc_id, content)
+                logger.info(f"Created Analysis doc: {analysis_title}")
+
+        high_leads = [l for l in analyzed if l["priority"] == "HIGH"]
+        review_docs = []
+
+        if google.credentials and high_leads:
+            for lead in high_leads:
+                addr = lead.get("address", "") or lead.get("seller", "Unknown")
+
+                case_summary = ""
+                if lead.get("court_case_number") and lead["court_case_number"] not in ("N/A", "", "Not found"):
+                    try:
+                        case_summary = generate_case_law_summary(addr, lead["court_case_number"])
+                    except Exception as e:
+                        case_summary = f"[Case law lookup failed: {e}]"
+
+                review_title = f"REVIEW {addr} pre-auction"
+
+                if template_id:
+                    try:
+                        doc_id = google.copy_document(template_id, review_title, folder_id)
+                        if doc_id:
+                            replacements = {
+                                "{{PROPERTY_ADDRESS}}": addr,
+                                "{{OWNER_NAME}}": lead.get("seller", "N/A"),
+                                "{{PLAINTIFF}}": lead.get("lender", "N/A"),
+                                "{{MARKET_VALUE}}": f"${lead.get('market_value', 0):,.0f}",
+                                "{{DEBT_AMOUNT}}": f"${lead.get('debt_amount', 0):,.0f}",
+                                "{{ESTIMATED_EQUITY}}": f"${lead.get('estimated_equity', 0):,.0f}",
+                                "{{PRIORITY}}": lead.get("priority", "N/A"),
+                                "{{CASE_NUMBER}}": lead.get("court_case_number", "N/A"),
+                                "{{RETURN_DATE}}": lead.get("return_date", "TBD"),
+                                "{{CASE_SUMMARY}}": case_summary[:2000],
+                                "{{ANALYSIS}}": lead.get("perplexity_analysis", "")[:2000],
+                                "{{DATE}}": today,
+                                "{{OUTREACH_ANGLE}}": lead.get("outreach_angle", ""),
+                                "{{COMPS_SUMMARY}}": lead.get("comps_summary", ""),
+                            }
+                            google.replace_text_in_doc(doc_id, replacements)
+                            lead["review_doc_id"] = doc_id
+                            lead["review_doc_url"] = f"{GDOC_URL}/{doc_id}"
+                            review_docs.append({"address": addr, "doc_id": doc_id, "url": f"{GDOC_URL}/{doc_id}"})
+                            logger.info(f"Created REVIEW doc from template: {review_title}")
+                    except Exception as e:
+                        logger.error(f"Failed to create REVIEW from template for {addr}: {e}")
+                else:
+                    try:
+                        doc_id = google.create_document(review_title, folder_id)
+                        if doc_id:
+                            review_content = (
+                                f"REVIEW - {addr} - Pre-Auction\n{'='*50}\n\n"
+                                f"Date: {today}\n\n"
+                                f"PROPERTY DETAILS\n{'-'*30}\n"
+                                f"Address: {addr}\n"
+                                f"Owner: {lead.get('seller', 'N/A')}\n"
+                                f"Plaintiff/Lender: {lead.get('lender', 'N/A')}\n"
+                                f"Case #: {lead.get('court_case_number', 'N/A')}\n"
+                                f"Return Date: {lead.get('return_date', 'TBD')}\n\n"
+                                f"FINANCIAL ANALYSIS\n{'-'*30}\n"
+                                f"Estimated Market Value: ${lead.get('market_value', 0):,.0f}\n"
+                                f"Known Debt: ${lead.get('debt_amount', 0):,.0f}\n"
+                                f"Rehab (5%): ${lead.get('rehab_cost', 0):,.0f}\n"
+                                f"Closing Costs: ${lead.get('closing_costs', 0):,.0f}\n"
+                                f"ESTIMATED EQUITY: ${lead.get('estimated_equity', 0):,.0f}\n"
+                                f"Priority: {lead.get('priority', 'N/A')}\n\n"
+                                f"CASE SUMMARY\n{'-'*30}\n{case_summary}\n\n"
+                                f"MARKET ANALYSIS\n{'-'*30}\n{lead.get('perplexity_analysis', 'N/A')}\n\n"
+                                f"OUTREACH STRATEGY\n{'-'*30}\n{lead.get('outreach_angle', 'N/A')}\n"
+                            )
+                            google.write_document_content(doc_id, review_content)
+                            lead["review_doc_id"] = doc_id
+                            lead["review_doc_url"] = f"{GDOC_URL}/{doc_id}"
+                            review_docs.append({"address": addr, "doc_id": doc_id, "url": f"{GDOC_URL}/{doc_id}"})
+                            logger.info(f"Created REVIEW doc: {review_title}")
+                    except Exception as e:
+                        logger.error(f"Failed to create REVIEW for {addr}: {e}")
+
+                time.sleep(2)
+
+        logic_doc_id = state.get("documents", {}).get("logic_doc_id")
+        if logic_doc_id and google.credentials:
+            logic_update = f"\n\n{'='*60}\nPHASE 2 UPDATE - Analysis Complete ({_now_ts()})\n{'='*60}\n\n"
+            logic_update += f"Analysis Document: {state.get('documents', {}).get('analysis_doc_url', 'N/A')}\n\n"
+            logic_update += "VALUATION SOURCES\n" + "-"*40 + "\n"
+            for lead in analyzed:
+                addr = lead.get("address", "") or lead.get("seller", "")
+                logic_update += f"\n{addr}:\n"
+                logic_update += f"  Priority: {lead['priority']}\n"
+                logic_update += f"  Market Value: ${lead['market_value']:,.0f}\n"
+                logic_update += f"  Equity: ${lead['estimated_equity']:,.0f}\n"
+                logic_update += f"  Source: {lead.get('valuation_source', 'Perplexity AI')}\n"
+                if lead.get("zillow_url"):
+                    logic_update += f"  Zillow: {lead['zillow_url']}\n"
+                if lead.get("redfin_url"):
+                    logic_update += f"  Redfin: {lead['redfin_url']}\n"
+                logic_update += f"  Payoff Calc: Market ${lead['market_value']:,.0f} - Debt ${lead['debt_amount']:,.0f} - Rehab ${lead['rehab_cost']:,.0f} - Closing ${lead['closing_costs']:,.0f} = ${lead['estimated_equity']:,.0f}\n"
+                logic_update += f"  Priority Reasoning: {lead.get('outreach_angle', '')}\n"
+
+            google.write_document_content(logic_doc_id, logic_update)
+
         state["analyzed_leads"] = analyzed
         state["leads_high"] = sum(1 for l in analyzed if l["priority"] == "HIGH")
         state["leads_med"] = sum(1 for l in analyzed if l["priority"] == "MED")
         state["leads_low"] = sum(1 for l in analyzed if l["priority"] == "LOW")
-        state["last_analysis"] = datetime.now(EASTERN).isoformat()
+        state["last_analysis"] = _now_ts()
+        state.setdefault("documents", {})["review_docs"] = review_docs
+        state["reviews_generated"] = len(review_docs)
         _save_state(state)
-
-        google = get_google_client()
-        spreadsheet_id = os.getenv("RE_MASTER_ANALYSIS_SHEET_ID")
-        if spreadsheet_id and google.credentials:
-            rows = []
-            for lead in analyzed:
-                rows.append([
-                    lead["address"],
-                    lead["defendant"],
-                    lead["plaintiff"],
-                    lead["recording_date"],
-                    f"${lead['market_value']:,.0f}",
-                    f"${lead['debt_amount']:,.0f}",
-                    f"${lead['estimated_equity']:,.0f}",
-                    lead["priority"],
-                    lead["court_case"],
-                    lead["return_date"],
-                    lead.get("perplexity_analysis", "")[:500],
-                ])
-            if rows:
-                google.append_rows(spreadsheet_id, "MasterAnalysis", rows)
 
         result["status"] = "success"
         result["analyzed"] = len(analyzed)
         result["high"] = state["leads_high"]
         result["med"] = state["leads_med"]
         result["low"] = state["leads_low"]
-        result["message"] = f"Analyzed {len(analyzed)} leads: {state['leads_high']} HIGH, {state['leads_med']} MED, {state['leads_low']} LOW"
+        result["reviews_created"] = len(review_docs)
+        result["message"] = f"Analyzed {len(analyzed)} leads: {state['leads_high']} HIGH, {state['leads_med']} MED, {state['leads_low']} LOW. Created {len(review_docs)} REVIEW docs."
         logger.info(result["message"])
 
     except Exception as e:
         result["status"] = "error"
         result["error"] = str(e)
-        state["errors"].append({"task": "analysis", "error": str(e), "time": datetime.now(EASTERN).isoformat()})
+        state.setdefault("errors", []).append({"task": "analysis", "error": str(e), "time": _now_ts()})
         _save_state(state)
         logger.error(f"Phase 2 error: {e}")
 
@@ -248,104 +502,45 @@ def run_0730_analysis() -> Dict:
 
 
 def run_0800_reviews() -> Dict:
-    logger.info("=== PHASE 3: Reviews (8:00 AM) ===")
+    logger.info("=== PHASE 3: Update LOGIC with REVIEW Doc URLs (8:00 AM) ===")
     state = _load_state()
-    result = {"task": "reviews", "status": "started", "timestamp": datetime.now(EASTERN).isoformat()}
+    result = {"task": "reviews", "status": "started", "timestamp": _now_ts()}
 
     try:
-        analyzed = state.get("analyzed_leads", [])
-        high_leads = [l for l in analyzed if l.get("priority") == "HIGH"]
+        review_docs = state.get("documents", {}).get("review_docs", [])
+        logic_doc_id = state.get("documents", {}).get("logic_doc_id")
 
-        if not high_leads:
+        if not review_docs:
             result["status"] = "skipped"
-            result["message"] = "No HIGH priority leads for review docs"
-            state["last_reviews"] = datetime.now(EASTERN).isoformat()
+            result["message"] = "No REVIEW docs to link in LOGIC"
+            state["last_reviews"] = _now_ts()
             _save_state(state)
             return result
 
         google = get_google_client()
-        template_id = REAL_ESTATE_CONFIG.get("review_template_doc_id")
-        folder_id = REAL_ESTATE_CONFIG.get("google_drive_folder_id")
-        reviews_created = 0
 
-        for lead in high_leads:
-            address = lead.get("address", "Unknown")
-            defendant = lead.get("defendant", "Unknown")
+        if logic_doc_id and google.credentials:
+            logic_update = f"\n\n{'='*60}\nPHASE 3 UPDATE - REVIEW Docs Linked ({_now_ts()})\n{'='*60}\n\n"
+            logic_update += "REVIEW DOCUMENTS CREATED\n" + "-"*40 + "\n\n"
+            for rd in review_docs:
+                logic_update += f"Property: {rd['address']}\n"
+                logic_update += f"REVIEW Doc: {rd['url']}\n\n"
 
-            case_summary = ""
-            if lead.get("court_case") and lead["court_case"] != "N/A":
-                try:
-                    case_summary = generate_case_law_summary(address, lead["court_case"])
-                except Exception as e:
-                    case_summary = f"[Case law lookup failed: {e}]"
+            google.write_document_content(logic_doc_id, logic_update)
+            logger.info(f"Updated LOGIC doc with {len(review_docs)} REVIEW links")
 
-            doc_title = f"REVIEW - {address or defendant} - {datetime.now(EASTERN).strftime('%Y-%m-%d')}"
-
-            if template_id and google.credentials:
-                try:
-                    doc_id = google.copy_document(template_id, doc_title, folder_id)
-                    if doc_id:
-                        replacements = {
-                            "{{PROPERTY_ADDRESS}}": address or "N/A",
-                            "{{OWNER_NAME}}": defendant or "N/A",
-                            "{{PLAINTIFF}}": lead.get("plaintiff", "N/A"),
-                            "{{MARKET_VALUE}}": f"${lead.get('market_value', 0):,.0f}",
-                            "{{DEBT_AMOUNT}}": f"${lead.get('debt_amount', 0):,.0f}",
-                            "{{ESTIMATED_EQUITY}}": f"${lead.get('estimated_equity', 0):,.0f}",
-                            "{{PRIORITY}}": lead.get("priority", "N/A"),
-                            "{{CASE_NUMBER}}": lead.get("court_case", "N/A"),
-                            "{{RETURN_DATE}}": lead.get("return_date", "TBD"),
-                            "{{CASE_SUMMARY}}": case_summary[:2000],
-                            "{{ANALYSIS}}": lead.get("perplexity_analysis", "")[:2000],
-                            "{{DATE}}": datetime.now(EASTERN).strftime("%B %d, %Y"),
-                        }
-                        google.replace_text_in_doc(doc_id, replacements)
-                        reviews_created += 1
-                        lead["review_doc_id"] = doc_id
-                        logger.info(f"Created review doc for {address}: {doc_id}")
-                except Exception as e:
-                    logger.error(f"Failed to create review for {address}: {e}")
-            else:
-                doc_id = None
-                if google.credentials:
-                    try:
-                        doc_id = google.create_document(doc_title, folder_id)
-                        if doc_id:
-                            content = (
-                                f"PROPERTY REVIEW\n{'='*50}\n\n"
-                                f"Property: {address}\nOwner: {defendant}\n"
-                                f"Plaintiff: {lead.get('plaintiff', 'N/A')}\n"
-                                f"Market Value: ${lead.get('market_value', 0):,.0f}\n"
-                                f"Debt: ${lead.get('debt_amount', 0):,.0f}\n"
-                                f"Equity: ${lead.get('estimated_equity', 0):,.0f}\n"
-                                f"Priority: {lead.get('priority', 'N/A')}\n"
-                                f"Case: {lead.get('court_case', 'N/A')}\n"
-                                f"Return Date: {lead.get('return_date', 'TBD')}\n\n"
-                                f"CASE SUMMARY\n{'-'*30}\n{case_summary}\n\n"
-                                f"ANALYSIS\n{'-'*30}\n{lead.get('perplexity_analysis', 'N/A')}\n"
-                            )
-                            google.write_document_content(doc_id, content)
-                            reviews_created += 1
-                            lead["review_doc_id"] = doc_id
-                    except Exception as e:
-                        logger.error(f"Failed to create plain review: {e}")
-
-            time.sleep(2)
-
-        state["reviews_generated"] = reviews_created
-        state["analyzed_leads"] = analyzed
-        state["last_reviews"] = datetime.now(EASTERN).isoformat()
+        state["last_reviews"] = _now_ts()
         _save_state(state)
 
         result["status"] = "success"
-        result["reviews_created"] = reviews_created
-        result["message"] = f"Generated {reviews_created} review documents for {len(high_leads)} HIGH leads"
+        result["reviews_linked"] = len(review_docs)
+        result["message"] = f"Linked {len(review_docs)} REVIEW docs in LOGIC document"
         logger.info(result["message"])
 
     except Exception as e:
         result["status"] = "error"
         result["error"] = str(e)
-        state["errors"].append({"task": "reviews", "error": str(e), "time": datetime.now(EASTERN).isoformat()})
+        state.setdefault("errors", []).append({"task": "reviews", "error": str(e), "time": _now_ts()})
         _save_state(state)
         logger.error(f"Phase 3 error: {e}")
 
@@ -353,9 +548,12 @@ def run_0800_reviews() -> Dict:
 
 
 def run_0830_outreach() -> Dict:
-    logger.info("=== PHASE 4: Outreach (8:30 AM) ===")
+    logger.info("=== PHASE 4: Outreach Letters (8:30 AM) ===")
     state = _load_state()
-    result = {"task": "outreach", "status": "started", "timestamp": datetime.now(EASTERN).isoformat()}
+    result = {"task": "outreach", "status": "started", "timestamp": _now_ts()}
+
+    today = _today_label()
+    folder_id = REAL_ESTATE_CONFIG.get("google_drive_folder_id")
 
     try:
         analyzed = state.get("analyzed_leads", [])
@@ -364,60 +562,98 @@ def run_0830_outreach() -> Dict:
         if not high_leads:
             result["status"] = "skipped"
             result["message"] = "No HIGH priority leads for outreach"
-            state["last_outreach"] = datetime.now(EASTERN).isoformat()
+            state["last_outreach"] = _now_ts()
             _save_state(state)
             return result
 
         google = get_google_client()
-        folder_id = REAL_ESTATE_CONFIG.get("google_drive_folder_id")
-        letters_created = 0
+        letter_docs = []
 
         for lead in high_leads:
-            address = lead.get("address", "Unknown")
-            owner = lead.get("defendant", "Property Owner")
-            plaintiff = lead.get("plaintiff", "")
+            address = lead.get("address", "") or lead.get("seller", "Unknown")
+            owner = lead.get("seller", "Property Owner")
+            lender_name = lead.get("lender", "")
             analysis = lead.get("perplexity_analysis", "")
 
             try:
-                letters = generate_outreach_letters(
+                letters_text = generate_outreach_letters(
                     owner_name=owner,
                     property_address=address,
                     summary=analysis[:500],
-                    lender=plaintiff,
+                    lender=lender_name,
                     court_date=lead.get("return_date", "TBD"),
                     years_at_property=0,
                     equity_estimate=max(0, lead.get("estimated_equity", 0)),
                 )
 
                 if google.credentials:
-                    doc_title = f"LETTERS - {address or owner} - {datetime.now(EASTERN).strftime('%Y-%m-%d')}"
+                    doc_title = f"LETTERS TO {address}"
                     doc_id = google.create_document(doc_title, folder_id)
                     if doc_id:
-                        google.write_document_content(doc_id, letters)
+                        letter_content = (
+                            f"LETTERS TO {address}\n{'='*50}\n\n"
+                            f"Prepared: {today}\n"
+                            f"Property: {address}\n"
+                            f"Owner: {owner}\n\n"
+                            f"{'='*50}\n"
+                            f"LETTER #1 - FIRST CONTACT\n"
+                            f"{'='*50}\n\n"
+                        )
+
+                        if "LETTER #2" in letters_text or "Letter #2" in letters_text or "FOLLOW-UP" in letters_text.upper():
+                            letter_content += letters_text
+                        else:
+                            letter_content += letters_text
+                            letter_content += f"\n\n{'='*50}\n"
+                            letter_content += "LETTER #2 - FOLLOW-UP (Send after 7 days)\n"
+                            letter_content += f"{'='*50}\n\n"
+                            letter_content += "[Follow-up letter included above or to be generated separately]\n"
+
+                        google.write_document_content(doc_id, letter_content)
                         lead["letters_doc_id"] = doc_id
-                        letters_created += 1
-                        logger.info(f"Created letters doc for {address}: {doc_id}")
+                        lead["letters_doc_url"] = f"{GDOC_URL}/{doc_id}"
+                        letter_docs.append({"address": address, "doc_id": doc_id, "url": f"{GDOC_URL}/{doc_id}"})
+                        logger.info(f"Created LETTERS doc: {doc_title}")
                 else:
-                    letters_created += 1
+                    letter_docs.append({"address": address, "doc_id": None, "url": None})
 
             except Exception as e:
                 logger.error(f"Failed to generate letters for {address}: {e}")
 
             time.sleep(3)
 
-        state["letters_queued"] = letters_created
-        state["last_outreach"] = datetime.now(EASTERN).isoformat()
+        logic_doc_id = state.get("documents", {}).get("logic_doc_id")
+        if logic_doc_id and google.credentials and letter_docs:
+            logic_update = f"\n\n{'='*60}\nPHASE 4 UPDATE - LETTERS Created ({_now_ts()})\n{'='*60}\n\n"
+            logic_update += "OUTREACH LETTERS CREATED\n" + "-"*40 + "\n\n"
+            for ld in letter_docs:
+                logic_update += f"Property: {ld['address']}\n"
+                if ld.get('url'):
+                    logic_update += f"LETTERS Doc: {ld['url']}\n"
+                logic_update += "\n"
+
+            logic_update += f"\n{'='*60}\n"
+            logic_update += f"PIPELINE COMPLETE - {_now_ts()}\n"
+            logic_update += f"{'='*60}\n"
+
+            google.write_document_content(logic_doc_id, logic_update)
+            logger.info("Updated LOGIC doc with LETTERS links - pipeline complete")
+
+        state["letters_queued"] = len(letter_docs)
+        state["last_outreach"] = _now_ts()
+        state.setdefault("documents", {})["letter_docs"] = letter_docs
+        state["analyzed_leads"] = analyzed
         _save_state(state)
 
         result["status"] = "success"
-        result["letters_created"] = letters_created
-        result["message"] = f"Generated {letters_created} letter sets for {len(high_leads)} HIGH leads"
+        result["letters_created"] = len(letter_docs)
+        result["message"] = f"Generated {len(letter_docs)} letter sets for {len(high_leads)} HIGH leads"
         logger.info(result["message"])
 
     except Exception as e:
         result["status"] = "error"
         result["error"] = str(e)
-        state["errors"].append({"task": "outreach", "error": str(e), "time": datetime.now(EASTERN).isoformat()})
+        state.setdefault("errors", []).append({"task": "outreach", "error": str(e), "time": _now_ts()})
         _save_state(state)
         logger.error(f"Phase 4 error: {e}")
 
@@ -426,6 +662,20 @@ def run_0830_outreach() -> Dict:
 
 def get_real_estate_status() -> Dict:
     state = _load_state()
+    docs = state.get("documents", {})
+
+    high_leads = []
+    for lead in state.get("analyzed_leads", []):
+        if lead.get("priority") == "HIGH":
+            high_leads.append({
+                "address": lead.get("address", "") or lead.get("seller", ""),
+                "equity": lead.get("estimated_equity", 0),
+                "review_url": lead.get("review_doc_url"),
+                "letters_url": lead.get("letters_doc_url"),
+                "court_case": lead.get("court_case_number", ""),
+                "return_date": lead.get("return_date", ""),
+            })
+
     return {
         "filings_today": state.get("filings_today", 0),
         "leads_high": state.get("leads_high", 0),
@@ -439,6 +689,13 @@ def get_real_estate_status() -> Dict:
         "last_outreach": state.get("last_outreach"),
         "errors": state.get("errors", [])[-5:],
         "pipeline_active": True,
+        "high_leads": high_leads,
+        "raw_data_sheet_url": docs.get("raw_data_sheet_url"),
+        "logic_doc_url": docs.get("logic_doc_url"),
+        "analysis_doc_url": docs.get("analysis_doc_url"),
+        "review_docs": docs.get("review_docs", []),
+        "letter_docs": docs.get("letter_docs", []),
+        "drive_folder_url": docs.get("drive_folder_url"),
     }
 
 
@@ -452,8 +709,8 @@ def check_and_run_scheduled_tasks() -> Optional[Dict]:
 
     today_str = now.strftime("%Y-%m-%d")
 
-    def already_ran(task_key):
-        last_run = state.get(f"last_{task_key.replace('searchiqs_', '')}")
+    def already_ran(state_key):
+        last_run = state.get(f"last_{state_key}")
         if not last_run:
             return False
         try:
@@ -462,39 +719,30 @@ def check_and_run_scheduled_tasks() -> Optional[Dict]:
         except Exception:
             return False
 
+    task_map = {
+        "searchiqs_ingest": ("ingest", run_0700_searchiqs_ingest),
+        "analysis": ("analysis", run_0730_analysis),
+        "reviews": ("reviews", run_0800_reviews),
+        "outreach": ("outreach", run_0830_outreach),
+    }
+
     for task_name, schedule in tasks.items():
         target_hour = schedule["hour"]
         target_minute = schedule["minute"]
 
         if current_hour == target_hour and abs(current_minute - target_minute) <= 2:
-            task_key = task_name
-            if task_name == "searchiqs_ingest":
-                task_key = "searchiqs_ingest"
-                state_key = "ingest"
-            elif task_name == "analysis":
-                state_key = "analysis"
-            elif task_name == "reviews":
-                state_key = "reviews"
-            elif task_name == "outreach":
-                state_key = "outreach"
-            else:
+            if task_name not in task_map:
                 continue
+
+            state_key, task_fn = task_map[task_name]
 
             if already_ran(state_key):
                 continue
 
             logger.info(f"Scheduled task triggered: {task_name} at {current_hour}:{current_minute:02d}")
-
-            if task_name == "searchiqs_ingest":
-                return run_0700_searchiqs_ingest()
-            elif task_name == "analysis":
-                return run_0730_analysis()
-            elif task_name == "reviews":
-                return run_0800_reviews()
-            elif task_name == "outreach":
-                return run_0830_outreach()
+            return task_fn()
 
     return None
 
 
-logger.info("Real estate tasks module loaded")
+logger.info("Real estate tasks module loaded (v2 - Google Docs pipeline)")

@@ -744,6 +744,89 @@
         .re-task-pill.completed .re-task-dot { background: var(--green-glow); }
         .re-task-pill.running .re-task-dot { background: var(--accent-blue); animation: pulse-dot 1s infinite; }
         .re-task-pill.error .re-task-dot { background: var(--red-glow); }
+        .re-high-table {
+            margin: 10px 0;
+            max-height: 140px;
+            overflow-y: auto;
+        }
+        .re-high-table table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.62rem;
+        }
+        .re-high-table th {
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            font-size: 0.55rem;
+            color: var(--muted-slate);
+            padding: 4px 6px;
+            text-align: left;
+            border-bottom: 1px solid var(--border-default);
+            font-weight: 600;
+        }
+        .re-high-table td {
+            padding: 5px 6px;
+            color: var(--signal-white);
+            border-bottom: 1px solid rgba(255,255,255,0.03);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 150px;
+        }
+        .re-high-table tr:hover td {
+            background: rgba(255,255,255,0.03);
+        }
+        .re-high-table .re-equity-val {
+            color: var(--green-glow);
+            font-weight: 600;
+        }
+        .re-high-table .re-doc-link {
+            color: var(--accent-blue);
+            text-decoration: none;
+            font-size: 0.58rem;
+            padding: 2px 5px;
+            border: 1px solid rgba(59,130,246,0.3);
+            border-radius: 4px;
+            margin-right: 3px;
+        }
+        .re-high-table .re-doc-link:hover {
+            background: rgba(59,130,246,0.15);
+        }
+        .re-doc-links {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin: 10px 0 8px;
+        }
+        .re-doc-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 5px 12px;
+            border-radius: 6px;
+            font-size: 0.62rem;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.2s;
+            border: 1px solid var(--border-default);
+            background: rgba(255,255,255,0.04);
+            color: var(--accent-blue);
+            cursor: pointer;
+        }
+        .re-doc-btn:hover {
+            background: rgba(59,130,246,0.12);
+            border-color: rgba(59,130,246,0.4);
+        }
+        .re-doc-btn.re-doc-disabled {
+            opacity: 0.35;
+            pointer-events: none;
+            color: var(--muted-slate);
+        }
+        .re-doc-btn.re-doc-active {
+            opacity: 1;
+            pointer-events: auto;
+        }
         .re-last-run {
             font-size: 0.65rem;
             color: var(--label-slate);
@@ -1097,12 +1180,23 @@
                         <div class="re-metric-label">Letters</div>
                     </div>
                 </div>
+
+                <div class="re-high-table" id="reHighTable"></div>
+
                 <div class="re-schedule-row">
                     <div class="re-task-pill" id="reTask1"><span class="re-task-dot"></span>7:00 Scrape</div>
                     <div class="re-task-pill" id="reTask2"><span class="re-task-dot"></span>7:30 Analysis</div>
                     <div class="re-task-pill" id="reTask3"><span class="re-task-dot"></span>8:00 Reviews</div>
                     <div class="re-task-pill" id="reTask4"><span class="re-task-dot"></span>8:30 Outreach</div>
                 </div>
+
+                <div class="re-doc-links" id="reDocLinks">
+                    <a class="re-doc-btn re-doc-disabled" id="reLogicBtn" target="_blank" rel="noopener">LOGIC Doc</a>
+                    <a class="re-doc-btn re-doc-disabled" id="reRawBtn" target="_blank" rel="noopener">Raw Data</a>
+                    <a class="re-doc-btn re-doc-disabled" id="reAnalysisBtn" target="_blank" rel="noopener">Analysis</a>
+                    <a class="re-doc-btn re-doc-disabled" id="reDriveBtn" target="_blank" rel="noopener">Drive Folder</a>
+                </div>
+
                 <div class="re-last-run" id="reLastRun">Pipeline idle — awaiting next scheduled run</div>
             </div>
 
@@ -1433,6 +1527,45 @@
             document.getElementById('reLow').textContent = z6.leads_low || 0;
             document.getElementById('reReviews').textContent = z6.reviews_generated || 0;
             document.getElementById('reLetters').textContent = z6.letters_queued || 0;
+
+            const highTable = document.getElementById('reHighTable');
+            const highLeads = z6.high_leads || [];
+            if (highLeads.length > 0) {
+                let tableHtml = '<table><thead><tr><th>Address</th><th>Equity</th><th>Case</th><th>Return</th><th>Docs</th></tr></thead><tbody>';
+                highLeads.forEach(lead => {
+                    const addr = lead.address || 'Unknown';
+                    const shortAddr = addr.length > 28 ? addr.slice(0, 26) + '...' : addr;
+                    const equity = lead.equity ? '$' + Math.round(lead.equity).toLocaleString() : '--';
+                    const caseNum = lead.court_case || '--';
+                    const retDate = lead.return_date || '--';
+                    let docLinks = '';
+                    if (lead.review_url) docLinks += '<a class="re-doc-link" href="' + lead.review_url + '" target="_blank">R</a>';
+                    if (lead.letters_url) docLinks += '<a class="re-doc-link" href="' + lead.letters_url + '" target="_blank">L</a>';
+                    if (!docLinks) docLinks = '--';
+                    tableHtml += '<tr><td title="' + addr + '">' + shortAddr + '</td><td class="re-equity-val">' + equity + '</td><td>' + caseNum + '</td><td>' + retDate + '</td><td>' + docLinks + '</td></tr>';
+                });
+                tableHtml += '</tbody></table>';
+                highTable.innerHTML = tableHtml;
+            } else {
+                highTable.innerHTML = '';
+            }
+
+            function setDocBtn(id, url) {
+                const btn = document.getElementById(id);
+                if (url) {
+                    btn.href = url;
+                    btn.classList.remove('re-doc-disabled');
+                    btn.classList.add('re-doc-active');
+                } else {
+                    btn.removeAttribute('href');
+                    btn.classList.add('re-doc-disabled');
+                    btn.classList.remove('re-doc-active');
+                }
+            }
+            setDocBtn('reLogicBtn', z6.logic_doc_url);
+            setDocBtn('reRawBtn', z6.raw_data_sheet_url);
+            setDocBtn('reAnalysisBtn', z6.analysis_doc_url);
+            setDocBtn('reDriveBtn', z6.drive_folder_url);
 
             const taskPills = [
                 {el: document.getElementById('reTask1'), key: 'last_ingest'},
