@@ -15,11 +15,11 @@ requiredFiles = [".replit", "replit.nix"]
 run = "python web_dashboard.py"
 
 [deployment]
-run = ["sh", "-c", "python web_dashboard.py"]
-deploymentTarget = "cloudrun"
+run = ["sh", "-c", "python run_both.py"]
+deploymentTarget = "gce"
 
 [workflows]
-runButton = "Autonomous Agent"
+runButton = "bot"
 
 [[workflows.workflow]]
 name = "Project"
@@ -56,6 +56,15 @@ args = "python run_autonomous_mainnet.py"
 
 [workflows.workflow.metadata]
 outputType = "console"
+
+[[workflows.workflow]]
+name = "bot"
+mode = "sequential"
+author = 39391053
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python run_both.py"
 
 [[ports]]
 localPort = 5000
