@@ -160,3 +160,49 @@ A web-based dashboard on port 5000 provides a "5-Zone Command Center" with a psy
   - USDC: `0xaf88d065e77c8cC2239327C5EDb3A432268e5831` (6 decimals)
   - USDT: `0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9` (6 decimals)
   - WETH Variable Debt Token: `0x0c84331e39d6658Cd6e6b9ba04736cC4c4734351`
+
+## Real Estate Pipeline (Zone 6)
+
+### Overview
+Automated Lis Pendens scraping pipeline for 5 Connecticut towns in Hartford County, with Google Docs/Sheets integration for lead management.
+
+### Towns Scraped
+- Hartford (CTHAR) - requires DocGroup postback to "LR" before search
+- East Hartford (CTEHART)
+- Windsor (CTWSR)
+- Berlin (CTBER)
+- Rocky Hill (CTROCK)
+
+### Pipeline Schedule (Eastern Time)
+- 7:00 AM - SearchIQS scraping (all 5 towns, 30-day lookback)
+- 7:30 AM - Perplexity AI analysis of filings
+- 8:00 AM - Review document generation
+- 8:30 AM - Outreach letter creation
+
+### Google Integration
+- Service account: `lead-doc-writer@site-link-485518.iam.gserviceaccount.com`
+- Leads folder: `128JqjJpDrSkV9ZyylFIICT-MJK5tBxOg`
+- Raw data sheet: `1mxQKY-AgXPXoJyFJBJHFUat-PwxYXzy4XVqqGZPPn0o` (Bailey Group Leads)
+- Hartford analysis doc: `1TVvVZevNXYZv2Ziw2rxvSIWzTTzwRBQmw4VGZidRJQY`
+- **Limitation**: Service account has 0 storage quota on personal Gmail - cannot create new files, only reuse existing shared ones
+- Per-town analysis doc IDs can be set via env vars: `HARTFORD_ANALYSIS_DOC_ID`, `EAST_HARTFORD_ANALYSIS_DOC_ID`, `WINDSOR_ANALYSIS_DOC_ID`, `BERLIN_ANALYSIS_DOC_ID`, `ROCKY_HILL_ANALYSIS_DOC_ID`
+- Raw data sheet ID: `RAW_DATA_SHEET_ID` env var
+- LOGIC doc ID: `LOGIC_DOC_ID` env var
+
+### Court Case Lookups
+- Disabled by default (CT courts site has SSL issues)
+- Enable via `COURT_LOOKUP_ENABLED=true` env var
+
+### Key Files
+- `searchiqs_scraper.py` - SearchIQS web scraper with multi-town support
+- `google_client.py` - Google Docs/Sheets/Drive API client with JWT auth
+- `real_estate_tasks.py` - Pipeline orchestration and scheduling
+- `perplexity_client.py` - AI analysis via Perplexity API
+- `config.py` - All configuration including town codes and thresholds
+
+### Recent Changes (Feb 17, 2026)
+- Fixed Hartford scraper: 2-step DocGroup postback to "LR" before search
+- Made form fields adaptive per town (cboTown vs txtExtraField1)
+- Added pre-configured doc ID support in config to bypass storage quota limit
+- Court lookups disabled by default due to SSL failures
+- Pipeline saves state to `real_estate_state.json`

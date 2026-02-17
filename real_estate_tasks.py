@@ -119,18 +119,29 @@ def run_0700_searchiqs_ingest() -> Dict:
             scraper = create_scraper(base_url=base_url, town_name=town_name)
             town_filings = scraper.search_lis_pendens(days_back=lookback, fetch_details=True)
 
-            for filing in town_filings:
-                defendant = filing.get("seller", "") or filing.get("defendant", "")
-                if defendant and not filing.get("court_case_number"):
-                    court_info = scraper.search_court_case(defendant)
-                    if court_info:
-                        filing["court_case_number"] = court_info.get("case_number", "")
-                        filing["court_url"] = court_info.get("court_url", "")
-                        if court_info.get("debt_amount") and court_info["debt_amount"] != "Unknown":
-                            filing["debt_amount"] = court_info["debt_amount"]
-                        if court_info.get("return_date") and court_info["return_date"] != "TBD":
-                            filing["return_date"] = court_info["return_date"]
-                    time.sleep(1)
+            court_lookup_enabled = os.getenv("COURT_LOOKUP_ENABLED", "false").lower() == "true"
+            if court_lookup_enabled:
+                court_lookup_failures = 0
+                for filing in town_filings:
+                    defendant = filing.get("seller", "") or filing.get("defendant", "")
+                    if defendant and not filing.get("court_case_number") and court_lookup_failures < 2:
+                        if defendant.strip() in ("", "&nbsp;&nbsp;", "&nbsp;"):
+                            continue
+                        try:
+                            court_info = scraper.search_court_case(defendant)
+                            if court_info:
+                                filing["court_case_number"] = court_info.get("case_number", "")
+                                filing["court_url"] = court_info.get("court_url", "")
+                                if court_info.get("debt_amount") and court_info["debt_amount"] != "Unknown":
+                                    filing["debt_amount"] = court_info["debt_amount"]
+                                if court_info.get("return_date") and court_info["return_date"] != "TBD":
+                                    filing["return_date"] = court_info["return_date"]
+                            time.sleep(1)
+                        except Exception as e:
+                            court_lookup_failures += 1
+                            logger.warning(f"Court lookup failed ({court_lookup_failures}/2), skipping remaining: {e}")
+            else:
+                logger.info(f"Court lookups disabled (SSL issues with CT courts site)")
 
             filings_by_town[town_name] = len(town_filings)
             town_results[town_name] = town_filings
@@ -145,10 +156,16 @@ def run_0700_searchiqs_ingest() -> Dict:
 
         google = get_google_client()
 
-        raw_sheet_id = None
+        raw_sheet_id = REAL_ESTATE_CONFIG.get("raw_data_sheet_id") or None
         if google.credentials:
             sheet_title = f"Hartford County Lis Pendens Raw Data - {today}"
-            raw_sheet_id = google.create_spreadsheet(sheet_title, folder_id)
+            if not raw_sheet_id:
+                raw_sheet_id = google.create_spreadsheet(sheet_title, folder_id)
+            else:
+                google._clear_spreadsheet(raw_sheet_id)
+                google._rename_file(raw_sheet_id, sheet_title)
+                logger.info(f"Reusing pre-configured raw data sheet: {raw_sheet_id}")
+
             if raw_sheet_id:
                 state["documents"]["raw_data_sheet_id"] = raw_sheet_id
                 state["documents"]["raw_data_sheet_url"] = f"{GSHEET_URL}/{raw_sheet_id}"
@@ -167,12 +184,16 @@ def run_0700_searchiqs_ingest() -> Dict:
                     else:
                         google.append_rows(raw_sheet_id, "Sheet1", [[town_name, "— No Lis Pendens filings found in last 30 days —", "", "", "", "", "", "", "", ""]])
 
-                logger.info(f"Created Raw Data sheet: {sheet_title} ({raw_sheet_id})")
+                logger.info(f"Raw Data sheet ready: {sheet_title} ({raw_sheet_id})")
 
-        logic_doc_id = None
+        logic_doc_id = REAL_ESTATE_CONFIG.get("logic_doc_id") or None
         if google.credentials:
             logic_title = f"LOGIC - Hartford County Lis Pendens - {today}"
-            logic_doc_id = google.create_document(logic_title, folder_id)
+            if not logic_doc_id:
+                logic_doc_id = google.create_document(logic_title, folder_id)
+            else:
+                google._rename_file(logic_doc_id, logic_title)
+                logger.info(f"Reusing pre-configured LOGIC doc: {logic_doc_id}")
             if logic_doc_id:
                 state["documents"]["logic_doc_id"] = logic_doc_id
                 state["documents"]["logic_doc_url"] = f"{GDOC_URL}/{logic_doc_id}"
@@ -213,10 +234,16 @@ def run_0700_searchiqs_ingest() -> Dict:
 
         analysis_docs_by_town = {}
         if google.credentials:
-            for town_name in towns:
+            for town_name, town_cfg in towns.items():
                 town_filings = town_results.get(town_name, [])
                 analysis_title = f"{town_name} Lis Pendens Analysis - {today}"
-                analysis_doc_id = google.create_document(analysis_title, folder_id)
+                pre_configured_id = town_cfg.get("analysis_doc_id", "")
+                if pre_configured_id:
+                    analysis_doc_id = pre_configured_id
+                    google._rename_file(analysis_doc_id, analysis_title)
+                    logger.info(f"Reusing pre-configured analysis doc for {town_name}: {analysis_doc_id}")
+                else:
+                    analysis_doc_id = google.create_document(analysis_title, folder_id)
                 if analysis_doc_id:
                     analysis_docs_by_town[town_name] = {
                         "doc_id": analysis_doc_id,
