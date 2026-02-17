@@ -712,7 +712,68 @@
         </div>
 
         <div class="grid-layout">
-            <!-- ZONE 1: Safety Rating (Top-Left) -->
+            <!-- ZONE 4: Engine Room — Video Avatar Card -->
+            <div class="zone-card" id="zone4">
+                <div class="zone-label">Zone 4 — Engine Room</div>
+                <div class="avatar-video-wrap">
+                    <video id="avatarVideo" muted playsinline autoplay loop src="/static/assets/avatar_idle.mp4"></video>
+                    <div class="avatar-hud">
+                        <div class="hud-cooldown-ring">
+                            <div class="hud-cooldown-ring-fill" id="hudCooldownRing" style="width:0%"></div>
+                        </div>
+                        <div class="hud-smart-status">
+                            <div class="hud-smart-icon eye" id="hudIcon">👁️</div>
+                            <div class="hud-smart-text" id="hudSmartText">SENTINEL: SCANNING MARKET...</div>
+                        </div>
+                        <div class="hud-data-row">
+                            <span class="hud-data-label">Capacity</span>
+                            <span class="hud-data-value" id="hudCapacity">$0.00</span>
+                        </div>
+                        <div class="hud-bar-bg">
+                            <div class="hud-bar-fill" id="hudCapBar" style="width:0%;background:var(--green-glow)"></div>
+                        </div>
+                        <div class="hud-data-row">
+                            <span class="hud-data-label">USDC → WALLET_B</span>
+                            <span class="hud-data-value" id="hudUsdc">0.00 / 22.00</span>
+                        </div>
+                        <div class="hud-bar-bg">
+                            <div class="hud-bar-fill" id="hudUsdcBar" style="width:0%;background:#2775ca"></div>
+                        </div>
+                        <div class="hud-data-row" style="margin-top:4px;">
+                            <span class="hud-data-label" style="font-size:0.65rem;opacity:0.7">WALLET_B</span>
+                            <span class="hud-data-value" id="hudWalletB" style="font-size:0.65rem;opacity:0.7">Loading...</span>
+                        </div>
+                        <div class="hud-data-row" style="margin-top:4px;">
+                            <span class="hud-data-label" style="font-size:0.65rem;opacity:0.8">Yield (24h)</span>
+                            <span class="hud-data-value" id="hudYieldStats" style="font-size:0.65rem;opacity:0.8;color:#2775ca">0 Flushes | $0.00</span>
+                        </div>
+                        <button id="injectBtn" class="hud-harvest-btn" onclick="injectLiquidity()" disabled>INJECT LIQUIDITY</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ZONE 2: Active Wealth -->
+            <div class="zone-card" id="zone2">
+                <div class="zone-label">Zone 2 — Active Wealth</div>
+                <div class="wealth-main" id="totalValue">$—</div>
+                <div class="wealth-change positive" id="valueChange">Calculating...</div>
+                <div class="wealth-breakdown">
+                    <div class="wealth-stat">
+                        <span class="wealth-stat-label">Collateral</span>
+                        <span class="wealth-stat-value" id="collateralVal">$—</span>
+                    </div>
+                    <div class="wealth-stat">
+                        <span class="wealth-stat-label">Debt</span>
+                        <span class="wealth-stat-value" id="debtVal">$—</span>
+                    </div>
+                    <div class="wealth-stat">
+                        <span class="wealth-stat-label">Available</span>
+                        <span class="wealth-stat-value" id="availVal">$—</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ZONE 1: Safety Rating -->
             <div class="zone-card" id="zone1">
                 <div class="zone-label">Zone 1 — Safety Anchor</div>
                 <div class="safety-row">
@@ -740,28 +801,7 @@
                 </div>
             </div>
 
-            <!-- ZONE 2: Active Wealth (Top-Right) -->
-            <div class="zone-card" id="zone2">
-                <div class="zone-label">Zone 2 — Active Wealth</div>
-                <div class="wealth-main" id="totalValue">$—</div>
-                <div class="wealth-change positive" id="valueChange">Calculating...</div>
-                <div class="wealth-breakdown">
-                    <div class="wealth-stat">
-                        <span class="wealth-stat-label">Collateral</span>
-                        <span class="wealth-stat-value" id="collateralVal">$—</span>
-                    </div>
-                    <div class="wealth-stat">
-                        <span class="wealth-stat-label">Debt</span>
-                        <span class="wealth-stat-value" id="debtVal">$—</span>
-                    </div>
-                    <div class="wealth-stat">
-                        <span class="wealth-stat-label">Available</span>
-                        <span class="wealth-stat-value" id="availVal">$—</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- ZONE 3: Defensive Guardrails (Center, full-width) -->
+            <!-- ZONE 3: Defensive Guardrails (full-width) -->
             <div class="zone-card zone-center" id="zone3">
                 <div class="zone-label">Zone 3 — Defensive Guardrails · Velocity Targets</div>
                 <div class="guardrails-grid">
@@ -847,47 +887,7 @@
                 </div>
             </div>
 
-            <!-- ZONE 4: Engine Room — Video Avatar Card -->
-            <div class="zone-card" id="zone4">
-                <div class="zone-label">Zone 4 — Engine Room</div>
-                <div class="avatar-video-wrap">
-                    <video id="avatarVideo" muted playsinline autoplay loop src="/static/assets/avatar_idle.mp4"></video>
-                    <div class="avatar-hud">
-                        <div class="hud-cooldown-ring">
-                            <div class="hud-cooldown-ring-fill" id="hudCooldownRing" style="width:0%"></div>
-                        </div>
-                        <div class="hud-smart-status">
-                            <div class="hud-smart-icon eye" id="hudIcon">👁️</div>
-                            <div class="hud-smart-text" id="hudSmartText">SENTINEL: SCANNING MARKET...</div>
-                        </div>
-                        <div class="hud-data-row">
-                            <span class="hud-data-label">Capacity</span>
-                            <span class="hud-data-value" id="hudCapacity">$0.00</span>
-                        </div>
-                        <div class="hud-bar-bg">
-                            <div class="hud-bar-fill" id="hudCapBar" style="width:0%;background:var(--green-glow)"></div>
-                        </div>
-                        <div class="hud-data-row">
-                            <span class="hud-data-label">USDC → WALLET_B</span>
-                            <span class="hud-data-value" id="hudUsdc">0.00 / 22.00</span>
-                        </div>
-                        <div class="hud-bar-bg">
-                            <div class="hud-bar-fill" id="hudUsdcBar" style="width:0%;background:#2775ca"></div>
-                        </div>
-                        <div class="hud-data-row" style="margin-top:4px;">
-                            <span class="hud-data-label" style="font-size:0.65rem;opacity:0.7">WALLET_B</span>
-                            <span class="hud-data-value" id="hudWalletB" style="font-size:0.65rem;opacity:0.7">Loading...</span>
-                        </div>
-                        <div class="hud-data-row" style="margin-top:4px;">
-                            <span class="hud-data-label" style="font-size:0.65rem;opacity:0.8">Yield (24h)</span>
-                            <span class="hud-data-value" id="hudYieldStats" style="font-size:0.65rem;opacity:0.8;color:#2775ca">0 Flushes | $0.00</span>
-                        </div>
-                        <button id="injectBtn" class="hud-harvest-btn" onclick="injectLiquidity()" disabled>INJECT LIQUIDITY</button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- ZONE 5: Intelligence Feed (Bottom-Right) -->
+            <!-- ZONE 5: Intelligence Feed -->
             <div class="zone-card" id="zone5">
                 <div class="zone-label">Zone 5 — Intelligence Feed</div>
                 <div class="intel-feed" id="intelFeed">
