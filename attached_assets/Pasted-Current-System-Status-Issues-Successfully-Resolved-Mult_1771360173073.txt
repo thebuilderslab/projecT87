@@ -1,0 +1,402 @@
+Current System Status & Issues
+✅ Successfully Resolved:
+Multi-town scraping implemented - 5 CT towns configured
+
+Google authentication fixed - Bypassed cryptography dependency using OpenSSL CLI
+
+Berlin, Windsor, East Hartford scraping working - Returning filings correctly
+
+🔴 Critical Issues Remaining:
+1. Hartford (CTHAR) Scraping Returns 0 Results
+Problem: Your agent found that Hartford's SearchIQS shows 14 Lis Pendens filings, but the scraper returns 0.
+​
+
+Root Cause Analysis:
+
+Form submission parameters may differ for CTHAR vs other towns
+
+Date field handling or document type filtering issue
+
+ViewState/session management specific to CTHAR instance
+
+Solution Code:
+
+python
+# Add to searchiqs_scraper.py - Enhanced Hartford-specific handling
+
+def search_lis_pendens(self, days_back=30, fetch_details=False):
+    """Enhanced search with Hartford-specific fixes"""
+    
+    # Calculate date range
+    to_date = datetime.now()
+    from_date = to_date - timedelta(days=days_back)
+    
+    # CRITICAL: Hartford requires different date format
+    date_fmt = "%m/%d/%Y"  # Use 4-digit year for CTHAR
+    
+    search_data = {
+        '__EVENTTARGET': '',
+        '__EVENTARGUMENT': '',
+        '__VIEWSTATE': self.viewstate,
+        '__VIEWSTATEGENERATOR': self.viewstate_generator,
+        '__EVENTVALIDATION': self.event_validation,
+        
+        # Date fields - try both with and without leading zeros
+        'ctl00$ContentPlaceHolder1$txtFromDate': from_date.strftime(date_fmt),
+        'ctl00$ContentPlaceHolder1$txtThruDate': to_date.strftime(date_fmt),
+        
+        # Document type - Try both specific and (ALL)
+        'ctl00$ContentPlaceHolder1$cboDocGroup': '(ALL)',  # Start broad
+        'ctl00$ContentPlaceHolder1$cboDocType': 'LIS PENDENS',
+        
+        # CRITICAL: Hartford may require this checked
+        'ctl00$ContentPlaceHolder1$chkIgnorePartyType': 'on',
+        
+        # Search button
+        'ctl00$ContentPlaceHolder1$cmdSearch': 'Search'
+    }
+    
+    # Add town-specific overrides
+    if 'CTHAR' in self.base_url:
+        logging.info("Applying CTHAR-specific form parameters")
+        # Try doc group 'LAND RECORDS' specifically for Hartford
+        search_data['ctl00$ContentPlaceHolder1$cboDocGroup'] = 'LAND RECORDS'
+    
+    response = self.session.post(
+        f"{self.base_url}/SearchAdvancedMP.aspx",
+        data=search_data,
+        headers=self._get_headers(referer=f"{self.base_url}/SearchAdvancedMP.aspx"),
+        timeout=30
+    )
+    
+    # Debug logging
+    if response.status_code == 200:
+        results_page = response.text
+        
+        # Check if we got results or redirected to error
+        if 'LogOut.aspx' in response.url:
+            logging.error("Session invalidated - redirected to logout")
+            return []
+        
+        if 'No records found' in results_page:
+            logging.warning("No records found - check date range and doc type")
+            # Retry with broader search
+            return self._retry_broader_search(days_back, fetch_details)
+    
+    return self._parse_results(response.text, fetch_details)
+
+def _retry_broader_search(self, days_back, fetch_details):
+    """Fallback: Try (ALL) doc types if LIS PENDENS returns nothing"""
+    logging.info("Retrying with (ALL) document types")
+    
+    # Refresh viewstate
+    self._get_fresh_viewstate()
+    
+    # Same search but (ALL) doc types
+    search_data = self._build_search_data(days_back)
+    search_data['ctl00$ContentPlaceHolder1$cboDocType'] = '(ALL)'
+    
+    response = self.session.post(
+        f"{self.base_url}/SearchAdvancedMP.aspx",
+        data=search_data,
+        headers=self._get_headers(referer=f"{self.base_url}/SearchAdvancedMP.aspx"),
+        timeout=30
+    )
+    
+    results = self._parse_results(response.text, fetch_details)
+    
+    # Filter for Lis Pendens in results
+    return [r for r in results if 'LIS PENDENS' in r.get('document_type', '').upper()]
+2. Google Drive Storage Quota Issue
+Problem: Service account has 0 storage quota, blocking document creation.
+​
+
+Permanent Solution - 3 Options:
+
+Option A: Use Google Workspace Account (Recommended)
+
+bash
+# Create service account under a Google Workspace organization
+# Workspace accounts have 30GB+ storage per user
+Option B: Write to User's Drive (Current Folder Owner)
+
+python
+# Update google_client.py
+
+def create_document_in_users_drive(self, title, content, folder_id):
+    """
+    Create document via user's Drive storage, not service account's.
+    This bypasses the service account storage quota issue.
+    """
+    try:
+        # Create file metadata - file will use folder owner's quota
+        file_metadata = {
+            'name': title,
+            'mimeType': 'application/vnd.google-apps.document',
+            'parents': [folder_id]  # baileygroupservices@gmail.com owns this folder
+        }
+        
+        # Create empty doc via Drive API
+        file = self.drive_service.files().create(
+            body=file_metadata,
+            fields='id,webViewLink,name'
+        ).execute()
+        
+        doc_id = file['id']
+        
+        # Add content via Docs API (now that file exists in user's storage)
+        requests_body = {
+            'requests': [{
+                'insertText': {
+                    'location': {'index': 1},
+                    'text': content
+                }
+            }]
+        }
+        
+        self.docs_service.documents().batchUpdate(
+            documentId=doc_id,
+            body=requests_body
+        ).execute()
+        
+        logging.info(f"✅ Document created in user's Drive: {file['webViewLink']}")
+        return {
+            'id': doc_id,
+            'url': file['webViewLink'],
+            'name': file['name']
+        }
+        
+    except Exception as e:
+        if 'storageQuotaExceeded' in str(e):
+            logging.error("❌ Folder owner's storage is full")
+            return self._create_local_backup(title, content)
+        raise
+Option C: Local Storage Fallback (Implemented)
+
+python
+# Your agent already started this - enhance it:
+
+def _create_local_backup(self, title, content):
+    """Save to local file system when Google Drive fails"""
+    safe_name = re.sub(r'[^\w\s-]', '', title).strip().replace(' ', '_')
+    filepath = f"./audit_reports/{safe_name}.txt"
+    
+    os.makedirs('./audit_reports', exist_ok=True)
+    
+    with open(filepath, 'w', encoding='utf-8') as f:
+        f.write(f"# {title}\n\n")
+        f.write(content)
+    
+    logging.warning(f"📄 Saved locally (Drive unavailable): {filepath}")
+    
+    return {
+        'id': None,
+        'url': f"file://{os.path.abspath(filepath)}",
+        'name': title,
+        'local': True
+    }
+Optimal Workflow Architecture
+Phase 1: Data Ingestion (Parallel)
+python
+# real_estate_tasks.py - Optimized workflow
+
+import asyncio
+from concurrent.futures import ThreadPoolExecutor
+import time
+
+async def run_multi_town_scrape_optimized():
+    """Parallel scraping with intelligent error handling"""
+    
+    towns = [
+        {"name": "Hartford", "url": "CTHAR", "priority": "high"},
+        {"name": "East Hartford", "url": "CTEHART", "priority": "high"},
+        {"name": "Windsor", "url": "CTWSR", "priority": "medium"},
+        {"name": "Berlin", "url": "CTBER", "priority": "low"},
+        {"name": "Rocky Hill", "url": "CTROCK", "priority": "low"}
+    ]
+    
+    results = {}
+    
+    # Parallel execution with rate limiting
+    with ThreadPoolExecutor(max_workers=3) as executor:
+        futures = {}
+        
+        for town in towns:
+            # Stagger requests by 2 seconds
+            time.sleep(2)
+            
+            future = executor.submit(
+                scrape_town_with_retry,
+                town['name'],
+                town['url'],
+                max_retries=3
+            )
+            futures[future] = town['name']
+        
+        # Collect results as they complete
+        for future in as_completed(futures):
+            town_name = futures[future]
+            try:
+                town_results = future.result(timeout=60)
+                results[town_name] = town_results
+                logging.info(f"✅ {town_name}: {len(town_results)} filings")
+            except Exception as e:
+                logging.error(f"❌ {town_name} failed: {e}")
+                results[town_name] = []
+    
+    return results
+
+def scrape_town_with_retry(town_name, base_code, max_retries=3):
+    """Scrape with exponential backoff retry"""
+    base_url = f"https://www.searchiqs.com/{base_code}/"
+    
+    for attempt in range(max_retries):
+        try:
+            scraper = SearchIQSScraper(base_url, town_name)
+            filings = scraper.search_lis_pendens(
+                days_back=30,
+                fetch_details=True  # Get full details in one pass
+            )
+            
+            # Validate data quality
+            valid_filings = [
+                f for f in filings 
+                if f.get('party1_seller') and f.get('recording_date')
+            ]
+            
+            if len(valid_filings) < len(filings):
+                logging.warning(
+                    f"{town_name}: {len(filings) - len(valid_filings)} "
+                    f"filings missing required fields"
+                )
+            
+            return valid_filings
+            
+        except Exception as e:
+            wait_time = 2 ** attempt  # Exponential backoff: 1s, 2s, 4s
+            logging.warning(
+                f"{town_name} attempt {attempt+1} failed: {e}. "
+                f"Retrying in {wait_time}s..."
+            )
+            time.sleep(wait_time)
+    
+    # All retries exhausted
+    logging.error(f"{town_name}: All {max_retries} attempts failed")
+    return []
+Phase 2: Data Processing & Enrichment
+python
+def process_and_enrich_filings(all_filings):
+    """Clean, deduplicate, and enrich filing data"""
+    
+    # 1. Deduplicate across towns
+    unique_filings = {}
+    for town, filings in all_filings.items():
+        for filing in filings:
+            # Create unique key
+            key = f"{filing.get('book_page')}_{filing.get('recording_date')}"
+            
+            if key not in unique_filings:
+                filing['towns'] = [town]
+                unique_filings[key] = filing
+            else:
+                # Same filing in multiple towns
+                unique_filings[key]['towns'].append(town)
+    
+    # 2. Data quality scoring
+    for filing in unique_filings.values():
+        score = 0
+        score += 30 if filing.get('property_address') else 0
+        score += 20 if filing.get('party1_seller') else 0
+        score += 20 if filing.get('party2_plaintiff') else 0
+        score += 15 if filing.get('recording_date') else 0
+        score += 15 if filing.get('book_page') else 0
+        
+        filing['data_quality_score'] = score
+    
+    # 3. Priority classification
+    for filing in unique_filings.values():
+        filing['priority'] = classify_priority(filing)
+    
+    return list(unique_filings.values())
+
+def classify_priority(filing):
+    """Intelligent priority classification"""
+    priority_score = 0
+    
+    # Recent filings = higher priority
+    try:
+        filing_date = datetime.strptime(
+            filing.get('recording_date', ''),
+            '%m/%d/%Y'
+        )
+        days_old = (datetime.now() - filing_date).days
+        
+        if days_old <= 7:
+            priority_score += 40
+        elif days_old <= 14:
+            priority_score += 25
+        elif days_old <= 30:
+            priority_score += 10
+    except:
+        pass
+    
+    # Complete property info = higher priority
+    if filing.get('property_address'):
+        priority_score += 30
+    
+    # Multiple party names = more complex case = higher priority
+    if filing.get('party1_seller') and filing.get('party2_plaintiff'):
+        priority_score += 20
+    
+    # Data quality bonus
+    priority_score += filing.get('data_quality_score', 0) * 0.1
+    
+    # Classify
+    if priority_score >= 70:
+        return 'HIGH'
+    elif priority_score >= 40:
+        return 'MEDIUM'
+    else:
+        return 'LOW'
+Phase 3: Document Generation (Hybrid Approach)
+python
+async def generate_analysis_documents(filings_by_town):
+    """Create analysis docs with fallback to local storage"""
+    
+    google_client = GoogleClient()
+    doc_links = {}
+    
+    for town, filings in filings_by_town.items():
+        if not filings:
+            logging.info(f"{town}: No filings to document")
+            continue
+        
+        # Generate analysis content
+        content = generate_town_analysis(town, filings)
+        
+        # Try Google Docs first, fall back to local
+        try:
+            doc = google_client.create_document_in_users_drive(
+                title=f"{town} Lis Pendens Analysis - {datetime.now():%Y-%m-%d}",
+                content=content,
+                folder_id=DRIVE_FOLDER_ID
+            )
+            doc_links[town] = doc['url']
+            
+        except Exception as e:
+            logging.error(f"Google Docs failed for {town}: {e}")
+            
+            # Local fallback
+            local_doc = google_client._create_local_backup(
+                f"{town}_analysis_{datetime.now():%Y%m%d}",
+                content
+            )
+            doc_links[town] = local_doc['url']
+    
+    return doc_links
+
+def generate_town_analysis(town, filings):
+    """Generate rich analysis content"""
+    
+    high = [f for f in filings if f.get('priority') == 'HIGH']
+    med = 

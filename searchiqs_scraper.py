@@ -70,6 +70,58 @@ class SearchIQSScraper:
             logger.error(f"SearchIQS login failed for {self.town_name}: {e}")
             return False
 
+    def _needs_docgroup_postback(self) -> bool:
+        return "CTHAR" in self.base_url
+
+    def _do_docgroup_postback(self, form_html: str) -> str:
+        logger.info(f"[{self.town_name}] Performing DocGroup postback to 'LR' (Land Records)")
+        viewstate = self._extract_field(form_html, "__VIEWSTATE")
+        viewstategenerator = self._extract_field(form_html, "__VIEWSTATEGENERATOR")
+        eventvalidation = self._extract_field(form_html, "__EVENTVALIDATION")
+
+        hidden_fields = re.findall(
+            r'<input[^>]*type="hidden"[^>]*name="([^"]*)"[^>]*value="([^"]*)"',
+            form_html
+        )
+
+        postback_data = {
+            "__EVENTTARGET": "ctl00$ContentPlaceHolder1$cboDocGroup",
+            "__EVENTARGUMENT": "",
+            "__LASTFOCUS": "",
+            "__VIEWSTATE": viewstate,
+            "__VIEWSTATEGENERATOR": viewstategenerator,
+            "__EVENTVALIDATION": eventvalidation,
+            "ctl00$ContentPlaceHolder1$scrollPos": "0",
+            "ctl00$ContentPlaceHolder1$cboDocGroup": "LR",
+            "ctl00$ContentPlaceHolder1$cboDocType": "(ALL)",
+            "ctl00$ContentPlaceHolder1$txtName": "",
+            "ctl00$ContentPlaceHolder1$txtFirstName": "",
+            "ctl00$ContentPlaceHolder1$chkIgnorePartyType": "on",
+            "ctl00$ContentPlaceHolder1$txtParty2Name": "",
+            "ctl00$ContentPlaceHolder1$txtParty2FirstName": "",
+            "ctl00$ContentPlaceHolder1$txtFromDate": "",
+            "ctl00$ContentPlaceHolder1$txtThruDate": "",
+            "ctl00$ContentPlaceHolder1$txtBook": "",
+            "ctl00$ContentPlaceHolder1$txtPage": "",
+            "ctl00$ContentPlaceHolder1$txtUDFNum": "",
+            "ctl00$ContentPlaceHolder1$txtExtraField1": "",
+            "BrowserWidth": "1920",
+            "BrowserHeight": "1080",
+        }
+
+        for name, val in hidden_fields:
+            if name not in postback_data and not name.startswith("__"):
+                postback_data[name] = val
+
+        self.session.headers["Referer"] = self.search_url
+        self.session.headers["Content-Type"] = "application/x-www-form-urlencoded"
+
+        time.sleep(2)
+        resp = self.session.post(self.search_url, data=postback_data, timeout=30, allow_redirects=True)
+        resp.raise_for_status()
+        logger.info(f"[{self.town_name}] DocGroup postback complete, page length: {len(resp.text)}")
+        return resp.text
+
     def search_lis_pendens(self, days_back: int = 30, fetch_details: bool = True) -> List[Dict]:
         if not self.logged_in:
             if not self.login_as_guest():
@@ -89,6 +141,11 @@ class SearchIQSScraper:
                 resp.raise_for_status()
                 form_html = resp.text
 
+            doc_group = "(ALL)"
+            if self._needs_docgroup_postback():
+                form_html = self._do_docgroup_postback(form_html)
+                doc_group = "LR"
+
             viewstate = self._extract_field(form_html, "__VIEWSTATE")
             viewstategenerator = self._extract_field(form_html, "__VIEWSTATEGENERATOR")
             eventvalidation = self._extract_field(form_html, "__EVENTVALIDATION")
@@ -106,9 +163,8 @@ class SearchIQSScraper:
                 "__VIEWSTATEGENERATOR": viewstategenerator,
                 "__EVENTVALIDATION": eventvalidation,
                 "ctl00$ContentPlaceHolder1$scrollPos": "0",
-                "ctl00$ContentPlaceHolder1$cboDocGroup": "(ALL)",
+                "ctl00$ContentPlaceHolder1$cboDocGroup": doc_group,
                 "ctl00$ContentPlaceHolder1$cboDocType": "LIS PENDENS",
-                "ctl00$ContentPlaceHolder1$cboTown": "(ALL)",
                 "ctl00$ContentPlaceHolder1$txtName": "",
                 "ctl00$ContentPlaceHolder1$txtFirstName": "",
                 "ctl00$ContentPlaceHolder1$chkIgnorePartyType": "on",
@@ -123,6 +179,13 @@ class SearchIQSScraper:
                 "BrowserWidth": "1920",
                 "BrowserHeight": "1080",
             }
+
+            if "cboTown" in form_html:
+                search_data["ctl00$ContentPlaceHolder1$cboTown"] = "(ALL)"
+            if "txtExtraField1" in form_html:
+                search_data["ctl00$ContentPlaceHolder1$txtExtraField1"] = ""
+            if "txtCaseNum" in form_html:
+                search_data["ctl00$ContentPlaceHolder1$txtCaseNum"] = ""
 
             for name, val in hidden_fields:
                 if name not in search_data and not name.startswith("__"):

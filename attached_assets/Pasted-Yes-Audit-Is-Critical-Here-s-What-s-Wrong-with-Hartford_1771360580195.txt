@@ -1,0 +1,256 @@
+Yes - Audit Is Critical! Here's What's Wrong with Hartford
+Based on the Replit chat analysis, YES, you absolutely need to audit the Hartford vs Windsor processing differences. Your agent discovered the exact issue:
+
+Root Cause: Hartford Uses Different Search Criteria
+The Key Difference:
+​
+Windsor (CTWSR) - Works ✅:
+
+Uses cboDocGroup: "(ALL)"
+
+Returns "LAND RECORDS" documents
+
+No additional filters needed
+
+Hartford (CTHAR) - Fails ❌:
+
+Requires cboDocGroup: "LAND RECORDS" explicitly
+
+Simply using "(ALL)" returns nothing
+
+The form structure requires more specific filtering
+
+Diagnostic Code to Compare Both Sites
+Add this comparison script to audit the exact differences:
+
+python
+# comparison_audit.py - Run this to diagnose Hartford vs Windsor
+
+import requests
+from bs4 import BeautifulSoup
+import json
+
+def audit_search_form(base_url, town_name):
+    """Extract and compare search form structures"""
+    
+    session = requests.Session()
+    
+    # Step 1: Login as guest
+    login_url = f"{base_url}/Default.aspx"
+    response = session.get(login_url)
+    soup = BeautifulSoup(response.text, 'html.parser')
+    
+    viewstate = soup.find('input', {'name': '__VIEWSTATE'})['value']
+    
+    # Guest login
+    login_data = {
+        '__EVENTTARGET': 'btnGuestLogin',
+        '__VIEWSTATE': viewstate,
+    }
+    session.post(login_url, data=login_data)
+    
+    # Step 2: Get search page
+    search_url = f"{base_url}/SearchAdvancedMP.aspx"
+    response = session.get(search_url)
+    soup = BeautifulSoup(response.text, 'html.parser')
+    
+    # Extract form structure
+    doc_group = soup.find('select', {'id': 'ContentPlaceHolder1_cboDocGroup'})
+    doc_type = soup.find('select', {'id': 'ContentPlaceHolder1_cboDocType'})
+    
+    audit_data = {
+        'town': town_name,
+        'url': base_url,
+        'doc_groups': [],
+        'doc_types': [],
+        'has_town_dropdown': bool(soup.find('select', {'id': 'ContentPlaceHolder1_cboTown'})),
+        'has_ignore_party_checkbox': bool(soup.find('input', {'id': 'ContentPlaceHolder1_chkIgnorePartyType'}))
+    }
+    
+    # Get all doc group options
+    if doc_group:
+        for option in doc_group.find_all('option'):
+            audit_data['doc_groups'].append({
+                'value': option.get('value', ''),
+                'text': option.text.strip()
+            })
+    
+    # Get all doc type options
+    if doc_type:
+        for option in doc_type.find_all('option'):
+            if 'LIS PENDENS' in option.text.upper() or 'FORECLOSURE' in option.text.upper():
+                audit_data['doc_types'].append({
+                    'value': option.get('value', ''),
+                    'text': option.text.strip()
+                })
+    
+    return audit_data
+
+
+# Run comparison
+hartford_audit = audit_search_form("https://www.searchiqs.com/CTHAR", "Hartford")
+windsor_audit = audit_search_form("https://www.searchiqs.com/CTWSR", "Windsor")
+
+print("=" * 60)
+print("HARTFORD vs WINDSOR AUDIT COMPARISON")
+print("=" * 60)
+
+print("\n📍 HARTFORD (CTHAR) - Not Working:")
+print(f"  Doc Groups: {[g['text'] for g in hartford_audit['doc_groups']]}")
+print(f"  Has Town Dropdown: {hartford_audit['has_town_dropdown']}")
+print(f"  Has Ignore Party Checkbox: {hartford_audit['has_ignore_party_checkbox']}")
+
+print("\n📍 WINDSOR (CTWSR) - Working:")
+print(f"  Doc Groups: {[g['text'] for g in windsor_audit['doc_groups']]}")
+print(f"  Has Town Dropdown: {windsor_audit['has_town_dropdown']}")
+print(f"  Has Ignore Party Checkbox: {windsor_audit['has_ignore_party_checkbox']}")
+
+print("\n🔍 KEY DIFFERENCES:")
+hartford_groups = set(g['text'] for g in hartford_audit['doc_groups'])
+windsor_groups = set(g['text'] for g in windsor_audit['doc_groups'])
+
+print(f"  Hartford-only groups: {hartford_groups - windsor_groups}")
+print(f"  Windsor-only groups: {windsor_groups - hartford_groups}")
+
+# Save full audit
+with open('form_audit_comparison.json', 'w') as f:
+    json.dump({
+        'hartford': hartford_audit,
+        'windsor': windsor_audit
+    }, f, indent=2)
+
+print("\n✅ Full audit saved to: form_audit_comparison.json")
+The Fix: Town-Specific Search Parameters
+Update your searchiqs_scraper.py with town-specific logic:
+
+python
+# searchiqs_scraper.py - Add this method
+
+def _get_town_specific_params(self, base_params):
+    """
+    Apply town-specific search parameter overrides
+    Different towns require different cboDocGroup settings
+    """
+    
+    town_overrides = {
+        'CTHAR': {  # Hartford - REQUIRES explicit LAND RECORDS group
+            'ctl00$ContentPlaceHolder1$cboDocGroup': 'LAND RECORDS',
+            'reason': 'Hartford requires explicit LAND RECORDS group, not (ALL)'
+        },
+        'CTEHART': {  # East Hartford - works with (ALL)
+            'ctl00$ContentPlaceHolder1$cboDocGroup': '(ALL)',
+        },
+        'CTWSR': {  # Windsor - works with (ALL)
+            'ctl00$ContentPlaceHolder1$cboDocGroup': '(ALL)',
+        },
+        'CTBER': {  # Berlin - works with (ALL)
+            'ctl00$ContentPlaceHolder1$cboDocGroup': '(ALL)',
+        },
+        'CTROCK': {  # Rocky Hill - may need explicit group
+            'ctl00$ContentPlaceHolder1$cboDocGroup': '(ALL)',
+        }
+    }
+    
+    # Detect town code from base_url
+    town_code = None
+    for code in town_overrides.keys():
+        if code in self.base_url:
+            town_code = code
+            break
+    
+    if town_code and town_code in town_overrides:
+        override = town_overrides[town_code]
+        logging.info(f"🔧 Applying {town_code}-specific parameters")
+        
+        if 'reason' in override:
+            logging.info(f"   Reason: {override['reason']}")
+        
+        # Apply overrides
+        for key, value in override.items():
+            if key != 'reason':
+                base_params[key] = value
+                logging.debug(f"   Override: {key} = {value}")
+    
+    return base_params
+
+
+# Update your search_lis_pendens method to use this:
+def search_lis_pendens(self, days_back=30, fetch_details=False):
+    """Search with town-specific parameter handling"""
+    
+    # ... (your existing date calculation code) ...
+    
+    # Build base search parameters
+    search_data = {
+        '__EVENTTARGET': '',
+        '__EVENTARGUMENT': '',
+        '__VIEWSTATE': self.viewstate,
+        '__VIEWSTATEGENERATOR': self.viewstate_generator,
+        '__EVENTVALIDATION': self.event_validation,
+        'ctl00$ContentPlaceHolder1$txtFromDate': from_date.strftime('%m/%d/%Y'),
+        'ctl00$ContentPlaceHolder1$txtThruDate': to_date.strftime('%m/%d/%Y'),
+        'ctl00$ContentPlaceHolder1$cboDocGroup': '(ALL)',  # Default
+        'ctl00$ContentPlaceHolder1$cboDocType': 'LIS PENDENS',
+        'ctl00$ContentPlaceHolder1$chkIgnorePartyType': 'on',
+        'ctl00$ContentPlaceHolder1$cmdSearch': 'Search'
+    }
+    
+    # Apply town-specific overrides
+    search_data = self._get_town_specific_params(search_data)
+    
+    # ... (rest of your search code) ...
+Alternative Diagnostic Approach: Side-by-Side Form Submission Test
+python
+# test_both_towns.py - Run this to compare live behavior
+
+def test_town_search(base_url, town_name, doc_group_value):
+    """Test search with specific doc_group value"""
+    
+    scraper = SearchIQSScraper(base_url, town_name)
+    
+    print(f"\n{'='*60}")
+    print(f"Testing {town_name} with cboDocGroup='{doc_group_value}'")
+    print(f"{'='*60}")
+    
+    # Manually override the doc_group for testing
+    results = scraper.search_lis_pendens(days_back=90, fetch_details=False)
+    
+    print(f"✅ Found {len(results)} filings")
+    
+    if results:
+        print("\nFirst 3 results:")
+        for r in results[:3]:
+            print(f"  - {r.get('party1_seller', 'N/A')[:50]} | {r.get('recording_date')}")
+    else:
+        print("⚠️  No results - checking error...")
+        # Check if we got error page
+        if scraper.last_response:
+            if 'no records found' in scraper.last_response.text.lower():
+                print("    Server returned: No records found")
+            elif 'insufficient search criteria' in scraper.last_response.text.lower():
+                print("    Server returned: Insufficient search criteria")
+    
+    return len(results)
+
+# Test Hartford with both settings
+print("\n🔬 HARTFORD DIAGNOSTICS:")
+hartford_all = test_town_search("https://www.searchiqs.com/CTHAR", "Hartford", "(ALL)")
+hartford_land = test_town_search("https://www.searchiqs.com/CTHAR", "Hartford", "LAND RECORDS")
+
+print(f"\n📊 Hartford Results:")
+print(f"   With '(ALL)': {hartford_all} filings")
+print(f"   With 'LAND RECORDS': {hartford_land} filings")
+
+# Test Windsor for comparison
+print("\n🔬 WINDSOR DIAGNOSTICS:")
+windsor_all = test_town_search("https://www.searchiqs.com/CTWSR", "Windsor", "(ALL)")
+
+print(f"\n📊 Windsor Results:")
+print(f"   With '(ALL)': {windsor_all} filings")
+Expected Outcome
+After applying the fix, you should see:
+
+text
+Hartford (CTHAR) with cboDocGroup="LAND RECORDS": ✅ 10-14 filings
+Windsor (CTWSR) with cboDocGroup="(ALL)": ✅ 6 filings  
+East Hartford (CTEHART) with cboDocGroup="(ALL)": ✅ 10 filings
