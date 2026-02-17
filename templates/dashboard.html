@@ -687,12 +687,120 @@
         }
 
         @media (max-width: 768px) {
+            .command-center {
+                padding: 8px;
+            }
+            .header-bar {
+                flex-direction: column;
+                gap: 8px;
+                padding: 10px 12px;
+                text-align: center;
+            }
+            .header-bar h1 {
+                font-size: 0.85rem;
+                letter-spacing: 0.3px;
+            }
+            .header-right {
+                width: 100%;
+                justify-content: center;
+                flex-wrap: wrap;
+            }
             .grid-layout {
                 grid-template-columns: 1fr;
+                gap: 10px;
             }
             .zone-center { grid-column: 1; }
-            .guardrails-grid { grid-template-columns: 1fr; }
-            .wealth-main { font-size: 1.8rem; }
+            .zone-card {
+                padding: 14px;
+                border-radius: 10px;
+            }
+            .zone-label {
+                font-size: 0.62rem;
+                margin-bottom: 10px;
+            }
+
+            .safety-row {
+                flex-direction: column;
+                gap: 12px;
+                text-align: center;
+            }
+            .hf-gauge-container {
+                width: 100px;
+                height: 100px;
+                margin: 0 auto;
+            }
+            .hf-gauge-svg {
+                width: 100px;
+                height: 100px;
+            }
+            .hf-value { font-size: 1.4rem; }
+            .safety-detail { font-size: 0.72rem; }
+
+            .wealth-main { font-size: 1.6rem; }
+            .wealth-change { font-size: 0.78rem; }
+            .wealth-breakdown {
+                flex-direction: row;
+                gap: 8px;
+            }
+            .wealth-stat-label { font-size: 0.6rem; }
+            .wealth-stat-value { font-size: 0.8rem; }
+
+            .guardrails-grid {
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
+            .guardrail-card { padding: 12px; }
+            .guardrail-context {
+                grid-template-columns: 1fr 1fr;
+                gap: 6px;
+            }
+            .guardrail-ctx-label { font-size: 0.58rem; }
+            .guardrail-ctx-value { font-size: 0.82rem; }
+            .short-engine-panel {
+                grid-column: 1;
+                padding: 10px 12px;
+            }
+            .short-engine-grid {
+                grid-template-columns: 1fr 1fr 1fr;
+                gap: 4px;
+            }
+            .short-metric-value { font-size: 0.85rem; }
+            .guardrails-current { grid-column: 1; }
+
+            .avatar-video-wrap {
+                min-height: 280px;
+            }
+            #zone4 .zone-label {
+                font-size: 0.58rem;
+                top: 6px;
+                left: 8px;
+                padding: 2px 8px;
+            }
+            .hud-smart-text {
+                font-size: 0.62rem;
+                letter-spacing: 1px;
+            }
+
+            .intel-feed {
+                height: 200px;
+                font-size: 0.68rem;
+                line-height: 1.6;
+            }
+
+            .last-updated {
+                font-size: 0.58rem;
+            }
+        }
+
+        @media (max-width: 400px) {
+            .command-center { padding: 4px; }
+            .header-bar h1 { font-size: 0.72rem; }
+            .wealth-main { font-size: 1.3rem; }
+            .zone-card { padding: 10px; }
+            .avatar-video-wrap { min-height: 240px; }
+            .hf-gauge-container { width: 80px; height: 80px; }
+            .hf-gauge-svg { width: 80px; height: 80px; }
+            .guardrail-context { grid-template-columns: 1fr 1fr; }
         }
     </style>
 </head>
