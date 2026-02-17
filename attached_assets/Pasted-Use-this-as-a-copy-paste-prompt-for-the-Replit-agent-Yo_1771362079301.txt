@@ -1,0 +1,93 @@
+Use this as a copy‑paste prompt for the Replit agent:
+
+You are helping me fix Google Docs/Sheets/Drive access in this Replit project.
+
+Context:
+
+Google Cloud project: site-link-485518
+
+Service account: lead-doc-writer@site-link-485518.iam.gserviceaccount.com
+
+APIs already enabled on this project: Google Docs API, Google Sheets API, Google Drive API.
+​
+
+I am using a service account JSON key stored in Replit Secrets.
+
+Your tasks:
+
+Inspect and update the Google API auth code so that:
+
+It uses the service account JSON from a Replit secret (e.g. GOOGLE_SERVICE_ACCOUNT_JSON).
+
+It requests all necessary scopes for what the app does, at minimum:
+
+https://www.googleapis.com/auth/documents
+
+https://www.googleapis.com/auth/spreadsheets
+
+https://www.googleapis.com/auth/drive.file
+
+It builds clients like this (or equivalent in the current language):
+
+Docs: build("docs", "v1", credentials=creds)
+
+Sheets: build("sheets", "v4", credentials=creds)
+
+Drive: build("drive", "v3", credentials=creds).
+
+Make sure there is no leftover OAuth user-token flow:
+
+Remove or refactor any flow.run_local_server, InstalledAppFlow, or token.json logic that assumes a local browser login (this breaks on Replit).
+​
+
+Ensure all Google calls use the service‑account credentials only.
+
+Add clear configuration at the top of the code:
+
+Variables for:
+
+SERVICE_ACCOUNT_SECRET_KEY name in Replit (e.g. GOOGLE_SERVICE_ACCOUNT_JSON).
+
+Target Google Doc ID(s) and Sheet ID(s).
+
+Comments telling me:
+
+Which secrets I must create in Replit.
+
+How to share each Google Doc/Sheet with the service account email as Editor in the Google UI (so permissions and scopes line up with the APIs already enabled).
+
+Handle and log typical auth / permission errors:
+
+If an API call fails due to scopes or permissions, log:
+
+The API called (Docs/Sheets/Drive).
+
+The scope list actually configured in the code.
+
+A human‑readable suggestion like: “Check that this file is shared with lead-doc-writer@site-link-485518.iam.gserviceaccount.com as Editor.”
+
+After updating the code:
+
+Show me exactly:
+
+The full updated auth/initialization code block.
+
+Any new or renamed Replit secrets I must create.
+
+A short checklist I should follow:
+
+Confirm the Replit secret with the JSON key is set.
+
+Confirm the file IDs are correct.
+
+Confirm the Google Docs/Sheets are shared with the service account as Editor.
+
+Run a minimal test call (one read and one write) to verify.
+
+Do not change unrelated business logic. Focus on:
+
+Correct service account usage.
+
+Correct scopes.
+
+Clear instructions for secrets and file sharing
