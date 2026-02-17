@@ -94,9 +94,34 @@ REAL_ESTATE_CONFIG = {
         "reviews": {"hour": 8, "minute": 0},
         "outreach": {"hour": 8, "minute": 30},
     },
-    "searchiqs_url": "https://www.searchiqs.com/CTHAR/SearchAdvancedMP.aspx",
-    "searchiqs_county": "Hartford",
-    "lookback_days": 3,
+    "towns": {
+        "Hartford": {
+            "code": "CTHAR",
+            "base_url": "https://www.searchiqs.com/CTHAR",
+            "county": "Hartford",
+        },
+        "East Hartford": {
+            "code": "CTEHART",
+            "base_url": "https://www.searchiqs.com/CTEHART",
+            "county": "Hartford",
+        },
+        "Windsor": {
+            "code": "CTWSR",
+            "base_url": "https://www.searchiqs.com/CTWSR",
+            "county": "Hartford",
+        },
+        "Berlin": {
+            "code": "CTBER",
+            "base_url": "https://www.searchiqs.com/CTBER",
+            "county": "Hartford",
+        },
+        "Rocky Hill": {
+            "code": "CTROCK",
+            "base_url": "https://www.searchiqs.com/CTROCK",
+            "county": "Hartford",
+        },
+    },
+    "lookback_days": 30,
     "google_drive_folder_id": os.getenv("GOOGLE_DRIVE_FOLDER_ID", "128JqjJpDrSkV9ZyylFIICT-MJK5tBxOg"),
     "review_template_doc_id": os.getenv("GOOGLE_REVIEW_TEMPLATE_ID", "1loKYjBFEUjfhlfYFwjdZ4SODiU9fMxwcg3N17bIfkIY"),
     "equity_thresholds": {

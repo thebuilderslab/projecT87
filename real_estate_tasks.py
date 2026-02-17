@@ -21,7 +21,7 @@ from perplexity_client import (
     generate_property_analysis,
     generate_outreach_letters,
 )
-from searchiqs_scraper import get_scraper
+from searchiqs_scraper import create_scraper
 from google_client import get_google_client
 
 RE_STATE_FILE = "real_estate_state.json"
@@ -47,6 +47,7 @@ def _default_state() -> Dict:
         "last_reviews": None,
         "last_outreach": None,
         "filings_today": 0,
+        "filings_by_town": {},
         "leads_high": 0,
         "leads_med": 0,
         "leads_low": 0,
@@ -60,8 +61,7 @@ def _default_state() -> Dict:
             "raw_data_sheet_url": None,
             "logic_doc_id": None,
             "logic_doc_url": None,
-            "analysis_doc_id": None,
-            "analysis_doc_url": None,
+            "analysis_docs": {},
             "review_docs": [],
             "letter_docs": [],
             "drive_folder_url": None,
@@ -78,7 +78,7 @@ def _save_state(state: Dict):
 
 
 def _today_label() -> str:
-    return datetime.now(EASTERN).strftime("%B %d, %Y")
+    return datetime.now(EASTERN).strftime("%-m/%-d/%Y")
 
 
 def _today_short() -> str:
@@ -89,103 +89,162 @@ def _now_ts() -> str:
     return datetime.now(EASTERN).isoformat()
 
 
+def _get_towns() -> Dict:
+    return REAL_ESTATE_CONFIG.get("towns", {})
+
+
 def run_0700_searchiqs_ingest() -> Dict:
-    logger.info("=== PHASE 1: SearchIQS Data Collection (7:00 AM) ===")
+    logger.info("=== PHASE 1: SearchIQS Data Collection — All Towns (7:00 AM) ===")
     state = _load_state()
     result = {"task": "searchiqs_ingest", "status": "started", "timestamp": _now_ts()}
 
     today = _today_label()
     folder_id = REAL_ESTATE_CONFIG.get("google_drive_folder_id")
+    lookback = REAL_ESTATE_CONFIG.get("lookback_days", 30)
+    towns = _get_towns()
 
     if "documents" not in state:
         state["documents"] = _default_state()["documents"]
     state["documents"]["drive_folder_url"] = f"{GDRIVE_URL}/{folder_id}" if folder_id else None
 
     try:
-        scraper = get_scraper()
-        lookback = REAL_ESTATE_CONFIG.get("lookback_days", 3)
-        filings = scraper.search_lis_pendens(days_back=lookback, fetch_details=True)
+        all_filings = []
+        filings_by_town = {}
+        town_results = {}
 
-        for filing in filings:
-            defendant = filing.get("seller", "") or filing.get("defendant", "")
-            if defendant and not filing.get("court_case_number"):
-                court_info = scraper.search_court_case(defendant)
-                if court_info:
-                    filing["court_case_number"] = court_info.get("case_number", "")
-                    filing["court_url"] = court_info.get("court_url", "")
-                    if court_info.get("debt_amount") and court_info["debt_amount"] != "Unknown":
-                        filing["debt_amount"] = court_info["debt_amount"]
-                    if court_info.get("return_date") and court_info["return_date"] != "TBD":
-                        filing["return_date"] = court_info["return_date"]
-                time.sleep(1)
+        for town_name, town_cfg in towns.items():
+            base_url = town_cfg["base_url"]
+            logger.info(f"--- Scraping {town_name} ({base_url}) ---")
 
-        state["raw_filings"] = filings
-        state["filings_today"] = len(filings)
+            scraper = create_scraper(base_url=base_url, town_name=town_name)
+            town_filings = scraper.search_lis_pendens(days_back=lookback, fetch_details=True)
+
+            for filing in town_filings:
+                defendant = filing.get("seller", "") or filing.get("defendant", "")
+                if defendant and not filing.get("court_case_number"):
+                    court_info = scraper.search_court_case(defendant)
+                    if court_info:
+                        filing["court_case_number"] = court_info.get("case_number", "")
+                        filing["court_url"] = court_info.get("court_url", "")
+                        if court_info.get("debt_amount") and court_info["debt_amount"] != "Unknown":
+                            filing["debt_amount"] = court_info["debt_amount"]
+                        if court_info.get("return_date") and court_info["return_date"] != "TBD":
+                            filing["return_date"] = court_info["return_date"]
+                    time.sleep(1)
+
+            filings_by_town[town_name] = len(town_filings)
+            town_results[town_name] = town_filings
+            all_filings.extend(town_filings)
+            logger.info(f"{town_name}: {len(town_filings)} filings found")
+            time.sleep(2)
+
+        state["raw_filings"] = all_filings
+        state["filings_today"] = len(all_filings)
+        state["filings_by_town"] = filings_by_town
         state["last_ingest"] = _now_ts()
 
         google = get_google_client()
 
         raw_sheet_id = None
         if google.credentials:
-            sheet_title = f"Hartford Lis Pendens Raw Data - {today}"
+            sheet_title = f"Hartford County Lis Pendens Raw Data - {today}"
             raw_sheet_id = google.create_spreadsheet(sheet_title, folder_id)
             if raw_sheet_id:
                 state["documents"]["raw_data_sheet_id"] = raw_sheet_id
                 state["documents"]["raw_data_sheet_url"] = f"{GSHEET_URL}/{raw_sheet_id}"
 
-                header = [["Address", "Seller", "Lender", "LP Date", "Original Mortgage",
+                header = [["Town", "Address", "Seller", "Lender", "LP Date", "Original Mortgage",
                            "Court Case#", "Debt Amount", "Return Date", "Status"]]
                 google.append_rows(raw_sheet_id, "Sheet1", header)
 
-                rows = []
-                for f in filings:
-                    rows.append(scraper.get_filing_as_row(f))
-                if rows:
-                    google.append_rows(raw_sheet_id, "Sheet1", rows)
+                for town_name in towns:
+                    town_filings = town_results.get(town_name, [])
+                    if town_filings:
+                        rows = []
+                        for f in town_filings:
+                            rows.append(scraper.get_filing_as_row(f))
+                        google.append_rows(raw_sheet_id, "Sheet1", rows)
+                    else:
+                        google.append_rows(raw_sheet_id, "Sheet1", [[town_name, "— No Lis Pendens filings found in last 30 days —", "", "", "", "", "", "", "", ""]])
+
                 logger.info(f"Created Raw Data sheet: {sheet_title} ({raw_sheet_id})")
 
         logic_doc_id = None
         if google.credentials:
-            logic_title = f"LOGIC - Hartford Lis Pendens - {today}"
+            logic_title = f"LOGIC - Hartford County Lis Pendens - {today}"
             logic_doc_id = google.create_document(logic_title, folder_id)
             if logic_doc_id:
                 state["documents"]["logic_doc_id"] = logic_doc_id
                 state["documents"]["logic_doc_url"] = f"{GDOC_URL}/{logic_doc_id}"
 
-                logic_content = f"LOGIC - Hartford Lis Pendens - {today}\n{'='*60}\n\n"
+                logic_content = f"LOGIC - Hartford County Lis Pendens - {today}\n{'='*60}\n\n"
                 logic_content += f"Generated: {_now_ts()}\n"
-                logic_content += f"SearchIQS URL: {REAL_ESTATE_CONFIG['searchiqs_url']}\n"
                 logic_content += f"Lookback Period: {lookback} days\n"
-                logic_content += f"Total Filings Found: {len(filings)}\n\n"
+                logic_content += f"Towns Searched: {', '.join(towns.keys())}\n"
+                logic_content += f"Total Filings Found: {len(all_filings)}\n\n"
 
                 if raw_sheet_id:
                     logic_content += f"Raw Data Sheet: {GSHEET_URL}/{raw_sheet_id}\n\n"
 
-                logic_content += f"DATA SOURCES\n{'-'*40}\n"
-                for i, f in enumerate(filings, 1):
-                    addr = f.get("property_address", "") or f.get("seller", "Unknown")
-                    logic_content += f"\n{i}. {addr}\n"
-                    if f.get("searchiqs_url"):
-                        logic_content += f"   SearchIQS: {f['searchiqs_url']}\n"
-                    if f.get("court_url"):
-                        logic_content += f"   Court Docket: {f['court_url']}\n"
-                    if f.get("court_case_number"):
-                        logic_content += f"   Case #: {f['court_case_number']}\n"
-                    logic_content += f"   Recorded: {f.get('recording_date', 'N/A')}\n"
-                    logic_content += f"   Book/Page: {f.get('book_page', 'N/A')}\n"
-                    logic_content += f"   Timestamp: {_now_ts()}\n"
+                for town_name, town_cfg in towns.items():
+                    town_filings = town_results.get(town_name, [])
+                    logic_content += f"\n{'='*60}\n"
+                    logic_content += f"TOWN: {town_name.upper()} — {len(town_filings)} filing(s)\n"
+                    logic_content += f"SearchIQS: {town_cfg['base_url']}/SearchAdvancedMP.aspx\n"
+                    logic_content += f"{'='*60}\n\n"
+
+                    if not town_filings:
+                        logic_content += "No Lis Pendens filings found in last 30 days.\n\n"
+                    else:
+                        for i, f in enumerate(town_filings, 1):
+                            addr = f.get("property_address", "") or f.get("seller", "Unknown")
+                            logic_content += f"{i}. {addr}\n"
+                            if f.get("searchiqs_url"):
+                                logic_content += f"   SearchIQS: {f['searchiqs_url']}\n"
+                            if f.get("court_url"):
+                                logic_content += f"   Court Docket: {f['court_url']}\n"
+                            if f.get("court_case_number"):
+                                logic_content += f"   Case #: {f['court_case_number']}\n"
+                            logic_content += f"   Recorded: {f.get('recording_date', 'N/A')}\n"
+                            logic_content += f"   Book/Page: {f.get('book_page', 'N/A')}\n\n"
 
                 google.write_document_content(logic_doc_id, logic_content)
                 logger.info(f"Created LOGIC doc: {logic_title} ({logic_doc_id})")
 
+        analysis_docs_by_town = {}
+        if google.credentials:
+            for town_name in towns:
+                town_filings = town_results.get(town_name, [])
+                analysis_title = f"{town_name} Lis Pendens Analysis - {today}"
+                analysis_doc_id = google.create_document(analysis_title, folder_id)
+                if analysis_doc_id:
+                    analysis_docs_by_town[town_name] = {
+                        "doc_id": analysis_doc_id,
+                        "url": f"{GDOC_URL}/{analysis_doc_id}",
+                        "title": analysis_title,
+                    }
+
+                    if not town_filings:
+                        content = f"{analysis_title}\n{'='*60}\n\n"
+                        content += f"Generated: {_now_ts()}\n\n"
+                        content += "0 Lis Pendens filings found in the last 30 days.\n\n"
+                        content += "No properties to analyze at this time.\n"
+                        google.write_document_content(analysis_doc_id, content)
+                        logger.info(f"Created empty Analysis doc for {town_name}: 0 filings")
+                    else:
+                        logger.info(f"Created Analysis doc placeholder for {town_name}: {len(town_filings)} filings (content in Phase 2)")
+
+            state["documents"]["analysis_docs"] = analysis_docs_by_town
+
         _save_state(state)
 
         result["status"] = "success"
-        result["filings_found"] = len(filings)
-        result["message"] = f"Scraped {len(filings)} Lis Pendens filings from Hartford"
+        result["filings_found"] = len(all_filings)
+        result["filings_by_town"] = filings_by_town
+        result["message"] = f"Scraped {len(all_filings)} Lis Pendens filings across {len(towns)} towns: " + ", ".join(f"{t}: {c}" for t, c in filings_by_town.items())
         result["raw_data_sheet_url"] = state["documents"].get("raw_data_sheet_url")
         result["logic_doc_url"] = state["documents"].get("logic_doc_url")
-        logger.info(f"Phase 1 complete: {len(filings)} filings found")
+        logger.info(f"Phase 1 complete: {result['message']}")
 
     except Exception as e:
         result["status"] = "error"
@@ -198,19 +257,33 @@ def run_0700_searchiqs_ingest() -> Dict:
 
 
 def run_0730_analysis() -> Dict:
-    logger.info("=== PHASE 2: Analysis + REVIEW Docs (7:30 AM) ===")
+    logger.info("=== PHASE 2: Analysis + REVIEW Docs — All Towns (7:30 AM) ===")
     state = _load_state()
     result = {"task": "analysis", "status": "started", "timestamp": _now_ts()}
 
     today = _today_label()
     folder_id = REAL_ESTATE_CONFIG.get("google_drive_folder_id")
     template_id = REAL_ESTATE_CONFIG.get("review_template_doc_id")
+    towns = _get_towns()
 
     try:
         filings = state.get("raw_filings", [])
         if not filings:
             result["status"] = "skipped"
             result["message"] = "No filings to analyze"
+
+            google = get_google_client()
+            analysis_docs = state.get("documents", {}).get("analysis_docs", {})
+            for town_name in towns:
+                town_doc = analysis_docs.get(town_name)
+                if town_doc and google.credentials:
+                    doc_id = town_doc["doc_id"]
+                    content = f"{town_name} Lis Pendens Analysis - {today}\n{'='*60}\n\n"
+                    content += f"Generated: {_now_ts()}\n\n"
+                    content += "0 Lis Pendens filings found in the last 30 days.\n"
+                    content += "No properties to analyze at this time.\n"
+                    google.write_document_content(doc_id, content)
+
             return result
 
         equity_high = REAL_ESTATE_CONFIG["equity_thresholds"]["high"]
@@ -220,6 +293,7 @@ def run_0730_analysis() -> Dict:
 
         analyzed = []
         for filing in filings:
+            town = filing.get("town", "Hartford")
             address = filing.get("property_address", "") or filing.get("property_description", "")
             seller = filing.get("seller", "") or filing.get("party1_seller", "")
             lender = filing.get("lender", "") or filing.get("party2_lender", "")
@@ -231,14 +305,14 @@ def run_0730_analysis() -> Dict:
                 debt_amount = float(debt_str) if debt_str else 0
 
             system_prompt = (
-                "You are a CT real estate data analyst. Given a property address in Hartford CT, "
+                f"You are a CT real estate data analyst. Given a property address in {town} CT, "
                 "estimate the current market value based on recent comparable sales, Zillow estimates, and Redfin data. "
                 "Return ONLY a JSON object: {\"estimated_value\": NUMBER, \"confidence\": \"high\"|\"medium\"|\"low\", "
                 "\"zillow_url\": \"URL or empty\", \"redfin_url\": \"URL or empty\", \"comps_summary\": \"brief text\", "
                 "\"valuation_source\": \"source description\"}"
             )
-            search_addr = address if address and address.upper() != "SEE DEED" else f"{seller}, Hartford CT"
-            user_prompt = f"Property: {search_addr}, Hartford, CT. Estimate current market value with sources."
+            search_addr = address if address and address.upper() != "SEE DEED" else f"{seller}, {town} CT"
+            user_prompt = f"Property: {search_addr}, {town}, CT. Estimate current market value with sources."
 
             market_value = 0
             valuation_data = {}
@@ -279,6 +353,7 @@ def run_0730_analysis() -> Dict:
                 outreach_angle = "Low equity - monitor only, may not support acquisition at this time"
 
             lead = {
+                "town": town,
                 "address": address,
                 "seller": seller,
                 "lender": lender,
@@ -321,24 +396,31 @@ def run_0730_analysis() -> Dict:
 
         google = get_google_client()
 
-        analysis_doc_id = None
-        if google.credentials:
-            analysis_title = f"Hartford Lis Pendens Analysis - {today}"
-            analysis_doc_id = google.create_document(analysis_title, folder_id)
-            if analysis_doc_id:
-                state.setdefault("documents", {})["analysis_doc_id"] = analysis_doc_id
-                state["documents"]["analysis_doc_url"] = f"{GDOC_URL}/{analysis_doc_id}"
+        analysis_docs = state.get("documents", {}).get("analysis_docs", {})
+        for town_name in towns:
+            town_leads = [l for l in analyzed if l.get("town") == town_name]
+            town_doc = analysis_docs.get(town_name)
+            if not town_doc or not google.credentials:
+                continue
 
-                content = f"Hartford Lis Pendens Analysis - {today}\n{'='*60}\n\n"
-                content += f"Total Filings Analyzed: {len(analyzed)}\n"
-                content += f"HIGH Priority: {sum(1 for l in analyzed if l['priority'] == 'HIGH')}\n"
-                content += f"MED Priority: {sum(1 for l in analyzed if l['priority'] == 'MED')}\n"
-                content += f"LOW Priority: {sum(1 for l in analyzed if l['priority'] == 'LOW')}\n\n"
+            doc_id = town_doc["doc_id"]
+            content = f"{town_name} Lis Pendens Analysis - {today}\n{'='*60}\n\n"
+            content += f"Generated: {_now_ts()}\n"
+            content += f"Total Filings Analyzed: {len(town_leads)}\n"
 
-                for i, lead in enumerate(analyzed, 1):
+            if not town_leads:
+                content += "\n0 Lis Pendens filings found in the last 30 days.\n"
+                content += "No properties to analyze at this time.\n"
+            else:
+                content += f"HIGH Priority: {sum(1 for l in town_leads if l['priority'] == 'HIGH')}\n"
+                content += f"MED Priority: {sum(1 for l in town_leads if l['priority'] == 'MED')}\n"
+                content += f"LOW Priority: {sum(1 for l in town_leads if l['priority'] == 'LOW')}\n\n"
+
+                for i, lead in enumerate(town_leads, 1):
                     content += f"\n{'='*50}\n"
                     content += f"PROPERTY {i}: {lead['address'] or lead['seller']}\n"
                     content += f"{'='*50}\n"
+                    content += f"Town: {town_name}\n"
                     content += f"Address: {lead['address']}\n"
                     content += f"Seller: {lead['seller']}\n"
                     content += f"Lender: {lead['lender']}\n"
@@ -372,8 +454,8 @@ def run_0730_analysis() -> Dict:
                     if lead.get("court_url"):
                         content += f"Court Docket: {lead['court_url']}\n"
 
-                google.write_document_content(analysis_doc_id, content)
-                logger.info(f"Created Analysis doc: {analysis_title}")
+            google.write_document_content(doc_id, content)
+            logger.info(f"Wrote {town_name} Analysis doc: {len(town_leads)} leads")
 
         high_leads = [l for l in analyzed if l["priority"] == "HIGH"]
         review_docs = []
@@ -381,6 +463,7 @@ def run_0730_analysis() -> Dict:
         if google.credentials and high_leads:
             for lead in high_leads:
                 addr = lead.get("address", "") or lead.get("seller", "Unknown")
+                town = lead.get("town", "Hartford")
 
                 case_summary = ""
                 if lead.get("court_case_number") and lead["court_case_number"] not in ("N/A", "", "Not found"):
@@ -397,6 +480,7 @@ def run_0730_analysis() -> Dict:
                         if doc_id:
                             replacements = {
                                 "{{PROPERTY_ADDRESS}}": addr,
+                                "{{TOWN}}": town,
                                 "{{OWNER_NAME}}": lead.get("seller", "N/A"),
                                 "{{PLAINTIFF}}": lead.get("lender", "N/A"),
                                 "{{MARKET_VALUE}}": f"${lead.get('market_value', 0):,.0f}",
@@ -414,7 +498,7 @@ def run_0730_analysis() -> Dict:
                             google.replace_text_in_doc(doc_id, replacements)
                             lead["review_doc_id"] = doc_id
                             lead["review_doc_url"] = f"{GDOC_URL}/{doc_id}"
-                            review_docs.append({"address": addr, "doc_id": doc_id, "url": f"{GDOC_URL}/{doc_id}"})
+                            review_docs.append({"address": addr, "town": town, "doc_id": doc_id, "url": f"{GDOC_URL}/{doc_id}"})
                             logger.info(f"Created REVIEW doc from template: {review_title}")
                     except Exception as e:
                         logger.error(f"Failed to create REVIEW from template for {addr}: {e}")
@@ -423,10 +507,11 @@ def run_0730_analysis() -> Dict:
                         doc_id = google.create_document(review_title, folder_id)
                         if doc_id:
                             review_content = (
-                                f"REVIEW - {addr} - Pre-Auction\n{'='*50}\n\n"
+                                f"REVIEW - {addr} ({town}) - Pre-Auction\n{'='*50}\n\n"
                                 f"Date: {today}\n\n"
                                 f"PROPERTY DETAILS\n{'-'*30}\n"
                                 f"Address: {addr}\n"
+                                f"Town: {town}\n"
                                 f"Owner: {lead.get('seller', 'N/A')}\n"
                                 f"Plaintiff/Lender: {lead.get('lender', 'N/A')}\n"
                                 f"Case #: {lead.get('court_case_number', 'N/A')}\n"
@@ -445,7 +530,7 @@ def run_0730_analysis() -> Dict:
                             google.write_document_content(doc_id, review_content)
                             lead["review_doc_id"] = doc_id
                             lead["review_doc_url"] = f"{GDOC_URL}/{doc_id}"
-                            review_docs.append({"address": addr, "doc_id": doc_id, "url": f"{GDOC_URL}/{doc_id}"})
+                            review_docs.append({"address": addr, "town": town, "doc_id": doc_id, "url": f"{GDOC_URL}/{doc_id}"})
                             logger.info(f"Created REVIEW doc: {review_title}")
                     except Exception as e:
                         logger.error(f"Failed to create REVIEW for {addr}: {e}")
@@ -455,11 +540,17 @@ def run_0730_analysis() -> Dict:
         logic_doc_id = state.get("documents", {}).get("logic_doc_id")
         if logic_doc_id and google.credentials:
             logic_update = f"\n\n{'='*60}\nPHASE 2 UPDATE - Analysis Complete ({_now_ts()})\n{'='*60}\n\n"
-            logic_update += f"Analysis Document: {state.get('documents', {}).get('analysis_doc_url', 'N/A')}\n\n"
-            logic_update += "VALUATION SOURCES\n" + "-"*40 + "\n"
+
+            for town_name in towns:
+                town_doc = analysis_docs.get(town_name)
+                if town_doc:
+                    logic_update += f"{town_name} Analysis: {town_doc['url']}\n"
+
+            logic_update += f"\nVALUATION SOURCES\n" + "-"*40 + "\n"
             for lead in analyzed:
                 addr = lead.get("address", "") or lead.get("seller", "")
-                logic_update += f"\n{addr}:\n"
+                town = lead.get("town", "")
+                logic_update += f"\n[{town}] {addr}:\n"
                 logic_update += f"  Priority: {lead['priority']}\n"
                 logic_update += f"  Market Value: ${lead['market_value']:,.0f}\n"
                 logic_update += f"  Equity: ${lead['estimated_equity']:,.0f}\n"
@@ -523,7 +614,7 @@ def run_0800_reviews() -> Dict:
             logic_update = f"\n\n{'='*60}\nPHASE 3 UPDATE - REVIEW Docs Linked ({_now_ts()})\n{'='*60}\n\n"
             logic_update += "REVIEW DOCUMENTS CREATED\n" + "-"*40 + "\n\n"
             for rd in review_docs:
-                logic_update += f"Property: {rd['address']}\n"
+                logic_update += f"Property: {rd['address']} ({rd.get('town', '')})\n"
                 logic_update += f"REVIEW Doc: {rd['url']}\n\n"
 
             google.append_document_content(logic_doc_id, logic_update)
@@ -571,6 +662,7 @@ def run_0830_outreach() -> Dict:
 
         for lead in high_leads:
             address = lead.get("address", "") or lead.get("seller", "Unknown")
+            town = lead.get("town", "Hartford")
             owner = lead.get("seller", "Property Owner")
             lender_name = lead.get("lender", "")
             analysis = lead.get("perplexity_analysis", "")
@@ -578,7 +670,7 @@ def run_0830_outreach() -> Dict:
             try:
                 letters_text = generate_outreach_letters(
                     owner_name=owner,
-                    property_address=address,
+                    property_address=f"{address}, {town}, CT",
                     summary=analysis[:500],
                     lender=lender_name,
                     court_date=lead.get("return_date", "TBD"),
@@ -591,9 +683,9 @@ def run_0830_outreach() -> Dict:
                     doc_id = google.create_document(doc_title, folder_id)
                     if doc_id:
                         letter_content = (
-                            f"LETTERS TO {address}\n{'='*50}\n\n"
+                            f"LETTERS TO {address} ({town})\n{'='*50}\n\n"
                             f"Prepared: {today}\n"
-                            f"Property: {address}\n"
+                            f"Property: {address}, {town}, CT\n"
                             f"Owner: {owner}\n\n"
                             f"{'='*50}\n"
                             f"LETTER #1 - FIRST CONTACT\n"
@@ -612,10 +704,10 @@ def run_0830_outreach() -> Dict:
                         google.write_document_content(doc_id, letter_content)
                         lead["letters_doc_id"] = doc_id
                         lead["letters_doc_url"] = f"{GDOC_URL}/{doc_id}"
-                        letter_docs.append({"address": address, "doc_id": doc_id, "url": f"{GDOC_URL}/{doc_id}"})
+                        letter_docs.append({"address": address, "town": town, "doc_id": doc_id, "url": f"{GDOC_URL}/{doc_id}"})
                         logger.info(f"Created LETTERS doc: {doc_title}")
                 else:
-                    letter_docs.append({"address": address, "doc_id": None, "url": None})
+                    letter_docs.append({"address": address, "town": town, "doc_id": None, "url": None})
 
             except Exception as e:
                 logger.error(f"Failed to generate letters for {address}: {e}")
@@ -627,7 +719,7 @@ def run_0830_outreach() -> Dict:
             logic_update = f"\n\n{'='*60}\nPHASE 4 UPDATE - LETTERS Created ({_now_ts()})\n{'='*60}\n\n"
             logic_update += "OUTREACH LETTERS CREATED\n" + "-"*40 + "\n\n"
             for ld in letter_docs:
-                logic_update += f"Property: {ld['address']}\n"
+                logic_update += f"Property: {ld['address']} ({ld.get('town', '')})\n"
                 if ld.get('url'):
                     logic_update += f"LETTERS Doc: {ld['url']}\n"
                 logic_update += "\n"
@@ -669,6 +761,7 @@ def get_real_estate_status() -> Dict:
         if lead.get("priority") == "HIGH":
             high_leads.append({
                 "address": lead.get("address", "") or lead.get("seller", ""),
+                "town": lead.get("town", ""),
                 "equity": lead.get("estimated_equity", 0),
                 "review_url": lead.get("review_doc_url"),
                 "letters_url": lead.get("letters_doc_url"),
@@ -676,8 +769,17 @@ def get_real_estate_status() -> Dict:
                 "return_date": lead.get("return_date", ""),
             })
 
+    analysis_docs_list = []
+    for town_name, doc_info in docs.get("analysis_docs", {}).items():
+        analysis_docs_list.append({
+            "town": town_name,
+            "url": doc_info.get("url"),
+            "title": doc_info.get("title", ""),
+        })
+
     return {
         "filings_today": state.get("filings_today", 0),
+        "filings_by_town": state.get("filings_by_town", {}),
         "leads_high": state.get("leads_high", 0),
         "leads_med": state.get("leads_med", 0),
         "leads_low": state.get("leads_low", 0),
@@ -692,7 +794,8 @@ def get_real_estate_status() -> Dict:
         "high_leads": high_leads,
         "raw_data_sheet_url": docs.get("raw_data_sheet_url"),
         "logic_doc_url": docs.get("logic_doc_url"),
-        "analysis_doc_url": docs.get("analysis_doc_url"),
+        "analysis_docs": analysis_docs_list,
+        "analysis_doc_url": analysis_docs_list[0]["url"] if analysis_docs_list else None,
         "review_docs": docs.get("review_docs", []),
         "letter_docs": docs.get("letter_docs", []),
         "drive_folder_url": docs.get("drive_folder_url"),
@@ -745,4 +848,4 @@ def check_and_run_scheduled_tasks() -> Optional[Dict]:
     return None
 
 
-logger.info("Real estate tasks module loaded (v2 - Google Docs pipeline)")
+logger.info("Real estate tasks module loaded (v3 - multi-town pipeline)")

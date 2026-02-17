@@ -1,0 +1,32 @@
+{
+  "last_ingest": "2026-02-17T14:54:18.660519-05:00",
+  "last_analysis": null,
+  "last_reviews": null,
+  "last_outreach": null,
+  "filings_today": 0,
+  "filings_by_town": {
+    "Hartford": 0,
+    "East Hartford": 0,
+    "Windsor": 0,
+    "Berlin": 0,
+    "Rocky Hill": 0
+  },
+  "leads_high": 0,
+  "leads_med": 0,
+  "leads_low": 0,
+  "reviews_generated": 0,
+  "letters_queued": 0,
+  "raw_filings": [],
+  "analyzed_leads": [],
+  "errors": [],
+  "documents": {
+    "raw_data_sheet_id": null,
+    "raw_data_sheet_url": null,
+    "logic_doc_id": null,
+    "logic_doc_url": null,
+    "analysis_docs": {},
+    "review_docs": [],
+    "letter_docs": [],
+    "drive_folder_url": "https://drive.google.com/drive/folders/128JqjJpDrSkV9ZyylFIICT-MJK5tBxOg"
+  }
+}

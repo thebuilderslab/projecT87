@@ -2,8 +2,8 @@ entrypoint = "main.py"
 modules = ["python-3.11"]
 
 [nix]
-channel = "stable-24_05"
-packages = ["glibcLocales"]
+channel = "stable-25_05"
+packages = ["libffi", "openssl"]
 
 [unitTest]
 language = "python3"

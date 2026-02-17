@@ -46,61 +46,9 @@ class GoogleClient:
             return self.access_token
 
         try:
-            import jwt as pyjwt
-            now = int(time.time())
-            payload = {
-                "iss": self.credentials["client_email"],
-                "scope": "https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive https://www.googleapis.com/auth/documents",
-                "aud": "https://oauth2.googleapis.com/token",
-                "iat": now,
-                "exp": now + 3600,
-            }
-            signed_jwt = pyjwt.encode(payload, self.credentials["private_key"], algorithm="RS256")
-
-            resp = requests.post("https://oauth2.googleapis.com/token", data={
-                "grant_type": "urn:ietf:params:oauth:grant-type:jwt-bearer",
-                "assertion": signed_jwt,
-            }, timeout=30)
-            resp.raise_for_status()
-            token_data = resp.json()
-            self.access_token = token_data["access_token"]
-            self.token_expiry = now + token_data.get("expires_in", 3600)
-            logger.info("Google access token refreshed")
-            return self.access_token
-        except ImportError:
-            logger.warning("PyJWT not available, trying manual JWT signing")
-            return self._manual_jwt_auth()
-        except Exception as e:
-            logger.error(f"Failed to get Google access token: {e}")
-            return None
-
-    def _manual_jwt_auth(self) -> Optional[str]:
-        try:
-            import base64
-            import hashlib
-            import hmac
-
-            now = int(time.time())
-            header = base64.urlsafe_b64encode(json.dumps({"alg": "RS256", "typ": "JWT"}).encode()).rstrip(b"=")
-            payload_data = {
-                "iss": self.credentials["client_email"],
-                "scope": "https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive https://www.googleapis.com/auth/documents",
-                "aud": "https://oauth2.googleapis.com/token",
-                "iat": now,
-                "exp": now + 3600,
-            }
-            payload = base64.urlsafe_b64encode(json.dumps(payload_data).encode()).rstrip(b"=")
-            signing_input = header + b"." + payload
-
-            from cryptography.hazmat.primitives import hashes, serialization
-            from cryptography.hazmat.primitives.asymmetric import padding
-
-            private_key = serialization.load_pem_private_key(
-                self.credentials["private_key"].encode(), password=None
-            )
-            signature = private_key.sign(signing_input, padding.PKCS1v15(), hashes.SHA256())
-            sig_b64 = base64.urlsafe_b64encode(signature).rstrip(b"=")
-            jwt_token = (signing_input + b"." + sig_b64).decode()
+            jwt_token = self._create_signed_jwt()
+            if not jwt_token:
+                return None
 
             resp = requests.post("https://oauth2.googleapis.com/token", data={
                 "grant_type": "urn:ietf:params:oauth:grant-type:jwt-bearer",
@@ -109,11 +57,58 @@ class GoogleClient:
             resp.raise_for_status()
             token_data = resp.json()
             self.access_token = token_data["access_token"]
-            self.token_expiry = now + token_data.get("expires_in", 3600)
-            logger.info("Google access token refreshed (manual JWT)")
+            self.token_expiry = int(time.time()) + token_data.get("expires_in", 3600)
+            logger.info("Google access token refreshed")
             return self.access_token
         except Exception as e:
-            logger.error(f"Manual JWT auth failed: {e}")
+            logger.error(f"Failed to get Google access token: {e}")
+            return None
+
+    def _create_signed_jwt(self) -> Optional[str]:
+        import base64
+        import subprocess
+        import tempfile
+
+        try:
+            now = int(time.time())
+            header = base64.urlsafe_b64encode(
+                json.dumps({"alg": "RS256", "typ": "JWT"}).encode()
+            ).rstrip(b"=")
+            payload_data = {
+                "iss": self.credentials["client_email"],
+                "scope": "https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive https://www.googleapis.com/auth/documents",
+                "aud": "https://oauth2.googleapis.com/token",
+                "iat": now,
+                "exp": now + 3600,
+            }
+            payload = base64.urlsafe_b64encode(
+                json.dumps(payload_data).encode()
+            ).rstrip(b"=")
+            signing_input = header + b"." + payload
+
+            with tempfile.NamedTemporaryFile(mode='w', suffix='.pem', delete=False) as kf:
+                kf.write(self.credentials["private_key"])
+                key_path = kf.name
+
+            try:
+                result = subprocess.run(
+                    ["openssl", "dgst", "-sha256", "-sign", key_path],
+                    input=signing_input,
+                    capture_output=True,
+                    timeout=10
+                )
+                if result.returncode != 0:
+                    logger.error(f"OpenSSL signing failed: {result.stderr.decode()}")
+                    return None
+                signature = result.stdout
+            finally:
+                os.unlink(key_path)
+
+            sig_b64 = base64.urlsafe_b64encode(signature).rstrip(b"=")
+            jwt_token = (signing_input + b"." + sig_b64).decode()
+            return jwt_token
+        except Exception as e:
+            logger.error(f"JWT creation failed: {e}")
             return None
 
     def _headers(self) -> Dict:

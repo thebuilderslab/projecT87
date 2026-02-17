@@ -792,6 +792,47 @@
         .re-high-table .re-doc-link:hover {
             background: rgba(59,130,246,0.15);
         }
+        .re-town-breakdown {
+            margin: 8px 0;
+        }
+        .re-town-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.62rem;
+        }
+        .re-town-table th {
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            font-size: 0.55rem;
+            color: var(--muted-slate);
+            padding: 3px 6px;
+            text-align: left;
+            border-bottom: 1px solid var(--border-default);
+            font-weight: 600;
+        }
+        .re-town-table td {
+            padding: 4px 6px;
+            color: var(--signal-white);
+            border-bottom: 1px solid rgba(255,255,255,0.03);
+        }
+        .re-town-table .re-town-count {
+            font-weight: 600;
+            text-align: center;
+        }
+        .re-town-table .re-doc-link {
+            color: var(--accent-blue);
+            text-decoration: none;
+            font-size: 0.58rem;
+            padding: 2px 5px;
+            border: 1px solid rgba(59,130,246,0.3);
+            border-radius: 4px;
+        }
+        .re-town-table .re-doc-link:hover {
+            background: rgba(59,130,246,0.15);
+        }
+        .re-town-table tr:hover td {
+            background: rgba(255,255,255,0.03);
+        }
         .re-doc-links {
             display: flex;
             gap: 6px;
@@ -1153,11 +1194,11 @@
 
             <!-- ZONE 6: Real Estate Pipeline -->
             <div class="zone-card zone-center" id="zone6">
-                <div class="zone-label">Zone 6 — Real Estate Pipeline</div>
+                <div class="zone-label">Zone 6 — Real Estate Pipeline (5 Towns)</div>
                 <div class="re-pipeline-grid">
                     <div class="re-metric-card">
                         <div class="re-metric-value" id="reFilings">0</div>
-                        <div class="re-metric-label">Filings (24h)</div>
+                        <div class="re-metric-label">Filings (30d)</div>
                     </div>
                     <div class="re-metric-card re-high">
                         <div class="re-metric-value" id="reHigh">0</div>
@@ -1181,6 +1222,8 @@
                     </div>
                 </div>
 
+                <div class="re-town-breakdown" id="reTownBreakdown"></div>
+
                 <div class="re-high-table" id="reHighTable"></div>
 
                 <div class="re-schedule-row">
@@ -1193,7 +1236,6 @@
                 <div class="re-doc-links" id="reDocLinks">
                     <a class="re-doc-btn re-doc-disabled" id="reLogicBtn" target="_blank" rel="noopener">LOGIC Doc</a>
                     <a class="re-doc-btn re-doc-disabled" id="reRawBtn" target="_blank" rel="noopener">Raw Data</a>
-                    <a class="re-doc-btn re-doc-disabled" id="reAnalysisBtn" target="_blank" rel="noopener">Analysis</a>
                     <a class="re-doc-btn re-doc-disabled" id="reDriveBtn" target="_blank" rel="noopener">Drive Folder</a>
                 </div>
 
@@ -1519,7 +1561,7 @@
             updateAvatarState(z4);
             updateHUD(z4);
 
-            // ZONE 6: Real Estate Pipeline
+            // ZONE 6: Real Estate Pipeline (Multi-Town)
             const z6 = data.zone6_real_estate || {};
             document.getElementById('reFilings').textContent = z6.filings_today || 0;
             document.getElementById('reHigh').textContent = z6.leads_high || 0;
@@ -1528,13 +1570,36 @@
             document.getElementById('reReviews').textContent = z6.reviews_generated || 0;
             document.getElementById('reLetters').textContent = z6.letters_queued || 0;
 
+            const townBreakdown = document.getElementById('reTownBreakdown');
+            const filingsByTown = z6.filings_by_town || {};
+            const analysisDocs = z6.analysis_docs || [];
+            const townNames = Object.keys(filingsByTown);
+            if (townNames.length > 0 || analysisDocs.length > 0) {
+                let tbHtml = '<table class="re-town-table"><thead><tr><th>Town</th><th>Filings</th><th>Analysis</th></tr></thead><tbody>';
+                const allTowns = ['Hartford', 'East Hartford', 'Windsor', 'Berlin', 'Rocky Hill'];
+                allTowns.forEach(town => {
+                    const count = filingsByTown[town] !== undefined ? filingsByTown[town] : '--';
+                    const townDoc = analysisDocs.find(d => d.town === town);
+                    let link = '--';
+                    if (townDoc && townDoc.url) {
+                        link = '<a class="re-doc-link" href="' + townDoc.url + '" target="_blank">View</a>';
+                    }
+                    tbHtml += '<tr><td>' + town + '</td><td class="re-town-count">' + count + '</td><td>' + link + '</td></tr>';
+                });
+                tbHtml += '</tbody></table>';
+                townBreakdown.innerHTML = tbHtml;
+            } else {
+                townBreakdown.innerHTML = '';
+            }
+
             const highTable = document.getElementById('reHighTable');
             const highLeads = z6.high_leads || [];
             if (highLeads.length > 0) {
-                let tableHtml = '<table><thead><tr><th>Address</th><th>Equity</th><th>Case</th><th>Return</th><th>Docs</th></tr></thead><tbody>';
+                let tableHtml = '<table><thead><tr><th>Town</th><th>Address</th><th>Equity</th><th>Case</th><th>Return</th><th>Docs</th></tr></thead><tbody>';
                 highLeads.forEach(lead => {
                     const addr = lead.address || 'Unknown';
-                    const shortAddr = addr.length > 28 ? addr.slice(0, 26) + '...' : addr;
+                    const shortAddr = addr.length > 24 ? addr.slice(0, 22) + '...' : addr;
+                    const town = lead.town || '--';
                     const equity = lead.equity ? '$' + Math.round(lead.equity).toLocaleString() : '--';
                     const caseNum = lead.court_case || '--';
                     const retDate = lead.return_date || '--';
@@ -1542,7 +1607,7 @@
                     if (lead.review_url) docLinks += '<a class="re-doc-link" href="' + lead.review_url + '" target="_blank">R</a>';
                     if (lead.letters_url) docLinks += '<a class="re-doc-link" href="' + lead.letters_url + '" target="_blank">L</a>';
                     if (!docLinks) docLinks = '--';
-                    tableHtml += '<tr><td title="' + addr + '">' + shortAddr + '</td><td class="re-equity-val">' + equity + '</td><td>' + caseNum + '</td><td>' + retDate + '</td><td>' + docLinks + '</td></tr>';
+                    tableHtml += '<tr><td>' + town + '</td><td title="' + addr + '">' + shortAddr + '</td><td class="re-equity-val">' + equity + '</td><td>' + caseNum + '</td><td>' + retDate + '</td><td>' + docLinks + '</td></tr>';
                 });
                 tableHtml += '</tbody></table>';
                 highTable.innerHTML = tableHtml;
@@ -1564,7 +1629,6 @@
             }
             setDocBtn('reLogicBtn', z6.logic_doc_url);
             setDocBtn('reRawBtn', z6.raw_data_sheet_url);
-            setDocBtn('reAnalysisBtn', z6.analysis_doc_url);
             setDocBtn('reDriveBtn', z6.drive_folder_url);
 
             const taskPills = [
