@@ -24,6 +24,12 @@ from perplexity_client import (
 from searchiqs_scraper import create_scraper
 from google_client import get_google_client
 
+try:
+    import db as database
+    DB_AVAILABLE = True
+except Exception:
+    DB_AVAILABLE = False
+
 RE_STATE_FILE = "real_estate_state.json"
 GDOC_URL = "https://docs.google.com/document/d"
 GSHEET_URL = "https://docs.google.com/spreadsheets/d"
@@ -209,6 +215,32 @@ def run_0700_searchiqs_ingest() -> Dict:
         state["filings_today"] = len(all_filings)
         state["filings_by_town"] = filings_by_town
         state["last_ingest"] = _now_ts()
+
+        if DB_AVAILABLE:
+            try:
+                run_id = database.create_pipeline_run("searchiqs_ingest")
+                db_towns = database.get_towns()
+                town_id_map = {t["name"]: t["id"] for t in db_towns}
+                db_filings_inserted = 0
+                for town_name in towns:
+                    tid = town_id_map.get(town_name)
+                    if not tid:
+                        continue
+                    database.clear_filings_for_town(tid)
+                    town_filings_list = town_results.get(town_name, [])
+                    for f in town_filings_list:
+                        f["town"] = town_name
+                        database.insert_filing(tid, f)
+                        db_filings_inserted += 1
+                database.complete_pipeline_run(
+                    run_id, towns_scraped=len(towns),
+                    filings_found=db_filings_inserted,
+                    status="completed",
+                    details={"filings_by_town": filings_by_town}
+                )
+                logger.info(f"Wrote {db_filings_inserted} filings to Postgres")
+            except Exception as e:
+                logger.error(f"DB write failed (non-fatal): {e}")
 
         google = get_google_client()
 

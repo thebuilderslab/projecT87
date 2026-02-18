@@ -15,6 +15,15 @@ import re
 import logging
 import queue
 import os
+import csv
+import io
+
+try:
+    import db as database
+    DB_AVAILABLE = True
+except Exception as e:
+    print(f"WARNING: Database module not available: {e}")
+    DB_AVAILABLE = False
 
 try:
     from zoneinfo import ZoneInfo
@@ -3167,8 +3176,193 @@ def log_startup_diagnostics():
 
     print("=" * 60)
 
+# ============================================================
+# MULTI-USER CONSUMER APIs
+# ============================================================
+
+@app.route('/app')
+def consumer_app():
+    """Consumer-facing multi-user dashboard"""
+    return render_template('consumer_dashboard.html')
+
+@app.route('/api/auth/wallet', methods=['POST'])
+def auth_wallet():
+    """Connect wallet - upsert user record"""
+    if not DB_AVAILABLE:
+        return jsonify({"error": "Database not available"}), 503
+    data = request.get_json()
+    if not data or not data.get('walletAddress'):
+        return jsonify({"error": "walletAddress required"}), 400
+    wallet = data['walletAddress']
+    if not wallet.startswith('0x') or len(wallet) != 42:
+        return jsonify({"error": "Invalid wallet address"}), 400
+    user = database.upsert_user(wallet)
+    user_towns = database.get_user_towns(user['id'])
+    return jsonify({"userId": user['id'], "walletAddress": user['wallet_address'], "towns": user_towns})
+
+@app.route('/api/towns', methods=['GET'])
+def list_towns():
+    """List all available towns with filing counts"""
+    if not DB_AVAILABLE:
+        return jsonify({"error": "Database not available"}), 503
+    towns = database.get_towns()
+    return jsonify({"towns": towns})
+
+@app.route('/api/user/towns', methods=['GET'])
+def get_user_towns_api():
+    """Get towns selected by user"""
+    if not DB_AVAILABLE:
+        return jsonify({"error": "Database not available"}), 503
+    user_id = request.args.get('userId', type=int)
+    if not user_id:
+        return jsonify({"error": "userId required"}), 400
+    towns = database.get_user_towns(user_id)
+    return jsonify({"towns": towns})
+
+@app.route('/api/user/towns', methods=['POST'])
+def set_user_towns_api():
+    """Set towns for a user"""
+    if not DB_AVAILABLE:
+        return jsonify({"error": "Database not available"}), 503
+    data = request.get_json()
+    if not data or not data.get('userId') or 'townIds' not in data:
+        return jsonify({"error": "userId and townIds required"}), 400
+    database.set_user_towns(data['userId'], data['townIds'])
+    return jsonify({"success": True, "townIds": data['townIds']})
+
+@app.route('/api/filings', methods=['GET'])
+def get_filings_api():
+    """Get filings with filters and pagination"""
+    if not DB_AVAILABLE:
+        return jsonify({"error": "Database not available"}), 503
+    town_id = request.args.get('townId', type=int)
+    date_from = request.args.get('dateFrom')
+    date_to = request.args.get('dateTo')
+    status = request.args.get('status')
+    page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('perPage', 50, type=int)
+    result = database.get_filings(town_id=town_id, date_from=date_from, date_to=date_to, status=status, page=page, per_page=per_page)
+    return jsonify(result)
+
+@app.route('/api/filings/stats', methods=['GET'])
+def get_filing_stats_api():
+    """Get filing statistics per town"""
+    if not DB_AVAILABLE:
+        return jsonify({"error": "Database not available"}), 503
+    stats = database.get_filing_stats()
+    return jsonify({"stats": stats})
+
+@app.route('/api/export/filings', methods=['GET'])
+def export_filings():
+    """Export filings as CSV"""
+    if not DB_AVAILABLE:
+        return jsonify({"error": "Database not available"}), 503
+    town_id = request.args.get('townId', type=int)
+    date_from = request.args.get('dateFrom')
+    date_to = request.args.get('dateTo')
+    fmt = request.args.get('format', 'csv')
+    result = database.get_filings(town_id=town_id, date_from=date_from, date_to=date_to, page=1, per_page=10000)
+    filings = result['filings']
+    
+    if fmt == 'xlsx':
+        try:
+            import openpyxl
+            from openpyxl import Workbook
+            wb = Workbook()
+            ws = wb.active
+            ws.title = "Lis Pendens Filings"
+            headers = ["Town", "Address", "Seller", "Lender", "Filing Date", "Book/Page", "Court Case #", "Debt Amount", "Return Date", "Status"]
+            ws.append(headers)
+            for f in filings:
+                ws.append([f.get('town_name',''), f.get('property_address',''), f.get('seller',''), f.get('lender',''), f.get('recording_date',''), f.get('book_page',''), f.get('court_case_number',''), f.get('debt_amount',''), f.get('return_date',''), f.get('status','')])
+            output = io.BytesIO()
+            wb.save(output)
+            output.seek(0)
+            from flask import send_file
+            return send_file(output, mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', as_attachment=True, download_name='lis_pendens_filings.xlsx')
+        except ImportError:
+            return jsonify({"error": "openpyxl not available, use CSV format"}), 500
+    
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(["Town", "Address", "Seller", "Lender", "Filing Date", "Book/Page", "Court Case #", "Debt Amount", "Return Date", "Status"])
+    for f in filings:
+        writer.writerow([f.get('town_name',''), f.get('property_address',''), f.get('seller',''), f.get('lender',''), f.get('recording_date',''), f.get('book_page',''), f.get('court_case_number',''), f.get('debt_amount',''), f.get('return_date',''), f.get('status','')])
+    from flask import Response
+    return Response(output.getvalue(), mimetype='text/csv', headers={"Content-Disposition": "attachment; filename=lis_pendens_filings.csv"})
+
+@app.route('/api/defi/state', methods=['GET'])
+def get_defi_state():
+    """Get DeFi state for a user"""
+    if not DB_AVAILABLE:
+        return jsonify({"error": "Database not available"}), 503
+    user_id = request.args.get('userId', type=int)
+    if not user_id:
+        return jsonify({"error": "userId required"}), 400
+    position = database.get_defi_position(user_id)
+    return jsonify({"position": position})
+
+@app.route('/api/pipeline/status', methods=['GET'])
+def get_pipeline_status():
+    """Get latest pipeline run status"""
+    if not DB_AVAILABLE:
+        return jsonify({"error": "Database not available"}), 503
+    run = database.get_latest_pipeline_run()
+    stats = database.get_filing_stats()
+    return jsonify({"latestRun": run, "townStats": stats})
+
+@app.route('/api/leads/summary', methods=['GET'])
+def get_leads_summary():
+    """Get leads summary with counts"""
+    if not DB_AVAILABLE:
+        return jsonify({"error": "Database not available"}), 503
+    summary = database.get_leads_summary()
+    return jsonify({"summary": summary})
+
+@app.route('/api/leads/notes', methods=['GET'])
+def get_notes_api():
+    """Get notes for a filing"""
+    if not DB_AVAILABLE:
+        return jsonify({"error": "Database not available"}), 503
+    filing_id = request.args.get('filingId', type=int)
+    if not filing_id:
+        return jsonify({"error": "filingId required"}), 400
+    notes = database.get_lead_notes(filing_id)
+    return jsonify({"notes": notes})
+
+@app.route('/api/leads/notes', methods=['POST'])
+def add_note_api():
+    """Add a note to a filing"""
+    if not DB_AVAILABLE:
+        return jsonify({"error": "Database not available"}), 503
+    data = request.get_json()
+    if not data or not data.get('filingId') or not data.get('content'):
+        return jsonify({"error": "filingId and content required"}), 400
+    note_id = database.add_lead_note(
+        filing_id=data['filingId'],
+        content=data['content'],
+        note_type=data.get('noteType', 'analysis'),
+        priority=data.get('priority', 'medium'),
+        user_id=data.get('userId')
+    )
+    return jsonify({"noteId": note_id, "success": True})
+
+@app.route('/api/income', methods=['GET'])
+def get_income_api():
+    """Get income events for user"""
+    if not DB_AVAILABLE:
+        return jsonify({"error": "Database not available"}), 503
+    user_id = request.args.get('userId', type=int)
+    if not user_id:
+        return jsonify({"error": "userId required"}), 400
+    events = database.get_income_events(user_id)
+    return jsonify({"events": events})
+
 if __name__ == '__main__':
     log_startup_diagnostics()
+    if DB_AVAILABLE:
+        database.init_db()
+        database.seed_towns()
 
     # Check for emergency stop and clear if needed for dashboard access
     if os.path.exists('EMERGENCY_STOP_ACTIVE.flag'):
