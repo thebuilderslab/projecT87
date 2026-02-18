@@ -93,6 +93,62 @@ def _get_towns() -> Dict:
     return REAL_ESTATE_CONFIG.get("towns", {})
 
 
+def _build_analysis_doc_content(town_name: str, town_filings: list, today: str, raw_sheet_id: str = None) -> str:
+    run_ts = _now_ts()
+    divider = "=" * 60
+    content = f"{town_name} Lis Pendens Analysis\n{divider}\n\n"
+    content += f"Run Date: {today}\n"
+    content += f"Generated: {run_ts}\n"
+    content += f"Lookback: {REAL_ESTATE_CONFIG.get('lookback_days', 30)} days\n"
+    content += f"Total Filings: {len(town_filings)}\n"
+    if raw_sheet_id:
+        content += f"Raw Data Sheet: https://docs.google.com/spreadsheets/d/{raw_sheet_id}\n"
+    content += "\n"
+
+    if not town_filings:
+        content += f"{divider}\n"
+        content += "0 Lis Pendens filings found in the last 30 days.\n\n"
+        content += "No properties to analyze at this time.\n"
+        content += f"{divider}\n"
+        return content
+
+    content += f"{divider}\n"
+    content += f"FILINGS SUMMARY — {len(town_filings)} PROPERTIES\n"
+    content += f"{divider}\n\n"
+
+    for i, f in enumerate(town_filings, 1):
+        addr = f.get("property_address", "") or f.get("property_description", "") or "SEE DEED"
+        seller = f.get("seller", "") or f.get("party1_seller", "") or "Unknown"
+        lender = f.get("lender", "") or f.get("party2_lender", "") or "Unknown"
+        rec_date = f.get("recording_date", "") or f.get("recording_date_detail", "") or "N/A"
+        mortgage = f.get("original_mortgage", "") or f.get("additional_description", "") or "N/A"
+        book_page = f.get("book_page", "") or "N/A"
+        court_case = f.get("court_case_number", "") or "N/A"
+        debt = f.get("debt_amount", "") or "N/A"
+        return_date = f.get("return_date", "") or "N/A"
+
+        content += f"--- Filing #{i} ---\n"
+        content += f"  Address:          {addr}\n"
+        content += f"  Seller/Defendant: {seller}\n"
+        content += f"  Lender/Plaintiff: {lender}\n"
+        content += f"  LP Recorded:      {rec_date}\n"
+        content += f"  Book/Page:        {book_page}\n"
+        content += f"  Original Mortgage:{mortgage}\n"
+        content += f"  Court Case #:     {court_case}\n"
+        content += f"  Debt Amount:      {debt}\n"
+        content += f"  Return Date:      {return_date}\n"
+        if f.get("searchiqs_url"):
+            content += f"  SearchIQS Link:   {f['searchiqs_url']}\n"
+        if f.get("court_url"):
+            content += f"  Court Docket:     {f['court_url']}\n"
+        content += "\n"
+
+    content += f"{divider}\n"
+    content += f"END OF {town_name.upper()} ANALYSIS — {today}\n"
+    content += f"{divider}\n"
+    return content
+
+
 def run_0700_searchiqs_ingest() -> Dict:
     logger.info("=== PHASE 1: SearchIQS Data Collection — All Towns (7:00 AM) ===")
     state = _load_state()
@@ -179,7 +235,18 @@ def run_0700_searchiqs_ingest() -> Dict:
                     if town_filings:
                         rows = []
                         for f in town_filings:
-                            rows.append(scraper.get_filing_as_row(f))
+                            rows.append([
+                                f.get("town", town_name),
+                                f.get("property_address", "") or f.get("property_description", "SEE DEED"),
+                                f.get("seller", "") or f.get("party1_seller", ""),
+                                f.get("lender", "") or f.get("party2_lender", ""),
+                                f.get("recording_date", "") or f.get("recording_date_detail", ""),
+                                f.get("original_mortgage", "") or f.get("additional_description", ""),
+                                f.get("court_case_number", ""),
+                                f.get("debt_amount", ""),
+                                f.get("return_date", ""),
+                                f.get("status", "PENDING"),
+                            ])
                         google.append_rows(raw_sheet_id, "Sheet1", rows)
                     else:
                         google.append_rows(raw_sheet_id, "Sheet1", [[town_name, "— No Lis Pendens filings found in last 30 days —", "", "", "", "", "", "", "", ""]])
@@ -251,15 +318,9 @@ def run_0700_searchiqs_ingest() -> Dict:
                         "title": analysis_title,
                     }
 
-                    if not town_filings:
-                        content = f"{analysis_title}\n{'='*60}\n\n"
-                        content += f"Generated: {_now_ts()}\n\n"
-                        content += "0 Lis Pendens filings found in the last 30 days.\n\n"
-                        content += "No properties to analyze at this time.\n"
-                        google.write_document_content(analysis_doc_id, content)
-                        logger.info(f"Created empty Analysis doc for {town_name}: 0 filings")
-                    else:
-                        logger.info(f"Created Analysis doc placeholder for {town_name}: {len(town_filings)} filings (content in Phase 2)")
+                    content = _build_analysis_doc_content(town_name, town_filings, today, raw_sheet_id)
+                    google.write_document_content(analysis_doc_id, content)
+                    logger.info(f"Wrote Analysis doc for {town_name}: {len(town_filings)} filings")
 
             state["documents"]["analysis_docs"] = analysis_docs_by_town
 

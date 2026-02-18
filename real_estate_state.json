@@ -1,13 +1,13 @@
 {
-  "last_ingest": "2026-02-17T21:21:10.058549",
+  "last_ingest": "2026-02-18T13:52:47.560769-05:00",
   "last_analysis": null,
   "last_reviews": null,
   "last_outreach": null,
-  "filings_today": 31,
+  "filings_today": 35,
   "filings_by_town": {
-    "Hartford": 14,
-    "East Hartford": 10,
-    "Windsor": 6,
+    "Hartford": 16,
+    "East Hartford": 11,
+    "Windsor": 7,
     "Berlin": 1,
     "Rocky Hill": 0
   },
@@ -368,6 +368,56 @@
       "town": "Hartford"
     },
     {
+      "record_id": "L|1352932",
+      "party1_seller": "",
+      "party2_lender": "",
+      "doc_type": "LIS PENDENS",
+      "book_page": "8501-201",
+      "recording_date": "02/17/2026",
+      "status": "PENDING",
+      "property_description": "&nbsp;",
+      "additional_description": "&nbsp;",
+      "view_button_name": "ctl00$ContentPlaceHolder1$grdResults$ctl17$btnView",
+      "view_url": "",
+      "searchiqs_url": "",
+      "property_address": "&nbsp;",
+      "seller": "",
+      "lender": "",
+      "original_mortgage": "&nbsp;",
+      "court_case_number": "",
+      "debt_amount": "",
+      "return_date": "",
+      "plaintiff": "",
+      "defendant": "",
+      "parties": "",
+      "town": "Hartford"
+    },
+    {
+      "record_id": "L|1352944",
+      "party1_seller": "",
+      "party2_lender": "",
+      "doc_type": "LIS PENDENS",
+      "book_page": "8501-254",
+      "recording_date": "02/17/2026",
+      "status": "PENDING",
+      "property_description": "&nbsp;",
+      "additional_description": "&nbsp;",
+      "view_button_name": "ctl00$ContentPlaceHolder1$grdResults$ctl18$btnView",
+      "view_url": "",
+      "searchiqs_url": "",
+      "property_address": "&nbsp;",
+      "seller": "",
+      "lender": "",
+      "original_mortgage": "&nbsp;",
+      "court_case_number": "",
+      "debt_amount": "",
+      "return_date": "",
+      "plaintiff": "",
+      "defendant": "",
+      "parties": "",
+      "town": "Hartford"
+    },
+    {
       "record_id": "L|577788",
       "party1_seller": "DIAZ FRANKLIN",
       "party2_lender": "MORTGAGE RESEARCH CENTER LLC VETERANS UNITED HOME LOANS",
@@ -618,6 +668,31 @@
       "town": "East Hartford"
     },
     {
+      "record_id": "L|578400",
+      "party1_seller": "",
+      "party2_lender": "",
+      "doc_type": "LIS PENDENS",
+      "book_page": "4284-995",
+      "recording_date": "02/17/2026",
+      "status": "PENDING",
+      "property_description": "",
+      "additional_description": "&nbsp;",
+      "view_button_name": "ctl00$ContentPlaceHolder1$grdResults$ctl13$btnView",
+      "view_url": "",
+      "searchiqs_url": "",
+      "property_address": "",
+      "seller": "",
+      "lender": "",
+      "original_mortgage": "&nbsp;",
+      "court_case_number": "",
+      "debt_amount": "",
+      "return_date": "",
+      "plaintiff": "",
+      "defendant": "",
+      "parties": "",
+      "town": "East Hartford"
+    },
+    {
       "record_id": "L|367879",
       "party1_seller": "KHAN SHAH A KHAN RAKHSHAN A",
       "party2_lender": "VALLEY VILLAGE CONDO ASSN INC",
@@ -768,6 +843,31 @@
       "town": "Windsor"
     },
     {
+      "record_id": "L|368122",
+      "party1_seller": "BLOOM BEATRICE CHATEAU WOOD CONDO ASSN INC",
+      "party2_lender": "IDAHO HOUSING & FINANCE ASSN",
+      "doc_type": "LIS PENDENS",
+      "book_page": "1994-471",
+      "recording_date": "02/17/2026",
+      "status": "PENDING",
+      "property_description": "136 HIGH PATH RD",
+      "additional_description": "U136 CHATEAU WOOD CONDO",
+      "view_button_name": "ctl00$ContentPlaceHolder1$grdResults$ctl09$btnView",
+      "view_url": "",
+      "searchiqs_url": "",
+      "property_address": "136 HIGH PATH RD",
+      "seller": "BLOOM BEATRICE CHATEAU WOOD CONDO ASSN INC",
+      "lender": "IDAHO HOUSING & FINANCE ASSN",
+      "original_mortgage": "U136 CHATEAU WOOD CONDO",
+      "court_case_number": "",
+      "debt_amount": "",
+      "return_date": "",
+      "plaintiff": "IDAHO HOUSING & FINANCE ASSN",
+      "defendant": "BLOOM BEATRICE CHATEAU WOOD CONDO ASSN INC",
+      "parties": "BLOOM BEATRICE CHATEAU WOOD CONDO ASSN INC vs IDAHO HOUSING & FINANCE ASSN",
+      "town": "Windsor"
+    },
+    {
       "record_id": "L|219893",
       "party1_seller": "SALMON PRISCILLA ET AL SALMON PAUL CONN STATE OF - DEPT OF REVENUE SERVICES SUPERIOR PLUS ENERGY SERVICES INC DBA CAPITOL ENERGY",
       "party2_lender": "M&T BANK",
@@ -798,13 +898,33 @@
   "documents": {
     "raw_data_sheet_id": "1mxQKY-AgXPXoJyFJBJHFUat-PwxYXzy4XVqqGZPPn0o",
     "raw_data_sheet_url": "https://docs.google.com/spreadsheets/d/1mxQKY-AgXPXoJyFJBJHFUat-PwxYXzy4XVqqGZPPn0o",
-    "logic_doc_id": null,
-    "logic_doc_url": null,
+    "logic_doc_id": "1wl8giSw0S-6LvzUz24cbO61JKNuuDO7Kd9kA9aE5URA",
+    "logic_doc_url": "https://docs.google.com/document/d/1wl8giSw0S-6LvzUz24cbO61JKNuuDO7Kd9kA9aE5URA",
     "analysis_docs": {
       "Hartford": {
         "doc_id": "1TVvVZevNXYZv2Ziw2rxvSIWzTTzwRBQmw4VGZidRJQY",
         "url": "https://docs.google.com/document/d/1TVvVZevNXYZv2Ziw2rxvSIWzTTzwRBQmw4VGZidRJQY",
-        "title": "Hartford Lis Pendens Analysis - 2/17/2026"
+        "title": "Hartford Lis Pendens Analysis - 2/18/2026"
+      },
+      "East Hartford": {
+        "doc_id": "1VRbmvEl4jNceaztihhgXOEDE2LMYZVbpx6zKRyfZJPM",
+        "url": "https://docs.google.com/document/d/1VRbmvEl4jNceaztihhgXOEDE2LMYZVbpx6zKRyfZJPM",
+        "title": "East Hartford Lis Pendens Analysis - 2/18/2026"
+      },
+      "Windsor": {
+        "doc_id": "1EbXMPnIJ_F9VwUEkn9If_qWwipLNcS-0v6eN45p63WI",
+        "url": "https://docs.google.com/document/d/1EbXMPnIJ_F9VwUEkn9If_qWwipLNcS-0v6eN45p63WI",
+        "title": "Windsor Lis Pendens Analysis - 2/18/2026"
+      },
+      "Berlin": {
+        "doc_id": "1y1crqKFU8_5e7xUOQTKiwa3WP5bI2DULNMNglsW-U88",
+        "url": "https://docs.google.com/document/d/1y1crqKFU8_5e7xUOQTKiwa3WP5bI2DULNMNglsW-U88",
+        "title": "Berlin Lis Pendens Analysis - 2/18/2026"
+      },
+      "Rocky Hill": {
+        "doc_id": "1hnB67ElPvqE4xpKoalORIGMGvejLWBut0AePsOWIMm0",
+        "url": "https://docs.google.com/document/d/1hnB67ElPvqE4xpKoalORIGMGvejLWBut0AePsOWIMm0",
+        "title": "Rocky Hill Lis Pendens Analysis - 2/18/2026"
       }
     },
     "review_docs": [],
