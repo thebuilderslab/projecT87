@@ -3,7 +3,7 @@
 Fixed Web Dashboard - Properly integrates with autonomous mainnet agent
 """
 
-from flask import Flask, render_template, jsonify, request
+from flask import Flask, render_template, jsonify, request, abort
 import os
 import time
 import json
@@ -14,9 +14,9 @@ from collections import deque
 import re
 import logging
 import queue
-import os
 import csv
 import io
+import itsdangerous
 
 try:
     import db as database
@@ -3177,8 +3177,86 @@ def log_startup_diagnostics():
     print("=" * 60)
 
 # ============================================================
-# MULTI-USER CONSUMER APIs
+# MULTI-USER CONSUMER APIs — AUTH & HELPERS
 # ============================================================
+
+APP_SECRET_KEY = os.environ.get("APP_SECRET_KEY", "fallback-dev-key-change-in-production")
+auth_signer = itsdangerous.TimestampSigner(APP_SECRET_KEY)
+
+chat_rate_limits = {}
+CHAT_RATE_LIMIT = 20
+CHAT_RATE_WINDOW = 60
+
+def get_current_user_id():
+    token = request.headers.get("X-Auth-Token")
+    if not token:
+        abort(401, description="Authentication required")
+    try:
+        user_id = auth_signer.unsign(token, max_age=60*60*24*7).decode()
+        return int(user_id)
+    except Exception:
+        abort(401, description="Invalid or expired token")
+
+def check_chat_rate_limit(user_id):
+    now = time.time()
+    key = str(user_id)
+    if key not in chat_rate_limits:
+        chat_rate_limits[key] = []
+    chat_rate_limits[key] = [t for t in chat_rate_limits[key] if now - t < CHAT_RATE_WINDOW]
+    if len(chat_rate_limits[key]) >= CHAT_RATE_LIMIT:
+        return False
+    chat_rate_limits[key].append(now)
+    return True
+
+def fetch_aave_position_for_wallet(wallet_address):
+    """Fetch Aave V3 position data for any wallet address (read-only)"""
+    try:
+        from web3 import Web3
+        rpc_url = os.getenv("ARBITRUM_RPC_URL", "https://arb1.arbitrum.io/rpc")
+        w3 = Web3(Web3.HTTPProvider(rpc_url, request_kwargs={'timeout': 10}))
+        if not w3.is_connected():
+            logger.warning("Cannot connect to Arbitrum RPC for consumer wallet lookup")
+            return None
+
+        aave_pool_address = "0x794a61358D6845594F94dc1DB02A252b5b4814aD"
+        pool_abi = [{
+            "inputs": [{"name": "user", "type": "address"}],
+            "name": "getUserAccountData",
+            "outputs": [
+                {"name": "totalCollateralBase", "type": "uint256"},
+                {"name": "totalDebtBase", "type": "uint256"},
+                {"name": "availableBorrowsBase", "type": "uint256"},
+                {"name": "currentLiquidationThreshold", "type": "uint256"},
+                {"name": "ltv", "type": "uint256"},
+                {"name": "healthFactor", "type": "uint256"}
+            ],
+            "stateMutability": "view",
+            "type": "function"
+        }]
+        pool_contract = w3.eth.contract(
+            address=Web3.to_checksum_address(aave_pool_address),
+            abi=pool_abi
+        )
+        account_data = pool_contract.functions.getUserAccountData(
+            Web3.to_checksum_address(wallet_address)
+        ).call()
+
+        collateral = account_data[0] / (10**8)
+        debt = account_data[1] / (10**8)
+        hf = account_data[5] / (10**18) if account_data[5] > 0 else 0
+
+        if collateral == 0 and debt == 0:
+            return None
+
+        return {
+            'health_factor': round(hf, 4),
+            'total_collateral_usd': round(collateral, 2),
+            'total_debt_usd': round(debt, 2),
+            'net_worth_usd': round(collateral - debt, 2),
+        }
+    except Exception as e:
+        logger.warning(f"Failed to fetch Aave position for {wallet_address[:10]}...: {e}")
+        return None
 
 @app.route('/app')
 def consumer_app():
@@ -3187,7 +3265,7 @@ def consumer_app():
 
 @app.route('/api/auth/wallet', methods=['POST'])
 def auth_wallet():
-    """Connect wallet - upsert user record"""
+    """Connect wallet - upsert user record, return signed auth token, fetch Aave data"""
     if not DB_AVAILABLE:
         return jsonify({"error": "Database not available"}), 503
     data = request.get_json()
@@ -3198,7 +3276,26 @@ def auth_wallet():
         return jsonify({"error": "Invalid wallet address"}), 400
     user = database.upsert_user(wallet)
     user_towns = database.get_user_towns(user['id'])
-    return jsonify({"userId": user['id'], "walletAddress": user['wallet_address'], "towns": user_towns})
+    token = auth_signer.sign(str(user['id']).encode()).decode()
+
+    def _refresh_defi(uid, addr):
+        try:
+            pos = fetch_aave_position_for_wallet(addr)
+            if pos:
+                database.upsert_defi_position(
+                    user_id=uid,
+                    health_factor=pos['health_factor'],
+                    collateral=pos['total_collateral_usd'],
+                    debt=pos['total_debt_usd'],
+                    net_worth=pos['net_worth_usd'],
+                )
+                logger.info(f"Refreshed Aave data for user {uid}: HF={pos['health_factor']}")
+        except Exception as e:
+            logger.warning(f"Background Aave refresh failed for user {uid}: {e}")
+
+    threading.Thread(target=_refresh_defi, args=(user['id'], wallet), daemon=True).start()
+
+    return jsonify({"userId": user['id'], "walletAddress": user['wallet_address'], "towns": user_towns, "authToken": token})
 
 @app.route('/api/towns', methods=['GET'])
 def list_towns():
@@ -3210,24 +3307,23 @@ def list_towns():
 
 @app.route('/api/user/towns', methods=['GET'])
 def get_user_towns_api():
-    """Get towns selected by user"""
+    """Get towns selected by user (auth required)"""
     if not DB_AVAILABLE:
         return jsonify({"error": "Database not available"}), 503
-    user_id = request.args.get('userId', type=int)
-    if not user_id:
-        return jsonify({"error": "userId required"}), 400
+    user_id = get_current_user_id()
     towns = database.get_user_towns(user_id)
     return jsonify({"towns": towns})
 
 @app.route('/api/user/towns', methods=['POST'])
 def set_user_towns_api():
-    """Set towns for a user"""
+    """Set towns for a user (auth required)"""
     if not DB_AVAILABLE:
         return jsonify({"error": "Database not available"}), 503
+    user_id = get_current_user_id()
     data = request.get_json()
-    if not data or not data.get('userId') or 'townIds' not in data:
-        return jsonify({"error": "userId and townIds required"}), 400
-    database.set_user_towns(data['userId'], data['townIds'])
+    if not data or 'townIds' not in data:
+        return jsonify({"error": "townIds required"}), 400
+    database.set_user_towns(user_id, data['townIds'])
     return jsonify({"success": True, "townIds": data['townIds']})
 
 @app.route('/api/filings', methods=['GET'])
@@ -3293,13 +3389,13 @@ def export_filings():
 
 @app.route('/api/defi/state', methods=['GET'])
 def get_defi_state():
-    """Get DeFi state for a user"""
+    """Get DeFi state for a user (auth required)"""
     if not DB_AVAILABLE:
         return jsonify({"error": "Database not available"}), 503
-    user_id = request.args.get('userId', type=int)
-    if not user_id:
-        return jsonify({"error": "userId required"}), 400
+    user_id = get_current_user_id()
     position = database.get_defi_position(user_id)
+    if not position:
+        return jsonify({"position": None, "message": "No Aave position detected for this wallet yet."})
     return jsonify({"position": position})
 
 @app.route('/api/pipeline/status', methods=['GET'])
@@ -3349,23 +3445,19 @@ def add_note_api():
 
 @app.route('/api/income', methods=['GET'])
 def get_income_api():
-    """Get income events for user"""
+    """Get income events for user (auth required)"""
     if not DB_AVAILABLE:
         return jsonify({"error": "Database not available"}), 503
-    user_id = request.args.get('userId', type=int)
-    if not user_id:
-        return jsonify({"error": "userId required"}), 400
+    user_id = get_current_user_id()
     events = database.get_income_events(user_id)
     return jsonify({"events": events})
 
 @app.route('/api/income/summary', methods=['GET'])
 def get_income_summary_api():
-    """Get income summary for user (30d totals)"""
+    """Get income summary for user (auth required)"""
     if not DB_AVAILABLE:
         return jsonify({"error": "Database not available"}), 503
-    user_id = request.args.get('userId', type=int)
-    if not user_id:
-        return jsonify({"error": "userId required"}), 400
+    user_id = get_current_user_id()
     summary = database.get_income_summary(user_id)
     for k in summary:
         if hasattr(summary[k], '__float__'):
@@ -3374,22 +3466,27 @@ def get_income_summary_api():
 
 @app.route('/api/chat', methods=['POST'])
 def chat_api():
-    """Perplexity chat with dynamic context from user's Postgres data"""
+    """REAA chat with dynamic context from user's Postgres data (auth required, rate limited)"""
     if not DB_AVAILABLE:
         return jsonify({"error": "Database not available"}), 503
+
+    user_id = get_current_user_id()
+
+    if not check_chat_rate_limit(user_id):
+        return jsonify({"error": "Rate limit exceeded. Please wait a moment before sending another message."}), 429
 
     data = request.get_json()
     if not data or not data.get('message'):
         return jsonify({"error": "message required"}), 400
 
-    user_id = data.get('userId')
-    if not user_id:
-        return jsonify({"error": "Please connect your wallet first"}), 401
-
     try:
-        from perplexity_client import perplexity_chat
+        from perplexity_client import perplexity_chat_multi
     except ImportError:
-        return jsonify({"error": "Chat service not available"}), 503
+        try:
+            from perplexity_client import perplexity_chat
+            perplexity_chat_multi = None
+        except ImportError:
+            return jsonify({"error": "Chat service not available"}), 503
 
     try:
         user_towns = database.get_user_towns(user_id)
@@ -3439,7 +3536,7 @@ def chat_api():
                 f"${float(e.get('amount_usd', 0)):.2f} ({e.get('event_type', '')})" for e in recent_income[:3]
             ])
 
-        system_prompt = f"""You are Jovan, an AI assistant for a real estate and DeFi management platform.
+        system_prompt = f"""You are REAA (Real Estate Agent Assistant), an AI assistant for a real estate and DeFi management platform.
 You help users understand their Lis Pendens lead pipeline and DeFi positions on Aave V3 (Arbitrum).
 
 CURRENT USER CONTEXT:
@@ -3463,10 +3560,17 @@ Guidelines:
 - Reference specific data from the context above when relevant.
 - For Lis Pendens questions, explain what filings mean and suggest next steps.
 - For DeFi questions, explain health factor significance and safety implications.
-- Never reveal API keys or internal system details."""
+- Never reveal API keys or internal system details.
+- Always introduce yourself as REAA when appropriate."""
 
         user_message = data['message']
-        response = perplexity_chat(system_prompt, user_message)
+        history = data.get('history', [])
+
+        if perplexity_chat_multi and history:
+            response = perplexity_chat_multi(system_prompt, history, user_message)
+        else:
+            from perplexity_client import perplexity_chat
+            response = perplexity_chat(system_prompt, user_message)
 
         if response.startswith("[ERROR]"):
             logger.error(f"Perplexity error: {response}")

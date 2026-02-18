@@ -1,7 +1,7 @@
-# Jovan Bot - Aave V3 Autonomous Debt Management System
+# REAA Platform - Real Estate Agent Assistant + Aave V3 Autonomous Debt Management
 
 ## Overview
-The Jovan Bot is an autonomous debt management system for Aave V3 on the Arbitrum Mainnet. Its primary purpose is to monitor collateral growth and execute fixed-value borrowing operations across distinct execution paths. It includes a "USDC Tax Mode" for profit accumulation and a "Liability Short Strategy" to hedge against market downturns. The system is designed for robustness with crash recovery, global execution locks, and a "Nurse Mode" for health factor management. The project also features a web-based "5-Zone Command Center" dashboard for monitoring and interaction, as well as an automated Lis Pendens scraping pipeline for real estate lead generation, integrated with Google Docs/Sheets and a Postgres database for lead management.
+The REAA (Real Estate Agent Assistant) platform combines autonomous DeFi debt management on Aave V3 (Arbitrum Mainnet) with a real estate lead generation pipeline. It features a consumer-facing Command Center dashboard at `/app` with wallet-based authentication, Perplexity-powered AI chat, and a 5-Zone layout. The bot component monitors collateral growth and executes fixed-value borrowing operations across distinct execution paths. It includes a "USDC Tax Mode" for profit accumulation and a "Liability Short Strategy" to hedge against market downturns. The system is designed for robustness with crash recovery, global execution locks, and a "Nurse Mode" for health factor management.
 
 ## User Preferences
 I prefer iterative development with clear communication on progress.
@@ -37,10 +37,36 @@ The system operates on the Arbitrum Mainnet and is designed around two primary f
 - **Pipeline:** Scrapes Lis Pendens data from 5 Connecticut towns (Hartford, East Hartford, Windsor, Berlin, Rocky Hill) using SearchIQS.
 - **Scheduling:** Daily pipeline execution for scraping, AI analysis (Perplexity AI), document generation, and outreach letter creation.
 - **Data Management:** Leads are stored in a Postgres database (8 tables) with Google Docs/Sheets integration for lead management.
-- **Consumer Dashboard:** A multi-user, wallet-connected web dashboard (`/app`) provides a "5-Zone Command Center" UI.
+- **REAA Command Center:** A multi-user, wallet-connected web dashboard (`/app`) provides a "5-Zone Command Center" UI.
     - Layout: 3-column grid displaying DeFi/Aave position, an animated avatar with a safety score and health ring, and lead pipeline town cards.
-    - Features: Safety score calculation, Perplexity AI-powered chat assistant with dynamic context from user's Postgres data, and various API endpoints for data retrieval and interaction.
+    - Features: Safety score calculation, Perplexity AI-powered chat assistant (REAA) with dynamic context from user's Postgres data, and various API endpoints for data retrieval and interaction.
     - Wallet Architecture: User's connected wallet is for read-only monitoring; `WALLET_S` and `WALLET_B` are internal bot wallets.
+    - Auth: Signed token (itsdangerous TimestampSigner) returned at wallet connect, validated server-side on all user-scoped endpoints via `X-Auth-Token` header. Tokens expire after 7 days.
+    - Rate Limiting: `/api/chat` is rate-limited to 20 calls per minute per user.
+
+## REAA (Real Estate Agent Assistant)
+REAA is the consumer-facing AI assistant integrated into the Command Center. It uses Perplexity's `sonar` model with a dynamic system prompt built from the user's Postgres data.
+
+**Data Sources for REAA Context:**
+- User's tracked towns + filing counts (from `towns` / `user_towns` tables)
+- Last 5 Lis Pendens filings (from `filings` table, joined with `towns`)
+- DeFi position: health factor, collateral, debt, net worth (from `defi_positions` table)
+- Safety rating label (Excellent/Good/Caution/Critical/No position) derived from health factor
+- Income summary: 30d total, event count, recent events (from `income_events` table)
+
+**Multi-turn:** Frontend sends last 5 messages as conversation history; backend forwards to Perplexity `perplexity_chat_multi()` for contextual follow-ups.
+
+**Error Handling:** Perplexity errors/timeouts return 503 with user-friendly message. Rate limit exceeded returns 429.
+
+## Authentication (Consumer /app)
+- **Mechanism:** `itsdangerous.TimestampSigner` signs the user ID at wallet connect.
+- **Token Delivery:** `POST /api/auth/wallet` returns `authToken` in JSON response.
+- **Frontend Storage:** Token stored in `state.authToken` (JavaScript memory, not localStorage).
+- **Header:** All authenticated API calls include `X-Auth-Token: <token>` header.
+- **Validation:** `get_current_user_id()` in `web_dashboard.py` unsigns the token (7-day max age), returns integer user ID. Returns 401 if missing/invalid/expired.
+- **Protected Endpoints:** `/api/chat`, `/api/defi/state`, `/api/income/summary`, `/api/income`, `/api/user/towns` (GET and POST).
+- **Unprotected Endpoints:** `/api/towns`, `/api/filings`, `/api/pipeline/status`, `/api/leads/summary` (public data).
+- **On 401:** Frontend auto-resets wallet button to "Connect Wallet" state.
 
 ## External Dependencies
 

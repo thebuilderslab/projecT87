@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Jovan - Real Estate Liquidity & Lead Assistant</title>
+<title>REAA - Real Estate Agent Assistant</title>
 <style>
 :root {
   --bg: #0a0e17;
@@ -139,6 +139,7 @@ body::before {
   width: 100%;
   height: 100%;
   transform: rotate(-90deg);
+  pointer-events: none;
 }
 .ring-bg {
   fill: none;
@@ -468,7 +469,7 @@ tr:hover { background:rgba(0,230,180,0.03); }
 <body>
 <div class="topbar">
   <div class="topbar-left">
-    <h1><span>Jovan</span> Real Estate Liquidity & Lead Assistant</h1>
+    <h1><span>REAA</span> Real Estate Agent Assistant</h1>
   </div>
   <div class="topbar-right">
     <div class="network-badge"><span class="dot"></span> Arbitrum Mainnet</div>
@@ -526,8 +527,8 @@ tr:hover { background:rgba(0,230,180,0.03); }
               stroke="var(--accent)" stroke-dasharray="754" stroke-dashoffset="754"/>
           </svg>
           <div class="ring-center">
-            <div class="avatar-frame" id="avatarBtn" onclick="openChat()" title="Chat with Jovan">
-              <img src="/static/images/agent_avatar.gif" alt="Jovan Agent" loading="lazy">
+            <div class="avatar-frame" id="avatarBtn" onclick="openChat()" title="Chat with REAA">
+              <img src="/static/images/agent_avatar.gif" alt="REAA Agent" loading="lazy">
             </div>
             <div class="ring-label">Safety Rating</div>
             <div class="ring-score" id="safetyScore">--</div>
@@ -535,7 +536,7 @@ tr:hover { background:rgba(0,230,180,0.03); }
           </div>
         </div>
         <button class="chat-trigger" onclick="openChat()">
-          <span>&#128172;</span> Ask Jovan
+          <span>&#128172;</span> Ask REAA
         </button>
       </div>
 
@@ -680,9 +681,9 @@ tr:hover { background:rgba(0,230,180,0.03); }
   <div class="chat-panel">
     <div class="chat-header">
       <div class="chat-header-left">
-        <div class="chat-avatar-sm"><img src="/static/images/agent_avatar.gif" alt="Jovan"></div>
+        <div class="chat-avatar-sm"><img src="/static/images/agent_avatar.gif" alt="REAA"></div>
         <div>
-          <h3>Jovan Assistant</h3>
+          <h3>REAA Assistant</h3>
           <div class="online">Online</div>
         </div>
       </div>
@@ -694,7 +695,7 @@ tr:hover { background:rgba(0,230,180,0.03); }
       <button class="chip" onclick="sendPreset('Suggest a DeFi rebalance')">Suggest DeFi rebalance</button>
     </div>
     <div class="chat-messages" id="chatMessages">
-      <div class="chat-msg agent">Hi! I'm Jovan, your real estate and DeFi assistant. Ask me about your Lis Pendens leads, safety rating, or DeFi position.</div>
+      <div class="chat-msg agent">Hi! I'm REAA (Real Estate Agent Assistant), your real estate and DeFi assistant. Ask me about your Lis Pendens leads, safety rating, or DeFi position.</div>
     </div>
     <div class="chat-input-area">
       <input class="chat-input" id="chatInput" placeholder="Ask your assistant..." onkeydown="if(event.key==='Enter')sendMessage()">
@@ -707,6 +708,7 @@ tr:hover { background:rgba(0,230,180,0.03); }
 let state = {
   userId: null,
   walletAddress: null,
+  authToken: null,
   towns: [],
   userTownIds: [],
   currentModalTownId: null,
@@ -719,10 +721,20 @@ let state = {
 };
 
 async function api(path, opts = {}) {
-  const res = await fetch(path, {
-    headers: { 'Content-Type': 'application/json', ...opts.headers },
-    ...opts,
-  });
+  const headers = { 'Content-Type': 'application/json', ...opts.headers };
+  if (state.authToken) {
+    headers['X-Auth-Token'] = state.authToken;
+  }
+  const res = await fetch(path, { headers, ...opts });
+  if (res.status === 401) {
+    state.authToken = null;
+    state.userId = null;
+    const btn = document.getElementById('walletBtn');
+    btn.className = 'wallet-btn connect';
+    btn.textContent = 'Connect Wallet';
+    btn.onclick = connectWallet;
+    return { error: 'Session expired. Please reconnect your wallet.' };
+  }
   return res.json();
 }
 
@@ -757,6 +769,7 @@ async function authenticateWallet(address) {
   if (data.error) { alert('Auth error: ' + data.error); return; }
   state.userId = data.userId;
   state.walletAddress = data.walletAddress;
+  state.authToken = data.authToken;
   state.userTownIds = (data.towns || []).map(t => t.id);
 
   const btn = document.getElementById('walletBtn');
@@ -805,7 +818,7 @@ function updateHealthRing(score) {
 
 async function loadDefiPanel() {
   if (!state.userId) return;
-  const data = await api(`/api/defi/state?userId=${state.userId}`);
+  const data = await api('/api/defi/state');
   const pos = data.position;
   state.defiPosition = pos;
 
@@ -849,7 +862,7 @@ async function loadDefiPanel() {
 
 async function loadIncomeSummary() {
   if (!state.userId) return;
-  const data = await api(`/api/income/summary?userId=${state.userId}`);
+  const data = await api('/api/income/summary');
   const s = data.summary || {};
   const total = parseFloat(s.total_30d) || 0;
   const count = parseInt(s.count_30d) || 0;
@@ -1116,7 +1129,7 @@ async function loadAnalysis() {
 
 async function loadDefiState() {
   if (!state.userId) return;
-  const data = await api(`/api/defi/state?userId=${state.userId}`);
+  const data = await api('/api/defi/state');
   const container = document.getElementById('defiContent');
   const pos = data.position;
   if (!pos) {
@@ -1174,6 +1187,7 @@ async function sendMessage() {
   }
 
   appendChatMsg('user', msg);
+  state.chatHistory.push({ role: 'user', content: msg });
   input.value = '';
   state.chatBusy = true;
   document.getElementById('chatSendBtn').disabled = true;
@@ -1181,9 +1195,10 @@ async function sendMessage() {
   const typingId = appendChatMsg('agent', '<div class="typing"><span></span><span></span><span></span></div>');
 
   try {
+    const recentHistory = state.chatHistory.slice(-5);
     const data = await api('/api/chat', {
       method: 'POST',
-      body: JSON.stringify({ message: msg, userId: state.userId }),
+      body: JSON.stringify({ message: msg, history: recentHistory }),
     });
 
     removeChatMsg(typingId);
@@ -1192,6 +1207,7 @@ async function sendMessage() {
       appendChatMsg('agent', data.error);
     } else {
       appendChatMsg('agent', formatChatResponse(data.response));
+      state.chatHistory.push({ role: 'assistant', content: data.response });
     }
   } catch (e) {
     removeChatMsg(typingId);

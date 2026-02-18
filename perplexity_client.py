@@ -56,6 +56,54 @@ def perplexity_chat(system_prompt: str, user_prompt: str, model: str = None, max
         return f"[ERROR] Perplexity API: {e}"
 
 
+def perplexity_chat_multi(system_prompt: str, history: list, user_prompt: str, model: str = None, max_tokens: int = 2048) -> str:
+    api_key = os.getenv("PERPLEXITY_API_KEY")
+    if not api_key:
+        logger.error("PERPLEXITY_API_KEY not set")
+        return "[ERROR] Perplexity API key not configured"
+
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json",
+    }
+
+    messages = [{"role": "system", "content": system_prompt}]
+    for msg in history[-5:]:
+        role = msg.get("role", "user")
+        if role in ("user", "assistant"):
+            messages.append({"role": role, "content": msg.get("content", "")})
+    messages.append({"role": "user", "content": user_prompt})
+
+    payload = {
+        "model": model or DEFAULT_MODEL,
+        "messages": messages,
+        "max_tokens": max_tokens,
+        "temperature": 0.2,
+        "top_p": 0.9,
+        "stream": False,
+        "frequency_penalty": 1,
+    }
+
+    try:
+        logger.info(f"Perplexity multi-turn API call: model={payload['model']}, turns={len(messages)}")
+        resp = requests.post(PERPLEXITY_API_URL, headers=headers, json=payload, timeout=60)
+        resp.raise_for_status()
+        data = resp.json()
+        content = data["choices"][0]["message"]["content"]
+        usage = data.get("usage", {})
+        logger.info(f"Perplexity response: {len(content)} chars, {usage.get('total_tokens', 0)} tokens")
+        return content
+    except requests.exceptions.HTTPError as e:
+        logger.error(f"Perplexity API HTTP error: {e}")
+        return f"[ERROR] Perplexity API: {e}"
+    except requests.exceptions.Timeout:
+        logger.error("Perplexity API timeout")
+        return "[ERROR] Perplexity API timeout"
+    except Exception as e:
+        logger.error(f"Perplexity API error: {e}")
+        return f"[ERROR] Perplexity API: {e}"
+
+
 def generate_case_law_summary(address: str, docket_id: str) -> str:
     system_prompt = (
         "You are a CT real estate and foreclosure research assistant. "
