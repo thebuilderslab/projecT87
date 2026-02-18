@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 
 PERPLEXITY_API_KEY = os.getenv("PERPLEXITY_API_KEY")
 PERPLEXITY_API_URL = "https://api.perplexity.ai/chat/completions"
-DEFAULT_MODEL = "llama-3.1-sonar-small-128k-online"
+DEFAULT_MODEL = "sonar"
 
 
 def perplexity_chat(system_prompt: str, user_prompt: str, model: str = None, max_tokens: int = 2048) -> str:

@@ -3,92 +3,349 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Jovan Bot - Real Estate Liquidity Hub</title>
+<title>Jovan - Real Estate Liquidity & Lead Assistant</title>
 <style>
 :root {
   --bg: #0a0e17;
-  --surface: #111827;
+  --surface: rgba(17,24,39,0.85);
   --surface2: #1a2236;
-  --border: #1e293b;
+  --surface3: rgba(26,34,54,0.6);
+  --border: rgba(30,41,59,0.7);
+  --border-glow: rgba(0,230,180,0.15);
   --text: #e2e8f0;
   --muted: #94a3b8;
-  --accent: #3b82f6;
-  --accent2: #8b5cf6;
+  --accent: #00e6b4;
+  --accent2: #3b82f6;
+  --accent3: #8b5cf6;
   --green: #10b981;
   --red: #ef4444;
   --orange: #f59e0b;
-  --radius: 12px;
+  --yellow: #eab308;
+  --radius: 16px;
+  --glow-green: 0 0 20px rgba(0,230,180,0.3);
+  --glow-yellow: 0 0 20px rgba(234,179,8,0.3);
+  --glow-red: 0 0 20px rgba(239,68,68,0.3);
 }
 * { margin:0; padding:0; box-sizing:border-box; }
-body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background:var(--bg); color:var(--text); min-height:100vh; }
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(ellipse at 50% 0%, rgba(0,230,180,0.06) 0%, transparent 60%),
+              radial-gradient(ellipse at 80% 80%, rgba(59,130,246,0.04) 0%, transparent 40%);
+  pointer-events: none;
+  z-index: 0;
+}
 
 .topbar {
   display:flex; align-items:center; justify-content:space-between;
-  padding:16px 24px; background:var(--surface); border-bottom:1px solid var(--border);
+  padding:14px 28px; background:var(--surface); border-bottom:1px solid var(--border);
+  backdrop-filter: blur(12px); position:relative; z-index:10;
 }
-.topbar h1 { font-size:20px; font-weight:700; }
+.topbar-left { display:flex; align-items:center; gap:12px; }
+.topbar h1 { font-size:18px; font-weight:700; letter-spacing:-0.5px; }
 .topbar h1 span { color:var(--accent); }
+.topbar-right { display:flex; align-items:center; gap:12px; }
+.network-badge {
+  display:flex; align-items:center; gap:6px; padding:6px 14px;
+  border-radius:20px; background:var(--surface2); border:1px solid var(--border);
+  font-size:12px; color:var(--muted);
+}
+.network-badge .dot { width:6px; height:6px; border-radius:50%; background:var(--green); }
 .wallet-btn {
-  padding:10px 20px; border-radius:8px; border:none; cursor:pointer;
-  font-size:14px; font-weight:600; transition:all .2s;
+  padding:8px 18px; border-radius:20px; border:none; cursor:pointer;
+  font-size:13px; font-weight:600; transition:all .2s;
 }
-.wallet-btn.connect { background:var(--accent); color:#fff; }
-.wallet-btn.connect:hover { background:#2563eb; }
-.wallet-btn.connected { background:var(--surface2); color:var(--green); border:1px solid var(--green); }
+.wallet-btn.connect { background:var(--accent); color:#0a0e17; }
+.wallet-btn.connect:hover { box-shadow: 0 0 16px rgba(0,230,180,0.4); }
+.wallet-btn.connected { background:var(--surface2); color:var(--accent); border:1px solid var(--accent); }
 
-.container { max-width:1400px; margin:0 auto; padding:24px; }
+.main-container { position:relative; z-index:1; max-width:1440px; margin:0 auto; padding:20px 24px; }
 
-.status-bar {
-  display:flex; gap:16px; margin-bottom:24px; flex-wrap:wrap;
+.nav-tabs {
+  display:flex; gap:4px; background:var(--surface); border:1px solid var(--border);
+  border-radius:12px; padding:4px; margin-bottom:20px; backdrop-filter:blur(8px);
 }
-.status-card {
-  flex:1; min-width:200px; background:var(--surface); border:1px solid var(--border);
-  border-radius:var(--radius); padding:16px;
+.nav-tab {
+  padding:8px 20px; border-radius:8px; border:none; background:transparent;
+  color:var(--muted); font-size:13px; font-weight:500; cursor:pointer; transition:all .2s;
 }
-.status-card .label { font-size:12px; color:var(--muted); text-transform:uppercase; letter-spacing:1px; }
-.status-card .value { font-size:28px; font-weight:700; margin-top:4px; }
-.status-card .sub { font-size:12px; color:var(--muted); margin-top:4px; }
+.nav-tab.active { background:var(--accent); color:#0a0e17; font-weight:600; }
+.nav-tab:hover:not(.active) { color:var(--text); }
 
-.section { margin-bottom:32px; }
-.section-header {
-  display:flex; align-items:center; justify-content:space-between;
-  margin-bottom:16px;
-}
-.section-header h2 { font-size:18px; font-weight:600; }
+.tab-content { display:none; }
+.tab-content.active { display:block; }
 
-.towns-grid {
-  display:grid; grid-template-columns:repeat(auto-fill, minmax(240px, 1fr)); gap:16px;
+.command-center {
+  display: grid;
+  grid-template-columns: 280px 1fr 300px;
+  grid-template-rows: auto auto;
+  gap: 20px;
 }
+
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  backdrop-filter: blur(12px);
+  overflow: hidden;
+}
+.panel-header {
+  padding: 16px 20px 12px;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 8px;
+}
+.panel-header h2 { font-size: 14px; font-weight: 600; letter-spacing: 0.5px; }
+.panel-header .icon { font-size: 16px; }
+.panel-body { padding: 16px 20px; }
+
+.defi-panel { grid-row: 1; grid-column: 1; }
+.center-panel { grid-row: 1; grid-column: 2; display:flex; flex-direction:column; align-items:center; }
+.pipeline-panel { grid-row: 1; grid-column: 3; }
+.income-panel { grid-row: 2; grid-column: 1 / -1; }
+
+.defi-metric {
+  display:flex; justify-content:space-between; align-items:center;
+  padding:10px 0; border-bottom:1px solid rgba(30,41,59,0.4);
+}
+.defi-metric:last-child { border-bottom:none; }
+.defi-metric .label { font-size:12px; color:var(--muted); }
+.defi-metric .val { font-size:15px; font-weight:600; }
+.defi-metric .val.green { color:var(--green); }
+.defi-metric .val.red { color:var(--red); }
+.defi-metric .val.accent { color:var(--accent); }
+
+.defi-actions-title { font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:1px; margin-top:16px; margin-bottom:8px; }
+.defi-action-item {
+  display:flex; align-items:center; gap:8px; padding:6px 0;
+  font-size:12px; color:var(--muted);
+}
+.defi-action-item .dot { width:5px; height:5px; border-radius:50%; flex-shrink:0; }
+
+.health-ring-container {
+  position: relative;
+  width: 280px;
+  height: 280px;
+  margin: 20px auto;
+}
+.health-ring-svg {
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+.ring-bg {
+  fill: none;
+  stroke: var(--surface2);
+  stroke-width: 8;
+}
+.ring-fill {
+  fill: none;
+  stroke-width: 8;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 1s ease, stroke 0.5s ease;
+}
+.ring-glow {
+  fill: none;
+  stroke-width: 12;
+  stroke-linecap: round;
+  opacity: 0.3;
+  filter: blur(4px);
+  transition: stroke-dashoffset 1s ease, stroke 0.5s ease;
+}
+
+.ring-center {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+.avatar-frame {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2px solid var(--accent);
+  box-shadow: 0 0 20px rgba(0,230,180,0.3);
+  cursor: pointer;
+  transition: box-shadow 0.3s;
+}
+.avatar-frame:hover { box-shadow: 0 0 30px rgba(0,230,180,0.5); }
+.avatar-frame img { width:100%; height:100%; object-fit:cover; }
+.ring-label { font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:1.5px; margin-top:4px; }
+.ring-score { font-size:36px; font-weight:700; letter-spacing:-1px; }
+.ring-range { font-size:11px; color:var(--muted); }
+
+.chat-trigger {
+  margin-top:8px; padding:8px 20px; border-radius:20px;
+  background:var(--surface2); border:1px solid var(--border);
+  color:var(--muted); font-size:12px; cursor:pointer; transition:all .2s;
+  display:flex; align-items:center; gap:6px;
+}
+.chat-trigger:hover { border-color:var(--accent); color:var(--accent); }
+
+.side-icons {
+  position:absolute;
+  top:50%;
+  transform:translateY(-50%);
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:8px;
+}
+.side-icons.left { left: -50px; }
+.side-icons.right { right: -50px; }
+.side-icon {
+  width:40px; height:40px; border-radius:12px;
+  background:var(--surface); border:1px solid var(--border);
+  display:flex; align-items:center; justify-content:center;
+  font-size:18px; color:var(--muted); cursor:default;
+}
+.side-icon-label { font-size:9px; color:var(--muted); text-align:center; margin-top:2px; }
+
 .town-card {
-  background:var(--surface); border:1px solid var(--border); border-radius:var(--radius);
-  padding:20px; cursor:pointer; transition:all .2s;
+  display:flex; justify-content:space-between; align-items:center;
+  padding:12px 16px; border-bottom:1px solid rgba(30,41,59,0.4);
+  cursor:pointer; transition:background .2s;
 }
-.town-card:hover { border-color:var(--accent); transform:translateY(-2px); }
-.town-card.selected { border-color:var(--accent); background:rgba(59,130,246,0.08); }
-.town-card .town-name { font-size:16px; font-weight:600; margin-bottom:4px; }
-.town-card .town-count { font-size:32px; font-weight:700; color:var(--accent); }
-.town-card .town-label { font-size:12px; color:var(--muted); }
-.town-card .town-actions { display:flex; gap:8px; margin-top:12px; }
-.town-card .view-btn {
-  padding:6px 14px; border-radius:6px; border:1px solid var(--border);
-  background:var(--surface2); color:var(--text); font-size:12px; cursor:pointer; transition:all .2s;
+.town-card:last-child { border-bottom:none; }
+.town-card:hover { background:rgba(0,230,180,0.04); }
+.town-info .town-name { font-size:14px; font-weight:600; }
+.town-info .town-count { font-size:22px; font-weight:700; color:var(--accent); }
+.town-info .town-label { font-size:10px; color:var(--muted); }
+.town-badges { display:flex; flex-direction:column; align-items:flex-end; gap:4px; }
+.badge {
+  display:inline-flex; align-items:center; gap:4px;
+  padding:3px 8px; border-radius:10px; font-size:10px; font-weight:600;
 }
-.town-card .view-btn:hover { background:var(--accent); border-color:var(--accent); }
-.town-card .track-btn {
-  padding:6px 14px; border-radius:6px; border:none;
-  background:var(--green); color:#fff; font-size:12px; cursor:pointer; opacity:0.8;
+.badge.updated { background:rgba(0,230,180,0.12); color:var(--accent); }
+.badge.idle { background:rgba(148,163,184,0.12); color:var(--muted); }
+.badge.healthy { color:var(--green); }
+.status-dot { width:5px; height:5px; border-radius:50%; }
+.status-dot.green { background:var(--green); }
+.status-dot.yellow { background:var(--yellow); }
+.status-dot.muted { background:var(--muted); }
+
+.income-row {
+  display:grid; grid-template-columns:repeat(auto-fit, minmax(250px, 1fr)); gap:16px;
+  padding:16px 20px;
 }
-.town-card .track-btn:hover { opacity:1; }
-.town-card .track-btn.tracked { background:var(--surface2); color:var(--muted); border:1px solid var(--border); }
+.income-card {
+  display:flex; align-items:center; gap:12px;
+  padding:12px 16px; background:var(--surface2); border-radius:12px;
+}
+.income-icon {
+  width:36px; height:36px; border-radius:10px;
+  display:flex; align-items:center; justify-content:center; font-size:16px;
+}
+.income-icon.green { background:rgba(16,185,129,0.15); color:var(--green); }
+.income-icon.blue { background:rgba(59,130,246,0.15); color:var(--accent2); }
+.income-icon.purple { background:rgba(139,92,246,0.15); color:var(--accent3); }
+.income-detail .income-val { font-size:16px; font-weight:700; }
+.income-detail .income-label { font-size:11px; color:var(--muted); }
+
+.chat-overlay {
+  display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5);
+  z-index:1000; align-items:center; justify-content:center;
+  backdrop-filter:blur(4px);
+}
+.chat-overlay.active { display:flex; }
+.chat-panel {
+  width:560px; max-width:95vw; max-height:80vh;
+  background:var(--surface); border:1px solid var(--border); border-radius:20px;
+  display:flex; flex-direction:column; overflow:hidden;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+}
+.chat-header {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:16px 20px; border-bottom:1px solid var(--border);
+}
+.chat-header-left { display:flex; align-items:center; gap:10px; }
+.chat-avatar-sm { width:32px; height:32px; border-radius:50%; overflow:hidden; border:1px solid var(--accent); }
+.chat-avatar-sm img { width:100%; height:100%; object-fit:cover; }
+.chat-header-left h3 { font-size:15px; font-weight:600; }
+.chat-header-left .online { font-size:11px; color:var(--green); }
+.chat-close {
+  width:28px; height:28px; border-radius:8px; border:1px solid var(--border);
+  background:var(--surface2); color:var(--text); cursor:pointer; font-size:16px;
+  display:flex; align-items:center; justify-content:center;
+}
+.chat-close:hover { background:var(--red); border-color:var(--red); }
+.chat-chips {
+  display:flex; gap:6px; padding:10px 20px; overflow-x:auto; border-bottom:1px solid var(--border);
+}
+.chip {
+  flex-shrink:0; padding:6px 14px; border-radius:16px;
+  background:var(--surface2); border:1px solid var(--border);
+  color:var(--muted); font-size:12px; cursor:pointer; transition:all .2s; white-space:nowrap;
+}
+.chip:hover { border-color:var(--accent); color:var(--accent); }
+.chat-messages {
+  flex:1; overflow-y:auto; padding:16px 20px;
+  display:flex; flex-direction:column; gap:12px;
+  min-height:200px; max-height:400px;
+}
+.chat-msg {
+  max-width:85%; padding:10px 14px; border-radius:14px;
+  font-size:13px; line-height:1.5;
+}
+.chat-msg.user {
+  align-self:flex-end; background:var(--accent); color:#0a0e17;
+  border-bottom-right-radius:4px;
+}
+.chat-msg.agent {
+  align-self:flex-start; background:var(--surface2);
+  border-bottom-left-radius:4px;
+}
+.chat-msg.agent .typing {
+  display:inline-flex; gap:4px;
+}
+.chat-msg.agent .typing span {
+  width:6px; height:6px; border-radius:50%; background:var(--muted);
+  animation: typing 1.2s infinite;
+}
+.chat-msg.agent .typing span:nth-child(2) { animation-delay:0.2s; }
+.chat-msg.agent .typing span:nth-child(3) { animation-delay:0.4s; }
+@keyframes typing {
+  0%, 60%, 100% { opacity:0.3; transform:translateY(0); }
+  30% { opacity:1; transform:translateY(-4px); }
+}
+.chat-input-area {
+  display:flex; gap:8px; padding:12px 20px; border-top:1px solid var(--border);
+}
+.chat-input {
+  flex:1; padding:10px 16px; border-radius:12px;
+  background:var(--surface2); border:1px solid var(--border);
+  color:var(--text); font-size:13px; outline:none;
+}
+.chat-input:focus { border-color:var(--accent); }
+.chat-send {
+  padding:10px 18px; border-radius:12px; border:none;
+  background:var(--accent); color:#0a0e17; font-weight:600;
+  font-size:13px; cursor:pointer; transition:all .2s;
+}
+.chat-send:hover { box-shadow: 0 0 12px rgba(0,230,180,0.4); }
+.chat-send:disabled { opacity:0.4; cursor:not-allowed; }
 
 .modal-overlay {
-  display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:1000;
+  display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:900;
   align-items:center; justify-content:center;
 }
 .modal-overlay.active { display:flex; }
 .modal {
-  background:var(--surface); border:1px solid var(--border); border-radius:16px;
+  background:var(--surface); border:1px solid var(--border); border-radius:20px;
   width:95vw; max-width:1200px; max-height:90vh; display:flex; flex-direction:column;
+  backdrop-filter:blur(12px);
 }
 .modal-header {
   display:flex; align-items:center; justify-content:space-between;
@@ -101,186 +358,244 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
   display:flex; align-items:center; justify-content:center;
 }
 .modal-close:hover { background:var(--red); border-color:var(--red); }
-
 .modal-toolbar {
   display:flex; gap:12px; padding:16px 24px; border-bottom:1px solid var(--border);
   flex-wrap:wrap; align-items:center;
 }
 .filter-input {
-  padding:8px 12px; border-radius:6px; border:1px solid var(--border);
+  padding:8px 12px; border-radius:8px; border:1px solid var(--border);
   background:var(--surface2); color:var(--text); font-size:13px;
 }
 .filter-input:focus { outline:none; border-color:var(--accent); }
 .export-btn {
-  padding:8px 16px; border-radius:6px; border:none;
-  background:var(--accent2); color:#fff; font-size:13px; font-weight:600; cursor:pointer;
+  padding:8px 16px; border-radius:8px; border:none;
+  background:var(--accent3); color:#fff; font-size:13px; font-weight:600; cursor:pointer;
 }
 .export-btn:hover { opacity:0.9; }
-
 .modal-body { flex:1; overflow-y:auto; padding:0; }
 
-table {
-  width:100%; border-collapse:collapse; font-size:13px;
-}
+table { width:100%; border-collapse:collapse; font-size:13px; }
 thead { position:sticky; top:0; background:var(--surface2); z-index:1; }
 th {
-  text-align:left; padding:12px 16px; font-weight:600; font-size:12px;
+  text-align:left; padding:12px 16px; font-weight:600; font-size:11px;
   text-transform:uppercase; letter-spacing:0.5px; color:var(--muted);
   border-bottom:1px solid var(--border);
 }
-td {
-  padding:12px 16px; border-bottom:1px solid var(--border);
-}
-tr:hover { background:rgba(59,130,246,0.04); }
+td { padding:12px 16px; border-bottom:1px solid rgba(30,41,59,0.4); }
+tr:hover { background:rgba(0,230,180,0.03); }
 .status-badge {
-  display:inline-block; padding:2px 8px; border-radius:4px; font-size:11px; font-weight:600;
+  display:inline-block; padding:2px 8px; border-radius:6px; font-size:10px; font-weight:600;
 }
 .status-badge.pending { background:rgba(245,158,11,0.15); color:var(--orange); }
 .status-badge.active { background:rgba(16,185,129,0.15); color:var(--green); }
-
-.summary-cards {
-  display:grid; grid-template-columns:repeat(auto-fill, minmax(280px, 1fr)); gap:16px;
-}
-.summary-card {
-  background:var(--surface); border:1px solid var(--border); border-radius:var(--radius);
-  padding:20px;
-}
-.summary-card h3 { font-size:14px; font-weight:600; margin-bottom:12px; color:var(--muted); }
-.summary-card .metric { font-size:24px; font-weight:700; }
-.summary-card .detail { font-size:13px; color:var(--muted); margin-top:8px; line-height:1.6; }
-
-.empty-state {
-  text-align:center; padding:60px 24px; color:var(--muted);
-}
-.empty-state h3 { font-size:18px; margin-bottom:8px; color:var(--text); }
-
-.loading { text-align:center; padding:40px; color:var(--muted); }
 
 .pagination {
   display:flex; align-items:center; justify-content:center; gap:8px;
   padding:16px 24px; border-top:1px solid var(--border);
 }
 .page-btn {
-  padding:6px 12px; border-radius:6px; border:1px solid var(--border);
+  padding:6px 12px; border-radius:8px; border:1px solid var(--border);
   background:var(--surface2); color:var(--text); cursor:pointer; font-size:13px;
 }
 .page-btn:hover { border-color:var(--accent); }
-.page-btn.active { background:var(--accent); border-color:var(--accent); }
 .page-btn:disabled { opacity:0.4; cursor:not-allowed; }
 .page-info { font-size:13px; color:var(--muted); }
 
-.note-input {
-  display:flex; gap:8px; margin-top:12px;
+.filings-view { }
+.filings-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; }
+.filings-header h2 { font-size:18px; font-weight:600; }
+.filings-filters {
+  display:flex; gap:12px; margin-bottom:16px; flex-wrap:wrap;
 }
-.note-input textarea {
-  flex:1; padding:8px 12px; border-radius:6px; border:1px solid var(--border);
-  background:var(--surface2); color:var(--text); font-size:13px; resize:vertical; min-height:60px;
+.filings-table-wrap {
+  background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); overflow:hidden;
 }
-.note-input button {
-  padding:8px 16px; border-radius:6px; border:none;
-  background:var(--accent); color:#fff; font-size:13px; cursor:pointer; align-self:flex-end;
+
+.summary-cards {
+  display:grid; grid-template-columns:repeat(auto-fill, minmax(280px, 1fr)); gap:16px;
 }
+.summary-card {
+  background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:20px;
+}
+.summary-card h3 { font-size:13px; font-weight:600; margin-bottom:12px; color:var(--muted); text-transform:uppercase; letter-spacing:0.5px; }
+.summary-card .metric { font-size:24px; font-weight:700; }
+.summary-card .detail { font-size:13px; color:var(--muted); margin-top:8px; line-height:1.6; }
 
 .defi-section {
   display:grid; grid-template-columns:repeat(auto-fill, minmax(300px, 1fr)); gap:16px;
 }
 .defi-card {
-  background:var(--surface); border:1px solid var(--border); border-radius:var(--radius);
-  padding:20px;
+  background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:20px;
 }
 .defi-card h3 { font-size:13px; color:var(--muted); text-transform:uppercase; letter-spacing:1px; margin-bottom:12px; }
-.health-meter {
-  height:8px; background:var(--surface2); border-radius:4px; overflow:hidden; margin-top:8px;
-}
+.health-meter { height:8px; background:var(--surface2); border-radius:4px; overflow:hidden; margin-top:8px; }
 .health-meter-fill { height:100%; border-radius:4px; transition:width .3s; }
 
-.tab-bar {
-  display:flex; gap:4px; background:var(--surface); border:1px solid var(--border);
-  border-radius:var(--radius); padding:4px; margin-bottom:24px;
-}
-.tab {
-  padding:10px 20px; border-radius:8px; border:none; background:transparent;
-  color:var(--muted); font-size:14px; font-weight:500; cursor:pointer; transition:all .2s;
-}
-.tab.active { background:var(--accent); color:#fff; }
-.tab:hover:not(.active) { color:var(--text); }
+.empty-state { text-align:center; padding:60px 24px; color:var(--muted); }
+.empty-state h3 { font-size:18px; margin-bottom:8px; color:var(--text); }
+.loading { text-align:center; padding:40px; color:var(--muted); }
 
-.tab-content { display:none; }
-.tab-content.active { display:block; }
+.note-input { display:flex; gap:8px; margin-top:12px; }
+.note-input textarea {
+  flex:1; padding:8px 12px; border-radius:8px; border:1px solid var(--border);
+  background:var(--surface2); color:var(--text); font-size:13px; resize:vertical; min-height:60px;
+}
+.note-input button {
+  padding:8px 16px; border-radius:8px; border:none;
+  background:var(--accent); color:#0a0e17; font-size:13px; font-weight:600; cursor:pointer; align-self:flex-end;
+}
 
+@media (max-width:1024px) {
+  .command-center {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto;
+  }
+  .center-panel { order:-1; }
+  .defi-panel { grid-column:1; }
+  .pipeline-panel { grid-column:1; }
+  .income-panel { grid-column:1; }
+}
 @media (max-width:768px) {
-  .container { padding:16px; }
-  .status-bar { flex-direction:column; }
-  .towns-grid { grid-template-columns:1fr; }
+  .main-container { padding:12px; }
+  .health-ring-container { width:220px; height:220px; }
+  .avatar-frame { width:90px; height:90px; }
+  .ring-score { font-size:28px; }
+  .chat-panel { width:100vw; max-width:100vw; border-radius:0; max-height:100vh; }
   .modal { width:100vw; max-width:100vw; border-radius:0; max-height:100vh; }
 }
 </style>
 </head>
 <body>
 <div class="topbar">
-  <h1><span>Jovan</span> Real Estate Hub</h1>
-  <button class="wallet-btn connect" id="walletBtn" onclick="connectWallet()">Connect Wallet</button>
+  <div class="topbar-left">
+    <h1><span>Jovan</span> Real Estate Liquidity & Lead Assistant</h1>
+  </div>
+  <div class="topbar-right">
+    <div class="network-badge"><span class="dot"></span> Arbitrum Mainnet</div>
+    <button class="wallet-btn connect" id="walletBtn" onclick="connectWallet()">Connect Wallet</button>
+  </div>
 </div>
 
-<div class="container">
-  <div class="tab-bar">
-    <button class="tab active" data-tab="overview" onclick="switchTab('overview')">Overview</button>
-    <button class="tab" data-tab="filings" onclick="switchTab('filings')">Filings</button>
-    <button class="tab" data-tab="analysis" onclick="switchTab('analysis')">Analysis</button>
-    <button class="tab" data-tab="defi" onclick="switchTab('defi')">DeFi</button>
+<div class="main-container">
+  <div class="nav-tabs">
+    <button class="nav-tab active" data-tab="command" onclick="switchTab('command')">Command Center</button>
+    <button class="nav-tab" data-tab="filings" onclick="switchTab('filings')">Filings</button>
+    <button class="nav-tab" data-tab="analysis" onclick="switchTab('analysis')">Analysis</button>
+    <button class="nav-tab" data-tab="defi" onclick="switchTab('defi')">DeFi</button>
   </div>
 
-  <!-- OVERVIEW TAB -->
-  <div class="tab-content active" id="tab-overview">
-    <div class="status-bar" id="statusBar">
-      <div class="status-card">
-        <div class="label">Total Filings</div>
-        <div class="value" id="totalFilings">-</div>
-        <div class="sub">Across all towns</div>
+  <div class="tab-content active" id="tab-command">
+    <div class="command-center">
+      <div class="panel defi-panel">
+        <div class="panel-header">
+          <span class="icon">&#9878;</span>
+          <h2>Aave / DeFi</h2>
+        </div>
+        <div class="panel-body" id="defiPanelBody">
+          <div class="defi-metric">
+            <span class="label">Collateral</span>
+            <span class="val accent" id="defiCollateral">--</span>
+          </div>
+          <div class="defi-metric">
+            <span class="label">Debt</span>
+            <span class="val red" id="defiDebt">--</span>
+          </div>
+          <div class="defi-metric">
+            <span class="label">Health Factor</span>
+            <span class="val green" id="defiHF">--</span>
+          </div>
+          <div class="defi-metric">
+            <span class="label">Net Worth</span>
+            <span class="val accent" id="defiNetWorth">--</span>
+          </div>
+          <div class="defi-actions-title">Recent Actions</div>
+          <div id="defiActions">
+            <div class="defi-action-item"><div class="dot" style="background:var(--muted)"></div> No recent actions</div>
+          </div>
+        </div>
       </div>
-      <div class="status-card">
-        <div class="label">Towns Tracked</div>
-        <div class="value" id="townsTracked">-</div>
-        <div class="sub">Hartford County, CT</div>
-      </div>
-      <div class="status-card">
-        <div class="label">Last Pipeline Run</div>
-        <div class="value" id="lastRun" style="font-size:16px;">-</div>
-        <div class="sub" id="lastRunStatus">-</div>
-      </div>
-      <div class="status-card">
-        <div class="label">High Priority Leads</div>
-        <div class="value" id="highLeads" style="color:var(--orange)">-</div>
-        <div class="sub">Needs review</div>
-      </div>
-    </div>
 
-    <div class="section">
-      <div class="section-header">
-        <h2>Towns</h2>
+      <div class="center-panel">
+        <div style="font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:4px;">System Health</div>
+        <div class="health-ring-container" id="healthRing">
+          <svg class="health-ring-svg" viewBox="0 0 280 280">
+            <circle class="ring-bg" cx="140" cy="140" r="120"/>
+            <circle class="ring-glow" id="ringGlow" cx="140" cy="140" r="120"
+              stroke="var(--accent)" stroke-dasharray="754" stroke-dashoffset="754"/>
+            <circle class="ring-fill" id="ringFill" cx="140" cy="140" r="120"
+              stroke="var(--accent)" stroke-dasharray="754" stroke-dashoffset="754"/>
+          </svg>
+          <div class="ring-center">
+            <div class="avatar-frame" id="avatarBtn" onclick="openChat()" title="Chat with Jovan">
+              <img src="/static/images/agent_avatar.gif" alt="Jovan Agent" loading="lazy">
+            </div>
+            <div class="ring-label">Safety Rating</div>
+            <div class="ring-score" id="safetyScore">--</div>
+            <div class="ring-range" id="safetyRange">Optimal: 2.5 - 4.0</div>
+          </div>
+        </div>
+        <button class="chat-trigger" onclick="openChat()">
+          <span>&#128172;</span> Ask Jovan
+        </button>
       </div>
-      <div class="towns-grid" id="townsGrid">
-        <div class="loading">Loading towns...</div>
+
+      <div class="panel pipeline-panel">
+        <div class="panel-header">
+          <span class="icon">&#128196;</span>
+          <h2>Lead Pipeline</h2>
+        </div>
+        <div class="panel-body" style="padding:0;" id="pipelineBody">
+          <div class="loading">Loading towns...</div>
+        </div>
+      </div>
+
+      <div class="panel income-panel">
+        <div class="panel-header">
+          <span class="icon">&#128176;</span>
+          <h2>Recent Payouts</h2>
+        </div>
+        <div class="income-row" id="incomeRow">
+          <div class="income-card">
+            <div class="income-icon green">$</div>
+            <div class="income-detail">
+              <div class="income-val" id="income30d">$0.00</div>
+              <div class="income-label">Last 30 days</div>
+            </div>
+          </div>
+          <div class="income-card">
+            <div class="income-icon blue">#</div>
+            <div class="income-detail">
+              <div class="income-val" id="incomeCount">0</div>
+              <div class="income-label">Payout events</div>
+            </div>
+          </div>
+          <div class="income-card">
+            <div class="income-icon purple">&#8710;</div>
+            <div class="income-detail">
+              <div class="income-val" id="incomeChange">--</div>
+              <div class="income-label">vs previous 30 days</div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
 
-  <!-- FILINGS TAB -->
   <div class="tab-content" id="tab-filings">
-    <div class="section">
-      <div class="section-header">
+    <div class="filings-view">
+      <div class="filings-header">
         <h2>All Filings</h2>
         <div style="display:flex;gap:8px;">
           <button class="export-btn" onclick="exportFilings('csv')">Download CSV</button>
           <button class="export-btn" onclick="exportFilings('xlsx')">Download Excel</button>
         </div>
       </div>
-      <div style="display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap;">
+      <div class="filings-filters">
         <select class="filter-input" id="filterTown" onchange="loadFilings()">
           <option value="">All Towns</option>
         </select>
-        <input type="date" class="filter-input" id="filterDateFrom" onchange="loadFilings()" placeholder="From">
-        <input type="date" class="filter-input" id="filterDateTo" onchange="loadFilings()" placeholder="To">
+        <input type="date" class="filter-input" id="filterDateFrom" onchange="loadFilings()">
+        <input type="date" class="filter-input" id="filterDateTo" onchange="loadFilings()">
         <select class="filter-input" id="filterStatus" onchange="loadFilings()">
           <option value="">All Status</option>
           <option value="PENDING">Pending</option>
@@ -288,20 +603,14 @@ tr:hover { background:rgba(59,130,246,0.04); }
           <option value="RESOLVED">Resolved</option>
         </select>
       </div>
-      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;">
+      <div class="filings-table-wrap">
         <div style="overflow-x:auto;">
           <table id="filingsTable">
             <thead>
               <tr>
-                <th>Town</th>
-                <th>Address</th>
-                <th>Seller</th>
-                <th>Lender</th>
-                <th>Filing Date</th>
-                <th>Court Case #</th>
-                <th>Debt Amount</th>
-                <th>Status</th>
-                <th>Actions</th>
+                <th>Town</th><th>Address</th><th>Seller</th><th>Lender</th>
+                <th>Filing Date</th><th>Court Case #</th><th>Debt Amount</th>
+                <th>Status</th><th>Actions</th>
               </tr>
             </thead>
             <tbody id="filingsBody">
@@ -314,35 +623,22 @@ tr:hover { background:rgba(59,130,246,0.04); }
     </div>
   </div>
 
-  <!-- ANALYSIS TAB -->
   <div class="tab-content" id="tab-analysis">
-    <div class="section">
-      <div class="section-header">
-        <h2>Pipeline Summary</h2>
-      </div>
-      <div class="summary-cards" id="analysisSummary">
-        <div class="loading">Loading analysis...</div>
-      </div>
+    <div class="summary-cards" id="analysisSummary">
+      <div class="loading">Loading analysis...</div>
     </div>
   </div>
 
-  <!-- DEFI TAB -->
   <div class="tab-content" id="tab-defi">
-    <div class="section">
-      <div class="section-header">
-        <h2>DeFi Position</h2>
-      </div>
-      <div id="defiContent">
-        <div class="empty-state">
-          <h3>Connect Your Wallet</h3>
-          <p>Connect your wallet to view your DeFi position and health metrics.</p>
-        </div>
+    <div id="defiContent">
+      <div class="empty-state">
+        <h3>Connect Your Wallet</h3>
+        <p>Connect your wallet to view your DeFi position and health metrics.</p>
       </div>
     </div>
   </div>
 </div>
 
-<!-- FILING DETAIL MODAL -->
 <div class="modal-overlay" id="filingModal">
   <div class="modal">
     <div class="modal-header">
@@ -366,15 +662,9 @@ tr:hover { background:rgba(59,130,246,0.04); }
       <table>
         <thead>
           <tr>
-            <th>Address</th>
-            <th>Seller</th>
-            <th>Lender</th>
-            <th>Filing Date</th>
-            <th>Book/Page</th>
-            <th>Court Case #</th>
-            <th>Debt Amount</th>
-            <th>Return Date</th>
-            <th>Status</th>
+            <th>Address</th><th>Seller</th><th>Lender</th><th>Filing Date</th>
+            <th>Book/Page</th><th>Court Case #</th><th>Debt Amount</th>
+            <th>Return Date</th><th>Status</th>
           </tr>
         </thead>
         <tbody id="modalFilingsBody">
@@ -383,6 +673,33 @@ tr:hover { background:rgba(59,130,246,0.04); }
       </table>
     </div>
     <div class="pagination" id="modalPagination"></div>
+  </div>
+</div>
+
+<div class="chat-overlay" id="chatOverlay">
+  <div class="chat-panel">
+    <div class="chat-header">
+      <div class="chat-header-left">
+        <div class="chat-avatar-sm"><img src="/static/images/agent_avatar.gif" alt="Jovan"></div>
+        <div>
+          <h3>Jovan Assistant</h3>
+          <div class="online">Online</div>
+        </div>
+      </div>
+      <button class="chat-close" onclick="closeChat()">&times;</button>
+    </div>
+    <div class="chat-chips">
+      <button class="chip" onclick="sendPreset('Summarize my new Lis Pendens')">Summarize my Lis Pendens</button>
+      <button class="chip" onclick="sendPreset('Explain my safety rating')">Explain my safety rating</button>
+      <button class="chip" onclick="sendPreset('Suggest a DeFi rebalance')">Suggest DeFi rebalance</button>
+    </div>
+    <div class="chat-messages" id="chatMessages">
+      <div class="chat-msg agent">Hi! I'm Jovan, your real estate and DeFi assistant. Ask me about your Lis Pendens leads, safety rating, or DeFi position.</div>
+    </div>
+    <div class="chat-input-area">
+      <input class="chat-input" id="chatInput" placeholder="Ask your assistant..." onkeydown="if(event.key==='Enter')sendMessage()">
+      <button class="chat-send" id="chatSendBtn" onclick="sendMessage()">Send</button>
+    </div>
   </div>
 </div>
 
@@ -395,6 +712,10 @@ let state = {
   currentModalTownId: null,
   currentPage: 1,
   modalPage: 1,
+  chatHistory: [],
+  chatBusy: false,
+  defiPosition: null,
+  safetyScore: 0,
 };
 
 async function api(path, opts = {}) {
@@ -421,7 +742,6 @@ async function connectWallet() {
       await authenticateWallet(accounts[0]);
     }
   } catch (e) {
-    console.error('Wallet connect error:', e);
     const addr = prompt('MetaMask connection failed. Enter wallet address manually (0x...):');
     if (addr && addr.startsWith('0x') && addr.length === 42) {
       await authenticateWallet(addr);
@@ -434,10 +754,7 @@ async function authenticateWallet(address) {
     method: 'POST',
     body: JSON.stringify({ walletAddress: address }),
   });
-  if (data.error) {
-    alert('Auth error: ' + data.error);
-    return;
-  }
+  if (data.error) { alert('Auth error: ' + data.error); return; }
   state.userId = data.userId;
   state.walletAddress = data.walletAddress;
   state.userTownIds = (data.towns || []).map(t => t.id);
@@ -447,34 +764,142 @@ async function authenticateWallet(address) {
   btn.textContent = address.substring(0, 6) + '...' + address.substring(38);
   btn.onclick = null;
 
-  loadDefiState();
+  loadDefiPanel();
+  loadIncomeSummary();
+}
+
+function computeSafetyScore(hf, collateral, debt) {
+  if (!hf || hf <= 0) return 0;
+  let score = Math.min(hf, 4.0);
+  if (collateral > 0 && debt > 0) {
+    const ratio = collateral / debt;
+    if (ratio > 5) score = Math.min(score + 0.2, 4.0);
+    else if (ratio < 1.5) score = Math.max(score - 0.3, 0);
+  }
+  return Math.round(score * 100) / 100;
+}
+
+function getSafetyColor(score) {
+  if (score >= 3.0) return 'var(--accent)';
+  if (score >= 2.0) return 'var(--yellow)';
+  return 'var(--red)';
+}
+
+function updateHealthRing(score) {
+  state.safetyScore = score;
+  const pct = Math.min(score / 4.0, 1.0);
+  const circumference = 2 * Math.PI * 120;
+  const offset = circumference * (1 - pct);
+  const color = getSafetyColor(score);
+
+  const fill = document.getElementById('ringFill');
+  const glow = document.getElementById('ringGlow');
+  fill.style.stroke = color;
+  fill.style.strokeDashoffset = offset;
+  glow.style.stroke = color;
+  glow.style.strokeDashoffset = offset;
+
+  document.getElementById('safetyScore').textContent = score > 0 ? score.toFixed(2) : '--';
+  document.getElementById('safetyScore').style.color = color;
+}
+
+async function loadDefiPanel() {
+  if (!state.userId) return;
+  const data = await api(`/api/defi/state?userId=${state.userId}`);
+  const pos = data.position;
+  state.defiPosition = pos;
+
+  if (!pos) {
+    document.getElementById('defiCollateral').textContent = '$0.00';
+    document.getElementById('defiDebt').textContent = '$0.00';
+    document.getElementById('defiHF').textContent = '--';
+    document.getElementById('defiNetWorth').textContent = '$0.00';
+    updateHealthRing(0);
+    return;
+  }
+
+  const hf = parseFloat(pos.health_factor) || 0;
+  const collateral = parseFloat(pos.total_collateral_usd) || 0;
+  const debt = parseFloat(pos.total_debt_usd) || 0;
+  const netWorth = parseFloat(pos.net_worth_usd) || 0;
+
+  document.getElementById('defiCollateral').textContent = '$' + collateral.toFixed(2);
+  document.getElementById('defiDebt').textContent = '$' + debt.toFixed(2);
+  document.getElementById('defiHF').textContent = hf.toFixed(2);
+  document.getElementById('defiNetWorth').textContent = '$' + netWorth.toFixed(2);
+
+  const hfEl = document.getElementById('defiHF');
+  hfEl.className = 'val ' + (hf >= 2 ? 'green' : hf >= 1.5 ? '' : 'red');
+  hfEl.style.color = hf >= 2 ? 'var(--green)' : hf >= 1.5 ? 'var(--orange)' : 'var(--red)';
+
+  const score = computeSafetyScore(hf, collateral, debt);
+  updateHealthRing(score);
+
+  if (pos.positions && typeof pos.positions === 'object') {
+    const actionsEl = document.getElementById('defiActions');
+    const assets = Object.entries(pos.positions);
+    if (assets.length > 0) {
+      actionsEl.innerHTML = assets.map(([asset, info]) => {
+        const val = typeof info === 'object' ? (info.balance || info.amount || JSON.stringify(info)) : info;
+        return `<div class="defi-action-item"><div class="dot" style="background:var(--accent)"></div>${asset}: ${val}</div>`;
+      }).join('');
+    }
+  }
+}
+
+async function loadIncomeSummary() {
+  if (!state.userId) return;
+  const data = await api(`/api/income/summary?userId=${state.userId}`);
+  const s = data.summary || {};
+  const total = parseFloat(s.total_30d) || 0;
+  const count = parseInt(s.count_30d) || 0;
+  const prev = parseFloat(s.total_prev_30d) || 0;
+
+  document.getElementById('income30d').textContent = '$' + total.toFixed(2);
+  document.getElementById('incomeCount').textContent = count;
+
+  if (prev > 0) {
+    const change = total - prev;
+    const pct = ((change / prev) * 100).toFixed(0);
+    const sign = change >= 0 ? '+' : '';
+    document.getElementById('incomeChange').textContent = `${sign}$${change.toFixed(2)} (${sign}${pct}%)`;
+    document.getElementById('incomeChange').style.color = change >= 0 ? 'var(--green)' : 'var(--red)';
+  } else if (total > 0) {
+    document.getElementById('incomeChange').textContent = '+$' + total.toFixed(2);
+    document.getElementById('incomeChange').style.color = 'var(--green)';
+  } else {
+    document.getElementById('incomeChange').textContent = '--';
+  }
 }
 
 async function loadTowns() {
   const data = await api('/api/towns');
   if (data.towns) {
     state.towns = data.towns;
-    renderTowns();
+    renderPipelineTowns();
     populateTownFilter();
   }
 }
 
-function renderTowns() {
-  const grid = document.getElementById('townsGrid');
+function renderPipelineTowns() {
+  const container = document.getElementById('pipelineBody');
   if (!state.towns.length) {
-    grid.innerHTML = '<div class="empty-state"><h3>No towns available</h3></div>';
+    container.innerHTML = '<div class="loading">No towns available</div>';
     return;
   }
-  grid.innerHTML = state.towns.map(t => {
-    const isTracked = state.userTownIds.includes(t.id);
+  container.innerHTML = state.towns.map(t => {
+    const hasFilings = t.filing_count > 0;
+    const isNew = t.filing_count > 10;
     return `
-      <div class="town-card ${isTracked ? 'selected' : ''}" id="town-${t.id}">
-        <div class="town-name">${t.name}</div>
-        <div class="town-count">${t.filing_count}</div>
-        <div class="town-label">Lis Pendens Filings</div>
-        <div class="town-actions">
-          <button class="view-btn" onclick="openTownModal(${t.id}, '${t.name}')">View Filings</button>
-          ${state.userId ? `<button class="track-btn ${isTracked ? 'tracked' : ''}" onclick="toggleTrack(${t.id})">${isTracked ? 'Tracked' : 'Track'}</button>` : ''}
+      <div class="town-card" onclick="openTownModal(${t.id}, '${t.name}')">
+        <div class="town-info">
+          <div class="town-name">${t.name}</div>
+          <div class="town-count">${t.filing_count}</div>
+          <div class="town-label">Lis Pendens</div>
+        </div>
+        <div class="town-badges">
+          ${hasFilings ? `<span class="badge updated">${isNew ? 'New' : 'Updated today'}</span>` : '<span class="badge idle">Idle</span>'}
+          <span class="badge"><span class="status-dot ${hasFilings ? 'green' : 'muted'}"></span> ${hasFilings ? 'Healthy' : 'Idle'}</span>
         </div>
       </div>
     `;
@@ -485,20 +910,6 @@ function populateTownFilter() {
   const sel = document.getElementById('filterTown');
   sel.innerHTML = '<option value="">All Towns</option>' +
     state.towns.map(t => `<option value="${t.id}">${t.name} (${t.filing_count})</option>`).join('');
-}
-
-async function toggleTrack(townId) {
-  if (!state.userId) return;
-  const idx = state.userTownIds.indexOf(townId);
-  if (idx >= 0) state.userTownIds.splice(idx, 1);
-  else state.userTownIds.push(townId);
-
-  await api('/api/user/towns', {
-    method: 'POST',
-    body: JSON.stringify({ userId: state.userId, townIds: state.userTownIds }),
-  });
-  renderTowns();
-  document.getElementById('townsTracked').textContent = state.userTownIds.length;
 }
 
 function openTownModal(townId, townName) {
@@ -517,7 +928,6 @@ function closeModal() {
 async function loadModalFilings() {
   const tbody = document.getElementById('modalFilingsBody');
   tbody.innerHTML = '<tr><td colspan="9" class="loading">Loading...</td></tr>';
-
   let url = `/api/filings?townId=${state.currentModalTownId}&page=${state.modalPage}&perPage=50`;
   const df = document.getElementById('modalDateFrom').value;
   const dt = document.getElementById('modalDateTo').value;
@@ -525,7 +935,6 @@ async function loadModalFilings() {
   if (df) url += `&dateFrom=${df}`;
   if (dt) url += `&dateTo=${dt}`;
   if (st) url += `&status=${st}`;
-
   const data = await api(url);
   renderModalFilings(data);
 }
@@ -556,7 +965,6 @@ function renderModalFilings(data) {
 async function loadFilings() {
   const tbody = document.getElementById('filingsBody');
   tbody.innerHTML = '<tr><td colspan="9" class="loading">Loading filings...</td></tr>';
-
   let url = `/api/filings?page=${state.currentPage}&perPage=50`;
   const town = document.getElementById('filterTown').value;
   const df = document.getElementById('filterDateFrom').value;
@@ -566,7 +974,6 @@ async function loadFilings() {
   if (df) url += `&dateFrom=${df}`;
   if (dt) url += `&dateTo=${dt}`;
   if (st) url += `&status=${st}`;
-
   const data = await api(url);
   renderFilings(data);
 }
@@ -574,7 +981,7 @@ async function loadFilings() {
 function renderFilings(data) {
   const tbody = document.getElementById('filingsBody');
   if (!data.filings || !data.filings.length) {
-    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:40px;color:var(--muted);">No filings found. Run the pipeline to scrape data.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:40px;color:var(--muted);">No filings found.</td></tr>';
     document.getElementById('paginationBar').innerHTML = '';
     return;
   }
@@ -588,7 +995,7 @@ function renderFilings(data) {
       <td>${f.court_case_number || '-'}</td>
       <td>${f.debt_amount || '-'}</td>
       <td><span class="status-badge ${(f.status||'pending').toLowerCase()}">${f.status || 'PENDING'}</span></td>
-      <td><button class="view-btn" onclick="viewFilingDetail(${f.id})">Notes</button></td>
+      <td><button class="export-btn" style="padding:4px 10px;font-size:11px;" onclick="viewFilingDetail(${f.id})">Notes</button></td>
     </tr>
   `).join('');
   renderPagination('paginationBar', data, 'main');
@@ -650,7 +1057,6 @@ async function viewFilingDetail(filingId) {
     </div>`;
   }
   html += '</div>';
-
   document.getElementById('modalTownName').textContent = 'Filing Notes';
   document.getElementById('modalFilingsBody').closest('.modal-body').innerHTML = html;
   document.getElementById('filingModal').classList.add('active');
@@ -672,7 +1078,6 @@ async function loadAnalysis() {
     api('/api/pipeline/status'),
     api('/api/leads/summary'),
   ]);
-
   let html = '';
   const run = pipeline.latestRun;
   if (run) {
@@ -687,7 +1092,6 @@ async function loadAnalysis() {
       </div>
     </div>`;
   }
-
   if (pipeline.townStats) {
     pipeline.townStats.forEach(ts => {
       html += `<div class="summary-card">
@@ -697,7 +1101,6 @@ async function loadAnalysis() {
       </div>`;
     });
   }
-
   const s = leads.summary || {};
   html += `<div class="summary-card">
     <h3>Lead Analysis</h3>
@@ -705,12 +1108,10 @@ async function loadAnalysis() {
     <div class="detail">
       High priority: ${s.high_priority || 0}<br>
       Medium priority: ${s.medium_priority || 0}<br>
-      Low priority: ${s.low_priority || 0}<br>
       Filings with notes: ${s.filings_with_notes || 0}
     </div>
   </div>`;
-
-  container.innerHTML = html || '<div class="empty-state"><h3>No data yet</h3><p>Run the pipeline to generate analysis.</p></div>';
+  container.innerHTML = html || '<div class="empty-state"><h3>No data yet</h3></div>';
 }
 
 async function loadDefiState() {
@@ -720,8 +1121,7 @@ async function loadDefiState() {
   const pos = data.position;
   if (!pos) {
     container.innerHTML = `<div class="defi-section">
-      <div class="defi-card">
-        <h3>Position Status</h3>
+      <div class="defi-card"><h3>Position Status</h3>
         <div class="metric" style="color:var(--muted)">No Active Position</div>
         <div class="detail">Your DeFi position will appear here once initialized.</div>
       </div>
@@ -732,55 +1132,104 @@ async function loadDefiState() {
   const hfColor = hf >= 2 ? 'var(--green)' : hf >= 1.5 ? 'var(--orange)' : 'var(--red)';
   const hfPct = Math.min(hf / 5 * 100, 100);
   container.innerHTML = `<div class="defi-section">
-    <div class="defi-card">
-      <h3>Health Factor</h3>
+    <div class="defi-card"><h3>Health Factor</h3>
       <div class="metric" style="color:${hfColor}">${hf.toFixed(2)}</div>
       <div class="health-meter"><div class="health-meter-fill" style="width:${hfPct}%;background:${hfColor}"></div></div>
     </div>
-    <div class="defi-card">
-      <h3>Collateral</h3>
+    <div class="defi-card"><h3>Collateral</h3>
       <div class="metric">$${parseFloat(pos.total_collateral_usd || 0).toFixed(2)}</div>
     </div>
-    <div class="defi-card">
-      <h3>Debt</h3>
+    <div class="defi-card"><h3>Debt</h3>
       <div class="metric" style="color:var(--red)">$${parseFloat(pos.total_debt_usd || 0).toFixed(2)}</div>
     </div>
-    <div class="defi-card">
-      <h3>Net Worth</h3>
+    <div class="defi-card"><h3>Net Worth</h3>
       <div class="metric" style="color:var(--green)">$${parseFloat(pos.net_worth_usd || 0).toFixed(2)}</div>
       <div class="detail">Last updated: ${pos.updated_at || '-'}</div>
     </div>
   </div>`;
 }
 
-async function loadOverviewStats() {
-  const [pipeline, leads] = await Promise.all([
-    api('/api/pipeline/status'),
-    api('/api/leads/summary'),
-  ]);
+function openChat() {
+  document.getElementById('chatOverlay').classList.add('active');
+  document.getElementById('chatInput').focus();
+}
 
-  let totalFilings = 0;
-  if (pipeline.townStats) {
-    pipeline.townStats.forEach(ts => totalFilings += ts.filing_count);
+function closeChat() {
+  document.getElementById('chatOverlay').classList.remove('active');
+}
+
+function sendPreset(msg) {
+  document.getElementById('chatInput').value = msg;
+  sendMessage();
+}
+
+async function sendMessage() {
+  const input = document.getElementById('chatInput');
+  const msg = input.value.trim();
+  if (!msg || state.chatBusy) return;
+
+  if (!state.userId) {
+    appendChatMsg('agent', 'Please connect your wallet first to use the chat.');
+    return;
   }
-  document.getElementById('totalFilings').textContent = totalFilings;
-  document.getElementById('townsTracked').textContent = state.userTownIds.length || state.towns.length;
 
-  const run = pipeline.latestRun;
-  if (run) {
-    const d = run.completed_at || run.started_at;
-    document.getElementById('lastRun').textContent = d ? new Date(d).toLocaleDateString() : '-';
-    document.getElementById('lastRunStatus').textContent = run.status || '-';
+  appendChatMsg('user', msg);
+  input.value = '';
+  state.chatBusy = true;
+  document.getElementById('chatSendBtn').disabled = true;
+
+  const typingId = appendChatMsg('agent', '<div class="typing"><span></span><span></span><span></span></div>');
+
+  try {
+    const data = await api('/api/chat', {
+      method: 'POST',
+      body: JSON.stringify({ message: msg, userId: state.userId }),
+    });
+
+    removeChatMsg(typingId);
+
+    if (data.error) {
+      appendChatMsg('agent', data.error);
+    } else {
+      appendChatMsg('agent', formatChatResponse(data.response));
+    }
+  } catch (e) {
+    removeChatMsg(typingId);
+    appendChatMsg('agent', 'Something went wrong. Please try again.');
   }
 
-  const s = leads.summary || {};
-  document.getElementById('highLeads').textContent = s.high_priority || 0;
+  state.chatBusy = false;
+  document.getElementById('chatSendBtn').disabled = false;
+}
+
+function appendChatMsg(role, content) {
+  const container = document.getElementById('chatMessages');
+  const div = document.createElement('div');
+  const id = 'msg-' + Date.now() + Math.random().toString(36).substr(2,4);
+  div.id = id;
+  div.className = `chat-msg ${role}`;
+  div.innerHTML = content;
+  container.appendChild(div);
+  container.scrollTop = container.scrollHeight;
+  return id;
+}
+
+function removeChatMsg(id) {
+  const el = document.getElementById(id);
+  if (el) el.remove();
+}
+
+function formatChatResponse(text) {
+  return text
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\n/g, '<br>')
+    .replace(/`(.*?)`/g, '<code style="background:var(--surface2);padding:1px 4px;border-radius:3px;font-size:12px;">$1</code>');
 }
 
 function switchTab(tab) {
-  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
   document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-  document.querySelector(`.tab[data-tab="${tab}"]`).classList.add('active');
+  document.querySelector(`.nav-tab[data-tab="${tab}"]`).classList.add('active');
   document.getElementById(`tab-${tab}`).classList.add('active');
 
   if (tab === 'filings') loadFilings();
@@ -790,11 +1239,11 @@ function switchTab(tab) {
 
 document.addEventListener('DOMContentLoaded', () => {
   loadTowns();
-  loadOverviewStats();
+  updateHealthRing(0);
 });
 
 document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') closeModal();
+  if (e.key === 'Escape') { closeModal(); closeChat(); }
 });
 </script>
 </body>

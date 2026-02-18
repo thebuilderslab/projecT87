@@ -466,6 +466,45 @@ def get_leads_summary():
         return dict(row) if row else {}
 
 
+def get_income_summary(user_id):
+    with get_conn() as conn:
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur.execute("""
+            SELECT
+                COALESCE(SUM(CASE WHEN created_at >= NOW() - INTERVAL '30 days' THEN amount_usd ELSE 0 END), 0) AS total_30d,
+                COUNT(CASE WHEN created_at >= NOW() - INTERVAL '30 days' THEN 1 END) AS count_30d,
+                COALESCE(SUM(CASE WHEN created_at >= NOW() - INTERVAL '60 days' AND created_at < NOW() - INTERVAL '30 days' THEN amount_usd ELSE 0 END), 0) AS total_prev_30d
+            FROM income_events WHERE user_id = %s
+        """, (user_id,))
+        row = cur.fetchone()
+        cur.close()
+        return dict(row) if row else {"total_30d": 0, "count_30d": 0, "total_prev_30d": 0}
+
+
+def get_recent_filings_for_towns(town_ids, limit=5):
+    if not town_ids:
+        return []
+    with get_conn() as conn:
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        placeholders = ','.join(['%s'] * len(town_ids))
+        cur.execute(f"""
+            SELECT f.property_address, f.seller, f.recording_date, t.name as town_name
+            FROM filings f JOIN towns t ON t.id = f.town_id
+            WHERE f.town_id IN ({placeholders})
+            ORDER BY f.recording_date DESC NULLS LAST, f.id DESC
+            LIMIT %s
+        """, town_ids + [limit])
+        rows = cur.fetchall()
+        cur.close()
+        result = []
+        for r in rows:
+            d = dict(r)
+            if d.get("recording_date"):
+                d["recording_date"] = d["recording_date"].isoformat()
+            result.append(d)
+        return result
+
+
 if __name__ == "__main__":
     print("Initializing database...")
     init_db()

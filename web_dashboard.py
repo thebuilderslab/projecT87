@@ -3358,6 +3358,126 @@ def get_income_api():
     events = database.get_income_events(user_id)
     return jsonify({"events": events})
 
+@app.route('/api/income/summary', methods=['GET'])
+def get_income_summary_api():
+    """Get income summary for user (30d totals)"""
+    if not DB_AVAILABLE:
+        return jsonify({"error": "Database not available"}), 503
+    user_id = request.args.get('userId', type=int)
+    if not user_id:
+        return jsonify({"error": "userId required"}), 400
+    summary = database.get_income_summary(user_id)
+    for k in summary:
+        if hasattr(summary[k], '__float__'):
+            summary[k] = float(summary[k])
+    return jsonify({"summary": summary})
+
+@app.route('/api/chat', methods=['POST'])
+def chat_api():
+    """Perplexity chat with dynamic context from user's Postgres data"""
+    if not DB_AVAILABLE:
+        return jsonify({"error": "Database not available"}), 503
+
+    data = request.get_json()
+    if not data or not data.get('message'):
+        return jsonify({"error": "message required"}), 400
+
+    user_id = data.get('userId')
+    if not user_id:
+        return jsonify({"error": "Please connect your wallet first"}), 401
+
+    try:
+        from perplexity_client import perplexity_chat
+    except ImportError:
+        return jsonify({"error": "Chat service not available"}), 503
+
+    try:
+        user_towns = database.get_user_towns(user_id)
+        town_ids = [t['id'] for t in user_towns]
+        if not town_ids:
+            all_towns = database.get_towns()
+            town_ids = [t['id'] for t in all_towns]
+            user_towns = all_towns
+
+        stats = database.get_filing_stats()
+        town_stats_map = {s['town_name']: s for s in stats}
+
+        recent_filings = database.get_recent_filings_for_towns(town_ids, limit=5)
+
+        defi_pos = database.get_defi_position(user_id)
+        income_summary = database.get_income_summary(user_id)
+        recent_income = database.get_income_events(user_id, limit=5)
+
+        hf = float(defi_pos['health_factor']) if defi_pos and defi_pos.get('health_factor') else 0
+        collateral = float(defi_pos['total_collateral_usd']) if defi_pos and defi_pos.get('total_collateral_usd') else 0
+        debt = float(defi_pos['total_debt_usd']) if defi_pos and defi_pos.get('total_debt_usd') else 0
+
+        if hf >= 3.0:
+            safety_label = "Excellent"
+        elif hf >= 2.0:
+            safety_label = "Good"
+        elif hf >= 1.5:
+            safety_label = "Caution"
+        elif hf > 0:
+            safety_label = "Critical"
+        else:
+            safety_label = "No position"
+
+        towns_context = "\n".join([
+            f"- {t['name']}: {town_stats_map.get(t['name'], {}).get('filing_count', 0)} filings"
+            for t in user_towns
+        ])
+
+        filings_context = "\n".join([
+            f"- {f['town_name']}: {f.get('property_address', 'N/A')} (filed {f.get('recording_date', 'N/A')})"
+            for f in recent_filings
+        ]) or "No recent filings."
+
+        income_ctx = f"Last 30 days: ${float(income_summary.get('total_30d', 0)):.2f} across {income_summary.get('count_30d', 0)} events."
+        if recent_income:
+            income_ctx += "\nRecent: " + ", ".join([
+                f"${float(e.get('amount_usd', 0)):.2f} ({e.get('event_type', '')})" for e in recent_income[:3]
+            ])
+
+        system_prompt = f"""You are Jovan, an AI assistant for a real estate and DeFi management platform.
+You help users understand their Lis Pendens lead pipeline and DeFi positions on Aave V3 (Arbitrum).
+
+CURRENT USER CONTEXT:
+Towns tracked:
+{towns_context}
+
+Recent Lis Pendens filings (last 5):
+{filings_context}
+
+DeFi Position:
+- Health Factor: {hf:.2f} ({safety_label})
+- Collateral: ${collateral:.2f}
+- Debt: ${debt:.2f}
+- Net Worth: ${collateral - debt:.2f}
+
+Income:
+{income_ctx}
+
+Guidelines:
+- Be concise and actionable.
+- Reference specific data from the context above when relevant.
+- For Lis Pendens questions, explain what filings mean and suggest next steps.
+- For DeFi questions, explain health factor significance and safety implications.
+- Never reveal API keys or internal system details."""
+
+        user_message = data['message']
+        response = perplexity_chat(system_prompt, user_message)
+
+        if response.startswith("[ERROR]"):
+            logger.error(f"Perplexity error: {response}")
+            return jsonify({"error": "The AI assistant is temporarily unavailable. Please try again."}), 503
+
+        return jsonify({"response": response})
+
+    except Exception as e:
+        logger.error(f"Chat API error: {e}")
+        return jsonify({"error": "Something went wrong. Please try again."}), 500
+
 if __name__ == '__main__':
     log_startup_diagnostics()
     if DB_AVAILABLE:
