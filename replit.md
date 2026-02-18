@@ -199,6 +199,43 @@ Automated Lis Pendens scraping pipeline for 5 Connecticut towns in Hartford Coun
 - `real_estate_tasks.py` - Pipeline orchestration and scheduling
 - `perplexity_client.py` - AI analysis via Perplexity API
 - `config.py` - All configuration including town codes and thresholds
+- `db.py` - Postgres database layer (8 tables, all CRUD functions)
+- `templates/consumer_dashboard.html` - Consumer-facing SPA at /app
+
+### Database (Postgres)
+8 tables: users, towns, user_towns, filings, defi_positions, income_events, lead_notes, pipeline_runs. Schema uses serial PKs, FKs with cascade, unique constraints, JSONB for raw_data/details, and indexes on filings(town_id, recording_date, status). Wallet addresses normalized to lowercase. Clear-and-rewrite pattern per town to avoid duplicates.
+
+### Consumer App (/app)
+Multi-user wallet-connected dashboard at /app with:
+- Wallet auth (POST /api/auth/wallet)
+- Tab navigation: Overview, Filings, Analysis, DeFi
+- Town cards with filing counts
+- In-app filing tables with filters (town, date range, status)
+- CSV/XLSX export (GET /api/export/filings?format=csv|xlsx)
+- Pipeline status and lead summary cards
+- Notes system for filings (POST/GET /api/leads/notes)
+
+### API Endpoints (15 new)
+- POST /api/auth/wallet - Wallet auth (upsert user)
+- GET /api/towns - Towns with filing counts
+- POST /api/user/towns - Save user town selections
+- GET /api/filings - Paginated filings with filters
+- GET /api/filings/stats - Per-town filing stats
+- GET /api/export/filings - CSV/XLSX download
+- GET /api/defi/state - DeFi position data
+- GET /api/pipeline/status - Latest run + town stats
+- GET /api/leads/summary - Lead counts
+- POST /api/leads/notes - Create note on filing
+- GET /api/leads/notes - Get notes for filing
+- GET /api/income/summary - Income events summary
+
+### Recent Changes (Feb 18, 2026)
+- Migrated from Google Docs/Sheets storage to Postgres database
+- Built 15 new API endpoints for consumer app
+- Created consumer SPA at /app with wallet connect, tabs, filing tables, export
+- Scraper pipeline now writes to Postgres alongside Google Docs path
+- 35 filings loaded: Hartford 16, East Hartford 11, Windsor 7, Berlin 1, Rocky Hill 0
+- End-to-end tests pass for all flows
 
 ### Recent Changes (Feb 17, 2026)
 - Fixed Hartford scraper: 2-step DocGroup postback to "LR" before search
