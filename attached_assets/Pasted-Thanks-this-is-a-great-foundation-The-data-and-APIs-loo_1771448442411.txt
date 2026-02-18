@@ -1,0 +1,82 @@
+Thanks, this is a great foundation. The data and APIs look good and /app as a consumer dashboard is the right direction.
+For the next phase I need three specific upgrades:
+
+
+Agent‑centric UI layout
+
+
+Replace the current 4‑tab layout as the default landing screen with a single “Command Center” view that matches this structure:
+
+
+Center: Agent avatar (animated GIF) inside a circular System Health ring showing the safety rating.
+
+
+Left: Aave/DeFi panel showing collateral, debt, health factor, and recent DeFi actions.
+
+
+Right: Lead Pipeline panel showing towns and Lis Pendens counts.
+
+
+Bottom: Recent payouts / income row using income_events.
+
+
+
+
+We can keep the existing tabs (Filings, Analysis, DeFi) as secondary navigation or deep‑dive views, but the new command center should be the main view at /app.
+
+
+
+
+Perplexity chat agent with GIF avatar in the center
+
+
+Implement a chat window anchored to the central agent:
+
+
+The GIF avatar sits in the middle of the safety ring.
+
+
+Chat messages appear around/below it.
+
+
+Chat uses the Perplexity API (OpenAI‑compatible) with a system prompt that includes:
+
+
+The user’s towns and pipeline summary from Postgres.
+
+
+The user’s DeFi state and safety rating.
+
+
+
+
+Provide preset chips like “Summarize my new Lis Pendens,” “Explain my safety rating,” and “Suggest a DeFi rebalance.”
+
+
+
+
+
+
+Clarify and finalize wallet roles
+
+
+Please document and, if needed, adjust the wallet model so that:
+
+
+The connected wallet (user) is used for that user’s Aave state and dashboard data.
+
+
+WALLET_S and WALLET_B remain internal distribution wallets and are not exposed to the frontend.
+
+
+The old hard‑coded wallet is no longer used in the consumer flow.
+
+
+
+
+Output a short “Wallet Architecture” section in replit.md explaining which wallet signs which type of transaction, for both the admin bot and consumer users.
+
+
+
+
+Also, confirm that the new consumer UI at /app does not depend on Google Docs at all, and that Google is now only kept for legacy admin usage while we transition.

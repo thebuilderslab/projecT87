@@ -1,0 +1,249 @@
+I’ve attached the latest mockups of:
+
+The circular System Health + agent layout
+
+The original “space” dashboard
+
+Please use these as visual reference for the new Command Center at /app (center ring, glow effects, card shapes), even if the first pass is a simplified CSS version.
+
+1. Command Center layout (primary view at /app)
+Turn the current Overview tab into a full Command Center with three main zones and a bottom row:
+
+Center: System Health ring + Agent avatar + Chat entry
+
+The animated GIF avatar (currently at attached_assets/assetsavatar_idle_...gif) should be served from a static directory and displayed inside a circular System Health ring.
+
+The ring shows a numeric safety score (0–4) and a color state (green/yellow/red).
+
+Clicking the avatar (or a chat icon near it) opens the chat window.
+
+Data wiring:
+
+The safety ring must be backed by real Postgres data, not a fixed number.
+
+Inputs should include at minimum (from defi_positions or equivalent):
+
+collateral_usd
+
+debt_usd
+
+health_factor
+
+Optionally include a simple runway metric derived from income_events vs an assumed monthly cost.
+
+Safety score formula:
+
+Please define a specific formula that maps those inputs to a 0–4 score and document it in replit.md.
+
+Example only (you choose final values and document them):
+
+3.0–4.0 → green,
+
+2.0–3.0 → yellow,
+
+< 2.0 → red.
+
+In replit.md, add a short “Safety Score” section:
+
+Inputs (tables/fields)
+
+Formula or thresholds
+
+Color mapping.
+
+Left: DeFi panel
+
+Show the user’s Aave / DeFi state pulled from Postgres:
+
+Total collateral (USD)
+
+Total debt (USD)
+
+Health factor
+
+Breakdown by asset (e.g., USDC, DAI, etc.) if available
+
+Please confirm which table(s) and columns this panel reads from (likely defi_positions) and describe this in replit.md.
+
+Right: Lead Pipeline panel
+
+For the currently selected towns for this user:
+
+Show one card per town: town name + count of recent filings (e.g., last 7 days) from filings/user_towns.
+
+Clicking a town card should open the existing in‑app filings table with:
+
+Columns: Address, Case #, Plaintiff, Defendant, Filing date, Status, Notes
+
+Filters across the top: town, date range, status (and later we’ll add “owner‑occupied vs absentee”).
+
+The existing Filings tab/table can be reused; just ensure it’s accessible directly from the Command Center via these cards.
+
+Bottom: Income / payouts row
+
+Use income_events to show:
+
+Total income last 30 days
+
+Count of income events
+
+Change vs previous 30 days (if easy; otherwise just show last 30 days)
+
+This should visually tie to “Recent payouts” / “Personal Income” in the mockups.
+
+The other tabs (Filings, Analysis, DeFi) should remain as secondary deep‑dive views, but /app should land on this Command Center view by default.
+
+2. Perplexity chat agent anchored to the center
+Please implement a chat experience anchored to the central agent:
+
+Backend endpoint
+
+Add POST /api/chat that:
+
+Requires an authenticated user session (wallet auth).
+
+Derives the user identity from the session / server‑side context, not from a client‑supplied userId query param.
+
+Builds a system prompt from the user’s Postgres data and forwards the request to the existing perplexity_chat() function.
+
+System prompt content (document in replit.md):
+
+Include at least these fields in the prompt context:
+
+User’s selected towns (from user_towns) and each town’s recent filings count.
+
+Top N recent filings (e.g., last 5) with town, address, filing date.
+
+Current safety rating and Aave health factor.
+
+Recent income events (e.g., last few income_events).
+
+In replit.md, add a short section “Chat Context” listing exactly which tables and fields are used and how they’re summarized.
+
+Error handling:
+
+Handle Perplexity timeouts/errors gracefully:
+
+Return a friendly error message to the UI if the API fails.
+
+Log the detailed error on the server, but never expose API keys.
+
+Frontend chat UI
+
+The avatar GIF inside the safety ring remains visible at all times.
+
+Clicking the avatar (or a chat icon) opens a chat panel anchored to the center:
+
+Message history (user/agent)
+
+Input box with placeholder like “Ask your assistant…”
+
+Preset chips/buttons:
+
+“Summarize my new Lis Pendens”
+
+“Explain my safety rating”
+
+“Suggest a DeFi rebalance”
+
+The chat panel should call POST /api/chat and display responses from Perplexity.
+
+3. Auth and permissions for /api/chat and data
+Please ensure:
+
+/api/chat only works for authenticated users who have connected their wallet.
+
+The backend uses the session/user context to select data from Postgres; the client should not be able to request another user’s data by changing parameters.
+
+If no user is logged in or no towns are selected, the endpoint should return a clear error that the UI can handle.
+
+4. Wallet behavior around Aave (clarification + documentation)
+Please explicitly enforce and document this wallet model:
+
+Connected wallet (consumer):
+
+Used as the user identity for /app and for associating data in users, defi_positions, income_events, etc.
+
+No consumer private keys are stored on the server.
+
+For now, Aave interactions for consumers can be read‑only (monitoring health) unless we explicitly add client‑side signing later.
+
+WALLET_S and WALLET_B:
+
+Remain internal to the agent/bot and distribution logic.
+
+Never exposed in any /app responses or frontend code.
+
+Consumer flows should not depend on them.
+
+Old hard‑coded wallet:
+
+Should not be used in any /app (consumer) logic.
+
+In replit.md, please add a “Wallet Architecture” section that states:
+
+Which wallet is used for which purpose.
+
+Which tables (if any) store addresses besides users.
+
+Which endpoints (if any) result in on‑chain transactions and how they are signed (bot vs user).
+
+5. Code / documentation I need
+Please update replit.md (or a short doc file) with:
+
+Component & file map
+
+Names and paths for key frontend pieces used by /app:
+
+Command Center layout file/template
+
+Components or sections for:
+
+SystemHealthRing
+
+Agent avatar / AgentChat
+
+DeFiPanel
+
+LeadPipelinePanel
+
+IncomeRow
+
+Names and paths for new backend handlers:
+
+/api/chat function name and file
+
+Any helper that builds the Perplexity system prompt
+
+Any helper that computes the safety score
+
+API contracts
+
+For each new or updated endpoint (especially /api/chat, /api/defi/state, /api/leads/summary if changed), document:
+
+Method & path
+
+Expected request body/query params
+
+Response JSON shape
+
+Safety score formula and thresholds (as noted above).
+
+Chat context summary (which fields from which tables go into Perplexity).
+
+6. Coupling to legacy code
+One concern: web_dashboard.py is large and powers the legacy admin dashboard.
+
+Please:
+
+Keep the new /app Command Center view and /api/chat logically separate from the legacy admin logic.
+
+/app should:
+
+Use the new REST APIs and Postgres only.
+
+Avoid reaching into legacy global variables or direct Google Docs calls.
+
+Google Docs/Sheets should remain only in the legacy admin pipeline, not in any /app UI or API.
+
+If anything is unclear in these instructions, please list your questions before implementing.
