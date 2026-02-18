@@ -1,0 +1,69 @@
+Use this as your reply to Replit:
+
+Reply to Replit
+
+Select option 2.
+
+I want this to become a real multi‑user consumer app with:
+
+Wallet connect + per‑user towns
+
+Users connect their own wallet (MetaMask/Web3Modal).
+
+Backend creates a user record keyed by wallet.
+
+Each user selects one or more towns; selections are stored per user.
+
+Everything stored in our own Postgres (Replit SQL) — no Google Drive dependency
+Please design the data model so all of the following live in Postgres (Replit SQL):
+
+Filings and Lis Pendens records.
+
+Town metadata and town‑level stats.
+
+User selections (which towns they track).
+
+DeFi state (Aave positions, safety/health metrics).
+
+Income events and any agent‑generated notes/analysis.
+
+In‑app table views instead of Google Docs/Sheets
+When a user clicks a town card (for example “Hartford – 32 Lis Pendens”), I want:
+
+A modal or full‑page table rendered inside the app, not an external Sheet.
+
+Columns: Address, Case #, Plaintiff, Defendant, Filing date, Status, Notes.
+
+Filters across the top: date range, case type, and later “owner‑occupied vs absentee.”
+
+This should fully replace the pattern of opening Google Docs/Sheets.
+
+Backend‑driven exports
+For users who still want files:
+
+Add buttons like “Download CSV” and “Download Excel” on the table view.
+
+Implement an endpoint such as GET /api/export/filings?userId=...&townId=... that:
+
+Reads the data from Postgres.
+
+Streams a CSV/XLSX file directly to the browser.
+
+Users can then open the file in Excel/Numbers; we are not integrating with Google Drive.
+
+Quick views instead of narrative Google Docs
+For items like “3:20 Analysis” or “8:30 Outreach,” please:
+
+Show short summary cards inside the app (e.g., “X high‑priority leads, Y letters queued”).
+
+Add a “View details” link that opens another in‑app table or panel.
+
+Store any narrative/notes in our own tables (for example a lead_notes table) and render them as text components in the UI.
+
+Please confirm you will:
+
+Keep all persistent data in Replit SQL/Postgres.
+
+Remove the need for Google Docs/Sheets as a dependency.
+
+Design the API and UI with these in‑app tables and export endpoints as the primary way users see and download their data.
