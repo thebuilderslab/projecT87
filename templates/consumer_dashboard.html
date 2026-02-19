@@ -1522,9 +1522,10 @@ async function loadDelegationStatus(afterConnect = false) {
         <span class="val" style="color:${deployed ? 'var(--green)' : 'var(--yellow)'};">${deployed ? 'ENABLED' : 'PENDING (contract not deployed)'}</span>
       </div>
       <div class="delegation-detail">
-        <span class="label">Total Supplied</span>
-        <span class="val">${d.suppliedWbtcAmount.toFixed(4)} WBTC</span>
+        <span class="label">Current Supply</span>
+        <span class="val">${d.hasActivePosition ? d.suppliedWbtcAmount.toFixed(4) + ' WBTC' : '0 WBTC'}</span>
       </div>
+      ${d.supplyReconciled ? '<div class="delegation-detail"><span class="label" style="color:var(--yellow);font-size:11px;">Note</span><span class="val" style="color:var(--yellow);font-size:11px;">On-chain position empty — counter resets on next refresh</span></div>' : ''}
       ${!deployed ? notDeployedMsg : ''}
       ${lastSupplyHtml}
       <button class="delegation-btn revoke" onclick="revokeDelegation()">Revoke Auto-Pilot</button>

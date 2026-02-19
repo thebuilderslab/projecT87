@@ -67,17 +67,17 @@ def fetch_aave_position_for_wallet(wallet_address):
                 continue
             pool = w3.eth.contract(address=Web3.to_checksum_address(pool_addr), abi=pool_abi)
             data = pool.functions.getUserAccountData(Web3.to_checksum_address(wallet_address)).call()
-            coll = data[0] / 1e8
-            debt = data[1] / 1e8
-            if coll == 0 and debt == 0:
+            coll = round(data[0] / 1e8, 2)
+            debt = round(data[1] / 1e8, 2)
+            if coll < 0.01 and debt < 0.01:
                 return None
             hf = data[5] / 1e18 if data[5] > 0 else 0
-            if debt == 0 and coll > 0:
+            if debt < 0.01 and coll >= 0.01:
                 hf = MAX_HF
             elif hf > MAX_HF:
                 hf = MAX_HF
-            return {'health_factor': round(hf, 4), 'total_collateral_usd': round(coll, 2),
-                    'total_debt_usd': round(debt, 2), 'net_worth_usd': round(coll - debt, 2)}
+            return {'health_factor': round(hf, 4), 'total_collateral_usd': coll,
+                    'total_debt_usd': debt, 'net_worth_usd': round(coll - debt, 2)}
         except Exception as e:
             last_err = e
             continue
@@ -86,7 +86,8 @@ def fetch_aave_position_for_wallet(wallet_address):
 
 
 def refresh_defi_for_user(user_id, wallet_address):
-    """Fetch on-chain Aave position and upsert to DB. Returns position dict or None."""
+    """Fetch on-chain Aave position and upsert to DB. Returns position dict or None.
+    If on-chain position is dust/zero, marks DB row inactive and resets supplied_wbtc_amount."""
     pos = fetch_aave_position_for_wallet(wallet_address)
     if pos:
         ok = database.upsert_defi_position(
@@ -102,7 +103,11 @@ def refresh_defi_for_user(user_id, wallet_address):
         else:
             log_agent_activity(f"[Monitor] DB upsert FAILED for user {user_id} ({wallet_address[:10]}...) — data: {pos}", "ERROR")
         return pos
-    return None
+    else:
+        database.mark_position_inactive(user_id)
+        database.reset_supplied_if_withdrawn(user_id, wallet_address)
+        log_agent_activity(f"[Monitor] No on-chain position for user {user_id} ({wallet_address[:10]}...) — marked inactive, reset supply counter")
+        return None
 
 
 def run_strategies_for_user(user_id, wallet_address, agent, run_id, iteration, config):

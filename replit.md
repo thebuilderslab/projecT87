@@ -40,10 +40,24 @@ The REAA platform is built on the Arbitrum Mainnet, featuring distinct modules f
 - **Wallet Architecture:** Distinguishes between the user's connected read-only wallet and internal bot wallets (`WALLET_S`, `WALLET_B`).
 - **Data Gating:** Restricts access to sensitive pipeline, filings, and analysis tabs until the user's wallet is connected.
 
-**Phase 2: WBTC Auto-Supply Delegation (Future/Planned):**
-- **Architecture:** Introduces `managed_wallets` and `wallet_actions` tables for tracking delegation status and audit trails. A dedicated `delegation_client.py` module handles interactions with the Delegation Manager contract.
+**Phase 2: WBTC Auto-Supply Delegation (Deployed on Arbitrum Mainnet):**
+- **Architecture:** Introduces `managed_wallets` and `wallet_actions` tables for tracking delegation status and audit trails. A dedicated `delegation_client.py` module handles interactions with the Delegation Manager contract (`0x7427370Ab4C311B090446544078c819b3946E59d`).
 - **Safety Rules:** Strict safety protocols for auto-supply, including `bot_enabled` checks, active delegation status, daily guards, and on-chain balance/allowance verification before execution.
 - **API and UI:** Provides API endpoints for activating/revoking delegation and frontend UX to manage delegation status, displaying relevant information and actions.
+
+**Data Model: State Semantics (defi_positions & supplied_wbtc_amount):**
+- **`defi_positions`**: A per-user snapshot of their Aave V3 position, updated by the monitoring loop (`run_autonomous_mainnet.py`) and on-demand via `/api/defi/state`. Fields: `health_factor`, `total_collateral_usd`, `total_debt_usd`, `net_worth_usd`, `has_active_position` (boolean), `updated_at`.
+  - **`has_active_position`**: Set to `true` when `total_collateral_usd >= $0.01`. Set to `false` when collateral is below $0.01 (dust threshold). When `false`, the DeFi card shows "No Active Position" instead of stale HF/collateral values.
+  - **Dust threshold**: Both `fetch_aave_position_for_wallet` functions (in `web_dashboard.py` and `run_autonomous_mainnet.py`) return `None` when both collateral and debt round to < $0.01 after conversion from on-chain 8-decimal format. This prevents dust amounts (e.g., $0.0000004 from leftover aToken interest) from creating misleading position rows.
+  - **Reconciliation on no-position**: When `fetch_aave_position_for_wallet` returns `None`, the monitoring loop calls `mark_position_inactive(user_id)` to zero out the row and `reset_supplied_if_withdrawn(user_id, wallet)` to zero the supply counter.
+- **`managed_wallets.supplied_wbtc_amount`**: Tracks the **current** on-chain WBTC supply attributed to auto-supply actions. This is NOT a lifetime counter.
+  - **Incremented** when `auto_supply.py` executes a successful supply transaction.
+  - **Reset to 0** when the monitoring loop detects the on-chain position is empty (user withdrew manually) via `reset_supplied_if_withdrawn()`.
+  - **UI label**: Shown as "Current Supply" in the Auto-Pilot panel. When `has_active_position=false` and `supplied_wbtc_amount > 0`, a reconciliation note is shown: "On-chain position empty — counter resets on next refresh."
+- **Edge cases**:
+  - User supplies via Aave UI directly (not through auto-supply): `supplied_wbtc_amount` stays 0, but `defi_positions` reflects the on-chain position correctly.
+  - User withdraws all collateral: Next monitoring refresh marks position inactive, resets supply counter.
+  - Delegation revoked but position exists: Position still monitored (read-only), but no auto-supply actions are taken.
 
 ## External Dependencies
 

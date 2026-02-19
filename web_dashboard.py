@@ -3254,15 +3254,15 @@ def fetch_aave_position_for_wallet(wallet_address):
                 Web3.to_checksum_address(wallet_address)
             ).call()
 
-            collateral = account_data[0] / (10**8)
-            debt = account_data[1] / (10**8)
+            collateral = round(account_data[0] / (10**8), 2)
+            debt = round(account_data[1] / (10**8), 2)
 
-            if collateral == 0 and debt == 0:
-                logger.info(f"[Aave] No position for {wallet_address[:10]}... (collateral=0, debt=0)")
+            if collateral < 0.01 and debt < 0.01:
+                logger.info(f"[Aave] No meaningful position for {wallet_address[:10]}... (collateral=${collateral}, debt=${debt} — below $0.01 dust threshold)")
                 return None
 
             raw_hf = account_data[5] / (10**18) if account_data[5] > 0 else 0
-            if debt == 0 and collateral > 0:
+            if debt < 0.01 and collateral >= 0.01:
                 raw_hf = 999.99
                 logger.info(f"[Aave] Zero-debt position for {wallet_address[:10]}..., capping HF to 999.99")
             elif raw_hf > 999.99:
@@ -3270,8 +3270,8 @@ def fetch_aave_position_for_wallet(wallet_address):
 
             return {
                 'health_factor': round(raw_hf, 4),
-                'total_collateral_usd': round(collateral, 2),
-                'total_debt_usd': round(debt, 2),
+                'total_collateral_usd': collateral,
+                'total_debt_usd': debt,
                 'net_worth_usd': round(collateral - debt, 2),
             }
         except Exception as e:
@@ -3363,6 +3363,15 @@ def user_status():
             delegation_info["suppliedWbtcAmount"] = float(mw['supplied_wbtc_amount'] or 0)
             delegation_info["lastAutoSupplyAt"] = mw['last_auto_supply_at'].isoformat() if mw.get('last_auto_supply_at') else None
             logger.debug(f"[UserStatus] user={user_id} wallet={wallet} mw.delegation_status={mw['delegation_status']} -> delegationStatus={delegation_info['delegationStatus']}")
+
+        defi_pos = database.get_defi_position(user_id)
+        has_active = defi_pos.get('has_active_position', False) if defi_pos else False
+        delegation_info["hasActivePosition"] = has_active
+
+        if not has_active and delegation_info["suppliedWbtcAmount"] > 0:
+            delegation_info["supplyReconciled"] = True
+            delegation_info["reconciledNote"] = "On-chain position is empty. Supply counter will reset on next refresh."
+
         last_action = database.get_last_wallet_action(user_id, wallet, action_type='auto_supply')
         if last_action:
             delegation_info["lastAutoSupplyTxHash"] = last_action.get('tx_hash')
@@ -3579,11 +3588,16 @@ def export_filings():
 
 @app.route('/api/defi/state', methods=['GET'])
 def get_defi_state():
-    """Get DeFi state for a user (auth required)"""
+    """Get DeFi state for a user (auth required).
+    Returns position: null if no active position (dust/withdrawn/never supplied)."""
     if not DB_AVAILABLE:
         return jsonify({"error": "Database not available"}), 503
     user_id = get_current_user_id()
     position = database.get_defi_position(user_id)
+
+    if position and not position.get('has_active_position', False):
+        return jsonify({"position": None, "message": "Position inactive (withdrawn or dust). Supply on Aave to see your position here."})
+
     if not position:
         user = database.get_user_by_id(user_id)
         wallet = user.get('wallet_address', '') if user else ''
@@ -3601,6 +3615,9 @@ def get_defi_state():
                 return jsonify({"position": position})
             else:
                 return jsonify({"position": None, "storageError": True, "message": "Aave position found on-chain but failed to store in database."})
+        else:
+            database.mark_position_inactive(user_id)
+            database.reset_supplied_if_withdrawn(user_id, wallet)
         return jsonify({"position": None, "message": "No Aave position detected for this wallet yet."})
     return jsonify({"position": position})
 

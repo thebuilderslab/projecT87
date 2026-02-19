@@ -83,10 +83,12 @@ def init_db():
             total_collateral_usd NUMERIC(14,2),
             total_debt_usd NUMERIC(14,2),
             net_worth_usd NUMERIC(14,2),
+            has_active_position BOOLEAN NOT NULL DEFAULT false,
             positions JSONB DEFAULT '{}',
             updated_at TIMESTAMPTZ DEFAULT NOW()
         );
         CREATE UNIQUE INDEX IF NOT EXISTS idx_defi_positions_user_unique ON defi_positions (user_id);
+        ALTER TABLE defi_positions ADD COLUMN IF NOT EXISTS has_active_position BOOLEAN NOT NULL DEFAULT false;
 
         CREATE TABLE IF NOT EXISTS income_events (
             id SERIAL PRIMARY KEY,
@@ -390,24 +392,68 @@ def upsert_defi_position(user_id, health_factor, collateral, debt, net_worth, po
     try:
         if health_factor is not None and health_factor > 999.99:
             health_factor = 999.99
+        has_active = bool(collateral is not None and float(collateral) >= 0.01)
         with get_conn() as conn:
             cur = conn.cursor()
             cur.execute("""
-                INSERT INTO defi_positions (user_id, health_factor, total_collateral_usd, total_debt_usd, net_worth_usd, positions, updated_at)
-                VALUES (%s, %s, %s, %s, %s, %s, NOW())
+                INSERT INTO defi_positions (user_id, health_factor, total_collateral_usd, total_debt_usd, net_worth_usd, has_active_position, positions, updated_at)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, NOW())
                 ON CONFLICT (user_id) DO UPDATE SET
                     health_factor = EXCLUDED.health_factor,
                     total_collateral_usd = EXCLUDED.total_collateral_usd,
                     total_debt_usd = EXCLUDED.total_debt_usd,
                     net_worth_usd = EXCLUDED.net_worth_usd,
+                    has_active_position = EXCLUDED.has_active_position,
                     positions = EXCLUDED.positions,
                     updated_at = NOW()
-            """, (user_id, health_factor, collateral, debt, net_worth, psycopg2.extras.Json(positions or {})))
+            """, (user_id, health_factor, collateral, debt, net_worth, has_active, psycopg2.extras.Json(positions or {})))
             cur.close()
-        logger.info(f"[DB] upsert_defi_position OK for user {user_id}: HF={health_factor}, collateral={collateral}, debt={debt}")
+        logger.info(f"[DB] upsert_defi_position OK for user {user_id}: HF={health_factor}, collateral={collateral}, debt={debt}, active={has_active}")
         return True
     except Exception as e:
         logger.error(f"[DB] upsert_defi_position FAILED for user {user_id}: {e} (HF={health_factor}, collateral={collateral}, debt={debt})")
+        return False
+
+
+def mark_position_inactive(user_id):
+    import logging
+    logger = logging.getLogger(__name__)
+    try:
+        with get_conn() as conn:
+            cur = conn.cursor()
+            cur.execute("""
+                UPDATE defi_positions
+                SET has_active_position = false, health_factor = 0, total_collateral_usd = 0,
+                    total_debt_usd = 0, net_worth_usd = 0, updated_at = NOW()
+                WHERE user_id = %s
+            """, (user_id,))
+            cur.close()
+        logger.info(f"[DB] Marked position inactive for user {user_id}")
+        return True
+    except Exception as e:
+        logger.error(f"[DB] mark_position_inactive FAILED for user {user_id}: {e}")
+        return False
+
+
+def reset_supplied_if_withdrawn(user_id, wallet_address):
+    import logging
+    logger = logging.getLogger(__name__)
+    wallet_address = wallet_address.lower().strip()
+    try:
+        with get_conn() as conn:
+            cur = conn.cursor()
+            cur.execute("""
+                UPDATE managed_wallets
+                SET supplied_wbtc_amount = 0, updated_at = NOW()
+                WHERE user_id = %s AND wallet_address = %s AND supplied_wbtc_amount > 0
+            """, (user_id, wallet_address))
+            rows = cur.rowcount
+            cur.close()
+        if rows > 0:
+            logger.info(f"[DB] Reset supplied_wbtc_amount to 0 for user {user_id} ({wallet_address[:10]}...) — on-chain withdrawn")
+        return rows > 0
+    except Exception as e:
+        logger.error(f"[DB] reset_supplied_if_withdrawn FAILED for user {user_id}: {e}")
         return False
 
 
