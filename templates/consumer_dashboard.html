@@ -828,11 +828,13 @@ let state = {
 };
 
 async function api(path, opts = {}) {
-  const headers = { 'Content-Type': 'application/json', ...opts.headers };
+  const baseHeaders = { 'Content-Type': 'application/json' };
   if (state.authToken) {
-    headers['X-Auth-Token'] = state.authToken;
+    baseHeaders['X-Auth-Token'] = state.authToken;
   }
-  const res = await fetch(path, { headers, ...opts });
+  const mergedHeaders = { ...baseHeaders, ...(opts.headers || {}) };
+  const fetchOpts = { ...opts, headers: mergedHeaders };
+  const res = await fetch(path, fetchOpts);
   if (res.status === 401) {
     fullDisconnect();
     return { error: 'Session expired. Please reconnect your wallet.' };
@@ -841,51 +843,65 @@ async function api(path, opts = {}) {
 }
 
 function fullDisconnect() {
-  state.authToken = null;
-  state.userId = null;
-  state.walletAddress = null;
-  state.chatHistory = [];
-  state.chatBusy = false;
-  state.defiPosition = null;
-  state.safetyScore = 0;
-  state.userTownIds = [];
-  state.towns = [];
+  if (state._disconnecting) return;
+  state._disconnecting = true;
+  try {
+    state.authToken = null;
+    state.userId = null;
+    state.walletAddress = null;
+    state.chatHistory = [];
+    state.chatBusy = false;
+    state.defiPosition = null;
+    state.safetyScore = 0;
+    state.userTownIds = [];
+    state.towns = [];
+    state.autoPilotOffered = false;
 
-  const btn = document.getElementById('walletBtn');
-  btn.className = 'wallet-btn connect';
-  btn.textContent = 'Connect Wallet';
-  btn.onclick = connectWallet;
-  document.getElementById('disconnectBtn').style.display = 'none';
+    closeAutoPilot();
+    closeModal();
+    closeChat();
 
-  document.getElementById('defiCollateral').textContent = '--';
-  document.getElementById('defiDebt').textContent = '--';
-  document.getElementById('defiHF').textContent = '--';
-  document.getElementById('defiHF').className = 'val green';
-  document.getElementById('defiHF').style.color = '';
-  document.getElementById('defiNetWorth').textContent = '--';
-  document.getElementById('defiActions').innerHTML = '<div class="defi-action-item"><div class="dot" style="background:var(--muted)"></div> No recent actions</div>';
+    const apBtn = document.getElementById('apEnableBtn');
+    if (apBtn) { apBtn.disabled = false; apBtn.textContent = 'Enable Auto-Pilot'; }
 
-  document.getElementById('delegationSection').style.display = 'none';
-  document.getElementById('delegationContent').innerHTML = '';
+    const btn = document.getElementById('walletBtn');
+    btn.className = 'wallet-btn connect';
+    btn.textContent = 'Connect Wallet';
+    btn.onclick = connectWallet;
+    document.getElementById('disconnectBtn').style.display = 'none';
 
-  updateHealthRing(0);
+    document.getElementById('defiCollateral').textContent = '--';
+    document.getElementById('defiDebt').textContent = '--';
+    document.getElementById('defiHF').textContent = '--';
+    document.getElementById('defiHF').className = 'val green';
+    document.getElementById('defiHF').style.color = '';
+    document.getElementById('defiNetWorth').textContent = '--';
+    document.getElementById('defiActions').innerHTML = '<div class="defi-action-item"><div class="dot" style="background:var(--muted)"></div> No recent actions</div>';
 
-  document.getElementById('income30d').textContent = '$0.00';
-  document.getElementById('incomeCount').textContent = '0';
-  document.getElementById('incomeChange').textContent = '--';
-  document.getElementById('incomeChange').style.color = '';
+    document.getElementById('delegationSection').style.display = 'none';
+    document.getElementById('delegationContent').innerHTML = '';
 
-  const chatContainer = document.getElementById('chatMessages');
-  chatContainer.innerHTML = '<div class="chat-msg agent">Hi! I\'m REAA (Real Estate Agent Assistant), your real estate and DeFi assistant. Ask me about your Lis Pendens leads, safety rating, or DeFi position.</div>';
+    updateHealthRing(0);
 
-  document.getElementById('chatSendBtn').disabled = false;
+    document.getElementById('income30d').textContent = '$0.00';
+    document.getElementById('incomeCount').textContent = '0';
+    document.getElementById('incomeChange').textContent = '--';
+    document.getElementById('incomeChange').style.color = '';
 
-  document.getElementById('pipelineBody').innerHTML = '<div class="loading">Connect wallet to view pipeline</div>';
+    const chatContainer = document.getElementById('chatMessages');
+    chatContainer.innerHTML = '<div class="chat-msg agent">Hi! I\'m REAA (Real Estate Agent Assistant), your real estate and DeFi assistant. Ask me about your Lis Pendens leads, safety rating, or DeFi position.</div>';
 
-  document.getElementById('filingsLocked').style.display = '';
-  document.getElementById('filingsUnlocked').style.display = 'none';
-  document.getElementById('analysisLocked').style.display = '';
-  document.getElementById('analysisUnlocked').style.display = 'none';
+    document.getElementById('chatSendBtn').disabled = false;
+
+    document.getElementById('pipelineBody').innerHTML = '<div class="loading">Connect wallet to view pipeline</div>';
+
+    document.getElementById('filingsLocked').style.display = '';
+    document.getElementById('filingsUnlocked').style.display = 'none';
+    document.getElementById('analysisLocked').style.display = '';
+    document.getElementById('analysisUnlocked').style.display = 'none';
+  } finally {
+    state._disconnecting = false;
+  }
 }
 
 async function connectWallet() {
@@ -1796,12 +1812,12 @@ async function enableAutoPilot() {
         delegation_tx_hash: delegationTxHash,
         on_chain_verified: true,
       }),
-      headers: { 'Content-Type': 'application/json' },
     });
     console.log('[AutoPilot] activate response:', JSON.stringify(data));
-    if (data.error) {
+    if (data.error || data.status === 'error') {
       resetBtn(btn);
-      appendChatMsg('agent', 'Error enabling Auto-Pilot: ' + data.error + '. On-chain delegation is active. Please try again or contact support.');
+      const errMsg = data.error || data.reason || 'Unknown error';
+      appendChatMsg('agent', 'Error enabling Auto-Pilot: ' + errMsg + '. On-chain delegation is active. Please try again or contact support.');
       return;
     }
     closeAutoPilot();
@@ -1809,7 +1825,12 @@ async function enableAutoPilot() {
     state.autoPilotOffered = true;
     await loadDelegationStatus();
     console.log('[AutoPilot] delegation activated successfully, UI refreshed');
-    const supplyMsg = data.supplyResult ? (' Initial supply: ' + data.supplyResult) : '';
+    let supplyMsg = '';
+    if (data.supplyResult) {
+      supplyMsg = ' Initial supply: ' + data.supplyResult;
+    } else if (data.status === 'skipped' && data.reason) {
+      supplyMsg = ' Note: ' + data.reason + ' — I will auto-supply when conditions are met.';
+    }
     appendChatMsg('agent', 'Auto-pilot is now enabled! Both on-chain transactions confirmed on Arbitrum. I\'ll auto-supply up to 80% of your WBTC and monitor your Aave position. You can revoke anytime from the DeFi panel.' + supplyMsg);
   } catch (e) {
     console.error('[AutoPilot] Unexpected error:', e);

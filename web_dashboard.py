@@ -3365,20 +3365,27 @@ def activate_delegation():
     on_chain_verified = req_data.get('on_chain_verified', False)
     logger.info(f"[AutoPilot] approve_tx={approve_tx_hash}, delegation_tx={delegation_tx_hash}, on_chain_verified={on_chain_verified}")
 
-    from delegation_client import is_contract_deployed, DELEGATION_MANAGER_ADDRESS, get_wbtc_allowance_raw, get_wbtc_balance_raw
+    from delegation_client import is_contract_deployed, DELEGATION_MANAGER_ADDRESS, get_wbtc_allowance_raw, get_wbtc_balance_raw, raw_to_wbtc, MIN_SUPPLY_RAW, _get_web3
     contract_live = is_contract_deployed()
-    logger.info(f"[AutoPilot] contract_deployed={contract_live}, address={DELEGATION_MANAGER_ADDRESS}")
+
+    chain_id = None
+    try:
+        w3 = _get_web3()
+        chain_id = w3.eth.chain_id
+    except Exception:
+        pass
+    logger.info(f"[AutoPilot] contract_deployed={contract_live}, address={DELEGATION_MANAGER_ADDRESS}, chain_id={chain_id}")
 
     if contract_live:
         if not on_chain_verified or not delegation_tx_hash:
             logger.warning(f"[AutoPilot] Missing on-chain verification: on_chain_verified={on_chain_verified}, delegation_tx_hash={delegation_tx_hash}")
-            return jsonify({"error": "On-chain delegation not verified. Please complete both wallet transactions (approve + delegation) before activating."}), 400
+            return jsonify({"status": "error", "reason": "On-chain delegation not verified. Please complete both wallet transactions (approve + delegation) before activating."}), 400
 
         allowance = get_wbtc_allowance_raw(wallet)
         logger.info(f"[AutoPilot] on-chain WBTC allowance for {wallet}: {allowance}")
         if allowance <= 0:
             logger.warning(f"[AutoPilot] allowance is 0 — approve tx may not have confirmed yet or was on wrong chain")
-            return jsonify({"error": "WBTC allowance is still zero on-chain. The approval may have been on the wrong network. Please ensure you are on Arbitrum and try again."}), 400
+            return jsonify({"status": "error", "reason": "WBTC allowance is still zero on-chain. The approval may have been on the wrong network. Please ensure you are on Arbitrum and try again."}), 400
 
     database.upsert_managed_wallet(user_id, wallet, auto_supply_wbtc=True)
     database.update_delegation_status(user_id, wallet, 'active')
@@ -3389,11 +3396,14 @@ def activate_delegation():
         "approve_tx_hash": approve_tx_hash,
         "delegation_tx_hash": delegation_tx_hash,
         "on_chain_verified": on_chain_verified,
+        "chain_id": chain_id,
     })
 
     mw_after = database.get_managed_wallet(user_id, wallet)
     logger.info(f"[AutoPilot] DB state after activation: delegation_status={mw_after.get('delegation_status') if mw_after else 'N/A'}, auto_supply_wbtc={mw_after.get('auto_supply_wbtc') if mw_after else 'N/A'}")
 
+    supply_status = "ok"
+    supply_reason = None
     supply_result = None
     if contract_live and mw_after:
         try:
@@ -3404,17 +3414,35 @@ def activate_delegation():
             did_supply = auto_supply_wbtc_for_wallet(mw_for_supply)
             if did_supply:
                 supply_result = "WBTC supplied to Aave successfully!"
+                supply_status = "ok"
                 logger.info(f"[AutoPilot] Immediate auto-supply succeeded for {wallet}")
             else:
                 balance = get_wbtc_balance_raw(wallet)
                 allowance_now = get_wbtc_allowance_raw(wallet)
-                supply_result = None
-                logger.info(f"[AutoPilot] Immediate auto-supply skipped for {wallet} (balance={balance}, allowance={allowance_now})")
+                balance_wbtc = float(raw_to_wbtc(balance))
+                threshold_wbtc = float(raw_to_wbtc(MIN_SUPPLY_RAW))
+                supply_status = "skipped"
+                if balance <= 0:
+                    supply_reason = "No WBTC balance in wallet"
+                elif allowance_now <= 0:
+                    supply_reason = "WBTC allowance is zero"
+                else:
+                    supply_reason = f"Balance {balance_wbtc:.8f} WBTC — 80% is below minimum threshold {threshold_wbtc} WBTC"
+                logger.info(f"[AutoPilot] Immediate auto-supply skipped for {wallet}: {supply_reason} (balance_raw={balance}, allowance_raw={allowance_now})")
         except Exception as e:
             logger.error(f"[AutoPilot] Immediate auto-supply error for {wallet}: {e}", exc_info=True)
-            supply_result = None
+            supply_status = "error"
+            supply_reason = str(e)
 
-    return jsonify({"status": "active", "autoSupplyWbtc": True, "contractDeployed": contract_live, "supplyResult": supply_result})
+    return jsonify({
+        "status": supply_status,
+        "autoSupplyWbtc": True,
+        "contractDeployed": contract_live,
+        "supplyResult": supply_result,
+        "reason": supply_reason,
+        "delegationStatus": "active",
+        "chainId": chain_id,
+    })
 
 
 @app.route('/api/delegation/revoke', methods=['POST'])
