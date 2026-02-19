@@ -16,7 +16,8 @@ Wallet Profiles:
 
   USER_WALLET — delegated user wallets via REAADelegationManager.
     - Profit Bucket: DISABLED (USDC stays in user wallet, never flushed)
-    - Liability Short close: 100% profit stays in user wallet (no 20/20/60 split)
+    - Liability Short close: 20/20/10/20/30 split — 20% Wallet_S (DAI), 20% USDC (user),
+      10% ETH (user), 20% WBTC (user), 30% USDT (user)
 
 These are the ONLY two intentional behavior differences. All other execution
 logic (Growth 6-step, Capacity 6-step, Nurse Mode sweep, Short entry,
@@ -158,7 +159,7 @@ STRATEGY_MAP = {
         "required_flags": ["allowBorrow", "allowSupply"],
         "entry_allocation": "40% WBTC, 35% USDT, 25% WETH collateral",
         "close_personal_bot": "20% Wallet_S (DAI), 20% Wallet_B (USDC), 60% Aave collateral",
-        "close_user_wallet": "100% profit stays in user wallet",
+        "close_user_wallet": "20% Wallet_S (DAI), 20% USDC (user), 10% ETH (user), 20% WBTC (user), 30% USDT (user)",
     },
     "micro_short": {
         "description": "Smaller WETH hedge against minor market dip ($30 velocity drop in 20 min, 4h cooldown)",
@@ -169,7 +170,7 @@ STRATEGY_MAP = {
         "required_flags": ["allowBorrow", "allowSupply"],
         "entry_allocation": "40% WBTC, 35% USDT, 25% WETH collateral",
         "close_personal_bot": "20% Wallet_S (DAI), 20% Wallet_B (USDC), 60% Aave collateral",
-        "close_user_wallet": "100% profit stays in user wallet",
+        "close_user_wallet": "20% Wallet_S (DAI), 20% USDC (user), 10% ETH (user), 20% WBTC (user), 30% USDT (user)",
     },
     "auto_supply": {
         "description": "Auto-supply WBTC to Aave on delegation activation",
@@ -216,8 +217,17 @@ WALLET_PROFILES = {
         "profit_bucket_threshold_usdc": None,
         "profit_bucket_destination": None,
         "short_close_profit_split": {
-            "user_wallet_pct": 1.00,
-            "note": "100% of remaining profit stays in user wallet. No 20/20/60 split.",
+            "wallet_s_pct": 0.20,
+            "wallet_s_token": "DAI",
+            "usdc_pct": 0.20,
+            "usdc_destination": "user_wallet",
+            "eth_pct": 0.10,
+            "eth_destination": "user_wallet",
+            "wbtc_pct": 0.20,
+            "wbtc_destination": "user_wallet",
+            "usdt_pct": 0.30,
+            "usdt_destination": "user_wallet",
+            "note": "20% Wallet_S (DAI), 20% USDC user, 10% ETH user, 20% WBTC user, 30% USDT user = 100%",
         },
         "growth_capacity_usdc_tax": "stays in user wallet permanently (user claims manually)",
     },
@@ -225,7 +235,7 @@ WALLET_PROFILES = {
 
 PARITY_DIFFERENCES = {
     "count": 2,
-    "description": "ONLY two intentional behavior differences between personal bot and user wallets",
+    "description": "Two intentional behavior differences between personal bot and user wallets",
     "differences": [
         {
             "id": 1,
@@ -237,7 +247,7 @@ PARITY_DIFFERENCES = {
             "id": 2,
             "feature": "Liability Short Close Profit Distribution",
             "personal_bot": "20/20/60 split — 20% Wallet_S (DAI), 20% Wallet_B (USDC), 60% Aave collateral (USDT)",
-            "user_wallet": "100% profit stays in user wallet — no split, no transfers to external wallets",
+            "user_wallet": "20/20/10/20/30 split — 20% Wallet_S (DAI), 20% USDC (user wallet), 10% ETH (user wallet), 20% WBTC (user wallet), 30% USDT (user wallet)",
         },
     ],
 }

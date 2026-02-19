@@ -169,11 +169,14 @@ PERSONAL BOT (20/20/60 split):
   ├── 20% → Wallet_B (USDT → USDC → accumulator)
   └── 60% → Aave collateral (USDT → supply)
 
-USER WALLET (100% to user):
-  On profitable short close:
-  └── 100% → Remaining profit stays in user wallet
-      (No split. No transfers to Wallet_S or Wallet_B.
-       Any leftover WETH/USDT sent back to user wallet.)
+USER WALLET (20/20/10/20/30 split):
+  On profitable short close (profit realized as WETH after repay):
+  ├── 20% → Wallet_S (swap WETH → DAI, transfer to Wallet_S)
+  ├── 20% → USDC (swap WETH → USDC, stays in user wallet)
+  ├── 10% → ETH (WETH transferred to user wallet, user can unwrap)
+  ├── 20% → WBTC (swap WETH → WBTC, stays in user wallet)
+  └── 30% → USDT (swap WETH → USDT, stays in user wallet)
+  Total = 100%. All non-Wallet_S tokens stay in user wallet.
 ```
 
 #### Everything Else: IDENTICAL
