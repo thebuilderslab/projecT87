@@ -1,0 +1,118 @@
+Audit looks good overall, but I want you to tighten it and implement fixes more rigorously. Please do the following, step by step, and show me concrete evidence and code diffs.
+
+1. Close the on‑chain vs read‑path gap
+For wallet 0xd60acbac798f146e4b7080e9a1f93977200f5cff on Arbitrum:
+
+Query the aWBTC (Aave WBTC aToken) balance directly from the contract.
+
+Call getUserAccountData on the Aave pool for this exact wallet.
+
+Do both calls using:
+
+The current public RPC.
+
+A second, reliable RPC provider (e.g., Alchemy, Infura, or another Arbitrum endpoint).
+
+Paste the raw results (aToken balance, total collateral, total debt, HF) so we can confirm:
+
+That the position does exist on-chain under my wallet address.
+
+That your fetch_aave_position_for_wallet is pointed at the correct pool, chain ID, and wallet.
+
+If there is any mismatch (different wallet, pool, or chain), identify it and propose the exact config/code correction.
+
+2. Fix health factor handling and DB overflow properly
+Implement these changes explicitly:
+
+In the Aave fetch layer (where you process getUserAccountData):
+
+If totalCollateralBase == 0 && totalDebtBase == 0, return None / “no position” instead of a record with HF = max_uint.
+
+Only compute and store health_factor when totalDebtBase > 0.
+
+If for some reason HF is still present and > a sane maximum (e.g., 10 or 100), cap it to a ceiling such as 999.99 before persisting.
+
+In the DB schema:
+
+Either widen the health_factor column (for example to NUMERIC(20,8)) or confirm that with the above logic we will never hit a value approaching the current limit.
+
+Add explicit error handling and logging around the defi_positions upsert:
+
+Log the full error when INSERT/UPDATE fails.
+
+Return a diagnostic flag so the API can distinguish “no position” from “position could not be stored”.
+
+Show me the relevant code diff(s) for:
+
+The Aave fetch function.
+
+The defi_positions insert/update logic.
+
+Any schema migration if you change the column type.
+
+3. Refactor monitoring from single‑wallet to multi‑wallet
+Right now the monitoring loop only watches the bot operator wallet. I want multi‑user strategy support, starting simple:
+
+Locate the main monitoring loop (e.g., in run_autonomous_mainnet.py or equivalent).
+
+Change it so that:
+
+It iterates over get_active_managed_wallets() (or another function that returns delegated wallets) where:
+
+delegation_status = 'active'
+
+bot_enabled = true
+
+For each wallet, it:
+
+Fetches position/health.
+
+Applies the macro/micro/growth/capacity strategy logic.
+
+Logs decisions per wallet (wallet, chainId, mode, decision, reason).
+
+Keep the bot operator wallet as just another managed wallet if needed, rather than a special case.
+
+Add temporary logs like:
+
+[Monitor] wallet=..., collateral=..., debt=..., hf=..., mode=..., decision=...
+
+and show me a sample log snippet that includes my wallet in the loop once delegation is active.
+
+4. Ensure UI and API reflect real position state
+Confirm that /api/defi/state:
+
+Returns position: null only when there is genuinely no on-chain position for that wallet.
+
+Returns a structured object when there is a position, and does not silently swallow DB errors.
+
+After fixing the HF/DB issue, trigger a refresh for my wallet and:
+
+Show the raw /api/defi/state JSON.
+
+Show a screenshot or description of the DeFi panel now recognizing the active position, including HF and collateral.
+
+If there is still a gap between API response and UI rendering, identify and fix the front-end mapping.
+
+5. Regression tests and guardrails
+Finally, add at least minimal automated coverage:
+
+A unit/integration test where:
+
+A wallet with collateral and no debt:
+
+Produces either no position or a capped HF.
+
+Does not trigger a DB overflow.
+
+A test that:
+
+Inserts multiple active managed wallets and confirms the monitoring loop logs decisions for each of them, not just the bot operator wallet.
+
+Summarize back to me:
+
+The final confirmed root cause(s).
+
+The exact code changes (files and functions).
+
+The test evidence (logs, API responses, or test cases) that show multi‑wallet autonomous mode is working and my Aave collateral is recognized correctly.
