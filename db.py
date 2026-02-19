@@ -1,4 +1,5 @@
 import os
+import json
 import psycopg2
 from psycopg2.extras import RealDictCursor
 from contextlib import contextmanager
@@ -126,6 +127,34 @@ def init_db():
         CREATE INDEX IF NOT EXISTS idx_lead_notes_filing ON lead_notes(filing_id);
         CREATE INDEX IF NOT EXISTS idx_income_events_user ON income_events(user_id);
         CREATE INDEX IF NOT EXISTS idx_defi_positions_user ON defi_positions(user_id);
+
+        CREATE TABLE IF NOT EXISTS managed_wallets (
+            id SERIAL PRIMARY KEY,
+            user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+            wallet_address TEXT NOT NULL,
+            delegation_status TEXT NOT NULL DEFAULT 'none',
+            auto_supply_wbtc BOOLEAN NOT NULL DEFAULT false,
+            supplied_wbtc_amount NUMERIC DEFAULT 0,
+            last_auto_supply_at TIMESTAMPTZ,
+            created_at TIMESTAMPTZ DEFAULT NOW(),
+            updated_at TIMESTAMPTZ DEFAULT NOW(),
+            UNIQUE(user_id, wallet_address)
+        );
+
+        CREATE TABLE IF NOT EXISTS wallet_actions (
+            id BIGSERIAL PRIMARY KEY,
+            user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+            wallet_address TEXT NOT NULL,
+            action_type TEXT NOT NULL,
+            details JSONB NOT NULL DEFAULT '{}',
+            tx_hash TEXT,
+            created_at TIMESTAMPTZ DEFAULT NOW()
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_managed_wallets_active
+            ON managed_wallets(delegation_status) WHERE delegation_status = 'active';
+        CREATE INDEX IF NOT EXISTS idx_wallet_actions_user
+            ON wallet_actions(user_id, created_at DESC);
         """)
         cur.close()
 
@@ -167,6 +196,15 @@ def get_user_by_wallet(wallet_address):
     with get_conn() as conn:
         cur = conn.cursor(cursor_factory=RealDictCursor)
         cur.execute("SELECT * FROM users WHERE wallet_address = %s", (wallet_address.lower().strip(),))
+        row = cur.fetchone()
+        cur.close()
+        return dict(row) if row else None
+
+
+def get_user_by_id(user_id):
+    with get_conn() as conn:
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur.execute("SELECT * FROM users WHERE id = %s", (user_id,))
         row = cur.fetchone()
         cur.close()
         return dict(row) if row else None
@@ -525,6 +563,118 @@ def get_recent_filings_for_towns(town_ids, limit=5):
                 d["recording_date"] = d["recording_date"].isoformat()
             result.append(d)
         return result
+
+
+def upsert_managed_wallet(user_id, wallet_address, auto_supply_wbtc=False):
+    wallet_address = wallet_address.lower().strip()
+    with get_conn() as conn:
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur.execute("""
+            INSERT INTO managed_wallets (user_id, wallet_address, delegation_status, auto_supply_wbtc)
+            VALUES (%s, %s, 'none', %s)
+            ON CONFLICT (user_id, wallet_address) DO UPDATE SET
+                auto_supply_wbtc = EXCLUDED.auto_supply_wbtc,
+                updated_at = NOW()
+            RETURNING *
+        """, (user_id, wallet_address, auto_supply_wbtc))
+        row = cur.fetchone()
+        cur.close()
+        return dict(row) if row else None
+
+
+def update_delegation_status(user_id, wallet_address, status):
+    wallet_address = wallet_address.lower().strip()
+    with get_conn() as conn:
+        cur = conn.cursor()
+        cur.execute("""
+            UPDATE managed_wallets
+            SET delegation_status = %s, updated_at = NOW()
+            WHERE user_id = %s AND wallet_address = %s
+        """, (status, user_id, wallet_address))
+        cur.close()
+
+
+def record_wallet_action(user_id, wallet_address, action_type, details, tx_hash=None):
+    wallet_address = wallet_address.lower().strip()
+    with get_conn() as conn:
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur.execute("""
+            INSERT INTO wallet_actions (user_id, wallet_address, action_type, details, tx_hash)
+            VALUES (%s, %s, %s, %s, %s)
+            RETURNING *
+        """, (user_id, wallet_address, action_type, json.dumps(details), tx_hash))
+        row = cur.fetchone()
+        cur.close()
+        return dict(row) if row else None
+
+
+def get_managed_wallet(user_id, wallet_address):
+    wallet_address = wallet_address.lower().strip()
+    with get_conn() as conn:
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur.execute("""
+            SELECT * FROM managed_wallets
+            WHERE user_id = %s AND wallet_address = %s
+        """, (user_id, wallet_address))
+        row = cur.fetchone()
+        cur.close()
+        return dict(row) if row else None
+
+
+def get_active_managed_wallets():
+    with get_conn() as conn:
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur.execute("""
+            SELECT mw.*, u.bot_enabled
+            FROM managed_wallets mw
+            JOIN users u ON u.id = mw.user_id
+            WHERE mw.delegation_status = 'active'
+              AND mw.auto_supply_wbtc = true
+              AND u.bot_enabled = true
+        """)
+        rows = cur.fetchall()
+        cur.close()
+        return [dict(r) for r in rows]
+
+
+def update_managed_wallet_supplied(user_id, wallet_address, amount_wbtc):
+    wallet_address = wallet_address.lower().strip()
+    with get_conn() as conn:
+        cur = conn.cursor()
+        cur.execute("""
+            UPDATE managed_wallets
+            SET supplied_wbtc_amount = supplied_wbtc_amount + %s,
+                last_auto_supply_at = NOW(),
+                updated_at = NOW()
+            WHERE user_id = %s AND wallet_address = %s
+        """, (amount_wbtc, user_id, wallet_address))
+        cur.close()
+
+
+def get_last_wallet_action(user_id, wallet_address, action_type=None):
+    wallet_address = wallet_address.lower().strip()
+    with get_conn() as conn:
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        if action_type:
+            cur.execute("""
+                SELECT * FROM wallet_actions
+                WHERE user_id = %s AND wallet_address = %s AND action_type = %s
+                ORDER BY created_at DESC LIMIT 1
+            """, (user_id, wallet_address, action_type))
+        else:
+            cur.execute("""
+                SELECT * FROM wallet_actions
+                WHERE user_id = %s AND wallet_address = %s
+                ORDER BY created_at DESC LIMIT 1
+            """, (user_id, wallet_address))
+        row = cur.fetchone()
+        cur.close()
+        if row:
+            d = dict(row)
+            if d.get('created_at'):
+                d['created_at'] = d['created_at'].isoformat()
+            return d
+        return None
 
 
 if __name__ == "__main__":

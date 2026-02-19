@@ -3312,10 +3312,76 @@ def disconnect_wallet():
 
 @app.route('/api/user/status', methods=['GET'])
 def user_status():
-    """Get current user status including bot_enabled flag"""
+    """Get current user status including bot_enabled flag and delegation info"""
     user_id = get_current_user_id()
     enabled = database.is_bot_enabled(user_id)
-    return jsonify({"botEnabled": enabled})
+    user = database.get_user_by_id(user_id)
+    wallet = user['wallet_address'] if user else None
+
+    delegation_info = {
+        "delegationStatus": "none",
+        "autoSupplyWbtc": False,
+        "suppliedWbtcAmount": 0,
+        "lastAutoSupplyAt": None,
+        "lastAutoSupplyTxHash": None,
+        "contractDeployed": False,
+    }
+
+    if wallet:
+        from delegation_client import is_contract_deployed
+        delegation_info["contractDeployed"] = is_contract_deployed()
+        mw = database.get_managed_wallet(user_id, wallet)
+        if mw:
+            delegation_info["delegationStatus"] = mw['delegation_status']
+            delegation_info["autoSupplyWbtc"] = mw['auto_supply_wbtc']
+            delegation_info["suppliedWbtcAmount"] = float(mw['supplied_wbtc_amount'] or 0)
+            delegation_info["lastAutoSupplyAt"] = mw['last_auto_supply_at'].isoformat() if mw.get('last_auto_supply_at') else None
+        last_action = database.get_last_wallet_action(user_id, wallet, action_type='auto_supply')
+        if last_action:
+            delegation_info["lastAutoSupplyTxHash"] = last_action.get('tx_hash')
+
+    return jsonify({"botEnabled": enabled, "delegation": delegation_info})
+
+
+@app.route('/api/delegation/activate', methods=['POST'])
+def activate_delegation():
+    """Activate WBTC auto-supply delegation for the connected wallet"""
+    if not DB_AVAILABLE:
+        return jsonify({"error": "Database not available"}), 503
+    user_id = get_current_user_id()
+    user = database.get_user_by_id(user_id)
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+    wallet = user['wallet_address']
+
+    database.upsert_managed_wallet(user_id, wallet, auto_supply_wbtc=True)
+    database.update_delegation_status(user_id, wallet, 'active')
+    database.record_wallet_action(user_id, wallet, 'delegation_activated', {
+        "auto_supply_wbtc": True,
+        "max_supply_ratio": "0.8",
+    })
+    logger.info(f"Delegation activated for user {user_id}, wallet {wallet}")
+    return jsonify({"status": "active", "autoSupplyWbtc": True})
+
+
+@app.route('/api/delegation/revoke', methods=['POST'])
+def revoke_delegation():
+    """Revoke WBTC auto-supply delegation"""
+    if not DB_AVAILABLE:
+        return jsonify({"error": "Database not available"}), 503
+    user_id = get_current_user_id()
+    user = database.get_user_by_id(user_id)
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+    wallet = user['wallet_address']
+
+    database.update_delegation_status(user_id, wallet, 'revoked')
+    mw = database.get_managed_wallet(user_id, wallet)
+    if mw:
+        database.upsert_managed_wallet(user_id, wallet, auto_supply_wbtc=False)
+    database.record_wallet_action(user_id, wallet, 'delegation_revoked', {})
+    logger.info(f"Delegation revoked for user {user_id}, wallet {wallet}")
+    return jsonify({"status": "revoked", "autoSupplyWbtc": False})
 
 @app.route('/api/towns', methods=['GET'])
 def list_towns():
