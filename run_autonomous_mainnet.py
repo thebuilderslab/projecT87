@@ -393,6 +393,18 @@ def run_autonomous_mainnet_agent():
         log_agent_activity("🛑 Agent halted due to critical error", "CRITICAL")
 
 if __name__ == "__main__":
+    if not os.environ.get('LAUNCHED_BY_RUN_BOTH'):
+        lock_file = '/tmp/run_both.lock'
+        if os.path.exists(lock_file):
+            try:
+                with open(lock_file, 'r') as f:
+                    pid = int(f.read().strip())
+                os.kill(pid, 0)
+                print(f"⚡ Agent already managed by bot workflow (run_both.py PID {pid}). Exiting duplicate.")
+                sys.exit(0)
+            except (OSError, ValueError):
+                pass
+
     # Ensure mainnet mode
     os.environ['NETWORK_MODE'] = 'mainnet'
     

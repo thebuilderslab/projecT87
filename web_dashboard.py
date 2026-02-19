@@ -3818,6 +3818,18 @@ Guidelines:
         return jsonify({"error": "Something went wrong. Please try again."}), 500
 
 if __name__ == '__main__':
+    if not os.environ.get('LAUNCHED_BY_RUN_BOTH'):
+        lock_file = '/tmp/run_both.lock'
+        if os.path.exists(lock_file):
+            try:
+                with open(lock_file, 'r') as f:
+                    pid = int(f.read().strip())
+                os.kill(pid, 0)
+                logger.info("⚡ Dashboard already managed by bot workflow (run_both.py PID %d). Exiting duplicate.", pid)
+                sys.exit(0)
+            except (OSError, ValueError):
+                pass
+
     log_startup_diagnostics()
     if DB_AVAILABLE:
         database.init_db()
