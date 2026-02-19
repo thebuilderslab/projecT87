@@ -819,6 +819,7 @@ let state = {
   currentModalTownId: null,
   currentPage: 1,
   modalPage: 1,
+  autoPilotOffered: false,
   chatHistory: [],
   chatBusy: false,
   defiPosition: null,
@@ -1445,7 +1446,8 @@ async function loadDelegationStatus(afterConnect = false) {
   const deployed = d.contractDeployed;
   const notDeployedMsg = '<div class="delegation-info" style="color:var(--yellow);">Delegation Manager contract not yet deployed. Auto-supply will activate once the contract is live.</div>';
 
-  if (afterConnect && d.delegationStatus === 'none' && deployed) {
+  if (afterConnect && d.delegationStatus === 'none' && deployed && !state.autoPilotOffered) {
+    state.autoPilotOffered = true;
     showAutoPilotPrompt();
   }
 
@@ -1532,24 +1534,57 @@ function closeAutoPilot() {
 async function enableAutoPilot() {
   const btn = document.getElementById('apEnableBtn');
   btn.disabled = true;
-  btn.textContent = 'Enabling...';
+  btn.textContent = 'Requesting approval...';
+
+  const WBTC_ADDRESS = '0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f';
+  const DELEGATION_MANAGER = '0x0000000000000000000000000000000000000000';
+  const MAX_UINT256 = '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
+  const ERC20_APPROVE_ABI = [{
+    name: 'approve', type: 'function', stateMutability: 'nonpayable',
+    inputs: [{ name: 'spender', type: 'address' }, { name: 'amount', type: 'uint256' }],
+    outputs: [{ name: '', type: 'bool' }]
+  }];
+
   try {
+    if (typeof window.ethereum !== 'undefined' && state.walletAddress) {
+      btn.textContent = 'Confirm in wallet...';
+      try {
+        const iface = new ethers.Interface(ERC20_APPROVE_ABI);
+        const approveData = iface.encodeFunctionData('approve', [DELEGATION_MANAGER, MAX_UINT256]);
+        await window.ethereum.request({
+          method: 'eth_sendTransaction',
+          params: [{
+            from: state.walletAddress,
+            to: WBTC_ADDRESS,
+            data: approveData,
+          }],
+        });
+      } catch (txErr) {
+        btn.disabled = false;
+        btn.textContent = 'Enable Auto-Pilot';
+        appendChatMsg('agent', 'Wallet transaction was rejected. Auto-pilot was not enabled — you remain in read-only mode. You can try again anytime.');
+        return;
+      }
+    }
+
+    btn.textContent = 'Enabling...';
     const data = await api('/api/delegation/activate', { method: 'POST' });
     if (data.error) {
-      alert('Error: ' + data.error);
       btn.disabled = false;
       btn.textContent = 'Enable Auto-Pilot';
+      appendChatMsg('agent', 'Failed to enable auto-pilot: ' + data.error + '. You remain in read-only mode.');
       return;
     }
     closeAutoPilot();
     btn.disabled = false;
     btn.textContent = 'Enable Auto-Pilot';
+    state.autoPilotOffered = true;
     loadDelegationStatus();
     appendChatMsg('agent', 'Auto-pilot is now enabled. I\'ll auto-supply up to 80% of your WBTC and monitor your Aave safety band. You can revoke anytime from the DeFi panel.');
   } catch (e) {
-    alert('Failed to enable auto-pilot. Please try again.');
     btn.disabled = false;
     btn.textContent = 'Enable Auto-Pilot';
+    appendChatMsg('agent', 'Something went wrong while enabling auto-pilot. You remain in read-only mode. Please try again.');
   }
 }
 
