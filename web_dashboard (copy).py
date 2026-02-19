@@ -31,20 +31,24 @@ try:
 except ImportError:
     EASTERN = timezone(timedelta(hours=-5))
 
+
 def est_now():
     """Return current time formatted as HH:MM:SS in Eastern Time (auto-handles EST/EDT)."""
     return datetime.now(EASTERN).strftime('%H:%M:%S')
+
 
 # Import PnL converter for dynamic parameter management
 try:
     from pnl_converter import PnLConverter
     PNL_CONVERTER_AVAILABLE = True
 except ImportError:
-    print("WARNING: PnLConverter not available - PnL endpoints will be disabled")
+    print(
+        "WARNING: PnLConverter not available - PnL endpoints will be disabled")
     PNL_CONVERTER_AVAILABLE = False
 
 # Configure logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(level=logging.INFO,
+                    format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
@@ -56,40 +60,44 @@ system_mode = None  # Track current system mode
 sse_clients = []  # Store SSE client connections
 pnl_event_queue = queue.Queue()  # Queue for PnL events
 
+
 class WorkingAgent:
     """Working agent with live mainnet data"""
+
     def _create_working_web3_connection(self):
         """Create working Web3 connection using proven RPC endpoints"""
         from web3 import Web3
-        
+
         # Use same proven working endpoints as autonomous agent
         working_rpcs = [
             "https://arbitrum-one.public.blastapi.io",  # Fastest: 0.16s
-            os.getenv('ALCHEMY_RPC_URL', "https://arb1.arbitrum.io/rpc"),  # Alchemy from env
+            os.getenv('ALCHEMY_RPC_URL',
+                      "https://arb1.arbitrum.io/rpc"),  # Alchemy from env
             "https://arb1.arbitrum.io/rpc",  # Official
             "https://arbitrum-one.publicnode.com"
         ]
-        
+
         for rpc_url in working_rpcs:
             try:
-                w3 = Web3(Web3.HTTPProvider(rpc_url, request_kwargs={'timeout': 10}))
+                w3 = Web3(
+                    Web3.HTTPProvider(rpc_url, request_kwargs={'timeout': 10}))
                 if w3.is_connected() and w3.eth.chain_id == 42161:
                     print(f"✅ Dashboard WorkingAgent: Connected to {rpc_url}")
                     return w3
             except Exception as e:
                 print(f"⚠️ Dashboard: RPC {rpc_url} failed: {e}")
                 continue
-        
+
         print("❌ Dashboard: All RPC endpoints failed")
         return None
-    
+
     def __init__(self):
         self.address = '0x5B823270e3719CDe8669e5e5326B455EaA8a350b'
         self.network_mode = 'mainnet'
-        
+
         # Initialize working Web3 connection using same endpoints as autonomous agent
         self.w3 = self._create_working_web3_connection()
-        
+
         # Initialize live data
         self.live_data = {
             'eth_balance': 0.001918,
@@ -113,10 +121,25 @@ class WorkingAgent:
             if not self.w3:
                 return 0.0
             from web3 import Web3
-            usdc_address = Web3.to_checksum_address("0xaf88d065e77c8cC2239327C5EDb3A432268e5831")
-            balance_abi = [{"inputs": [{"name": "account", "type": "address"}], "name": "balanceOf", "outputs": [{"name": "", "type": "uint256"}], "stateMutability": "view", "type": "function"}]
-            usdc_contract = self.w3.eth.contract(address=usdc_address, abi=balance_abi)
-            raw = usdc_contract.functions.balanceOf(Web3.to_checksum_address(self.address)).call()
+            usdc_address = Web3.to_checksum_address(
+                "0xaf88d065e77c8cC2239327C5EDb3A432268e5831")
+            balance_abi = [{
+                "inputs": [{
+                    "name": "account",
+                    "type": "address"
+                }],
+                "name": "balanceOf",
+                "outputs": [{
+                    "name": "",
+                    "type": "uint256"
+                }],
+                "stateMutability": "view",
+                "type": "function"
+            }]
+            usdc_contract = self.w3.eth.contract(address=usdc_address,
+                                                 abi=balance_abi)
+            raw = usdc_contract.functions.balanceOf(
+                Web3.to_checksum_address(self.address)).call()
             return raw / 10**6
         except Exception as e:
             logger.debug(f"USDC balance fetch error: {e}")
@@ -124,6 +147,7 @@ class WorkingAgent:
 
     def initialize_integrations(self):
         return True
+
 
 def initialize_agent():
     """Initialize agent safely with robust error handling"""
@@ -135,11 +159,13 @@ def initialize_agent():
         if agent is None:
             logger.info("📦 Dashboard: Creating WorkingAgent instance...")
             agent = WorkingAgent()
-            logger.info("✅ Dashboard: WorkingAgent instance created successfully")
+            logger.info(
+                "✅ Dashboard: WorkingAgent instance created successfully")
 
         # Check if autonomous agent is running
         if check_autonomous_agent_running():
-            logger.info("✅ Dashboard: Connected to running AUTONOMOUS MAINNET agent")
+            logger.info(
+                "✅ Dashboard: Connected to running AUTONOMOUS MAINNET agent")
             # Update with live autonomous agent data
             agent.live_data.update({
                 'data_source': 'autonomous_mainnet_agent',
@@ -156,7 +182,9 @@ def initialize_agent():
                 'trigger_threshold': 97.0
             })
         else:
-            logger.warning("⚠️ Dashboard: Autonomous agent not running, using cached data")
+            logger.warning(
+                "⚠️ Dashboard: Autonomous agent not running, using cached data"
+            )
             agent.live_data.update({
                 'data_source': 'cached_mainnet_data',
                 'agent_status': 'using_cached_data',
@@ -167,42 +195,55 @@ def initialize_agent():
                 'baseline_collateral': 47.0
             })
 
-        logger.info("✅ Dashboard: Successfully connected to autonomous agent data")
+        logger.info(
+            "✅ Dashboard: Successfully connected to autonomous agent data")
 
     except Exception as e:
         logger.error(f"⚠️ Dashboard: Connection error: {e}")
         agent = WorkingAgent()
 
+
 def check_autonomous_agent_running():
     """Check if autonomous agent is currently running"""
     try:
         # Check if autonomous agent process is active
-        result = subprocess.run(['ps', 'aux'], capture_output=True, text=True, timeout=5)
-        is_running = ('run_autonomous_mainnet.py' in result.stdout or
-                     'arbitrum_testnet_agent.py' in result.stdout or
-                     'ArbitrumTestnetAgent' in result.stdout or
-                     'complete_autonomous_launcher.py' in result.stdout or
-                     'main.py' in result.stdout)
+        result = subprocess.run(['ps', 'aux'],
+                                capture_output=True,
+                                text=True,
+                                timeout=5)
+        is_running = ('run_autonomous_mainnet.py' in result.stdout
+                      or 'arbitrum_testnet_agent.py' in result.stdout
+                      or 'ArbitrumTestnetAgent' in result.stdout
+                      or 'complete_autonomous_launcher.py' in result.stdout
+                      or 'main.py' in result.stdout)
         logger.debug(f"🔍 Autonomous agent running check: {is_running}")
         return is_running
     except Exception as e:
         logger.error(f"⚠️ Error checking autonomous agent: {e}")
         return False
 
+
 def monitor_console_output():
     """Monitor console output from autonomous agent"""
     global console_buffer
 
     # Initialize with current status
-    console_buffer.append(f"[{est_now()}] 🚀 Dashboard console monitoring started")
+    console_buffer.append(
+        f"[{est_now()}] 🚀 Dashboard console monitoring started")
 
     while True:
         try:
             # Method 1: Check for autonomous agent process output with detailed info
             try:
-                result = subprocess.run(['ps', 'aux'], capture_output=True, text=True, timeout=3)
+                result = subprocess.run(['ps', 'aux'],
+                                        capture_output=True,
+                                        text=True,
+                                        timeout=3)
                 processes = result.stdout.split('\n')
-                agent_processes = [p for p in processes if 'main.py' in p or 'arbitrum_testnet_agent.py' in p]
+                agent_processes = [
+                    p for p in processes
+                    if 'main.py' in p or 'arbitrum_testnet_agent.py' in p
+                ]
 
                 if agent_processes:
                     for proc in agent_processes[:2]:  # Show up to 2 processes
@@ -212,10 +253,13 @@ def monitor_console_output():
                             mem = parts[3]
                             pid = parts[1]
                             status_line = f"[{est_now()}] 🤖 Agent PID:{pid} CPU:{cpu}% MEM:{mem}% - Active"
-                            if not console_buffer or not any(f"PID:{pid}" in line for line in list(console_buffer)[-3:]):
+                            if not console_buffer or not any(
+                                    f"PID:{pid}" in line
+                                    for line in list(console_buffer)[-3:]):
                                 console_buffer.append(status_line)
             except Exception as e:
-                console_buffer.append(f"[{est_now()}] ⚠️ Process check error: {str(e)[:50]}")
+                console_buffer.append(
+                    f"[{est_now()}] ⚠️ Process check error: {str(e)[:50]}")
                 pass
 
             # Method 2: Read from performance log for activity and debt swap operations
@@ -225,18 +269,24 @@ def monitor_console_output():
                         lines = f.readlines()
                         if lines:
                             latest = json.loads(lines[-1])
-                            timestamp = datetime.fromtimestamp(latest.get('timestamp', time.time()), tz=EASTERN)
+                            timestamp = datetime.fromtimestamp(latest.get(
+                                'timestamp', time.time()),
+                                                               tz=EASTERN)
 
                             # Check for debt swap operations in metadata
                             if latest.get('metadata'):
                                 metadata = latest['metadata']
-                                health_factor = metadata.get('health_factor', 'N/A')
-                                collateral = metadata.get('total_collateral_usdc', 'N/A')
+                                health_factor = metadata.get(
+                                    'health_factor', 'N/A')
+                                collateral = metadata.get(
+                                    'total_collateral_usdc', 'N/A')
 
                                 # Look for debt swap indicators
-                                if 'debt_swap' in str(metadata).lower() or 'market_signal' in str(metadata).lower():
+                                if 'debt_swap' in str(metadata).lower(
+                                ) or 'market_signal' in str(metadata).lower():
                                     console_line = f"[{timestamp.strftime('%H:%M:%S')}] 🔄 DEBT SWAP: Operation detected in logs | HF={health_factor}"
-                                elif metadata.get('operation_type') == 'market_signal':
+                                elif metadata.get(
+                                        'operation_type') == 'market_signal':
                                     console_line = f"[{timestamp.strftime('%H:%M:%S')}] 📈 MARKET SIGNAL: Operation executed | HF={health_factor}"
                                 else:
                                     console_line = f"[{timestamp.strftime('%H:%M:%S')}] 📊 Agent Status: HF={health_factor}, Collateral=${collateral}"
@@ -244,7 +294,8 @@ def monitor_console_output():
                                 console_line = f"[{timestamp.strftime('%H:%M:%S')}] 🔄 Run {latest.get('run_id', 0)}, Iteration {latest.get('iteration', 0)}"
 
                             # Add to console buffer if it's new
-                            if not console_buffer or console_buffer[-1] != console_line:
+                            if not console_buffer or console_buffer[
+                                    -1] != console_line:
                                 console_buffer.append(console_line)
                 except Exception as e:
                     logger.error(f"Error reading performance log: {e}")
@@ -252,14 +303,19 @@ def monitor_console_output():
 
             # Method 2.5: Check for debt swap transaction logs
             try:
-                debt_swap_files = ['debt_swap_log.json', 'market_signal_log.json', 'swap_transactions.json']
+                debt_swap_files = [
+                    'debt_swap_log.json', 'market_signal_log.json',
+                    'swap_transactions.json'
+                ]
                 for file_name in debt_swap_files:
                     if os.path.exists(file_name):
                         with open(file_name, 'r') as f:
                             content = f.read()
                             if content.strip():
                                 timestamp = est_now()
-                                console_buffer.append(f"[{timestamp}] 🔍 DEBT SWAP: Found activity in {file_name}")
+                                console_buffer.append(
+                                    f"[{timestamp}] 🔍 DEBT SWAP: Found activity in {file_name}"
+                                )
             except Exception as e:
                 logger.error(f"Error checking debt swap logs: {e}")
                 pass
@@ -269,7 +325,9 @@ def monitor_console_output():
                 live_data = get_live_agent_data()
                 if live_data and live_data.get('health_factor', 0) > 0:
                     wallet_line = f"[{est_now()}] 💰 Wallet: HF={live_data['health_factor']:.4f}, ${live_data.get('total_collateral_usdc', 0):.2f} collateral"
-                    if not console_buffer or not any(f"HF={live_data['health_factor']:.4f}" in line for line in list(console_buffer)[-3:]):
+                    if not console_buffer or not any(
+                            f"HF={live_data['health_factor']:.4f}" in line
+                            for line in list(console_buffer)[-3:]):
                         console_buffer.append(wallet_line)
             except Exception as e:
                 logger.error(f"Error adding wallet status update: {e}")
@@ -290,12 +348,15 @@ def monitor_console_output():
 
                         # Detailed status line
                         detail_line = f"[{est_now()}] 📊 Aave Status: HF={hf:.4f} | Collateral=${collateral:.2f} | Debt=${debt:.2f} | Available=${available:.2f}"
-                        if not console_buffer or console_buffer[-1] != detail_line:
+                        if not console_buffer or console_buffer[
+                                -1] != detail_line:
                             console_buffer.append(detail_line)
 
                         # DEBT SWAP MONITORING - Check conditions
-                        debt_swap_status = check_debt_swap_conditions(hf, available, debt)
-                        if not console_buffer or console_buffer[-1] != debt_swap_status:
+                        debt_swap_status = check_debt_swap_conditions(
+                            hf, available, debt)
+                        if not console_buffer or console_buffer[
+                                -1] != debt_swap_status:
                             console_buffer.append(debt_swap_status)
 
                         # Health factor assessment
@@ -307,12 +368,16 @@ def monitor_console_output():
                             health_status = f"[{est_now()}] 🚨 Health Factor: {hf:.4f} - LOW RISK (Emergency protocols)"
 
                         # Only add health assessment if significantly different
-                        if not console_buffer or not any(f"Health Factor: {hf:.4f}" in line for line in list(console_buffer)[-3:]):
+                        if not console_buffer or not any(
+                                f"Health Factor: {hf:.4f}" in line
+                                for line in list(console_buffer)[-3:]):
                             console_buffer.append(health_status)
 
                         # Enhanced market signal monitoring with debt swap focus
                         market_status = check_market_signals()
-                        if market_status and (not console_buffer or console_buffer[-1] != market_status):
+                        if market_status and (not console_buffer
+                                              or console_buffer[-1]
+                                              != market_status):
                             console_buffer.append(market_status)
 
                         # Check for debt swap execution logs every few cycles
@@ -320,17 +385,20 @@ def monitor_console_output():
                             debt_swap_logs = check_for_debt_swap_activity()
                             if debt_swap_logs:
                                 for log in debt_swap_logs:
-                                    if not console_buffer or console_buffer[-1] != log:
+                                    if not console_buffer or console_buffer[
+                                            -1] != log:
                                         console_buffer.append(log)
 
                         # Network status
                         network_line = f"[{est_now()}] 🌐 Network: Arbitrum Mainnet | Chain ID: 42161 | RPC: Connected"
                         if len(console_buffer) % 8 == 0:  # Every 8th cycle
-                            if not console_buffer or console_buffer[-1] != network_line:
+                            if not console_buffer or console_buffer[
+                                    -1] != network_line:
                                 console_buffer.append(network_line)
 
                 except Exception as e:
-                    logger.error(f"Error fetching live data for system metrics: {e}")
+                    logger.error(
+                        f"Error fetching live data for system metrics: {e}")
                     error_line = f"[{est_now()}] ❌ Live data fetch error: {str(e)[:60]}"
                     if not console_buffer or console_buffer[-1] != error_line:
                         console_buffer.append(error_line)
@@ -343,7 +411,8 @@ def monitor_console_output():
                     if not console_buffer or console_buffer[-1] != context_line:
                         console_buffer.append(context_line)
 
-            if not console_buffer or not any("System:" in line for line in list(console_buffer)[-3:]):
+            if not console_buffer or not any(
+                    "System:" in line for line in list(console_buffer)[-3:]):
                 if not console_buffer or console_buffer[-1] != system_line:
                     console_buffer.append(system_line)
 
@@ -360,6 +429,7 @@ def monitor_console_output():
                 console_buffer.append(error_line)
             time.sleep(15)
 
+
 def get_system_mode():
     """Determine current system mode"""
     global system_mode
@@ -370,6 +440,7 @@ def get_system_mode():
         return "autonomous"
     else:
         return "manual"
+
 
 def get_live_agent_data():
     """Get live data from unified Aave fetcher - eliminates cached data issues"""
@@ -382,26 +453,33 @@ def get_live_agent_data():
         try:
             from arbitrum_testnet_agent import ArbitrumTestnetAgent
             from web3 import Web3
+
             # Create enhanced RPC manager using same system as working autonomous agent
             class EnhancedRPCManager:
+
                 def __init__(self):
                     # Use the same working RPC endpoints as autonomous agent
                     self.rpc_endpoints = [
                         "https://arbitrum-one.public.blastapi.io",  # Fastest working RPC
                         "https://arb1.arbitrum.io/rpc",
                         "https://arbitrum-one.publicnode.com",
-                        os.getenv('ALCHEMY_RPC_URL', "https://arb1.arbitrum.io/rpc")  # Alchemy from secrets
+                        os.getenv('ALCHEMY_RPC_URL',
+                                  "https://arb1.arbitrum.io/rpc"
+                                  )  # Alchemy from secrets
                     ]
                     self.working_rpc = None
                     self.w3 = None
                     self._find_working_rpc()
-                
+
                 def _find_working_rpc(self):
                     """Find a working RPC endpoint"""
                     for rpc_url in self.rpc_endpoints:
                         try:
-                            test_w3 = Web3(Web3.HTTPProvider(rpc_url, request_kwargs={'timeout': 10}))
-                            if test_w3.is_connected() and test_w3.eth.chain_id == 42161:
+                            test_w3 = Web3(
+                                Web3.HTTPProvider(
+                                    rpc_url, request_kwargs={'timeout': 10}))
+                            if test_w3.is_connected(
+                            ) and test_w3.eth.chain_id == 42161:
                                 self.working_rpc = rpc_url
                                 self.w3 = test_w3
                                 print(f"✅ Dashboard: Connected to {rpc_url}")
@@ -409,11 +487,13 @@ def get_live_agent_data():
                         except:
                             continue
                     return False
-                
-                def get_web3(self):
-                    return self.w3 if self.w3 else Web3(Web3.HTTPProvider(self.rpc_endpoints[0]))
 
-            private_key = os.getenv('PRIVATE_KEY') or os.getenv('Wallet_PRIVATE_KEY')
+                def get_web3(self):
+                    return self.w3 if self.w3 else Web3(
+                        Web3.HTTPProvider(self.rpc_endpoints[0]))
+
+            private_key = os.getenv('PRIVATE_KEY') or os.getenv(
+                'Wallet_PRIVATE_KEY')
             if private_key:
                 # Define required Aave addresses for Arbitrum Mainnet
                 import sys
@@ -422,9 +502,11 @@ def get_live_agent_data():
                     AAVE_POOL_ADDRESS = "0x794a61358D6845594F94dc1DB02A252b5b4814aD"
                     AAVE_POOL_DATA_PROVIDER = "0x69FA688f1Dc47d4B5d8029D5a35FB7a548310654"
                     globals()['AAVE_POOL_ADDRESS'] = AAVE_POOL_ADDRESS
-                    globals()['AAVE_POOL_DATA_PROVIDER'] = AAVE_POOL_DATA_PROVIDER
+                    globals(
+                    )['AAVE_POOL_DATA_PROVIDER'] = AAVE_POOL_DATA_PROVIDER
 
-                if agent is None or not hasattr(agent, 'w3') or agent.w3 is None:
+                if agent is None or not hasattr(agent,
+                                                'w3') or agent.w3 is None:
                     enhanced_rpc = EnhancedRPCManager()
                     if agent is None:
                         agent = WorkingAgent()
@@ -435,26 +517,47 @@ def get_live_agent_data():
                     # Use hardcoded Aave pool address for Arbitrum Mainnet
                     aave_pool_address = "0x794a61358D6845594F94dc1DB02A252b5b4814aD"
                     pool_abi = [{
-                        "inputs": [{"name": "user", "type": "address"}],
-                        "name": "getUserAccountData",
-                        "outputs": [
-                            {"name": "totalCollateralBase", "type": "uint256"},
-                            {"name": "totalDebtBase", "type": "uint256"},
-                            {"name": "availableBorrowsBase", "type": "uint256"},
-                            {"name": "currentLiquidationThreshold", "type": "uint256"},
-                            {"name": "ltv", "type": "uint256"},
-                            {"name": "healthFactor", "type": "uint256"}
-                        ],
-                        "stateMutability": "view",
-                        "type": "function"
+                        "inputs": [{
+                            "name": "user",
+                            "type": "address"
+                        }],
+                        "name":
+                        "getUserAccountData",
+                        "outputs": [{
+                            "name": "totalCollateralBase",
+                            "type": "uint256"
+                        }, {
+                            "name": "totalDebtBase",
+                            "type": "uint256"
+                        }, {
+                            "name": "availableBorrowsBase",
+                            "type": "uint256"
+                        }, {
+                            "name": "currentLiquidationThreshold",
+                            "type": "uint256"
+                        }, {
+                            "name": "ltv",
+                            "type": "uint256"
+                        }, {
+                            "name": "healthFactor",
+                            "type": "uint256"
+                        }],
+                        "stateMutability":
+                        "view",
+                        "type":
+                        "function"
                     }]
-                    pool_contract = agent.w3.eth.contract(address=Web3.to_checksum_address(aave_pool_address), abi=pool_abi)
-                    account_data = pool_contract.functions.getUserAccountData(agent.address).call()
+                    pool_contract = agent.w3.eth.contract(
+                        address=Web3.to_checksum_address(aave_pool_address),
+                        abi=pool_abi)
+                    account_data = pool_contract.functions.getUserAccountData(
+                        agent.address).call()
 
                     fresh_collateral_usd = account_data[0] / (10**8)
                     fresh_debt_usd = account_data[1] / (10**8)
                     fresh_available_borrows_usd = account_data[2] / (10**8)
-                    fresh_health_factor = account_data[5] / (10**18) if account_data[5] > 0 else float('inf')
+                    fresh_health_factor = account_data[5] / (
+                        10**18) if account_data[5] > 0 else float('inf')
 
                     live_data_from_contract = {
                         'health_factor': fresh_health_factor,
@@ -465,13 +568,19 @@ def get_live_agent_data():
                         'last_update': time.time(),
                         'data_quality': 'VALIDATED'
                     }
-                    logger.info(f"📊 Using LIVE AAVE CONTRACT data: HF {live_data_from_contract['health_factor']:.4f}")
+                    logger.info(
+                        f"📊 Using LIVE AAVE CONTRACT data: HF {live_data_from_contract['health_factor']:.4f}"
+                    )
                     return live_data_from_contract
                 else:
-                    logger.warning("⚠️ Agent or agent.w3 not initialized properly for contract data fetch.")
+                    logger.warning(
+                        "⚠️ Agent or agent.w3 not initialized properly for contract data fetch."
+                    )
 
         except ImportError:
-            logger.warning("unified_aave_data_fetcher not found. Install it to get live data.")
+            logger.warning(
+                "unified_aave_data_fetcher not found. Install it to get live data."
+            )
         except Exception as agent_error:
             logger.error(f"⚠️ Agent initialization failed: {agent_error}")
 
@@ -486,32 +595,55 @@ def get_live_agent_data():
 
                     # Check if we have fresh Aave data from autonomous agent
                     if metadata and metadata.get('health_factor', 0) > 0:
-                        logger.info(f"📊 Using cached autonomous agent data: HF {metadata.get('health_factor', 0):.4f}")
+                        logger.info(
+                            f"📊 Using cached autonomous agent data: HF {metadata.get('health_factor', 0):.4f}"
+                        )
                         return {
-                            'health_factor': metadata.get('health_factor', 1.68),
-                            'total_collateral_usdc': metadata.get('total_collateral_usdc', 64.48),
-                            'total_debt_usdc': metadata.get('total_debt_usdc', 31.61),
-                            'available_borrows_usdc': metadata.get('available_borrows_usdc', 10.14),
-                            'baseline_collateral': metadata.get('baseline_collateral', 47.0),
-                            'next_trigger_threshold': metadata.get('baseline_collateral', 47.0) + 12.0,
-                            'data_source': 'autonomous_agent_cached',
-                            'last_update': latest.get('timestamp', time.time()),
-                            'data_quality': 'CACHED'
+                            'health_factor':
+                            metadata.get('health_factor', 1.68),
+                            'total_collateral_usdc':
+                            metadata.get('total_collateral_usdc', 64.48),
+                            'total_debt_usdc':
+                            metadata.get('total_debt_usdc', 31.61),
+                            'available_borrows_usdc':
+                            metadata.get('available_borrows_usdc', 10.14),
+                            'baseline_collateral':
+                            metadata.get('baseline_collateral', 47.0),
+                            'next_trigger_threshold':
+                            metadata.get('baseline_collateral', 47.0) + 12.0,
+                            'data_source':
+                            'autonomous_agent_cached',
+                            'last_update':
+                            latest.get('timestamp', time.time()),
+                            'data_quality':
+                            'CACHED'
                         }
 
                     if 'aave_data' in latest:
                         aave_data = latest['aave_data']
-                        logger.info(f"📊 Using live Aave data from agent: HF {aave_data.get('health_factor', 0):.4f}")
+                        logger.info(
+                            f"📊 Using live Aave data from agent: HF {aave_data.get('health_factor', 0):.4f}"
+                        )
                         return {
-                            'health_factor': aave_data.get('health_factor', 1.68),
-                            'total_collateral_usdc': aave_data.get('total_collateral_usd', 64.48),
-                            'total_debt_usdc': aave_data.get('total_debt_usd', 31.61),
-                            'available_borrows_usdc': aave_data.get('available_borrows_usd', 10.14),
-                            'baseline_collateral': aave_data.get('total_collateral_usd', 64.48),
-                            'next_trigger_threshold': aave_data.get('total_collateral_usd', 64.48) + 12.0,
-                            'data_source': 'autonomous_agent_aave_live',
-                            'last_update': latest.get('timestamp', time.time()),
-                            'data_quality': 'VALIDATED'
+                            'health_factor':
+                            aave_data.get('health_factor', 1.68),
+                            'total_collateral_usdc':
+                            aave_data.get('total_collateral_usd', 64.48),
+                            'total_debt_usdc':
+                            aave_data.get('total_debt_usd', 31.61),
+                            'available_borrows_usdc':
+                            aave_data.get('available_borrows_usd', 10.14),
+                            'baseline_collateral':
+                            aave_data.get('total_collateral_usd', 64.48),
+                            'next_trigger_threshold':
+                            aave_data.get('total_collateral_usd', 64.48) +
+                            12.0,
+                            'data_source':
+                            'autonomous_agent_aave_live',
+                            'last_update':
+                            latest.get('timestamp', time.time()),
+                            'data_quality':
+                            'VALIDATED'
                         }
 
     except Exception as e:
@@ -519,7 +651,8 @@ def get_live_agent_data():
 
     # Method 3: Return current live data from autonomous agent console (updated with latest values)
     # This is a fallback if other methods fail.
-    logger.info("📊 Using latest autonomous agent data from console logs as fallback")
+    logger.info(
+        "📊 Using latest autonomous agent data from console logs as fallback")
     return {
         'health_factor': 1.68,
         'total_collateral_usdc': 64.48,
@@ -532,6 +665,7 @@ def get_live_agent_data():
         'last_update': time.time(),
         'data_quality': 'LIVE_FALLBACK'
     }
+
 
 # Add initial console messages
 console_buffer.append(f"[{est_now()}] 🚀 Dashboard started")
@@ -546,10 +680,12 @@ threading.Thread(target=monitor_console_output, daemon=True).start()
 # Add startup status
 console_buffer.append(f"[{est_now()}] 🔄 Initializing agent connections...")
 
+
 @app.route('/')
 def root_redirect():
     """Redirect root to consumer dashboard"""
     return redirect('/app')
+
 
 @app.route('/admin')
 def dashboard():
@@ -568,13 +704,14 @@ def dashboard():
         agent_status = "Connected" if agent else "Initializing..."
 
         return render_template('dashboard.html',
-                             emergency_active=emergency_active,
-                             agent_status=agent_status,
-                             network_info=network_info)
+                               emergency_active=emergency_active,
+                               agent_status=agent_status,
+                               network_info=network_info)
 
     except Exception as e:
         logger.error(f"Dashboard route error: {e}")
         return f"Dashboard Error: {str(e)}", 500
+
 
 @app.route('/api/wallet_status')
 def wallet_status():
@@ -596,32 +733,56 @@ def wallet_status():
                 aave_pool_address = "0x794a61358D6845594F94dc1DB02A252b5b4814aD"
 
                 pool_abi = [{
-                    "inputs": [{"name": "user", "type": "address"}],
-                    "name": "getUserAccountData",
-                    "outputs": [
-                        {"name": "totalCollateralBase", "type": "uint256"},
-                        {"name": "totalDebtBase", "type": "uint256"},
-                        {"name": "availableBorrowsBase", "type": "uint256"},
-                        {"name": "currentLiquidationThreshold", "type": "uint256"},
-                        {"name": "ltv", "type": "uint256"},
-                        {"name": "healthFactor", "type": "uint256"}
-                    ],
-                    "stateMutability": "view",
-                    "type": "function"
+                    "inputs": [{
+                        "name": "user",
+                        "type": "address"
+                    }],
+                    "name":
+                    "getUserAccountData",
+                    "outputs": [{
+                        "name": "totalCollateralBase",
+                        "type": "uint256"
+                    }, {
+                        "name": "totalDebtBase",
+                        "type": "uint256"
+                    }, {
+                        "name": "availableBorrowsBase",
+                        "type": "uint256"
+                    }, {
+                        "name": "currentLiquidationThreshold",
+                        "type": "uint256"
+                    }, {
+                        "name": "ltv",
+                        "type": "uint256"
+                    }, {
+                        "name": "healthFactor",
+                        "type": "uint256"
+                    }],
+                    "stateMutability":
+                    "view",
+                    "type":
+                    "function"
                 }]
 
-                pool_contract = agent.w3.eth.contract(address=Web3.to_checksum_address(aave_pool_address), abi=pool_abi)
-                account_data = pool_contract.functions.getUserAccountData(agent.address).call()
+                pool_contract = agent.w3.eth.contract(
+                    address=Web3.to_checksum_address(aave_pool_address),
+                    abi=pool_abi)
+                account_data = pool_contract.functions.getUserAccountData(
+                    agent.address).call()
 
                 fresh_collateral_usd = account_data[0] / (10**8)
                 fresh_debt_usd = account_data[1] / (10**8)
                 fresh_available_borrows_usd = account_data[2] / (10**8)
-                fresh_health_factor = account_data[5] / (10**18) if account_data[5] > 0 else float('inf')
+                fresh_health_factor = account_data[5] / (
+                    10**18) if account_data[5] > 0 else float('inf')
 
-                logger.info(f"✅ Fresh Aave data: Collateral ${fresh_collateral_usd:.2f}, HF {fresh_health_factor:.4f}")
+                logger.info(
+                    f"✅ Fresh Aave data: Collateral ${fresh_collateral_usd:.2f}, HF {fresh_health_factor:.4f}"
+                )
 
                 # Use fresh data if available and it's more up-to-date
-                if fresh_health_factor > 0 and fresh_health_factor != live_agent_data.get('health_factor', 0):
+                if fresh_health_factor > 0 and fresh_health_factor != live_agent_data.get(
+                        'health_factor', 0):
                     live_agent_data.update({
                         'health_factor': fresh_health_factor,
                         'total_collateral_usdc': fresh_collateral_usd,
@@ -634,37 +795,67 @@ def wallet_status():
             logger.warning(f"⚠️ Fresh Aave data fetch failed: {fresh_error}")
 
         data = {
-            'wallet_address': '0x5B823270e3719CDe8669e5e5326B455EaA8a350b',
-            'eth_balance': 0.001805,  # From latest agent logs
-            'usdc_balance': 0.0,
-            'wbtc_balance': 0.0,
-            'weth_balance': 0.0,
-            'arb_balance': 0.0,
-            'health_factor': live_agent_data.get('health_factor', 1.68),
-            'total_collateral': live_agent_data.get('total_collateral_usdc', 64.48) / 3330.61,
-            'total_debt': live_agent_data.get('total_debt_usdc', 31.61) / 3330.61,
-            'available_borrows': live_agent_data.get('available_borrows_usdc', 10.14) / 3330.61,
-            'total_collateral_usdc': live_agent_data.get('total_collateral_usdc', 64.48),
-            'total_debt_usdc': live_agent_data.get('total_debt_usdc', 31.61),
-            'available_borrows_usdc': live_agent_data.get('available_borrows_usdc', 10.14),
-            'arb_price': round(float(os.getenv('ARB_PRICE', '0.4100')), 4) if os.getenv('ARB_PRICE') else 0.4100,  # From autonomous agent logs
-            'network_name': 'Arbitrum Mainnet',
-            'network_mode': 'mainnet',
-            'timestamp': time.time(),
-            'data_source': 'autonomous_mainnet_live' if agent_is_running else 'autonomous_mainnet_cached',
-            'agent_status': 'running' if agent_is_running else 'cached_data',
-            'baseline_collateral': live_agent_data.get('baseline_collateral', 47.0),
-            'next_trigger_threshold': live_agent_data.get('next_trigger_threshold', 97.0),
-            'operation_cooldown': live_agent_data.get('operation_cooldown', False),
-            'data_quality': live_agent_data.get('data_quality', 'VALIDATED'),
-            'optimization_status': 'ENHANCED_MONITORING_ACTIVE',
-            'success': True
+            'wallet_address':
+            '0x5B823270e3719CDe8669e5e5326B455EaA8a350b',
+            'eth_balance':
+            0.001805,  # From latest agent logs
+            'usdc_balance':
+            0.0,
+            'wbtc_balance':
+            0.0,
+            'weth_balance':
+            0.0,
+            'arb_balance':
+            0.0,
+            'health_factor':
+            live_agent_data.get('health_factor', 1.68),
+            'total_collateral':
+            live_agent_data.get('total_collateral_usdc', 64.48) / 3330.61,
+            'total_debt':
+            live_agent_data.get('total_debt_usdc', 31.61) / 3330.61,
+            'available_borrows':
+            live_agent_data.get('available_borrows_usdc', 10.14) / 3330.61,
+            'total_collateral_usdc':
+            live_agent_data.get('total_collateral_usdc', 64.48),
+            'total_debt_usdc':
+            live_agent_data.get('total_debt_usdc', 31.61),
+            'available_borrows_usdc':
+            live_agent_data.get('available_borrows_usdc', 10.14),
+            'arb_price':
+            round(float(os.getenv('ARB_PRICE', '0.4100')), 4) if
+            os.getenv('ARB_PRICE') else 0.4100,  # From autonomous agent logs
+            'network_name':
+            'Arbitrum Mainnet',
+            'network_mode':
+            'mainnet',
+            'timestamp':
+            time.time(),
+            'data_source':
+            'autonomous_mainnet_live'
+            if agent_is_running else 'autonomous_mainnet_cached',
+            'agent_status':
+            'running' if agent_is_running else 'cached_data',
+            'baseline_collateral':
+            live_agent_data.get('baseline_collateral', 47.0),
+            'next_trigger_threshold':
+            live_agent_data.get('next_trigger_threshold', 97.0),
+            'operation_cooldown':
+            live_agent_data.get('operation_cooldown', False),
+            'data_quality':
+            live_agent_data.get('data_quality', 'VALIDATED'),
+            'optimization_status':
+            'ENHANCED_MONITORING_ACTIVE',
+            'success':
+            True
         }
 
         # Get market analysis
         try:
-            if hasattr(agent, 'market_signal_strategy') and agent.market_signal_strategy:
-                market_analysis = agent.market_signal_strategy.get_market_analysis()
+            if hasattr(
+                    agent,
+                    'market_signal_strategy') and agent.market_signal_strategy:
+                market_analysis = agent.market_signal_strategy.get_market_analysis(
+                )
                 data['market_analysis'] = market_analysis
         except Exception as e:
             logger.error(f"Error getting market analysis: {e}")
@@ -684,12 +875,16 @@ def wallet_status():
             if agent and hasattr(agent, 'get_trigger_predictions'):
                 predictions = agent.get_trigger_predictions()
                 data['trigger_predictions'] = predictions
-                logger.info(f"📊 Trigger predictions: {predictions.get('status', 'unknown')}")
+                logger.info(
+                    f"📊 Trigger predictions: {predictions.get('status', 'unknown')}"
+                )
         except Exception as e:
             logger.error(f"Error getting trigger predictions: {e}")
             data['trigger_predictions'] = {'status': 'error', 'reason': str(e)}
 
-        logger.info(f"✅ Wallet status retrieved: HF {data['health_factor']:.4f}, Agent Running: {agent_is_running}")
+        logger.info(
+            f"✅ Wallet status retrieved: HF {data['health_factor']:.4f}, Agent Running: {agent_is_running}"
+        )
         return jsonify(data)
 
     except Exception as e:
@@ -706,6 +901,7 @@ def wallet_status():
             'network_mode': 'mainnet',
             'timestamp': time.time()
         }), 200
+
 
 @app.route('/api/parameters')
 def get_parameters():
@@ -742,6 +938,7 @@ def get_parameters():
         logger.error(f"Parameters API error: {e}")
         return jsonify({'error': str(e), 'success': False}), 200
 
+
 @app.route('/api/emergency_status')
 def get_emergency_status():
     """Get emergency stop status"""
@@ -774,6 +971,7 @@ def get_emergency_status():
             'timestamp': time.time()
         }), 200
 
+
 @app.route('/api/performance')
 def performance_data():
     """Get performance metrics"""
@@ -786,12 +984,15 @@ def performance_data():
                     try:
                         performance_data.append(json.loads(line))
                     except json.JSONDecodeError:
-                        logger.warning(f"Skipping malformed line in performance_log.json: {line.strip()}")
+                        logger.warning(
+                            f"Skipping malformed line in performance_log.json: {line.strip()}"
+                        )
                         continue
 
         if len(performance_data) >= 2:
             recent = performance_data[-20:]  # Last 20 entries
-            avg_performance = sum(p.get('performance_metric', 0) for p in recent) / len(recent)
+            avg_performance = sum(
+                p.get('performance_metric', 0) for p in recent) / len(recent)
 
             return jsonify({
                 'pnl_24h': 0.8,  # Based on autonomous agent performance
@@ -804,7 +1005,8 @@ def performance_data():
         else:
             return jsonify({
                 'pnl_24h': 0.0,
-                'avg_performance': 0.8,  # Good performance from autonomous agent
+                'avg_performance':
+                0.8,  # Good performance from autonomous agent
                 'error_rate': 0.0,
                 'total_operations': 1,
                 'timestamp': time.time(),
@@ -821,6 +1023,7 @@ def performance_data():
             'total_operations': 0
         })
 
+
 @app.route('/api/emergency_stop', methods=['POST'])
 def activate_emergency_stop():
     """Activate emergency stop"""
@@ -833,16 +1036,22 @@ def activate_emergency_stop():
             f.write(f"EMERGENCY STOP ACTIVE\n")
             f.write(f"Reason: {reason}\n")
             f.write(f"Timestamp: {time.time()}\n")
-            f.write(f"DateTime: {datetime.now().strftime('%Y-%m-%d %H:%M:%S UTC')}\n")
+            f.write(
+                f"DateTime: {datetime.now().strftime('%Y-%m-%d %H:%M:%S UTC')}\n"
+            )
             f.flush()
             os.fsync(f.fileno())
 
         logger.warning(f"🛑 Emergency stop activated: {reason}")
-        return jsonify({'success': True, 'message': 'Emergency stop activated'})
+        return jsonify({
+            'success': True,
+            'message': 'Emergency stop activated'
+        })
 
     except Exception as e:
         logger.error(f"Activate emergency stop API error: {e}")
         return jsonify({'error': str(e)}), 500
+
 
 @app.route('/api/emergency_stop', methods=['DELETE'])
 def clear_emergency_stop():
@@ -852,15 +1061,23 @@ def clear_emergency_stop():
         if os.path.exists(emergency_file):
             os.remove(emergency_file)
             logger.info("✅ Emergency stop cleared")
-            return jsonify({'success': True, 'message': 'Emergency stop cleared'})
+            return jsonify({
+                'success': True,
+                'message': 'Emergency stop cleared'
+            })
         else:
-            return jsonify({'success': False, 'message': 'No emergency stop active'})
+            return jsonify({
+                'success': False,
+                'message': 'No emergency stop active'
+            })
 
     except Exception as e:
         logger.error(f"Clear emergency stop API error: {e}")
         return jsonify({'error': str(e)}), 500
 
-def _get_engine_room_state(health_factor, total_collateral, total_debt, available_borrows, agent_running):
+
+def _get_engine_room_state(health_factor, total_collateral, total_debt,
+                           available_borrows, agent_running):
     """Compute Zone 4 Engine Room state: avatar state, countdown, blocking reasons."""
     import time as _time
 
@@ -896,17 +1113,22 @@ def _get_engine_room_state(health_factor, total_collateral, total_debt, availabl
         bot_state = "cooling"
         if last_action and "growth" in str(last_action).lower():
             bot_state = "growth_cooldown"
-        elif last_action and ("macro" in str(last_action).lower() or "micro" in str(last_action).lower() or "liability" in str(last_action).lower()):
+        elif last_action and ("macro" in str(last_action).lower()
+                              or "micro" in str(last_action).lower()
+                              or "liability" in str(last_action).lower()):
             bot_state = "shield_cooldown"
     else:
         growth_ok = health_factor >= growth_hf_min and available_borrows >= min_capacity_growth
         capacity_ok = health_factor >= capacity_hf_min and available_borrows >= min_capacity_cap
 
         if health_factor < capacity_hf_min:
-            blocking_reasons.append(f"HF too low: {health_factor:.2f} < {capacity_hf_min}")
+            blocking_reasons.append(
+                f"HF too low: {health_factor:.2f} < {capacity_hf_min}")
             bot_state = "paused"
         elif available_borrows < min_capacity_cap:
-            blocking_reasons.append(f"Capacity too low: ${available_borrows:.2f} < ${min_capacity_cap}")
+            blocking_reasons.append(
+                f"Capacity too low: ${available_borrows:.2f} < ${min_capacity_cap}"
+            )
             bot_state = "idle"
         else:
             if growth_ok:
@@ -921,7 +1143,7 @@ def _get_engine_room_state(health_factor, total_collateral, total_debt, availabl
     avatar_video = "idle"
     if bot_state in ("growth_cooldown", "ready_growth"):
         avatar_video = "growth"
-    elif bot_state in ("shield_cooldown",):
+    elif bot_state in ("shield_cooldown", ):
         avatar_video = "shield"
     elif bot_state == "paused":
         avatar_video = "idle"
@@ -929,10 +1151,10 @@ def _get_engine_room_state(health_factor, total_collateral, total_debt, availabl
     if bot_state == "cooling":
         smart_text = f"RECHARGING: {int(cooldown_remaining // 60):02d}:{int(cooldown_remaining % 60):02d}"
         smart_icon = "battery"
-    elif bot_state in ("growth_cooldown",):
+    elif bot_state in ("growth_cooldown", ):
         smart_text = f"RECHARGING: {int(cooldown_remaining // 60):02d}:{int(cooldown_remaining % 60):02d}"
         smart_icon = "battery"
-    elif bot_state in ("shield_cooldown",):
+    elif bot_state in ("shield_cooldown", ):
         smart_text = f"RECHARGING: {int(cooldown_remaining // 60):02d}:{int(cooldown_remaining % 60):02d}"
         smart_icon = "battery"
     elif bot_state == "paused":
@@ -961,7 +1183,9 @@ def _get_engine_room_state(health_factor, total_collateral, total_debt, availabl
         "blocking_reasons": blocking_reasons,
     }
 
+
 INJECTION_TEST_MODE = True
+
 
 def _get_real_estate_data():
     try:
@@ -969,24 +1193,42 @@ def _get_real_estate_data():
         return get_real_estate_status()
     except ImportError:
         return {
-            "filings_today": 0, "leads_high": 0, "leads_med": 0, "leads_low": 0,
-            "reviews_generated": 0, "letters_queued": 0,
-            "last_ingest": None, "last_analysis": None,
-            "last_reviews": None, "last_outreach": None,
-            "pipeline_active": False, "errors": [],
+            "filings_today": 0,
+            "leads_high": 0,
+            "leads_med": 0,
+            "leads_low": 0,
+            "reviews_generated": 0,
+            "letters_queued": 0,
+            "last_ingest": None,
+            "last_analysis": None,
+            "last_reviews": None,
+            "last_outreach": None,
+            "pipeline_active": False,
+            "errors": [],
         }
     except Exception as e:
         logger.error(f"Real estate data error: {e}")
         return {
-            "filings_today": 0, "leads_high": 0, "leads_med": 0, "leads_low": 0,
-            "reviews_generated": 0, "letters_queued": 0,
-            "pipeline_active": False, "errors": [str(e)],
+            "filings_today": 0,
+            "leads_high": 0,
+            "leads_med": 0,
+            "leads_low": 0,
+            "reviews_generated": 0,
+            "letters_queued": 0,
+            "pipeline_active": False,
+            "errors": [str(e)],
         }
+
 
 def _get_yield_stats():
     try:
         if not os.path.exists('yield_history.json'):
-            return {"last_24h_count": 0, "last_24h_total": 0.0, "all_time_total": 0.0, "all_time_count": 0}
+            return {
+                "last_24h_count": 0,
+                "last_24h_total": 0.0,
+                "all_time_total": 0.0,
+                "all_time_count": 0
+            }
         with open('yield_history.json', 'r') as f:
             history = json.load(f)
         cutoff = datetime.now(timezone.utc) - timedelta(hours=24)
@@ -1000,12 +1242,20 @@ def _get_yield_stats():
                 pass
         return {
             "last_24h_count": len(recent),
-            "last_24h_total": round(sum(e.get("amount", 0) for e in recent), 4),
-            "all_time_total": round(sum(e.get("amount", 0) for e in history), 4),
+            "last_24h_total": round(sum(e.get("amount", 0) for e in recent),
+                                    4),
+            "all_time_total": round(sum(e.get("amount", 0) for e in history),
+                                    4),
             "all_time_count": len(history),
         }
     except Exception:
-        return {"last_24h_count": 0, "last_24h_total": 0.0, "all_time_total": 0.0, "all_time_count": 0}
+        return {
+            "last_24h_count": 0,
+            "last_24h_total": 0.0,
+            "all_time_total": 0.0,
+            "all_time_count": 0
+        }
+
 
 def _get_injection_estimate(available_borrows, total_debt):
     total_capacity = total_debt + available_borrows
@@ -1022,6 +1272,7 @@ def _get_injection_estimate(available_borrows, total_debt):
         "injection_amount": amount,
         "test_mode": INJECTION_TEST_MODE,
     }
+
 
 @app.route('/api/command-center')
 def command_center():
@@ -1044,7 +1295,17 @@ def command_center():
         else:
             hf_status = "EMERGENCY"
 
-        ls_data = {"micro_trigger_drop_usd": 30, "macro_trigger_drop_usd": 50, "velocity_drop_20m": 0, "velocity_drop_30m": 0, "velocity_buffer_size": 0, "has_active_position": False, "position_tier": None, "entry_eth_price": None, "current_eth_price": None}
+        ls_data = {
+            "micro_trigger_drop_usd": 30,
+            "macro_trigger_drop_usd": 50,
+            "velocity_drop_20m": 0,
+            "velocity_drop_30m": 0,
+            "velocity_buffer_size": 0,
+            "has_active_position": False,
+            "position_tier": None,
+            "entry_eth_price": None,
+            "current_eth_price": None
+        }
         growth_cooldown = 0
         ls_cooldown = 0
 
@@ -1054,30 +1315,45 @@ def command_center():
                 with open('system_status.json', 'r') as f:
                     status_file = json.loads(f.read())
                 ls_data = status_file.get('liability_short', ls_data)
-                growth_cooldown = status_file.get('growth_cooldown_remaining', 0)
+                growth_cooldown = status_file.get('growth_cooldown_remaining',
+                                                  0)
                 ls_cooldown = status_file.get('ls_cooldown_remaining', 0)
         except Exception:
             pass
 
         short_summary = {}
-        if agent and hasattr(agent, 'liability_short_strategy') and agent.liability_short_strategy:
+        if agent and hasattr(
+                agent,
+                'liability_short_strategy') and agent.liability_short_strategy:
             try:
-                short_summary = agent.liability_short_strategy.get_status_summary()
+                short_summary = agent.liability_short_strategy.get_status_summary(
+                )
                 if not ls_data.get('velocity_drop_20m'):
-                    levels = agent.liability_short_strategy.get_trigger_levels()
-                    ls_data["micro_trigger_drop_usd"] = levels.get("micro_trigger_drop_usd", 30)
-                    ls_data["macro_trigger_drop_usd"] = levels.get("macro_trigger_drop_usd", 50)
-                    ls_data["velocity_buffer_size"] = levels.get("buffer_size", 0)
-                    ls_data["velocity_drop_20m"] = short_summary.get("velocity_drop_20m", 0)
-                    ls_data["velocity_drop_30m"] = short_summary.get("velocity_drop_30m", 0)
-                ls_data["has_active_position"] = agent.liability_short_strategy.has_active_position()
-                ls_data["current_eth_price"] = agent.liability_short_strategy.get_eth_price()
+                    levels = agent.liability_short_strategy.get_trigger_levels(
+                    )
+                    ls_data["micro_trigger_drop_usd"] = levels.get(
+                        "micro_trigger_drop_usd", 30)
+                    ls_data["macro_trigger_drop_usd"] = levels.get(
+                        "macro_trigger_drop_usd", 50)
+                    ls_data["velocity_buffer_size"] = levels.get(
+                        "buffer_size", 0)
+                    ls_data["velocity_drop_20m"] = short_summary.get(
+                        "velocity_drop_20m", 0)
+                    ls_data["velocity_drop_30m"] = short_summary.get(
+                        "velocity_drop_30m", 0)
+                ls_data[
+                    "has_active_position"] = agent.liability_short_strategy.has_active_position(
+                    )
+                ls_data[
+                    "current_eth_price"] = agent.liability_short_strategy.get_eth_price(
+                    )
             except Exception:
                 pass
 
         baseline = 47.0
         value_change = total_collateral - baseline
-        value_change_pct = (value_change / baseline * 100) if baseline > 0 else 0
+        value_change_pct = (value_change / baseline *
+                            100) if baseline > 0 else 0
 
         intel_lines = []
         try:
@@ -1099,17 +1375,41 @@ def command_center():
                 "Execute": "Action Taken",
             }
             decision_keywords = [
-                "TRIGGER", "IDLE", "EMERGENCY", "GROWTH", "CAPACITY", "LIABILITY",
-                "SUCCESS", "FAILED", "ACTIVATED", "Monitoring cycle", "Position:",
-                "Waiting", "HF", "Health factor", "RECOVERY", "defense", "hedge",
-                "Liability Short", "Defensive", "EXECUTING", "Operation",
+                "TRIGGER",
+                "IDLE",
+                "EMERGENCY",
+                "GROWTH",
+                "CAPACITY",
+                "LIABILITY",
+                "SUCCESS",
+                "FAILED",
+                "ACTIVATED",
+                "Monitoring cycle",
+                "Position:",
+                "Waiting",
+                "HF",
+                "Health factor",
+                "RECOVERY",
+                "defense",
+                "hedge",
+                "Liability Short",
+                "Defensive",
+                "EXECUTING",
+                "Operation",
             ]
             for line in raw_lines:
                 if any(kw in line for kw in decision_keywords):
                     translated = line
                     for old_term, new_term in translation_map.items():
                         translated = translated.replace(old_term, new_term)
-                    for prefix in ["INFO:", "WARNING:", "ERROR:", "DEBUG:", "INFO:web_dashboard:", "INFO:market_signal_strategy:", "INFO:enhanced_market_analyzer:", "INFO:cost_optimization_manager:", "INFO:liability_short_strategy:"]:
+                    for prefix in [
+                            "INFO:", "WARNING:", "ERROR:", "DEBUG:",
+                            "INFO:web_dashboard:",
+                            "INFO:market_signal_strategy:",
+                            "INFO:enhanced_market_analyzer:",
+                            "INFO:cost_optimization_manager:",
+                            "INFO:liability_short_strategy:"
+                    ]:
                         translated = translated.replace(prefix, "")
                     intel_lines.append(translated.strip())
         except Exception:
@@ -1129,64 +1429,132 @@ def command_center():
                 "change_24h_pct": round(value_change_pct, 1),
             },
             "zone3_guardrails": {
-                "micro_trigger_drop_usd": ls_data.get("micro_trigger_drop_usd", 30),
-                "macro_trigger_drop_usd": ls_data.get("macro_trigger_drop_usd", 50),
-                "velocity_drop_20m": round(ls_data.get("velocity_drop_20m", 0), 2),
-                "velocity_drop_30m": round(ls_data.get("velocity_drop_30m", 0), 2),
+                "micro_trigger_drop_usd": ls_data.get("micro_trigger_drop_usd",
+                                                      30),
+                "macro_trigger_drop_usd": ls_data.get("macro_trigger_drop_usd",
+                                                      50),
+                "velocity_drop_20m": round(ls_data.get("velocity_drop_20m", 0),
+                                           2),
+                "velocity_drop_30m": round(ls_data.get("velocity_drop_30m", 0),
+                                           2),
                 "velocity_buffer_size": ls_data.get("velocity_buffer_size", 0),
-                "has_active_position": ls_data.get("has_active_position", False),
+                "has_active_position": ls_data.get("has_active_position",
+                                                   False),
                 "position_tier": ls_data.get("position_tier"),
                 "current_eth_price": ls_data.get("current_eth_price"),
                 "entry_eth_price": ls_data.get("entry_eth_price"),
                 "current_collateral": round(total_collateral, 2),
                 "micro": {
-                    "current_value": round(total_collateral, 2),
-                    "window_high": round(total_collateral + ls_data.get("velocity_drop_20m", 0), 2),
-                    "dollar_drop_so_far": round(ls_data.get("velocity_drop_20m", 0), 2),
-                    "dollar_drop_required": ls_data.get("micro_trigger_drop_usd", 30),
-                    "dollar_drop_remaining": round(max(0, ls_data.get("micro_trigger_drop_usd", 30) - ls_data.get("velocity_drop_20m", 0)), 2),
-                    "progress_pct": round(min(100, (ls_data.get("velocity_drop_20m", 0) / max(0.01, ls_data.get("micro_trigger_drop_usd", 30))) * 100), 1),
-                    "time_window_seconds": 1200,
-                    "on_cooldown": short_summary.get("micro_on_cooldown", False),
+                    "current_value":
+                    round(total_collateral, 2),
+                    "window_high":
+                    round(
+                        total_collateral + ls_data.get("velocity_drop_20m", 0),
+                        2),
+                    "dollar_drop_so_far":
+                    round(ls_data.get("velocity_drop_20m", 0), 2),
+                    "dollar_drop_required":
+                    ls_data.get("micro_trigger_drop_usd", 30),
+                    "dollar_drop_remaining":
+                    round(
+                        max(
+                            0,
+                            ls_data.get("micro_trigger_drop_usd", 30) -
+                            ls_data.get("velocity_drop_20m", 0)), 2),
+                    "progress_pct":
+                    round(
+                        min(100, (ls_data.get("velocity_drop_20m", 0) / max(
+                            0.01, ls_data.get("micro_trigger_drop_usd", 30))) *
+                            100), 1),
+                    "time_window_seconds":
+                    1200,
+                    "on_cooldown":
+                    short_summary.get("micro_on_cooldown", False),
                 },
                 "macro": {
-                    "current_value": round(total_collateral, 2),
-                    "window_high": round(total_collateral + ls_data.get("velocity_drop_30m", 0), 2),
-                    "dollar_drop_so_far": round(ls_data.get("velocity_drop_30m", 0), 2),
-                    "dollar_drop_required": ls_data.get("macro_trigger_drop_usd", 50),
-                    "dollar_drop_remaining": round(max(0, ls_data.get("macro_trigger_drop_usd", 50) - ls_data.get("velocity_drop_30m", 0)), 2),
-                    "progress_pct": round(min(100, (ls_data.get("velocity_drop_30m", 0) / max(0.01, ls_data.get("macro_trigger_drop_usd", 50))) * 100), 1),
-                    "time_window_seconds": 1800,
-                    "on_cooldown": short_summary.get("macro_on_cooldown", False),
+                    "current_value":
+                    round(total_collateral, 2),
+                    "window_high":
+                    round(
+                        total_collateral + ls_data.get("velocity_drop_30m", 0),
+                        2),
+                    "dollar_drop_so_far":
+                    round(ls_data.get("velocity_drop_30m", 0), 2),
+                    "dollar_drop_required":
+                    ls_data.get("macro_trigger_drop_usd", 50),
+                    "dollar_drop_remaining":
+                    round(
+                        max(
+                            0,
+                            ls_data.get("macro_trigger_drop_usd", 50) -
+                            ls_data.get("velocity_drop_30m", 0)), 2),
+                    "progress_pct":
+                    round(
+                        min(100, (ls_data.get("velocity_drop_30m", 0) / max(
+                            0.01, ls_data.get("macro_trigger_drop_usd", 50))) *
+                            100), 1),
+                    "time_window_seconds":
+                    1800,
+                    "on_cooldown":
+                    short_summary.get("macro_on_cooldown", False),
                 },
                 "short_engine": {
-                    "phase": short_summary.get("phase", 2),
-                    "polling_mode": short_summary.get("polling_mode", "SENTRY"),
-                    "polling_interval": short_summary.get("polling_interval", 90),
-                    "position_status": short_summary.get("position_status", "IDLE"),
-                    "target_price": short_summary.get("target_price"),
-                    "stop_loss_price": short_summary.get("stop_loss_price"),
-                    "entry_eth_price": short_summary.get("entry_eth_price"),
-                    "current_eth_price": short_summary.get("current_eth_price"),
-                    "distance_to_target_pct": short_summary.get("distance_to_target_pct"),
-                    "eth_change_pct": short_summary.get("eth_change_pct"),
-                    "profit_target": short_summary.get("profit_targets", {}).get("total", 10.0),
-                    "on_cooldown": short_summary.get("on_cooldown", False),
-                    "total_positions": short_summary.get("total_positions_history", 0),
+                    "phase":
+                    short_summary.get("phase", 2),
+                    "polling_mode":
+                    short_summary.get("polling_mode", "SENTRY"),
+                    "polling_interval":
+                    short_summary.get("polling_interval", 90),
+                    "position_status":
+                    short_summary.get("position_status", "IDLE"),
+                    "target_price":
+                    short_summary.get("target_price"),
+                    "stop_loss_price":
+                    short_summary.get("stop_loss_price"),
+                    "entry_eth_price":
+                    short_summary.get("entry_eth_price"),
+                    "current_eth_price":
+                    short_summary.get("current_eth_price"),
+                    "distance_to_target_pct":
+                    short_summary.get("distance_to_target_pct"),
+                    "eth_change_pct":
+                    short_summary.get("eth_change_pct"),
+                    "profit_target":
+                    short_summary.get("profit_targets", {}).get("total", 10.0),
+                    "on_cooldown":
+                    short_summary.get("on_cooldown", False),
+                    "total_positions":
+                    short_summary.get("total_positions_history", 0),
                 },
             },
             "zone4_engine": {
-                "growth_cooldown_sec": round(max(0, growth_cooldown), 0),
-                "ls_cooldown_sec": round(max(0, ls_cooldown), 0),
-                "available_borrows": round(available_borrows, 2),
-                "total_debt": round(total_debt, 2),
-                "borrow_capacity": round(total_collateral * 0.8, 2),
-                "usdc_balance": round(getattr(agent, '_get_usdc_balance', lambda: 0)() if agent else 0, 4),
-                "usdc_target": getattr(agent, 'USDC_HARVEST_TARGET', 22.0) if agent else 22.0,
-                "wallet_b": os.getenv('WALLET_B_ADDRESS', 'Not Set')[:10] + '...' if os.getenv('WALLET_B_ADDRESS') else 'Not Set',
-                "engine_room": _get_engine_room_state(health_factor, total_collateral, total_debt, available_borrows, agent_running),
-                "yield_stats": _get_yield_stats(),
-                "injection_estimate": _get_injection_estimate(available_borrows, total_debt),
+                "growth_cooldown_sec":
+                round(max(0, growth_cooldown), 0),
+                "ls_cooldown_sec":
+                round(max(0, ls_cooldown), 0),
+                "available_borrows":
+                round(available_borrows, 2),
+                "total_debt":
+                round(total_debt, 2),
+                "borrow_capacity":
+                round(total_collateral * 0.8, 2),
+                "usdc_balance":
+                round(
+                    getattr(agent, '_get_usdc_balance', lambda: 0)()
+                    if agent else 0, 4),
+                "usdc_target":
+                getattr(agent, 'USDC_HARVEST_TARGET', 22.0) if agent else 22.0,
+                "wallet_b":
+                os.getenv('WALLET_B_ADDRESS', 'Not Set')[:10] +
+                '...' if os.getenv('WALLET_B_ADDRESS') else 'Not Set',
+                "engine_room":
+                _get_engine_room_state(health_factor, total_collateral,
+                                       total_debt, available_borrows,
+                                       agent_running),
+                "yield_stats":
+                _get_yield_stats(),
+                "injection_estimate":
+                _get_injection_estimate(available_borrows, total_debt),
             },
             "zone5_intel": {
                 "lines": intel_lines[-15:],
@@ -1200,16 +1568,20 @@ def command_center():
         logger.error(f"Command center API error: {e}")
         return jsonify({"error": str(e), "success": False}), 500
 
+
 @app.route('/api/real-estate/status')
 def real_estate_status():
     return jsonify(_get_real_estate_data())
+
 
 @app.route('/api/real-estate/run/<task_name>', methods=['POST'])
 def run_real_estate_task(task_name):
     try:
         from real_estate_tasks import (
-            run_0700_searchiqs_ingest, run_0730_analysis,
-            run_0800_reviews, run_0830_outreach,
+            run_0700_searchiqs_ingest,
+            run_0730_analysis,
+            run_0800_reviews,
+            run_0830_outreach,
         )
         task_map = {
             "ingest": run_0700_searchiqs_ingest,
@@ -1218,11 +1590,15 @@ def run_real_estate_task(task_name):
             "outreach": run_0830_outreach,
         }
         if task_name not in task_map:
-            return jsonify({"error": f"Unknown task: {task_name}", "valid_tasks": list(task_map.keys())}), 400
+            return jsonify({
+                "error": f"Unknown task: {task_name}",
+                "valid_tasks": list(task_map.keys())
+            }), 400
         result = task_map[task_name]()
         return jsonify(result)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
 
 @app.route('/diagnostics')
 def diagnostics_page():
@@ -1231,28 +1607,65 @@ def diagnostics_page():
 
         checks = []
         growth = DISTRIBUTIONS["GROWTH"]
-        growth_total = growth["tax_usdc"] + growth["gas_reserve_eth"] + growth["wallet_s_dai"] + growth["collateral_wbtc"] + growth["collateral_weth"] + growth["collateral_usdt"]
+        growth_total = growth["tax_usdc"] + growth["gas_reserve_eth"] + growth[
+            "wallet_s_dai"] + growth["collateral_wbtc"] + growth[
+                "collateral_weth"] + growth["collateral_usdt"]
         growth_match = abs(growth_total - growth["borrow_amount"]) < 0.01
-        checks.append({"name": "Growth Distribution Sum", "expected": growth["borrow_amount"], "actual": round(growth_total, 2), "pass": growth_match})
+        checks.append({
+            "name": "Growth Distribution Sum",
+            "expected": growth["borrow_amount"],
+            "actual": round(growth_total, 2),
+            "pass": growth_match
+        })
 
         capacity = DISTRIBUTIONS["CAPACITY"]
-        cap_total = capacity["tax_usdc"] + capacity["gas_reserve_eth"] + capacity["wallet_s_dai"] + capacity["collateral_wbtc"] + capacity["collateral_weth"] + capacity["collateral_usdt"]
+        cap_total = capacity["tax_usdc"] + capacity[
+            "gas_reserve_eth"] + capacity["wallet_s_dai"] + capacity[
+                "collateral_wbtc"] + capacity["collateral_weth"] + capacity[
+                    "collateral_usdt"]
         cap_match = abs(cap_total - capacity["borrow_amount"]) < 0.01
-        checks.append({"name": "Capacity Distribution Sum", "expected": capacity["borrow_amount"], "actual": round(cap_total, 2), "pass": cap_match})
+        checks.append({
+            "name": "Capacity Distribution Sum",
+            "expected": capacity["borrow_amount"],
+            "actual": round(cap_total, 2),
+            "pass": cap_match
+        })
 
         for tier in ["MACRO", "MICRO"]:
             alloc = SHORT_CONFIG[tier]["allocation"]
             alloc_sum = sum(alloc.values())
-            checks.append({"name": f"{tier} Short Allocation Sum", "expected": 1.0, "actual": round(alloc_sum, 2), "pass": abs(alloc_sum - 1.0) < 0.01})
+            checks.append({
+                "name": f"{tier} Short Allocation Sum",
+                "expected": 1.0,
+                "actual": round(alloc_sum, 2),
+                "pass": abs(alloc_sum - 1.0) < 0.01
+            })
 
         close_sum = sum(SHORT_CLOSE_SPLIT.values())
-        checks.append({"name": "Short Close Split Sum", "expected": 1.0, "actual": round(close_sum, 2), "pass": abs(close_sum - 1.0) < 0.01})
+        checks.append({
+            "name": "Short Close Split Sum",
+            "expected": 1.0,
+            "actual": round(close_sum, 2),
+            "pass": abs(close_sum - 1.0) < 0.01
+        })
 
         perplexity_key = bool(os.getenv("PERPLEXITY_API_KEY"))
-        checks.append({"name": "Perplexity API Key", "expected": "Set", "actual": "Set" if perplexity_key else "Missing", "pass": perplexity_key})
+        checks.append({
+            "name": "Perplexity API Key",
+            "expected": "Set",
+            "actual": "Set" if perplexity_key else "Missing",
+            "pass": perplexity_key
+        })
 
-        google_creds = bool(os.getenv("GOOGLE_SERVICE_ACCOUNT_JSON") or os.getenv("GOOGLE_APPLICATION_CREDENTIALS"))
-        checks.append({"name": "Google Credentials", "expected": "Set", "actual": "Set" if google_creds else "Missing", "pass": google_creds})
+        google_creds = bool(
+            os.getenv("GOOGLE_SERVICE_ACCOUNT_JSON")
+            or os.getenv("GOOGLE_APPLICATION_CREDENTIALS"))
+        checks.append({
+            "name": "Google Credentials",
+            "expected": "Set",
+            "actual": "Set" if google_creds else "Missing",
+            "pass": google_creds
+        })
 
         all_pass = all(c["pass"] for c in checks)
 
@@ -1263,7 +1676,11 @@ def diagnostics_page():
             "short_config": SHORT_CONFIG,
             "short_close_split": SHORT_CLOSE_SPLIT,
             "velocity_config": VELOCITY_CONFIG,
-            "real_estate_config": {k: v for k, v in REAL_ESTATE_CONFIG.items() if k != "google_drive_folder_id"},
+            "real_estate_config": {
+                k: v
+                for k, v in REAL_ESTATE_CONFIG.items()
+                if k != "google_drive_folder_id"
+            },
             "perplexity_config": PERPLEXITY_CONFIG,
             "real_estate_status": _get_real_estate_data(),
             "timestamp": time.time(),
@@ -1271,6 +1688,7 @@ def diagnostics_page():
         return jsonify(diag)
     except Exception as e:
         return jsonify({"error": str(e), "FINAL_SPEC_STATUS": "FAIL"}), 500
+
 
 @app.route('/api/test')
 def api_test():
@@ -1280,6 +1698,7 @@ def api_test():
         'timestamp': time.time(),
         'autonomous_agent_running': check_autonomous_agent_running()
     })
+
 
 @app.route('/api/console')
 def get_console_output():
@@ -1291,8 +1710,9 @@ def get_console_output():
             try:
                 # Extract timestamp from the first line if it's in the expected format
                 if last_line_str.startswith('['):
-                    last_timestamp_str = last_line_str[1:10] # [HH:MM:SS]
-                    last_time = datetime.strptime(last_timestamp_str, '%H:%M:%S')
+                    last_timestamp_str = last_line_str[1:10]  # [HH:MM:SS]
+                    last_time = datetime.strptime(last_timestamp_str,
+                                                  '%H:%M:%S')
                     current_time = datetime.now()
                     time_diff = (current_time - last_time).total_seconds()
 
@@ -1305,10 +1725,10 @@ def get_console_output():
                 # Handle cases where the last line is not a timestamped log
                 pass
 
-
         # Ensure we have some content
         if not console_buffer:
-            console_buffer.append(f"[{est_now()}] 📱 Dashboard ready - Monitoring system...")
+            console_buffer.append(
+                f"[{est_now()}] 📱 Dashboard ready - Monitoring system...")
 
         return jsonify({
             'console_lines': list(console_buffer),
@@ -1321,10 +1741,13 @@ def get_console_output():
     except Exception as e:
         logger.error(f"Console output API error: {e}")
         return jsonify({
-            'error': str(e),
+            'error':
+            str(e),
             'console_lines': [f"[{est_now()}] ❌ Console error: {str(e)}"],
-            'success': False
+            'success':
+            False
         })
+
 
 @app.route('/api/system_metrics')
 def get_system_metrics():
@@ -1338,22 +1761,32 @@ def get_system_metrics():
         if agent_running:
             try:
                 from arbitrum_testnet_agent import ArbitrumTestnetAgent
+
                 # Create a minimal RPC manager mock for the agent
                 class MockRPCManager:
+
                     def get_web3(self):
                         from web3 import Web3
-                        return Web3(Web3.HTTPProvider("https://arb1.arbitrum.io/rpc"))
+                        return Web3(
+                            Web3.HTTPProvider("https://arb1.arbitrum.io/rpc"))
 
-                private_key = os.getenv('PRIVATE_KEY') or os.getenv('Wallet_PRIVATE_KEY')
+                private_key = os.getenv('PRIVATE_KEY') or os.getenv(
+                    'Wallet_PRIVATE_KEY')
                 if private_key:
-                    if hasattr(agent, 'get_system_metrics') and agent is not None:
+                    if hasattr(agent,
+                               'get_system_metrics') and agent is not None:
                         agent_metrics = agent.get_system_metrics()
                     else:
-                        logger.warning("Agent does not have get_system_metrics method.")
+                        logger.warning(
+                            "Agent does not have get_system_metrics method.")
                 else:
-                    logger.warning("No private key found for agent initialization to fetch metrics.")
+                    logger.warning(
+                        "No private key found for agent initialization to fetch metrics."
+                    )
             except ImportError:
-                logger.error("arbitrum_testnet_agent not found. Cannot fetch agent system metrics.")
+                logger.error(
+                    "arbitrum_testnet_agent not found. Cannot fetch agent system metrics."
+                )
             except Exception as e:
                 logger.error(f"Error fetching agent system metrics: {e}")
 
@@ -1366,13 +1799,17 @@ def get_system_metrics():
                     try:
                         performance_data.append(json.loads(line))
                     except json.JSONDecodeError:
-                        logger.warning(f"Skipping malformed line in performance_log.json for metrics: {line.strip()}")
+                        logger.warning(
+                            f"Skipping malformed line in performance_log.json for metrics: {line.strip()}"
+                        )
                         continue
 
         # Calculate metrics
         current_time = time.time()
         last_operation_time = agent_metrics.get('last_operation_time', 0)
-        rest_period = max(0, 60 - (current_time - last_operation_time)) if last_operation_time > 0 else 0
+        rest_period = max(
+            0, 60 - (current_time -
+                     last_operation_time)) if last_operation_time > 0 else 0
 
         # Get live wallet data
         live_data = get_live_agent_data()
@@ -1381,29 +1818,51 @@ def get_system_metrics():
         triggers_info = analyze_trigger_conditions(live_data)
 
         return jsonify({
-            'timestamp': current_time,
-            'formatted_timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S UTC'),
-            'current_iteration': agent_metrics.get('current_iteration', 0),
-            'agent_running': agent_running,
-            'rest_period_seconds': rest_period,
-            'rest_period_formatted': f"{int(rest_period)}s" if rest_period > 0 else "Ready",
-            'triggers_activated': agent_metrics.get('triggers_activated', 0),
-            'last_sequence_type': agent_metrics.get('last_sequence_type', 'None'),
-            'next_trigger_target': agent_metrics.get('next_trigger_target', live_data.get('next_trigger_threshold', 97.0)),
-            'current_collateral': live_data.get('total_collateral_usdc', 64.48),
-            'baseline_collateral': live_data.get('baseline_collateral', 47.0),
+            'timestamp':
+            current_time,
+            'formatted_timestamp':
+            datetime.now().strftime('%Y-%m-%d %H:%M:%S UTC'),
+            'current_iteration':
+            agent_metrics.get('current_iteration', 0),
+            'agent_running':
+            agent_running,
+            'rest_period_seconds':
+            rest_period,
+            'rest_period_formatted':
+            f"{int(rest_period)}s" if rest_period > 0 else "Ready",
+            'triggers_activated':
+            agent_metrics.get('triggers_activated', 0),
+            'last_sequence_type':
+            agent_metrics.get('last_sequence_type', 'None'),
+            'next_trigger_target':
+            agent_metrics.get('next_trigger_target',
+                              live_data.get('next_trigger_threshold', 97.0)),
+            'current_collateral':
+            live_data.get('total_collateral_usdc', 64.48),
+            'baseline_collateral':
+            live_data.get('baseline_collateral', 47.0),
             'borrowed_assets': {
-                'total_borrowed_usd': live_data.get('total_debt_usdc', 31.61),
-                'assets': ['DAI'], # Example asset
-                'utilization_ratio': (live_data.get('total_debt_usdc', 35.06) / max(live_data.get('total_collateral_usdc', 1), 1)) * 100
+                'total_borrowed_usd':
+                live_data.get('total_debt_usdc', 31.61),
+                'assets': ['DAI'],  # Example asset
+                'utilization_ratio':
+                (live_data.get('total_debt_usdc', 35.06) /
+                 max(live_data.get('total_collateral_usdc', 1), 1)) * 100
             },
-            'pending_approvals': check_pending_approvals(),
-            'self_improvement_proposals': get_improvement_proposals(live_data, performance_data),
-            'network_status': get_network_approval_status(live_data),
-            'trigger_analysis': triggers_info,
-            'market_signals': get_market_signal_status(),
-            'debt_swap_status': _get_debt_swap_status(), # Call the new function
-            'success': True
+            'pending_approvals':
+            check_pending_approvals(),
+            'self_improvement_proposals':
+            get_improvement_proposals(live_data, performance_data),
+            'network_status':
+            get_network_approval_status(live_data),
+            'trigger_analysis':
+            triggers_info,
+            'market_signals':
+            get_market_signal_status(),
+            'debt_swap_status':
+            _get_debt_swap_status(),  # Call the new function
+            'success':
+            True
         })
 
     except Exception as e:
@@ -1414,12 +1873,14 @@ def get_system_metrics():
             'success': False
         })
 
+
 # Helper function for debt_swap_status
 def _get_debt_swap_status():
     """Get status of debt swap operations."""
     try:
         # Check for market signal strategy enabled
-        market_enabled = os.getenv('MARKET_SIGNAL_ENABLED', 'false').lower() == 'true'
+        market_enabled = os.getenv('MARKET_SIGNAL_ENABLED',
+                                   'false').lower() == 'true'
 
         # Check for recent debt swap activity logs
         recent_activity = check_for_debt_swap_activity()
@@ -1473,17 +1934,27 @@ def analyze_trigger_conditions(live_data):
             triggers_active.append("Capacity-Based System")
 
         return {
-            'growth_achieved': growth_achieved,
-            'growth_needed': growth_needed,
-            'triggers_ready': triggers_active,
-            'next_growth_target': baseline + growth_threshold,
-            'capacity_available': available_borrows,
-            'health_factor_status': 'Healthy' if health_factor > 2.0 else 'Caution',
-            'trigger_probability': calculate_trigger_probability(growth_trigger_ready, capacity_trigger_ready, health_factor)
+            'growth_achieved':
+            growth_achieved,
+            'growth_needed':
+            growth_needed,
+            'triggers_ready':
+            triggers_active,
+            'next_growth_target':
+            baseline + growth_threshold,
+            'capacity_available':
+            available_borrows,
+            'health_factor_status':
+            'Healthy' if health_factor > 2.0 else 'Caution',
+            'trigger_probability':
+            calculate_trigger_probability(growth_trigger_ready,
+                                          capacity_trigger_ready,
+                                          health_factor)
         }
     except Exception as e:
         logger.error(f"Error in analyze_trigger_conditions: {e}")
         return {'error': str(e)}
+
 
 def calculate_trigger_probability(growth_ready, capacity_ready, health_factor):
     """Calculate probability of successful trigger execution"""
@@ -1500,6 +1971,7 @@ def calculate_trigger_probability(growth_ready, capacity_ready, health_factor):
 
     return min(95, max(10, base_probability))
 
+
 def check_pending_approvals():
     """Check for pending user approvals"""
     try:
@@ -1508,17 +1980,23 @@ def check_pending_approvals():
         # Check for parameter update triggers
         if os.path.exists('parameter_update_trigger.flag'):
             pending.append({
-                'type': 'Parameter Changes',
-                'message': 'User settings updated - review required',
-                'action_required': 'Review and approve new parameters'
+                'type':
+                'Parameter Changes',
+                'message':
+                'User settings updated - review required',
+                'action_required':
+                'Review and approve new parameters'
             })
 
         # Check for emergency stop
         if os.path.exists('EMERGENCY_STOP_ACTIVE.flag'):
             pending.append({
-                'type': 'Emergency Stop',
-                'message': 'System halted - manual intervention needed',
-                'action_required': 'Clear emergency stop to resume operations'
+                'type':
+                'Emergency Stop',
+                'message':
+                'System halted - manual intervention needed',
+                'action_required':
+                'Clear emergency stop to resume operations'
             })
 
         return {
@@ -1530,6 +2008,7 @@ def check_pending_approvals():
         logger.error(f"Error in check_pending_approvals: {e}")
         return {'pending': False, 'count': 0, 'items': [], 'error': str(e)}
 
+
 def get_improvement_proposals(live_data, performance_data):
     """Generate self-improvement proposal headlines"""
     try:
@@ -1537,36 +2016,47 @@ def get_improvement_proposals(live_data, performance_data):
 
         # Performance-based proposals
         if performance_data:
-            recent_performance = [p.get('performance_metric', 0) for p in performance_data[-5:]]
-            avg_performance = sum(recent_performance) / len(recent_performance) if recent_performance else 0
+            recent_performance = [
+                p.get('performance_metric', 0) for p in performance_data[-5:]
+            ]
+            avg_performance = sum(recent_performance) / len(
+                recent_performance) if recent_performance else 0
 
             if avg_performance < 0.6:
-                proposals.append("🔧 Optimize transaction timing for better success rates")
+                proposals.append(
+                    "🔧 Optimize transaction timing for better success rates")
             if avg_performance > 0.8:
-                proposals.append("📈 Consider increasing operation frequency for higher yields")
+                proposals.append(
+                    "📈 Consider increasing operation frequency for higher yields"
+                )
 
         # Health factor based
         health_factor = live_data.get('health_factor', 4.346)
         if health_factor > 4.0:
-            proposals.append("💰 Increase leverage ratio for capital efficiency")
+            proposals.append(
+                "💰 Increase leverage ratio for capital efficiency")
         elif health_factor < 2.5:
             proposals.append("🛡️ Reduce risk exposure for safety")
 
         # Capacity utilization
         available_borrows = live_data.get('available_borrows_usdc', 108.27)
         if available_borrows > 100:
-            proposals.append("🚀 High capacity available - ready for scaled operations")
+            proposals.append(
+                "🚀 High capacity available - ready for scaled operations")
 
         # Market conditions
         if os.getenv('MARKET_SIGNAL_ENABLED', 'false').lower() == 'true':
-            proposals.append("📊 Market signal strategy active - debt swap optimization")
+            proposals.append(
+                "📊 Market signal strategy active - debt swap optimization")
         else:
-            proposals.append("💡 Enable market signals for enhanced yield opportunities")
+            proposals.append(
+                "💡 Enable market signals for enhanced yield opportunities")
 
         return proposals[:4]  # Return top 4 proposals
     except Exception as e:
         logger.error(f"Error in get_improvement_proposals: {e}")
         return [f"❌ Proposal error: {str(e)[:50]}"]
+
 
 def get_network_approval_status(live_data):
     """Get network readiness and approval probability"""
@@ -1590,12 +2080,18 @@ def get_network_approval_status(live_data):
         approval_probability = max(10, min(95, approval_probability))
 
         return {
-            'ready_for_execution': health_factor > 1.5 and eth_balance > 0.001,
-            'approval_probability': approval_probability,
-            'network_congestion': 'Low',  # Could be enhanced with real gas price data
-            'execution_status': 'Ready' if approval_probability > 70 else 'Caution',
-            'estimated_gas_cost': '$0.02',  # Estimate for Arbitrum
-            'next_execution_window': 'Immediate' if approval_probability > 80 else '1-2 minutes'
+            'ready_for_execution':
+            health_factor > 1.5 and eth_balance > 0.001,
+            'approval_probability':
+            approval_probability,
+            'network_congestion':
+            'Low',  # Could be enhanced with real gas price data
+            'execution_status':
+            'Ready' if approval_probability > 70 else 'Caution',
+            'estimated_gas_cost':
+            '$0.02',  # Estimate for Arbitrum
+            'next_execution_window':
+            'Immediate' if approval_probability > 80 else '1-2 minutes'
         }
     except Exception as e:
         logger.error(f"Error in get_network_approval_status: {e}")
@@ -1605,6 +2101,7 @@ def get_network_approval_status(live_data):
             'execution_status': f'Error: {e}',
             'error': str(e)
         }
+
 
 def get_market_signal_status():
     """Get enhanced market signal status with CoinMarketCap analysis"""
@@ -1621,6 +2118,7 @@ def get_market_signal_status():
             from enhanced_market_analyzer import EnhancedMarketAnalyzer
 
             class MockAgent:
+
                 def __init__(self):
                     self.address = "0x1234...5678"
 
@@ -1628,8 +2126,10 @@ def get_market_signal_status():
             market_summary = analyzer.get_market_summary()
 
             if 'error' not in market_summary:
-                btc_change = market_summary.get('btc_analysis', {}).get('change_24h', 0)
-                eth_change = market_summary.get('eth_analysis', {}).get('change_24h', 0)
+                btc_change = market_summary.get('btc_analysis',
+                                                {}).get('change_24h', 0)
+                eth_change = market_summary.get('eth_analysis',
+                                                {}).get('change_24h', 0)
                 sentiment = market_summary.get('market_sentiment', 'neutral')
 
                 sentiment_emoji = {
@@ -1640,24 +2140,31 @@ def get_market_signal_status():
                     'very_bearish': '💥'
                 }.get(sentiment, '➡️')
 
-                return (f"[{timestamp}] {sentiment_emoji} ENHANCED SIGNALS: {sentiment.upper()} | "
-                       f"BTC: {btc_change:+.1f}% | ETH: {eth_change:+.1f}% | CoinMarketCap API Active")
+                return (
+                    f"[{timestamp}] {sentiment_emoji} ENHANCED SIGNALS: {sentiment.upper()} | "
+                    f"BTC: {btc_change:+.1f}% | ETH: {eth_change:+.1f}% | CoinMarketCap API Active"
+                )
 
         except ImportError:
-            logger.error("enhanced_market_analyzer not found. Cannot get enhanced market signals.")
+            logger.error(
+                "enhanced_market_analyzer not found. Cannot get enhanced market signals."
+            )
             return f"[{timestamp}] ❌ MARKET SIGNALS: enhanced_market_analyzer not found"
         except Exception as enhanced_error:
             # Fallback to basic status if enhanced analysis fails
-            logger.warning(f"Enhanced market analysis failed: {enhanced_error}")
+            logger.warning(
+                f"Enhanced market analysis failed: {enhanced_error}")
             # Still check if market signals are enabled at all
-            market_enabled = os.getenv('MARKET_SIGNAL_ENABLED', 'false').lower() == 'true'
+            market_enabled = os.getenv('MARKET_SIGNAL_ENABLED',
+                                       'false').lower() == 'true'
             if market_enabled:
                 return f"[{timestamp}] ⚠️ MARKET SIGNALS: Active (Analysis Error) | Check logs for details"
             else:
                 return f"[{timestamp}] 💤 MARKET SIGNALS: Disabled"
 
         # Default return if CoinMarketCap API is enabled but analysis didn't occur or failed
-        market_enabled = os.getenv('MARKET_SIGNAL_ENABLED', 'false').lower() == 'true'
+        market_enabled = os.getenv('MARKET_SIGNAL_ENABLED',
+                                   'false').lower() == 'true'
         if market_enabled:
             return f"[{timestamp}] 📊 MARKET SIGNALS: Enabled | Waiting for market data"
         else:
@@ -1673,13 +2180,12 @@ def get_market_signals():
     """Get real-time market signal status"""
     try:
         # Check market signal strategy status
-        market_enabled = os.getenv('MARKET_SIGNAL_ENABLED', 'false').lower() == 'true'
+        market_enabled = os.getenv('MARKET_SIGNAL_ENABLED',
+                                   'false').lower() == 'true'
 
         # Check API availability
-        coinapi_key = (os.getenv('COIN_API') or
-                       os.getenv('COIN_API_KEY') or
-                       os.getenv('COINAPI_KEY') or
-                       os.getenv('COINAPI'))
+        coinapi_key = (os.getenv('COIN_API') or os.getenv('COIN_API_KEY')
+                       or os.getenv('COINAPI_KEY') or os.getenv('COINAPI'))
         coinmarketcap_key = os.getenv('COINMARKETCAP_API_KEY')
 
         # Test strategy initialization
@@ -1693,13 +2199,15 @@ def get_market_signals():
 
                 # Create minimal test to verify strategy works
                 class MockAgent:
+
                     def __init__(self):
                         self.address = "0x0000000000000000000000000000000000000000"
 
                 test_agent = MockAgent()
                 strategy = MarketSignalStrategy(test_agent)
 
-                if hasattr(strategy, 'initialization_successful') and strategy.initialization_successful:
+                if hasattr(strategy, 'initialization_successful'
+                           ) and strategy.initialization_successful:
                     strategy_initialized = True
 
                     # Get detailed status
@@ -1713,7 +2221,8 @@ def get_market_signals():
                         data_source = "Mock Data"
 
                     # Add technical indicators status
-                    tech_ready = status.get('technical_indicators_ready', False)
+                    tech_ready = status.get('technical_indicators_ready',
+                                            False)
                     price_points = status.get('price_history_points', 0)
 
                     if tech_ready:
@@ -1729,7 +2238,6 @@ def get_market_signals():
                 error_message = f"Import/initialization error: {str(e)[:100]}"
         else:
             error_message = "Market signals are disabled. Set MARKET_SIGNAL_ENABLED=true."
-
 
         return jsonify({
             'market_signals_enabled': market_enabled,
@@ -1762,10 +2270,12 @@ def set_system_mode_api():
         mode = data.get('mode', '').lower()
 
         if mode not in ['autonomous', 'manual']:
-            return jsonify({'error': 'Invalid mode. Use "autonomous" or "manual"'}), 400
+            return jsonify(
+                {'error': 'Invalid mode. Use "autonomous" or "manual"'}), 400
 
         system_mode = mode
-        console_buffer.append(f"[{est_now()}] 🔄 System mode changed to: {mode}")
+        console_buffer.append(
+            f"[{est_now()}] 🔄 System mode changed to: {mode}")
 
         return jsonify({
             'success': True,
@@ -1776,23 +2286,33 @@ def set_system_mode_api():
         logger.error(f"Set system mode API error: {e}")
         return jsonify({'error': str(e)}), 500
 
+
 @app.route('/api/system_status')
 def system_status():
     """Get comprehensive system status"""
     try:
         return jsonify({
-            'dashboard_status': 'operational',
-            'autonomous_agent_running': check_autonomous_agent_running(),
-            'network_mode': 'mainnet',
-            'wallet_address': '0x5B823270e3719CDe8669e5e5326B455EaA8a350b',
-            'emergency_stop_active': os.path.exists('EMERGENCY_STOP_ACTIVE.flag'),
-            'timestamp': time.time(),
-            'agent_initialized': agent is not None,
-            'live_data_available': bool(get_live_agent_data())
+            'dashboard_status':
+            'operational',
+            'autonomous_agent_running':
+            check_autonomous_agent_running(),
+            'network_mode':
+            'mainnet',
+            'wallet_address':
+            '0x5B823270e3719CDe8669e5e5326B455EaA8a350b',
+            'emergency_stop_active':
+            os.path.exists('EMERGENCY_STOP_ACTIVE.flag'),
+            'timestamp':
+            time.time(),
+            'agent_initialized':
+            agent is not None,
+            'live_data_available':
+            bool(get_live_agent_data())
         })
     except Exception as e:
         logger.error(f"System status API error: {e}")
         return jsonify({'error': str(e)}), 500
+
 
 @app.route('/api/network-info')
 def get_network_info_api():
@@ -1809,6 +2329,7 @@ def get_network_info_api():
         logger.error(f"Network info API error: {e}")
         return jsonify({'error': str(e)}), 500
 
+
 @app.route('/api/switch-network', methods=['POST'])
 def switch_network():
     """Switch between mainnet and testnet"""
@@ -1817,7 +2338,8 @@ def switch_network():
         target_network = data.get('network', 'testnet').lower()
 
         if target_network not in ['mainnet', 'testnet']:
-            return jsonify({'error': 'Invalid network. Use "mainnet" or "testnet"'}), 400
+            return jsonify(
+                {'error': 'Invalid network. Use "mainnet" or "testnet"'}), 400
 
         # Update environment variable
         os.environ['NETWORK_MODE'] = target_network
@@ -1861,7 +2383,8 @@ def switch_network():
                 try:
                     logs = json.load(f)
                 except json.JSONDecodeError:
-                    logger.warning(f"Malformed JSON in {switch_log_file}, resetting.")
+                    logger.warning(
+                        f"Malformed JSON in {switch_log_file}, resetting.")
                     logs = []
         else:
             logs = []
@@ -1871,7 +2394,6 @@ def switch_network():
             json.dump(logs, f, indent=2)
             f.flush()
             os.fsync(f.fileno())
-
 
         return jsonify({
             'success': True,
@@ -1885,6 +2407,7 @@ def switch_network():
         logger.error(f"Switch network API error: {e}")
         return jsonify({'error': str(e)}), 500
 
+
 @app.route('/api/diagnostics/connection-test')
 def connection_test():
     """Simple connection test for UI debugging"""
@@ -1895,7 +2418,8 @@ def connection_test():
             'timestamp': time.time(),
             'server_time': datetime.now().strftime('%Y-%m-%d %H:%M:%S UTC'),
             'agent_initialized': agent is not None,
-            'dashboard_available': True,  # Assume dashboard is always available
+            'dashboard_available':
+            True,  # Assume dashboard is always available
             'network_mode': 'mainnet',  # Hardcoded for now
             'deployment_mode': bool(os.getenv('REPLIT_DEPLOYMENT')),
             'api_version': '1.0'
@@ -1905,6 +2429,7 @@ def connection_test():
     except Exception as e:
         logger.error(f"Connection test API error: {e}")
         return jsonify({'error': str(e), 'status': 'error'}), 500
+
 
 @app.route('/api/debug/test-all')
 def test_all_endpoints():
@@ -1936,24 +2461,29 @@ def test_all_endpoints():
                     logger.info(f"🔍 Testing endpoint: {endpoint}")
                     response = client.get(endpoint)
                     results[endpoint] = {
-                        'status': 'success' if response.status_code == 200 else 'error',
+                        'status':
+                        'success' if response.status_code == 200 else 'error',
                         'status_code': response.status_code,
                         'has_data': bool(response.get_data())
                     }
                 except Exception as e:
-                    results[endpoint] = {'status': 'exception', 'error': str(e)}
+                    results[endpoint] = {
+                        'status': 'exception',
+                        'error': str(e)
+                    }
                     logger.error(f"Endpoint {endpoint} test failed: {e}")
 
         return jsonify({
             'test_results': results,
             'timestamp': time.time(),
             'agent_status': agent is not None,
-            'dashboard_status': True #assume dashboard always running
+            'dashboard_status': True  #assume dashboard always running
         })
 
     except Exception as e:
         logger.error(f"Test all endpoints API error: {e}")
         return jsonify({'error': str(e)}), 500
+
 
 @app.route('/api/health-check')
 def comprehensive_health_check():
@@ -1964,7 +2494,8 @@ def comprehensive_health_check():
             'timestamp': time.time(),
             'components': {
                 'web_dashboard': 'operational',
-                'agent_connection': 'connected' if agent else 'not_initialized',
+                'agent_connection':
+                'connected' if agent else 'not_initialized',
                 'api_endpoints': 'operational',
                 'emergency_stop': 'ready',
                 'parameters': 'loaded'
@@ -1976,7 +2507,7 @@ def comprehensive_health_check():
             'secrets': {
                 'coinmarketcap_api': bool(os.getenv('COINMARKETCAP_API_KEY')),
                 'private_key': bool(os.getenv('PRIVATE_KEY')),
-                'network_mode': True # Assumes network mode is configured
+                'network_mode': True  # Assumes network mode is configured
             },
             'api_status': {
                 'wallet_status': 'working',
@@ -1986,19 +2517,23 @@ def comprehensive_health_check():
         }
 
         # Perform checks on API endpoints
-        endpoints_to_check = ['/api/wallet_status', '/api/parameters', '/api/emergency_status']
+        endpoints_to_check = [
+            '/api/wallet_status', '/api/parameters', '/api/emergency_status'
+        ]
         for endpoint in endpoints_to_check:
             try:
                 with app.test_client() as client:
                     response = client.get(endpoint)
                     status = 'working' if response.status_code == 200 else f'error ({response.status_code})'
-                    health_status['api_status'][endpoint.split('/')[-1]] = status
+                    health_status['api_status'][endpoint.split('/')
+                                                [-1]] = status
             except Exception as e:
-                health_status['api_status'][endpoint.split('/')[-1]] = f'exception: {str(e)[:50]}'
+                health_status['api_status'][endpoint.split('/')
+                                            [-1]] = f'exception: {str(e)[:50]}'
                 health_status['overall_status'] = 'degraded'
 
         if health_status['overall_status'] != 'healthy':
-             health_status['overall_status'] = 'degraded'
+            health_status['overall_status'] = 'degraded'
 
         return jsonify(health_status)
     except Exception as e:
@@ -2011,6 +2546,7 @@ def comprehensive_health_check():
                 'web_dashboard': 'error'
             }
         }), 200
+
 
 @app.route('/api/parameter-sync-status')
 def get_parameter_sync_status():
@@ -2044,32 +2580,38 @@ def get_parameter_sync_status():
                                 recent_update = True
                                 break
             except (json.JSONDecodeError, IOError) as e:
-                logger.warning(f"Error reading performance log for sync status: {e}")
+                logger.warning(
+                    f"Error reading performance log for sync status: {e}")
                 pass
 
         return jsonify({
-            'sync_status': 'synced' if recent_update else 'pending',
-            'settings_modified': settings_mtime,
-            'settings_modified_readable': datetime.utcfromtimestamp(settings_mtime).strftime('%Y-%m-%d %H:%M:%S UTC'),
-            'message': 'Parameters synced with agent' if recent_update else 'Waiting for agent to pick up changes'
+            'sync_status':
+            'synced' if recent_update else 'pending',
+            'settings_modified':
+            settings_mtime,
+            'settings_modified_readable':
+            datetime.utcfromtimestamp(settings_mtime).strftime(
+                '%Y-%m-%d %H:%M:%S UTC'),
+            'message':
+            'Parameters synced with agent'
+            if recent_update else 'Waiting for agent to pick up changes'
         })
 
     except Exception as e:
         logger.error(f"Parameter sync status API error: {e}")
-        return jsonify({
-            'sync_status': 'error',
-            'error': str(e)
-        })
+        return jsonify({'sync_status': 'error', 'error': str(e)})
+
 
 @app.route('/api/diagnostics/debug-parameters')
 def debug_parameters():
     """Debug parameter loading issues"""
     try:
         debug_info = {
-            'config_file_exists': False, # No agent_config.json used directly
+            'config_file_exists': False,  # No agent_config.json used directly
             'user_settings_exists': os.path.exists('user_settings.json'),
-            'dashboard_available': True, # Dashboard itself is available
-            'dashboard_has_params': True # Dashboard initializes with default parameters
+            'dashboard_available': True,  # Dashboard itself is available
+            'dashboard_has_params':
+            True  # Dashboard initializes with default parameters
         }
 
         # Load parameters using the same logic as get_parameters()
@@ -2081,8 +2623,8 @@ def debug_parameters():
             'exploration_rate': 0.1,
             'max_iterations_per_run': 100,
             'optimization_target_threshold': 0.95,
-            'health_factor_target': 1.25, # Updated default
-            'borrow_trigger_threshold': 12.0, # Updated default
+            'health_factor_target': 1.25,  # Updated default
+            'borrow_trigger_threshold': 12.0,  # Updated default
             'arb_decline_threshold': 0.05,
             'auto_mode': True
         }
@@ -2094,26 +2636,33 @@ def debug_parameters():
                     user_settings = json.load(f)
                     methods['user_settings_file'] = user_settings
             except (json.JSONDecodeError, IOError) as e:
-                methods['user_settings_file'] = {'error': f"Failed to load: {e}"}
+                methods['user_settings_file'] = {
+                    'error': f"Failed to load: {e}"
+                }
         else:
             methods['user_settings_file'] = {'error': 'File not found'}
 
         # Method 3: Parameters as loaded by the dashboard (which uses defaults and then user_settings)
         loaded_params = methods['default_config'].copy()
-        if 'user_settings_file' in methods and isinstance(methods['user_settings_file'], dict) and 'error' not in methods['user_settings_file']:
+        if 'user_settings_file' in methods and isinstance(
+                methods['user_settings_file'],
+                dict) and 'error' not in methods['user_settings_file']:
             loaded_params.update(methods['user_settings_file'])
         methods['dashboard_loaded_params'] = loaded_params
 
-
         return jsonify({
-            'debug_info': debug_info,
-            'parameter_sources': methods,
-            'recommendation': 'Compare "default_config", "user_settings_file", and "dashboard_loaded_params" to identify discrepancies.'
+            'debug_info':
+            debug_info,
+            'parameter_sources':
+            methods,
+            'recommendation':
+            'Compare "default_config", "user_settings_file", and "dashboard_loaded_params" to identify discrepancies.'
         })
 
     except Exception as e:
         logger.error(f"Debug parameters API error: {e}")
         return jsonify({'error': str(e)}), 500
+
 
 @app.route('/api/parameters', methods=['POST'])
 def save_parameters():
@@ -2130,14 +2679,19 @@ def save_parameters():
                 with open(settings_file, 'r') as f:
                     existing_settings = json.load(f)
             except (json.JSONDecodeError, IOError) as e:
-                logger.warning(f"Could not load existing user settings: {e}. Starting fresh.")
+                logger.warning(
+                    f"Could not load existing user settings: {e}. Starting fresh."
+                )
                 existing_settings = {}
 
         # Update with new parameters, ensuring only valid parameters are updated
         # Filter out non-parameter keys if necessary, or assume input is clean
-        valid_param_keys = {'health_factor_target', 'borrow_trigger_threshold', 'arb_decline_threshold',
-                            'exploration_rate', 'auto_mode', 'learning_rate', 'max_iterations_per_run',
-                            'optimization_target_threshold'}
+        valid_param_keys = {
+            'health_factor_target', 'borrow_trigger_threshold',
+            'arb_decline_threshold', 'exploration_rate', 'auto_mode',
+            'learning_rate', 'max_iterations_per_run',
+            'optimization_target_threshold'
+        }
         updated_params_list = []
         for key, value in data.items():
             if key in valid_param_keys:
@@ -2146,10 +2700,10 @@ def save_parameters():
             else:
                 logger.warning(f"Ignoring unknown parameter key: {key}")
 
-
         # Add timestamp to force reload detection
         existing_settings['last_updated'] = time.time()
-        existing_settings['update_count'] = existing_settings.get('update_count', 0) + 1
+        existing_settings['update_count'] = existing_settings.get(
+            'update_count', 0) + 1
 
         # Save updated settings with explicit flush
         with open(settings_file, 'w') as f:
@@ -2165,8 +2719,11 @@ def save_parameters():
             f.flush()
             os.fsync(f.fileno())
 
-        logger.info(f"✅ Parameters updated via dashboard: {updated_params_list}")
-        logger.info(f"📁 Settings file updated with timestamp: {existing_settings['last_updated']}")
+        logger.info(
+            f"✅ Parameters updated via dashboard: {updated_params_list}")
+        logger.info(
+            f"📁 Settings file updated with timestamp: {existing_settings['last_updated']}"
+        )
 
         return jsonify({
             'status': 'success',
@@ -2180,19 +2737,25 @@ def save_parameters():
         logger.error(f"Failed to save parameters: {e}")
         return jsonify({'error': str(e)}), 500
 
+
 def check_debt_swap_conditions(health_factor, available_borrows, total_debt):
     """Check and log debt swap conditions with enhanced monitoring"""
     try:
         timestamp = est_now()
 
         # Check debt swap triggers
-        debt_ratio = (total_debt / (total_debt + available_borrows)) if (total_debt + available_borrows) > 0 else 0
+        debt_ratio = (total_debt / (total_debt + available_borrows)) if (
+            total_debt + available_borrows) > 0 else 0
 
         # Market signal environment check with detailed validation
-        market_enabled = os.getenv('MARKET_SIGNAL_ENABLED', 'false').lower() == 'true'
-        btc_threshold = float(os.getenv('BTC_DROP_THRESHOLD', '0.002'))  # Default 0.2% drop
-        dai_threshold = float(os.getenv('DAI_TO_ARB_THRESHOLD', '0.7'))  # Default 70% confidence
-        arb_rsi_threshold = float(os.getenv('ARB_RSI_OVERSOLD', '30'))  # Default 30
+        market_enabled = os.getenv('MARKET_SIGNAL_ENABLED',
+                                   'false').lower() == 'true'
+        btc_threshold = float(os.getenv('BTC_DROP_THRESHOLD',
+                                        '0.002'))  # Default 0.2% drop
+        dai_threshold = float(os.getenv('DAI_TO_ARB_THRESHOLD',
+                                        '0.7'))  # Default 70% confidence
+        arb_rsi_threshold = float(os.getenv('ARB_RSI_OVERSOLD',
+                                            '30'))  # Default 30
 
         if market_enabled:
             status = f"[{timestamp}] 🚀 DEBT SWAP: Market signals ENABLED"
@@ -2205,13 +2768,16 @@ def check_debt_swap_conditions(health_factor, available_borrows, total_debt):
             strategy_active = False
             try:
                 # Check if agent object exists and has the strategy attribute
-                if agent and hasattr(agent, 'market_signal_strategy') and agent.market_signal_strategy:
+                if agent and hasattr(agent, 'market_signal_strategy'
+                                     ) and agent.market_signal_strategy:
                     strategy_active = True
                     status += f" | Strategy: ACTIVE"
                 else:
                     status += f" | Strategy: INITIALIZING"
             except Exception as agent_check_error:
-                logger.warning(f"Error checking agent strategy status: {agent_check_error}")
+                logger.warning(
+                    f"Error checking agent strategy status: {agent_check_error}"
+                )
                 status += f" | Strategy: UNKNOWN ERROR"
 
         else:
@@ -2238,6 +2804,7 @@ def check_debt_swap_conditions(health_factor, available_borrows, total_debt):
         logger.error(f"Error in check_debt_swap_conditions: {e}")
         return f"[{est_now()}] ❌ DEBT SWAP: Condition check failed: {str(e)[:50]}"
 
+
 def check_for_debt_swap_activity():
     """Check for recent debt swap activity and log execution"""
     try:
@@ -2256,12 +2823,15 @@ def check_for_debt_swap_activity():
                             metadata = entry.get('metadata', {})
 
                             # Look for market signal operations or debt swap indicators
-                            if (metadata.get('operation_type') == 'market_signal' or
-                                'debt_swap' in str(metadata).lower() or
-                                'market_driven' in str(metadata).lower()):
+                            if (metadata.get('operation_type')
+                                    == 'market_signal'
+                                    or 'debt_swap' in str(metadata).lower() or
+                                    'market_driven' in str(metadata).lower()):
 
-                                log_time = datetime.fromtimestamp(entry.get('timestamp', time.time()))
-                                operation = metadata.get('operation_type', 'debt_swap')
+                                log_time = datetime.fromtimestamp(
+                                    entry.get('timestamp', time.time()))
+                                operation = metadata.get(
+                                    'operation_type', 'debt_swap')
                                 amount = metadata.get('amount', 0)
                                 success = metadata.get('success', False)
 
@@ -2270,13 +2840,17 @@ def check_for_debt_swap_activity():
                                     f"[{timestamp}] {status_icon} DEBT SWAP EXECUTED: {operation} | ${amount:.2f} | {log_time.strftime('%H:%M:%S')}"
                                 )
                         except json.JSONDecodeError:
-                            continue # Skip malformed lines
+                            continue  # Skip malformed lines
             except IOError as e:
-                logger.warning(f"Could not read performance log for debt swap activity: {e}")
+                logger.warning(
+                    f"Could not read performance log for debt swap activity: {e}"
+                )
                 pass
 
         # Check for market signal strategy logs
-        market_log_files = ['market_signal_log.json', 'debt_swap_transactions.json']
+        market_log_files = [
+            'market_signal_log.json', 'debt_swap_transactions.json'
+        ]
         for log_file in market_log_files:
             if os.path.exists(log_file):
                 try:
@@ -2287,16 +2861,20 @@ def check_for_debt_swap_activity():
                                 f"[{timestamp}] 📊 DEBT SWAP LOG: Activity detected in {log_file}"
                             )
                 except IOError as e:
-                    logger.warning(f"Could not read {log_file} for debt swap activity: {e}")
+                    logger.warning(
+                        f"Could not read {log_file} for debt swap activity: {e}"
+                    )
                     pass
 
         # Check for transaction hashes in recent operations
         try:
             # Look for any recent .json files that might contain transaction data
             import glob
-            recent_files = glob.glob('*transaction*.json') + glob.glob('*swap*.json')
+            recent_files = glob.glob('*transaction*.json') + glob.glob(
+                '*swap*.json')
             for file in recent_files[-2:]:  # Check last 2 files
-                if os.path.getmtime(file) > (time.time() - 300):  # Modified in last 5 minutes
+                if os.path.getmtime(file) > (
+                        time.time() - 300):  # Modified in last 5 minutes
                     activity_logs.append(
                         f"[{timestamp}] 🔗 DEBT SWAP TX: Recent transaction file {file}"
                     )
@@ -2308,7 +2886,10 @@ def check_for_debt_swap_activity():
 
     except Exception as e:
         logger.error(f"Error in check_for_debt_swap_activity: {e}")
-        return [f"[{est_now()}] ❌ DEBT SWAP: Activity check failed | {str(e)[:40]}"]
+        return [
+            f"[{est_now()}] ❌ DEBT SWAP: Activity check failed | {str(e)[:40]}"
+        ]
+
 
 def check_market_signals():
     """Check current market signals for debt swapping with real-time analysis"""
@@ -2317,7 +2898,8 @@ def check_market_signals():
         timestamp = est_now()
 
         # Check if market signal strategy is enabled
-        market_enabled = os.getenv('MARKET_SIGNAL_ENABLED', 'false').lower() == 'true'
+        market_enabled = os.getenv('MARKET_SIGNAL_ENABLED',
+                                   'false').lower() == 'true'
 
         if not market_enabled:
             return f"[{timestamp}] 🚀 DEBT SWAP: Ready to enable | Set MARKET_SIGNAL_ENABLED=true in Secrets to activate"
@@ -2329,8 +2911,9 @@ def check_market_signals():
         # Safe agent check with fallback
         if agent is None:
             return f"[{timestamp}] ❌ MARKET SIGNALS: Agent not initialized | Waiting for agent startup"
-            
-        if not hasattr(agent, 'market_signal_strategy') or not getattr(agent, 'market_signal_strategy', None):
+
+        if not hasattr(agent, 'market_signal_strategy') or not getattr(
+                agent, 'market_signal_strategy', None):
             return f"[{timestamp}] ❌ MARKET SIGNALS: Agent strategy not initialized or failed to load"
 
         # Try to get market analysis from the agent's strategy
@@ -2355,21 +2938,32 @@ def check_market_signals():
                                 if hasattr(obj, key):
                                     return getattr(obj, key)
                         return default
-                    
-                    btc_change = safe_get(signal, 'btc_price_change', 'btc_change', 'change_24h', default=0)
-                    arb_rsi = safe_get(signal, 'arb_technical_score', 'arb_rsi', 'rsi', default=50)
+
+                    btc_change = safe_get(signal,
+                                          'btc_price_change',
+                                          'btc_change',
+                                          'change_24h',
+                                          default=0)
+                    arb_rsi = safe_get(signal,
+                                       'arb_technical_score',
+                                       'arb_rsi',
+                                       'rsi',
+                                       default=50)
                     confidence = safe_get(signal, 'confidence', default=0.5)
 
                     status = f"[{timestamp}] 📊 MARKET ANALYSIS: BTC {btc_change:+.2f}% | ARB RSI {arb_rsi:.1f} | Confidence {confidence:.0%}"
 
                     # Check specific triggers based on environment variables
-                    btc_threshold = float(os.getenv('BTC_DROP_THRESHOLD', '0.002')) * 100 # default 0.2%
+                    btc_threshold = float(
+                        os.getenv('BTC_DROP_THRESHOLD',
+                                  '0.002')) * 100  # default 0.2%
                     if btc_change <= -btc_threshold:
                         status += f" | ✅ BTC drop trigger met"
                     else:
                         status += f" | ❌ BTC needs {-btc_threshold:.1f}% drop"
 
-                    arb_rsi_oversold = float(os.getenv('ARB_RSI_OVERSOLD', '30'))
+                    arb_rsi_oversold = float(
+                        os.getenv('ARB_RSI_OVERSOLD', '30'))
                     if arb_rsi <= arb_rsi_oversold:
                         status += f" | ✅ ARB oversold (RSI ≤ {arb_rsi_oversold})"
                     else:
@@ -2379,7 +2973,8 @@ def check_market_signals():
                 else:
                     return f"[{timestamp}] 📊 MARKET SIGNALS: No signal data | Waiting for market conditions"
         except Exception as agent_error:
-            logger.error(f"Error analyzing market signals with agent: {agent_error}")
+            logger.error(
+                f"Error analyzing market signals with agent: {agent_error}")
             return f"[{timestamp}] ❌ MARKET SIGNALS: Agent error | {str(agent_error)[:50]}"
 
     except Exception as e:
@@ -2391,6 +2986,7 @@ def check_market_signals():
 # PnL CONFIGURATION ENDPOINTS - Phase 2.1: Dynamic Parameter Control
 # ============================================================================
 
+
 @app.route('/api/pnl-config', methods=['GET'])
 def get_pnl_config():
     """Get current PnL configuration and targets"""
@@ -2399,25 +2995,29 @@ def get_pnl_config():
             'error': 'PnL converter not available',
             'success': False
         }), 503
-    
+
     try:
         converter = PnLConverter()
-        
+
         return jsonify({
-            'pnl_targets': converter.get_pnl_targets(),
-            'operational_thresholds': converter.get_operational_thresholds(),
-            'system_parameters': converter.get_system_parameters(),
-            'conversion_coefficients': converter.config.get('conversion_coefficients', {}),
-            'timestamp': time.time(),
-            'success': True
+            'pnl_targets':
+            converter.get_pnl_targets(),
+            'operational_thresholds':
+            converter.get_operational_thresholds(),
+            'system_parameters':
+            converter.get_system_parameters(),
+            'conversion_coefficients':
+            converter.config.get('conversion_coefficients', {}),
+            'timestamp':
+            time.time(),
+            'success':
+            True
         })
-    
+
     except Exception as e:
         logger.error(f"Error fetching PnL config: {e}")
-        return jsonify({
-            'error': str(e),
-            'success': False
-        }), 500
+        return jsonify({'error': str(e), 'success': False}), 500
+
 
 @app.route('/api/pnl-config', methods=['PUT'])
 def update_pnl_config():
@@ -2427,7 +3027,7 @@ def update_pnl_config():
             'error': 'PnL converter not available',
             'success': False
         }), 503
-    
+
     try:
         data = request.get_json()
         if not data:
@@ -2435,27 +3035,27 @@ def update_pnl_config():
                 'error': 'No data provided',
                 'success': False
             }), 400
-        
+
         converter = PnLConverter()
-        
+
         # Update specific targets if provided
         if 'pnl_targets' in data:
             for operation_type, value in data['pnl_targets'].items():
                 if isinstance(value, (int, float)) and value > 0:
                     converter.update_pnl_target(operation_type, value)
-        
+
         # Update coefficients if provided
         if 'conversion_coefficients' in data:
             for key, value in data['conversion_coefficients'].items():
                 if isinstance(value, (int, float)) and value > 0:
                     converter.config['conversion_coefficients'][key] = value
-        
+
         # Update system parameters if provided
         if 'system_parameters' in data:
             for key, value in data['system_parameters'].items():
                 if isinstance(value, (int, float)) and value > 0:
                     converter.config['system_parameters'][key] = value
-        
+
         # Save changes
         try:
             converter.config.setdefault("metadata", {})
@@ -2466,17 +3066,21 @@ def update_pnl_config():
                 'error': 'Failed to save configuration changes',
                 'success': False
             }), 500
-        
+
         # Return updated configuration
         updated_config = {
-            'pnl_targets': converter.get_pnl_targets(),
-            'operational_thresholds': converter.get_operational_thresholds(),
-            'system_parameters': converter.get_system_parameters(),
-            'conversion_coefficients': converter.config.get('conversion_coefficients', {})
+            'pnl_targets':
+            converter.get_pnl_targets(),
+            'operational_thresholds':
+            converter.get_operational_thresholds(),
+            'system_parameters':
+            converter.get_system_parameters(),
+            'conversion_coefficients':
+            converter.config.get('conversion_coefficients', {})
         }
-        
+
         logger.info(f"✅ PnL configuration updated via dashboard")
-        
+
         # Broadcast configuration change to all SSE clients for real-time dashboard sync
         config_change_event = {
             'type': 'config_update',
@@ -2486,20 +3090,18 @@ def update_pnl_config():
         }
         broadcast_pnl_event('config_update', config_change_event)
         logger.info(f"📡 Broadcasted PnL config change to SSE clients")
-        
+
         return jsonify({
             'message': 'PnL configuration updated successfully',
             'updated_config': updated_config,
             'timestamp': time.time(),
             'success': True
         })
-    
+
     except Exception as e:
         logger.error(f"Error updating PnL config: {e}")
-        return jsonify({
-            'error': str(e),
-            'success': False
-        }), 500
+        return jsonify({'error': str(e), 'success': False}), 500
+
 
 @app.route('/api/decision-state', methods=['GET'])
 def get_decision_state():
@@ -2507,23 +3109,23 @@ def get_decision_state():
     try:
         # Get live agent data
         live_data = get_live_agent_data()
-        
+
         # Extract key decision parameters
         health_factor = live_data.get('health_factor', 1.699)
         available_borrows = live_data.get('available_borrows_usdc', 0)
         market_analysis = live_data.get('market_analysis', {})
-        
+
         # Calculate trigger states
         hf_status = "EXCELLENT" if health_factor > 2.0 else "SAFE" if health_factor > 1.5 else "CAUTION" if health_factor > 1.2 else "CRITICAL"
         hf_next_action = "Monitor for decline" if health_factor > 1.5 else "Consider risk reduction" if health_factor > 1.2 else "Emergency deleveraging"
-        
+
         # Market signals analysis
         btc_analysis = market_analysis.get('btc_analysis', {})
         arb_analysis = market_analysis.get('arb_analysis', {})
-        
+
         btc_drop = abs(btc_analysis.get('price_change_5min', 0.1))
         arb_rsi = arb_analysis.get('rsi', 45)
-        
+
         if arb_rsi < 30 or arb_rsi > 70:
             market_status = "SIGNAL"
             market_next_action = "Execute debt swap"
@@ -2533,19 +3135,20 @@ def get_decision_state():
         else:
             market_status = "ANALYZING"
             market_next_action = "Monitor for patterns"
-        
+
         # Capacity analysis
         capacity_status = "READY" if available_borrows > 25 else "LIMITED" if available_borrows > 10 else "LOW"
         capacity_next_action = "Ready for operations" if available_borrows > 25 else "Limited capacity available" if available_borrows > 10 else "Insufficient capacity"
-        
+
         # System phase determination
         operation_cooldown = 300  # seconds
         system_phase = "Monitoring"  # Could be "Cooldown", "Waiting", "Executing", etc.
-        
+
         decision_state = {
             'current_state': {
                 'cycle_count': live_data.get('monitoring_cycle', 1),
-                'operation_cooldown_remaining': 0,  # Calculate based on last operation
+                'operation_cooldown_remaining':
+                0,  # Calculate based on last operation
                 'system_phase': system_phase,
                 'next_check_eta': 5  # seconds to next monitoring cycle
             },
@@ -2573,41 +3176,43 @@ def get_decision_state():
                     'next_action': capacity_next_action
                 }
             },
-            'scheduled_operations': [
-                {
-                    'name': 'Monitor Health Factor',
-                    'frequency': 'Every 5s',
-                    'description': 'Check for changes in Aave position health',
-                    'next_run': 5,
-                    'active': True
-                },
-                {
-                    'name': 'Analyze Market Signals',
-                    'frequency': 'Every 30s',
-                    'description': 'Process BTC/ARB/DAI market data for trading opportunities',
-                    'next_run': 30,
-                    'active': True
-                },
-                {
-                    'name': 'Execute Debt Swap',
-                    'frequency': 'When triggered',
-                    'description': f'Ready to execute DAI↔ARB swaps based on market conditions',
-                    'next_run': None,
-                    'active': available_borrows > 1.0 and health_factor > 1.5
-                }
-            ],
-            'timestamp': time.time(),
-            'success': True
+            'scheduled_operations': [{
+                'name': 'Monitor Health Factor',
+                'frequency': 'Every 5s',
+                'description': 'Check for changes in Aave position health',
+                'next_run': 5,
+                'active': True
+            }, {
+                'name': 'Analyze Market Signals',
+                'frequency': 'Every 30s',
+                'description':
+                'Process BTC/ARB/DAI market data for trading opportunities',
+                'next_run': 30,
+                'active': True
+            }, {
+                'name':
+                'Execute Debt Swap',
+                'frequency':
+                'When triggered',
+                'description':
+                f'Ready to execute DAI↔ARB swaps based on market conditions',
+                'next_run':
+                None,
+                'active':
+                available_borrows > 1.0 and health_factor > 1.5
+            }],
+            'timestamp':
+            time.time(),
+            'success':
+            True
         }
-        
+
         return jsonify(decision_state)
-    
+
     except Exception as e:
         logger.error(f"Error getting decision state: {e}")
-        return jsonify({
-            'error': str(e),
-            'success': False
-        }), 500
+        return jsonify({'error': str(e), 'success': False}), 500
+
 
 @app.route('/api/pnl-thresholds', methods=['GET'])
 def get_current_thresholds():
@@ -2617,46 +3222,49 @@ def get_current_thresholds():
             'error': 'PnL converter not available',
             'success': False
         }), 503
-    
+
     try:
         converter = PnLConverter()
-        
+
         # Get current market data for conversion
         current_btc_price = 109356.43  # Should be fetched from live data
-        current_collateral = 174.99    # Should be fetched from live agent data
-        
+        current_collateral = 174.99  # Should be fetched from live agent data
+
         # Convert PnL targets to operational thresholds
         thresholds = {}
         pnl_targets = converter.get_pnl_targets()
         operational_thresholds = converter.get_operational_thresholds()
-        
+
         for target_name, pnl_target in pnl_targets.items():
             try:
                 # Map target names to operation types
                 operation_type_map = {
                     'pnl_growth_target': 'growth',
-                    'pnl_capacity_target': 'capacity', 
+                    'pnl_capacity_target': 'capacity',
                     'pnl_debt_swap_target': 'debt_swap'
                 }
                 operation_type = operation_type_map.get(target_name, 'growth')
-                
+
                 threshold_usd = converter.convert_pnl_to_usd_threshold(
-                    pnl_target, 
-                    operation_type
-                )
+                    pnl_target, operation_type)
                 thresholds[target_name] = {
-                    'pnl_target': pnl_target,
-                    'threshold_usd': threshold_usd,
-                    'coefficient': converter.config.get('conversion_coefficients', {}).get(f'{operation_type}_multiplier', 1.0)
+                    'pnl_target':
+                    pnl_target,
+                    'threshold_usd':
+                    threshold_usd,
+                    'coefficient':
+                    converter.config.get('conversion_coefficients', {}).get(
+                        f'{operation_type}_multiplier', 1.0)
                 }
             except Exception as conversion_error:
-                logger.warning(f"Error converting {target_name}: {conversion_error}")
+                logger.warning(
+                    f"Error converting {target_name}: {conversion_error}")
                 thresholds[target_name] = {
                     'pnl_target': pnl_target,
                     'threshold_usd': None,
                     'error': str(conversion_error)
                 }
-        
+
         return jsonify({
             'thresholds': thresholds,
             'market_context': {
@@ -2667,13 +3275,11 @@ def get_current_thresholds():
             'timestamp': time.time(),
             'success': True
         })
-    
+
     except Exception as e:
         logger.error(f"Error calculating thresholds: {e}")
-        return jsonify({
-            'error': str(e),
-            'success': False
-        }), 500
+        return jsonify({'error': str(e), 'success': False}), 500
+
 
 @app.route('/api/pnl-status', methods=['GET'])
 def get_pnl_status():
@@ -2683,19 +3289,20 @@ def get_pnl_status():
             'error': 'PnL converter not available',
             'success': False
         }), 503
-    
+
     try:
         converter = PnLConverter()
-        
+
         # Get live agent data
         live_data = get_live_agent_data()
         current_collateral = live_data.get('total_collateral_usdc', 64.48)
         health_factor = live_data.get('health_factor', 1.68)
-        
+
         # Calculate current PnL performance
         baseline_collateral = 47.0
-        current_pnl = ((current_collateral - baseline_collateral) / baseline_collateral) * 100
-        
+        current_pnl = ((current_collateral - baseline_collateral) /
+                       baseline_collateral) * 100
+
         status = {
             'current_performance': {
                 'collateral_usd': current_collateral,
@@ -2705,33 +3312,34 @@ def get_pnl_status():
             },
             'pnl_targets': converter.get_pnl_targets(),
             'threshold_proximity': {},
-            'system_status': 'operational' if health_factor > 2.0 else 'caution',
+            'system_status':
+            'operational' if health_factor > 2.0 else 'caution',
             'timestamp': time.time(),
             'success': True
         }
-        
+
         # Calculate proximity to each target
         for target_name, target_pnl in status['pnl_targets'].items():
             distance = abs(current_pnl - target_pnl)
-            proximity = max(0, 100 - (distance * 10))  # Simple proximity calculation
+            proximity = max(0, 100 -
+                            (distance * 10))  # Simple proximity calculation
             status['threshold_proximity'][target_name] = {
                 'distance': distance,
                 'proximity_percent': proximity,
                 'status': 'near' if proximity > 70 else 'far'
             }
-        
+
         return jsonify(status)
-    
+
     except Exception as e:
         logger.error(f"Error getting PnL status: {e}")
-        return jsonify({
-            'error': str(e),
-            'success': False
-        }), 500
+        return jsonify({'error': str(e), 'success': False}), 500
+
 
 # ============================================================================
 # COST OPTIMIZATION CONFIG ENDPOINTS - API Limit Management
 # ============================================================================
+
 
 @app.route('/api/cost-optimization-config', methods=['GET'])
 def get_cost_optimization_config():
@@ -2743,24 +3351,22 @@ def get_cost_optimization_config():
                 'error': 'Cost optimization manager not available',
                 'success': False
             }), 503
-        
+
         # Get current configuration from cost manager
         config = agent.cost_manager.get_configuration()
         usage_summary = agent.cost_manager.get_usage_summary()
-        
+
         return jsonify({
             'configuration': config,
             'current_usage': usage_summary,
             'timestamp': time.time(),
             'success': True
         })
-    
+
     except Exception as e:
         logger.error(f"Error getting cost optimization config: {e}")
-        return jsonify({
-            'error': str(e),
-            'success': False
-        }), 500
+        return jsonify({'error': str(e), 'success': False}), 500
+
 
 @app.route('/api/cost-optimization-config', methods=['PUT'])
 def update_cost_optimization_config():
@@ -2772,29 +3378,29 @@ def update_cost_optimization_config():
                 'error': 'Cost optimization manager not available',
                 'success': False
             }), 503
-        
+
         data = request.get_json()
         if not data:
             return jsonify({
                 'error': 'No configuration data provided',
                 'success': False
             }), 400
-        
+
         # Update configuration
         update_success = agent.cost_manager.update_configuration(data)
-        
+
         if not update_success:
             return jsonify({
                 'error': 'Failed to update configuration',
                 'success': False
             }), 500
-        
+
         # Get updated configuration
         updated_config = agent.cost_manager.get_configuration()
         usage_summary = agent.cost_manager.get_usage_summary()
-        
+
         logger.info(f"✅ Cost optimization configuration updated via dashboard")
-        
+
         # Broadcast configuration change to all SSE clients for real-time dashboard sync
         config_change_event = {
             'type': 'cost_config_update',
@@ -2803,14 +3409,15 @@ def update_cost_optimization_config():
             'message': 'API limits updated via dashboard',
             'timestamp': time.time()
         }
-        
+
         # Use existing broadcast mechanism if available, otherwise skip
         try:
             broadcast_pnl_event('cost_config_update', config_change_event)
             logger.info(f"📡 Broadcasted cost config change to SSE clients")
         except:
-            logger.info("SSE broadcast not available, config updated locally only")
-        
+            logger.info(
+                "SSE broadcast not available, config updated locally only")
+
         return jsonify({
             'message': 'Cost optimization configuration updated successfully',
             'updated_config': updated_config,
@@ -2818,13 +3425,11 @@ def update_cost_optimization_config():
             'timestamp': time.time(),
             'success': True
         })
-    
+
     except Exception as e:
         logger.error(f"Error updating cost optimization config: {e}")
-        return jsonify({
-            'error': str(e),
-            'success': False
-        }), 500
+        return jsonify({'error': str(e), 'success': False}), 500
+
 
 @app.route('/api/cost-optimization-status', methods=['GET'])
 def get_cost_optimization_status():
@@ -2836,18 +3441,20 @@ def get_cost_optimization_status():
                 'error': 'Cost optimization manager not available',
                 'success': False
             }), 503
-        
+
         # Get current usage and configuration
         usage_summary = agent.cost_manager.get_usage_summary()
         config = agent.cost_manager.get_configuration()
-        
+
         # Check current API call allowance
         can_make_call = agent.cost_manager.can_make_api_call()
-        
+
         # Calculate remaining budget
-        remaining_hourly = config['api_limits']['hourly_credit_limit'] - usage_summary['hourly_usage']
-        remaining_daily = config['api_limits']['daily_credit_limit'] - usage_summary['daily_usage']
-        
+        remaining_hourly = config['api_limits'][
+            'hourly_credit_limit'] - usage_summary['hourly_usage']
+        remaining_daily = config['api_limits'][
+            'daily_credit_limit'] - usage_summary['daily_usage']
+
         status = {
             'current_usage': usage_summary,
             'api_limits': config['api_limits'],
@@ -2858,7 +3465,8 @@ def get_cost_optimization_status():
                 'can_make_calls': can_make_call['allowed']
             },
             'interval_settings': config['interval_settings'],
-            'system_status': 'healthy' if can_make_call['allowed'] else 'blocked',
+            'system_status':
+            'healthy' if can_make_call['allowed'] else 'blocked',
             'next_reset': {
                 'hourly_reset_in_seconds': 3600 - (time.time() % 3600),
                 'daily_reset_in_seconds': 86400 - (time.time() % 86400)
@@ -2866,15 +3474,12 @@ def get_cost_optimization_status():
             'timestamp': time.time(),
             'success': True
         }
-        
+
         return jsonify(status)
-    
+
     except Exception as e:
         logger.error(f"Error getting cost optimization status: {e}")
-        return jsonify({
-            'error': str(e),
-            'success': False
-        }), 500
+        return jsonify({'error': str(e), 'success': False}), 500
 
 
 # ============================================================================
@@ -2887,7 +3492,10 @@ def api_inject_liquidity():
     global agent
     try:
         if not agent:
-            return jsonify({"error": "Agent not initialized", "success": False}), 503
+            return jsonify({
+                "error": "Agent not initialized",
+                "success": False
+            }), 503
 
         live_data = get_live_agent_data()
         available_borrows = live_data.get('available_borrows_usdc', 0)
@@ -2897,7 +3505,8 @@ def api_inject_liquidity():
 
         if availability_ratio < 0.52:
             return jsonify({
-                "error": f"Portfolio too risky — Availability Ratio {availability_ratio:.1%} < 52% minimum",
+                "error":
+                f"Portfolio too risky — Availability Ratio {availability_ratio:.1%} < 52% minimum",
                 "availability_ratio": round(availability_ratio, 4),
                 "success": False
             }), 400
@@ -2909,11 +3518,18 @@ def api_inject_liquidity():
             injection_amount = round(max_safe, 2)
 
         if injection_amount < 1.0:
-            return jsonify({"error": f"Injection amount too small: ${injection_amount:.2f}", "success": False}), 400
+            return jsonify({
+                "error":
+                f"Injection amount too small: ${injection_amount:.2f}",
+                "success": False
+            }), 400
 
         wallet_b = os.getenv('WALLET_B_ADDRESS', '').strip()
         if not wallet_b or len(wallet_b) != 42:
-            return jsonify({"error": "WALLET_B_ADDRESS not configured", "success": False}), 400
+            return jsonify({
+                "error": "WALLET_B_ADDRESS not configured",
+                "success": False
+            }), 400
 
         trigger = {
             "action": "inject_liquidity",
@@ -2926,7 +3542,8 @@ def api_inject_liquidity():
             json.dump(trigger, f, indent=2)
 
         return jsonify({
-            "message": f"Injection queued: ${injection_amount:.2f} DAI → USDC → WALLET_B (will execute next cycle)",
+            "message":
+            f"Injection queued: ${injection_amount:.2f} DAI → USDC → WALLET_B (will execute next cycle)",
             "amount": injection_amount,
             "test_mode": INJECTION_TEST_MODE,
             "queued": True,
@@ -2936,6 +3553,7 @@ def api_inject_liquidity():
     except Exception as e:
         return jsonify({"error": str(e), "success": False}), 500
 
+
 # REAL-TIME SSE ENDPOINTS - Phase 2.2: WebSocket-style Synchronization
 @app.route('/api/send-usdc-to-wallet-b', methods=['POST'])
 def api_send_usdc_to_wallet_b():
@@ -2943,14 +3561,22 @@ def api_send_usdc_to_wallet_b():
     global agent
     try:
         if not agent:
-            return jsonify({"error": "Agent not initialized", "success": False}), 503
-        usdc_balance = agent._get_usdc_balance() if hasattr(agent, '_get_usdc_balance') else 0
+            return jsonify({
+                "error": "Agent not initialized",
+                "success": False
+            }), 503
+        usdc_balance = agent._get_usdc_balance() if hasattr(
+            agent, '_get_usdc_balance') else 0
         wallet_b = os.getenv('WALLET_B_ADDRESS', '')
         if not wallet_b:
-            return jsonify({"error": "WALLET_B_ADDRESS not configured", "success": False}), 400
+            return jsonify({
+                "error": "WALLET_B_ADDRESS not configured",
+                "success": False
+            }), 400
         if usdc_balance < 0.01:
             return jsonify({
-                "error": f"USDC balance {usdc_balance:.4f} too low to transfer",
+                "error":
+                f"USDC balance {usdc_balance:.4f} too low to transfer",
                 "usdc_balance": round(usdc_balance, 4),
                 "success": False
             }), 400
@@ -2958,102 +3584,137 @@ def api_send_usdc_to_wallet_b():
             result = agent._send_usdc_to_wallet_b()
             if result:
                 return jsonify({
-                    "message": f"Sent {usdc_balance:.4f} USDC to WALLET_B ({wallet_b[:10]}...)",
+                    "message":
+                    f"Sent {usdc_balance:.4f} USDC to WALLET_B ({wallet_b[:10]}...)",
                     "usdc_balance": round(usdc_balance, 4),
                     "success": True
                 })
             else:
-                return jsonify({"error": "USDC transfer failed", "success": False}), 500
+                return jsonify({
+                    "error": "USDC transfer failed",
+                    "success": False
+                }), 500
         return jsonify({
-            "message": f"USDC available: {usdc_balance:.4f}. Agent transfer function not available.",
+            "message":
+            f"USDC available: {usdc_balance:.4f}. Agent transfer function not available.",
             "usdc_balance": round(usdc_balance, 4),
             "success": False
         }), 503
     except Exception as e:
         return jsonify({"error": str(e), "success": False}), 500
 
+
 # ============================================================================
+
 
 @app.route('/api/events')
 def sse_events():
     """Server-Sent Events endpoint for real-time dashboard updates"""
+
     def event_stream():
         """Generate real-time events for dashboard synchronization"""
         try:
             # Send initial connection event
             yield f"data: {json.dumps({'type': 'connected', 'timestamp': time.time()})}\n\n"
-            
+
             last_pnl_check = 0
             last_status_check = 0
             last_cost_check = 0
-            
+
             while True:
                 current_time = time.time()
-                
+
                 # Send PnL status updates every 10 seconds
                 if current_time - last_pnl_check >= 10:
                     try:
                         if PNL_CONVERTER_AVAILABLE:
                             converter = PnLConverter()
                             live_data = get_live_agent_data()
-                            
+
                             # Get current PnL performance
-                            current_collateral = live_data.get('total_collateral_usdc', 174.99)
+                            current_collateral = live_data.get(
+                                'total_collateral_usdc', 174.99)
                             baseline_collateral = 47.0
-                            current_pnl = ((current_collateral - baseline_collateral) / baseline_collateral) * 100
-                            
+                            current_pnl = (
+                                (current_collateral - baseline_collateral) /
+                                baseline_collateral) * 100
+
                             pnl_status = {
-                                'type': 'pnl_update',
-                                'current_pnl': current_pnl,
-                                'collateral_usd': current_collateral,
-                                'pnl_targets': converter.get_pnl_targets(),
-                                'health_factor': live_data.get('health_factor', 6.89),
-                                'timestamp': current_time
+                                'type':
+                                'pnl_update',
+                                'current_pnl':
+                                current_pnl,
+                                'collateral_usd':
+                                current_collateral,
+                                'pnl_targets':
+                                converter.get_pnl_targets(),
+                                'health_factor':
+                                live_data.get('health_factor', 6.89),
+                                'timestamp':
+                                current_time
                             }
-                            
+
                             yield f"data: {json.dumps(pnl_status)}\n\n"
-                        
+
                         last_pnl_check = current_time
                     except Exception as e:
                         logger.error(f"Error in PnL status update: {e}")
-                
+
                 # Send cost optimization status updates every 12 seconds
                 if current_time - last_cost_check >= 12:
                     try:
-                        if hasattr(agent, 'cost_manager') and agent.cost_manager:
-                            usage_summary = agent.cost_manager.get_usage_summary()
-                            can_make_call = agent.cost_manager.can_make_api_call()
-                            
+                        if hasattr(agent,
+                                   'cost_manager') and agent.cost_manager:
+                            usage_summary = agent.cost_manager.get_usage_summary(
+                            )
+                            can_make_call = agent.cost_manager.can_make_api_call(
+                            )
+
                             cost_status = {
-                                'type': 'cost_optimization_update',
-                                'usage_summary': usage_summary,
-                                'can_make_calls': can_make_call['allowed'],
-                                'hourly_remaining': can_make_call['hourly_limit'] - can_make_call['hourly_usage'],
-                                'daily_remaining': can_make_call['daily_limit'] - can_make_call['daily_usage'],
-                                'next_allowed_time': can_make_call.get('next_allowed_time'),
-                                'recommended_interval': can_make_call.get('recommended_interval'),
-                                'timestamp': current_time
+                                'type':
+                                'cost_optimization_update',
+                                'usage_summary':
+                                usage_summary,
+                                'can_make_calls':
+                                can_make_call['allowed'],
+                                'hourly_remaining':
+                                can_make_call['hourly_limit'] -
+                                can_make_call['hourly_usage'],
+                                'daily_remaining':
+                                can_make_call['daily_limit'] -
+                                can_make_call['daily_usage'],
+                                'next_allowed_time':
+                                can_make_call.get('next_allowed_time'),
+                                'recommended_interval':
+                                can_make_call.get('recommended_interval'),
+                                'timestamp':
+                                current_time
                             }
-                            
+
                             yield f"data: {json.dumps(cost_status)}\n\n"
-                        
+
                         last_cost_check = current_time
                     except Exception as e:
-                        logger.error(f"Error in cost optimization status update: {e}")
-                
+                        logger.error(
+                            f"Error in cost optimization status update: {e}")
+
                 # Send system status updates every 15 seconds
                 if current_time - last_status_check >= 15:
                     try:
                         # Get dynamic API budget status
                         api_budget_status = 'unknown'
                         try:
-                            if hasattr(agent, 'cost_manager') and agent.cost_manager:
-                                can_make_call = agent.cost_manager.can_make_api_call()
-                                usage_summary = agent.cost_manager.get_usage_summary()
+                            if hasattr(agent,
+                                       'cost_manager') and agent.cost_manager:
+                                can_make_call = agent.cost_manager.can_make_api_call(
+                                )
+                                usage_summary = agent.cost_manager.get_usage_summary(
+                                )
                                 if can_make_call['allowed']:
                                     if usage_summary['hourly_percentage'] < 70:
                                         api_budget_status = 'healthy'
-                                    elif usage_summary['hourly_percentage'] < 90:
+                                    elif usage_summary[
+                                            'hourly_percentage'] < 90:
                                         api_budget_status = 'warning'
                                     else:
                                         api_budget_status = 'near_limit'
@@ -3062,9 +3723,11 @@ def sse_events():
                             else:
                                 api_budget_status = 'manager_unavailable'
                         except Exception as budget_error:
-                            logger.warning(f"Error getting API budget status: {budget_error}")
+                            logger.warning(
+                                f"Error getting API budget status: {budget_error}"
+                            )
                             api_budget_status = 'error'
-                        
+
                         system_status = {
                             'type': 'system_update',
                             'agent_running': check_autonomous_agent_running(),
@@ -3072,46 +3735,41 @@ def sse_events():
                             'api_budget_status': api_budget_status,
                             'timestamp': current_time
                         }
-                        
+
                         yield f"data: {json.dumps(system_status)}\n\n"
                         last_status_check = current_time
                     except Exception as e:
                         logger.error(f"Error in system status update: {e}")
-                
+
                 # Check for queued events
                 try:
                     event_data = pnl_event_queue.get_nowait()
                     yield f"data: {json.dumps(event_data)}\n\n"
                 except queue.Empty:
                     pass
-                
+
                 time.sleep(2)  # Check every 2 seconds for responsiveness
-                
+
         except GeneratorExit:
             logger.info("SSE client disconnected")
         except Exception as e:
             logger.error(f"SSE stream error: {e}")
             yield f"data: {json.dumps({'type': 'error', 'message': str(e)})}\n\n"
-    
-    response = app.response_class(
-        event_stream(),
-        mimetype='text/event-stream',
-        headers={
-            'Cache-Control': 'no-cache',
-            'Connection': 'keep-alive',
-            'Access-Control-Allow-Origin': '*'
-        }
-    )
+
+    response = app.response_class(event_stream(),
+                                  mimetype='text/event-stream',
+                                  headers={
+                                      'Cache-Control': 'no-cache',
+                                      'Connection': 'keep-alive',
+                                      'Access-Control-Allow-Origin': '*'
+                                  })
     return response
+
 
 def broadcast_pnl_event(event_type: str, data: dict):
     """Broadcast PnL events to all connected SSE clients"""
-    event_data = {
-        'type': event_type,
-        'data': data,
-        'timestamp': time.time()
-    }
-    
+    event_data = {'type': event_type, 'data': data, 'timestamp': time.time()}
+
     try:
         pnl_event_queue.put_nowait(event_data)
         logger.info(f"📡 Broadcasted PnL event: {event_type}")
@@ -3137,6 +3795,7 @@ def get_available_port(start_port=5000):
             logger.error(f"⚠️ Error checking port {port}: {e}")
     return 8080  # Fallback port
 
+
 def log_startup_diagnostics():
     """Log comprehensive startup diagnostics"""
     print("=" * 60)
@@ -3145,14 +3804,21 @@ def log_startup_diagnostics():
 
     print(f"📂 Working Directory: {os.getcwd()}")
     print(f"🌍 Environment Variables:")
-    env_vars = ['NETWORK_MODE', 'PRIVATE_KEY', 'COINMARKETCAP_API_KEY', 'REPLIT_DEPLOYMENT', 'MARKET_SIGNAL_ENABLED', 'ARB_PRICE']
+    env_vars = [
+        'NETWORK_MODE', 'PRIVATE_KEY', 'COINMARKETCAP_API_KEY',
+        'REPLIT_DEPLOYMENT', 'MARKET_SIGNAL_ENABLED', 'ARB_PRICE'
+    ]
     for var in env_vars:
         value = os.getenv(var)
         if value:
             if var == 'PRIVATE_KEY':
-                print(f"   {var}: {value[:10]}...{value[-4:] if len(value) > 14 else 'short'}")
+                print(
+                    f"   {var}: {value[:10]}...{value[-4:] if len(value) > 14 else 'short'}"
+                )
             elif var == 'COINMARKETCAP_API_KEY':
-                print(f"   {var}: {value[:8]}...{value[-4:] if len(value) > 12 else 'short'}")
+                print(
+                    f"   {var}: {value[:8]}...{value[-4:] if len(value) > 12 else 'short'}"
+                )
             elif var in ['ARB_PRICE']:
                 print(f"   {var}: {value}")
             else:
@@ -3161,7 +3827,11 @@ def log_startup_diagnostics():
             print(f"   {var}: NOT SET")
 
     print(f"📁 Key Files:")
-    files_to_check = ['user_settings.json', 'EMERGENCY_STOP_ACTIVE.flag', 'performance_log.json', 'network_switch_log.json', 'parameter_update_trigger.flag']
+    files_to_check = [
+        'user_settings.json', 'EMERGENCY_STOP_ACTIVE.flag',
+        'performance_log.json', 'network_switch_log.json',
+        'parameter_update_trigger.flag'
+    ]
     for file in files_to_check:
         if os.path.exists(file):
             try:
@@ -3177,48 +3847,56 @@ def log_startup_diagnostics():
     print(f"🤖 Agent Initialization:")
     print(f"   Agent object: {agent is not None}")
     print(f"   Agent connected: {check_autonomous_agent_running()}")
-    print(f"   Dashboard object: True") # Dashboard object is always created
+    print(f"   Dashboard object: True")  # Dashboard object is always created
 
     print("=" * 60)
+
 
 # ============================================================
 # MULTI-USER CONSUMER APIs — AUTH & HELPERS
 # ============================================================
 
-APP_SECRET_KEY = os.environ.get("APP_SECRET_KEY", "fallback-dev-key-change-in-production")
+APP_SECRET_KEY = os.environ.get("APP_SECRET_KEY",
+                                "fallback-dev-key-change-in-production")
 auth_signer = itsdangerous.TimestampSigner(APP_SECRET_KEY)
 
 chat_rate_limits = {}
 CHAT_RATE_LIMIT = 20
 CHAT_RATE_WINDOW = 60
 
+
 def get_current_user_id():
     token = request.headers.get("X-Auth-Token")
     if not token:
         abort(401, description="Authentication required")
     try:
-        user_id = auth_signer.unsign(token, max_age=60*60*24*7).decode()
+        user_id = auth_signer.unsign(token, max_age=60 * 60 * 24 * 7).decode()
         return int(user_id)
     except Exception:
         abort(401, description="Invalid or expired token")
+
 
 def check_chat_rate_limit(user_id):
     now = time.time()
     key = str(user_id)
     if key not in chat_rate_limits:
         chat_rate_limits[key] = []
-    chat_rate_limits[key] = [t for t in chat_rate_limits[key] if now - t < CHAT_RATE_WINDOW]
+    chat_rate_limits[key] = [
+        t for t in chat_rate_limits[key] if now - t < CHAT_RATE_WINDOW
+    ]
     if len(chat_rate_limits[key]) >= CHAT_RATE_LIMIT:
         return False
     chat_rate_limits[key].append(now)
     return True
+
 
 def fetch_aave_position_for_wallet(wallet_address):
     """Fetch Aave V3 position data for any wallet address (read-only).
     Returns None if collateral==0 AND debt==0 (no position).
     Caps HF to 999.99 for zero-debt positions to prevent DB overflow."""
     rpc_urls = [
-        os.getenv("ALCHEMY_ARB_RPC", "https://arb-mainnet.g.alchemy.com/v2/demo"),
+        os.getenv("ALCHEMY_ARB_RPC",
+                  "https://arb-mainnet.g.alchemy.com/v2/demo"),
         os.getenv("ARBITRUM_RPC_URL", "https://arb1.arbitrum.io/rpc"),
         "https://arbitrum-one.publicnode.com",
         "https://arbitrum.blockpi.network/v1/rpc/public",
@@ -3226,45 +3904,65 @@ def fetch_aave_position_for_wallet(wallet_address):
     from web3 import Web3
     aave_pool_address = "0x794a61358D6845594F94dc1DB02A252b5b4814aD"
     pool_abi = [{
-        "inputs": [{"name": "user", "type": "address"}],
-        "name": "getUserAccountData",
-        "outputs": [
-            {"name": "totalCollateralBase", "type": "uint256"},
-            {"name": "totalDebtBase", "type": "uint256"},
-            {"name": "availableBorrowsBase", "type": "uint256"},
-            {"name": "currentLiquidationThreshold", "type": "uint256"},
-            {"name": "ltv", "type": "uint256"},
-            {"name": "healthFactor", "type": "uint256"}
-        ],
-        "stateMutability": "view",
-        "type": "function"
+        "inputs": [{
+            "name": "user",
+            "type": "address"
+        }],
+        "name":
+        "getUserAccountData",
+        "outputs": [{
+            "name": "totalCollateralBase",
+            "type": "uint256"
+        }, {
+            "name": "totalDebtBase",
+            "type": "uint256"
+        }, {
+            "name": "availableBorrowsBase",
+            "type": "uint256"
+        }, {
+            "name": "currentLiquidationThreshold",
+            "type": "uint256"
+        }, {
+            "name": "ltv",
+            "type": "uint256"
+        }, {
+            "name": "healthFactor",
+            "type": "uint256"
+        }],
+        "stateMutability":
+        "view",
+        "type":
+        "function"
     }]
 
     last_error = None
     for rpc_url in rpc_urls:
         try:
-            w3 = Web3(Web3.HTTPProvider(rpc_url, request_kwargs={'timeout': 10}))
+            w3 = Web3(
+                Web3.HTTPProvider(rpc_url, request_kwargs={'timeout': 10}))
             if not w3.is_connected():
                 continue
             pool_contract = w3.eth.contract(
                 address=Web3.to_checksum_address(aave_pool_address),
-                abi=pool_abi
-            )
+                abi=pool_abi)
             account_data = pool_contract.functions.getUserAccountData(
-                Web3.to_checksum_address(wallet_address)
-            ).call()
+                Web3.to_checksum_address(wallet_address)).call()
 
             collateral = round(account_data[0] / (10**8), 2)
             debt = round(account_data[1] / (10**8), 2)
 
             if collateral < 0.01 and debt < 0.01:
-                logger.info(f"[Aave] No meaningful position for {wallet_address[:10]}... (collateral=${collateral}, debt=${debt} — below $0.01 dust threshold)")
+                logger.info(
+                    f"[Aave] No meaningful position for {wallet_address[:10]}... (collateral=${collateral}, debt=${debt} — below $0.01 dust threshold)"
+                )
                 return None
 
             raw_hf = account_data[5] / (10**18) if account_data[5] > 0 else 0
             if debt < 0.01 and collateral >= 0.01:
                 raw_hf = 999.99
-                logger.info(f"[Aave] Zero-debt position for {wallet_address[:10]}..., capping HF to 999.99")
+                logger.info(
+                    f"[Aave] Zero-debt position for {wallet_address[:10]}..., capping HF to 999.99"
+                )
             elif raw_hf > 999.99:
                 raw_hf = 999.99
 
@@ -3278,13 +3976,17 @@ def fetch_aave_position_for_wallet(wallet_address):
             last_error = e
             continue
 
-    logger.warning(f"Failed to fetch Aave position for {wallet_address[:10]}... after all RPCs: {last_error}")
+    logger.warning(
+        f"Failed to fetch Aave position for {wallet_address[:10]}... after all RPCs: {last_error}"
+    )
     return None
+
 
 @app.route('/app')
 def consumer_app():
     """Consumer-facing multi-user dashboard"""
     return render_template('consumer_dashboard.html')
+
 
 @app.route('/api/auth/wallet', methods=['POST'])
 def auth_wallet():
@@ -3314,17 +4016,33 @@ def auth_wallet():
                     net_worth=pos['net_worth_usd'],
                 )
                 if ok:
-                    logger.info(f"[Auth] Refreshed Aave data for user {uid}: HF={pos['health_factor']}, collateral=${pos['total_collateral_usd']}")
+                    logger.info(
+                        f"[Auth] Refreshed Aave data for user {uid}: HF={pos['health_factor']}, collateral=${pos['total_collateral_usd']}"
+                    )
                 else:
-                    logger.error(f"[Auth] DB upsert FAILED for user {uid} — position data lost: {pos}")
+                    logger.error(
+                        f"[Auth] DB upsert FAILED for user {uid} — position data lost: {pos}"
+                    )
             else:
-                logger.info(f"[Auth] No Aave position for user {uid} ({addr[:10]}...) — nothing to store")
+                logger.info(
+                    f"[Auth] No Aave position for user {uid} ({addr[:10]}...) — nothing to store"
+                )
         except Exception as e:
-            logger.error(f"[Auth] Background Aave refresh FAILED for user {uid}: {e}", exc_info=True)
+            logger.error(
+                f"[Auth] Background Aave refresh FAILED for user {uid}: {e}",
+                exc_info=True)
 
-    threading.Thread(target=_refresh_defi, args=(user['id'], wallet), daemon=True).start()
+    threading.Thread(target=_refresh_defi,
+                     args=(user['id'], wallet),
+                     daemon=True).start()
 
-    return jsonify({"userId": user['id'], "walletAddress": user['wallet_address'], "towns": user_towns, "authToken": token})
+    return jsonify({
+        "userId": user['id'],
+        "walletAddress": user['wallet_address'],
+        "towns": user_towns,
+        "authToken": token
+    })
+
 
 @app.route('/api/auth/disconnect', methods=['POST'])
 def disconnect_wallet():
@@ -3332,6 +4050,7 @@ def disconnect_wallet():
     user_id = get_current_user_id()
     database.set_bot_enabled(user_id, False)
     return jsonify({"status": "ok", "botEnabled": False})
+
 
 @app.route('/api/user/status', methods=['GET'])
 def user_status():
@@ -3358,31 +4077,48 @@ def user_status():
     if wallet:
         from delegation_client import is_contract_deployed, DELEGATION_MANAGER_ADDRESS
         delegation_info["contractDeployed"] = is_contract_deployed()
-        if DELEGATION_MANAGER_ADDRESS and DELEGATION_MANAGER_ADDRESS.startswith("0x") and len(DELEGATION_MANAGER_ADDRESS) == 42:
+        if DELEGATION_MANAGER_ADDRESS and DELEGATION_MANAGER_ADDRESS.startswith(
+                "0x") and len(DELEGATION_MANAGER_ADDRESS) == 42:
             delegation_info["contractAddress"] = DELEGATION_MANAGER_ADDRESS
         mw = database.get_managed_wallet(user_id, wallet)
         if mw:
-            delegation_info["delegationStatus"] = mw['delegation_status'] or 'none'
-            delegation_info["autoSupplyWbtc"] = bool(mw.get('auto_supply_wbtc', False))
-            delegation_info["suppliedWbtcAmount"] = float(mw['supplied_wbtc_amount'] or 0)
-            delegation_info["lastAutoSupplyAt"] = mw['last_auto_supply_at'].isoformat() if mw.get('last_auto_supply_at') else None
-            delegation_info["lastStrategyAction"] = mw.get('last_strategy_action')
-            delegation_info["lastStrategyTimestamp"] = mw['last_strategy_at'].isoformat() if mw.get('last_strategy_at') else None
-            delegation_info["strategyStatus"] = mw.get('strategy_status', 'disabled')
-            delegation_info["strategyEnabled"] = delegation_info["strategyStatus"] in ('active', 'monitoring_only')
-            logger.debug(f"[UserStatus] user={user_id} wallet={wallet} mw.delegation_status={mw['delegation_status']} -> delegationStatus={delegation_info['delegationStatus']}, strategyStatus={delegation_info['strategyStatus']}")
+            delegation_info[
+                "delegationStatus"] = mw['delegation_status'] or 'none'
+            delegation_info["autoSupplyWbtc"] = bool(
+                mw.get('auto_supply_wbtc', False))
+            delegation_info["suppliedWbtcAmount"] = float(
+                mw['supplied_wbtc_amount'] or 0)
+            delegation_info[
+                "lastAutoSupplyAt"] = mw['last_auto_supply_at'].isoformat(
+                ) if mw.get('last_auto_supply_at') else None
+            delegation_info["lastStrategyAction"] = mw.get(
+                'last_strategy_action')
+            delegation_info[
+                "lastStrategyTimestamp"] = mw['last_strategy_at'].isoformat(
+                ) if mw.get('last_strategy_at') else None
+            delegation_info["strategyStatus"] = mw.get('strategy_status',
+                                                       'disabled')
+            delegation_info["strategyEnabled"] = delegation_info[
+                "strategyStatus"] in ('active', 'monitoring_only')
+            logger.debug(
+                f"[UserStatus] user={user_id} wallet={wallet} mw.delegation_status={mw['delegation_status']} -> delegationStatus={delegation_info['delegationStatus']}, strategyStatus={delegation_info['strategyStatus']}"
+            )
 
         defi_pos = database.get_defi_position(user_id)
-        has_active = defi_pos.get('has_active_position', False) if defi_pos else False
+        has_active = defi_pos.get('has_active_position',
+                                  False) if defi_pos else False
         delegation_info["hasActivePosition"] = has_active
 
         if not has_active and delegation_info["suppliedWbtcAmount"] > 0:
             delegation_info["supplyReconciled"] = True
-            delegation_info["reconciledNote"] = "On-chain position is empty. Supply counter will reset on next refresh."
+            delegation_info[
+                "reconciledNote"] = "On-chain position is empty. Supply counter will reset on next refresh."
 
-        last_action = database.get_last_wallet_action(user_id, wallet, action_type='auto_supply')
+        last_action = database.get_last_wallet_action(
+            user_id, wallet, action_type='auto_supply')
         if last_action:
-            delegation_info["lastAutoSupplyTxHash"] = last_action.get('tx_hash')
+            delegation_info["lastAutoSupplyTxHash"] = last_action.get(
+                'tx_hash')
 
     return jsonify({"botEnabled": enabled, "delegation": delegation_info})
 
@@ -3397,13 +4133,17 @@ def activate_delegation():
     if not user:
         return jsonify({"error": "User not found"}), 404
     wallet = user['wallet_address']
-    logger.info(f"[AutoPilot] activate_delegation called for user={user_id}, wallet={wallet}")
+    logger.info(
+        f"[AutoPilot] activate_delegation called for user={user_id}, wallet={wallet}"
+    )
 
     req_data = request.get_json(silent=True) or {}
     approve_tx_hash = req_data.get('approve_tx_hash')
     delegation_tx_hash = req_data.get('delegation_tx_hash')
     on_chain_verified = req_data.get('on_chain_verified', False)
-    logger.info(f"[AutoPilot] approve_tx={approve_tx_hash}, delegation_tx={delegation_tx_hash}, on_chain_verified={on_chain_verified}")
+    logger.info(
+        f"[AutoPilot] approve_tx={approve_tx_hash}, delegation_tx={delegation_tx_hash}, on_chain_verified={on_chain_verified}"
+    )
 
     from delegation_client import is_contract_deployed, DELEGATION_MANAGER_ADDRESS, get_wbtc_allowance_raw, get_wbtc_balance_raw, raw_to_wbtc, MIN_SUPPLY_RAW, _get_web3
     contract_live = is_contract_deployed()
@@ -3414,33 +4154,53 @@ def activate_delegation():
         chain_id = w3.eth.chain_id
     except Exception:
         pass
-    logger.info(f"[AutoPilot] contract_deployed={contract_live}, address={DELEGATION_MANAGER_ADDRESS}, chain_id={chain_id}")
+    logger.info(
+        f"[AutoPilot] contract_deployed={contract_live}, address={DELEGATION_MANAGER_ADDRESS}, chain_id={chain_id}"
+    )
 
     if contract_live:
         if not on_chain_verified or not delegation_tx_hash:
-            logger.warning(f"[AutoPilot] Missing on-chain verification: on_chain_verified={on_chain_verified}, delegation_tx_hash={delegation_tx_hash}")
-            return jsonify({"status": "error", "reason": "On-chain delegation not verified. Please complete both wallet transactions (approve + delegation) before activating."}), 400
+            logger.warning(
+                f"[AutoPilot] Missing on-chain verification: on_chain_verified={on_chain_verified}, delegation_tx_hash={delegation_tx_hash}"
+            )
+            return jsonify({
+                "status":
+                "error",
+                "reason":
+                "On-chain delegation not verified. Please complete both wallet transactions (approve + delegation) before activating."
+            }), 400
 
         allowance = get_wbtc_allowance_raw(wallet)
-        logger.info(f"[AutoPilot] on-chain WBTC allowance for {wallet}: {allowance}")
+        logger.info(
+            f"[AutoPilot] on-chain WBTC allowance for {wallet}: {allowance}")
         if allowance <= 0:
-            logger.warning(f"[AutoPilot] allowance is 0 — approve tx may not have confirmed yet or was on wrong chain")
-            return jsonify({"status": "error", "reason": "WBTC allowance is still zero on-chain. The approval may have been on the wrong network. Please ensure you are on Arbitrum and try again."}), 400
+            logger.warning(
+                f"[AutoPilot] allowance is 0 — approve tx may not have confirmed yet or was on wrong chain"
+            )
+            return jsonify({
+                "status":
+                "error",
+                "reason":
+                "WBTC allowance is still zero on-chain. The approval may have been on the wrong network. Please ensure you are on Arbitrum and try again."
+            }), 400
 
     database.upsert_managed_wallet(user_id, wallet, auto_supply_wbtc=True)
     database.update_delegation_status(user_id, wallet, 'active')
-    database.record_wallet_action(user_id, wallet, 'delegation_granted', {
-        "auto_supply_wbtc": True,
-        "max_supply_ratio": "0.8",
-        "contract_deployed": contract_live,
-        "approve_tx_hash": approve_tx_hash,
-        "delegation_tx_hash": delegation_tx_hash,
-        "on_chain_verified": on_chain_verified,
-        "chain_id": chain_id,
-    })
+    database.record_wallet_action(
+        user_id, wallet, 'delegation_granted', {
+            "auto_supply_wbtc": True,
+            "max_supply_ratio": "0.8",
+            "contract_deployed": contract_live,
+            "approve_tx_hash": approve_tx_hash,
+            "delegation_tx_hash": delegation_tx_hash,
+            "on_chain_verified": on_chain_verified,
+            "chain_id": chain_id,
+        })
 
     mw_after = database.get_managed_wallet(user_id, wallet)
-    logger.info(f"[AutoPilot] DB state after activation: delegation_status={mw_after.get('delegation_status') if mw_after else 'N/A'}, auto_supply_wbtc={mw_after.get('auto_supply_wbtc') if mw_after else 'N/A'}")
+    logger.info(
+        f"[AutoPilot] DB state after activation: delegation_status={mw_after.get('delegation_status') if mw_after else 'N/A'}, auto_supply_wbtc={mw_after.get('auto_supply_wbtc') if mw_after else 'N/A'}"
+    )
 
     supply_status = "ok"
     supply_reason = None
@@ -3450,12 +4210,15 @@ def activate_delegation():
             from auto_supply import auto_supply_wbtc_for_wallet
             mw_for_supply = dict(mw_after)
             mw_for_supply['bot_enabled'] = True
-            logger.info(f"[AutoPilot] Triggering immediate auto-supply for {wallet}")
+            logger.info(
+                f"[AutoPilot] Triggering immediate auto-supply for {wallet}")
             did_supply = auto_supply_wbtc_for_wallet(mw_for_supply)
             if did_supply:
                 supply_result = "WBTC supplied to Aave successfully!"
                 supply_status = "ok"
-                logger.info(f"[AutoPilot] Immediate auto-supply succeeded for {wallet}")
+                logger.info(
+                    f"[AutoPilot] Immediate auto-supply succeeded for {wallet}"
+                )
             else:
                 balance = get_wbtc_balance_raw(wallet)
                 allowance_now = get_wbtc_allowance_raw(wallet)
@@ -3468,9 +4231,13 @@ def activate_delegation():
                     supply_reason = "WBTC allowance is zero"
                 else:
                     supply_reason = f"Balance {balance_wbtc:.8f} WBTC — 80% is below minimum threshold {threshold_wbtc} WBTC"
-                logger.info(f"[AutoPilot] Immediate auto-supply skipped for {wallet}: {supply_reason} (balance_raw={balance}, allowance_raw={allowance_now})")
+                logger.info(
+                    f"[AutoPilot] Immediate auto-supply skipped for {wallet}: {supply_reason} (balance_raw={balance}, allowance_raw={allowance_now})"
+                )
         except Exception as e:
-            logger.error(f"[AutoPilot] Immediate auto-supply error for {wallet}: {e}", exc_info=True)
+            logger.error(
+                f"[AutoPilot] Immediate auto-supply error for {wallet}: {e}",
+                exc_info=True)
             supply_status = "error"
             supply_reason = str(e)
 
@@ -3504,6 +4271,7 @@ def revoke_delegation():
     logger.info(f"Delegation revoked for user {user_id}, wallet {wallet}")
     return jsonify({"status": "revoked", "autoSupplyWbtc": False})
 
+
 @app.route('/api/towns', methods=['GET'])
 def list_towns():
     """List all available towns with filing counts"""
@@ -3511,6 +4279,7 @@ def list_towns():
         return jsonify({"error": "Database not available"}), 503
     towns = database.get_towns()
     return jsonify({"towns": towns})
+
 
 @app.route('/api/user/towns', methods=['GET'])
 def get_user_towns_api():
@@ -3520,6 +4289,7 @@ def get_user_towns_api():
     user_id = get_current_user_id()
     towns = database.get_user_towns(user_id)
     return jsonify({"towns": towns})
+
 
 @app.route('/api/user/towns', methods=['POST'])
 def set_user_towns_api():
@@ -3533,6 +4303,7 @@ def set_user_towns_api():
     database.set_user_towns(user_id, data['townIds'])
     return jsonify({"success": True, "townIds": data['townIds']})
 
+
 @app.route('/api/filings', methods=['GET'])
 def get_filings_api():
     """Get filings with filters and pagination"""
@@ -3544,8 +4315,14 @@ def get_filings_api():
     status = request.args.get('status')
     page = request.args.get('page', 1, type=int)
     per_page = request.args.get('perPage', 50, type=int)
-    result = database.get_filings(town_id=town_id, date_from=date_from, date_to=date_to, status=status, page=page, per_page=per_page)
+    result = database.get_filings(town_id=town_id,
+                                  date_from=date_from,
+                                  date_to=date_to,
+                                  status=status,
+                                  page=page,
+                                  per_page=per_page)
     return jsonify(result)
+
 
 @app.route('/api/filings/stats', methods=['GET'])
 def get_filing_stats_api():
@@ -3554,6 +4331,7 @@ def get_filing_stats_api():
         return jsonify({"error": "Database not available"}), 503
     stats = database.get_filing_stats()
     return jsonify({"stats": stats})
+
 
 @app.route('/api/export/filings', methods=['GET'])
 def export_filings():
@@ -3564,9 +4342,13 @@ def export_filings():
     date_from = request.args.get('dateFrom')
     date_to = request.args.get('dateTo')
     fmt = request.args.get('format', 'csv')
-    result = database.get_filings(town_id=town_id, date_from=date_from, date_to=date_to, page=1, per_page=10000)
+    result = database.get_filings(town_id=town_id,
+                                  date_from=date_from,
+                                  date_to=date_to,
+                                  page=1,
+                                  per_page=10000)
     filings = result['filings']
-    
+
     if fmt == 'xlsx':
         try:
             import openpyxl
@@ -3574,25 +4356,66 @@ def export_filings():
             wb = Workbook()
             ws = wb.active
             ws.title = "Lis Pendens Filings"
-            headers = ["Town", "Address", "Seller", "Lender", "Filing Date", "Book/Page", "Court Case #", "Debt Amount", "Return Date", "Status"]
+            headers = [
+                "Town", "Address", "Seller", "Lender", "Filing Date",
+                "Book/Page", "Court Case #", "Debt Amount", "Return Date",
+                "Status"
+            ]
             ws.append(headers)
             for f in filings:
-                ws.append([f.get('town_name',''), f.get('property_address',''), f.get('seller',''), f.get('lender',''), f.get('recording_date',''), f.get('book_page',''), f.get('court_case_number',''), f.get('debt_amount',''), f.get('return_date',''), f.get('status','')])
+                ws.append([
+                    f.get('town_name', ''),
+                    f.get('property_address', ''),
+                    f.get('seller', ''),
+                    f.get('lender', ''),
+                    f.get('recording_date', ''),
+                    f.get('book_page', ''),
+                    f.get('court_case_number', ''),
+                    f.get('debt_amount', ''),
+                    f.get('return_date', ''),
+                    f.get('status', '')
+                ])
             output = io.BytesIO()
             wb.save(output)
             output.seek(0)
             from flask import send_file
-            return send_file(output, mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', as_attachment=True, download_name='lis_pendens_filings.xlsx')
+            return send_file(
+                output,
+                mimetype=
+                'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                as_attachment=True,
+                download_name='lis_pendens_filings.xlsx')
         except ImportError:
-            return jsonify({"error": "openpyxl not available, use CSV format"}), 500
-    
+            return jsonify({"error":
+                            "openpyxl not available, use CSV format"}), 500
+
     output = io.StringIO()
     writer = csv.writer(output)
-    writer.writerow(["Town", "Address", "Seller", "Lender", "Filing Date", "Book/Page", "Court Case #", "Debt Amount", "Return Date", "Status"])
+    writer.writerow([
+        "Town", "Address", "Seller", "Lender", "Filing Date", "Book/Page",
+        "Court Case #", "Debt Amount", "Return Date", "Status"
+    ])
     for f in filings:
-        writer.writerow([f.get('town_name',''), f.get('property_address',''), f.get('seller',''), f.get('lender',''), f.get('recording_date',''), f.get('book_page',''), f.get('court_case_number',''), f.get('debt_amount',''), f.get('return_date',''), f.get('status','')])
+        writer.writerow([
+            f.get('town_name', ''),
+            f.get('property_address', ''),
+            f.get('seller', ''),
+            f.get('lender', ''),
+            f.get('recording_date', ''),
+            f.get('book_page', ''),
+            f.get('court_case_number', ''),
+            f.get('debt_amount', ''),
+            f.get('return_date', ''),
+            f.get('status', '')
+        ])
     from flask import Response
-    return Response(output.getvalue(), mimetype='text/csv', headers={"Content-Disposition": "attachment; filename=lis_pendens_filings.csv"})
+    return Response(output.getvalue(),
+                    mimetype='text/csv',
+                    headers={
+                        "Content-Disposition":
+                        "attachment; filename=lis_pendens_filings.csv"
+                    })
+
 
 @app.route('/api/defi/state', methods=['GET'])
 def get_defi_state():
@@ -3604,7 +4427,12 @@ def get_defi_state():
     position = database.get_defi_position(user_id)
 
     if position and not position.get('has_active_position', False):
-        return jsonify({"position": None, "message": "Position inactive (withdrawn or dust). Supply on Aave to see your position here."})
+        return jsonify({
+            "position":
+            None,
+            "message":
+            "Position inactive (withdrawn or dust). Supply on Aave to see your position here."
+        })
 
     if not position:
         user = database.get_user_by_id(user_id)
@@ -3622,12 +4450,25 @@ def get_defi_state():
                 position = database.get_defi_position(user_id)
                 return jsonify({"position": position})
             else:
-                return jsonify({"position": None, "storageError": True, "message": "Aave position found on-chain but failed to store in database."})
+                return jsonify({
+                    "position":
+                    None,
+                    "storageError":
+                    True,
+                    "message":
+                    "Aave position found on-chain but failed to store in database."
+                })
         else:
             database.mark_position_inactive(user_id)
             database.reset_supplied_if_withdrawn(user_id, wallet)
-        return jsonify({"position": None, "message": "No Aave position detected for this wallet yet."})
+        return jsonify({
+            "position":
+            None,
+            "message":
+            "No Aave position detected for this wallet yet."
+        })
     return jsonify({"position": position})
+
 
 @app.route('/api/pipeline/status', methods=['GET'])
 def get_pipeline_status():
@@ -3638,6 +4479,7 @@ def get_pipeline_status():
     stats = database.get_filing_stats()
     return jsonify({"latestRun": run, "townStats": stats})
 
+
 @app.route('/api/leads/summary', methods=['GET'])
 def get_leads_summary():
     """Get leads summary with counts"""
@@ -3645,6 +4487,7 @@ def get_leads_summary():
         return jsonify({"error": "Database not available"}), 503
     summary = database.get_leads_summary()
     return jsonify({"summary": summary})
+
 
 @app.route('/api/leads/notes', methods=['GET'])
 def get_notes_api():
@@ -3657,6 +4500,7 @@ def get_notes_api():
     notes = database.get_lead_notes(filing_id)
     return jsonify({"notes": notes})
 
+
 @app.route('/api/leads/notes', methods=['POST'])
 def add_note_api():
     """Add a note to a filing"""
@@ -3665,14 +4509,14 @@ def add_note_api():
     data = request.get_json()
     if not data or not data.get('filingId') or not data.get('content'):
         return jsonify({"error": "filingId and content required"}), 400
-    note_id = database.add_lead_note(
-        filing_id=data['filingId'],
-        content=data['content'],
-        note_type=data.get('noteType', 'analysis'),
-        priority=data.get('priority', 'medium'),
-        user_id=data.get('userId')
-    )
+    note_id = database.add_lead_note(filing_id=data['filingId'],
+                                     content=data['content'],
+                                     note_type=data.get(
+                                         'noteType', 'analysis'),
+                                     priority=data.get('priority', 'medium'),
+                                     user_id=data.get('userId'))
     return jsonify({"noteId": note_id, "success": True})
+
 
 @app.route('/api/income', methods=['GET'])
 def get_income_api():
@@ -3682,6 +4526,7 @@ def get_income_api():
     user_id = get_current_user_id()
     events = database.get_income_events(user_id)
     return jsonify({"events": events})
+
 
 @app.route('/api/income/summary', methods=['GET'])
 def get_income_summary_api():
@@ -3695,6 +4540,7 @@ def get_income_summary_api():
             summary[k] = float(summary[k])
     return jsonify({"summary": summary})
 
+
 @app.route('/api/chat', methods=['POST'])
 def chat_api():
     """REAA chat with dynamic context from user's Postgres data (auth required, rate limited)"""
@@ -3704,7 +4550,10 @@ def chat_api():
     user_id = get_current_user_id()
 
     if not check_chat_rate_limit(user_id):
-        return jsonify({"error": "Rate limit exceeded. Please wait a moment before sending another message."}), 429
+        return jsonify({
+            "error":
+            "Rate limit exceeded. Please wait a moment before sending another message."
+        }), 429
 
     data = request.get_json()
     if not data or not data.get('message'):
@@ -3730,15 +4579,20 @@ def chat_api():
         stats = database.get_filing_stats()
         town_stats_map = {s['town_name']: s for s in stats}
 
-        recent_filings = database.get_recent_filings_for_towns(town_ids, limit=5)
+        recent_filings = database.get_recent_filings_for_towns(town_ids,
+                                                               limit=5)
 
         defi_pos = database.get_defi_position(user_id)
         income_summary = database.get_income_summary(user_id)
         recent_income = database.get_income_events(user_id, limit=5)
 
-        hf = float(defi_pos['health_factor']) if defi_pos and defi_pos.get('health_factor') else 0
-        collateral = float(defi_pos['total_collateral_usd']) if defi_pos and defi_pos.get('total_collateral_usd') else 0
-        debt = float(defi_pos['total_debt_usd']) if defi_pos and defi_pos.get('total_debt_usd') else 0
+        hf = float(defi_pos['health_factor']
+                   ) if defi_pos and defi_pos.get('health_factor') else 0
+        collateral = float(
+            defi_pos['total_collateral_usd']
+        ) if defi_pos and defi_pos.get('total_collateral_usd') else 0
+        debt = float(defi_pos['total_debt_usd']
+                     ) if defi_pos and defi_pos.get('total_debt_usd') else 0
 
         # Safety labels here are derived directly from health_factor for REAA's natural language context.
         # The 0-4.0 safety SCORE (for the visual health ring) is computed client-side in computeSafetyScore().
@@ -3768,7 +4622,8 @@ def chat_api():
         income_ctx = f"Last 30 days: ${float(income_summary.get('total_30d', 0)):.2f} across {income_summary.get('count_30d', 0)} events."
         if recent_income:
             income_ctx += "\nRecent: " + ", ".join([
-                f"${float(e.get('amount_usd', 0)):.2f} ({e.get('event_type', '')})" for e in recent_income[:3]
+                f"${float(e.get('amount_usd', 0)):.2f} ({e.get('event_type', '')})"
+                for e in recent_income[:3]
             ])
 
         system_prompt = f"""You are REAA (Real Estate Agent Assistant), an AI assistant for a real estate and DeFi management platform.
@@ -3802,20 +4657,26 @@ Guidelines:
         history = data.get('history', [])
 
         if perplexity_chat_multi and history:
-            response = perplexity_chat_multi(system_prompt, history, user_message)
+            response = perplexity_chat_multi(system_prompt, history,
+                                             user_message)
         else:
             from perplexity_client import perplexity_chat
             response = perplexity_chat(system_prompt, user_message)
 
         if response.startswith("[ERROR]"):
             logger.error(f"Perplexity error: {response}")
-            return jsonify({"error": "The AI assistant is temporarily unavailable. Please try again."}), 503
+            return jsonify({
+                "error":
+                "The AI assistant is temporarily unavailable. Please try again."
+            }), 503
 
         return jsonify({"response": response})
 
     except Exception as e:
         logger.error(f"Chat API error: {e}")
-        return jsonify({"error": "Something went wrong. Please try again."}), 500
+        return jsonify({"error":
+                        "Something went wrong. Please try again."}), 500
+
 
 if __name__ == '__main__':
     log_startup_diagnostics()
@@ -3825,7 +4686,8 @@ if __name__ == '__main__':
 
     # Check for emergency stop and clear if needed for dashboard access
     if os.path.exists('EMERGENCY_STOP_ACTIVE.flag'):
-        logger.warning("⚠️ Emergency stop detected - clearing for dashboard access...")
+        logger.warning(
+            "⚠️ Emergency stop detected - clearing for dashboard access...")
         try:
             os.remove('EMERGENCY_STOP_ACTIVE.flag')
             logger.info("✅ Emergency stop flag cleared for dashboard")
