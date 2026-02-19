@@ -3,7 +3,7 @@
 Fixed Web Dashboard - Properly integrates with autonomous mainnet agent
 """
 
-from flask import Flask, render_template, jsonify, request, abort
+from flask import Flask, render_template, jsonify, request, abort, redirect
 import os
 import time
 import json
@@ -547,8 +547,13 @@ threading.Thread(target=monitor_console_output, daemon=True).start()
 console_buffer.append(f"[{est_now()}] 🔄 Initializing agent connections...")
 
 @app.route('/')
+def root_redirect():
+    """Redirect root to consumer dashboard"""
+    return redirect('/app')
+
+@app.route('/admin')
 def dashboard():
-    """Main dashboard page"""
+    """Admin bot dashboard page"""
     global agent
     try:
         emergency_active = os.path.exists('EMERGENCY_STOP_ACTIVE.flag')
@@ -3509,6 +3514,10 @@ def chat_api():
         collateral = float(defi_pos['total_collateral_usd']) if defi_pos and defi_pos.get('total_collateral_usd') else 0
         debt = float(defi_pos['total_debt_usd']) if defi_pos and defi_pos.get('total_debt_usd') else 0
 
+        # Safety labels here are derived directly from health_factor for REAA's natural language context.
+        # The 0-4.0 safety SCORE (for the visual health ring) is computed client-side in computeSafetyScore().
+        # These are intentionally separate: the label is a qualitative bucket for the AI prompt,
+        # while the score is a continuous value for the ring animation. See replit.md "Safety Score Source of Truth".
         if hf >= 3.0:
             safety_label = "Excellent"
         elif hf >= 2.0:

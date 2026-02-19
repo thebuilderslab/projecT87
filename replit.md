@@ -56,6 +56,49 @@ REAA is the consumer-facing AI assistant integrated into the Command Center. It 
 
 **Multi-turn:** Frontend sends last 5 messages as conversation history; backend forwards to Perplexity `perplexity_chat_multi()` for contextual follow-ups.
 
+## Chat History Structure
+The frontend maintains `state.chatHistory`, an array of message objects. Each entry has this shape:
+```json
+{ "role": "user" | "assistant", "content": "message text" }
+```
+- On each user message, `{role: "user", content: msg}` is pushed to the array.
+- On each REAA response, `{role: "assistant", content: response}` is pushed.
+- Before sending to `/api/chat`, the frontend slices the last 5 entries: `state.chatHistory.slice(-5)` and sends them as the `history` field in the POST body.
+- Backend receives `history` and passes it to `perplexity_chat_multi(system_prompt, history, user_message)`.
+- `perplexity_chat_multi` constructs a Perplexity API messages array: `[{role: "system", content: system_prompt}] + history + [{role: "user", content: user_message}]`.
+- If `history` is empty, the backend falls back to single-turn `perplexity_chat(system_prompt, user_message)`.
+
+## Safety Score — Source of Truth
+There are two related but intentionally separate safety representations:
+
+**1. Client-side safety score (0–4.0 continuous, for the health ring animation):**
+```javascript
+function computeSafetyScore(hf, collateral, debt) {
+  if (!hf || hf <= 0) return 0;
+  let score = Math.min(hf, 4.0);
+  if (collateral > 0 && debt > 0) {
+    const ratio = collateral / debt;
+    if (ratio > 5) score = Math.min(score + 0.2, 4.0);
+    else if (ratio < 1.5) score = Math.max(score - 0.3, 0);
+  }
+  return Math.round(score * 100) / 100;
+}
+```
+- Input: Aave health factor, total collateral USD, total debt USD.
+- Output: a 0–4.0 score displayed in the health ring SVG. The ring fill percentage = `score / 4.0`.
+- Color: >= 3.0 green (accent), >= 2.0 yellow, < 2.0 red.
+
+**2. Server-side safety label (qualitative, for REAA's AI prompt context):**
+- Derived directly from `health_factor` in `chat_api()`:
+  - HF >= 3.0 → "Excellent"
+  - HF >= 2.0 → "Good"
+  - HF >= 1.5 → "Caution"
+  - HF > 0 → "Critical"
+  - HF = 0 → "No position"
+- This label is injected into the REAA system prompt so the AI can reference it in natural language.
+
+**Why separate:** The client score incorporates collateral/debt ratio for a more nuanced visual indicator. The server label is a simple bucket for the AI prompt — keeping it simple prevents the LLM from over-interpreting a decimal score. If we need safety score server-side in the future (e.g., alerts), we should refactor `computeSafetyScore` into a shared Python function.
+
 **Error Handling:** Perplexity errors/timeouts return 503 with user-friendly message. Rate limit exceeded returns 429.
 
 ## Authentication (Consumer /app)

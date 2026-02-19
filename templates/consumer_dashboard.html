@@ -546,7 +546,7 @@ tr:hover { background:rgba(0,230,180,0.03); }
           <h2>Lead Pipeline</h2>
         </div>
         <div class="panel-body" style="padding:0;" id="pipelineBody">
-          <div class="loading">Loading towns...</div>
+          <div class="loading">Connect wallet to view pipeline</div>
         </div>
       </div>
 
@@ -769,7 +769,7 @@ function fullDisconnect() {
 
   document.getElementById('chatSendBtn').disabled = false;
 
-  document.getElementById('pipelineBody').innerHTML = '<div class="loading">No towns available</div>';
+  document.getElementById('pipelineBody').innerHTML = '<div class="loading">Connect wallet to view pipeline</div>';
 }
 
 async function connectWallet() {
@@ -811,8 +811,19 @@ async function authenticateWallet(address) {
   btn.textContent = address.substring(0, 6) + '...' + address.substring(38);
   btn.onclick = null;
 
+  document.getElementById('defiCollateral').textContent = 'Loading...';
+  document.getElementById('defiDebt').textContent = 'Loading...';
+  document.getElementById('defiHF').textContent = 'Loading...';
+  document.getElementById('defiHF').className = 'val';
+  document.getElementById('defiHF').style.color = 'var(--muted)';
+  document.getElementById('defiNetWorth').textContent = 'Loading...';
+  document.getElementById('defiActions').innerHTML = '<div class="defi-action-item"><div class="dot" style="background:var(--muted)"></div> Fetching DeFi data...</div>';
+  document.getElementById('safetyScore').textContent = '...';
+  document.getElementById('safetyScore').style.color = 'var(--muted)';
+
   loadDefiPanel();
   loadIncomeSummary();
+  loadTowns();
 }
 
 function computeSafetyScore(hf, collateral, debt) {
@@ -857,10 +868,11 @@ async function loadDefiPanel() {
   state.defiPosition = pos;
 
   if (!pos) {
-    document.getElementById('defiCollateral').textContent = '$0.00';
-    document.getElementById('defiDebt').textContent = '$0.00';
+    document.getElementById('defiCollateral').textContent = '--';
+    document.getElementById('defiDebt').textContent = '--';
     document.getElementById('defiHF').textContent = '--';
-    document.getElementById('defiNetWorth').textContent = '$0.00';
+    document.getElementById('defiNetWorth').textContent = '--';
+    document.getElementById('defiActions').innerHTML = '<div class="defi-action-item"><div class="dot" style="background:var(--muted)"></div> ' + (data.message || 'No Aave position detected for this wallet yet.') + '</div>';
     updateHealthRing(0);
     return;
   }
@@ -1282,13 +1294,17 @@ function switchTab(tab) {
   document.querySelector(`.nav-tab[data-tab="${tab}"]`).classList.add('active');
   document.getElementById(`tab-${tab}`).classList.add('active');
 
+  if (!state.authToken) {
+    document.getElementById(`tab-${tab}`).innerHTML = '<div class="loading" style="padding:40px;text-align:center;">Connect wallet to view data</div>';
+    return;
+  }
   if (tab === 'filings') loadFilings();
   if (tab === 'analysis') loadAnalysis();
   if (tab === 'defi') loadDefiState();
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-  loadTowns();
+  document.getElementById('pipelineBody').innerHTML = '<div class="loading">Connect wallet to view pipeline</div>';
   updateHealthRing(0);
 });
 
