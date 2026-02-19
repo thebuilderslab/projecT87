@@ -1,0 +1,233 @@
+Phase 2 Goal
+After a user:
+
+Connects their wallet, and
+
+Explicitly approves REAA Delegation Manager,
+
+the system should:
+
+Detect WBTC balance in the wallet on Arbitrum.
+
+Automatically supply 80% of the WBTC balance into Aave V3 as collateral.
+
+Leave 20% in the wallet for safety/gas.
+
+Record all actions in Postgres so the REAA dashboard can show “REAA supplied X WBTC” for that wallet.
+
+No other tokens are auto‑supplied in this phase.
+
+1. New data model (Postgres)
+managed_wallets
+
+sql
+create table if not exists managed_wallets (
+  id serial primary key,
+  user_id int references users(id),
+  wallet_address text not null,
+  delegation_status text not null, -- 'none' | 'active' | 'revoked'
+  auto_supply_wbtc boolean not null default false,
+  supplied_wbtc_amount numeric default 0, -- total WBTC supplied via REAA
+  last_auto_supply_at timestamptz,
+  unique (user_id, wallet_address)
+);
+wallet_actions (for logs)
+
+sql
+create table if not exists wallet_actions (
+  id bigserial primary key,
+  user_id int references users(id),
+  wallet_address text not null,
+  action_type text not null, -- 'auto_supply_wbtc', 'delegation_granted', 'delegation_revoked', etc.
+  details jsonb not null,
+  tx_hash text,
+  created_at timestamptz default now()
+);
+Add helpers in db.py:
+
+python
+def upsert_managed_wallet(user_id, wallet_address, auto_supply_wbtc=False):
+    ...
+
+def update_delegation_status(user_id, wallet_address, status):
+    ...
+
+def record_wallet_action(user_id, wallet_address, action_type, details, tx_hash=None):
+    ...
+2. Delegation Manager contract behavior
+High‑level requirements:
+
+Deployed on Arbitrum.
+
+User calls approveDelegation() from their wallet UI.
+
+Contract is allowed to:
+
+Pull WBTC from the user (via ERC20 transferFrom) and call Aave’s supply on behalf of that user.
+
+User can call revokeDelegation() at any time (clears allowance).
+
+We don’t need full Solidity here, but the interface should support:
+
+text
+function approveWBTCDelegation(uint256 maxAmount) external;
+function revokeWBTCDelegation() external;
+function autoSupplyWBTC(address user, uint256 amount) external; // called by bot
+The important constraint: autoSupplyWBTC must only be callable by your bot/admin address, and must respect the approved allowance.
+
+3. Wallet connection + delegation flow (frontend + API)
+After wallet connect (/api/auth/wallet):
+
+Frontend calls a new endpoint, e.g. GET /api/user/status, to see:
+
+botEnabled
+
+delegationStatus (none/active/revoked)
+
+autoSupplyWBTC flag
+
+If delegationStatus = "none":
+
+Show a step in /app:
+
+“Approve REAA to auto‑supply 80% of your WBTC to Aave.”
+
+Explain clearly:
+
+Only WBTC is targeted.
+
+Max 80% of balance is ever supplied.
+
+User can revoke at any time.
+
+On click:
+
+Frontend triggers a contract call from the user’s wallet to approveWBTCDelegation(maxAmount) on the Delegation Manager contract.
+
+After successful tx, call POST /api/delegation/activate so backend knows this wallet is now managed.
+
+API endpoints
+
+Add in web_dashboard.py:
+
+python
+@app.post("/api/delegation/activate")
+def activate_delegation():
+    user_id = get_current_user_id()
+    wallet_address = request.json.get("walletAddress").lower()
+    # mark in DB
+    database.update_delegation_status(user_id, wallet_address, "active")
+    database.upsert_managed_wallet(user_id, wallet_address, auto_supply_wbtc=True)
+    database.record_wallet_action(
+        user_id, wallet_address, "delegation_granted", {"auto_supply_wbtc": True}
+    )
+    return jsonify({"status": "ok", "delegationStatus": "active", "autoSupplyWBTC": True})
+Similarly a /api/delegation/revoke for turning it off.
+
+4. Auto‑supply WBTC logic: calculations & process
+The core requirement: supply 80% of on‑chain WBTC balance for that wallet, but never more than both:
+
+The current WBTC ERC20 balance.
+
+The approved allowance in the Delegation Manager contract.
+
+4.1 Calculation
+For each managed wallet with delegation_status="active" and auto_supply_wbtc = true:
+
+Read on‑chain WBTC balance:
+
+python
+balance_wbtc = wbtc_contract.balanceOf(wallet_address)  # in satoshis, 8 decimals
+Compute intended supply amount:
+
+python
+# 80% of balance
+amount_to_supply_raw = (balance_wbtc * 80) // 100
+Safety checks:
+
+If amount_to_supply_raw <= min_threshold (e.g. 0.01 WBTC), skip.
+
+Check allowance:
+
+python
+allowance = wbtc_contract.allowance(wallet_address, delegation_manager_address)
+amount_to_supply_raw = min(amount_to_supply_raw, allowance)
+Final guard:
+
+If amount_to_supply_raw <= 0: skip, log “no WBTC available for auto‑supply”.
+
+4.2 Execution process
+Pseudocode for the bot loop (in your agent):
+
+python
+def auto_supply_wbtc_for_wallet(user_id, wallet_address):
+    if not database.is_bot_enabled(user_id):
+        return
+
+    mw = database.get_managed_wallet(user_id, wallet_address)
+    if not mw or mw.delegation_status != "active" or not mw.auto_supply_wbtc:
+        return
+
+    balance = wbtc.balanceOf(wallet_address)
+    allowance = wbtc.allowance(wallet_address, delegation_manager_address)
+
+    amount = (balance * 80) // 100
+    # apply thresholds and allowance
+    amount = min(amount, allowance)
+    if amount <= MIN_WBTC_SUPPLY_RAW:
+        return
+
+    # call Delegation Manager from bot admin key
+    tx = delegation_manager.autoSupplyWBTC(wallet_address, amount, {"from": bot_account})
+    receipt = wait_for_receipt(tx)
+
+    # convert to WBTC units for logging
+    wbtc_decimals = 8
+    amount_wbtc = amount / (10 ** wbtc_decimals)
+
+    database.record_wallet_action(
+        user_id,
+        wallet_address,
+        "auto_supply_wbtc",
+        {
+          "amount_raw": int(amount),
+          "amount_wbtc": float(amount_wbtc),
+        },
+        tx_hash=receipt.transactionHash.hex()
+    )
+
+    database.update_managed_wallet_supplied(user_id, wallet_address, amount_wbtc)
+Key points:
+
+Uses on‑chain values (balance + allowance).
+
+Caps at 80% of balance and at allowance.
+
+Respects bot_enabled and delegation_status.
+
+Logs everything into wallet_actions and updates managed_wallets.supplied_wbtc_amount.
+
+5. Safety constraints and UI messaging
+Tell Replit to enforce and surface:
+
+Minimum WBTC threshold
+
+e.g., only auto‑supply if amount >= 0.01 WBTC.
+
+Avoid wasting gas on tiny moves.
+
+One‑time vs periodic behavior
+
+For MVP: auto‑supply WBTC once per wallet per day max.
+
+In managed_wallets, track last_auto_supply_at and skip if a recent run already happened.
+
+UI in /app
+
+In the Command Center, for a delegated wallet, show:
+
+“WBTC auto‑supply: ON, 80% of wallet balance.”
+
+The last auto supply amount and timestamp from wallet_actions.
+
+A “Turn off auto‑supply” toggle that calls /api/delegation/revoke or flips auto_supply_wbtc to false.
