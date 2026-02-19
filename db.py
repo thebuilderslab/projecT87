@@ -35,8 +35,10 @@ def init_db():
             id SERIAL PRIMARY KEY,
             wallet_address VARCHAR(42) UNIQUE NOT NULL,
             created_at TIMESTAMPTZ DEFAULT NOW(),
-            last_seen TIMESTAMPTZ DEFAULT NOW()
+            last_seen TIMESTAMPTZ DEFAULT NOW(),
+            bot_enabled BOOLEAN NOT NULL DEFAULT true
         );
+        ALTER TABLE users ADD COLUMN IF NOT EXISTS bot_enabled BOOLEAN NOT NULL DEFAULT true;
 
         CREATE TABLE IF NOT EXISTS towns (
             id SERIAL PRIMARY KEY,
@@ -168,6 +170,26 @@ def get_user_by_wallet(wallet_address):
         row = cur.fetchone()
         cur.close()
         return dict(row) if row else None
+
+
+def set_bot_enabled(user_id, enabled: bool):
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "UPDATE users SET bot_enabled = %s WHERE id = %s",
+                (enabled, user_id),
+            )
+
+
+def is_bot_enabled(user_id) -> bool:
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT bot_enabled FROM users WHERE id = %s",
+                (user_id,)
+            )
+            row = cur.fetchone()
+            return bool(row[0]) if row else False
 
 
 def get_towns():

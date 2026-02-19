@@ -474,6 +474,7 @@ tr:hover { background:rgba(0,230,180,0.03); }
   <div class="topbar-right">
     <div class="network-badge"><span class="dot"></span> Arbitrum Mainnet</div>
     <button class="wallet-btn connect" id="walletBtn" onclick="connectWallet()">Connect Wallet</button>
+    <button class="wallet-btn" id="disconnectBtn" style="display:none;background:var(--surface2);color:var(--red);border:1px solid var(--red);" onclick="disconnectWallet()">Disconnect</button>
   </div>
 </div>
 
@@ -752,6 +753,7 @@ function fullDisconnect() {
   btn.className = 'wallet-btn connect';
   btn.textContent = 'Connect Wallet';
   btn.onclick = connectWallet;
+  document.getElementById('disconnectBtn').style.display = 'none';
 
   document.getElementById('defiCollateral').textContent = '--';
   document.getElementById('defiDebt').textContent = '--';
@@ -804,6 +806,13 @@ async function connectWallet() {
   }
 }
 
+async function disconnectWallet() {
+  if (state.authToken) {
+    await api('/api/auth/disconnect', { method: 'POST' });
+  }
+  fullDisconnect();
+}
+
 async function authenticateWallet(address) {
   const data = await api('/api/auth/wallet', {
     method: 'POST',
@@ -819,6 +828,7 @@ async function authenticateWallet(address) {
   btn.className = 'wallet-btn connected';
   btn.textContent = address.substring(0, 6) + '...' + address.substring(38);
   btn.onclick = null;
+  document.getElementById('disconnectBtn').style.display = 'inline-flex';
 
   document.getElementById('defiCollateral').textContent = 'Loading...';
   document.getElementById('defiDebt').textContent = 'Loading...';

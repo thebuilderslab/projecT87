@@ -20,6 +20,20 @@ try:
 except ImportError:
     RE_TASKS_AVAILABLE = False
 
+try:
+    import db as database
+    DB_AVAILABLE = True
+except ImportError:
+    DB_AVAILABLE = False
+
+
+def run_strategies_for_user(user_id, wallet_address, agent, run_id, iteration, config):
+    if DB_AVAILABLE and not database.is_bot_enabled(user_id):
+        log_agent_activity(f"⏸️ Bot disabled for user {user_id} ({wallet_address[:10]}...) — skipping strategies")
+        return None
+    performance = agent.run_real_defi_task(run_id, iteration, config)
+    return performance
+
 os.environ['NETWORK_MODE'] = 'mainnet'
 
 def log_agent_activity(message, level="INFO"):
@@ -155,10 +169,25 @@ def run_autonomous_mainnet_agent():
 
                 log_agent_activity(f"🔄 Monitoring cycle {run_id}-{iteration}")
                 
-                performance = agent.run_real_defi_task(run_id, iteration, {
+                bot_wallet = agent.address
+                bot_user_id = None
+                if DB_AVAILABLE:
+                    bot_user = database.get_user_by_wallet(bot_wallet)
+                    if bot_user:
+                        bot_user_id = bot_user['id']
+
+                config = {
                     'health_factor_target': 3.10,
                     'max_iterations_per_run': 100
-                })
+                }
+
+                if bot_user_id is not None:
+                    performance = run_strategies_for_user(bot_user_id, bot_wallet, agent, run_id, iteration, config)
+                else:
+                    performance = agent.run_real_defi_task(run_id, iteration, config)
+
+                if performance is None:
+                    performance = 0.0
                 
                 # Log performance
                 if performance > 0.9:

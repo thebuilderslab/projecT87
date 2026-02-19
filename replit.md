@@ -43,6 +43,10 @@ The system operates on the Arbitrum Mainnet and is designed around two primary f
     - Wallet Architecture: User's connected wallet is for read-only monitoring; `WALLET_S` and `WALLET_B` are internal bot wallets.
     - Auth: Signed token (itsdangerous TimestampSigner) returned at wallet connect, validated server-side on all user-scoped endpoints via `X-Auth-Token` header. Tokens expire after 7 days.
     - Rate Limiting: `/api/chat` is rate-limited to 20 calls per minute per user.
+    - Data Gating: Pipeline, filings, and analysis tabs are completely hidden until wallet connects. Shows "Connect wallet to view..." placeholders.
+    - Connect/Disconnect: `/api/auth/wallet` sets `bot_enabled=true`, `/api/auth/disconnect` sets `bot_enabled=false`. Disconnect button appears next to wallet address after connect. `fullDisconnect()` resets all UI state and re-locks data panels.
+    - Bot Enable Flag: `users.bot_enabled` column controls whether the autonomous agent runs strategies for a given user. Checked via `is_bot_enabled(user_id)`.
+    - Routing: `/` redirects to `/app` (consumer dashboard). Admin bot dashboard lives at `/admin`.
 
 ## REAA (Real Estate Agent Assistant)
 REAA is the consumer-facing AI assistant integrated into the Command Center. It uses Perplexity's `sonar` model with a dynamic system prompt built from the user's Postgres data.

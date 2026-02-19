@@ -3280,6 +3280,7 @@ def auth_wallet():
     if not wallet.startswith('0x') or len(wallet) != 42:
         return jsonify({"error": "Invalid wallet address"}), 400
     user = database.upsert_user(wallet)
+    database.set_bot_enabled(user['id'], True)
     user_towns = database.get_user_towns(user['id'])
     token = auth_signer.sign(str(user['id']).encode()).decode()
 
@@ -3301,6 +3302,20 @@ def auth_wallet():
     threading.Thread(target=_refresh_defi, args=(user['id'], wallet), daemon=True).start()
 
     return jsonify({"userId": user['id'], "walletAddress": user['wallet_address'], "towns": user_towns, "authToken": token})
+
+@app.route('/api/auth/disconnect', methods=['POST'])
+def disconnect_wallet():
+    """Disconnect wallet - disable bot for this user"""
+    user_id = get_current_user_id()
+    database.set_bot_enabled(user_id, False)
+    return jsonify({"status": "ok", "botEnabled": False})
+
+@app.route('/api/user/status', methods=['GET'])
+def user_status():
+    """Get current user status including bot_enabled flag"""
+    user_id = get_current_user_id()
+    enabled = database.is_bot_enabled(user_id)
+    return jsonify({"botEnabled": enabled})
 
 @app.route('/api/towns', methods=['GET'])
 def list_towns():
