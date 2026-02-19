@@ -1,0 +1,135 @@
+Please extend the audit to cover not just token/permission coverage, but the exact execution sequences the system is designed to run, and how that differs between:
+
+The personal bot / operator wallet, and
+
+A user wallet that connects and delegates.
+
+From your tests I see so far:
+
+Growth/Capacity: DAI borrow/repay
+
+Macro/Micro short: WETH borrow
+
+Auto-supply: WBTC
+
+USDC: profit accounting / user claims
+
+I now need a deeper, sequence-level audit and documentation, in permissions.py and replit.md, that clearly answers:
+
+1) Full token set and current capabilities
+List every token the automation system can touch today (including, at minimum):
+
+DAI, ETH, WETH, WBTC, USDC, USDT (and any others discovered during the audit).
+
+For each token, document what the system can do right now (user wallets, as implemented today):
+
+supply / deposit
+
+borrow
+
+repay
+
+withdraw / unwind
+
+swap (if implemented)
+
+claim / harvest / distribute rewards or profits
+
+any other protocol-specific action
+
+For each of those actions, specify which strategies actually call them (macro, micro, growth, capacity, emergency, etc.), and under what conditions they run automatically (e.g., HF bands, thresholds, timing).
+
+This should be encoded in permissions.py as a structured matrix, and mirrored in a human-readable table in replit.md.
+
+2) Personal bot vs user wallet – behavior diff
+We need a precise comparison between what the personal bot wallet can do and what a delegated user wallet can do, including:
+
+Allowances and delegation
+
+For each token, list the on-chain allowances and delegation rights the personal bot has (e.g., token approvals, REAADelegationManager flags, any other executor contracts).
+
+Do the same for a user wallet after delegation is activated.
+
+Highlight any differences (e.g., personal bot can swap or move USDC/USDT, user wallets currently cannot, etc.).
+
+Distributions and flows
+
+Describe how profits, rewards, or interest are handled by the personal bot:
+
+Which tokens are accumulated (DAI, USDC, WBTC, etc.).
+
+How and when they are distributed, swapped, or compounded.
+
+Describe the same flows for user wallets:
+
+Are they receiving the same distributions?
+
+Are there any differences in which address collects rewards, who can claim, or how USDC/USDT flows are handled?
+
+Logic and sequences
+
+For each main strategy type (macro, micro, growth, capacity, emergency):
+
+Describe the intended sequence of actions for the personal bot, for example:
+
+“Growth: monitor HF → if HF within band, borrow DAI → supply DAI (loop) → periodically repay/adjust when HF moves out of band.”
+
+Describe the actual sequence that runs today for a user wallet:
+
+Which steps execute as coded.
+
+Which steps are blocked or never called (e.g., because allowances are missing, or functions are not wired for delegated wallets).
+
+The goal is to have a side‑by‑side view of “personal bot sequences” vs “user wallet sequences” so we can see exactly what is missing or degraded for users.
+
+3) Detecting what’s missing at wallet connect
+Using the above, please implement and document a check that runs when a user connects and activates delegation:
+
+When a wallet is activated (delegation_status='active', delegationMode='full_automation'):
+
+Compare the wallet’s on-chain permissions and allowances against the personal bot’s expected profile:
+
+REAADelegationManager flags
+
+ERC20 allowances / approvals relevant to the strategies
+
+Any required executor / router approvals for swaps, distribution, or reward claiming.
+
+If anything is missing relative to the personal bot’s capability set:
+
+Record exactly which capabilities are missing, per token and per action (e.g., “user wallet missing: DAI swap router approval, USDT borrow allowance, WBTC withdraw permission”).
+
+Surface this in:
+
+Logs (structured event).
+
+DB (e.g., an extended error_permissions payload or a dedicated field).
+
+Optionally in /api/user/status so we can see the delta from the personal bot without digging through logs.
+
+Document this behavior in replit.md under a section like “Personal bot vs User wallet capability audit,” including examples of what a fully matched user wallet looks like vs a partially configured one.
+
+4) Deliverables
+Please provide:
+
+Updated permissions.py with:
+
+Full token/action matrix.
+
+Explicit encoding of what is implemented now for user wallets.
+
+Updates to replit.md:
+
+Token/action table.
+
+Personal bot vs user wallet comparison.
+
+Description of the wallet-connect capability check and how missing pieces are reported.
+
+A short summary (or log excerpts) showing:
+
+A user wallet that fully matches the personal bot’s capabilities.
+
+A user wallet that is active but missing some capabilities, with the system correctly surfacing the differences at connect/activation time.
+
+This way we’re not just confirming “full automation flags are on,” but also auditing the exact sequences, allowances, distributions, and logic that make the personal bot powerful, and ensuring user wallets are brought up to that same level or clearly marked where they fall short.
