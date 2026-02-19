@@ -302,7 +302,7 @@ def get_strategy_status(user_id, wallet_address):
     if mw.get('delegation_status') != 'active':
         return "disabled"
 
-    if not mw.get('bot_enabled', False):
+    if not database.is_bot_enabled(user_id):
         return "disabled"
 
     position = database.get_defi_position(user_id)

@@ -3429,6 +3429,9 @@ def activate_delegation():
 
     database.upsert_managed_wallet(user_id, wallet, auto_supply_wbtc=True)
     database.update_delegation_status(user_id, wallet, 'active')
+    database.update_strategy_status_field(user_id, wallet, 'active')
+    database.set_bot_enabled(user_id, True)
+    logger.info(f"[AutoPilot] Hard-synced all flags ON for user={user_id}, wallet={wallet}: delegation_status=active, auto_supply_wbtc=true, strategy_status=active, bot_enabled=true")
     database.record_wallet_action(user_id, wallet, 'delegation_granted', {
         "auto_supply_wbtc": True,
         "max_supply_ratio": "0.8",
@@ -3500,8 +3503,10 @@ def revoke_delegation():
     mw = database.get_managed_wallet(user_id, wallet)
     if mw:
         database.upsert_managed_wallet(user_id, wallet, auto_supply_wbtc=False)
+    database.update_strategy_status_field(user_id, wallet, 'disabled')
+    database.set_bot_enabled(user_id, False)
     database.record_wallet_action(user_id, wallet, 'delegation_revoked', {})
-    logger.info(f"Delegation revoked for user {user_id}, wallet {wallet}")
+    logger.info(f"[AutoPilot] Hard-synced all flags OFF for user={user_id}, wallet={wallet}: delegation_status=revoked, auto_supply_wbtc=false, strategy_status=disabled, bot_enabled=false")
     return jsonify({"status": "revoked", "autoSupplyWbtc": False})
 
 @app.route('/api/towns', methods=['GET'])
