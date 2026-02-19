@@ -1541,6 +1541,26 @@ function encodeApproveCalldata(spenderAddr, amountHex) {
   return selector + spender + amount;
 }
 
+async function waitForTxReceipt(txHash, maxWaitMs = 90000) {
+  const pollMs = 3000;
+  const deadline = Date.now() + maxWaitMs;
+  while (Date.now() < deadline) {
+    try {
+      const receipt = await window.ethereum.request({
+        method: 'eth_getTransactionReceipt',
+        params: [txHash],
+      });
+      if (receipt) {
+        return receipt;
+      }
+    } catch (e) {
+      console.warn('[AutoPilot] receipt poll error:', e);
+    }
+    await new Promise(r => setTimeout(r, pollMs));
+  }
+  return null;
+}
+
 async function enableAutoPilot() {
   const btn = document.getElementById('apEnableBtn');
   btn.disabled = true;
@@ -1553,37 +1573,65 @@ async function enableAutoPilot() {
 
   console.log('[AutoPilot] wallet:', state.walletAddress, 'contractAddr:', delegationManagerAddr, 'ethereum:', typeof window.ethereum);
 
+  if (typeof window.ethereum === 'undefined') {
+    btn.disabled = false;
+    btn.textContent = 'Enable Auto-Pilot';
+    appendChatMsg('agent', 'No wallet detected. Please install MetaMask or another Web3 wallet and try again.');
+    return;
+  }
+  if (!state.walletAddress) {
+    btn.disabled = false;
+    btn.textContent = 'Enable Auto-Pilot';
+    appendChatMsg('agent', 'Please connect your wallet first before enabling Auto-Pilot.');
+    return;
+  }
+  if (!delegationManagerAddr) {
+    btn.disabled = false;
+    btn.textContent = 'Enable Auto-Pilot';
+    appendChatMsg('agent', 'Delegation Manager contract address not available yet. Please refresh and try again.');
+    return;
+  }
+
   try {
-    if (typeof window.ethereum !== 'undefined' && state.walletAddress && delegationManagerAddr) {
-      btn.textContent = 'Confirm in wallet...';
-      console.log('[AutoPilot] Sending ERC-20 approve tx to WBTC for spender', delegationManagerAddr);
-      try {
-        const approveData = encodeApproveCalldata(delegationManagerAddr, MAX_UINT256_HEX);
-        console.log('[AutoPilot] approve calldata:', approveData);
-        const txHash = await window.ethereum.request({
-          method: 'eth_sendTransaction',
-          params: [{
-            from: state.walletAddress,
-            to: WBTC_ADDRESS,
-            data: approveData,
-          }],
-        });
-        console.log('[AutoPilot] Approve tx sent:', txHash);
-      } catch (txErr) {
-        console.warn('[AutoPilot] Wallet tx rejected or failed:', txErr);
-        btn.disabled = false;
-        btn.textContent = 'Enable Auto-Pilot';
-        const reason = (txErr && txErr.code === 4001) ? 'You rejected the transaction in your wallet.' : 'The wallet transaction failed.';
-        appendChatMsg('agent', 'Auto-Pilot not enabled \u2014 ' + reason + ' Your delegation remains inactive and your wallet stays in read-only mode. You can try again anytime from the DeFi panel.');
-        return;
-      }
-    } else {
-      console.log('[AutoPilot] Skipping on-chain approve (no MetaMask or no contract address). Activating server-side only.');
+    btn.textContent = 'Confirm in wallet...';
+    console.log('[AutoPilot] Sending ERC-20 approve tx to WBTC for spender', delegationManagerAddr);
+    let approveTxHash;
+    try {
+      const approveData = encodeApproveCalldata(delegationManagerAddr, MAX_UINT256_HEX);
+      console.log('[AutoPilot] approve calldata:', approveData);
+      approveTxHash = await window.ethereum.request({
+        method: 'eth_sendTransaction',
+        params: [{
+          from: state.walletAddress,
+          to: WBTC_ADDRESS,
+          data: approveData,
+        }],
+      });
+      console.log('[AutoPilot] Approve tx sent:', approveTxHash);
+    } catch (txErr) {
+      console.warn('[AutoPilot] Wallet tx rejected or failed:', txErr);
+      btn.disabled = false;
+      btn.textContent = 'Enable Auto-Pilot';
+      const reason = (txErr && txErr.code === 4001) ? 'You rejected the transaction in your wallet.' : 'The wallet transaction failed.';
+      appendChatMsg('agent', 'Auto-Pilot not enabled \u2014 ' + reason + ' Your delegation remains inactive and your wallet stays in read-only mode. You can try again anytime from the DeFi panel.');
+      return;
     }
 
-    btn.textContent = 'Enabling...';
-    console.log('[AutoPilot] Calling POST /api/delegation/activate');
-    const data = await api('/api/delegation/activate', { method: 'POST' });
+    btn.textContent = 'Waiting for confirmation...';
+    console.log('[AutoPilot] Waiting for approve tx receipt...');
+    const receipt = await waitForTxReceipt(approveTxHash);
+    if (!receipt || receipt.status === '0x0') {
+      console.error('[AutoPilot] Approve tx failed or timed out. Receipt:', receipt);
+      btn.disabled = false;
+      btn.textContent = 'Enable Auto-Pilot';
+      appendChatMsg('agent', 'The WBTC approval transaction failed on-chain. Auto-Pilot was not enabled. Please try again.');
+      return;
+    }
+    console.log('[AutoPilot] Approve tx confirmed! Block:', receipt.blockNumber);
+
+    btn.textContent = 'Activating...';
+    console.log('[AutoPilot] Calling POST /api/delegation/activate with tx_hash:', approveTxHash);
+    const data = await api('/api/delegation/activate', { method: 'POST', body: JSON.stringify({ approve_tx_hash: approveTxHash }), headers: { 'Content-Type': 'application/json' } });
     console.log('[AutoPilot] activate response:', JSON.stringify(data));
     if (data.error) {
       btn.disabled = false;
@@ -1597,7 +1645,8 @@ async function enableAutoPilot() {
     state.autoPilotOffered = true;
     await loadDelegationStatus();
     console.log('[AutoPilot] delegation activated successfully, UI refreshed');
-    appendChatMsg('agent', 'Auto-pilot is now enabled. I\'ll auto-supply up to 80% of your WBTC and monitor your Aave safety band. You can revoke anytime from the DeFi panel.');
+    const supplyMsg = data.supplyResult ? (' Initial supply: ' + data.supplyResult) : '';
+    appendChatMsg('agent', 'Auto-pilot is now enabled. I\'ll auto-supply up to 80% of your WBTC and monitor your Aave safety band. You can revoke anytime from the DeFi panel.' + supplyMsg);
   } catch (e) {
     console.error('[AutoPilot] Unexpected error:', e);
     btn.disabled = false;
