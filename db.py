@@ -79,13 +79,14 @@ def init_db():
         CREATE TABLE IF NOT EXISTS defi_positions (
             id SERIAL PRIMARY KEY,
             user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
-            health_factor NUMERIC(12,4),
+            health_factor NUMERIC(20,4),
             total_collateral_usd NUMERIC(14,2),
             total_debt_usd NUMERIC(14,2),
             net_worth_usd NUMERIC(14,2),
             positions JSONB DEFAULT '{}',
             updated_at TIMESTAMPTZ DEFAULT NOW()
         );
+        CREATE UNIQUE INDEX IF NOT EXISTS idx_defi_positions_user_unique ON defi_positions (user_id);
 
         CREATE TABLE IF NOT EXISTS income_events (
             id SERIAL PRIMARY KEY,
@@ -228,6 +229,15 @@ def is_bot_enabled(user_id) -> bool:
             )
             row = cur.fetchone()
             return bool(row[0]) if row else False
+
+
+def get_all_bot_enabled_users():
+    with get_conn() as conn:
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur.execute("SELECT id, wallet_address FROM users WHERE bot_enabled = true AND wallet_address IS NOT NULL")
+        rows = cur.fetchall()
+        cur.close()
+        return [dict(r) for r in rows]
 
 
 def get_towns():
@@ -375,20 +385,30 @@ def get_filing_stats():
 
 
 def upsert_defi_position(user_id, health_factor, collateral, debt, net_worth, positions=None):
-    with get_conn() as conn:
-        cur = conn.cursor()
-        cur.execute("""
-            INSERT INTO defi_positions (user_id, health_factor, total_collateral_usd, total_debt_usd, net_worth_usd, positions, updated_at)
-            VALUES (%s, %s, %s, %s, %s, %s, NOW())
-            ON CONFLICT (user_id) DO UPDATE SET
-                health_factor = EXCLUDED.health_factor,
-                total_collateral_usd = EXCLUDED.total_collateral_usd,
-                total_debt_usd = EXCLUDED.total_debt_usd,
-                net_worth_usd = EXCLUDED.net_worth_usd,
-                positions = EXCLUDED.positions,
-                updated_at = NOW()
-        """, (user_id, health_factor, collateral, debt, net_worth, psycopg2.extras.Json(positions or {})))
-        cur.close()
+    import logging
+    logger = logging.getLogger(__name__)
+    try:
+        if health_factor is not None and health_factor > 999.99:
+            health_factor = 999.99
+        with get_conn() as conn:
+            cur = conn.cursor()
+            cur.execute("""
+                INSERT INTO defi_positions (user_id, health_factor, total_collateral_usd, total_debt_usd, net_worth_usd, positions, updated_at)
+                VALUES (%s, %s, %s, %s, %s, %s, NOW())
+                ON CONFLICT (user_id) DO UPDATE SET
+                    health_factor = EXCLUDED.health_factor,
+                    total_collateral_usd = EXCLUDED.total_collateral_usd,
+                    total_debt_usd = EXCLUDED.total_debt_usd,
+                    net_worth_usd = EXCLUDED.net_worth_usd,
+                    positions = EXCLUDED.positions,
+                    updated_at = NOW()
+            """, (user_id, health_factor, collateral, debt, net_worth, psycopg2.extras.Json(positions or {})))
+            cur.close()
+        logger.info(f"[DB] upsert_defi_position OK for user {user_id}: HF={health_factor}, collateral={collateral}, debt={debt}")
+        return True
+    except Exception as e:
+        logger.error(f"[DB] upsert_defi_position FAILED for user {user_id}: {e} (HF={health_factor}, collateral={collateral}, debt={debt})")
+        return False
 
 
 def get_defi_position(user_id):

@@ -3214,54 +3214,72 @@ def check_chat_rate_limit(user_id):
     return True
 
 def fetch_aave_position_for_wallet(wallet_address):
-    """Fetch Aave V3 position data for any wallet address (read-only)"""
-    try:
-        from web3 import Web3
-        rpc_url = os.getenv("ARBITRUM_RPC_URL", "https://arb1.arbitrum.io/rpc")
-        w3 = Web3(Web3.HTTPProvider(rpc_url, request_kwargs={'timeout': 10}))
-        if not w3.is_connected():
-            logger.warning("Cannot connect to Arbitrum RPC for consumer wallet lookup")
-            return None
+    """Fetch Aave V3 position data for any wallet address (read-only).
+    Returns None if collateral==0 AND debt==0 (no position).
+    Caps HF to 999.99 for zero-debt positions to prevent DB overflow."""
+    rpc_urls = [
+        os.getenv("ALCHEMY_ARB_RPC", "https://arb-mainnet.g.alchemy.com/v2/demo"),
+        os.getenv("ARBITRUM_RPC_URL", "https://arb1.arbitrum.io/rpc"),
+        "https://arbitrum-one.publicnode.com",
+        "https://arbitrum.blockpi.network/v1/rpc/public",
+    ]
+    from web3 import Web3
+    aave_pool_address = "0x794a61358D6845594F94dc1DB02A252b5b4814aD"
+    pool_abi = [{
+        "inputs": [{"name": "user", "type": "address"}],
+        "name": "getUserAccountData",
+        "outputs": [
+            {"name": "totalCollateralBase", "type": "uint256"},
+            {"name": "totalDebtBase", "type": "uint256"},
+            {"name": "availableBorrowsBase", "type": "uint256"},
+            {"name": "currentLiquidationThreshold", "type": "uint256"},
+            {"name": "ltv", "type": "uint256"},
+            {"name": "healthFactor", "type": "uint256"}
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    }]
 
-        aave_pool_address = "0x794a61358D6845594F94dc1DB02A252b5b4814aD"
-        pool_abi = [{
-            "inputs": [{"name": "user", "type": "address"}],
-            "name": "getUserAccountData",
-            "outputs": [
-                {"name": "totalCollateralBase", "type": "uint256"},
-                {"name": "totalDebtBase", "type": "uint256"},
-                {"name": "availableBorrowsBase", "type": "uint256"},
-                {"name": "currentLiquidationThreshold", "type": "uint256"},
-                {"name": "ltv", "type": "uint256"},
-                {"name": "healthFactor", "type": "uint256"}
-            ],
-            "stateMutability": "view",
-            "type": "function"
-        }]
-        pool_contract = w3.eth.contract(
-            address=Web3.to_checksum_address(aave_pool_address),
-            abi=pool_abi
-        )
-        account_data = pool_contract.functions.getUserAccountData(
-            Web3.to_checksum_address(wallet_address)
-        ).call()
+    last_error = None
+    for rpc_url in rpc_urls:
+        try:
+            w3 = Web3(Web3.HTTPProvider(rpc_url, request_kwargs={'timeout': 10}))
+            if not w3.is_connected():
+                continue
+            pool_contract = w3.eth.contract(
+                address=Web3.to_checksum_address(aave_pool_address),
+                abi=pool_abi
+            )
+            account_data = pool_contract.functions.getUserAccountData(
+                Web3.to_checksum_address(wallet_address)
+            ).call()
 
-        collateral = account_data[0] / (10**8)
-        debt = account_data[1] / (10**8)
-        hf = account_data[5] / (10**18) if account_data[5] > 0 else 0
+            collateral = account_data[0] / (10**8)
+            debt = account_data[1] / (10**8)
 
-        if collateral == 0 and debt == 0:
-            return None
+            if collateral == 0 and debt == 0:
+                logger.info(f"[Aave] No position for {wallet_address[:10]}... (collateral=0, debt=0)")
+                return None
 
-        return {
-            'health_factor': round(hf, 4),
-            'total_collateral_usd': round(collateral, 2),
-            'total_debt_usd': round(debt, 2),
-            'net_worth_usd': round(collateral - debt, 2),
-        }
-    except Exception as e:
-        logger.warning(f"Failed to fetch Aave position for {wallet_address[:10]}...: {e}")
-        return None
+            raw_hf = account_data[5] / (10**18) if account_data[5] > 0 else 0
+            if debt == 0 and collateral > 0:
+                raw_hf = 999.99
+                logger.info(f"[Aave] Zero-debt position for {wallet_address[:10]}..., capping HF to 999.99")
+            elif raw_hf > 999.99:
+                raw_hf = 999.99
+
+            return {
+                'health_factor': round(raw_hf, 4),
+                'total_collateral_usd': round(collateral, 2),
+                'total_debt_usd': round(debt, 2),
+                'net_worth_usd': round(collateral - debt, 2),
+            }
+        except Exception as e:
+            last_error = e
+            continue
+
+    logger.warning(f"Failed to fetch Aave position for {wallet_address[:10]}... after all RPCs: {last_error}")
+    return None
 
 @app.route('/app')
 def consumer_app():
@@ -3288,16 +3306,21 @@ def auth_wallet():
         try:
             pos = fetch_aave_position_for_wallet(addr)
             if pos:
-                database.upsert_defi_position(
+                ok = database.upsert_defi_position(
                     user_id=uid,
                     health_factor=pos['health_factor'],
                     collateral=pos['total_collateral_usd'],
                     debt=pos['total_debt_usd'],
                     net_worth=pos['net_worth_usd'],
                 )
-                logger.info(f"Refreshed Aave data for user {uid}: HF={pos['health_factor']}")
+                if ok:
+                    logger.info(f"[Auth] Refreshed Aave data for user {uid}: HF={pos['health_factor']}, collateral=${pos['total_collateral_usd']}")
+                else:
+                    logger.error(f"[Auth] DB upsert FAILED for user {uid} — position data lost: {pos}")
+            else:
+                logger.info(f"[Auth] No Aave position for user {uid} ({addr[:10]}...) — nothing to store")
         except Exception as e:
-            logger.warning(f"Background Aave refresh failed for user {uid}: {e}")
+            logger.error(f"[Auth] Background Aave refresh FAILED for user {uid}: {e}", exc_info=True)
 
     threading.Thread(target=_refresh_defi, args=(user['id'], wallet), daemon=True).start()
 
@@ -3562,6 +3585,22 @@ def get_defi_state():
     user_id = get_current_user_id()
     position = database.get_defi_position(user_id)
     if not position:
+        user = database.get_user_by_id(user_id)
+        wallet = user.get('wallet_address', '') if user else ''
+        live_pos = fetch_aave_position_for_wallet(wallet) if wallet else None
+        if live_pos:
+            ok = database.upsert_defi_position(
+                user_id=user_id,
+                health_factor=live_pos['health_factor'],
+                collateral=live_pos['total_collateral_usd'],
+                debt=live_pos['total_debt_usd'],
+                net_worth=live_pos['net_worth_usd'],
+            )
+            if ok:
+                position = database.get_defi_position(user_id)
+                return jsonify({"position": position})
+            else:
+                return jsonify({"position": None, "storageError": True, "message": "Aave position found on-chain but failed to store in database."})
         return jsonify({"position": None, "message": "No Aave position detected for this wallet yet."})
     return jsonify({"position": position})
 

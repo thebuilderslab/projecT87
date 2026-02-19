@@ -33,9 +33,81 @@ except ImportError:
     DB_AVAILABLE = False
 
 
+MAX_HF = 999.99
+
+def fetch_aave_position_for_wallet(wallet_address):
+    """Fetch Aave V3 position data for any wallet (read-only, with RPC fallback).
+    Returns None if no position. Caps HF to 999.99."""
+    from web3 import Web3
+    rpc_urls = [
+        os.getenv("ALCHEMY_ARB_RPC", "https://arb-mainnet.g.alchemy.com/v2/demo"),
+        os.getenv("ARBITRUM_RPC_URL", "https://arb1.arbitrum.io/rpc"),
+        "https://arbitrum-one.publicnode.com",
+    ]
+    pool_addr = "0x794a61358D6845594F94dc1DB02A252b5b4814aD"
+    pool_abi = [{
+        "inputs": [{"name": "user", "type": "address"}],
+        "name": "getUserAccountData",
+        "outputs": [
+            {"name": "totalCollateralBase", "type": "uint256"},
+            {"name": "totalDebtBase", "type": "uint256"},
+            {"name": "availableBorrowsBase", "type": "uint256"},
+            {"name": "currentLiquidationThreshold", "type": "uint256"},
+            {"name": "ltv", "type": "uint256"},
+            {"name": "healthFactor", "type": "uint256"}
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    }]
+    last_err = None
+    for rpc in rpc_urls:
+        try:
+            w3 = Web3(Web3.HTTPProvider(rpc, request_kwargs={'timeout': 10}))
+            if not w3.is_connected():
+                continue
+            pool = w3.eth.contract(address=Web3.to_checksum_address(pool_addr), abi=pool_abi)
+            data = pool.functions.getUserAccountData(Web3.to_checksum_address(wallet_address)).call()
+            coll = data[0] / 1e8
+            debt = data[1] / 1e8
+            if coll == 0 and debt == 0:
+                return None
+            hf = data[5] / 1e18 if data[5] > 0 else 0
+            if debt == 0 and coll > 0:
+                hf = MAX_HF
+            elif hf > MAX_HF:
+                hf = MAX_HF
+            return {'health_factor': round(hf, 4), 'total_collateral_usd': round(coll, 2),
+                    'total_debt_usd': round(debt, 2), 'net_worth_usd': round(coll - debt, 2)}
+        except Exception as e:
+            last_err = e
+            continue
+    log_agent_activity(f"⚠️ Aave position fetch failed for {wallet_address[:10]}...: {last_err}", "WARNING")
+    return None
+
+
+def refresh_defi_for_user(user_id, wallet_address):
+    """Fetch on-chain Aave position and upsert to DB. Returns position dict or None."""
+    pos = fetch_aave_position_for_wallet(wallet_address)
+    if pos:
+        ok = database.upsert_defi_position(
+            user_id=user_id,
+            health_factor=pos['health_factor'],
+            collateral=pos['total_collateral_usd'],
+            debt=pos['total_debt_usd'],
+            net_worth=pos['net_worth_usd'],
+        )
+        if ok:
+            log_agent_activity(f"[Monitor] Refreshed position for user {user_id} ({wallet_address[:10]}...): "
+                             f"collateral=${pos['total_collateral_usd']}, debt=${pos['total_debt_usd']}, HF={pos['health_factor']}")
+        else:
+            log_agent_activity(f"[Monitor] DB upsert FAILED for user {user_id} ({wallet_address[:10]}...) — data: {pos}", "ERROR")
+        return pos
+    return None
+
+
 def run_strategies_for_user(user_id, wallet_address, agent, run_id, iteration, config):
     if DB_AVAILABLE and not database.is_bot_enabled(user_id):
-        log_agent_activity(f"⏸️ Bot disabled for user {user_id} ({wallet_address[:10]}...) — skipping strategies")
+        log_agent_activity(f"[Monitor] wallet={wallet_address[:10]}..., decision=SKIP (bot_disabled)")
         return None
     performance = agent.run_real_defi_task(run_id, iteration, config)
     return performance
@@ -174,7 +246,17 @@ def run_autonomous_mainnet_agent():
                 agent._perform_safety_sweep()
 
                 log_agent_activity(f"🔄 Monitoring cycle {run_id}-{iteration}")
-                
+
+                config = {
+                    'health_factor_target': 3.10,
+                    'max_iterations_per_run': 100
+                }
+
+                managed_wallets = []
+                if DB_AVAILABLE:
+                    managed_wallets = database.get_active_managed_wallets()
+                    log_agent_activity(f"[Monitor] Active managed wallets: {len(managed_wallets)}")
+
                 bot_wallet = agent.address
                 bot_user_id = None
                 if DB_AVAILABLE:
@@ -182,30 +264,54 @@ def run_autonomous_mainnet_agent():
                     if bot_user:
                         bot_user_id = bot_user['id']
 
-                config = {
-                    'health_factor_target': 3.10,
-                    'max_iterations_per_run': 100
-                }
+                processed_user_ids = set()
 
-                if bot_user_id is not None:
+                for mw in managed_wallets:
+                    uid = mw['user_id']
+                    waddr = mw['wallet_address']
+                    processed_user_ids.add(uid)
+                    try:
+                        pos = refresh_defi_for_user(uid, waddr)
+                        if pos:
+                            log_agent_activity(f"[Monitor] wallet={waddr[:10]}..., collateral=${pos['total_collateral_usd']}, "
+                                             f"debt=${pos['total_debt_usd']}, hf={pos['health_factor']}, mode=delegated, decision=MONITOR")
+                        else:
+                            log_agent_activity(f"[Monitor] wallet={waddr[:10]}..., mode=delegated, decision=SKIP (no position)")
+                    except Exception as mw_err:
+                        log_agent_activity(f"[Monitor] wallet={waddr[:10]}..., mode=delegated, decision=ERROR ({mw_err})", "WARNING")
+
+                if bot_user_id is not None and bot_user_id not in processed_user_ids:
+                    refresh_defi_for_user(bot_user_id, bot_wallet)
+                    performance = run_strategies_for_user(bot_user_id, bot_wallet, agent, run_id, iteration, config)
+                elif bot_user_id is not None:
                     performance = run_strategies_for_user(bot_user_id, bot_wallet, agent, run_id, iteration, config)
                 else:
                     performance = agent.run_real_defi_task(run_id, iteration, config)
 
                 if performance is None:
                     performance = 0.0
-                
-                # Log performance
+
                 if performance > 0.9:
                     log_agent_activity(f"✅ High performance cycle: {performance:.3f}", "SUCCESS")
                 elif performance > 0.5:
                     log_agent_activity(f"✔️ Moderate performance cycle: {performance:.3f}", "INFO")
                 else:
                     log_agent_activity(f"⚠️ Low performance cycle: {performance:.3f}", "WARNING")
-                
+
+                if DB_AVAILABLE:
+                    try:
+                        all_users = database.get_all_bot_enabled_users()
+                        for u in all_users:
+                            if u['id'] not in processed_user_ids and u['id'] != bot_user_id:
+                                refresh_defi_for_user(u['id'], u['wallet_address'])
+                                processed_user_ids.add(u['id'])
+                        if len(all_users) > len(managed_wallets):
+                            log_agent_activity(f"[Monitor] Refreshed {len(all_users) - len(managed_wallets)} additional connected wallet(s)")
+                    except Exception as refresh_err:
+                        log_agent_activity(f"⚠️ Periodic refresh error: {refresh_err}", "WARNING")
+
                 iteration += 1
-                
-                # Reset run ID every 50 iterations
+
                 if iteration >= 50:
                     run_id += 1
                     iteration = 0

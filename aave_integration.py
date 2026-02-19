@@ -141,12 +141,14 @@ class AaveArbitrumIntegration:
                         else:
                             raise Exception("Account data is None after all retries")
 
-                    # Return structured data with guaranteed values
+                    raw_hf = float(account_data[5] / (10**18)) if account_data[5] is not None and account_data[5] > 0 else 999.99
+                    if raw_hf > 999.99:
+                        raw_hf = 999.99
                     return {
                         'totalCollateralUSD': float(account_data[0] / (10**8)) if account_data[0] is not None else 0.0,
                         'totalDebtUSD': float(account_data[1] / (10**8)) if account_data[1] is not None else 0.0,
                         'availableBorrowsUSD': float(account_data[2] / (10**8)) if account_data[2] is not None else 0.0,
-                        'healthFactor': float(account_data[5] / (10**18)) if account_data[5] is not None and account_data[5] > 0 else float('inf'),
+                        'healthFactor': raw_hf,
                         'data_source': 'aave_contract',
                         'timestamp': time.time()
                     }
@@ -159,12 +161,11 @@ class AaveArbitrumIntegration:
 
         except Exception as e:
             logger.error(f"Failed to get account data: {e}")
-            # Return safe fallback data instead of None
             fallback_data = {
                 'totalCollateralUSD': 0.0,
                 'totalDebtUSD': 0.0,
                 'availableBorrowsUSD': 0.0,
-                'healthFactor': float('inf'),
+                'healthFactor': 999.99,
                 'data_source': 'fallback_safe_defaults',
                 'timestamp': time.time(),
                 'error': str(e)
