@@ -19,7 +19,7 @@ run = ["sh", "-c", "python run_both.py"]
 deploymentTarget = "gce"
 
 [workflows]
-runButton = "Autonomous Agent"
+runButton = "bot"
 
 [[workflows.workflow]]
 name = "Project"
