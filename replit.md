@@ -42,7 +42,8 @@ The REAA platform is built on the Arbitrum Mainnet, featuring distinct modules f
 
 **Phase 2: WBTC Auto-Supply Delegation (Deployed on Arbitrum Mainnet):**
 - **Architecture:** Introduces `managed_wallets` and `wallet_actions` tables for tracking delegation status and audit trails. A dedicated `delegation_client.py` module handles interactions with the Delegation Manager contract (`0x7427370Ab4C311B090446544078c819b3946E59d`).
-- **Safety Rules:** Strict safety protocols for auto-supply, including `bot_enabled` checks, active delegation status, daily guards, and on-chain balance/allowance verification before execution.
+- **Safety Rules:** Strict safety protocols for auto-supply, including `bot_enabled` checks, active delegation status, configurable cooldown, and on-chain balance/allowance verification before execution.
+- **Cooldown:** Configurable via `AUTO_SUPPLY_COOLDOWN_SECONDS` env var (default: 3600s = 1 hour for prod, 300s = 5 min for testing). `last_auto_supply_at` starts at NULL (never supplied) and is only updated after a confirmed on-chain supply tx — never on skip or error. NULL always passes the cooldown check (first-run safe).
 - **API and UI:** Provides API endpoints for activating/revoking delegation and frontend UX to manage delegation status, displaying relevant information and actions.
 
 **Data Model: State Semantics (defi_positions & supplied_wbtc_amount):**

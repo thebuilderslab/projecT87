@@ -1,4 +1,5 @@
 import logging
+import os
 from datetime import datetime, timezone, timedelta
 import db as database
 from delegation_client import (
@@ -15,7 +16,8 @@ from delegation_client import (
 
 logger = logging.getLogger(__name__)
 
-ONE_DAY = timedelta(days=1)
+COOLDOWN_SECONDS = int(os.environ.get('AUTO_SUPPLY_COOLDOWN_SECONDS', '3600'))
+COOLDOWN_PERIOD = timedelta(seconds=COOLDOWN_SECONDS)
 WBTC_DECIMALS = 8
 CHAIN_ID_ARBITRUM = 42161
 
@@ -52,14 +54,19 @@ def auto_supply_wbtc_for_wallet(managed_wallet):
         return False
 
     last_supply = managed_wallet.get('last_auto_supply_at')
-    if last_supply:
+    if last_supply is not None:
         if isinstance(last_supply, str):
             last_supply = datetime.fromisoformat(last_supply)
         if last_supply.tzinfo is None:
             last_supply = last_supply.replace(tzinfo=timezone.utc)
-        if datetime.now(timezone.utc) - last_supply < ONE_DAY:
-            logger.info(f"[AutoSupply] status=skipped, reason=daily_cap_reached, wallet={wallet}, last_supply={last_supply.isoformat()}")
+        elapsed = datetime.now(timezone.utc) - last_supply
+        if elapsed < COOLDOWN_PERIOD:
+            remaining = int((COOLDOWN_PERIOD - elapsed).total_seconds())
+            logger.info(f"[AutoSupply] status=skipped, reason=cooldown_active, wallet={wallet}, "
+                       f"last_supply={last_supply.isoformat()}, cooldown={COOLDOWN_SECONDS}s, remaining={remaining}s")
             return False
+    else:
+        logger.info(f"[AutoSupply] wallet={wallet}, first_run=true (no prior supply), cooldown_check=PASS")
 
     if not is_contract_deployed():
         logger.info(f"[AutoSupply] status=skipped, reason=contract_not_deployed, wallet={wallet}")
