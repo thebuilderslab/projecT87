@@ -70,7 +70,7 @@ contract REAADelegationManager {
     address public constant AAVE_POOL = 0x794a61358D6845594F94dc1DB02A252b5b4814aD;
 
     uint256 public constant WBTC_DECIMALS = 8;
-    uint256 public constant MIN_SUPPLY_AMOUNT = 1_000_000;
+    uint256 public constant MIN_SUPPLY_AMOUNT = 10_000;
     uint256 public constant MAX_SUPPLY_RATIO_NUM = 4;
     uint256 public constant MAX_SUPPLY_RATIO_DEN = 5;
     uint256 public constant DAY = 86400;
@@ -191,7 +191,7 @@ contract REAADelegationManager {
         DelegationConfig storage config = delegations[user];
         require(config.allowSupply, "Supply not permitted");
         require(amount > 0, "Amount must be > 0");
-        require(amount >= MIN_SUPPLY_AMOUNT, "Below minimum supply (0.01 WBTC)");
+        require(amount >= MIN_SUPPLY_AMOUNT, "Below minimum supply (0.0001 WBTC)");
         require(amount <= config.maxSupplyPerTx, "Exceeds per-tx limit");
 
         _resetDailyIfNeeded(config);
