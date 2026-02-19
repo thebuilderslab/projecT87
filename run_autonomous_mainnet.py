@@ -27,10 +27,16 @@ except ImportError:
     AUTO_SUPPLY_AVAILABLE = False
 
 try:
-    from strategy_engine import run_delegated_strategy, get_strategy_status
+    from strategy_engine import run_delegated_strategy, get_strategy_status, run_delegated_nurse_sweep
     STRATEGY_ENGINE_AVAILABLE = True
 except ImportError:
     STRATEGY_ENGINE_AVAILABLE = False
+
+try:
+    from delegation_client import check_user_wallet_approvals
+    APPROVAL_CHECK_AVAILABLE = True
+except ImportError:
+    APPROVAL_CHECK_AVAILABLE = False
 
 try:
     import db as database
@@ -276,23 +282,46 @@ def run_autonomous_mainnet_agent():
                         bot_user_id = bot_user['id']
 
                 processed_user_ids = set()
-                processed_strategy_ids = set()
+                processed_wallet_addrs = set()
 
                 for mw in managed_wallets:
                     uid = mw['user_id']
                     waddr = mw['wallet_address']
+                    waddr_lower = waddr.lower()
                     processed_user_ids.add(uid)
+
+                    if waddr_lower in processed_wallet_addrs:
+                        log_agent_activity(f"[Strategy] wallet={waddr[:10]}..., DEDUP_SKIP (wallet already processed this cycle)")
+                        continue
+                    processed_wallet_addrs.add(waddr_lower)
+
                     try:
                         pos = refresh_defi_for_user(uid, waddr)
                         if pos:
                             log_agent_activity(f"[Monitor] wallet={waddr[:10]}..., collateral=${pos['total_collateral_usd']}, "
                                              f"debt=${pos['total_debt_usd']}, hf={pos['health_factor']}, mode=delegated")
 
-                            if STRATEGY_ENGINE_AVAILABLE and uid not in processed_strategy_ids:
-                                processed_strategy_ids.add(uid)
+                            if APPROVAL_CHECK_AVAILABLE and iteration % 10 == 0:
+                                try:
+                                    approval_result = check_user_wallet_approvals(waddr)
+                                    if not approval_result.get("all_approved"):
+                                        missing = approval_result.get("missing", [])
+                                        missing_str = "; ".join([f"{m['token']}->{m['spender']}" for m in missing[:3]])
+                                        log_agent_activity(f"[Approvals] wallet={waddr[:10]}..., MISSING: {missing_str}", "WARNING")
+                                except Exception as appr_err:
+                                    log_agent_activity(f"[Approvals] wallet={waddr[:10]}..., check error: {appr_err}", "WARNING")
+
+                            if STRATEGY_ENGINE_AVAILABLE:
                                 defi_pos = database.get_defi_position(uid)
                                 has_active = defi_pos.get('has_active_position', False) if defi_pos else False
                                 if has_active and mw.get('delegation_status') == 'active':
+                                    try:
+                                        nurse_result = run_delegated_nurse_sweep(uid, waddr, agent)
+                                        if nurse_result.get("swept"):
+                                            log_agent_activity(f"[Nurse] wallet={waddr[:10]}..., {nurse_result['details']}")
+                                    except Exception as nurse_err:
+                                        log_agent_activity(f"[Nurse] wallet={waddr[:10]}..., error: {nurse_err}", "WARNING")
+
                                     strategy_result = run_delegated_strategy(uid, waddr, agent, run_id, iteration, config)
                                     strat_status = get_strategy_status(uid, waddr)
                                     database.update_strategy_status_field(uid, waddr, strat_status)
@@ -301,9 +330,7 @@ def run_autonomous_mainnet_agent():
                                                      f"details={strategy_result.get('details', '')}")
                                 else:
                                     log_agent_activity(f"[Monitor] wallet={waddr[:10]}..., strategy=SKIP (active_pos={has_active}, delegation={mw.get('delegation_status')})")
-                            elif STRATEGY_ENGINE_AVAILABLE and uid in processed_strategy_ids:
-                                log_agent_activity(f"[Strategy] wallet={waddr[:10]}..., DEDUP_SKIP (user {uid} already processed this cycle)")
-                            elif not STRATEGY_ENGINE_AVAILABLE:
+                            else:
                                 log_agent_activity(f"[Monitor] wallet={waddr[:10]}..., mode=delegated, decision=MONITOR (strategy engine not loaded)")
                         else:
                             log_agent_activity(f"[Monitor] wallet={waddr[:10]}..., mode=delegated, decision=SKIP (no position)")

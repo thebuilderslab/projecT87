@@ -108,15 +108,24 @@ Misconfigurations (e.g., `isActive=true` but a flag is `false`) produce explicit
   - `allowRepay` — bot can repay debt on behalf of user
   - `allowWithdraw` — bot can withdraw collateral on behalf of user
 
-### Token Permission Matrix
+### Token Permission Matrix (Full Parity)
 Defined in `permissions.py`. All tokens the system may touch:
 
 | Token | Address (Arbitrum) | Strategies | Actions |
 |-------|--------------------|------------|---------|
-| WBTC | `0x2f2a...5B0f` | auto_supply | supply |
-| DAI | `0xDA10...0da1` | growth, capacity, nurse_repay | borrow, repay |
-| WETH | `0x82aF...Bab1` | macro_short, micro_short | borrow, repay |
-| USDC | `0xaf88...5831` | (profit token — user claims) | read-only |
+| WBTC | `0x2f2a...5B0f` | auto_supply, growth/capacity swap+supply, short entry, nurse | supply |
+| DAI | `0xDA10...0da1` | growth, capacity, nurse, wallet_s transfer, usdc_tax swap | borrow, supply, repay |
+| WETH | `0x82aF...Bab1` | macro/micro short, growth/capacity swap+supply, nurse | borrow, supply, repay |
+| USDT | `0xFd08...Cbb9` | short entry swap+supply, short close withdraw, nurse | supply, withdraw |
+| USDC | `0xaf88...5831` | (profit token — user claims) | read-only, NEVER swept |
+
+### Required User Approvals
+Users must grant infinite ERC20 approvals for **all 5 tokens** to exactly **3 contracts**:
+1. **DelegationManager** (`0x7427...59d`) — for transferFrom pulls
+2. **Aave Pool** (`0x794a...1aD`) — for supply/borrow/repay/withdraw
+3. **Uniswap Router** (`0xE592...564`) — for token swaps
+
+Missing approvals = structured error, no partial execution.
 
 ### Full Automation Profile
 All flags = `true` for any delegated wallet. Defined in `permissions.FULL_AUTOMATION`:
@@ -124,15 +133,57 @@ All flags = `true` for any delegated wallet. Defined in `permissions.FULL_AUTOMA
 isActive=true, allowSupply=true, allowBorrow=true, allowRepay=true, allowWithdraw=true
 ```
 
-### Strategy Responsibilities
-1. **Growth** (HF >= 3.10): Borrow DAI when collateral appreciates >= $50 or >= 10%.
-2. **Capacity** (HF >= 2.90): Borrow DAI to utilize idle borrowing capacity.
-3. **Macro Short** (HF >= 3.05): Hedge via WETH borrow against major market downturn.
-4. **Micro Short** (HF >= 3.00): Smaller WETH hedge against minor market dip.
-5. **Auto Supply**: Supply WBTC to Aave on delegation activation.
-6. **Emergency** (HF < 2.50): Alert only — no automated action.
+### Strategy Responsibilities (Full 6-Step Engine)
+1. **Growth** (HF >= 3.10): Full 6-step distribution — borrow $11.40 DAI, supply DAI to Aave, swap+supply WBTC, swap+supply WETH, ETH gas reserve, Wallet_S transfer, USDC tax.
+2. **Capacity** (HF >= 2.90): Same 6-step engine with $6.70 DAI borrow.
+3. **Macro Short** (HF >= 3.05): Borrow WETH, split 40% WBTC / 35% USDT / 25% WETH collateral.
+4. **Micro Short** (HF >= 3.00): Same as macro with smaller size, 4h cooldown.
+5. **Nurse Mode**: Sweep idle DAI/WETH/WBTC/USDT to Aave. $2 floor. NEVER touches USDC.
+6. **Auto Supply**: Supply WBTC to Aave on delegation activation.
+7. **Emergency** (HF < 2.50): Alert only — no automated action.
 
 Skips are based only on HF/risk rules or strategy constraints — never on missing permissions.
+
+### Profit Flow Comparison: Personal Bot vs User Wallet
+
+**These are the ONLY two intentional behavior differences.** All other execution logic is identical.
+
+#### Difference 1: Profit Bucket
+```
+PERSONAL BOT:
+  USDC accumulates in bot wallet from Growth/Capacity tax steps
+  When balance >= $22 → auto-flush ALL USDC to Wallet_B
+  This is the "Profit Bucket" mechanism
+
+USER WALLET:
+  USDC from Growth/Capacity tax steps stays in user wallet permanently
+  NO auto-flush. NO Profit Bucket. User claims manually via Dashboard.
+  Bot NEVER touches user's USDC.
+```
+
+#### Difference 2: Liability Short Close Profit Distribution
+```
+PERSONAL BOT (20/20/60 split):
+  On profitable short close:
+  ├── 20% → Wallet_S (USDT → WETH → DAI → transfer)
+  ├── 20% → Wallet_B (USDT → USDC → accumulator)
+  └── 60% → Aave collateral (USDT → supply)
+
+USER WALLET (100% to user):
+  On profitable short close:
+  └── 100% → Remaining profit stays in user wallet
+      (No split. No transfers to Wallet_S or Wallet_B.
+       Any leftover WETH/USDT sent back to user wallet.)
+```
+
+#### Everything Else: IDENTICAL
+- Growth 6-step distribution (same $ amounts, same step order)
+- Capacity 6-step distribution (same $ amounts, same step order)
+- Liability Short entry (same WETH borrow, same 40/35/25 allocation)
+- Nurse Mode sweep (same $2 floor, same tokens, same USDC protection)
+- HF thresholds (same 3.10/2.90/3.05/3.00/2.50 bands)
+- Emergency alerts (same behavior)
+- Approval requirements (same 5 tokens × 3 contracts)
 
 ### Revocation Flow
 When a user revokes delegation:

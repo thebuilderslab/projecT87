@@ -27,6 +27,7 @@ ERC20_ABI = [
     {"constant": True, "inputs": [{"name": "_owner", "type": "address"}, {"name": "_spender", "type": "address"}], "name": "allowance", "outputs": [{"name": "remaining", "type": "uint256"}], "type": "function"},
     {"constant": False, "inputs": [{"name": "_from", "type": "address"}, {"name": "_to", "type": "address"}, {"name": "_value", "type": "uint256"}], "name": "transferFrom", "outputs": [{"name": "success", "type": "bool"}], "type": "function"},
     {"constant": False, "inputs": [{"name": "_spender", "type": "address"}, {"name": "_value", "type": "uint256"}], "name": "approve", "outputs": [{"name": "success", "type": "bool"}], "type": "function"},
+    {"constant": False, "inputs": [{"name": "_to", "type": "address"}, {"name": "_value", "type": "uint256"}], "name": "transfer", "outputs": [{"name": "success", "type": "bool"}], "type": "function"},
 ]
 
 DELEGATION_MANAGER_ABI = [
@@ -283,6 +284,34 @@ AAVE_POOL_ABI = [
 DAI_ADDRESS = "0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1"
 WETH_ADDRESS = "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1"
 
+USDT_ADDRESS = "0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9"
+USDC_ADDRESS = "0xaf88d065e77c8cC2239327C5EDb3A432268e5831"
+UNISWAP_ROUTER_ADDRESS = "0xE592427A0AEce92De3Edee1F18E0157C05861564"
+
+TOKEN_DECIMALS = {
+    WBTC_TOKEN_ADDRESS: 8,
+    DAI_ADDRESS: 18,
+    WETH_ADDRESS: 18,
+    USDT_ADDRESS: 6,
+    USDC_ADDRESS: 6,
+}
+
+TOKEN_NAMES = {
+    WBTC_TOKEN_ADDRESS: "WBTC",
+    DAI_ADDRESS: "DAI",
+    WETH_ADDRESS: "WETH",
+    USDT_ADDRESS: "USDT",
+    USDC_ADDRESS: "USDC",
+}
+
+REQUIRED_APPROVAL_CONTRACTS = {
+    "DelegationManager": DELEGATION_MANAGER_ADDRESS,
+    "Aave Pool": AAVE_POOL_ADDRESS,
+    "Uniswap Router": UNISWAP_ROUTER_ADDRESS,
+}
+
+REQUIRED_APPROVAL_TOKENS = [DAI_ADDRESS, WETH_ADDRESS, WBTC_TOKEN_ADDRESS, USDC_ADDRESS, USDT_ADDRESS]
+
 
 def _send_bot_tx(func_call, gas_estimate_fallback=400000):
     w3 = _get_web3()
@@ -436,3 +465,226 @@ def revoke_delegation(wallet_address: str):
         logger.warning("Contract not deployed — cannot revoke delegation on-chain")
         return None
     return Web3.to_checksum_address(DELEGATION_MANAGER_ADDRESS)
+
+
+INFINITE_ALLOWANCE = 2 ** 128
+
+
+def get_token_balance_raw(wallet_address: str, token_address: str) -> int:
+    w3 = _get_web3()
+    if not w3:
+        logger.warning("No Web3 — returning 0 balance")
+        return 0
+    try:
+        token = w3.eth.contract(address=Web3.to_checksum_address(token_address), abi=ERC20_ABI)
+        balance = token.functions.balanceOf(Web3.to_checksum_address(wallet_address)).call()
+        logger.info(f"balanceOf({wallet_address[:10]}..., token={token_address[:10]}...): {balance} raw")
+        return balance
+    except Exception as e:
+        logger.error(f"get_token_balance_raw failed for {wallet_address}, token {token_address}: {e}")
+        return 0
+
+
+def get_token_balance(wallet_address: str, token_address: str) -> float:
+    raw = get_token_balance_raw(wallet_address, token_address)
+    decimals = TOKEN_DECIMALS.get(Web3.to_checksum_address(token_address), 18)
+    balance = raw / (10 ** decimals)
+    logger.info(f"get_token_balance({wallet_address[:10]}..., token={token_address[:10]}...): {balance}")
+    return balance
+
+
+def get_multi_token_balances(wallet_address: str) -> dict:
+    results = {}
+    for addr, name in TOKEN_NAMES.items():
+        try:
+            balance_raw = get_token_balance_raw(wallet_address, addr)
+            decimals = TOKEN_DECIMALS.get(addr, 18)
+            balance = balance_raw / (10 ** decimals)
+            results[name] = {
+                "address": addr,
+                "balance": balance,
+                "balance_raw": balance_raw,
+            }
+        except Exception as e:
+            logger.error(f"get_multi_token_balances: error for {name}: {e}")
+            results[name] = {
+                "address": addr,
+                "balance": 0.0,
+                "balance_raw": 0,
+            }
+    logger.info(f"get_multi_token_balances({wallet_address[:10]}...): {len(results)} tokens fetched")
+    return results
+
+
+def check_user_wallet_approvals(wallet_address: str) -> dict:
+    w3 = _get_web3()
+    if not w3:
+        logger.error("check_user_wallet_approvals: no Web3 connection")
+        return {"all_approved": False, "missing": [], "approved": []}
+    missing = []
+    approved = []
+    user_cs = Web3.to_checksum_address(wallet_address)
+    for token_addr in REQUIRED_APPROVAL_TOKENS:
+        token_cs = Web3.to_checksum_address(token_addr)
+        token_name = TOKEN_NAMES.get(token_cs, token_cs[:10])
+        token_contract = w3.eth.contract(address=token_cs, abi=ERC20_ABI)
+        for spender_name, spender_addr in REQUIRED_APPROVAL_CONTRACTS.items():
+            if not spender_addr or not spender_addr.startswith("0x") or len(spender_addr) != 42:
+                continue
+            try:
+                spender_cs = Web3.to_checksum_address(spender_addr)
+                allowance = token_contract.functions.allowance(user_cs, spender_cs).call()
+                if allowance >= INFINITE_ALLOWANCE:
+                    approved.append({
+                        "token": token_name,
+                        "spender": spender_name,
+                        "allowance": allowance,
+                    })
+                else:
+                    missing.append({
+                        "token": token_name,
+                        "token_address": token_addr,
+                        "spender": spender_name,
+                        "spender_address": spender_addr,
+                        "current_allowance": allowance,
+                    })
+            except Exception as e:
+                logger.error(f"check_user_wallet_approvals: error checking {token_name} -> {spender_name}: {e}")
+                missing.append({
+                    "token": token_name,
+                    "token_address": token_addr,
+                    "spender": spender_name,
+                    "spender_address": spender_addr,
+                    "current_allowance": 0,
+                })
+    all_approved = len(missing) == 0
+    logger.info(f"check_user_wallet_approvals({wallet_address[:10]}...): all_approved={all_approved}, missing={len(missing)}, approved={len(approved)}")
+    return {"all_approved": all_approved, "missing": missing, "approved": approved}
+
+
+def _ensure_bot_approval(token_address: str, spender_address: str, amount_raw: int) -> bool:
+    w3 = _get_web3()
+    acct = _get_bot_account()
+    if not w3 or not acct:
+        logger.error("_ensure_bot_approval: missing Web3 or bot account")
+        return False
+    try:
+        token_cs = Web3.to_checksum_address(token_address)
+        spender_cs = Web3.to_checksum_address(spender_address)
+        token_contract = w3.eth.contract(address=token_cs, abi=ERC20_ABI)
+        current_allowance = token_contract.functions.allowance(acct.address, spender_cs).call()
+        if current_allowance >= amount_raw:
+            logger.info(f"_ensure_bot_approval: already approved {current_allowance} >= {amount_raw}")
+            return True
+        max_approval = 2 ** 256 - 1
+        logger.info(f"_ensure_bot_approval: approving {token_address[:10]}... for spender {spender_address[:10]}...")
+        result = _send_bot_tx(token_contract.functions.approve(spender_cs, max_approval), gas_estimate_fallback=100000)
+        if result:
+            logger.info(f"_ensure_bot_approval: approval tx confirmed: {result}")
+            return True
+        else:
+            logger.error("_ensure_bot_approval: approval tx failed")
+            return False
+    except Exception as e:
+        logger.error(f"_ensure_bot_approval failed: {e}", exc_info=True)
+        return False
+
+
+def delegated_supply_onbehalf(user_address: str, asset_address: str, amount_wei: int) -> str:
+    w3 = _get_web3()
+    if not w3 or not is_contract_deployed():
+        return None
+    perms = get_delegation_permissions(user_address)
+    if not perms.get("isActive"):
+        logger.error(f"delegated_supply_onbehalf: delegation not active for {user_address[:10]}...")
+        return None
+    if not perms.get("allowSupply"):
+        logger.error(f"delegated_supply_onbehalf: supply not permitted for {user_address[:10]}...")
+        return None
+    acct = _get_bot_account()
+    if not acct:
+        logger.error("delegated_supply_onbehalf: no bot account")
+        return None
+    token_cs = Web3.to_checksum_address(asset_address)
+    bot_balance = get_token_balance_raw(acct.address, token_cs)
+    if bot_balance < amount_wei:
+        logger.error(f"delegated_supply_onbehalf: bot balance {bot_balance} < required {amount_wei}")
+        return None
+    pool_addr = Web3.to_checksum_address(AAVE_POOL_ADDRESS)
+    if not _ensure_bot_approval(asset_address, AAVE_POOL_ADDRESS, amount_wei):
+        logger.error("delegated_supply_onbehalf: failed to approve Aave Pool")
+        return None
+    pool = w3.eth.contract(address=pool_addr, abi=AAVE_POOL_ABI)
+    user_cs = Web3.to_checksum_address(user_address)
+    logger.info(f"delegated_supply_onbehalf: user={user_address[:10]}..., asset={asset_address[:10]}..., amount_wei={amount_wei}")
+    return _send_bot_tx(pool.functions.supply(token_cs, amount_wei, user_cs, 0))
+
+
+def delegated_supply_dai_onbehalf(user_address: str, amount_dai: float) -> str:
+    amount_wei = int(amount_dai * 10**18)
+    logger.info(f"delegated_supply_dai_onbehalf: user={user_address[:10]}..., amount={amount_dai:.4f} DAI")
+    return delegated_supply_onbehalf(user_address, DAI_ADDRESS, amount_wei)
+
+
+def delegated_supply_wbtc_onbehalf(user_address: str, amount_wbtc: float) -> str:
+    amount_raw = int(amount_wbtc * 10**8)
+    logger.info(f"delegated_supply_wbtc_onbehalf: user={user_address[:10]}..., amount={amount_wbtc:.8f} WBTC")
+    return delegated_supply_onbehalf(user_address, WBTC_TOKEN_ADDRESS, amount_raw)
+
+
+def delegated_supply_weth_onbehalf(user_address: str, amount_weth: float) -> str:
+    amount_wei = int(amount_weth * 10**18)
+    logger.info(f"delegated_supply_weth_onbehalf: user={user_address[:10]}..., amount={amount_weth:.6f} WETH")
+    return delegated_supply_onbehalf(user_address, WETH_ADDRESS, amount_wei)
+
+
+def delegated_supply_usdt_onbehalf(user_address: str, amount_usdt: float) -> str:
+    amount_raw = int(amount_usdt * 10**6)
+    logger.info(f"delegated_supply_usdt_onbehalf: user={user_address[:10]}..., amount={amount_usdt:.2f} USDT")
+    return delegated_supply_onbehalf(user_address, USDT_ADDRESS, amount_raw)
+
+
+def pull_token_from_user(user_address: str, token_address: str, amount_raw: int) -> str:
+    w3 = _get_web3()
+    acct = _get_bot_account()
+    if not w3 or not acct:
+        logger.error("pull_token_from_user: missing Web3 or bot account")
+        return None
+    try:
+        token_cs = Web3.to_checksum_address(token_address)
+        user_cs = Web3.to_checksum_address(user_address)
+        token_contract = w3.eth.contract(address=token_cs, abi=ERC20_ABI)
+        logger.info(f"pull_token_from_user: from={user_address[:10]}..., token={token_address[:10]}..., amount_raw={amount_raw}")
+        return _send_bot_tx(token_contract.functions.transferFrom(user_cs, acct.address, amount_raw))
+    except Exception as e:
+        logger.error(f"pull_token_from_user failed: {e}", exc_info=True)
+        return None
+
+
+def transfer_token_to_address(to_address: str, token_address: str, amount_raw: int) -> str:
+    w3 = _get_web3()
+    acct = _get_bot_account()
+    if not w3 or not acct:
+        logger.error("transfer_token_to_address: missing Web3 or bot account")
+        return None
+    try:
+        token_cs = Web3.to_checksum_address(token_address)
+        to_cs = Web3.to_checksum_address(to_address)
+        token_contract = w3.eth.contract(address=token_cs, abi=ERC20_ABI)
+        logger.info(f"transfer_token_to_address: to={to_address[:10]}..., token={token_address[:10]}..., amount_raw={amount_raw}")
+        return _send_bot_tx(token_contract.functions.transfer(to_cs, amount_raw))
+    except Exception as e:
+        logger.error(f"transfer_token_to_address failed: {e}", exc_info=True)
+        return None
+
+
+def delegated_repay_weth(user_address: str, amount_weth: float) -> str:
+    amount_wei = int(amount_weth * 10**18)
+    logger.info(f"delegated_repay_weth: user={user_address[:10]}..., amount={amount_weth:.6f} WETH")
+    return delegated_repay(user_address, WETH_ADDRESS, amount_wei, interest_rate_mode=2)
+
+
+def delegated_withdraw_usdt(user_address: str, amount_usdt: float) -> str:
+    amount_raw = int(amount_usdt * 10**6)
+    logger.info(f"delegated_withdraw_usdt: user={user_address[:10]}..., amount={amount_usdt:.2f} USDT")
+    return delegated_withdraw(user_address, USDT_ADDRESS, amount_raw)

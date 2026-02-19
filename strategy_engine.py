@@ -14,14 +14,19 @@ HF Band Priority Order (checked top to bottom, first match wins):
 -----------------------------------------------------------------
 1. EMERGENCY (HF < 2.50): Position at risk. Log critical warning, SKIP.
 2. GROWTH (HF >= 3.10, collateral grew >= $50 or >= 10%, available borrows >= $13.20):
-   Borrow DAI via delegation to expand position.
+   Full 6-step distribution: borrow DAI, supply DAI, swap+supply WBTC, swap+supply WETH,
+   swap DAI->ETH for gas, transfer DAI to Wallet_S, swap DAI->USDC (stays in user wallet).
 3. CAPACITY (HF >= 2.90, available borrows >= $8.20):
-   Smaller DAI borrow to utilize idle capacity. Fires only if Growth did not.
+   Same 6-step engine with smaller amounts.
 4. MACRO SHORT (collateral velocity drop >= $50 in 30 min, HF >= 3.05):
    Hedge via WETH borrow against market downturn.
 5. MICRO SHORT (collateral velocity drop >= $30 in 20 min, HF >= 3.00):
    Smaller hedge. 4h cooldown.
 6. IDLE / SKIP: No conditions met. Log reason and wait for next cycle.
+
+USER WALLET vs PERSONAL BOT — Two Intentional Differences:
+  1. Profit Bucket: DISABLED for user wallets. USDC stays in user wallet, never flushed.
+  2. Liability Short profits: 100% stays in user wallet. Personal bot uses 20/20/60 split.
 
 Inputs (all from defi_positions — single source of truth):
   - health_factor, total_collateral_usd, total_debt_usd (from DB, refreshed by monitoring)
@@ -31,6 +36,9 @@ Inputs (all from defi_positions — single source of truth):
 One action per wallet per cycle. No double-execution.
 """
 
+import os
+import json
+import time
 import logging
 from datetime import datetime, timezone
 
@@ -51,6 +59,51 @@ GROWTH_RELATIVE_TRIGGER_PCT = 0.10
 GROWTH_BORROW_USD = 11.40
 CAPACITY_BORROW_USD = 6.70
 
+GROWTH_DISTRIBUTION = {
+    'total_borrow': 11.40,
+    'dai_supply': 2.75,
+    'wbtc_swap_supply': 2.80,
+    'weth_swap_supply': 2.45,
+    'eth_gas_reserve': 1.10,
+    'dai_transfer': 1.10,
+    'usdc_tax': 1.20,
+}
+
+CAPACITY_DISTRIBUTION = {
+    'total_borrow': 6.70,
+    'dai_supply': 1.10,
+    'wbtc_swap_supply': 1.10,
+    'weth_swap_supply': 1.10,
+    'eth_gas_reserve': 1.10,
+    'dai_transfer': 1.10,
+    'usdc_tax': 1.20,
+}
+
+DELEGATED_STEP_ORDER = [
+    "borrowed",
+    "dai_supplied",
+    "wbtc_supplied",
+    "weth_supplied",
+    "eth_converted",
+    "wallet_s_transferred",
+    "usdc_taxed",
+]
+
+EXECUTION_STATE_DIR = "/tmp/reaa_delegation_states"
+
+MACRO_VELOCITY_DROP_USD = 50.0
+MACRO_VELOCITY_WINDOW_MIN = 30
+MICRO_VELOCITY_DROP_USD = 30.0
+MICRO_VELOCITY_WINDOW_MIN = 20
+MICRO_COOLDOWN_HOURS = 4
+
+MACRO_SHORT_SIZE_USD = 15.0
+MICRO_SHORT_SIZE_USD = 8.0
+
+SHORT_WBTC_PCT = 0.40
+SHORT_USDT_PCT = 0.35
+SHORT_WETH_PCT = 0.25
+
 try:
     import db as database
     DB_AVAILABLE = True
@@ -62,6 +115,24 @@ try:
         get_delegation_permissions,
         get_user_account_data,
         delegated_borrow_dai,
+        delegated_borrow_weth,
+        delegated_repay_weth,
+        delegated_supply_dai_onbehalf,
+        delegated_supply_wbtc_onbehalf,
+        delegated_supply_weth_onbehalf,
+        delegated_supply_usdt_onbehalf,
+        delegated_withdraw_usdt,
+        pull_token_from_user,
+        transfer_token_to_address,
+        check_user_wallet_approvals,
+        get_multi_token_balances,
+        get_token_balance,
+        DAI_ADDRESS,
+        WETH_ADDRESS,
+        WBTC_TOKEN_ADDRESS,
+        USDT_ADDRESS,
+        USDC_ADDRESS,
+        UNISWAP_ROUTER_ADDRESS,
     )
     DELEGATION_AVAILABLE = True
 except ImportError:
@@ -72,6 +143,12 @@ try:
     PERMISSIONS_AVAILABLE = True
 except ImportError:
     PERMISSIONS_AVAILABLE = False
+
+try:
+    from uniswap_integration import UniswapIntegration
+    UNISWAP_AVAILABLE = True
+except ImportError:
+    UNISWAP_AVAILABLE = False
 
 
 def _log_strategy(user_id, wallet, mode, action, hf_before, hf_after=None, details=""):
@@ -114,13 +191,668 @@ def _update_wallet_baseline(user_id, wallet_address, new_baseline):
         logger.error(f"Failed to update baseline for user {user_id}: {e}")
 
 
+def _get_execution_state_path(wallet_address):
+    os.makedirs(EXECUTION_STATE_DIR, exist_ok=True)
+    safe_addr = wallet_address.lower().replace("0x", "")
+    return os.path.join(EXECUTION_STATE_DIR, f"exec_state_{safe_addr}.json")
+
+
+def _save_execution_state(wallet_address, step, path_name, distribution):
+    state = {
+        "step": step,
+        "path_name": path_name,
+        "distribution": distribution,
+        "timestamp": time.time(),
+        "timestamp_human": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC"),
+    }
+    try:
+        path = _get_execution_state_path(wallet_address)
+        with open(path, 'w') as f:
+            json.dump(state, f, indent=2)
+        logger.info(f"[ExecState] {wallet_address[:10]}... step={step} path={path_name}")
+    except Exception as e:
+        logger.error(f"[ExecState] save failed for {wallet_address[:10]}...: {e}")
+
+
+def _load_execution_state(wallet_address):
+    try:
+        path = _get_execution_state_path(wallet_address)
+        if os.path.exists(path):
+            with open(path, 'r') as f:
+                state = json.load(f)
+            age = time.time() - state.get("timestamp", 0)
+            if age > 3600:
+                logger.warning(f"[ExecState] {wallet_address[:10]}... state is {age:.0f}s old — clearing stale state")
+                _clear_execution_state(wallet_address)
+                return None
+            return state
+    except Exception as e:
+        logger.error(f"[ExecState] load failed for {wallet_address[:10]}...: {e}")
+    return None
+
+
+def _clear_execution_state(wallet_address):
+    try:
+        path = _get_execution_state_path(wallet_address)
+        if os.path.exists(path):
+            os.remove(path)
+            logger.info(f"[ExecState] {wallet_address[:10]}... state cleared")
+    except Exception as e:
+        logger.error(f"[ExecState] clear failed for {wallet_address[:10]}...: {e}")
+
+
+def _get_uniswap(agent):
+    if hasattr(agent, 'uniswap') and agent.uniswap:
+        return agent.uniswap
+    if UNISWAP_AVAILABLE:
+        try:
+            from web3 import Web3
+            from delegation_client import _get_web3, _get_bot_account
+            w3 = _get_web3()
+            acct = _get_bot_account()
+            if w3 and acct:
+                return UniswapIntegration(w3, acct)
+        except Exception as e:
+            logger.error(f"Failed to initialize UniswapIntegration: {e}")
+    return None
+
+
+def _execute_delegated_distribution(user_id, wallet_address, agent, path_name, distribution, live_hf):
+    """
+    Execute the full 6-step distribution for a delegated user wallet.
+    Steps:
+      1. Borrow DAI via delegation (lands in user wallet)
+      2. Pull DAI from user -> supply DAI to Aave onBehalfOf user
+      3. Pull DAI from user -> swap DAI->WBTC -> supply WBTC to Aave onBehalfOf user
+      4. Pull DAI from user -> swap DAI->WETH -> supply WETH to Aave onBehalfOf user
+      5. DAI stays in user wallet for gas reserve (no pull, no swap — user keeps DAI)
+      6. Pull DAI from user -> transfer to Wallet_S
+      7. Pull DAI from user -> swap DAI->USDC (stays in user wallet — NO Profit Bucket for users)
+
+    On failure at any step: stop, log, tokens remain in user wallet (safe).
+    Crash recovery via execution_state files.
+    """
+    result = {"mode": path_name, "action": "DISTRIBUTION", "executed": False, "details": "", "steps_completed": []}
+    total_borrow = distribution['total_borrow']
+
+    existing_state = _load_execution_state(wallet_address)
+    resume_after = None
+    if existing_state and existing_state.get("path_name") == path_name:
+        resume_after = existing_state.get("step")
+        logger.info(f"[Distribution] {wallet_address[:10]}... resuming {path_name} after step '{resume_after}'")
+
+    already_done = set()
+    if resume_after and resume_after in DELEGATED_STEP_ORDER:
+        idx = DELEGATED_STEP_ORDER.index(resume_after)
+        already_done = set(DELEGATED_STEP_ORDER[:idx + 1])
+
+    uniswap = _get_uniswap(agent)
+
+    dist_serializable = {k: v for k, v in distribution.items()}
+    steps_completed = list(already_done)
+    steps_failed = []
+
+    approval_check = check_user_wallet_approvals(wallet_address) if DELEGATION_AVAILABLE else None
+    if approval_check and not approval_check.get("all_approved"):
+        missing = approval_check.get("missing", [])
+        missing_str = "; ".join([f"{m['token']}->{m['spender']}" for m in missing[:5]])
+        result["details"] = f"Missing approvals: {missing_str}"
+        result["action"] = "APPROVAL_ERROR"
+        _log_strategy(user_id, wallet_address, path_name, "APPROVAL_ERROR", live_hf,
+                      details=f"Cannot execute — missing approvals: {missing_str}")
+        _record_strategy_action(user_id, wallet_address, f"ERROR: missing approvals — {missing_str}")
+        return result
+
+    try:
+        if "borrowed" not in already_done:
+            _log_strategy(user_id, wallet_address, path_name, "STEP1_BORROW", live_hf,
+                          details=f"Borrowing ${total_borrow:.2f} DAI via delegation")
+            tx_hash = delegated_borrow_dai(wallet_address, total_borrow)
+            if not tx_hash:
+                result["details"] = f"DAI borrow failed for ${total_borrow:.2f}"
+                result["action"] = "BORROW_FAILED"
+                _record_strategy_action(user_id, wallet_address, f"FAILED: {path_name} borrow ${total_borrow:.2f} DAI")
+                return result
+            _save_execution_state(wallet_address, "borrowed", path_name, dist_serializable)
+            steps_completed.append("borrowed")
+            time.sleep(3)
+
+        dai_supply_amount = distribution['dai_supply']
+        if "dai_supplied" not in already_done and dai_supply_amount >= 0.50:
+            _log_strategy(user_id, wallet_address, path_name, "STEP2_DAI_SUPPLY", live_hf,
+                          details=f"Pull ${dai_supply_amount:.2f} DAI -> supply to Aave onBehalfOf user")
+            dai_supply_wei = int(dai_supply_amount * 1e18)
+            pull_tx = pull_token_from_user(wallet_address, DAI_ADDRESS, dai_supply_wei)
+            if pull_tx:
+                supply_tx = delegated_supply_dai_onbehalf(wallet_address, dai_supply_amount)
+                if supply_tx:
+                    _save_execution_state(wallet_address, "dai_supplied", path_name, dist_serializable)
+                    steps_completed.append("dai_supplied")
+                    time.sleep(2)
+                else:
+                    steps_failed.append("dai_supply_to_aave")
+                    logger.warning(f"[Distribution] {wallet_address[:10]}... DAI supply to Aave failed — DAI in bot wallet")
+            else:
+                steps_failed.append("dai_pull")
+                logger.warning(f"[Distribution] {wallet_address[:10]}... DAI pull from user failed")
+        elif "dai_supplied" in already_done:
+            pass
+
+        wbtc_amount = distribution['wbtc_swap_supply']
+        if "wbtc_supplied" not in already_done and wbtc_amount >= 0.50 and uniswap:
+            _log_strategy(user_id, wallet_address, path_name, "STEP3_WBTC_SWAP", live_hf,
+                          details=f"Pull ${wbtc_amount:.2f} DAI -> swap DAI->WBTC -> supply onBehalfOf")
+            wbtc_dai_wei = int(wbtc_amount * 1e18)
+            pull_tx = pull_token_from_user(wallet_address, DAI_ADDRESS, wbtc_dai_wei)
+            if pull_tx:
+                time.sleep(2)
+                swap_result = uniswap.swap_dai_for_wbtc(wbtc_amount)
+                if swap_result and swap_result.get('tx_hash'):
+                    time.sleep(3)
+                    from delegation_client import _get_bot_account, _get_web3, ERC20_ABI
+                    w3 = _get_web3()
+                    acct = _get_bot_account()
+                    if w3 and acct:
+                        wbtc_contract = w3.eth.contract(
+                            address=w3.to_checksum_address(WBTC_TOKEN_ADDRESS), abi=ERC20_ABI)
+                        wbtc_bal_raw = wbtc_contract.functions.balanceOf(acct.address).call()
+                        if wbtc_bal_raw > 0:
+                            wbtc_float = wbtc_bal_raw / 1e8
+                            supply_tx = delegated_supply_wbtc_onbehalf(wallet_address, wbtc_float)
+                            if supply_tx:
+                                _save_execution_state(wallet_address, "wbtc_supplied", path_name, dist_serializable)
+                                steps_completed.append("wbtc_supplied")
+                                time.sleep(2)
+                            else:
+                                steps_failed.append("wbtc_supply_to_aave")
+                        else:
+                            steps_failed.append("wbtc_swap_zero_output")
+                else:
+                    steps_failed.append("dai_to_wbtc_swap")
+            else:
+                steps_failed.append("wbtc_dai_pull")
+        elif "wbtc_supplied" in already_done:
+            pass
+
+        weth_amount = distribution['weth_swap_supply']
+        if "weth_supplied" not in already_done and weth_amount >= 0.50 and uniswap:
+            _log_strategy(user_id, wallet_address, path_name, "STEP4_WETH_SWAP", live_hf,
+                          details=f"Pull ${weth_amount:.2f} DAI -> swap DAI->WETH -> supply onBehalfOf")
+            weth_dai_wei = int(weth_amount * 1e18)
+            pull_tx = pull_token_from_user(wallet_address, DAI_ADDRESS, weth_dai_wei)
+            if pull_tx:
+                time.sleep(2)
+                swap_result = uniswap.swap_dai_for_weth(weth_amount)
+                if swap_result and swap_result.get('tx_hash'):
+                    time.sleep(3)
+                    from delegation_client import _get_bot_account, _get_web3, ERC20_ABI
+                    w3 = _get_web3()
+                    acct = _get_bot_account()
+                    if w3 and acct:
+                        weth_contract = w3.eth.contract(
+                            address=w3.to_checksum_address(WETH_ADDRESS), abi=ERC20_ABI)
+                        weth_bal_raw = weth_contract.functions.balanceOf(acct.address).call()
+                        if weth_bal_raw > 0:
+                            weth_float = weth_bal_raw / 1e18
+                            supply_tx = delegated_supply_weth_onbehalf(wallet_address, weth_float)
+                            if supply_tx:
+                                _save_execution_state(wallet_address, "weth_supplied", path_name, dist_serializable)
+                                steps_completed.append("weth_supplied")
+                                time.sleep(2)
+                            else:
+                                steps_failed.append("weth_supply_to_aave")
+                        else:
+                            steps_failed.append("weth_swap_zero_output")
+                else:
+                    steps_failed.append("dai_to_weth_swap")
+            else:
+                steps_failed.append("weth_dai_pull")
+        elif "weth_supplied" in already_done:
+            pass
+
+        eth_amount = distribution['eth_gas_reserve']
+        if "eth_converted" not in already_done and eth_amount >= 0.50:
+            _log_strategy(user_id, wallet_address, path_name, "STEP5_ETH_GAS", live_hf,
+                          details=f"${eth_amount:.2f} DAI stays in user wallet for gas reserve")
+            _save_execution_state(wallet_address, "eth_converted", path_name, dist_serializable)
+            steps_completed.append("eth_converted")
+
+        dai_transfer = distribution['dai_transfer']
+        if "wallet_s_transferred" not in already_done and dai_transfer >= 0.50:
+            wallet_s = os.getenv('WALLET_S_ADDRESS', '').strip()
+            if wallet_s and len(wallet_s) == 42:
+                _log_strategy(user_id, wallet_address, path_name, "STEP6_WALLET_S", live_hf,
+                              details=f"Pull ${dai_transfer:.2f} DAI -> transfer to Wallet_S")
+                dai_transfer_wei = int(dai_transfer * 1e18)
+                pull_tx = pull_token_from_user(wallet_address, DAI_ADDRESS, dai_transfer_wei)
+                if pull_tx:
+                    time.sleep(2)
+                    xfer_tx = transfer_token_to_address(wallet_s, DAI_ADDRESS, dai_transfer_wei)
+                    if xfer_tx:
+                        _save_execution_state(wallet_address, "wallet_s_transferred", path_name, dist_serializable)
+                        steps_completed.append("wallet_s_transferred")
+                        time.sleep(2)
+                    else:
+                        steps_failed.append("wallet_s_transfer")
+                else:
+                    steps_failed.append("wallet_s_dai_pull")
+            else:
+                logger.warning(f"[Distribution] WALLET_S_ADDRESS not set — skipping Wallet_S transfer")
+                _save_execution_state(wallet_address, "wallet_s_transferred", path_name, dist_serializable)
+                steps_completed.append("wallet_s_transferred")
+
+        usdc_tax = distribution.get('usdc_tax', 0)
+        if "usdc_taxed" not in already_done and usdc_tax >= 0.50 and uniswap:
+            _log_strategy(user_id, wallet_address, path_name, "STEP7_USDC_TAX", live_hf,
+                          details=f"Pull ${usdc_tax:.2f} DAI -> swap DAI->USDC (stays in user wallet)")
+            usdc_dai_wei = int(usdc_tax * 1e18)
+            pull_tx = pull_token_from_user(wallet_address, DAI_ADDRESS, usdc_dai_wei)
+            if pull_tx:
+                time.sleep(2)
+                swap_result = uniswap.swap_dai_for_usdc(usdc_tax)
+                if swap_result and swap_result.get('tx_hash'):
+                    time.sleep(3)
+                    from delegation_client import _get_bot_account, _get_web3, ERC20_ABI
+                    w3 = _get_web3()
+                    acct = _get_bot_account()
+                    if w3 and acct:
+                        usdc_contract = w3.eth.contract(
+                            address=w3.to_checksum_address(USDC_ADDRESS), abi=ERC20_ABI)
+                        usdc_bal_raw = usdc_contract.functions.balanceOf(acct.address).call()
+                        if usdc_bal_raw > 0:
+                            usdc_transfer_wei = usdc_bal_raw
+                            xfer_tx = transfer_token_to_address(wallet_address, USDC_ADDRESS, usdc_transfer_wei)
+                            if xfer_tx:
+                                _save_execution_state(wallet_address, "usdc_taxed", path_name, dist_serializable)
+                                steps_completed.append("usdc_taxed")
+                            else:
+                                steps_failed.append("usdc_transfer_to_user")
+                        else:
+                            steps_failed.append("usdc_swap_zero_output")
+                else:
+                    steps_failed.append("dai_to_usdc_swap")
+            else:
+                steps_failed.append("usdc_dai_pull")
+        elif "usdc_taxed" in already_done:
+            pass
+
+        _clear_execution_state(wallet_address)
+
+        post_data = get_user_account_data(wallet_address)
+        post_hf = post_data.get("healthFactor", 0) if post_data else 0
+
+        completed_count = len(steps_completed)
+        failed_count = len(steps_failed)
+        detail_str = f"{completed_count}/7 steps OK"
+        if failed_count > 0:
+            detail_str += f", {failed_count} failed: {', '.join(steps_failed)}"
+        detail_str += f", HF {live_hf:.2f} -> {post_hf:.2f}"
+
+        result["executed"] = completed_count >= 1
+        result["action"] = "DISTRIBUTION_COMPLETE" if failed_count == 0 else "DISTRIBUTION_PARTIAL"
+        result["details"] = detail_str
+        result["steps_completed"] = steps_completed
+
+        _log_strategy(user_id, wallet_address, path_name, result["action"], live_hf, hf_after=post_hf,
+                      details=detail_str)
+        _record_strategy_action(user_id, wallet_address, f"{path_name.upper()}: {detail_str}")
+
+        if DB_AVAILABLE:
+            database.record_wallet_action(
+                user_id=user_id, wallet_address=wallet_address,
+                action_type=f'strategy_{path_name}_distribution',
+                details={"distribution": dist_serializable, "steps_completed": steps_completed,
+                         "steps_failed": steps_failed, "hf_before": live_hf, "hf_after": post_hf},
+                tx_hash=None)
+
+        return result
+
+    except Exception as e:
+        logger.error(f"[Distribution] {wallet_address[:10]}... {path_name} failed: {e}", exc_info=True)
+        result["details"] = f"Distribution exception: {e}"
+        result["action"] = "DISTRIBUTION_ERROR"
+        _record_strategy_action(user_id, wallet_address, f"ERROR: {path_name} distribution exception — {e}")
+        return result
+
+
+def _execute_delegated_short_entry(user_id, wallet_address, agent, tier, short_size_usd, live_hf):
+    """
+    Delegated liability short entry:
+      1. Borrow WETH via delegation (lands in user wallet)
+      2. Pull WETH from user -> swap 40% to WBTC -> supply onBehalfOf
+      3. Remaining WETH: swap 35% to USDT -> supply onBehalfOf
+      4. Remaining 25% WETH -> supply onBehalfOf as WETH collateral
+    """
+    result = {"mode": f"{tier}_short", "action": "SHORT_ENTRY", "executed": False, "details": ""}
+
+    uniswap = _get_uniswap(agent)
+    if not uniswap:
+        result["details"] = "uniswap_unavailable"
+        return result
+
+    try:
+        from delegation_client import _get_web3
+        w3 = _get_web3()
+        if not w3:
+            result["details"] = "web3_unavailable"
+            return result
+
+        eth_price = 2000.0
+        try:
+            oracle_addr = "0xb56c2F0B653B2e0b10C9b928C8580Ac5Df02C7C7"
+            oracle_abi = [{"inputs": [{"name": "asset", "type": "address"}], "name": "getAssetPrice",
+                           "outputs": [{"name": "", "type": "uint256"}], "stateMutability": "view", "type": "function"}]
+            oracle = w3.eth.contract(address=w3.to_checksum_address(oracle_addr), abi=oracle_abi)
+            eth_price = oracle.functions.getAssetPrice(w3.to_checksum_address(WETH_ADDRESS)).call() / 1e8
+        except Exception:
+            pass
+
+        weth_amount = short_size_usd / eth_price
+        _log_strategy(user_id, wallet_address, f"{tier}_short", "SHORT_ENTRY", live_hf,
+                      details=f"Borrowing {weth_amount:.6f} WETH (${short_size_usd:.2f}) via delegation")
+
+        tx_hash = delegated_borrow_weth(wallet_address, weth_amount)
+        if not tx_hash:
+            result["details"] = f"WETH borrow failed for {weth_amount:.6f}"
+            result["action"] = "SHORT_ENTRY_FAILED"
+            return result
+
+        time.sleep(3)
+
+        wbtc_weth = weth_amount * SHORT_WBTC_PCT
+        usdt_weth = weth_amount * SHORT_USDT_PCT
+        hold_weth = weth_amount * SHORT_WETH_PCT
+
+        wbtc_weth_wei = int(wbtc_weth * 1e18)
+        pull_tx = pull_token_from_user(wallet_address, WETH_ADDRESS, wbtc_weth_wei)
+        if pull_tx:
+            time.sleep(2)
+            swap_result = uniswap.swap_weth_for_wbtc(wbtc_weth)
+            if swap_result and swap_result.get('tx_hash'):
+                time.sleep(3)
+                from delegation_client import _get_bot_account, ERC20_ABI
+                acct = _get_bot_account()
+                wbtc_contract = w3.eth.contract(address=w3.to_checksum_address(WBTC_TOKEN_ADDRESS), abi=ERC20_ABI)
+                wbtc_bal = wbtc_contract.functions.balanceOf(acct.address).call()
+                if wbtc_bal > 0:
+                    delegated_supply_wbtc_onbehalf(wallet_address, wbtc_bal / 1e8)
+                    time.sleep(2)
+
+        usdt_weth_wei = int(usdt_weth * 1e18)
+        pull_tx = pull_token_from_user(wallet_address, WETH_ADDRESS, usdt_weth_wei)
+        if pull_tx:
+            time.sleep(2)
+            swap_result = uniswap.swap_weth_for_usdt(usdt_weth)
+            if swap_result and swap_result.get('tx_hash'):
+                time.sleep(3)
+                from delegation_client import _get_bot_account, ERC20_ABI
+                acct = _get_bot_account()
+                usdt_contract = w3.eth.contract(address=w3.to_checksum_address(USDT_ADDRESS), abi=ERC20_ABI)
+                usdt_bal = usdt_contract.functions.balanceOf(acct.address).call()
+                if usdt_bal > 0:
+                    delegated_supply_usdt_onbehalf(wallet_address, usdt_bal / 1e6)
+                    time.sleep(2)
+
+        hold_weth_wei = int(hold_weth * 1e18)
+        pull_tx = pull_token_from_user(wallet_address, WETH_ADDRESS, hold_weth_wei)
+        if pull_tx:
+            time.sleep(2)
+            delegated_supply_weth_onbehalf(wallet_address, hold_weth)
+            time.sleep(2)
+
+        result["executed"] = True
+        result["action"] = "SHORT_ENTRY_OK"
+        result["details"] = f"{tier} short: {weth_amount:.6f} WETH (${short_size_usd:.2f}), ETH@${eth_price:.2f}"
+
+        if DB_AVAILABLE:
+            database.record_wallet_action(
+                user_id=user_id, wallet_address=wallet_address,
+                action_type=f'strategy_{tier}_short_entry',
+                details={"weth_borrowed": weth_amount, "eth_price": eth_price,
+                         "short_size_usd": short_size_usd, "hf": live_hf},
+                tx_hash=tx_hash)
+
+        _log_strategy(user_id, wallet_address, f"{tier}_short", "SHORT_ENTRY_OK", live_hf,
+                      details=result["details"])
+        _record_strategy_action(user_id, wallet_address, f"SHORT ENTRY: {result['details']}")
+        return result
+
+    except Exception as e:
+        logger.error(f"[Short Entry] {wallet_address[:10]}... failed: {e}", exc_info=True)
+        result["details"] = f"Short entry exception: {e}"
+        result["action"] = "SHORT_ENTRY_ERROR"
+        return result
+
+
+def _execute_delegated_short_close(user_id, wallet_address, agent, live_hf):
+    """
+    Delegated liability short close:
+      1. Withdraw USDT from Aave via delegation
+      2. Pull USDT from user -> swap USDT->WETH
+      3. Repay WETH loan via delegation
+      4. USER WALLET DIFFERENCE: All remaining profit stays 100% in user wallet
+         (personal bot does 20/20/60 split — this is intentional parity difference #2)
+    """
+    result = {"mode": "short_close", "action": "SHORT_CLOSE", "executed": False, "details": ""}
+
+    uniswap = _get_uniswap(agent)
+    if not uniswap:
+        result["details"] = "uniswap_unavailable"
+        return result
+
+    try:
+        from delegation_client import _get_web3, _get_bot_account, ERC20_ABI
+        w3 = _get_web3()
+        acct = _get_bot_account()
+        if not w3 or not acct:
+            result["details"] = "web3_or_account_unavailable"
+            return result
+
+        user_balances = get_multi_token_balances(wallet_address)
+        usdt_balance = user_balances.get("USDT", {}).get("balance", 0) if user_balances else 0
+
+        if usdt_balance < 1.0:
+            result["details"] = f"USDT balance too low ({usdt_balance:.2f}) for short close"
+            return result
+
+        _log_strategy(user_id, wallet_address, "short_close", "STEP1_WITHDRAW_USDT", live_hf,
+                      details=f"Withdrawing {usdt_balance:.2f} USDT from Aave")
+        usdt_withdraw_raw = int(usdt_balance * 1e6)
+        withdraw_tx = delegated_withdraw_usdt(wallet_address, usdt_balance)
+        if not withdraw_tx:
+            result["details"] = "USDT withdrawal from Aave failed"
+            result["action"] = "SHORT_CLOSE_FAILED"
+            return result
+        time.sleep(3)
+
+        usdt_available_raw = int(usdt_balance * 1e6)
+        pull_tx = pull_token_from_user(wallet_address, USDT_ADDRESS, usdt_available_raw)
+        if not pull_tx:
+            result["details"] = "USDT pull from user failed — USDT stays in user wallet"
+            result["action"] = "SHORT_CLOSE_FAILED"
+            return result
+        time.sleep(2)
+
+        _log_strategy(user_id, wallet_address, "short_close", "STEP2_SWAP_USDT_WETH", live_hf,
+                      details=f"Swapping {usdt_balance:.2f} USDT -> WETH")
+        swap_result = uniswap.swap_usdt_for_weth(usdt_balance * 0.95)
+        if not swap_result or 'tx_hash' not in swap_result:
+            result["details"] = "USDT->WETH swap failed — tokens in bot wallet for recovery"
+            result["action"] = "SHORT_CLOSE_FAILED"
+            return result
+        time.sleep(3)
+
+        weth_contract = w3.eth.contract(address=w3.to_checksum_address(WETH_ADDRESS), abi=ERC20_ABI)
+        weth_received_raw = weth_contract.functions.balanceOf(acct.address).call()
+        weth_received = weth_received_raw / 1e18
+
+        if weth_received < 0.0001:
+            result["details"] = "WETH received from swap too low"
+            result["action"] = "SHORT_CLOSE_FAILED"
+            return result
+
+        user_data = get_user_account_data(wallet_address)
+        weth_debt = user_data.get("totalDebtUSD", 0) if user_data else 0
+
+        _log_strategy(user_id, wallet_address, "short_close", "STEP3_REPAY_WETH", live_hf,
+                      details=f"Repaying {weth_received:.8f} WETH debt via delegation")
+
+        from delegation_client import _ensure_bot_approval, AAVE_POOL_ADDRESS
+        _ensure_bot_approval(WETH_ADDRESS, AAVE_POOL_ADDRESS, weth_received_raw)
+
+        repay_tx = delegated_repay_weth(wallet_address, weth_received * 0.999)
+        if not repay_tx:
+            result["details"] = "WETH repayment failed — WETH in bot wallet for recovery"
+            result["action"] = "SHORT_CLOSE_FAILED"
+            return result
+        time.sleep(3)
+
+        remaining_weth_raw = weth_contract.functions.balanceOf(acct.address).call()
+        if remaining_weth_raw > 0:
+            xfer_tx = transfer_token_to_address(wallet_address, WETH_ADDRESS, remaining_weth_raw)
+            if xfer_tx:
+                logger.info(f"[Short Close] Remaining WETH ({remaining_weth_raw / 1e18:.8f}) sent to user wallet")
+
+        remaining_usdt_contract = w3.eth.contract(address=w3.to_checksum_address(USDT_ADDRESS), abi=ERC20_ABI)
+        remaining_usdt_raw = remaining_usdt_contract.functions.balanceOf(acct.address).call()
+        if remaining_usdt_raw > 0:
+            xfer_tx = transfer_token_to_address(wallet_address, USDT_ADDRESS, remaining_usdt_raw)
+            if xfer_tx:
+                logger.info(f"[Short Close] Remaining USDT ({remaining_usdt_raw / 1e6:.2f}) sent to user wallet")
+
+        post_data = get_user_account_data(wallet_address)
+        post_hf = post_data.get("healthFactor", 0) if post_data else 0
+
+        result["executed"] = True
+        result["action"] = "SHORT_CLOSE_OK"
+        result["details"] = (f"Short closed. Profits stay 100% in user wallet. "
+                            f"HF {live_hf:.2f} -> {post_hf:.2f}")
+
+        _log_strategy(user_id, wallet_address, "short_close", "SHORT_CLOSE_OK", live_hf,
+                      hf_after=post_hf, details="Profits 100% to user (no 20/20/60 split)")
+        _record_strategy_action(user_id, wallet_address, f"SHORT CLOSE: profits to user, HF {live_hf:.2f} -> {post_hf:.2f}")
+
+        if DB_AVAILABLE:
+            database.record_wallet_action(
+                user_id=user_id, wallet_address=wallet_address,
+                action_type='strategy_short_close',
+                details={"hf_before": live_hf, "hf_after": post_hf,
+                         "profit_destination": "100%_user_wallet",
+                         "note": "No 20/20/60 split for user wallets"},
+                tx_hash=repay_tx)
+
+        return result
+
+    except Exception as e:
+        logger.error(f"[Short Close] {wallet_address[:10]}... failed: {e}", exc_info=True)
+        result["details"] = f"Short close exception: {e}"
+        result["action"] = "SHORT_CLOSE_ERROR"
+        return result
+
+
+def run_delegated_nurse_sweep(user_id, wallet_address, agent):
+    """
+    Nurse Mode for delegated wallets.
+    Reads user wallet balances for DAI/WETH/WBTC/USDT.
+    Skips below $2 floor. NEVER touches USDC.
+    Pulls via transferFrom -> supplies to Aave onBehalfOf user.
+    """
+    result = {"swept": False, "tokens_swept": [], "details": ""}
+
+    if not DELEGATION_AVAILABLE:
+        result["details"] = "delegation_client_unavailable"
+        return result
+
+    try:
+        balances = get_multi_token_balances(wallet_address)
+        if not balances:
+            result["details"] = "Could not fetch user wallet balances"
+            return result
+
+        HARD_FLOOR_USD = 2.00
+
+        from delegation_client import _get_web3
+        w3 = _get_web3()
+        eth_price = 2000.0
+        btc_price = 67000.0
+        if w3:
+            try:
+                oracle_addr = "0xb56c2F0B653B2e0b10C9b928C8580Ac5Df02C7C7"
+                oracle_abi = [{"inputs": [{"name": "asset", "type": "address"}], "name": "getAssetPrice",
+                               "outputs": [{"name": "", "type": "uint256"}], "stateMutability": "view", "type": "function"}]
+                oracle = w3.eth.contract(address=w3.to_checksum_address(oracle_addr), abi=oracle_abi)
+                eth_price = oracle.functions.getAssetPrice(w3.to_checksum_address(WETH_ADDRESS)).call() / 1e8
+                btc_price = oracle.functions.getAssetPrice(w3.to_checksum_address(WBTC_TOKEN_ADDRESS)).call() / 1e8
+            except Exception:
+                pass
+
+        sweep_tokens = {
+            "DAI": {"address": DAI_ADDRESS, "price": 1.0, "decimals": 18,
+                    "supply_fn": delegated_supply_dai_onbehalf},
+            "WETH": {"address": WETH_ADDRESS, "price": eth_price, "decimals": 18,
+                     "supply_fn": delegated_supply_weth_onbehalf},
+            "WBTC": {"address": WBTC_TOKEN_ADDRESS, "price": btc_price, "decimals": 8,
+                     "supply_fn": delegated_supply_wbtc_onbehalf},
+            "USDT": {"address": USDT_ADDRESS, "price": 1.0, "decimals": 6,
+                     "supply_fn": delegated_supply_usdt_onbehalf},
+        }
+
+        for token_name, config in sweep_tokens.items():
+            token_data = balances.get(token_name, {})
+            balance = token_data.get("balance", 0)
+            balance_raw = token_data.get("balance_raw", 0)
+            usd_value = balance * config["price"]
+
+            if balance <= 0 or balance_raw <= 0:
+                continue
+
+            if usd_value < HARD_FLOOR_USD:
+                logger.info(f"[Nurse] {wallet_address[:10]}... {token_name} ${usd_value:.2f} below $2 floor — skip")
+                continue
+
+            logger.info(f"[Nurse] {wallet_address[:10]}... sweeping {balance:.8f} {token_name} (${usd_value:.2f})")
+
+            pull_tx = pull_token_from_user(wallet_address, config["address"], balance_raw)
+            if pull_tx:
+                time.sleep(2)
+                supply_tx = config["supply_fn"](wallet_address, balance * 0.99)
+                if supply_tx:
+                    result["swept"] = True
+                    result["tokens_swept"].append(f"{token_name}(${usd_value:.2f})")
+                    logger.info(f"[Nurse] {wallet_address[:10]}... {token_name} supplied to Aave onBehalfOf")
+                    time.sleep(2)
+                else:
+                    logger.warning(f"[Nurse] {wallet_address[:10]}... {token_name} supply failed — tokens in bot wallet")
+            else:
+                logger.warning(f"[Nurse] {wallet_address[:10]}... {token_name} pull from user failed")
+
+        usdc_data = balances.get("USDC", {})
+        usdc_balance = usdc_data.get("balance", 0)
+        if usdc_balance > 0:
+            logger.info(f"[Nurse] {wallet_address[:10]}... USDC ${usdc_balance:.2f} — PROFIT TOKEN, never swept")
+
+        if result["swept"]:
+            result["details"] = f"Swept: {', '.join(result['tokens_swept'])}"
+        else:
+            result["details"] = "No tokens above $2 floor to sweep"
+
+        return result
+
+    except Exception as e:
+        logger.error(f"[Nurse] {wallet_address[:10]}... sweep failed: {e}", exc_info=True)
+        result["details"] = f"Nurse sweep exception: {e}"
+        return result
+
+
 def run_delegated_strategy(user_id, wallet_address, agent, run_id, iteration, config):
     """
     Run the strategy engine for a single delegated wallet.
     Returns a dict: {"mode": str, "action": str, "executed": bool, "details": str}
 
-    Priority order: Emergency > Growth > Capacity > Idle/Skip
+    Priority order: Emergency > Growth (6-step) > Capacity (6-step) > Macro Short > Micro Short > Idle/Skip
     One action per call. Never multiple conflicting actions.
+
+    USER WALLET: No Profit Bucket. Short profits stay 100% in user wallet.
     """
     result = {"mode": "idle", "action": "SKIP", "executed": False, "details": ""}
 
@@ -228,33 +960,9 @@ def run_delegated_strategy(user_id, wallet_address, agent, run_id, iteration, co
             _record_strategy_action(user_id, wallet_address, f"SKIP: growth borrow too small (${borrow_amount:.2f})")
             return result
 
-        _log_strategy(user_id, wallet_address, "growth", "BORROW_DAI", live_hf,
-                      details=f"borrowing ${borrow_amount:.2f} DAI via delegation (collateral grew ${absolute_growth:+.2f} / {relative_growth*100:.1f}%)")
-
-        tx_hash = delegated_borrow_dai(wallet_address, borrow_amount)
-        if tx_hash:
-            post_data = get_user_account_data(wallet_address)
-            post_hf = post_data.get("healthFactor", 0) if post_data else 0
-            _log_strategy(user_id, wallet_address, "growth", "BORROW_DAI_OK", live_hf, hf_after=post_hf,
-                          details=f"tx={tx_hash[:16]}..., amount=${borrow_amount:.2f}")
+        result = _execute_delegated_distribution(user_id, wallet_address, agent, "growth", GROWTH_DISTRIBUTION, live_hf)
+        if result.get("executed"):
             _update_wallet_baseline(user_id, wallet_address, collateral_usd)
-            _record_strategy_action(user_id, wallet_address, f"GROWTH: Borrowed ${borrow_amount:.2f} DAI, HF {live_hf:.2f} -> {post_hf:.2f}")
-            result.update({"mode": "growth", "action": "BORROW_DAI", "executed": True,
-                          "details": f"Borrowed ${borrow_amount:.2f} DAI, HF {live_hf:.2f} -> {post_hf:.2f}"})
-
-            if DB_AVAILABLE:
-                database.record_wallet_action(
-                    user_id=user_id, wallet_address=wallet_address,
-                    action_type='strategy_growth_borrow',
-                    details={"amount_dai": borrow_amount, "hf_before": live_hf, "hf_after": post_hf,
-                             "collateral_usd": collateral_usd, "growth_abs": absolute_growth, "growth_rel": relative_growth},
-                    tx_hash=tx_hash)
-        else:
-            _log_strategy(user_id, wallet_address, "growth", "BORROW_DAI_FAILED", live_hf,
-                          details=f"tx failed for ${borrow_amount:.2f} DAI")
-            _record_strategy_action(user_id, wallet_address, f"FAILED: Growth borrow ${borrow_amount:.2f} DAI failed")
-            result.update({"mode": "growth", "action": "BORROW_DAI_FAILED", "executed": False,
-                          "details": f"Tx failed for ${borrow_amount:.2f} DAI"})
         return result
 
     capacity_met = (
@@ -273,32 +981,7 @@ def run_delegated_strategy(user_id, wallet_address, agent, run_id, iteration, co
             _record_strategy_action(user_id, wallet_address, f"SKIP: capacity borrow too small (${borrow_amount:.2f})")
             return result
 
-        _log_strategy(user_id, wallet_address, "capacity", "BORROW_DAI", live_hf,
-                      details=f"borrowing ${borrow_amount:.2f} DAI via delegation (capacity=${available_borrows:.2f})")
-
-        tx_hash = delegated_borrow_dai(wallet_address, borrow_amount)
-        if tx_hash:
-            post_data = get_user_account_data(wallet_address)
-            post_hf = post_data.get("healthFactor", 0) if post_data else 0
-            _log_strategy(user_id, wallet_address, "capacity", "BORROW_DAI_OK", live_hf, hf_after=post_hf,
-                          details=f"tx={tx_hash[:16]}..., amount=${borrow_amount:.2f}")
-            _record_strategy_action(user_id, wallet_address, f"CAPACITY: Borrowed ${borrow_amount:.2f} DAI, HF {live_hf:.2f} -> {post_hf:.2f}")
-            result.update({"mode": "capacity", "action": "BORROW_DAI", "executed": True,
-                          "details": f"Borrowed ${borrow_amount:.2f} DAI, HF {live_hf:.2f} -> {post_hf:.2f}"})
-
-            if DB_AVAILABLE:
-                database.record_wallet_action(
-                    user_id=user_id, wallet_address=wallet_address,
-                    action_type='strategy_capacity_borrow',
-                    details={"amount_dai": borrow_amount, "hf_before": live_hf, "hf_after": post_hf,
-                             "collateral_usd": collateral_usd, "available_borrows": available_borrows},
-                    tx_hash=tx_hash)
-        else:
-            _log_strategy(user_id, wallet_address, "capacity", "BORROW_DAI_FAILED", live_hf,
-                          details=f"tx failed for ${borrow_amount:.2f} DAI")
-            _record_strategy_action(user_id, wallet_address, f"FAILED: Capacity borrow ${borrow_amount:.2f} DAI failed")
-            result.update({"mode": "capacity", "action": "BORROW_DAI_FAILED", "executed": False,
-                          "details": f"Tx failed for ${borrow_amount:.2f} DAI"})
+        result = _execute_delegated_distribution(user_id, wallet_address, agent, "capacity", CAPACITY_DISTRIBUTION, live_hf)
         return result
 
     skip_reasons = []
