@@ -126,35 +126,44 @@ def deploy(abi, bytecode, bot_address=None):
     balance_eth = w3.from_wei(balance, "ether")
     print(f"  Deployer ETH balance: {balance_eth:.6f} ETH")
 
-    if balance_eth < 0.001:
-        print(f"ERROR: Insufficient ETH for deployment. Need at least 0.001 ETH, have {balance_eth:.6f}")
+    if balance_eth < 0.0001:
+        print(f"ERROR: Insufficient ETH for deployment. Need at least 0.0001 ETH, have {balance_eth:.6f}")
         sys.exit(1)
 
     contract = w3.eth.contract(abi=abi, bytecode=bytecode)
 
     print("\nBuilding deployment transaction...")
-    gas_price = w3.eth.gas_price
     nonce = w3.eth.get_transaction_count(deployer)
+    latest_block = w3.eth.get_block("latest")
+    base_fee = latest_block.get("baseFeePerGas", 0)
+    max_priority_fee = w3.to_wei(0.01, "gwei")
+    max_fee = int(base_fee * 1.25) + max_priority_fee
 
     constructor_tx = contract.constructor(bot_operator).build_transaction({
         "chainId": 42161,
         "from": deployer,
         "nonce": nonce,
-        "gasPrice": gas_price,
+        "maxFeePerGas": max_fee,
+        "maxPriorityFeePerGas": max_priority_fee,
     })
 
     gas_estimate = w3.eth.estimate_gas(constructor_tx)
-    constructor_tx["gas"] = int(gas_estimate * 1.2)
+    constructor_tx["gas"] = int(gas_estimate * 1.05)
 
-    cost_wei = constructor_tx["gas"] * gas_price
+    cost_wei = constructor_tx["gas"] * max_fee
     cost_eth = w3.from_wei(cost_wei, "ether")
     print(f"  Estimated gas: {gas_estimate}")
-    print(f"  Gas price: {w3.from_wei(gas_price, 'gwei'):.4f} gwei")
-    print(f"  Estimated cost: {cost_eth:.6f} ETH")
+    print(f"  Base fee: {w3.from_wei(base_fee, 'gwei'):.4f} gwei")
+    print(f"  Max fee: {w3.from_wei(max_fee, 'gwei'):.4f} gwei")
+    print(f"  Estimated max cost: {cost_eth:.6f} ETH")
+
+    if cost_wei > balance:
+        print(f"  WARNING: Max cost exceeds balance, but Arbitrum actual cost is typically much lower. Proceeding...")
 
     print("\nSigning and sending deployment transaction...")
     signed_tx = w3.eth.account.sign_transaction(constructor_tx, pk)
-    tx_hash = w3.eth.send_raw_transaction(signed_tx.raw_transaction)
+    raw_tx = getattr(signed_tx, 'raw_transaction', None) or signed_tx.rawTransaction
+    tx_hash = w3.eth.send_raw_transaction(raw_tx)
     print(f"  Tx hash: {tx_hash.hex()}")
     print(f"  Arbiscan: https://arbiscan.io/tx/{tx_hash.hex()}")
 
