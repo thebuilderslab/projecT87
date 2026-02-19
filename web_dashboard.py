@@ -3354,14 +3354,18 @@ def activate_delegation():
         return jsonify({"error": "User not found"}), 404
     wallet = user['wallet_address']
 
+    from delegation_client import is_contract_deployed
+    contract_live = is_contract_deployed()
+
     database.upsert_managed_wallet(user_id, wallet, auto_supply_wbtc=True)
     database.update_delegation_status(user_id, wallet, 'active')
-    database.record_wallet_action(user_id, wallet, 'delegation_activated', {
+    database.record_wallet_action(user_id, wallet, 'delegation_granted', {
         "auto_supply_wbtc": True,
         "max_supply_ratio": "0.8",
+        "contract_deployed": contract_live,
     })
-    logger.info(f"Delegation activated for user {user_id}, wallet {wallet}")
-    return jsonify({"status": "active", "autoSupplyWbtc": True})
+    logger.info(f"Delegation granted for user {user_id}, wallet {wallet}, contract_deployed={contract_live}")
+    return jsonify({"status": "active", "autoSupplyWbtc": True, "contractDeployed": contract_live})
 
 
 @app.route('/api/delegation/revoke', methods=['POST'])

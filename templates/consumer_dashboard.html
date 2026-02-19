@@ -1368,22 +1368,29 @@ async function loadDelegationStatus() {
   const section = document.getElementById('delegationSection');
   const content = document.getElementById('delegationContent');
 
-  if (!d.contractDeployed && d.delegationStatus === 'none') {
-    section.style.display = 'block';
-    content.innerHTML = '<div class="delegation-info" style="color:var(--yellow);">Delegation Manager contract not yet deployed. This feature will be available soon.</div>';
-    return;
-  }
-
   section.style.display = 'block';
+  const deployed = d.contractDeployed;
+  const notDeployedMsg = '<div class="delegation-info" style="color:var(--yellow);">Delegation Manager contract not yet deployed. Auto-supply will activate once the contract is live.</div>';
 
   if (d.delegationStatus === 'none') {
-    content.innerHTML = `
-      <div class="delegation-info">
-        REAA may auto-supply up to 80% of your WBTC balance to Aave.<br>
-        You can revoke at any time.
-      </div>
-      <button class="delegation-btn activate" onclick="activateDelegation()">Enable WBTC Auto-Supply</button>
-    `;
+    if (!deployed) {
+      content.innerHTML = `
+        <div class="delegation-info">
+          REAA may auto-supply up to 80% of your WBTC balance to Aave.<br>
+          You can revoke at any time.
+        </div>
+        ${notDeployedMsg}
+        <button class="delegation-btn activate" disabled title="Contract not deployed">Enable WBTC Auto-Supply</button>
+      `;
+    } else {
+      content.innerHTML = `
+        <div class="delegation-info">
+          REAA may auto-supply up to 80% of your WBTC balance to Aave.<br>
+          You can revoke at any time.
+        </div>
+        <button class="delegation-btn activate" onclick="activateDelegation()">Enable WBTC Auto-Supply</button>
+      `;
+    }
   } else if (d.delegationStatus === 'active') {
     let lastSupplyHtml = '';
     if (d.lastAutoSupplyAt) {
@@ -1414,12 +1421,13 @@ async function loadDelegationStatus() {
       </div>
       <div class="delegation-detail">
         <span class="label">Auto-Supply WBTC</span>
-        <span class="val" style="color:var(--green);">ON</span>
+        <span class="val" style="color:${deployed ? 'var(--green)' : 'var(--yellow)'};">${deployed ? 'ON' : 'PENDING (contract not deployed)'}</span>
       </div>
       <div class="delegation-detail">
         <span class="label">Total Supplied</span>
         <span class="val">${d.suppliedWbtcAmount.toFixed(4)} WBTC</span>
       </div>
+      ${!deployed ? notDeployedMsg : ''}
       ${lastSupplyHtml}
       <button class="delegation-btn revoke" onclick="revokeDelegation()">Revoke Delegation</button>
     `;
@@ -1430,7 +1438,8 @@ async function loadDelegationStatus() {
         <span class="delegation-badge revoked">Revoked</span>
       </div>
       <div class="delegation-info">Delegation was revoked. You can re-enable it at any time.</div>
-      <button class="delegation-btn activate" onclick="activateDelegation()">Re-enable WBTC Auto-Supply</button>
+      ${!deployed ? notDeployedMsg : ''}
+      <button class="delegation-btn activate" onclick="activateDelegation()" ${!deployed ? 'disabled title="Contract not deployed"' : ''}>Re-enable WBTC Auto-Supply</button>
     `;
   }
 }
