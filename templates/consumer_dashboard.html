@@ -583,7 +583,8 @@ tr:hover { background:rgba(0,230,180,0.03); }
   </div>
 
   <div class="tab-content" id="tab-filings">
-    <div class="filings-view">
+    <div id="filingsLocked" class="loading" style="padding:60px 20px;text-align:center;color:var(--muted);font-size:15px;">Connect wallet to view filings</div>
+    <div class="filings-view" id="filingsUnlocked" style="display:none;">
       <div class="filings-header">
         <h2>All Filings</h2>
         <div style="display:flex;gap:8px;">
@@ -625,8 +626,11 @@ tr:hover { background:rgba(0,230,180,0.03); }
   </div>
 
   <div class="tab-content" id="tab-analysis">
-    <div class="summary-cards" id="analysisSummary">
-      <div class="loading">Loading analysis...</div>
+    <div id="analysisLocked" class="loading" style="padding:60px 20px;text-align:center;color:var(--muted);font-size:15px;">Connect wallet to view analysis</div>
+    <div id="analysisUnlocked" style="display:none;">
+      <div class="summary-cards" id="analysisSummary">
+        <div class="loading">Loading analysis...</div>
+      </div>
     </div>
   </div>
 
@@ -770,6 +774,11 @@ function fullDisconnect() {
   document.getElementById('chatSendBtn').disabled = false;
 
   document.getElementById('pipelineBody').innerHTML = '<div class="loading">Connect wallet to view pipeline</div>';
+
+  document.getElementById('filingsLocked').style.display = '';
+  document.getElementById('filingsUnlocked').style.display = 'none';
+  document.getElementById('analysisLocked').style.display = '';
+  document.getElementById('analysisUnlocked').style.display = 'none';
 }
 
 async function connectWallet() {
@@ -820,6 +829,11 @@ async function authenticateWallet(address) {
   document.getElementById('defiActions').innerHTML = '<div class="defi-action-item"><div class="dot" style="background:var(--muted)"></div> Fetching DeFi data...</div>';
   document.getElementById('safetyScore').textContent = '...';
   document.getElementById('safetyScore').style.color = 'var(--muted)';
+
+  document.getElementById('filingsLocked').style.display = 'none';
+  document.getElementById('filingsUnlocked').style.display = '';
+  document.getElementById('analysisLocked').style.display = 'none';
+  document.getElementById('analysisUnlocked').style.display = '';
 
   loadDefiPanel();
   loadIncomeSummary();
@@ -1294,10 +1308,7 @@ function switchTab(tab) {
   document.querySelector(`.nav-tab[data-tab="${tab}"]`).classList.add('active');
   document.getElementById(`tab-${tab}`).classList.add('active');
 
-  if (!state.authToken) {
-    document.getElementById(`tab-${tab}`).innerHTML = '<div class="loading" style="padding:40px;text-align:center;">Connect wallet to view data</div>';
-    return;
-  }
+  if (!state.authToken) return;
   if (tab === 'filings') loadFilings();
   if (tab === 'analysis') loadAnalysis();
   if (tab === 'defi') loadDefiState();
