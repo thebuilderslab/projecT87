@@ -1,0 +1,143 @@
+Please patch the Liability Short close behavior for delegated user wallets so that profits follow a 20/20/60 pattern, with the 60% slice further split into ETH/WBTC/USDT.
+
+Target behavior (delegated user wallets, short close)
+When a delegated user wallet closes a Liability Short and realizes profit:
+
+Compute total realized profit in the settlement token (e.g., USDT or WETH), exactly as the personal bot does today.
+
+Apply a top‑level 20/20/60 split to the total profit:
+
+20%: send to Wallet_S (in DAI, same as personal bot’s “Wallet_S” logic).
+
+20%: “Wallet_B slice” → for user wallets:
+
+Swap this 20% slice to USDC via Uniswap.
+
+Leave the resulting USDC in the user’s wallet.
+
+60%: “collateral slice” → for user wallets:
+
+Further split this 60% slice as:
+
+20% of the total profit into ETH
+
+40% of the total profit into WBTC
+
+The remaining 40% of the total profit left in USDT (or the settlement token)
+
+Concretely, if total profit = P:
+
+p20_S = 0.20 * P → Wallet_S (DAI)
+
+p20_B = 0.20 * P → user‑held USDC
+
+p20_ETH = 0.20 * P → swap to ETH
+
+p40_WBTC = 0.40 * P → swap to WBTC
+
+p40_USDT = 0.40 * P → remain in / be held as USDT
+
+So the full breakdown of P is:
+
+20% Wallet_S (DAI)
+
+20% USDC in user wallet
+
+20% ETH
+
+40% WBTC
+
+40% USDT
+
+(With the understanding that the last 80% is all within the user’s economic domain.)
+
+Implementation details
+In the Liability Short close path (e.g., run_delegated_liability_short_close()):
+
+python
+profit_total = ...  # computed profit in settlement token
+
+p20_S   = profit_total * Decimal("0.20")  # Wallet_S slice
+p20_B   = profit_total * Decimal("0.20")  # to user as USDC
+p20_ETH = profit_total * Decimal("0.20")  # to ETH
+p40_WBTC = profit_total * Decimal("0.40") # to WBTC
+p40_USDT = profit_total * Decimal("0.40") # stays as USDT
+Wallet_S slice (20%)
+
+Same as personal bot:
+
+If profit token ≠ DAI, swap p20_S to DAI via Uniswap.
+
+Transfer DAI to Wallet_S.
+
+“Wallet_B” slice (20% → USDC in user wallet)
+
+For user wallets only:
+
+Swap p20_B to USDC via Uniswap.
+
+Transfer resulting USDC to the user wallet.
+
+Collateral slice (60% → ETH/WBTC/USDT)
+
+Treat the 60% slice as:
+
+p20_ETH (20% of total) → swap to ETH, leave in user wallet or supply to Aave on behalf of user (choose one and document).
+
+p40_WBTC (40% of total) → swap to WBTC, likewise either:
+
+leave in the user wallet, or
+
+supply WBTC to Aave as additional collateral (document which).
+
+p40_USDT (40% of total) → remain as USDT (or settlement token) in the user wallet, unless you choose to supply it; document behavior.
+
+You can implement this by:
+
+Starting with the settlement token (e.g., USDT or WETH).
+
+Executing the necessary Uniswap swaps for each slice.
+
+Routing outputs to either the user wallet or Aave onBehalfOf user, per your chosen pattern.
+
+Gating / config
+Personal bot remains unchanged (its existing 20/20/60 Wallet_S/Wallet_B/collateral behavior stays as‑is).
+
+Delegated user wallets use this new breakdown:
+
+20% Wallet_S (DAI)
+
+20% USDC in wallet
+
+20% ETH
+
+40% WBTC
+
+40% USDT
+
+Use a wallet profile flag to branch between operator vs user behavior.
+
+Tests and docs
+Tests:
+
+For a sample profit (e.g., P = 100 units):
+
+20 units worth → Wallet_S in DAI.
+
+20 units worth → USDC in user wallet.
+
+20 units worth → ETH per user allocation.
+
+40 units worth → WBTC per user allocation.
+
+40 units worth → USDT retained.
+
+Docs:
+
+Update replit.md Profit Flow Comparison:
+
+Personal bot: current 20/20/60 breakdown.
+
+User wallet: 20% Wallet_S (DAI), 20% USDC to user wallet, 20% ETH, 40% WBTC, 40% USDT (explain ETH/WBTC/USDT handling and whether they are left in wallet or supplied to Aave).
+
+This patch preserves the 20/20/60 concept while redistributing the “collateral” slice into ETH, WBTC, and USDT as specified.

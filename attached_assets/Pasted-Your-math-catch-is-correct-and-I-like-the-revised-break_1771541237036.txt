@@ -1,0 +1,136 @@
+Your math catch is correct, and I like the revised breakdown. Please treat the following as the final build spec for user‑wallet Liability Short profit distribution and proceed to implementation.
+
+1. Final profit allocation for delegated user wallets (short close)
+When a delegated user wallet closes a Liability Short and realizes profit 
+P
+P:
+
+Implement this exact allocation (all percentages are of the total profit P):
+
+20% of P → Wallet_S in DAI
+
+20% of P → USDC in the user’s wallet
+
+10% of P → ETH in the user’s wallet
+
+20% of P → WBTC in the user’s wallet
+
+30% of P → USDT in the user’s wallet
+
+So for any profit 
+P
+P:
+
+0.20
+P
+0.20P → Wallet_S (DAI)
+
+0.20
+P
+0.20P → USDC (user wallet)
+
+0.10
+P
+0.10P → ETH (user wallet)
+
+0.20
+P
+0.20P → WBTC (user wallet)
+
+0.30
+P
+0.30P → USDT (user wallet)
+
+Total = 100% of profit.
+
+The personal bot behavior stays unchanged (its existing 20/20/60 Wallet_S/Wallet_B/collateral logic is preserved).
+
+2. Implementation requirements
+In the Liability Short close handler for delegated wallets (e.g., run_delegated_liability_short_close):
+
+Compute profit in the settlement token (same method as today).
+
+Derive the slices:
+
+python
+profit_total = ...  # settlement token amount
+
+p_wallet_s = profit_total * Decimal("0.20")
+p_usdc    = profit_total * Decimal("0.20")
+p_eth     = profit_total * Decimal("0.10")
+p_wbtc    = profit_total * Decimal("0.20")
+p_usdt    = profit_total * Decimal("0.30")
+Apply them as follows:
+
+Wallet_S slice (20%)
+
+Swap p_wallet_s to DAI if needed, then transfer to Wallet_S.
+
+USDC slice (20%, user wallet)
+
+Swap p_usdc to USDC via existing Uniswap integration.
+
+Transfer USDC to the user wallet.
+
+ETH slice (10%, user wallet)
+
+Swap p_eth to ETH.
+
+Leave ETH in the user wallet (do not supply to Aave unless you explicitly decide and document otherwise).
+
+WBTC slice (20%, user wallet)
+
+Swap p_wbtc to WBTC.
+
+Leave WBTC in the user wallet (same note as above).
+
+USDT slice (30%, user wallet)
+
+Leave p_usdt as USDT (or settlement token) in the user wallet.
+
+Make sure:
+
+This distribution is only applied when wallet_profile (or equivalent) indicates a delegated user wallet.
+
+The personal bot path is not modified.
+
+3. Tests and docs (acceptance criteria)
+Before marking this complete:
+
+Tests
+
+For a test profit 
+P
+=
+100
+P=100 units on a delegated wallet, assert that approximately:
+
+20 units of DAI go to Wallet_S.
+
+20 units worth end up as USDC in the user wallet.
+
+10 units worth end up as ETH in the user wallet.
+
+20 units worth end up as WBTC in the user wallet.
+
+30 units worth remain as USDT in the user wallet.
+
+Documentation
+
+Update replit.md Profit Flow Comparison to show:
+
+Personal bot: existing 20/20/60 (Wallet_S / Wallet_B / collateral) unchanged.
+
+Delegated user wallet (short close):
+
+20% → Wallet_S (DAI)
+
+20% → USDC (user wallet)
+
+10% → ETH (user wallet)
+
+20% → WBTC (user wallet)
+
+30% → USDT (user wallet)
+
+Please proceed with this allocation and open a PR with the code + tests + doc update.
