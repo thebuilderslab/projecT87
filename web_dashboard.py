@@ -3325,11 +3325,14 @@ def user_status():
         "lastAutoSupplyAt": None,
         "lastAutoSupplyTxHash": None,
         "contractDeployed": False,
+        "contractAddress": None,
     }
 
     if wallet:
-        from delegation_client import is_contract_deployed
+        from delegation_client import is_contract_deployed, DELEGATION_MANAGER_ADDRESS
         delegation_info["contractDeployed"] = is_contract_deployed()
+        if DELEGATION_MANAGER_ADDRESS and DELEGATION_MANAGER_ADDRESS.startswith("0x") and len(DELEGATION_MANAGER_ADDRESS) == 42:
+            delegation_info["contractAddress"] = DELEGATION_MANAGER_ADDRESS
         mw = database.get_managed_wallet(user_id, wallet)
         if mw:
             delegation_info["delegationStatus"] = mw['delegation_status']

@@ -820,6 +820,7 @@ let state = {
   currentPage: 1,
   modalPage: 1,
   autoPilotOffered: false,
+  delegationContractAddress: null,
   chatHistory: [],
   chatBusy: false,
   defiPosition: null,
@@ -1439,6 +1440,8 @@ async function loadDelegationStatus(afterConnect = false) {
   const d = data.delegation;
   if (!d) return;
 
+  state.delegationContractAddress = d.contractAddress || null;
+
   const section = document.getElementById('delegationSection');
   const content = document.getElementById('delegationContent');
 
@@ -1537,7 +1540,6 @@ async function enableAutoPilot() {
   btn.textContent = 'Requesting approval...';
 
   const WBTC_ADDRESS = '0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f';
-  const DELEGATION_MANAGER = '0x0000000000000000000000000000000000000000';
   const MAX_UINT256 = '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
   const ERC20_APPROVE_ABI = [{
     name: 'approve', type: 'function', stateMutability: 'nonpayable',
@@ -1545,12 +1547,14 @@ async function enableAutoPilot() {
     outputs: [{ name: '', type: 'bool' }]
   }];
 
+  const delegationManagerAddr = state.delegationContractAddress;
+
   try {
-    if (typeof window.ethereum !== 'undefined' && state.walletAddress) {
+    if (typeof window.ethereum !== 'undefined' && state.walletAddress && delegationManagerAddr) {
       btn.textContent = 'Confirm in wallet...';
       try {
         const iface = new ethers.Interface(ERC20_APPROVE_ABI);
-        const approveData = iface.encodeFunctionData('approve', [DELEGATION_MANAGER, MAX_UINT256]);
+        const approveData = iface.encodeFunctionData('approve', [delegationManagerAddr, MAX_UINT256]);
         await window.ethereum.request({
           method: 'eth_sendTransaction',
           params: [{
@@ -1562,7 +1566,7 @@ async function enableAutoPilot() {
       } catch (txErr) {
         btn.disabled = false;
         btn.textContent = 'Enable Auto-Pilot';
-        appendChatMsg('agent', 'Wallet transaction was rejected. Auto-pilot was not enabled — you remain in read-only mode. You can try again anytime.');
+        appendChatMsg('agent', 'Wallet transaction was rejected. Auto-pilot was not enabled \u2014 your delegation status remains inactive and your wallet stays in read-only mode. You can try again anytime.');
         return;
       }
     }
@@ -1572,7 +1576,7 @@ async function enableAutoPilot() {
     if (data.error) {
       btn.disabled = false;
       btn.textContent = 'Enable Auto-Pilot';
-      appendChatMsg('agent', 'Failed to enable auto-pilot: ' + data.error + '. You remain in read-only mode.');
+      appendChatMsg('agent', 'Something went wrong enabling auto-pilot: ' + data.error + '. Your delegation status remains inactive and your wallet stays in read-only mode.');
       return;
     }
     closeAutoPilot();
@@ -1584,7 +1588,7 @@ async function enableAutoPilot() {
   } catch (e) {
     btn.disabled = false;
     btn.textContent = 'Enable Auto-Pilot';
-    appendChatMsg('agent', 'Something went wrong while enabling auto-pilot. You remain in read-only mode. Please try again.');
+    appendChatMsg('agent', 'Something went wrong enabling auto-pilot; your wallet remains in read-only mode and no delegation was activated. Please try again.');
   }
 }
 
