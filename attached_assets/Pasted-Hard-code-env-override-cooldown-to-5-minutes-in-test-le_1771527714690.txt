@@ -1,0 +1,64 @@
+Hard‑code / env‑override cooldown to 5 minutes in test: lets you iterate quickly.
+
+Zero‑state reset of last_auto_supply_at for the test wallet: directly validates the “first run” bug is fixed.
+
+Spam vs. success checks at 2 and 6 minutes: clean way to prove the cooldown gate behaves as designed.
+
+Production goal (e.g., 1 hour, or similar) is reasonable once behavior is verified.
+
+The pseudocode condition is also correct for avoiding the “blocked on first run” issue:
+
+python
+if last_auto_supply_at == 0 or (now - last_auto_supply_at >= COOLDOWN):
+    execute_supply()
+    last_auto_supply_at = now
+else:
+    log("Cooldown active. Skipping.")
+What to clarify / enforce in implementation
+Ask Replit to:
+
+Parameterize COOLDOWN_PERIOD via config/env
+
+Add something like AUTO_SUPPLY_COOLDOWN_SECONDS (default 3600 for prod).
+
+For your test, set it to 300 in the Replit env.
+
+Only set last_auto_supply_at on successful supply
+
+Ensure the timestamp is updated only after:
+
+The auto‑supply function returns status=ok, and
+
+A supply tx hash is recorded.
+
+If a run SKIPs or errors, leave last_auto_supply_at unchanged.
+
+Implement your test sequence explicitly
+
+Have them follow and confirm each step for your wallet:
+
+Set last_auto_supply_at = 0 for your wallet in managed_wallets.
+
+With cooldown = 300s:
+
+First run: supply should trigger immediately (and show on Aave).
+
+At ~2 minutes: manual trigger or wait for next cycle should SKIP with a “cooldown active” log.
+
+After ~6 minutes: second supply attempt should be allowed (if balance remains above min).
+
+They should paste:
+
+The relevant config/env snippet (showing cooldown value).
+
+The log lines for your wallet for each of the 3 events (initial supply, 2‑minute SKIP, 6‑minute success).
+
+Lock in production behavior
+
+After test success, set AUTO_SUPPLY_COOLDOWN_SECONDS to your agreed prod value (e.g., 3600).
+
+Add a comment in config / replit.md noting:
+
+“Test value: 300s” vs “Prod value: 3600s,”
+
+and that last_auto_supply_at starts at 0 and only changes on confirmed supply.
