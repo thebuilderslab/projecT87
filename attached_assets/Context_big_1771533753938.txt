@@ -1,0 +1,380 @@
+Context:
+You are working on our Auto‑Pilot / delegation system for user wallets. We want ONE mode only: full automation for any wallet that connects and signs. No monitoring‑only option for users.
+
+Task:
+Please read and follow the detailed spec below. It describes:
+- The full audit of tokens and permissions
+- Backend and on‑chain changes to auto‑grant full automation on connect
+- Strategy engine expectations
+- Revocation behavior
+- Documentation and security recommendations
+
+I want you to implement a single, full‑automation delegation model for any wallet that connects and signs into the app. There is no monitoring‑only mode for users. When a user connects a wallet and signs, the system must:
+
+Audit what permissions it actually needs for macro, micro, growth, and capacity.
+
+Audit all tokens the system may touch.
+
+Then automatically grant monitoring, triggering, and execution permissions across those tokens for that wallet via the delegation contracts and backend state.
+
+Please do this in three phases: (1) audit, (2) implementation, (3) documentation + recommendations.
+
+1. Full audit of tokens and permissions
+First, perform a thorough audit across the codebase and contracts to discover everything the automation system can do.
+
+Scan strategy and delegation code
+
+In the strategy engine and related modules (for example, strategy_engine.py, delegated_strategy_runner.py, macro.py, micro.py, growth.py, capacity.py, and any helpers), build a clear map of:
+
+All strategy types: macro, micro, growth, capacity (and any additional like “nurse”, “risk manager”, etc.).
+
+For each strategy type, the concrete on‑chain actions it may perform:
+
+Monitor only (read positions, health factor, prices).
+
+Supply / deposit.
+
+Borrow.
+
+Repay.
+
+Withdraw / unwind / rebalance.
+
+Any protocol‑specific operations (e.g., claim rewards, swap, re‑collateralize) if present.
+
+In whatever module handles delegation / execution (e.g., delegation_client.*, delegation_manager_client.*, aave_client.*), identify the actual contract functions called:
+
+Aave / lending calls such as supply, borrow, repay, withdraw (often via Pool.borrow, Pool.repay, etc.).
+
+Any credit or role delegation calls (e.g., approveDelegation, delegationWithSig, or a custom DelegationManager/Executor contract).
+
+Any ERC20 allowance or transfer logic used to move tokens from the user’s wallet or delegated vault.
+​
+
+Build a token‑by‑token permission matrix
+
+From that scan, construct a matrix (you can implement as a Python/TS constant) of all tokens and all required actions:
+
+List every token symbol or address that macro/micro/growth/capacity can ever touch, for example:
+
+WBTC
+
+WETH
+
+USDC
+
+Any other supported asset.
+
+For each token, mark which actions are used by the strategies:
+
+can_monitor (read only).
+
+can_supply.
+
+can_borrow.
+
+can_repay.
+
+can_withdraw.
+
+Additional protocol actions if relevant (e.g., can_claim_rewards, can_swap).
+
+Represent this as code, for example (adjust to your language):
+
+ts
+// permissions/strategyPermissions.ts
+export const TOKEN_PERMISSIONS = {
+  WBTC: {
+    can_monitor: true,
+    can_supply: true,
+    can_borrow: true,
+    can_repay: true,
+    can_withdraw: true,
+  },
+  WETH: {
+    can_monitor: true,
+    can_supply: true,
+    can_borrow: true,
+    can_repay: true,
+    can_withdraw: true,
+  },
+  USDC: {
+    can_monitor: true,
+    can_supply: true,
+    can_borrow: true,
+    can_repay: true,
+    can_withdraw: true,
+  },
+  // Extend for every supported token discovered in the audit
+} as const;
+
+export type TokenSymbol = keyof typeof TOKEN_PERMISSIONS;
+Derive required delegation flags per token
+
+Using that matrix, define a single “full_automation” delegation profile per token that captures what must be granted to the system’s operator wallet / executor contracts:
+
+ts
+// permissions/delegationProfile.ts
+export const FULL_AUTOMATION_FLAGS = {
+  WBTC: {
+    allowSupply: true,
+    allowBorrow: true,
+    allowRepay: true,
+    allowWithdraw: true,
+  },
+  WETH: {
+    allowSupply: true,
+    allowBorrow: true,
+    allowRepay: true,
+    allowWithdraw: true,
+  },
+  USDC: {
+    allowSupply: true,
+    allowBorrow: true,
+    allowRepay: true,
+    allowWithdraw: true,
+  },
+  // one entry for every supported token
+} as const;
+If your contracts use a different flag scheme (e.g., roles, bitmasks, or per‑function selectors), adapt the structure accordingly but keep the idea: a clear, enumerated permission set that matches what the strategies actually do.
+
+2. Implementation: auto‑grant full automation on wallet connect
+There must be no user‑facing choice; any wallet that explicitly connects and signs to enable the system receives full automation permission.
+
+2.1 Backend: connect/sign flow
+Hook into the existing connect + sign logic
+
+Locate the code that currently:
+
+Handles wallet connection (e.g., /api/auth/siwe, /api/wallet/connect).
+
+Verifies the signature and associates the wallet address with a user record.
+
+Enables “Auto‑Pilot” or similar features for that user.
+
+Extend this flow so that once the wallet is successfully authenticated and the user enables the bot, you:
+
+Call a new “full automation setup” function, something like:
+
+ts
+// services/delegationSetup.ts
+import { FULL_AUTOMATION_FLAGS } from "../permissions/delegationProfile";
+
+export async function enableFullAutomationForWallet(userId: string, walletAddress: string) {
+  // 1) On-chain delegation per token
+  for (const [symbol, flags] of Object.entries(FULL_AUTOMATION_FLAGS)) {
+    await delegationClient.setDelegationForToken({
+      userWallet: walletAddress,
+      tokenSymbol: symbol,
+      allowSupply: flags.allowSupply,
+      allowBorrow: flags.allowBorrow,
+      allowRepay: flags.allowRepay,
+      allowWithdraw: flags.allowWithdraw,
+    });
+  }
+
+  // 2) Persist in DB
+  await db.managed_wallets.upsert({
+    where: { user_id: userId, wallet_address: walletAddress },
+    update: {
+      delegation_status: "active",
+      strategy_status: "active",
+      delegation_mode: "full_automation", // new column if needed
+      auto_supply_wbtc: true, // and similar flags for other tokens if you track them
+    },
+    create: {
+      user_id: userId,
+      wallet_address: walletAddress,
+      delegation_status: "active",
+      strategy_status: "active",
+      delegation_mode: "full_automation",
+      auto_supply_wbtc: true,
+      // other defaults as needed
+    },
+  });
+
+  await db.users.update({
+    where: { id: userId },
+    data: { bot_enabled: true },
+  });
+}
+Call this function automatically when:
+
+A user connects a wallet and signs, and
+
+Toggles “Auto‑Pilot” / “Delegation” ON.
+
+There should be no alternate mode; either delegation is fully enabled or fully off.
+
+Delegation contract integration
+
+Implement or adapt a delegationClient.setDelegationForToken that:
+
+For each token discovered in the audit, configures the necessary on‑chain rights for the automation executor (e.g., the strategy bot or DelegationManager contract).
+
+Uses your existing delegation mechanism (e.g., credit delegation calls, role grants, or a custom DelegationManager).
+
+Example (pseudocode):
+
+ts
+// clients/delegationClient.ts
+export async function setDelegationForToken(opts: {
+  userWallet: string;
+  tokenSymbol: string;
+  allowSupply: boolean;
+  allowBorrow: boolean;
+  allowRepay: boolean;
+  allowWithdraw: boolean;
+}) {
+  const tokenConfig = TOKEN_CONFIG[opts.tokenSymbol]; // address, debt token, etc.
+  // For example, using an Executor/DelegationManager contract:
+  await delegationManager.configureDelegation(
+    opts.userWallet,
+    tokenConfig.underlying,
+    {
+      allowSupply: opts.allowSupply,
+      allowBorrow: opts.allowBorrow,
+      allowRepay: opts.allowRepay,
+      allowWithdraw: opts.allowWithdraw,
+    }
+  );
+}
+If you are using Aave‑style credit delegation, this may involve calling approveDelegation or similar on the appropriate debt token for each asset.
+
+2.2 Strategy engine: enforce full automation when active
+Update the strategy engine so that for any wallet in delegation_status='active':
+
+Macro, micro, growth, and capacity assume full execution rights for all tokens in FULL_AUTOMATION_FLAGS.
+
+Decisions to SKIP must be based only on:
+
+Health factor / risk rules.
+
+Any internal strategy constraints (e.g., min size, frequency, HF bands).
+
+If an action is attempted that the on‑chain flags do not allow (e.g., misconfiguration or revoked permission), log a clear permission error and mark the wallet as mis‑configured (but do not silently downgrade to monitoring‑only).
+
+For example:
+
+ts
+// strategy_engine.ts (pseudo)
+async function runDelegatedStrategiesForWallet(wallet: ManagedWallet) {
+  if (wallet.delegation_status !== "active") return; // completely off
+
+  const positions = await defiClient.getPositions(wallet.wallet_address);
+
+  for (const strategy of STRATEGIES) {
+    const token = strategy.tokenSymbol;
+    const flags = FULL_AUTOMATION_FLAGS[token];
+
+    const decision = strategy.evaluate(positions[token]);
+
+    if (!decision.shouldExecute) {
+      logSkip(wallet, strategy, "HF/rules");
+      continue;
+    }
+
+    try {
+      // Only attempt actions that should be allowed under full automation
+      await strategy.execute(wallet.wallet_address, decision);
+      logExecuted(wallet, strategy, decision);
+    } catch (err) {
+      if (isPermissionError(err)) {
+        logPermissionError(wallet, strategy, token, err);
+        // optionally mark wallet as misconfigured in DB
+      } else {
+        logStrategyError(wallet, strategy, err);
+      }
+    }
+  }
+}
+2.3 Revocation: fully off
+Implement a single “turn everything off” flow:
+
+On‑chain:
+
+Clear or disable delegation/credit allowances so the executor can no longer act on behalf of that wallet for any token.
+​
+
+DB:
+
+delegation_status = 'revoked'
+
+strategy_status = 'disabled'
+
+delegation_mode = null or 'none'
+
+bot_enabled = false.
+
+After revocation:
+
+The wallet should not appear in any “active managed wallets” queries.
+
+Strategy engine must not attempt macro/micro/growth/capacity execution for this wallet.
+
+3. Documentation and recommendations
+Finally, update documentation and add internal guidance.
+
+Add a “Delegation & Permissions” section to your main docs (e.g., replit.md or docs/delegation.md):
+
+Include:
+
+A description that any wallet that connects, signs, and enables Auto‑Pilot is automatically placed in full‑automation mode.
+
+The token‑by‑token permission matrix (which tokens and which actions).
+
+A description of macro/micro/growth/capacity responsibilities:
+
+Macro: high‑level rebalancing, big moves.
+
+Micro: small, frequent optimizations.
+​
+
+Growth: borrow/supply loops for yield.
+
+Capacity: liquidity management and HF guardrails.
+
+An explanation of the revocation flow and what it does on‑chain and in the DB.
+
+Inline code comments
+
+Document the FULL_AUTOMATION_FLAGS and TOKEN_PERMISSIONS structures with comments explaining that they are derived from a periodic audit of the strategy code, and any new strategy/token must update these tables.
+
+Security and UX recommendations
+
+Implement robust, structured logging for:
+
+Each wallet’s delegation setup per token and the result.
+
+Each executed strategy action vs SKIP, including reason codes (HF, config, permission, error).
+
+Consider:
+
+Adding limits / guards in the DelegationManager, such as per‑token max notional or HF constraints, to avoid catastrophic misuse if keys are compromised.
+
+Periodic internal reviews when new tokens or strategies are added, to refresh the permission audit and matrices.
+
+Deliverable expectation:
+
+New or updated code that:
+
+Audits and codifies token‑level permissions into a central matrix.
+
+Automatically configures full automation delegation for every connecting wallet that enables the bot (no monitoring‑only option).
+
+Updates DB fields consistently for delegation and strategy status.
+
+Makes the strategy engine actually execute macro/micro/growth/capacity for user wallets, with skips only for HF/risk or explicit revocation.
+
+Updated documentation describing this model and how to revoke.
+
+Use this prompt as the implementation spec and show me the concrete code changes (files, functions, and snippets) plus updated documentation text you add.
+
+Deliverables:
+- A short tech plan (files to touch, approach, any questions)
+- The actual code changes (PRs) implementing this behavior
+- Updated docs section on “Delegation & Permissions”
+- Evidence from logs / screenshots that a user wallet:
+  - Gets full automation delegation on connect+sign
+  - Has macro/micro/growth/capacity actually executing (not just monitoring)
+  - Can be fully turned off via revoke
