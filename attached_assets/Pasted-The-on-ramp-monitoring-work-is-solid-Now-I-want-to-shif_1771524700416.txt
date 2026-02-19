@@ -1,0 +1,90 @@
+The on‑ramp + monitoring work is solid. Now I want to shift focus fully to a consumer‑facing bot where the macro/micro/growth/capacity strategy engine runs on each delegated user wallet, not on the bot’s personal wallet.
+
+Please treat the bot wallet as an internal operator only; all automation should execute on the user’s connected wallet via delegation.
+
+1. Target architecture (new requirement)
+Implement and document this new pipeline for each delegated wallet:
+
+User connects wallet → approves delegation → enables auto‑pilot.
+
+System detects WBTC and (if enabled) supplies to Aave on that wallet’s behalf.
+
+Monitoring loop refreshes that wallet’s Aave position into defi_positions (has_active_position=true).
+
+Strategy engine (macro / micro / growth / capacity) runs for that wallet, using its own HF, collateral, and debt, and sends transactions via the delegation contract, not via the bot wallet’s balance.
+
+On withdraw or revoke, has_active_position flips false, supplied_wbtc_amount reconciles, and strategies stop for that wallet.
+
+2. Parameterize the strategy engine per wallet
+Refactor the current strategy engine (inside agent.run_real_defi_task / arbitrum_testnet_agent.py) so that:
+
+It accepts a wallet_address (and any needed delegation context) as an explicit parameter.
+
+All on‑chain actions it performs (borrow, repay, rebalance, mode changes) are executed for that delegated wallet via the delegation manager / contracts, not directly from agent.address.
+
+agent.address is used only as the signer/operator where required, never as the “position owner” you are optimizing.
+
+Please show:
+
+The updated function signatures you introduce (e.g., run_real_defi_task_for_wallet(wallet_address, run_id, iteration, config, delegation_ctx) or equivalent).
+
+Where you inject the delegated wallet address and how the contract calls route to that user’s Aave position.
+
+3. Update the monitoring loop to run strategies per delegated wallet
+In run_autonomous_mainnet.py:
+
+For each entry in managed_wallets (active delegated wallets):
+
+Call refresh_defi_for_user(uid, waddr) as you do now.
+
+If has_active_position is true (non‑dust), call the per‑wallet strategy function for that user:
+
+e.g., run_strategies_for_user(uid, waddr, agent, run_id, iteration, config)
+
+Inside, the strategy engine should operate on that wallet’s Aave position and issue delegated actions.
+
+The bot wallet may still run its own strategies if needed, but that should be optional and clearly separated from consumer flows.
+
+Add logging like:
+
+[Strategy] user=UID wallet=0x..., mode=growth, action=borrow, hf_before=X, hf_after=Y
+
+so we can see that strategies are executing per wallet, not just for the bot.
+
+4. Ensure no conflicts with auto‑supply and monitoring
+Keep auto_supply.py as the on‑ramp (supply only) with no independent HF/borrow logic.
+
+Ensure all borrow/repay/position‑management decisions happen in the per‑wallet strategy engine, driven by the same defi_positions data.
+
+Confirm that each wallet has a single decision path per cycle (no duplicate calls for the same wallet).
+
+Briefly describe how macro, micro, growth, and capacity modes map to:
+
+HF bands and target ranges per wallet.
+
+Borrow/repay actions taken via delegation.
+
+5. End‑to‑end consumer test
+Using a dedicated test user wallet (not the bot wallet):
+
+Connect, delegate, enable auto‑pilot.
+
+Supply WBTC (either via auto‑supply or manually, but above the dust threshold).
+
+Let several monitoring cycles run.
+
+Please provide:
+
+/api/defi/state and /api/user/status JSON for that user once the position is active.
+
+Monitoring + strategy logs showing:
+
+Wallet is included in get_active_managed_wallets.
+
+Aave position is refreshed.
+
+Strategy engine runs for that wallet and either executes on‑chain actions or logs a clear SKIP with reasons.
+
+A short code snippet or reference showing the exact function where you now run strategies per delegated wallet.
+
+When this is done, the system should behave as: “user connects wallet → bot runs autonomously on their wallet,” with my personal/bot wallet no longer being the only account that receives full strategy execution.
