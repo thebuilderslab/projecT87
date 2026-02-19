@@ -1534,28 +1534,33 @@ function closeAutoPilot() {
   document.getElementById('autopilotOverlay').classList.remove('visible');
 }
 
+function encodeApproveCalldata(spenderAddr, amountHex) {
+  const selector = '0x095ea7b3';
+  const spender = spenderAddr.toLowerCase().replace('0x', '').padStart(64, '0');
+  const amount = amountHex.replace('0x', '').padStart(64, '0');
+  return selector + spender + amount;
+}
+
 async function enableAutoPilot() {
   const btn = document.getElementById('apEnableBtn');
   btn.disabled = true;
   btn.textContent = 'Requesting approval...';
+  console.log('[AutoPilot] enableAutoPilot() called');
 
   const WBTC_ADDRESS = '0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f';
-  const MAX_UINT256 = '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
-  const ERC20_APPROVE_ABI = [{
-    name: 'approve', type: 'function', stateMutability: 'nonpayable',
-    inputs: [{ name: 'spender', type: 'address' }, { name: 'amount', type: 'uint256' }],
-    outputs: [{ name: '', type: 'bool' }]
-  }];
-
+  const MAX_UINT256_HEX = 'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
   const delegationManagerAddr = state.delegationContractAddress;
+
+  console.log('[AutoPilot] wallet:', state.walletAddress, 'contractAddr:', delegationManagerAddr, 'ethereum:', typeof window.ethereum);
 
   try {
     if (typeof window.ethereum !== 'undefined' && state.walletAddress && delegationManagerAddr) {
       btn.textContent = 'Confirm in wallet...';
+      console.log('[AutoPilot] Sending ERC-20 approve tx to WBTC for spender', delegationManagerAddr);
       try {
-        const iface = new ethers.Interface(ERC20_APPROVE_ABI);
-        const approveData = iface.encodeFunctionData('approve', [delegationManagerAddr, MAX_UINT256]);
-        await window.ethereum.request({
+        const approveData = encodeApproveCalldata(delegationManagerAddr, MAX_UINT256_HEX);
+        console.log('[AutoPilot] approve calldata:', approveData);
+        const txHash = await window.ethereum.request({
           method: 'eth_sendTransaction',
           params: [{
             from: state.walletAddress,
@@ -1563,32 +1568,41 @@ async function enableAutoPilot() {
             data: approveData,
           }],
         });
+        console.log('[AutoPilot] Approve tx sent:', txHash);
       } catch (txErr) {
+        console.warn('[AutoPilot] Wallet tx rejected or failed:', txErr);
         btn.disabled = false;
         btn.textContent = 'Enable Auto-Pilot';
-        appendChatMsg('agent', 'Wallet transaction was rejected. Auto-pilot was not enabled \u2014 your delegation status remains inactive and your wallet stays in read-only mode. You can try again anytime.');
+        const reason = (txErr && txErr.code === 4001) ? 'You rejected the transaction in your wallet.' : 'The wallet transaction failed.';
+        appendChatMsg('agent', 'Auto-Pilot not enabled \u2014 ' + reason + ' Your delegation remains inactive and your wallet stays in read-only mode. You can try again anytime from the DeFi panel.');
         return;
       }
+    } else {
+      console.log('[AutoPilot] Skipping on-chain approve (no MetaMask or no contract address). Activating server-side only.');
     }
 
     btn.textContent = 'Enabling...';
+    console.log('[AutoPilot] Calling POST /api/delegation/activate');
     const data = await api('/api/delegation/activate', { method: 'POST' });
+    console.log('[AutoPilot] activate response:', JSON.stringify(data));
     if (data.error) {
       btn.disabled = false;
       btn.textContent = 'Enable Auto-Pilot';
-      appendChatMsg('agent', 'Something went wrong enabling auto-pilot: ' + data.error + '. Your delegation status remains inactive and your wallet stays in read-only mode.');
+      appendChatMsg('agent', 'Error enabling Auto-Pilot: ' + data.error + '. Please try again or contact support.');
       return;
     }
     closeAutoPilot();
     btn.disabled = false;
     btn.textContent = 'Enable Auto-Pilot';
     state.autoPilotOffered = true;
-    loadDelegationStatus();
+    await loadDelegationStatus();
+    console.log('[AutoPilot] delegation activated successfully, UI refreshed');
     appendChatMsg('agent', 'Auto-pilot is now enabled. I\'ll auto-supply up to 80% of your WBTC and monitor your Aave safety band. You can revoke anytime from the DeFi panel.');
   } catch (e) {
+    console.error('[AutoPilot] Unexpected error:', e);
     btn.disabled = false;
     btn.textContent = 'Enable Auto-Pilot';
-    appendChatMsg('agent', 'Something went wrong enabling auto-pilot; your wallet remains in read-only mode and no delegation was activated. Please try again.');
+    appendChatMsg('agent', 'Error enabling Auto-Pilot: unexpected issue (' + (e.message || 'unknown') + '). Your wallet remains in read-only mode. Please try again or contact support.');
   }
 }
 

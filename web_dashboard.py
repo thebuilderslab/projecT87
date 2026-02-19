@@ -3335,10 +3335,11 @@ def user_status():
             delegation_info["contractAddress"] = DELEGATION_MANAGER_ADDRESS
         mw = database.get_managed_wallet(user_id, wallet)
         if mw:
-            delegation_info["delegationStatus"] = mw['delegation_status']
-            delegation_info["autoSupplyWbtc"] = mw['auto_supply_wbtc']
+            delegation_info["delegationStatus"] = mw['delegation_status'] or 'none'
+            delegation_info["autoSupplyWbtc"] = bool(mw.get('auto_supply_wbtc', False))
             delegation_info["suppliedWbtcAmount"] = float(mw['supplied_wbtc_amount'] or 0)
             delegation_info["lastAutoSupplyAt"] = mw['last_auto_supply_at'].isoformat() if mw.get('last_auto_supply_at') else None
+            logger.debug(f"[UserStatus] user={user_id} wallet={wallet} mw.delegation_status={mw['delegation_status']} -> delegationStatus={delegation_info['delegationStatus']}")
         last_action = database.get_last_wallet_action(user_id, wallet, action_type='auto_supply')
         if last_action:
             delegation_info["lastAutoSupplyTxHash"] = last_action.get('tx_hash')
@@ -3356,9 +3357,11 @@ def activate_delegation():
     if not user:
         return jsonify({"error": "User not found"}), 404
     wallet = user['wallet_address']
+    logger.info(f"[AutoPilot] activate_delegation called for user={user_id}, wallet={wallet}")
 
-    from delegation_client import is_contract_deployed
+    from delegation_client import is_contract_deployed, DELEGATION_MANAGER_ADDRESS
     contract_live = is_contract_deployed()
+    logger.info(f"[AutoPilot] contract_deployed={contract_live}, address={DELEGATION_MANAGER_ADDRESS}")
 
     database.upsert_managed_wallet(user_id, wallet, auto_supply_wbtc=True)
     database.update_delegation_status(user_id, wallet, 'active')
@@ -3367,7 +3370,10 @@ def activate_delegation():
         "max_supply_ratio": "0.8",
         "contract_deployed": contract_live,
     })
-    logger.info(f"Delegation granted for user {user_id}, wallet {wallet}, contract_deployed={contract_live}")
+
+    mw_after = database.get_managed_wallet(user_id, wallet)
+    logger.info(f"[AutoPilot] DB state after activation: delegation_status={mw_after.get('delegation_status') if mw_after else 'N/A'}, auto_supply_wbtc={mw_after.get('auto_supply_wbtc') if mw_after else 'N/A'}")
+
     return jsonify({"status": "active", "autoSupplyWbtc": True, "contractDeployed": contract_live})
 
 
