@@ -1,0 +1,110 @@
+We’re past planning; please implement the changes and prove they work end‑to‑end so we can treat this as build‑ready.
+
+1. Implement the endpoint changes
+In web_dashboard.py, please:
+
+In the delegation activate endpoint (around lines 3430–3431):
+
+After the existing upsert_managed_wallet and update_delegation_status calls, actually add:
+
+python
+database.update_strategy_status_field(user_id, wallet, 'active')
+database.set_bot_enabled(user_id, True)
+In the delegation revoke endpoint (around lines 3499–3502):
+
+After the existing revoke calls, actually add:
+
+python
+database.update_strategy_status_field(user_id, wallet, 'disabled')
+database.set_bot_enabled(user_id, False)
+Confirm there are no other delegation/auto‑pilot endpoints that can leave these flags in an inconsistent state. If there are, adjust them similarly.
+
+Please paste the updated endpoint code blocks so I can see exactly what you changed.
+
+2. Verify the flow via UI/API (no manual SQL)
+Starting from a clean “off” state for my wallet (user 22, 0xd60a...5cff):
+
+Use the normal app flow:
+
+Revoke delegation / disable Auto‑Pilot in the UI.
+
+Then: Connect wallet → Approve Delegation → Enable Auto‑Pilot.
+
+After doing that only through the UI/API, show:
+
+The managed_wallets row for my wallet (or the relevant fields):
+
+delegation_status
+
+auto_supply_wbtc
+
+strategy_status
+
+The users.bot_enabled value for my user.
+
+These should all be in the “on” state:
+
+delegation_status = 'active'
+
+auto_supply_wbtc = true
+
+strategy_status = 'active'
+
+bot_enabled = true
+
+Call /api/user/status for my user and paste the JSON, showing:
+
+strategyStatus
+
+strategyEnabled (if present)
+
+lastStrategyAction
+
+lastStrategyTimestamp
+
+Confirm that strategyStatus reflects active and matches the DB values.
+
+3. Prove auto‑supply + monitoring work after cooldown
+With WBTC in my wallet and the test cooldown configured (e.g., 5 minutes):
+
+Wait until cooldown has expired and let the bot (run_both.py) workflow run at least one auto‑supply cycle.
+
+Show, for my wallet:
+
+Auto‑supply log line with:
+
+wallet address,
+
+decision (status=ok or similar),
+
+supplied amount,
+
+tx hash.
+
+Confirmation that Aave shows WBTC under “Your supplies”.
+
+The updated defi_positions entry (total_collateral_usd, has_active_position=true).
+
+Show that the dashboard and APIs reflect this:
+
+/api/defi/state for my user, with non‑zero collateral and correct HF.
+
+/api/user/status with updated lastSupply / LastSupplyTimestamp fields if applicable.
+
+Screenshot or description of the Command Center / Auto‑Pilot panel showing:
+
+non‑zero Current Supply,
+
+correct Last Supply timestamp,
+
+Strategy Engine: ACTIVE.
+
+Once you’ve:
+
+Implemented the endpoint changes,
+
+Shown the flags flip correctly via the normal UI/API flow (no manual SQL), and
+
+Demonstrated one successful auto‑supply + monitoring cycle for my wallet,
+
+I’ll consider this build‑ready and we can proceed to deploy.
