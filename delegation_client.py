@@ -33,6 +33,17 @@ DELEGATION_MANAGER_ABI = [
     {"inputs": [{"name": "maxAmount", "type": "uint256"}], "name": "approveWBTCDelegation", "outputs": [], "stateMutability": "nonpayable", "type": "function"},
     {"inputs": [], "name": "revokeWBTCDelegation", "outputs": [], "stateMutability": "nonpayable", "type": "function"},
     {"inputs": [{"name": "user", "type": "address"}, {"name": "amount", "type": "uint256"}], "name": "autoSupplyWBTC", "outputs": [], "stateMutability": "nonpayable", "type": "function"},
+    {"inputs": [{"name": "user", "type": "address"}], "name": "getDelegation", "outputs": [
+        {"name": "isActive", "type": "bool"}, {"name": "approvedAt", "type": "uint256"}, {"name": "revokedAt", "type": "uint256"},
+        {"name": "maxSupplyPerTx", "type": "uint256"}, {"name": "dailySupplyLimit", "type": "uint256"}, {"name": "dailySupplyUsed", "type": "uint256"},
+        {"name": "allowSupply", "type": "bool"}, {"name": "allowBorrow", "type": "bool"}, {"name": "allowRepay", "type": "bool"}, {"name": "allowWithdraw", "type": "bool"},
+    ], "stateMutability": "view", "type": "function"},
+    {"inputs": [{"name": "user", "type": "address"}], "name": "getDailyUsage", "outputs": [
+        {"name": "used", "type": "uint256"}, {"name": "limit", "type": "uint256"}, {"name": "resetsAt", "type": "uint256"},
+    ], "stateMutability": "view", "type": "function"},
+    {"inputs": [], "name": "paused", "outputs": [{"name": "", "type": "bool"}], "stateMutability": "view", "type": "function"},
+    {"inputs": [], "name": "botOperator", "outputs": [{"name": "", "type": "address"}], "stateMutability": "view", "type": "function"},
+    {"inputs": [], "name": "owner", "outputs": [{"name": "", "type": "address"}], "stateMutability": "view", "type": "function"},
 ]
 
 AAVE_POOL_SUPPLY_ABI = [
