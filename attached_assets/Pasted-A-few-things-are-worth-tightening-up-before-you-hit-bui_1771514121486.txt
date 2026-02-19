@@ -1,0 +1,106 @@
+A few things are worth tightening up before you hit build, both in code and in how you’ll validate this in production-like conditions.
+
+Code changes to double‑check
+Make the header behavior explicit
+
+In enableAutoPilot(), remove any headers from the opts you pass to api() so you are never spreading a second headers object over the one that includes the auth token.
+
+If you truly need per-call headers (e.g., feature flags), merge them inside api() in a controlled way, e.g.:
+
+ts
+function api(path, opts: RequestInit = {}) {
+  const baseHeaders = { Authorization: `Bearer ${token}`, "Content-Type": "application/json" };
+  const mergedHeaders = { ...baseHeaders, ...(opts.headers || {}) }; // opts cannot override auth
+  return fetch(path, { ...opts, headers: mergedHeaders });
+}
+Harden fullDisconnect()
+
+Ensure fullDisconnect() always: clears timers/intervals, resets any “active” flags, closes the modal, and returns UI to a known-safe idle state.
+
+Make it idempotent (safe to call multiple times), since 401s or network errors might happen in bursts.
+
+Improve modal lifecycle
+
+Tie the modal state to a single source of truth (e.g., autopilotState.status) rather than ad-hoc booleans.
+
+On any terminal state (success, error, revoked, disconnected), call a shared “cleanup UI” function so you don’t forget to hide the modal in new code paths.
+
+Strengthen logging and errors
+
+Standardize a response contract from the backend: e.g., { status: "ok" | "skipped" | "error", reason?: string }.
+
+Map “skipped because min not met”, “already supplied”, “market closed”, etc. to human-readable messages near the button, not just in the console.
+
+Edge cases around balances and thresholds
+Handle borderline balances
+
+Explicitly floor or round WBTC amounts before comparing to the 0.0001 threshold to avoid floating-point weirdness.
+​
+
+Log both “raw” and “normalized” amounts in your cycle logs so you can debug odd cases (0.0000999999 vs 0.0001).
+
+Network/chain assumptions
+
+Confirm chain ID and RPC endpoint are consistent between activation, monitor loop, and revoke; log chain ID at activation.
+
+If the chain or market changes underneath you, fail noisy (surface an error) instead of silently skipping.
+
+Multi-user and isolation concerns
+State isolation
+
+Confirm all per-user state (balances, timers, modal open/closed, auth token) is scoped by user/session and never stored in global singletons.
+
+In memory caches (if any), key by {userId, chainId} to avoid leaking one user’s automation into another’s cycles.
+
+Auth resilience
+
+If an auth token expires, ensure you either:
+
+attempt a refresh once, then call fullDisconnect() on failure, or
+
+immediately fullDisconnect() with a “session expired, please reconnect” message.
+
+Automation-cycle behavior to test explicitly
+Turn your bullet list into a concrete test script you or QA can follow:
+
+Activation
+
+With autopilot off, click “Enable”, assert: API call receives valid Authorization header, modal shows “activating…”, then transitions to “active” or shows a clear error.
+
+Immediate first supply
+
+With ~0.002 WBTC, activate and assert one of:
+
+a successful supply tx with tx hash logged, or
+
+a “skipped: reason=XYZ” log and user-visible message.
+
+Monitoring loop
+
+Artificially change balance/price inputs (mock or testnet) and ensure the monitor loop reacts within expected interval and logs each decision.
+
+Idle safety
+
+Simulate: tab closed, browser slept, network lost. On resume or reconnect, ensure you either resume cleanly with fresh state or force a reactivation, not a half-broken loop.
+​
+
+Revoke flow
+
+Hit “Revoke” while a cycle is pending. Confirm:
+
+all timers are cleared,
+
+no further supplies occur,
+
+UI status flips to “inactive” and modal disappears.
+
+Bot restart
+
+Restart process / redeploy, reload UI with an already-on-chain autopilot state. Confirm the app re-syncs to reality (reads on-chain status) before starting cycles.
+
+Build/deploy hygiene on Replit
+Run tests and type checks (npm test, npm run lint, tsc --noEmit if TS) before hitting build, to catch any spread/headers regressions.
+
+In Replit Deployments, verify your environment variables (API base URL, auth secrets, RPC URLs) match what you used in testing so the behavior is identical in prod.
+
+If you paste the relevant api() and enableAutoPilot() snippets, I can sanity-check the header and modal handling before you ship

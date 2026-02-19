@@ -1,0 +1,58 @@
+After updating to the new Delegation Manager (0x7427370Ab4C311B090446544078c819b3946E59d) and running only the bot workflow, I tested again:
+
+
+I click Enable Auto‑Pilot.
+
+
+I approve both MetaMask transactions (WBTC approve + delegation). MetaMask shows “Your transaction is complete.”
+
+
+The REAA modal stays on screen, Enable Auto‑Pilot remains disabled, and the only way to recover is to disconnect the wallet. Clicking Enable again does nothing.
+
+
+Can you please debug the frontend + backend flow after tx success and fix whatever is keeping the modal stuck? Specifically:
+
+
+Confirm both on‑chain txs for my last attempt
+  - For wallet 0xd60a… on Arbitrum, list the two most recent tx hashes from my last click:
+    - WBTC approve(spender = 0x7427…E59d, amount = maxAmount).
+    - REAADelegationManager.approveWBTCDelegation(maxAmount).
+  - Confirm they are successful and show:
+    - WBTC.allowance(user, DM) > 0.
+    - getDelegation(user).isActive == true with the expected limits.
+
+
+Trace enableAutoPilot() after the second tx
+  - Add/inspect logs around each step:
+    - After approve receipt → log “approve success”.
+    - After delegation receipt → log “delegation success”.
+    - After on‑chain verification (allowance + getDelegation) → log the values and “on_chain_verified = true”.
+    - Around the fetch('/api/delegation/activate', …) call → log request and response status + body.
+  - Check the browser console for any JS errors or unhandled promise rejections during this sequence. A failing fetch or thrown error would explain why the modal never advances.
+
+
+Check /api/delegation/activate and /api/user/status
+  - In server logs for my last attempt, show:
+    - The [AutoPilot] activate_delegation log line with my wallet + approve_tx + delegation_tx.
+    - Whether on_chain_verified is true and delegation_status is actually updated to active.
+  - Immediately after activation, hit /api/user/status for my wallet and confirm it returns delegationStatus: "active" and autoSupplyWbtc: true.
+  - If activation fails or returns non‑200, ensure the frontend handles that response and shows an error instead of hanging.
+
+
+Fix the modal state transitions
+  - Make sure the UI does one of the following on success:
+    - Close the modal and update the dashboard state, or
+    - Replace it with a success state and re‑enable buttons.
+  - On failure at any step (wrong chain, tx reject, backend error), close or update the modal with a clear error and make the Enable Auto‑Pilot button usable again.
+
+
+Please send back:
+
+
+The two tx hashes from my latest attempt and their decoded calls.
+
+
+The relevant server log snippet for /api/delegation/activate and /api/user/status.
+
+
+Any JS error or failed fetch visible in the browser console when the modal gets stuck.
