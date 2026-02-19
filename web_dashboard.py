@@ -3361,17 +3361,24 @@ def activate_delegation():
 
     req_data = request.get_json(silent=True) or {}
     approve_tx_hash = req_data.get('approve_tx_hash')
-    logger.info(f"[AutoPilot] approve_tx_hash from frontend: {approve_tx_hash}")
+    delegation_tx_hash = req_data.get('delegation_tx_hash')
+    on_chain_verified = req_data.get('on_chain_verified', False)
+    logger.info(f"[AutoPilot] approve_tx={approve_tx_hash}, delegation_tx={delegation_tx_hash}, on_chain_verified={on_chain_verified}")
 
     from delegation_client import is_contract_deployed, DELEGATION_MANAGER_ADDRESS, get_wbtc_allowance_raw, get_wbtc_balance_raw
     contract_live = is_contract_deployed()
     logger.info(f"[AutoPilot] contract_deployed={contract_live}, address={DELEGATION_MANAGER_ADDRESS}")
 
     if contract_live:
+        if not on_chain_verified or not delegation_tx_hash:
+            logger.warning(f"[AutoPilot] Missing on-chain verification: on_chain_verified={on_chain_verified}, delegation_tx_hash={delegation_tx_hash}")
+            return jsonify({"error": "On-chain delegation not verified. Please complete both wallet transactions (approve + delegation) before activating."}), 400
+
         allowance = get_wbtc_allowance_raw(wallet)
         logger.info(f"[AutoPilot] on-chain WBTC allowance for {wallet}: {allowance}")
         if allowance <= 0:
-            logger.warning(f"[AutoPilot] allowance is 0 — approve tx may not have confirmed yet")
+            logger.warning(f"[AutoPilot] allowance is 0 — approve tx may not have confirmed yet or was on wrong chain")
+            return jsonify({"error": "WBTC allowance is still zero on-chain. The approval may have been on the wrong network. Please ensure you are on Arbitrum and try again."}), 400
 
     database.upsert_managed_wallet(user_id, wallet, auto_supply_wbtc=True)
     database.update_delegation_status(user_id, wallet, 'active')
@@ -3380,6 +3387,8 @@ def activate_delegation():
         "max_supply_ratio": "0.8",
         "contract_deployed": contract_live,
         "approve_tx_hash": approve_tx_hash,
+        "delegation_tx_hash": delegation_tx_hash,
+        "on_chain_verified": on_chain_verified,
     })
 
     mw_after = database.get_managed_wallet(user_id, wallet)
