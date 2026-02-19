@@ -1,0 +1,52 @@
+implement these concrete changes:
+
+Treat zero‑rounded collateral as “no position”
+
+In fetch_aave_position_for_wallet, after computing collateral and debt and rounding to 2 decimals, if both round to 0.00, return None instead of inserting a row with HF 999.99 and $0.00 collateral.
+
+Alternatively, add a small USD floor (e.g., < $0.01 → treat as no position), so dust never creates a “position.”
+
+Make supplied_wbtc_amount reconciled, not one‑way
+
+Decide what “Total Supplied” should mean:
+
+If it’s current supplied on Aave, derive it from on‑chain position, not supplied_wbtc_amount.
+
+If it’s lifetime supplied, then also show current supplied separately so users aren’t confused.
+
+At minimum, implement a reconciliation step in the monitoring/refresh that:
+
+Compares on‑chain aWBTC (or Aave collateral) to managed_wallets.supplied_wbtc_amount.
+
+If on‑chain is zero but DB is non‑zero, either:
+
+reset the DB field to zero, or
+
+mark a “mismatch” flag and show that in the UI.
+
+Explicit “no current position” state in DB
+
+Add a boolean or status column (e.g., has_active_position) to defi_positions, set based on collateral > threshold.
+
+Make /api/defi/state use that flag when deciding to return position vs null, instead of relying only on “row exists.”
+​
+
+Data cleanup / migration for existing users
+
+Write a one‑off script that:
+
+For each user, refetch Aave position;
+
+If collateral (rounded) is zero and debt is zero, delete or mark their defi_positions row as inactive and zero out supplied_wbtc_amount unless you intend that field to be lifetime.
+
+Run this before opening up to more consumers so no one carries over stale states.
+
+Document state semantics for consumer rollout
+
+They should add internal docs (even a short README section) clarifying:
+
+What defi_positions represents (snapshot, with has_active_position flag).
+
+What supplied_wbtc_amount represents (current vs lifetime vs last auto‑supply).
+
+When and how those values are updated (auto‑supply, manual withdraws, monitoring refresh), including edge cases like dust.
