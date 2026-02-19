@@ -242,6 +242,188 @@ def call_auto_supply_wbtc(user_address: str, amount_raw: int):
         return None
 
 
+def get_delegation_permissions(wallet_address: str) -> dict:
+    w3 = _get_web3()
+    if not w3 or not is_contract_deployed():
+        return {"isActive": False, "allowSupply": False, "allowBorrow": False, "allowRepay": False, "allowWithdraw": False}
+    try:
+        dm = w3.eth.contract(address=Web3.to_checksum_address(DELEGATION_MANAGER_ADDRESS), abi=DELEGATION_MANAGER_ABI)
+        result = dm.functions.getDelegation(Web3.to_checksum_address(wallet_address)).call()
+        perms = {
+            "isActive": result[0],
+            "approvedAt": result[1],
+            "revokedAt": result[2],
+            "maxSupplyPerTx": result[3],
+            "dailySupplyLimit": result[4],
+            "dailySupplyUsed": result[5],
+            "allowSupply": result[6],
+            "allowBorrow": result[7],
+            "allowRepay": result[8],
+            "allowWithdraw": result[9],
+        }
+        logger.info(f"getDelegation({wallet_address[:10]}...): active={perms['isActive']}, borrow={perms['allowBorrow']}, repay={perms['allowRepay']}, withdraw={perms['allowWithdraw']}")
+        return perms
+    except Exception as e:
+        logger.error(f"get_delegation_permissions failed for {wallet_address}: {e}")
+        return {"isActive": False, "allowSupply": False, "allowBorrow": False, "allowRepay": False, "allowWithdraw": False}
+
+
+AAVE_POOL_ABI = [
+    {"inputs": [{"name": "asset", "type": "address"}, {"name": "amount", "type": "uint256"}, {"name": "onBehalfOf", "type": "address"}, {"name": "referralCode", "type": "uint16"}], "name": "supply", "outputs": [], "stateMutability": "nonpayable", "type": "function"},
+    {"inputs": [{"name": "asset", "type": "address"}, {"name": "amount", "type": "uint256"}, {"name": "interestRateMode", "type": "uint256"}, {"name": "referralCode", "type": "uint16"}, {"name": "onBehalfOf", "type": "address"}], "name": "borrow", "outputs": [], "stateMutability": "nonpayable", "type": "function"},
+    {"inputs": [{"name": "asset", "type": "address"}, {"name": "amount", "type": "uint256"}, {"name": "interestRateMode", "type": "uint256"}, {"name": "onBehalfOf", "type": "address"}], "name": "repay", "outputs": [{"name": "", "type": "uint256"}], "stateMutability": "nonpayable", "type": "function"},
+    {"inputs": [{"name": "asset", "type": "address"}, {"name": "amount", "type": "uint256"}, {"name": "to", "type": "address"}], "name": "withdraw", "outputs": [{"name": "", "type": "uint256"}], "stateMutability": "nonpayable", "type": "function"},
+    {"inputs": [{"name": "user", "type": "address"}], "name": "getUserAccountData", "outputs": [
+        {"name": "totalCollateralBase", "type": "uint256"}, {"name": "totalDebtBase", "type": "uint256"},
+        {"name": "availableBorrowsBase", "type": "uint256"}, {"name": "currentLiquidationThreshold", "type": "uint256"},
+        {"name": "ltv", "type": "uint256"}, {"name": "healthFactor", "type": "uint256"}
+    ], "stateMutability": "view", "type": "function"},
+]
+
+DAI_ADDRESS = "0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1"
+WETH_ADDRESS = "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1"
+
+
+def _send_bot_tx(func_call, gas_estimate_fallback=400000):
+    w3 = _get_web3()
+    acct = _get_bot_account()
+    if not w3 or not acct:
+        logger.error("_send_bot_tx: missing Web3 or bot account")
+        return None
+    try:
+        eth_bal = w3.eth.get_balance(acct.address)
+        if eth_bal < w3.to_wei(0.0002, "ether"):
+            logger.error(f"Bot ETH too low for gas: {w3.from_wei(eth_bal, 'ether')} ETH")
+            return None
+        base_gas = w3.eth.gas_price
+        gas_price = int(base_gas * 2.5)
+        nonce = w3.eth.get_transaction_count(acct.address)
+        try:
+            est = func_call.estimate_gas({"from": acct.address})
+            gas_limit = int(est * 1.3)
+        except Exception as ge:
+            logger.warning(f"Gas estimate failed ({ge}), using {gas_estimate_fallback}")
+            gas_limit = gas_estimate_fallback
+        tx = func_call.build_transaction({
+            "from": acct.address,
+            "gas": gas_limit,
+            "gasPrice": gas_price,
+            "nonce": nonce,
+            "chainId": 42161,
+        })
+        signed = w3.eth.account.sign_transaction(tx, acct.key)
+        tx_hash = w3.eth.send_raw_transaction(signed.rawTransaction)
+        logger.info(f"Tx sent: {tx_hash.hex()}")
+        receipt = w3.eth.wait_for_transaction_receipt(tx_hash, timeout=120)
+        if receipt.status == 1:
+            final_hash = receipt.transactionHash.hex()
+            logger.info(f"Tx confirmed: {final_hash}")
+            return final_hash
+        else:
+            logger.error(f"Tx reverted: {tx_hash.hex()}")
+            return None
+    except Exception as e:
+        logger.error(f"_send_bot_tx failed: {e}", exc_info=True)
+        return None
+
+
+def delegated_borrow(user_address: str, asset_address: str, amount_wei: int, interest_rate_mode: int = 2) -> str:
+    w3 = _get_web3()
+    if not w3 or not is_contract_deployed():
+        return None
+    perms = get_delegation_permissions(user_address)
+    if not perms.get("isActive"):
+        logger.error(f"delegated_borrow: delegation not active for {user_address[:10]}...")
+        return None
+    if not perms.get("allowBorrow"):
+        logger.error(f"delegated_borrow: borrow not permitted for {user_address[:10]}...")
+        return None
+    dm = w3.eth.contract(address=Web3.to_checksum_address(DELEGATION_MANAGER_ADDRESS), abi=DELEGATION_MANAGER_ABI + [
+        {"inputs": [{"name": "user", "type": "address"}, {"name": "asset", "type": "address"}, {"name": "amount", "type": "uint256"}, {"name": "interestRateMode", "type": "uint256"}], "name": "executeBorrow", "outputs": [], "stateMutability": "nonpayable", "type": "function"},
+    ])
+    user_cs = Web3.to_checksum_address(user_address)
+    asset_cs = Web3.to_checksum_address(asset_address)
+    logger.info(f"delegated_borrow: user={user_address[:10]}..., asset={asset_address[:10]}..., amount_wei={amount_wei}")
+    return _send_bot_tx(dm.functions.executeBorrow(user_cs, asset_cs, amount_wei, interest_rate_mode))
+
+
+def delegated_borrow_dai(user_address: str, amount_dai: float) -> str:
+    amount_wei = int(amount_dai * 10**18)
+    logger.info(f"delegated_borrow_dai: user={user_address[:10]}..., amount=${amount_dai:.2f}")
+    return delegated_borrow(user_address, DAI_ADDRESS, amount_wei, interest_rate_mode=2)
+
+
+def delegated_borrow_weth(user_address: str, amount_weth: float) -> str:
+    amount_wei = int(amount_weth * 10**18)
+    logger.info(f"delegated_borrow_weth: user={user_address[:10]}..., amount={amount_weth:.6f} WETH")
+    return delegated_borrow(user_address, WETH_ADDRESS, amount_wei, interest_rate_mode=2)
+
+
+def delegated_repay(user_address: str, asset_address: str, amount_wei: int, interest_rate_mode: int = 2) -> str:
+    w3 = _get_web3()
+    if not w3 or not is_contract_deployed():
+        return None
+    perms = get_delegation_permissions(user_address)
+    if not perms.get("isActive") or not perms.get("allowRepay"):
+        logger.error(f"delegated_repay: not permitted for {user_address[:10]}...")
+        return None
+    dm = w3.eth.contract(address=Web3.to_checksum_address(DELEGATION_MANAGER_ADDRESS), abi=DELEGATION_MANAGER_ABI + [
+        {"inputs": [{"name": "user", "type": "address"}, {"name": "asset", "type": "address"}, {"name": "amount", "type": "uint256"}, {"name": "interestRateMode", "type": "uint256"}], "name": "executeRepay", "outputs": [], "stateMutability": "nonpayable", "type": "function"},
+    ])
+    user_cs = Web3.to_checksum_address(user_address)
+    asset_cs = Web3.to_checksum_address(asset_address)
+    logger.info(f"delegated_repay: user={user_address[:10]}..., asset={asset_address[:10]}..., amount_wei={amount_wei}")
+    return _send_bot_tx(dm.functions.executeRepay(user_cs, asset_cs, amount_wei, interest_rate_mode))
+
+
+def delegated_repay_dai(user_address: str, amount_dai: float) -> str:
+    amount_wei = int(amount_dai * 10**18)
+    logger.info(f"delegated_repay_dai: user={user_address[:10]}..., amount=${amount_dai:.2f}")
+    return delegated_repay(user_address, DAI_ADDRESS, amount_wei, interest_rate_mode=2)
+
+
+def delegated_withdraw(user_address: str, asset_address: str, amount_wei: int) -> str:
+    w3 = _get_web3()
+    if not w3 or not is_contract_deployed():
+        return None
+    perms = get_delegation_permissions(user_address)
+    if not perms.get("isActive") or not perms.get("allowWithdraw"):
+        logger.error(f"delegated_withdraw: not permitted for {user_address[:10]}...")
+        return None
+    dm = w3.eth.contract(address=Web3.to_checksum_address(DELEGATION_MANAGER_ADDRESS), abi=DELEGATION_MANAGER_ABI + [
+        {"inputs": [{"name": "user", "type": "address"}, {"name": "asset", "type": "address"}, {"name": "amount", "type": "uint256"}], "name": "executeWithdraw", "outputs": [], "stateMutability": "nonpayable", "type": "function"},
+    ])
+    user_cs = Web3.to_checksum_address(user_address)
+    asset_cs = Web3.to_checksum_address(asset_address)
+    logger.info(f"delegated_withdraw: user={user_address[:10]}..., asset={asset_address[:10]}..., amount_wei={amount_wei}")
+    return _send_bot_tx(dm.functions.executeWithdraw(user_cs, asset_cs, amount_wei))
+
+
+def get_user_account_data(wallet_address: str) -> dict:
+    w3 = _get_web3()
+    if not w3:
+        return None
+    try:
+        pool = w3.eth.contract(address=Web3.to_checksum_address(AAVE_POOL_ADDRESS), abi=AAVE_POOL_ABI)
+        data = pool.functions.getUserAccountData(Web3.to_checksum_address(wallet_address)).call()
+        collateral_usd = data[0] / 1e8
+        debt_usd = data[1] / 1e8
+        available_borrows_usd = data[2] / 1e8
+        hf = data[5] / 1e18 if data[5] > 0 else 0
+        if hf > 999.99:
+            hf = 999.99
+        return {
+            "totalCollateralUSD": round(collateral_usd, 2),
+            "totalDebtUSD": round(debt_usd, 2),
+            "availableBorrowsUSD": round(available_borrows_usd, 2),
+            "healthFactor": round(hf, 4),
+            "ltv": data[4],
+        }
+    except Exception as e:
+        logger.error(f"get_user_account_data failed for {wallet_address}: {e}")
+        return None
+
+
 def approve_delegation(wallet_address: str):
     if not is_contract_deployed():
         logger.warning("Contract not deployed — cannot approve delegation on-chain")

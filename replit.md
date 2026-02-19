@@ -59,6 +59,22 @@ The REAA platform is built on the Arbitrum Mainnet, featuring distinct modules f
   - User withdraws all collateral: Next monitoring refresh marks position inactive, resets supply counter.
   - Delegation revoked but position exists: Position still monitored (read-only), but no auto-supply actions are taken.
 
+**Phase 2B: Per-Wallet Autonomous Strategy Execution:**
+- **Architecture:** `strategy_engine.py` implements per-wallet HF-band strategies via `run_delegated_strategy()`. The monitoring loop (`run_autonomous_mainnet.py`) calls this for each managed wallet with `has_active_position=true` and `delegation_status='active'`.
+- **HF Band Priority (highest first):**
+  1. **Growth** (HF ≥ 3.10): Borrow $11.40 DAI via delegation contract `executeBorrow`. Requires $13.20 collateral cap + $50 growth since baseline.
+  2. **Capacity** (HF ≥ 2.90): Borrow $6.70 DAI. Requires $8.20 collateral cap.
+  3. **Macro Short** (HF ≥ 3.05): Triggered by collateral velocity drop ≥ $50 in 30 min. Borrows WETH as hedge.
+  4. **Micro Short** (HF ≥ 3.00): Triggered by collateral velocity drop ≥ $30 in 20 min. Borrows WETH as smaller hedge.
+  5. **SKIP**: If no band matches, logs explicit reason and takes no action.
+- **One mode per wallet per cycle.** No concurrent conflicting actions. `processed_strategy_ids` set prevents double-execution.
+- **DB columns on `managed_wallets`:** `last_strategy_action` (TEXT), `last_strategy_at` (TIMESTAMPTZ), `strategy_status` (VARCHAR — active/monitoring_only/disabled), `last_collateral_baseline` (NUMERIC for growth tracking).
+- **Single source of truth:** `defi_positions` → `strategy_engine.py` → `delegation_client.py` → on-chain Aave Pool via REAADelegationManager.
+- **API:** `/api/user/status` returns `strategyEnabled`, `strategyStatus`, `lastStrategyAction`, `lastStrategyTimestamp`.
+- **UI:** Auto-Pilot panel shows Strategy Engine status line, last action text, and timestamp.
+- **Delegation routing:** All borrow/repay/withdraw calls go through `delegation_client.py` which signs with bot operator key and calls REAADelegationManager contract methods.
+- **Bot wallet separation:** Bot wallet strategies (`run_strategies_for_user`) run on a separate path from delegated wallet strategies.
+
 ## External Dependencies
 
 - **Aave V3 Protocol**: Core DeFi lending protocol on Arbitrum Mainnet.

@@ -3349,6 +3349,10 @@ def user_status():
         "lastAutoSupplyTxHash": None,
         "contractDeployed": False,
         "contractAddress": None,
+        "strategyEnabled": False,
+        "strategyStatus": "disabled",
+        "lastStrategyAction": None,
+        "lastStrategyTimestamp": None,
     }
 
     if wallet:
@@ -3362,7 +3366,11 @@ def user_status():
             delegation_info["autoSupplyWbtc"] = bool(mw.get('auto_supply_wbtc', False))
             delegation_info["suppliedWbtcAmount"] = float(mw['supplied_wbtc_amount'] or 0)
             delegation_info["lastAutoSupplyAt"] = mw['last_auto_supply_at'].isoformat() if mw.get('last_auto_supply_at') else None
-            logger.debug(f"[UserStatus] user={user_id} wallet={wallet} mw.delegation_status={mw['delegation_status']} -> delegationStatus={delegation_info['delegationStatus']}")
+            delegation_info["lastStrategyAction"] = mw.get('last_strategy_action')
+            delegation_info["lastStrategyTimestamp"] = mw['last_strategy_at'].isoformat() if mw.get('last_strategy_at') else None
+            delegation_info["strategyStatus"] = mw.get('strategy_status', 'disabled')
+            delegation_info["strategyEnabled"] = delegation_info["strategyStatus"] in ('active', 'monitoring_only')
+            logger.debug(f"[UserStatus] user={user_id} wallet={wallet} mw.delegation_status={mw['delegation_status']} -> delegationStatus={delegation_info['delegationStatus']}, strategyStatus={delegation_info['strategyStatus']}")
 
         defi_pos = database.get_defi_position(user_id)
         has_active = defi_pos.get('has_active_position', False) if defi_pos else False

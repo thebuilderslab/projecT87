@@ -27,6 +27,12 @@ except ImportError:
     AUTO_SUPPLY_AVAILABLE = False
 
 try:
+    from strategy_engine import run_delegated_strategy, get_strategy_status
+    STRATEGY_ENGINE_AVAILABLE = True
+except ImportError:
+    STRATEGY_ENGINE_AVAILABLE = False
+
+try:
     import db as database
     DB_AVAILABLE = True
 except ImportError:
@@ -270,6 +276,7 @@ def run_autonomous_mainnet_agent():
                         bot_user_id = bot_user['id']
 
                 processed_user_ids = set()
+                processed_strategy_ids = set()
 
                 for mw in managed_wallets:
                     uid = mw['user_id']
@@ -279,14 +286,33 @@ def run_autonomous_mainnet_agent():
                         pos = refresh_defi_for_user(uid, waddr)
                         if pos:
                             log_agent_activity(f"[Monitor] wallet={waddr[:10]}..., collateral=${pos['total_collateral_usd']}, "
-                                             f"debt=${pos['total_debt_usd']}, hf={pos['health_factor']}, mode=delegated, decision=MONITOR")
+                                             f"debt=${pos['total_debt_usd']}, hf={pos['health_factor']}, mode=delegated")
+
+                            if STRATEGY_ENGINE_AVAILABLE and uid not in processed_strategy_ids:
+                                processed_strategy_ids.add(uid)
+                                defi_pos = database.get_defi_position(uid)
+                                has_active = defi_pos.get('has_active_position', False) if defi_pos else False
+                                if has_active and mw.get('delegation_status') == 'active':
+                                    strategy_result = run_delegated_strategy(uid, waddr, agent, run_id, iteration, config)
+                                    strat_status = get_strategy_status(uid, waddr)
+                                    database.update_strategy_status_field(uid, waddr, strat_status)
+                                    log_agent_activity(f"[Strategy] wallet={waddr[:10]}..., mode={strategy_result['mode']}, "
+                                                     f"action={strategy_result['action']}, status={strat_status}, "
+                                                     f"details={strategy_result.get('details', '')}")
+                                else:
+                                    log_agent_activity(f"[Monitor] wallet={waddr[:10]}..., strategy=SKIP (active_pos={has_active}, delegation={mw.get('delegation_status')})")
+                            elif STRATEGY_ENGINE_AVAILABLE and uid in processed_strategy_ids:
+                                log_agent_activity(f"[Strategy] wallet={waddr[:10]}..., DEDUP_SKIP (user {uid} already processed this cycle)")
+                            elif not STRATEGY_ENGINE_AVAILABLE:
+                                log_agent_activity(f"[Monitor] wallet={waddr[:10]}..., mode=delegated, decision=MONITOR (strategy engine not loaded)")
                         else:
                             log_agent_activity(f"[Monitor] wallet={waddr[:10]}..., mode=delegated, decision=SKIP (no position)")
                     except Exception as mw_err:
                         log_agent_activity(f"[Monitor] wallet={waddr[:10]}..., mode=delegated, decision=ERROR ({mw_err})", "WARNING")
 
-                if bot_user_id is not None and bot_user_id not in processed_user_ids:
-                    refresh_defi_for_user(bot_user_id, bot_wallet)
+                if bot_user_id is not None and bot_user_id not in processed_strategy_ids:
+                    if bot_user_id not in processed_user_ids:
+                        refresh_defi_for_user(bot_user_id, bot_wallet)
                     performance = run_strategies_for_user(bot_user_id, bot_wallet, agent, run_id, iteration, config)
                 elif bot_user_id is not None:
                     performance = run_strategies_for_user(bot_user_id, bot_wallet, agent, run_id, iteration, config)

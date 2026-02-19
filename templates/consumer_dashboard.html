@@ -1512,6 +1512,31 @@ async function loadDelegationStatus(afterConnect = false) {
         `;
       }
     }
+    const stratStatusColor = d.strategyStatus === 'active' ? 'var(--green)' : d.strategyStatus === 'monitoring_only' ? 'var(--yellow)' : 'var(--muted)';
+    const stratStatusLabel = d.strategyStatus === 'active' ? 'ACTIVE' : d.strategyStatus === 'monitoring_only' ? 'MONITORING ONLY' : 'DISABLED';
+    let strategyHtml = `
+      <div class="delegation-detail">
+        <span class="label">Strategy Engine</span>
+        <span class="val" style="color:${stratStatusColor};">${stratStatusLabel}</span>
+      </div>
+    `;
+    if (d.lastStrategyAction) {
+      strategyHtml += `
+        <div class="delegation-detail">
+          <span class="label">Last Action</span>
+          <span class="val" style="font-size:11px;">${d.lastStrategyAction}</span>
+        </div>
+      `;
+      if (d.lastStrategyTimestamp) {
+        const stratDt = new Date(d.lastStrategyTimestamp);
+        strategyHtml += `
+          <div class="delegation-detail">
+            <span class="label">At</span>
+            <span class="val" style="font-size:11px;">${stratDt.toLocaleString()}</span>
+          </div>
+        `;
+      }
+    }
     content.innerHTML = `
       <div class="delegation-status-row">
         <span class="label" style="font-size:12px;color:var(--muted);">Status</span>
@@ -1525,6 +1550,7 @@ async function loadDelegationStatus(afterConnect = false) {
         <span class="label">Current Supply</span>
         <span class="val">${d.hasActivePosition ? d.suppliedWbtcAmount.toFixed(4) + ' WBTC' : '0 WBTC'}</span>
       </div>
+      ${strategyHtml}
       ${d.supplyReconciled ? '<div class="delegation-detail"><span class="label" style="color:var(--yellow);font-size:11px;">Note</span><span class="val" style="color:var(--yellow);font-size:11px;">On-chain position empty — counter resets on next refresh</span></div>' : ''}
       ${!deployed ? notDeployedMsg : ''}
       ${lastSupplyHtml}

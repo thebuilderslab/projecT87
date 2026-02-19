@@ -139,10 +139,18 @@ def init_db():
             auto_supply_wbtc BOOLEAN NOT NULL DEFAULT false,
             supplied_wbtc_amount NUMERIC DEFAULT 0,
             last_auto_supply_at TIMESTAMPTZ,
+            last_strategy_action TEXT,
+            last_strategy_at TIMESTAMPTZ,
+            strategy_status VARCHAR(20) NOT NULL DEFAULT 'disabled',
+            last_collateral_baseline NUMERIC(14,2) DEFAULT 0,
             created_at TIMESTAMPTZ DEFAULT NOW(),
             updated_at TIMESTAMPTZ DEFAULT NOW(),
             UNIQUE(user_id, wallet_address)
         );
+        ALTER TABLE managed_wallets ADD COLUMN IF NOT EXISTS last_strategy_action TEXT;
+        ALTER TABLE managed_wallets ADD COLUMN IF NOT EXISTS last_strategy_at TIMESTAMPTZ;
+        ALTER TABLE managed_wallets ADD COLUMN IF NOT EXISTS strategy_status VARCHAR(20) NOT NULL DEFAULT 'disabled';
+        ALTER TABLE managed_wallets ADD COLUMN IF NOT EXISTS last_collateral_baseline NUMERIC(14,2) DEFAULT 0;
 
         CREATE TABLE IF NOT EXISTS wallet_actions (
             id BIGSERIAL PRIMARY KEY,
@@ -454,6 +462,63 @@ def reset_supplied_if_withdrawn(user_id, wallet_address):
         return rows > 0
     except Exception as e:
         logger.error(f"[DB] reset_supplied_if_withdrawn FAILED for user {user_id}: {e}")
+        return False
+
+
+def update_strategy_status(user_id, wallet_address, action_text):
+    import logging
+    logger = logging.getLogger(__name__)
+    wallet_address = wallet_address.lower().strip()
+    try:
+        with get_conn() as conn:
+            cur = conn.cursor()
+            cur.execute("""
+                UPDATE managed_wallets
+                SET last_strategy_action = %s, last_strategy_at = NOW(), updated_at = NOW()
+                WHERE user_id = %s AND wallet_address = %s
+            """, (action_text, user_id, wallet_address))
+            cur.close()
+        return True
+    except Exception as e:
+        logger.error(f"[DB] update_strategy_status FAILED for user {user_id}: {e}")
+        return False
+
+
+def update_strategy_status_field(user_id, wallet_address, status):
+    import logging
+    logger = logging.getLogger(__name__)
+    wallet_address = wallet_address.lower().strip()
+    try:
+        with get_conn() as conn:
+            cur = conn.cursor()
+            cur.execute("""
+                UPDATE managed_wallets
+                SET strategy_status = %s, updated_at = NOW()
+                WHERE user_id = %s AND wallet_address = %s
+            """, (status, user_id, wallet_address))
+            cur.close()
+        return True
+    except Exception as e:
+        logger.error(f"[DB] update_strategy_status_field FAILED for user {user_id}: {e}")
+        return False
+
+
+def update_collateral_baseline(user_id, wallet_address, baseline):
+    import logging
+    logger = logging.getLogger(__name__)
+    wallet_address = wallet_address.lower().strip()
+    try:
+        with get_conn() as conn:
+            cur = conn.cursor()
+            cur.execute("""
+                UPDATE managed_wallets
+                SET last_collateral_baseline = %s, updated_at = NOW()
+                WHERE user_id = %s AND wallet_address = %s
+            """, (baseline, user_id, wallet_address))
+            cur.close()
+        return True
+    except Exception as e:
+        logger.error(f"[DB] update_collateral_baseline FAILED for user {user_id}: {e}")
         return False
 
 
