@@ -1512,8 +1512,8 @@ async function loadDelegationStatus(afterConnect = false) {
         `;
       }
     }
-    const stratStatusColor = d.strategyStatus === 'active' ? 'var(--green)' : d.strategyStatus === 'monitoring_only' ? 'var(--yellow)' : 'var(--muted)';
-    const stratStatusLabel = d.strategyStatus === 'active' ? 'ACTIVE' : d.strategyStatus === 'monitoring_only' ? 'MONITORING ONLY' : 'DISABLED';
+    const stratStatusColor = d.strategyStatus === 'active' ? 'var(--green)' : d.strategyStatus === 'error_permissions' ? 'var(--red)' : 'var(--muted)';
+    const stratStatusLabel = d.strategyStatus === 'active' ? 'FULL AUTOMATION' : d.strategyStatus === 'error_permissions' ? 'PERMISSION ERROR' : 'DISABLED';
     let strategyHtml = `
       <div class="delegation-detail">
         <span class="label">Strategy Engine</span>

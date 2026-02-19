@@ -24,7 +24,7 @@ The REAA platform is built on the Arbitrum Mainnet, featuring distinct modules f
 - **Liability Short Strategy:** Automatically hedges against market downturns by borrowing WETH based on collateral velocity drops, allocating it into a diversified basket, and distributing profits from closing positions.
 - **Health Factor Management:** Employs conservative health factor thresholds and a "Nurse Mode" (`_perform_safety_sweep()`) to proactively sweep non-USDC collateral to Aave, ensuring account health.
 - **Execution Control:** Features a global execution lock, state persistence for crash recovery, and a "Proportional Recovery" mechanism for handling insufficient funds.
-- **Delegation Mode:** Supports managing Aave operations on behalf of a target wallet, with an upcoming WBTC auto-supply delegation feature.
+- **Delegation Mode:** Full-automation only. Any wallet that connects, signs, and enables Auto-Pilot receives all execution permissions (supply, borrow, repay, withdraw). No monitoring-only mode exists.
 - **Token Operations:** Manages token approvals and uses Uniswap V3 for multi-hop swaps (e.g., DAI→WETH→USDC). AaveOracle is the primary price source.
 - **Profit Accumulation:** USDC profit accumulates in the agent's wallet and is periodically transferred to a designated `WALLET_B`.
 
@@ -69,7 +69,7 @@ The REAA platform is built on the Arbitrum Mainnet, featuring distinct modules f
   4. **Micro Short** (HF ≥ 3.00): Triggered by collateral velocity drop ≥ $30 in 20 min. Borrows WETH as smaller hedge.
   5. **SKIP**: If no band matches, logs explicit reason and takes no action.
 - **One mode per wallet per cycle.** No concurrent conflicting actions. `processed_strategy_ids` set prevents double-execution.
-- **DB columns on `managed_wallets`:** `last_strategy_action` (TEXT), `last_strategy_at` (TIMESTAMPTZ), `strategy_status` (VARCHAR — active/monitoring_only/disabled), `last_collateral_baseline` (NUMERIC for growth tracking).
+- **DB columns on `managed_wallets`:** `last_strategy_action` (TEXT), `last_strategy_at` (TIMESTAMPTZ), `strategy_status` (VARCHAR — active/error_permissions/disabled), `delegation_mode` (VARCHAR — full_automation/NULL), `last_collateral_baseline` (NUMERIC for growth tracking).
 - **Single source of truth:** `defi_positions` → `strategy_engine.py` → `delegation_client.py` → on-chain Aave Pool via REAADelegationManager.
 - **API:** `/api/user/status` returns `strategyEnabled`, `strategyStatus`, `lastStrategyAction`, `lastStrategyTimestamp`.
 - **UI:** Auto-Pilot panel shows Strategy Engine status line, last action text, and timestamp.
@@ -89,3 +89,59 @@ The REAA platform is built on the Arbitrum Mainnet, featuring distinct modules f
 - **Perplexity AI**: AI service (`sonar` model) for analysis and chat functionalities.
 - **Google Docs/Sheets/Drive API**: For real estate lead management and data storage.
 - **PostgreSQL Database**: Primary data store for real estate leads and user data.
+
+## Delegation & Permissions
+
+### Single Mode: Full Automation
+Any wallet that connects, signs, and enables Auto-Pilot is automatically placed in **full-automation mode**. There is no monitoring-only option for users. A wallet is either:
+- **Fully delegated** (`isActive=true`, all permission flags ON), or
+- **Disabled / Revoked / Misconfigured** (strategies do not execute).
+
+Misconfigurations (e.g., `isActive=true` but a flag is `false`) produce explicit `error_permissions` status — never a silent downgrade.
+
+### On-Chain Contract
+- **REAADelegationManager** on Arbitrum Mainnet: `0x7427370Ab4C311B090446544078c819b3946E59d`
+- Flags are **wallet-level** (single set per wallet, not per-token):
+  - `isActive` — delegation is live
+  - `allowSupply` — bot can supply collateral on behalf of user
+  - `allowBorrow` — bot can borrow on behalf of user
+  - `allowRepay` — bot can repay debt on behalf of user
+  - `allowWithdraw` — bot can withdraw collateral on behalf of user
+
+### Token Permission Matrix
+Defined in `permissions.py`. All tokens the system may touch:
+
+| Token | Address (Arbitrum) | Strategies | Actions |
+|-------|--------------------|------------|---------|
+| WBTC | `0x2f2a...5B0f` | auto_supply | supply |
+| DAI | `0xDA10...0da1` | growth, capacity, nurse_repay | borrow, repay |
+| WETH | `0x82aF...Bab1` | macro_short, micro_short | borrow, repay |
+| USDC | `0xaf88...5831` | (profit token — user claims) | read-only |
+
+### Full Automation Profile
+All flags = `true` for any delegated wallet. Defined in `permissions.FULL_AUTOMATION`:
+```
+isActive=true, allowSupply=true, allowBorrow=true, allowRepay=true, allowWithdraw=true
+```
+
+### Strategy Responsibilities
+1. **Growth** (HF >= 3.10): Borrow DAI when collateral appreciates >= $50 or >= 10%.
+2. **Capacity** (HF >= 2.90): Borrow DAI to utilize idle borrowing capacity.
+3. **Macro Short** (HF >= 3.05): Hedge via WETH borrow against major market downturn.
+4. **Micro Short** (HF >= 3.00): Smaller WETH hedge against minor market dip.
+5. **Auto Supply**: Supply WBTC to Aave on delegation activation.
+6. **Emergency** (HF < 2.50): Alert only — no automated action.
+
+Skips are based only on HF/risk rules or strategy constraints — never on missing permissions.
+
+### Revocation Flow
+When a user revokes delegation:
+- **On-chain:** User signs `revokeDelegation()` transaction via frontend, clearing `isActive` and all flags.
+- **Backend:** Sets `delegation_status='revoked'`, `strategy_status='disabled'`, `delegation_mode=NULL`, `auto_supply_wbtc=false`, `bot_enabled=false`.
+- **Effect:** Wallet is excluded from `get_active_managed_wallets()` query. Strategy engine will not attempt any actions.
+
+### Security Notes
+- All on-chain calls route through `delegation_client.py`, signed by bot operator key via REAADelegationManager.
+- Permission validation via `permissions.validate_full_automation()` checks all 5 flags before any strategy runs.
+- Structured logging captures: delegation setup per wallet, each strategy action vs SKIP with reason codes, permission errors.
+- New tokens or strategies must update `permissions.py` (TOKEN_PERMISSIONS and STRATEGY_MAP).

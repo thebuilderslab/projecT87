@@ -3369,8 +3369,9 @@ def user_status():
             delegation_info["lastStrategyAction"] = mw.get('last_strategy_action')
             delegation_info["lastStrategyTimestamp"] = mw['last_strategy_at'].isoformat() if mw.get('last_strategy_at') else None
             delegation_info["strategyStatus"] = mw.get('strategy_status', 'disabled')
-            delegation_info["strategyEnabled"] = delegation_info["strategyStatus"] in ('active', 'monitoring_only')
-            logger.debug(f"[UserStatus] user={user_id} wallet={wallet} mw.delegation_status={mw['delegation_status']} -> delegationStatus={delegation_info['delegationStatus']}, strategyStatus={delegation_info['strategyStatus']}")
+            delegation_info["strategyEnabled"] = delegation_info["strategyStatus"] == 'active'
+            delegation_info["delegationMode"] = mw.get('delegation_mode') or 'none'
+            logger.debug(f"[UserStatus] user={user_id} wallet={wallet} mw.delegation_status={mw['delegation_status']} delegation_mode={mw.get('delegation_mode')} -> delegationStatus={delegation_info['delegationStatus']}, strategyStatus={delegation_info['strategyStatus']}")
 
         defi_pos = database.get_defi_position(user_id)
         has_active = defi_pos.get('has_active_position', False) if defi_pos else False
@@ -3427,13 +3428,14 @@ def activate_delegation():
             logger.warning(f"[AutoPilot] allowance is 0 — approve tx may not have confirmed yet or was on wrong chain")
             return jsonify({"status": "error", "reason": "WBTC allowance is still zero on-chain. The approval may have been on the wrong network. Please ensure you are on Arbitrum and try again."}), 400
 
-    database.upsert_managed_wallet(user_id, wallet, auto_supply_wbtc=True)
+    database.upsert_managed_wallet(user_id, wallet, auto_supply_wbtc=True, delegation_mode='full_automation')
     database.update_delegation_status(user_id, wallet, 'active')
     database.update_strategy_status_field(user_id, wallet, 'active')
     database.set_bot_enabled(user_id, True)
-    logger.info(f"[AutoPilot] Hard-synced all flags ON for user={user_id}, wallet={wallet}: delegation_status=active, auto_supply_wbtc=true, strategy_status=active, bot_enabled=true")
+    logger.info(f"[AutoPilot] Full-automation activated for user={user_id}, wallet={wallet}: delegation_status=active, delegation_mode=full_automation, auto_supply_wbtc=true, strategy_status=active, bot_enabled=true")
     database.record_wallet_action(user_id, wallet, 'delegation_granted', {
         "auto_supply_wbtc": True,
+        "delegation_mode": "full_automation",
         "max_supply_ratio": "0.8",
         "contract_deployed": contract_live,
         "approve_tx_hash": approve_tx_hash,
@@ -3502,11 +3504,11 @@ def revoke_delegation():
     database.update_delegation_status(user_id, wallet, 'revoked')
     mw = database.get_managed_wallet(user_id, wallet)
     if mw:
-        database.upsert_managed_wallet(user_id, wallet, auto_supply_wbtc=False)
+        database.upsert_managed_wallet(user_id, wallet, auto_supply_wbtc=False, delegation_mode=None)
     database.update_strategy_status_field(user_id, wallet, 'disabled')
     database.set_bot_enabled(user_id, False)
-    database.record_wallet_action(user_id, wallet, 'delegation_revoked', {})
-    logger.info(f"[AutoPilot] Hard-synced all flags OFF for user={user_id}, wallet={wallet}: delegation_status=revoked, auto_supply_wbtc=false, strategy_status=disabled, bot_enabled=false")
+    database.record_wallet_action(user_id, wallet, 'delegation_revoked', {"delegation_mode": None})
+    logger.info(f"[AutoPilot] Full revocation for user={user_id}, wallet={wallet}: delegation_status=revoked, delegation_mode=NULL, auto_supply_wbtc=false, strategy_status=disabled, bot_enabled=false")
     return jsonify({"status": "revoked", "autoSupplyWbtc": False})
 
 @app.route('/api/towns', methods=['GET'])

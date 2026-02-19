@@ -1,23 +1,26 @@
 """
-Per-Wallet Delegated Strategy Engine
-=====================================
+Per-Wallet Delegated Strategy Engine — Full Automation Only
+============================================================
 Runs macro/micro/growth/capacity strategies on each delegated user wallet.
 All on-chain actions are routed through the REAADelegationManager contract,
 not the bot's own wallet.
 
+There is ONE mode only: full automation. A wallet is either:
+  - fully delegated (isActive=true, all flags per FULL_AUTOMATION profile), or
+  - disabled / revoked / error_permissions (strategies must not run).
+No "monitoring only" — misconfigurations become explicit errors.
+
 HF Band Priority Order (checked top to bottom, first match wins):
 -----------------------------------------------------------------
-1. EMERGENCY (HF < 2.50): Position at risk. Log critical warning, SKIP (no auto-repay
-   unless allowRepay is enabled — future enhancement).
+1. EMERGENCY (HF < 2.50): Position at risk. Log critical warning, SKIP.
 2. GROWTH (HF >= 3.10, collateral grew >= $50 or >= 10%, available borrows >= $13.20):
-   Borrow DAI via delegation to expand position. Highest priority because it
-   captures collateral appreciation.
+   Borrow DAI via delegation to expand position.
 3. CAPACITY (HF >= 2.90, available borrows >= $8.20):
    Smaller DAI borrow to utilize idle capacity. Fires only if Growth did not.
 4. MACRO SHORT (collateral velocity drop >= $50 in 30 min, HF >= 3.05):
-   Hedge via WETH borrow against market downturn. Requires allowBorrow.
+   Hedge via WETH borrow against market downturn.
 5. MICRO SHORT (collateral velocity drop >= $30 in 20 min, HF >= 3.00):
-   Smaller hedge. Requires allowBorrow. 4h cooldown.
+   Smaller hedge. 4h cooldown.
 6. IDLE / SKIP: No conditions met. Log reason and wait for next cycle.
 
 Inputs (all from defi_positions — single source of truth):
@@ -63,6 +66,12 @@ try:
     DELEGATION_AVAILABLE = True
 except ImportError:
     DELEGATION_AVAILABLE = False
+
+try:
+    from permissions import FULL_AUTOMATION, REQUIRED_FLAGS, validate_full_automation
+    PERMISSIONS_AVAILABLE = True
+except ImportError:
+    PERMISSIONS_AVAILABLE = False
 
 
 def _log_strategy(user_id, wallet, mode, action, hf_before, hf_after=None, details=""):
@@ -141,8 +150,39 @@ def run_delegated_strategy(user_id, wallet_address, agent, run_id, iteration, co
         _record_strategy_action(user_id, wallet_address, "SKIP: delegation not active on-chain")
         return result
 
-    can_borrow = perms.get("allowBorrow", False)
-    can_repay = perms.get("allowRepay", False)
+    if PERMISSIONS_AVAILABLE:
+        validation = validate_full_automation(perms)
+        if not validation["valid"]:
+            missing = validation["missing_flags"]
+            result["mode"] = "error_permissions"
+            result["action"] = "SKIP"
+            result["details"] = f"Permission misconfiguration: {validation['details']}"
+            _log_strategy(user_id, wallet_address, "error_permissions", "SKIP", hf,
+                          details=f"PERMISSION ERROR: {validation['details']} — wallet marked misconfigured")
+            _record_strategy_action(user_id, wallet_address, f"ERROR: permission misconfiguration — missing: {', '.join(missing)}")
+            if DB_AVAILABLE:
+                database.update_strategy_status_field(user_id, wallet_address, 'error_permissions')
+            return result
+    else:
+        can_borrow = perms.get("allowBorrow", False)
+        can_supply = perms.get("allowSupply", False)
+        can_repay = perms.get("allowRepay", False)
+        can_withdraw = perms.get("allowWithdraw", False)
+        missing = []
+        if not can_supply: missing.append("allowSupply")
+        if not can_borrow: missing.append("allowBorrow")
+        if not can_repay: missing.append("allowRepay")
+        if not can_withdraw: missing.append("allowWithdraw")
+        if missing:
+            result["mode"] = "error_permissions"
+            result["action"] = "SKIP"
+            result["details"] = f"Permission misconfiguration: missing {', '.join(missing)}"
+            _log_strategy(user_id, wallet_address, "error_permissions", "SKIP", hf,
+                          details=f"PERMISSION ERROR: missing {', '.join(missing)} — wallet marked misconfigured")
+            _record_strategy_action(user_id, wallet_address, f"ERROR: permission misconfiguration — missing: {', '.join(missing)}")
+            if DB_AVAILABLE:
+                database.update_strategy_status_field(user_id, wallet_address, 'error_permissions')
+            return result
 
     live_data = get_user_account_data(wallet_address)
     if not live_data:
@@ -161,15 +201,6 @@ def run_delegated_strategy(user_id, wallet_address, agent, run_id, iteration, co
         _log_strategy(user_id, wallet_address, "emergency", "ALERT", live_hf,
                       details=f"HF critically low! Collateral=${collateral_usd:.2f}, Debt=${debt_usd:.2f}")
         _record_strategy_action(user_id, wallet_address, f"ALERT: HF {live_hf:.4f} critically low")
-        return result
-
-    if not can_borrow:
-        result["mode"] = "monitoring_only"
-        result["action"] = "SKIP"
-        result["details"] = f"borrow not permitted by delegation (HF={live_hf:.4f})"
-        _log_strategy(user_id, wallet_address, "monitoring_only", "SKIP", live_hf,
-                      details="borrow not permitted — monitoring only")
-        _record_strategy_action(user_id, wallet_address, f"SKIP: monitoring only (HF {live_hf:.4f})")
         return result
 
     baseline = _get_wallet_baseline(user_id, wallet_address)
@@ -290,7 +321,9 @@ def run_delegated_strategy(user_id, wallet_address, agent, run_id, iteration, co
 def get_strategy_status(user_id, wallet_address):
     """
     Determine the strategy status for a wallet.
-    Returns one of: 'active', 'monitoring_only', 'disabled'
+    Returns one of: 'active', 'disabled', 'error_permissions'
+
+    Full automation only — no monitoring_only mode.
     """
     if not DB_AVAILABLE:
         return "disabled"
@@ -312,11 +345,21 @@ def get_strategy_status(user_id, wallet_address):
     if DELEGATION_AVAILABLE:
         try:
             perms = get_delegation_permissions(wallet_address)
-            if perms.get("isActive") and perms.get("allowBorrow"):
-                return "active"
-            elif perms.get("isActive"):
-                return "monitoring_only"
+            if not perms.get("isActive"):
+                return "disabled"
+            if PERMISSIONS_AVAILABLE:
+                validation = validate_full_automation(perms)
+                if validation["valid"]:
+                    return "active"
+                else:
+                    return "error_permissions"
+            else:
+                required = ["allowSupply", "allowBorrow", "allowRepay", "allowWithdraw"]
+                if all(perms.get(f, False) for f in required):
+                    return "active"
+                else:
+                    return "error_permissions"
         except Exception:
             pass
 
-    return "monitoring_only"
+    return "disabled"

@@ -151,6 +151,7 @@ def init_db():
         ALTER TABLE managed_wallets ADD COLUMN IF NOT EXISTS last_strategy_at TIMESTAMPTZ;
         ALTER TABLE managed_wallets ADD COLUMN IF NOT EXISTS strategy_status VARCHAR(20) NOT NULL DEFAULT 'disabled';
         ALTER TABLE managed_wallets ADD COLUMN IF NOT EXISTS last_collateral_baseline NUMERIC(14,2) DEFAULT 0;
+        ALTER TABLE managed_wallets ADD COLUMN IF NOT EXISTS delegation_mode VARCHAR(30) DEFAULT NULL;
 
         CREATE TABLE IF NOT EXISTS wallet_actions (
             id BIGSERIAL PRIMARY KEY,
@@ -696,18 +697,19 @@ def get_recent_filings_for_towns(town_ids, limit=5):
         return result
 
 
-def upsert_managed_wallet(user_id, wallet_address, auto_supply_wbtc=False):
+def upsert_managed_wallet(user_id, wallet_address, auto_supply_wbtc=False, delegation_mode=None):
     wallet_address = wallet_address.lower().strip()
     with get_conn() as conn:
         cur = conn.cursor(cursor_factory=RealDictCursor)
         cur.execute("""
-            INSERT INTO managed_wallets (user_id, wallet_address, delegation_status, auto_supply_wbtc)
-            VALUES (%s, %s, 'none', %s)
+            INSERT INTO managed_wallets (user_id, wallet_address, delegation_status, auto_supply_wbtc, delegation_mode)
+            VALUES (%s, %s, 'none', %s, %s)
             ON CONFLICT (user_id, wallet_address) DO UPDATE SET
                 auto_supply_wbtc = EXCLUDED.auto_supply_wbtc,
+                delegation_mode = EXCLUDED.delegation_mode,
                 updated_at = NOW()
             RETURNING *
-        """, (user_id, wallet_address, auto_supply_wbtc))
+        """, (user_id, wallet_address, auto_supply_wbtc, delegation_mode))
         row = cur.fetchone()
         cur.close()
         return dict(row) if row else None
