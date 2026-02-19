@@ -727,15 +727,49 @@ async function api(path, opts = {}) {
   }
   const res = await fetch(path, { headers, ...opts });
   if (res.status === 401) {
-    state.authToken = null;
-    state.userId = null;
-    const btn = document.getElementById('walletBtn');
-    btn.className = 'wallet-btn connect';
-    btn.textContent = 'Connect Wallet';
-    btn.onclick = connectWallet;
+    fullDisconnect();
     return { error: 'Session expired. Please reconnect your wallet.' };
   }
   return res.json();
+}
+
+function fullDisconnect() {
+  state.authToken = null;
+  state.userId = null;
+  state.walletAddress = null;
+  state.chatHistory = [];
+  state.chatBusy = false;
+  state.defiPosition = null;
+  state.safetyScore = 0;
+  state.userTownIds = [];
+  state.towns = [];
+
+  const btn = document.getElementById('walletBtn');
+  btn.className = 'wallet-btn connect';
+  btn.textContent = 'Connect Wallet';
+  btn.onclick = connectWallet;
+
+  document.getElementById('defiCollateral').textContent = '--';
+  document.getElementById('defiDebt').textContent = '--';
+  document.getElementById('defiHF').textContent = '--';
+  document.getElementById('defiHF').className = 'val green';
+  document.getElementById('defiHF').style.color = '';
+  document.getElementById('defiNetWorth').textContent = '--';
+  document.getElementById('defiActions').innerHTML = '<div class="defi-action-item"><div class="dot" style="background:var(--muted)"></div> No recent actions</div>';
+
+  updateHealthRing(0);
+
+  document.getElementById('income30d').textContent = '$0.00';
+  document.getElementById('incomeCount').textContent = '0';
+  document.getElementById('incomeChange').textContent = '--';
+  document.getElementById('incomeChange').style.color = '';
+
+  const chatContainer = document.getElementById('chatMessages');
+  chatContainer.innerHTML = '<div class="chat-msg agent">Hi! I\'m REAA (Real Estate Agent Assistant), your real estate and DeFi assistant. Ask me about your Lis Pendens leads, safety rating, or DeFi position.</div>';
+
+  document.getElementById('chatSendBtn').disabled = false;
+
+  document.getElementById('pipelineBody').innerHTML = '<div class="loading">No towns available</div>';
 }
 
 async function connectWallet() {
