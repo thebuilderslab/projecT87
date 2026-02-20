@@ -212,6 +212,35 @@ When a user revokes delegation:
 - **Backend:** Sets `delegation_status='revoked'`, `strategy_status='disabled'`, `delegation_mode=NULL`, `auto_supply_wbtc=false`, `bot_enabled=false`.
 - **Effect:** Wallet is excluded from `get_active_managed_wallets()` query. Strategy engine will not attempt any actions.
 
+### Delegated Wallet Data Flow
+
+#### Position Fetch Pipeline
+1. **Monitoring loop** (`run_autonomous_mainnet.py`): For each active managed wallet, calls `refresh_defi_for_user(user_id, wallet_address)`.
+2. **On-chain fetch**: `fetch_aave_position_for_wallet(wallet_address)` calls Aave V3 `getUserAccountData` with the delegated wallet's address.
+3. **DB upsert**: `upsert_defi_position(user_id, ..., wallet_address=wallet_address)` writes to `defi_positions` keyed by `(user_id, wallet_address)` composite unique index.
+4. **Strategy engine**: `run_delegated_strategy` and `get_strategy_status` both call `get_defi_position(user_id, wallet_address)` to get the correct wallet-specific row.
+
+#### Per-Wallet Storage (defi_positions table)
+- **Primary key**: `id` (serial).
+- **Unique constraint**: `(user_id, wallet_address)` — each wallet gets its own row, no overwriting.
+- **Columns**: `health_factor`, `total_collateral_usd`, `total_debt_usd`, `net_worth_usd`, `has_active_position`, `consecutive_empty_count`, `positions` (JSONB), `updated_at`.
+- **Personal bot** (user_id=1): stored with `wallet_address='0x5b82...'`.
+- **Delegated wallets**: stored with their own `wallet_address` (e.g., `'0xd60a...'`).
+- `get_defi_position(user_id, wallet_address)` returns the specific wallet's row. Without `wallet_address`, returns the row with the highest collateral.
+- `get_all_defi_positions_for_user(user_id)` returns all wallet positions for a user.
+
+#### Fetch Resilience (consecutive_empty_count)
+- A single empty/failed Aave fetch does NOT immediately zero out and mark a wallet inactive.
+- `consecutive_empty_count` increments on each empty fetch.
+- Position is only marked inactive when `consecutive_empty_count >= CONSECUTIVE_EMPTY_THRESHOLD` (default: 3).
+- Any successful fetch resets `consecutive_empty_count` to 0.
+- Prevents transient RPC failures from wiping out valid position data.
+
+#### Permission Errors vs Empty Positions
+- **Permission error** (`strategy_status='error_permissions'`): Delegation flags missing or ERC20 approvals missing. Strategy skips, but position data stays intact. No `mark_position_inactive` call.
+- **Empty position** (`has_active_position=false`): Aave reports zero collateral across multiple consecutive checks. Position zeroed out, `supplied_wbtc_amount` reset.
+- **Transient failure**: RPC error or single empty fetch. `consecutive_empty_count` incremented, position data preserved until threshold reached.
+
 ### Security Notes
 - All on-chain calls route through `delegation_client.py`, signed by bot operator key via REAADelegationManager.
 - Permission validation via `permissions.validate_full_automation()` checks all 5 flags before any strategy runs.

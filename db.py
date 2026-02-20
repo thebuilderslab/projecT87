@@ -79,16 +79,21 @@ def init_db():
         CREATE TABLE IF NOT EXISTS defi_positions (
             id SERIAL PRIMARY KEY,
             user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+            wallet_address VARCHAR(42),
             health_factor NUMERIC(20,4),
             total_collateral_usd NUMERIC(14,2),
             total_debt_usd NUMERIC(14,2),
             net_worth_usd NUMERIC(14,2),
             has_active_position BOOLEAN NOT NULL DEFAULT false,
+            consecutive_empty_count INTEGER NOT NULL DEFAULT 0,
             positions JSONB DEFAULT '{}',
             updated_at TIMESTAMPTZ DEFAULT NOW()
         );
-        CREATE UNIQUE INDEX IF NOT EXISTS idx_defi_positions_user_unique ON defi_positions (user_id);
+        ALTER TABLE defi_positions ADD COLUMN IF NOT EXISTS wallet_address VARCHAR(42);
+        ALTER TABLE defi_positions ADD COLUMN IF NOT EXISTS consecutive_empty_count INTEGER NOT NULL DEFAULT 0;
         ALTER TABLE defi_positions ADD COLUMN IF NOT EXISTS has_active_position BOOLEAN NOT NULL DEFAULT false;
+        DROP INDEX IF EXISTS idx_defi_positions_user_unique;
+        CREATE UNIQUE INDEX IF NOT EXISTS idx_defi_positions_user_wallet ON defi_positions (user_id, wallet_address);
 
         CREATE TABLE IF NOT EXISTS income_events (
             id SERIAL PRIMARY KEY,
@@ -395,52 +400,99 @@ def get_filing_stats():
         return result
 
 
-def upsert_defi_position(user_id, health_factor, collateral, debt, net_worth, positions=None):
+def upsert_defi_position(user_id, health_factor, collateral, debt, net_worth, positions=None, wallet_address=None):
     import logging
     logger = logging.getLogger(__name__)
     try:
         if health_factor is not None and health_factor > 999.99:
             health_factor = 999.99
         has_active = bool(collateral is not None and float(collateral) >= 0.01)
+        if wallet_address:
+            wallet_address = wallet_address.lower().strip()
         with get_conn() as conn:
             cur = conn.cursor()
             cur.execute("""
-                INSERT INTO defi_positions (user_id, health_factor, total_collateral_usd, total_debt_usd, net_worth_usd, has_active_position, positions, updated_at)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, NOW())
-                ON CONFLICT (user_id) DO UPDATE SET
+                INSERT INTO defi_positions (user_id, wallet_address, health_factor, total_collateral_usd, total_debt_usd, net_worth_usd, has_active_position, positions, consecutive_empty_count, updated_at)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, 0, NOW())
+                ON CONFLICT (user_id, wallet_address) DO UPDATE SET
                     health_factor = EXCLUDED.health_factor,
                     total_collateral_usd = EXCLUDED.total_collateral_usd,
                     total_debt_usd = EXCLUDED.total_debt_usd,
                     net_worth_usd = EXCLUDED.net_worth_usd,
                     has_active_position = EXCLUDED.has_active_position,
                     positions = EXCLUDED.positions,
+                    consecutive_empty_count = 0,
                     updated_at = NOW()
-            """, (user_id, health_factor, collateral, debt, net_worth, has_active, psycopg2.extras.Json(positions or {})))
+            """, (user_id, wallet_address, health_factor, collateral, debt, net_worth, has_active, psycopg2.extras.Json(positions or {})))
             cur.close()
-        logger.info(f"[DB] upsert_defi_position OK for user {user_id}: HF={health_factor}, collateral={collateral}, debt={debt}, active={has_active}")
+        logger.info(f"[DB] upsert_defi_position OK for user {user_id} wallet={wallet_address}: HF={health_factor}, collateral={collateral}, debt={debt}, active={has_active}")
         return True
     except Exception as e:
-        logger.error(f"[DB] upsert_defi_position FAILED for user {user_id}: {e} (HF={health_factor}, collateral={collateral}, debt={debt})")
+        logger.error(f"[DB] upsert_defi_position FAILED for user {user_id} wallet={wallet_address}: {e} (HF={health_factor}, collateral={collateral}, debt={debt})")
         return False
 
 
-def mark_position_inactive(user_id):
+CONSECUTIVE_EMPTY_THRESHOLD = 3
+
+def increment_empty_count(user_id, wallet_address=None):
     import logging
     logger = logging.getLogger(__name__)
+    if wallet_address:
+        wallet_address = wallet_address.lower().strip()
     try:
         with get_conn() as conn:
             cur = conn.cursor()
-            cur.execute("""
-                UPDATE defi_positions
-                SET has_active_position = false, health_factor = 0, total_collateral_usd = 0,
-                    total_debt_usd = 0, net_worth_usd = 0, updated_at = NOW()
-                WHERE user_id = %s
-            """, (user_id,))
+            if wallet_address:
+                cur.execute("""
+                    UPDATE defi_positions
+                    SET consecutive_empty_count = consecutive_empty_count + 1, updated_at = NOW()
+                    WHERE user_id = %s AND wallet_address = %s
+                    RETURNING consecutive_empty_count
+                """, (user_id, wallet_address))
+            else:
+                cur.execute("""
+                    UPDATE defi_positions
+                    SET consecutive_empty_count = consecutive_empty_count + 1, updated_at = NOW()
+                    WHERE user_id = %s AND wallet_address IS NULL
+                    RETURNING consecutive_empty_count
+                """, (user_id,))
+            row = cur.fetchone()
             cur.close()
-        logger.info(f"[DB] Marked position inactive for user {user_id}")
+        count = row[0] if row else 0
+        logger.info(f"[DB] increment_empty_count for user {user_id} wallet={wallet_address}: count={count}")
+        return count
+    except Exception as e:
+        logger.error(f"[DB] increment_empty_count FAILED for user {user_id} wallet={wallet_address}: {e}")
+        return 0
+
+
+def mark_position_inactive(user_id, wallet_address=None):
+    import logging
+    logger = logging.getLogger(__name__)
+    if wallet_address:
+        wallet_address = wallet_address.lower().strip()
+    try:
+        with get_conn() as conn:
+            cur = conn.cursor()
+            if wallet_address:
+                cur.execute("""
+                    UPDATE defi_positions
+                    SET has_active_position = false, health_factor = 0, total_collateral_usd = 0,
+                        total_debt_usd = 0, net_worth_usd = 0, updated_at = NOW()
+                    WHERE user_id = %s AND wallet_address = %s
+                """, (user_id, wallet_address))
+            else:
+                cur.execute("""
+                    UPDATE defi_positions
+                    SET has_active_position = false, health_factor = 0, total_collateral_usd = 0,
+                        total_debt_usd = 0, net_worth_usd = 0, updated_at = NOW()
+                    WHERE user_id = %s AND wallet_address IS NULL
+                """, (user_id,))
+            cur.close()
+        logger.info(f"[DB] Marked position inactive for user {user_id} wallet={wallet_address}")
         return True
     except Exception as e:
-        logger.error(f"[DB] mark_position_inactive FAILED for user {user_id}: {e}")
+        logger.error(f"[DB] mark_position_inactive FAILED for user {user_id} wallet={wallet_address}: {e}")
         return False
 
 
@@ -523,10 +575,14 @@ def update_collateral_baseline(user_id, wallet_address, baseline):
         return False
 
 
-def get_defi_position(user_id):
+def get_defi_position(user_id, wallet_address=None):
     with get_conn() as conn:
         cur = conn.cursor(cursor_factory=RealDictCursor)
-        cur.execute("SELECT * FROM defi_positions WHERE user_id = %s", (user_id,))
+        if wallet_address:
+            wallet_address = wallet_address.lower().strip()
+            cur.execute("SELECT * FROM defi_positions WHERE user_id = %s AND wallet_address = %s", (user_id, wallet_address))
+        else:
+            cur.execute("SELECT * FROM defi_positions WHERE user_id = %s ORDER BY total_collateral_usd DESC NULLS LAST LIMIT 1", (user_id,))
         row = cur.fetchone()
         cur.close()
         if row:
@@ -535,6 +591,21 @@ def get_defi_position(user_id):
                 d["updated_at"] = d["updated_at"].isoformat()
             return d
         return None
+
+
+def get_all_defi_positions_for_user(user_id):
+    with get_conn() as conn:
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur.execute("SELECT * FROM defi_positions WHERE user_id = %s ORDER BY total_collateral_usd DESC NULLS LAST", (user_id,))
+        rows = cur.fetchall()
+        cur.close()
+        result = []
+        for row in rows:
+            d = dict(row)
+            if d.get("updated_at"):
+                d["updated_at"] = d["updated_at"].isoformat()
+            result.append(d)
+        return result
 
 
 def add_income_event(user_id, event_type, amount_usd, token=None, tx_hash=None, description=None):

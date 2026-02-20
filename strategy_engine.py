@@ -1121,7 +1121,7 @@ def run_delegated_strategy(user_id, wallet_address, agent, run_id, iteration, co
         result["details"] = "delegation_client_unavailable"
         return result
 
-    position = database.get_defi_position(user_id)
+    position = database.get_defi_position(user_id, wallet_address)
     if not position or not position.get('has_active_position', False):
         result["details"] = "no_active_position"
         _log_strategy(user_id, wallet_address, "idle", "SKIP", 0, details="no active position")
@@ -1278,7 +1278,7 @@ def get_strategy_status(user_id, wallet_address):
     if not database.is_bot_enabled(user_id):
         return "disabled"
 
-    position = database.get_defi_position(user_id)
+    position = database.get_defi_position(user_id, wallet_address)
     if not position or not position.get('has_active_position', False):
         return "disabled"
 

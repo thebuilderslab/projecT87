@@ -3373,9 +3373,19 @@ def user_status():
             delegation_info["delegationMode"] = mw.get('delegation_mode') or 'none'
             logger.debug(f"[UserStatus] user={user_id} wallet={wallet} mw.delegation_status={mw['delegation_status']} delegation_mode={mw.get('delegation_mode')} -> delegationStatus={delegation_info['delegationStatus']}, strategyStatus={delegation_info['strategyStatus']}")
 
-        defi_pos = database.get_defi_position(user_id)
+        defi_pos = database.get_defi_position(user_id, wallet)
         has_active = defi_pos.get('has_active_position', False) if defi_pos else False
         delegation_info["hasActivePosition"] = has_active
+
+        if defi_pos:
+            delegation_info["defiPosition"] = {
+                "healthFactor": float(defi_pos.get('health_factor', 0)),
+                "totalCollateralUsd": float(defi_pos.get('total_collateral_usd', 0)),
+                "totalDebtUsd": float(defi_pos.get('total_debt_usd', 0)),
+                "netWorthUsd": float(defi_pos.get('net_worth_usd', 0)),
+                "walletAddress": defi_pos.get('wallet_address', wallet),
+                "updatedAt": defi_pos.get('updated_at'),
+            }
 
         if not has_active and delegation_info["suppliedWbtcAmount"] > 0:
             delegation_info["supplyReconciled"] = True
@@ -3608,14 +3618,14 @@ def get_defi_state():
     if not DB_AVAILABLE:
         return jsonify({"error": "Database not available"}), 503
     user_id = get_current_user_id()
-    position = database.get_defi_position(user_id)
+    user = database.get_user_by_id(user_id)
+    wallet = user.get('wallet_address', '') if user else ''
+    position = database.get_defi_position(user_id, wallet)
 
     if position and not position.get('has_active_position', False):
         return jsonify({"position": None, "message": "Position inactive (withdrawn or dust). Supply on Aave to see your position here."})
 
     if not position:
-        user = database.get_user_by_id(user_id)
-        wallet = user.get('wallet_address', '') if user else ''
         live_pos = fetch_aave_position_for_wallet(wallet) if wallet else None
         if live_pos:
             ok = database.upsert_defi_position(
@@ -3624,14 +3634,15 @@ def get_defi_state():
                 collateral=live_pos['total_collateral_usd'],
                 debt=live_pos['total_debt_usd'],
                 net_worth=live_pos['net_worth_usd'],
+                wallet_address=wallet,
             )
             if ok:
-                position = database.get_defi_position(user_id)
+                position = database.get_defi_position(user_id, wallet)
                 return jsonify({"position": position})
             else:
                 return jsonify({"position": None, "storageError": True, "message": "Aave position found on-chain but failed to store in database."})
         else:
-            database.mark_position_inactive(user_id)
+            database.mark_position_inactive(user_id, wallet)
             database.reset_supplied_if_withdrawn(user_id, wallet)
         return jsonify({"position": None, "message": "No Aave position detected for this wallet yet."})
     return jsonify({"position": position})
@@ -3739,7 +3750,9 @@ def chat_api():
 
         recent_filings = database.get_recent_filings_for_towns(town_ids, limit=5)
 
-        defi_pos = database.get_defi_position(user_id)
+        user_data = database.get_user_by_id(user_id)
+        user_wallet = user_data.get('wallet_address', '') if user_data else ''
+        defi_pos = database.get_defi_position(user_id, user_wallet)
         income_summary = database.get_income_summary(user_id)
         recent_income = database.get_income_events(user_id, limit=5)
 

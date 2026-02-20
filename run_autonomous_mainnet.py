@@ -99,7 +99,8 @@ def fetch_aave_position_for_wallet(wallet_address):
 
 def refresh_defi_for_user(user_id, wallet_address):
     """Fetch on-chain Aave position and upsert to DB. Returns position dict or None.
-    If on-chain position is dust/zero, marks DB row inactive and resets supplied_wbtc_amount."""
+    Uses consecutive_empty_count to avoid zeroing out a wallet on transient fetch failures.
+    Only marks inactive after CONSECUTIVE_EMPTY_THRESHOLD consecutive zero-collateral fetches."""
     pos = fetch_aave_position_for_wallet(wallet_address)
     if pos:
         ok = database.upsert_defi_position(
@@ -108,6 +109,7 @@ def refresh_defi_for_user(user_id, wallet_address):
             collateral=pos['total_collateral_usd'],
             debt=pos['total_debt_usd'],
             net_worth=pos['net_worth_usd'],
+            wallet_address=wallet_address,
         )
         if ok:
             log_agent_activity(f"[Monitor] Refreshed position for user {user_id} ({wallet_address[:10]}...): "
@@ -116,9 +118,16 @@ def refresh_defi_for_user(user_id, wallet_address):
             log_agent_activity(f"[Monitor] DB upsert FAILED for user {user_id} ({wallet_address[:10]}...) — data: {pos}", "ERROR")
         return pos
     else:
-        database.mark_position_inactive(user_id)
-        database.reset_supplied_if_withdrawn(user_id, wallet_address)
-        log_agent_activity(f"[Monitor] No on-chain position for user {user_id} ({wallet_address[:10]}...) — marked inactive, reset supply counter")
+        empty_count = database.increment_empty_count(user_id, wallet_address)
+        threshold = database.CONSECUTIVE_EMPTY_THRESHOLD
+        if empty_count >= threshold:
+            database.mark_position_inactive(user_id, wallet_address)
+            database.reset_supplied_if_withdrawn(user_id, wallet_address)
+            log_agent_activity(f"[Monitor] No on-chain position for user {user_id} ({wallet_address[:10]}...) — "
+                             f"confirmed empty ({empty_count}/{threshold} consecutive), marked inactive")
+        else:
+            log_agent_activity(f"[Monitor] Empty fetch for user {user_id} ({wallet_address[:10]}...) — "
+                             f"count={empty_count}/{threshold}, NOT marking inactive yet (may be transient)")
         return None
 
 
@@ -312,7 +321,7 @@ def run_autonomous_mainnet_agent():
                                     log_agent_activity(f"[Approvals] wallet={waddr[:10]}..., check error: {appr_err}", "WARNING")
 
                             if STRATEGY_ENGINE_AVAILABLE:
-                                defi_pos = database.get_defi_position(uid)
+                                defi_pos = database.get_defi_position(uid, waddr)
                                 has_active = defi_pos.get('has_active_position', False) if defi_pos else False
                                 if has_active and mw.get('delegation_status') == 'active':
                                     try:
@@ -337,7 +346,7 @@ def run_autonomous_mainnet_agent():
                     except Exception as mw_err:
                         log_agent_activity(f"[Monitor] wallet={waddr[:10]}..., mode=delegated, decision=ERROR ({mw_err})", "WARNING")
 
-                if bot_user_id is not None and bot_user_id not in processed_strategy_ids:
+                if bot_user_id is not None and bot_user_id not in processed_user_ids:
                     if bot_user_id not in processed_user_ids:
                         refresh_defi_for_user(bot_user_id, bot_wallet)
                     performance = run_strategies_for_user(bot_user_id, bot_wallet, agent, run_id, iteration, config)
