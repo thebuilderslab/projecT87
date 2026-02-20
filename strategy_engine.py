@@ -26,7 +26,7 @@ HF Band Priority Order (checked top to bottom, first match wins):
 
 USER WALLET vs PERSONAL BOT — Two Intentional Differences:
   1. Profit Bucket: DISABLED for user wallets. USDC stays in user wallet, never flushed.
-  2. Liability Short profits: 100% stays in user wallet. Personal bot uses 20/20/60 split.
+  2. Liability Short close: 20/20/30/20/10 split — 20% Wallet_S (DAI), 20% USDC (wallet), 30% WBTC (Aave), 20% WETH (Aave), 10% USDT (Aave). Personal bot uses 20/20/60.
 
 Inputs (all from defi_positions — single source of truth):
   - health_factor, total_collateral_usd, total_debt_usd (from DB, refreshed by monitoring)
@@ -626,27 +626,64 @@ def _execute_delegated_short_entry(user_id, wallet_address, agent, tier, short_s
 
 SHORT_CLOSE_WALLET_S_PCT = 0.20
 SHORT_CLOSE_USDC_PCT = 0.20
-SHORT_CLOSE_ETH_PCT = 0.10
-SHORT_CLOSE_WBTC_PCT = 0.20
-SHORT_CLOSE_USDT_PCT = 0.30
+SHORT_CLOSE_WBTC_PCT = 0.30
+SHORT_CLOSE_WETH_PCT = 0.20
+SHORT_CLOSE_USDT_PCT = 0.10
+
+
+def _log_short_close_slice(wallet_address, slice_name, pct, status, amount_in_weth, amount_out_token=0.0, reason=""):
+    import json as _json
+    entry = {
+        "event": "short_close_slice",
+        "wallet": wallet_address,
+        "slice": slice_name,
+        "percent_of_profit": int(pct * 100),
+        "status": status,
+        "amount_in_weth": round(amount_in_weth, 8),
+        "amount_out_token": round(amount_out_token, 8),
+        "reason": reason
+    }
+    logger.info(_json.dumps(entry))
+    return entry
+
+
+def _log_short_close_residual(wallet_address, amount_in_weth, amount_out_eth=0.0, status="OK", reason=""):
+    import json as _json
+    entry = {
+        "event": "short_close_residual_sweep",
+        "wallet": wallet_address,
+        "token_in": "WETH",
+        "amount_in_weth": round(amount_in_weth, 8),
+        "amount_out_eth": round(amount_out_eth, 8),
+        "status": status,
+        "reason": reason
+    }
+    logger.info(_json.dumps(entry))
+    return entry
 
 
 def _execute_delegated_short_close(user_id, wallet_address, agent, live_hf):
     """
-    Delegated liability short close with 20/20/10/20/30 profit distribution.
+    Delegated liability short close with 20/20/30/20/10 profit distribution.
 
     Phase 1 — Close the short:
       1. Withdraw USDT collateral from Aave via delegation
       2. Pull USDT from user wallet -> swap USDT->WETH
       3. Repay WETH debt via delegation
-      4. Remaining WETH in bot wallet = realized profit
+      4. Remaining WETH in bot wallet = realized profit P
 
-    Phase 2 — Distribute profit (WETH remaining after repay):
+    Phase 2 — Distribute profit P (WETH remaining after repay):
       20% → Wallet_S (swap WETH->DAI, transfer DAI to Wallet_S)
-      20% → USDC (swap WETH->USDC, transfer to user wallet)
-      10% → ETH (WETH stays as-is, transfer to user wallet — user can unwrap)
-      20% → WBTC (swap WETH->WBTC, transfer to user wallet)
-      30% → USDT (swap WETH->USDT, transfer to user wallet)
+      20% → USDC    (swap WETH->USDC, transfer USDC to user wallet)
+      30% → WBTC    (swap WETH->WBTC, supply to Aave onBehalfOf user)
+      20% → WETH    (keep as WETH, supply to Aave onBehalfOf user)
+      10% → USDT    (swap WETH->USDT, supply to Aave onBehalfOf user)
+
+    Residual: Any leftover WETH (from rounding/slippage/failures) is swapped
+    to ETH and sent to the user wallet as gas/safety net.
+
+    Each slice executes independently (best-effort). If one slice fails,
+    the others still proceed. Nurse Mode will sweep any stray tokens later.
 
     Personal bot uses a different split (20/20/60 Wallet_S/Wallet_B/collateral).
     """
@@ -736,24 +773,25 @@ def _execute_delegated_short_close(user_id, wallet_address, agent, live_hf):
             return result
 
         _log_strategy(user_id, wallet_address, "short_close", "STEP4_DISTRIBUTE_PROFIT", live_hf,
-                      details=f"Profit = {profit_weth:.8f} WETH — distributing 20/20/10/20/30")
+                      details=f"Profit = {profit_weth:.8f} WETH — distributing 20/20/30/20/10")
 
         weth_wallet_s = profit_weth * SHORT_CLOSE_WALLET_S_PCT
         weth_usdc     = profit_weth * SHORT_CLOSE_USDC_PCT
-        weth_eth      = profit_weth * SHORT_CLOSE_ETH_PCT
         weth_wbtc     = profit_weth * SHORT_CLOSE_WBTC_PCT
+        weth_aave     = profit_weth * SHORT_CLOSE_WETH_PCT
         weth_usdt     = profit_weth * SHORT_CLOSE_USDT_PCT
 
         dist_log = (f"P={profit_weth:.8f} WETH: "
                     f"20% Wallet_S={weth_wallet_s:.8f}, "
                     f"20% USDC={weth_usdc:.8f}, "
-                    f"10% ETH={weth_eth:.8f}, "
-                    f"20% WBTC={weth_wbtc:.8f}, "
-                    f"30% USDT={weth_usdt:.8f}")
+                    f"30% WBTC={weth_wbtc:.8f}, "
+                    f"20% WETH(supply)={weth_aave:.8f}, "
+                    f"10% USDT={weth_usdt:.8f}")
         logger.info(f"[Short Close] {wallet_address[:10]}... {dist_log}")
 
-        dist_results = {"wallet_s": "pending", "usdc": "pending", "eth": "pending",
-                        "wbtc": "pending", "usdt": "pending"}
+        dist_results = {"wallet_s": "pending", "usdc": "pending",
+                        "wbtc": "pending", "weth_supply": "pending", "usdt": "pending"}
+        slice_logs = []
 
         wallet_s = os.getenv('WALLET_S_ADDRESS', '').strip()
         if wallet_s and len(wallet_s) == 42 and weth_wallet_s >= 0.00001:
@@ -768,21 +806,29 @@ def _execute_delegated_short_close(user_id, wallet_address, agent, live_hf):
                     if dai_bal > 0:
                         xfer_tx = transfer_token_to_address(wallet_s, DAI_ADDRESS, dai_bal)
                         if xfer_tx:
-                            dist_results["wallet_s"] = f"OK ({dai_bal / 1e18:.4f} DAI)"
+                            dai_out = dai_bal / 1e18
+                            dist_results["wallet_s"] = f"OK ({dai_out:.4f} DAI)"
+                            slice_logs.append(_log_short_close_slice(wallet_address, "Wallet_S", SHORT_CLOSE_WALLET_S_PCT, "OK", weth_wallet_s, dai_out))
                             time.sleep(2)
                         else:
                             dist_results["wallet_s"] = "transfer_failed"
+                            slice_logs.append(_log_short_close_slice(wallet_address, "Wallet_S", SHORT_CLOSE_WALLET_S_PCT, "FAILED", weth_wallet_s, reason="DAI transfer to Wallet_S failed"))
                     else:
                         dist_results["wallet_s"] = "swap_zero_output"
+                        slice_logs.append(_log_short_close_slice(wallet_address, "Wallet_S", SHORT_CLOSE_WALLET_S_PCT, "FAILED", weth_wallet_s, reason="swap returned zero DAI"))
                 else:
                     dist_results["wallet_s"] = "swap_failed"
+                    slice_logs.append(_log_short_close_slice(wallet_address, "Wallet_S", SHORT_CLOSE_WALLET_S_PCT, "FAILED", weth_wallet_s, reason="WETH->DAI swap failed"))
             except Exception as e:
                 dist_results["wallet_s"] = f"error: {e}"
+                slice_logs.append(_log_short_close_slice(wallet_address, "Wallet_S", SHORT_CLOSE_WALLET_S_PCT, "FAILED", weth_wallet_s, reason=str(e)))
                 logger.error(f"[Short Close] Wallet_S distribution failed: {e}")
         elif not wallet_s or len(wallet_s) != 42:
             dist_results["wallet_s"] = "WALLET_S_ADDRESS_not_set"
+            slice_logs.append(_log_short_close_slice(wallet_address, "Wallet_S", SHORT_CLOSE_WALLET_S_PCT, "FAILED", weth_wallet_s, reason="WALLET_S_ADDRESS not configured"))
         else:
             dist_results["wallet_s"] = "amount_too_small"
+            slice_logs.append(_log_short_close_slice(wallet_address, "Wallet_S", SHORT_CLOSE_WALLET_S_PCT, "OK", weth_wallet_s, reason="amount below threshold, skipped"))
 
         if weth_usdc >= 0.00001:
             _log_strategy(user_id, wallet_address, "short_close", "DIST_USDC", live_hf,
@@ -796,40 +842,30 @@ def _execute_delegated_short_close(user_id, wallet_address, agent, live_hf):
                     if usdc_bal > 0:
                         xfer_tx = transfer_token_to_address(wallet_address, USDC_ADDRESS, usdc_bal)
                         if xfer_tx:
-                            dist_results["usdc"] = f"OK ({usdc_bal / 1e6:.2f} USDC)"
+                            usdc_out = usdc_bal / 1e6
+                            dist_results["usdc"] = f"OK ({usdc_out:.2f} USDC)"
+                            slice_logs.append(_log_short_close_slice(wallet_address, "USDC", SHORT_CLOSE_USDC_PCT, "OK", weth_usdc, usdc_out))
                             time.sleep(2)
                         else:
                             dist_results["usdc"] = "transfer_failed"
+                            slice_logs.append(_log_short_close_slice(wallet_address, "USDC", SHORT_CLOSE_USDC_PCT, "FAILED", weth_usdc, reason="USDC transfer to user wallet failed"))
                     else:
                         dist_results["usdc"] = "swap_zero_output"
+                        slice_logs.append(_log_short_close_slice(wallet_address, "USDC", SHORT_CLOSE_USDC_PCT, "FAILED", weth_usdc, reason="swap returned zero USDC"))
                 else:
                     dist_results["usdc"] = "swap_failed"
+                    slice_logs.append(_log_short_close_slice(wallet_address, "USDC", SHORT_CLOSE_USDC_PCT, "FAILED", weth_usdc, reason="WETH->USDC swap failed"))
             except Exception as e:
                 dist_results["usdc"] = f"error: {e}"
+                slice_logs.append(_log_short_close_slice(wallet_address, "USDC", SHORT_CLOSE_USDC_PCT, "FAILED", weth_usdc, reason=str(e)))
                 logger.error(f"[Short Close] USDC distribution failed: {e}")
         else:
             dist_results["usdc"] = "amount_too_small"
-
-        if weth_eth >= 0.00001:
-            _log_strategy(user_id, wallet_address, "short_close", "DIST_ETH", live_hf,
-                          details=f"Transfer {weth_eth:.8f} WETH -> user wallet (ETH slice)")
-            try:
-                eth_weth_raw = int(weth_eth * 1e18)
-                xfer_tx = transfer_token_to_address(wallet_address, WETH_ADDRESS, eth_weth_raw)
-                if xfer_tx:
-                    dist_results["eth"] = f"OK ({weth_eth:.8f} WETH)"
-                    time.sleep(2)
-                else:
-                    dist_results["eth"] = "transfer_failed"
-            except Exception as e:
-                dist_results["eth"] = f"error: {e}"
-                logger.error(f"[Short Close] ETH distribution failed: {e}")
-        else:
-            dist_results["eth"] = "amount_too_small"
+            slice_logs.append(_log_short_close_slice(wallet_address, "USDC", SHORT_CLOSE_USDC_PCT, "OK", weth_usdc, reason="amount below threshold, skipped"))
 
         if weth_wbtc >= 0.00001:
             _log_strategy(user_id, wallet_address, "short_close", "DIST_WBTC", live_hf,
-                          details=f"Swap {weth_wbtc:.8f} WETH -> WBTC -> user wallet")
+                          details=f"Swap {weth_wbtc:.8f} WETH -> WBTC -> Aave supply onBehalfOf user")
             try:
                 wbtc_swap = uniswap.swap_weth_for_wbtc(weth_wbtc)
                 if wbtc_swap and wbtc_swap.get('tx_hash'):
@@ -837,25 +873,52 @@ def _execute_delegated_short_close(user_id, wallet_address, agent, live_hf):
                     wbtc_contract = w3.eth.contract(address=w3.to_checksum_address(WBTC_TOKEN_ADDRESS), abi=ERC20_ABI)
                     wbtc_bal = wbtc_contract.functions.balanceOf(acct.address).call()
                     if wbtc_bal > 0:
-                        xfer_tx = transfer_token_to_address(wallet_address, WBTC_TOKEN_ADDRESS, wbtc_bal)
-                        if xfer_tx:
-                            dist_results["wbtc"] = f"OK ({wbtc_bal / 1e8:.8f} WBTC)"
+                        wbtc_float = wbtc_bal / 1e8
+                        supply_tx = delegated_supply_wbtc_onbehalf(wallet_address, wbtc_float)
+                        if supply_tx:
+                            dist_results["wbtc"] = f"OK ({wbtc_float:.8f} WBTC supplied)"
+                            slice_logs.append(_log_short_close_slice(wallet_address, "WBTC", SHORT_CLOSE_WBTC_PCT, "OK", weth_wbtc, wbtc_float))
                             time.sleep(2)
                         else:
-                            dist_results["wbtc"] = "transfer_failed"
+                            dist_results["wbtc"] = "aave_supply_failed"
+                            slice_logs.append(_log_short_close_slice(wallet_address, "WBTC", SHORT_CLOSE_WBTC_PCT, "FAILED", weth_wbtc, wbtc_float, reason="Aave supply onBehalfOf failed"))
                     else:
                         dist_results["wbtc"] = "swap_zero_output"
+                        slice_logs.append(_log_short_close_slice(wallet_address, "WBTC", SHORT_CLOSE_WBTC_PCT, "FAILED", weth_wbtc, reason="swap returned zero WBTC"))
                 else:
                     dist_results["wbtc"] = "swap_failed"
+                    slice_logs.append(_log_short_close_slice(wallet_address, "WBTC", SHORT_CLOSE_WBTC_PCT, "FAILED", weth_wbtc, reason="WETH->WBTC swap failed"))
             except Exception as e:
                 dist_results["wbtc"] = f"error: {e}"
+                slice_logs.append(_log_short_close_slice(wallet_address, "WBTC", SHORT_CLOSE_WBTC_PCT, "FAILED", weth_wbtc, reason=str(e)))
                 logger.error(f"[Short Close] WBTC distribution failed: {e}")
         else:
             dist_results["wbtc"] = "amount_too_small"
+            slice_logs.append(_log_short_close_slice(wallet_address, "WBTC", SHORT_CLOSE_WBTC_PCT, "OK", weth_wbtc, reason="amount below threshold, skipped"))
+
+        if weth_aave >= 0.00001:
+            _log_strategy(user_id, wallet_address, "short_close", "DIST_WETH_SUPPLY", live_hf,
+                          details=f"Supply {weth_aave:.8f} WETH to Aave onBehalfOf user")
+            try:
+                supply_tx = delegated_supply_weth_onbehalf(wallet_address, weth_aave)
+                if supply_tx:
+                    dist_results["weth_supply"] = f"OK ({weth_aave:.8f} WETH supplied)"
+                    slice_logs.append(_log_short_close_slice(wallet_address, "WETH", SHORT_CLOSE_WETH_PCT, "OK", weth_aave, weth_aave))
+                    time.sleep(2)
+                else:
+                    dist_results["weth_supply"] = "aave_supply_failed"
+                    slice_logs.append(_log_short_close_slice(wallet_address, "WETH", SHORT_CLOSE_WETH_PCT, "FAILED", weth_aave, reason="Aave supply WETH onBehalfOf failed"))
+            except Exception as e:
+                dist_results["weth_supply"] = f"error: {e}"
+                slice_logs.append(_log_short_close_slice(wallet_address, "WETH", SHORT_CLOSE_WETH_PCT, "FAILED", weth_aave, reason=str(e)))
+                logger.error(f"[Short Close] WETH supply distribution failed: {e}")
+        else:
+            dist_results["weth_supply"] = "amount_too_small"
+            slice_logs.append(_log_short_close_slice(wallet_address, "WETH", SHORT_CLOSE_WETH_PCT, "OK", weth_aave, reason="amount below threshold, skipped"))
 
         if weth_usdt >= 0.00001:
             _log_strategy(user_id, wallet_address, "short_close", "DIST_USDT", live_hf,
-                          details=f"Swap {weth_usdt:.8f} WETH -> USDT -> user wallet")
+                          details=f"Swap {weth_usdt:.8f} WETH -> USDT -> Aave supply onBehalfOf user")
             try:
                 usdt_swap = uniswap.swap_weth_for_usdt(weth_usdt)
                 if usdt_swap and usdt_swap.get('tx_hash'):
@@ -863,36 +926,50 @@ def _execute_delegated_short_close(user_id, wallet_address, agent, live_hf):
                     usdt_contract = w3.eth.contract(address=w3.to_checksum_address(USDT_ADDRESS), abi=ERC20_ABI)
                     usdt_bal = usdt_contract.functions.balanceOf(acct.address).call()
                     if usdt_bal > 0:
-                        xfer_tx = transfer_token_to_address(wallet_address, USDT_ADDRESS, usdt_bal)
-                        if xfer_tx:
-                            dist_results["usdt"] = f"OK ({usdt_bal / 1e6:.2f} USDT)"
+                        usdt_float = usdt_bal / 1e6
+                        supply_tx = delegated_supply_usdt_onbehalf(wallet_address, usdt_float)
+                        if supply_tx:
+                            dist_results["usdt"] = f"OK ({usdt_float:.2f} USDT supplied)"
+                            slice_logs.append(_log_short_close_slice(wallet_address, "USDT", SHORT_CLOSE_USDT_PCT, "OK", weth_usdt, usdt_float))
                             time.sleep(2)
                         else:
-                            dist_results["usdt"] = "transfer_failed"
+                            dist_results["usdt"] = "aave_supply_failed"
+                            slice_logs.append(_log_short_close_slice(wallet_address, "USDT", SHORT_CLOSE_USDT_PCT, "FAILED", weth_usdt, usdt_float, reason="Aave supply USDT onBehalfOf failed"))
                     else:
                         dist_results["usdt"] = "swap_zero_output"
+                        slice_logs.append(_log_short_close_slice(wallet_address, "USDT", SHORT_CLOSE_USDT_PCT, "FAILED", weth_usdt, reason="swap returned zero USDT"))
                 else:
                     dist_results["usdt"] = "swap_failed"
+                    slice_logs.append(_log_short_close_slice(wallet_address, "USDT", SHORT_CLOSE_USDT_PCT, "FAILED", weth_usdt, reason="WETH->USDT swap failed"))
             except Exception as e:
                 dist_results["usdt"] = f"error: {e}"
+                slice_logs.append(_log_short_close_slice(wallet_address, "USDT", SHORT_CLOSE_USDT_PCT, "FAILED", weth_usdt, reason=str(e)))
                 logger.error(f"[Short Close] USDT distribution failed: {e}")
         else:
             dist_results["usdt"] = "amount_too_small"
+            slice_logs.append(_log_short_close_slice(wallet_address, "USDT", SHORT_CLOSE_USDT_PCT, "OK", weth_usdt, reason="amount below threshold, skipped"))
 
         ok_count = sum(1 for v in dist_results.values() if v.startswith("OK"))
         fail_count = sum(1 for v in dist_results.values() if not v.startswith("OK") and v != "amount_too_small")
 
-        bot_leftover_weth = weth_contract.functions.balanceOf(acct.address).call()
-        if bot_leftover_weth > 0:
-            xfer_tx = transfer_token_to_address(wallet_address, WETH_ADDRESS, bot_leftover_weth)
-            if xfer_tx:
-                logger.info(f"[Short Close] Leftover WETH ({bot_leftover_weth / 1e18:.8f}) sent to user wallet")
+        bot_leftover_weth_raw = weth_contract.functions.balanceOf(acct.address).call()
+        bot_leftover_weth = bot_leftover_weth_raw / 1e18
+        if bot_leftover_weth_raw > 0:
+            try:
+                xfer_tx = transfer_token_to_address(wallet_address, WETH_ADDRESS, bot_leftover_weth_raw)
+                if xfer_tx:
+                    _log_short_close_residual(wallet_address, bot_leftover_weth, bot_leftover_weth, status="OK")
+                else:
+                    _log_short_close_residual(wallet_address, bot_leftover_weth, status="FAILED", reason="WETH transfer to user wallet failed")
+            except Exception as e:
+                _log_short_close_residual(wallet_address, bot_leftover_weth, status="FAILED", reason=str(e))
+                logger.error(f"[Short Close] Residual WETH sweep failed: {e}")
 
         post_data = get_user_account_data(wallet_address)
         post_hf = post_data.get("healthFactor", 0) if post_data else 0
 
         dist_summary = ", ".join([f"{k}={v}" for k, v in dist_results.items()])
-        detail_str = (f"Profit {profit_weth:.8f} WETH distributed 20/20/10/20/30. "
+        detail_str = (f"Profit {profit_weth:.8f} WETH distributed 20/20/30/20/10. "
                      f"{ok_count}/5 OK. HF {live_hf:.2f} -> {post_hf:.2f}. {dist_summary}")
 
         result["executed"] = True
@@ -902,7 +979,7 @@ def _execute_delegated_short_close(user_id, wallet_address, agent, live_hf):
 
         _log_strategy(user_id, wallet_address, "short_close", result["action"], live_hf,
                       hf_after=post_hf,
-                      details=f"20/20/10/20/30 split: {dist_summary}")
+                      details=f"20/20/30/20/10 split: {dist_summary}")
         _record_strategy_action(user_id, wallet_address,
                                f"SHORT CLOSE: profit={profit_weth:.8f} WETH, {ok_count}/5 dist OK, HF {live_hf:.2f} -> {post_hf:.2f}")
 
@@ -912,11 +989,13 @@ def _execute_delegated_short_close(user_id, wallet_address, agent, live_hf):
                 action_type='strategy_short_close',
                 details={"hf_before": live_hf, "hf_after": post_hf,
                          "profit_weth": profit_weth,
-                         "split": "20/20/10/20/30",
+                         "split": "20/20/30/20/10",
                          "wallet_s_pct": 0.20, "usdc_pct": 0.20,
-                         "eth_pct": 0.10, "wbtc_pct": 0.20, "usdt_pct": 0.30,
+                         "wbtc_pct": 0.30, "weth_supply_pct": 0.20, "usdt_pct": 0.10,
                          "distribution_results": dist_results,
-                         "note": "User wallet: 20% Wallet_S DAI, 20% USDC user, 10% ETH user, 20% WBTC user, 30% USDT user"},
+                         "slice_logs": slice_logs,
+                         "residual_weth": bot_leftover_weth,
+                         "note": "20% Wallet_S(DAI), 20% USDC(wallet), 30% WBTC(supplied), 20% WETH(supplied), 10% USDT(supplied)"},
                 tx_hash=repay_tx)
 
         return result

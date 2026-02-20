@@ -16,8 +16,11 @@ Wallet Profiles:
 
   USER_WALLET — delegated user wallets via REAADelegationManager.
     - Profit Bucket: DISABLED (USDC stays in user wallet, never flushed)
-    - Liability Short close: 20/20/10/20/30 split — 20% Wallet_S (DAI), 20% USDC (user),
-      10% ETH (user), 20% WBTC (user), 30% USDT (user)
+    - Liability Short close: 20/20/30/20/10 split — 20% Wallet_S (DAI), 20% USDC (user wallet),
+      30% WBTC (supplied to Aave), 20% WETH (supplied to Aave), 10% USDT (supplied to Aave).
+      Only Wallet_S and USDC are direct wallet transfers; WBTC/WETH/USDT are Aave supplies.
+      Residual WETH → ETH sent to user wallet as gas/safety net.
+      Each slice executes independently (best-effort); Nurse Mode cleans up leftovers.
 
 These are the ONLY two intentional behavior differences. All other execution
 logic (Growth 6-step, Capacity 6-step, Nurse Mode sweep, Short entry,
@@ -159,7 +162,7 @@ STRATEGY_MAP = {
         "required_flags": ["allowBorrow", "allowSupply"],
         "entry_allocation": "40% WBTC, 35% USDT, 25% WETH collateral",
         "close_personal_bot": "20% Wallet_S (DAI), 20% Wallet_B (USDC), 60% Aave collateral",
-        "close_user_wallet": "20% Wallet_S (DAI), 20% USDC (user), 10% ETH (user), 20% WBTC (user), 30% USDT (user)",
+        "close_user_wallet": "20% Wallet_S (DAI), 20% USDC (wallet), 30% WBTC (Aave supply), 20% WETH (Aave supply), 10% USDT (Aave supply). Residual WETH→ETH to user. Per-slice best-effort.",
     },
     "micro_short": {
         "description": "Smaller WETH hedge against minor market dip ($30 velocity drop in 20 min, 4h cooldown)",
@@ -170,7 +173,7 @@ STRATEGY_MAP = {
         "required_flags": ["allowBorrow", "allowSupply"],
         "entry_allocation": "40% WBTC, 35% USDT, 25% WETH collateral",
         "close_personal_bot": "20% Wallet_S (DAI), 20% Wallet_B (USDC), 60% Aave collateral",
-        "close_user_wallet": "20% Wallet_S (DAI), 20% USDC (user), 10% ETH (user), 20% WBTC (user), 30% USDT (user)",
+        "close_user_wallet": "20% Wallet_S (DAI), 20% USDC (wallet), 30% WBTC (Aave supply), 20% WETH (Aave supply), 10% USDT (Aave supply). Residual WETH→ETH to user. Per-slice best-effort.",
     },
     "auto_supply": {
         "description": "Auto-supply WBTC to Aave on delegation activation",
@@ -219,15 +222,19 @@ WALLET_PROFILES = {
         "short_close_profit_split": {
             "wallet_s_pct": 0.20,
             "wallet_s_token": "DAI",
+            "wallet_s_destination": "Wallet_S (transfer)",
             "usdc_pct": 0.20,
-            "usdc_destination": "user_wallet",
-            "eth_pct": 0.10,
-            "eth_destination": "user_wallet",
-            "wbtc_pct": 0.20,
-            "wbtc_destination": "user_wallet",
-            "usdt_pct": 0.30,
-            "usdt_destination": "user_wallet",
-            "note": "20% Wallet_S (DAI), 20% USDC user, 10% ETH user, 20% WBTC user, 30% USDT user = 100%",
+            "usdc_destination": "user_wallet (transfer)",
+            "wbtc_pct": 0.30,
+            "wbtc_destination": "Aave supply onBehalfOf user",
+            "weth_supply_pct": 0.20,
+            "weth_destination": "Aave supply onBehalfOf user",
+            "usdt_pct": 0.10,
+            "usdt_destination": "Aave supply onBehalfOf user",
+            "residual": "Any leftover WETH → ETH sent to user wallet as gas/safety net",
+            "execution_model": "per-slice best-effort, not atomic; failures leave WETH for residual sweep",
+            "nurse_mode_interaction": "Nurse Mode sweeps stray DAI/WETH/WBTC/USDT into Aave over time",
+            "note": "20% Wallet_S (DAI), 20% USDC (wallet), 30% WBTC (supplied), 20% WETH (supplied), 10% USDT (supplied) = 100%",
         },
         "growth_capacity_usdc_tax": "stays in user wallet permanently (user claims manually)",
     },
@@ -247,7 +254,7 @@ PARITY_DIFFERENCES = {
             "id": 2,
             "feature": "Liability Short Close Profit Distribution",
             "personal_bot": "20/20/60 split — 20% Wallet_S (DAI), 20% Wallet_B (USDC), 60% Aave collateral (USDT)",
-            "user_wallet": "20/20/10/20/30 split — 20% Wallet_S (DAI), 20% USDC (user wallet), 10% ETH (user wallet), 20% WBTC (user wallet), 30% USDT (user wallet)",
+            "user_wallet": "20/20/30/20/10 split — 20% Wallet_S (DAI), 20% USDC (user wallet), 30% WBTC (Aave supply), 20% WETH (Aave supply), 10% USDT (Aave supply). Residual WETH→ETH to user wallet. Per-slice best-effort.",
         },
     ],
 }

@@ -169,14 +169,32 @@ PERSONAL BOT (20/20/60 split):
   ├── 20% → Wallet_B (USDT → USDC → accumulator)
   └── 60% → Aave collateral (USDT → supply)
 
-USER WALLET (20/20/10/20/30 split):
-  On profitable short close (profit realized as WETH after repay):
-  ├── 20% → Wallet_S (swap WETH → DAI, transfer to Wallet_S)
-  ├── 20% → USDC (swap WETH → USDC, stays in user wallet)
-  ├── 10% → ETH (WETH transferred to user wallet, user can unwrap)
-  ├── 20% → WBTC (swap WETH → WBTC, stays in user wallet)
-  └── 30% → USDT (swap WETH → USDT, stays in user wallet)
-  Total = 100%. All non-Wallet_S tokens stay in user wallet.
+USER WALLET (20/20/30/20/10 split):
+  On profitable short close (profit P realized as WETH after debt repay):
+  ├── 20% → Wallet_S (swap WETH → DAI, transfer DAI to Wallet_S)
+  ├── 20% → USDC (swap WETH → USDC, transfer to user wallet)
+  ├── 30% → WBTC (swap WETH → WBTC, supply to Aave onBehalfOf user)
+  ├── 20% → WETH (keep as WETH, supply to Aave onBehalfOf user)
+  └── 10% → USDT (swap WETH → USDT, supply to Aave onBehalfOf user)
+  Residual: Any leftover WETH → ETH sent to user wallet as gas/safety net
+  Total = 100%.
+
+  Execution model (per-slice best-effort, NOT atomic):
+  - Each of the 5 slices executes independently.
+  - If one slice fails (e.g. USDC swap reverts), the other slices still proceed.
+  - Any unprocessed WETH from a failed slice remains and is included in the
+    final residual sweep (WETH → ETH → user wallet).
+  - Failures do not block other slices; they just leave more WETH for the sweep.
+
+  Residual handling:
+  - On any slice failure, unprocessed WETH stays in the bot/DelegationManager.
+  - After all slices attempt, residual WETH is transferred to the user wallet.
+  - Nothing is stuck permanently in the DelegationManager.
+
+  Nurse Mode interaction:
+  - Nurse Mode later sweeps DAI/WETH/WBTC/USDT from the user wallet into Aave
+    (above $2 floor), lifting HF and potentially re-enabling Growth/Capacity.
+  - USDC is NEVER swept by Nurse Mode (profit token, user claims manually).
 ```
 
 #### Everything Else: IDENTICAL
