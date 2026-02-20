@@ -80,6 +80,7 @@ The REAA platform is built on the Arbitrum Mainnet, featuring distinct modules f
 - **API:** `/api/user/status` returns `strategyEnabled`, `strategyStatus`, `lastStrategyAction`, `lastStrategyTimestamp`.
 - **UI:** Auto-Pilot panel shows Strategy Engine status line, last action text, and timestamp.
 - **Delegation routing:** All borrow/repay/withdraw calls go through `delegation_client.py` which signs with bot operator key and calls REAADelegationManager contract methods.
+- **Borrow Token Forwarding (Critical Fix Feb 2026):** Aave V3's `borrow(onBehalfOf=user)` sends borrowed tokens to `msg.sender` (DelegationManager), not the user. `delegated_borrow()` now auto-forwards tokens: after `executeBorrow`, calls `emergencyWithdrawToken` (DM→bot) then `ERC20.transfer` (bot→user). This is a 3-tx pattern: borrow + withdraw + transfer. Bot wallet must be DM owner for `emergencyWithdrawToken` access.
 - **Bot wallet separation:** Bot wallet strategies (`run_strategies_for_user`) run on a separate path from delegated wallet strategies.
 
 **Phase 2C: Full-Automation Permission Parity (Feb 2026):**

@@ -490,6 +490,32 @@ def _send_bot_tx(func_call, gas_estimate_fallback=400000):
         return None
 
 
+def _forward_borrowed_tokens_to_user(asset_address: str, amount_wei: int, user_address: str) -> bool:
+    w3 = _get_web3()
+    acct = _get_bot_account()
+    if not w3 or not acct:
+        logger.error("_forward_borrowed_tokens: missing Web3 or bot account")
+        return False
+    dm_addr = Web3.to_checksum_address(DELEGATION_MANAGER_ADDRESS)
+    asset_cs = Web3.to_checksum_address(asset_address)
+    user_cs = Web3.to_checksum_address(user_address)
+    dm = w3.eth.contract(address=dm_addr, abi=DELEGATION_MANAGER_ABI + [
+        {"inputs": [{"name": "token", "type": "address"}, {"name": "amount", "type": "uint256"}], "name": "emergencyWithdrawToken", "outputs": [], "stateMutability": "nonpayable", "type": "function"},
+    ])
+    logger.info(f"_forward_borrowed_tokens: withdrawing {amount_wei} from DM to bot, then forwarding to {user_address[:10]}...")
+    withdraw_hash = _send_bot_tx(dm.functions.emergencyWithdrawToken(asset_cs, amount_wei))
+    if not withdraw_hash:
+        logger.error(f"_forward_borrowed_tokens: emergencyWithdrawToken failed")
+        return False
+    token = w3.eth.contract(address=asset_cs, abi=ERC20_ABI)
+    transfer_hash = _send_bot_tx(token.functions.transfer(user_cs, amount_wei))
+    if not transfer_hash:
+        logger.error(f"_forward_borrowed_tokens: transfer to user failed")
+        return False
+    logger.info(f"_forward_borrowed_tokens: OK — {amount_wei} forwarded to {user_address[:10]}...")
+    return True
+
+
 def delegated_borrow(user_address: str, asset_address: str, amount_wei: int, interest_rate_mode: int = 2) -> str:
     w3 = _get_web3()
     if not w3 or not is_contract_deployed():
@@ -507,7 +533,13 @@ def delegated_borrow(user_address: str, asset_address: str, amount_wei: int, int
     user_cs = Web3.to_checksum_address(user_address)
     asset_cs = Web3.to_checksum_address(asset_address)
     logger.info(f"delegated_borrow: user={user_address[:10]}..., asset={asset_address[:10]}..., amount_wei={amount_wei}")
-    return _send_bot_tx(dm.functions.executeBorrow(user_cs, asset_cs, amount_wei, interest_rate_mode))
+    borrow_hash = _send_bot_tx(dm.functions.executeBorrow(user_cs, asset_cs, amount_wei, interest_rate_mode))
+    if borrow_hash:
+        forwarded = _forward_borrowed_tokens_to_user(asset_address, amount_wei, user_address)
+        if not forwarded:
+            logger.error(f"delegated_borrow: borrow OK but token forward to user FAILED — tokens stuck in DM")
+            return None
+    return borrow_hash
 
 
 def delegated_borrow_dai(user_address: str, amount_dai: float) -> str:
