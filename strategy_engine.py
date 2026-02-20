@@ -123,6 +123,7 @@ try:
         delegated_supply_usdt_onbehalf,
         delegated_withdraw_usdt,
         pull_token_from_user,
+        dm_execute_supply,
         transfer_token_to_address,
         check_user_wallet_approvals,
         get_multi_token_balances,
@@ -320,122 +321,109 @@ def _execute_delegated_distribution(user_id, wallet_address, agent, path_name, d
         dai_supply_amount = distribution['dai_supply']
         if "dai_supplied" not in already_done and dai_supply_amount >= 0.50:
             _log_strategy(user_id, wallet_address, path_name, "STEP2_DAI_SUPPLY", live_hf,
-                          details=f"Pull ${dai_supply_amount:.2f} DAI -> supply to Aave onBehalfOf user")
-            dai_supply_wei = int(dai_supply_amount * 1e18)
-            pull_tx = pull_token_from_user(wallet_address, DAI_ADDRESS, dai_supply_wei)
-            if pull_tx:
-                supply_tx = delegated_supply_dai_onbehalf(wallet_address, dai_supply_amount)
-                if supply_tx:
-                    _save_execution_state(wallet_address, "dai_supplied", path_name, dist_serializable)
-                    steps_completed.append("dai_supplied")
-                    time.sleep(2)
-                else:
-                    steps_failed.append("dai_supply_to_aave")
-                    logger.warning(f"[Distribution] {wallet_address[:10]}... DAI supply to Aave failed — DAI in bot wallet")
+                          details=f"Supply ${dai_supply_amount:.2f} DAI to Aave onBehalfOf user (from bot wallet)")
+            supply_tx = delegated_supply_dai_onbehalf(wallet_address, dai_supply_amount)
+            if supply_tx:
+                _save_execution_state(wallet_address, "dai_supplied", path_name, dist_serializable)
+                steps_completed.append("dai_supplied")
+                time.sleep(2)
             else:
-                steps_failed.append("dai_pull")
-                logger.warning(f"[Distribution] {wallet_address[:10]}... DAI pull from user failed")
+                steps_failed.append("dai_supply_to_aave")
+                logger.warning(f"[Distribution] {wallet_address[:10]}... DAI supply to Aave failed")
         elif "dai_supplied" in already_done:
             pass
 
         wbtc_amount = distribution['wbtc_swap_supply']
         if "wbtc_supplied" not in already_done and wbtc_amount >= 0.50 and uniswap:
             _log_strategy(user_id, wallet_address, path_name, "STEP3_WBTC_SWAP", live_hf,
-                          details=f"Pull ${wbtc_amount:.2f} DAI -> swap DAI->WBTC -> supply onBehalfOf")
-            wbtc_dai_wei = int(wbtc_amount * 1e18)
-            pull_tx = pull_token_from_user(wallet_address, DAI_ADDRESS, wbtc_dai_wei)
-            if pull_tx:
-                time.sleep(2)
-                swap_result = uniswap.swap_dai_for_wbtc(wbtc_amount)
-                if swap_result and swap_result.get('tx_hash'):
-                    time.sleep(3)
-                    from delegation_client import _get_bot_account, _get_web3, ERC20_ABI
-                    w3 = _get_web3()
-                    acct = _get_bot_account()
-                    if w3 and acct:
-                        wbtc_contract = w3.eth.contract(
-                            address=w3.to_checksum_address(WBTC_TOKEN_ADDRESS), abi=ERC20_ABI)
-                        wbtc_bal_raw = wbtc_contract.functions.balanceOf(acct.address).call()
-                        if wbtc_bal_raw > 0:
-                            wbtc_float = wbtc_bal_raw / 1e8
-                            supply_tx = delegated_supply_wbtc_onbehalf(wallet_address, wbtc_float)
-                            if supply_tx:
-                                _save_execution_state(wallet_address, "wbtc_supplied", path_name, dist_serializable)
-                                steps_completed.append("wbtc_supplied")
-                                time.sleep(2)
-                            else:
-                                steps_failed.append("wbtc_supply_to_aave")
+                          details=f"Swap ${wbtc_amount:.2f} DAI->WBTC -> supply onBehalfOf (from bot wallet)")
+            swap_result = uniswap.swap_dai_for_wbtc(wbtc_amount)
+            if swap_result and swap_result.get('tx_hash'):
+                time.sleep(3)
+                from delegation_client import _get_bot_account, _get_web3, ERC20_ABI
+                w3 = _get_web3()
+                acct = _get_bot_account()
+                if w3 and acct:
+                    wbtc_contract = w3.eth.contract(
+                        address=w3.to_checksum_address(WBTC_TOKEN_ADDRESS), abi=ERC20_ABI)
+                    wbtc_bal_raw = wbtc_contract.functions.balanceOf(acct.address).call()
+                    if wbtc_bal_raw > 0:
+                        wbtc_float = wbtc_bal_raw / 1e8
+                        supply_tx = delegated_supply_wbtc_onbehalf(wallet_address, wbtc_float)
+                        if supply_tx:
+                            _save_execution_state(wallet_address, "wbtc_supplied", path_name, dist_serializable)
+                            steps_completed.append("wbtc_supplied")
+                            time.sleep(2)
                         else:
-                            steps_failed.append("wbtc_swap_zero_output")
-                else:
-                    steps_failed.append("dai_to_wbtc_swap")
+                            steps_failed.append("wbtc_supply_to_aave")
+                    else:
+                        steps_failed.append("wbtc_swap_zero_output")
             else:
-                steps_failed.append("wbtc_dai_pull")
+                steps_failed.append("dai_to_wbtc_swap")
         elif "wbtc_supplied" in already_done:
             pass
 
         weth_amount = distribution['weth_swap_supply']
         if "weth_supplied" not in already_done and weth_amount >= 0.50 and uniswap:
             _log_strategy(user_id, wallet_address, path_name, "STEP4_WETH_SWAP", live_hf,
-                          details=f"Pull ${weth_amount:.2f} DAI -> swap DAI->WETH -> supply onBehalfOf")
-            weth_dai_wei = int(weth_amount * 1e18)
-            pull_tx = pull_token_from_user(wallet_address, DAI_ADDRESS, weth_dai_wei)
-            if pull_tx:
-                time.sleep(2)
-                swap_result = uniswap.swap_dai_for_weth(weth_amount)
-                if swap_result and swap_result.get('tx_hash'):
-                    time.sleep(3)
-                    from delegation_client import _get_bot_account, _get_web3, ERC20_ABI
-                    w3 = _get_web3()
-                    acct = _get_bot_account()
-                    if w3 and acct:
-                        weth_contract = w3.eth.contract(
-                            address=w3.to_checksum_address(WETH_ADDRESS), abi=ERC20_ABI)
-                        weth_bal_raw = weth_contract.functions.balanceOf(acct.address).call()
-                        if weth_bal_raw > 0:
-                            weth_float = weth_bal_raw / 1e18
-                            supply_tx = delegated_supply_weth_onbehalf(wallet_address, weth_float)
-                            if supply_tx:
-                                _save_execution_state(wallet_address, "weth_supplied", path_name, dist_serializable)
-                                steps_completed.append("weth_supplied")
-                                time.sleep(2)
-                            else:
-                                steps_failed.append("weth_supply_to_aave")
+                          details=f"Swap ${weth_amount:.2f} DAI->WETH -> supply onBehalfOf (from bot wallet)")
+            swap_result = uniswap.swap_dai_for_weth(weth_amount)
+            if swap_result and swap_result.get('tx_hash'):
+                time.sleep(3)
+                from delegation_client import _get_bot_account, _get_web3, ERC20_ABI
+                w3 = _get_web3()
+                acct = _get_bot_account()
+                if w3 and acct:
+                    weth_contract = w3.eth.contract(
+                        address=w3.to_checksum_address(WETH_ADDRESS), abi=ERC20_ABI)
+                    weth_bal_raw = weth_contract.functions.balanceOf(acct.address).call()
+                    if weth_bal_raw > 0:
+                        weth_float = weth_bal_raw / 1e18
+                        supply_tx = delegated_supply_weth_onbehalf(wallet_address, weth_float)
+                        if supply_tx:
+                            _save_execution_state(wallet_address, "weth_supplied", path_name, dist_serializable)
+                            steps_completed.append("weth_supplied")
+                            time.sleep(2)
                         else:
-                            steps_failed.append("weth_swap_zero_output")
-                else:
-                    steps_failed.append("dai_to_weth_swap")
+                            steps_failed.append("weth_supply_to_aave")
+                    else:
+                        steps_failed.append("weth_swap_zero_output")
             else:
-                steps_failed.append("weth_dai_pull")
+                steps_failed.append("dai_to_weth_swap")
         elif "weth_supplied" in already_done:
             pass
 
         eth_amount = distribution['eth_gas_reserve']
         if "eth_converted" not in already_done and eth_amount >= 0.50:
             _log_strategy(user_id, wallet_address, path_name, "STEP5_ETH_GAS", live_hf,
-                          details=f"${eth_amount:.2f} DAI stays in user wallet for gas reserve")
-            _save_execution_state(wallet_address, "eth_converted", path_name, dist_serializable)
-            steps_completed.append("eth_converted")
+                          details=f"Transfer ${eth_amount:.2f} DAI to user wallet for gas reserve")
+            from delegation_client import _forward_tokens_to_user
+            eth_dai_wei = int(eth_amount * 1e18)
+            fwd = _forward_tokens_to_user(DAI_ADDRESS, eth_dai_wei, wallet_address)
+            if fwd:
+                _save_execution_state(wallet_address, "eth_converted", path_name, dist_serializable)
+                steps_completed.append("eth_converted")
+                time.sleep(2)
+            else:
+                steps_failed.append("eth_gas_transfer")
+                logger.warning(f"[Distribution] {wallet_address[:10]}... DAI gas reserve transfer to user failed")
+        elif "eth_converted" in already_done:
+            pass
 
         dai_transfer = distribution['dai_transfer']
         if "wallet_s_transferred" not in already_done and dai_transfer >= 0.50:
             wallet_s = os.getenv('WALLET_S_ADDRESS', '').strip()
             if wallet_s and len(wallet_s) == 42:
                 _log_strategy(user_id, wallet_address, path_name, "STEP6_WALLET_S", live_hf,
-                              details=f"Pull ${dai_transfer:.2f} DAI -> transfer to Wallet_S")
+                              details=f"Transfer ${dai_transfer:.2f} DAI to Wallet_S (from bot wallet)")
                 dai_transfer_wei = int(dai_transfer * 1e18)
-                pull_tx = pull_token_from_user(wallet_address, DAI_ADDRESS, dai_transfer_wei)
-                if pull_tx:
+                xfer_tx = transfer_token_to_address(wallet_s, DAI_ADDRESS, dai_transfer_wei)
+                if xfer_tx:
+                    _save_execution_state(wallet_address, "wallet_s_transferred", path_name, dist_serializable)
+                    steps_completed.append("wallet_s_transferred")
                     time.sleep(2)
-                    xfer_tx = transfer_token_to_address(wallet_s, DAI_ADDRESS, dai_transfer_wei)
-                    if xfer_tx:
-                        _save_execution_state(wallet_address, "wallet_s_transferred", path_name, dist_serializable)
-                        steps_completed.append("wallet_s_transferred")
-                        time.sleep(2)
-                    else:
-                        steps_failed.append("wallet_s_transfer")
                 else:
-                    steps_failed.append("wallet_s_dai_pull")
+                    steps_failed.append("wallet_s_transfer")
             else:
                 logger.warning(f"[Distribution] WALLET_S_ADDRESS not set — skipping Wallet_S transfer")
                 _save_execution_state(wallet_address, "wallet_s_transferred", path_name, dist_serializable)
@@ -444,35 +432,29 @@ def _execute_delegated_distribution(user_id, wallet_address, agent, path_name, d
         usdc_tax = distribution.get('usdc_tax', 0)
         if "usdc_taxed" not in already_done and usdc_tax >= 0.50 and uniswap:
             _log_strategy(user_id, wallet_address, path_name, "STEP7_USDC_TAX", live_hf,
-                          details=f"Pull ${usdc_tax:.2f} DAI -> swap DAI->USDC (stays in user wallet)")
-            usdc_dai_wei = int(usdc_tax * 1e18)
-            pull_tx = pull_token_from_user(wallet_address, DAI_ADDRESS, usdc_dai_wei)
-            if pull_tx:
-                time.sleep(2)
-                swap_result = uniswap.swap_dai_for_usdc(usdc_tax)
-                if swap_result and swap_result.get('tx_hash'):
-                    time.sleep(3)
-                    from delegation_client import _get_bot_account, _get_web3, ERC20_ABI
-                    w3 = _get_web3()
-                    acct = _get_bot_account()
-                    if w3 and acct:
-                        usdc_contract = w3.eth.contract(
-                            address=w3.to_checksum_address(USDC_ADDRESS), abi=ERC20_ABI)
-                        usdc_bal_raw = usdc_contract.functions.balanceOf(acct.address).call()
-                        if usdc_bal_raw > 0:
-                            usdc_transfer_wei = usdc_bal_raw
-                            xfer_tx = transfer_token_to_address(wallet_address, USDC_ADDRESS, usdc_transfer_wei)
-                            if xfer_tx:
-                                _save_execution_state(wallet_address, "usdc_taxed", path_name, dist_serializable)
-                                steps_completed.append("usdc_taxed")
-                            else:
-                                steps_failed.append("usdc_transfer_to_user")
+                          details=f"Swap ${usdc_tax:.2f} DAI->USDC, transfer to user (from bot wallet)")
+            swap_result = uniswap.swap_dai_for_usdc(usdc_tax)
+            if swap_result and swap_result.get('tx_hash'):
+                time.sleep(3)
+                from delegation_client import _get_bot_account, _get_web3, ERC20_ABI
+                w3 = _get_web3()
+                acct = _get_bot_account()
+                if w3 and acct:
+                    usdc_contract = w3.eth.contract(
+                        address=w3.to_checksum_address(USDC_ADDRESS), abi=ERC20_ABI)
+                    usdc_bal_raw = usdc_contract.functions.balanceOf(acct.address).call()
+                    if usdc_bal_raw > 0:
+                        usdc_transfer_wei = usdc_bal_raw
+                        xfer_tx = transfer_token_to_address(wallet_address, USDC_ADDRESS, usdc_transfer_wei)
+                        if xfer_tx:
+                            _save_execution_state(wallet_address, "usdc_taxed", path_name, dist_serializable)
+                            steps_completed.append("usdc_taxed")
                         else:
-                            steps_failed.append("usdc_swap_zero_output")
-                else:
-                    steps_failed.append("dai_to_usdc_swap")
+                            steps_failed.append("usdc_transfer_to_user")
+                    else:
+                        steps_failed.append("usdc_swap_zero_output")
             else:
-                steps_failed.append("usdc_dai_pull")
+                steps_failed.append("dai_to_usdc_swap")
         elif "usdc_taxed" in already_done:
             pass
 
@@ -1069,19 +1051,15 @@ def run_delegated_nurse_sweep(user_id, wallet_address, agent):
 
             logger.info(f"[Nurse] {wallet_address[:10]}... sweeping {balance:.8f} {token_name} (${usd_value:.2f})")
 
-            pull_tx = pull_token_from_user(wallet_address, config["address"], balance_raw)
-            if pull_tx:
+            supply_raw = int(balance_raw * 0.99)
+            supply_tx = dm_execute_supply(wallet_address, config["address"], supply_raw)
+            if supply_tx:
+                result["swept"] = True
+                result["tokens_swept"].append(f"{token_name}(${usd_value:.2f})")
+                logger.info(f"[Nurse] {wallet_address[:10]}... {token_name} supplied to Aave via DM executeSupply")
                 time.sleep(2)
-                supply_tx = config["supply_fn"](wallet_address, balance * 0.99)
-                if supply_tx:
-                    result["swept"] = True
-                    result["tokens_swept"].append(f"{token_name}(${usd_value:.2f})")
-                    logger.info(f"[Nurse] {wallet_address[:10]}... {token_name} supplied to Aave onBehalfOf")
-                    time.sleep(2)
-                else:
-                    logger.warning(f"[Nurse] {wallet_address[:10]}... {token_name} supply failed — tokens in bot wallet")
             else:
-                logger.warning(f"[Nurse] {wallet_address[:10]}... {token_name} pull from user failed")
+                logger.warning(f"[Nurse] {wallet_address[:10]}... {token_name} DM executeSupply failed")
 
         usdc_data = balances.get("USDC", {})
         usdc_balance = usdc_data.get("balance", 0)

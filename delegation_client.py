@@ -43,6 +43,7 @@ DELEGATION_MANAGER_ABI = [
     {"inputs": [], "name": "revokeWBTCDelegation", "outputs": [], "stateMutability": "nonpayable", "type": "function"},
     {"inputs": [], "name": "revokeDelegation", "outputs": [], "stateMutability": "nonpayable", "type": "function"},
     {"inputs": [{"name": "user", "type": "address"}, {"name": "amount", "type": "uint256"}], "name": "autoSupplyWBTC", "outputs": [], "stateMutability": "nonpayable", "type": "function"},
+    {"inputs": [{"name": "user", "type": "address"}, {"name": "asset", "type": "address"}, {"name": "amount", "type": "uint256"}], "name": "executeSupply", "outputs": [], "stateMutability": "nonpayable", "type": "function"},
     {"inputs": [{"name": "user", "type": "address"}], "name": "getDelegation", "outputs": [
         {"name": "isActive", "type": "bool"}, {"name": "approvedAt", "type": "uint256"}, {"name": "revokedAt", "type": "uint256"},
         {"name": "maxSupplyPerTx", "type": "uint256"}, {"name": "dailySupplyLimit", "type": "uint256"}, {"name": "dailySupplyUsed", "type": "uint256"},
@@ -447,72 +448,90 @@ def validate_full_automation_ready(wallet_address):
     return results
 
 
-def _send_bot_tx(func_call, gas_estimate_fallback=400000):
+def _send_bot_tx(func_call, gas_estimate_fallback=400000, max_retries=2):
     w3 = _get_web3()
     acct = _get_bot_account()
     if not w3 or not acct:
         logger.error("_send_bot_tx: missing Web3 or bot account")
         return None
-    try:
-        eth_bal = w3.eth.get_balance(acct.address)
-        if eth_bal < w3.to_wei(0.0002, "ether"):
-            logger.error(f"Bot ETH too low for gas: {w3.from_wei(eth_bal, 'ether')} ETH")
-            return None
-        base_gas = w3.eth.gas_price
-        gas_price = int(base_gas * 2.5)
-        nonce = w3.eth.get_transaction_count(acct.address)
+    for attempt in range(max_retries + 1):
         try:
-            est = func_call.estimate_gas({"from": acct.address})
-            gas_limit = int(est * 1.3)
-        except Exception as ge:
-            logger.warning(f"Gas estimate failed ({ge}), using {gas_estimate_fallback}")
-            gas_limit = gas_estimate_fallback
-        tx = func_call.build_transaction({
-            "from": acct.address,
-            "gas": gas_limit,
-            "gasPrice": gas_price,
-            "nonce": nonce,
-            "chainId": 42161,
-        })
-        signed = w3.eth.account.sign_transaction(tx, acct.key)
-        tx_hash = w3.eth.send_raw_transaction(signed.rawTransaction)
-        logger.info(f"Tx sent: {tx_hash.hex()}")
-        receipt = w3.eth.wait_for_transaction_receipt(tx_hash, timeout=120)
-        if receipt.status == 1:
-            final_hash = receipt.transactionHash.hex()
-            logger.info(f"Tx confirmed: {final_hash}")
-            return final_hash
-        else:
-            logger.error(f"Tx reverted: {tx_hash.hex()}")
+            eth_bal = w3.eth.get_balance(acct.address)
+            if eth_bal < w3.to_wei(0.0002, "ether"):
+                logger.error(f"Bot ETH too low for gas: {w3.from_wei(eth_bal, 'ether')} ETH")
+                return None
+            base_gas = w3.eth.gas_price
+            gas_price = int(base_gas * 2.5)
+            nonce = w3.eth.get_transaction_count(acct.address, "pending")
+            try:
+                est = func_call.estimate_gas({"from": acct.address})
+                gas_limit = int(est * 1.3)
+            except Exception as ge:
+                logger.warning(f"Gas estimate failed ({ge}), using {gas_estimate_fallback}")
+                gas_limit = gas_estimate_fallback
+            tx = func_call.build_transaction({
+                "from": acct.address,
+                "gas": gas_limit,
+                "gasPrice": gas_price,
+                "nonce": nonce,
+                "chainId": 42161,
+            })
+            signed = w3.eth.account.sign_transaction(tx, acct.key)
+            tx_hash = w3.eth.send_raw_transaction(signed.rawTransaction)
+            logger.info(f"Tx sent: {tx_hash.hex()} (nonce={nonce})")
+            receipt = w3.eth.wait_for_transaction_receipt(tx_hash, timeout=120)
+            if receipt.status == 1:
+                final_hash = receipt.transactionHash.hex()
+                logger.info(f"Tx confirmed: {final_hash} (gas={receipt.gasUsed})")
+                return final_hash
+            else:
+                logger.error(f"Tx reverted: {tx_hash.hex()}")
+                return None
+        except Exception as e:
+            err_msg = str(e).lower()
+            if "nonce too low" in err_msg and attempt < max_retries:
+                import time
+                logger.warning(f"_send_bot_tx: nonce too low (attempt {attempt+1}/{max_retries+1}), retrying with fresh nonce...")
+                time.sleep(1)
+                continue
+            logger.error(f"_send_bot_tx failed: {e}", exc_info=True)
             return None
-    except Exception as e:
-        logger.error(f"_send_bot_tx failed: {e}", exc_info=True)
-        return None
+    return None
 
 
-def _forward_borrowed_tokens_to_user(asset_address: str, amount_wei: int, user_address: str) -> bool:
+def _rescue_tokens_from_dm(asset_address: str, amount_wei: int) -> bool:
     w3 = _get_web3()
     acct = _get_bot_account()
     if not w3 or not acct:
-        logger.error("_forward_borrowed_tokens: missing Web3 or bot account")
+        logger.error("_rescue_tokens_from_dm: missing Web3 or bot account")
         return False
     dm_addr = Web3.to_checksum_address(DELEGATION_MANAGER_ADDRESS)
     asset_cs = Web3.to_checksum_address(asset_address)
-    user_cs = Web3.to_checksum_address(user_address)
     dm = w3.eth.contract(address=dm_addr, abi=DELEGATION_MANAGER_ABI + [
         {"inputs": [{"name": "token", "type": "address"}, {"name": "amount", "type": "uint256"}], "name": "emergencyWithdrawToken", "outputs": [], "stateMutability": "nonpayable", "type": "function"},
     ])
-    logger.info(f"_forward_borrowed_tokens: withdrawing {amount_wei} from DM to bot, then forwarding to {user_address[:10]}...")
+    logger.info(f"_rescue_tokens_from_dm: withdrawing {amount_wei} from DM to bot wallet")
     withdraw_hash = _send_bot_tx(dm.functions.emergencyWithdrawToken(asset_cs, amount_wei))
     if not withdraw_hash:
-        logger.error(f"_forward_borrowed_tokens: emergencyWithdrawToken failed")
+        logger.error(f"_rescue_tokens_from_dm: emergencyWithdrawToken failed")
         return False
+    logger.info(f"_rescue_tokens_from_dm: OK — {amount_wei} rescued to bot wallet")
+    return True
+
+
+def _forward_tokens_to_user(asset_address: str, amount_wei: int, user_address: str) -> bool:
+    w3 = _get_web3()
+    if not w3:
+        return False
+    asset_cs = Web3.to_checksum_address(asset_address)
+    user_cs = Web3.to_checksum_address(user_address)
     token = w3.eth.contract(address=asset_cs, abi=ERC20_ABI)
+    logger.info(f"_forward_tokens_to_user: transferring {amount_wei} to {user_address[:10]}...")
     transfer_hash = _send_bot_tx(token.functions.transfer(user_cs, amount_wei))
     if not transfer_hash:
-        logger.error(f"_forward_borrowed_tokens: transfer to user failed")
+        logger.error(f"_forward_tokens_to_user: transfer to user failed")
         return False
-    logger.info(f"_forward_borrowed_tokens: OK — {amount_wei} forwarded to {user_address[:10]}...")
+    logger.info(f"_forward_tokens_to_user: OK — {amount_wei} sent to {user_address[:10]}...")
     return True
 
 
@@ -535,10 +554,11 @@ def delegated_borrow(user_address: str, asset_address: str, amount_wei: int, int
     logger.info(f"delegated_borrow: user={user_address[:10]}..., asset={asset_address[:10]}..., amount_wei={amount_wei}")
     borrow_hash = _send_bot_tx(dm.functions.executeBorrow(user_cs, asset_cs, amount_wei, interest_rate_mode))
     if borrow_hash:
-        forwarded = _forward_borrowed_tokens_to_user(asset_address, amount_wei, user_address)
-        if not forwarded:
-            logger.error(f"delegated_borrow: borrow OK but token forward to user FAILED — tokens stuck in DM")
+        rescued = _rescue_tokens_from_dm(asset_address, amount_wei)
+        if not rescued:
+            logger.error(f"delegated_borrow: borrow OK but rescue from DM to bot FAILED — tokens stuck in DM")
             return None
+        logger.info(f"delegated_borrow: OK — tokens in bot wallet, ready for distribution")
     return borrow_hash
 
 
@@ -591,7 +611,17 @@ def delegated_withdraw(user_address: str, asset_address: str, amount_wei: int) -
     user_cs = Web3.to_checksum_address(user_address)
     asset_cs = Web3.to_checksum_address(asset_address)
     logger.info(f"delegated_withdraw: user={user_address[:10]}..., asset={asset_address[:10]}..., amount_wei={amount_wei}")
-    return _send_bot_tx(dm.functions.executeWithdraw(user_cs, asset_cs, amount_wei))
+    withdraw_hash = _send_bot_tx(dm.functions.executeWithdraw(user_cs, asset_cs, amount_wei))
+    if withdraw_hash:
+        rescued = _rescue_tokens_from_dm(asset_address, amount_wei)
+        if not rescued:
+            logger.error(f"delegated_withdraw: withdraw OK but rescue from DM FAILED — tokens stuck in DM")
+            return None
+        forwarded = _forward_tokens_to_user(asset_address, amount_wei, user_address)
+        if not forwarded:
+            logger.error(f"delegated_withdraw: tokens in bot wallet but forward to user FAILED")
+            return None
+    return withdraw_hash
 
 
 def get_user_account_data(wallet_address: str) -> dict:
@@ -808,6 +838,30 @@ def delegated_supply_usdt_onbehalf(user_address: str, amount_usdt: float) -> str
     amount_raw = int(amount_usdt * 10**6)
     logger.info(f"delegated_supply_usdt_onbehalf: user={user_address[:10]}..., amount={amount_usdt:.2f} USDT")
     return delegated_supply_onbehalf(user_address, USDT_ADDRESS, amount_raw)
+
+
+def dm_execute_supply(user_address: str, asset_address: str, amount_raw: int) -> str:
+    """Call DelegationManager.executeSupply() — pulls tokens from user wallet via DM
+    (user approved DM, not bot) and supplies to Aave onBehalfOf user atomically."""
+    w3 = _get_web3()
+    if not w3 or not is_contract_deployed():
+        return None
+    perms = get_delegation_permissions(user_address)
+    if not perms.get("isActive"):
+        logger.error(f"dm_execute_supply: delegation not active for {user_address[:10]}...")
+        return None
+    if not perms.get("allowSupply"):
+        logger.error(f"dm_execute_supply: supply not permitted for {user_address[:10]}...")
+        return None
+    acct = _get_bot_account()
+    if not acct:
+        return None
+    dm_addr = Web3.to_checksum_address(DELEGATION_MANAGER_ADDRESS)
+    dm = w3.eth.contract(address=dm_addr, abi=DELEGATION_MANAGER_ABI)
+    user_cs = Web3.to_checksum_address(user_address)
+    asset_cs = Web3.to_checksum_address(asset_address)
+    logger.info(f"dm_execute_supply: user={user_address[:10]}..., asset={asset_address[:10]}..., amount_raw={amount_raw}")
+    return _send_bot_tx(dm.functions.executeSupply(user_cs, asset_cs, amount_raw))
 
 
 def pull_token_from_user(user_address: str, token_address: str, amount_raw: int) -> str:

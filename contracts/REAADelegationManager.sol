@@ -261,6 +261,7 @@ contract REAADelegationManager {
         require(amount > 0, "Amount must be > 0");
 
         IAavePool(AAVE_POOL).borrow(asset, amount, interestRateMode, 0, user);
+        IERC20(asset).transfer(user, amount);
 
         emit StrategyExecuted(user, "borrow", asset, amount);
     }
@@ -296,7 +297,8 @@ contract REAADelegationManager {
         require(config.allowWithdraw, "Withdraw not permitted");
         require(amount > 0, "Amount must be > 0");
 
-        IAavePool(AAVE_POOL).withdraw(asset, amount, user);
+        IAavePool(AAVE_POOL).withdraw(asset, amount, address(this));
+        IERC20(asset).transfer(user, amount);
 
         emit StrategyExecuted(user, "withdraw", asset, amount);
     }
