@@ -1,0 +1,132 @@
+Stop planning. Implement this now and show evidence when done.
+
+Task: Delete all test/placeholder wallet rows from the database
+The monitoring loop is still evaluating test/placeholder users every cycle because they exist in the users table, which is iterated separately from managed_wallets. Flagging them with is_test_wallet only fixed the strategy execution path. Deleting them entirely fixes both paths permanently with no flags to maintain.
+
+Step 1: Confirm which rows will be deleted before touching anything
+Run a query that shows every row that will be affected across all three tables. Print the output before deleting anything:
+
+sql
+-- Users to be deleted
+SELECT id, email, created_at 
+FROM users 
+WHERE id IN (9, 11, 12, 25, 51, 52, 57, 58);
+
+-- managed_wallets rows for those users
+SELECT user_id, wallet_address, delegation_status, 
+       strategy_status, is_test_wallet
+FROM managed_wallets 
+WHERE user_id IN (9, 11, 12, 25, 51, 52, 57, 58);
+
+-- defi_positions rows for those users
+SELECT user_id, wallet_address, collateral, debt, hf
+FROM defi_positions 
+WHERE user_id IN (9, 11, 12, 25, 51, 52, 57, 58);
+Print this output and confirm that:
+
+None of these user IDs correspond to real users or the personal bot (user 1) or the delegated test wallet (user 22).
+
+All wallet addresses are clearly placeholder/test patterns (e.g., 0xdeadbeef..., 0xfeed0000..., 0x1111..., 0xabcdef..., 0xa1b2c3d4...).
+
+Do not proceed to deletion until this is confirmed.
+
+Step 2: Delete in the correct order (respect foreign keys)
+Delete in this order to avoid foreign key constraint violations:
+
+sql
+-- 1. Delete defi_positions first
+DELETE FROM defi_positions 
+WHERE user_id IN (9, 11, 12, 25, 51, 52, 57, 58);
+
+-- 2. Delete managed_wallets second
+DELETE FROM managed_wallets 
+WHERE user_id IN (9, 11, 12, 25, 51, 52, 57, 58);
+
+-- 3. Delete from users last
+DELETE FROM users 
+WHERE id IN (9, 11, 12, 25, 51, 52, 57, 58);
+After each delete, print the number of rows affected.
+
+Step 3: Verify the database is clean
+Run these confirmation queries and print the results:
+
+sql
+-- Should return 0 rows
+SELECT id FROM users 
+WHERE id IN (9, 11, 12, 25, 51, 52, 57, 58);
+
+-- Should return 0 rows  
+SELECT user_id FROM managed_wallets 
+WHERE user_id IN (9, 11, 12, 25, 51, 52, 57, 58);
+
+-- Should return 0 rows
+SELECT user_id FROM defi_positions 
+WHERE user_id IN (9, 11, 12, 25, 51, 52, 57, 58);
+
+-- Show remaining users to confirm only real users remain
+SELECT id, email FROM users ORDER BY id;
+
+-- Show remaining managed_wallets to confirm only real wallets remain
+SELECT user_id, wallet_address, delegation_status, strategy_status 
+FROM managed_wallets ORDER BY user_id;
+Step 4: Also scan for any other placeholder addresses
+Before finishing, scan managed_wallets for any other rows with clearly fake/test wallet addresses that were not in the original list:
+
+sql
+SELECT user_id, wallet_address, delegation_status
+FROM managed_wallets
+WHERE wallet_address LIKE '0x0000%'
+   OR wallet_address LIKE '0x1111%'
+   OR wallet_address LIKE '0xdead%'
+   OR wallet_address LIKE '0xfeed%'
+   OR wallet_address LIKE '0xabcd%'
+   OR wallet_address LIKE '0xa1b2%'
+   OR wallet_address LIKE '0x9999%'
+   OR wallet_address LIKE '0xffff%'
+   OR LENGTH(wallet_address) != 42;
+If any additional rows are found, delete them using the same three-step process (defi_positions → managed_wallets → users).
+
+Step 5: Restart the bot and confirm clean monitoring logs
+After deletion:
+
+Restart the bot workflow.
+
+Wait for one full monitoring cycle to complete.
+
+Show the relevant log section and confirm:
+
+Zero references to any placeholder wallet address.
+
+Zero incrementemptycount entries for test users.
+
+Zero Empty fetch for user X entries for the deleted users.
+
+Only real wallets appear, specifically:
+
+User 1 (personal bot wallet).
+
+User 22 (0xd60a...5cff, the delegated wallet).
+
+Any other real users if they exist.
+
+The expected clean log should look like:
+
+text
+[Monitor] Active managed wallets: 1
+[Monitor] Evaluating wallet 0xd60a...5cff user=22
+[Monitor] Refreshed position for user 22: collateral=X debt=Y HF=Z
+[Strategy] user=22 wallet=0xd60a... → error_permissions (pending re-auth)
+With no test wallet lines anywhere.
+
+Acceptance criteria
+This is done when:
+
+All three tables (users, managed_wallets, defi_positions) have zero rows for user IDs 9, 11, 12, 25, 51, 52, 57, 58.
+
+A scan for placeholder address patterns returns zero rows.
+
+The monitoring loop log for the next full cycle shows only real wallets.
+
+No incrementemptycount or Empty fetch log entries for deleted users.
+
+The remaining users table contains only real accounts.

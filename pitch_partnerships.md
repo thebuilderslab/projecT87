@@ -1,3 +1,45 @@
+Before deleting anything, please run the following 
+safety checks and show me the output:
+
+1) Grep the entire codebase for hardcoded references to 
+   user IDs 9, 11, 12, 25, 51, 52, 57, 58:
+   
+   grep -rn "user_id.*\b(9|11|12|25|51|52|57|58)\b" \
+     --include="*.py" .
+   grep -rn "user_id=\(9\|11\|12\|25\|51\|52\|57\|58\)" \
+     --include="*.py" .
+
+2) Check whether init_db() or any seed/fixture script 
+   creates these users on startup:
+   
+   grep -n "INSERT INTO users" db.py
+   grep -n "seed" db.py
+   grep -rn "seed\|fixture\|test_user" --include="*.py" .
+
+3) Check whether ON DELETE CASCADE is set on foreign 
+   keys from users to managed_wallets and defi_positions:
+   
+   SELECT sql FROM sqlite_master 
+   WHERE type='table' 
+   AND name IN ('managed_wallets', 'defi_positions');
+
+4) Check for any execution state files for test user IDs:
+   
+   ls -la execution_state_user_*.json 2>/dev/null || 
+     echo "No execution state files found"
+
+5) Check whether any dashboard or API endpoint queries 
+   reference these user IDs directly rather than using 
+   the logged-in user's session:
+   
+   grep -n "user_id in (9\|11\|12\|25\|51\|52\|57\|58)" \
+     web_dashboard.py
+
+Only proceed to deletion after confirming:
+- No hardcoded references to these IDs in the codebase.
+- init_db() does not re-seed these users on restart.
+- Cascade behavior is understood and accounted for.
+- No execution state files need cleanup.
 # REAA — Partnership & Integration Pitch
 
 ## Core Value Proposition

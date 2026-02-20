@@ -1,0 +1,118 @@
+All five safety checks passed. Proceed with the deletion now. Do not plan further — implement, show row counts, and confirm clean logs.
+
+Step 1: Print the rows that will be deleted (confirm before touching anything)
+
+sql
+SELECT 'users' as table_name, id, email 
+FROM users 
+WHERE id IN (9, 11, 12, 25, 51, 52, 57, 58)
+
+UNION ALL
+
+SELECT 'managed_wallets', user_id, wallet_address 
+FROM managed_wallets 
+WHERE user_id IN (9, 11, 12, 25, 51, 52, 57, 58)
+
+UNION ALL
+
+SELECT 'defi_positions', user_id, wallet_address 
+FROM defi_positions 
+WHERE user_id IN (9, 11, 12, 25, 51, 52, 57, 58)
+
+UNION ALL
+
+SELECT 'wallet_actions', user_id, CAST(id AS TEXT) 
+FROM wallet_actions 
+WHERE user_id IN (9, 11, 12, 25, 51, 52, 57, 58);
+Print this output before proceeding.
+
+Step 2: Delete in explicit order for auditability
+
+sql
+-- 1. defi_positions
+DELETE FROM defi_positions 
+WHERE user_id IN (9, 11, 12, 25, 51, 52, 57, 58);
+-- Print: "Deleted X rows from defi_positions"
+
+-- 2. managed_wallets
+DELETE FROM managed_wallets 
+WHERE user_id IN (9, 11, 12, 25, 51, 52, 57, 58);
+-- Print: "Deleted X rows from managed_wallets"
+
+-- 3. wallet_actions
+DELETE FROM wallet_actions 
+WHERE user_id IN (9, 11, 12, 25, 51, 52, 57, 58);
+-- Print: "Deleted X rows from wallet_actions"
+
+-- 4. users (last)
+DELETE FROM users 
+WHERE id IN (9, 11, 12, 25, 51, 52, 57, 58);
+-- Print: "Deleted X rows from users"
+Step 3: Scan for any remaining placeholder addresses
+
+sql
+SELECT user_id, wallet_address, delegation_status
+FROM managed_wallets
+WHERE wallet_address LIKE '0x0000%'
+   OR wallet_address LIKE '0x1111%'
+   OR wallet_address LIKE '0xdead%'
+   OR wallet_address LIKE '0xfeed%'
+   OR wallet_address LIKE '0xabcd%'
+   OR wallet_address LIKE '0xa1b2%'
+   OR wallet_address LIKE '0x9999%'
+   OR wallet_address LIKE '0xffff%'
+   OR LENGTH(wallet_address) != 42;
+If any rows are returned, delete them using the same four-step order.
+
+Step 4: Confirm only real rows remain
+
+sql
+-- Show all remaining users
+SELECT id, email FROM users ORDER BY id;
+
+-- Show all remaining managed_wallets
+SELECT user_id, wallet_address, delegation_status, 
+       strategy_status 
+FROM managed_wallets ORDER BY user_id;
+
+-- Show all remaining defi_positions
+SELECT user_id, wallet_address, collateral, debt, hf 
+FROM defi_positions ORDER BY user_id;
+Expected result:
+
+users: only user 1 (personal bot) and user 22 (delegated wallet), plus any other real users.
+
+managed_wallets: only 0xd60a...5cff for user 22 (and bot wallet for user 1 if present).
+
+defi_positions: only rows for users 1 and 22.
+
+Step 5: Restart the bot and confirm clean monitoring logs
+
+After deletion, restart the bot workflow and wait for one full monitoring cycle. Show the log output and confirm:
+
+Zero incrementemptycount entries for any deleted user ID.
+
+Zero Empty fetch for user X for any deleted user.
+
+Zero references to placeholder addresses (0xdeadbeef, 0xfeed, 0x1111, etc.).
+
+Only real wallets appear in monitoring output.
+
+Expected clean log pattern:
+
+text
+[Monitor] Active managed wallets: 1
+[Monitor] Evaluating wallet 0xd60a...5cff user=22
+[Monitor] Refreshed position for user 22: collateral=X debt=Y HF=Z
+[Strategy] user=22 wallet=0xd60a... → error_permissions (pending re-auth)
+[Monitor] Bot wallet user=1: HF=2.72 collateral=380 debt=114
+Acceptance criteria:
+
+All four tables show zero rows for user IDs 9, 11, 12, 25, 51, 52, 57, 58.
+
+Placeholder address scan returns zero rows.
+
+Monitoring cycle log shows only real wallets.
+
+Bot workflow restarts cleanly with no errors related to missing user IDs.
+
