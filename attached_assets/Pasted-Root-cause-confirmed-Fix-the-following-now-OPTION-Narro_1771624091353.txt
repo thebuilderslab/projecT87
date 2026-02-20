@@ -1,0 +1,110 @@
+Root cause confirmed. Fix the following now.
+
+OPTION: Narrow credit delegation to only 
+tokens the system actually borrows
+
+Since the system only borrows DAI (Growth/
+Capacity) and WETH (Liability Short/Macro/
+Micro), credit delegation approvals are 
+only needed for those two tokens.
+
+Please:
+
+1) In delegation_client.py, update 
+   VARIABLE_DEBT_TOKENS to only include 
+   DAI and WETH:
+
+   VARIABLE_DEBT_TOKENS = {
+     "DAI":  "0x8619d80FB0141ba7F184CbF22fd724116D9f7ffC",
+     "WETH": "0x0c84331e39d6658Cd6e6b9ba04736cC4c4734351",
+   }
+
+2) In consumer_dashboard.html, update 
+   the VARIABLE_DEBT_TOKENS JavaScript 
+   constant to the same two tokens:
+
+   const VARIABLE_DEBT_TOKENS = {
+     DAI:  "0x8619d80FB0141ba7F184CbF22fd724116D9f7ffC",
+     WETH: "0x0c84331e39d6658Cd6e6b9ba04736cC4c4734351",
+   };
+
+3) Simulate both approveDelegation calls 
+   to confirm they succeed before touching 
+   the frontend:
+
+   from web3 import Web3
+   import os
+   w3 = Web3(Web3.HTTPProvider(os.environ["RPC_URL"]))
+
+   USER = "0xd60acbac798f146e4b7080e9a1f93977200f5cff"
+   DM   = "0x7427370Ab4C311B090446544078c819b3946E59d"
+   MAX  = 2**256 - 1
+
+   TOKENS = {
+     "DAI":  "0x8619d80FB0141ba7F184CbF22fd724116D9f7ffC",
+     "WETH": "0x0c84331e39d6658Cd6e6b9ba04736cC4c4734351",
+   }
+
+   ABI = [{
+     "inputs": [
+       {"name": "delegatee", "type": "address"},
+       {"name": "amount",    "type": "uint256"}
+     ],
+     "name": "approveDelegation",
+     "outputs": [],
+     "stateMutability": "nonpayable",
+     "type": "function"
+   }]
+
+   for symbol, addr in TOKENS.items():
+     contract = w3.eth.contract(
+       address=Web3.to_checksum_address(addr),
+       abi=ABI
+     )
+     try:
+       gas = w3.eth.estimate_gas({
+         "from": Web3.to_checksum_address(USER),
+         "to":   Web3.to_checksum_address(addr),
+         "data": contract.encodeABI(
+           fn_name="approveDelegation",
+           args=[Web3.to_checksum_address(DM), MAX]
+         )
+       })
+       print(f"{symbol}: OK — gas estimate {gas}")
+     except Exception as e:
+       print(f"{symbol}: REVERT — {e}")
+
+   Both should return reasonable gas estimates 
+   (under 50,000 gas each). Print the output.
+
+4) After confirming simulations pass, restart 
+   the bot.
+
+5) Test the connect flow with a fresh wallet 
+   reconnect. Confirm:
+   - Step 3/4 only shows 2 credit delegation 
+     signatures (DAI and WETH), not 5.
+   - MetaMask shows a normal gas estimate 
+     (under $1 on Arbitrum) for each.
+   - No $15M gas estimate.
+   - All steps complete successfully.
+
+6) After connect flow succeeds, confirm 
+   validate_full_automation_ready() returns 
+   ready=True with 0 blockers.
+
+7) Update replit.md to document that credit 
+   delegation is only required for DAI and 
+   WETH (the only two tokens the system 
+   borrows), and explain why USDC/USDT/WBTC 
+   are excluded.
+
+Acceptance criteria:
+- Both DAI and WETH credit delegation 
+  simulations return OK with reasonable gas.
+- Connect flow completes all 4 steps with 
+  normal MetaMask gas estimates.
+- validate_full_automation_ready() returns 
+  ready=True for the reconnected wallet.
+- No USDT or other wrong-address tokens 
+  in the credit delegation flow.
