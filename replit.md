@@ -45,6 +45,12 @@ The REAA platform is built on the Arbitrum Mainnet, featuring distinct modules f
 - **Safety Rules:** Strict safety protocols for auto-supply, including `bot_enabled` checks, active delegation status, configurable cooldown, and on-chain balance/allowance verification before execution.
 - **Cooldown:** Configurable via `AUTO_SUPPLY_COOLDOWN_SECONDS` env var (default: 3600s = 1 hour for prod, 300s = 5 min for testing). `last_auto_supply_at` starts at NULL (never supplied) and is only updated after a confirmed on-chain supply tx — never on skip or error. NULL always passes the cooldown check (first-run safe).
 - **API and UI:** Provides API endpoints for activating/revoking delegation and frontend UX to manage delegation status, displaying relevant information and actions.
+- **Three Permission Layers for Full Automation:**
+  1. **DelegationManager Contract Flags (Layer 1):** User calls `setPermissions(wallet, true, true, true, true)` to enable supply/borrow/repay/withdraw. Set during onboarding Step 1/4.
+  2. **ERC20 Token Approvals (Layer 2):** User approves 15 tokens (5 assets × 3 contracts: Aave Pool, DelegationManager, Uniswap Router) for `type(uint256).max`. Set during onboarding Step 2/4.
+  3. **Aave V3 Credit Delegation (Layer 3):** User calls `variableDebtToken.approveDelegation(DelegationManager, maxUint)` for each borrowable asset (DAI, WBTC, WETH, USDC, USDT). Required for DelegationManager to execute `executeBorrow()` on user's behalf. Set during onboarding Step 3/4. Variable debt token addresses: DAI=0x8619d80F…, WBTC=0x92b42c66…, WETH=0x0c84331e…, USDC=0xFCCf3cAb…, USDT=0x6ab707Ac….
+- **Permission Validation:** `validate_full_automation_ready()` in `delegation_client.py` checks all three layers and returns structured `{ready, blockers}` response. The `/api/delegation/check-permissions` endpoint uses this for auto-recovery and status sync.
+- **Existing User Remediation:** Users who onboarded before Layer 3 was implemented see an "Approve Credit Delegation" button (strategy_status=`error_permissions`, permissionBlockerType=`aave_credit_delegation`). New users complete all 3 layers during the 4-step onboarding flow.
 
 **Data Model: State Semantics (defi_positions & supplied_wbtc_amount):**
 - **`defi_positions`**: A per-user snapshot of their Aave V3 position, updated by the monitoring loop (`run_autonomous_mainnet.py`) and on-demand via `/api/defi/state`. Fields: `health_factor`, `total_collateral_usd`, `total_debt_usd`, `net_worth_usd`, `has_active_position` (boolean), `updated_at`.

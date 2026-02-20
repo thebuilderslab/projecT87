@@ -1554,7 +1554,8 @@ async function loadDelegationStatus(afterConnect = false) {
       ${d.supplyReconciled ? '<div class="delegation-detail"><span class="label" style="color:var(--yellow);font-size:11px;">Note</span><span class="val" style="color:var(--yellow);font-size:11px;">On-chain position empty — counter resets on next refresh</span></div>' : ''}
       ${!deployed ? notDeployedMsg : ''}
       ${lastSupplyHtml}
-      ${d.strategyStatus === 'error_permissions' ? '<button id="apReauthBtn" class="delegation-btn" style="background:var(--green);color:#000;margin-bottom:8px;" onclick="reauthorizeAutoPilot()">Re-authorize Auto-Pilot</button>' : ''}
+      ${d.strategyStatus === 'error_permissions' && d.permissionBlockerType === 'aave_credit_delegation' ? '<div style="color:var(--yellow);font-size:11px;margin-bottom:6px;">Action required: Aave credit delegation missing for borrowing.</div><button id="apCreditDelegBtn" class="delegation-btn" style="background:var(--green);color:#000;margin-bottom:8px;" onclick="approveCreditDelegation()">Approve Credit Delegation</button>' : ''}
+      ${d.strategyStatus === 'error_permissions' && d.permissionBlockerType !== 'aave_credit_delegation' ? '<button id="apReauthBtn" class="delegation-btn" style="background:var(--green);color:#000;margin-bottom:8px;" onclick="reauthorizeAutoPilot()">Re-authorize Auto-Pilot</button>' : ''}
       <button class="delegation-btn revoke" onclick="revokeDelegation()">Revoke Auto-Pilot</button>
     `;
   } else if (d.delegationStatus === 'revoked') {
@@ -1626,6 +1627,81 @@ const REQUIRED_SPENDERS = {
   UniswapRouter:     '0xE592427A0AEce92De3Edee1F18E0157C05861564',
 };
 const MIN_ALLOWANCE_THRESHOLD = BigInt('1000000000000000000');
+
+const VARIABLE_DEBT_TOKENS = {
+  DAI:  '0x8619d80FB0141ba7F184CbF22fd724116D9f7ffC',
+  WBTC: '0x92b42c66840C7AD907b4BF74879FF3eF7c529473',
+  WETH: '0x0c84331e39d6658Cd6e6b9ba04736cC4c4734351',
+  USDC: '0xFCCf3cAbbe80101232d343252614b6A3eE81C989',
+  USDT: '0x6ab707Aca953eDAeFBc4fD23bA73294241490620',
+};
+
+function encodeCreditDelegationCalldata(delegateeAddr, amountHex) {
+  const selector = '0xc04a8a10';
+  const delegatee = delegateeAddr.toLowerCase().replace('0x', '').padStart(64, '0');
+  const amount = amountHex.replace('0x', '').padStart(64, '0');
+  return selector + delegatee + amount;
+}
+
+async function readBorrowAllowance(walletAddr, debtTokenAddr, delegateeAddr) {
+  const selector = '0x6bd76d24';
+  const fromUser = walletAddr.toLowerCase().replace('0x', '').padStart(64, '0');
+  const toUser = delegateeAddr.toLowerCase().replace('0x', '').padStart(64, '0');
+  try {
+    const result = await window.ethereum.request({
+      method: 'eth_call',
+      params: [{ to: debtTokenAddr, data: selector + fromUser + toUser }, 'latest'],
+    });
+    return BigInt(result);
+  } catch (e) {
+    console.warn('[AutoPilot] borrowAllowance check failed:', debtTokenAddr, e);
+    return BigInt(0);
+  }
+}
+
+async function signMissingCreditDelegations(walletAddr, delegationManagerAddr, statusCallback) {
+  const MAX_UINT256_HEX = 'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
+  const missing = [];
+  for (const [symbol, debtTokenAddr] of Object.entries(VARIABLE_DEBT_TOKENS)) {
+    try {
+      const allowance = await readBorrowAllowance(walletAddr, debtTokenAddr, delegationManagerAddr);
+      if (allowance === BigInt(0)) {
+        missing.push({ symbol, debtTokenAddr });
+      }
+    } catch (e) {
+      console.warn(`[AutoPilot] Credit delegation check failed for ${symbol}:`, e);
+    }
+  }
+  if (missing.length === 0) {
+    console.log('[AutoPilot] All credit delegations already in place');
+    return { ok: true, signed: 0, total: 0 };
+  }
+  console.log(`[AutoPilot] ${missing.length} missing credit delegations to sign`);
+  let signed = 0;
+  for (const { symbol, debtTokenAddr } of missing) {
+    signed++;
+    if (statusCallback) statusCallback(`Credit delegation for ${symbol} (${signed}/${missing.length})...`);
+    try {
+      const calldata = encodeCreditDelegationCalldata(delegationManagerAddr, MAX_UINT256_HEX);
+      const txHash = await window.ethereum.request({
+        method: 'eth_sendTransaction',
+        params: [{ from: walletAddr, to: debtTokenAddr, data: calldata }],
+      });
+      console.log(`[AutoPilot] ${symbol} credit delegation tx:`, txHash);
+      const receipt = await waitForTxReceipt(txHash, 60000);
+      if (!receipt || receipt.status === '0x0') {
+        console.error(`[AutoPilot] ${symbol} credit delegation tx failed`);
+        return { ok: false, error: `${symbol} credit delegation failed on-chain`, signed, total: missing.length };
+      }
+    } catch (txErr) {
+      if (txErr && txErr.code === 4001) {
+        return { ok: false, error: `You rejected the ${symbol} credit delegation. All credit delegations are needed for borrowing.`, signed: signed - 1, total: missing.length };
+      }
+      console.warn(`[AutoPilot] ${symbol} credit delegation failed (may not be needed):`, txErr.message);
+    }
+  }
+  return { ok: true, signed, total: missing.length };
+}
 
 async function readAllowance(walletAddr, tokenAddr, spenderAddr) {
   const selector = '0xdd62ed3e';
@@ -1831,7 +1907,7 @@ async function enableAutoPilot(isReauthorize = false) {
     }
     console.log('[AutoPilot] On Arbitrum. Proceeding...');
 
-    btn.textContent = 'Step 1/3: Full delegation approval...';
+    btn.textContent = 'Step 1/4: Full delegation approval...';
     console.log('[AutoPilot] Step 1: Calling approveDelegation with all flags true on', delegationManagerAddr);
     let delegationTxHash;
     try {
@@ -1877,12 +1953,12 @@ async function enableAutoPilot(isReauthorize = false) {
       return;
     }
 
-    btn.textContent = 'Step 2/3: Token approvals...';
+    btn.textContent = 'Step 2/4: Token approvals...';
     console.log('[AutoPilot] Step 2: Signing ERC20 approvals (up to 15)');
     const approvalResult = await signMissingERC20Approvals(
       state.walletAddress,
       delegationManagerAddr,
-      (statusMsg) => { btn.textContent = 'Step 2/3: ' + statusMsg; }
+      (statusMsg) => { btn.textContent = 'Step 2/4: ' + statusMsg; }
     );
     if (!approvalResult.ok) {
       resetBtn(btn);
@@ -1893,8 +1969,24 @@ async function enableAutoPilot(isReauthorize = false) {
       console.log(`[AutoPilot] ${approvalResult.signed} ERC20 approvals signed successfully`);
     }
 
-    btn.textContent = 'Step 3/3: Activating...';
-    console.log('[AutoPilot] Step 3: Calling POST /api/delegation/activate');
+    btn.textContent = 'Step 3/4: Credit delegation...';
+    console.log('[AutoPilot] Step 3: Signing Aave credit delegations');
+    const creditResult = await signMissingCreditDelegations(
+      state.walletAddress,
+      delegationManagerAddr,
+      (statusMsg) => { btn.textContent = 'Step 3/4: ' + statusMsg; }
+    );
+    if (!creditResult.ok) {
+      resetBtn(btn);
+      appendChatMsg('agent', `Authorization incomplete — ${creditResult.error}. Delegation and token approvals are active, but credit delegation is needed for borrowing. Click "${actionName} Auto-Pilot" to continue where you left off.`);
+      return;
+    }
+    if (creditResult.signed > 0) {
+      console.log(`[AutoPilot] ${creditResult.signed} credit delegations signed successfully`);
+    }
+
+    btn.textContent = 'Step 4/4: Activating...';
+    console.log('[AutoPilot] Step 4: Calling POST /api/delegation/activate');
     const data = await api('/api/delegation/activate', {
       method: 'POST',
       body: JSON.stringify({
@@ -1932,6 +2024,55 @@ async function enableAutoPilot(isReauthorize = false) {
 
 async function reauthorizeAutoPilot() {
   return enableAutoPilot(true);
+}
+
+async function approveCreditDelegation() {
+  const btn = document.getElementById('apCreditDelegBtn');
+  if (!btn) return;
+  btn.disabled = true;
+  btn.textContent = 'Preparing...';
+
+  if (typeof window.ethereum === 'undefined') {
+    btn.disabled = false;
+    btn.textContent = 'Approve Credit Delegation';
+    appendChatMsg('agent', 'No wallet detected. Please install MetaMask or another Web3 wallet.');
+    return;
+  }
+
+  try {
+    btn.textContent = 'Switching to Arbitrum...';
+    const chainResult = await ensureArbitrumChain();
+    if (!chainResult.ok) {
+      btn.disabled = false;
+      btn.textContent = 'Approve Credit Delegation';
+      appendChatMsg('agent', chainResult.reason || 'Could not switch to Arbitrum.');
+      return;
+    }
+
+    const delegationManagerAddr = state.delegationContractAddress;
+    const creditResult = await signMissingCreditDelegations(
+      state.walletAddress,
+      delegationManagerAddr,
+      (statusMsg) => { btn.textContent = statusMsg; }
+    );
+
+    if (!creditResult.ok) {
+      btn.disabled = false;
+      btn.textContent = 'Approve Credit Delegation';
+      appendChatMsg('agent', `Credit delegation incomplete — ${creditResult.error}. Please try again.`);
+      return;
+    }
+
+    btn.textContent = 'Verifying...';
+    await api('/api/delegation/check-permissions', { method: 'POST' });
+    await loadDelegationStatus();
+    appendChatMsg('agent', `Credit delegation approved! ${creditResult.signed} token(s) authorized. Borrowing strategies are now unblocked.`);
+  } catch (e) {
+    console.error('[AutoPilot] Credit delegation error:', e);
+    btn.disabled = false;
+    btn.textContent = 'Approve Credit Delegation';
+    appendChatMsg('agent', `Error: ${e.message || 'unknown'}. Please try again.`);
+  }
 }
 
 async function revokeDelegation() {

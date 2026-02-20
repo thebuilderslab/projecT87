@@ -60,6 +60,19 @@ AAVE_POOL_SUPPLY_ABI = [
     {"inputs": [{"name": "asset", "type": "address"}, {"name": "amount", "type": "uint256"}, {"name": "onBehalfOf", "type": "address"}, {"name": "referralCode", "type": "uint16"}], "name": "supply", "outputs": [], "stateMutability": "nonpayable", "type": "function"},
 ]
 
+VARIABLE_DEBT_TOKENS = {
+    "DAI":  "0x8619d80FB0141ba7F184CbF22fd724116D9f7ffC",
+    "WBTC": "0x92b42c66840C7AD907b4BF74879FF3eF7c529473",
+    "WETH": "0x0c84331e39d6658Cd6e6b9ba04736cC4c4734351",
+    "USDC": "0xFCCf3cAbbe80101232d343252614b6A3eE81C989",
+    "USDT": "0x6ab707Aca953eDAeFBc4fD23bA73294241490620",
+}
+
+VARIABLE_DEBT_TOKEN_ABI = [
+    {"inputs": [{"internalType": "address", "name": "fromUser", "type": "address"}, {"internalType": "address", "name": "toUser", "type": "address"}], "name": "borrowAllowance", "outputs": [{"internalType": "uint256", "type": "uint256"}], "stateMutability": "view", "type": "function"},
+    {"inputs": [{"internalType": "address", "name": "delegatee", "type": "address"}, {"internalType": "uint256", "name": "amount", "type": "uint256"}], "name": "approveDelegation", "outputs": [], "stateMutability": "nonpayable", "type": "function"},
+]
+
 _w3_instance = None
 _bot_account = None
 
@@ -387,6 +400,44 @@ def validate_full_automation_ready(wallet_address):
                     "spender_address": spender_addr,
                     "current_allowance": str(allowance),
                 })
+
+    w3 = _get_web3()
+    dm_cs = Web3.to_checksum_address(DELEGATION_MANAGER_ADDRESS) if DELEGATION_MANAGER_ADDRESS else None
+    credit_delegation_results = []
+    if w3 and dm_cs:
+        wallet_cs = Web3.to_checksum_address(wallet_address)
+        for symbol, debt_token_addr in VARIABLE_DEBT_TOKENS.items():
+            try:
+                debt_token = w3.eth.contract(
+                    address=Web3.to_checksum_address(debt_token_addr),
+                    abi=VARIABLE_DEBT_TOKEN_ABI
+                )
+                credit_allowance = debt_token.functions.borrowAllowance(
+                    wallet_cs, dm_cs
+                ).call()
+                status = "OK" if credit_allowance > 0 else "MISSING"
+                credit_delegation_results.append({
+                    "token": symbol,
+                    "debt_token_address": debt_token_addr,
+                    "allowance": str(credit_allowance),
+                    "status": status,
+                })
+                if credit_allowance == 0:
+                    blockers.append({
+                        "type": "aave_credit_delegation",
+                        "token": symbol,
+                        "debt_token_address": debt_token_addr,
+                        "message": f"Missing Aave credit delegation for {symbol}. User must call approveDelegation({dm_cs}, maxUint) on the {symbol} variable debt token.",
+                    })
+            except Exception as e:
+                logger.warning(f"[Validation] Could not check credit delegation for {symbol}: {e}")
+                credit_delegation_results.append({
+                    "token": symbol,
+                    "debt_token_address": debt_token_addr,
+                    "allowance": "error",
+                    "status": "ERROR",
+                })
+    results["credit_delegations"] = credit_delegation_results
 
     results["ready"] = len(blockers) == 0
     results["blockers"] = blockers

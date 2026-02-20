@@ -3371,6 +3371,19 @@ def user_status():
             delegation_info["strategyStatus"] = mw.get('strategy_status', 'disabled')
             delegation_info["strategyEnabled"] = delegation_info["strategyStatus"] == 'active'
             delegation_info["delegationMode"] = mw.get('delegation_mode') or 'none'
+            if delegation_info["strategyStatus"] == 'error_permissions':
+                try:
+                    from delegation_client import validate_full_automation_ready
+                    val = validate_full_automation_ready(wallet)
+                    credit_blockers = [b for b in val.get('blockers', []) if b['type'] == 'aave_credit_delegation']
+                    if credit_blockers:
+                        delegation_info["permissionBlockerType"] = "aave_credit_delegation"
+                    elif val.get('blockers'):
+                        delegation_info["permissionBlockerType"] = val['blockers'][0]['type']
+                    else:
+                        delegation_info["permissionBlockerType"] = "unknown"
+                except Exception:
+                    delegation_info["permissionBlockerType"] = "unknown"
             logger.debug(f"[UserStatus] user={user_id} wallet={wallet} mw.delegation_status={mw['delegation_status']} delegation_mode={mw.get('delegation_mode')} -> delegationStatus={delegation_info['delegationStatus']}, strategyStatus={delegation_info['strategyStatus']}")
 
         defi_pos = database.get_defi_position(user_id, wallet)
@@ -3534,6 +3547,18 @@ def check_delegation_permissions():
             database.upsert_managed_wallet(user_id, wallet, auto_supply_wbtc=True, delegation_mode='full_automation')
             database.set_bot_enabled(user_id, True)
             logger.info(f"[CheckPermissions] Auto-recovered wallet {wallet[:10]}... (was deleg={deleg}, strat={strat}) — on-chain valid, DB synced to active")
+    else:
+        blockers = validation.get('blockers', [])
+        credit_blockers = [b for b in blockers if b['type'] == 'aave_credit_delegation']
+        flag_blockers = [b for b in blockers if b['type'] == 'delegation_flags']
+        if credit_blockers and not flag_blockers:
+            mw = database.get_managed_wallet(user_id, wallet)
+            if mw:
+                database.update_delegation_status(user_id, wallet, 'active')
+                database.update_strategy_status_field(user_id, wallet, 'error_permissions')
+                database.upsert_managed_wallet(user_id, wallet, auto_supply_wbtc=True, delegation_mode='full_automation')
+                database.set_bot_enabled(user_id, True)
+                logger.info(f"[CheckPermissions] Wallet {wallet[:10]}... has DM flags + ERC20 OK but missing credit delegation for {[b['token'] for b in credit_blockers]} — set error_permissions")
 
     return jsonify(validation)
 
