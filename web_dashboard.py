@@ -3375,15 +3375,13 @@ def user_status():
                 try:
                     from delegation_client import validate_full_automation_ready
                     val = validate_full_automation_ready(wallet)
-                    credit_blockers = [b for b in val.get('blockers', []) if b['type'] == 'aave_credit_delegation']
-                    if credit_blockers:
-                        delegation_info["permissionBlockerType"] = "aave_credit_delegation"
-                    elif val.get('blockers'):
-                        delegation_info["permissionBlockerType"] = val['blockers'][0]['type']
-                    else:
-                        delegation_info["permissionBlockerType"] = "unknown"
+                    blockers = val.get('blockers', [])
+                    blocker_types = set(b['type'] for b in blockers)
+                    delegation_info["missingLayers"] = list(blocker_types)
+                    delegation_info["missingLayerCount"] = len(blocker_types)
                 except Exception:
-                    delegation_info["permissionBlockerType"] = "unknown"
+                    delegation_info["missingLayers"] = []
+                    delegation_info["missingLayerCount"] = 0
             logger.debug(f"[UserStatus] user={user_id} wallet={wallet} mw.delegation_status={mw['delegation_status']} delegation_mode={mw.get('delegation_mode')} -> delegationStatus={delegation_info['delegationStatus']}, strategyStatus={delegation_info['strategyStatus']}")
 
         defi_pos = database.get_defi_position(user_id, wallet)
