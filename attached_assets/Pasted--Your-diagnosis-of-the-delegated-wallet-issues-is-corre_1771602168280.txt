@@ -1,0 +1,150 @@
+
+Your diagnosis of the delegated wallet issues is correct. Please treat the points below as the build spec and move into implementation.
+
+1) Fix DeFi position tracking for delegated wallets
+Goal: delegated wallets must have their Aave positions stored and surfaced correctly, independent of the personal bot.
+
+Implement:
+
+DB semantics
+
+Confirm defi_positions can safely store multiple rows per user (e.g., keyed by user_id + wallet_address or a similar composite).
+
+If it currently only uses user_id as a key, add wallet_address (or managed_wallet_id) and migrate so positions are per wallet, not just per user.
+
+Refresh pipeline
+
+In the monitoring loop and refresh_defi_for_user (or equivalent):
+
+For the personal bot:
+
+Keep existing behavior (store bot wallet positions under its own user/wallet record).
+
+For each delegated wallet:
+
+Call get_user_account_data (Aave client) with the delegated wallet address.
+
+Write positions to defi_positions associated with that wallet (not overwriting the bot’s record).
+
+Do not mark the delegated wallet “inactive” if it has non‑zero Aave collateral but one fetch temporarily fails; treat that as a transient error.
+
+has_active_position / mark_position_inactive
+
+Fix has_active_position so it checks activity per wallet address.
+
+Change fetch_aave_position_for_wallet + mark_position_inactive logic so that:
+
+A single failed fetch does not immediately zero out and reset a wallet that clearly has collateral on‑chain.
+
+Only mark a wallet inactive and zero out supplied when:
+
+Aave reports zero supplied AND
+
+This is consistent across a few consecutive checks (e.g., N monitoring cycles) or confirmed by a successful on‑chain fetch.
+
+2) Fix the dashboard and API to use wallet‑level positions
+get_defi_position(user_id)
+
+Either:
+
+Change this to accept wallet address (e.g., get_defi_position(user_id, wallet_address)), or
+
+Add a new function like get_defi_position_for_wallet(user_id, wallet_address).
+
+User status / dashboard
+
+Ensure /api/user/status and the UI:
+
+Show DeFi positions per wallet, not just a single aggregate per user.
+
+For the delegated wallet (e.g., 0xd66a…5cff), display:
+
+Correct Aave supplied balances (e.g., ~$110 WBTC).
+
+Debt, HF, and other metrics from that wallet’s position record.
+
+Strategy engine
+
+Verify run_delegated_strategy uses the delegated wallet’s position data when computing HF, collateral, and triggers (not the personal bot’s).
+
+3) Permission flags and approvals surface clearly (no silent blockers)
+You already identified:
+
+Delegated wallet had only allowSupply=true.
+
+allowBorrow, allowRepay, allowWithdraw were false.
+
+DAI and other tokens weren’t approved.
+
+Implement:
+
+Pre‑strategy check
+
+Before running Growth/Capacity/Shorts for a delegated wallet, validate:
+
+Delegation flags: all 4 must be true.
+
+ERC20 approvals: required tokens (DAI, WETH, WBTC, USDC, USDT) approved to DelegationManager, Aave Pool, Uniswap Router.
+
+Error handling
+
+If anything is missing:
+
+Set strategy_status='error_permissions' (or equivalent error state) for that wallet.
+
+Log a structured error with:
+
+Which wallet.
+
+Which flags are missing.
+
+Which token/contract approvals are missing.
+
+Do not zero out positions or mark the wallet empty just because of permission errors.
+
+4) Tests and acceptance criteria
+Before calling this done, please provide:
+
+End‑to‑end test with the delegated wallet
+
+Use the delegated wallet that has ~$110 WBTC supplied.
+
+After your changes:
+
+Aave UI: still shows ~$110 WBTC.
+
+/api/user/status + dashboard:
+
+Show that same collateral under the delegated wallet entry.
+
+Show correct HF and debt (0 if nothing borrowed).
+
+Logs show:
+
+Position fetch for that wallet address succeeded.
+
+No mark_position_inactive unless Aave reports zero collateral.
+
+Simulated permission error
+
+Turn off a flag (e.g., allowBorrow=false) or revoke DAI approval temporarily.
+
+Confirm:
+
+Strategy for that wallet does not run.
+
+strategy_status='error_permissions'.
+
+Explicit log: “missing allowBorrow” or “missing DAI approval to DelegationManager,” etc.
+
+Position data is still present (no empty/reset bug).
+
+Docs
+
+Update replit.md with a short “Delegated Wallet Data Flow” section:
+
+How positions for delegated wallets are fetched.
+
+How they are stored (per wallet).
+
+How permission errors vs empty positions are differentiated.
