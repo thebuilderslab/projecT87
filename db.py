@@ -157,6 +157,7 @@ def init_db():
         ALTER TABLE managed_wallets ADD COLUMN IF NOT EXISTS strategy_status VARCHAR(20) NOT NULL DEFAULT 'disabled';
         ALTER TABLE managed_wallets ADD COLUMN IF NOT EXISTS last_collateral_baseline NUMERIC(14,2) DEFAULT 0;
         ALTER TABLE managed_wallets ADD COLUMN IF NOT EXISTS delegation_mode VARCHAR(30) DEFAULT NULL;
+        ALTER TABLE managed_wallets ADD COLUMN IF NOT EXISTS is_test_wallet BOOLEAN NOT NULL DEFAULT false;
 
         CREATE TABLE IF NOT EXISTS wallet_actions (
             id BIGSERIAL PRIMARY KEY,
@@ -835,6 +836,7 @@ def get_active_managed_wallets():
             WHERE mw.delegation_status = 'active'
               AND mw.auto_supply_wbtc = true
               AND u.bot_enabled = true
+              AND mw.is_test_wallet = false
         """)
         rows = cur.fetchall()
         cur.close()

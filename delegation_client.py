@@ -32,7 +32,16 @@ ERC20_ABI = [
 
 DELEGATION_MANAGER_ABI = [
     {"inputs": [{"name": "maxAmount", "type": "uint256"}], "name": "approveWBTCDelegation", "outputs": [], "stateMutability": "nonpayable", "type": "function"},
+    {"inputs": [
+        {"name": "maxSupplyPerTx", "type": "uint256"},
+        {"name": "dailySupplyLimit", "type": "uint256"},
+        {"name": "allowSupply", "type": "bool"},
+        {"name": "allowBorrow", "type": "bool"},
+        {"name": "allowRepay", "type": "bool"},
+        {"name": "allowWithdraw", "type": "bool"}
+    ], "name": "approveDelegation", "outputs": [], "stateMutability": "nonpayable", "type": "function"},
     {"inputs": [], "name": "revokeWBTCDelegation", "outputs": [], "stateMutability": "nonpayable", "type": "function"},
+    {"inputs": [], "name": "revokeDelegation", "outputs": [], "stateMutability": "nonpayable", "type": "function"},
     {"inputs": [{"name": "user", "type": "address"}, {"name": "amount", "type": "uint256"}], "name": "autoSupplyWBTC", "outputs": [], "stateMutability": "nonpayable", "type": "function"},
     {"inputs": [{"name": "user", "type": "address"}], "name": "getDelegation", "outputs": [
         {"name": "isActive", "type": "bool"}, {"name": "approvedAt", "type": "uint256"}, {"name": "revokedAt", "type": "uint256"},
@@ -311,6 +320,83 @@ REQUIRED_APPROVAL_CONTRACTS = {
 }
 
 REQUIRED_APPROVAL_TOKENS = [DAI_ADDRESS, WETH_ADDRESS, WBTC_TOKEN_ADDRESS, USDC_ADDRESS, USDT_ADDRESS]
+
+MIN_REQUIRED_ALLOWANCE = 10 ** 18
+
+
+def get_erc20_allowance(token_address, owner_address, spender_address):
+    w3 = _get_web3()
+    if not w3:
+        return 0
+    try:
+        token = w3.eth.contract(address=Web3.to_checksum_address(token_address), abi=ERC20_ABI)
+        allowance = token.functions.allowance(
+            Web3.to_checksum_address(owner_address),
+            Web3.to_checksum_address(spender_address)
+        ).call()
+        return allowance
+    except Exception as e:
+        logger.error(f"get_erc20_allowance failed: token={token_address[:10]}... owner={owner_address[:10]}... spender={spender_address[:10]}...: {e}")
+        return 0
+
+
+def validate_full_automation_ready(wallet_address):
+    blockers = []
+    results = {
+        "wallet": wallet_address,
+        "delegation_flags": {},
+        "erc20_approvals": [],
+        "ready": False,
+    }
+
+    perms = get_delegation_permissions(wallet_address)
+    results["delegation_flags"] = {
+        "isActive": perms.get("isActive", False),
+        "allowSupply": perms.get("allowSupply", False),
+        "allowBorrow": perms.get("allowBorrow", False),
+        "allowRepay": perms.get("allowRepay", False),
+        "allowWithdraw": perms.get("allowWithdraw", False),
+    }
+
+    required_flags = ["allowSupply", "allowBorrow", "allowRepay", "allowWithdraw"]
+    missing_flags = [f for f in required_flags if not perms.get(f, False)]
+    if not perms.get("isActive", False):
+        missing_flags.insert(0, "isActive")
+    if missing_flags:
+        blockers.append({"type": "delegation_flags", "missing": missing_flags})
+
+    for token_addr in REQUIRED_APPROVAL_TOKENS:
+        token_name = TOKEN_NAMES.get(token_addr, token_addr[:10])
+        for spender_name, spender_addr in REQUIRED_APPROVAL_CONTRACTS.items():
+            if not spender_addr:
+                continue
+            allowance = get_erc20_allowance(token_addr, wallet_address, spender_addr)
+            status = "OK" if allowance >= MIN_REQUIRED_ALLOWANCE else "MISSING"
+            results["erc20_approvals"].append({
+                "token": token_name,
+                "spender": spender_name,
+                "allowance": str(allowance),
+                "status": status,
+            })
+            if allowance < MIN_REQUIRED_ALLOWANCE:
+                blockers.append({
+                    "type": "erc20_approval",
+                    "token": token_name,
+                    "token_address": token_addr,
+                    "spender": spender_name,
+                    "spender_address": spender_addr,
+                    "current_allowance": str(allowance),
+                })
+
+    results["ready"] = len(blockers) == 0
+    results["blockers"] = blockers
+
+    if results["ready"]:
+        logger.info(f"[Validation] Wallet {wallet_address[:10]}... fully validated — all flags and approvals OK")
+    else:
+        logger.warning(f"[Validation] Wallet {wallet_address[:10]}... NOT ready — {len(blockers)} blocker(s): {[b['type'] + ':' + str(b.get('missing', b.get('token', ''))) for b in blockers]}")
+
+    return results
 
 
 def _send_bot_tx(func_call, gas_estimate_fallback=400000):

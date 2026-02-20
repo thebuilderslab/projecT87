@@ -76,6 +76,16 @@ The REAA platform is built on the Arbitrum Mainnet, featuring distinct modules f
 - **Delegation routing:** All borrow/repay/withdraw calls go through `delegation_client.py` which signs with bot operator key and calls REAADelegationManager contract methods.
 - **Bot wallet separation:** Bot wallet strategies (`run_strategies_for_user`) run on a separate path from delegated wallet strategies.
 
+**Phase 2C: Full-Automation Permission Parity (Feb 2026):**
+- **Root cause fixed:** Frontend was calling `approveWBTCDelegation` (only sets `allowSupply=true`) instead of `approveDelegation` (sets all 4 flags: `allowSupply`, `allowBorrow`, `allowRepay`, `allowWithdraw`).
+- **`approveDelegation` ABI:** Selector `0x86ed8da1`, params `(uint256 maxSupplyPerTx, uint256 dailySupplyLimit, bool allowSupply, bool allowBorrow, bool allowRepay, bool allowWithdraw)`. User must sign this to grant full execution parity.
+- **15 ERC20 approvals:** 5 tokens (DAI, WETH, WBTC, USDC, USDT) × 3 contracts (DelegationManager, AavePool, UniswapRouter) = 15 `approve(spender, maxUint256)` calls user must sign during activation.
+- **`validate_full_automation_ready(wallet)`:** On-chain validation function in `delegation_client.py` that checks all 4 DelegationManager flags AND 15 ERC20 allowances ≥ `MIN_REQUIRED_ALLOWANCE` (10^18). Returns `{ready: bool, blockers: [...]}`.
+- **`/api/delegation/check-permissions`:** Backend endpoint that runs validation, auto-upgrades `strategy_status` from `error_permissions` → `active` when all blockers are resolved.
+- **Re-authorize flow:** Dashboard shows "Re-authorize Auto-Pilot" button when `strategy_status === 'error_permissions'`. Triggers same full signing sequence as new activation (1 approveDelegation + 15 ERC20 approvals + activation API call).
+- **Test wallet cleanup:** `is_test_wallet` boolean column on `managed_wallets`. Placeholder addresses (0xdeadbeef..., 0xfeed..., 0xa1b2c3d4...) flagged as test wallets and excluded from `get_active_managed_wallets()` query.
+- **Diagnostic script:** `diagnose_wallet.py` reads all DelegationManager flags, 15 ERC20 allowances, DB state, and prints full status report with remediation instructions.
+
 ## External Dependencies
 
 - **Aave V3 Protocol**: Core DeFi lending protocol on Arbitrum Mainnet.

@@ -3416,7 +3416,7 @@ def activate_delegation():
     on_chain_verified = req_data.get('on_chain_verified', False)
     logger.info(f"[AutoPilot] approve_tx={approve_tx_hash}, delegation_tx={delegation_tx_hash}, on_chain_verified={on_chain_verified}")
 
-    from delegation_client import is_contract_deployed, DELEGATION_MANAGER_ADDRESS, get_wbtc_allowance_raw, get_wbtc_balance_raw, raw_to_wbtc, MIN_SUPPLY_RAW, _get_web3
+    from delegation_client import is_contract_deployed, DELEGATION_MANAGER_ADDRESS, get_wbtc_allowance_raw, get_wbtc_balance_raw, raw_to_wbtc, MIN_SUPPLY_RAW, _get_web3, validate_full_automation_ready
     contract_live = is_contract_deployed()
 
     chain_id = None
@@ -3430,17 +3430,21 @@ def activate_delegation():
     if contract_live:
         if not on_chain_verified or not delegation_tx_hash:
             logger.warning(f"[AutoPilot] Missing on-chain verification: on_chain_verified={on_chain_verified}, delegation_tx_hash={delegation_tx_hash}")
-            return jsonify({"status": "error", "reason": "On-chain delegation not verified. Please complete both wallet transactions (approve + delegation) before activating."}), 400
+            return jsonify({"status": "error", "reason": "On-chain delegation not verified. Please complete all wallet transactions before activating."}), 400
 
-        allowance = get_wbtc_allowance_raw(wallet)
-        logger.info(f"[AutoPilot] on-chain WBTC allowance for {wallet}: {allowance}")
-        if allowance <= 0:
-            logger.warning(f"[AutoPilot] allowance is 0 — approve tx may not have confirmed yet or was on wrong chain")
-            return jsonify({"status": "error", "reason": "WBTC allowance is still zero on-chain. The approval may have been on the wrong network. Please ensure you are on Arbitrum and try again."}), 400
+    validation = validate_full_automation_ready(wallet) if contract_live else {"ready": True, "blockers": []}
+    logger.info(f"[AutoPilot] Validation result: ready={validation['ready']}, blockers={len(validation.get('blockers', []))}")
 
     database.upsert_managed_wallet(user_id, wallet, auto_supply_wbtc=True, delegation_mode='full_automation')
     database.update_delegation_status(user_id, wallet, 'active')
-    database.update_strategy_status_field(user_id, wallet, 'active')
+
+    if validation['ready']:
+        database.update_strategy_status_field(user_id, wallet, 'active')
+        logger.info(f"[AutoPilot] Full permissions validated — strategy_status=active")
+    else:
+        database.update_strategy_status_field(user_id, wallet, 'error_permissions')
+        logger.warning(f"[AutoPilot] Permissions incomplete — strategy_status=error_permissions, blockers: {validation.get('blockers', [])}")
+
     database.set_bot_enabled(user_id, True)
     logger.info(f"[AutoPilot] Full-automation activated for user={user_id}, wallet={wallet}: delegation_status=active, delegation_mode=full_automation, auto_supply_wbtc=true, strategy_status=active, bot_enabled=true")
     database.record_wallet_action(user_id, wallet, 'delegation_granted', {
@@ -3498,6 +3502,33 @@ def activate_delegation():
         "delegationStatus": "active",
         "chainId": chain_id,
     })
+
+
+@app.route('/api/delegation/check-permissions', methods=['GET', 'POST'])
+def check_delegation_permissions():
+    if not DB_AVAILABLE:
+        return jsonify({"error": "Database not available"}), 503
+    user_id = get_current_user_id()
+    user = database.get_user_by_id(user_id)
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+    wallet = user['wallet_address']
+
+    from delegation_client import validate_full_automation_ready, is_contract_deployed
+    if not is_contract_deployed():
+        return jsonify({"ready": False, "blockers": [{"type": "contract", "missing": ["contract_not_deployed"]}]}), 200
+
+    validation = validate_full_automation_ready(wallet)
+    logger.info(f"[CheckPermissions] user={user_id}, wallet={wallet[:10]}..., ready={validation['ready']}, blockers={len(validation.get('blockers', []))}")
+
+    if validation['ready']:
+        mw = database.get_managed_wallet(user_id, wallet)
+        if mw and mw.get('strategy_status') == 'error_permissions':
+            database.update_strategy_status_field(user_id, wallet, 'active')
+            database.update_delegation_status(user_id, wallet, 'active')
+            logger.info(f"[CheckPermissions] Upgraded strategy_status to active for {wallet[:10]}...")
+
+    return jsonify(validation)
 
 
 @app.route('/api/delegation/revoke', methods=['POST'])
@@ -3846,7 +3877,7 @@ if __name__ == '__main__':
                     pid = int(f.read().strip())
                 os.kill(pid, 0)
                 logger.info("⚡ Dashboard already managed by bot workflow (run_both.py PID %d). Exiting duplicate.", pid)
-                sys.exit(0)
+                import sys as _sys; _sys.exit(0)
             except (OSError, ValueError):
                 pass
 
