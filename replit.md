@@ -48,7 +48,7 @@ The REAA platform is built on the Arbitrum Mainnet, featuring distinct modules f
 - **Three Permission Layers for Full Automation:**
   1. **DelegationManager Contract Flags (Layer 1):** User calls `setPermissions(wallet, true, true, true, true)` to enable supply/borrow/repay/withdraw. Set during onboarding Step 1/4.
   2. **ERC20 Token Approvals (Layer 2):** User approves 15 tokens (5 assets × 3 contracts: Aave Pool, DelegationManager, Uniswap Router) for `type(uint256).max`. Set during onboarding Step 2/4.
-  3. **Aave V3 Credit Delegation (Layer 3):** User calls `variableDebtToken.approveDelegation(DelegationManager, maxUint)` for each borrowable asset (DAI, WBTC, WETH, USDC, USDT). Required for DelegationManager to execute `executeBorrow()` on user's behalf. Set during onboarding Step 3/4. Variable debt token addresses: DAI=0x8619d80F…, WBTC=0x92b42c66…, WETH=0x0c84331e…, USDC=0xFCCf3cAb…, USDT=0x6ab707Ac….
+  3. **Aave V3 Credit Delegation (Layer 3):** User calls `variableDebtToken.approveDelegation(DelegationManager, maxUint)` for DAI and WETH only. These are the only two tokens the system borrows on behalf of users (Growth/Capacity strategies borrow DAI, Liability Short/Macro/Micro strategies borrow WETH). WBTC, USDC, and USDT are never borrowed — they are only used as collateral or swap outputs — so credit delegation for those tokens is unnecessary. Variable debt token addresses: DAI=0x8619d80F…, WETH=0x0c84331e…. Required for DelegationManager to execute `executeBorrow()` on user's behalf. Set during onboarding Step 3/4.
 - **Permission Validation:** `validate_full_automation_ready()` in `delegation_client.py` checks all three layers and returns structured `{ready, blockers}` response. The `/api/delegation/check-permissions` endpoint uses this for auto-recovery and status sync.
 - **Existing User Remediation:** Users who onboarded before Layer 3 was implemented see an "Approve Credit Delegation" button (strategy_status=`error_permissions`, permissionBlockerType=`aave_credit_delegation`). New users complete all 3 layers during the 4-step onboarding flow.
 
@@ -100,7 +100,7 @@ The REAA platform is built on the Arbitrum Mainnet, featuring distinct modules f
 - **Arbitrum Mainnet**: Primary blockchain network.
 - **CoinMarketCap API**: Fallback price oracle.
 - **AaveOracle**: Primary price oracle.
-- **Required Tokens**: DAI, WETH, WBTC, USDC, USDT, WETH Variable Debt Token (specified by contract addresses).
+- **Required Tokens**: DAI, WETH, WBTC, USDC, USDT for ERC20 approvals. Credit delegation (variable debt tokens) is only required for DAI and WETH.
 - **SearchIQS**: Web scraping service for real estate data.
 - **Perplexity AI**: AI service (`sonar` model) for analysis and chat functionalities.
 - **Google Docs/Sheets/Drive API**: For real estate lead management and data storage.
