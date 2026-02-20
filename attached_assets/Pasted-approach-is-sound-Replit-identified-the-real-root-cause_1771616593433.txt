@@ -1,0 +1,37 @@
+approach is sound. Replit identified the real root cause correctly: the on-chain flags are already fixed but the DB was never synced after re-authorization. Here is the full analysis plus a build-ready prompt.
+
+What is actually happening
+On-chain: isActive=True, allowBorrow=True, allowRepay=True, allowWithdraw=True — all correct.
+
+DB: delegation_status='revoked' for user 22 — never updated after the user signed approveDelegation().
+
+Result: get_active_managed_wallets() excludes user 22 because it filters on delegation_status='active'. The monitoring loop never evaluates this wallet. Position data goes stale. Dashboard shows error_permissions based on the old DB state.
+
+This is a DB sync gap: the re-authorization signing flow updated the contract but never called the backend to sync the new on-chain state into the DB.
+
+Additional actors and strategies to consider
+1. The re-authorization flow must close the loop
+
+When the user signs approveDelegation() on-chain, the frontend must then call the backend to re-validate and update the DB. Right now the signing happens but the backend is never notified. The fix must include a post-sign callback that:
+
+Calls /api/delegation/check-permissions or /api/delegation/activate.
+
+That endpoint calls validate_full_automation_ready().
+
+Which sets delegation_status='active' and strategy_status='active' if all flags are confirmed.
+
+2. The monitoring loop must not rely solely on DB state for on-chain facts
+
+The current architecture trusts delegation_status in the DB as the source of truth for whether to evaluate a wallet. But if the DB can get out of sync with the contract (as it just did), wallets with valid on-chain permissions get silently excluded. A periodic reconciliation check would prevent this.
+
+3. The "Current Supply" field
+
+Showing "0 WBTC" is misleading because:
+
+It shows token amount, not USD value.
+
+It is redundant with the Collateral field.
+
+It reads from a field that only tracks WBTC auto-supply, not total supplied value.
+
+It should show total USD collateral from defi_positions.collateral

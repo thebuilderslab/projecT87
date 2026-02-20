@@ -1,0 +1,153 @@
+Stop planning. All four issues have been diagnosed. 
+Move directly into implementation now.
+
+ROOT CAUSE CONFIRMED:
+The on-chain flags for 0xd60a...5cff are already 
+correct (isActive=True, allowBorrow=True, 
+allowRepay=True, allowWithdraw=True). The problem 
+is the DB still has delegation_status='revoked' 
+for user 22, so get_active_managed_wallets() 
+excludes this wallet and the monitoring loop 
+never evaluates it.
+
+TASK 1: Sync DB state with on-chain reality for 
+user 22 immediately
+
+Run validate_full_automation_ready(22, 
+"0xd60acbac798f146e4b7080e9a1f93977200f5cff") 
+right now. This should:
+- Read the live on-chain flags (already confirmed 
+  all true).
+- Read the ERC20 allowances (already confirmed 
+  signed).
+- Set delegation_status='active', 
+  strategy_status='active', 
+  delegation_mode='full_automation', 
+  bot_enabled=True in the DB.
+
+Print the result and confirm the DB row for 
+user 22 / managed_wallets now shows:
+  delegation_status = 'active'
+  strategy_status = 'active'
+  delegation_mode = 'full_automation'
+  bot_enabled = True
+
+TASK 2: Fix the re-authorization flow to always 
+close the loop
+
+The current re-authorization signing flow calls 
+approveDelegation() on-chain but never calls 
+the backend to sync the DB afterward. Fix this:
+
+In the frontend Re-authorize Auto-Pilot flow, 
+after the user's transaction is confirmed 
+on-chain, immediately call:
+  POST /api/delegation/activate
+  or
+  POST /api/delegation/check-permissions
+
+That endpoint must then call 
+validate_full_automation_ready() and update 
+the DB to reflect the confirmed on-chain state.
+
+This must also apply to the initial connect+sign 
+flow — after approveDelegation() is signed and 
+confirmed, the frontend must notify the backend 
+to sync the DB.
+
+Show the updated frontend signing flow code 
+that includes the post-confirmation backend call.
+
+TASK 3: Add a periodic on-chain reconciliation 
+check in the monitoring loop
+
+To prevent future DB/on-chain sync gaps, add a 
+check every N cycles (e.g., every 10th cycle) 
+that:
+
+For each wallet in managed_wallets where 
+delegation_status = 'revoked' OR 
+strategy_status = 'error_permissions':
+  - Call getDelegation(wallet_address) live 
+    from the contract.
+  - If on-chain flags are all true and ERC20 
+    approvals are present:
+    - Automatically re-sync the DB to 
+      delegation_status='active', 
+      strategy_status='active'.
+    - Log: "[Monitor] Auto-recovered wallet 
+      {wallet} — on-chain permissions valid, 
+      DB synced to active"
+
+This prevents a situation where a user 
+successfully signs on-chain but the DB gets 
+stuck in an error state due to a missed 
+callback.
+
+Implement this as a function called 
+reconcile_delegation_state() called from the 
+monitoring loop every 10th iteration alongside 
+the existing approval checks.
+
+TASK 4: Fix "Current Supply" display
+
+Change the "Current Supply" field in the 
+WBTC AUTO-SUPPLY DELEGATION panel to show 
+total USD value of supplied collateral instead 
+of WBTC token amount:
+
+- Read from defi_positions.collateral for 
+  (user_id=22, wallet_address='0xd60a...').
+- Format as USD: e.g., "$110.75".
+- Label it "Total Supplied" instead of 
+  "Current Supply" to distinguish it from 
+  the Collateral field above.
+- Remove the "0 WBTC" token display — it is 
+  redundant and misleading.
+
+TASK 5: Verify end-to-end after Tasks 1-4
+
+After completing Tasks 1-4, restart the bot 
+and confirm:
+
+a) Monitoring loop now includes user 22:
+   [Monitor] Active managed wallets: 1
+   [Monitor] Evaluating wallet 0xd60a...5cff 
+   user=22
+
+b) Position fetch works:
+   [Monitor] Refreshed position for user 22: 
+   collateral=$110.75, debt=$0.00, HF=999.99
+
+c) Strategy fires:
+   [Strategy] user=22 wallet=0xd60a... 
+   HF=999.99 >= 2.90 → Capacity trigger
+   [Strategy] Executing delegated borrow DAI
+
+d) Dashboard shows:
+   - Collateral: $110.75
+   - Debt: non-zero after borrow
+   - HF: real number (not 999.99)
+   - Last Action: CAPACITY: borrowed X DAI, 
+     6-step distribution complete
+   - Total Supplied: $110.75 (USD)
+   - strategy_status: active (no error)
+
+e) /api/user/status confirms:
+   strategyStatus: "active"
+   delegationMode: "full_automation"
+   lastStrategyAction: "CAPACITY: ..."
+   healthFactor: <real number>
+
+ACCEPTANCE CRITERIA:
+- DB and on-chain state are in sync for user 22.
+- Re-authorization flow always closes the loop 
+  with a backend sync call after on-chain 
+  confirmation.
+- Monitoring loop includes a periodic 
+  reconciliation check every 10 cycles.
+- Dashboard shows USD total supplied, not 
+  WBTC token amount.
+- At least one Capacity or Growth cycle has 
+  fired for user 22 with full 6-step 
+  distribution logged.
