@@ -843,6 +843,20 @@ def get_active_managed_wallets():
         return [dict(r) for r in rows]
 
 
+def get_all_managed_wallets():
+    with get_conn() as conn:
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur.execute("""
+            SELECT mw.*, u.bot_enabled
+            FROM managed_wallets mw
+            JOIN users u ON u.id = mw.user_id
+            WHERE mw.is_test_wallet = false
+        """)
+        rows = cur.fetchall()
+        cur.close()
+        return [dict(r) for r in rows]
+
+
 def update_managed_wallet_supplied(user_id, wallet_address, amount_wbtc):
     wallet_address = wallet_address.lower().strip()
     with get_conn() as conn:

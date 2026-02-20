@@ -3523,10 +3523,17 @@ def check_delegation_permissions():
 
     if validation['ready']:
         mw = database.get_managed_wallet(user_id, wallet)
-        if mw and mw.get('strategy_status') == 'error_permissions':
-            database.update_strategy_status_field(user_id, wallet, 'active')
+        needs_sync = False
+        if mw:
+            deleg = mw.get('delegation_status', 'none')
+            strat = mw.get('strategy_status', 'disabled')
+            needs_sync = deleg != 'active' or strat != 'active'
+        if mw and needs_sync:
             database.update_delegation_status(user_id, wallet, 'active')
-            logger.info(f"[CheckPermissions] Upgraded strategy_status to active for {wallet[:10]}...")
+            database.update_strategy_status_field(user_id, wallet, 'active')
+            database.upsert_managed_wallet(user_id, wallet, auto_supply_wbtc=True, delegation_mode='full_automation')
+            database.set_bot_enabled(user_id, True)
+            logger.info(f"[CheckPermissions] Auto-recovered wallet {wallet[:10]}... (was deleg={deleg}, strat={strat}) — on-chain valid, DB synced to active")
 
     return jsonify(validation)
 

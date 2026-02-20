@@ -33,7 +33,7 @@ except ImportError:
     STRATEGY_ENGINE_AVAILABLE = False
 
 try:
-    from delegation_client import check_user_wallet_approvals
+    from delegation_client import check_user_wallet_approvals, get_delegation_permissions, validate_full_automation_ready
     APPROVAL_CHECK_AVAILABLE = True
 except ImportError:
     APPROVAL_CHECK_AVAILABLE = False
@@ -137,6 +137,41 @@ def run_strategies_for_user(user_id, wallet_address, agent, run_id, iteration, c
         return None
     performance = agent.run_real_defi_task(run_id, iteration, config)
     return performance
+
+
+def reconcile_delegation_state():
+    if not DB_AVAILABLE or not APPROVAL_CHECK_AVAILABLE:
+        return
+    try:
+        all_wallets = database.get_all_managed_wallets()
+        for mw in all_wallets:
+            uid = mw['user_id']
+            waddr = mw['wallet_address']
+            status = mw.get('delegation_status', 'none')
+            strat = mw.get('strategy_status', 'disabled')
+
+            if status not in ('revoked', 'none') and strat != 'error_permissions':
+                continue
+
+            perms = get_delegation_permissions(waddr)
+            if not perms.get('isActive'):
+                continue
+
+            required = ['allowSupply', 'allowBorrow', 'allowRepay', 'allowWithdraw']
+            if not all(perms.get(f, False) for f in required):
+                continue
+
+            validation = validate_full_automation_ready(waddr)
+            if not validation.get('ready'):
+                continue
+
+            database.update_delegation_status(uid, waddr, 'active')
+            database.update_strategy_status_field(uid, waddr, 'active')
+            database.upsert_managed_wallet(uid, waddr, auto_supply_wbtc=True, delegation_mode='full_automation')
+            database.set_bot_enabled(uid, True)
+            log_agent_activity(f"[Monitor] Auto-recovered wallet {waddr[:10]}... — on-chain permissions valid, DB synced to active")
+    except Exception as e:
+        log_agent_activity(f"[Monitor] reconcile_delegation_state error: {e}", "WARNING")
 
 os.environ['NETWORK_MODE'] = 'mainnet'
 
@@ -277,6 +312,9 @@ def run_autonomous_mainnet_agent():
                     'health_factor_target': 3.10,
                     'max_iterations_per_run': 100
                 }
+
+                if DB_AVAILABLE and APPROVAL_CHECK_AVAILABLE and iteration % 10 == 0:
+                    reconcile_delegation_state()
 
                 managed_wallets = []
                 if DB_AVAILABLE:
