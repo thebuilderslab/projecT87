@@ -1,0 +1,247 @@
+Stop planning. Move directly into implementation. Every item below is a concrete build task — implement, test, and show evidence for each one before marking it done.
+
+Context: What we know
+The REAADelegationManager contract at 0x7427370Ab4C311B090446544078c819b3946E59d already has approveDelegation(maxSupplyPerTx, dailySupplyLimit, allowSupply, allowBorrow, allowRepay, allowWithdraw) in the source code. The connect+sign flow is currently calling approveWBTCDelegation instead, which hardcodes allowBorrow=false, allowRepay=false, allowWithdraw=false. This is the root cause of the error_permissions state on 0xd60a...5cff and every future wallet that connects. No contract redeployment is needed.
+
+Task 1: Add approveDelegation to the ABI in delegation_client.py
+Add this entry to the contract ABI:
+
+python
+{
+    "inputs": [
+        {"internalType": "uint256", "name": "maxSupplyPerTx", "type": "uint256"},
+        {"internalType": "uint256", "name": "dailySupplyLimit", "type": "uint256"},
+        {"internalType": "bool", "name": "allowSupply", "type": "bool"},
+        {"internalType": "bool", "name": "allowBorrow", "type": "bool"},
+        {"internalType": "bool", "name": "allowRepay", "type": "bool"},
+        {"internalType": "bool", "name": "allowWithdraw", "type": "bool"}
+    ],
+    "name": "approveDelegation",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+}
+Confirm the ABI is loaded correctly by calling contract.functions.approveDelegation and showing no AttributeError.
+
+Task 2: Update the frontend connect+sign flow
+Replace every call to approveWBTCDelegation with approveDelegation, passing all four flags as true:
+
+javascript
+await delegationManager.approveDelegation(
+  maxSupplyPerTx,   // same value as before
+  dailySupplyLimit, // same value as before
+  true,             // allowSupply
+  true,             // allowBorrow
+  true,             // allowRepay
+  true              // allowWithdraw
+);
+After the approveDelegation call succeeds, present the ERC20 approval signing steps in the same session. For each of the 5 tokens (DAI, WETH, WBTC, USDC, USDT) and each of the 3 contracts (REAADelegationManager, Aave V3 Pool, Uniswap Router), check the current allowance and only prompt a signature if it is below the required threshold:
+
+javascript
+const MAX_UINT = ethers.constants.MaxUint256;
+const tokens = {
+  DAI: "0x...",
+  WETH: "0x...",
+  WBTC: "0x...",
+  USDC: "0x...",
+  USDT: "0x..."
+};
+const spenders = {
+  DelegationManager: "0x7427370Ab4C311B090446544078c819b3946E59d",
+  AavePool: "0x794a61358D6845594F94dc1DB02A252b5b4814aD",
+  UniswapRouter: "<address from config>"
+};
+
+for (const [tokenName, tokenAddr] of Object.entries(tokens)) {
+  for (const [spenderName, spenderAddr] of Object.entries(spenders)) {
+    const token = new ethers.Contract(tokenAddr, ERC20_ABI, signer);
+    const allowance = await token.allowance(userWallet, spenderAddr);
+    if (allowance.lt(ethers.utils.parseUnits("1000000", 18))) {
+      await token.approve(spenderAddr, MAX_UINT);
+    }
+  }
+}
+The UI must show clear progress to the user, for example:
+
+"Step 1 of 3: Approve delegation (sign transaction)"
+
+"Step 2 of 3: Approve tokens (up to 15 approvals, only missing ones will be shown)"
+
+"Step 3 of 3: Activating Auto-Pilot..."
+
+If the user cancels any step, do NOT activate the wallet. Surface a clear message: "Authorization incomplete — please complete all steps to enable Auto-Pilot."
+
+Task 3: Add a backend pre-activation validation gate
+Before setting delegation_status='active' or strategy_status='active' in the DB for any wallet, run a validation function that checks both the on-chain flags and the ERC20 approvals:
+
+python
+def validate_full_automation_ready(user_id: int, wallet_address: str) -> dict:
+    blockers = []
+
+    # Check delegation flags
+    delegation = contract.functions.getDelegation(wallet_address).call()
+    flags = {
+        "allowSupply": delegation[2],
+        "allowBorrow": delegation[3],
+        "allowRepay": delegation[4],
+        "allowWithdraw": delegation[5],
+    }
+    missing_flags = [k for k, v in flags.items() if not v]
+    if missing_flags:
+        blockers.append({
+            "type": "delegation_flags",
+            "missing": missing_flags
+        })
+
+    # Check ERC20 approvals (5 tokens x 3 contracts)
+    tokens = {
+        "DAI": DAI_ADDRESS, "WETH": WETH_ADDRESS, "WBTC": WBTC_ADDRESS,
+        "USDC": USDC_ADDRESS, "USDT": USDT_ADDRESS
+    }
+    spenders = {
+        "DelegationManager": DELEGATION_MANAGER,
+        "AavePool": AAVE_POOL,
+        "UniswapRouter": UNISWAP_ROUTER
+    }
+    for token_name, token_addr in tokens.items():
+        for spender_name, spender_addr in spenders.items():
+            allowance = get_erc20_allowance(token_addr, wallet_address,
+                                            spender_addr)
+            if allowance < MIN_REQUIRED_ALLOWANCE:
+                blockers.append({
+                    "type": "erc20_approval",
+                    "token": token_name,
+                    "spender": spender_name,
+                    "current_allowance": str(allowance)
+                })
+
+    ready = len(blockers) == 0
+    if ready:
+        database.update_strategy_status_field(user_id, wallet_address,
+                                              'active')
+        database.set_bot_enabled(user_id, True)
+        log.info(f"[Activation] Wallet {wallet_address} fully validated "
+                 f"— strategy_status=active")
+    else:
+        database.update_strategy_status_field(user_id, wallet_address,
+                                              'error_permissions')
+        log.warning(f"[Activation] Wallet {wallet_address} NOT ready — "
+                    f"blockers: {blockers}")
+
+    return {"ready": ready, "blockers": blockers}
+Expose this via /api/delegation/check-permissions so the frontend can call it after signing and show the user exactly what is still missing if anything failed.
+
+Task 4: Add "Re-authorize Auto-Pilot" flow for existing wallets
+Wallets like 0xd60a...5cff that connected via the old flow cannot be fixed server-side. They need a user-initiated re-sign. Implement this:
+
+In the dashboard, detect when a wallet has strategy_status='error_permissions' and surface a clear call-to-action:
+
+Show: "Auto-Pilot requires updated permissions. Click below to re-authorize."
+
+Button: "Re-authorize Auto-Pilot"
+
+Clicking the button triggers the same signing sequence as Task 2:
+
+approveDelegation with all four flags true.
+
+ERC20 approvals for any missing token/contract pairs.
+
+After signing, the frontend calls /api/delegation/check-permissions to re-validate on-chain state, and if ready=true, the backend updates strategy_status='active'.
+
+The dashboard refreshes and shows the updated status without requiring a full page reload.
+
+Task 5: Manual remediation for 0xd60a...5cff
+Write and run a one-time script that:
+
+Reads the current delegation flags for 0xd60a...5cff from the contract.
+
+Calls approveDelegation for that wallet with all flags set to true using the bot/owner wallet (if the contract allows owner-initiated calls), OR confirms that only a user-signed transaction can update those flags.
+
+If owner can call it: run the script and confirm on-chain.
+
+If only the user can call it: document this clearly and ensure the Re-authorize button (Task 4) is the remediation path.
+
+Checks all 15 ERC20 allowances (5 tokens × 3 contracts) for that wallet and logs which ones are missing.
+
+After any changes, runs validate_full_automation_ready(22, "0xd60a...5cff") and prints the result.
+
+Shows a final summary:
+
+text
+Wallet: 0xd60a...5cff
+DelegationManager flags:
+  allowSupply=True/False
+  allowBorrow=True/False
+  allowRepay=True/False
+  allowWithdraw=True/False
+ERC20 approvals:
+  DAI → DelegationManager: OK/MISSING
+  DAI → AavePool: OK/MISSING
+  DAI → UniswapRouter: OK/MISSING
+  [... all 15 ...]
+DB: strategy_status=active/error_permissions
+Ready for next monitoring cycle: YES/NO
+Task 6: Test wallet cleanup
+For users 9, 11, 12, 25, 51, 52, 57, 58 with placeholder wallet addresses — confirm whether these rows are needed for any purpose (test fixtures, UI demos, etc.).
+
+If NOT needed: delete them from managed_wallets and users.
+
+If needed for reference: add is_test_wallet BOOLEAN DEFAULT FALSE to managed_wallets, set is_test_wallet=true for those rows, update get_active_managed_wallets() to exclude them, and update init_db() for fresh installs.
+
+After the change, show the next monitoring cycle log confirming zero evaluations for placeholder addresses.
+
+Task 7: Verify end-to-end after all fixes
+After Tasks 1–6 are complete:
+
+Restart the bot workflow.
+
+On the next monitoring cycle for 0xd60a...5cff, confirm logs show:
+
+text
+[Strategy] user=22 wallet=0xd60a... HF=999.99 >= 2.90 → Capacity trigger
+[Strategy] Executing delegated borrow DAI amount=X
+[Strategy] Step 1/6: DAI supply OK
+[Strategy] Step 2/6: DAI→WBTC swap+supply OK
+[Strategy] Step 3/6: DAI→WETH swap+supply OK
+[Strategy] Step 4/6: DAI→ETH gas OK
+[Strategy] Step 5/6: DAI→Wallet_S OK
+[Strategy] Step 6/6: DAI→USDC tax OK
+Show /api/user/status after the cycle:
+
+json
+{
+  "strategyStatus": "active",
+  "delegationMode": "full_automation",
+  "lastStrategyAction": "CAPACITY: borrowed X DAI, 6-step distribution complete",
+  "collateral": "<updated>",
+  "debt": "<non-zero DAI>",
+  "healthFactor": "<real number, not 999.99>"
+}
+Show the dashboard with:
+
+Real collateral value.
+
+Non-zero debt.
+
+HF in a real range.
+
+Last Action: successful strategy execution, not error_permissions.
+
+Also confirm that the connect flow for a new test wallet now automatically grants all four flags and prompts the 15 ERC20 approvals, and that the wallet reaches strategy_status='active' without manual intervention.
+
+Acceptance criteria
+This is build-ready when:
+
+approveDelegation is in the ABI and wired into the connect+sign flow.
+
+Every new wallet that connects and enables Auto-Pilot automatically gets all four delegation flags and all 15 ERC20 approvals.
+
+validate_full_automation_ready is called before any wallet is set to strategy_status='active'.
+
+0xd60a...5cff has all flags set and at least one Capacity cycle logged with the 6-step distribution.
+
+The "Re-authorize Auto-Pilot" button exists and works for existing misconfigured wallets.
+
+The monitoring loop no longer processes test/placeholder wallets.
+
+replit.md documents the connect+sign permission flow, the 15 required ERC20 approvals, and the re-authorization path for existing wallets.
