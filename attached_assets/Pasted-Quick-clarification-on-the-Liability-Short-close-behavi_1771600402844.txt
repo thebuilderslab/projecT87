@@ -1,0 +1,73 @@
+Quick clarification on the Liability Short close behavior — this is mostly correct, I just want the intent and docs to be explicit.
+
+Current behavior (as implemented):
+
+Profit 
+P
+P from short close is split as:
+
+20% → Wallet_S (swap from WETH to DAI, send to Wallet_S).
+
+20% → USDC (swap from WETH to USDC, send to user wallet).
+
+30% → WBTC (swap from WETH to WBTC, then supply to Aave on behalf of the user).
+
+20% → WETH (kept as WETH and supplied to Aave on behalf of the user).
+
+10% → USDT (swap from WETH to USDT, then supply to Aave on behalf of the user).
+
+Any leftover WETH in the bot/DelegationManager is swapped to ETH and sent to the user wallet as a gas/safety net.
+
+Each slice executes independently; if one swap fails, the others can still succeed.
+
+This matches my intended distribution and I’m OK with the best‑effort, per‑slice completion model, with Nurse Mode cleaning up any odd leftovers over time.
+
+Please do the following to lock this in:
+
+Make the behavior explicit in docs
+
+In replit.md, under the Profit Flow Comparison / Liability Short section, clearly document:
+
+Exact target split for delegated user wallets:
+
+20% → Wallet_S (DAI)
+
+20% → USDC (user wallet)
+
+30% → WBTC (supplied)
+
+20% → WETH (supplied)
+
+10% → USDT (supplied)
+
+Any residual WETH → swapped to ETH and sent to user wallet.
+
+That each slice is executed independently and not atomic:
+
+If the USDC slice fails, WBTC/WETH/USDT slices still proceed.
+
+Failures do not block other slices; they just leave more WETH/settlement token to be swept later.
+
+Clarify residual handling and Nurse Mode interaction
+
+Confirm and document that:
+
+On any slice failure, the unprocessed portion remains as WETH (or settlement token) and is ultimately in the user’s wallet or supplied on their behalf, never stuck permanently in the DelegationManager.
+
+Nurse Mode later sweeps DAI/WETH/WBTC/USDT from the user wallet into Aave, lifting HF and potentially re‑enabling Growth/Capacity actions.
+
+Improve logging / observability (optional but preferred)
+
+For each Liability Short close:
+
+Log per‑slice success/failure, e.g.:
+
+short_close_slice: {slice: "USDC", status: "FAILED", reason: "..."}
+
+short_close_slice: {slice: "WBTC", status: "OK"}
+
+Log any final residual sweep, e.g.:
+
+short_close_residual_sweep: {token: "WETH", amount: X, dest: "user_wallet", as: "ETH"}
+
+I don’t need the distribution logic changed; I just want the per‑slice best‑effort model, residual behavior, and Nurse Mode cleanup path clearly implemented and documented, with logs that make it easy to see what happened on each close.
