@@ -536,19 +536,11 @@ def _forward_tokens_to_user(asset_address: str, amount_wei: int, user_address: s
     return True
 
 
-USE_ATOMIC_BORROW = False
-
-
 def delegated_borrow(user_address: str, asset_address: str, amount_wei: int, interest_rate_mode: int = 2) -> str:
     """
     Borrow tokens on behalf of user via DelegationManager.
+    Uses executeBorrowAndTransfer for atomic borrow+transfer to user wallet.
     Tokens MUST end in the USER wallet, never the BOT wallet.
-
-    When USE_ATOMIC_BORROW=True (redeployed contract):
-      Single call to DM.executeBorrowAndTransfer → Aave → DM → USER atomically.
-
-    When USE_ATOMIC_BORROW=False (current deployed contract):
-      3-step workaround: executeBorrow → emergencyWithdrawToken (DM→BOT) → transfer (BOT→USER).
     """
     w3 = _get_web3()
     if not w3 or not is_contract_deployed():
@@ -565,33 +557,11 @@ def delegated_borrow(user_address: str, asset_address: str, amount_wei: int, int
     asset_cs = Web3.to_checksum_address(asset_address)
     logger.info(f"delegated_borrow: user={user_address[:10]}..., asset={asset_address[:10]}..., amount_wei={amount_wei}")
 
-    if USE_ATOMIC_BORROW:
-        dm = w3.eth.contract(address=Web3.to_checksum_address(DELEGATION_MANAGER_ADDRESS), abi=DELEGATION_MANAGER_ABI)
-        borrow_hash = _send_bot_tx(dm.functions.executeBorrowAndTransfer(user_cs, asset_cs, amount_wei, interest_rate_mode))
-        if borrow_hash:
-            logger.info(f"delegated_borrow: Step 1/1 OK — atomic borrow+transfer to user {user_address[:10]}...")
-        return borrow_hash
-    else:
-        dm = w3.eth.contract(address=Web3.to_checksum_address(DELEGATION_MANAGER_ADDRESS), abi=DELEGATION_MANAGER_ABI + [
-            {"inputs": [{"name": "user", "type": "address"}, {"name": "asset", "type": "address"}, {"name": "amount", "type": "uint256"}, {"name": "interestRateMode", "type": "uint256"}], "name": "executeBorrow", "outputs": [], "stateMutability": "nonpayable", "type": "function"},
-        ])
-        borrow_hash = _send_bot_tx(dm.functions.executeBorrow(user_cs, asset_cs, amount_wei, interest_rate_mode))
-        if not borrow_hash:
-            return None
-        logger.info(f"delegated_borrow: Step 1/3 OK — borrowed {amount_wei} for {user_address[:10]}...")
-
-        rescued = _rescue_tokens_from_dm(asset_address, amount_wei)
-        if not rescued:
-            logger.error(f"delegated_borrow: Step 2/3 FAILED — cannot rescue from DM to BOT, tokens stuck in DM")
-            return None
-        logger.info(f"delegated_borrow: Step 2/3 OK — forwarded DM→BOT")
-
-        forwarded = _forward_tokens_to_user(asset_address, amount_wei, user_address)
-        if not forwarded:
-            logger.error(f"delegated_borrow: Step 3/3 FAILED — cannot transfer BOT→USER, tokens stuck in BOT wallet")
-            return None
-        logger.info(f"delegated_borrow: Step 3/3 OK — transferred BOT→USER. Tokens in USER wallet.")
-        return borrow_hash
+    dm = w3.eth.contract(address=Web3.to_checksum_address(DELEGATION_MANAGER_ADDRESS), abi=DELEGATION_MANAGER_ABI)
+    borrow_hash = _send_bot_tx(dm.functions.executeBorrowAndTransfer(user_cs, asset_cs, amount_wei, interest_rate_mode))
+    if borrow_hash:
+        logger.info(f"delegated_borrow: OK — atomic borrow+transfer to user {user_address[:10]}...")
+    return borrow_hash
 
 
 def delegated_borrow_dai(user_address: str, amount_dai: float) -> str:
@@ -645,14 +615,7 @@ def delegated_withdraw(user_address: str, asset_address: str, amount_wei: int) -
     logger.info(f"delegated_withdraw: user={user_address[:10]}..., asset={asset_address[:10]}..., amount_wei={amount_wei}")
     withdraw_hash = _send_bot_tx(dm.functions.executeWithdraw(user_cs, asset_cs, amount_wei))
     if withdraw_hash:
-        rescued = _rescue_tokens_from_dm(asset_address, amount_wei)
-        if not rescued:
-            logger.error(f"delegated_withdraw: withdraw OK but rescue from DM FAILED — tokens stuck in DM")
-            return None
-        forwarded = _forward_tokens_to_user(asset_address, amount_wei, user_address)
-        if not forwarded:
-            logger.error(f"delegated_withdraw: tokens in bot wallet but forward to user FAILED")
-            return None
+        logger.info(f"delegated_withdraw: OK — tokens transferred to user {user_address[:10]}... atomically by DM contract")
     return withdraw_hash
 
 
@@ -816,6 +779,14 @@ def _ensure_bot_approval(token_address: str, spender_address: str, amount_raw: i
     except Exception as e:
         logger.error(f"_ensure_bot_approval failed: {e}", exc_info=True)
         return False
+
+
+def ensure_bot_dex_approval(token_address: str, amount_raw: int) -> bool:
+    """
+    Ensure BOT wallet has approved the DEX Router (Uniswap V3) to spend tokens.
+    Must be called before any swap. Uses max approval to avoid repeated approvals.
+    """
+    return _ensure_bot_approval(token_address, UNISWAP_ROUTER_ADDRESS, amount_raw)
 
 
 def delegated_supply_onbehalf(user_address: str, asset_address: str, amount_wei: int) -> str:
