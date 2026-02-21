@@ -583,7 +583,7 @@ def get_defi_position(user_id, wallet_address=None):
             wallet_address = wallet_address.lower().strip()
             cur.execute("SELECT * FROM defi_positions WHERE user_id = %s AND wallet_address = %s", (user_id, wallet_address))
         else:
-            cur.execute("SELECT * FROM defi_positions WHERE user_id = %s ORDER BY total_collateral_usd DESC NULLS LAST LIMIT 1", (user_id,))
+            cur.execute("SELECT * FROM defi_positions WHERE user_id = %s ORDER BY updated_at DESC NULLS LAST LIMIT 1", (user_id,))
         row = cur.fetchone()
         cur.close()
         if row:
