@@ -9,8 +9,7 @@ import os
 import sys
 import time
 import json
-import threading
-import concurrent.futures
+import asyncio
 from datetime import datetime
 import pytz
 from arbitrum_testnet_agent import ArbitrumTestnetAgent
@@ -141,24 +140,19 @@ def run_strategies_for_user(user_id, wallet_address, agent, run_id, iteration, c
     return performance
 
 
-_tx_lock = threading.Lock()
-_rpc_semaphore = threading.Semaphore(5)
 RPC_DELAY_SECONDS = 0.5
 MAX_CONCURRENT_WALLETS = 5
 
 
-def _process_managed_wallet(mw, agent, run_id, iteration, config, check_approvals):
-    """Process a single managed wallet — designed to run concurrently via ThreadPoolExecutor.
-    Position reads are parallelized; on-chain transactions acquire _tx_lock to serialize.
-    RPC rate limiting: acquires _rpc_semaphore and sleeps RPC_DELAY_SECONDS between RPC calls."""
+def _process_managed_wallet_sync(mw, agent, run_id, iteration, config, check_approvals):
+    """Synchronous wallet processing — called via asyncio.to_thread().
+    Contains all blocking Web3 RPC and on-chain transaction logic."""
     uid = mw['user_id']
     waddr = mw['wallet_address']
     result = {'user_id': uid, 'wallet': waddr, 'status': 'skipped', 'details': ''}
 
     try:
-        with _rpc_semaphore:
-            time.sleep(RPC_DELAY_SECONDS)
-            pos = refresh_defi_for_user(uid, waddr)
+        pos = refresh_defi_for_user(uid, waddr)
         if not pos:
             result['status'] = 'no_position'
             log_agent_activity(f"[Monitor] wallet={waddr[:10]}..., mode=delegated, decision=SKIP (no position)")
@@ -190,30 +184,29 @@ def _process_managed_wallet(mw, agent, run_id, iteration, config, check_approval
             log_agent_activity(f"[Monitor] wallet={waddr[:10]}..., strategy=SKIP (active_pos={has_active}, delegation={mw.get('delegation_status')})")
             return result
 
-        with _tx_lock:
-            distribution_resumed = False
+        distribution_resumed = False
+        try:
+            resume_result = resume_incomplete_distribution(uid, waddr, agent)
+            if resume_result:
+                distribution_resumed = True
+                log_agent_activity(f"[Resume] wallet={waddr[:10]}..., COMPLETED incomplete distribution: "
+                                 f"action={resume_result.get('action')}, details={resume_result.get('details')}")
+        except Exception as resume_err:
+            log_agent_activity(f"[Resume] wallet={waddr[:10]}..., error: {resume_err}", "WARNING")
+
+        if not distribution_resumed and not has_active_distribution(waddr):
             try:
-                resume_result = resume_incomplete_distribution(uid, waddr, agent)
-                if resume_result:
-                    distribution_resumed = True
-                    log_agent_activity(f"[Resume] wallet={waddr[:10]}..., COMPLETED incomplete distribution: "
-                                     f"action={resume_result.get('action')}, details={resume_result.get('details')}")
-            except Exception as resume_err:
-                log_agent_activity(f"[Resume] wallet={waddr[:10]}..., error: {resume_err}", "WARNING")
+                nurse_result = run_delegated_nurse_sweep(uid, waddr, agent)
+                if nurse_result.get("swept"):
+                    log_agent_activity(f"[Nurse] wallet={waddr[:10]}..., {nurse_result['details']}")
+            except Exception as nurse_err:
+                log_agent_activity(f"[Nurse] wallet={waddr[:10]}..., error: {nurse_err}", "WARNING")
+        elif not distribution_resumed:
+            log_agent_activity(f"[Nurse] wallet={waddr[:10]}..., SKIPPED — active distribution detected")
 
-            if not distribution_resumed and not has_active_distribution(waddr):
-                try:
-                    nurse_result = run_delegated_nurse_sweep(uid, waddr, agent)
-                    if nurse_result.get("swept"):
-                        log_agent_activity(f"[Nurse] wallet={waddr[:10]}..., {nurse_result['details']}")
-                except Exception as nurse_err:
-                    log_agent_activity(f"[Nurse] wallet={waddr[:10]}..., error: {nurse_err}", "WARNING")
-            elif not distribution_resumed:
-                log_agent_activity(f"[Nurse] wallet={waddr[:10]}..., SKIPPED — active distribution detected")
-
-            strategy_result = run_delegated_strategy(uid, waddr, agent, run_id, iteration, config)
-            strat_status = get_strategy_status(uid, waddr)
-            database.update_strategy_status_field(uid, waddr, strat_status)
+        strategy_result = run_delegated_strategy(uid, waddr, agent, run_id, iteration, config)
+        strat_status = get_strategy_status(uid, waddr)
+        database.update_strategy_status_field(uid, waddr, strat_status)
 
         result['status'] = 'executed'
         result['details'] = f"mode={strategy_result['mode']}, action={strategy_result['action']}, status={strat_status}"
@@ -225,6 +218,29 @@ def _process_managed_wallet(mw, agent, run_id, iteration, config, check_approval
         result['details'] = str(mw_err)
         log_agent_activity(f"[Monitor] wallet={waddr[:10]}..., mode=delegated, decision=ERROR ({mw_err})", "WARNING")
         return result
+
+
+async def _process_all_wallets(deduped_wallets, agent, run_id, iteration, config, check_approvals):
+    """Process all managed wallets concurrently using asyncio.gather with Semaphore(5) rate limiting.
+    Creates the semaphore inside the running event loop to avoid cross-loop binding issues."""
+    sem = asyncio.Semaphore(MAX_CONCURRENT_WALLETS)
+
+    async def _run_one(mw):
+        async with sem:
+            await asyncio.sleep(RPC_DELAY_SECONDS)
+            return await asyncio.to_thread(
+                _process_managed_wallet_sync, mw, agent, run_id, iteration, config, check_approvals
+            )
+
+    tasks = [_run_one(mw) for mw in deduped_wallets]
+    results = await asyncio.gather(*tasks, return_exceptions=True)
+    for i, result in enumerate(results):
+        if isinstance(result, Exception):
+            waddr = deduped_wallets[i]['wallet_address']
+            log_agent_activity(f"[Async] wallet={waddr[:10]}..., EXCEPTION: {result}", "ERROR")
+        elif isinstance(result, dict) and result.get('status') == 'error':
+            log_agent_activity(f"[Async] wallet={result['wallet'][:10]}..., FAILED: {result['details']}", "WARNING")
+    return results
 
 
 def reconcile_delegation_state():
@@ -332,18 +348,13 @@ def run_autonomous_mainnet_agent():
         eth_balance = agent.get_bot_eth_balance()
         log_agent_activity(f"💰 ETH Balance: {eth_balance:.6f} ETH")
         
-        import concurrent.futures
         try:
-            with concurrent.futures.ThreadPoolExecutor() as executor:
-                future = executor.submit(agent.health_monitor.get_current_health_factor)
-                health_data = future.result(timeout=15)
-                if health_data:
-                    hf = health_data.get('health_factor', 0)
-                    log_agent_activity(f"❤️ Initial Health Factor: {hf:.4f}")
-                else:
-                    log_agent_activity("⚠️ Could not retrieve initial health factor")
-        except concurrent.futures.TimeoutError:
-            log_agent_activity("⚠️ Health factor check timed out (15s) — skipping")
+            health_data = agent.health_monitor.get_current_health_factor()
+            if health_data:
+                hf = health_data.get('health_factor', 0)
+                log_agent_activity(f"❤️ Initial Health Factor: {hf:.4f}")
+            else:
+                log_agent_activity("⚠️ Could not retrieve initial health factor")
         except Exception as e:
             log_agent_activity(f"⚠️ Health factor check error: {e}")
         
@@ -430,25 +441,23 @@ def run_autonomous_mainnet_agent():
                         log_agent_activity(f"[Strategy] wallet={mw['wallet_address'][:10]}..., DEDUP_SKIP")
 
                 check_approvals = (iteration % 10 == 0)
-                max_workers = min(len(deduped_wallets), MAX_CONCURRENT_WALLETS) if deduped_wallets else 1
 
                 if deduped_wallets:
-                    log_agent_activity(f"[Concurrent] Processing {len(deduped_wallets)} wallet(s) with ThreadPoolExecutor (max_workers={max_workers}, rpc_delay={RPC_DELAY_SECONDS}s)")
-                    with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
-                        futures = {
-                            executor.submit(_process_managed_wallet, mw, agent, run_id, iteration, config, check_approvals): mw
-                            for mw in deduped_wallets
-                        }
-                        for future in concurrent.futures.as_completed(futures, timeout=120):
-                            mw = futures[future]
-                            try:
-                                result = future.result(timeout=60)
-                                if result['status'] == 'error':
-                                    log_agent_activity(f"[Concurrent] wallet={result['wallet'][:10]}..., FAILED: {result['details']}", "WARNING")
-                            except concurrent.futures.TimeoutError:
-                                log_agent_activity(f"[Concurrent] wallet={mw['wallet_address'][:10]}..., TIMEOUT (60s)", "WARNING")
-                            except Exception as exc:
-                                log_agent_activity(f"[Concurrent] wallet={mw['wallet_address'][:10]}..., EXCEPTION: {exc}", "ERROR")
+                    log_agent_activity(f"[Async] Processing {len(deduped_wallets)} wallet(s) with asyncio.gather (semaphore={MAX_CONCURRENT_WALLETS}, rpc_delay={RPC_DELAY_SECONDS}s)")
+                    loop = asyncio.new_event_loop()
+                    try:
+                        loop.run_until_complete(
+                            asyncio.wait_for(
+                                _process_all_wallets(deduped_wallets, agent, run_id, iteration, config, check_approvals),
+                                timeout=120
+                            )
+                        )
+                    except asyncio.TimeoutError:
+                        log_agent_activity(f"[Async] Wallet processing timed out (120s) for {len(deduped_wallets)} wallet(s)", "WARNING")
+                    except Exception as async_err:
+                        log_agent_activity(f"[Async] Wallet processing error: {async_err}", "ERROR")
+                    finally:
+                        loop.close()
 
                 if bot_user_id is not None and bot_user_id not in processed_user_ids:
                     if bot_user_id not in processed_user_ids:
