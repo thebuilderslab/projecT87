@@ -1,0 +1,65 @@
+I need a full audit of how data is scraped, stored in PostgreSQL, and displayed in the UI.
+
+Scope
+- All scrapers / ingestion jobs that write into Postgres (e.g., Aave positions, DeFi metrics, payouts, real estate data).
+- All tables and views that back the dashboard (Command Center, DeFi tab, approvals, AI hints, etc.).
+- All frontend components that consume these APIs.
+
+Your tasks:
+
+1) Inventory data flow end-to-end
+
+a) Scrapers / ingestion
+- List each script/job that fetches off-chain or on-chain data (name, file, schedule).
+- For each, show:
+  - Data source (API URL, chain + contract, RPC).
+  - The transformation/normalization logic.
+  - The INSERT/UPSERT statements into Postgres (table names, key columns).
+
+b) Database schema
+- For each relevant table (e.g., defi_positions, managed_wallets, payouts, user_towns, strategy_logs):
+  - Show the CREATE TABLE definition.
+  - Explain what each key column represents (source, units, nullable?).
+  - Identify primary keys and uniqueness constraints.
+
+c) API / backend
+- List all endpoints that read from these tables for the dashboard:
+  - URL, method, and handler function.
+  - The SQL/ORM queries used.
+  - Any in-memory caching or aggregation layers.
+
+d) Frontend
+- For each major dashboard section (Command Center, DeFi tab, approvals checklist, AI chat, USDC meter):
+  - Identify which endpoint(s) it calls.
+  - Show the shape of the JSON it expects
+  - Show the mapping from JSON fields to UI elements.
+
+2) Validate correctness and freshness
+
+a) Scraper → DB
+- For at least one representative user (e.g. user 22), pick:
+  - Aset of on-chain values (collateral, debt, HF, WBTC balance).
+- Show:
+  - Raw source value (e.g. RPC or API response).
+  - The row as stored in Postgres (SELECT * … WHERE user_id=22).
+  - Confirm the units, rounding, and timestamps are consistent.
+
+b) DB → API → UI
+- For the same user:
+  - Show the API JSON output.
+  - Screenshot or code snippet for the UI section.
+  - Confirm that numbers on screen match the JSON and DB (same currency, same precision).
+
+c) Staleness / scheduling
+- Document how often each scraper runs.
+- Show any “last_updated” columns and how the UI displays stale data (e.g. “Last updated: …” or warning state).
+
+3) Identify and fix issues
+
+For each of these potential problems, either confirm “OK” with evidence or propose a concrete fix:
+
+- Mismatched joins or user IDs (e.g., wallet address null or wrong in defi_positions).
+- Double-counting or missing rows (e.g., payouts or events that aren’t visible).
+- Inconsistent units (wei vs ether, USD vs token).
+- Race conditions where UI queries before scrapers finish.
+- Missing error handling: scrapers that silently fail, endpoints that swallow DB err
