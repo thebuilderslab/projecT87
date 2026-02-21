@@ -76,10 +76,16 @@ The REAA platform operates on the Arbitrum Mainnet, comprising distinct modules 
 
 ## Data Safety Guarantees
 
-**Filings (Lis Pendens) Scraper Safety:**
+**Filings (Lis Pendens) Data Pipeline:**
+- **Flow:** SearchIQS scrape → `replace_filings_for_town()` → `filings` table → `/api/filings/recent` → "New Opportunities" panel.
 - `replace_filings_for_town(town_id, filings_list)` is the primary ingest function. It wraps DELETE+INSERT in a single Postgres transaction (atomic).
 - If `filings_list` is empty (scraper returns 0 results due to network error, etc.), the function **preserves existing rows** — no delete occurs.
 - This prevents historical data loss from transient scraper failures.
+- **Only `source='searchiqs'` rows are replaced** on scrape — manual filings (`source='manual'`) are always preserved.
+- **Source tagging:** Every filing has a `source` column (`'searchiqs'` or `'manual'`). Manual inserts are clearly tagged and never overwritten by automated scrapes.
+- **Scrape status tracking:** Each town in the `towns` table has `last_scrape_status` (OK | ZERO_RESULTS | HTTP_403 | ERROR) and `last_scrape_at` (timestamp). Updated after every scrape run.
+- **UI freshness:** The "New Opportunities" panel shows orange warning banners for towns with error scrape statuses, so users can see when data may be stale.
+- **API:** `GET /api/filings/recent?days=7&limit=20` returns filings, counts, and per-town scrape status in `towns[]` array.
 
 **DeFi Position Integrity:**
 - `upsert_defi_position()` requires a non-empty `wallet_address` parameter — calls without it are rejected with a logged error.

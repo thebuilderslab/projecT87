@@ -174,7 +174,7 @@ class SearchIQSScraper:
     def search_lis_pendens(self, days_back: int = 30, fetch_details: bool = True) -> List[Dict]:
         if not self.logged_in:
             if not self.login_as_guest():
-                return []
+                raise RuntimeError(f"SearchIQS login failed for {self.town_name} — site may be in maintenance or blocking requests")
 
         end_date = datetime.now()
         start_date = end_date - timedelta(days=days_back)

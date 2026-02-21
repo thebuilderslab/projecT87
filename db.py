@@ -71,10 +71,14 @@ def init_db():
             debt_amount VARCHAR(100),
             return_date VARCHAR(100),
             status VARCHAR(50) DEFAULT 'PENDING',
+            source TEXT NOT NULL DEFAULT 'searchiqs',
             raw_data JSONB DEFAULT '{}',
             created_at TIMESTAMPTZ DEFAULT NOW(),
             updated_at TIMESTAMPTZ DEFAULT NOW()
         );
+        ALTER TABLE filings ADD COLUMN IF NOT EXISTS source TEXT NOT NULL DEFAULT 'searchiqs';
+        ALTER TABLE towns ADD COLUMN IF NOT EXISTS last_scrape_status TEXT DEFAULT NULL;
+        ALTER TABLE towns ADD COLUMN IF NOT EXISTS last_scrape_at TIMESTAMPTZ DEFAULT NULL;
 
         CREATE TABLE IF NOT EXISTS defi_positions (
             id SERIAL PRIMARY KEY,
@@ -269,7 +273,13 @@ def get_towns():
         """)
         rows = cur.fetchall()
         cur.close()
-        return [dict(r) for r in rows]
+        result = []
+        for r in rows:
+            d = dict(r)
+            if d.get("last_scrape_at"):
+                d["last_scrape_at"] = d["last_scrape_at"].isoformat()
+            result.append(d)
+        return result
 
 
 def get_user_towns(user_id):
@@ -294,7 +304,7 @@ def set_user_towns(user_id, town_ids):
         cur.close()
 
 
-def insert_filing(town_id, data):
+def insert_filing(town_id, data, source="searchiqs"):
     with get_conn() as conn:
         cur = conn.cursor(cursor_factory=RealDictCursor)
         rec_date = data.get("recording_date") or data.get("recording_date_detail")
@@ -308,8 +318,8 @@ def insert_filing(town_id, data):
                     continue
         cur.execute("""
             INSERT INTO filings (town_id, property_address, seller, lender, recording_date,
-                book_page, original_mortgage, court_case_number, debt_amount, return_date, status, raw_data)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                book_page, original_mortgage, court_case_number, debt_amount, return_date, status, source, raw_data)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             RETURNING id
         """, (
             town_id,
@@ -323,6 +333,7 @@ def insert_filing(town_id, data):
             data.get("debt_amount", ""),
             data.get("return_date", ""),
             data.get("status", "PENDING"),
+            source,
             psycopg2.extras.Json(data),
         ))
         row = cur.fetchone()
@@ -723,7 +734,7 @@ def replace_filings_for_town(town_id, filings_list):
         return 0
     with get_conn() as conn:
         cur = conn.cursor()
-        cur.execute("DELETE FROM filings WHERE town_id = %s", (town_id,))
+        cur.execute("DELETE FROM filings WHERE town_id = %s AND source = 'searchiqs'", (town_id,))
         deleted = cur.rowcount
         inserted = 0
         for data in filings_list:
@@ -738,8 +749,8 @@ def replace_filings_for_town(town_id, filings_list):
                         continue
             cur.execute("""
                 INSERT INTO filings (town_id, property_address, seller, lender, recording_date,
-                    book_page, original_mortgage, court_case_number, debt_amount, return_date, status, raw_data)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    book_page, original_mortgage, court_case_number, debt_amount, return_date, status, source, raw_data)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'searchiqs', %s)
             """, (
                 town_id,
                 data.get("property_address") or data.get("property_description", "SEE DEED"),
@@ -756,7 +767,7 @@ def replace_filings_for_town(town_id, filings_list):
             ))
             inserted += 1
         cur.close()
-        logger.info(f"[DB] replace_filings_for_town: town_id={town_id}, deleted={deleted}, inserted={inserted} (atomic transaction)")
+        logger.info(f"[DB] replace_filings_for_town: town_id={town_id}, deleted={deleted} searchiqs rows, inserted={inserted}, manual rows preserved")
         return inserted
 
 
@@ -822,7 +833,8 @@ def get_filings_last_n_days(days=7, limit=20):
         cur = conn.cursor(cursor_factory=RealDictCursor)
         cur.execute("""
             SELECT f.id, f.property_address, f.seller, f.lender, f.recording_date,
-                   f.debt_amount, f.status, f.court_case_number, t.name as town_name
+                   f.debt_amount, f.status, f.court_case_number, f.source,
+                   t.name as town_name, t.id as town_id
             FROM filings f JOIN towns t ON t.id = f.town_id
             WHERE f.recording_date >= CURRENT_DATE - %s
             ORDER BY f.recording_date DESC NULLS LAST, f.id DESC
@@ -852,6 +864,34 @@ def count_filings_by_period(days_recent=7, days_total=30):
         row = cur.fetchone()
         cur.close()
         return dict(row) if row else {"recent_count": 0, "total_count": 0, "all_count": 0}
+
+
+def update_town_scrape_status(town_id, status, scrape_at=None):
+    if scrape_at is None:
+        scrape_at = datetime.now(timezone.utc)
+    with get_conn() as conn:
+        cur = conn.cursor()
+        cur.execute("""
+            UPDATE towns SET last_scrape_status = %s, last_scrape_at = %s WHERE id = %s
+        """, (status, scrape_at, town_id))
+        cur.close()
+
+
+def get_towns_scrape_status():
+    with get_conn() as conn:
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur.execute("""
+            SELECT id, name, last_scrape_status, last_scrape_at FROM towns ORDER BY name
+        """)
+        rows = cur.fetchall()
+        cur.close()
+        result = []
+        for r in rows:
+            d = dict(r)
+            if d.get("last_scrape_at"):
+                d["last_scrape_at"] = d["last_scrape_at"].isoformat()
+            result.append(d)
+        return result
 
 
 def upsert_managed_wallet(user_id, wallet_address, auto_supply_wbtc=False, delegation_mode=None):

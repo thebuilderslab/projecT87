@@ -1171,6 +1171,7 @@ async function loadIncomeSummary() {
     const total30d = data.total_30d || 0;
     const allCount = data.all_count || 0;
     const filings = data.filings || [];
+    const towns = data.towns || [];
 
     document.getElementById('alertsNewCount').textContent = recentCount;
     document.getElementById('alerts30dCount').textContent = total30d;
@@ -1185,18 +1186,29 @@ async function loadIncomeSummary() {
     }
 
     const listEl = document.getElementById('alertsList');
+    let warningsHtml = '';
+    const errorStatuses = ['HTTP_403', 'ERROR'];
+    const staleTowns = towns.filter(t => t.lastScrapeStatus && errorStatuses.includes(t.lastScrapeStatus));
+    if (staleTowns.length > 0) {
+      warningsHtml = staleTowns.map(t => {
+        const when = t.lastScrapeAt ? new Date(t.lastScrapeAt).toLocaleString() : 'unknown';
+        return `<div style="padding:4px 8px;margin-bottom:4px;background:rgba(255,165,0,0.1);border-left:3px solid var(--orange);border-radius:4px;font-size:12px;color:var(--orange);">Data may be stale for ${t.townName} (last scrape: ${t.lastScrapeStatus} at ${when})</div>`;
+      }).join('');
+    }
+
     if (filings.length === 0) {
-      listEl.innerHTML = '<div style="padding:8px 0;color:var(--muted);font-size:13px;">No new filings in the last 7 days. Run a scrape to refresh data.</div>';
+      listEl.innerHTML = warningsHtml + '<div style="padding:8px 0;color:var(--muted);font-size:13px;">No new filings in the last 7 days. Run a scrape to refresh data.</div>';
     } else {
-      listEl.innerHTML = filings.map(f => {
+      listEl.innerHTML = warningsHtml + filings.map(f => {
         const date = f.recording_date ? new Date(f.recording_date).toLocaleDateString() : 'N/A';
         const addr = f.property_address || 'Address pending';
         const town = f.town_name || '';
+        const src = f.source === 'manual' ? ' <span style="color:var(--orange);font-size:10px;">[manual]</span>' : '';
         const debt = f.debt_amount ? '$' + parseFloat(f.debt_amount).toLocaleString() : '';
         return `<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.05);font-size:13px;">
           <div style="width:6px;height:6px;border-radius:50%;background:var(--orange);flex-shrink:0;"></div>
           <div style="flex:1;min-width:0;">
-            <div style="color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${addr}</div>
+            <div style="color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${addr}${src}</div>
             <div style="color:var(--muted);font-size:11px;">${town} &middot; ${date}${debt ? ' &middot; ' + debt : ''}</div>
           </div>
         </div>`;

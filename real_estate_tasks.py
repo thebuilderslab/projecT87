@@ -2,6 +2,7 @@ import os
 import json
 import logging
 import time
+import requests
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional
 
@@ -174,15 +175,44 @@ def run_0700_searchiqs_ingest() -> Dict:
         filings_by_town = {}
         town_results = {}
 
+        db_towns = []
+        town_id_map = {}
+        if DB_AVAILABLE:
+            try:
+                db_towns = database.get_towns()
+                town_id_map = {t["name"]: t["id"] for t in db_towns}
+            except Exception as e:
+                logger.error(f"Failed to load towns from DB: {e}")
+
+        town_scrape_statuses = {}
+
         for town_name, town_cfg in towns.items():
             base_url = town_cfg["base_url"]
             logger.info(f"--- Scraping {town_name} ({base_url}) ---")
+            scrape_status = "OK"
 
-            scraper = create_scraper(base_url=base_url, town_name=town_name)
-            town_filings = scraper.search_lis_pendens(days_back=lookback, fetch_details=True)
+            try:
+                scraper = create_scraper(base_url=base_url, town_name=town_name)
+                town_filings = scraper.search_lis_pendens(days_back=lookback, fetch_details=True)
+            except requests.exceptions.HTTPError as e:
+                if "403" in str(e):
+                    scrape_status = "HTTP_403"
+                else:
+                    scrape_status = "ERROR"
+                logger.warning(f"[{town_name}] Scrape failed ({scrape_status}): {e}")
+                town_filings = []
+            except Exception as e:
+                scrape_status = "ERROR"
+                logger.warning(f"[{town_name}] Scrape failed: {e}")
+                town_filings = []
+
+            if scrape_status == "OK" and len(town_filings) == 0:
+                scrape_status = "ZERO_RESULTS"
+
+            town_scrape_statuses[town_name] = scrape_status
 
             court_lookup_enabled = os.getenv("COURT_LOOKUP_ENABLED", "false").lower() == "true"
-            if court_lookup_enabled:
+            if court_lookup_enabled and town_filings:
                 court_lookup_failures = 0
                 for filing in town_filings:
                     defendant = filing.get("seller", "") or filing.get("defendant", "")
@@ -202,13 +232,21 @@ def run_0700_searchiqs_ingest() -> Dict:
                         except Exception as e:
                             court_lookup_failures += 1
                             logger.warning(f"Court lookup failed ({court_lookup_failures}/2), skipping remaining: {e}")
-            else:
+            elif not court_lookup_enabled:
                 logger.info(f"Court lookups disabled (SSL issues with CT courts site)")
 
             filings_by_town[town_name] = len(town_filings)
             town_results[town_name] = town_filings
             all_filings.extend(town_filings)
-            logger.info(f"{town_name}: {len(town_filings)} filings found")
+            logger.info(f"{town_name}: {len(town_filings)} filings found (status: {scrape_status})")
+
+            tid = town_id_map.get(town_name)
+            if DB_AVAILABLE and tid:
+                try:
+                    database.update_town_scrape_status(tid, scrape_status)
+                except Exception as e:
+                    logger.warning(f"Failed to update scrape status for {town_name}: {e}")
+
             time.sleep(2)
 
         state["raw_filings"] = all_filings
@@ -219,8 +257,6 @@ def run_0700_searchiqs_ingest() -> Dict:
         if DB_AVAILABLE:
             try:
                 run_id = database.create_pipeline_run("searchiqs_ingest")
-                db_towns = database.get_towns()
-                town_id_map = {t["name"]: t["id"] for t in db_towns}
                 db_filings_inserted = 0
                 for town_name in towns:
                     tid = town_id_map.get(town_name)
@@ -235,7 +271,7 @@ def run_0700_searchiqs_ingest() -> Dict:
                     run_id, towns_scraped=len(towns),
                     filings_found=db_filings_inserted,
                     status="completed",
-                    details={"filings_by_town": filings_by_town}
+                    details={"filings_by_town": filings_by_town, "scrape_statuses": town_scrape_statuses}
                 )
                 logger.info(f"Wrote {db_filings_inserted} filings to Postgres")
             except Exception as e:

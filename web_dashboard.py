@@ -3640,18 +3640,33 @@ def get_filing_stats_api():
 
 @app.route('/api/filings/recent', methods=['GET'])
 def get_recent_filings_api():
-    """Get filings from the last 7 days as alerts/new opportunities"""
+    """Get filings from the last N days as alerts/new opportunities, with per-town scrape status"""
     if not DB_AVAILABLE:
         return jsonify({"error": "Database not available"}), 503
     days = request.args.get('days', 7, type=int)
     limit = request.args.get('limit', 20, type=int)
     filings = database.get_filings_last_n_days(days=days, limit=limit)
-    counts = database.count_filings_by_period(days_recent=7, days_total=30)
+    counts = database.count_filings_by_period(days_recent=days, days_total=30)
+    scrape_statuses = database.get_towns_scrape_status()
+    towns_summary = {}
+    for t in scrape_statuses:
+        towns_summary[t["name"]] = {
+            "townId": t["id"],
+            "townName": t["name"],
+            "lastScrapeStatus": t.get("last_scrape_status"),
+            "lastScrapeAt": t.get("last_scrape_at"),
+            "recentCount": 0,
+        }
+    for f in filings:
+        tn = f.get("town_name", "")
+        if tn in towns_summary:
+            towns_summary[tn]["recentCount"] += 1
     return jsonify({
         "filings": filings,
         "recent_count": counts["recent_count"],
         "total_30d": counts["total_count"],
         "all_count": counts["all_count"],
+        "towns": list(towns_summary.values()),
     })
 
 @app.route('/api/export/filings', methods=['GET'])
