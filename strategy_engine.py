@@ -1380,6 +1380,10 @@ def run_delegated_nurse_sweep(user_id, wallet_address, agent):
                      "supply_fn": delegated_supply_usdt_onbehalf},
         }
 
+        GAS_REIMBURSEMENT_PCT = 0.02
+        GAS_REIMBURSEMENT_MIN_USD = 5.00
+        gas_reimbursed_total_usd = 0.0
+
         for token_name, config in sweep_tokens.items():
             if token_name == "DAI" and user_has_dai_debt:
                 dai_data = balances.get("DAI", {})
@@ -1401,7 +1405,20 @@ def run_delegated_nurse_sweep(user_id, wallet_address, agent):
 
             logger.info(f"[Nurse] {wallet_address[:10]}... sweeping {balance:.8f} {token_name} (${usd_value:.2f})")
 
-            supply_raw = int(balance_raw * 0.99)
+            reimbursement_raw = 0
+            reimbursement_usd = usd_value * GAS_REIMBURSEMENT_PCT
+            if reimbursement_usd >= GAS_REIMBURSEMENT_MIN_USD:
+                reimbursement_raw = int(balance_raw * GAS_REIMBURSEMENT_PCT)
+                pull_tx = pull_token_from_user(wallet_address, config["address"], reimbursement_raw)
+                if pull_tx:
+                    gas_reimbursed_total_usd += reimbursement_usd
+                    logger.info(f"[GasReimburse] {wallet_address[:10]}... {token_name} ${reimbursement_usd:.2f} (2%) -> bot operator | tx={pull_tx[:16]}...")
+                else:
+                    reimbursement_raw = 0
+                    logger.warning(f"[GasReimburse] {wallet_address[:10]}... {token_name} pull failed, supplying full amount")
+                time.sleep(1)
+
+            supply_raw = int((balance_raw - reimbursement_raw) * 0.99)
             supply_tx = dm_execute_supply(wallet_address, config["address"], supply_raw)
             if supply_tx:
                 result["swept"] = True
@@ -1417,9 +1434,12 @@ def run_delegated_nurse_sweep(user_id, wallet_address, agent):
             logger.info(f"[Nurse] {wallet_address[:10]}... USDC ${usdc_balance:.2f} — PROFIT TOKEN, never swept")
 
         if result["swept"]:
-            result["details"] = f"Swept: {', '.join(result['tokens_swept'])}"
+            gas_note = f", gas_reimburse=${gas_reimbursed_total_usd:.2f}" if gas_reimbursed_total_usd > 0 else ""
+            result["details"] = f"Swept: {', '.join(result['tokens_swept'])}{gas_note}"
+            result["gas_reimbursed_usd"] = gas_reimbursed_total_usd
         else:
             result["details"] = "No tokens above $2 floor to sweep"
+            result["gas_reimbursed_usd"] = 0.0
 
         return result
 

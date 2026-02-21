@@ -1,5 +1,7 @@
 import os
 import json
+import secrets
+import hashlib
 import psycopg2
 from psycopg2.extras import RealDictCursor
 from contextlib import contextmanager
@@ -177,6 +179,28 @@ def init_db():
             ON managed_wallets(delegation_status) WHERE delegation_status = 'active';
         CREATE INDEX IF NOT EXISTS idx_wallet_actions_user
             ON wallet_actions(user_id, created_at DESC);
+
+        CREATE TABLE IF NOT EXISTS api_keys (
+            id SERIAL PRIMARY KEY,
+            user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+            key_hash VARCHAR(128) NOT NULL UNIQUE,
+            key_prefix VARCHAR(8),
+            label VARCHAR(100) DEFAULT '',
+            status VARCHAR(20) NOT NULL DEFAULT 'active',
+            last_used_at TIMESTAMPTZ,
+            created_at TIMESTAMPTZ DEFAULT NOW()
+        );
+        CREATE INDEX IF NOT EXISTS idx_api_keys_user ON api_keys(user_id);
+        CREATE INDEX IF NOT EXISTS idx_api_keys_hash ON api_keys(key_hash) WHERE status = 'active';
+
+        CREATE TABLE IF NOT EXISTS notifications (
+            id SERIAL PRIMARY KEY,
+            title VARCHAR(200) DEFAULT '',
+            message TEXT NOT NULL,
+            priority VARCHAR(20) NOT NULL DEFAULT 'info',
+            created_at TIMESTAMPTZ DEFAULT NOW()
+        );
+        CREATE INDEX IF NOT EXISTS idx_notifications_created ON notifications(created_at DESC);
         """)
         cur.close()
 
@@ -1020,6 +1044,187 @@ def get_last_wallet_action(user_id, wallet_address, action_type=None):
                 d['created_at'] = d['created_at'].isoformat()
             return d
         return None
+
+
+MAX_API_KEYS_PER_USER = 2
+
+
+def _hash_api_key(raw_key: str) -> str:
+    return hashlib.sha256(raw_key.encode()).hexdigest()
+
+
+def count_active_keys(user_id: int) -> int:
+    with get_conn() as conn:
+        cur = conn.cursor()
+        cur.execute(
+            "SELECT COUNT(*) FROM api_keys WHERE user_id = %s AND status = 'active'",
+            (user_id,),
+        )
+        count = cur.fetchone()[0]
+        cur.close()
+        return count
+
+
+def generate_api_key(user_id: int, label: str = "") -> dict:
+    active_count = count_active_keys(user_id)
+    if active_count >= MAX_API_KEYS_PER_USER:
+        return {"error": f"Maximum {MAX_API_KEYS_PER_USER} active API keys allowed. Revoke an existing key first."}
+
+    raw_key = "oc_" + secrets.token_urlsafe(32)
+    key_hash = _hash_api_key(raw_key)
+    key_prefix = raw_key[:8]
+
+    with get_conn() as conn:
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur.execute("""
+            INSERT INTO api_keys (user_id, key_hash, key_prefix, label, status)
+            VALUES (%s, %s, %s, %s, 'active')
+            RETURNING id, key_prefix, label, status, created_at
+        """, (user_id, key_hash, key_prefix, label))
+        row = cur.fetchone()
+        cur.close()
+        result = dict(row)
+        result['raw_key'] = raw_key
+        if result.get('created_at'):
+            result['created_at'] = result['created_at'].isoformat()
+        return result
+
+
+def validate_api_key(raw_key: str) -> dict:
+    key_hash = _hash_api_key(raw_key)
+    with get_conn() as conn:
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur.execute("""
+            SELECT ak.id as key_id, ak.user_id, ak.status, u.wallet_address
+            FROM api_keys ak
+            JOIN users u ON u.id = ak.user_id
+            WHERE ak.key_hash = %s AND ak.status = 'active'
+        """, (key_hash,))
+        row = cur.fetchone()
+        if row:
+            cur.execute(
+                "UPDATE api_keys SET last_used_at = NOW() WHERE id = %s",
+                (row['key_id'],),
+            )
+        cur.close()
+        if not row:
+            return None
+        return dict(row)
+
+
+def revoke_api_key(key_id: int, user_id: int) -> bool:
+    with get_conn() as conn:
+        cur = conn.cursor()
+        cur.execute(
+            "UPDATE api_keys SET status = 'revoked' WHERE id = %s AND user_id = %s AND status = 'active'",
+            (key_id, user_id),
+        )
+        affected = cur.rowcount
+        cur.close()
+        return affected > 0
+
+
+def revoke_all_user_keys(user_id: int) -> int:
+    with get_conn() as conn:
+        cur = conn.cursor()
+        cur.execute(
+            "UPDATE api_keys SET status = 'revoked' WHERE user_id = %s AND status = 'active'",
+            (user_id,),
+        )
+        affected = cur.rowcount
+        cur.close()
+        return affected
+
+
+def list_user_keys(user_id: int) -> list:
+    with get_conn() as conn:
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur.execute("""
+            SELECT id, key_prefix, label, status, last_used_at, created_at
+            FROM api_keys
+            WHERE user_id = %s
+            ORDER BY created_at DESC
+        """, (user_id,))
+        rows = cur.fetchall()
+        cur.close()
+        result = []
+        for r in rows:
+            d = dict(r)
+            if d.get('created_at'):
+                d['created_at'] = d['created_at'].isoformat()
+            if d.get('last_used_at'):
+                d['last_used_at'] = d['last_used_at'].isoformat()
+            result.append(d)
+        return result
+
+
+def create_notification(title: str, message: str, priority: str = "info") -> dict:
+    with get_conn() as conn:
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur.execute("""
+            INSERT INTO notifications (title, message, priority)
+            VALUES (%s, %s, %s)
+            RETURNING id, title, message, priority, created_at
+        """, (title, message, priority))
+        row = cur.fetchone()
+        cur.close()
+        d = dict(row)
+        if d.get('created_at'):
+            d['created_at'] = d['created_at'].isoformat()
+        return d
+
+
+def get_notifications(limit: int = 50, since_id: int = None) -> list:
+    with get_conn() as conn:
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        if since_id:
+            cur.execute("""
+                SELECT id, title, message, priority, created_at
+                FROM notifications
+                WHERE id > %s
+                ORDER BY created_at DESC
+                LIMIT %s
+            """, (since_id, limit))
+        else:
+            cur.execute("""
+                SELECT id, title, message, priority, created_at
+                FROM notifications
+                ORDER BY created_at DESC
+                LIMIT %s
+            """, (limit,))
+        rows = cur.fetchall()
+        cur.close()
+        result = []
+        for r in rows:
+            d = dict(r)
+            if d.get('created_at'):
+                d['created_at'] = d['created_at'].isoformat()
+            result.append(d)
+        return result
+
+
+def get_active_delegated_wallets() -> list:
+    with get_conn() as conn:
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur.execute("""
+            SELECT mw.user_id, mw.wallet_address, mw.delegation_status,
+                   mw.strategy_status, mw.last_strategy_action, mw.last_strategy_at,
+                   u.bot_enabled
+            FROM managed_wallets mw
+            JOIN users u ON u.id = mw.user_id
+            WHERE mw.delegation_status = 'active'
+              AND u.bot_enabled = true
+            ORDER BY mw.user_id
+        """)
+        rows = cur.fetchall()
+        cur.close()
+        result = []
+        for r in rows:
+            d = dict(r)
+            if d.get('last_strategy_at'):
+                d['last_strategy_at'] = d['last_strategy_at'].isoformat()
+            result.append(d)
+        return result
 
 
 if __name__ == "__main__":

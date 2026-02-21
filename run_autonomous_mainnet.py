@@ -9,6 +9,8 @@ import os
 import sys
 import time
 import json
+import threading
+import concurrent.futures
 from datetime import datetime
 import pytz
 from arbitrum_testnet_agent import ArbitrumTestnetAgent
@@ -137,6 +139,86 @@ def run_strategies_for_user(user_id, wallet_address, agent, run_id, iteration, c
         return None
     performance = agent.run_real_defi_task(run_id, iteration, config)
     return performance
+
+
+_tx_lock = threading.Lock()
+
+
+def _process_managed_wallet(mw, agent, run_id, iteration, config, check_approvals):
+    """Process a single managed wallet — designed to run concurrently via ThreadPoolExecutor.
+    Position reads are parallelized; on-chain transactions acquire _tx_lock to serialize."""
+    uid = mw['user_id']
+    waddr = mw['wallet_address']
+    result = {'user_id': uid, 'wallet': waddr, 'status': 'skipped', 'details': ''}
+
+    try:
+        pos = refresh_defi_for_user(uid, waddr)
+        if not pos:
+            result['status'] = 'no_position'
+            log_agent_activity(f"[Monitor] wallet={waddr[:10]}..., mode=delegated, decision=SKIP (no position)")
+            return result
+
+        log_agent_activity(f"[Monitor] wallet={waddr[:10]}..., collateral=${pos['total_collateral_usd']}, "
+                         f"debt=${pos['total_debt_usd']}, hf={pos['health_factor']}, mode=delegated")
+
+        if check_approvals and APPROVAL_CHECK_AVAILABLE:
+            try:
+                approval_result = check_user_wallet_approvals(waddr)
+                if not approval_result.get("all_approved"):
+                    missing = approval_result.get("missing", [])
+                    missing_str = "; ".join([f"{m['token']}->{m['spender']}" for m in missing[:3]])
+                    log_agent_activity(f"[Approvals] wallet={waddr[:10]}..., MISSING: {missing_str}", "WARNING")
+            except Exception as appr_err:
+                log_agent_activity(f"[Approvals] wallet={waddr[:10]}..., check error: {appr_err}", "WARNING")
+
+        if not STRATEGY_ENGINE_AVAILABLE:
+            result['status'] = 'monitor_only'
+            log_agent_activity(f"[Monitor] wallet={waddr[:10]}..., mode=delegated, decision=MONITOR (strategy engine not loaded)")
+            return result
+
+        defi_pos = database.get_defi_position(uid, waddr)
+        has_active = defi_pos.get('has_active_position', False) if defi_pos else False
+
+        if not (has_active and mw.get('delegation_status') == 'active'):
+            result['status'] = 'inactive'
+            log_agent_activity(f"[Monitor] wallet={waddr[:10]}..., strategy=SKIP (active_pos={has_active}, delegation={mw.get('delegation_status')})")
+            return result
+
+        with _tx_lock:
+            distribution_resumed = False
+            try:
+                resume_result = resume_incomplete_distribution(uid, waddr, agent)
+                if resume_result:
+                    distribution_resumed = True
+                    log_agent_activity(f"[Resume] wallet={waddr[:10]}..., COMPLETED incomplete distribution: "
+                                     f"action={resume_result.get('action')}, details={resume_result.get('details')}")
+            except Exception as resume_err:
+                log_agent_activity(f"[Resume] wallet={waddr[:10]}..., error: {resume_err}", "WARNING")
+
+            if not distribution_resumed and not has_active_distribution(waddr):
+                try:
+                    nurse_result = run_delegated_nurse_sweep(uid, waddr, agent)
+                    if nurse_result.get("swept"):
+                        log_agent_activity(f"[Nurse] wallet={waddr[:10]}..., {nurse_result['details']}")
+                except Exception as nurse_err:
+                    log_agent_activity(f"[Nurse] wallet={waddr[:10]}..., error: {nurse_err}", "WARNING")
+            elif not distribution_resumed:
+                log_agent_activity(f"[Nurse] wallet={waddr[:10]}..., SKIPPED — active distribution detected")
+
+            strategy_result = run_delegated_strategy(uid, waddr, agent, run_id, iteration, config)
+            strat_status = get_strategy_status(uid, waddr)
+            database.update_strategy_status_field(uid, waddr, strat_status)
+
+        result['status'] = 'executed'
+        result['details'] = f"mode={strategy_result['mode']}, action={strategy_result['action']}, status={strat_status}"
+        log_agent_activity(f"[Strategy] wallet={waddr[:10]}..., {result['details']}")
+        return result
+
+    except Exception as mw_err:
+        result['status'] = 'error'
+        result['details'] = str(mw_err)
+        log_agent_activity(f"[Monitor] wallet={waddr[:10]}..., mode=delegated, decision=ERROR ({mw_err})", "WARNING")
+        return result
 
 
 def reconcile_delegation_state():
@@ -331,71 +413,36 @@ def run_autonomous_mainnet_agent():
                 processed_user_ids = set()
                 processed_wallet_addrs = set()
 
+                deduped_wallets = []
                 for mw in managed_wallets:
-                    uid = mw['user_id']
-                    waddr = mw['wallet_address']
-                    waddr_lower = waddr.lower()
-                    processed_user_ids.add(uid)
+                    waddr_lower = mw['wallet_address'].lower()
+                    if waddr_lower not in processed_wallet_addrs:
+                        processed_wallet_addrs.add(waddr_lower)
+                        processed_user_ids.add(mw['user_id'])
+                        deduped_wallets.append(mw)
+                    else:
+                        log_agent_activity(f"[Strategy] wallet={mw['wallet_address'][:10]}..., DEDUP_SKIP")
 
-                    if waddr_lower in processed_wallet_addrs:
-                        log_agent_activity(f"[Strategy] wallet={waddr[:10]}..., DEDUP_SKIP (wallet already processed this cycle)")
-                        continue
-                    processed_wallet_addrs.add(waddr_lower)
+                check_approvals = (iteration % 10 == 0)
+                max_workers = min(len(deduped_wallets), 8) if deduped_wallets else 1
 
-                    try:
-                        pos = refresh_defi_for_user(uid, waddr)
-                        if pos:
-                            log_agent_activity(f"[Monitor] wallet={waddr[:10]}..., collateral=${pos['total_collateral_usd']}, "
-                                             f"debt=${pos['total_debt_usd']}, hf={pos['health_factor']}, mode=delegated")
-
-                            if APPROVAL_CHECK_AVAILABLE and iteration % 10 == 0:
-                                try:
-                                    approval_result = check_user_wallet_approvals(waddr)
-                                    if not approval_result.get("all_approved"):
-                                        missing = approval_result.get("missing", [])
-                                        missing_str = "; ".join([f"{m['token']}->{m['spender']}" for m in missing[:3]])
-                                        log_agent_activity(f"[Approvals] wallet={waddr[:10]}..., MISSING: {missing_str}", "WARNING")
-                                except Exception as appr_err:
-                                    log_agent_activity(f"[Approvals] wallet={waddr[:10]}..., check error: {appr_err}", "WARNING")
-
-                            if STRATEGY_ENGINE_AVAILABLE:
-                                defi_pos = database.get_defi_position(uid, waddr)
-                                has_active = defi_pos.get('has_active_position', False) if defi_pos else False
-                                if has_active and mw.get('delegation_status') == 'active':
-                                    distribution_resumed = False
-                                    try:
-                                        resume_result = resume_incomplete_distribution(uid, waddr, agent)
-                                        if resume_result:
-                                            distribution_resumed = True
-                                            log_agent_activity(f"[Resume] wallet={waddr[:10]}..., COMPLETED incomplete distribution: "
-                                                             f"action={resume_result.get('action')}, details={resume_result.get('details')}")
-                                    except Exception as resume_err:
-                                        log_agent_activity(f"[Resume] wallet={waddr[:10]}..., error: {resume_err}", "WARNING")
-
-                                    if not distribution_resumed and not has_active_distribution(waddr):
-                                        try:
-                                            nurse_result = run_delegated_nurse_sweep(uid, waddr, agent)
-                                            if nurse_result.get("swept"):
-                                                log_agent_activity(f"[Nurse] wallet={waddr[:10]}..., {nurse_result['details']}")
-                                        except Exception as nurse_err:
-                                            log_agent_activity(f"[Nurse] wallet={waddr[:10]}..., error: {nurse_err}", "WARNING")
-                                    elif not distribution_resumed:
-                                        log_agent_activity(f"[Nurse] wallet={waddr[:10]}..., SKIPPED — active distribution detected")
-
-                                    strategy_result = run_delegated_strategy(uid, waddr, agent, run_id, iteration, config)
-                                    strat_status = get_strategy_status(uid, waddr)
-                                    database.update_strategy_status_field(uid, waddr, strat_status)
-                                    log_agent_activity(f"[Strategy] wallet={waddr[:10]}..., mode={strategy_result['mode']}, "
-                                                     f"action={strategy_result['action']}, status={strat_status}, "
-                                                     f"details={strategy_result.get('details', '')}")
-                                else:
-                                    log_agent_activity(f"[Monitor] wallet={waddr[:10]}..., strategy=SKIP (active_pos={has_active}, delegation={mw.get('delegation_status')})")
-                            else:
-                                log_agent_activity(f"[Monitor] wallet={waddr[:10]}..., mode=delegated, decision=MONITOR (strategy engine not loaded)")
-                        else:
-                            log_agent_activity(f"[Monitor] wallet={waddr[:10]}..., mode=delegated, decision=SKIP (no position)")
-                    except Exception as mw_err:
-                        log_agent_activity(f"[Monitor] wallet={waddr[:10]}..., mode=delegated, decision=ERROR ({mw_err})", "WARNING")
+                if deduped_wallets:
+                    log_agent_activity(f"[Concurrent] Processing {len(deduped_wallets)} wallet(s) with ThreadPoolExecutor (max_workers={max_workers})")
+                    with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
+                        futures = {
+                            executor.submit(_process_managed_wallet, mw, agent, run_id, iteration, config, check_approvals): mw
+                            for mw in deduped_wallets
+                        }
+                        for future in concurrent.futures.as_completed(futures, timeout=120):
+                            mw = futures[future]
+                            try:
+                                result = future.result(timeout=60)
+                                if result['status'] == 'error':
+                                    log_agent_activity(f"[Concurrent] wallet={result['wallet'][:10]}..., FAILED: {result['details']}", "WARNING")
+                            except concurrent.futures.TimeoutError:
+                                log_agent_activity(f"[Concurrent] wallet={mw['wallet_address'][:10]}..., TIMEOUT (60s)", "WARNING")
+                            except Exception as exc:
+                                log_agent_activity(f"[Concurrent] wallet={mw['wallet_address'][:10]}..., EXCEPTION: {exc}", "ERROR")
 
                 if bot_user_id is not None and bot_user_id not in processed_user_ids:
                     if bot_user_id not in processed_user_ids:

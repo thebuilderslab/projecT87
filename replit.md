@@ -56,6 +56,13 @@ The REAA platform operates on the Arbitrum Mainnet, comprising distinct modules 
 - **Full Automation Permission Parity:** Frontend ensures `approveDelegation` is called to set all 4 flags, and users sign 15 ERC20 approvals for full execution parity. `validate_full_automation_ready` checks all permissions.
 - **Revocation Flow:** User signs `revokeDelegation()` on-chain, and backend updates `delegation_status` to 'revoked', disabling further strategy execution.
 
+**OpenClaw Multi-Tenant Infrastructure (Feb 2026):**
+- **API Keys:** `api_keys` table with SHA-256 hashing, 2-key limit per user, revocation support. Helper functions: `create_api_key()`, `verify_api_key()`, `revoke_api_key()`, `get_user_api_keys()`.
+- **Notifications:** `notifications` table with per-user notification CRUD: `create_notification()`, `get_user_notifications()`, `mark_notification_read()`, `mark_all_notifications_read()`.
+- **Multi-Tenant Position Reading:** `get_eth_balance()`, `get_dai_balance()`, `get_usdt_balance()`, `get_health_factor()`, `_get_usdc_balance()` all accept optional `user_wallet_address` parameter (defaults to bot operator for backward compat). New `get_aave_position(user_wallet_address)` returns unified position dict.
+- **Concurrent Wallet Processing:** `run_autonomous_mainnet.py` uses `ThreadPoolExecutor` (max 8 workers) to process managed wallets concurrently. Position reads run in parallel; on-chain transactions serialize via `_tx_lock` (threading.Lock) to prevent nonce collisions.
+- **Gas Reimbursement:** Nurse sweep takes 2% of each swept token (above $5 minimum) via `pull_token_from_user()` to reimburse bot operator for gas costs. Result includes `gas_reimbursed_usd` field.
+
 ## Wallet Connection & USDC Meter
 
 **Wallet connection flow:**

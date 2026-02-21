@@ -3529,14 +3529,15 @@ class ArbitrumTestnetAgent:
             print(f"❌ WETH→USDC swap error: {e}")
             return False
     
-    def _get_usdc_balance(self):
-        """Get USDC balance from wallet (6 decimals)."""
+    def _get_usdc_balance(self, user_wallet_address=None):
+        """Get USDC balance from wallet (6 decimals). If user_wallet_address is provided, reads that wallet."""
         try:
             if not self.usdc_address:
                 return 0.0
+            target = self.w3.to_checksum_address(user_wallet_address) if user_wallet_address else self.address
             erc20_abi = [{"inputs":[{"name":"account","type":"address"}],"name":"balanceOf","outputs":[{"name":"","type":"uint256"}],"stateMutability":"view","type":"function"}]
             usdc_contract = self.w3.eth.contract(address=self.usdc_address, abi=erc20_abi)
-            raw_balance = usdc_contract.functions.balanceOf(self.address).call()
+            raw_balance = usdc_contract.functions.balanceOf(target).call()
             return raw_balance / 1e6
         except Exception as e:
             print(f"❌ Failed to get USDC balance: {e}")
@@ -4096,18 +4097,24 @@ class ArbitrumTestnetAgent:
             print(f"❌ WETH supply error: {e}")
             return False
 
-    def get_eth_balance(self):
-        """Get ETH balance in readable format"""
+    def get_eth_balance(self, user_wallet_address=None):
+        """Get ETH balance in readable format. If user_wallet_address is provided, reads that wallet instead of bot operator."""
         try:
-            balance_wei = self.w3.eth.get_balance(self.address)
+            target = self.w3.to_checksum_address(user_wallet_address) if user_wallet_address else self.address
+            balance_wei = self.w3.eth.get_balance(target)
             return balance_wei / (10**18)
         except Exception as e:
             print(f"❌ Failed to get ETH balance: {e}")
             return 0.0
 
-    def get_dai_balance(self):
-        """Get DAI balance using Aave integration"""
+    def get_dai_balance(self, user_wallet_address=None):
+        """Get DAI balance. If user_wallet_address is provided, reads that wallet's balance."""
         try:
+            if user_wallet_address:
+                erc20_abi = [{"inputs":[{"name":"account","type":"address"}],"name":"balanceOf","outputs":[{"name":"","type":"uint256"}],"stateMutability":"view","type":"function"}]
+                dai_contract = self.w3.eth.contract(address=self.dai_address, abi=erc20_abi)
+                raw = dai_contract.functions.balanceOf(self.w3.to_checksum_address(user_wallet_address)).call()
+                return raw / 1e18
             if hasattr(self, 'aave') and self.aave:
                 return self.aave.get_dai_balance()
             else:
@@ -4117,22 +4124,27 @@ class ArbitrumTestnetAgent:
             print(f"❌ Failed to get DAI balance: {e}")
             return 0.0
 
-    def get_usdt_balance(self):
-        """Get USDT balance from wallet (6 decimals)."""
+    def get_usdt_balance(self, user_wallet_address=None):
+        """Get USDT balance from wallet (6 decimals). If user_wallet_address is provided, reads that wallet."""
         try:
             if not hasattr(self, 'usdt_address') or not self.usdt_address:
                 return 0.0
+            target = self.w3.to_checksum_address(user_wallet_address) if user_wallet_address else self.address
             erc20_abi = [{"inputs":[{"name":"account","type":"address"}],"name":"balanceOf","outputs":[{"name":"","type":"uint256"}],"stateMutability":"view","type":"function"}]
             usdt_contract = self.w3.eth.contract(address=self.usdt_address, abi=erc20_abi)
-            raw_balance = usdt_contract.functions.balanceOf(self.address).call()
+            raw_balance = usdt_contract.functions.balanceOf(target).call()
             return raw_balance / 1e6
         except Exception as e:
             print(f"❌ Failed to get USDT balance: {e}")
             return 0.0
 
-    def get_health_factor(self):
-        """Get current health factor from Aave"""
+    def get_health_factor(self, user_wallet_address=None):
+        """Get current health factor from Aave. If user_wallet_address is provided, reads that user's position."""
         try:
+            if user_wallet_address:
+                from delegation_client import get_user_account_data
+                data = get_user_account_data(user_wallet_address)
+                return data.get('health_factor', 0) if data else 0
             if hasattr(self, 'aave') and self.aave:
                 account_data = self.aave.get_user_account_data()
                 return account_data.get('healthFactor', 0) if account_data else 0
@@ -4143,8 +4155,36 @@ class ArbitrumTestnetAgent:
             print(f"❌ Failed to get health factor: {e}")
             return 0.0
 
-    def run_real_defi_task(self, run_id, iteration, agent_config):
+    def get_aave_position(self, user_wallet_address=None):
+        """Get full Aave position data for any wallet. Returns dict with health_factor, collateral, debt, available_borrows or None."""
+        try:
+            target = user_wallet_address or self.address
+            from delegation_client import get_user_account_data
+            data = get_user_account_data(target)
+            if data:
+                return {
+                    'health_factor': data.get('health_factor', 0),
+                    'total_collateral_usd': data.get('total_collateral_usd', 0),
+                    'total_debt_usd': data.get('total_debt_usd', 0),
+                    'available_borrows_usd': data.get('available_borrows_usd', 0),
+                }
+            if not user_wallet_address and hasattr(self, 'aave') and self.aave:
+                account_data = self.aave.get_user_account_data()
+                if account_data:
+                    return {
+                        'health_factor': account_data.get('healthFactor', 0),
+                        'total_collateral_usd': account_data.get('totalCollateralUSD', 0),
+                        'total_debt_usd': account_data.get('totalDebtUSD', 0),
+                        'available_borrows_usd': account_data.get('availableBorrowsUSD', 0),
+                    }
+            return None
+        except Exception as e:
+            print(f"❌ Failed to get Aave position for {(user_wallet_address or self.address)[:10]}...: {e}")
+            return None
+
+    def run_real_defi_task(self, run_id, iteration, agent_config, user_wallet_address=None):
         """Run real DeFi task with Global Execution Lock, growth trigger first, then capacity trigger.
+        If user_wallet_address is provided, runs checks against that user's position using delegated execution.
         On startup, checks execution_state.json for interrupted sequences and resumes them."""
         try:
             print(f"\n🚀 Monitoring cycle {run_id}-{iteration}")
