@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OPENCLAW // DEVELOPER PORTAL</title>
+<link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #050505;
+  --green: #00FF41;
+  --cyan: #00FFFF;
+  --red: #FF3131;
+  --grid: #003300;
+  --dim: #005500;
+  --sidebar-w: 250px;
+  --header-h: 38px;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  font-family: 'VT323', monospace;
+  background: var(--bg);
+  color: var(--green);
+  min-height: 100vh;
+  overflow: hidden;
+  font-size: 16px;
+  line-height: 1.4;
+}
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(18,16,16,0) 0px,
+    rgba(18,16,16,0.25) 1px,
+    rgba(18,16,16,0) 2px
+  );
+  pointer-events: none;
+  z-index: 9999;
+}
+
+@keyframes flicker {
+  0%   { opacity: 1; }
+  50%  { opacity: 0.97; }
+  100% { opacity: 1; }
+}
+
+.glow { text-shadow: 0 0 5px var(--green); }
+.glow-cyan { text-shadow: 0 0 5px var(--cyan); color: var(--cyan); }
+.glow-red { text-shadow: 0 0 5px var(--red); color: var(--red); }
+
+.status-bar {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: var(--header-h);
+  background: var(--bg);
+  border-bottom: 1px solid var(--grid);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  z-index: 100;
+  font-size: 14px;
+}
+.status-bar .left { display:flex; gap:24px; align-items:center; }
+.status-bar .right { display:flex; gap:20px; align-items:center; }
+.status-dot {
+  display:inline-block; width:8px; height:8px;
+  background: var(--green); box-shadow: 0 0 6px var(--green);
+}
+.status-label { text-transform: uppercase; letter-spacing: 2px; font-size: 13px; }
+
+.layout {
+  position: fixed;
+  top: var(--header-h);
+  left: 0; right: 0; bottom: 0;
+  display: flex;
+}
+
+.sidebar {
+  width: var(--sidebar-w);
+  min-width: var(--sidebar-w);
+  background: var(--bg);
+  border-right: 1px solid var(--grid);
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  overflow-y: auto;
+}
+.sidebar-header {
+  padding: 16px 14px 10px;
+  border-bottom: 1px solid var(--grid);
+  text-align: center;
+}
+.sidebar-header h2 {
+  font-size: 18px;
+  text-transform: uppercase;
+  letter-spacing: 3px;
+  margin-bottom: 6px;
+}
+.sidebar-ai {
+  width: 100%;
+  padding: 8px;
+  border-bottom: 1px solid var(--grid);
+}
+.sidebar-ai img {
+  width: 100%;
+  height: auto;
+  border: 1px solid var(--grid);
+  display: block;
+}
+.sidebar-nav {
+  flex: 1;
+  padding: 12px 0;
+}
+.nav-item {
+  display: block;
+  width: 100%;
+  padding: 10px 14px;
+  background: transparent;
+  border: none;
+  border-left: 2px solid transparent;
+  color: var(--green);
+  font-family: 'VT323', monospace;
+  font-size: 16px;
+  text-align: left;
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  transition: all 0.1s;
+  text-decoration: none;
+}
+.nav-item:hover, .nav-item.active {
+  background: rgba(0,255,65,0.05);
+  border-left-color: var(--green);
+  text-shadow: 0 0 5px var(--green);
+}
+.nav-item .tag {
+  display: inline-block;
+  min-width: 50px;
+  color: var(--dim);
+  margin-right: 6px;
+}
+.nav-item:hover .tag { color: var(--green); }
+.sidebar-footer {
+  padding: 12px 14px;
+  border-top: 1px solid var(--grid);
+}
+.eject-btn {
+  display: block;
+  width: 100%;
+  padding: 10px;
+  background: transparent;
+  border: 1px solid var(--red);
+  color: var(--red);
+  font-family: 'VT323', monospace;
+  font-size: 15px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.eject-btn:hover {
+  background: var(--red);
+  color: var(--bg);
+  box-shadow: 0 0 12px var(--red);
+}
+
+.main-console {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.console-section {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--grid);
+  overflow-y: auto;
+}
+.console-section.keys-section { flex: 0 0 auto; max-height: 45%; }
+.console-section.terminal-section { flex: 1; animation: flicker 0.05s infinite; }
+
+.section-title {
+  font-size: 18px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-bottom: 12px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--grid);
+}
+
+.dbl-border {
+  border: 1px solid var(--grid);
+  outline: 1px solid var(--grid);
+  outline-offset: 2px;
+  padding: 12px;
+  margin-bottom: 14px;
+}
+
+.gen-key-btn {
+  padding: 10px 20px;
+  background: transparent;
+  border: 1px solid var(--green);
+  color: var(--green);
+  font-family: 'VT323', monospace;
+  font-size: 16px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  cursor: pointer;
+  transition: all 0.15s;
+  margin-bottom: 14px;
+}
+.gen-key-btn:hover:not(:disabled) {
+  background: var(--green);
+  color: var(--bg);
+  box-shadow: 0 0 15px var(--green), 0 0 30px rgba(0,255,65,0.3);
+}
+.gen-key-btn:disabled {
+  border-color: var(--dim);
+  color: var(--dim);
+  cursor: not-allowed;
+}
+
+.key-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 15px;
+}
+.key-table th {
+  text-align: left;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--green);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-size: 13px;
+  color: var(--dim);
+}
+.key-table td {
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--grid);
+}
+.key-table .status-active { color: var(--green); }
+.key-table .status-revoked { color: var(--dim); text-decoration: line-through; }
+.revoke-btn {
+  padding: 4px 10px;
+  background: transparent;
+  border: 1px solid var(--red);
+  color: var(--red);
+  font-family: 'VT323', monospace;
+  font-size: 14px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.1s;
+}
+.revoke-btn:hover {
+  background: var(--red);
+  color: var(--bg);
+  box-shadow: 0 0 8px var(--red);
+}
+.no-keys { color: var(--dim); font-style: italic; padding: 10px 0; }
+
+.terminal-feed {
+  overflow-y: auto;
+  max-height: calc(100% - 40px);
+  padding: 4px 0;
+  font-size: 15px;
+}
+.log-line { padding: 2px 0; white-space: pre-wrap; word-break: break-all; }
+.log-line .ts { color: var(--dim); }
+.log-line .tag { color: var(--cyan); }
+.log-line.critical { color: var(--red); text-shadow: 0 0 4px var(--red); }
+.log-line.critical .tag { color: var(--red); }
+.log-line.balance { color: var(--cyan); }
+.log-line.balance .tag { color: var(--cyan); }
+.log-line.routine { color: var(--green); }
+
+.modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.85);
+  z-index: 10000;
+  align-items: center;
+  justify-content: center;
+}
+.modal-overlay.visible { display: flex; }
+.modal-box {
+  background: var(--bg);
+  border: 1px solid var(--green);
+  outline: 1px solid var(--green);
+  outline-offset: 3px;
+  padding: 24px 28px;
+  max-width: 600px;
+  width: 90%;
+}
+.modal-box h3 {
+  text-transform: uppercase;
+  letter-spacing: 3px;
+  font-size: 20px;
+  margin-bottom: 16px;
+  text-shadow: 0 0 8px var(--green);
+}
+.modal-warning {
+  color: var(--red);
+  text-shadow: 0 0 5px var(--red);
+  font-size: 15px;
+  margin-bottom: 14px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+.key-display {
+  background: #0a0a0a;
+  border: 1px solid var(--green);
+  padding: 12px 14px;
+  font-size: 16px;
+  word-break: break-all;
+  margin-bottom: 16px;
+  position: relative;
+  color: var(--cyan);
+  text-shadow: 0 0 4px var(--cyan);
+}
+@keyframes blink-cursor {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+.key-display::after {
+  content: '\2588';
+  animation: blink-cursor 1s step-end infinite;
+  color: var(--green);
+  margin-left: 2px;
+}
+.copy-btn {
+  padding: 8px 16px;
+  background: transparent;
+  border: 1px solid var(--cyan);
+  color: var(--cyan);
+  font-family: 'VT323', monospace;
+  font-size: 15px;
+  cursor: pointer;
+  margin-right: 10px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+.copy-btn:hover {
+  background: var(--cyan);
+  color: var(--bg);
+  box-shadow: 0 0 10px var(--cyan);
+}
+.confirm-btn {
+  padding: 8px 16px;
+  background: transparent;
+  border: 1px solid var(--green);
+  color: var(--green);
+  font-family: 'VT323', monospace;
+  font-size: 15px;
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+.confirm-btn:hover {
+  background: var(--green);
+  color: var(--bg);
+  box-shadow: 0 0 12px var(--green);
+}
+.modal-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+
+.wallet-prompt {
+  padding: 40px 20px;
+  text-align: center;
+}
+.wallet-prompt h2 {
+  font-size: 22px;
+  text-transform: uppercase;
+  letter-spacing: 3px;
+  margin-bottom: 16px;
+}
+.wallet-prompt p { color: var(--dim); margin-bottom: 20px; }
+.connect-wallet-btn {
+  padding: 12px 28px;
+  background: transparent;
+  border: 1px solid var(--cyan);
+  color: var(--cyan);
+  font-family: 'VT323', monospace;
+  font-size: 18px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  cursor: pointer;
+}
+.connect-wallet-btn:hover {
+  background: var(--cyan);
+  color: var(--bg);
+  box-shadow: 0 0 15px var(--cyan);
+}
+
+.empty-terminal {
+  color: var(--dim);
+  padding: 20px 0;
+  text-align: center;
+  font-size: 15px;
+}
+
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--grid); }
+::-webkit-scrollbar-thumb:hover { background: var(--dim); }
+</style>
+</head>
+<body>
+
+<div class="status-bar">
+  <div class="left">
+    <span><span class="status-dot"></span>&nbsp; <span class="status-label glow">SYSTEM STATUS: <span id="sysStatus">OPERATIONAL</span></span></span>
+    <span class="status-label" style="color:var(--dim)">|</span>
+    <span class="status-label">OPENCLAW v1.0</span>
+  </div>
+  <div class="right">
+    <span class="glow-cyan" style="font-size:14px">ETH: <span id="ethPrice">--</span></span>
+    <span style="color:var(--dim)">|</span>
+    <span class="glow-cyan" style="font-size:14px">GAS: <span id="gasPrice">--</span></span>
+    <span style="color:var(--dim)">|</span>
+    <span id="walletBadge" style="font-size:13px;color:var(--dim)">NO WALLET</span>
+  </div>
+</div>
+
+<div class="layout">
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <h2 class="glow">OPENCLAW</h2>
+      <div style="color:var(--dim);font-size:13px;letter-spacing:1px">DEVELOPER PORTAL</div>
+    </div>
+    <div class="sidebar-ai">
+      <img src="/static/images/ai_component.gif" alt="AI CORE">
+    </div>
+    <nav class="sidebar-nav">
+      <button class="nav-item active" onclick="scrollToSection('keys')">
+        <span class="tag">[ KEY ]</span> ACCESS KEYS
+      </button>
+      <button class="nav-item" onclick="scrollToSection('terminal')">
+        <span class="tag">[ LOG ]</span> ACTIVITY LOG
+      </button>
+      <a class="nav-item" href="/docs" target="_blank">
+        <span class="tag">[ DOC ]</span> API DOCS
+      </a>
+      <a class="nav-item" href="/app">
+        <span class="tag">[ APP ]</span> DASHBOARD
+      </a>
+    </nav>
+    <div class="sidebar-footer">
+      <button class="eject-btn" onclick="ejectWallet()">[ EJECT ] DISCONNECT</button>
+    </div>
+  </aside>
+
+  <main class="main-console" id="mainConsole">
+    <div id="walletPrompt" class="wallet-prompt" style="display:none;">
+      <h2 class="glow">AUTHENTICATION REQUIRED</h2>
+      <p>CONNECT YOUR WALLET TO ACCESS THE DEVELOPER PORTAL</p>
+      <button class="connect-wallet-btn" onclick="connectWallet()">INITIALIZE CONNECTION</button>
+    </div>
+
+    <div id="portalContent" style="display:none; height:100%; flex-direction:column;">
+      <section class="console-section keys-section" id="keysSection">
+        <div class="section-title glow">// ACCESS KEY MANAGEMENT</div>
+        <div class="dbl-border">
+          <button class="gen-key-btn glow" id="genKeyBtn" onclick="generateKey()">
+            [ + ] GENERATE NEW ACCESS KEY
+          </button>
+          <div id="keyCount" style="color:var(--dim);font-size:13px;margin-bottom:10px"></div>
+          <table class="key-table" id="keyTable">
+            <thead>
+              <tr>
+                <th>PREFIX</th>
+                <th>LABEL</th>
+                <th>STATUS</th>
+                <th>CREATED</th>
+                <th>LAST USED</th>
+                <th>ACTION</th>
+              </tr>
+            </thead>
+            <tbody id="keyTableBody">
+              <tr><td colspan="6" class="no-keys">LOADING KEY DATA...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="console-section terminal-section" id="terminalSection">
+        <div class="section-title glow">// AUTONOMOUS ACTIVITY TERMINAL</div>
+        <div class="dbl-border" style="height:calc(100% - 40px);display:flex;flex-direction:column;">
+          <div class="terminal-feed" id="terminalFeed">
+            <div class="empty-terminal">AWAITING SYSTEM MESSAGES...</div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+</div>
+
+<div class="modal-overlay" id="keyModal">
+  <div class="modal-box">
+    <h3 class="glow">TERMINAL OVERRIDE</h3>
+    <div class="modal-warning">&#9888; SYSTEM ALERT: COPY THIS KEY NOW. IT WILL NEVER BE DISPLAYED AGAIN.</div>
+    <div class="key-display" id="rawKeyDisplay"></div>
+    <div class="modal-actions">
+      <button class="copy-btn" onclick="copyKey()">COPY TO CLIPBOARD</button>
+      <button class="confirm-btn" onclick="confirmKeyCopied()">I HAVE COPIED THE ACCESS KEY</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let authToken = localStorage.getItem('authToken');
+let currentWallet = localStorage.getItem('walletAddress');
+let currentRawKey = '';
+
+function init() {
+  if (authToken && currentWallet) {
+    showPortal();
+    loadKeys();
+    loadActivity();
+    loadStatus();
+    document.getElementById('walletBadge').textContent = currentWallet.substring(0,6) + '...' + currentWallet.slice(-4);
+    document.getElementById('walletBadge').style.color = 'var(--cyan)';
+    setInterval(loadActivity, 30000);
+    setInterval(loadStatus, 15000);
+  } else {
+    showWalletPrompt();
+  }
+}
+
+function showPortal() {
+  document.getElementById('walletPrompt').style.display = 'none';
+  var el = document.getElementById('portalContent');
+  el.style.display = 'flex';
+}
+
+function showWalletPrompt() {
+  document.getElementById('walletPrompt').style.display = 'block';
+  document.getElementById('portalContent').style.display = 'none';
+}
+
+async function connectWallet() {
+  if (typeof window.ethereum === 'undefined') {
+    alert('METAMASK NOT DETECTED. INSTALL A WEB3 WALLET.');
+    return;
+  }
+  try {
+    const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+    const wallet = accounts[0];
+    const resp = await fetch('/api/auth/wallet', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ walletAddress: wallet })
+    });
+    if (!resp.ok) throw new Error('Auth failed');
+    const data = await resp.json();
+    authToken = data.authToken;
+    currentWallet = data.walletAddress;
+    localStorage.setItem('authToken', authToken);
+    localStorage.setItem('walletAddress', currentWallet);
+    init();
+  } catch (e) {
+    console.error('Connection error:', e);
+  }
+}
+
+function authHeaders() {
+  return { 'X-Auth-Token': authToken, 'Content-Type': 'application/json' };
+}
+
+async function authFetch(url, opts) {
+  opts = opts || {};
+  opts.headers = Object.assign(authHeaders(), opts.headers || {});
+  var resp = await fetch(url, opts);
+  if (resp.status === 401) { logout(); return null; }
+  return resp;
+}
+
+async function loadKeys() {
+  try {
+    const resp = await authFetch('/api/keys/list');
+    if (!resp) return;
+    const data = await resp.json();
+    renderKeys(data.keys || []);
+  } catch(e) { console.error('Load keys error:', e); }
+}
+
+function renderKeys(keys) {
+  const tbody = document.getElementById('keyTableBody');
+  const activeKeys = keys.filter(k => k.status === 'active');
+  const countEl = document.getElementById('keyCount');
+  countEl.textContent = 'ACTIVE KEYS: ' + activeKeys.length + ' / 2';
+  const btn = document.getElementById('genKeyBtn');
+  btn.disabled = activeKeys.length >= 2;
+
+  if (keys.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="6" class="no-keys">NO KEYS GENERATED. CREATE YOUR FIRST ACCESS KEY.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = keys.map(k => {
+    const statusClass = k.status === 'active' ? 'status-active' : 'status-revoked';
+    const created = k.created_at ? new Date(k.created_at).toLocaleDateString() : '--';
+    const lastUsed = k.last_used_at ? new Date(k.last_used_at).toLocaleDateString() : 'NEVER';
+    const action = k.status === 'active'
+      ? '<button class="revoke-btn" onclick="revokeKey(' + k.id + ')">REVOKE</button>'
+      : '<span style="color:var(--dim)">--</span>';
+    return '<tr>'
+      + '<td>' + (k.key_prefix || '--') + '****</td>'
+      + '<td>' + (k.label || '--') + '</td>'
+      + '<td class="' + statusClass + '">' + k.status.toUpperCase() + '</td>'
+      + '<td>' + created + '</td>'
+      + '<td>' + lastUsed + '</td>'
+      + '<td>' + action + '</td>'
+      + '</tr>';
+  }).join('');
+}
+
+async function generateKey() {
+  try {
+    const resp = await authFetch('/api/keys/generate', {
+      method: 'POST',
+      body: JSON.stringify({ label: 'dev-key' })
+    });
+    if (!resp) return;
+    const data = await resp.json();
+    if (data.error) {
+      alert('ERROR: ' + data.error);
+      return;
+    }
+    if (data.raw_key) {
+      currentRawKey = data.raw_key;
+      document.getElementById('rawKeyDisplay').textContent = currentRawKey;
+      document.getElementById('keyModal').classList.add('visible');
+    }
+    loadKeys();
+  } catch(e) { console.error('Generate key error:', e); }
+}
+
+function copyKey() {
+  navigator.clipboard.writeText(currentRawKey).then(() => {
+    const btn = event.target;
+    btn.textContent = 'COPIED!';
+    btn.style.borderColor = 'var(--green)';
+    btn.style.color = 'var(--green)';
+    setTimeout(() => {
+      btn.textContent = 'COPY TO CLIPBOARD';
+      btn.style.borderColor = '';
+      btn.style.color = '';
+    }, 2000);
+  });
+}
+
+function confirmKeyCopied() {
+  currentRawKey = '';
+  document.getElementById('rawKeyDisplay').textContent = '';
+  document.getElementById('keyModal').classList.remove('visible');
+}
+
+async function revokeKey(keyId) {
+  if (!confirm('CONFIRM: REVOKE THIS ACCESS KEY? THIS CANNOT BE UNDONE.')) return;
+  try {
+    const resp = await authFetch('/api/keys/' + keyId + '/revoke', { method: 'POST' });
+    if (!resp) return;
+    if (resp.ok) loadKeys();
+    else {
+      const data = await resp.json();
+      alert('ERROR: ' + (data.error || 'Revocation failed'));
+    }
+  } catch(e) { console.error('Revoke error:', e); }
+}
+
+function classifyLog(msg) {
+  const lower = (msg || '').toLowerCase();
+  if (lower.includes('macro') || lower.includes('micro') || lower.includes('short')
+      || lower.includes('emergency') || lower.includes('liquidat') || lower.includes('alert')) {
+    return 'critical';
+  }
+  if (lower.includes('balance') || lower.includes('collateral') || lower.includes('health factor')
+      || lower.includes('$') || lower.includes('usdc') || lower.includes('usdt')
+      || lower.includes('wbtc') || lower.includes('weth')) {
+    return 'balance';
+  }
+  return 'routine';
+}
+
+function formatTimestamp(ts) {
+  if (!ts) return '--:--:--';
+  const d = new Date(ts);
+  return d.toLocaleTimeString('en-US', { hour12: false, hour:'2-digit', minute:'2-digit', second:'2-digit' });
+}
+
+function tagFromMessage(msg) {
+  const lower = (msg || '').toLowerCase();
+  if (lower.includes('distribution') || lower.includes('growth') || lower.includes('capacity')) return 'DIST';
+  if (lower.includes('short')) return 'SHORT';
+  if (lower.includes('nurse') || lower.includes('sweep')) return 'NURSE';
+  if (lower.includes('emergency') || lower.includes('alert')) return 'ALERT';
+  if (lower.includes('borrow') || lower.includes('repay')) return 'DEFI';
+  return 'SYS_MSG';
+}
+
+async function loadActivity() {
+  try {
+    const resp = await authFetch('/api/user/activity?limit=50');
+    if (!resp) return;
+    const data = await resp.json();
+    renderActivity(data.notifications || []);
+  } catch(e) { console.error('Load activity error:', e); }
+}
+
+function renderActivity(notifications) {
+  const feed = document.getElementById('terminalFeed');
+  if (!notifications || notifications.length === 0) {
+    feed.innerHTML = '<div class="empty-terminal">NO ACTIVITY RECORDED. SYSTEM MONITORING ACTIVE.</div>';
+    return;
+  }
+
+  feed.innerHTML = notifications.map(n => {
+    const cls = classifyLog(n.message || n.title);
+    const ts = formatTimestamp(n.created_at);
+    const tag = tagFromMessage(n.message || n.title);
+    const msg = n.message || n.title || 'UNKNOWN EVENT';
+    return '<div class="log-line ' + cls + '">'
+      + '<span class="ts">[' + ts + ']</span> '
+      + '<span class="tag">' + tag + ':</span> '
+      + msg
+      + '</div>';
+  }).join('');
+
+  feed.scrollTop = feed.scrollHeight;
+}
+
+async function loadStatus() {
+  try {
+    const resp = await fetch('/api/command-center');
+    if (!resp.ok) return;
+    const data = await resp.json();
+    if (data.eth_price) {
+      document.getElementById('ethPrice').textContent = '$' + parseFloat(data.eth_price).toFixed(0);
+    }
+    if (data.gas_price_gwei != null) {
+      document.getElementById('gasPrice').textContent = parseFloat(data.gas_price_gwei).toFixed(1) + ' GWEI';
+    }
+  } catch(e) {}
+}
+
+function scrollToSection(id) {
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  event.currentTarget.classList.add('active');
+  const el = document.getElementById(id === 'keys' ? 'keysSection' : 'terminalSection');
+  if (el) el.scrollIntoView({ behavior: 'smooth' });
+}
+
+async function ejectWallet() {
+  if (!confirm('CONFIRM: DISCONNECT WALLET AND TERMINATE SESSION?')) return;
+  try {
+    await authFetch('/api/auth/disconnect', { method: 'POST' });
+  } catch(e) {}
+  logout();
+}
+
+function logout() {
+  localStorage.removeItem('authToken');
+  localStorage.removeItem('walletAddress');
+  authToken = null;
+  currentWallet = null;
+  showWalletPrompt();
+  document.getElementById('walletBadge').textContent = 'NO WALLET';
+  document.getElementById('walletBadge').style.color = 'var(--dim)';
+}
+
+init();
+</script>
+</body>
+</html>

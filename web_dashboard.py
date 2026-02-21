@@ -3359,6 +3359,44 @@ def disconnect_wallet():
     database.set_bot_enabled(user_id, False)
     return jsonify({"status": "ok", "botEnabled": False})
 
+@app.route('/developer')
+def developer_portal():
+    """Developer Portal — retro terminal UI for API key management and activity feed"""
+    return render_template('developer_portal.html')
+
+@app.route('/api/keys/generate', methods=['POST'])
+def generate_key():
+    """Generate a new API key for the authenticated user"""
+    if not DB_AVAILABLE:
+        return jsonify({"error": "Database not available"}), 503
+    user_id = get_current_user_id()
+    data = request.get_json() or {}
+    label = data.get('label', '')
+    result = database.generate_api_key(user_id, label=label)
+    if 'error' in result:
+        return jsonify(result), 409
+    return jsonify(result), 201
+
+@app.route('/api/keys/<int:key_id>/revoke', methods=['POST'])
+def revoke_key(key_id):
+    """Revoke an API key"""
+    if not DB_AVAILABLE:
+        return jsonify({"error": "Database not available"}), 503
+    user_id = get_current_user_id()
+    success = database.revoke_api_key(key_id, user_id)
+    if not success:
+        return jsonify({"error": "Key not found or already revoked"}), 404
+    return jsonify({"status": "revoked", "key_id": key_id})
+
+@app.route('/api/keys/list', methods=['GET'])
+def list_keys():
+    """List all API keys for the authenticated user"""
+    if not DB_AVAILABLE:
+        return jsonify({"error": "Database not available"}), 503
+    user_id = get_current_user_id()
+    keys = database.list_user_keys(user_id)
+    return jsonify({"keys": keys})
+
 @app.route('/api/user/status', methods=['GET'])
 def user_status():
     """Get current user status including bot_enabled flag and delegation info"""
