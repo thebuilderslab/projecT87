@@ -1,0 +1,98 @@
+I need a full “hard reset” for a single user so I can test the system from scratch.
+
+Target user
+- User ID: 22
+- Wallet: 0xd60acbac798f146e4b7080e9a1f93977200f5cff
+- New DelegationManager: 0x4866709c...
+
+Goal
+Completely disconnect this wallet from the system and reset all stored state, so that:
+
+1) From the backend’s point of view:
+   - No stale collateral/debt rows.
+   - No lingering delegation or strategy state.
+   - No saved auth/session for this wallet.
+2) From on-chain view:
+   - Bot / DM are not holding any user funds (or we at least verify and report if they are).
+3) From the frontend:
+   - The wallet can reconnect as a brand-new user, then:
+     - grant all needed approvals (DM + BOT) for swaps/supplies/repays/borrows,
+     - enable Auto WBTC delegation,
+     - let the auto-supply sequence run once,
+     - then allow the strategy engine to monitor and execute autonomously.
+
+Implement the following tasks.
+
+────────────────────
+Task 1 – Hard disconnect + DB reset for user 22
+────────────────────
+
+1.1 Wallet disconnect and session cleanup
+- Ensure any auth/session data for user 22 is cleared:
+  - On the backend (DB rows for auth tokens / sessions tied to this wallet).
+  - On the frontend (localStorage keys used for wallet persistence).
+
+- Add a small admin helper (e.g. a script or function) that, given a userId, will:
+  - mark the user as disconnected,
+  - clear any cached strategy state (e.g. execution state files, in-memory flags).
+
+Show:
+- The SQL or ORM calls you add for this, including table names and fields.
+- The frontend change (if any) that guarantees a “full disconnect” UI path.
+
+1.2 DeFi / strategy state reset
+- For user 22, reset all strategy-related DB fields so the system treats them as fresh:
+
+  - managedwallets: set consecutiveEmptyCount = 0, lastAutoSupplyAt = NULL, status to “inactive” or equivalent.
+  - defipositions / any similar table:
+      * set collateral, debt, healthFactor to reflect “no position”,
+      * or delete the rows if the code expects absence to mean empty.
+  - delegation / strategy config tables:
+      * ensure WBTC auto-supply and strategy flags can be re-enabled cleanly (no half-enabled states).
+
+- Confirm in logs that the monitoring loop, on the next cycle, sees user 22 as having:
+  - no on-chain Aave position, and
+  - no in-progress distribution state.
+
+Show:
+- The exact reset routine for user 22 (SQL or Python script) and the log output from the next monitor cycle.
+
+────────────────────
+Task 2 – On-chain safety: verify no user funds stuck in DM or BOT
+────────────────────
+
+2.1 Balance audit for user-linked assets
+- Add or run a helper that checks, for user 22’s relevant assets (WBTC, DAI, WETH, USDC/USDT):
+
+  - balanceOf(DELEGATION_MANAGER, token)
+  - balanceOf(BOT_WALLET, token)
+
+- If any non-trivial balance is found that belongs to user 22 (e.g., leftover from old flows):
+  - Log it clearly.
+  - Recommend or implement a safe rescue path (e.g., emergencyWithdrawToken DM->BOT then BOT->USER) and only run it if you can safely attribute those funds to this user.
+
+Show:
+- The balance check output for DM and BOT for the key tokens.
+- Either:
+  - confirmation that there are no stuck funds, or
+  - the exact rescue steps you run and their tx hashes.
+
+────────────────────
+Task 3 – Define the clean “re-onboard and approve everything” path
+────────────────────
+
+I want a single, clean sequence for a fresh user 22:
+
+A) Wallet connect
+B) Grant all approvals
+C) Enable Auto-WBTC
+D) Let auto-supply run
+E) Let strategy engine monitor and execute
+
+Implement and document this.
+
+3.1 Approval checklist (DM + BOT)
+
+- In a new doc (e.g. approvals.md or update replit_wallet_audit.md), define the approvals that the frontend must request when a user connects:
+
+  1) User → DelegationManager (0x4866709c...) appro
