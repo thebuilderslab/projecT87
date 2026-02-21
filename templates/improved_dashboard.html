@@ -384,13 +384,13 @@
 
         <!-- Controls -->
         <div class="controls">
-            <button class="btn btn-primary" onclick="refreshData()">
+            <button class="btn btn-primary" id="refreshDataBtn">
                 🔄 Refresh Data
             </button>
-            <button class="btn btn-success" onclick="openAave()">
+            <button class="btn btn-success" id="openAaveBtn">
                 🏦 Open Aave
             </button>
-            <button class="btn btn-danger" onclick="emergencyStop()">
+            <button class="btn btn-danger" id="emergencyStopBtn">
                 🛑 Emergency Stop
             </button>
         </div>
@@ -643,6 +643,10 @@
                 messageDiv.remove();
             }, 5000);
         }
+
+        document.getElementById('refreshDataBtn').addEventListener('click', refreshData);
+        document.getElementById('openAaveBtn').addEventListener('click', openAave);
+        document.getElementById('emergencyStopBtn').addEventListener('click', emergencyStop);
     </script>
 </body>
 </html>
