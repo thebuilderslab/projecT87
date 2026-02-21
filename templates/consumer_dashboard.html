@@ -152,26 +152,18 @@ body::before {
 .delegation-tx-link { font-size:11px; color:var(--accent); text-decoration:none; }
 .delegation-tx-link:hover { text-decoration:underline; }
 
-.usdc-meter {
-  width:100%; max-width:340px; margin-top:18px;
-  background:var(--surface); border:1px solid var(--border);
-  border-radius:var(--radius); padding:14px 18px;
+.usdc-meter { margin-top: 12px; }
+.usdc-meter-label {
+  display: flex; justify-content: space-between; font-size: 12px; color: #9ca3af;
 }
-.usdc-meter-header {
-  display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;
-}
-.usdc-meter-label { font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:1px; font-weight:600; }
-.usdc-meter-value { font-size:15px; font-weight:700; color:var(--green); }
 .usdc-meter-bar {
-  width:100%; height:8px; background:var(--surface2); border-radius:6px; overflow:hidden; position:relative;
+  margin-top: 4px; width: 100%; height: 6px; border-radius: 999px;
+  background: #111827; overflow: hidden;
 }
-.usdc-meter-fill {
-  height:100%; border-radius:6px; transition:width 0.6s ease;
-  background:linear-gradient(90deg, var(--accent), #22c55e);
-}
-.usdc-meter-target {
-  display:flex; justify-content:flex-end; margin-top:4px;
-  font-size:10px; color:var(--muted);
+.usdc-meter-bar .usdc-meter-fill {
+  height: 100%; width: 0%; border-radius: 999px;
+  background: linear-gradient(90deg, #22c55e, #0ea5e9);
+  transition: width 0.3s ease;
 }
 
 .health-ring-container {
@@ -675,15 +667,12 @@ tr:hover { background:rgba(0,230,180,0.03); }
           <span>&#128172;</span> Ask REAA
         </button>
         <div class="usdc-meter" id="usdcMeter" style="display:none;">
-          <div class="usdc-meter-header">
-            <span class="usdc-meter-label">USDC Balance</span>
-            <span class="usdc-meter-value" id="usdcMeterValue">$0.00</span>
+          <div class="usdc-meter-label">
+            USDC &#8594; WALLET
+            <span id="usdcMeterValue">$0.00 / $0.00</span>
           </div>
           <div class="usdc-meter-bar">
             <div class="usdc-meter-fill" id="usdcMeterFill" style="width:0%"></div>
-          </div>
-          <div class="usdc-meter-target">
-            <span id="usdcMeterTarget">Target: $1,000.00</span>
           </div>
         </div>
       </div>
@@ -912,15 +901,18 @@ function fullDisconnect() {
   state._disconnecting = true;
   try {
     try { localStorage.removeItem('reaa_wallet'); } catch(e) {}
+    try { sessionStorage.clear(); } catch(e) {}
     state.authToken = null;
     state.userId = null;
     state.walletAddress = null;
+    state.towns = [];
     state.chatHistory = [];
     state.chatBusy = false;
     state.defiPosition = null;
     state.safetyScore = 0;
     state.userTownIds = [];
     state.autoPilotOffered = false;
+    state.delegationContractAddress = null;
 
     closeAutoPilot();
     closeModal();
@@ -949,7 +941,7 @@ function fullDisconnect() {
     document.getElementById('defiConnectedContent').style.display = 'none';
 
     document.getElementById('usdcMeter').style.display = 'none';
-    document.getElementById('usdcMeterValue').textContent = '$0.00';
+    document.getElementById('usdcMeterValue').textContent = '$0.00 / $0.00';
     document.getElementById('usdcMeterFill').style.width = '0%';
     document.getElementById('usdcWalletRow').style.display = 'none';
     document.getElementById('defiUsdcBalance').textContent = '--';
@@ -1048,11 +1040,19 @@ async function authenticateWallet(address) {
   document.getElementById('analysisLocked').style.display = 'none';
   document.getElementById('analysisUnlocked').style.display = '';
 
-  loadDefiPanel();
-  loadIncomeSummary();
-  loadTowns();
-  loadDelegationStatus(true);
-  loadUsdcBalance();
+  console.log('[REAA] Auth OK, token set. Loading dashboard data...');
+  try {
+    await Promise.all([
+      loadDefiPanel(),
+      loadIncomeSummary(),
+      loadTowns(),
+      loadDelegationStatus(true),
+      loadUsdcBalance(),
+    ]);
+    console.log('[REAA] All dashboard data loaded successfully');
+  } catch (err) {
+    console.error('[REAA] Initial dashboard load failed:', err);
+  }
 }
 
 function computeSafetyScore(hf, collateral, debt) {
@@ -1171,15 +1171,16 @@ async function loadUsdcBalance() {
   meter.style.display = '';
   const data = await api('/api/wallet/usdc-balance');
   const balance = parseFloat(data.balance) || 0;
-  const formatted = '$' + balance.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
-  const target = 1000;
-  const pct = Math.min((balance / target) * 100, 100);
-  document.getElementById('usdcMeterValue').textContent = formatted;
+  const target = parseFloat(data.target) || 5000;
+  const pct = Math.max(0, Math.min(100, (balance / (target || 1)) * 100));
+  const fmt = (v) => '$' + v.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
+
+  document.getElementById('usdcMeterValue').textContent = fmt(balance) + ' / ' + fmt(target);
   document.getElementById('usdcMeterFill').style.width = pct + '%';
-  document.getElementById('usdcMeterTarget').textContent = 'Target: $' + target.toLocaleString('en-US', {minimumFractionDigits:2});
+
   if (walletRow) {
     walletRow.style.display = '';
-    document.getElementById('defiUsdcBalance').textContent = formatted;
+    document.getElementById('defiUsdcBalance').textContent = fmt(balance);
   }
 }
 
@@ -2406,10 +2407,18 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('analysisLocked').style.display = 'none';
         document.getElementById('analysisUnlocked').style.display = '';
 
-        loadDefiPanel();
-        loadIncomeSummary();
-        loadTowns();
-        loadDelegationStatus(true);
+        console.log('[REAA] Auto-reconnect: token found, loading dashboard...');
+        Promise.all([
+          loadDefiPanel(),
+          loadIncomeSummary(),
+          loadTowns(),
+          loadDelegationStatus(true),
+          loadUsdcBalance(),
+        ]).then(() => {
+          console.log('[REAA] Auto-reconnect: all data loaded');
+        }).catch(err => {
+          console.error('[REAA] Auto-reconnect load failed:', err);
+        });
       }
     }
   } catch(e) {}

@@ -55,6 +55,25 @@ The REAA platform operates on the Arbitrum Mainnet, comprising distinct modules 
 - **Full Automation Permission Parity:** Frontend ensures `approveDelegation` is called to set all 4 flags, and users sign 15 ERC20 approvals for full execution parity. `validate_full_automation_ready` checks all permissions.
 - **Revocation Flow:** User signs `revokeDelegation()` on-chain, and backend updates `delegation_status` to 'revoked', disabling further strategy execution.
 
+## Wallet Connection & USDC Meter
+
+**Wallet connection flow:**
+- `connectWallet()` gets the wallet address from MetaMask (or manual entry fallback).
+- `authenticateWallet(address)` calls `POST /api/auth/wallet`, awaits the auth response, stores `authToken`, `userId`, and `walletAddress` in both `state` and `localStorage`.
+- Only after auth succeeds, all dashboard data loaders run via `await Promise.all([loadDefiPanel(), loadIncomeSummary(), loadTowns(), loadDelegationStatus(), loadUsdcBalance()])`.
+- On page reload, saved credentials in `localStorage` are restored and the same loaders fire.
+- On 401 from any authenticated API call, `fullDisconnect()` fires once, wiping all user-specific state (`walletAddress`, `authToken`, `userId`, `towns`, `defiPosition`, `delegationContractAddress`, etc.) and clearing `localStorage`/`sessionStorage`.
+
+**USDC meter:**
+- Endpoint: `GET /api/wallet/usdc-balance` (authenticated, returns `{balance, wallet, target}`).
+- Reads on-chain USDC balance at Arbitrum address `0xaf88d065e77c8cC2239327C5EDb3A432268e5831` for the connected user's wallet.
+- `target` is a configurable goal (default $5,000).
+- Command Center meter displays `USDC → WALLET $X.XX / $Y.YY` with a gradient progress bar.
+- Active Wealth panel displays `USDC Wallet: $X.XX` as a text row.
+
+**WBTC delegation UI location:**
+- The WBTC Auto-Supply Delegation panel lives in the DeFi tab (`#tab-defi`), inside `#defiConnectedContent`, below the HF Thresholds section.
+
 ## External Dependencies
 
 - **Aave V3 Protocol**: Core DeFi lending protocol.

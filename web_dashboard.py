@@ -3753,7 +3753,7 @@ def get_wallet_usdc_balance():
         usdc_contract = w3.eth.contract(address=usdc_address, abi=balance_abi)
         raw = usdc_contract.functions.balanceOf(Web3.to_checksum_address(wallet)).call()
         balance = raw / 10**6
-        return jsonify({"balance": round(balance, 2), "wallet": wallet})
+        return jsonify({"balance": round(balance, 2), "wallet": wallet, "target": 5000.00})
     except Exception as e:
         logger.error(f"USDC balance fetch error for {wallet[:10]}...: {e}")
         return jsonify({"balance": 0, "error": str(e)})
