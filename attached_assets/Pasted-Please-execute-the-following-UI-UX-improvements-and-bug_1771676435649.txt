@@ -1,0 +1,20 @@
+Please execute the following UI/UX improvements and bug fixes for the REAA (Real Estate Agent Assistant) dashboard to make it more consumer-friendly and ensure live data is fetching correctly. 
+
+**Task 1: UI Renaming & Relocation**
+- **Rename "Aave / DeFi":** In the left-hand column, change the header "Aave / DeFi" to a more consumer-friendly name. Please use "Active Wealth" (or "Liquidity Portfolio").
+- **Relocate Optimal HF:** Move the text "Optimal: 2.5 - 4.0" out of the center circular "SAFETY RATING" dial. Relocate this text to the "DeFi" tab.
+- **Display HF Minimums:** On the "DeFi" tab, create a new UI section that clearly displays the Health Factor (HF) minimums for the Macro, Micro, Growth, and Capacity strategies. Ensure these values are wired to fetch dynamically from the backend state or configuration.
+
+**Task 2: Live USDC Wallet Balance**
+- In the newly renamed "Active Wealth" section on the left, add a line item to display the total USDC balance currently held in the user's wallet.
+- **Web3 Wiring:** Use `ethers.js` or our existing Web3 provider hook to fetch the live balance of the connected wallet on Arbitrum (USDC Contract: `0xaf88d065e77c8cC2239327C5EDb3A432268e5831`). Format it cleanly as currency (e.g., `$1,250.00`).
+
+**Task 3: Fix Lead Pipeline Data on Wallet Connect**
+- **The Bug:** The "Lead Pipeline" data on the right side of the dashboard fails to fetch or disappears when a user connects their Web3 wallet.
+- **The Fix:** Audit the `useEffect` hooks and state dependencies that trigger the Lead Pipeline API call. Ensure that the wallet connection state change does not accidentally unmount the lead component, wipe the lead data array, or cause the API request to fail (e.g., by improperly attaching a Web3 signature to a standard database fetch).
+
+**Task 4: Fix AI Chat Assistant**
+- **The Bug:** The REAA Assistant chat widget is currently returning the error: "The AI assistant is temporarily unavailable. Please try again."
+- **The Fix:** Inspect the backend API route handling the chat interactions. Verify that the LLM API keys (OpenAI, Gemini, etc.) are correctly configured in the environment secrets. Add proper error logging to the `catch` block on both the frontend and backend to surface the exact reason the AI is failing to respond, and resolve the blockage.
+
+Please implement these changes step-by-step, starting with the UI updates, moving to the USDC Web3 integration, and finishing with the bug fixes. Let me know when you are ready for me to test the live data.
