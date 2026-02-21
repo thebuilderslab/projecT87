@@ -12,11 +12,14 @@ No "monitoring only" — misconfigurations become explicit errors.
 
 HF Band Priority Order (checked top to bottom, first match wins):
 -----------------------------------------------------------------
-1. EMERGENCY (HF < 2.50): Position at risk. Log critical warning, SKIP.
-2. GROWTH (HF >= 3.10, collateral grew >= $50 or >= 10%, available borrows >= $13.20):
+0. RESUME (any HF): If an incomplete distribution is detected (execution state
+   file exists OR user wallet has DAI from a prior borrow), the swap pipeline
+   resumes immediately. This runs BEFORE Nurse and BEFORE HF threshold checks.
+1. EMERGENCY (HF < 2.20): Position at risk. Log critical warning, SKIP.
+2. GROWTH (HF >= 2.60, collateral grew >= $50 or >= 10%, available borrows >= $13.20):
    Full 6-step distribution: borrow DAI, supply DAI, swap+supply WBTC, swap+supply WETH,
    swap DAI->ETH for gas, transfer DAI to Wallet_S, swap DAI->USDC (stays in user wallet).
-3. CAPACITY (HF >= 2.90, available borrows >= $8.20):
+3. CAPACITY (HF >= 2.40, available borrows >= $8.20):
    Same 6-step engine with smaller amounts.
 4. MACRO SHORT (collateral velocity drop >= $50 in 30 min, HF >= 3.05):
    Hedge via WETH borrow against market downturn.
@@ -44,11 +47,11 @@ from datetime import datetime, timezone
 
 logger = logging.getLogger(__name__)
 
-GROWTH_HF_THRESHOLD = 3.10
-CAPACITY_HF_THRESHOLD = 2.90
+GROWTH_HF_THRESHOLD = 2.60
+CAPACITY_HF_THRESHOLD = 2.40
 MACRO_HF_THRESHOLD = 3.05
 MICRO_HF_THRESHOLD = 3.00
-EMERGENCY_HF_THRESHOLD = 2.50
+EMERGENCY_HF_THRESHOLD = 2.20
 
 GROWTH_MIN_CAPACITY_USD = 13.20
 CAPACITY_MIN_CAPACITY_USD = 8.20
@@ -224,8 +227,8 @@ def _load_execution_state(wallet_address):
             with open(path, 'r') as f:
                 state = json.load(f)
             age = time.time() - state.get("timestamp", 0)
-            if age > 3600:
-                logger.warning(f"[ExecState] {wallet_address[:10]}... state is {age:.0f}s old — clearing stale state")
+            if age > 86400:
+                logger.warning(f"[ExecState] {wallet_address[:10]}... state is {age:.0f}s old (>24h) — clearing stale state")
                 _clear_execution_state(wallet_address)
                 return None
             return state
@@ -242,6 +245,132 @@ def _clear_execution_state(wallet_address):
             logger.info(f"[ExecState] {wallet_address[:10]}... state cleared")
     except Exception as e:
         logger.error(f"[ExecState] clear failed for {wallet_address[:10]}...: {e}")
+
+
+def _get_dai_debt_balance(wallet_address):
+    if not DELEGATION_AVAILABLE:
+        return 0.0
+    try:
+        from delegation_client import _get_web3, VARIABLE_DEBT_TOKENS
+        from web3 import Web3
+        w3 = _get_web3()
+        dai_debt_addr = VARIABLE_DEBT_TOKENS.get("DAI")
+        if not dai_debt_addr or not w3:
+            return 0.0
+        erc20_abi = [{"inputs": [{"name": "account", "type": "address"}], "name": "balanceOf", "outputs": [{"name": "", "type": "uint256"}], "stateMutability": "view", "type": "function"}]
+        debt_token = w3.eth.contract(address=Web3.to_checksum_address(dai_debt_addr), abi=erc20_abi)
+        raw = debt_token.functions.balanceOf(Web3.to_checksum_address(wallet_address)).call()
+        return raw / 1e18
+    except Exception as e:
+        logger.error(f"[DAIDebt] {wallet_address[:10]}... check error: {e}")
+        return 0.0
+
+
+def _detect_orphaned_dai(wallet_address):
+    if not DELEGATION_AVAILABLE:
+        return False, 0.0
+    try:
+        balances = get_multi_token_balances(wallet_address)
+        dai_balance = balances.get("DAI", {}).get("balance", 0) if balances else 0
+
+        dai_debt = _get_dai_debt_balance(wallet_address)
+
+        if dai_balance >= 2.0 and dai_debt >= 1.0:
+            return True, dai_balance
+    except Exception as e:
+        logger.error(f"[OrphanDAI] {wallet_address[:10]}... detection error: {e}")
+    return False, 0.0
+
+
+def has_active_distribution(wallet_address):
+    state = _load_execution_state(wallet_address)
+    if state and state.get("step") and state.get("path_name"):
+        step = state["step"]
+        last_step = DELEGATED_STEP_ORDER[-1]
+        if step != last_step:
+            return True
+
+    orphaned, dai_bal = _detect_orphaned_dai(wallet_address)
+    if orphaned:
+        logger.info(f"[ActiveDist] {wallet_address[:10]}... orphaned DAI detected (${dai_bal:.2f} DAI + debt) — treating as active distribution")
+        return True
+    return False
+
+
+def resume_incomplete_distribution(user_id, wallet_address, agent):
+    state = _load_execution_state(wallet_address)
+
+    if state:
+        step = state.get("step", "")
+        path_name = state.get("path_name", "")
+        distribution = state.get("distribution", {})
+        last_step = DELEGATED_STEP_ORDER[-1]
+
+        if step == last_step:
+            _clear_execution_state(wallet_address)
+            return None
+
+        if not path_name or not distribution:
+            logger.warning(f"[Resume] {wallet_address[:10]}... corrupt execution state — clearing")
+            _clear_execution_state(wallet_address)
+        else:
+            age = time.time() - state.get("timestamp", 0)
+            logger.info(f"[Resume] {wallet_address[:10]}... INCOMPLETE distribution (state file)! "
+                        f"path={path_name}, last_step={step}, age={age:.0f}s — resuming swap pipeline")
+
+            live_data = get_user_account_data(wallet_address) if DELEGATION_AVAILABLE else None
+            live_hf = live_data.get("healthFactor", 0) if live_data else 0
+
+            result = _execute_delegated_distribution(user_id, wallet_address, agent, path_name, distribution, live_hf)
+            result["resumed"] = True
+            result["resume_source"] = "state_file"
+            logger.info(f"[Resume] {wallet_address[:10]}... state-file resume result: "
+                        f"action={result.get('action')}, details={result.get('details')}")
+            return result
+
+    orphaned, dai_balance = _detect_orphaned_dai(wallet_address)
+    if orphaned:
+        logger.info(f"[Resume] {wallet_address[:10]}... ORPHANED DAI detected! "
+                    f"DAI=${dai_balance:.2f} in wallet + active DAI debt — building recovery distribution")
+
+        if dai_balance < 5.0:
+            logger.info(f"[Resume] {wallet_address[:10]}... orphaned DAI ${dai_balance:.2f} below $5 minimum — "
+                        f"too small for meaningful swaps, skipping recovery")
+            return None
+
+        recovery_distribution = dict(CAPACITY_DISTRIBUTION)
+        if dai_balance > GROWTH_BORROW_USD:
+            recovery_distribution = dict(GROWTH_DISTRIBUTION)
+
+        total_available = dai_balance
+        recovery_distribution['total_borrow'] = 0
+
+        template_total = sum(v for k, v in recovery_distribution.items() if k != 'total_borrow')
+        scale = min(1.0, total_available / template_total) if template_total > 0 else 0
+
+        for k in recovery_distribution:
+            if k != 'total_borrow':
+                recovery_distribution[k] = round(recovery_distribution[k] * scale, 2)
+
+        viable_legs = sum(1 for k, v in recovery_distribution.items() if k != 'total_borrow' and v >= 1.0)
+        if viable_legs < 2:
+            logger.info(f"[Resume] {wallet_address[:10]}... recovery distribution has only {viable_legs} legs >= $1 — "
+                        f"not enough for meaningful recovery, skipping")
+            return None
+
+        _save_execution_state(wallet_address, "borrowed", "recovery", recovery_distribution)
+
+        live_data = get_user_account_data(wallet_address) if DELEGATION_AVAILABLE else None
+        live_hf = live_data.get("healthFactor", 0) if live_data else 0
+
+        result = _execute_delegated_distribution(user_id, wallet_address, agent, "recovery", recovery_distribution, live_hf)
+        result["resumed"] = True
+        result["resume_source"] = "orphaned_dai"
+        logger.info(f"[Resume] {wallet_address[:10]}... orphaned DAI resume result: "
+                    f"action={result.get('action')}, details={result.get('details')}")
+        return result
+
+    return None
 
 
 def _get_uniswap(agent):
@@ -1131,11 +1260,20 @@ def run_delegated_nurse_sweep(user_id, wallet_address, agent):
     Reads user wallet balances for DAI/WETH/WBTC/USDT.
     Skips below $2 floor. NEVER touches USDC.
     Pulls via transferFrom -> supplies to Aave onBehalfOf user.
+
+    IMPORTANT: Nurse must NOT sweep tokens if an active distribution is in progress.
+    DAI is also skipped if the user has outstanding DAI debt, because that DAI
+    likely came from a borrow and should go through the swap pipeline instead.
     """
     result = {"swept": False, "tokens_swept": [], "details": ""}
 
     if not DELEGATION_AVAILABLE:
         result["details"] = "delegation_client_unavailable"
+        return result
+
+    if has_active_distribution(wallet_address):
+        result["details"] = "skipped_active_distribution"
+        logger.info(f"[Nurse] {wallet_address[:10]}... SKIPPED — active distribution in progress, Nurse must not interfere")
         return result
 
     try:
@@ -1161,6 +1299,15 @@ def run_delegated_nurse_sweep(user_id, wallet_address, agent):
             except Exception:
                 pass
 
+        user_has_dai_debt = False
+        try:
+            dai_debt = _get_dai_debt_balance(wallet_address)
+            if dai_debt >= 1.0:
+                user_has_dai_debt = True
+                logger.debug(f"[Nurse] {wallet_address[:10]}... DAI-specific debt: ${dai_debt:.2f}")
+        except Exception:
+            pass
+
         sweep_tokens = {
             "DAI": {"address": DAI_ADDRESS, "price": 1.0, "decimals": 18,
                     "supply_fn": delegated_supply_dai_onbehalf},
@@ -1173,6 +1320,12 @@ def run_delegated_nurse_sweep(user_id, wallet_address, agent):
         }
 
         for token_name, config in sweep_tokens.items():
+            if token_name == "DAI" and user_has_dai_debt:
+                dai_data = balances.get("DAI", {})
+                dai_bal = dai_data.get("balance", 0)
+                if dai_bal > 0:
+                    logger.info(f"[Nurse] {wallet_address[:10]}... DAI ${dai_bal:.2f} SKIPPED — user has DAI debt, DAI should go through swap pipeline")
+                continue
             token_data = balances.get(token_name, {})
             balance = token_data.get("balance", 0)
             balance_raw = token_data.get("balance_raw", 0)

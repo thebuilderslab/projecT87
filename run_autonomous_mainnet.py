@@ -27,7 +27,7 @@ except ImportError:
     AUTO_SUPPLY_AVAILABLE = False
 
 try:
-    from strategy_engine import run_delegated_strategy, get_strategy_status, run_delegated_nurse_sweep
+    from strategy_engine import run_delegated_strategy, get_strategy_status, run_delegated_nurse_sweep, resume_incomplete_distribution, has_active_distribution
     STRATEGY_ENGINE_AVAILABLE = True
 except ImportError:
     STRATEGY_ENGINE_AVAILABLE = False
@@ -362,12 +362,25 @@ def run_autonomous_mainnet_agent():
                                 defi_pos = database.get_defi_position(uid, waddr)
                                 has_active = defi_pos.get('has_active_position', False) if defi_pos else False
                                 if has_active and mw.get('delegation_status') == 'active':
+                                    distribution_resumed = False
                                     try:
-                                        nurse_result = run_delegated_nurse_sweep(uid, waddr, agent)
-                                        if nurse_result.get("swept"):
-                                            log_agent_activity(f"[Nurse] wallet={waddr[:10]}..., {nurse_result['details']}")
-                                    except Exception as nurse_err:
-                                        log_agent_activity(f"[Nurse] wallet={waddr[:10]}..., error: {nurse_err}", "WARNING")
+                                        resume_result = resume_incomplete_distribution(uid, waddr, agent)
+                                        if resume_result:
+                                            distribution_resumed = True
+                                            log_agent_activity(f"[Resume] wallet={waddr[:10]}..., COMPLETED incomplete distribution: "
+                                                             f"action={resume_result.get('action')}, details={resume_result.get('details')}")
+                                    except Exception as resume_err:
+                                        log_agent_activity(f"[Resume] wallet={waddr[:10]}..., error: {resume_err}", "WARNING")
+
+                                    if not distribution_resumed and not has_active_distribution(waddr):
+                                        try:
+                                            nurse_result = run_delegated_nurse_sweep(uid, waddr, agent)
+                                            if nurse_result.get("swept"):
+                                                log_agent_activity(f"[Nurse] wallet={waddr[:10]}..., {nurse_result['details']}")
+                                        except Exception as nurse_err:
+                                            log_agent_activity(f"[Nurse] wallet={waddr[:10]}..., error: {nurse_err}", "WARNING")
+                                    elif not distribution_resumed:
+                                        log_agent_activity(f"[Nurse] wallet={waddr[:10]}..., SKIPPED — active distribution detected")
 
                                     strategy_result = run_delegated_strategy(uid, waddr, agent, run_id, iteration, config)
                                     strat_status = get_strategy_status(uid, waddr)

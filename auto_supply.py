@@ -30,6 +30,14 @@ def _get_chain_id():
         return None
 
 
+def _check_active_distribution(wallet_address):
+    try:
+        from strategy_engine import has_active_distribution
+        return has_active_distribution(wallet_address)
+    except ImportError:
+        return False
+
+
 def auto_supply_wbtc_for_wallet(managed_wallet):
     user_id = managed_wallet['user_id']
     wallet = managed_wallet['wallet_address']
@@ -37,6 +45,11 @@ def auto_supply_wbtc_for_wallet(managed_wallet):
 
     logger.info(f"[AutoSupply] === Evaluating wallet {wallet} (user={user_id}) ===")
     logger.info(f"[AutoSupply] chain_id={chain_id}, contract={DELEGATION_MANAGER_ADDRESS}")
+
+    if _check_active_distribution(wallet):
+        logger.info(f"[AutoSupply] status=skipped, reason=active_distribution, wallet={wallet}, "
+                    f"decision=SKIP (distribution in progress, auto_supply must not interfere)")
+        return False
 
     if chain_id and chain_id != CHAIN_ID_ARBITRUM:
         logger.error(f"[AutoSupply] status=error, reason=wrong_chain, chain_id={chain_id}, expected={CHAIN_ID_ARBITRUM}")
