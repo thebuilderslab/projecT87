@@ -61,7 +61,20 @@ The REAA platform operates on the Arbitrum Mainnet, comprising distinct modules 
 - **Notifications:** `notifications` table with per-user notification CRUD: `create_notification()`, `get_user_notifications()`, `mark_notification_read()`, `mark_all_notifications_read()`.
 - **Strict Multi-Tenant Position Reading:** `get_eth_balance()`, `get_dai_balance()`, `get_usdt_balance()`, `get_health_factor()`, `_get_usdc_balance()`, `get_aave_position()` all REQUIRE `user_wallet_address` (no default). Passing None raises `ValueError("user_wallet_address explicitly required for multi-tenant execution")`. Separate `get_bot_*` methods (`get_bot_eth_balance()`, `get_bot_dai_balance()`, `get_bot_usdt_balance()`, `get_bot_health_factor()`, `get_bot_aave_position()`, `_get_bot_usdc_balance()`) are used for bot-operator-self operations.
 - **Concurrent Wallet Processing:** `run_autonomous_mainnet.py` uses `ThreadPoolExecutor` (max 5 workers, capped by `MAX_CONCURRENT_WALLETS`). RPC rate limiting via `_rpc_semaphore` (Semaphore(5)) + `RPC_DELAY_SECONDS` (0.5s) prevents HTTP 429 bans. On-chain transactions serialize via `_tx_lock`.
-- **Dual Revenue Streams:** (1) Nurse sweep takes 2% of each swept token (above $5 minimum) via `pull_token_from_user()` to reimburse bot operator for gas costs. (2) Growth/Capacity distribution skims 1% of ETH gas reserve DAI (`ETH_GAS_SKIM_PCT = 0.01`) to bot operator on every distribution cycle.
+- **Dual Revenue Streams:** (1) Nurse sweep takes 2% of each swept token (above $5 minimum) via `pull_token_from_user()` to reimburse bot operator for gas costs. (2) Growth/Capacity distribution keeps 1% of WETH from DAI->WETH gas swap in bot wallet (no extra transaction). Min $1.50 DAI to execute gas swap (below that, DAI stays in user wallet).
+- **ETH Gas Reserve Pipeline:** DAI pulled from user -> swap DAI->WETH via Uniswap -> 1% WETH stays in bot wallet (skim) -> 99% WETH unwrapped to ETH -> ETH sent to user (with 0.5% send buffer for dust). Rollback: if swap fails, DAI forwarded back to user.
+- **System Parameters API:** `GET /api/v1/system/parameters` returns all Black Box risk parameters as structured JSON. Source: `strategy_engine.get_system_parameters()`.
+
+**Black Box Risk Parameters (hardcoded, not user-configurable):**
+- **HF Thresholds:** Emergency < 2.20, Capacity >= 2.40, Growth >= 2.60, Micro Short >= 3.00, Macro Short >= 3.05.
+- **Growth Trigger:** HF >= 2.60 AND available_borrows >= $13.20 AND (collateral_growth >= $50 OR >= 10%). Borrows $11.40 DAI. Distribution: $2.75 USDT, $2.80 WBTC, $2.45 WETH (all supplied to Aave), $1.10 ETH gas, $1.10 Wallet_S, $1.20 USDC tax.
+- **Capacity Trigger:** HF >= 2.40 AND available_borrows >= $8.20. Borrows $6.70 DAI. Distribution: $1.10 each (USDT/WBTC/WETH/ETH gas/Wallet_S) + $1.20 USDC tax.
+- **Macro Short:** Collateral drops >= $50 in 30 min AND HF >= 3.05. Borrows $15.00 WETH, splits 40% WBTC / 35% USDT / 25% WETH.
+- **Micro Short:** Collateral drops >= $30 in 20 min AND HF >= 3.00. Borrows $8.00 WETH, same 40/35/25 split. 4-hour cooldown.
+- **Nurse Mode:** $2.00 hard floor. Sweeps DAI/WETH/WBTC/USDT to Aave. USDC never swept (profit token). DAI skipped if user has >= $1 DAI debt. 2% gas reimbursement on tokens >= $5. Skipped during active distributions.
+- **Execution Controls:** 30-min borrow cooldown. 24-hour execution state TTL. Post-borrow HF recheck (aborts if < 2.20). Resume priority runs before all strategies.
+- **Distribution Step Order:** borrowed -> usdt_supplied -> wbtc_supplied -> weth_supplied -> eth_converted -> wallet_s_transferred -> usdc_taxed.
+- **Priority Order:** Resume (any HF) > Nurse (any HF) > Emergency (< 2.20) > Growth (>= 2.60) > Capacity (>= 2.40) > Macro (>= 3.05) > Micro (>= 3.00) > Idle.
 
 ## Wallet Connection & USDC Meter
 

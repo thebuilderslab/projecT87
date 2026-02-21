@@ -1794,6 +1794,18 @@ def system_status():
         logger.error(f"System status API error: {e}")
         return jsonify({'error': str(e)}), 500
 
+@app.route('/api/v1/system/parameters')
+def get_system_parameters_api():
+    """Return all Black Box risk parameters for system analysis."""
+    try:
+        from strategy_engine import get_system_parameters
+        params = get_system_parameters()
+        return jsonify(params)
+    except Exception as e:
+        logger.error(f"System parameters API error: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
 @app.route('/api/network-info')
 def get_network_info_api():
     """Get current network information"""

@@ -1729,3 +1729,113 @@ def get_strategy_status(user_id, wallet_address):
             pass
 
     return "disabled"
+
+
+def get_system_parameters():
+    """
+    Return all Black Box risk parameters for system analysis.
+    These are hardcoded — users cannot customize them.
+    """
+    return {
+        "hf_thresholds": {
+            "growth": {"value": GROWTH_HF_THRESHOLD, "description": "Minimum HF to trigger Growth distribution"},
+            "capacity": {"value": CAPACITY_HF_THRESHOLD, "description": "Minimum HF to trigger Capacity distribution"},
+            "macro_short": {"value": MACRO_HF_THRESHOLD, "description": "Minimum HF to open Macro short hedge"},
+            "micro_short": {"value": MICRO_HF_THRESHOLD, "description": "Minimum HF to open Micro short hedge"},
+            "emergency": {"value": EMERGENCY_HF_THRESHOLD, "description": "Below this HF = critical alert, no actions taken"},
+            "priority_order": "Emergency (< 2.20) > Growth (>= 2.60) > Capacity (>= 2.40) > Macro (>= 3.05) > Micro (>= 3.00) > Idle",
+        },
+        "growth_trigger": {
+            "hf_minimum": GROWTH_HF_THRESHOLD,
+            "min_available_borrows_usd": GROWTH_MIN_CAPACITY_USD,
+            "absolute_collateral_growth_usd": GROWTH_ABSOLUTE_TRIGGER_USD,
+            "relative_collateral_growth_pct": GROWTH_RELATIVE_TRIGGER_PCT * 100,
+            "trigger_logic": "HF >= 2.60 AND available_borrows >= $13.20 AND (collateral_growth >= $50 OR collateral_growth >= 10%)",
+            "borrow_amount_usd": GROWTH_BORROW_USD,
+            "distribution": dict(GROWTH_DISTRIBUTION),
+            "distribution_sequence": [
+                "STEP1: Borrow $11.40 DAI from Aave (delegated)",
+                "STEP2: Swap $2.75 DAI -> USDT, supply USDT to Aave onBehalfOf user",
+                "STEP3: Swap $2.80 DAI -> WBTC, supply WBTC to Aave onBehalfOf user",
+                "STEP4: Swap $2.45 DAI -> WETH, supply WETH to Aave onBehalfOf user",
+                "STEP5: Swap $1.10 DAI -> WETH -> unwrap ETH (1% skim to bot as WETH, 99% ETH to user for gas). Min $1.50 to execute.",
+                "STEP6: Pull $1.10 DAI -> transfer to Wallet_S (savings)",
+                "STEP7: Swap $1.20 DAI -> USDC (stays in user wallet, profit accumulator)",
+            ],
+        },
+        "capacity_trigger": {
+            "hf_minimum": CAPACITY_HF_THRESHOLD,
+            "min_available_borrows_usd": CAPACITY_MIN_CAPACITY_USD,
+            "trigger_logic": "HF >= 2.40 AND available_borrows >= $8.20 (no collateral growth requirement)",
+            "borrow_amount_usd": CAPACITY_BORROW_USD,
+            "distribution": dict(CAPACITY_DISTRIBUTION),
+            "distribution_sequence": [
+                "STEP1: Borrow $6.70 DAI from Aave (delegated)",
+                "STEP2: Swap $1.10 DAI -> USDT, supply USDT to Aave onBehalfOf user",
+                "STEP3: Swap $1.10 DAI -> WBTC, supply WBTC to Aave onBehalfOf user",
+                "STEP4: Swap $1.10 DAI -> WETH, supply WETH to Aave onBehalfOf user",
+                "STEP5: Swap $1.10 DAI -> WETH -> unwrap ETH (1% skim to bot as WETH, 99% ETH to user for gas). Min $1.50 to execute.",
+                "STEP6: Pull $1.10 DAI -> transfer to Wallet_S (savings)",
+                "STEP7: Swap $1.20 DAI -> USDC (stays in user wallet, profit accumulator)",
+            ],
+        },
+        "macro_short": {
+            "hf_minimum": MACRO_HF_THRESHOLD,
+            "velocity_drop_usd": MACRO_VELOCITY_DROP_USD,
+            "velocity_window_minutes": MACRO_VELOCITY_WINDOW_MIN,
+            "short_size_usd": MACRO_SHORT_SIZE_USD,
+            "trigger_logic": f"Collateral drops >= ${MACRO_VELOCITY_DROP_USD} within {MACRO_VELOCITY_WINDOW_MIN} min AND HF >= {MACRO_HF_THRESHOLD}",
+            "hedge_allocation": {
+                "wbtc_pct": SHORT_WBTC_PCT * 100,
+                "usdt_pct": SHORT_USDT_PCT * 100,
+                "weth_pct": SHORT_WETH_PCT * 100,
+            },
+            "description": "Borrow WETH against collateral and diversify into WBTC/USDT/WETH to hedge downside",
+        },
+        "micro_short": {
+            "hf_minimum": MICRO_HF_THRESHOLD,
+            "velocity_drop_usd": MICRO_VELOCITY_DROP_USD,
+            "velocity_window_minutes": MICRO_VELOCITY_WINDOW_MIN,
+            "cooldown_hours": MICRO_COOLDOWN_HOURS,
+            "short_size_usd": MICRO_SHORT_SIZE_USD,
+            "trigger_logic": f"Collateral drops >= ${MICRO_VELOCITY_DROP_USD} within {MICRO_VELOCITY_WINDOW_MIN} min AND HF >= {MICRO_HF_THRESHOLD}, 4h cooldown",
+            "hedge_allocation": {
+                "wbtc_pct": SHORT_WBTC_PCT * 100,
+                "usdt_pct": SHORT_USDT_PCT * 100,
+                "weth_pct": SHORT_WETH_PCT * 100,
+            },
+            "description": "Smaller hedge for moderate drops, 4-hour cooldown between triggers",
+        },
+        "nurse_mode": {
+            "hard_floor_usd": 2.00,
+            "gas_reimbursement_pct": 2.0,
+            "gas_reimbursement_min_usd": 5.00,
+            "protected_token": "USDC (never swept)",
+            "sweep_tokens": ["DAI", "WETH", "WBTC", "USDT"],
+            "dai_debt_guard": "DAI skipped if user has >= $1 outstanding DAI debt",
+            "distribution_guard": "Nurse skipped entirely if active distribution in progress",
+            "action": "Pull idle tokens from user wallet -> supply to Aave onBehalfOf user (raises HF)",
+            "skim_logic": "2% of each swept token pulled to bot operator wallet IF token USD value >= $5. Below $5, full amount supplied.",
+        },
+        "execution_controls": {
+            "borrow_cooldown_seconds": BORROW_COOLDOWN_SECONDS,
+            "borrow_cooldown_minutes": BORROW_COOLDOWN_SECONDS / 60,
+            "execution_state_ttl_hours": 24,
+            "post_borrow_hf_recheck": True,
+            "post_borrow_emergency_abort": f"If HF drops below {EMERGENCY_HF_THRESHOLD} after borrow, distribution aborts (state preserved for recovery)",
+            "swap_failure_threshold": "If borrow succeeded but >= 3 swap steps failed with 0 successes, state preserved (not cleared) for resume",
+            "step_order": list(DELEGATED_STEP_ORDER),
+            "priority_order": "Resume (any HF) > Nurse (any HF) > Emergency (< 2.20) > Growth (>= 2.60) > Capacity (>= 2.40) > Macro > Micro > Idle",
+        },
+        "gas_economics": {
+            "eth_gas_skim_pct": 1.0,
+            "eth_gas_min_usd": 1.50,
+            "skim_method": "Bot keeps 1% of WETH from DAI->WETH swap (no extra transaction). Remaining 99% unwrapped to ETH and sent to user.",
+            "below_minimum": "If ETH gas reserve < $1.50, DAI stays in user wallet (4 txns uneconomical)",
+            "send_buffer": "0.5% ETH send buffer (sends 99.5% of unwrapped ETH) to prevent dust rounding errors",
+        },
+        "revenue_streams": {
+            "nurse_gas_reimbursement": "2% of swept tokens above $5 minimum",
+            "distribution_eth_skim": "1% of WETH from ETH gas reserve swap (kept as WETH, no extra tx)",
+        },
+    }
