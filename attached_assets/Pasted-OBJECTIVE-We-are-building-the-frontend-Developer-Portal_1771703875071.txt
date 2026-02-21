@@ -1,0 +1,46 @@
+OBJECTIVE
+We are building the frontend Developer Portal using Flask Jinja templates. We want a lightweight, highly responsive UI with an "80s Retro Terminal / Cyberpunk Mainframe" aesthetic. It must look like a hacker terminal but function with modern enterprise clarity.
+
+UI/UX & THEME GUIDELINES (Strict CSS Instructions)
+
+Performance First: Achieve the theme using ONLY pure CSS. No heavy background images or JS animation libraries.
+
+Colors: Deep pitch-black (#000000) or dark charcoal (#0D1117) backgrounds. Use "Phosphor Green" (#00FF41) as the primary text color, with Neon Cyan (#00FFFF) or Alert Red (#FF003C) for highlights.
+
+Typography: Import the VT323 or Fira Code Google Font. All text must be monospace.
+
+The Glow Effect: Apply a subtle text-shadow: 0 0 5px #00FF41; to headers and primary text to simulate a CRT monitor glow. Apply a neon box-shadow on hover states for buttons.
+
+Angular Geometry: Absolutely NO border-radius. All borders must be sharp 90-degree angles. If possible, use clip-path for chamfered corners on primary buttons.
+
+Layout Structure: Implement a Split-Pane Flexbox layout. A fixed left-side navigation menu, and a scrolling right-side main content pane.
+
+TASK 1: API Key Management UI
+
+Action: Build the Key Management panel at the top of the main view.
+
+Features:
+
+A prominent, glowing "Generate New API Key" button. (Disable it if the database shows the user already has 2 active keys).
+
+A data-table of active keys showing the key_prefix, creation date, and a red "Revoke" button.
+
+Security Modal: When a new key is generated, display the raw key in a temporary, highly visible terminal-style modal using Vanilla JS. Display the warning: "SYSTEM ALERT: Copy this key now. It will never be displayed again."
+
+TASK 2: The Autonomous Activity Terminal (Inbox)
+
+Action: Build the Activity Log panel below the API keys.
+
+Features:
+
+Fetch the user's notifications using get_notifications_for_wallet.
+
+Display them inside a container styled to look like a command-line terminal (overflow-y: auto; max-height: 400px; border: 1px solid #00FF41; padding: 15px;).
+
+Ensure routine backend events (like the 7-step Growth distribution) appear in standard green text, but style critical events (like Macro/Micro short executions) with a red/warning CSS class to break up the visual monotony.
+
+TASK 3: Navigation & Integration
+
+Action: Ensure the left sidebar includes clear navigation linking to the /docs (FastAPI Swagger UI) and a "Disconnect Wallet / Eject" button.
+
+Execute this frontend build and confirm when the Jinja templates are styled and routed.

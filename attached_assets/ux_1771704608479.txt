@@ -1,0 +1,19 @@
+Proceed with the Developer Portal build using the following specific style constraints to achieve a high-fidelity "80s Retro Terminal" look:
+
+Typography: Import VT323 from Google Fonts. Apply it globally. Set all text to #00FF41 with a text-shadow: 0 0 5px #00FF41;.
+
+CSS Scanlines: Implement a CSS overlay on the body using repeating-linear-gradient(rgba(18, 16, 16, 0) 0, rgba(18, 16, 16, 0.25) 50%, rgba(18, 16, 16, 0.5) 100%) to simulate a CRT monitor.
+
+Component Styling: Remove all border-radius. Use #003300 for container borders.
+
+One-Time Secret Display: When a user generates an API key, use a stylized div that mimics a "Terminal Override" popup. It should have a blinking cursor effect and force the user to click "I HAVE COPIED THE ACCESS KEY" before closing.
+
+Log Feed: In the Activity Terminal, color-code the output:
+
+Standard distribution: Phosphor Green.
+
+Macro/Micro Shorts: Neon Red.
+
+Wallet Balances: High-Voltage Cyan.
+
+Execute Task 2 (Template Creation) and Task 3 (Key Management) using these style tokens.
