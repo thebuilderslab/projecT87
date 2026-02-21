@@ -543,13 +543,10 @@ threading.Thread(target=monitor_console_output, daemon=True).start()
 # Add startup status
 console_buffer.append(f"[{est_now()}] 🔄 Initializing agent connections...")
 
-@app.after_request
-def add_security_headers(response):
-    response.headers['Content-Security-Policy'] = (
-        "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.replit.dev; "
-        "object-src 'none';"
-    )
-    return response
+@app.context_processor
+def inject_csp_nonce():
+    nonce = request.environ.get("HTTP_X_CSP_NONCE", "")
+    return {"csp_nonce": nonce}
 
 @app.route('/')
 def root_redirect():

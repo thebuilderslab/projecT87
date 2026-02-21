@@ -1254,7 +1254,7 @@
         <div class="last-updated" id="lastUpdated">Awaiting first data cycle...</div>
     </div>
 
-    <script>
+    <script nonce="{{ csp_nonce }}">
         let refreshInterval = null;
         let lastData = null;
         let growthCooldownSec = 0;

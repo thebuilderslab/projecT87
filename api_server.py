@@ -1,12 +1,11 @@
 import logging
 import os
+import secrets
 from typing import Optional
 
 from fastapi import FastAPI, Depends, HTTPException, Query
 from fastapi.security import APIKeyHeader
 from fastapi.middleware.wsgi import WSGIMiddleware
-from starlette.middleware.base import BaseHTTPMiddleware
-from starlette.requests import Request as StarletteRequest
 from pydantic import BaseModel, ConfigDict, Field
 
 import db as database
@@ -18,14 +17,46 @@ ALLOWED_BORROW_ASSETS = {"DAI", "USDC", "USDT"}
 
 database.init_db()
 
-class CSPMiddleware(BaseHTTPMiddleware):
-    async def dispatch(self, request: StarletteRequest, call_next):
-        response = await call_next(request)
-        response.headers["Content-Security-Policy"] = (
-            "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.replit.dev; "
-            "object-src 'none';"
-        )
-        return response
+class EnhancedWeb3CSPMiddleware:
+    def __init__(self, app):
+        self.app = app
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+
+        nonce = secrets.token_urlsafe(16)
+        if "state" not in scope:
+            scope["state"] = {}
+        scope["state"]["csp_nonce"] = nonce
+
+        async def send_with_csp(message):
+            if message["type"] == "http.response.start":
+                headers = dict(
+                    (k.lower(), v) for k, v in
+                    [(h[0], h[1]) for h in message.get("headers", [])]
+                )
+                ct = headers.get(b"content-type", b"").decode("utf-8", errors="ignore")
+
+                if "text/html" in ct:
+                    csp = (
+                        f"default-src 'self'; "
+                        f"script-src 'self' 'nonce-{nonce}' 'unsafe-eval' https://*.replit.dev; "
+                        f"connect-src 'self' https://*.arbitrum.io https://*.tenderly.co "
+                        f"https://*.blastapi.io https://*.publicnode.com wss://*.walletconnect.org; "
+                        f"style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+                        f"font-src 'self' https://fonts.gstatic.com; "
+                        f"object-src 'none';"
+                    )
+                    new_headers = [h for h in message.get("headers", [])
+                                   if h[0].lower() != b"content-security-policy"]
+                    new_headers.append([b"content-security-policy", csp.encode()])
+                    message = {**message, "headers": new_headers}
+
+            await send(message)
+
+        await self.app(scope, receive, send_with_csp)
 
 app = FastAPI(
     title="OpenClaw API",
@@ -33,7 +64,7 @@ app = FastAPI(
     description="Multi-tenant DeFi Infrastructure-as-a-Service API",
 )
 
-app.add_middleware(CSPMiddleware)
+app.add_middleware(EnhancedWeb3CSPMiddleware)
 
 api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
 
@@ -246,7 +277,25 @@ def api_health_check():
 
 
 from web_dashboard import app as flask_app
-app.mount("/", WSGIMiddleware(flask_app))
+
+class NoncePassingWSGIMiddleware:
+    def __init__(self, wsgi_app):
+        self.wsgi_app = wsgi_app
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] != "http":
+            return
+
+        nonce = (scope.get("state") or {}).get("csp_nonce", "")
+
+        def nonce_injecting_app(environ, start_response):
+            environ["HTTP_X_CSP_NONCE"] = nonce
+            return self.wsgi_app(environ, start_response)
+
+        bridge = WSGIMiddleware(nonce_injecting_app)
+        await bridge(scope, receive, send)
+
+app.mount("/", NoncePassingWSGIMiddleware(flask_app))
 
 
 def start_server(host: str = "0.0.0.0", port: int = 5000):

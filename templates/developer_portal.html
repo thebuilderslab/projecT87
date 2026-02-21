@@ -531,7 +531,7 @@ body.ejecting {
   </div>
 </div>
 
-<script>
+<script nonce="{{ csp_nonce }}">
 let authToken = localStorage.getItem('authToken');
 let currentWallet = localStorage.getItem('walletAddress');
 let currentRawKey = '';
