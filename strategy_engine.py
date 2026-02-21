@@ -247,16 +247,28 @@ def _clear_execution_state(wallet_address):
 def _get_uniswap(agent):
     if hasattr(agent, 'uniswap') and agent.uniswap:
         return agent.uniswap
+    return _get_bot_uniswap()
+
+
+_bot_uniswap_cache = None
+
+def _get_bot_uniswap():
+    global _bot_uniswap_cache
+    if _bot_uniswap_cache is not None:
+        return _bot_uniswap_cache
     if UNISWAP_AVAILABLE:
         try:
-            from web3 import Web3
             from delegation_client import _get_web3, _get_bot_account
             w3 = _get_web3()
             acct = _get_bot_account()
             if w3 and acct:
-                return UniswapIntegration(w3, acct)
+                _bot_uniswap_cache = UniswapIntegration(w3, acct)
+                logger.info(f"[Uniswap] Bot-wallet UniswapIntegration created for {acct.address}")
+                return _bot_uniswap_cache
+            else:
+                logger.error("[Uniswap] Cannot create bot UniswapIntegration: missing w3 or bot account")
         except Exception as e:
-            logger.error(f"Failed to initialize UniswapIntegration: {e}")
+            logger.error(f"[Uniswap] Failed to initialize bot UniswapIntegration: {e}")
     return None
 
 
@@ -297,7 +309,13 @@ def _execute_delegated_distribution(user_id, wallet_address, agent, path_name, d
         idx = DELEGATED_STEP_ORDER.index(resume_after)
         already_done = set(DELEGATED_STEP_ORDER[:idx + 1])
 
-    uniswap = _get_uniswap(agent)
+    uniswap = _get_bot_uniswap()
+    if not uniswap:
+        result["details"] = "Bot-wallet Uniswap unavailable — cannot execute swaps"
+        result["action"] = "UNISWAP_UNAVAILABLE"
+        logger.error(f"[Distribution] {wallet_address[:10]}... ABORTED: bot-wallet UniswapIntegration is None")
+        _record_strategy_action(user_id, wallet_address, "ERROR: bot uniswap unavailable")
+        return result
 
     dist_serializable = {k: v for k, v in distribution.items()}
     steps_completed = list(already_done)
@@ -566,7 +584,7 @@ def _execute_delegated_short_entry(user_id, wallet_address, agent, tier, short_s
     """
     result = {"mode": f"{tier}_short", "action": "SHORT_ENTRY", "executed": False, "details": ""}
 
-    uniswap = _get_uniswap(agent)
+    uniswap = _get_bot_uniswap()
     if not uniswap:
         result["details"] = "uniswap_unavailable"
         return result
@@ -747,7 +765,7 @@ def _execute_delegated_short_close(user_id, wallet_address, agent, live_hf):
     result = {"mode": "short_close", "action": "SHORT_CLOSE", "executed": False, "details": "",
               "distribution": {}}
 
-    uniswap = _get_uniswap(agent)
+    uniswap = _get_bot_uniswap()
     if not uniswap:
         result["details"] = "uniswap_unavailable"
         return result
