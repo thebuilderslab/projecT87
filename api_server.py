@@ -43,8 +43,9 @@ class EnhancedWeb3CSPMiddleware:
                     csp = (
                         f"default-src 'self'; "
                         f"script-src 'self' 'nonce-{nonce}' 'unsafe-eval' https://*.replit.dev; "
-                        f"connect-src 'self' https://*.arbitrum.io https://*.tenderly.co "
-                        f"https://*.blastapi.io https://*.publicnode.com wss://*.walletconnect.org; "
+                        f"connect-src 'self' https://arb1.arbitrum.io https://arbitrum.publicnode.com "
+                        f"wss://relay.walletconnect.com https://verify.walletconnect.com "
+                        f"https://explorer-api.walletconnect.com; "
                         f"style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
                         f"font-src 'self' https://fonts.gstatic.com; "
                         f"object-src 'none';"

@@ -106,11 +106,16 @@ The CSP behavior was verified with runtime checks:
    - 404 pages also emit a CSP header.
 
 4. **External domains allowed**
-   - Network traces during normal flows show external requests to:
-     - `fonts.googleapis.com` and `fonts.gstatic.com` (Google Fonts), covered by `style-src` / `font-src`.
-     - `*.arbitrum.io` (Arbitrum RPC), covered by `connect-src`.
-     - Links to `arbiscan.io` are plain anchors, not script or XHR endpoints, so no CSP change is required.
-   - As of this writing, WalletConnect is not fully exercised in automated tests; the CSP is configured to allow the expected WalletConnect endpoints (for example `wss://relay.walletconnect.com`, `https://explorer-api.walletconnect.com`, `https://verify.walletconnect.com`), but this has not yet been validated against a full live WalletConnect flow.
+   - The `connect-src` directive whitelists these specific endpoints:
+     - `https://arb1.arbitrum.io` — primary Arbitrum One RPC.
+     - `https://arbitrum.publicnode.com` — backup Arbitrum RPC.
+     - `wss://relay.walletconnect.com` — WalletConnect v2 relay (persistent WebSocket).
+     - `https://verify.walletconnect.com` — WalletConnect session verification.
+     - `https://explorer-api.walletconnect.com` — WalletConnect dapp metadata.
+   - `style-src` / `font-src` allow `fonts.googleapis.com` and `fonts.gstatic.com` for Google Fonts.
+   - Links to `arbiscan.io` are plain anchors, not script or XHR endpoints, so no CSP directive is required.
+   - WalletConnect domains use the `.com` TLD (not `.org`). The relay uses `wss://` for its persistent socket connection; verify and explorer-api use `https://`.
+   - As of this writing, WalletConnect is not fully exercised in automated tests; the CSP is configured with the correct 2026 production endpoints listed above, but has not yet been validated against a full live WalletConnect flow.
 
 ### Known limitations and open items
 
