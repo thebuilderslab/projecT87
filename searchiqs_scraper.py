@@ -13,6 +13,9 @@ CT_COURT_URL = "https://civilinquiry.jud.ct.gov"
 
 
 class SearchIQSScraper:
+    MAX_LOGIN_RETRIES = 3
+    RETRY_BACKOFF = [5, 15, 30]
+
     def __init__(self, base_url: str = "https://www.searchiqs.com/CTEHART", town_name: str = "Hartford"):
         self.base_url = base_url.rstrip("/")
         self.town_name = town_name
@@ -21,23 +24,67 @@ class SearchIQSScraper:
         self.login_url = f"{self.base_url}/"
         self.session = requests.Session()
         self.session.headers.update({
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
             "Accept-Language": "en-US,en;q=0.9",
+            "Accept-Encoding": "gzip, deflate",
+            "Connection": "keep-alive",
+            "Upgrade-Insecure-Requests": "1",
+            "Sec-Fetch-Dest": "document",
+            "Sec-Fetch-Mode": "navigate",
+            "Sec-Fetch-Site": "none",
+            "Sec-Fetch-User": "?1",
+            "Cache-Control": "max-age=0",
         })
         self.logged_in = False
         self.login_page_html = None
 
+    def _get_with_retry(self, url, max_retries=None, timeout=30):
+        retries = max_retries or self.MAX_LOGIN_RETRIES
+        for attempt in range(retries):
+            try:
+                resp = self.session.get(url, timeout=timeout)
+                if resp.status_code == 403:
+                    wait = self.RETRY_BACKOFF[min(attempt, len(self.RETRY_BACKOFF) - 1)]
+                    logger.warning(f"[{self.town_name}] 403 on GET {url} (attempt {attempt+1}/{retries}), retrying in {wait}s...")
+                    time.sleep(wait)
+                    continue
+                if resp.status_code == 503:
+                    wait = self.RETRY_BACKOFF[min(attempt, len(self.RETRY_BACKOFF) - 1)]
+                    logger.warning(f"[{self.town_name}] 503 maintenance on {url} (attempt {attempt+1}/{retries}), retrying in {wait}s...")
+                    time.sleep(wait)
+                    continue
+                resp.raise_for_status()
+                return resp
+            except requests.exceptions.HTTPError:
+                if attempt < retries - 1:
+                    wait = self.RETRY_BACKOFF[min(attempt, len(self.RETRY_BACKOFF) - 1)]
+                    logger.warning(f"[{self.town_name}] HTTP error on {url} (attempt {attempt+1}), retrying in {wait}s...")
+                    time.sleep(wait)
+                else:
+                    raise
+            except requests.exceptions.ConnectionError:
+                if attempt < retries - 1:
+                    wait = self.RETRY_BACKOFF[min(attempt, len(self.RETRY_BACKOFF) - 1)]
+                    logger.warning(f"[{self.town_name}] Connection error on {url} (attempt {attempt+1}), retrying in {wait}s...")
+                    time.sleep(wait)
+                else:
+                    raise
+        raise requests.exceptions.HTTPError(f"Failed after {retries} retries: {url}")
+
     def login_as_guest(self) -> bool:
         try:
             logger.info(f"Logging into SearchIQS as guest ({self.town_name})...")
-            resp = self.session.get(self.login_url, timeout=30)
-            resp.raise_for_status()
+            resp = self._get_with_retry(self.login_url)
 
             if len(resp.text) < 100:
                 logger.warning(f"Empty page from {self.login_url}, retrying...")
                 time.sleep(2)
-                resp = self.session.get(self.login_url, timeout=30)
+                resp = self._get_with_retry(self.login_url)
+
+            if "btnGuestLogin" not in resp.text and "Search Records as Guest" not in resp.text:
+                logger.warning(f"[{self.town_name}] Guest login button not found — site may be in maintenance mode")
+                return False
 
             viewstate = self._extract_field(resp.text, "__VIEWSTATE")
             viewstategenerator = self._extract_field(resp.text, "__VIEWSTATEGENERATOR")
@@ -56,6 +103,8 @@ class SearchIQSScraper:
                 "password": "",
             }
 
+            self.session.headers["Sec-Fetch-Site"] = "same-origin"
+            self.session.headers["Referer"] = self.login_url
             resp2 = self.session.post(self.login_url, data=login_data, timeout=30, allow_redirects=True)
 
             if resp2.status_code == 200 and ("SearchAdvanced" in resp2.url or "Search" in resp2.text):

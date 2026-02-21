@@ -3638,6 +3638,22 @@ def get_filing_stats_api():
     stats = database.get_filing_stats()
     return jsonify({"stats": stats})
 
+@app.route('/api/filings/recent', methods=['GET'])
+def get_recent_filings_api():
+    """Get filings from the last 7 days as alerts/new opportunities"""
+    if not DB_AVAILABLE:
+        return jsonify({"error": "Database not available"}), 503
+    days = request.args.get('days', 7, type=int)
+    limit = request.args.get('limit', 20, type=int)
+    filings = database.get_filings_last_n_days(days=days, limit=limit)
+    counts = database.count_filings_by_period(days_recent=7, days_total=30)
+    return jsonify({
+        "filings": filings,
+        "recent_count": counts["recent_count"],
+        "total_30d": counts["total_count"],
+        "all_count": counts["all_count"],
+    })
+
 @app.route('/api/export/filings', methods=['GET'])
 def export_filings():
     """Export filings as CSV"""

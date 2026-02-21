@@ -817,6 +817,43 @@ def get_recent_filings_for_towns(town_ids, limit=5):
         return result
 
 
+def get_filings_last_n_days(days=7, limit=20):
+    with get_conn() as conn:
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur.execute("""
+            SELECT f.id, f.property_address, f.seller, f.lender, f.recording_date,
+                   f.debt_amount, f.status, f.court_case_number, t.name as town_name
+            FROM filings f JOIN towns t ON t.id = f.town_id
+            WHERE f.recording_date >= CURRENT_DATE - %s
+            ORDER BY f.recording_date DESC NULLS LAST, f.id DESC
+            LIMIT %s
+        """, (days, limit))
+        rows = cur.fetchall()
+        cur.close()
+        result = []
+        for r in rows:
+            d = dict(r)
+            if d.get("recording_date"):
+                d["recording_date"] = d["recording_date"].isoformat()
+            result.append(d)
+        return result
+
+
+def count_filings_by_period(days_recent=7, days_total=30):
+    with get_conn() as conn:
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur.execute("""
+            SELECT
+                COUNT(*) FILTER (WHERE recording_date >= CURRENT_DATE - %s) as recent_count,
+                COUNT(*) FILTER (WHERE recording_date >= CURRENT_DATE - %s) as total_count,
+                COUNT(*) as all_count
+            FROM filings
+        """, (days_recent, days_total))
+        row = cur.fetchone()
+        cur.close()
+        return dict(row) if row else {"recent_count": 0, "total_count": 0, "all_count": 0}
+
+
 def upsert_managed_wallet(user_id, wallet_address, auto_supply_wbtc=False, delegation_mode=None):
     wallet_address = wallet_address.lower().strip()
     with get_conn() as conn:
