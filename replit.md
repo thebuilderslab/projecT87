@@ -69,6 +69,66 @@ The REAA platform operates on the Arbitrum Mainnet, integrating distinct modules
 - **DeFi Position Integrity:** `upsert_defi_position()` requires a non-empty `wallet_address` to prevent data corruption.
 - **Staleness Visibility:** Dashboard indicates data freshness with color-coded "Last Updated" timestamps.
 
+## Content Security Policy (CSP)
+
+### Security property
+
+On the hardened routes (`/app` and `/admin`), the intended security property is:
+
+> No attacker-controlled inline JavaScript can execute in the browser. Only scripts that are:
+> 1) delivered by our servers from trusted origins, and
+> 2) explicitly tagged with the per-request CSP nonce
+> are allowed to run.
+
+CSP is used as a defense-in-depth control against XSS and other content injection attacks, complementing input validation and output encoding.
+
+### Implementation overview
+
+- A FastAPI middleware generates a fresh cryptographic nonce for every HTTP request, attaches it to the response CSP header, and exposes it to downstream components.
+- A custom WSGI bridge injects this nonce into the Flask request environment without shared mutable state, so each request gets its own nonce.
+- A Flask context processor reads the nonce from the environment and exposes it to templates as `{{ csp_nonce }}`.
+- All active templates for `/app` and `/admin` use `nonce="{{ csp_nonce }}"` on their `<script>` tags, and there are no remaining inline event handlers (`onclick`, etc.) on these routes.
+- All HTML responses for `/app` and `/admin` send a CSP header whose `script-src` includes the per-request nonce and only the minimum required external script/connect/style sources.
+
+### Verification status
+
+The CSP behavior was verified with runtime checks:
+
+1. **Per-request nonce consistency**
+   - For `/app`, `/admin`, and `/reaa`, multiple test requests were captured.
+   - Within each individual response, the nonce in the CSP header matched the nonce on all `<script nonce="…">` tags, and each request used a distinct nonce value.
+
+2. **Cross-layer propagation (FastAPI → WSGI → Flask)**
+   - Logging at three points (middleware generation, WSGI environ injection, Flask context processor) confirmed the same nonce is used end-to-end for a given request, and different requests produce different nonces.
+
+3. **Route coverage**
+   - All active HTML routes (`/app`, `/admin`, `/reaa`) and the `/` redirect (which lands on `/app`) send a CSP header with a per-request nonce.
+   - 404 pages also emit a CSP header.
+
+4. **External domains allowed**
+   - Network traces during normal flows show external requests to:
+     - `fonts.googleapis.com` and `fonts.gstatic.com` (Google Fonts), covered by `style-src` / `font-src`.
+     - `*.arbitrum.io` (Arbitrum RPC), covered by `connect-src`.
+     - Links to `arbiscan.io` are plain anchors, not script or XHR endpoints, so no CSP change is required.
+   - As of this writing, WalletConnect is not fully exercised in automated tests; the CSP is configured to allow the expected WalletConnect endpoints (for example `wss://relay.walletconnect.com`, `https://explorer-api.walletconnect.com`, `https://verify.walletconnect.com`), but this has not yet been validated against a full live WalletConnect flow.
+
+### Known limitations and open items
+
+- **Legacy `/reaa` dashboard inline handlers (open vulnerability)**
+  - The legacy consumer dashboard at `/reaa` still contains ~30 inline `onclick` handlers in its template. Under a nonce-based CSP, inline event handlers are blocked unless weakened by `unsafe-inline`, which is intentionally avoided because it significantly reduces XSS protection.
+  - As long as `/reaa` is reachable and these handlers remain, this route does not fully satisfy the security property above. An attacker who can introduce HTML/attribute injection on `/reaa` may be able to execute code via those handlers.
+  - **Planned remediation:** refactor `/reaa` to move inline handlers into nonced scripts using `addEventListener` or similar, or decommission the route if it is no longer needed.
+
+- **WalletConnect validation status**
+  - CSP directives include allowances for expected WalletConnect domains, but there is no end-to-end automated test yet that runs a full WalletConnect connection and signing flow under CSP.
+  - **Planned remediation:** add an integration test that drives a WalletConnect session in a real browser (or headless) and confirms no CSP violations occur during connect, sign, and disconnect phases.
+
+### Summary
+
+- `/app` and `/admin` currently meet the stated CSP security property: no inline handlers, all executing scripts are explicitly nonced, and external domains are restricted to what the app requires.
+- `/reaa` is explicitly tracked as an exception with known inline handlers and is slated for refactoring or removal.
+- WalletConnect is configured but not yet fully validated by automated CSP-aware tests; this is documented as an open task.
+
 ## External Dependencies
 
 - **Aave V3 Protocol**: Core DeFi lending protocol.
