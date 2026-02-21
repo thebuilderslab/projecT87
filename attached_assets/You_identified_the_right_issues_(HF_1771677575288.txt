@@ -1,0 +1,304 @@
+You identified the right issues (HF thresholds, chat sanitization, auth race, USDC UI, and ignored UI moves), but several tasks were left at the plan level. I now need you to actually implement them with code and show evidence.
+
+Execute these tasks in order. Do not start UI work until the wallet connect race condition is fixed and verified.
+
+────────────────────────
+Task 1 – Fix wallet connect race condition and fullDisconnect behavior (CRITICAL)
+────────────────────────
+
+Problem recap:
+- You previously “fixed” the disconnect UX by preserving `state.towns` across `fullDisconnect()`. That is not acceptable: on disconnect, all user-specific state must be wiped.
+- The real bug is a race condition: `connectWallet` kicks off concurrent API calls (e.g. `loadTowns`, `loadDefiPanel`) before the auth token is reliably set in state and attached to headers, causing intermittent 401s and forced disconnects.
+
+Requirements:
+
+1.1 Revert the state.towns hack
+- Show the current `fullDisconnect()` implementation.
+- Remove any logic that preserves `state.towns` or any other user-specific fields.
+- Ensure `fullDisconnect()` clears:
+  - in-memory state (walletAddress, authToken, userId, towns, defi data),
+  - localStorage/sessionStorage keys you use for wallet persistence.
+
+Example shape:
+
+```javascript
+function fullDisconnect() {
+  state.walletAddress = null;
+  state.authToken = null;
+  state.userId = null;
+  state.towns = [];
+  state.defiStatus = null;
+  localStorage.removeItem('rea_wallet_session');
+  updateUIForDisconnectedState();
+}
+1.2 Refactor connectWallet to await auth before loading data
+
+Show the current connectWallet() / authenticateWallet() implementations.
+
+Refactor them so that:
+
+Step 1: user connects via wallet provider and you get the address.
+
+Step 2: you call the backend auth endpoint, await the response, and only after storing authToken and userId in state and localStorage do you fire dashboard data fetches.
+
+Example:
+
+javascript
+async function connectWallet() {
+  try {
+    const address = await requestWalletAddress();
+    state.walletAddress = address;
+
+    // Step 2: authenticate and await
+    const auth = await authenticateWallet(address);
+    state.authToken = auth.token;
+    state.userId = auth.userId;
+    localStorage.setItem('rea_wallet_session', JSON.stringify({
+      walletAddress: address,
+      authToken: auth.token,
+      userId: auth.userId,
+    }));
+
+    // Step 3: only now load dashboard data (in parallel if you want)
+    await Promise.all([
+      loadDefiPanel(),
+      loadTowns(),
+      loadRecentPayouts(),
+      // any other initial loaders
+    ]);
+
+  } catch (e) {
+    console.error('connectWallet failed', e);
+    fullDisconnect();
+  }
+}
+Ensure that any fetch helper attaches state.authToken to headers and gracefully handles 401 by calling fullDisconnect() once (not in a loop).
+
+1.3 Verification
+
+After implementing, show logs from:
+
+One fresh connect where:
+
+auth response is received before any /api/... data calls,
+
+no 401s occur during initial load.
+
+A manual disconnect → refresh → reconnect cycle to confirm:
+
+after disconnect, dashboard shows a clean logged-out state,
+
+after reconnect, data loads without 401 races.
+
+────────────────────────
+Task 2 – Build USDC meter: text + visual, wired to live Arbitrum data
+────────────────────────
+
+Requirements:
+
+2.1 Backend or data source
+
+Show how you currently get DeFi balances (for Aave/USDC).
+
+Add or confirm an API field for the user’s Arbitrum USDC wallet balance and an optional target:
+
+Example JSON from /api/user/status or /api/defi:
+
+json
+{
+  "usdc": {
+    "walletBalanceUsd": 1250.00,
+    "targetUsd": 5000.00
+  },
+  ...
+}
+The USDC token address to track: 0xaf88d065e77c8cC2239327C5EDb3A432268e5831 (Arbitrum).
+
+2.2 “Active Wealth” panel text
+
+In the “Active Wealth” panel component/template:
+
+Add a line that renders the USDC wallet balance as text:
+
+xml
+<div class="active-wealth-row">
+  <span>USDC (wallet)</span>
+  <span id="usdcWalletText">$1,250.00</span>
+</div>
+In JS, wire it:
+
+javascript
+function renderActiveWealth(data) {
+  const usdc = data.usdc;
+  document.getElementById('usdcWalletText').textContent =
+    formatCurrency(usdc.walletBalanceUsd);
+}
+2.3 Command Center meter
+
+In the center Command Center (below or around the dial), add a horizontal meter:
+
+xml
+<div class="usdc-meter">
+  <div class="usdc-meter-label">
+    USDC → WALLET
+    <span id="usdcMeterValue">$0.00 / $0.00</span>
+  </div>
+  <div class="usdc-meter-bar">
+    <div id="usdcMeterFill"></div>
+  </div>
+</div>
+CSS (dark mode, sleek):
+
+css
+.usdc-meter {
+  margin-top: 12px;
+}
+.usdc-meter-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: #9ca3af;
+}
+.usdc-meter-bar {
+  margin-top: 4px;
+  width: 100%;
+  height: 6px;
+  border-radius: 999px;
+  background: #111827;
+  overflow: hidden;
+}
+.usdc-meter-bar #usdcMeterFill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #22c55e, #0ea5e9);
+  transition: width 0.3s ease;
+}
+JS wiring:
+
+javascript
+function renderUsdcMeter(data) {
+  const usdc = data.usdc;
+  const valueEl = document.getElementById('usdcMeterValue');
+  const fillEl = document.getElementById('usdcMeterFill');
+
+  const balance = usdc.walletBalanceUsd || 0;
+  const target = usdc.targetUsd || 1; // avoid divide-by-zero
+  const pct = Math.max(0, Math.min(100, (balance / target) * 100));
+
+  valueEl.textContent = `${formatCurrency(balance)} / ${formatCurrency(target)}`;
+  fillEl.style.width = `${pct}%`;
+}
+Call renderUsdcMeter() from the same place you render Defi/Command Center after the auth race fix.
+
+────────────────────────
+Task 3 – Execute the previously dropped UI changes
+────────────────────────
+
+3.1 Move “WBTC AUTO-SUPPLY DELEGATION” into DeFi tab
+
+Identify the markup for the “WBTC AUTO-SUPPLY DELEGATION” panel and its checklist (currently under Command Center).
+
+Refactor the layout so that:
+
+Command Center no longer contains that entire card.
+
+DeFi tab has a dedicated section, e.g.:
+
+xml
+<!-- In DeFi tab content -->
+<section id="wbtcAutoSupplySection">
+  <!-- existing WBTC AUTO-SUPPLY DELEGATION markup moved here -->
+</section>
+Ensure the JS that updates that panel (status, checklist, buttons) now targets the new location (IDs unchanged or updated consistently).
+
+Confirm that:
+
+Toggling Auto-Pilot, permissions, etc. still works from the DeFi tab.
+
+Command Center no longer shows the WBTC section.
+
+3.2 Replace SAFETY RATING image with masked autoplay video
+
+Locate the current SAFETY RATING dial markup, where a static image is used.
+
+Replace the image element inside the dial with:
+
+xml
+<div class="safety-dial">
+  <div class="safety-dial-video-mask">
+    <video
+      src="/assets/ideilin_reaa.mp4"
+      autoplay
+      loop
+      muted
+      playsinline
+    ></video>
+  </div>
+  <!-- existing dial ring / labels remain -->
+</div>
+CSS to mask into a circle:
+
+css
+.safety-dial-video-mask {
+  width: 140px; /* match existing dial inner diameter */
+  height: 140px;
+  border-radius: 50%;
+  overflow: hidden;
+  position: relative;
+  margin: 0 auto;
+}
+.safety-dial-video-mask video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+Ensure:
+
+Video loads from the correct path.
+
+It autoplays, loops, is muted, and plays inline on mobile.
+
+The outer ring / HF arc remains as-is on top or around this video, preserving the dial’s look.
+
+────────────────────────
+Task 4 – Quick docs and verification
+────────────────────────
+
+4.1 Docs
+
+In your frontend README or replit.md, add a short section:
+
+“Wallet connection flow”:
+
+explains that connectWallet awaits auth before loading data,
+
+notes that 401s trigger fullDisconnect() and wipe all state.
+
+“USDC meter”:
+
+describes which endpoint fields it uses and the Arbitrum USDC address.
+
+“WBTC delegation UI location”:
+
+notes that the WBTC auto-supply panel lives in the DeFi tab.
+
+4.2 Verification checklist
+
+After implementation, log or screenshot:
+
+A connect → initial load with no 401s and all panels populated.
+
+The Active Wealth panel showing a USDC wallet balance.
+
+Command Center with the USDC meter and SAFETY RATING video dial.
+
+DeFi tab showing the WBTC AUTO-SUPPLY DELEGATION section moved over and functioning.
+
+Constraints
+
+Do not reintroduce any hacks that keep user data on disconnect.
+
+Do not start loading dashboard data until the auth token is set in state and storage.
+
+Keep all new UI elements (USDC meter, video) aligned with the existing dark mode visual style.

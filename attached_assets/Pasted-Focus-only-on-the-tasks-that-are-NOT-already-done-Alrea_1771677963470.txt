@@ -1,0 +1,252 @@
+Focus only on the tasks that are NOT already done.
+
+Already correct (do NOT touch):
+- WBTC AUTO-SUPPLY DELEGATION lives in the DeFi tab.
+- SAFETY RATING dial already uses the ideilin_reaa.mp4 video with autoplay/loop/muted and circular mask.
+
+The remaining work is:
+
+1) Wallet connect / disconnect flow
+2) USDC text + meter wiring and styling
+3) Minimal docs and a quick verification
+
+Implement these now with code and evidence, not another plan.
+
+────────────────────────
+Task 1 – Fix fullDisconnect and harden wallet connect flow
+────────────────────────
+
+1.1 fullDisconnect must wipe all user state
+
+- Paste the CURRENT fullDisconnect() implementation.
+- Update it so that on disconnect it wipes **all** user-specific state, including:
+
+  - state.walletAddress
+  - state.authToken
+  - state.userId
+  - state.towns
+  - any DeFi / dashboard state (positions, HF, approvals, etc.)
+  - any localStorage/sessionStorage keys used for wallet persistence (e.g. `rea_wallet_session`)
+
+Example shape (adapt to your state names):
+
+```javascript
+function fullDisconnect() {
+  state.walletAddress = null;
+  state.authToken = null;
+  state.userId = null;
+  state.towns = [];
+  state.defiStatus = null;
+  state.delegationStatus = null;
+  localStorage.removeItem('rea_wallet_session');
+  updateUIForDisconnectedState();
+}
+Show the final fullDisconnect() code.
+
+1.2 authenticateWallet / connectWallet: await loads instead of fire‑and‑forget
+
+You said auth is awaited before loads, which is good, but the loads are still fire‑and‑forget. I need them wrapped so errors are caught.
+
+Paste the full authenticateWallet() (and connectWallet() if separate).
+
+Refactor so that after the auth response and after setting state.authToken and saving to localStorage, you:
+
+Await a Promise.all of the initial data loaders.
+
+Catch and log any error.
+
+Example:
+
+javascript
+async function authenticateWallet(address) {
+  const res = await api('/api/auth', { address });
+  state.authToken = res.token;
+  state.userId = res.userId;
+  localStorage.setItem('rea_wallet_session', JSON.stringify({
+    walletAddress: address,
+    authToken: res.token,
+    userId: res.userId,
+  }));
+
+  try {
+    await Promise.all([
+      loadDefiPanel(),
+      loadTowns(),
+      loadRecentPayouts(),
+      // ...other first-load calls
+    ]);
+  } catch (err) {
+    console.error('Initial dashboard load failed', err);
+    // Optionally show a banner rather than silently failing
+  }
+}
+Ensure all these load functions go through your api() helper and that api():
+
+attaches state.authToken,
+
+on 401, calls fullDisconnect() once and surfaces a clear “session expired” state.
+
+Show the updated authenticateWallet()/connectWallet() code.
+
+1.3 Quick log proof
+
+After changes, run a real connect + reload and show a short log excerpt:
+
+authenticateWallet finishes (you can log “auth OK, token set”),
+
+then your loads run and either succeed or log errors,
+
+no 401s during the initial load if the token is valid.
+
+────────────────────────
+Task 2 – USDC text and meter (Active Wealth + Command Center)
+────────────────────────
+
+2.1 Backend / data source
+
+Show the JSON shape you currently return for the Command Center / DeFi status.
+
+If USDC is not yet there, add:
+
+json
+{
+  "usdc": {
+    "walletBalanceUsd": 1250.00,
+    "targetUsd": 5000.00
+  }
+}
+Paste the backend code that:
+
+reads the user’s Arbitrum USDC balance at 0xaf88d065e77c8cC2239327C5EDb3A432268e5831,
+
+converts to USD,
+
+and sets walletBalanceUsd and targetUsd (even if targetUsd is just a configured constant for now).
+
+2.2 Active Wealth panel text
+
+Paste the current HTML/JS for the “Active Wealth” panel.
+
+Add a row for USDC wallet balance:
+
+xml
+<div class="active-wealth-row">
+  <span>USDC (wallet)</span>
+  <span id="usdcWalletText">$0.00</span>
+</div>
+Wire it in JS, using your formatter:
+
+javascript
+function renderActiveWealth(data) {
+  const usdc = data.usdc;
+  document.getElementById('usdcWalletText').textContent =
+    formatCurrency(usdc.walletBalanceUsd || 0);
+}
+Show the final HTML snippet and the render function.
+
+2.3 Command Center USDC meter look + wiring
+
+You said a USDC meter exists; now it needs the requested format and styling.
+
+Paste the existing markup for the USDC meter.
+
+Update it to:
+
+xml
+<div class="usdc-meter">
+  <div class="usdc-meter-label">
+    USDC → WALLET
+    <span id="usdcMeterValue">$0.00 / $0.00</span>
+  </div>
+  <div class="usdc-meter-bar">
+    <div id="usdcMeterFill"></div>
+  </div>
+</div>
+Add / adjust CSS to:
+
+css
+.usdc-meter {
+  margin-top: 12px;
+}
+.usdc-meter-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: #9ca3af;
+}
+.usdc-meter-bar {
+  margin-top: 4px;
+  width: 100%;
+  height: 6px;
+  border-radius: 999px;
+  background: #111827;
+  overflow: hidden;
+}
+.usdc-meter-bar #usdcMeterFill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #22c55e, #0ea5e9);
+  transition: width 0.3s ease;
+}
+Wire it in JS:
+
+javascript
+function renderUsdcMeter(data) {
+  const { walletBalanceUsd, targetUsd } = data.usdc;
+  const balance = walletBalanceUsd || 0;
+  const target = targetUsd || 1;
+  const pct = Math.max(0, Math.min(100, (balance / target) * 100));
+
+  document.getElementById('usdcMeterValue').textContent =
+    `${formatCurrency(balance)} / ${formatCurrency(target)}`;
+  document.getElementById('usdcMeterFill').style.width = `${pct}%`;
+}
+Show where you call renderUsdcMeter(data) in your main render/update path, ideally right after you fetch the DeFi/Command Center data.
+
+────────────────────────
+Task 3 – Minimal docs + quick manual test
+────────────────────────
+
+3.1 Docs
+
+Append a short section to replit.md (or your frontend README) with:
+
+“Wallet connection flow”:
+
+connectWallet → authenticateWallet awaits auth,
+
+fullDisconnect clears state + storage,
+
+401 handling behavior.
+
+“USDC meter”:
+
+endpoints/fields used,
+
+Arbitrum USDC address,
+
+what wallet/target it represents.
+
+Paste that new section.
+
+3.2 Manual test
+
+Run this sequence:
+
+Disconnect.
+
+Refresh.
+
+Connect wallet.
+
+Wait for dashboard to load.
+
+Report:
+
+whether any 401s appear in logs,
+
+that the Active Wealth panel shows USDC (wallet) with a numeric value,
+
+that the Command Center USDC meter shows $X / $Y and the bar reflects the percentage.
+
+Only after you’ve pasted the updated code snippets and this test result should you say the tasks are complete
