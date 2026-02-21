@@ -41,7 +41,7 @@ The REAA platform is built on the Arbitrum Mainnet, featuring distinct modules f
 - **Data Gating:** Restricts access to sensitive pipeline, filings, and analysis tabs until the user's wallet is connected.
 
 **Phase 2: WBTC Auto-Supply Delegation (Deployed on Arbitrum Mainnet):**
-- **Architecture:** Introduces `managed_wallets` and `wallet_actions` tables for tracking delegation status and audit trails. A dedicated `delegation_client.py` module handles interactions with the Delegation Manager contract (`0x7427370Ab4C311B090446544078c819b3946E59d`).
+- **Architecture:** Introduces `managed_wallets` and `wallet_actions` tables for tracking delegation status and audit trails. A dedicated `delegation_client.py` module handles interactions with the Delegation Manager contract (`0x4866709c25908158DA9A3D292Bd2e4E96F0D2A7C`, deployed Feb 2026, replacing old `0x7427370Ab4C311B090446544078c819b3946E59d`).
 - **Safety Rules:** Strict safety protocols for auto-supply, including `bot_enabled` checks, active delegation status, configurable cooldown, and on-chain balance/allowance verification before execution.
 - **Cooldown:** Configurable via `AUTO_SUPPLY_COOLDOWN_SECONDS` env var (default: 3600s = 1 hour for prod, 300s = 5 min for testing). `last_auto_supply_at` starts at NULL (never supplied) and is only updated after a confirmed on-chain supply tx — never on skip or error. NULL always passes the cooldown check (first-run safe).
 - **API and UI:** Provides API endpoints for activating/revoking delegation and frontend UX to manage delegation status, displaying relevant information and actions.
@@ -266,3 +266,41 @@ When a user revokes delegation:
 - Permission validation via `permissions.validate_full_automation()` checks all 5 flags before any strategy runs.
 - Structured logging captures: delegation setup per wallet, each strategy action vs SKIP with reason codes, permission errors.
 - New tokens or strategies must update `permissions.py` (TOKEN_PERMISSIONS and STRATEGY_MAP).
+
+### Hard Reset Script (`hard_reset_user.py`)
+- **Usage:** `python hard_reset_user.py --user-id <ID>` (or `--dry-run` to preview)
+- **DB Reset:** Resets `managed_wallets` (delegation_status→inactive, strategy_status→disabled, auto_supply_wbtc→false, clears all timestamps/baselines), deletes all `defi_positions`, `wallet_actions`, `income_events` for the user, sets `users.bot_enabled=false`.
+- **On-Chain Audit:** Checks `balanceOf(DM)` and `balanceOf(BOT)` for WBTC, WETH, DAI, USDC, USDT. Reports any non-zero balances with rescue recommendations.
+- **Post-Reset:** User must clear browser localStorage (`reaa_wallet` key) and reconnect fresh.
+
+### Re-Onboard Sequence (Clean Path)
+After hard reset, user follows this sequence:
+1. **Connect Wallet** — Dashboard authenticates via `POST /api/auth/wallet`, creates/updates user row, stores auth token in localStorage.
+2. **Enable Auto-Pilot** — Frontend walks through 4-step signing:
+   - Step 1/4: `approveDelegation(maxUint, maxUint, true, true, true, true)` on DM contract (sets all 4 flags)
+   - Step 2/4: 15 ERC20 `approve(spender, maxUint)` calls (5 tokens × 3 contracts: DM, Aave Pool, Uniswap Router)
+   - Step 3/4: 2 Aave credit delegations (`approveDelegation(DM, maxUint)` on DAI and WETH variable debt tokens)
+   - Step 4/4: `POST /api/delegation/activate` — sets DB state, triggers immediate auto-supply attempt
+3. **Auto-Supply Runs** — If WBTC balance > threshold and allowance > 0, bot supplies 80% to Aave via DM contract.
+4. **Strategy Engine Monitors** — Bot loop detects `delegation_status=active` + `has_active_position=true`, runs HF-band strategy (Growth/Capacity/Macro/Micro) each cycle.
+
+### Approval Checklist UI
+- Visible in Auto-Pilot panel when `delegation_status=active` (both `strategy_status=active` and `error_permissions`).
+- Calls `GET /api/delegation/check-permissions` which runs `validate_full_automation_ready()`.
+- Displays grouped checklist: DM contract flags (5), ERC20 approvals grouped by spender (15), Aave credit delegations (2).
+- Shows `X/22 approvals granted` summary with per-item status.
+
+### Wallet Persistence (Feb 2026)
+- `authenticateWallet()` saves `{userId, walletAddress, authToken, userTownIds}` to `localStorage['reaa_wallet']`.
+- `DOMContentLoaded` restores state from localStorage, re-renders wallet button, unlocks panels, loads all data.
+- `fullDisconnect()` clears localStorage before resetting JS state.
+- Expired tokens are caught by 401 handler in `api()` which calls `fullDisconnect()` (auto-clears localStorage).
+
+### Recent Changes (Feb 21, 2026)
+- Deployed new DelegationManager contract to `0x4866709c25908158DA9A3D292Bd2e4E96F0D2A7C` (replaces old contract).
+- Updated `DELEGATION_MANAGER_ADDRESS` secret to new contract.
+- Fixed dashboard phantom data: deleted stale `defi_positions` rows, changed query to `ORDER BY updated_at DESC`.
+- Added wallet connection persistence across page refreshes via localStorage.
+- Created `hard_reset_user.py` admin script for clean user reset + on-chain balance audit.
+- Added approval checklist UI to Auto-Pilot panel showing detailed permission status.
+- Hard-reset User 22 for clean re-onboard testing.

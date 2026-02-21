@@ -541,6 +541,20 @@ tr:hover { background:rgba(0,230,180,0.03); }
   background:var(--surface2); color:var(--muted); border:1px solid var(--border);
 }
 .ap-btn.secondary:hover { color:var(--text); border-color:var(--text); }
+
+.approval-checklist { margin:10px 0; padding:8px; background:var(--surface2); border-radius:8px; border:1px solid var(--border); }
+.approval-checklist h4 { margin:0 0 8px; font-size:12px; color:var(--muted); text-transform:uppercase; letter-spacing:0.5px; }
+.approval-group { margin-bottom:8px; }
+.approval-group-title { font-size:11px; font-weight:600; color:var(--text); margin-bottom:4px; }
+.approval-item { display:flex; align-items:center; gap:6px; font-size:11px; padding:2px 0; color:var(--muted); }
+.approval-item .check { width:14px; height:14px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:9px; flex-shrink:0; }
+.approval-item .check.ok { background:var(--green); color:#000; }
+.approval-item .check.missing { background:var(--red); color:#fff; }
+.approval-item .check.ok::after { content:'\2713'; }
+.approval-item .check.missing::after { content:'\2717'; }
+.approval-item.ok { color:var(--green); }
+.approval-item.missing { color:var(--red); }
+.approval-summary { font-size:11px; color:var(--muted); margin-top:6px; padding-top:6px; border-top:1px solid var(--border); }
 </style>
 </head>
 <body>
@@ -1580,8 +1594,10 @@ async function loadDelegationStatus(afterConnect = false) {
         }
         return `<div style="color:var(--yellow);font-size:11px;margin-bottom:6px;">${hint}</div><button id="apReauthBtn" class="delegation-btn" style="background:var(--green);color:#000;margin-bottom:8px;" onclick="reauthorizeAutoPilot()">${label}</button>`;
       })() : ''}
+      <div id="approvalChecklist" class="approval-checklist"></div>
       <button class="delegation-btn revoke" onclick="revokeDelegation()">Revoke Auto-Pilot</button>
     `;
+    loadApprovalChecklist();
   } else if (d.delegationStatus === 'revoked') {
     content.innerHTML = `
       <div class="delegation-status-row">
@@ -1887,6 +1903,67 @@ async function readOnChainDelegation(walletAddr, contractAddr) {
 function resetBtn(btn) {
   btn.disabled = false;
   btn.textContent = 'Enable Auto-Pilot';
+}
+
+async function loadApprovalChecklist() {
+  const container = document.getElementById('approvalChecklist');
+  if (!container) return;
+  container.innerHTML = '<div style="font-size:11px;color:var(--muted);">Checking on-chain approvals...</div>';
+  const data = await api('/api/delegation/check-permissions');
+  if (data.error) {
+    container.innerHTML = '<div style="font-size:11px;color:var(--red);">Could not load approvals</div>';
+    return;
+  }
+
+  if (!data.delegation_flags && !data.erc20_approvals && !data.credit_delegations) {
+    container.innerHTML = '<div style="font-size:11px;color:var(--muted);">Approval data not available</div>';
+    return;
+  }
+
+  let html = '<h4>Approval Status</h4>';
+
+  const flags = data.delegation_flags || {};
+  const flagNames = { isActive: 'Delegation Active', allowSupply: 'Supply', allowBorrow: 'Borrow', allowRepay: 'Repay', allowWithdraw: 'Withdraw' };
+  html += '<div class="approval-group"><div class="approval-group-title">DM Contract Flags</div>';
+  for (const [key, label] of Object.entries(flagNames)) {
+    const ok = flags[key];
+    html += `<div class="approval-item ${ok ? 'ok' : 'missing'}"><div class="check ${ok ? 'ok' : 'missing'}"></div>${label}</div>`;
+  }
+  html += '</div>';
+
+  const approvals = data.erc20_approvals || [];
+  if (approvals.length > 0) {
+    const grouped = {};
+    approvals.forEach(a => {
+      if (!grouped[a.spender]) grouped[a.spender] = [];
+      grouped[a.spender].push(a);
+    });
+    for (const [spender, items] of Object.entries(grouped)) {
+      html += `<div class="approval-group"><div class="approval-group-title">ERC20 → ${spender}</div>`;
+      items.forEach(a => {
+        const ok = a.status === 'OK';
+        html += `<div class="approval-item ${ok ? 'ok' : 'missing'}"><div class="check ${ok ? 'ok' : 'missing'}"></div>${a.token}</div>`;
+      });
+      html += '</div>';
+    }
+  }
+
+  const credits = data.credit_delegations || [];
+  if (credits.length > 0) {
+    html += '<div class="approval-group"><div class="approval-group-title">Aave Credit Delegation</div>';
+    credits.forEach(c => {
+      const ok = c.status === 'OK';
+      html += `<div class="approval-item ${ok ? 'ok' : 'missing'}"><div class="check ${ok ? 'ok' : 'missing'}"></div>${c.token} Variable Debt</div>`;
+    });
+    html += '</div>';
+  }
+
+  const blockers = data.blockers || [];
+  const okCount = approvals.filter(a => a.status === 'OK').length + credits.filter(c => c.status === 'OK').length + Object.values(flags).filter(Boolean).length;
+  const totalCount = approvals.length + credits.length + Object.keys(flags).length;
+  html += `<div class="approval-summary">${okCount}/${totalCount} approvals granted${blockers.length > 0 ? ' — click Authorize to fix missing' : ' — all set!'}</div>`;
+
+  container.innerHTML = html;
 }
 
 async function enableAutoPilot(isReauthorize = false) {
