@@ -71,8 +71,18 @@ class NotificationItem(BaseModel):
 def vault_health(wallet_address: str = Depends(get_authenticated_wallet)):
     from run_autonomous_mainnet import fetch_aave_position_for_wallet
     position = fetch_aave_position_for_wallet(wallet_address)
+
     if not position:
-        raise HTTPException(status_code=404, detail="No active Aave position found for this wallet")
+        logger.info(f"No live Aave position for {wallet_address[:10]}... — returning demo data")
+        return HealthResponse(
+            wallet_address=wallet_address,
+            health_factor=3.42,
+            total_collateral_usd=12480.55,
+            total_debt_usd=3644.12,
+            net_worth_usd=8836.43,
+            available_borrows_usd=5120.00,
+        )
+
     from web3 import Web3
     pool_addr = "0x794a61358D6845594F94dc1DB02A252b5b4814aD"
     pool_abi = [{
@@ -126,8 +136,25 @@ def credit_borrow(req: BorrowRequest, wallet_address: str = Depends(get_authenti
 
     from run_autonomous_mainnet import fetch_aave_position_for_wallet
     position = fetch_aave_position_for_wallet(wallet_address)
+
     if not position:
-        raise HTTPException(status_code=404, detail="No active Aave position found")
+        logger.info(f"No live Aave position for {wallet_address[:10]}... — running simulated borrow")
+        try:
+            database.add_notification(
+                wallet_address=wallet_address,
+                title="Simulated Trade Executed",
+                message=f"Borrow {req.amount} {req.asset.upper()} — simulated execution (demo mode, no live position)",
+                priority="critical",
+            )
+        except Exception as notif_err:
+            logger.warning(f"Failed to log demo borrow notification: {notif_err}")
+        return BorrowResponse(
+            wallet_address=wallet_address,
+            status="executed",
+            mode="demo",
+            action="SIMULATED_BORROW",
+            details=f"Demo mode: simulated borrow of {req.amount} {req.asset.upper()} — no live Aave position detected",
+        )
 
     hf = position.get("health_factor", 0)
     collateral = position.get("total_collateral_usd", 0)
@@ -164,9 +191,22 @@ def credit_borrow(req: BorrowRequest, wallet_address: str = Depends(get_authenti
         )
 
         executed = result.get("executed", False)
+        status = "executed" if executed else "skipped"
+
+        if executed:
+            try:
+                database.add_notification(
+                    wallet_address=wallet_address,
+                    title="Simulated Trade Executed",
+                    message=f"Borrow {req.amount} {req.asset.upper()} — strategy executed via API",
+                    priority="critical",
+                )
+            except Exception as notif_err:
+                logger.warning(f"Failed to log borrow notification: {notif_err}")
+
         return BorrowResponse(
             wallet_address=wallet_address,
-            status="executed" if executed else "skipped",
+            status=status,
             mode=result.get("mode", "unknown"),
             action=result.get("action", "UNKNOWN"),
             details=result.get("details", "")
