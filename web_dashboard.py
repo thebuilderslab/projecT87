@@ -3362,7 +3362,8 @@ def user_status():
             delegation_info["contractAddress"] = DELEGATION_MANAGER_ADDRESS
         mw = database.get_managed_wallet(user_id, wallet)
         if mw:
-            delegation_info["delegationStatus"] = mw['delegation_status'] or 'none'
+            raw_status = mw['delegation_status'] or 'none'
+            delegation_info["delegationStatus"] = 'none' if raw_status == 'inactive' else raw_status
             delegation_info["autoSupplyWbtc"] = bool(mw.get('auto_supply_wbtc', False))
             delegation_info["suppliedWbtcAmount"] = float(mw['supplied_wbtc_amount'] or 0)
             delegation_info["lastAutoSupplyAt"] = mw['last_auto_supply_at'].isoformat() if mw.get('last_auto_supply_at') else None
