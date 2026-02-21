@@ -198,6 +198,7 @@ def init_db():
             title VARCHAR(200) DEFAULT '',
             message TEXT NOT NULL,
             priority VARCHAR(20) NOT NULL DEFAULT 'info',
+            wallet_address TEXT,
             created_at TIMESTAMPTZ DEFAULT NOW()
         );
         CREATE INDEX IF NOT EXISTS idx_notifications_created ON notifications(created_at DESC);
@@ -1172,6 +1173,43 @@ def create_notification(title: str, message: str, priority: str = "info") -> dic
         if d.get('created_at'):
             d['created_at'] = d['created_at'].isoformat()
         return d
+
+
+def add_notification(wallet_address: str, message: str, priority: str = "info", title: str = "") -> dict:
+    with get_conn() as conn:
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur.execute("""
+            INSERT INTO notifications (wallet_address, title, message, priority)
+            VALUES (%s, %s, %s, %s)
+            RETURNING id, title, message, priority, wallet_address, created_at
+        """, (wallet_address.lower(), title, message, priority))
+        row = cur.fetchone()
+        cur.close()
+        d = dict(row)
+        if d.get('created_at'):
+            d['created_at'] = d['created_at'].isoformat()
+        return d
+
+
+def get_notifications_for_wallet(wallet_address: str, limit: int = 20) -> list:
+    with get_conn() as conn:
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur.execute("""
+            SELECT id, title, message, priority, created_at
+            FROM notifications
+            WHERE wallet_address = %s
+            ORDER BY created_at DESC
+            LIMIT %s
+        """, (wallet_address.lower(), limit))
+        rows = cur.fetchall()
+        cur.close()
+        result = []
+        for r in rows:
+            d = dict(r)
+            if d.get('created_at'):
+                d['created_at'] = d['created_at'].isoformat()
+            result.append(d)
+        return result
 
 
 def get_notifications(limit: int = 50, since_id: int = None) -> list:

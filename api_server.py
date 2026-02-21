@@ -1,0 +1,205 @@
+import logging
+import os
+from typing import Optional
+
+from fastapi import FastAPI, Depends, HTTPException, Query
+from fastapi.security import APIKeyHeader
+from fastapi.middleware.wsgi import WSGIMiddleware
+from pydantic import BaseModel, ConfigDict, Field
+
+import db as database
+
+logger = logging.getLogger(__name__)
+
+ALLOWED_BORROW_ASSETS = {"DAI", "USDC", "USDT"}
+
+database.init_db()
+
+app = FastAPI(
+    title="OpenClaw API",
+    version="1.0.0",
+    description="Multi-tenant DeFi Infrastructure-as-a-Service API",
+)
+
+api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
+
+
+def get_authenticated_wallet(api_key: str = Depends(api_key_header)) -> str:
+    if not api_key:
+        raise HTTPException(status_code=401, detail="Missing X-API-Key header")
+    result = database.validate_api_key(api_key)
+    if not result:
+        raise HTTPException(status_code=401, detail="Invalid or revoked API key")
+    wallet = result.get("wallet_address")
+    if not wallet:
+        raise HTTPException(status_code=401, detail="No wallet associated with this API key")
+    return wallet
+
+
+class BorrowRequest(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    amount: float = Field(..., gt=0, le=10000, description="Amount to borrow in asset units")
+    asset: str = Field(..., description="Asset to borrow (DAI, USDC, USDT)")
+
+
+class HealthResponse(BaseModel):
+    wallet_address: str
+    health_factor: float
+    total_collateral_usd: float
+    total_debt_usd: float
+    net_worth_usd: float
+    available_borrows_usd: float
+
+
+class BorrowResponse(BaseModel):
+    wallet_address: str
+    status: str
+    mode: str
+    action: str
+    details: str
+
+
+class NotificationItem(BaseModel):
+    id: int
+    title: str
+    message: str
+    priority: str
+    created_at: str
+
+
+@app.get("/api/v1/vault/health", response_model=HealthResponse)
+def vault_health(wallet_address: str = Depends(get_authenticated_wallet)):
+    from run_autonomous_mainnet import fetch_aave_position_for_wallet
+    position = fetch_aave_position_for_wallet(wallet_address)
+    if not position:
+        raise HTTPException(status_code=404, detail="No active Aave position found for this wallet")
+    from web3 import Web3
+    pool_addr = "0x794a61358D6845594F94dc1DB02A252b5b4814aD"
+    pool_abi = [{
+        "inputs": [{"name": "user", "type": "address"}],
+        "name": "getUserAccountData",
+        "outputs": [
+            {"name": "totalCollateralBase", "type": "uint256"},
+            {"name": "totalDebtBase", "type": "uint256"},
+            {"name": "availableBorrowsBase", "type": "uint256"},
+            {"name": "currentLiquidationThreshold", "type": "uint256"},
+            {"name": "ltv", "type": "uint256"},
+            {"name": "healthFactor", "type": "uint256"}
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    }]
+    available_borrows = 0.0
+    rpc_url = os.getenv("ALCHEMY_ARB_RPC", "https://arb-mainnet.g.alchemy.com/v2/demo")
+    try:
+        w3 = Web3(Web3.HTTPProvider(rpc_url, request_kwargs={'timeout': 10}))
+        if w3.is_connected():
+            pool = w3.eth.contract(address=Web3.to_checksum_address(pool_addr), abi=pool_abi)
+            data = pool.functions.getUserAccountData(Web3.to_checksum_address(wallet_address)).call()
+            available_borrows = round(data[2] / 1e8, 2)
+    except Exception as e:
+        logger.warning(f"Could not fetch available borrows: {e}")
+
+    return HealthResponse(
+        wallet_address=wallet_address,
+        health_factor=position["health_factor"],
+        total_collateral_usd=position["total_collateral_usd"],
+        total_debt_usd=position["total_debt_usd"],
+        net_worth_usd=position["net_worth_usd"],
+        available_borrows_usd=available_borrows,
+    )
+
+
+@app.post("/api/v1/credit/borrow", response_model=BorrowResponse)
+def credit_borrow(req: BorrowRequest, wallet_address: str = Depends(get_authenticated_wallet)):
+    if req.asset.upper() not in ALLOWED_BORROW_ASSETS:
+        raise HTTPException(
+            status_code=422,
+            detail=f"Asset '{req.asset}' not supported. Allowed: {', '.join(sorted(ALLOWED_BORROW_ASSETS))}"
+        )
+
+    user = database.get_user_by_wallet(wallet_address)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found for this wallet")
+
+    user_id = user["id"]
+
+    from run_autonomous_mainnet import fetch_aave_position_for_wallet
+    position = fetch_aave_position_for_wallet(wallet_address)
+    if not position:
+        raise HTTPException(status_code=404, detail="No active Aave position found")
+
+    hf = position.get("health_factor", 0)
+    collateral = position.get("total_collateral_usd", 0)
+    debt = position.get("total_debt_usd", 0)
+
+    if hf < 2.40:
+        return BorrowResponse(
+            wallet_address=wallet_address,
+            status="rejected",
+            mode="risk_check",
+            action="SKIP",
+            details=f"Health factor {hf:.4f} below minimum threshold 2.40. Cannot borrow."
+        )
+
+    try:
+        from strategy_engine import run_delegated_strategy, get_strategy_status
+        status = get_strategy_status(user_id, wallet_address)
+        if status != "active":
+            return BorrowResponse(
+                wallet_address=wallet_address,
+                status="rejected",
+                mode="delegation_check",
+                action="SKIP",
+                details=f"Delegation status is '{status}'. Must be 'active' to borrow."
+            )
+
+        result = run_delegated_strategy(
+            user_id=user_id,
+            wallet_address=wallet_address,
+            agent=None,
+            run_id="api_borrow",
+            iteration=0,
+            config={}
+        )
+
+        executed = result.get("executed", False)
+        return BorrowResponse(
+            wallet_address=wallet_address,
+            status="executed" if executed else "skipped",
+            mode=result.get("mode", "unknown"),
+            action=result.get("action", "UNKNOWN"),
+            details=result.get("details", "")
+        )
+
+    except Exception as e:
+        logger.error(f"Borrow endpoint error for {wallet_address[:10]}...: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Strategy execution error: {str(e)}")
+
+
+@app.get("/api/v1/notifications", response_model=list[NotificationItem])
+def get_notifications(
+    wallet_address: str = Depends(get_authenticated_wallet),
+    limit: int = Query(default=20, ge=1, le=100),
+):
+    rows = database.get_notifications_for_wallet(wallet_address, limit=limit)
+    return [NotificationItem(**r) for r in rows]
+
+
+@app.get("/api/v1/health")
+def api_health_check():
+    return {"status": "ok", "service": "openclaw-api", "version": "1.0.0"}
+
+
+from web_dashboard import app as flask_app
+app.mount("/", WSGIMiddleware(flask_app))
+
+
+def start_server(host: str = "0.0.0.0", port: int = 5000):
+    import uvicorn
+    logger.info(f"🚀 OpenClaw API Server starting on {host}:{port}")
+    uvicorn.run(app, host=host, port=port, log_level="info")
+
+
+if __name__ == "__main__":
+    start_server()

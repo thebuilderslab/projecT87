@@ -3339,6 +3339,19 @@ def auth_wallet():
 
     return jsonify({"userId": user['id'], "walletAddress": user['wallet_address'], "towns": user_towns, "authToken": token})
 
+@app.route('/api/user/activity', methods=['GET'])
+def user_activity_feed():
+    """Get recent notifications/activity for the current user"""
+    user_id = get_current_user_id()
+    user = database.get_user_by_id(user_id)
+    if not user or not user.get('wallet_address'):
+        return jsonify({"notifications": [], "count": 0})
+    wallet = user['wallet_address']
+    limit = request.args.get('limit', 20, type=int)
+    limit = min(limit, 100)
+    notifications = database.get_notifications_for_wallet(wallet, limit=limit)
+    return jsonify({"notifications": notifications, "count": len(notifications)})
+
 @app.route('/api/auth/disconnect', methods=['POST'])
 def disconnect_wallet():
     """Disconnect wallet - disable bot for this user"""

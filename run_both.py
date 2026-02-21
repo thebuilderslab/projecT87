@@ -34,16 +34,16 @@ def run_agent():
             print(f"❌ Agent execution error: {e}. Restarting...", flush=True)
             time.sleep(5)
 
-def run_dashboard():
-    """Run the web dashboard in a loop"""
+def run_api_server():
+    """Run the FastAPI/Uvicorn API server (serves both API + Flask dashboard)"""
     while True:
         try:
-            print("📊 Starting Web Dashboard...", flush=True)
-            subprocess.run([sys.executable, "web_dashboard.py"])
-            print("⚠️ Dashboard stopped. Restarting in 5 seconds...", flush=True)
+            print("🚀 Starting OpenClaw API Server (FastAPI + Flask Dashboard)...", flush=True)
+            subprocess.run([sys.executable, "api_server.py"])
+            print("⚠️ API Server stopped. Restarting in 5 seconds...", flush=True)
             time.sleep(5)
         except Exception as e:
-            print(f"❌ Dashboard execution error: {e}. Restarting...", flush=True)
+            print(f"❌ API Server execution error: {e}. Restarting...", flush=True)
             time.sleep(5)
 
 if __name__ == "__main__":
@@ -58,4 +58,4 @@ if __name__ == "__main__":
     agent_thread = threading.Thread(target=run_agent, daemon=True)
     agent_thread.start()
 
-    run_dashboard()
+    run_api_server()

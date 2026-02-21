@@ -835,6 +835,17 @@ def _execute_delegated_distribution(user_id, wallet_address, agent, path_name, d
                       details=detail_str)
         _record_strategy_action(user_id, wallet_address, f"{path_name.upper()}: {detail_str}")
 
+        if result["executed"] and DB_AVAILABLE:
+            try:
+                database.add_notification(
+                    wallet_address=wallet_address,
+                    title=f"{path_name.capitalize()} Distribution",
+                    message=f"{path_name.capitalize()} distribution completed: {detail_str}",
+                    priority="info" if failed_count == 0 else "warning",
+                )
+            except Exception:
+                pass
+
         if DB_AVAILABLE:
             database.record_wallet_action(
                 user_id=user_id, wallet_address=wallet_address,
@@ -965,6 +976,15 @@ def _execute_delegated_short_entry(user_id, wallet_address, agent, tier, short_s
                 details={"weth_borrowed": weth_amount, "eth_price": eth_price,
                          "short_size_usd": short_size_usd, "hf": live_hf},
                 tx_hash=tx_hash)
+            try:
+                database.add_notification(
+                    wallet_address=wallet_address,
+                    title=f"{tier.capitalize()} Short Activated",
+                    message=f"DEFENSE ACTIVATED: {tier.capitalize()} short executed due to market volatility. Borrowed {weth_amount:.6f} WETH (${short_size_usd:.2f})",
+                    priority="warning",
+                )
+            except Exception:
+                pass
 
         _log_strategy(user_id, wallet_address, f"{tier}_short", "SHORT_ENTRY_OK", live_hf,
                       details=result["details"])
@@ -1343,6 +1363,17 @@ def _execute_delegated_short_close(user_id, wallet_address, agent, live_hf):
         result["details"] = detail_str
         result["distribution"] = dist_results
 
+        if DB_AVAILABLE:
+            try:
+                database.add_notification(
+                    wallet_address=wallet_address,
+                    title="Short Position Closed",
+                    message=f"Short position closed: {detail_str}",
+                    priority="info" if fail_count == 0 else "warning",
+                )
+            except Exception:
+                pass
+
         _log_strategy(user_id, wallet_address, "short_close", result["action"], live_hf,
                       hf_after=post_hf,
                       details=f"20/20/30/20/10 split: {dist_summary}")
@@ -1495,6 +1526,17 @@ def run_delegated_nurse_sweep(user_id, wallet_address, agent):
             gas_note = f", gas_reimburse=${gas_reimbursed_total_usd:.2f}" if gas_reimbursed_total_usd > 0 else ""
             result["details"] = f"Swept: {', '.join(result['tokens_swept'])}{gas_note}"
             result["gas_reimbursed_usd"] = gas_reimbursed_total_usd
+
+            if DB_AVAILABLE:
+                try:
+                    database.add_notification(
+                        wallet_address=wallet_address,
+                        title="Nurse Sweep Complete",
+                        message=f"Nurse sweep completed: {result['details']}",
+                        priority="info",
+                    )
+                except Exception:
+                    pass
         else:
             result["details"] = "No tokens above $2 floor to sweep"
             result["gas_reimbursed_usd"] = 0.0
