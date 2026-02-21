@@ -84,6 +84,7 @@ contract REAADelegationManager {
     event EmergencyUnpause(address indexed triggeredBy);
     event BotOperatorUpdated(address indexed oldBot, address indexed newBot);
     event OwnershipTransferred(address indexed oldOwner, address indexed newOwner);
+    event BorrowAndTransferExecuted(address indexed asset, uint256 amount, address indexed user);
 
     modifier onlyOwner() {
         require(msg.sender == owner, "Only owner");
@@ -264,6 +265,33 @@ contract REAADelegationManager {
         IERC20(asset).transfer(user, amount);
 
         emit StrategyExecuted(user, "borrow", asset, amount);
+    }
+
+    /**
+     * @notice Borrows an asset on behalf of a user and immediately transfers it to their wallet.
+     * @dev Aave assigns debt to 'user' but sends tokens to msg.sender (this DM contract).
+     *      This function atomically forwards the borrowed tokens to the user's wallet.
+     * @param asset The address of the underlying asset to borrow.
+     * @param amount The amount to borrow.
+     * @param interestRateMode 1 for Stable, 2 for Variable.
+     * @param user The address of the user who delegated borrowing power (receives debt and tokens).
+     */
+    function executeBorrowAndTransfer(
+        address user,
+        address asset,
+        uint256 amount,
+        uint256 interestRateMode
+    ) external onlyBot whenNotPaused onlyActiveDelegation(user) nonReentrant {
+        DelegationConfig storage config = delegations[user];
+        require(config.allowBorrow, "Borrow not permitted");
+        require(amount > 0, "Amount must be > 0");
+
+        IAavePool(AAVE_POOL).borrow(asset, amount, interestRateMode, 0, user);
+
+        bool success = IERC20(asset).transfer(user, amount);
+        require(success, "Token transfer to user failed");
+
+        emit BorrowAndTransferExecuted(asset, amount, user);
     }
 
     function executeRepay(
