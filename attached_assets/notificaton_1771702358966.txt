@@ -1,0 +1,58 @@
+Since we already built the notifications table in Phase 1, we just need to wire it up so that the bot automatically writes to it, and the API/Dashboard reads from it.
+
+Here is the exact architecture for the Broadcast Notification System, followed by the prompt to feed into Replit.
+
+The Notification Architecture
+1. The Publisher (The DeFi Engine)
+Whenever the bot successfully completes a major action in strategy_engine.py (e.g., a Capacity Borrow, a Macro Short, or a Nurse Sweep), it will call a new database function: db.add_notification(user_wallet, message).
+
+2. The Subscribers (The UIs and Agents)
+
+The Human (Flask Dashboard): We will add a simple "Inbox" or "Activity Feed" page to the Flask dashboard that queries this table so the user can see a ledger of everything your platform has done for them.
+
+The AI (FastAPI): We will create a new endpoint (GET /api/v1/notifications) so the OpenClaw agent can programmatically check its own inbox and act on the information (e.g., "Oh, the Macro Short activated, I should pause trading").
+
+OBJECTIVE
+We need to activate the notifications table we created in Phase 1. The DeFi engine must automatically log major autonomous actions (borrowing, hedging, sweeping) to this table. We will then expose these logs to both the human user (via Flask) and the OpenClaw agent (via FastAPI).
+
+TASK 1: Database Helper Function
+
+File: db.py
+
+Action: Create a new function add_notification(wallet_address: str, message: str, priority: str = 'info').
+
+Implementation: This function should safely insert a new row into the notifications table using the existing database connection pool.
+
+TASK 2: Inject Triggers into the Strategy Engine
+
+File: strategy_engine.py (and relevant strategy files)
+
+Action: Import the add_notification function.
+
+Implementation: Locate the success paths for the major multi-tenant operations:
+
+Growth/Capacity Distribution: On successful completion, log: "Capacity distribution successful: Borrowed $X DAI and routed to gas/savings/profit."
+
+Macro/Micro Shorts: On successful execution, log: "DEFENSE ACTIVATED: Macro short executed due to market volatility. Borrowed $X WETH."
+
+Nurse Sweep: On successful sweep, log: "Nurse Sweep complete. Rebalanced $X."
+
+Note: Ensure these logs only trigger if the on-chain transaction actually succeeds.
+
+TASK 3: The OpenClaw API Endpoint
+
+File: api_server.py
+
+Action: Create a new FastAPI route: GET /api/v1/notifications
+
+Implementation: Secure this route using the existing X-API-Key dependency. It should return a JSON array of the 20 most recent notifications for that specific user_wallet_address, ordered by created_at descending.
+
+TASK 4: The Dashboard Inbox (Flask)
+
+File: web_dashboard.py and a new/existing HTML template.
+
+Action: Create a simple route /dashboard/activity (or inject it into the main dashboard view).
+
+Implementation: Query the database for the logged-in user's notifications and pass them to the Jinja template to display a simple chronological "Activity Feed".
+
+Execute this build. Please confirm when the database insertion triggers are successfully wired into the strategy engine.

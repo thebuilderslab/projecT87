@@ -1,0 +1,39 @@
+HASE 3 BUILD: FastAPI Wrapper & OpenClaw Security Endpoints
+
+OBJECTIVE
+We are exposing our secure, multi-tenant DeFi engine to external OpenClaw AI agents via a REST API. We must implement FastAPI, secure it with API key authentication linked to our PostgreSQL database, and mount our legacy Flask dashboard so both run seamlessly on the same port.
+
+TASK 1: FastAPI Initialization & Flask Mounting
+
+File: Create a new api_server.py (or update main.py).
+
+Action: Initialize a FastAPI app.
+
+Integration: Import the existing Flask app from web_dashboard.py. Use fastapi.middleware.wsgi.WSGIMiddleware to mount the Flask app to a specific path (e.g., /app or /dashboard).
+
+Goal: Uvicorn should serve the FastAPI routes on /api/v1/ and pass all dashboard traffic to the Flask app, solving any port collision issues.
+
+TASK 2: API Key Security Middleware
+
+Action: Implement an API key validation dependency using fastapi.security.APIKeyHeader(name="X-API-Key").
+
+Logic: 1. Intercept the incoming X-API-Key.
+2. Hash the key and query the PostgreSQL api_keys table.
+3. If invalid or revoked, raise a HTTPException(status_code=401).
+4. If valid, return the associated user_wallet_address to the route.
+
+TASK 3: The "Black Box" Pydantic Schemas
+
+Action: Define the request payloads using Pydantic BaseModel.
+
+Strict Constraint: The API must act as a managed-risk Black Box. Ensure the schemas ONLY accept execution variables like amount: float and asset: str. Do NOT allow any risk parameters (like health factor limits or collateral thresholds) to be passed in the API request.
+
+TASK 4: Core Endpoints
+
+Action: Create the RESTful routes for the OpenClaw agents.
+
+GET /api/v1/vault/health: Returns the user's current Aave health factor.
+
+POST /api/v1/credit/borrow: Accepts the Pydantic request, receives the authenticated user_wallet_address from Task 2, and routes it to our async check_capacity_opportunities logic.
+
+Execute this API integration and confirm when the Uvicorn server is successfully running both the FastAPI endpoints and the mounted Flask app

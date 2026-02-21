@@ -1,0 +1,49 @@
+import requests
+import json
+
+# --- CONFIGURATION ---
+# Replace this with your actual Replit URL once the server is running
+API_URL = "https://your-replit-app-url.repl.co" 
+
+# Replace this with the raw API key you generate from your new dashboard
+API_KEY = "your_generated_raw_api_key_here"
+
+headers = {
+    "X-API-Key": API_KEY,
+    "Content-Type": "application/json"
+}
+
+def run_agent_test():
+    print("🤖 OpenClaw Simulation Started...")
+
+    # TEST 1: Check the Vault Health
+    print("\n📊 Checking Vault Health...")
+    health_response = requests.get(f"{API_URL}/api/v1/vault/health", headers=headers)
+    print(f"Status Code: {health_response.status_code}")
+    print(f"Response: {json.dumps(health_response.json(), indent=2)}")
+
+    if health_response.status_code != 200:
+        print("❌ Authentication failed or server error. Stopping test.")
+        return
+
+    # TEST 2: Request a Capacity Borrow
+    print("\n💸 Requesting $100 Credit Line for AI Trade...")
+    
+    # Notice: We are ONLY sending amount and asset. The Pydantic model will reject
+    # any attempts to pass risk parameters or health factor minimums.
+    payload = {
+        "amount": 100.0,
+        "asset": "USDC"
+    }
+    
+    borrow_response = requests.post(
+        f"{API_URL}/api/v1/credit/borrow", 
+        headers=headers, 
+        json=payload
+    )
+    
+    print(f"Status Code: {borrow_response.status_code}")
+    print(f"Response: {json.dumps(borrow_response.json(), indent=2)}")
+
+if __name__ == "__main__":
+    run_agent_test()
