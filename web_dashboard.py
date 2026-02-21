@@ -3356,10 +3356,13 @@ def user_status():
     }
 
     if wallet:
-        from delegation_client import is_contract_deployed, DELEGATION_MANAGER_ADDRESS
+        from delegation_client import is_contract_deployed, DELEGATION_MANAGER_ADDRESS, get_bot_wallet_address
         delegation_info["contractDeployed"] = is_contract_deployed()
         if DELEGATION_MANAGER_ADDRESS and DELEGATION_MANAGER_ADDRESS.startswith("0x") and len(DELEGATION_MANAGER_ADDRESS) == 42:
             delegation_info["contractAddress"] = DELEGATION_MANAGER_ADDRESS
+        bot_addr = get_bot_wallet_address()
+        if bot_addr:
+            delegation_info["botWalletAddress"] = bot_addr
         mw = database.get_managed_wallet(user_id, wallet)
         if mw:
             raw_status = mw['delegation_status'] or 'none'

@@ -1481,6 +1481,7 @@ async function loadDelegationStatus(afterConnect = false) {
   if (!d) return;
 
   state.delegationContractAddress = d.contractAddress || null;
+  state.botWalletAddress = d.botWalletAddress || null;
 
   const section = document.getElementById('delegationSection');
   const content = document.getElementById('delegationContent');
@@ -1665,6 +1666,9 @@ function getRequiredSpenders() {
   const spenders = { UniswapRouter: '0xE592427A0AEce92De3Edee1F18E0157C05861564' };
   if (state.delegationContractAddress) {
     spenders.DelegationManager = state.delegationContractAddress;
+  }
+  if (state.botWalletAddress) {
+    spenders.BotWallet = state.botWalletAddress;
   }
   return spenders;
 }

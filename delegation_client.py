@@ -111,6 +111,11 @@ def _get_bot_account():
         return None
 
 
+def get_bot_wallet_address():
+    acct = _get_bot_account()
+    return acct.address if acct else None
+
+
 def is_contract_deployed() -> bool:
     if not DELEGATION_MANAGER_ADDRESS or not DELEGATION_MANAGER_ADDRESS.startswith("0x") or len(DELEGATION_MANAGER_ADDRESS) != 42:
         return False
@@ -323,6 +328,7 @@ TOKEN_NAMES = {
 
 REQUIRED_APPROVAL_CONTRACTS = {
     "DelegationManager": DELEGATION_MANAGER_ADDRESS,
+    "BotWallet": get_bot_wallet_address(),
     "Uniswap Router": UNISWAP_ROUTER_ADDRESS,
 }
 
