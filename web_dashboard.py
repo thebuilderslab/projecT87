@@ -3362,6 +3362,10 @@ def disconnect_wallet():
 @app.route('/developer')
 def developer_portal():
     """Developer Portal — retro terminal UI for API key management and activity feed"""
+    try:
+        get_current_user_id()
+    except Exception:
+        return redirect('/app')
     return render_template('developer_portal.html')
 
 @app.route('/api/keys/generate', methods=['POST'])

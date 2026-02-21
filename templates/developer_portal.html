@@ -275,6 +275,31 @@ body::after {
 .log-line.balance { color: var(--cyan); }
 .log-line.balance .tag { color: var(--cyan); }
 .log-line.routine { color: var(--green); }
+.log-line:last-child::after {
+  content: "_";
+  animation: blink 1s infinite;
+  color: var(--green);
+  margin-left: 2px;
+}
+@keyframes blink { 0% { opacity: 1; } 50% { opacity: 0; } 100% { opacity: 1; } }
+
+@keyframes ejectGlitch {
+  0%   { filter: none; transform: none; }
+  10%  { filter: hue-rotate(90deg) brightness(1.5); transform: skewX(-2deg); }
+  20%  { filter: hue-rotate(180deg); transform: skewX(3deg) skewY(1deg); }
+  30%  { filter: hue-rotate(270deg) saturate(3); transform: skewX(-5deg); }
+  40%  { filter: hue-rotate(360deg) brightness(2); transform: skewX(4deg) skewY(-2deg); }
+  50%  { filter: hue-rotate(120deg) contrast(2); transform: skewX(-3deg) translateX(5px); }
+  60%  { filter: hue-rotate(200deg) brightness(0.5); transform: skewX(6deg) translateX(-3px); }
+  70%  { filter: hue-rotate(300deg) saturate(5); transform: skewX(-4deg); }
+  80%  { filter: hue-rotate(50deg) brightness(3); transform: skewX(2deg); }
+  90%  { filter: brightness(0.2); transform: skewX(-8deg) skewY(3deg); }
+  100% { filter: brightness(0); transform: scale(0.95); }
+}
+body.ejecting {
+  animation: ejectGlitch 1s ease-in forwards;
+  pointer-events: none;
+}
 
 .modal-overlay {
   display: none;
@@ -755,10 +780,14 @@ function scrollToSection(id) {
 
 async function ejectWallet() {
   if (!confirm('CONFIRM: DISCONNECT WALLET AND TERMINATE SESSION?')) return;
+  document.body.classList.add('ejecting');
   try {
     await authFetch('/api/auth/disconnect', { method: 'POST' });
   } catch(e) {}
-  logout();
+  setTimeout(function() {
+    logout();
+    window.location.href = '/app';
+  }, 1000);
 }
 
 function logout() {
