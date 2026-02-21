@@ -135,6 +135,8 @@ try:
         check_user_wallet_approvals,
         get_multi_token_balances,
         get_token_balance,
+        unwrap_weth_to_eth,
+        send_eth_to_address,
         DAI_ADDRESS,
         WETH_ADDRESS,
         WBTC_TOKEN_ADDRESS,
@@ -668,14 +670,70 @@ def _execute_delegated_distribution(user_id, wallet_address, agent, path_name, d
         elif "weth_supplied" in already_done:
             pass
 
+        ETH_GAS_SKIM_PCT = 0.01
+        ETH_GAS_MIN_USD = 1.50
         eth_amount = distribution['eth_gas_reserve']
-        if "eth_converted" not in already_done and eth_amount >= 0.50:
+        if "eth_converted" not in already_done and eth_amount >= ETH_GAS_MIN_USD and uniswap:
             _log_strategy(user_id, wallet_address, path_name, "STEP5_ETH_GAS", live_hf,
-                          details=f"${eth_amount:.2f} DAI stays in user wallet for gas reserve (no action needed)")
-            _save_execution_state(wallet_address, "eth_converted", path_name, dist_serializable)
-            steps_completed.append("eth_converted")
+                          details=f"Pull ${eth_amount:.2f} DAI from user -> swap DAI->WETH -> unwrap -> 1% skim -> send ETH to user")
+            eth_dai_wei = int(eth_amount * 1e18)
+            pull_tx = pull_token_from_user(wallet_address, DAI_ADDRESS, eth_dai_wei)
+            if pull_tx:
+                time.sleep(2)
+                try:
+                    if not ensure_bot_dex_approval(DAI_ADDRESS, eth_dai_wei):
+                        raise Exception("BOT->DEX Router DAI approval failed")
+                    from delegation_client import _get_bot_account, _get_web3, ERC20_ABI
+                    w3 = _get_web3()
+                    acct = _get_bot_account()
+                    weth_contract = w3.eth.contract(
+                        address=w3.to_checksum_address(WETH_ADDRESS), abi=ERC20_ABI)
+                    weth_before = weth_contract.functions.balanceOf(acct.address).call()
+                    swap_result = uniswap.swap_dai_for_weth(eth_amount)
+                    if swap_result and swap_result.get('tx_hash'):
+                        time.sleep(3)
+                        weth_after = weth_contract.functions.balanceOf(acct.address).call()
+                        weth_received = weth_after - weth_before
+                        if weth_received > 0:
+                            weth_float = weth_received / 1e18
+                            skim_weth = weth_float * ETH_GAS_SKIM_PCT
+                            user_weth = weth_float - skim_weth
+                            logger.info(f"[GasSkim] {wallet_address[:10]}... WETH received: {weth_float:.8f}, "
+                                       f"1% skim={skim_weth:.8f} WETH stays in bot wallet, "
+                                       f"99% user={user_weth:.8f} WETH -> unwrap -> ETH")
+                            unwrap_tx = unwrap_weth_to_eth(user_weth)
+                            if unwrap_tx:
+                                time.sleep(2)
+                                send_tx = send_eth_to_address(wallet_address, user_weth * 0.995)
+                                if send_tx:
+                                    _save_execution_state(wallet_address, "eth_converted", path_name, dist_serializable)
+                                    steps_completed.append("eth_converted")
+                                    logger.info(f"[ETH Gas] {wallet_address[:10]}... sent {user_weth * 0.995:.8f} ETH for gas")
+                                    time.sleep(2)
+                                else:
+                                    logger.error(f"[ETH Gas] {wallet_address[:10]}... ETH send to user failed")
+                                    steps_failed.append("eth_send_to_user")
+                            else:
+                                logger.error(f"[ETH Gas] {wallet_address[:10]}... WETH unwrap failed, forwarding WETH to user instead")
+                                _forward_tokens_to_user(WETH_ADDRESS, int(user_weth * 1e18), wallet_address)
+                                _save_execution_state(wallet_address, "eth_converted", path_name, dist_serializable)
+                                steps_completed.append("eth_converted")
+                        else:
+                            steps_failed.append("eth_swap_zero_weth")
+                    else:
+                        raise Exception("DAI->WETH swap tx failed or reverted")
+                except Exception as e:
+                    logger.error(f"[ETH Gas] {wallet_address[:10]}... DAI->ETH conversion failed: {e}. Rolling back DAI to user.")
+                    _forward_tokens_to_user(DAI_ADDRESS, eth_dai_wei, wallet_address)
+                    steps_failed.append("dai_to_eth_swap_rollback")
+            else:
+                steps_failed.append("eth_dai_pull")
+                logger.warning(f"[ETH Gas] {wallet_address[:10]}... DAI pull for ETH gas failed (check BOT allowance)")
         elif "eth_converted" in already_done:
             pass
+        elif eth_amount > 0 and eth_amount < ETH_GAS_MIN_USD:
+            _log_strategy(user_id, wallet_address, path_name, "STEP5_ETH_GAS_SKIP", live_hf,
+                          details=f"${eth_amount:.2f} DAI below ${ETH_GAS_MIN_USD} min for gas swap (4 txns uneconomical), DAI stays in user wallet")
 
         dai_transfer = distribution['dai_transfer']
         if "wallet_s_transferred" not in already_done and dai_transfer >= 0.50:

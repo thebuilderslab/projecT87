@@ -142,17 +142,23 @@ def run_strategies_for_user(user_id, wallet_address, agent, run_id, iteration, c
 
 
 _tx_lock = threading.Lock()
+_rpc_semaphore = threading.Semaphore(5)
+RPC_DELAY_SECONDS = 0.5
+MAX_CONCURRENT_WALLETS = 5
 
 
 def _process_managed_wallet(mw, agent, run_id, iteration, config, check_approvals):
     """Process a single managed wallet — designed to run concurrently via ThreadPoolExecutor.
-    Position reads are parallelized; on-chain transactions acquire _tx_lock to serialize."""
+    Position reads are parallelized; on-chain transactions acquire _tx_lock to serialize.
+    RPC rate limiting: acquires _rpc_semaphore and sleeps RPC_DELAY_SECONDS between RPC calls."""
     uid = mw['user_id']
     waddr = mw['wallet_address']
     result = {'user_id': uid, 'wallet': waddr, 'status': 'skipped', 'details': ''}
 
     try:
-        pos = refresh_defi_for_user(uid, waddr)
+        with _rpc_semaphore:
+            time.sleep(RPC_DELAY_SECONDS)
+            pos = refresh_defi_for_user(uid, waddr)
         if not pos:
             result['status'] = 'no_position'
             log_agent_activity(f"[Monitor] wallet={waddr[:10]}..., mode=delegated, decision=SKIP (no position)")
@@ -323,7 +329,7 @@ def run_autonomous_mainnet_agent():
         
         # Initial status check
         log_agent_activity("📊 Performing initial status check...")
-        eth_balance = agent.get_eth_balance()
+        eth_balance = agent.get_bot_eth_balance()
         log_agent_activity(f"💰 ETH Balance: {eth_balance:.6f} ETH")
         
         import concurrent.futures
@@ -424,10 +430,10 @@ def run_autonomous_mainnet_agent():
                         log_agent_activity(f"[Strategy] wallet={mw['wallet_address'][:10]}..., DEDUP_SKIP")
 
                 check_approvals = (iteration % 10 == 0)
-                max_workers = min(len(deduped_wallets), 8) if deduped_wallets else 1
+                max_workers = min(len(deduped_wallets), MAX_CONCURRENT_WALLETS) if deduped_wallets else 1
 
                 if deduped_wallets:
-                    log_agent_activity(f"[Concurrent] Processing {len(deduped_wallets)} wallet(s) with ThreadPoolExecutor (max_workers={max_workers})")
+                    log_agent_activity(f"[Concurrent] Processing {len(deduped_wallets)} wallet(s) with ThreadPoolExecutor (max_workers={max_workers}, rpc_delay={RPC_DELAY_SECONDS}s)")
                     with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
                         futures = {
                             executor.submit(_process_managed_wallet, mw, agent, run_id, iteration, config, check_approvals): mw

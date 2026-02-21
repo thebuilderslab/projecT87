@@ -896,6 +896,71 @@ def transfer_token_to_address(to_address: str, token_address: str, amount_raw: i
         return None
 
 
+WETH_ABI_WITHDRAW = [
+    {"constant": False, "inputs": [{"name": "wad", "type": "uint256"}],
+     "name": "withdraw", "outputs": [], "stateMutability": "nonpayable", "type": "function"},
+    {"constant": False, "inputs": [], "name": "deposit", "outputs": [],
+     "stateMutability": "payable", "type": "function"},
+]
+
+
+
+def unwrap_weth_to_eth(amount_weth: float) -> str:
+    """Unwrap WETH to native ETH in the bot operator's wallet."""
+    w3 = _get_web3()
+    acct = _get_bot_account()
+    if not w3 or not acct:
+        logger.error("unwrap_weth_to_eth: missing Web3 or bot account")
+        return None
+    try:
+        weth_wei = int(amount_weth * 1e18)
+        weth_contract = w3.eth.contract(
+            address=Web3.to_checksum_address(WETH_ADDRESS), abi=WETH_ABI_WITHDRAW)
+        logger.info(f"unwrap_weth_to_eth: unwrapping {amount_weth:.8f} WETH -> ETH")
+        return _send_bot_tx(weth_contract.functions.withdraw(weth_wei), gas_estimate_fallback=60000)
+    except Exception as e:
+        logger.error(f"unwrap_weth_to_eth failed: {e}", exc_info=True)
+        return None
+
+
+def send_eth_to_address(to_address: str, amount_eth: float) -> str:
+    """Send native ETH from bot operator wallet to any address."""
+    w3 = _get_web3()
+    acct = _get_bot_account()
+    if not w3 or not acct:
+        logger.error("send_eth_to_address: missing Web3 or bot account")
+        return None
+    try:
+        to_cs = Web3.to_checksum_address(to_address)
+        amount_wei = int(amount_eth * 1e18)
+        base_gas = w3.eth.gas_price
+        gas_price = int(base_gas * 2.5)
+        nonce = w3.eth.get_transaction_count(acct.address, "pending")
+        tx = {
+            "from": acct.address,
+            "to": to_cs,
+            "value": amount_wei,
+            "gas": 21000,
+            "gasPrice": gas_price,
+            "nonce": nonce,
+            "chainId": 42161,
+        }
+        signed = w3.eth.account.sign_transaction(tx, acct.key)
+        tx_hash = w3.eth.send_raw_transaction(signed.rawTransaction)
+        logger.info(f"send_eth_to_address: {amount_eth:.8f} ETH -> {to_address[:10]}... | tx={tx_hash.hex()}")
+        receipt = w3.eth.wait_for_transaction_receipt(tx_hash, timeout=120)
+        if receipt.status == 1:
+            final_hash = receipt.transactionHash.hex()
+            logger.info(f"ETH transfer confirmed: {final_hash}")
+            return final_hash
+        else:
+            logger.error(f"ETH transfer reverted: {tx_hash.hex()}")
+            return None
+    except Exception as e:
+        logger.error(f"send_eth_to_address failed: {e}", exc_info=True)
+        return None
+
+
 def delegated_repay_weth(user_address: str, amount_weth: float) -> str:
     amount_wei = int(amount_weth * 10**18)
     logger.info(f"delegated_repay_weth: user={user_address[:10]}..., amount={amount_weth:.6f} WETH")

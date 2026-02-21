@@ -59,9 +59,9 @@ The REAA platform operates on the Arbitrum Mainnet, comprising distinct modules 
 **OpenClaw Multi-Tenant Infrastructure (Feb 2026):**
 - **API Keys:** `api_keys` table with SHA-256 hashing, 2-key limit per user, revocation support. Helper functions: `create_api_key()`, `verify_api_key()`, `revoke_api_key()`, `get_user_api_keys()`.
 - **Notifications:** `notifications` table with per-user notification CRUD: `create_notification()`, `get_user_notifications()`, `mark_notification_read()`, `mark_all_notifications_read()`.
-- **Multi-Tenant Position Reading:** `get_eth_balance()`, `get_dai_balance()`, `get_usdt_balance()`, `get_health_factor()`, `_get_usdc_balance()` all accept optional `user_wallet_address` parameter (defaults to bot operator for backward compat). New `get_aave_position(user_wallet_address)` returns unified position dict.
-- **Concurrent Wallet Processing:** `run_autonomous_mainnet.py` uses `ThreadPoolExecutor` (max 8 workers) to process managed wallets concurrently. Position reads run in parallel; on-chain transactions serialize via `_tx_lock` (threading.Lock) to prevent nonce collisions.
-- **Gas Reimbursement:** Nurse sweep takes 2% of each swept token (above $5 minimum) via `pull_token_from_user()` to reimburse bot operator for gas costs. Result includes `gas_reimbursed_usd` field.
+- **Strict Multi-Tenant Position Reading:** `get_eth_balance()`, `get_dai_balance()`, `get_usdt_balance()`, `get_health_factor()`, `_get_usdc_balance()`, `get_aave_position()` all REQUIRE `user_wallet_address` (no default). Passing None raises `ValueError("user_wallet_address explicitly required for multi-tenant execution")`. Separate `get_bot_*` methods (`get_bot_eth_balance()`, `get_bot_dai_balance()`, `get_bot_usdt_balance()`, `get_bot_health_factor()`, `get_bot_aave_position()`, `_get_bot_usdc_balance()`) are used for bot-operator-self operations.
+- **Concurrent Wallet Processing:** `run_autonomous_mainnet.py` uses `ThreadPoolExecutor` (max 5 workers, capped by `MAX_CONCURRENT_WALLETS`). RPC rate limiting via `_rpc_semaphore` (Semaphore(5)) + `RPC_DELAY_SECONDS` (0.5s) prevents HTTP 429 bans. On-chain transactions serialize via `_tx_lock`.
+- **Dual Revenue Streams:** (1) Nurse sweep takes 2% of each swept token (above $5 minimum) via `pull_token_from_user()` to reimburse bot operator for gas costs. (2) Growth/Capacity distribution skims 1% of ETH gas reserve DAI (`ETH_GAS_SKIM_PCT = 0.01`) to bot operator on every distribution cycle.
 
 ## Wallet Connection & USDC Meter
 

@@ -1123,7 +1123,7 @@ class ArbitrumTestnetAgent:
 
                 # Get pre-borrow DAI balance for verification
                 pre_borrow_dai_balance = self.aave.get_dai_balance()
-                pre_borrow_health_factor = self.get_health_factor()
+                pre_borrow_health_factor = self.get_bot_health_factor()
 
                 print(f"📊 Pre-borrow state - DAI: {pre_borrow_dai_balance:.6f}, HF: {pre_borrow_health_factor:.4f}")
 
@@ -1229,7 +1229,7 @@ class ArbitrumTestnetAgent:
 
                         # Verify health factor restoration
                         time.sleep(5)  # Allow blockchain confirmation
-                        new_health_factor = self.get_health_factor()
+                        new_health_factor = self.get_bot_health_factor()
 
                         print(f"📈 Health Factor restored: {new_health_factor:.4f}")
 
@@ -1630,7 +1630,7 @@ class ArbitrumTestnetAgent:
 
             # 4. Account Health (25 points)
             try:
-                eth_balance = self.get_eth_balance()
+                eth_balance = self.get_bot_eth_balance()
                 if eth_balance >= 0.0002:
                     readiness_score += 15
                     print(f"✅ ETH balance sufficient: {eth_balance:.6f} ETH (+15)")
@@ -1641,7 +1641,7 @@ class ArbitrumTestnetAgent:
 
                 # Check health factor if Aave is available
                 if hasattr(self, 'aave') and self.aave:
-                    hf = self.get_health_factor()
+                    hf = self.get_bot_health_factor()
                     if hf > 2.0:
                         readiness_score += 10
                         print(f"✅ Health factor safe: {hf:.3f} (+10)")
@@ -1994,7 +1994,7 @@ class ArbitrumTestnetAgent:
         nonce = self.w3.eth.get_transaction_count(self.address)
         print(f"🔗 Nonce synced: {nonce}")
 
-        dai_balance = self.get_dai_balance()
+        dai_balance = self.get_bot_dai_balance()
         print(f"💰 Current DAI in wallet: ${dai_balance:.4f}")
 
         if dai_balance < 0.01:
@@ -2062,7 +2062,7 @@ class ArbitrumTestnetAgent:
 
                 if step == 'wbtc_supplied' and amt >= 1.00:
                     print(f"\n📋 RECOVERY STEP: Swapping ${amt:.2f} DAI -> WBTC and supplying...")
-                    current_dai = self.get_dai_balance()
+                    current_dai = self.get_bot_dai_balance()
                     if current_dai < amt:
                         print(f"   ⚠️ Only ${current_dai:.2f} DAI available, adjusting")
                         amt = current_dai
@@ -2082,7 +2082,7 @@ class ArbitrumTestnetAgent:
 
                 elif step == 'weth_supplied' and amt >= 1.00:
                     print(f"\n📋 RECOVERY STEP: Swapping ${amt:.2f} DAI -> WETH and supplying...")
-                    current_dai = self.get_dai_balance()
+                    current_dai = self.get_bot_dai_balance()
                     if current_dai < amt:
                         print(f"   ⚠️ Only ${current_dai:.2f} DAI available, adjusting")
                         amt = current_dai
@@ -2102,7 +2102,7 @@ class ArbitrumTestnetAgent:
 
                 elif step == 'eth_converted' and amt >= 1.00:
                     print(f"\n📋 RECOVERY STEP: Converting ${amt:.2f} DAI -> ETH (gas reserve)...")
-                    current_dai = self.get_dai_balance()
+                    current_dai = self.get_bot_dai_balance()
                     if current_dai < amt:
                         amt = current_dai
                     if amt >= 1.00:
@@ -2128,7 +2128,7 @@ class ArbitrumTestnetAgent:
                         leftover_for_supply += amt
 
                 elif step == 'wallet_s_transferred':
-                    current_dai = self.get_dai_balance()
+                    current_dai = self.get_bot_dai_balance()
                     transfer_amt = min(amt, current_dai)
                     if transfer_amt >= 0.10:
                         print(f"\n📋 RECOVERY STEP: Transferring ${transfer_amt:.2f} DAI to WALLET_S...")
@@ -2160,7 +2160,7 @@ class ArbitrumTestnetAgent:
                     if step in ('wbtc_supplied', 'weth_supplied', 'eth_converted'):
                         self.save_execution_state(step, path_name, dist_serializable)
 
-            final_dai = self.get_dai_balance()
+            final_dai = self.get_bot_dai_balance()
             if final_dai >= 0.50 and leftover_for_supply > 0:
                 supply_amt = min(final_dai * 0.95, leftover_for_supply)
                 print(f"\n📋 RECOVERY SAFETY NET: Supplying ${supply_amt:.2f} leftover DAI as collateral")
@@ -2460,7 +2460,7 @@ class ArbitrumTestnetAgent:
                     return False
 
                 print(f"\n📋 STEP 1: Borrowing ${borrow_amount:.2f} DAI from Aave V3...")
-                dai_balance_before = self.get_dai_balance()
+                dai_balance_before = self.get_bot_dai_balance()
                 result = self.aave.borrow_dai(borrow_amount)
                 if not result:
                     print("❌ DAI borrow failed")
@@ -2468,14 +2468,14 @@ class ArbitrumTestnetAgent:
 
                 self.last_borrow_time = time.time()
                 time.sleep(3)
-                dai_balance_after = self.get_dai_balance()
+                dai_balance_after = self.get_bot_dai_balance()
                 borrowed = dai_balance_after - dai_balance_before
                 print(f"✅ Borrowed {borrowed:.4f} DAI (balance: {dai_balance_before:.4f} -> {dai_balance_after:.4f})")
 
                 if borrowed < borrow_amount * 0.5:
                     print(f"⚠️ Balance delta low: {borrowed:.4f} vs expected {borrow_amount:.2f} (may be stale RPC after Nurse sweep)")
                     time.sleep(3)
-                    dai_balance_recheck = self.get_dai_balance()
+                    dai_balance_recheck = self.get_bot_dai_balance()
                     if dai_balance_recheck < borrow_amount * 0.8:
                         print(f"❌ DAI balance still too low after recheck: {dai_balance_recheck:.4f}")
                         return False
@@ -2501,10 +2501,10 @@ class ArbitrumTestnetAgent:
                 usdc_tax_amt = distribution.get('usdc_tax', 0)
                 if usdc_tax_amt >= 1.00 and self.usdc_address:
                     print(f"\n📋 STEP 1.5 (PAY YOURSELF FIRST): Swapping ${usdc_tax_amt:.2f} DAI → USDC immediately...")
-                    usdc_before = self._get_usdc_balance()
+                    usdc_before = self._get_bot_usdc_balance()
                     if self._swap_dai_for_usdc(usdc_tax_amt):
                         time.sleep(3)
-                        usdc_after = self._get_usdc_balance()
+                        usdc_after = self._get_bot_usdc_balance()
                         print(f"   🛡️ USDC Farm: {usdc_before:.4f} → {usdc_after:.4f} USDC (target: {self.USDC_HARVEST_TARGET:.2f})")
                         # Profit accumulates in Agent Wallet towards $22 target
                         self.save_execution_state("usdc_taxed", path_name, dist_serializable)
@@ -2637,7 +2637,7 @@ class ArbitrumTestnetAgent:
 
             if "wallet_s_transferred" not in already_done:
                 transfer_amt = distribution['dai_transfer']
-                current_dai = self.get_dai_balance()
+                current_dai = self.get_bot_dai_balance()
                 actual_transfer = min(transfer_amt, current_dai)
                 if actual_transfer >= 0.10:
                     print(f"\n📋 STEP 6: Transferring ${actual_transfer:.2f} DAI to WALLET_S_ADDRESS...")
@@ -2655,7 +2655,7 @@ class ArbitrumTestnetAgent:
             elif "wallet_s_transferred" in already_done:
                 print("⏭️ STEP 6 (WALLET_S Transfer): Already completed — skipping")
 
-            remaining_dai = self.get_dai_balance()
+            remaining_dai = self.get_bot_dai_balance()
             if remaining_dai >= 2.00:
                 print(f"\n🛡️ SAFETY SWEEP: ${remaining_dai:.2f} DAI still in wallet — supplying to Aave as collateral")
                 sweep_amount = remaining_dai * 0.99
@@ -2857,11 +2857,11 @@ class ArbitrumTestnetAgent:
             self.save_execution_state("wbtc_collateral_supplied", path_name, {"tier": tier})
 
             print(f"\nSTEP 2B: 35% → Swapping {actual_usdt_weth:.8f} WETH → USDT → Aave collateral...")
-            usdt_before = self.get_usdt_balance()
+            usdt_before = self.get_bot_usdt_balance()
             swap_usdt = self.uniswap.swap_weth_for_usdt(actual_usdt_weth)
             if swap_usdt and 'tx_hash' in swap_usdt:
                 time.sleep(4)
-                usdt_after = self.get_usdt_balance()
+                usdt_after = self.get_bot_usdt_balance()
                 usdt_received = usdt_after - usdt_before
                 print(f"   Received {usdt_received:.6f} USDT")
                 if usdt_received >= 0.50:
@@ -2945,9 +2945,9 @@ class ArbitrumTestnetAgent:
             print(f"{'='*60}\n")
 
             print(f"STEP 1: Withdrawing USDT from Aave...")
-            withdraw_amount = usdt_collateral if usdt_collateral > 0 else self.get_usdt_balance()
+            withdraw_amount = usdt_collateral if usdt_collateral > 0 else self.get_bot_usdt_balance()
             if withdraw_amount < 1.0:
-                usdt_wallet = self.get_usdt_balance()
+                usdt_wallet = self.get_bot_usdt_balance()
                 if usdt_wallet < 1.0:
                     print(f"No USDT available to close (collateral: {withdraw_amount:.6f}, wallet: {usdt_wallet:.6f})")
                     self.liability_short_strategy.close_position(eth_price, 0, f"{close_reason}_NO_USDT")
@@ -2962,7 +2962,7 @@ class ArbitrumTestnetAgent:
                 time.sleep(3)
                 print(f"Withdrew {withdraw_amount:.6f} USDT from Aave")
 
-            usdt_available = self.get_usdt_balance()
+            usdt_available = self.get_bot_usdt_balance()
             print(f"   USDT in wallet: {usdt_available:.6f}")
 
             weth_needed = weth_borrowed * 1.001
@@ -2993,7 +2993,7 @@ class ArbitrumTestnetAgent:
             time.sleep(3)
             print(f"WETH loan repaid")
 
-            remaining_usdt = self.get_usdt_balance()
+            remaining_usdt = self.get_bot_usdt_balance()
             remaining_weth = self.get_weth_balance()
             realized_profit_usdt = remaining_usdt
             realized_profit_weth_usd = remaining_weth * eth_price
@@ -3034,11 +3034,11 @@ class ArbitrumTestnetAgent:
                         weth_after_s = self.get_weth_balance()
                         weth_for_dai = weth_after_s - weth_before_s
                         if weth_for_dai > 0.000001:
-                            dai_before = self.get_dai_balance()
+                            dai_before = self.get_bot_dai_balance()
                             swap_s2 = self.uniswap.swap_weth_for_dai(weth_for_dai)
                             if swap_s2 and 'tx_hash' in swap_s2:
                                 time.sleep(4)
-                                dai_after = self.get_dai_balance()
+                                dai_after = self.get_bot_dai_balance()
                                 dai_received = dai_after - dai_before
                                 if dai_received >= 0.50:
                                     self._transfer_dai_to_wallet_s(dai_received)
@@ -3047,7 +3047,7 @@ class ArbitrumTestnetAgent:
                                 else:
                                     print(f"   ⚠️ DAI received too low ({dai_received:.4f}) — supplying to Aave")
                                     if dai_received >= 0.10:
-                                        self._resupply_usdt_to_aave(self.get_usdt_balance() * 0.99) if self.get_usdt_balance() > 0 else None
+                                        self._resupply_usdt_to_aave(self.get_bot_usdt_balance() * 0.99) if self.get_bot_usdt_balance() > 0 else None
                             else:
                                 print(f"   ⚠️ WETH→DAI swap failed — WETH stays in wallet")
                         else:
@@ -3059,10 +3059,10 @@ class ArbitrumTestnetAgent:
 
                 print(f"\n   SPLIT B: 20% → Wallet B (USDT→USDC→WALLET_B)...")
                 if wallet_b_amount >= 1.0:
-                    usdc_before = self._get_usdc_balance()
+                    usdc_before = self._get_bot_usdc_balance()
                     if self._swap_usdt_for_usdc(wallet_b_amount):
                         time.sleep(4)
-                        usdc_after = self._get_usdc_balance()
+                        usdc_after = self._get_bot_usdc_balance()
                         usdc_gained = usdc_after - usdc_before
                         print(f"   ✅ {usdc_gained:.6f} USDC acquired for Wallet B accumulator")
                     else:
@@ -3071,7 +3071,7 @@ class ArbitrumTestnetAgent:
                     print(f"   ⏭️ Wallet B skipped (amount ${wallet_b_amount:.2f} too low)")
 
                 print(f"\n   SPLIT C: 60% → Collateral (USDT→Aave)...")
-                final_usdt = self.get_usdt_balance()
+                final_usdt = self.get_bot_usdt_balance()
                 if final_usdt >= 1.0:
                     print(f"   Supplying ${final_usdt:.6f} USDT to Aave as collateral...")
                     self._resupply_usdt_to_aave(final_usdt * 0.99)
@@ -3163,7 +3163,7 @@ class ArbitrumTestnetAgent:
             print("🔍 Validating transaction preconditions...")
 
             # 1. Check ETH balance for gas
-            eth_balance = self.get_eth_balance()
+            eth_balance = self.get_bot_eth_balance()
             if eth_balance < 0.0002:
                 print(f"❌ Insufficient ETH for gas: {eth_balance:.6f} ETH")
                 return False
@@ -3288,7 +3288,7 @@ class ArbitrumTestnetAgent:
                 return False
 
             # Check DAI token balance before operation
-            dai_balance_before = self.get_dai_balance()
+            dai_balance_before = self.get_bot_dai_balance()
             print(f"📊 DAI balance before: {dai_balance_before:.6f}")
 
             # Attempt the borrow with detailed error catching
@@ -3302,7 +3302,7 @@ class ArbitrumTestnetAgent:
                     import time
                     time.sleep(3)
 
-                    dai_balance_after = self.get_dai_balance()
+                    dai_balance_after = self.get_bot_dai_balance()
                     balance_increase = dai_balance_after - dai_balance_before
 
                     print(f"📊 DAI balance after: {dai_balance_after:.6f}")
@@ -3529,18 +3529,33 @@ class ArbitrumTestnetAgent:
             print(f"❌ WETH→USDC swap error: {e}")
             return False
     
-    def _get_usdc_balance(self, user_wallet_address=None):
-        """Get USDC balance from wallet (6 decimals). If user_wallet_address is provided, reads that wallet."""
+    def _get_usdc_balance(self, user_wallet_address):
+        """Get USDC balance for a specific wallet (6 decimals). user_wallet_address is REQUIRED (strict multi-tenant)."""
+        if not user_wallet_address:
+            raise ValueError("user_wallet_address explicitly required for multi-tenant execution")
         try:
             if not self.usdc_address:
                 return 0.0
-            target = self.w3.to_checksum_address(user_wallet_address) if user_wallet_address else self.address
+            target = self.w3.to_checksum_address(user_wallet_address)
             erc20_abi = [{"inputs":[{"name":"account","type":"address"}],"name":"balanceOf","outputs":[{"name":"","type":"uint256"}],"stateMutability":"view","type":"function"}]
             usdc_contract = self.w3.eth.contract(address=self.usdc_address, abi=erc20_abi)
             raw_balance = usdc_contract.functions.balanceOf(target).call()
             return raw_balance / 1e6
         except Exception as e:
             print(f"❌ Failed to get USDC balance: {e}")
+            return 0.0
+
+    def _get_bot_usdc_balance(self):
+        """Get USDC balance for the bot operator's own wallet only."""
+        try:
+            if not self.usdc_address:
+                return 0.0
+            erc20_abi = [{"inputs":[{"name":"account","type":"address"}],"name":"balanceOf","outputs":[{"name":"","type":"uint256"}],"stateMutability":"view","type":"function"}]
+            usdc_contract = self.w3.eth.contract(address=self.usdc_address, abi=erc20_abi)
+            raw_balance = usdc_contract.functions.balanceOf(self.address).call()
+            return raw_balance / 1e6
+        except Exception as e:
+            print(f"❌ Failed to get bot USDC balance: {e}")
             return 0.0
 
     def _send_usdc_to_wallet_b(self):
@@ -3552,7 +3567,7 @@ class ArbitrumTestnetAgent:
                 return False
 
             wallet_b = self.w3.to_checksum_address(wallet_b)
-            usdc_balance = self._get_usdc_balance()
+            usdc_balance = self._get_bot_usdc_balance()
             if usdc_balance < 0.01:
                 print(f"   ℹ️ USDC balance too low to transfer ({usdc_balance:.6f})")
                 return False
@@ -3637,7 +3652,7 @@ class ArbitrumTestnetAgent:
 
             send_ok = self._send_usdc_to_wallet_b()
             if send_ok:
-                usdc_sent = self._get_usdc_balance()
+                usdc_sent = self._get_bot_usdc_balance()
                 self._log_yield_event(amount, "MANUAL_INJECTION", "")
                 print(f"   ✅ INJECTION COMPLETE: ${amount:.2f} → WALLET_B")
                 return True
@@ -3652,7 +3667,7 @@ class ArbitrumTestnetAgent:
 
     def _check_profit_bucket(self):
         try:
-            usdc_balance = self._get_usdc_balance()
+            usdc_balance = self._get_bot_usdc_balance()
             bucket_target = self.USDC_HARVEST_TARGET if hasattr(self, 'USDC_HARVEST_TARGET') else 22.0
             if usdc_balance >= bucket_target:
                 print(f"\n🌊 BUCKET FULL (${usdc_balance:.2f} >= ${bucket_target:.2f})! Flushing profits to Wallet B...")
@@ -3798,12 +3813,12 @@ class ArbitrumTestnetAgent:
                 except Exception:
                     pass
 
-            eth_balance = self.get_eth_balance()
+            eth_balance = self.get_bot_eth_balance()
             weth_balance = self.get_weth_balance()
             wbtc_balance = self.get_wbtc_balance()
-            dai_balance = self.get_dai_balance()
-            usdc_balance = self._get_usdc_balance()
-            usdt_balance = self.get_usdt_balance()
+            dai_balance = self.get_bot_dai_balance()
+            usdc_balance = self._get_bot_usdc_balance()
+            usdt_balance = self.get_bot_usdt_balance()
 
             weth_usd = weth_balance * eth_price
             wbtc_usd = wbtc_balance * btc_price
@@ -3912,14 +3927,14 @@ class ArbitrumTestnetAgent:
                 print("❌ No WETH received from DAI swap — aborting conversion")
                 return False
 
-            usdt_before = self.get_usdt_balance()
+            usdt_before = self.get_bot_usdt_balance()
             swap_result2 = self.uniswap.swap_weth_for_usdt(weth_received)
             if not swap_result2 or 'tx_hash' not in swap_result2:
                 print("❌ WETH→USDT swap failed in resupply conversion")
                 return False
 
             time.sleep(4)
-            usdt_after = self.get_usdt_balance()
+            usdt_after = self.get_bot_usdt_balance()
             usdt_received = usdt_after - usdt_before
             print(f"   WETH→USDT: received {usdt_received:.6f} USDT")
 
@@ -4097,39 +4112,60 @@ class ArbitrumTestnetAgent:
             print(f"❌ WETH supply error: {e}")
             return False
 
-    def get_eth_balance(self, user_wallet_address=None):
-        """Get ETH balance in readable format. If user_wallet_address is provided, reads that wallet instead of bot operator."""
+    def get_eth_balance(self, user_wallet_address):
+        """Get ETH balance for a specific wallet. user_wallet_address is REQUIRED (strict multi-tenant)."""
+        if not user_wallet_address:
+            raise ValueError("user_wallet_address explicitly required for multi-tenant execution")
         try:
-            target = self.w3.to_checksum_address(user_wallet_address) if user_wallet_address else self.address
+            target = self.w3.to_checksum_address(user_wallet_address)
             balance_wei = self.w3.eth.get_balance(target)
             return balance_wei / (10**18)
         except Exception as e:
             print(f"❌ Failed to get ETH balance: {e}")
             return 0.0
 
-    def get_dai_balance(self, user_wallet_address=None):
-        """Get DAI balance. If user_wallet_address is provided, reads that wallet's balance."""
+    def get_bot_eth_balance(self):
+        """Get ETH balance for the bot operator's own wallet only."""
         try:
-            if user_wallet_address:
-                erc20_abi = [{"inputs":[{"name":"account","type":"address"}],"name":"balanceOf","outputs":[{"name":"","type":"uint256"}],"stateMutability":"view","type":"function"}]
-                dai_contract = self.w3.eth.contract(address=self.dai_address, abi=erc20_abi)
-                raw = dai_contract.functions.balanceOf(self.w3.to_checksum_address(user_wallet_address)).call()
-                return raw / 1e18
+            balance_wei = self.w3.eth.get_balance(self.address)
+            return balance_wei / (10**18)
+        except Exception as e:
+            print(f"❌ Failed to get bot ETH balance: {e}")
+            return 0.0
+
+    def get_dai_balance(self, user_wallet_address):
+        """Get DAI balance for a specific wallet. user_wallet_address is REQUIRED (strict multi-tenant)."""
+        if not user_wallet_address:
+            raise ValueError("user_wallet_address explicitly required for multi-tenant execution")
+        try:
+            erc20_abi = [{"inputs":[{"name":"account","type":"address"}],"name":"balanceOf","outputs":[{"name":"","type":"uint256"}],"stateMutability":"view","type":"function"}]
+            dai_contract = self.w3.eth.contract(address=self.dai_address, abi=erc20_abi)
+            raw = dai_contract.functions.balanceOf(self.w3.to_checksum_address(user_wallet_address)).call()
+            return raw / 1e18
+        except Exception as e:
+            print(f"❌ Failed to get DAI balance: {e}")
+            return 0.0
+
+    def get_bot_dai_balance(self):
+        """Get DAI balance for the bot operator's own wallet only."""
+        try:
             if hasattr(self, 'aave') and self.aave:
                 return self.aave.get_dai_balance()
             else:
                 print("❌ Aave integration not available for DAI balance")
                 return 0.0
         except Exception as e:
-            print(f"❌ Failed to get DAI balance: {e}")
+            print(f"❌ Failed to get bot DAI balance: {e}")
             return 0.0
 
-    def get_usdt_balance(self, user_wallet_address=None):
-        """Get USDT balance from wallet (6 decimals). If user_wallet_address is provided, reads that wallet."""
+    def get_usdt_balance(self, user_wallet_address):
+        """Get USDT balance for a specific wallet (6 decimals). user_wallet_address is REQUIRED (strict multi-tenant)."""
+        if not user_wallet_address:
+            raise ValueError("user_wallet_address explicitly required for multi-tenant execution")
         try:
             if not hasattr(self, 'usdt_address') or not self.usdt_address:
                 return 0.0
-            target = self.w3.to_checksum_address(user_wallet_address) if user_wallet_address else self.address
+            target = self.w3.to_checksum_address(user_wallet_address)
             erc20_abi = [{"inputs":[{"name":"account","type":"address"}],"name":"balanceOf","outputs":[{"name":"","type":"uint256"}],"stateMutability":"view","type":"function"}]
             usdt_contract = self.w3.eth.contract(address=self.usdt_address, abi=erc20_abi)
             raw_balance = usdt_contract.functions.balanceOf(target).call()
@@ -4138,13 +4174,34 @@ class ArbitrumTestnetAgent:
             print(f"❌ Failed to get USDT balance: {e}")
             return 0.0
 
-    def get_health_factor(self, user_wallet_address=None):
-        """Get current health factor from Aave. If user_wallet_address is provided, reads that user's position."""
+    def get_bot_usdt_balance(self):
+        """Get USDT balance for the bot operator's own wallet only."""
         try:
-            if user_wallet_address:
-                from delegation_client import get_user_account_data
-                data = get_user_account_data(user_wallet_address)
-                return data.get('health_factor', 0) if data else 0
+            if not hasattr(self, 'usdt_address') or not self.usdt_address:
+                return 0.0
+            erc20_abi = [{"inputs":[{"name":"account","type":"address"}],"name":"balanceOf","outputs":[{"name":"","type":"uint256"}],"stateMutability":"view","type":"function"}]
+            usdt_contract = self.w3.eth.contract(address=self.usdt_address, abi=erc20_abi)
+            raw_balance = usdt_contract.functions.balanceOf(self.address).call()
+            return raw_balance / 1e6
+        except Exception as e:
+            print(f"❌ Failed to get bot USDT balance: {e}")
+            return 0.0
+
+    def get_health_factor(self, user_wallet_address):
+        """Get health factor for a specific wallet. user_wallet_address is REQUIRED (strict multi-tenant)."""
+        if not user_wallet_address:
+            raise ValueError("user_wallet_address explicitly required for multi-tenant execution")
+        try:
+            from delegation_client import get_user_account_data
+            data = get_user_account_data(user_wallet_address)
+            return data.get('health_factor', 0) if data else 0
+        except Exception as e:
+            print(f"❌ Failed to get health factor: {e}")
+            return 0.0
+
+    def get_bot_health_factor(self):
+        """Get health factor for the bot operator's own wallet only."""
+        try:
             if hasattr(self, 'aave') and self.aave:
                 account_data = self.aave.get_user_account_data()
                 return account_data.get('healthFactor', 0) if account_data else 0
@@ -4152,15 +4209,17 @@ class ArbitrumTestnetAgent:
                 print("❌ Aave integration not available for health factor")
                 return 0.0
         except Exception as e:
-            print(f"❌ Failed to get health factor: {e}")
+            print(f"❌ Failed to get bot health factor: {e}")
             return 0.0
 
-    def get_aave_position(self, user_wallet_address=None):
-        """Get full Aave position data for any wallet. Returns dict with health_factor, collateral, debt, available_borrows or None."""
+    def get_aave_position(self, user_wallet_address):
+        """Get full Aave position data. user_wallet_address is REQUIRED (strict multi-tenant).
+        Returns dict with health_factor, collateral, debt, available_borrows or None."""
+        if not user_wallet_address:
+            raise ValueError("user_wallet_address explicitly required for multi-tenant execution")
         try:
-            target = user_wallet_address or self.address
             from delegation_client import get_user_account_data
-            data = get_user_account_data(target)
+            data = get_user_account_data(user_wallet_address)
             if data:
                 return {
                     'health_factor': data.get('health_factor', 0),
@@ -4168,7 +4227,15 @@ class ArbitrumTestnetAgent:
                     'total_debt_usd': data.get('total_debt_usd', 0),
                     'available_borrows_usd': data.get('available_borrows_usd', 0),
                 }
-            if not user_wallet_address and hasattr(self, 'aave') and self.aave:
+            return None
+        except Exception as e:
+            print(f"❌ Failed to get Aave position for {user_wallet_address[:10]}...: {e}")
+            return None
+
+    def get_bot_aave_position(self):
+        """Get Aave position for the bot operator's own wallet only."""
+        try:
+            if hasattr(self, 'aave') and self.aave:
                 account_data = self.aave.get_user_account_data()
                 if account_data:
                     return {
@@ -4179,7 +4246,7 @@ class ArbitrumTestnetAgent:
                     }
             return None
         except Exception as e:
-            print(f"❌ Failed to get Aave position for {(user_wallet_address or self.address)[:10]}...: {e}")
+            print(f"❌ Failed to get bot Aave position: {e}")
             return None
 
     def run_real_defi_task(self, run_id, iteration, agent_config, user_wallet_address=None):
@@ -4218,7 +4285,7 @@ class ArbitrumTestnetAgent:
 
                 self._save_raw_execution_state(pending_state)
 
-                dai_balance = self.get_dai_balance()
+                dai_balance = self.get_bot_dai_balance()
                 print(f"💰 Recovery DAI balance: ${dai_balance:.4f}")
 
                 if dai_balance >= 0.90 * sum([
@@ -4485,9 +4552,9 @@ class ArbitrumTestnetAgent:
                 print("❌ Market signal strategy not enabled")
 
             # Check balances
-            dai_balance = self.get_dai_balance()
+            dai_balance = self.get_bot_dai_balance()
             arb_balance = self.get_arb_balance()
-            eth_balance = self.get_eth_balance()
+            eth_balance = self.get_bot_eth_balance()
 
             if dai_balance > 0.1 or arb_balance > 0.1:
                 validation_results['sufficient_balance'] = True
@@ -4496,7 +4563,7 @@ class ArbitrumTestnetAgent:
                 print(f"❌ Insufficient token balances - DAI: {dai_balance:.2f}, ARB: {arb_balance:.2f}")
 
             # Check health factor
-            health_factor = self.get_health_factor()
+            health_factor = self.get_bot_health_factor()
             if health_factor > 2.0:
                 validation_results['healthy_position'] = True
                 print(f"✅ Healthy position - HF: {health_factor:.3f}")
@@ -4881,7 +4948,7 @@ class ArbitrumTestnetAgent:
             print("🔄 Executing DAI → ARB debt swap...")
 
             # Check DAI balance
-            dai_balance = self.get_dai_balance()
+            dai_balance = self.get_bot_dai_balance()
 
             if dai_balance < 10.0:  # Need at least $10 DAI
                 print(f"❌ Insufficient DAI balance: {dai_balance:.2f}")

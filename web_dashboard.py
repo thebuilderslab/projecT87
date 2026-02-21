@@ -2944,7 +2944,7 @@ def api_send_usdc_to_wallet_b():
     try:
         if not agent:
             return jsonify({"error": "Agent not initialized", "success": False}), 503
-        usdc_balance = agent._get_usdc_balance() if hasattr(agent, '_get_usdc_balance') else 0
+        usdc_balance = agent._get_bot_usdc_balance() if hasattr(agent, '_get_bot_usdc_balance') else 0
         wallet_b = os.getenv('WALLET_B_ADDRESS', '')
         if not wallet_b:
             return jsonify({"error": "WALLET_B_ADDRESS not configured", "success": False}), 400
