@@ -545,7 +545,7 @@ console_buffer.append(f"[{est_now()}] 🔄 Initializing agent connections...")
 
 @app.route('/')
 def root_redirect():
-    """Redirect root to consumer dashboard"""
+    """Redirect root to Developer Portal"""
     return redirect('/app')
 
 @app.route('/admin')
@@ -3292,7 +3292,12 @@ def fetch_aave_position_for_wallet(wallet_address):
 
 @app.route('/app')
 def consumer_app():
-    """Consumer-facing multi-user dashboard"""
+    """Developer Portal — main user-facing page"""
+    return render_template('developer_portal.html')
+
+@app.route('/reaa')
+def reaa_dashboard():
+    """REAA consumer dashboard (legacy)"""
     return render_template('consumer_dashboard.html')
 
 @app.route('/api/auth/wallet', methods=['POST'])
@@ -3358,12 +3363,8 @@ def disconnect_wallet():
 
 @app.route('/developer')
 def developer_portal():
-    """Developer Portal — retro terminal UI for API key management and activity feed"""
-    try:
-        get_current_user_id()
-    except Exception:
-        return redirect('/app')
-    return render_template('developer_portal.html')
+    """Developer Portal — redirect to /app (canonical location)"""
+    return redirect('/app')
 
 @app.route('/api/keys/generate', methods=['POST'])
 def generate_key():
