@@ -1,0 +1,23 @@
+Please update the UI/UX of the REAA (Real Estate Agent Assistant) dashboard to make it more user-friendly. I have three specific design and functionality changes that need to be implemented. 
+
+Please execute the following tasks:
+
+**Task 1: Relocate the Delegation Panel**
+- Move the entire "WBTC AUTO-SUPPLY DELEGATION" section (and its associated "APPROVAL STATUS" checklist) from its current location on the main "Command Center" tab.
+- Relocate this entire component to the "DeFi" tab. Ensure the state management/routing is updated so it only renders when the user clicks the DeFi tab. 
+
+**Task 2: Replace Center Image with Looping Video**
+- In the center of the Command Center dashboard, there is a "SYSTEM HEALTH / SAFETY RATING" circular dial containing a static image.
+- Replace that static image with a video element using the file `ideilin reaa.mp4`.
+- The video must play automatically and seamlessly. Use the following HTML attributes on the video tag: `autoplay loop muted playsinline`.
+- Ensure the CSS is updated so the video is properly masked/cropped to fit perfectly inside the circular UI element without breaking the surrounding layout.
+
+**Task 3: Build and Wire a Live USDC Balance Meter**
+- I want a new visual meter added to the Command Center dashboard, styled exactly like the green/blue capacity progress bar from the "Zone 4 - Engine Room" reference UI (which looks like `USDC -> WALLET_B $13.16 / $22.00`).
+- **UI Design:** Replicate the sleek, dark-mode meter aesthetic. 
+- **Live Data Integration:** This meter must NOT contain hardcoded values. It must display the live USDC balance of the currently connected user wallet.
+- **Backend/Web3 Wiring:** 1. Create or utilize an existing backend endpoint or frontend `ethers.js` call to fetch the real-time USDC balance of the connected wallet on Arbitrum (USDC Contract: `0xaf88d065e77c8cC2239327C5EDb3A432268e5831`).
+    2. Format the text to display: `USDC BALANCE` on the left, and the live formatted dollar amount (e.g., `$500.00`) on the right.
+    3. (Optional but recommended for UI): Set a sensible "target" or "capacity" maximum for the progress bar visually, or make the bar fill dynamically based on a user-defined goal so the meter actually moves. 
+
+Please implement these changes step-by-step. Start by updating the HTML/CSS for the layout moves and the video, then handle the Web3/backend wiring for the live USDC meter. Let me know when you are ready for me to test.
