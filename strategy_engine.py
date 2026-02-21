@@ -53,6 +53,8 @@ MACRO_HF_THRESHOLD = 3.05
 MICRO_HF_THRESHOLD = 3.00
 EMERGENCY_HF_THRESHOLD = 2.20
 
+BORROW_COOLDOWN_SECONDS = 1800
+
 GROWTH_MIN_CAPACITY_USD = 13.20
 CAPACITY_MIN_CAPACITY_USD = 8.20
 
@@ -245,6 +247,37 @@ def _clear_execution_state(wallet_address):
             logger.info(f"[ExecState] {wallet_address[:10]}... state cleared")
     except Exception as e:
         logger.error(f"[ExecState] clear failed for {wallet_address[:10]}...: {e}")
+
+
+def _get_borrow_cooldown_path(wallet_address):
+    os.makedirs(EXECUTION_STATE_DIR, exist_ok=True)
+    safe = wallet_address.lower().replace("0x", "")[:16]
+    return os.path.join(EXECUTION_STATE_DIR, f"last_borrow_{safe}.json")
+
+
+def _record_borrow_timestamp(wallet_address):
+    try:
+        path = _get_borrow_cooldown_path(wallet_address)
+        with open(path, 'w') as f:
+            json.dump({"timestamp": time.time(), "human": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")}, f)
+    except Exception as e:
+        logger.error(f"[Cooldown] {wallet_address[:10]}... save failed: {e}")
+
+
+def _check_borrow_cooldown(wallet_address):
+    try:
+        path = _get_borrow_cooldown_path(wallet_address)
+        if not os.path.exists(path):
+            return True, 0
+        with open(path, 'r') as f:
+            data = json.load(f)
+        elapsed = time.time() - data.get("timestamp", 0)
+        remaining = BORROW_COOLDOWN_SECONDS - elapsed
+        if remaining <= 0:
+            return True, 0
+        return False, remaining
+    except Exception:
+        return True, 0
 
 
 def _get_dai_debt_balance(wallet_address):
@@ -463,17 +496,36 @@ def _execute_delegated_distribution(user_id, wallet_address, agent, path_name, d
 
     try:
         if "borrowed" not in already_done:
-            _log_strategy(user_id, wallet_address, path_name, "STEP1_BORROW", live_hf,
-                          details=f"Borrowing ${total_borrow:.2f} DAI via delegation")
-            tx_hash = delegated_borrow_dai(wallet_address, total_borrow)
-            if not tx_hash:
-                result["details"] = f"DAI borrow failed for ${total_borrow:.2f}"
-                result["action"] = "BORROW_FAILED"
-                _record_strategy_action(user_id, wallet_address, f"FAILED: {path_name} borrow ${total_borrow:.2f} DAI")
-                return result
-            _save_execution_state(wallet_address, "borrowed", path_name, dist_serializable)
-            steps_completed.append("borrowed")
-            time.sleep(3)
+            if total_borrow <= 0:
+                logger.info(f"[Distribution] {wallet_address[:10]}... total_borrow=0 (recovery mode) — skipping borrow step")
+                _save_execution_state(wallet_address, "borrowed", path_name, dist_serializable)
+                steps_completed.append("borrowed")
+            else:
+                _log_strategy(user_id, wallet_address, path_name, "STEP1_BORROW", live_hf,
+                              details=f"Borrowing ${total_borrow:.2f} DAI via delegation")
+                tx_hash = delegated_borrow_dai(wallet_address, total_borrow)
+                if not tx_hash:
+                    result["details"] = f"DAI borrow failed for ${total_borrow:.2f}"
+                    result["action"] = "BORROW_FAILED"
+                    _record_strategy_action(user_id, wallet_address, f"FAILED: {path_name} borrow ${total_borrow:.2f} DAI")
+                    return result
+                _save_execution_state(wallet_address, "borrowed", path_name, dist_serializable)
+                steps_completed.append("borrowed")
+                _record_borrow_timestamp(wallet_address)
+                time.sleep(3)
+
+                post_borrow_data = get_user_account_data(wallet_address) if DELEGATION_AVAILABLE else None
+                post_borrow_hf = post_borrow_data.get("healthFactor", 0) if post_borrow_data else 0
+                if post_borrow_hf > 0 and post_borrow_hf < EMERGENCY_HF_THRESHOLD:
+                    logger.warning(f"[Distribution] {wallet_address[:10]}... POST-BORROW HF {post_borrow_hf:.4f} < "
+                                   f"EMERGENCY {EMERGENCY_HF_THRESHOLD} — ABORTING distribution, preserving state at 'borrowed' for recovery")
+                    _save_execution_state(wallet_address, "borrowed", path_name, dist_serializable)
+                    result["details"] = f"Post-borrow HF {post_borrow_hf:.4f} dropped below emergency threshold"
+                    result["action"] = "BORROW_HF_ABORT"
+                    result["executed"] = True
+                    _record_strategy_action(user_id, wallet_address,
+                                            f"ABORT: post-borrow HF {post_borrow_hf:.4f} < {EMERGENCY_HF_THRESHOLD}")
+                    return result
 
         usdt_amount = distribution['usdt_swap_supply']
         if "usdt_supplied" not in already_done and usdt_amount >= 0.50 and uniswap:
@@ -695,7 +747,16 @@ def _execute_delegated_distribution(user_id, wallet_address, agent, path_name, d
         elif "usdc_taxed" in already_done:
             pass
 
-        _clear_execution_state(wallet_address)
+        borrow_done = "borrowed" in steps_completed or "borrowed" in already_done
+        final_step_done = DELEGATED_STEP_ORDER[-1] in steps_completed or DELEGATED_STEP_ORDER[-1] in already_done
+
+        if borrow_done and not final_step_done and len(steps_failed) > 0:
+            last_ok = steps_completed[-1] if steps_completed else "borrowed"
+            logger.warning(f"[Distribution] {wallet_address[:10]}... borrow succeeded but {len(steps_failed)} "
+                           f"steps failed, final step not reached — preserving state at '{last_ok}' for recovery next cycle")
+            _save_execution_state(wallet_address, last_ok, path_name, dist_serializable)
+        else:
+            _clear_execution_state(wallet_address)
 
         post_data = get_user_account_data(wallet_address)
         post_hf = post_data.get("healthFactor", 0) if post_data else 0
@@ -1474,6 +1535,16 @@ def run_delegated_strategy(user_id, wallet_address, agent, run_id, iteration, co
     )
 
     if growth_met:
+        cooldown_ok, cooldown_remaining = _check_borrow_cooldown(wallet_address)
+        if not cooldown_ok:
+            result["mode"] = "growth"
+            result["action"] = "SKIP"
+            result["details"] = f"growth triggered but borrow cooldown active ({cooldown_remaining:.0f}s remaining)"
+            _log_strategy(user_id, wallet_address, "growth", "SKIP", live_hf,
+                          details=f"borrow cooldown: {cooldown_remaining:.0f}s remaining")
+            _record_strategy_action(user_id, wallet_address, f"SKIP: growth cooldown ({cooldown_remaining:.0f}s)")
+            return result
+
         borrow_amount = min(GROWTH_BORROW_USD, available_borrows * 0.9)
         if borrow_amount < 1.0:
             result["mode"] = "growth"
@@ -1495,6 +1566,16 @@ def run_delegated_strategy(user_id, wallet_address, agent, run_id, iteration, co
     )
 
     if capacity_met:
+        cooldown_ok, cooldown_remaining = _check_borrow_cooldown(wallet_address)
+        if not cooldown_ok:
+            result["mode"] = "capacity"
+            result["action"] = "SKIP"
+            result["details"] = f"capacity triggered but borrow cooldown active ({cooldown_remaining:.0f}s remaining)"
+            _log_strategy(user_id, wallet_address, "capacity", "SKIP", live_hf,
+                          details=f"borrow cooldown: {cooldown_remaining:.0f}s remaining")
+            _record_strategy_action(user_id, wallet_address, f"SKIP: capacity cooldown ({cooldown_remaining:.0f}s)")
+            return result
+
         borrow_amount = min(CAPACITY_BORROW_USD, available_borrows * 0.9)
         if borrow_amount < 1.0:
             result["mode"] = "capacity"

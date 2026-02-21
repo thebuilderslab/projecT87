@@ -609,10 +609,11 @@ class ArbitrumTestnetAgent:
         self.capacity_health_factor_threshold = 2.90  # Conservative USDC mode: Capacity min HF
         self.target_health_factor = 3.10  # Conservative USDC mode: target HF
 
-        # Display Hybrid System Configuration
+        self.bot_borrow_cooldown_seconds = 1800
+        self.last_borrow_time = 0
+
         self._display_hybrid_system_config()
 
-        # Initialize metrics tracking
         self.current_iteration = 0
         self.triggers_activated_count = 0
         self.next_trigger_threshold = self.growth_trigger_threshold # Initial next trigger for growth
@@ -2444,6 +2445,12 @@ class ArbitrumTestnetAgent:
                 print(f"{'='*60}\n")
 
             if "borrowed" not in already_done:
+                elapsed = time.time() - self.last_borrow_time
+                if elapsed < self.bot_borrow_cooldown_seconds:
+                    remaining = self.bot_borrow_cooldown_seconds - elapsed
+                    print(f"🕐 BORROW COOLDOWN: {remaining:.0f}s remaining — skipping {path_name} to prevent cascading borrows")
+                    return False
+
                 if not self._validate_transaction_preconditions(borrow_amount):
                     print("❌ Transaction preconditions not met")
                     return False
@@ -2459,6 +2466,7 @@ class ArbitrumTestnetAgent:
                     print("❌ DAI borrow failed")
                     return False
 
+                self.last_borrow_time = time.time()
                 time.sleep(3)
                 dai_balance_after = self.get_dai_balance()
                 borrowed = dai_balance_after - dai_balance_before
@@ -2473,6 +2481,14 @@ class ArbitrumTestnetAgent:
                         return False
                     else:
                         print(f"✅ DAI balance confirmed on recheck: {dai_balance_recheck:.4f} — proceeding")
+
+                post_borrow_account = self.aave.get_user_account_data() if hasattr(self, 'aave') and self.aave else None
+                post_borrow_hf = post_borrow_account.get('healthFactor', 0) if post_borrow_account else 0
+                if post_borrow_hf > 0 and post_borrow_hf < self.capacity_health_factor_threshold:
+                    print(f"🚨 POST-BORROW HF {post_borrow_hf:.4f} dropped below capacity threshold {self.capacity_health_factor_threshold} — ABORTING")
+                    print(f"   DAI remains in wallet for recovery next cycle")
+                    self.save_execution_state("borrowed", path_name, dist_serializable)
+                    return False
 
                 self.save_execution_state("borrowed", path_name, dist_serializable)
             else:
