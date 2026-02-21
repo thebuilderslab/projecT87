@@ -563,13 +563,48 @@ function showWalletPrompt() {
 }
 
 async function connectWallet() {
+  console.log('Attempting connection...');
+  var btn = document.querySelector('.connect-wallet-btn');
   if (typeof window.ethereum === 'undefined') {
     alert('METAMASK NOT DETECTED. INSTALL A WEB3 WALLET.');
     return;
   }
   try {
+    btn.textContent = 'CONNECTING...';
+    btn.disabled = true;
+
     const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
     const wallet = accounts[0];
+    console.log('Wallet connected: ' + wallet);
+
+    const chainId = await window.ethereum.request({ method: 'eth_chainId' });
+    console.log('Current chain ID: ' + chainId);
+    if (chainId !== '0xa4b1') {
+      console.log('Wrong network detected, switching to Arbitrum One...');
+      try {
+        await window.ethereum.request({
+          method: 'wallet_switchEthereumChain',
+          params: [{ chainId: '0xa4b1' }],
+        });
+      } catch (switchErr) {
+        if (switchErr.code === 4902) {
+          await window.ethereum.request({
+            method: 'wallet_addEthereumChain',
+            params: [{
+              chainId: '0xa4b1',
+              chainName: 'Arbitrum One',
+              nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
+              rpcUrls: ['https://arb1.arbitrum.io/rpc'],
+              blockExplorerUrls: ['https://arbiscan.io']
+            }],
+          });
+        } else {
+          throw switchErr;
+        }
+      }
+      console.log('Switched to Arbitrum One');
+    }
+
     const resp = await fetch('/api/auth/wallet', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -581,9 +616,22 @@ async function connectWallet() {
     currentWallet = data.walletAddress;
     localStorage.setItem('authToken', authToken);
     localStorage.setItem('walletAddress', currentWallet);
+    console.log('Auth token stored, launching mainframe...');
+
+    btn.textContent = 'LAUNCH MAINFRAME';
+    btn.classList.add('glow');
+    await new Promise(r => setTimeout(r, 600));
+
     init();
   } catch (e) {
     console.error('Connection error:', e);
+    btn.textContent = 'INITIALIZE CONNECTION';
+    btn.disabled = false;
+    if (e.code === 4001) {
+      console.log('User rejected the connection request');
+    } else {
+      alert('CONNECTION FAILED: ' + (e.message || 'Unknown error'));
+    }
   }
 }
 
