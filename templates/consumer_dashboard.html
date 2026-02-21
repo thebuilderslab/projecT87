@@ -623,7 +623,7 @@ tr:hover { background:rgba(0,230,180,0.03); }
       <div class="panel defi-panel">
         <div class="panel-header">
           <span class="icon">&#9878;</span>
-          <h2>Aave / DeFi</h2>
+          <h2>Active Wealth</h2>
         </div>
         <div class="panel-body" id="defiPanelBody">
           <div class="defi-metric">
@@ -641,6 +641,10 @@ tr:hover { background:rgba(0,230,180,0.03); }
           <div class="defi-metric">
             <span class="label">Net Worth</span>
             <span class="val accent" id="defiNetWorth">--</span>
+          </div>
+          <div class="defi-metric" id="usdcWalletRow" style="display:none;">
+            <span class="label">USDC Wallet</span>
+            <span class="val green" id="defiUsdcBalance">--</span>
           </div>
           <div class="defi-actions-title">Recent Actions</div>
           <div id="defiActions">
@@ -665,7 +669,6 @@ tr:hover { background:rgba(0,230,180,0.03); }
             </div>
             <div class="ring-label">Safety Rating</div>
             <div class="ring-score" id="safetyScore">--</div>
-            <div class="ring-range" id="safetyRange">Optimal: 2.5 - 4.0</div>
           </div>
         </div>
         <button class="chat-trigger" onclick="openChat()">
@@ -787,6 +790,17 @@ tr:hover { background:rgba(0,230,180,0.03); }
       </div>
       <div id="defiConnectedContent" style="display:none;">
         <div id="defiStateCards"></div>
+        <div style="margin-top:16px;padding:14px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);">
+          <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;font-weight:600;">Health Factor Thresholds</div>
+          <div style="font-size:12px;color:var(--muted);margin-bottom:10px;">Optimal HF range: 2.5 - 4.0</div>
+          <div id="hfThresholds" style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+            <div class="defi-metric" style="padding:6px 0;"><span class="label">Growth</span><span class="val green" id="hfGrowth">--</span></div>
+            <div class="defi-metric" style="padding:6px 0;"><span class="label">Macro</span><span class="val green" id="hfMacro">--</span></div>
+            <div class="defi-metric" style="padding:6px 0;"><span class="label">Micro</span><span class="val accent" id="hfMicro">--</span></div>
+            <div class="defi-metric" style="padding:6px 0;"><span class="label">Capacity</span><span class="val accent" id="hfCapacity">--</span></div>
+            <div class="defi-metric" style="padding:6px 0;border-bottom:none;"><span class="label">Emergency</span><span class="val red" id="hfEmergency">--</span></div>
+          </div>
+        </div>
         <div class="delegation-section" id="delegationSection" style="padding-top:14px;border-top:1px solid var(--border);margin-top:16px;">
           <div class="delegation-title">WBTC Auto-Supply Delegation</div>
           <div id="delegationContent"></div>
@@ -886,7 +900,7 @@ async function api(path, opts = {}) {
   const mergedHeaders = { ...baseHeaders, ...(opts.headers || {}) };
   const fetchOpts = { ...opts, headers: mergedHeaders };
   const res = await fetch(path, fetchOpts);
-  if (res.status === 401) {
+  if (res.status === 401 && state.authToken) {
     fullDisconnect();
     return { error: 'Session expired. Please reconnect your wallet.' };
   }
@@ -906,7 +920,6 @@ function fullDisconnect() {
     state.defiPosition = null;
     state.safetyScore = 0;
     state.userTownIds = [];
-    state.towns = [];
     state.autoPilotOffered = false;
 
     closeAutoPilot();
@@ -938,6 +951,8 @@ function fullDisconnect() {
     document.getElementById('usdcMeter').style.display = 'none';
     document.getElementById('usdcMeterValue').textContent = '$0.00';
     document.getElementById('usdcMeterFill').style.width = '0%';
+    document.getElementById('usdcWalletRow').style.display = 'none';
+    document.getElementById('defiUsdcBalance').textContent = '--';
 
     updateHealthRing(0);
 
@@ -1147,18 +1162,25 @@ async function loadIncomeSummary() {
 
 async function loadUsdcBalance() {
   const meter = document.getElementById('usdcMeter');
+  const walletRow = document.getElementById('usdcWalletRow');
   if (!state.userId) {
     meter.style.display = 'none';
+    if (walletRow) walletRow.style.display = 'none';
     return;
   }
   meter.style.display = '';
   const data = await api('/api/wallet/usdc-balance');
   const balance = parseFloat(data.balance) || 0;
+  const formatted = '$' + balance.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
   const target = 1000;
   const pct = Math.min((balance / target) * 100, 100);
-  document.getElementById('usdcMeterValue').textContent = '$' + balance.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
+  document.getElementById('usdcMeterValue').textContent = formatted;
   document.getElementById('usdcMeterFill').style.width = pct + '%';
   document.getElementById('usdcMeterTarget').textContent = 'Target: $' + target.toLocaleString('en-US', {minimumFractionDigits:2});
+  if (walletRow) {
+    walletRow.style.display = '';
+    document.getElementById('defiUsdcBalance').textContent = formatted;
+  }
 }
 
 async function loadTowns() {
@@ -1403,10 +1425,23 @@ async function loadAnalysis() {
   container.innerHTML = html || '<div class="empty-state"><h3>No data yet</h3></div>';
 }
 
+async function loadHfThresholds() {
+  try {
+    const data = await api('/api/defi/hf-thresholds');
+    const t = data.thresholds || {};
+    document.getElementById('hfGrowth').textContent = (t.growth || 0).toFixed(2);
+    document.getElementById('hfMacro').textContent = (t.macro || 0).toFixed(2);
+    document.getElementById('hfMicro').textContent = (t.micro || 0).toFixed(2);
+    document.getElementById('hfCapacity').textContent = (t.capacity || 0).toFixed(2);
+    document.getElementById('hfEmergency').textContent = (t.emergency || 0).toFixed(2);
+  } catch(e) {}
+}
+
 async function loadDefiState() {
   if (!state.userId) return;
   document.getElementById('defiEmptyState').style.display = 'none';
   document.getElementById('defiConnectedContent').style.display = '';
+  loadHfThresholds();
   const data = await api('/api/defi/state');
   const container = document.getElementById('defiStateCards');
   const pos = data.position;

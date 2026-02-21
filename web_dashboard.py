@@ -3712,6 +3712,28 @@ def get_defi_state():
         return jsonify({"position": None, "message": "No Aave position detected for this wallet yet."})
     return jsonify({"position": position})
 
+@app.route('/api/defi/hf-thresholds', methods=['GET'])
+def get_hf_thresholds():
+    """Get current HF strategy thresholds from strategy engine config"""
+    try:
+        from strategy_engine import GROWTH_HF_THRESHOLD, CAPACITY_HF_THRESHOLD, MACRO_HF_THRESHOLD, MICRO_HF_THRESHOLD, EMERGENCY_HF_THRESHOLD
+        return jsonify({
+            "thresholds": {
+                "growth": GROWTH_HF_THRESHOLD,
+                "macro": MACRO_HF_THRESHOLD,
+                "micro": MICRO_HF_THRESHOLD,
+                "capacity": CAPACITY_HF_THRESHOLD,
+                "emergency": EMERGENCY_HF_THRESHOLD,
+            }
+        })
+    except Exception as e:
+        return jsonify({
+            "thresholds": {
+                "growth": 3.10, "macro": 3.05, "micro": 3.00,
+                "capacity": 2.90, "emergency": 2.50
+            }
+        })
+
 @app.route('/api/wallet/usdc-balance', methods=['GET'])
 def get_wallet_usdc_balance():
     """Get on-chain USDC balance for the connected user wallet"""
@@ -3910,20 +3932,32 @@ Guidelines:
         user_message = data['message']
         history = data.get('history', [])
 
-        if perplexity_chat_multi and history:
-            response = perplexity_chat_multi(system_prompt, history, user_message)
+        clean_history = [
+            {"role": m.get("role"), "content": m.get("content", "")}
+            for m in (history or [])
+            if m.get("role") in ("user", "assistant") and m.get("content")
+        ]
+
+        if perplexity_chat_multi and clean_history:
+            response = perplexity_chat_multi(system_prompt, clean_history, user_message)
         else:
             from perplexity_client import perplexity_chat
             response = perplexity_chat(system_prompt, user_message)
 
         if response.startswith("[ERROR]"):
-            logger.error(f"Perplexity error: {response}")
-            return jsonify({"error": "The AI assistant is temporarily unavailable. Please try again."}), 503
+            logger.error(f"Perplexity error for user {user_id}: {response}")
+            error_detail = response.replace("[ERROR] ", "")
+            if "API key" in error_detail:
+                return jsonify({"error": "AI service configuration issue. Please contact support."}), 503
+            elif "timeout" in error_detail.lower():
+                return jsonify({"error": "The AI took too long to respond. Please try a shorter question."}), 504
+            else:
+                return jsonify({"error": "The AI assistant encountered an issue. Please try again."}), 503
 
         return jsonify({"response": response})
 
     except Exception as e:
-        logger.error(f"Chat API error: {e}")
+        logger.error(f"Chat API error for user {user_id}: {e}", exc_info=True)
         return jsonify({"error": "Something went wrong. Please try again."}), 500
 
 if __name__ == '__main__':
