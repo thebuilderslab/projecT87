@@ -16,6 +16,11 @@ import time
 import requests
 import itsdangerous
 
+from constants import (
+    AAVE_POOL, WBTC_TOKEN, USDC_TOKEN, DAI_TOKEN, WETH_TOKEN, USDT_TOKEN,
+    CHAIN_ID, CHAIN_NAME, DEFAULT_GAS_PRICE_GWEI, get_rpc_url,
+)
+
 BASE_URL = os.getenv("TEST_BASE_URL", "http://localhost:5000")
 TEST_WALLET = "0xDeaDBEEF00000000000000000000000000042069"
 
@@ -194,11 +199,41 @@ def step_7_verify_activity_feed(auth_token):
     print(f"  Simulated Trade Executed found   : {'Yes' if found_simulated else 'No'}")
 
 
+def step_0_verify_arbitrum_addresses():
+    header("STEP 0: Verify Arbitrum One Contract Addresses")
+    expected = {
+        "AAVE_POOL":  ("0x794a61358D6845594F94dc1DB02A252b5b4814aD", AAVE_POOL),
+        "WBTC_TOKEN": ("0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f", WBTC_TOKEN),
+        "USDC_TOKEN": ("0xaf88d065e77c8cC2239327C5EDb3A432268e5831", USDC_TOKEN),
+        "DAI_TOKEN":  ("0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1", DAI_TOKEN),
+        "WETH_TOKEN": ("0x82aF49447D8a07e3bd95BD0d56f35241523fBab1", WETH_TOKEN),
+        "USDT_TOKEN": ("0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9", USDT_TOKEN),
+    }
+    all_ok = True
+    for name, (want, got) in expected.items():
+        match = want.lower() == got.lower()
+        tag = PASS if match else FAIL
+        print(f"  {tag} {name:12s} = {got}")
+        if not match:
+            print(f"       EXPECTED: {want}")
+            all_ok = False
+
+    print(f"\n  Chain         : {CHAIN_NAME} (ID {CHAIN_ID})")
+    print(f"  RPC Provider  : {get_rpc_url()}")
+    print(f"  Default Gas   : {DEFAULT_GAS_PRICE_GWEI} Gwei (Arbitrum low-fee)")
+    assert DEFAULT_GAS_PRICE_GWEI < 0.5, "Gas should be < 0.5 Gwei on Arbitrum"
+    print(f"  {PASS} Gas price {DEFAULT_GAS_PRICE_GWEI} Gwei confirms Arbitrum low-fee environment")
+    return all_ok
+
+
 def main():
     print("\n" + "=" * 60)
     print("  OpenClaw — Full Loop Integration Test Suite")
+    print(f"  Network: {CHAIN_NAME} (Chain ID {CHAIN_ID})")
     print("  " + time.strftime("%Y-%m-%d %H:%M:%S"))
     print("=" * 60)
+
+    step_0_verify_arbitrum_addresses()
 
     user_id, auth_token = step_1_simulate_wallet_connection()
     if not user_id:
@@ -219,6 +254,7 @@ def main():
 
     header("INTEGRATION TEST COMPLETE")
     print(f"  {PASS} All steps executed successfully.")
+    print(f"  {INFO} Network: {CHAIN_NAME} (Chain ID {CHAIN_ID})")
     print(f"  {INFO} Use the raw API key above to test endpoints manually.")
     print(f"  {INFO} Check the Developer Portal terminal for color-coded logs.")
     print()

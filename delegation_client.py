@@ -12,8 +12,19 @@ _local_nonce = None
 
 DELEGATION_MANAGER_ADDRESS = os.environ.get("DELEGATION_MANAGER_ADDRESS", "")
 
-WBTC_TOKEN_ADDRESS = "0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f"
-AAVE_POOL_ADDRESS = "0x794a61358D6845594F94dc1DB02A252b5b4814aD"
+from constants import (
+    WBTC_TOKEN as WBTC_TOKEN_ADDRESS,
+    AAVE_POOL as AAVE_POOL_ADDRESS,
+    DAI_TOKEN as DAI_ADDRESS,
+    WETH_TOKEN as WETH_ADDRESS,
+    USDT_TOKEN as USDT_ADDRESS,
+    USDC_TOKEN as USDC_ADDRESS,
+    UNISWAP_ROUTER as UNISWAP_ROUTER_ADDRESS,
+    TOKEN_DECIMALS,
+    TOKEN_NAMES,
+    ARBITRUM_PUBLIC_RPCS as ARBITRUM_RPCS,
+    get_rpc_url,
+)
 
 WBTC_DECIMALS = 8
 WBTC_UNIT = Decimal(10) ** WBTC_DECIMALS
@@ -21,11 +32,6 @@ MIN_SUPPLY_RAW = int(Decimal("0.0001") * WBTC_UNIT)
 MAX_SUPPLY_RATIO_NUM = 4
 MAX_SUPPLY_RATIO_DEN = 5
 
-ARBITRUM_RPCS = [
-    "https://arbitrum-one.public.blastapi.io",
-    "https://arb1.arbitrum.io/rpc",
-    "https://arbitrum-one.publicnode.com",
-]
 
 ERC20_ABI = [
     {"constant": True, "inputs": [{"name": "_owner", "type": "address"}], "name": "balanceOf", "outputs": [{"name": "balance", "type": "uint256"}], "type": "function"},
@@ -273,28 +279,6 @@ AAVE_POOL_ABI = [
     ], "stateMutability": "view", "type": "function"},
 ]
 
-DAI_ADDRESS = "0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1"
-WETH_ADDRESS = "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1"
-
-USDT_ADDRESS = "0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9"
-USDC_ADDRESS = "0xaf88d065e77c8cC2239327C5EDb3A432268e5831"
-UNISWAP_ROUTER_ADDRESS = "0xE592427A0AEce92De3Edee1F18E0157C05861564"
-
-TOKEN_DECIMALS = {
-    WBTC_TOKEN_ADDRESS: 8,
-    DAI_ADDRESS: 18,
-    WETH_ADDRESS: 18,
-    USDT_ADDRESS: 6,
-    USDC_ADDRESS: 6,
-}
-
-TOKEN_NAMES = {
-    WBTC_TOKEN_ADDRESS: "WBTC",
-    DAI_ADDRESS: "DAI",
-    WETH_ADDRESS: "WETH",
-    USDT_ADDRESS: "USDT",
-    USDC_ADDRESS: "USDC",
-}
 
 REQUIRED_APPROVAL_CONTRACTS = {
     "DelegationManager": DELEGATION_MANAGER_ADDRESS,

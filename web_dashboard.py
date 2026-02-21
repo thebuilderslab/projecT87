@@ -415,13 +415,10 @@ def get_live_agent_data():
 
             private_key = os.getenv('PRIVATE_KEY') or os.getenv('Wallet_PRIVATE_KEY')
             if private_key:
-                # Define required Aave addresses for Arbitrum Mainnet
                 import sys
                 if 'arbitrum_testnet_agent' not in sys.modules:
-                    # Import required constants before creating agent
-                    AAVE_POOL_ADDRESS = "0x794a61358D6845594F94dc1DB02A252b5b4814aD"
-                    AAVE_POOL_DATA_PROVIDER = "0x69FA688f1Dc47d4B5d8029D5a35FB7a548310654"
-                    globals()['AAVE_POOL_ADDRESS'] = AAVE_POOL_ADDRESS
+                    from constants import AAVE_POOL, AAVE_POOL_DATA_PROVIDER
+                    globals()['AAVE_POOL_ADDRESS'] = AAVE_POOL
                     globals()['AAVE_POOL_DATA_PROVIDER'] = AAVE_POOL_DATA_PROVIDER
 
                 if agent is None or not hasattr(agent, 'w3') or agent.w3 is None:

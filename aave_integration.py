@@ -28,14 +28,17 @@ class AaveArbitrumIntegration:
         self.account = account
         self.network_mode = network_mode
 
-        # DAI-ONLY COMPLIANCE: Only DAI address is configured
+        from constants import (
+            AAVE_POOL, DAI_TOKEN, WBTC_TOKEN, WETH_TOKEN,
+            USDT_TOKEN, ARB_TOKEN,
+        )
         if network_mode == 'mainnet':
-            self.dai_address = "0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1"
-            self.wbtc_address = "0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f"
-            self.weth_address = "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1"
-            self.usdt_address = "0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9"
-            self.arb_address = "0x912CE59144191C1204E64559FE8253a0e49E6548"
-            self.pool_address = "0x794a61358D6845594F94dc1DB02A252b5b4814aD"
+            self.dai_address = DAI_TOKEN
+            self.wbtc_address = WBTC_TOKEN
+            self.weth_address = WETH_TOKEN
+            self.usdt_address = USDT_TOKEN
+            self.arb_address = ARB_TOKEN
+            self.pool_address = AAVE_POOL
         else:
             self.dai_address = "0x5f6bB460B6d0bdA2CCaDdd7A19B5F6E7b5b8E1DB"
             self.wbtc_address = "0xA2d460Bc966F6C4D5527a6ba35C6cB57c15c8F96"

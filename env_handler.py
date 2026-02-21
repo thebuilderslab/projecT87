@@ -37,13 +37,14 @@ def setup_environment():
     if not os.getenv('NETWORK_MODE'):
         os.environ['NETWORK_MODE'] = 'mainnet'
     
-    if not os.getenv('ARBITRUM_RPC_URL'):
+    if os.getenv('TENDERLY_RPC_URL'):
+        os.environ.setdefault('ARBITRUM_RPC_URL', os.environ['TENDERLY_RPC_URL'])
+    elif not os.getenv('ARBITRUM_RPC_URL'):
         if os.getenv('NETWORK_MODE') == 'mainnet':
             os.environ['ARBITRUM_RPC_URL'] = 'https://arb1.arbitrum.io/rpc'
         else:
             os.environ['ARBITRUM_RPC_URL'] = 'https://sepolia-rollup.arbitrum.io/rpc'
-    
-    # Set ARB_RPC_URL as alias for ARBITRUM_RPC_URL
+
     if not os.getenv('ARB_RPC_URL'):
         os.environ['ARB_RPC_URL'] = os.getenv('ARBITRUM_RPC_URL', 'https://arb1.arbitrum.io/rpc')
 

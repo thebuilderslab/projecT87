@@ -8,6 +8,7 @@ from fastapi.middleware.wsgi import WSGIMiddleware
 from pydantic import BaseModel, ConfigDict, Field
 
 import db as database
+from constants import AAVE_POOL, get_rpc_url
 
 logger = logging.getLogger(__name__)
 
@@ -84,7 +85,7 @@ def vault_health(wallet_address: str = Depends(get_authenticated_wallet)):
         )
 
     from web3 import Web3
-    pool_addr = "0x794a61358D6845594F94dc1DB02A252b5b4814aD"
+    pool_addr = AAVE_POOL
     pool_abi = [{
         "inputs": [{"name": "user", "type": "address"}],
         "name": "getUserAccountData",
@@ -100,7 +101,7 @@ def vault_health(wallet_address: str = Depends(get_authenticated_wallet)):
         "type": "function"
     }]
     available_borrows = 0.0
-    rpc_url = os.getenv("ALCHEMY_ARB_RPC", "https://arb-mainnet.g.alchemy.com/v2/demo")
+    rpc_url = get_rpc_url()
     try:
         w3 = Web3(Web3.HTTPProvider(rpc_url, request_kwargs={'timeout': 10}))
         if w3.is_connected():
