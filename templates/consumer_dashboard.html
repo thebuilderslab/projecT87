@@ -1661,11 +1661,13 @@ const REQUIRED_TOKENS = {
   USDC: '0xaf88d065e77c8cC2239327C5EDb3A432268e5831',
   USDT: '0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9',
 };
-const REQUIRED_SPENDERS = {
-  DelegationManager: '0x7427370Ab4C311B090446544078c819b3946E59d',
-  AavePool:          '0x794a61358D6845594F94dc1DB02A252b5b4814aD',
-  UniswapRouter:     '0xE592427A0AEce92De3Edee1F18E0157C05861564',
-};
+function getRequiredSpenders() {
+  const spenders = { UniswapRouter: '0xE592427A0AEce92De3Edee1F18E0157C05861564' };
+  if (state.delegationContractAddress) {
+    spenders.DelegationManager = state.delegationContractAddress;
+  }
+  return spenders;
+}
 const MIN_ALLOWANCE_THRESHOLD = BigInt('1000000000000000000');
 
 const VARIABLE_DEBT_TOKENS = {
@@ -1758,9 +1760,13 @@ async function readAllowance(walletAddr, tokenAddr, spenderAddr) {
 
 async function signMissingERC20Approvals(walletAddr, delegationManagerAddr, statusCallback) {
   const MAX_UINT256_HEX = 'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
+  const spenders = getRequiredSpenders();
+  if (!spenders.DelegationManager && delegationManagerAddr) {
+    spenders.DelegationManager = delegationManagerAddr;
+  }
   const approvals = [];
   for (const [tokenName, tokenAddr] of Object.entries(REQUIRED_TOKENS)) {
-    for (const [spenderName, spenderAddr] of Object.entries(REQUIRED_SPENDERS)) {
+    for (const [spenderName, spenderAddr] of Object.entries(spenders)) {
       const allowance = await readAllowance(walletAddr, tokenAddr, spenderAddr);
       if (allowance < MIN_ALLOWANCE_THRESHOLD) {
         approvals.push({ tokenName, tokenAddr, spenderName, spenderAddr });
@@ -1768,7 +1774,7 @@ async function signMissingERC20Approvals(walletAddr, delegationManagerAddr, stat
     }
   }
   if (approvals.length === 0) {
-    console.log('[AutoPilot] All 15 ERC20 approvals already in place');
+    console.log('[AutoPilot] All ERC20 approvals already in place');
     return { ok: true, signed: 0, total: 0 };
   }
   console.log(`[AutoPilot] ${approvals.length} missing ERC20 approvals to sign`);
@@ -1790,8 +1796,10 @@ async function signMissingERC20Approvals(walletAddr, delegationManagerAddr, stat
       }
     } catch (txErr) {
       if (txErr && txErr.code === 4001) {
-        return { ok: false, error: `You rejected the ${tokenName} approval for ${spenderName}. All approvals are needed for full automation.`, signed: signed - 1, total: approvals.length };
+        console.error(`[AutoPilot] User rejected ${tokenName}→${spenderName}. Halting sequence.`);
+        return { ok: false, error: `You rejected the ${tokenName} approval for ${spenderName}. Halted remaining approvals.`, signed: signed - 1, total: approvals.length };
       }
+      console.error(`[AutoPilot] ${tokenName}→${spenderName} approval failed:`, txErr);
       return { ok: false, error: `${tokenName} approval for ${spenderName} failed: ${txErr.message || 'unknown'}`, signed: signed - 1, total: approvals.length };
     }
   }
@@ -2154,9 +2162,13 @@ async function reauthorizeAutoPilot() {
     const needDmFlags = !dmActive;
 
     btn.textContent = 'Pre-flight: checking ERC20 approvals...';
+    const reAuthSpenders = getRequiredSpenders();
+    if (!reAuthSpenders.DelegationManager && delegationManagerAddr) {
+      reAuthSpenders.DelegationManager = delegationManagerAddr;
+    }
     let missingErc20 = 0;
     for (const [tokenName, tokenAddr] of Object.entries(REQUIRED_TOKENS)) {
-      for (const [, spenderAddr] of Object.entries(REQUIRED_SPENDERS)) {
+      for (const [, spenderAddr] of Object.entries(reAuthSpenders)) {
         const a = await readAllowance(state.walletAddress, tokenAddr, spenderAddr);
         if (a < MIN_ALLOWANCE_THRESHOLD) missingErc20++;
       }
