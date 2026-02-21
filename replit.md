@@ -1,7 +1,7 @@
-# REAA Platform - Compressed replit.md
+# REAA Platform
 
 ## Overview
-The REAA (Real Estate Agent Assistant) platform integrates autonomous DeFi debt management on Aave V3 (Arbitrum Mainnet) with a real estate lead generation system. Its primary purpose is to automate DeFi borrowing strategies and facilitate real estate lead generation, offering a comprehensive solution for agents. Key capabilities include a consumer-facing Command Center dashboard for wallet-based interaction, Perplexity-powered AI chat, and sophisticated debt management strategies such as "USDC Tax Mode" for profit accumulation and a "Liability Short Strategy" for market downturns. The system emphasizes robustness with features like crash recovery, global execution locks, and "Nurse Mode" for health factor maintenance.
+The REAA (Real Estate Agent Assistant) platform offers a comprehensive solution for real estate agents by integrating autonomous DeFi debt management on Aave V3 (Arbitrum Mainnet) with a real estate lead generation system. Its core purpose is to automate DeFi borrowing strategies and facilitate lead generation. Key features include a consumer-facing Command Center dashboard, AI chat powered by Perplexity, and advanced debt management strategies like "USDC Tax Mode" and a "Liability Short Strategy." The system is designed for robustness, incorporating crash recovery, global execution locks, and a "Nurse Mode" for maintaining health factors.
 
 ## User Preferences
 I prefer iterative development with clear communication on progress.
@@ -17,290 +17,54 @@ I want the agent to protect profit tokens (USDC) from being swept by safety mech
 I want the agent to always use its own private key wallet for all operations unless explicitly configured for delegation.
 
 ## System Architecture
-The REAA platform is built on the Arbitrum Mainnet, featuring distinct modules for DeFi debt management and real estate lead generation, unified by a web-based Command Center.
+The REAA platform operates on the Arbitrum Mainnet, comprising distinct modules for DeFi debt management and real estate lead generation, all accessed via a web-based Command Center.
 
 **DeFi Debt Management:**
-- **Borrowing Strategies:** Implements "Growth" and "Capacity" paths for DAI borrowing, distributing funds across various collateral types (WBTC, WETH, USDT), ETH gas, and a USDC tax accumulator.
-- **Liability Short Strategy:** Automatically hedges against market downturns by borrowing WETH based on collateral velocity drops, allocating it into a diversified basket, and distributing profits from closing positions.
-- **Health Factor Management:** Employs conservative health factor thresholds and a "Nurse Mode" (`_perform_safety_sweep()`) to proactively sweep non-USDC collateral to Aave, ensuring account health.
-- **Execution Control:** Features a global execution lock, state persistence for crash recovery, and a "Proportional Recovery" mechanism for handling insufficient funds.
-- **Delegation Mode:** Full-automation only. Any wallet that connects, signs, and enables Auto-Pilot receives all execution permissions (supply, borrow, repay, withdraw). No monitoring-only mode exists.
-- **Token Operations:** Manages token approvals and uses Uniswap V3 for multi-hop swaps (e.g., DAI→WETH→USDC). AaveOracle is the primary price source.
-- **Profit Accumulation:** USDC profit accumulates in the agent's wallet and is periodically transferred to a designated `WALLET_B`.
+- **Borrowing Strategies:** Features "Growth" and "Capacity" paths for DAI borrowing, distributing funds across various collateral types (WBTC, WETH, USDT), ETH gas, and a USDC tax accumulator.
+- **Liability Short Strategy:** Automatically hedges against market downturns by borrowing WETH based on collateral velocity drops, diversifying it, and distributing profits from closing positions.
+- **Health Factor Management:** Utilizes conservative health factor thresholds and "Nurse Mode" (`_perform_safety_sweep()`) to proactively manage account health by sweeping non-USDC collateral to Aave.
+- **Execution Control:** Includes a global execution lock, state persistence for crash recovery, and "Proportional Recovery" for handling insufficient funds.
+- **Delegation Mode:** Supports full-automation only, granting execution permissions (supply, borrow, repay, withdraw) to wallets that connect, sign, and enable Auto-Pilot.
+- **Token Operations:** Manages token approvals and employs Uniswap V3 for multi-hop swaps. AaveOracle serves as the primary price source.
+- **Profit Accumulation:** USDC profits accrue in the agent's wallet and are transferred to a designated `WALLET_B`.
 
 **Real Estate Lead Generation (Secondary Module):**
-- **Data Pipeline:** Scrapes Lis Pendens data from specific Connecticut towns using SearchIQS, processes it with AI (Perplexity AI), and generates outreach materials.
-- **Data Management:** Utilizes a PostgreSQL database for lead storage and integrates with Google Docs/Sheets for lead management.
+- **Data Pipeline:** Scrapes Lis Pendens data from specific Connecticut towns using SearchIQS, processes it with Perplexity AI, and generates outreach materials.
+- **Data Management:** Stores leads in a PostgreSQL database and integrates with Google Docs/Sheets for management.
 
 **REAA Command Center (UI/UX):**
 - **Dashboard (`/app`):** A multi-user, wallet-connected web dashboard with a "5-Zone Command Center" layout, displaying DeFi positions, an animated avatar with a safety score, and lead pipeline information.
-- **AI Assistant:** Features a Perplexity AI-powered chat assistant (REAA) providing dynamic context from the user's Postgres data and DeFi position.
-- **Authentication:** Wallet-based authentication using `itsdangerous.TimestampSigner` for secure access to user-specific data and API endpoints, with a 7-day token expiration.
-- **Safety Score:** A client-side continuous score (0-4.0) for visual representation of account health, distinct from a server-side qualitative safety label used for AI prompt context.
-- **Wallet Architecture:** Distinguishes between the user's connected read-only wallet and internal bot wallets (`WALLET_S`, `WALLET_B`).
-- **Data Gating:** Restricts access to sensitive pipeline, filings, and analysis tabs until the user's wallet is connected.
+- **AI Assistant:** A Perplexity AI-powered chat assistant (REAA) provides dynamic context from user data and DeFi positions.
+- **Authentication:** Wallet-based authentication uses `itsdangerous.TimestampSigner` for secure access, with a 7-day token expiration.
+- **Safety Score:** A client-side continuous score (0-4.0) visually represents account health, complementing a server-side qualitative safety label for AI prompt context.
+- **Wallet Architecture:** Differentiates between the user's connected read-only wallet and internal bot wallets (`WALLET_S`, `WALLET_B`).
+- **Data Gating:** Restricts access to sensitive tabs until the user's wallet is connected.
 
-**Phase 2: WBTC Auto-Supply Delegation (Deployed on Arbitrum Mainnet):**
-- **Architecture:** Introduces `managed_wallets` and `wallet_actions` tables for tracking delegation status and audit trails. A dedicated `delegation_client.py` module handles interactions with the Delegation Manager contract (`0x4866709c25908158DA9A3D292Bd2e4E96F0D2A7C`, deployed Feb 2026, replacing old `0x7427370Ab4C311B090446544078c819b3946E59d`).
-- **Safety Rules:** Strict safety protocols for auto-supply, including `bot_enabled` checks, active delegation status, configurable cooldown, and on-chain balance/allowance verification before execution.
-- **Cooldown:** Configurable via `AUTO_SUPPLY_COOLDOWN_SECONDS` env var (default: 3600s = 1 hour for prod, 300s = 5 min for testing). `last_auto_supply_at` starts at NULL (never supplied) and is only updated after a confirmed on-chain supply tx — never on skip or error. NULL always passes the cooldown check (first-run safe).
-- **API and UI:** Provides API endpoints for activating/revoking delegation and frontend UX to manage delegation status, displaying relevant information and actions.
+**Delegation Architecture (WBTC Auto-Supply & Strategy Execution):**
+- **Architecture:** Employs `managed_wallets` and `wallet_actions` tables for tracking delegation status and audit trails. `delegation_client.py` interacts with the `REAADelegationManager` contract.
+- **Safety Rules:** Strict protocols for auto-supply, including `bot_enabled` checks, active delegation, configurable cooldowns, and on-chain balance/allowance verification.
+- **API and UI:** Provides endpoints for activating/revoking delegation and a frontend to manage status.
 - **Three Permission Layers for Full Automation:**
-  1. **DelegationManager Contract Flags (Layer 1):** User calls `setPermissions(wallet, true, true, true, true)` to enable supply/borrow/repay/withdraw. Set during onboarding Step 1/4.
-  2. **ERC20 Token Approvals (Layer 2):** User approves 15 tokens (5 assets × 3 contracts: Aave Pool, DelegationManager, Uniswap Router) for `type(uint256).max`. Set during onboarding Step 2/4.
-  3. **Aave V3 Credit Delegation (Layer 3):** User calls `variableDebtToken.approveDelegation(DelegationManager, maxUint)` for DAI and WETH only. These are the only two tokens the system borrows on behalf of users (Growth/Capacity strategies borrow DAI, Liability Short/Macro/Micro strategies borrow WETH). WBTC, USDC, and USDT are never borrowed — they are only used as collateral or swap outputs — so credit delegation for those tokens is unnecessary. Variable debt token addresses: DAI=0x8619d80F…, WETH=0x0c84331e…. Required for DelegationManager to execute `executeBorrow()` on user's behalf. Set during onboarding Step 3/4.
-- **Permission Validation:** `validate_full_automation_ready()` in `delegation_client.py` checks all three layers and returns structured `{ready, blockers}` response. The `/api/delegation/check-permissions` endpoint uses this for auto-recovery and status sync.
-- **Existing User Remediation:** Users who onboarded before Layer 3 was implemented see an "Approve Credit Delegation" button (strategy_status=`error_permissions`, permissionBlockerType=`aave_credit_delegation`). New users complete all 3 layers during the 4-step onboarding flow.
-
-**Data Model: State Semantics (defi_positions & supplied_wbtc_amount):**
-- **`defi_positions`**: A per-user snapshot of their Aave V3 position, updated by the monitoring loop (`run_autonomous_mainnet.py`) and on-demand via `/api/defi/state`. Fields: `health_factor`, `total_collateral_usd`, `total_debt_usd`, `net_worth_usd`, `has_active_position` (boolean), `updated_at`.
-  - **`has_active_position`**: Set to `true` when `total_collateral_usd >= $0.01`. Set to `false` when collateral is below $0.01 (dust threshold). When `false`, the DeFi card shows "No Active Position" instead of stale HF/collateral values.
-  - **Dust threshold**: Both `fetch_aave_position_for_wallet` functions (in `web_dashboard.py` and `run_autonomous_mainnet.py`) return `None` when both collateral and debt round to < $0.01 after conversion from on-chain 8-decimal format. This prevents dust amounts (e.g., $0.0000004 from leftover aToken interest) from creating misleading position rows.
-  - **Reconciliation on no-position**: When `fetch_aave_position_for_wallet` returns `None`, the monitoring loop calls `mark_position_inactive(user_id)` to zero out the row and `reset_supplied_if_withdrawn(user_id, wallet)` to zero the supply counter.
-- **`managed_wallets.supplied_wbtc_amount`**: Tracks the **current** on-chain WBTC supply attributed to auto-supply actions. This is NOT a lifetime counter.
-  - **Incremented** when `auto_supply.py` executes a successful supply transaction.
-  - **Reset to 0** when the monitoring loop detects the on-chain position is empty (user withdrew manually) via `reset_supplied_if_withdrawn()`.
-  - **UI label**: Shown as "Current Supply" in the Auto-Pilot panel. When `has_active_position=false` and `supplied_wbtc_amount > 0`, a reconciliation note is shown: "On-chain position empty — counter resets on next refresh."
-- **Edge cases**:
-  - User supplies via Aave UI directly (not through auto-supply): `supplied_wbtc_amount` stays 0, but `defi_positions` reflects the on-chain position correctly.
-  - User withdraws all collateral: Next monitoring refresh marks position inactive, resets supply counter.
-  - Delegation revoked but position exists: Position still monitored (read-only), but no auto-supply actions are taken.
-
-**Phase 2B: Per-Wallet Autonomous Strategy Execution:**
-- **Architecture:** `strategy_engine.py` implements per-wallet HF-band strategies via `run_delegated_strategy()`. The monitoring loop (`run_autonomous_mainnet.py`) calls this for each managed wallet with `has_active_position=true` and `delegation_status='active'`.
-- **HF Band Priority (highest first):**
-  1. **Growth** (HF ≥ 3.10): Borrow $11.40 DAI via delegation contract `executeBorrow`. Requires $13.20 collateral cap + $50 growth since baseline.
-  2. **Capacity** (HF ≥ 2.90): Borrow $6.70 DAI. Requires $8.20 collateral cap.
-  3. **Macro Short** (HF ≥ 3.05): Triggered by collateral velocity drop ≥ $50 in 30 min. Borrows WETH as hedge.
-  4. **Micro Short** (HF ≥ 3.00): Triggered by collateral velocity drop ≥ $30 in 20 min. Borrows WETH as smaller hedge.
-  5. **SKIP**: If no band matches, logs explicit reason and takes no action.
-- **One mode per wallet per cycle.** No concurrent conflicting actions. `processed_strategy_ids` set prevents double-execution.
-- **DB columns on `managed_wallets`:** `last_strategy_action` (TEXT), `last_strategy_at` (TIMESTAMPTZ), `strategy_status` (VARCHAR — active/error_permissions/disabled), `delegation_mode` (VARCHAR — full_automation/NULL), `last_collateral_baseline` (NUMERIC for growth tracking).
-- **Single source of truth:** `defi_positions` → `strategy_engine.py` → `delegation_client.py` → on-chain Aave Pool via REAADelegationManager.
-- **API:** `/api/user/status` returns `strategyEnabled`, `strategyStatus`, `lastStrategyAction`, `lastStrategyTimestamp`.
-- **UI:** Auto-Pilot panel shows Strategy Engine status line, last action text, and timestamp.
-- **Delegation routing:** All borrow/repay/withdraw calls go through `delegation_client.py` which signs with bot operator key and calls REAADelegationManager contract methods.
-- **Borrow/Withdraw Token Routing (Feb 2026):** `executeBorrowAndTransfer` in `REAADelegationManager.sol` atomically borrows from Aave and transfers tokens to user's wallet in a single call. `executeWithdraw` also atomically withdraws and transfers to user. No 3-step workaround — all operations are atomic through the DM contract.
-- **Distribution Token Flow (User-Custodial, Feb 2026):** After borrow, tokens land in USER wallet atomically. Distribution steps 2-7 each call `pull_token_from_user(wallet, token, amount)` (ERC20 `transferFrom`) to pull tokens from user to bot for swaps/supplies. **Triple approval model:** User must approve (1) DM contract for Aave primitives, (2) BOT wallet for ERC20 token pulls, and (3) BOT approves DEX Router before each swap via `ensure_bot_dex_approval`. Frontend grants (1) and (2) at wallet connection time; (3) is handled programmatically. Step 5 (gas reserve) requires no pull — DAI stays in user wallet. Swaps happen in BOT wallet, final outputs (USDC, supply txs) go to user.
-- **Swap Safety (Feb 2026):** Every swap step follows the pattern: pull → approve DEX → try swap → on success: supply/transfer → on failure: rollback tokens to user via `_forward_tokens_to_user`. No user funds can be stuck in the bot wallet after a failed swap.
-- **executeRepay flow (confirmed correct):** `executeRepay` pulls tokens from user via `transferFrom(user→DM)`, approves Aave, then calls `repay(asset, amount, interestRateMode, user)`. No forwarding needed — tokens flow user→DM→Aave, debt reduced on user's account.
-- **Bot wallet separation:** Bot wallet strategies (`run_strategies_for_user`) run on a separate path from delegated wallet strategies.
-
-**Phase 2C: Full-Automation Permission Parity (Feb 2026):**
-- **Root cause fixed:** Frontend was calling `approveWBTCDelegation` (only sets `allowSupply=true`) instead of `approveDelegation` (sets all 4 flags: `allowSupply`, `allowBorrow`, `allowRepay`, `allowWithdraw`).
-- **`approveDelegation` ABI:** Selector `0x86ed8da1`, params `(uint256 maxSupplyPerTx, uint256 dailySupplyLimit, bool allowSupply, bool allowBorrow, bool allowRepay, bool allowWithdraw)`. User must sign this to grant full execution parity.
-- **15 ERC20 approvals:** 5 tokens (DAI, WETH, WBTC, USDC, USDT) × 3 contracts (DelegationManager, AavePool, UniswapRouter) = 15 `approve(spender, maxUint256)` calls user must sign during activation.
-- **`validate_full_automation_ready(wallet)`:** On-chain validation function in `delegation_client.py` that checks all 4 DelegationManager flags AND 15 ERC20 allowances ≥ `MIN_REQUIRED_ALLOWANCE` (10^18). Returns `{ready: bool, blockers: [...]}`.
-- **`/api/delegation/check-permissions`:** Backend endpoint that runs validation, auto-upgrades `strategy_status` from `error_permissions` → `active` when all blockers are resolved.
-- **Re-authorize flow:** Dashboard shows "Re-authorize Auto-Pilot" button when `strategy_status === 'error_permissions'`. Triggers same full signing sequence as new activation (1 approveDelegation + 15 ERC20 approvals + activation API call).
-- **Test wallet cleanup:** `is_test_wallet` boolean column on `managed_wallets`. Placeholder addresses (0xdeadbeef..., 0xfeed..., 0xa1b2c3d4...) flagged as test wallets and excluded from `get_active_managed_wallets()` query.
-- **Diagnostic script:** `diagnose_wallet.py` reads all DelegationManager flags, 15 ERC20 allowances, DB state, and prints full status report with remediation instructions.
+  1. **DelegationManager Contract Flags:** User sets `setPermissions` (supply, borrow, repay, withdraw).
+  2. **ERC20 Token Approvals:** User approves 15 tokens (5 assets × 3 contracts: Aave Pool, DelegationManager, Uniswap Router).
+  3. **Aave V3 Credit Delegation:** User approves `variableDebtToken.approveDelegation` for DAI and WETH.
+- **Validation:** `validate_full_automation_ready()` checks all three layers, returning `{ready, blockers}`.
+- **State Semantics (`defi_positions` & `supplied_wbtc_amount`):** `defi_positions` provides a per-user Aave V3 position snapshot, updated by a monitoring loop. `supplied_wbtc_amount` tracks current on-chain WBTC supply from auto-supply actions.
+- **Per-Wallet Autonomous Strategy Execution:** `strategy_engine.py` implements per-wallet HF-band strategies (Growth, Capacity, Macro Short, Micro Short, Nurse Mode) executed by the monitoring loop for active, delegated wallets.
+- **Token Routing:** All borrow/repay/withdraw calls route through `delegation_client.py` and the `REAADelegationManager` contract. Distribution token flow is user-custodial, employing `pull_token_from_user` and `_forward_tokens_to_user` for swap safety.
+- **Full Automation Permission Parity:** Frontend ensures `approveDelegation` is called to set all 4 flags, and users sign 15 ERC20 approvals for full execution parity. `validate_full_automation_ready` checks all permissions.
+- **Revocation Flow:** User signs `revokeDelegation()` on-chain, and backend updates `delegation_status` to 'revoked', disabling further strategy execution.
 
 ## External Dependencies
 
-- **Aave V3 Protocol**: Core DeFi lending protocol on Arbitrum Mainnet.
+- **Aave V3 Protocol**: Core DeFi lending protocol.
 - **Uniswap V3**: Decentralized exchange for token swaps.
 - **ParaSwap Debt Swap Adapter V3**: For specific debt swap functionalities.
 - **Arbitrum Mainnet**: Primary blockchain network.
-- **CoinMarketCap API**: Fallback price oracle.
 - **AaveOracle**: Primary price oracle.
-- **Required Tokens**: DAI, WETH, WBTC, USDC, USDT for ERC20 approvals. Credit delegation (variable debt tokens) is only required for DAI and WETH.
+- **CoinMarketCap API**: Fallback price oracle.
+- **Required Tokens**: DAI, WETH, WBTC, USDC, USDT.
 - **SearchIQS**: Web scraping service for real estate data.
-- **Perplexity AI**: AI service (`sonar` model) for analysis and chat functionalities.
-- **Google Docs/Sheets/Drive API**: For real estate lead management and data storage.
+- **Perplexity AI**: AI service (`sonar` model) for analysis and chat.
+- **Google Docs/Sheets/Drive API**: For real estate lead management.
 - **PostgreSQL Database**: Primary data store for real estate leads and user data.
-
-## Delegation & Permissions
-
-### Single Mode: Full Automation
-Any wallet that connects, signs, and enables Auto-Pilot is automatically placed in **full-automation mode**. There is no monitoring-only option for users. A wallet is either:
-- **Fully delegated** (`isActive=true`, all permission flags ON), or
-- **Disabled / Revoked / Misconfigured** (strategies do not execute).
-
-Misconfigurations (e.g., `isActive=true` but a flag is `false`) produce explicit `error_permissions` status — never a silent downgrade.
-
-### On-Chain Contract
-- **REAADelegationManager** on Arbitrum Mainnet: `0x7427370Ab4C311B090446544078c819b3946E59d`
-- Flags are **wallet-level** (single set per wallet, not per-token):
-  - `isActive` — delegation is live
-  - `allowSupply` — bot can supply collateral on behalf of user
-  - `allowBorrow` — bot can borrow on behalf of user
-  - `allowRepay` — bot can repay debt on behalf of user
-  - `allowWithdraw` — bot can withdraw collateral on behalf of user
-
-### Token Permission Matrix (Full Parity)
-Defined in `permissions.py`. All tokens the system may touch:
-
-| Token | Address (Arbitrum) | Strategies | Actions |
-|-------|--------------------|------------|---------|
-| WBTC | `0x2f2a...5B0f` | auto_supply, growth/capacity swap+supply, short entry, nurse | supply |
-| DAI | `0xDA10...0da1` | growth, capacity, nurse, wallet_s transfer, usdc_tax swap | borrow, supply, repay |
-| WETH | `0x82aF...Bab1` | macro/micro short, growth/capacity swap+supply, nurse | borrow, supply, repay |
-| USDT | `0xFd08...Cbb9` | short entry swap+supply, short close withdraw, nurse | supply, withdraw |
-| USDC | `0xaf88...5831` | (profit token — user claims) | read-only, NEVER swept |
-
-### Required User Approvals
-Users must grant infinite ERC20 approvals for **all 5 tokens** to exactly **3 contracts**:
-1. **DelegationManager** (`0x7427...59d`) — for transferFrom pulls
-2. **Aave Pool** (`0x794a...1aD`) — for supply/borrow/repay/withdraw
-3. **Uniswap Router** (`0xE592...564`) — for token swaps
-
-Missing approvals = structured error, no partial execution.
-
-### Full Automation Profile
-All flags = `true` for any delegated wallet. Defined in `permissions.FULL_AUTOMATION`:
-```
-isActive=true, allowSupply=true, allowBorrow=true, allowRepay=true, allowWithdraw=true
-```
-
-### Strategy Responsibilities (Full 6-Step Engine)
-1. **Growth** (HF >= 3.10): Full 6-step distribution — borrow $11.40 DAI, supply DAI to Aave, swap+supply WBTC, swap+supply WETH, ETH gas reserve, Wallet_S transfer, USDC tax.
-2. **Capacity** (HF >= 2.90): Same 6-step engine with $6.70 DAI borrow.
-3. **Macro Short** (HF >= 3.05): Borrow WETH, split 40% WBTC / 35% USDT / 25% WETH collateral.
-4. **Micro Short** (HF >= 3.00): Same as macro with smaller size, 4h cooldown.
-5. **Nurse Mode**: Sweep idle DAI/WETH/WBTC/USDT to Aave. $2 floor. NEVER touches USDC.
-6. **Auto Supply**: Supply WBTC to Aave on delegation activation.
-7. **Emergency** (HF < 2.50): Alert only — no automated action.
-
-Skips are based only on HF/risk rules or strategy constraints — never on missing permissions.
-
-### Profit Flow Comparison: Personal Bot vs User Wallet
-
-**These are the ONLY two intentional behavior differences.** All other execution logic is identical.
-
-#### Difference 1: Profit Bucket
-```
-PERSONAL BOT:
-  USDC accumulates in bot wallet from Growth/Capacity tax steps
-  When balance >= $22 → auto-flush ALL USDC to Wallet_B
-  This is the "Profit Bucket" mechanism
-
-USER WALLET:
-  USDC from Growth/Capacity tax steps stays in user wallet permanently
-  NO auto-flush. NO Profit Bucket. User claims manually via Dashboard.
-  Bot NEVER touches user's USDC.
-```
-
-#### Difference 2: Liability Short Close Profit Distribution
-```
-PERSONAL BOT (20/20/60 split):
-  On profitable short close:
-  ├── 20% → Wallet_S (USDT → WETH → DAI → transfer)
-  ├── 20% → Wallet_B (USDT → USDC → accumulator)
-  └── 60% → Aave collateral (USDT → supply)
-
-USER WALLET (20/20/30/20/10 split):
-  On profitable short close (profit P realized as WETH after debt repay):
-  ├── 20% → Wallet_S (swap WETH → DAI, transfer DAI to Wallet_S)
-  ├── 20% → USDC (swap WETH → USDC, transfer to user wallet)
-  ├── 30% → WBTC (swap WETH → WBTC, supply to Aave onBehalfOf user)
-  ├── 20% → WETH (keep as WETH, supply to Aave onBehalfOf user)
-  └── 10% → USDT (swap WETH → USDT, supply to Aave onBehalfOf user)
-  Residual: Any leftover WETH → ETH sent to user wallet as gas/safety net
-  Total = 100%.
-
-  Execution model (per-slice best-effort, NOT atomic):
-  - Each of the 5 slices executes independently.
-  - If one slice fails (e.g. USDC swap reverts), the other slices still proceed.
-  - Any unprocessed WETH from a failed slice remains and is included in the
-    final residual sweep (WETH → ETH → user wallet).
-  - Failures do not block other slices; they just leave more WETH for the sweep.
-
-  Residual handling:
-  - On any slice failure, unprocessed WETH stays in the bot/DelegationManager.
-  - After all slices attempt, residual WETH is transferred to the user wallet.
-  - Nothing is stuck permanently in the DelegationManager.
-
-  Nurse Mode interaction:
-  - Nurse Mode later sweeps DAI/WETH/WBTC/USDT from the user wallet into Aave
-    (above $2 floor), lifting HF and potentially re-enabling Growth/Capacity.
-  - USDC is NEVER swept by Nurse Mode (profit token, user claims manually).
-```
-
-#### Everything Else: IDENTICAL
-- Growth 6-step distribution (same $ amounts, same step order)
-- Capacity 6-step distribution (same $ amounts, same step order)
-- Liability Short entry (same WETH borrow, same 40/35/25 allocation)
-- Nurse Mode sweep (same $2 floor, same tokens, same USDC protection)
-- HF thresholds (same 3.10/2.90/3.05/3.00/2.50 bands)
-- Emergency alerts (same behavior)
-- Approval requirements (same 5 tokens × 3 contracts)
-
-### Revocation Flow
-When a user revokes delegation:
-- **On-chain:** User signs `revokeDelegation()` transaction via frontend, clearing `isActive` and all flags.
-- **Backend:** Sets `delegation_status='revoked'`, `strategy_status='disabled'`, `delegation_mode=NULL`, `auto_supply_wbtc=false`, `bot_enabled=false`.
-- **Effect:** Wallet is excluded from `get_active_managed_wallets()` query. Strategy engine will not attempt any actions.
-
-### Delegated Wallet Data Flow
-
-#### Position Fetch Pipeline
-1. **Monitoring loop** (`run_autonomous_mainnet.py`): For each active managed wallet, calls `refresh_defi_for_user(user_id, wallet_address)`.
-2. **On-chain fetch**: `fetch_aave_position_for_wallet(wallet_address)` calls Aave V3 `getUserAccountData` with the delegated wallet's address.
-3. **DB upsert**: `upsert_defi_position(user_id, ..., wallet_address=wallet_address)` writes to `defi_positions` keyed by `(user_id, wallet_address)` composite unique index.
-4. **Strategy engine**: `run_delegated_strategy` and `get_strategy_status` both call `get_defi_position(user_id, wallet_address)` to get the correct wallet-specific row.
-
-#### Per-Wallet Storage (defi_positions table)
-- **Primary key**: `id` (serial).
-- **Unique constraint**: `(user_id, wallet_address)` — each wallet gets its own row, no overwriting.
-- **Columns**: `health_factor`, `total_collateral_usd`, `total_debt_usd`, `net_worth_usd`, `has_active_position`, `consecutive_empty_count`, `positions` (JSONB), `updated_at`.
-- **Personal bot** (user_id=1): stored with `wallet_address='0x5b82...'`.
-- **Delegated wallets**: stored with their own `wallet_address` (e.g., `'0xd60a...'`).
-- `get_defi_position(user_id, wallet_address)` returns the specific wallet's row. Without `wallet_address`, returns the row with the highest collateral.
-- `get_all_defi_positions_for_user(user_id)` returns all wallet positions for a user.
-
-#### Fetch Resilience (consecutive_empty_count)
-- A single empty/failed Aave fetch does NOT immediately zero out and mark a wallet inactive.
-- `consecutive_empty_count` increments on each empty fetch.
-- Position is only marked inactive when `consecutive_empty_count >= CONSECUTIVE_EMPTY_THRESHOLD` (default: 3).
-- Any successful fetch resets `consecutive_empty_count` to 0.
-- Prevents transient RPC failures from wiping out valid position data.
-
-#### Permission Errors vs Empty Positions
-- **Permission error** (`strategy_status='error_permissions'`): Delegation flags missing or ERC20 approvals missing. Strategy skips, but position data stays intact. No `mark_position_inactive` call.
-- **Empty position** (`has_active_position=false`): Aave reports zero collateral across multiple consecutive checks. Position zeroed out, `supplied_wbtc_amount` reset.
-- **Transient failure**: RPC error or single empty fetch. `consecutive_empty_count` incremented, position data preserved until threshold reached.
-
-### Security Notes
-- All on-chain calls route through `delegation_client.py`, signed by bot operator key via REAADelegationManager.
-- Permission validation via `permissions.validate_full_automation()` checks all 5 flags before any strategy runs.
-- Structured logging captures: delegation setup per wallet, each strategy action vs SKIP with reason codes, permission errors.
-- New tokens or strategies must update `permissions.py` (TOKEN_PERMISSIONS and STRATEGY_MAP).
-
-### Hard Reset Script (`hard_reset_user.py`)
-- **Usage:** `python hard_reset_user.py --user-id <ID>` (or `--dry-run` to preview)
-- **DB Reset:** Resets `managed_wallets` (delegation_status→inactive, strategy_status→disabled, auto_supply_wbtc→false, clears all timestamps/baselines), deletes all `defi_positions`, `wallet_actions`, `income_events` for the user, sets `users.bot_enabled=false`.
-- **On-Chain Audit:** Checks `balanceOf(DM)` and `balanceOf(BOT)` for WBTC, WETH, DAI, USDC, USDT. Reports any non-zero balances with rescue recommendations.
-- **Post-Reset:** User must clear browser localStorage (`reaa_wallet` key) and reconnect fresh.
-
-### Re-Onboard Sequence (Clean Path)
-After hard reset, user follows this sequence:
-1. **Connect Wallet** — Dashboard authenticates via `POST /api/auth/wallet`, creates/updates user row, stores auth token in localStorage.
-2. **Enable Auto-Pilot** — Frontend walks through 4-step signing:
-   - Step 1/4: `approveDelegation(maxUint, maxUint, true, true, true, true)` on DM contract (sets all 4 flags)
-   - Step 2/4: 15 ERC20 `approve(spender, maxUint)` calls (5 tokens × 3 contracts: DM, Aave Pool, Uniswap Router)
-   - Step 3/4: 2 Aave credit delegations (`approveDelegation(DM, maxUint)` on DAI and WETH variable debt tokens)
-   - Step 4/4: `POST /api/delegation/activate` — sets DB state, triggers immediate auto-supply attempt
-3. **Auto-Supply Runs** — If WBTC balance > threshold and allowance > 0, bot supplies 80% to Aave via DM contract.
-4. **Strategy Engine Monitors** — Bot loop detects `delegation_status=active` + `has_active_position=true`, runs HF-band strategy (Growth/Capacity/Macro/Micro) each cycle.
-
-### Approval Checklist UI
-- Visible in Auto-Pilot panel when `delegation_status=active` (both `strategy_status=active` and `error_permissions`).
-- Calls `GET /api/delegation/check-permissions` which runs `validate_full_automation_ready()`.
-- Displays grouped checklist: DM contract flags (5), ERC20 approvals grouped by spender (15), Aave credit delegations (2).
-- Shows `X/22 approvals granted` summary with per-item status.
-
-### Wallet Persistence (Feb 2026)
-- `authenticateWallet()` saves `{userId, walletAddress, authToken, userTownIds}` to `localStorage['reaa_wallet']`.
-- `DOMContentLoaded` restores state from localStorage, re-renders wallet button, unlocks panels, loads all data.
-- `fullDisconnect()` clears localStorage before resetting JS state.
-- Expired tokens are caught by 401 handler in `api()` which calls `fullDisconnect()` (auto-clears localStorage).
-
-### Recent Changes (Feb 21, 2026)
-- Deployed new DelegationManager contract to `0x4866709c25908158DA9A3D292Bd2e4E96F0D2A7C` (replaces old contract).
-- Updated `DELEGATION_MANAGER_ADDRESS` secret to new contract.
-- Fixed dashboard phantom data: deleted stale `defi_positions` rows, changed query to `ORDER BY updated_at DESC`.
-- Added wallet connection persistence across page refreshes via localStorage.
-- Created `hard_reset_user.py` admin script for clean user reset + on-chain balance audit.
-- Added approval checklist UI to Auto-Pilot panel showing detailed permission status.
-- Hard-reset User 22 for clean re-onboard testing.

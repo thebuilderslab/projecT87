@@ -3712,6 +3712,30 @@ def get_defi_state():
         return jsonify({"position": None, "message": "No Aave position detected for this wallet yet."})
     return jsonify({"position": position})
 
+@app.route('/api/wallet/usdc-balance', methods=['GET'])
+def get_wallet_usdc_balance():
+    """Get on-chain USDC balance for the connected user wallet"""
+    user_id = get_current_user_id()
+    if not user_id:
+        return jsonify({"balance": 0, "error": "Not authenticated"}), 401
+    user = database.get_user_by_id(user_id) if DB_AVAILABLE else None
+    wallet = user.get('wallet_address', '') if user else ''
+    if not wallet:
+        return jsonify({"balance": 0})
+    try:
+        from web3 import Web3
+        rpc_url = os.environ.get('ALCHEMY_RPC_URL', 'https://arb1.arbitrum.io/rpc')
+        w3 = Web3(Web3.HTTPProvider(rpc_url))
+        usdc_address = Web3.to_checksum_address("0xaf88d065e77c8cC2239327C5EDb3A432268e5831")
+        balance_abi = [{"inputs": [{"name": "account", "type": "address"}], "name": "balanceOf", "outputs": [{"name": "", "type": "uint256"}], "stateMutability": "view", "type": "function"}]
+        usdc_contract = w3.eth.contract(address=usdc_address, abi=balance_abi)
+        raw = usdc_contract.functions.balanceOf(Web3.to_checksum_address(wallet)).call()
+        balance = raw / 10**6
+        return jsonify({"balance": round(balance, 2), "wallet": wallet})
+    except Exception as e:
+        logger.error(f"USDC balance fetch error for {wallet[:10]}...: {e}")
+        return jsonify({"balance": 0, "error": str(e)})
+
 @app.route('/api/pipeline/status', methods=['GET'])
 def get_pipeline_status():
     """Get latest pipeline run status"""
