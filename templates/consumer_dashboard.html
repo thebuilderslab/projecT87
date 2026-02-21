@@ -846,6 +846,7 @@ function fullDisconnect() {
   if (state._disconnecting) return;
   state._disconnecting = true;
   try {
+    try { localStorage.removeItem('reaa_wallet'); } catch(e) {}
     state.authToken = null;
     state.userId = null;
     state.walletAddress = null;
@@ -944,6 +945,15 @@ async function authenticateWallet(address) {
   state.walletAddress = data.walletAddress;
   state.authToken = data.authToken;
   state.userTownIds = (data.towns || []).map(t => t.id);
+
+  try {
+    localStorage.setItem('reaa_wallet', JSON.stringify({
+      userId: state.userId,
+      walletAddress: state.walletAddress,
+      authToken: state.authToken,
+      userTownIds: state.userTownIds
+    }));
+  } catch(e) {}
 
   const btn = document.getElementById('walletBtn');
   btn.className = 'wallet-btn connected';
@@ -2180,6 +2190,35 @@ async function revokeDelegation() {
 document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('pipelineBody').innerHTML = '<div class="loading">Connect wallet to view pipeline</div>';
   updateHealthRing(0);
+
+  try {
+    const saved = localStorage.getItem('reaa_wallet');
+    if (saved) {
+      const w = JSON.parse(saved);
+      if (w.authToken && w.walletAddress) {
+        state.userId = w.userId;
+        state.walletAddress = w.walletAddress;
+        state.authToken = w.authToken;
+        state.userTownIds = w.userTownIds || [];
+
+        const btn = document.getElementById('walletBtn');
+        btn.className = 'wallet-btn connected';
+        btn.textContent = w.walletAddress.substring(0, 6) + '...' + w.walletAddress.substring(38);
+        btn.onclick = null;
+        document.getElementById('disconnectBtn').style.display = 'inline-flex';
+
+        document.getElementById('filingsLocked').style.display = 'none';
+        document.getElementById('filingsUnlocked').style.display = '';
+        document.getElementById('analysisLocked').style.display = 'none';
+        document.getElementById('analysisUnlocked').style.display = '';
+
+        loadDefiPanel();
+        loadIncomeSummary();
+        loadTowns();
+        loadDelegationStatus(true);
+      }
+    }
+  } catch(e) {}
 });
 
 document.addEventListener('keydown', e => {
