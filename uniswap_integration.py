@@ -6,6 +6,7 @@ import os
 import time
 from web3 import Web3
 from eth_account import Account
+from delegation_client import get_tx_broadcast_lock, acquire_nonce, confirm_nonce, reset_nonce
 
 class UniswapIntegration:
     def __init__(self, w3, account):
@@ -51,6 +52,21 @@ class UniswapIntegration:
         )
 
         print(f"🔄 Uniswap V3 integration initialized")
+
+    def _sign_and_send(self, tx_dict):
+        with get_tx_broadcast_lock():
+            nonce = acquire_nonce(self.w3, self.address)
+            tx_dict['nonce'] = nonce
+            try:
+                signed = self.w3.eth.account.sign_transaction(tx_dict, self.account.key)
+                tx_hash = self.w3.eth.send_raw_transaction(signed.rawTransaction)
+                confirm_nonce()
+                return tx_hash
+            except Exception as e:
+                err_msg = str(e).lower()
+                if "nonce too low" in err_msg or "already known" in err_msg or "replacement transaction" in err_msg:
+                    reset_nonce()
+                raise
 
     def _get_router_abi(self):
         """Uniswap V3 SwapRouter (original) ABI — deadline IS in the struct"""
@@ -361,7 +377,6 @@ class UniswapIntegration:
                     'sqrtPriceLimitX96': 0
                 }
 
-                nonce = self.w3.eth.get_transaction_count(self.address, 'pending')
                 base_gas_price = self.w3.eth.gas_price
                 swap_gas_price = int(base_gas_price * 2.5) if chain_id == 42161 else int(base_gas_price * 1.5)
                 gas_limit = 500000
@@ -373,7 +388,7 @@ class UniswapIntegration:
                     'chainId': chain_id,
                     'gas': gas_limit,
                     'gasPrice': swap_gas_price,
-                    'nonce': nonce,
+                    'nonce': 0,
                     'value': amount_in_wei if is_eth_in else 0
                 })
 
@@ -405,12 +420,8 @@ class UniswapIntegration:
                     else:
                         print(f"⚠️ Gas estimation failed: {gas_err}, using fallback {gas_limit}")
 
-                fresh_nonce = self.w3.eth.get_transaction_count(self.address, 'pending')
-                swap_tx['nonce'] = fresh_nonce
-
                 try:
-                    signed_swap = self.w3.eth.account.sign_transaction(swap_tx, self.account.key)
-                    tx_hash = self.w3.eth.send_raw_transaction(signed_swap.rawTransaction)
+                    tx_hash = self._sign_and_send(swap_tx)
                     print(f"✅ Swap sent: {tx_hash.hex()}")
 
                     receipt = self.w3.eth.wait_for_transaction_receipt(tx_hash, timeout=120)
@@ -584,7 +595,6 @@ class UniswapIntegration:
                 return True
 
             max_uint256 = 2**256 - 1
-            nonce = self.w3.eth.get_transaction_count(self.address)
             base_gas_price = self.w3.eth.gas_price
             chain_id = self.w3.eth.chain_id
             gas_price = int(base_gas_price * 2.5) if chain_id == 42161 else int(base_gas_price * 1.3)
@@ -593,10 +603,9 @@ class UniswapIntegration:
             ).build_transaction({
                 'from': self.address,
                 'chainId': chain_id, 'gas': 100000,
-                'gasPrice': gas_price, 'nonce': nonce,
+                'gasPrice': gas_price, 'nonce': 0,
             })
-            signed_approve = self.w3.eth.account.sign_transaction(approve_tx, self.account.key)
-            approve_hash = self.w3.eth.send_raw_transaction(signed_approve.rawTransaction)
+            approve_hash = self._sign_and_send(approve_tx)
             print(f"🔐 Router approval sent: {approve_hash.hex()}")
             receipt = self.w3.eth.wait_for_transaction_receipt(approve_hash, timeout=60)
             if receipt.status == 1:
@@ -625,7 +634,6 @@ class UniswapIntegration:
                     print(f"❌ Cannot proceed without token approval for Router")
                     return None
 
-            nonce = self.w3.eth.get_transaction_count(self.address)
             base_gas_price = self.w3.eth.gas_price
             chain_id = self.w3.eth.chain_id
             swap_gas_price = int(base_gas_price * 2.5) if chain_id == 42161 else int(base_gas_price * 1.5)
@@ -646,7 +654,7 @@ class UniswapIntegration:
                 'chainId': chain_id,
                 'gas': gas_limit,
                 'gasPrice': swap_gas_price,
-                'nonce': nonce,
+                'nonce': 0,
                 'value': 0
             })
 
@@ -663,10 +671,7 @@ class UniswapIntegration:
                     return None
                 print(f"⚠️ Multi-hop gas estimation failed: {gas_err}, using {gas_limit}")
 
-            fresh_nonce = self.w3.eth.get_transaction_count(self.address, 'pending')
-            swap_tx['nonce'] = fresh_nonce
-            signed_swap = self.w3.eth.account.sign_transaction(swap_tx, self.account.key)
-            tx_hash = self.w3.eth.send_raw_transaction(signed_swap.rawTransaction)
+            tx_hash = self._sign_and_send(swap_tx)
             print(f"✅ Multi-hop swap sent: {tx_hash.hex()}")
 
             receipt = self.w3.eth.wait_for_transaction_receipt(tx_hash, timeout=120)
@@ -780,7 +785,6 @@ class UniswapIntegration:
             min_output = max(1, int(expected_usdc_out * 0.95))
 
             chain_id = self.w3.eth.chain_id
-            nonce = self.w3.eth.get_transaction_count(self.address, 'pending')
             base_gas_price = self.w3.eth.gas_price
             swap_gas_price = int(base_gas_price * 2.5) if chain_id == 42161 else int(base_gas_price * 1.5)
 
@@ -799,7 +803,7 @@ class UniswapIntegration:
                 'chainId': chain_id,
                 'gas': 600000,
                 'gasPrice': swap_gas_price,
-                'nonce': nonce,
+                'nonce': 0,
                 'value': 0
             })
 
@@ -816,11 +820,7 @@ class UniswapIntegration:
                     return False
                 print(f"⚠️ Gas estimation failed: {gas_err}, using fallback 600000")
 
-            fresh_nonce = self.w3.eth.get_transaction_count(self.address, 'pending')
-            swap_tx['nonce'] = fresh_nonce
-
-            signed_swap = self.w3.eth.account.sign_transaction(swap_tx, self.account.key)
-            tx_hash = self.w3.eth.send_raw_transaction(signed_swap.rawTransaction)
+            tx_hash = self._sign_and_send(swap_tx)
             tx_hash_hex = tx_hash.hex()
             print(f"✅ DAI→WETH→USDC swap sent: {tx_hash_hex}")
 
@@ -996,7 +996,6 @@ class UniswapIntegration:
                 print("❌ Cannot proceed without USDT approval for Router")
                 return False
 
-            nonce = self.w3.eth.get_transaction_count(self.address)
             base_gas_price = self.w3.eth.gas_price
             chain_id = self.w3.eth.chain_id
             swap_gas_price = int(base_gas_price * 2.5) if chain_id == 42161 else int(base_gas_price * 1.5)
@@ -1023,7 +1022,7 @@ class UniswapIntegration:
                         'chainId': chain_id,
                         'gas': gas_limit,
                         'gasPrice': swap_gas_price,
-                        'nonce': nonce,
+                        'nonce': 0,
                         'value': 0
                     })
 
@@ -1037,10 +1036,7 @@ class UniswapIntegration:
                             continue
                         print(f"⚠️ Gas estimation failed for fee {fee}: {gas_err}")
 
-                    fresh_nonce = self.w3.eth.get_transaction_count(self.address, 'pending')
-                    swap_tx['nonce'] = fresh_nonce
-                    signed_swap = self.w3.eth.account.sign_transaction(swap_tx, self.account.key)
-                    tx_hash = self.w3.eth.send_raw_transaction(signed_swap.rawTransaction)
+                    tx_hash = self._sign_and_send(swap_tx)
                     print(f"✅ USDT→WETH swap sent (fee {fee}): {tx_hash.hex()}")
 
                     receipt = self.w3.eth.wait_for_transaction_receipt(tx_hash, timeout=120)

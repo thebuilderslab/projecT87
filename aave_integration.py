@@ -13,6 +13,7 @@ from eth_account import Account
 from decimal import Decimal
 import logging
 from uniswap_integration import UniswapIntegration
+from delegation_client import get_tx_broadcast_lock, acquire_nonce, confirm_nonce, reset_nonce
 try:
     from config_constants import MIN_HEALTH_FACTOR
 except ImportError:
@@ -50,6 +51,21 @@ class AaveArbitrumIntegration:
         self._initialize_pool_contract()
 
         print(f"✅ Aave integration initialized for {network_mode} with DAI-only compliance")
+
+    def _sign_and_send(self, tx_dict):
+        with get_tx_broadcast_lock():
+            nonce = acquire_nonce(self.w3, self.account.address)
+            tx_dict['nonce'] = nonce
+            try:
+                signed = self.w3.eth.account.sign_transaction(tx_dict, self.account.key)
+                tx_hash = self.w3.eth.send_raw_transaction(signed.rawTransaction)
+                confirm_nonce()
+                return tx_hash
+            except Exception as e:
+                err_msg = str(e).lower()
+                if "nonce too low" in err_msg or "already known" in err_msg or "replacement transaction" in err_msg:
+                    reset_nonce()
+                raise
 
     def _initialize_pool_contract(self):
         """Initialize Aave pool contract"""
@@ -286,7 +302,6 @@ class AaveArbitrumIntegration:
             max_retries = 3
             for attempt in range(max_retries):
                 try:
-                    nonce = self.w3.eth.get_transaction_count(self.account.address)
                     base_gas_price = self.w3.eth.gas_price
                     chain_id = self.w3.eth.chain_id
                     
@@ -296,8 +311,6 @@ class AaveArbitrumIntegration:
                     else:
                         gas_price = int(base_gas_price * 1.3)
                         print(f"⛽ Testnet: base {base_gas_price} → optimized {gas_price} (1.3x)")
-
-                    print(f"📊 Transaction params - Nonce: {nonce}, Gas Price: {gas_price}")
 
                     try:
                         estimated_gas = self.pool_contract.functions.borrow(
@@ -325,12 +338,9 @@ class AaveArbitrumIntegration:
                         'from': self.account.address,
                         'gas': gas_limit,
                         'gasPrice': gas_price,
-                        'nonce': nonce
                     })
 
-                    # Sign and send
-                    signed_tx = self.w3.eth.account.sign_transaction(tx, self.account.key)
-                    tx_hash = self.w3.eth.send_raw_transaction(signed_tx.rawTransaction)
+                    tx_hash = self._sign_and_send(tx)
 
                     print(f"✅ DAI borrow transaction sent: {tx_hash.hex()}")
 
@@ -397,7 +407,6 @@ class AaveArbitrumIntegration:
             max_retries = 3
             for attempt in range(max_retries):
                 try:
-                    nonce = self.w3.eth.get_transaction_count(self.account.address)
                     base_gas_price = self.w3.eth.gas_price
                     chain_id = self.w3.eth.chain_id
 
@@ -407,8 +416,6 @@ class AaveArbitrumIntegration:
                     else:
                         gas_price = int(base_gas_price * 1.3)
                         print(f"⛽ Testnet: base {base_gas_price} → optimized {gas_price} (1.3x)")
-
-                    print(f"📊 WETH Borrow params - Nonce: {nonce}, Gas Price: {gas_price}")
 
                     try:
                         estimated_gas = self.pool_contract.functions.borrow(
@@ -436,11 +443,9 @@ class AaveArbitrumIntegration:
                         'from': self.account.address,
                         'gas': gas_limit,
                         'gasPrice': gas_price,
-                        'nonce': nonce
                     })
 
-                    signed_tx = self.w3.eth.account.sign_transaction(tx, self.account.key)
-                    tx_hash = self.w3.eth.send_raw_transaction(signed_tx.rawTransaction)
+                    tx_hash = self._sign_and_send(tx)
 
                     print(f"✅ WETH borrow transaction sent: {tx_hash.hex()}")
 
@@ -528,13 +533,11 @@ class AaveArbitrumIntegration:
 
             print(f"✅ {token_name} approval successful")
 
-            # Step 4: Get fresh nonce and gas price with Arbitrum multiplier
-            nonce = self.w3.eth.get_transaction_count(self.account.address)
+            # Step 4: Get gas price with Arbitrum multiplier
             base_gas_price = self.w3.eth.gas_price
             chain_id = self.w3.eth.chain_id
             
-            # Apply 2x multiplier for Arbitrum mainnet to handle variable gas costs
-            if chain_id == 42161:  # Arbitrum Mainnet
+            if chain_id == 42161:
                 gas_price = int(base_gas_price * 2.5)
                 print(f"⛽ Arbitrum mainnet supply: base {base_gas_price} → optimized {gas_price} (2.5x)")
             else:
@@ -565,12 +568,9 @@ class AaveArbitrumIntegration:
                 'from': self.account.address,
                 'gas': gas_limit,
                 'gasPrice': gas_price,
-                'nonce': nonce
             })
 
-            # Step 7: Sign and send transaction
-            signed_tx = self.w3.eth.account.sign_transaction(tx, self.account.key)
-            tx_hash = self.w3.eth.send_raw_transaction(signed_tx.rawTransaction)
+            tx_hash = self._sign_and_send(tx)
             tx_hash_hex = tx_hash.hex()
 
             print(f"📤 Supply transaction sent: {tx_hash_hex}")
@@ -638,7 +638,6 @@ class AaveArbitrumIntegration:
                 print(f"ℹ️ {token_name} collateral enable skipped — estimate_gas failed: {est_err}")
                 return True
 
-            nonce = self.w3.eth.get_transaction_count(self.account.address)
             base_gas_price = self.w3.eth.gas_price
             chain_id = self.w3.eth.chain_id
             gas_price = int(base_gas_price * (2.5 if chain_id == 42161 else 1.3))
@@ -649,12 +648,10 @@ class AaveArbitrumIntegration:
                 'from': self.account.address,
                 'gas': gas_limit,
                 'gasPrice': gas_price,
-                'nonce': nonce,
                 'chainId': chain_id
             })
 
-            signed_tx = self.w3.eth.account.sign_transaction(tx, self.account.key)
-            tx_hash = self.w3.eth.send_raw_transaction(signed_tx.rawTransaction)
+            tx_hash = self._sign_and_send(tx)
             receipt = self.w3.eth.wait_for_transaction_receipt(tx_hash, timeout=60)
 
             if receipt.status == 1:
@@ -790,33 +787,28 @@ class AaveArbitrumIntegration:
             except Exception as allowance_err:
                 print(f"⚠️ Could not check allowance: {allowance_err}")
 
-            # Get fresh transaction parameters with Arbitrum multiplier
-            nonce = self.w3.eth.get_transaction_count(self.account.address)
             base_gas_price = self.w3.eth.gas_price
             chain_id = self.w3.eth.chain_id
             
-            # Apply 2x multiplier for Arbitrum mainnet to handle variable gas costs
-            if chain_id == 42161:  # Arbitrum Mainnet
+            if chain_id == 42161:
                 gas_price = int(base_gas_price * 2.5)
                 print(f"⛽ Arbitrum mainnet approval: base {base_gas_price} → optimized {gas_price} (2.5x)")
             else:
                 gas_price = int(base_gas_price * 1.3)
                 print(f"⛽ Testnet approval: base {base_gas_price} → optimized {gas_price} (1.3x)")
 
-            # Estimate gas for approval
             try:
                 estimated_gas = contract.functions.approve(
                     self.pool_address,
                     amount_wei
                 ).estimate_gas({'from': self.account.address})
 
-                gas_limit = int(estimated_gas * 1.2)  # Add 20% buffer
+                gas_limit = int(estimated_gas * 1.2)
 
             except Exception as gas_err:
                 print(f"⚠️ Gas estimation failed: {gas_err}")
-                gas_limit = 100000  # Standard approval gas
+                gas_limit = 100000
 
-            # Build transaction
             tx = contract.functions.approve(
                 self.pool_address,
                 amount_wei
@@ -824,12 +816,9 @@ class AaveArbitrumIntegration:
                 'from': self.account.address,
                 'gas': gas_limit,
                 'gasPrice': gas_price,
-                'nonce': nonce
             })
 
-            # Sign and send
-            signed_tx = self.w3.eth.account.sign_transaction(tx, self.account.key)
-            tx_hash = self.w3.eth.send_raw_transaction(signed_tx.rawTransaction)
+            tx_hash = self._sign_and_send(tx)
 
             print(f"📤 Approval transaction sent: {tx_hash.hex()}")
 
@@ -875,12 +864,9 @@ class AaveArbitrumIntegration:
                 'from': self.account.address,
                 'gas': 300000,
                 'gasPrice': int(self.w3.eth.gas_price * 2.5),
-                'nonce': self.w3.eth.get_transaction_count(self.account.address)
             })
 
-            # Sign and send
-            signed_tx = self.w3.eth.account.sign_transaction(tx, self.account.key)
-            tx_hash = self.w3.eth.send_raw_transaction(signed_tx.rawTransaction)
+            tx_hash = self._sign_and_send(tx)
 
             print(f"✅ Token withdrawal successful: {amount:.6f}")
             return tx_hash.hex()
@@ -921,22 +907,18 @@ class AaveArbitrumIntegration:
         try:
             amount_wei = int(amount * 10**18)  # DAI has 18 decimals
 
-            # Build transaction
             tx = self.pool_contract.functions.repay(
                 self.dai_address,
                 amount_wei,
-                2,  # Variable interest rate
+                2,
                 self.account.address
             ).build_transaction({
                 'from': self.account.address,
                 'gas': 300000,
                 'gasPrice': int(self.w3.eth.gas_price * 2.5),
-                'nonce': self.w3.eth.get_transaction_count(self.account.address)
             })
 
-            # Sign and send
-            signed_tx = self.w3.eth.account.sign_transaction(tx, self.account.key)
-            tx_hash = self.w3.eth.send_raw_transaction(signed_tx.rawTransaction)
+            tx_hash = self._sign_and_send(tx)
 
             print(f"✅ DAI repayment successful: {amount:.6f}")
             return tx_hash.hex()
@@ -959,11 +941,9 @@ class AaveArbitrumIntegration:
                 'from': self.account.address,
                 'gas': 300000,
                 'gasPrice': int(self.w3.eth.gas_price * 2.5),
-                'nonce': self.w3.eth.get_transaction_count(self.account.address)
             })
 
-            signed_tx = self.w3.eth.account.sign_transaction(tx, self.account.key)
-            tx_hash = self.w3.eth.send_raw_transaction(signed_tx.rawTransaction)
+            tx_hash = self._sign_and_send(tx)
 
             receipt = self.w3.eth.wait_for_transaction_receipt(tx_hash, timeout=120)
             if receipt.status == 1:

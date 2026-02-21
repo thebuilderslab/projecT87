@@ -1,10 +1,14 @@
 import os
 import json
 import logging
+import threading
 from decimal import Decimal
 from web3 import Web3
 
 logger = logging.getLogger(__name__)
+
+_tx_broadcast_lock = threading.Lock()
+_local_nonce = None
 
 DELEGATION_MANAGER_ADDRESS = os.environ.get("DELEGATION_MANAGER_ADDRESS", "")
 
@@ -213,9 +217,8 @@ def call_auto_supply_wbtc(user_address: str, amount_raw: int):
         logger.error("call_auto_supply_wbtc: contract not deployed")
         return None
     w3 = _get_web3()
-    acct = _get_bot_account()
-    if not w3 or not acct:
-        logger.error("call_auto_supply_wbtc: missing Web3 or bot account")
+    if not w3:
+        logger.error("call_auto_supply_wbtc: missing Web3")
         return None
 
     dm_addr = Web3.to_checksum_address(DELEGATION_MANAGER_ADDRESS)
@@ -223,43 +226,10 @@ def call_auto_supply_wbtc(user_address: str, amount_raw: int):
     dm = w3.eth.contract(address=dm_addr, abi=DELEGATION_MANAGER_ABI)
 
     try:
-        eth_bal = w3.eth.get_balance(acct.address)
-        if eth_bal < w3.to_wei(0.0002, "ether"):
-            logger.error(f"Bot ETH too low for gas: {w3.from_wei(eth_bal, 'ether')} ETH")
-            return None
-
-        base_gas = w3.eth.gas_price
-        gas_price = int(base_gas * 2.5)
-        nonce = w3.eth.get_transaction_count(acct.address)
-
-        try:
-            est = dm.functions.autoSupplyWBTC(user_cs, amount_raw).estimate_gas({"from": acct.address})
-            gas_limit = int(est * 1.3)
-        except Exception as ge:
-            logger.warning(f"autoSupplyWBTC gas estimate failed ({ge}), using 400000")
-            gas_limit = 400000
-
-        tx = dm.functions.autoSupplyWBTC(user_cs, amount_raw).build_transaction({
-            "from": acct.address,
-            "gas": gas_limit,
-            "gasPrice": gas_price,
-            "nonce": nonce,
-            "chainId": 42161,
-        })
-
-        signed = w3.eth.account.sign_transaction(tx, acct.key)
-        tx_hash = w3.eth.send_raw_transaction(signed.rawTransaction)
-        logger.info(f"autoSupplyWBTC tx sent: {tx_hash.hex()}")
-
-        receipt = w3.eth.wait_for_transaction_receipt(tx_hash, timeout=120)
-        if receipt.status == 1:
-            final_hash = receipt.transactionHash.hex()
-            logger.info(f"autoSupplyWBTC confirmed: {final_hash}")
-            return final_hash
-        else:
-            logger.error(f"autoSupplyWBTC reverted: {tx_hash.hex()}")
-            return None
-
+        result = _send_bot_tx(dm.functions.autoSupplyWBTC(user_cs, amount_raw))
+        if result:
+            logger.info(f"autoSupplyWBTC confirmed: {result}")
+        return result
     except Exception as e:
         logger.error(f"call_auto_supply_wbtc failed for {user_address}: {e}", exc_info=True)
         return None
@@ -451,36 +421,61 @@ def validate_full_automation_ready(wallet_address):
 
 
 def _send_bot_tx(func_call, gas_estimate_fallback=400000, max_retries=2):
+    global _local_nonce
     w3 = _get_web3()
     acct = _get_bot_account()
     if not w3 or not acct:
         logger.error("_send_bot_tx: missing Web3 or bot account")
         return None
+
+    eth_bal = w3.eth.get_balance(acct.address)
+    if eth_bal < w3.to_wei(0.0002, "ether"):
+        logger.error(f"Bot ETH too low for gas: {w3.from_wei(eth_bal, 'ether')} ETH")
+        return None
+
+    try:
+        est = func_call.estimate_gas({"from": acct.address})
+        gas_limit = int(est * 1.3)
+    except Exception as ge:
+        logger.warning(f"Gas estimate failed ({ge}), using {gas_estimate_fallback}")
+        gas_limit = gas_estimate_fallback
+
     for attempt in range(max_retries + 1):
-        try:
-            eth_bal = w3.eth.get_balance(acct.address)
-            if eth_bal < w3.to_wei(0.0002, "ether"):
-                logger.error(f"Bot ETH too low for gas: {w3.from_wei(eth_bal, 'ether')} ETH")
-                return None
-            base_gas = w3.eth.gas_price
-            gas_price = int(base_gas * 2.5)
-            nonce = w3.eth.get_transaction_count(acct.address, "pending")
+        with _tx_broadcast_lock:
             try:
-                est = func_call.estimate_gas({"from": acct.address})
-                gas_limit = int(est * 1.3)
-            except Exception as ge:
-                logger.warning(f"Gas estimate failed ({ge}), using {gas_estimate_fallback}")
-                gas_limit = gas_estimate_fallback
-            tx = func_call.build_transaction({
-                "from": acct.address,
-                "gas": gas_limit,
-                "gasPrice": gas_price,
-                "nonce": nonce,
-                "chainId": 42161,
-            })
-            signed = w3.eth.account.sign_transaction(tx, acct.key)
-            tx_hash = w3.eth.send_raw_transaction(signed.rawTransaction)
-            logger.info(f"Tx sent: {tx_hash.hex()} (nonce={nonce})")
+                if _local_nonce is None:
+                    nonce = w3.eth.get_transaction_count(acct.address, "pending")
+                    logger.info(f"[NonceMgr] Fetched fresh nonce from RPC: {nonce}")
+                else:
+                    nonce = _local_nonce
+                    logger.info(f"[NonceMgr] Using local nonce: {nonce}")
+
+                base_gas = w3.eth.gas_price
+                gas_price = int(base_gas * 2.5)
+                tx = func_call.build_transaction({
+                    "from": acct.address,
+                    "gas": gas_limit,
+                    "gasPrice": gas_price,
+                    "nonce": nonce,
+                    "chainId": 42161,
+                })
+                signed = w3.eth.account.sign_transaction(tx, acct.key)
+                tx_hash = w3.eth.send_raw_transaction(signed.rawTransaction)
+                _local_nonce = nonce + 1
+                logger.info(f"Tx sent: {tx_hash.hex()} (nonce={nonce}, next_nonce={_local_nonce})")
+            except Exception as e:
+                err_msg = str(e).lower()
+                if "nonce too low" in err_msg or "already known" in err_msg or "replacement transaction" in err_msg:
+                    _local_nonce = None
+                    logger.warning(f"[NonceMgr] Nonce error (attempt {attempt+1}/{max_retries+1}), reset local nonce: {e}")
+                    if attempt < max_retries:
+                        import time
+                        time.sleep(1)
+                        continue
+                logger.error(f"_send_bot_tx failed: {e}", exc_info=True)
+                return None
+
+        try:
             receipt = w3.eth.wait_for_transaction_receipt(tx_hash, timeout=120)
             if receipt.status == 1:
                 final_hash = receipt.transactionHash.hex()
@@ -490,15 +485,98 @@ def _send_bot_tx(func_call, gas_estimate_fallback=400000, max_retries=2):
                 logger.error(f"Tx reverted: {tx_hash.hex()}")
                 return None
         except Exception as e:
-            err_msg = str(e).lower()
-            if "nonce too low" in err_msg and attempt < max_retries:
-                import time
-                logger.warning(f"_send_bot_tx: nonce too low (attempt {attempt+1}/{max_retries+1}), retrying with fresh nonce...")
-                time.sleep(1)
-                continue
-            logger.error(f"_send_bot_tx failed: {e}", exc_info=True)
+            logger.error(f"_send_bot_tx receipt wait failed: {e}", exc_info=True)
             return None
     return None
+
+
+def _send_bot_raw_tx(tx_dict, max_retries=2):
+    """Send a raw transaction dict (e.g. ETH transfer) through the locked nonce manager.
+    Caller provides everything except 'nonce' — nonce is injected by the manager."""
+    global _local_nonce
+    w3 = _get_web3()
+    acct = _get_bot_account()
+    if not w3 or not acct:
+        logger.error("_send_bot_raw_tx: missing Web3 or bot account")
+        return None
+
+    for attempt in range(max_retries + 1):
+        with _tx_broadcast_lock:
+            try:
+                if _local_nonce is None:
+                    nonce = w3.eth.get_transaction_count(acct.address, "pending")
+                    logger.info(f"[NonceMgr] Fetched fresh nonce from RPC: {nonce}")
+                else:
+                    nonce = _local_nonce
+                    logger.info(f"[NonceMgr] Using local nonce: {nonce}")
+
+                tx_dict["nonce"] = nonce
+                signed = w3.eth.account.sign_transaction(tx_dict, acct.key)
+                tx_hash = w3.eth.send_raw_transaction(signed.rawTransaction)
+                _local_nonce = nonce + 1
+                logger.info(f"Raw tx sent: {tx_hash.hex()} (nonce={nonce}, next_nonce={_local_nonce})")
+            except Exception as e:
+                err_msg = str(e).lower()
+                if "nonce too low" in err_msg or "already known" in err_msg or "replacement transaction" in err_msg:
+                    _local_nonce = None
+                    logger.warning(f"[NonceMgr] Nonce error (attempt {attempt+1}/{max_retries+1}), reset local nonce: {e}")
+                    if attempt < max_retries:
+                        import time
+                        time.sleep(1)
+                        continue
+                logger.error(f"_send_bot_raw_tx failed: {e}", exc_info=True)
+                return None
+
+        try:
+            receipt = w3.eth.wait_for_transaction_receipt(tx_hash, timeout=120)
+            if receipt.status == 1:
+                final_hash = receipt.transactionHash.hex()
+                logger.info(f"Raw tx confirmed: {final_hash} (gas={receipt.gasUsed})")
+                return final_hash
+            else:
+                logger.error(f"Raw tx reverted: {tx_hash.hex()}")
+                return None
+        except Exception as e:
+            logger.error(f"_send_bot_raw_tx receipt wait failed: {e}", exc_info=True)
+            return None
+    return None
+
+
+def get_tx_broadcast_lock():
+    """Return the global transaction broadcast lock for use by other modules
+    (aave_integration, uniswap_integration) that also sign from the bot operator wallet."""
+    return _tx_broadcast_lock
+
+
+def acquire_nonce(w3, address):
+    """Acquire the next nonce inside an already-held _tx_broadcast_lock.
+    Returns the nonce to use. Caller MUST hold _tx_broadcast_lock before calling.
+    After successful send_raw_transaction, caller MUST call confirm_nonce().
+    On nonce-related errors, caller MUST call reset_nonce()."""
+    global _local_nonce
+    if _local_nonce is None:
+        _local_nonce = w3.eth.get_transaction_count(address, "pending")
+        logger.info(f"[NonceMgr] Fetched fresh nonce from RPC: {_local_nonce}")
+    else:
+        logger.info(f"[NonceMgr] Using local nonce: {_local_nonce}")
+    return _local_nonce
+
+
+def confirm_nonce():
+    """Increment local nonce after successful send_raw_transaction.
+    Caller MUST hold _tx_broadcast_lock."""
+    global _local_nonce
+    if _local_nonce is not None:
+        _local_nonce += 1
+        logger.info(f"[NonceMgr] Nonce incremented to {_local_nonce}")
+
+
+def reset_nonce():
+    """Reset local nonce on nonce-related errors, forcing a fresh RPC fetch next time.
+    Caller MUST hold _tx_broadcast_lock."""
+    global _local_nonce
+    _local_nonce = None
+    logger.info(f"[NonceMgr] Nonce reset — next tx will fetch from RPC")
 
 
 def _rescue_tokens_from_dm(asset_address: str, amount_wei: int) -> bool:
@@ -924,7 +1002,8 @@ def unwrap_weth_to_eth(amount_weth: float) -> str:
 
 
 def send_eth_to_address(to_address: str, amount_eth: float) -> str:
-    """Send native ETH from bot operator wallet to any address."""
+    """Send native ETH from bot operator wallet to any address.
+    Routes through _send_bot_raw_tx for nonce-safe broadcasting."""
     w3 = _get_web3()
     acct = _get_bot_account()
     if not w3 or not acct:
@@ -935,27 +1014,16 @@ def send_eth_to_address(to_address: str, amount_eth: float) -> str:
         amount_wei = int(amount_eth * 1e18)
         base_gas = w3.eth.gas_price
         gas_price = int(base_gas * 2.5)
-        nonce = w3.eth.get_transaction_count(acct.address, "pending")
         tx = {
             "from": acct.address,
             "to": to_cs,
             "value": amount_wei,
             "gas": 21000,
             "gasPrice": gas_price,
-            "nonce": nonce,
             "chainId": 42161,
         }
-        signed = w3.eth.account.sign_transaction(tx, acct.key)
-        tx_hash = w3.eth.send_raw_transaction(signed.rawTransaction)
-        logger.info(f"send_eth_to_address: {amount_eth:.8f} ETH -> {to_address[:10]}... | tx={tx_hash.hex()}")
-        receipt = w3.eth.wait_for_transaction_receipt(tx_hash, timeout=120)
-        if receipt.status == 1:
-            final_hash = receipt.transactionHash.hex()
-            logger.info(f"ETH transfer confirmed: {final_hash}")
-            return final_hash
-        else:
-            logger.error(f"ETH transfer reverted: {tx_hash.hex()}")
-            return None
+        logger.info(f"send_eth_to_address: {amount_eth:.8f} ETH -> {to_address[:10]}...")
+        return _send_bot_raw_tx(tx)
     except Exception as e:
         logger.error(f"send_eth_to_address failed: {e}", exc_info=True)
         return None
