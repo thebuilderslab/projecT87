@@ -1,0 +1,78 @@
+viable pivot. OpenClaw is currently exploding as an open-source, self-hosted AI agent that users connect to their WhatsApp, Telegram, or local machines. However, out of the box, OpenClaw has no built-in, secure DeFi credit facility.
+
+By acting as the "Bank for OpenClaw," you are providing the missing financial infrastructure for the AI agent economy.
+
+Here is an examination of your plan, followed by the technical build specs and the exact prompt to feed into Replit.
+
+1. Concept Examination & Validation
+The "Black Box" Calibration: Brilliant. By forcing users to use your hardcoded risk parameters (Growth, Capacity, Macro, Micro), you eliminate the risk of a user configuring things poorly and getting liquidated. You are selling "Managed Risk."
+
+Max 2 API Keys: Smart limitation. It allows a developer to have one key for a staging/testing agent and one for their production agent, preventing spam and database bloat on your end.
+
+System Notifications: Essential for IaaS (Infrastructure as a Service). If you change the underlying "Capacity" limits or Aave changes their interest rates, you need a way to broadcast this to the users without them having to check a Twitter feed.
+
+The "Disconnect" Switch: Critical for trust in Web3. The user must always have a "panic button" to revoke your platform's access to their WBTC and pull their funds.
+
+2. Technical Build Specs
+To make this work, your architecture needs to split into three interconnected layers:
+
+A. The Web3 Frontend (User Dashboard)
+Auth: Implement "Sign-In with Ethereum" (EIP-4361). The user connects their wallet (e.g., MetaMask) and signs a message to prove ownership. No emails, no passwords.
+
+Key Management UI: A simple panel where the user clicks "Generate API Key". The raw key is shown only once. The UI tracks how many active keys they have (enforcing the limit of 2).
+
+Notification Inbox: A simple feed in the dashboard fetching broadcast messages from your database.
+
+The "Eject" Button: A one-click function that revokes smart contract allowances and withdraws their WBTC, subsequently disabling their API keys.
+
+B. The FastAPI Backend (The Bridge)
+Database (SQLite or PostgreSQL): You need three basic tables:
+
+Users: wallet_address (Primary Key).
+
+API_Keys: key_hash (Primary Key), wallet_address (Foreign Key), status (active/revoked), created_at.
+
+Notifications: message, date_sent.
+
+Key Security: You never save the raw API key in the database. You hash it (using bcrypt or hashlib) just like a password. When the OpenClaw agent sends the key in the header, your backend hashes it and compares it to the database.
+
+Rate Limiting: Use a library like slowapi or built-in token-bucket logic to prevent an AI agent from spamming your /borrow endpoint in an infinite loop.
+
+C. The DeFi Engine (Multi-Tenant Isolation)
+Your current bot logic likely assumes one wallet (yours). To become an API, the Python bot must become Multi-Tenant.
+
+When an API key hits the /borrow endpoint, the backend must map that key to the specific user's wallet_address and execute the Capacity/Growth checks only against that specific user's isolated collateral vault, not a global pool.
+
+3. The Replit Audit Prompt
+Before you start writing new code, you must force Replit to audit your existing codebase to see what needs to be refactored to support this multi-user API model. Paste this directly into Replit:
+
+SYSTEM ARCHITECTURE AUDIT: Pivot to Multi-Tenant FastAPI
+
+OBJECTIVE
+We are pivoting the application into an Infrastructure-as-a-Service (IaaS) for AI agents (specifically OpenClaw). Users will connect a wallet (funding it with WBTC), we will manage the risk using our strictly hardcoded Macro/Micro/Capacity parameters, and the user will generate API keys to plug into their AI agent.
+
+Before we build, audit the current Replit codebase against the following requirements and provide a gap analysis.
+
+REQUIREMENT 1: Multi-Tenancy Readiness
+Our current bot logic (Growth, Capacity, Macro, Micro, Nurse) was built for a single user/wallet.
+
+Action: Audit the core execution functions (e.g., _execute_liability_short, check_capacity_opportunities).
+
+Identify: Are they currently hardcoded to a single global state/wallet address? What specific variables and function signatures need to be updated to accept a dynamic user_wallet_address passed down from an API request?
+
+REQUIREMENT 2: Database & API Key Schema
+We need a database (SQLite is fine for now) to handle API key generation (max 2 per user), Web3 wallet authentication, and system notifications.
+
+Action: Check if we currently have any ORM (like SQLAlchemy) or database setup initialized in the project.
+
+Identify: What is the optimal schema to link a wallet_address to hashed API_keys while enforcing the 2-key limit?
+
+REQUIREMENT 3: FastAPI Implementation
+We need to wrap the DeFi engine in a FastAPI application with strict security headers and rate limiting.
+
+Action: Review the current web dashboard setup (e.g., Flask or simple HTTP server).
+
+Identify: What is the best path to migrate the existing web server to FastAPI to support both the frontend dashboard (for key generation) and the RESTful endpoints (/api/v1/credit/borrow) for the OpenClaw agents?
+
+OUTPUT REQUIRED
+Do not write the final code yet. Provide a detailed "Gap Analysis" detailing exactly what files need to be modified or created to transition from a single-user autonomous loop to a multi-tenant FastAPI backend.
