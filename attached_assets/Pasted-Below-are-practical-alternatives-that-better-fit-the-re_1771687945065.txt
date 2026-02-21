@@ -1,0 +1,96 @@
+Below are practical alternatives that better fit the requirement “scrape the appropriate SearchIQS sites using filter criteria, ignoring CT courts, and acknowledging the site works manually.”
+
+1. Move off ScraperAPI for the POST-bound parts
+Use ScraperAPI only for GETs that are blocked, and perform POST requests via a different channel.
+For example:
+
+Use ScraperAPI (or another residential proxy) only to fetch key pages or discover URLs.
+
+Use a normal session with a different proxy provider (plain HTTP/SOCKS5 proxy) that just forwards requests, without rewriting or interpreting them. Many cheap proxy services will let you maintain a standard requests.Session that behaves much closer to a browser.
+​
+
+If Replit’s IP is blocked for both GET and POST:
+
+Run the core scraper on a small VPS (DigitalOcean, Hetzner, etc.) where you can control network and install full dependencies, then expose a simple API that your Replit app calls.
+​
+​
+
+This decouples your UI/automation logic (Replit) from the scraping infra (VPS).
+
+2. Use a real browser automation stack (Playwright/Selenium) in a suitable environment
+Playwright/Selenium is an appropriate tool here, because:
+
+The site already works in a normal browser.
+
+ASP.NET WebForms with hidden fields (ViewState, EventValidation, etc.) and anti‑bot logic is much easier to handle by simply simulating real clicks and form submissions.
+
+If Playwright is painful on Replit:
+
+Run Playwright in a Docker container (on a VPS or a service like Render/Fly.io) and expose a minimal HTTP API:
+
+/run_search?town=Windsor&from=2024-01-01&to=2024-01-31
+
+That API spins a browser, does the guest login + search flow, returns structured JSON.
+
+Your Replit code remains responsible for:
+
+Scheduling jobs,
+
+Storing results,
+
+Coordinating across towns/dates, etc.
+
+You can still pipe the traffic through residential proxies from Playwright, but you’re no longer limited by ScraperAPI’s POST behavior.
+
+3. Explore direct URL patterns / “backdoor” endpoints
+The agent briefly mentioned this at the end—this is actually worth a serious, manual recon pass.
+On many legacy government/ASP.NET sites:
+
+Search results or detail pages are reachable via GET URLs that embed the query or a record identifier, even when the UI uses POST.
+
+Example patterns (just illustrative):
+
+.../Results.aspx?TownCode=WINDSOR&StartDate=...&EndDate=...
+
+.../Datalets/Datalet.aspx?sIndex=3&...
+​
+
+A focused manual inspection:
+
+Perform a search in DevTools Network tab.
+
+Look at:
+
+The action attribute of the main <form>
+
+Any subsequent GETs triggered by javascript:selectSearchRow(...) or similar.
+
+If you discover a pure-GET “datalet” or “results” endpoint, you can:
+
+Use ScraperAPI or a standard proxy only for GETs to those final endpoints,
+
+Completely skip trying to emulate the login/search POST on the backend.
+​
+
+This could give you a “direct to results” URL pattern that is far simpler and avoids POST constraints entirely.
+
+4. Consider a small dedicated scraper microservice
+Given your broader business and how central these scrapes are, a microservice architecture is likely the cleanest long‑term move:
+
+Build a small Python/Node service whose sole job is:
+
+Navigate SearchIQS via Playwright or Selenium.
+
+Expose an authenticated API to request:
+
+“Run Windsor LP search for [date range], return JSON.”
+
+Host that service on infrastructure that:
+
+Allows headless Chrome/Playwright,
+
+Lets you plug in residential/rotating proxies as needed,
+
+Is not restricted by Replit’s network quirks.
+​
+​

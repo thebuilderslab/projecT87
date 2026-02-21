@@ -4,12 +4,16 @@ import json
 import logging
 import requests
 import time
+import random
 from datetime import datetime, timedelta
 from typing import List, Dict, Optional
+from urllib.parse import urlencode, quote
 
 logger = logging.getLogger(__name__)
 
 CT_COURT_URL = "https://civilinquiry.jud.ct.gov"
+
+SCRAPERAPI_BASE = "http://api.scraperapi.com"
 
 
 class SearchIQSScraper:
@@ -23,7 +27,7 @@ class SearchIQSScraper:
         self.results_url = f"{self.base_url}/SearchResultsMP.aspx"
         self.login_url = f"{self.base_url}/"
         self.session = requests.Session()
-        self.session.headers.update({
+        self._browser_headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
             "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
             "Accept-Language": "en-US,en;q=0.9",
@@ -35,15 +39,62 @@ class SearchIQSScraper:
             "Sec-Fetch-Site": "none",
             "Sec-Fetch-User": "?1",
             "Cache-Control": "max-age=0",
-        })
+        }
+        self.session.headers.update(self._browser_headers)
         self.logged_in = False
         self.login_page_html = None
+
+        self.scraper_api_key = os.environ.get("SCRAPER_API_KEY", "").strip()
+        self.use_proxy = bool(self.scraper_api_key)
+        self._session_number = str(random.randint(100000, 999999))
+        if self.use_proxy:
+            logger.info(f"[{self.town_name}] ScraperAPI proxy ENABLED (session={self._session_number})")
+        else:
+            logger.info(f"[{self.town_name}] ScraperAPI proxy not configured, using direct requests")
+
+    def _proxy_get(self, url, timeout=60):
+        params = {
+            "api_key": self.scraper_api_key,
+            "url": url,
+            "session_number": self._session_number,
+            "country_code": "us",
+            "follow_redirect": "true",
+            "keep_headers": "true",
+        }
+        logger.debug(f"[{self.town_name}] ScraperAPI GET: {url}")
+        resp = requests.get(SCRAPERAPI_BASE, params=params, timeout=timeout, headers=self._browser_headers)
+        return resp
+
+    def _proxy_post(self, url, data, timeout=60):
+        params = {
+            "api_key": self.scraper_api_key,
+            "url": url,
+            "session_number": self._session_number,
+            "country_code": "us",
+            "follow_redirect": "true",
+            "keep_headers": "true",
+        }
+        headers = dict(self._browser_headers)
+        headers["Content-Type"] = "application/x-www-form-urlencoded"
+        logger.debug(f"[{self.town_name}] ScraperAPI POST: {url}")
+        resp = requests.post(SCRAPERAPI_BASE, params=params, data=data, timeout=timeout, headers=headers)
+        return resp
+
+    def _do_get(self, url, timeout=30):
+        if self.use_proxy:
+            return self._proxy_get(url, timeout=max(timeout, 60))
+        return self.session.get(url, timeout=timeout)
+
+    def _do_post(self, url, data, timeout=30):
+        if self.use_proxy:
+            return self._proxy_post(url, data, timeout=max(timeout, 60))
+        return self.session.post(url, data=data, timeout=timeout, allow_redirects=True)
 
     def _get_with_retry(self, url, max_retries=None, timeout=30):
         retries = max_retries or self.MAX_LOGIN_RETRIES
         for attempt in range(retries):
             try:
-                resp = self.session.get(url, timeout=timeout)
+                resp = self._do_get(url, timeout=timeout)
                 if resp.status_code == 403:
                     wait = self.RETRY_BACKOFF[min(attempt, len(self.RETRY_BACKOFF) - 1)]
                     logger.warning(f"[{self.town_name}] 403 on GET {url} (attempt {attempt+1}/{retries}), retrying in {wait}s...")
@@ -74,7 +125,7 @@ class SearchIQSScraper:
 
     def login_as_guest(self) -> bool:
         try:
-            logger.info(f"Logging into SearchIQS as guest ({self.town_name})...")
+            logger.info(f"Logging into SearchIQS as guest ({self.town_name})... [proxy={'ON' if self.use_proxy else 'OFF'}]")
             resp = self._get_with_retry(self.login_url)
 
             if len(resp.text) < 100:
@@ -83,7 +134,7 @@ class SearchIQSScraper:
                 resp = self._get_with_retry(self.login_url)
 
             if "btnGuestLogin" not in resp.text and "Search Records as Guest" not in resp.text:
-                logger.warning(f"[{self.town_name}] Guest login button not found — site may be in maintenance mode")
+                logger.warning(f"[{self.town_name}] Guest login button not found — site may be in maintenance mode (page length: {len(resp.text)})")
                 return False
 
             viewstate = self._extract_field(resp.text, "__VIEWSTATE")
@@ -103,17 +154,23 @@ class SearchIQSScraper:
                 "password": "",
             }
 
-            self.session.headers["Sec-Fetch-Site"] = "same-origin"
-            self.session.headers["Referer"] = self.login_url
-            resp2 = self.session.post(self.login_url, data=login_data, timeout=30, allow_redirects=True)
+            if not self.use_proxy:
+                self.session.headers["Sec-Fetch-Site"] = "same-origin"
+                self.session.headers["Referer"] = self.login_url
+            resp2 = self._do_post(self.login_url, data=login_data, timeout=30)
 
             if resp2.status_code == 200 and ("SearchAdvanced" in resp2.url or "Search" in resp2.text):
                 self.logged_in = True
                 self.login_page_html = resp2.text
                 logger.info(f"SearchIQS guest login successful ({self.town_name}) -> {resp2.url}")
                 return True
+            elif resp2.status_code == 200 and ("Search" in resp2.text or "cboDocType" in resp2.text or "ContentPlaceHolder1" in resp2.text):
+                self.logged_in = True
+                self.login_page_html = resp2.text
+                logger.info(f"SearchIQS guest login successful ({self.town_name}) [proxy mode, detected search form in response]")
+                return True
             else:
-                logger.warning(f"SearchIQS login may have failed for {self.town_name} (status: {resp2.status_code}, url: {resp2.url})")
+                logger.warning(f"SearchIQS login may have failed for {self.town_name} (status: {resp2.status_code}, url: {resp2.url}, body_len: {len(resp2.text)})")
                 return False
         except Exception as e:
             logger.error(f"SearchIQS login failed for {self.town_name}: {e}")
@@ -162,11 +219,12 @@ class SearchIQSScraper:
             if name not in postback_data and not name.startswith("__"):
                 postback_data[name] = val
 
-        self.session.headers["Referer"] = self.search_url
-        self.session.headers["Content-Type"] = "application/x-www-form-urlencoded"
+        if not self.use_proxy:
+            self.session.headers["Referer"] = self.search_url
+            self.session.headers["Content-Type"] = "application/x-www-form-urlencoded"
 
         time.sleep(2)
-        resp = self.session.post(self.search_url, data=postback_data, timeout=30, allow_redirects=True)
+        resp = self._do_post(self.search_url, data=postback_data, timeout=30)
         resp.raise_for_status()
         logger.info(f"[{self.town_name}] DocGroup postback complete, page length: {len(resp.text)}")
         return resp.text
@@ -186,7 +244,7 @@ class SearchIQSScraper:
         try:
             form_html = self.login_page_html
             if not form_html:
-                resp = self.session.get(self.search_url, timeout=30)
+                resp = self._do_get(self.search_url, timeout=30)
                 resp.raise_for_status()
                 form_html = resp.text
 
@@ -240,12 +298,13 @@ class SearchIQSScraper:
                 if name not in search_data and not name.startswith("__"):
                     search_data[name] = val
 
-            self.session.headers["Referer"] = self.search_url
-            self.session.headers["Content-Type"] = "application/x-www-form-urlencoded"
+            if not self.use_proxy:
+                self.session.headers["Referer"] = self.search_url
+                self.session.headers["Content-Type"] = "application/x-www-form-urlencoded"
 
             time.sleep(3)
 
-            resp2 = self.session.post(self.search_url, data=search_data, timeout=60, allow_redirects=True)
+            resp2 = self._do_post(self.search_url, data=search_data, timeout=60)
             self.login_page_html = None
             resp2.raise_for_status()
 
@@ -473,7 +532,7 @@ class SearchIQSScraper:
                 "BrowserHeight": "1080",
             }
 
-            resp = self.session.post(self.results_url, data=post_data, timeout=30, allow_redirects=True)
+            resp = self._do_post(self.results_url, data=post_data, timeout=30)
             if resp.status_code != 200:
                 return None
 
@@ -485,7 +544,7 @@ class SearchIQSScraper:
 
     def _fetch_document_details(self, view_url: str) -> Optional[Dict]:
         try:
-            resp = self.session.get(view_url, timeout=30)
+            resp = self._do_get(view_url, timeout=30)
             if resp.status_code != 200:
                 return None
             return self._parse_document_page(resp.text)
