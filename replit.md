@@ -74,6 +74,22 @@ The REAA platform operates on the Arbitrum Mainnet, comprising distinct modules 
 **WBTC delegation UI location:**
 - The WBTC Auto-Supply Delegation panel lives in the DeFi tab (`#tab-defi`), inside `#defiConnectedContent`, below the HF Thresholds section.
 
+## Data Safety Guarantees
+
+**Filings (Lis Pendens) Scraper Safety:**
+- `replace_filings_for_town(town_id, filings_list)` is the primary ingest function. It wraps DELETE+INSERT in a single Postgres transaction (atomic).
+- If `filings_list` is empty (scraper returns 0 results due to network error, etc.), the function **preserves existing rows** — no delete occurs.
+- This prevents historical data loss from transient scraper failures.
+
+**DeFi Position Integrity:**
+- `upsert_defi_position()` requires a non-empty `wallet_address` parameter — calls without it are rejected with a logged error.
+- All call sites (`_refresh_defi`, `get_defi_state`, `refresh_defi_for_user`) pass the wallet address explicitly.
+- NULL wallet_address rows were cleaned up (Feb 2026); the guard prevents recurrence.
+
+**Staleness Visibility:**
+- Active Wealth panel shows "Last Updated: Xm ago" with color coding (grey = fresh, orange = >30 min stale).
+- `defi_positions.updated_at` is returned in `/api/defi/state` response and rendered client-side.
+
 ## External Dependencies
 
 - **Aave V3 Protocol**: Core DeFi lending protocol.

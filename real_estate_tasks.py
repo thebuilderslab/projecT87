@@ -226,12 +226,11 @@ def run_0700_searchiqs_ingest() -> Dict:
                     tid = town_id_map.get(town_name)
                     if not tid:
                         continue
-                    database.clear_filings_for_town(tid)
                     town_filings_list = town_results.get(town_name, [])
                     for f in town_filings_list:
                         f["town"] = town_name
-                        database.insert_filing(tid, f)
-                        db_filings_inserted += 1
+                    count = database.replace_filings_for_town(tid, town_filings_list)
+                    db_filings_inserted += count
                 database.complete_pipeline_run(
                     run_id, towns_scraped=len(towns),
                     filings_found=db_filings_inserted,

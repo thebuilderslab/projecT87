@@ -638,6 +638,10 @@ tr:hover { background:rgba(0,230,180,0.03); }
             <span class="label">USDC Wallet</span>
             <span class="val green" id="defiUsdcBalance">--</span>
           </div>
+          <div class="defi-metric" id="defiUpdatedRow" style="display:none;">
+            <span class="label">Last Updated</span>
+            <span class="val" id="defiUpdatedAt" style="font-size:12px;color:var(--muted);">--</span>
+          </div>
           <div class="defi-actions-title">Recent Actions</div>
           <div id="defiActions">
             <div class="defi-action-item"><div class="dot" style="background:var(--muted)"></div> No recent actions</div>
@@ -1101,6 +1105,8 @@ async function loadDefiPanel() {
     document.getElementById('defiDebt').textContent = '--';
     document.getElementById('defiHF').textContent = '--';
     document.getElementById('defiNetWorth').textContent = '--';
+    document.getElementById('defiUpdatedRow').style.display = 'none';
+    document.getElementById('defiUpdatedAt').textContent = '--';
     document.getElementById('defiActions').innerHTML = '<div class="defi-action-item"><div class="dot" style="background:var(--muted)"></div> ' + (data.message || 'No Aave position detected for this wallet yet.') + '</div>';
     updateHealthRing(0);
     return;
@@ -1119,6 +1125,23 @@ async function loadDefiPanel() {
   const hfEl = document.getElementById('defiHF');
   hfEl.className = 'val ' + (hf >= 2 ? 'green' : hf >= 1.5 ? '' : 'red');
   hfEl.style.color = hf >= 2 ? 'var(--green)' : hf >= 1.5 ? 'var(--orange)' : 'var(--red)';
+
+  if (pos.updated_at) {
+    const updatedRow = document.getElementById('defiUpdatedRow');
+    const updatedEl = document.getElementById('defiUpdatedAt');
+    const dt = new Date(pos.updated_at);
+    const now = new Date();
+    const diffMs = now - dt;
+    const diffMin = Math.floor(diffMs / 60000);
+    let ago;
+    if (diffMin < 1) ago = 'just now';
+    else if (diffMin < 60) ago = diffMin + 'm ago';
+    else if (diffMin < 1440) ago = Math.floor(diffMin / 60) + 'h ago';
+    else ago = Math.floor(diffMin / 1440) + 'd ago';
+    updatedEl.textContent = ago;
+    updatedEl.style.color = diffMin > 30 ? 'var(--orange)' : 'var(--muted)';
+    updatedRow.style.display = '';
+  }
 
   const score = computeSafetyScore(hf, collateral, debt);
   updateHealthRing(score);

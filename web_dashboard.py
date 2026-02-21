@@ -3312,6 +3312,7 @@ def auth_wallet():
                     collateral=pos['total_collateral_usd'],
                     debt=pos['total_debt_usd'],
                     net_worth=pos['net_worth_usd'],
+                    wallet_address=addr,
                 )
                 if ok:
                     logger.info(f"[Auth] Refreshed Aave data for user {uid}: HF={pos['health_factor']}, collateral=${pos['total_collateral_usd']}")

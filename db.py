@@ -404,6 +404,9 @@ def get_filing_stats():
 def upsert_defi_position(user_id, health_factor, collateral, debt, net_worth, positions=None, wallet_address=None):
     import logging
     logger = logging.getLogger(__name__)
+    if not wallet_address:
+        logger.error(f"[DB] upsert_defi_position REJECTED: wallet_address is required (user_id={user_id})")
+        return False
     try:
         if health_factor is not None and health_factor > 999.99:
             health_factor = 999.99
@@ -710,6 +713,51 @@ def clear_filings_for_town(town_id):
         cur = conn.cursor()
         cur.execute("DELETE FROM filings WHERE town_id = %s", (town_id,))
         cur.close()
+
+
+def replace_filings_for_town(town_id, filings_list):
+    import logging
+    logger = logging.getLogger(__name__)
+    if not filings_list:
+        logger.warning(f"[DB] replace_filings_for_town: 0 filings for town_id={town_id}, preserving existing rows")
+        return 0
+    with get_conn() as conn:
+        cur = conn.cursor()
+        cur.execute("DELETE FROM filings WHERE town_id = %s", (town_id,))
+        deleted = cur.rowcount
+        inserted = 0
+        for data in filings_list:
+            rec_date = data.get("recording_date") or data.get("recording_date_detail")
+            parsed_date = None
+            if rec_date:
+                for fmt in ("%m/%d/%Y", "%Y-%m-%d", "%m-%d-%Y"):
+                    try:
+                        parsed_date = datetime.strptime(rec_date.strip(), fmt).date()
+                        break
+                    except (ValueError, AttributeError):
+                        continue
+            cur.execute("""
+                INSERT INTO filings (town_id, property_address, seller, lender, recording_date,
+                    book_page, original_mortgage, court_case_number, debt_amount, return_date, status, raw_data)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            """, (
+                town_id,
+                data.get("property_address") or data.get("property_description", "SEE DEED"),
+                data.get("seller") or data.get("party1_seller", ""),
+                data.get("lender") or data.get("party2_lender", ""),
+                parsed_date,
+                data.get("book_page", ""),
+                data.get("original_mortgage") or data.get("additional_description", ""),
+                data.get("court_case_number", ""),
+                data.get("debt_amount", ""),
+                data.get("return_date", ""),
+                data.get("status", "PENDING"),
+                psycopg2.extras.Json(data),
+            ))
+            inserted += 1
+        cur.close()
+        logger.info(f"[DB] replace_filings_for_town: town_id={town_id}, deleted={deleted}, inserted={inserted} (atomic transaction)")
+        return inserted
 
 
 def get_leads_summary():
