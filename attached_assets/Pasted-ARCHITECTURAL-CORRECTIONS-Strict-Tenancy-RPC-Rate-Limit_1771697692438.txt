@@ -1,0 +1,24 @@
+ARCHITECTURAL CORRECTIONS: Strict Tenancy, RPC Rate Limiting, and Revenue Routing
+
+ASSESSMENT
+Excellent work identifying that strategy_engine.py already handles multi-tenant logic. Building a wrapper was the safest and smartest path.
+
+ANSWER TO YOUR QUESTION
+Implement BOTH revenue streams. We need the 1% ETH skim from the Growth/Capacity distributions in addition to the 2% nurse sweep. In this IaaS model, the bot operator pays all gas fees, so capturing revenue on both entry (skim) and maintenance (sweep) is strictly required.
+
+CORRECTION 1: Strict Tenancy (Remove Silent Fallbacks)
+In Task 2, you made user_wallet_address an optional parameter that defaults to self.address. In a multi-tenant financial system, this is a severe security risk. If a function call drops the user argument, the system will silently execute against the platform treasury.
+
+Action: Remove the self.address fallback for ALL multi-tenant execution and position-reading functions.
+
+Enforcement: user_wallet_address must be a REQUIRED argument. If a user_wallet_address is None or missing, the code must immediately crash and raise a ValueError("user_wallet_address explicitly required for multi-tenant execution"). Do not silently fall back to the admin wallet.
+
+CORRECTION 2: Web3 RPC Rate Limiting (Prevent HTTP 429)
+In Task 3, you implemented concurrent execution using ThreadPoolExecutor. If this scales to 50 users, it will fire 50 concurrent requests and instantly trigger an HTTP 429 (Too Many Requests) IP ban from our Web3 RPC node.
+
+Action: We must configure the ThreadPoolExecutor to respect Web3 RPC limits.
+
+Implementation: 1. Cap the max_workers in the ThreadPoolExecutor to 5.
+2. Introduce a small deterministic sleep/delay (e.g., time.sleep(0.5)) inside the worker function or use a semaphore/token-bucket logic to ensure we do not exceed roughly 10 requests per second across the entire thread pool.
+
+Execute these corrections immediately and confirm when the 429 rate-limiting safeguards are in place.
