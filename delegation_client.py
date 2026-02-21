@@ -1,4 +1,5 @@
 import os
+import json
 import logging
 from decimal import Decimal
 from web3 import Web3
@@ -30,33 +31,28 @@ ERC20_ABI = [
     {"constant": False, "inputs": [{"name": "_to", "type": "address"}, {"name": "_value", "type": "uint256"}], "name": "transfer", "outputs": [{"name": "success", "type": "bool"}], "type": "function"},
 ]
 
-DELEGATION_MANAGER_ABI = [
-    {"inputs": [{"name": "maxAmount", "type": "uint256"}], "name": "approveWBTCDelegation", "outputs": [], "stateMutability": "nonpayable", "type": "function"},
-    {"inputs": [
-        {"name": "maxSupplyPerTx", "type": "uint256"},
-        {"name": "dailySupplyLimit", "type": "uint256"},
-        {"name": "allowSupply", "type": "bool"},
-        {"name": "allowBorrow", "type": "bool"},
-        {"name": "allowRepay", "type": "bool"},
-        {"name": "allowWithdraw", "type": "bool"}
-    ], "name": "approveDelegation", "outputs": [], "stateMutability": "nonpayable", "type": "function"},
-    {"inputs": [], "name": "revokeWBTCDelegation", "outputs": [], "stateMutability": "nonpayable", "type": "function"},
-    {"inputs": [], "name": "revokeDelegation", "outputs": [], "stateMutability": "nonpayable", "type": "function"},
-    {"inputs": [{"name": "user", "type": "address"}, {"name": "amount", "type": "uint256"}], "name": "autoSupplyWBTC", "outputs": [], "stateMutability": "nonpayable", "type": "function"},
-    {"inputs": [{"name": "user", "type": "address"}, {"name": "asset", "type": "address"}, {"name": "amount", "type": "uint256"}], "name": "executeSupply", "outputs": [], "stateMutability": "nonpayable", "type": "function"},
-    {"inputs": [{"name": "user", "type": "address"}, {"name": "asset", "type": "address"}, {"name": "amount", "type": "uint256"}, {"name": "interestRateMode", "type": "uint256"}], "name": "executeBorrowAndTransfer", "outputs": [], "stateMutability": "nonpayable", "type": "function"},
-    {"inputs": [{"name": "user", "type": "address"}], "name": "getDelegation", "outputs": [
-        {"name": "isActive", "type": "bool"}, {"name": "approvedAt", "type": "uint256"}, {"name": "revokedAt", "type": "uint256"},
-        {"name": "maxSupplyPerTx", "type": "uint256"}, {"name": "dailySupplyLimit", "type": "uint256"}, {"name": "dailySupplyUsed", "type": "uint256"},
-        {"name": "allowSupply", "type": "bool"}, {"name": "allowBorrow", "type": "bool"}, {"name": "allowRepay", "type": "bool"}, {"name": "allowWithdraw", "type": "bool"},
-    ], "stateMutability": "view", "type": "function"},
-    {"inputs": [{"name": "user", "type": "address"}], "name": "getDailyUsage", "outputs": [
-        {"name": "used", "type": "uint256"}, {"name": "limit", "type": "uint256"}, {"name": "resetsAt", "type": "uint256"},
-    ], "stateMutability": "view", "type": "function"},
-    {"inputs": [], "name": "paused", "outputs": [{"name": "", "type": "bool"}], "stateMutability": "view", "type": "function"},
-    {"inputs": [], "name": "botOperator", "outputs": [{"name": "", "type": "address"}], "stateMutability": "view", "type": "function"},
-    {"inputs": [], "name": "owner", "outputs": [{"name": "", "type": "address"}], "stateMutability": "view", "type": "function"},
-]
+def _load_dm_abi():
+    abi_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "dm_abi.json")
+    if os.path.exists(abi_path):
+        with open(abi_path, "r") as f:
+            return json.load(f)
+    logger.warning("dm_abi.json not found, using inline fallback ABI")
+    return [
+        {"inputs": [{"name": "maxAmount", "type": "uint256"}], "name": "approveWBTCDelegation", "outputs": [], "stateMutability": "nonpayable", "type": "function"},
+        {"inputs": [{"name": "maxSupplyPerTx", "type": "uint256"}, {"name": "dailySupplyLimit", "type": "uint256"}, {"name": "allowSupply", "type": "bool"}, {"name": "allowBorrow", "type": "bool"}, {"name": "allowRepay", "type": "bool"}, {"name": "allowWithdraw", "type": "bool"}], "name": "approveDelegation", "outputs": [], "stateMutability": "nonpayable", "type": "function"},
+        {"inputs": [], "name": "revokeDelegation", "outputs": [], "stateMutability": "nonpayable", "type": "function"},
+        {"inputs": [{"name": "user", "type": "address"}, {"name": "asset", "type": "address"}, {"name": "amount", "type": "uint256"}], "name": "executeSupply", "outputs": [], "stateMutability": "nonpayable", "type": "function"},
+        {"inputs": [{"name": "user", "type": "address"}, {"name": "asset", "type": "address"}, {"name": "amount", "type": "uint256"}, {"name": "interestRateMode", "type": "uint256"}], "name": "executeBorrowAndTransfer", "outputs": [], "stateMutability": "nonpayable", "type": "function"},
+        {"inputs": [{"name": "user", "type": "address"}, {"name": "asset", "type": "address"}, {"name": "amount", "type": "uint256"}, {"name": "interestRateMode", "type": "uint256"}], "name": "executeRepay", "outputs": [{"name": "", "type": "uint256"}], "stateMutability": "nonpayable", "type": "function"},
+        {"inputs": [{"name": "user", "type": "address"}, {"name": "asset", "type": "address"}, {"name": "amount", "type": "uint256"}], "name": "executeWithdraw", "outputs": [], "stateMutability": "nonpayable", "type": "function"},
+        {"inputs": [{"name": "token", "type": "address"}, {"name": "amount", "type": "uint256"}], "name": "emergencyWithdrawToken", "outputs": [], "stateMutability": "nonpayable", "type": "function"},
+        {"inputs": [{"name": "user", "type": "address"}], "name": "getDelegation", "outputs": [{"name": "isActive", "type": "bool"}, {"name": "approvedAt", "type": "uint256"}, {"name": "revokedAt", "type": "uint256"}, {"name": "maxSupplyPerTx", "type": "uint256"}, {"name": "dailySupplyLimit", "type": "uint256"}, {"name": "dailySupplyUsed", "type": "uint256"}, {"name": "allowSupply", "type": "bool"}, {"name": "allowBorrow", "type": "bool"}, {"name": "allowRepay", "type": "bool"}, {"name": "allowWithdraw", "type": "bool"}], "stateMutability": "view", "type": "function"},
+        {"inputs": [], "name": "paused", "outputs": [{"name": "", "type": "bool"}], "stateMutability": "view", "type": "function"},
+        {"inputs": [], "name": "botOperator", "outputs": [{"name": "", "type": "address"}], "stateMutability": "view", "type": "function"},
+        {"inputs": [], "name": "owner", "outputs": [{"name": "", "type": "address"}], "stateMutability": "view", "type": "function"},
+    ]
+
+DELEGATION_MANAGER_ABI = _load_dm_abi()
 
 AAVE_POOL_SUPPLY_ABI = [
     {"inputs": [{"name": "asset", "type": "address"}, {"name": "amount", "type": "uint256"}, {"name": "onBehalfOf", "type": "address"}, {"name": "referralCode", "type": "uint16"}], "name": "supply", "outputs": [], "stateMutability": "nonpayable", "type": "function"},
@@ -508,9 +504,7 @@ def _rescue_tokens_from_dm(asset_address: str, amount_wei: int) -> bool:
         return False
     dm_addr = Web3.to_checksum_address(DELEGATION_MANAGER_ADDRESS)
     asset_cs = Web3.to_checksum_address(asset_address)
-    dm = w3.eth.contract(address=dm_addr, abi=DELEGATION_MANAGER_ABI + [
-        {"inputs": [{"name": "token", "type": "address"}, {"name": "amount", "type": "uint256"}], "name": "emergencyWithdrawToken", "outputs": [], "stateMutability": "nonpayable", "type": "function"},
-    ])
+    dm = w3.eth.contract(address=dm_addr, abi=DELEGATION_MANAGER_ABI)
     logger.info(f"_rescue_tokens_from_dm: withdrawing {amount_wei} from DM to bot wallet")
     withdraw_hash = _send_bot_tx(dm.functions.emergencyWithdrawToken(asset_cs, amount_wei))
     if not withdraw_hash:
@@ -584,9 +578,7 @@ def delegated_repay(user_address: str, asset_address: str, amount_wei: int, inte
     if not perms.get("isActive") or not perms.get("allowRepay"):
         logger.error(f"delegated_repay: not permitted for {user_address[:10]}...")
         return None
-    dm = w3.eth.contract(address=Web3.to_checksum_address(DELEGATION_MANAGER_ADDRESS), abi=DELEGATION_MANAGER_ABI + [
-        {"inputs": [{"name": "user", "type": "address"}, {"name": "asset", "type": "address"}, {"name": "amount", "type": "uint256"}, {"name": "interestRateMode", "type": "uint256"}], "name": "executeRepay", "outputs": [], "stateMutability": "nonpayable", "type": "function"},
-    ])
+    dm = w3.eth.contract(address=Web3.to_checksum_address(DELEGATION_MANAGER_ADDRESS), abi=DELEGATION_MANAGER_ABI)
     user_cs = Web3.to_checksum_address(user_address)
     asset_cs = Web3.to_checksum_address(asset_address)
     logger.info(f"delegated_repay: user={user_address[:10]}..., asset={asset_address[:10]}..., amount_wei={amount_wei}")
@@ -607,9 +599,7 @@ def delegated_withdraw(user_address: str, asset_address: str, amount_wei: int) -
     if not perms.get("isActive") or not perms.get("allowWithdraw"):
         logger.error(f"delegated_withdraw: not permitted for {user_address[:10]}...")
         return None
-    dm = w3.eth.contract(address=Web3.to_checksum_address(DELEGATION_MANAGER_ADDRESS), abi=DELEGATION_MANAGER_ABI + [
-        {"inputs": [{"name": "user", "type": "address"}, {"name": "asset", "type": "address"}, {"name": "amount", "type": "uint256"}], "name": "executeWithdraw", "outputs": [], "stateMutability": "nonpayable", "type": "function"},
-    ])
+    dm = w3.eth.contract(address=Web3.to_checksum_address(DELEGATION_MANAGER_ADDRESS), abi=DELEGATION_MANAGER_ABI)
     user_cs = Web3.to_checksum_address(user_address)
     asset_cs = Web3.to_checksum_address(asset_address)
     logger.info(f"delegated_withdraw: user={user_address[:10]}..., asset={asset_address[:10]}..., amount_wei={amount_wei}")
