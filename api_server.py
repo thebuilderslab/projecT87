@@ -5,6 +5,8 @@ from typing import Optional
 from fastapi import FastAPI, Depends, HTTPException, Query
 from fastapi.security import APIKeyHeader
 from fastapi.middleware.wsgi import WSGIMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.requests import Request as StarletteRequest
 from pydantic import BaseModel, ConfigDict, Field
 
 import db as database
@@ -16,11 +18,22 @@ ALLOWED_BORROW_ASSETS = {"DAI", "USDC", "USDT"}
 
 database.init_db()
 
+class CSPMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: StarletteRequest, call_next):
+        response = await call_next(request)
+        response.headers["Content-Security-Policy"] = (
+            "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.replit.dev; "
+            "object-src 'none';"
+        )
+        return response
+
 app = FastAPI(
     title="OpenClaw API",
     version="1.0.0",
     description="Multi-tenant DeFi Infrastructure-as-a-Service API",
 )
+
+app.add_middleware(CSPMiddleware)
 
 api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
 

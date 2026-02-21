@@ -543,6 +543,14 @@ threading.Thread(target=monitor_console_output, daemon=True).start()
 # Add startup status
 console_buffer.append(f"[{est_now()}] 🔄 Initializing agent connections...")
 
+@app.after_request
+def add_security_headers(response):
+    response.headers['Content-Security-Policy'] = (
+        "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.replit.dev; "
+        "object-src 'none';"
+    )
+    return response
+
 @app.route('/')
 def root_redirect():
     """Redirect root to Developer Portal"""

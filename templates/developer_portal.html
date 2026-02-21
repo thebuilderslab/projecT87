@@ -625,10 +625,14 @@ async function connectWallet() {
     init();
   } catch (e) {
     console.error('Connection error:', e);
+    console.error('Error name: ' + e.name + ', code: ' + e.code + ', message: ' + e.message);
     btn.textContent = 'INITIALIZE CONNECTION';
     btn.disabled = false;
     if (e.code === 4001) {
       console.log('User rejected the connection request');
+    } else if (e.message && (e.message.includes('Content Security Policy') || e.message.includes('CSP') || e.message.includes('EvalError'))) {
+      console.error('CSP BLOCK DETECTED: Wallet extension scripts blocked by Content Security Policy. Try opening in a new tab instead of the preview iframe.');
+      alert('WALLET BLOCKED BY BROWSER SECURITY POLICY. Open this page in a new tab (click the open-in-new-tab icon) to connect.');
     } else {
       alert('CONNECTION FAILED: ' + (e.message || 'Unknown error'));
     }
