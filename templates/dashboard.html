@@ -1006,7 +1006,7 @@
         <div class="header-bar">
             <h1>REAL ESTATE LIQUIDITY HUB — COMMAND CENTER</h1>
             <div class="header-right">
-                <button class="refresh-btn" id="refreshBtn" onclick="manualRefresh()">
+                <button class="refresh-btn" id="refreshBtn">
                     <span class="refresh-icon">&#x21bb;</span> REFRESH
                 </button>
                 <div class="conn-badge">
@@ -1052,7 +1052,7 @@
                             <span class="hud-data-label" style="font-size:0.65rem;opacity:0.8">Yield (24h)</span>
                             <span class="hud-data-value" id="hudYieldStats" style="font-size:0.65rem;opacity:0.8;color:#2775ca">0 Flushes | $0.00</span>
                         </div>
-                        <button id="injectBtn" class="hud-harvest-btn" onclick="injectLiquidity()" disabled>INJECT LIQUIDITY</button>
+                        <button id="injectBtn" class="hud-harvest-btn" disabled>INJECT LIQUIDITY</button>
                     </div>
                 </div>
             </div>
@@ -1669,6 +1669,9 @@
             const now = new Date();
             document.getElementById('lastUpdated').textContent = 'Last updated: ' + now.toLocaleTimeString('en-US', {timeZone: 'America/New_York'}) + ' EST · Data age: ' + Math.round((Date.now()/1000 - data.timestamp)) + 's';
         }
+
+        document.getElementById('refreshBtn').addEventListener('click', manualRefresh);
+        document.getElementById('injectBtn').addEventListener('click', injectLiquidity);
 
         fetchCommandCenter();
         refreshInterval = setInterval(fetchCommandCenter, 5000);

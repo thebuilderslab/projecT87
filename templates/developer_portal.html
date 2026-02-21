@@ -459,10 +459,10 @@ body.ejecting {
       <img src="/static/images/ai_component.gif" alt="AI CORE">
     </div>
     <nav class="sidebar-nav">
-      <button class="nav-item active" onclick="scrollToSection('keys')">
+      <button class="nav-item active" id="navKeys" data-section="keys">
         <span class="tag">[ KEY ]</span> ACCESS KEYS
       </button>
-      <button class="nav-item" onclick="scrollToSection('terminal')">
+      <button class="nav-item" id="navTerminal" data-section="terminal">
         <span class="tag">[ LOG ]</span> ACTIVITY LOG
       </button>
       <a class="nav-item" href="/docs" target="_blank">
@@ -470,7 +470,7 @@ body.ejecting {
       </a>
     </nav>
     <div class="sidebar-footer">
-      <button class="eject-btn" onclick="ejectWallet()">[ EJECT ] DISCONNECT</button>
+      <button class="eject-btn" id="ejectBtn">[ EJECT ] DISCONNECT</button>
     </div>
   </aside>
 
@@ -478,14 +478,14 @@ body.ejecting {
     <div id="walletPrompt" class="wallet-prompt" style="display:none;">
       <h2 class="glow">AUTHENTICATION REQUIRED</h2>
       <p>CONNECT YOUR WALLET TO ACCESS THE DEVELOPER PORTAL</p>
-      <button class="connect-wallet-btn" onclick="connectWallet()">INITIALIZE CONNECTION</button>
+      <button class="connect-wallet-btn" id="connectBtn">INITIALIZE CONNECTION</button>
     </div>
 
     <div id="portalContent" style="display:none; height:100%; flex-direction:column;">
       <section class="console-section keys-section" id="keysSection">
         <div class="section-title glow">// ACCESS KEY MANAGEMENT</div>
         <div class="dbl-border">
-          <button class="gen-key-btn glow" id="genKeyBtn" onclick="generateKey()">
+          <button class="gen-key-btn glow" id="genKeyBtn">
             [ + ] GENERATE NEW ACCESS KEY
           </button>
           <div id="keyCount" style="color:var(--dim);font-size:13px;margin-bottom:10px"></div>
@@ -525,8 +525,8 @@ body.ejecting {
     <div class="modal-warning">&#9888; SYSTEM ALERT: COPY THIS KEY NOW. IT WILL NEVER BE DISPLAYED AGAIN.</div>
     <div class="key-display" id="rawKeyDisplay"></div>
     <div class="modal-actions">
-      <button class="copy-btn" onclick="copyKey()">COPY TO CLIPBOARD</button>
-      <button class="confirm-btn" onclick="confirmKeyCopied()">I HAVE COPIED THE ACCESS KEY</button>
+      <button class="copy-btn" id="copyKeyBtn">COPY TO CLIPBOARD</button>
+      <button class="confirm-btn" id="confirmKeyBtn">I HAVE COPIED THE ACCESS KEY</button>
     </div>
   </div>
 </div>
@@ -678,7 +678,7 @@ function renderKeys(keys) {
     const created = k.created_at ? new Date(k.created_at).toLocaleDateString() : '--';
     const lastUsed = k.last_used_at ? new Date(k.last_used_at).toLocaleDateString() : 'NEVER';
     const action = k.status === 'active'
-      ? '<button class="revoke-btn" onclick="revokeKey(' + k.id + ')">REVOKE</button>'
+      ? '<button class="revoke-btn" data-revoke-id="' + k.id + '">REVOKE</button>'
       : '<span style="color:var(--dim)">--</span>';
     return '<tr>'
       + '<td>' + (k.key_prefix || '--') + '****</td>'
@@ -848,6 +848,18 @@ function logout() {
   document.getElementById('walletBadge').textContent = 'NO WALLET';
   document.getElementById('walletBadge').style.color = 'var(--dim)';
 }
+
+document.getElementById('navKeys').addEventListener('click', function() { scrollToSection('keys'); });
+document.getElementById('navTerminal').addEventListener('click', function() { scrollToSection('terminal'); });
+document.getElementById('ejectBtn').addEventListener('click', ejectWallet);
+document.getElementById('connectBtn').addEventListener('click', connectWallet);
+document.getElementById('genKeyBtn').addEventListener('click', generateKey);
+document.getElementById('copyKeyBtn').addEventListener('click', copyKey);
+document.getElementById('confirmKeyBtn').addEventListener('click', confirmKeyCopied);
+document.getElementById('keyTable').addEventListener('click', function(e) {
+  var btn = e.target.closest('[data-revoke-id]');
+  if (btn) revokeKey(parseInt(btn.getAttribute('data-revoke-id')));
+});
 
 init();
 </script>
