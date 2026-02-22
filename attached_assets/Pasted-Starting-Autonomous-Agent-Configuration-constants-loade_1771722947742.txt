@@ -1,0 +1,57 @@
+Starting Autonomous Agent...
+ Configuration constants loaded successfullylask Dashboard)...
+2026-02-22 01:14:56,199 - INFO - 🔄 Dashboard: Connecting to running autonomous agent...
+2026-02-22 01:14:56,199 - INFO - 📦 Dashboard: Creating WorkingAgent instance...
+2026-02-22 01:14:56,221 - WARNING - ⚠️ Agent not yet initialized for live data fetch
+2026-02-22 01:14:56,257 - INFO - 🚀 OpenClaw API Server starting on 0.0.0.0:5000
+INFO:     Started server process [3270]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:5000 (Press CTRL+C to quit)
+⚠️ Cannot determine Web3 version
+Configuration constants loaded successfully
+⚠️ Cannot determine Web3 version
+✅ Config module loaded successfully (canonical)
+✅ Configuration constants loaded successfully
+INFO:perplexity_client:Perplexity client module loaded
+INFO:searchiqs_scraper:SearchIQS scraper module loaded (v4 - fixed login & search)
+INFO:google_client:Google client module loaded (service account auth with openssl JWT signing)
+INFO:real_estate_tasks:Real estate tasks module loaded (v3 - multi-town pipeline)
+🚀 ARBITRUM MAINNET AUTONOMOUS AGENT
+============================================================
+🌐 Network: Arbitrum Mainnet (Chain ID: 42161)
+🔑 Operation Mode: SELF-TRADE MODE (private key)
+🤖 Mode: Continuous Autonomous Operation
+🛑 Emergency Stop: Create 'EMERGENCY_STOP_ACTIVE.flag' to halt
+============================================================
+[20:14:57 EST] INFO: Initializing Arbitrum Mainnet Agent...
+🤖 Initializing Arbitrum Testnet Agent...
+DEBUG: Private key loaded from parameter/environment: [REDACTED]
+✅ All critical environment variables validated successfully
+🔍 DEBUG: Starting RPC manager initialization...
+🔍 DEBUG: Network mode: fork
+🔍 DEBUG: TENDERLY_RPC_URL status: loaded
+🔍 Testing RPC: https://virtual.arbitrum.us-east.rpc.tenderly.co/5bf04a6a-97e5-40f6-a29c-b578f776dc23
+✅ Dashboard WorkingAgent: Connected to https://arbitrum-one.public.blastapi.io
+2026-02-22 01:14:57,419 - INFO - ✅ Dashboard: WorkingAgent instance created successfully
+2026-02-22 01:14:57,427 - INFO - ✅ Dashboard: Connected to running AUTONOMOUS MAINNET agent
+2026-02-22 01:14:57,427 - INFO - ✅ Dashboard: Successfully connected to autonomous agent data
+2026-02-22 01:14:57,569 - INFO - delegation_client: connected via https://arbitrum-one.public.blastapi.io
+2026-02-22 01:14:57,573 - INFO - delegation_client: bot wallet 0xbbd55BB128645c16D6DEa9f1866bd9a7e7fC9c48
+✅ Config module loaded successfully (canonical)
+✅ Configuration constants loaded successfully
+INFO:     172.31.113.194:49146 - "GET / HTTP/1.1" 302 Found
+✅ RPC passed tests: https://virtual.arbitrum.us-east.rpc.tenderly.co/5bf04a6a-97e5-40f6-a29c-b578f776dc23 (0.39s)
+📊 RPC Test Results: 1/1 endpoints working
+🔀 Operating on Tenderly Fork (Chain ID: 7357)
+🔍 DEBUG: Final RPC selection results:
+   Primary RPC: https://virtual.arbitrum.us-east.rpc.tenderly.co/5bf04a6a-97e5-40f6-a29c-b578f776dc23
+   Fallback RPCs: 0 available
+🚨 NETWORK_MODE from environment: 'fork'
+🔗 Primary RPC: https://virtual.arbitrum.us-east.rpc.tenderly.co/5bf04a6a-97e5-40f6-a29c-b578f776dc23
+🔄 Fallback RPCs: 0 available
+🔍 DEBUG: Attempting to create Web3 connection with primary RPC: https://virtual.arbitrum.us-east.rpc.tenderly.co/5bf04a6a-97e5-40f6-a29c-b578f776dc23
+INFO:     172.31.113.194:49146 - "GET /app HTTP/1.1" 200 OK
+✅ Successfully connected to primary RPC: https://virtual.arbitrum.us-east.rpc.tenderly.co/5bf04a6a-97e5-40f6-a29c-b578f776dc23
+2026-02-22 01:14:57,785 - INFO - 📊 Using LIVE AAVE CONTRACT data: HF 2.7494
+🔍 DEBUG: Web3 connection verified - Chain ID: 7357,
