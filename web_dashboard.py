@@ -338,7 +338,9 @@ def monitor_console_output():
                                         console_buffer.append(log)
 
                         # Network status
-                        network_line = f"[{est_now()}] 🌐 Network: Arbitrum Mainnet | Chain ID: 42161 | RPC: Connected"
+                        _net_mode = os.getenv('NETWORK_MODE', 'mainnet')
+                        _net_label = "Tenderly Fork | Chain ID: 7357" if _net_mode == 'fork' else "Arbitrum Mainnet | Chain ID: 42161"
+                        network_line = f"[{est_now()}] 🌐 Network: {_net_label} | RPC: Connected"
                         if len(console_buffer) % 8 == 0:  # Every 8th cycle
                             if not console_buffer or console_buffer[-1] != network_line:
                                 console_buffer.append(network_line)
@@ -1833,13 +1835,24 @@ def get_system_parameters_api():
 def get_network_info_api():
     """Get current network information"""
     try:
-        network_info = {
-            'network_mode': 'mainnet',
-            'chain_id': 42161,
-            'network_name': 'Arbitrum Mainnet',
-            'rpc_url': 'https://arb1.arbitrum.io/rpc'
-        }
-        return jsonify(network_info)
+        mode = os.getenv('NETWORK_MODE', 'mainnet')
+        if mode == 'fork':
+            network_info_data = {
+                'network_mode': 'fork',
+                'is_fork': True,
+                'chain_id': 7357,
+                'network_name': 'Tenderly Fork',
+                'rpc_url': os.getenv('TENDERLY_RPC_URL', '')[:60] + '...'
+            }
+        else:
+            network_info_data = {
+                'network_mode': 'mainnet',
+                'is_fork': False,
+                'chain_id': 42161,
+                'network_name': 'Arbitrum Mainnet',
+                'rpc_url': 'https://arb1.arbitrum.io/rpc'
+            }
+        return jsonify(network_info_data)
     except Exception as e:
         logger.error(f"Network info API error: {e}")
         return jsonify({'error': str(e)}), 500
@@ -3386,6 +3399,117 @@ def disconnect_wallet():
     user_id = get_current_user_id()
     database.set_bot_enabled(user_id, False)
     return jsonify({"status": "ok", "botEnabled": False})
+
+@app.route('/api/fund-test-position', methods=['POST'])
+def fund_test_position():
+    """Wrap ETH→WETH and supply to Aave on Tenderly fork (fork mode only).
+    Requires authenticated admin session."""
+    from eth_account import Account as EthAccount
+    network_mode = os.getenv('NETWORK_MODE', 'mainnet')
+    if network_mode != 'fork':
+        return jsonify({"error": "Only available in fork mode"}), 403
+
+    user_id = get_current_user_id()
+    if not user_id or user_id <= 0:
+        return jsonify({"error": "Authentication required"}), 401
+
+    rpc_url = os.getenv('TENDERLY_RPC_URL')
+    pk = os.getenv('PRIVATE_KEY2') or os.getenv('PRIVATE_KEY')
+    if not rpc_url or not pk:
+        return jsonify({"error": "Missing RPC or key config"}), 500
+
+    data = request.get_json() or {}
+    eth_amount = min(float(data.get('amount', 5.0)), 50.0)
+
+    try:
+        from web3 import Web3 as W3
+        w3 = W3(W3.HTTPProvider(rpc_url, request_kwargs={'timeout': 30}))
+        account = EthAccount.from_key(pk)
+        wallet = account.address
+        chain_id = w3.eth.chain_id
+        wrap_amount = w3.to_wei(eth_amount, 'ether')
+
+        WETH = "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1"
+        POOL = "0x794a61358D6845594F94dc1DB02A252b5b4814aD"
+
+        weth_abi = json.loads('[{"constant":false,"inputs":[],"name":"deposit","outputs":[],"payable":true,"stateMutability":"payable","type":"function"},{"constant":false,"inputs":[{"name":"guy","type":"address"},{"name":"wad","type":"uint256"}],"name":"approve","outputs":[{"name":"","type":"bool"}],"type":"function"},{"constant":true,"inputs":[{"name":"","type":"address"},{"name":"","type":"address"}],"name":"allowance","outputs":[{"name":"","type":"uint256"}],"type":"function"},{"constant":true,"inputs":[{"name":"","type":"address"}],"name":"balanceOf","outputs":[{"name":"","type":"uint256"}],"type":"function"}]')
+        pool_abi = json.loads('[{"inputs":[{"internalType":"address","name":"asset","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"},{"internalType":"address","name":"onBehalfOf","type":"address"},{"internalType":"uint16","name":"referralCode","type":"uint16"}],"name":"supply","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"user","type":"address"}],"name":"getUserAccountData","outputs":[{"internalType":"uint256","name":"totalCollateralBase","type":"uint256"},{"internalType":"uint256","name":"totalDebtBase","type":"uint256"},{"internalType":"uint256","name":"availableBorrowsBase","type":"uint256"},{"internalType":"uint256","name":"currentLiquidationThreshold","type":"uint256"},{"internalType":"uint256","name":"ltv","type":"uint256"},{"internalType":"uint256","name":"healthFactor","type":"uint256"}],"stateMutability":"view","type":"function"}]')
+
+        weth_c = w3.eth.contract(address=W3.to_checksum_address(WETH), abi=weth_abi)
+        pool_c = w3.eth.contract(address=W3.to_checksum_address(POOL), abi=pool_abi)
+
+        steps = []
+
+        cur_bal = w3.eth.get_balance(wallet)
+        needed = w3.to_wei(eth_amount + 0.1, 'ether')
+        if cur_bal < needed:
+            shortfall = w3.from_wei(needed - cur_bal, 'ether')
+            return jsonify({"error": f"Agent wallet needs {shortfall:.2f} more ETH. Send ETH to {wallet} on the fork first."}), 400
+
+        def send_signed(signed_tx):
+            raw = getattr(signed_tx, 'rawTransaction', None) or getattr(signed_tx, 'raw_transaction', None)
+            return w3.eth.send_raw_transaction(raw)
+
+        nonce = w3.eth.get_transaction_count(wallet)
+        tx = weth_c.functions.deposit().build_transaction({
+            'from': wallet, 'value': wrap_amount, 'nonce': nonce,
+            'gas': 100000, 'gasPrice': w3.eth.gas_price, 'chainId': chain_id,
+        })
+        signed = account.sign_transaction(tx)
+        tx_hash = send_signed(signed)
+        r = w3.eth.wait_for_transaction_receipt(tx_hash, timeout=60)
+        if r.status != 1:
+            return jsonify({"error": "Wrap TX failed"}), 500
+        steps.append(f"Wrapped {eth_amount} ETH → WETH")
+
+        allowance = weth_c.functions.allowance(wallet, POOL).call()
+        if allowance < wrap_amount:
+            nonce = w3.eth.get_transaction_count(wallet)
+            tx2 = weth_c.functions.approve(POOL, 2**256 - 1).build_transaction({
+                'from': wallet, 'nonce': nonce,
+                'gas': 100000, 'gasPrice': w3.eth.gas_price, 'chainId': chain_id,
+            })
+            signed = account.sign_transaction(tx2)
+            tx_hash = send_signed(signed)
+            r = w3.eth.wait_for_transaction_receipt(tx_hash, timeout=60)
+            if r.status != 1:
+                return jsonify({"error": "Approve TX failed"}), 500
+            steps.append("Approved Aave Pool")
+        else:
+            steps.append("Already approved")
+
+        nonce = w3.eth.get_transaction_count(wallet)
+        tx3 = pool_c.functions.supply(W3.to_checksum_address(WETH), wrap_amount, wallet, 0).build_transaction({
+            'from': wallet, 'nonce': nonce,
+            'gas': 500000, 'gasPrice': w3.eth.gas_price, 'chainId': chain_id,
+        })
+        signed = account.sign_transaction(tx3)
+        tx_hash = send_signed(signed)
+        r = w3.eth.wait_for_transaction_receipt(tx_hash, timeout=60)
+        if r.status != 1:
+            return jsonify({"error": "Supply TX failed"}), 500
+        steps.append(f"Supplied {eth_amount} WETH to Aave")
+
+        result = pool_c.functions.getUserAccountData(wallet).call()
+        position = {
+            "collateral_usd": round(result[0] / 1e8, 2),
+            "debt_usd": round(result[1] / 1e8, 2),
+            "available_borrows_usd": round(result[2] / 1e8, 2),
+            "health_factor": round(result[5] / 1e18, 4) if result[5] / 1e18 < 1e10 else "infinity",
+        }
+        remaining_eth = w3.from_wei(w3.eth.get_balance(wallet), 'ether')
+
+        return jsonify({
+            "success": True,
+            "steps": steps,
+            "position": position,
+            "remaining_eth": float(remaining_eth),
+            "wallet": wallet,
+        })
+
+    except Exception as e:
+        logger.error(f"Fund test position error: {e}")
+        return jsonify({"error": str(e)}), 500
 
 @app.route('/developer')
 def developer_portal():

@@ -295,9 +295,14 @@ def run_autonomous_mainnet_agent():
     target_wallet = get_target_wallet()
     delegation_label = get_delegation_mode()
     
+    network_mode = os.getenv('NETWORK_MODE', 'mainnet')
+    if network_mode == 'fork':
+        network_label = "Tenderly Fork (Chain ID: 7357)"
+    else:
+        network_label = "Arbitrum Mainnet (Chain ID: 42161)"
     print("🚀 ARBITRUM MAINNET AUTONOMOUS AGENT")
     print("=" * 60)
-    print("🌐 Network: Arbitrum Mainnet (Chain ID: 42161)")
+    print(f"🌐 Network: {network_label}")
     print(f"🔑 Operation Mode: {delegation_label}")
     if target_wallet:
         print(f"👤 Target Wallet: {target_wallet}")

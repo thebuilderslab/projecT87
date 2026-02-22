@@ -507,6 +507,24 @@ body.ejecting {
         </div>
       </section>
 
+      <section class="console-section" id="fundSection" style="display:none;">
+        <div class="section-title glow">// FORK TEST MODE — FUND POSITION</div>
+        <div class="dbl-border" style="padding:20px;">
+          <div style="color:var(--green);margin-bottom:12px;font-size:13px;">
+            TENDERLY VIRTUAL TESTNET DETECTED. USE THIS PANEL TO FUND AN AAVE POSITION FOR TRIGGER TESTING.
+          </div>
+          <div style="display:flex;gap:12px;align-items:center;margin-bottom:16px;">
+            <label style="color:var(--cyan);font-size:13px;">ETH AMOUNT:</label>
+            <input type="number" id="fundAmount" value="10" min="0.1" max="50" step="0.1"
+              style="background:#0a0a0a;border:1px solid var(--cyan);color:var(--green);padding:6px 10px;width:100px;font-family:inherit;font-size:13px;">
+            <button id="fundBtn" style="background:transparent;border:1px solid var(--green);color:var(--green);padding:8px 20px;cursor:pointer;font-family:inherit;font-size:13px;text-transform:uppercase;">
+              [ WRAP &amp; SUPPLY TO AAVE ]
+            </button>
+          </div>
+          <div id="fundLog" style="color:var(--dim);font-size:12px;white-space:pre-line;max-height:200px;overflow-y:auto;"></div>
+        </div>
+      </section>
+
       <section class="console-section terminal-section" id="terminalSection">
         <div class="section-title glow">// AUTONOMOUS ACTIVITY TERMINAL</div>
         <div class="dbl-border" style="height:calc(100% - 40px);display:flex;flex-direction:column;">
@@ -808,16 +826,19 @@ function renderActivity(notifications) {
 
 async function loadStatus() {
   try {
-    const resp = await fetch('/api/command-center');
-    if (!resp.ok) return;
-    const data = await resp.json();
-    if (data.eth_price) {
-      document.getElementById('ethPrice').textContent = '$' + parseFloat(data.eth_price).toFixed(0);
+    if (window.ethereum && currentWallet) {
+      var rawBal = await window.ethereum.request({
+        method: 'eth_getBalance',
+        params: [currentWallet, 'latest']
+      });
+      var ethBal = parseInt(rawBal, 16) / 1e18;
+      document.getElementById('ethPrice').textContent = ethBal.toFixed(4) + ' ETH';
+
+      var rawGas = await window.ethereum.request({ method: 'eth_gasPrice' });
+      var gweiVal = parseInt(rawGas, 16) / 1e9;
+      document.getElementById('gasPrice').textContent = gweiVal.toFixed(2) + ' GWEI';
     }
-    if (data.gas_price_gwei != null) {
-      document.getElementById('gasPrice').textContent = parseFloat(data.gas_price_gwei).toFixed(1) + ' GWEI';
-    }
-  } catch(e) {}
+  } catch(e) { console.log('Status fetch error:', e); }
 }
 
 function scrollToSection(id) {
@@ -859,6 +880,55 @@ document.getElementById('confirmKeyBtn').addEventListener('click', confirmKeyCop
 document.getElementById('keyTable').addEventListener('click', function(e) {
   var btn = e.target.closest('[data-revoke-id]');
   if (btn) revokeKey(parseInt(btn.getAttribute('data-revoke-id')));
+});
+
+(async function checkForkMode() {
+  try {
+    var resp = await fetch('/api/network-info');
+    var info = await resp.json();
+    if (info.is_fork) {
+      document.getElementById('fundSection').style.display = 'block';
+    }
+  } catch(e) {}
+})();
+
+document.getElementById('fundBtn').addEventListener('click', async function() {
+  var btn = this;
+  var log = document.getElementById('fundLog');
+  var amount = parseFloat(document.getElementById('fundAmount').value) || 5;
+  btn.disabled = true;
+  btn.textContent = '[ PROCESSING... ]';
+  log.textContent = '> Initiating wrap ETH → WETH + Aave supply...\n';
+  try {
+    var headers = { 'Content-Type': 'application/json' };
+    if (authToken) headers['Authorization'] = 'Bearer ' + authToken;
+    var resp = await fetch('/api/fund-test-position', {
+      method: 'POST',
+      headers: headers,
+      body: JSON.stringify({ amount: amount })
+    });
+    var data = await resp.json();
+    if (data.success) {
+      data.steps.forEach(function(s) { log.textContent += '✅ ' + s + '\n'; });
+      log.textContent += '\n--- POSITION STATUS ---\n';
+      log.textContent += '💎 Collateral:  $' + data.position.collateral_usd.toLocaleString() + '\n';
+      log.textContent += '💳 Debt:        $' + data.position.debt_usd.toLocaleString() + '\n';
+      log.textContent += '🏦 Borrows:     $' + data.position.available_borrows_usd.toLocaleString() + '\n';
+      log.textContent += '❤️ Health:      ' + data.position.health_factor + '\n';
+      log.textContent += '📊 Remaining:   ' + data.remaining_eth.toFixed(4) + ' ETH\n';
+      log.textContent += '\n🎯 Position funded! Agent triggers now active.';
+      btn.textContent = '[ ✅ FUNDED ]';
+      btn.style.borderColor = 'var(--green)';
+      loadStatus();
+    } else {
+      log.textContent += '❌ Error: ' + (data.error || 'Unknown error') + '\n';
+      btn.textContent = '[ RETRY ]';
+    }
+  } catch(e) {
+    log.textContent += '❌ Request failed: ' + e.message + '\n';
+    btn.textContent = '[ RETRY ]';
+  }
+  btn.disabled = false;
 });
 
 init();
