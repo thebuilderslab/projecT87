@@ -137,6 +137,7 @@ try:
         get_token_balance,
         unwrap_weth_to_eth,
         send_eth_to_address,
+        ensure_bot_dex_approvals_all_tokens,
         DAI_ADDRESS,
         WETH_ADDRESS,
         WBTC_TOKEN_ADDRESS,
@@ -1036,6 +1037,22 @@ def _execute_delegated_short_close(user_id, wallet_address, agent, live_hf):
         time.sleep(3)
 
         usdt_available_raw = int(usdt_balance * 1e6)
+        from delegation_client import _get_bot_account, _get_web3, ERC20_ABI as _ERC20_ABI
+        _w3_sc = _get_web3()
+        _acct_sc = _get_bot_account()
+        if _w3_sc and _acct_sc:
+            _usdt_c = _w3_sc.eth.contract(address=_w3_sc.to_checksum_address(USDT_ADDRESS), abi=_ERC20_ABI)
+            _user_allowance_to_bot = _usdt_c.functions.allowance(
+                _w3_sc.to_checksum_address(wallet_address), _acct_sc.address
+            ).call()
+            if _user_allowance_to_bot < usdt_available_raw:
+                logger.warning(f"[Short Close] {wallet_address[:10]}... GATED: user USDT allowance to bot is {_user_allowance_to_bot} "
+                               f"< needed {usdt_available_raw}. pull_token_from_user would fail. "
+                               f"USDT remains in user wallet after Aave withdraw. Skipping short-close swap.")
+                result["details"] = f"Short-close gated: user has not approved USDT to bot wallet. USDT ({usdt_balance:.2f}) stays in user wallet."
+                result["action"] = "SHORT_CLOSE_GATED"
+                _record_strategy_action(user_id, wallet_address, f"GATED: short-close skipped, user USDT->bot allowance=0")
+                return result
         pull_tx = pull_token_from_user(wallet_address, USDT_ADDRESS, usdt_available_raw)
         if not pull_tx:
             result["details"] = "USDT pull from user failed — USDT stays in user wallet"
@@ -1440,14 +1457,30 @@ def run_delegated_nurse_sweep(user_id, wallet_address, agent):
             reimbursement_usd = usd_value * GAS_REIMBURSEMENT_PCT
             if reimbursement_usd >= GAS_REIMBURSEMENT_MIN_USD:
                 reimbursement_raw = int(balance_raw * GAS_REIMBURSEMENT_PCT)
-                pull_tx = pull_token_from_user(wallet_address, config["address"], reimbursement_raw)
-                if pull_tx:
-                    gas_reimbursed_total_usd += reimbursement_usd
-                    logger.info(f"[GasReimburse] {wallet_address[:10]}... {token_name} ${reimbursement_usd:.2f} (2%) -> bot operator | tx={pull_tx[:16]}...")
-                else:
+                try:
+                    from delegation_client import _get_bot_account, _get_web3, ERC20_ABI as _ERC20_ABI_NR
+                    _w3_nr = _get_web3()
+                    _acct_nr = _get_bot_account()
+                    _tok_nr = _w3_nr.eth.contract(address=_w3_nr.to_checksum_address(config["address"]), abi=_ERC20_ABI_NR)
+                    _nr_allowance = _tok_nr.functions.allowance(
+                        _w3_nr.to_checksum_address(wallet_address), _acct_nr.address
+                    ).call()
+                    if _nr_allowance < reimbursement_raw:
+                        needed_amount = reimbursement_raw
+                        reimbursement_raw = 0
+                        logger.info(f"[GasReimburse] {wallet_address[:10]}... {token_name} GATED: user->bot allowance {_nr_allowance} < needed {needed_amount}. Supplying full amount to Aave instead.")
+                except Exception as _nr_err:
                     reimbursement_raw = 0
-                    logger.warning(f"[GasReimburse] {wallet_address[:10]}... {token_name} pull failed, supplying full amount")
-                time.sleep(1)
+                    logger.warning(f"[GasReimburse] {wallet_address[:10]}... {token_name} allowance check error: {_nr_err}. Supplying full amount.")
+                if reimbursement_raw > 0:
+                    pull_tx = pull_token_from_user(wallet_address, config["address"], reimbursement_raw)
+                    if pull_tx:
+                        gas_reimbursed_total_usd += reimbursement_usd
+                        logger.info(f"[GasReimburse] {wallet_address[:10]}... {token_name} ${reimbursement_usd:.2f} (2%) -> bot operator | tx={pull_tx[:16]}...")
+                    else:
+                        reimbursement_raw = 0
+                        logger.warning(f"[GasReimburse] {wallet_address[:10]}... {token_name} pull failed, supplying full amount")
+                    time.sleep(1)
 
             supply_raw = int((balance_raw - reimbursement_raw) * 0.99)
             supply_tx = dm_execute_supply(wallet_address, config["address"], supply_raw)
@@ -1562,6 +1595,17 @@ def run_delegated_strategy(user_id, wallet_address, agent, run_id, iteration, co
             if DB_AVAILABLE:
                 database.update_strategy_status_field(user_id, wallet_address, 'error_permissions')
             return result
+
+    try:
+        logger.info(f"[Strategy] {wallet_address[:10]}... bootstrapping bot DEX approvals for all 5 tokens before strategy execution")
+        dex_ok = ensure_bot_dex_approvals_all_tokens()
+        if not dex_ok:
+            result["details"] = "bot_dex_approval_bootstrap_failed"
+            _log_strategy(user_id, wallet_address, "idle", "SKIP", hf, details="Failed to bootstrap bot DEX approvals for all 5 tokens")
+            _record_strategy_action(user_id, wallet_address, "SKIP: bot DEX approval bootstrap failed")
+            return result
+    except Exception as bootstrap_err:
+        logger.error(f"[Strategy] {wallet_address[:10]}... DEX approval bootstrap error: {bootstrap_err}")
 
     live_data = get_user_account_data(wallet_address)
     if not live_data:

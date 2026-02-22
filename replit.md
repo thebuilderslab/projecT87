@@ -41,7 +41,14 @@ The REAA platform operates on the Arbitrum Mainnet, integrating distinct modules
 - **Data Pipeline:** Scrapes Lis Pendens data, processes it with Perplexity AI, and generates outreach materials.
 - **Data Management:** Stores leads in PostgreSQL and integrates with Google Docs/Sheets.
 
-**Delegation Architecture:**
+**Delegation Architecture (Feb 2026 — Bot-Wallet Direct Model):**
+- Credit delegation targets bot wallet directly: user signs EIP-712 delegationWithSig → bot calls Pool.borrow(onBehalfOf=user) → tokens go to bot wallet → bot executes swaps/distributions.
+- `validate_full_automation_ready()` checks: DM delegation flags, WBTC→DM allowance, credit delegation borrowAllowance(user, BOT_WALLET) for DAI/WETH, and bot wallet DEX approvals (informational).
+- `ensure_bot_dex_approvals_all_tokens()` bootstraps max-uint Uniswap Router approvals for all 5 tokens on bot wallet before strategy execution.
+- Auto-supply runs BEFORE strategy processing in the monitoring loop to ensure collateral is supplied before borrowing decisions.
+- `pull_token_from_user` paths (short-close USDT + nurse gas reimbursement) are gated with on-chain allowance checks — skipped gracefully if user hasn't approved tokens to bot.
+- `hard_reset_wallet()` performs cascading deletes (wallet_actions, api_keys, notifications, defi_positions, income_events, managed_wallets) + clears execution_state files.
+- Borrow cooldown countdown exposed via `/api/wallet/borrow-cooldown` and displayed in developer portal sidebar.
 - Employs `managed_wallets` and `wallet_actions` tables for tracking delegation status and audit trails via `REAADelegationManager` contract.
 - Strict safety rules for auto-supply including `bot_enabled` checks, active delegation, cooldowns, and on-chain balance/allowance verification.
 - **Per-Wallet Autonomous Strategy Execution:** `strategy_engine.py` implements per-wallet HF-band strategies (Growth, Capacity, Macro Short, Micro Short, Nurse Mode).

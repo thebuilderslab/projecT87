@@ -1329,6 +1329,38 @@ def get_active_delegated_wallets() -> list:
         return result
 
 
+def hard_reset_wallet(user_id: int, wallet_address: str) -> dict:
+    results = {"deleted": {}, "errors": []}
+    with get_conn() as conn:
+        cur = conn.cursor()
+        try:
+            cur.execute("DELETE FROM wallet_actions WHERE user_id = %s AND wallet_address = %s", (user_id, wallet_address))
+            results["deleted"]["wallet_actions"] = cur.rowcount
+
+            cur.execute("DELETE FROM api_keys WHERE user_id = %s", (user_id,))
+            results["deleted"]["api_keys"] = cur.rowcount
+
+            cur.execute("DELETE FROM notifications WHERE wallet_address = %s", (wallet_address,))
+            results["deleted"]["notifications"] = cur.rowcount
+
+            cur.execute("DELETE FROM defi_positions WHERE user_id = %s AND wallet_address = %s", (user_id, wallet_address))
+            results["deleted"]["defi_positions"] = cur.rowcount
+
+            cur.execute("DELETE FROM income_events WHERE user_id = %s AND wallet_address = %s", (user_id, wallet_address))
+            results["deleted"]["income_events"] = cur.rowcount
+
+            cur.execute("DELETE FROM managed_wallets WHERE user_id = %s AND wallet_address = %s", (user_id, wallet_address))
+            results["deleted"]["managed_wallets"] = cur.rowcount
+
+            cur.close()
+            results["success"] = True
+        except Exception as e:
+            results["errors"].append(str(e))
+            results["success"] = False
+            cur.close()
+    return results
+
+
 if __name__ == "__main__":
     print("Initializing database...")
     init_db()

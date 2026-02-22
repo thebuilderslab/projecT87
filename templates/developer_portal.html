@@ -619,6 +619,11 @@ body.ejecting {
       </a>
     </nav>
     <div class="sidebar-footer">
+      <div id="cooldownDisplay" style="display:none; margin-bottom:8px; padding:6px 10px; background:rgba(255,170,0,0.1); border:1px solid #aa7700; font-size:0.8rem; text-align:center;">
+        <span style="color:#ffaa00;">BORROW COOLDOWN</span><br>
+        <span id="cooldownTimer" style="color:#ffcc44; font-family:monospace; font-size:1.1rem;">--:--</span>
+      </div>
+      <button class="eject-btn" id="hardResetBtn" style="background:rgba(255,0,0,0.15); border-color:#cc0000; color:#ff4444; margin-bottom:6px; font-size:0.7rem;">[ HARD RESET ] WIPE ALL DATA</button>
       <button class="eject-btn" id="ejectBtn">[ EJECT ] DISCONNECT</button>
     </div>
   </aside>
@@ -862,6 +867,7 @@ function showActivatedState() {
   document.getElementById('activatedBanner').style.display = 'block';
   unlockKeysNav();
   loadKeys();
+  startCooldownPolling();
   showSection('keysSection');
   document.getElementById('keysSection').style.display = 'block';
   document.getElementById('terminalSection').style.display = 'block';
@@ -1453,6 +1459,46 @@ async function loadStatus() {
   } catch(e) { console.log('Status fetch error:', e); }
 }
 
+async function hardResetWallet() {
+  if (!confirm('⚠️ HARD RESET: This will DELETE all your data including API keys, wallet actions, positions, and execution state. You will need to reconnect and re-activate. Continue?')) return;
+  if (!confirm('FINAL CONFIRMATION: Type OK to proceed with HARD RESET.')) return;
+  try {
+    var resp = await authFetch('/api/wallet/hard-reset', { method: 'POST' });
+    var data = await resp.json();
+    if (data.success) {
+      alert('HARD RESET COMPLETE. All data wiped. You will be disconnected.');
+      logout();
+      window.location.href = '/app';
+    } else {
+      alert('Hard reset failed: ' + JSON.stringify(data.errors));
+    }
+  } catch(e) {
+    alert('Hard reset error: ' + e.message);
+  }
+}
+
+var cooldownInterval = null;
+async function pollBorrowCooldown() {
+  try {
+    var resp = await authFetch('/api/wallet/borrow-cooldown');
+    if (!resp || !resp.ok) return;
+    var data = await resp.json();
+    var el = document.getElementById('cooldownDisplay');
+    var timer = document.getElementById('cooldownTimer');
+    if (data.on_cooldown && data.remaining_seconds > 0) {
+      el.style.display = 'block';
+      timer.textContent = data.remaining_formatted;
+    } else {
+      el.style.display = 'none';
+    }
+  } catch(e) {}
+}
+function startCooldownPolling() {
+  if (cooldownInterval) clearInterval(cooldownInterval);
+  pollBorrowCooldown();
+  cooldownInterval = setInterval(pollBorrowCooldown, 10000);
+}
+
 async function ejectWallet() {
   if (!confirm('CONFIRM: DISCONNECT WALLET AND TERMINATE SESSION?')) return;
   document.body.classList.add('ejecting');
@@ -1487,6 +1533,7 @@ document.getElementById('navTerminal').addEventListener('click', function() {
   showSection('terminalSection');
 });
 document.getElementById('ejectBtn').addEventListener('click', ejectWallet);
+document.getElementById('hardResetBtn').addEventListener('click', hardResetWallet);
 document.getElementById('connectBtn').addEventListener('click', connectWallet);
 document.getElementById('activateBtn').addEventListener('click', runActivationSequence);
 document.getElementById('genKeyBtn').addEventListener('click', generateKey);

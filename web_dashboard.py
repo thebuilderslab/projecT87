@@ -4259,6 +4259,61 @@ def get_wallet_usdc_balance():
         logger.error(f"USDC balance fetch error for {wallet[:10]}...: {e}")
         return jsonify({"balance": 0, "error": str(e)})
 
+@app.route('/api/wallet/hard-reset', methods=['POST'])
+def hard_reset_wallet_endpoint():
+    user_id = get_current_user_id()
+    if not user_id:
+        return jsonify({"error": "Not authenticated"}), 401
+    if not DB_AVAILABLE:
+        return jsonify({"error": "Database not available"}), 503
+    user = database.get_user_by_id(user_id)
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+    wallet = user.get('wallet_address', '')
+    if not wallet:
+        return jsonify({"error": "No wallet linked"}), 400
+
+    import glob as _glob
+    import shutil
+    result = database.hard_reset_wallet(user_id, wallet)
+
+    cooldown_dir = os.path.join(os.path.dirname(__file__), "execution_state")
+    if os.path.isdir(cooldown_dir):
+        safe_addr = wallet.lower().replace("0x", "")[:40]
+        for f in _glob.glob(os.path.join(cooldown_dir, f"*{safe_addr}*")):
+            try:
+                os.remove(f)
+            except Exception:
+                pass
+        result.setdefault("deleted", {})["execution_state_files"] = True
+
+    logger.info(f"[HardReset] user_id={user_id} wallet={wallet[:10]}... result={result}")
+    return jsonify(result)
+
+
+@app.route('/api/wallet/borrow-cooldown', methods=['GET'])
+def get_borrow_cooldown():
+    user_id = get_current_user_id()
+    if not user_id:
+        return jsonify({"error": "Not authenticated"}), 401
+    user = database.get_user_by_id(user_id) if DB_AVAILABLE else None
+    wallet = user.get('wallet_address', '') if user else ''
+    if not wallet:
+        return jsonify({"on_cooldown": False, "remaining_seconds": 0})
+    try:
+        from strategy_engine import _check_borrow_cooldown, BORROW_COOLDOWN_SECONDS
+        cooldown_ok, remaining = _check_borrow_cooldown(wallet)
+        return jsonify({
+            "on_cooldown": not cooldown_ok,
+            "remaining_seconds": round(remaining, 0),
+            "total_seconds": BORROW_COOLDOWN_SECONDS,
+            "remaining_formatted": f"{int(remaining // 60):02d}:{int(remaining % 60):02d}" if remaining > 0 else "00:00"
+        })
+    except Exception as e:
+        logger.error(f"Borrow cooldown check error: {e}")
+        return jsonify({"on_cooldown": False, "remaining_seconds": 0, "error": str(e)})
+
+
 @app.route('/api/pipeline/status', methods=['GET'])
 def get_pipeline_status():
     """Get latest pipeline run status"""

@@ -325,6 +325,7 @@ def validate_full_automation_ready(wallet_address):
         "wallet": wallet_address,
         "delegation_flags": {},
         "erc20_approvals": [],
+        "bot_dex_approvals": [],
         "ready": False,
     }
 
@@ -344,33 +345,42 @@ def validate_full_automation_ready(wallet_address):
     if missing_flags:
         blockers.append({"type": "delegation_flags", "missing": missing_flags})
 
-    for token_addr in REQUIRED_APPROVAL_TOKENS:
-        token_name = TOKEN_NAMES.get(token_addr, token_addr[:10])
-        for spender_name, spender_addr in REQUIRED_APPROVAL_CONTRACTS.items():
-            if not spender_addr:
-                continue
-            allowance = get_erc20_allowance(token_addr, wallet_address, spender_addr)
-            status = "OK" if allowance >= MIN_REQUIRED_ALLOWANCE else "MISSING"
-            results["erc20_approvals"].append({
+    wbtc_allowance = get_erc20_allowance(WBTC_TOKEN_ADDRESS, wallet_address, DELEGATION_MANAGER_ADDRESS)
+    wbtc_status = "OK" if wbtc_allowance >= MIN_REQUIRED_ALLOWANCE else "MISSING"
+    results["erc20_approvals"].append({
+        "token": "WBTC",
+        "spender": "DelegationManager",
+        "allowance": str(wbtc_allowance),
+        "status": wbtc_status,
+    })
+    if wbtc_allowance < MIN_REQUIRED_ALLOWANCE:
+        blockers.append({
+            "type": "erc20_approval",
+            "token": "WBTC",
+            "token_address": WBTC_TOKEN_ADDRESS,
+            "spender": "DelegationManager",
+            "spender_address": DELEGATION_MANAGER_ADDRESS,
+            "current_allowance": str(wbtc_allowance),
+        })
+
+    bot_wallet = get_bot_wallet_address()
+    bot_dex_tokens = [DAI_ADDRESS, WETH_ADDRESS, WBTC_TOKEN_ADDRESS, USDC_ADDRESS, USDT_ADDRESS]
+    bot_dex_token_names = ["DAI", "WETH", "WBTC", "USDC", "USDT"]
+    for token_addr, token_name in zip(bot_dex_tokens, bot_dex_token_names):
+        if bot_wallet and UNISWAP_ROUTER_ADDRESS:
+            bot_allowance = get_erc20_allowance(token_addr, bot_wallet, UNISWAP_ROUTER_ADDRESS)
+            bot_status = "OK" if bot_allowance >= MIN_REQUIRED_ALLOWANCE else "NEEDS_APPROVAL"
+            results["bot_dex_approvals"].append({
                 "token": token_name,
-                "spender": spender_name,
-                "allowance": str(allowance),
-                "status": status,
+                "spender": "Uniswap Router",
+                "allowance": str(bot_allowance),
+                "status": bot_status,
             })
-            if allowance < MIN_REQUIRED_ALLOWANCE:
-                blockers.append({
-                    "type": "erc20_approval",
-                    "token": token_name,
-                    "token_address": token_addr,
-                    "spender": spender_name,
-                    "spender_address": spender_addr,
-                    "current_allowance": str(allowance),
-                })
 
     w3 = _get_web3()
-    dm_cs = Web3.to_checksum_address(DELEGATION_MANAGER_ADDRESS) if DELEGATION_MANAGER_ADDRESS else None
+    bot_cs = Web3.to_checksum_address(bot_wallet) if bot_wallet else None
     credit_delegation_results = []
-    if w3 and dm_cs:
+    if w3 and bot_cs:
         wallet_cs = Web3.to_checksum_address(wallet_address)
         for symbol, debt_token_addr in VARIABLE_DEBT_TOKENS.items():
             try:
@@ -379,12 +389,13 @@ def validate_full_automation_ready(wallet_address):
                     abi=VARIABLE_DEBT_TOKEN_ABI
                 )
                 credit_allowance = debt_token.functions.borrowAllowance(
-                    wallet_cs, dm_cs
+                    wallet_cs, bot_cs
                 ).call()
                 status = "OK" if credit_allowance > 0 else "MISSING"
                 credit_delegation_results.append({
                     "token": symbol,
                     "debt_token_address": debt_token_addr,
+                    "delegatee": bot_wallet,
                     "allowance": str(credit_allowance),
                     "status": status,
                 })
@@ -393,7 +404,7 @@ def validate_full_automation_ready(wallet_address):
                         "type": "aave_credit_delegation",
                         "token": symbol,
                         "debt_token_address": debt_token_addr,
-                        "message": f"Missing Aave credit delegation for {symbol}. User must call approveDelegation({dm_cs}, maxUint) on the {symbol} variable debt token.",
+                        "message": f"Missing Aave credit delegation for {symbol} to bot wallet ({bot_cs}). User must sign EIP-712 delegationWithSig.",
                     })
             except Exception as e:
                 logger.warning(f"[Validation] Could not check credit delegation for {symbol}: {e}")
@@ -409,11 +420,31 @@ def validate_full_automation_ready(wallet_address):
     results["blockers"] = blockers
 
     if results["ready"]:
-        logger.info(f"[Validation] Wallet {wallet_address[:10]}... fully validated — all flags and approvals OK")
+        logger.info(f"[Validation] Wallet {wallet_address[:10]}... fully validated — DM flags OK, WBTC->DM OK, credit delegation to bot wallet OK")
     else:
         logger.warning(f"[Validation] Wallet {wallet_address[:10]}... NOT ready — {len(blockers)} blocker(s): {[b['type'] + ':' + str(b.get('missing', b.get('token', ''))) for b in blockers]}")
 
     return results
+
+
+def ensure_bot_dex_approvals_all_tokens():
+    all_ok = True
+    tokens = [
+        (DAI_ADDRESS, "DAI"),
+        (WETH_ADDRESS, "WETH"),
+        (WBTC_TOKEN_ADDRESS, "WBTC"),
+        (USDC_ADDRESS, "USDC"),
+        (USDT_ADDRESS, "USDT"),
+    ]
+    max_uint = 2 ** 256 - 1
+    for token_addr, token_name in tokens:
+        ok = _ensure_bot_approval(token_addr, UNISWAP_ROUTER_ADDRESS, max_uint)
+        if ok:
+            logger.info(f"[BotApproval] {token_name} -> Uniswap Router: OK")
+        else:
+            logger.error(f"[BotApproval] {token_name} -> Uniswap Router: FAILED")
+            all_ok = False
+    return all_ok
 
 
 def _send_bot_tx(func_call, gas_estimate_fallback=400000, max_retries=2):

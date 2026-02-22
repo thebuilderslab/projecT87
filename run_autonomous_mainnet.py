@@ -426,6 +426,14 @@ def run_autonomous_mainnet_agent():
                 if DB_AVAILABLE and APPROVAL_CHECK_AVAILABLE and iteration % 10 == 0:
                     reconcile_delegation_state()
 
+                if AUTO_SUPPLY_AVAILABLE:
+                    try:
+                        supply_count = run_auto_supply_cycle()
+                        if supply_count > 0:
+                            log_agent_activity(f"💰 Auto-supply: {supply_count} wallet(s) supplied WBTC to Aave")
+                    except Exception as supply_err:
+                        log_agent_activity(f"⚠️ Auto-supply cycle error: {supply_err}", "WARNING")
+
                 managed_wallets = []
                 if DB_AVAILABLE:
                     managed_wallets = database.get_active_managed_wallets()
@@ -525,14 +533,6 @@ def run_autonomous_mainnet_agent():
                             log_agent_activity(f"🏠 RE Task: {re_result.get('task', 'unknown')} → {re_result.get('status', 'unknown')}: {re_result.get('message', '')}")
                     except Exception as re_err:
                         log_agent_activity(f"⚠️ Real estate task error: {re_err}", "WARNING")
-
-                if AUTO_SUPPLY_AVAILABLE:
-                    try:
-                        supply_count = run_auto_supply_cycle()
-                        if supply_count > 0:
-                            log_agent_activity(f"💰 Auto-supply: {supply_count} wallet(s) supplied WBTC to Aave")
-                    except Exception as supply_err:
-                        log_agent_activity(f"⚠️ Auto-supply cycle error: {supply_err}", "WARNING")
 
             except Exception as e:
                 log_agent_activity(f"❌ Error in monitoring cycle: {e}", "ERROR")
