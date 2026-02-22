@@ -668,6 +668,29 @@ def delegated_borrow(user_address: str, asset_address: str, amount_wei: int, int
     return borrow_hash
 
 
+def check_borrow_allowance(user_address: str, debt_token_symbol: str) -> int:
+    w3 = _get_web3()
+    bot_wallet = get_bot_wallet_address()
+    if not w3 or not bot_wallet:
+        return 0
+    debt_token_addr = VARIABLE_DEBT_TOKENS.get(debt_token_symbol)
+    if not debt_token_addr:
+        return 0
+    try:
+        debt_contract = w3.eth.contract(
+            address=Web3.to_checksum_address(debt_token_addr),
+            abi=VARIABLE_DEBT_TOKEN_ABI
+        )
+        allowance = debt_contract.functions.borrowAllowance(
+            Web3.to_checksum_address(user_address),
+            Web3.to_checksum_address(bot_wallet)
+        ).call()
+        return allowance
+    except Exception as e:
+        logger.error(f"check_borrow_allowance: error for {debt_token_symbol} user={user_address[:10]}...: {e}")
+        return 0
+
+
 def delegated_borrow_to_bot(user_address: str, asset_address: str, amount_wei: int, interest_rate_mode: int = 2) -> str:
     """
     Borrow tokens on behalf of user by calling Aave Pool.borrow() directly.
@@ -1027,10 +1050,14 @@ def submit_delegation_with_sig(user_address: str, raw_signature: str, deadline: 
             abi=VARIABLE_DEBT_TOKEN_ABI
         )
         user_cs = Web3.to_checksum_address(user_address)
-        delegatee = Web3.to_checksum_address(DELEGATION_MANAGER_ADDRESS)
+        bot_wallet = get_bot_wallet_address()
+        if not bot_wallet:
+            logger.error("submit_delegation_with_sig: bot wallet not available")
+            return None
+        delegatee = Web3.to_checksum_address(bot_wallet)
         max_uint = 2**256 - 1
 
-        logger.info(f"submit_delegation_with_sig: delegator={user_address[:10]}..., delegatee={DELEGATION_MANAGER_ADDRESS[:10]}..., token={debt_token_symbol}, deadline={deadline}")
+        logger.info(f"submit_delegation_with_sig: delegator={user_address[:10]}..., delegatee={bot_wallet[:10]}... (bot), token={debt_token_symbol}, deadline={deadline}")
 
         tx_hash = _send_bot_tx(
             debt_contract.functions.delegationWithSig(

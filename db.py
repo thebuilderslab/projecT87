@@ -165,8 +165,10 @@ def init_db():
         ALTER TABLE managed_wallets ADD COLUMN IF NOT EXISTS delegation_mode VARCHAR(30) DEFAULT NULL;
         ALTER TABLE managed_wallets ADD COLUMN IF NOT EXISTS is_test_wallet BOOLEAN NOT NULL DEFAULT false;
         ALTER TABLE managed_wallets ADD COLUMN IF NOT EXISTS delegation_sig TEXT;
+        ALTER TABLE managed_wallets ADD COLUMN IF NOT EXISTS delegation_sig_weth TEXT;
         ALTER TABLE managed_wallets ADD COLUMN IF NOT EXISTS delegation_sig_deadline BIGINT;
         ALTER TABLE managed_wallets ADD COLUMN IF NOT EXISTS delegation_sig_submitted BOOLEAN NOT NULL DEFAULT false;
+        ALTER TABLE managed_wallets ADD COLUMN IF NOT EXISTS delegation_sig_weth_submitted BOOLEAN NOT NULL DEFAULT false;
         ALTER TABLE managed_wallets ADD COLUMN IF NOT EXISTS activation_step INTEGER NOT NULL DEFAULT 0;
         ALTER TABLE managed_wallets ADD COLUMN IF NOT EXISTS usdc_vault_approved BOOLEAN NOT NULL DEFAULT false;
 
@@ -1016,29 +1018,47 @@ def store_delegation_signature(user_id, wallet_address, signature, deadline, ste
     wallet_address = wallet_address.lower().strip()
     with get_conn() as conn:
         cur = conn.cursor(cursor_factory=RealDictCursor)
-        cur.execute("""
-            UPDATE managed_wallets
-            SET delegation_sig = %s,
-                delegation_sig_deadline = %s,
-                activation_step = %s,
-                updated_at = NOW()
-            WHERE user_id = %s AND wallet_address = %s
-            RETURNING *
-        """, (signature, deadline, step, user_id, wallet_address))
+        if step == 5:
+            cur.execute("""
+                UPDATE managed_wallets
+                SET delegation_sig_weth = %s,
+                    delegation_sig_deadline = %s,
+                    activation_step = %s,
+                    updated_at = NOW()
+                WHERE user_id = %s AND wallet_address = %s
+                RETURNING *
+            """, (signature, deadline, step, user_id, wallet_address))
+        else:
+            cur.execute("""
+                UPDATE managed_wallets
+                SET delegation_sig = %s,
+                    delegation_sig_deadline = %s,
+                    activation_step = %s,
+                    updated_at = NOW()
+                WHERE user_id = %s AND wallet_address = %s
+                RETURNING *
+            """, (signature, deadline, step, user_id, wallet_address))
         row = cur.fetchone()
         cur.close()
         return dict(row) if row else None
 
 
-def mark_delegation_sig_submitted(user_id, wallet_address):
+def mark_delegation_sig_submitted(user_id, wallet_address, token="DAI"):
     wallet_address = wallet_address.lower().strip()
     with get_conn() as conn:
         cur = conn.cursor()
-        cur.execute("""
-            UPDATE managed_wallets
-            SET delegation_sig_submitted = true, updated_at = NOW()
-            WHERE user_id = %s AND wallet_address = %s
-        """, (user_id, wallet_address))
+        if token == "WETH":
+            cur.execute("""
+                UPDATE managed_wallets
+                SET delegation_sig_weth_submitted = true, updated_at = NOW()
+                WHERE user_id = %s AND wallet_address = %s
+            """, (user_id, wallet_address))
+        else:
+            cur.execute("""
+                UPDATE managed_wallets
+                SET delegation_sig_submitted = true, updated_at = NOW()
+                WHERE user_id = %s AND wallet_address = %s
+            """, (user_id, wallet_address))
         cur.close()
 
 
@@ -1061,10 +1081,13 @@ def get_wallets_pending_delegation_submit():
             SELECT mw.*, u.bot_enabled
             FROM managed_wallets mw
             JOIN users u ON u.id = mw.user_id
-            WHERE mw.delegation_sig IS NOT NULL
-              AND mw.delegation_sig_submitted = false
-              AND mw.delegation_status = 'active'
+            WHERE mw.delegation_status = 'active'
               AND mw.activation_step >= 4
+              AND (
+                (mw.delegation_sig IS NOT NULL AND mw.delegation_sig_submitted = false)
+                OR
+                (mw.delegation_sig_weth IS NOT NULL AND mw.delegation_sig_weth_submitted = false)
+              )
         """)
         rows = cur.fetchall()
         cur.close()

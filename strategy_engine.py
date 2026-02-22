@@ -119,6 +119,7 @@ try:
     from delegation_client import (
         get_delegation_permissions,
         get_user_account_data,
+        check_borrow_allowance,
         delegated_borrow_dai,
         delegated_borrow_weth,
         delegated_repay_weth,
@@ -493,8 +494,14 @@ def _execute_delegated_distribution(user_id, wallet_address, agent, path_name, d
                 _save_execution_state(wallet_address, "borrowed", path_name, dist_serializable)
                 steps_completed.append("borrowed")
             else:
+                dai_allowance = check_borrow_allowance(wallet_address, "DAI") if DELEGATION_AVAILABLE else 0
+                if dai_allowance == 0:
+                    logger.warning(f"[Strategy] wallet={wallet_address[:10]}... DAI credit delegation missing (borrowAllowance=0). Skipping borrow — user must re-sign delegation or background processor will submit.")
+                    result["details"] = "DAI credit delegation not active (borrowAllowance=0). Pending on-chain submission."
+                    result["action"] = "BORROW_SKIPPED_NO_DELEGATION"
+                    return result
                 _log_strategy(user_id, wallet_address, path_name, "STEP1_BORROW", live_hf,
-                              details=f"Borrowing ${total_borrow:.2f} DAI via delegation")
+                              details=f"Borrowing ${total_borrow:.2f} DAI via delegation (allowance={dai_allowance})")
                 tx_hash = delegated_borrow_dai(wallet_address, total_borrow)
                 if not tx_hash:
                     result["details"] = f"DAI borrow failed for ${total_borrow:.2f}"
@@ -850,8 +857,16 @@ def _execute_delegated_short_entry(user_id, wallet_address, agent, tier, short_s
             pass
 
         weth_amount = short_size_usd / eth_price
+
+        weth_allowance = check_borrow_allowance(wallet_address, "WETH") if DELEGATION_AVAILABLE else 0
+        if weth_allowance == 0:
+            logger.warning(f"[Strategy] wallet={wallet_address[:10]}... WETH credit delegation missing (borrowAllowance=0). Skipping short entry — pending on-chain submission.")
+            result["details"] = "WETH credit delegation not active (borrowAllowance=0). Pending on-chain submission."
+            result["action"] = "SHORT_SKIPPED_NO_DELEGATION"
+            return result
+
         _log_strategy(user_id, wallet_address, f"{tier}_short", "SHORT_ENTRY", live_hf,
-                      details=f"Borrowing {weth_amount:.6f} WETH (${short_size_usd:.2f}) via delegation")
+                      details=f"Borrowing {weth_amount:.6f} WETH (${short_size_usd:.2f}) via delegation (allowance={weth_allowance})")
 
         tx_hash = delegated_borrow_weth(wallet_address, weth_amount)
         if not tx_hash:

@@ -3997,14 +3997,52 @@ def register_wallet_activation():
         "chain_id": chain_id,
     })
 
+    logger.info(f"[RegisterWallet] Wallet {wallet} sigs stored. Submitting credit delegation on-chain...")
+
+    dai_submitted = False
+    weth_submitted = False
+    sig_submit_errors = []
+
+    if contract_live:
+        from delegation_client import submit_delegation_with_sig as _submit_sig
+        try:
+            dai_tx = _submit_sig(wallet, dai_signature, int(deadline), debt_token_symbol="DAI")
+            if dai_tx:
+                dai_submitted = True
+                database.mark_delegation_sig_submitted(user_id, wallet, token="DAI")
+                logger.info(f"[RegisterWallet] DAI delegationWithSig submitted on-chain: {dai_tx}")
+            else:
+                sig_submit_errors.append("DAI delegationWithSig tx failed")
+                logger.error(f"[RegisterWallet] DAI delegationWithSig submission failed for {wallet[:10]}...")
+        except Exception as e:
+            sig_submit_errors.append(f"DAI: {str(e)}")
+            logger.error(f"[RegisterWallet] DAI sig submit error: {e}", exc_info=True)
+
+        try:
+            weth_tx = _submit_sig(wallet, weth_signature, int(deadline), debt_token_symbol="WETH")
+            if weth_tx:
+                weth_submitted = True
+                database.mark_delegation_sig_submitted(user_id, wallet, token="WETH")
+                logger.info(f"[RegisterWallet] WETH delegationWithSig submitted on-chain: {weth_tx}")
+            else:
+                sig_submit_errors.append("WETH delegationWithSig tx failed")
+                logger.error(f"[RegisterWallet] WETH delegationWithSig submission failed for {wallet[:10]}...")
+        except Exception as e:
+            sig_submit_errors.append(f"WETH: {str(e)}")
+            logger.error(f"[RegisterWallet] WETH sig submit error: {e}", exc_info=True)
+
+    if dai_submitted and weth_submitted:
+        database.update_strategy_status_field(user_id, wallet, 'active')
+        logger.info(f"[RegisterWallet] Both DAI + WETH credit delegation submitted on-chain. Strategy status: active")
+    else:
+        database.update_strategy_status_field(user_id, wallet, 'pending_sig_submit')
+        logger.warning(f"[RegisterWallet] Credit delegation incomplete (DAI={dai_submitted}, WETH={weth_submitted}). Status: pending_sig_submit. Errors: {sig_submit_errors}")
+
     if contract_live:
         validation = validate_full_automation_ready(wallet)
         if validation['ready']:
             database.update_strategy_status_field(user_id, wallet, 'active')
-        else:
-            database.update_strategy_status_field(user_id, wallet, 'pending_sig_submit')
-    else:
-        database.update_strategy_status_field(user_id, wallet, 'pending_sig_submit')
+            logger.info(f"[RegisterWallet] Full automation validated on-chain. Strategy status: active")
 
     logger.info(f"[RegisterWallet] Wallet {wallet} fully registered. EIP-712 sig verified & stored, auto-supply enabled.")
 
@@ -4027,8 +4065,11 @@ def register_wallet_activation():
         "wallet": wallet,
         "delegationStored": True,
         "sigVerified": True,
+        "daiDelegationSubmitted": dai_submitted,
+        "wethDelegationSubmitted": weth_submitted,
+        "sigSubmitErrors": sig_submit_errors if sig_submit_errors else None,
         "autoSupplyTriggered": supply_triggered,
-        "strategyEnabled": True,
+        "strategyEnabled": dai_submitted and weth_submitted,
     }), 201
 
 

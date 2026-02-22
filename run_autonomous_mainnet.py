@@ -28,6 +28,12 @@ except ImportError:
     AUTO_SUPPLY_AVAILABLE = False
 
 try:
+    from delegation_sig_processor import run_pending_delegation_submissions
+    SIG_PROCESSOR_AVAILABLE = True
+except ImportError:
+    SIG_PROCESSOR_AVAILABLE = False
+
+try:
     from strategy_engine import run_delegated_strategy, get_strategy_status, run_delegated_nurse_sweep, resume_incomplete_distribution, has_active_distribution
     STRATEGY_ENGINE_AVAILABLE = True
 except ImportError:
@@ -433,6 +439,14 @@ def run_autonomous_mainnet_agent():
                             log_agent_activity(f"💰 Auto-supply: {supply_count} wallet(s) supplied WBTC to Aave")
                     except Exception as supply_err:
                         log_agent_activity(f"⚠️ Auto-supply cycle error: {supply_err}", "WARNING")
+
+                if SIG_PROCESSOR_AVAILABLE:
+                    try:
+                        sig_count = run_pending_delegation_submissions()
+                        if sig_count > 0:
+                            log_agent_activity(f"🔑 Credit delegation: {sig_count} signature(s) submitted on-chain")
+                    except Exception as sig_err:
+                        log_agent_activity(f"⚠️ Delegation sig processor error: {sig_err}", "WARNING")
 
                 managed_wallets = []
                 if DB_AVAILABLE:
