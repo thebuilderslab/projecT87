@@ -86,12 +86,22 @@ def _get_web3():
     global _w3_instance
     if _w3_instance and _w3_instance.is_connected():
         return _w3_instance
+    from constants import CHAIN_ID
+    network_mode = os.getenv("NETWORK_MODE", "mainnet")
+    expected_chain_id = CHAIN_ID if network_mode == "fork" else 42161
+    rpcs = []
+    if network_mode == "fork":
+        tenderly_rpc = os.getenv("TENDERLY_RPC_URL")
+        if tenderly_rpc:
+            rpcs.append(tenderly_rpc)
     alchemy = os.getenv("ALCHEMY_RPC_URL") or os.getenv("ARBITRUM_RPC_URL")
-    rpcs = ([alchemy] if alchemy else []) + ARBITRUM_RPCS
+    if alchemy:
+        rpcs.append(alchemy)
+    rpcs.extend(ARBITRUM_RPCS)
     for url in rpcs:
         try:
             w3 = Web3(Web3.HTTPProvider(url, request_kwargs={"timeout": 10}))
-            if w3.is_connected() and w3.eth.chain_id == 42161:
+            if w3.is_connected() and w3.eth.chain_id == expected_chain_id:
                 _w3_instance = w3
                 logger.info(f"delegation_client: connected via {url}")
                 return w3

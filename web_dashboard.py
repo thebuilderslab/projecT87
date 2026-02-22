@@ -61,19 +61,33 @@ class WorkingAgent:
     def _create_working_web3_connection(self):
         """Create working Web3 connection using proven RPC endpoints"""
         from web3 import Web3
+        from constants import CHAIN_ID
         
-        # Use same proven working endpoints as autonomous agent
+        network_mode = os.getenv('NETWORK_MODE', 'mainnet')
+        
+        if network_mode == 'fork':
+            tenderly_rpc = os.getenv('TENDERLY_RPC_URL')
+            if tenderly_rpc:
+                try:
+                    w3 = Web3(Web3.HTTPProvider(tenderly_rpc, request_kwargs={'timeout': 10}))
+                    if w3.is_connected():
+                        print(f"✅ Dashboard WorkingAgent: Connected to Tenderly fork")
+                        return w3
+                except Exception as e:
+                    print(f"⚠️ Dashboard: Tenderly RPC failed: {e}")
+        
+        expected_chain_id = CHAIN_ID if network_mode == 'fork' else 42161
         working_rpcs = [
-            "https://arbitrum-one.public.blastapi.io",  # Fastest: 0.16s
-            os.getenv('ALCHEMY_RPC_URL', "https://arb1.arbitrum.io/rpc"),  # Alchemy from env
-            "https://arb1.arbitrum.io/rpc",  # Official
+            "https://arbitrum-one.public.blastapi.io",
+            os.getenv('ALCHEMY_RPC_URL', "https://arb1.arbitrum.io/rpc"),
+            "https://arb1.arbitrum.io/rpc",
             "https://arbitrum-one.publicnode.com"
         ]
         
         for rpc_url in working_rpcs:
             try:
                 w3 = Web3(Web3.HTTPProvider(rpc_url, request_kwargs={'timeout': 10}))
-                if w3.is_connected() and w3.eth.chain_id == 42161:
+                if w3.is_connected() and w3.eth.chain_id == expected_chain_id:
                     print(f"✅ Dashboard WorkingAgent: Connected to {rpc_url}")
                     return w3
             except Exception as e:
@@ -85,7 +99,7 @@ class WorkingAgent:
     
     def __init__(self):
         self.address = '0x5B823270e3719CDe8669e5e5326B455EaA8a350b'
-        self.network_mode = 'mainnet'
+        self.network_mode = os.getenv('NETWORK_MODE', 'mainnet')
         
         # Initialize working Web3 connection using same endpoints as autonomous agent
         self.w3 = self._create_working_web3_connection()
@@ -385,13 +399,20 @@ def get_live_agent_data():
             # Create enhanced RPC manager using same system as working autonomous agent
             class EnhancedRPCManager:
                 def __init__(self):
-                    # Use the same working RPC endpoints as autonomous agent
-                    self.rpc_endpoints = [
-                        "https://arbitrum-one.public.blastapi.io",  # Fastest working RPC
+                    from constants import CHAIN_ID
+                    self.network_mode = os.getenv('NETWORK_MODE', 'mainnet')
+                    self.expected_chain_id = CHAIN_ID if self.network_mode == 'fork' else 42161
+                    self.rpc_endpoints = []
+                    if self.network_mode == 'fork':
+                        tenderly_rpc = os.getenv('TENDERLY_RPC_URL')
+                        if tenderly_rpc:
+                            self.rpc_endpoints.append(tenderly_rpc)
+                    self.rpc_endpoints.extend([
+                        "https://arbitrum-one.public.blastapi.io",
                         "https://arb1.arbitrum.io/rpc",
                         "https://arbitrum-one.publicnode.com",
-                        os.getenv('ALCHEMY_RPC_URL', "https://arb1.arbitrum.io/rpc")  # Alchemy from secrets
-                    ]
+                        os.getenv('ALCHEMY_RPC_URL', "https://arb1.arbitrum.io/rpc")
+                    ])
                     self.working_rpc = None
                     self.w3 = None
                     self._find_working_rpc()
@@ -401,7 +422,7 @@ def get_live_agent_data():
                     for rpc_url in self.rpc_endpoints:
                         try:
                             test_w3 = Web3(Web3.HTTPProvider(rpc_url, request_kwargs={'timeout': 10}))
-                            if test_w3.is_connected() and test_w3.eth.chain_id == 42161:
+                            if test_w3.is_connected() and test_w3.eth.chain_id == self.expected_chain_id:
                                 self.working_rpc = rpc_url
                                 self.w3 = test_w3
                                 print(f"✅ Dashboard: Connected to {rpc_url}")
