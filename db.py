@@ -209,6 +209,34 @@ def init_db():
             created_at TIMESTAMPTZ DEFAULT NOW()
         );
         CREATE INDEX IF NOT EXISTS idx_notifications_created ON notifications(created_at DESC);
+
+        CREATE TABLE IF NOT EXISTS collateral_snapshots (
+            id BIGSERIAL PRIMARY KEY,
+            user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+            wallet_address TEXT NOT NULL,
+            collateral_usd NUMERIC(14,2) NOT NULL,
+            created_at TIMESTAMPTZ DEFAULT NOW()
+        );
+        CREATE INDEX IF NOT EXISTS idx_collateral_snapshots_wallet_time
+            ON collateral_snapshots(wallet_address, created_at DESC);
+
+        CREATE TABLE IF NOT EXISTS short_positions (
+            id SERIAL PRIMARY KEY,
+            user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+            wallet_address TEXT NOT NULL,
+            tier VARCHAR(10) NOT NULL,
+            status VARCHAR(20) NOT NULL DEFAULT 'open',
+            weth_borrowed NUMERIC(20,8) NOT NULL DEFAULT 0,
+            entry_collateral NUMERIC(14,2) NOT NULL DEFAULT 0,
+            entry_hf NUMERIC(20,4) NOT NULL DEFAULT 0,
+            entry_time TIMESTAMPTZ DEFAULT NOW(),
+            close_time TIMESTAMPTZ,
+            close_details JSONB DEFAULT '{}',
+            tx_hash_entry TEXT,
+            tx_hash_close TEXT
+        );
+        CREATE INDEX IF NOT EXISTS idx_short_positions_open
+            ON short_positions(wallet_address, status) WHERE status = 'open';
         """)
         cur.close()
 
@@ -1386,6 +1414,12 @@ def hard_reset_wallet(user_id: int, wallet_address: str) -> dict:
             cur.execute("DELETE FROM income_events WHERE user_id = %s", (user_id,))
             results["deleted"]["income_events"] = cur.rowcount
 
+            cur.execute("DELETE FROM collateral_snapshots WHERE user_id = %s AND wallet_address = %s", (user_id, wallet_address))
+            results["deleted"]["collateral_snapshots"] = cur.rowcount
+
+            cur.execute("DELETE FROM short_positions WHERE user_id = %s AND wallet_address = %s", (user_id, wallet_address))
+            results["deleted"]["short_positions"] = cur.rowcount
+
             cur.execute("DELETE FROM managed_wallets WHERE user_id = %s AND wallet_address = %s", (user_id, wallet_address))
             results["deleted"]["managed_wallets"] = cur.rowcount
 
@@ -1396,6 +1430,103 @@ def hard_reset_wallet(user_id: int, wallet_address: str) -> dict:
             results["success"] = False
             cur.close()
     return results
+
+
+def insert_collateral_snapshot(user_id: int, wallet_address: str, collateral_usd: float):
+    with get_conn() as conn:
+        cur = conn.cursor()
+        cur.execute("""
+            INSERT INTO collateral_snapshots (user_id, wallet_address, collateral_usd)
+            VALUES (%s, %s, %s)
+        """, (user_id, wallet_address, collateral_usd))
+        cur.close()
+
+
+def get_collateral_snapshots(wallet_address: str, window_minutes: int = 5) -> list:
+    with get_conn() as conn:
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur.execute("""
+            SELECT collateral_usd, created_at
+            FROM collateral_snapshots
+            WHERE wallet_address = %s
+              AND created_at >= NOW() - make_interval(mins => %s)
+            ORDER BY created_at ASC
+        """, (wallet_address, window_minutes))
+        rows = cur.fetchall()
+        cur.close()
+        return [dict(r) for r in rows]
+
+
+def prune_collateral_snapshots(max_age_minutes: int = 60):
+    with get_conn() as conn:
+        cur = conn.cursor()
+        cur.execute("""
+            DELETE FROM collateral_snapshots
+            WHERE created_at < NOW() - make_interval(mins => %s)
+        """, (max_age_minutes,))
+        deleted = cur.rowcount
+        cur.close()
+        return deleted
+
+
+def save_short_position(user_id: int, wallet_address: str, tier: str,
+                        weth_borrowed: float, entry_collateral: float,
+                        entry_hf: float, tx_hash_entry: str = None) -> int:
+    with get_conn() as conn:
+        cur = conn.cursor()
+        cur.execute("""
+            INSERT INTO short_positions
+                (user_id, wallet_address, tier, status, weth_borrowed,
+                 entry_collateral, entry_hf, tx_hash_entry)
+            VALUES (%s, %s, %s, 'open', %s, %s, %s, %s)
+            RETURNING id
+        """, (user_id, wallet_address, tier, weth_borrowed,
+              entry_collateral, entry_hf, tx_hash_entry))
+        row = cur.fetchone()
+        cur.close()
+        return row[0] if row else None
+
+
+def get_open_short(wallet_address: str) -> dict:
+    with get_conn() as conn:
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur.execute("""
+            SELECT * FROM short_positions
+            WHERE wallet_address = %s AND status = 'open'
+            ORDER BY entry_time DESC
+            LIMIT 1
+        """, (wallet_address,))
+        row = cur.fetchone()
+        cur.close()
+        return dict(row) if row else None
+
+
+def close_short_position(short_id: int, tx_hash_close: str = None,
+                         close_details: dict = None):
+    import json
+    with get_conn() as conn:
+        cur = conn.cursor()
+        cur.execute("""
+            UPDATE short_positions
+            SET status = 'closed', close_time = NOW(),
+                tx_hash_close = %s, close_details = %s
+            WHERE id = %s
+        """, (tx_hash_close, json.dumps(close_details or {}), short_id))
+        cur.close()
+
+
+def get_last_closed_short(wallet_address: str) -> dict:
+    with get_conn() as conn:
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur.execute("""
+            SELECT * FROM short_positions
+            WHERE wallet_address = %s AND status = 'closed'
+            ORDER BY close_time DESC
+            LIMIT 1
+        """, (wallet_address,))
+        row = cur.fetchone()
+        cur.close()
+        return dict(row) if row else None
 
 
 if __name__ == "__main__":

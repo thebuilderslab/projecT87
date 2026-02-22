@@ -3934,13 +3934,28 @@ def delegation_status():
 
     wallet = user['wallet_address']
     try:
-        from delegation_client import check_borrow_allowance
+        from delegation_client import check_borrow_allowance, _get_web3, _get_bot_account, ERC20_ABI
         dai_allowance = check_borrow_allowance(wallet, "DAI")
         weth_allowance = check_borrow_allowance(wallet, "WETH")
-        logger.info(f"[DelegationStatus] wallet={wallet[:10]}... DAI borrowAllowance={dai_allowance}, WETH borrowAllowance={weth_allowance}")
+
+        usdt_allowance_to_bot = 0
+        try:
+            w3 = _get_web3()
+            acct = _get_bot_account()
+            if w3 and acct:
+                USDT_ADDR = "0xFd086bC7Cd5C481DCC9C85ebE478A1C0b69FCbb9"
+                usdt_c = w3.eth.contract(address=w3.to_checksum_address(USDT_ADDR), abi=ERC20_ABI)
+                usdt_allowance_to_bot = usdt_c.functions.allowance(
+                    w3.to_checksum_address(wallet), acct.address
+                ).call()
+        except Exception as usdt_err:
+            logger.warning(f"[DelegationStatus] USDT allowance check failed: {usdt_err}")
+
+        logger.info(f"[DelegationStatus] wallet={wallet[:10]}... DAI borrowAllowance={dai_allowance}, WETH borrowAllowance={weth_allowance}, USDT allowance_to_bot={usdt_allowance_to_bot}")
         return jsonify({
             "dai_allowance": dai_allowance,
             "weth_allowance": weth_allowance,
+            "usdt_allowance_to_bot": usdt_allowance_to_bot,
             "wallet": wallet
         })
     except Exception as e:
@@ -3967,11 +3982,12 @@ def register_wallet_activation():
     approve_tx = data.get('approveTxHash')
     delegation_tx = data.get('delegationTxHash')
     usdc_tx = data.get('usdcTxHash')
+    usdt_tx = data.get('usdtTxHash')
 
     if not dai_signature or not weth_signature or not deadline:
         return jsonify({"error": "Missing EIP-712 signatures (DAI + WETH) or deadline"}), 400
 
-    logger.info(f"[RegisterWallet] user={user_id}, wallet={wallet}, deadline={deadline}, has_weth_sig={bool(weth_signature)}, steps: approve={approve_tx}, delegation={delegation_tx}, usdc={usdc_tx}")
+    logger.info(f"[RegisterWallet] user={user_id}, wallet={wallet}, deadline={deadline}, has_weth_sig={bool(weth_signature)}, steps: approve={approve_tx}, delegation={delegation_tx}, usdc={usdc_tx}, usdt={usdt_tx}")
 
     from delegation_client import is_contract_deployed, validate_full_automation_ready, DELEGATION_MANAGER_ADDRESS, VARIABLE_DEBT_TOKENS, _get_web3, get_bot_wallet_address
     contract_live = is_contract_deployed()
@@ -4017,9 +4033,10 @@ def register_wallet_activation():
         "approve_tx": approve_tx,
         "delegation_tx": delegation_tx,
         "usdc_tx": usdc_tx,
+        "usdt_tx": usdt_tx,
         "dai_signature_deadline": deadline,
         "weth_signature_present": bool(weth_signature),
-        "activation_step": 4,
+        "activation_step": 5,
         "sigs_verified": True,
         "chain_id": chain_id,
     })

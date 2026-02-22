@@ -55,16 +55,33 @@ The REAA platform operates on the Arbitrum Mainnet, integrating distinct modules
 - **Re-sign flow:** Developer portal checks `borrowAllowance` on-chain via `/api/delegation-status`, shows RE-SIGN button if missing, user re-signs EIP-712 with 30-day deadline, backend verifies + submits + returns borrowAllowance confirmation.
 - **Per-Wallet Autonomous Strategy Execution:** `strategy_engine.py` implements per-wallet HF-band strategies (Growth, Capacity, Macro Short, Micro Short, Nurse Mode).
 - **Distribution Pipeline Safety:** Prioritizes Resume > Nurse > Strategy with borrow cooldowns, post-borrow HF rechecks, and state preservation on swap failures.
+
+**Macro/Micro Short System (Feb 2026):**
+- **Purpose:** Automated hedging against collateral velocity drops (market downturns or manual withdrawals).
+- **Data Storage:** Two PostgreSQL tables: `collateral_snapshots` (tracks collateral over time per wallet), `short_positions` (tracks open/closed shorts with entry/close details).
+- **Velocity Tracking:** `insert_collateral_snapshot()` runs every monitoring cycle in `run_autonomous_mainnet.py`. `_compute_velocity_drop()` computes max collateral drop within a configurable time window. Stale snapshots pruned hourly (>60 min).
+- **Decision Tree Priority:** Resume > Short Close > Emergency > Growth > Capacity > Macro > Micro > Idle. Short close evaluates BEFORE growth/capacity to ensure open positions are managed first.
+- **Macro Short Trigger:** Collateral drops >=$50 in 5-min window + HF >= 3.05 + no existing open short. Borrows $15 WETH, splits 40% WBTC / 35% USDT / 25% WETH, all supplied to user's Aave position.
+- **Micro Short Trigger:** Collateral drops >=$30 in 5-min window + HF >= 3.00 + no existing open short + 3-min cooldown since last micro close.
+- **Short Close Logic:** Closes when collateral recovers to entry level OR hold time exceeds 10 minutes. Flow: withdraw USDT from user's Aave → USDT goes to user wallet (via DelegationManager: Aave→DM→user) → bot pulls USDT from user wallet (requires user USDT→bot approval) → swap USDT→WETH → repay WETH debt → distribute profit 20/20/30/20/10 (Wallet_S DAI / USDC wallet / WBTC Aave / WETH Aave / USDT Aave).
+- **USDT Routing Confirmed:** `executeWithdraw()` in DelegationManager does `AavePool.withdraw(asset, amount, address(this))` then `IERC20.transfer(user, amount)`. USDT lands in USER wallet, not bot. Bot must `pull_token_from_user()` to get USDT for swapping.
+- **Simulation Settings:** 5-min velocity windows, 3-min micro cooldown, 10-min max short hold, $15 macro / $8 micro short sizes.
+- **Simulation Logging:** `📡 [SIM STATUS]` log line shows HF, collateral, velocity drop, snapshot count, open short status, and trigger thresholds every strategy cycle.
+- **Short Position State:** Persisted in PostgreSQL via `save_short_position()` / `close_short_position()` / `get_open_short()` / `get_last_closed_short()`. Survives bot restarts.
+- **Pre-borrow Guards:** Checks WETH `borrowAllowance(user, bot) > 0` before short entry, skips with `SHORT_SKIPPED_NO_DELEGATION` if missing.
 - Bot wallet: 0xbbd55BB128645c16D6DEa9f1866bd9a7e7fC9c48. Variable debt tokens: DAI=0x8619d80F..., WETH=0x0c84331e... on Arbitrum mainnet (chain ID 42161).
 
-**4-Step Sequential Signer (Wallet Activation):**
+**5-Step Sequential Signer (Wallet Activation):**
 - Step 1: Unlimited WBTC approval to DelegationManager (on-chain tx)
 - Step 2: DM delegation config with full permissions (on-chain tx)
 - Step 3: Gasless EIP-712 credit delegation for DAI + WETH variable debt tokens to **bot wallet** (2 signatures, no gas)
 - Step 4: Unlimited USDC approval to DelegationManager (on-chain tx)
+- Step 5: Unlimited USDT approval to **bot wallet** (on-chain tx) — Required for short close routing where bot pulls USDT from user wallet after Aave withdrawal
 - Endpoints (`/api/register-wallet`, `/api/wallet/activation-status`) manage the activation process.
 - **Credit delegation targets the bot wallet directly** — bot calls Aave Pool.borrow(onBehalfOf=user) and receives tokens as msg.sender, bypassing DM for borrows and eliminating the need for pull_token_from_user.
 - Supply/repay/withdraw operations still route through `delegation_client.py` and the `REAADelegationManager` contract.
+- **Existing wallet USDT prompt:** For wallets activated before Step 5, `/api/delegation-status` returns `usdt_allowance_to_bot`, and the portal shows an `[ APPROVE USDT FOR SHORT CLOSE ]` button if missing.
+- **SIMULATION_MODE:** `SIMULATION_MODE = True` in `strategy_engine.py` routes short entry/close through mock functions (`_execute_mock_short_entry` / `_execute_mock_short_close`) that log what would happen without executing on-chain transactions. Mock close also checks USDT allowance and reports approval status. Short positions are still persisted in DB for state tracking. Set `SIMULATION_MODE = False` for live trading.
 
 **Multi-Tenant Infrastructure:**
 - **API Keys:** `api_keys` table with SHA-256 hashing, 2-key limit, and revocation support.

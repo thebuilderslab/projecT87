@@ -118,6 +118,10 @@ def refresh_defi_for_user(user_id, wallet_address):
             net_worth=pos['net_worth_usd'],
             wallet_address=wallet_address,
         )
+        try:
+            database.insert_collateral_snapshot(user_id, wallet_address, pos['total_collateral_usd'])
+        except Exception as snap_err:
+            logging.getLogger(__name__).warning(f"[Monitor] Collateral snapshot insert failed: {snap_err}")
         if ok:
             log_agent_activity(f"[Monitor] Refreshed position for user {user_id} ({wallet_address[:10]}...): "
                              f"collateral=${pos['total_collateral_usd']}, debt=${pos['total_debt_usd']}, HF={pos['health_factor']}")
@@ -423,6 +427,14 @@ def run_autonomous_mainnet_agent():
                 agent._perform_safety_sweep()
 
                 log_agent_activity(f"🔄 Monitoring cycle {run_id}-{iteration}")
+
+                if DB_AVAILABLE and iteration % 20 == 0:
+                    try:
+                        pruned = database.prune_collateral_snapshots(max_age_minutes=60)
+                        if pruned > 0:
+                            logging.getLogger(__name__).info(f"[Monitor] Pruned {pruned} stale collateral snapshots")
+                    except Exception:
+                        pass
 
                 config = {
                     'health_factor_target': 3.10,

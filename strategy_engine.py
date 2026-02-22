@@ -21,10 +21,10 @@ HF Band Priority Order (checked top to bottom, first match wins):
    swap DAI->ETH for gas, transfer DAI to Wallet_S, swap DAI->USDC (stays in user wallet).
 3. CAPACITY (HF >= 2.40, available borrows >= $8.20):
    Same 6-step engine with smaller amounts.
-4. MACRO SHORT (collateral velocity drop >= $50 in 30 min, HF >= 3.05):
-   Hedge via WETH borrow against market downturn.
-5. MICRO SHORT (collateral velocity drop >= $30 in 20 min, HF >= 3.00):
-   Smaller hedge. 4h cooldown.
+4. MACRO SHORT (collateral velocity drop >= $50 in 5 min, HF >= 3.05):
+   Hedge via WETH borrow against market downturn. $15 short size.
+5. MICRO SHORT (collateral velocity drop >= $30 in 5 min, HF >= 3.00):
+   Smaller hedge ($8). 3-min cooldown. Max hold 10 min.
 6. IDLE / SKIP: No conditions met. Log reason and wait for next cycle.
 
 USER WALLET vs PERSONAL BOT — Two Intentional Differences:
@@ -97,13 +97,17 @@ DELEGATED_STEP_ORDER = [
 EXECUTION_STATE_DIR = "/tmp/reaa_delegation_states"
 
 MACRO_VELOCITY_DROP_USD = 50.0
-MACRO_VELOCITY_WINDOW_MIN = 30
+MACRO_VELOCITY_WINDOW_MIN = 5
 MICRO_VELOCITY_DROP_USD = 30.0
-MICRO_VELOCITY_WINDOW_MIN = 20
-MICRO_COOLDOWN_HOURS = 4
+MICRO_VELOCITY_WINDOW_MIN = 5
+MICRO_COOLDOWN_HOURS = 0.05
 
 MACRO_SHORT_SIZE_USD = 15.0
 MICRO_SHORT_SIZE_USD = 8.0
+
+MAX_SHORT_HOLD_MINUTES = 10
+
+SIMULATION_MODE = True
 
 SHORT_WBTC_PCT = 0.40
 SHORT_USDT_PCT = 0.35
@@ -161,6 +165,55 @@ try:
     UNISWAP_AVAILABLE = True
 except ImportError:
     UNISWAP_AVAILABLE = False
+
+
+def _compute_velocity_drop(wallet_address, window_minutes):
+    if not DB_AVAILABLE:
+        return 0.0, 0.0, 0
+    snapshots = database.get_collateral_snapshots(wallet_address, window_minutes)
+    if len(snapshots) < 2:
+        return 0.0, 0.0, len(snapshots)
+    max_collateral = max(float(s['collateral_usd']) for s in snapshots)
+    latest_collateral = float(snapshots[-1]['collateral_usd'])
+    drop = max_collateral - latest_collateral
+    return drop, latest_collateral, len(snapshots)
+
+
+def _get_open_short(wallet_address):
+    if not DB_AVAILABLE:
+        return None
+    return database.get_open_short(wallet_address)
+
+
+def _save_short_position(user_id, wallet_address, tier, weth_borrowed, entry_collateral, entry_hf, tx_hash=None):
+    if not DB_AVAILABLE:
+        return None
+    return database.save_short_position(user_id, wallet_address, tier, weth_borrowed, entry_collateral, entry_hf, tx_hash)
+
+
+def _close_short_position(short_id, tx_hash_close=None, close_details=None):
+    if not DB_AVAILABLE:
+        return
+    database.close_short_position(short_id, tx_hash_close, close_details)
+
+
+def _check_micro_cooldown(wallet_address):
+    if not DB_AVAILABLE:
+        return True
+    last_closed = database.get_last_closed_short(wallet_address)
+    if not last_closed:
+        return True
+    if last_closed.get('tier') != 'micro':
+        return True
+    close_time = last_closed.get('close_time') or last_closed.get('entry_time')
+    if not close_time:
+        return True
+    from datetime import datetime, timezone, timedelta
+    cooldown_delta = timedelta(hours=MICRO_COOLDOWN_HOURS)
+    now = datetime.now(timezone.utc)
+    if hasattr(close_time, 'tzinfo') and close_time.tzinfo is None:
+        close_time = close_time.replace(tzinfo=timezone.utc)
+    return now >= close_time + cooldown_delta
 
 
 def _log_strategy(user_id, wallet, mode, action, hf_before, hf_after=None, details=""):
@@ -824,6 +877,33 @@ def _execute_delegated_distribution(user_id, wallet_address, agent, path_name, d
         return result
 
 
+def _execute_mock_short_entry(user_id, wallet_address, tier, short_size_usd, live_hf, entry_collateral):
+    weth_amount = short_size_usd / 2000.0
+
+    logger.info(
+        f"🧪 [MOCK SHORT ENTRY] wallet={wallet_address[:10]}... tier={tier} "
+        f"size=${short_size_usd:.2f} weth={weth_amount:.6f} entry_collateral=${entry_collateral:.2f} | "
+        f"SIMULATION_MODE=True — no on-chain tx executed")
+
+    _log_strategy(user_id, wallet_address, f"{tier}_short_entry", "MOCK_ENTRY", live_hf,
+                  details=f"[SIM] {tier} short mock-opened. size=${short_size_usd:.2f}, weth={weth_amount:.6f}. No on-chain tx.")
+
+    if DB_AVAILABLE:
+        database.record_wallet_action(
+            user_id=user_id, wallet_address=wallet_address,
+            action_type=f'strategy_short_entry_mock_{tier}',
+            details={"tier": tier, "short_size_usd": short_size_usd,
+                     "weth_amount": weth_amount, "simulation": True})
+
+    result = {
+        "mode": f"{tier}_short_entry", "action": "MOCK_ENTRY_OK", "executed": True,
+        "details": f"[SIM] {tier} short mock-opened at ${short_size_usd:.2f}",
+        "tx_hash": None, "weth_borrowed": weth_amount,
+    }
+    _record_strategy_action(user_id, wallet_address, f"MOCK ENTRY: {tier} short ${short_size_usd:.2f} (simulation)")
+    return result
+
+
 def _execute_delegated_short_entry(user_id, wallet_address, agent, tier, short_size_usd, live_hf):
     """
     Delegated liability short entry:
@@ -992,6 +1072,67 @@ def _log_short_close_residual(wallet_address, amount_in_weth, amount_out_eth=0.0
     }
     logger.info(_json.dumps(entry))
     return entry
+
+
+def _check_usdt_allowance_to_bot(wallet_address):
+    if not DELEGATION_AVAILABLE:
+        return 0
+    try:
+        from delegation_client import _get_web3, _get_bot_account, ERC20_ABI as _ERC20
+        w3 = _get_web3()
+        acct = _get_bot_account()
+        if not w3 or not acct:
+            return 0
+        usdt_c = w3.eth.contract(address=w3.to_checksum_address(USDT_ADDRESS), abi=_ERC20)
+        return usdt_c.functions.allowance(
+            w3.to_checksum_address(wallet_address), acct.address
+        ).call()
+    except Exception as e:
+        logger.warning(f"[USDT Allowance Check] {wallet_address[:10]}... error: {e}")
+        return 0
+
+
+def _execute_mock_short_close(user_id, wallet_address, agent, live_hf, open_short):
+    tier = open_short.get('tier', 'unknown')
+    short_id = open_short['id']
+    weth_borrowed = float(open_short.get('weth_borrowed', 0))
+    entry_collateral = float(open_short.get('entry_collateral', 0))
+
+    usdt_allowance = _check_usdt_allowance_to_bot(wallet_address)
+    usdt_approved = usdt_allowance > 0
+
+    logger.info(
+        f"🧪 [MOCK SHORT CLOSE] wallet={wallet_address[:10]}... tier={tier} "
+        f"weth_borrowed={weth_borrowed:.6f} entry_collateral=${entry_collateral:.2f} | "
+        f"USDT allowance_to_bot={usdt_allowance} ({'APPROVED' if usdt_approved else 'NOT APPROVED — Step 5 needed'}) | "
+        f"SIMULATION_MODE=True — no on-chain tx executed")
+
+    _log_strategy(user_id, wallet_address, "short_close", "MOCK_CLOSE", live_hf,
+                  details=f"[SIM] {tier} short mock-closed. weth_borrowed={weth_borrowed:.6f}, "
+                          f"usdt_approved={usdt_approved}. No on-chain tx.")
+
+    close_details = {
+        "reason": "mock_close_simulation",
+        "tier": tier,
+        "weth_borrowed": weth_borrowed,
+        "usdt_allowance_to_bot": usdt_allowance,
+        "usdt_approved": usdt_approved,
+        "simulation": True,
+    }
+    _close_short_position(short_id, tx_hash_close=None, close_details=close_details)
+
+    if DB_AVAILABLE:
+        database.record_wallet_action(
+            user_id=user_id, wallet_address=wallet_address,
+            action_type='strategy_short_close_mock',
+            details=close_details)
+
+    result = {
+        "mode": "short_close", "action": "MOCK_CLOSE_OK", "executed": True,
+        "details": f"[SIM] {tier} short mock-closed. USDT approved={usdt_approved}",
+    }
+    _record_strategy_action(user_id, wallet_address, f"MOCK CLOSE: {tier} short (simulation)")
+    return result
 
 
 def _execute_delegated_short_close(user_id, wallet_address, agent, live_hf):
@@ -1631,6 +1772,20 @@ def run_delegated_strategy(user_id, wallet_address, agent, run_id, iteration, co
 
     available_borrows = live_data.get("availableBorrowsUSD", 0)
     live_hf = live_data.get("healthFactor", hf)
+    live_collateral_now = live_data.get("totalCollateralUSD", collateral_usd)
+
+    snap_count = 0
+    vel_drop = 0.0
+    if DB_AVAILABLE:
+        snap_count = len(database.get_collateral_snapshots(wallet_address, MACRO_VELOCITY_WINDOW_MIN))
+        vel_drop, _, _ = _compute_velocity_drop(wallet_address, MACRO_VELOCITY_WINDOW_MIN)
+    open_short_now = _get_open_short(wallet_address)
+    logger.info(
+        f"📡 [SIM STATUS] wallet={wallet_address[:10]}... HF={live_hf:.4f} | "
+        f"collateral=${live_collateral_now:.2f} | debt=${debt_usd:.2f} | "
+        f"avail_borrow=${available_borrows:.2f} | velocity_drop=${vel_drop:.2f} in {MACRO_VELOCITY_WINDOW_MIN}min "
+        f"({snap_count} snaps) | open_short={'YES '+open_short_now['tier'] if open_short_now else 'NONE'} | "
+        f"thresholds: macro>=${MACRO_VELOCITY_DROP_USD} micro>={MICRO_VELOCITY_DROP_USD}")
 
     if live_hf < EMERGENCY_HF_THRESHOLD:
         result["mode"] = "emergency"
@@ -1640,6 +1795,61 @@ def run_delegated_strategy(user_id, wallet_address, agent, run_id, iteration, co
                       details=f"HF critically low! Collateral=${collateral_usd:.2f}, Debt=${debt_usd:.2f}")
         _record_strategy_action(user_id, wallet_address, f"ALERT: HF {live_hf:.4f} critically low")
         return result
+
+    open_short = _get_open_short(wallet_address)
+    if open_short:
+        from datetime import datetime, timezone
+        entry_time = open_short['entry_time']
+        if hasattr(entry_time, 'tzinfo') and entry_time.tzinfo is None:
+            entry_time = entry_time.replace(tzinfo=timezone.utc)
+        age_minutes = (datetime.now(timezone.utc) - entry_time).total_seconds() / 60.0
+        entry_collateral = float(open_short.get('entry_collateral', 0))
+        live_collateral = live_data.get("totalCollateralUSD", collateral_usd)
+        tier = open_short['tier']
+        short_id = open_short['id']
+
+        collateral_recovered = live_collateral >= entry_collateral
+        hold_expired = age_minutes >= MAX_SHORT_HOLD_MINUTES
+
+        logger.info(f"📊 [SHORT MONITOR] wallet={wallet_address[:10]}... tier={tier} age={age_minutes:.1f}min "
+                     f"entry_collateral=${entry_collateral:.2f} current=${live_collateral:.2f} "
+                     f"recovered={collateral_recovered} hold_expired={hold_expired} (max={MAX_SHORT_HOLD_MINUTES}min)")
+
+        if collateral_recovered or hold_expired:
+            close_reason = "collateral_recovered" if collateral_recovered else f"hold_expired_{age_minutes:.0f}min"
+            logger.info(f"🔻 [SHORT CLOSE TRIGGER] wallet={wallet_address[:10]}... reason={close_reason}")
+            _log_strategy(user_id, wallet_address, "short_close", "TRIGGER", live_hf,
+                          details=f"Closing {tier} short: {close_reason}. Entry=${entry_collateral:.2f}, Current=${live_collateral:.2f}, Age={age_minutes:.1f}min")
+
+            if SIMULATION_MODE:
+                close_result = _execute_mock_short_close(user_id, wallet_address, agent, live_hf, open_short)
+            else:
+                close_result = _execute_delegated_short_close(user_id, wallet_address, agent, live_hf)
+
+                close_details_data = {
+                    "reason": close_reason,
+                    "age_minutes": round(age_minutes, 1),
+                    "entry_collateral": entry_collateral,
+                    "close_collateral": live_collateral,
+                    "close_hf": live_hf,
+                    "close_action": close_result.get("action", "UNKNOWN"),
+                }
+                _close_short_position(short_id, close_result.get("tx_hash"), close_details_data)
+
+            logger.info(f"✅ [SHORT CLOSED] wallet={wallet_address[:10]}... action={close_result.get('action')} "
+                         f"details={close_result.get('details', '')}")
+            return close_result
+        else:
+            logger.info(f"⏳ [SHORT HOLD] wallet={wallet_address[:10]}... {tier} short still open, "
+                         f"waiting for recovery or timeout ({MAX_SHORT_HOLD_MINUTES - age_minutes:.1f}min remaining)")
+            result["mode"] = f"{tier}_short_hold"
+            result["action"] = "HOLDING"
+            result["details"] = (f"{tier} short open {age_minutes:.1f}min. "
+                                  f"Entry=${entry_collateral:.2f}, Current=${live_collateral:.2f}. "
+                                  f"Closes on recovery or after {MAX_SHORT_HOLD_MINUTES}min")
+            _log_strategy(user_id, wallet_address, f"{tier}_short_hold", "HOLDING", live_hf, details=result["details"])
+            _record_strategy_action(user_id, wallet_address, f"HOLDING: {tier} short open {age_minutes:.1f}min")
+            return result
 
     baseline = _get_wallet_baseline(user_id, wallet_address)
     if baseline <= 0:
@@ -1710,6 +1920,62 @@ def run_delegated_strategy(user_id, wallet_address, agent, run_id, iteration, co
         result = _execute_delegated_distribution(user_id, wallet_address, agent, "capacity", CAPACITY_DISTRIBUTION, live_hf)
         return result
 
+    macro_drop, macro_latest, macro_count = _compute_velocity_drop(wallet_address, MACRO_VELOCITY_WINDOW_MIN)
+    micro_drop, micro_latest, micro_count = _compute_velocity_drop(wallet_address, MICRO_VELOCITY_WINDOW_MIN)
+
+    logger.info(f"📉 [VELOCITY] wallet={wallet_address[:10]}... "
+                f"macro_drop=${macro_drop:.2f}/{MACRO_VELOCITY_DROP_USD} in {MACRO_VELOCITY_WINDOW_MIN}min ({macro_count} snapshots) | "
+                f"micro_drop=${micro_drop:.2f}/{MICRO_VELOCITY_DROP_USD} in {MICRO_VELOCITY_WINDOW_MIN}min ({micro_count} snapshots)")
+
+    macro_triggered = (
+        macro_drop >= MACRO_VELOCITY_DROP_USD and
+        live_hf >= MACRO_HF_THRESHOLD and
+        macro_count >= 2
+    )
+
+    if macro_triggered:
+        logger.info(f"🚨 [MACRO SHORT TRIGGER] wallet={wallet_address[:10]}... "
+                     f"drop=${macro_drop:.2f} >= ${MACRO_VELOCITY_DROP_USD} | HF={live_hf:.2f} >= {MACRO_HF_THRESHOLD}")
+        _log_strategy(user_id, wallet_address, "macro_short", "TRIGGER", live_hf,
+                      details=f"Collateral dropped ${macro_drop:.2f} in {MACRO_VELOCITY_WINDOW_MIN}min. Entering macro short hedge (${MACRO_SHORT_SIZE_USD})")
+
+        if SIMULATION_MODE:
+            entry_result = _execute_mock_short_entry(user_id, wallet_address, "macro", MACRO_SHORT_SIZE_USD, live_hf, macro_latest + macro_drop)
+        else:
+            entry_result = _execute_delegated_short_entry(user_id, wallet_address, agent, "macro", MACRO_SHORT_SIZE_USD, live_hf)
+        if entry_result.get("executed"):
+            _save_short_position(user_id, wallet_address, "macro",
+                                 MACRO_SHORT_SIZE_USD / 2000.0,
+                                 macro_latest + macro_drop,
+                                 live_hf, entry_result.get("tx_hash"))
+            logger.info(f"✅ [MACRO SHORT OPEN] wallet={wallet_address[:10]}... entry_collateral=${macro_latest + macro_drop:.2f}")
+        return entry_result
+
+    micro_triggered = (
+        micro_drop >= MICRO_VELOCITY_DROP_USD and
+        live_hf >= MICRO_HF_THRESHOLD and
+        micro_count >= 2 and
+        _check_micro_cooldown(wallet_address)
+    )
+
+    if micro_triggered:
+        logger.info(f"⚡ [MICRO SHORT TRIGGER] wallet={wallet_address[:10]}... "
+                     f"drop=${micro_drop:.2f} >= ${MICRO_VELOCITY_DROP_USD} | HF={live_hf:.2f} >= {MICRO_HF_THRESHOLD}")
+        _log_strategy(user_id, wallet_address, "micro_short", "TRIGGER", live_hf,
+                      details=f"Collateral dropped ${micro_drop:.2f} in {MICRO_VELOCITY_WINDOW_MIN}min. Entering micro short hedge (${MICRO_SHORT_SIZE_USD})")
+
+        if SIMULATION_MODE:
+            entry_result = _execute_mock_short_entry(user_id, wallet_address, "micro", MICRO_SHORT_SIZE_USD, live_hf, micro_latest + micro_drop)
+        else:
+            entry_result = _execute_delegated_short_entry(user_id, wallet_address, agent, "micro", MICRO_SHORT_SIZE_USD, live_hf)
+        if entry_result.get("executed"):
+            _save_short_position(user_id, wallet_address, "micro",
+                                 MICRO_SHORT_SIZE_USD / 2000.0,
+                                 micro_latest + micro_drop,
+                                 live_hf, entry_result.get("tx_hash"))
+            logger.info(f"✅ [MICRO SHORT OPEN] wallet={wallet_address[:10]}... entry_collateral=${micro_latest + micro_drop:.2f}")
+        return entry_result
+
     skip_reasons = []
     if live_hf < GROWTH_HF_THRESHOLD:
         skip_reasons.append(f"HF {live_hf:.2f} < Growth threshold {GROWTH_HF_THRESHOLD}")
@@ -1717,6 +1983,8 @@ def run_delegated_strategy(user_id, wallet_address, agent, run_id, iteration, co
         skip_reasons.append(f"growth ${absolute_growth:+.2f} ({relative_growth*100:.1f}%) below triggers")
     if available_borrows < CAPACITY_MIN_CAPACITY_USD:
         skip_reasons.append(f"capacity ${available_borrows:.2f} < ${CAPACITY_MIN_CAPACITY_USD}")
+    if macro_drop > 0 and macro_drop < MACRO_VELOCITY_DROP_USD:
+        skip_reasons.append(f"velocity drop ${macro_drop:.2f} < macro ${MACRO_VELOCITY_DROP_USD}")
 
     reason_str = "; ".join(skip_reasons) if skip_reasons else f"HF {live_hf:.2f} within safe band, no triggers met"
     result["mode"] = "idle"
@@ -1834,6 +2102,9 @@ def get_system_parameters():
                 "weth_pct": SHORT_WETH_PCT * 100,
             },
             "description": "Borrow WETH against collateral and diversify into WBTC/USDT/WETH to hedge downside",
+            "max_hold_minutes": MAX_SHORT_HOLD_MINUTES,
+            "close_trigger": f"Collateral recovers to entry level OR hold time > {MAX_SHORT_HOLD_MINUTES} min",
+            "state_storage": "PostgreSQL short_positions table (persistent across restarts)",
         },
         "micro_short": {
             "hf_minimum": MICRO_HF_THRESHOLD,
@@ -1841,7 +2112,7 @@ def get_system_parameters():
             "velocity_window_minutes": MICRO_VELOCITY_WINDOW_MIN,
             "cooldown_hours": MICRO_COOLDOWN_HOURS,
             "short_size_usd": MICRO_SHORT_SIZE_USD,
-            "trigger_logic": f"Collateral drops >= ${MICRO_VELOCITY_DROP_USD} within {MICRO_VELOCITY_WINDOW_MIN} min AND HF >= {MICRO_HF_THRESHOLD}, 4h cooldown",
+            "trigger_logic": f"Collateral drops >= ${MICRO_VELOCITY_DROP_USD} within {MICRO_VELOCITY_WINDOW_MIN} min AND HF >= {MICRO_HF_THRESHOLD}, {MICRO_COOLDOWN_HOURS}h cooldown",
             "hedge_allocation": {
                 "wbtc_pct": SHORT_WBTC_PCT * 100,
                 "usdt_pct": SHORT_USDT_PCT * 100,
