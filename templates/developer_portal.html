@@ -1071,20 +1071,34 @@ async function scanWbtcBalance() {
     return;
   }
   try {
+    var chainId = await window.ethereum.request({ method: 'eth_chainId' });
+    if (chainId !== '0xa4b1') {
+      display.textContent = 'SWITCH TO ARBITRUM';
+      display.style.color = 'var(--red)';
+      return;
+    }
     var data = '0x70a08231000000000000000000000000' + currentWallet.slice(2).toLowerCase();
     var raw = await window.ethereum.request({
       method: 'eth_call',
       params: [{ to: CONTRACTS.WBTC, data: data }, 'latest']
     });
+    if (!raw || raw === '0x' || raw === '0x0') {
+      display.textContent = '0.00000000 WBTC (NO WBTC FOUND)';
+      display.style.color = 'var(--red)';
+      return;
+    }
     var bal = parseInt(raw, 16);
+    if (isNaN(bal)) bal = 0;
     var wbtcVal = bal / 1e8;
     display.textContent = wbtcVal.toFixed(8) + ' WBTC';
+    display.style.color = '';
     if (bal === 0) {
       display.textContent = '0.00000000 WBTC (NO WBTC FOUND)';
       display.style.color = 'var(--red)';
     }
   } catch(e) {
     display.textContent = 'SCAN FAILED';
+    display.style.color = 'var(--red)';
     console.error('WBTC scan error:', e);
   }
 }
