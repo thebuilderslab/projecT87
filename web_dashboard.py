@@ -77,12 +77,18 @@ class WorkingAgent:
                     print(f"⚠️ Dashboard: Tenderly RPC failed: {e}")
         
         expected_chain_id = CHAIN_ID if network_mode == 'fork' else 42161
-        working_rpcs = [
+        working_rpcs = []
+        arb_rpc = os.getenv('ARBITRUM_RPC_URL')
+        if arb_rpc:
+            working_rpcs.append(arb_rpc)
+        alchemy_rpc = os.getenv('ALCHEMY_ARB_RPC') or os.getenv('ALCHEMY_RPC_URL')
+        if alchemy_rpc and alchemy_rpc not in working_rpcs:
+            working_rpcs.append(alchemy_rpc)
+        working_rpcs.extend([
             "https://arbitrum-one.public.blastapi.io",
-            os.getenv('ALCHEMY_RPC_URL', "https://arb1.arbitrum.io/rpc"),
             "https://arb1.arbitrum.io/rpc",
             "https://arbitrum-one.publicnode.com"
-        ]
+        ])
         
         for rpc_url in working_rpcs:
             try:
@@ -409,11 +415,16 @@ def get_live_agent_data():
                         tenderly_rpc = os.getenv('TENDERLY_RPC_URL')
                         if tenderly_rpc:
                             self.rpc_endpoints.append(tenderly_rpc)
+                    arb_rpc = os.getenv('ARBITRUM_RPC_URL')
+                    if arb_rpc:
+                        self.rpc_endpoints.append(arb_rpc)
+                    alchemy_rpc = os.getenv('ALCHEMY_ARB_RPC') or os.getenv('ALCHEMY_RPC_URL')
+                    if alchemy_rpc and alchemy_rpc not in self.rpc_endpoints:
+                        self.rpc_endpoints.append(alchemy_rpc)
                     self.rpc_endpoints.extend([
                         "https://arbitrum-one.public.blastapi.io",
                         "https://arb1.arbitrum.io/rpc",
                         "https://arbitrum-one.publicnode.com",
-                        os.getenv('ALCHEMY_RPC_URL', "https://arb1.arbitrum.io/rpc")
                     ])
                     self.working_rpc = None
                     self.w3 = None

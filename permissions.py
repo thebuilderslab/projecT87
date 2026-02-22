@@ -1,3 +1,5 @@
+import os
+
 """
 Delegation Permissions Audit & Full-Automation Profile
 ======================================================
@@ -6,7 +8,7 @@ and auto-supply modules. Any new strategy or token MUST update these
 tables.
 
 On-chain contract: REAADelegationManager (Arbitrum mainnet)
-  Address: 0x7427370Ab4C311B090446544078c819b3946E59d
+  Address: Loaded from DELEGATION_MANAGER_ADDRESS env var
   Flags are WALLET-LEVEL (single set per wallet, not per-token).
 
 Wallet Profiles:
@@ -35,7 +37,7 @@ WETH_ADDRESS = "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1"
 USDC_ADDRESS = "0xaf88d065e77c8cC2239327C5EDb3A432268e5831"
 USDT_ADDRESS = "0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9"
 
-DELEGATION_MANAGER_ADDRESS = "0x7427370Ab4C311B090446544078c819b3946E59d"
+DELEGATION_MANAGER_ADDRESS = os.environ.get("DELEGATION_MANAGER_ADDRESS", "")
 AAVE_POOL_ADDRESS = "0x794a61358D6845594F94dc1DB02A252b5b4814aD"
 UNISWAP_ROUTER_ADDRESS = "0xE592427A0AEce92De3Edee1F18E0157C05861564"
 

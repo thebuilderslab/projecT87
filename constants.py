@@ -44,10 +44,10 @@ ARBITRUM_PUBLIC_RPCS = [
 
 def get_rpc_url() -> str:
     return (
-        os.getenv("TENDERLY_RPC_URL")
-        or os.getenv("ARBITRUM_RPC_URL")
+        os.getenv("ARBITRUM_RPC_URL")
         or os.getenv("ALCHEMY_ARB_RPC")
         or os.getenv("ARB_RPC_URL")
+        or os.getenv("TENDERLY_RPC_URL")
         or ARBITRUM_PUBLIC_RPCS[0]
     )
 
