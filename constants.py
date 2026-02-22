@@ -2,9 +2,9 @@ import os
 
 CHAIN_NAME = "Arbitrum One"
 # --- Network Configuration ---
-CHAIN_ID = 7357
-NETWORK_NAME = "Tenderly Fork"
-FORCE_NETWORK = "fork"  # This tells the RPC Manager to stop looking for Mainnet
+CHAIN_ID = 42161
+NETWORK_NAME = "Arbitrum Mainnet"
+
 AAVE_POOL = "0x794a61358D6845594F94dc1DB02A252b5b4814aD"
 AAVE_POOL_DATA_PROVIDER = "0x69FA688f1Dc47d4B5d8029D5a35FB7a548310654"
 
