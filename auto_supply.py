@@ -7,11 +7,12 @@ from delegation_client import (
     get_wbtc_balance_raw,
     get_wbtc_allowance_raw,
     compute_supply_amount_raw,
-    call_auto_supply_wbtc,
+    dm_execute_supply,
     raw_to_wbtc,
     MIN_SUPPLY_RAW,
     _get_web3,
     DELEGATION_MANAGER_ADDRESS,
+    WBTC_TOKEN_ADDRESS,
 )
 
 logger = logging.getLogger(__name__)
@@ -153,7 +154,7 @@ def auto_supply_wbtc_for_wallet(managed_wallet):
 
     logger.info(f"[AutoSupply] decision=SUPPLY, wallet={wallet}, amount={amount_wbtc} WBTC ({amount_raw} raw)")
 
-    tx_hash = call_auto_supply_wbtc(wallet, amount_raw)
+    tx_hash = dm_execute_supply(wallet, WBTC_TOKEN_ADDRESS, amount_raw)
 
     if tx_hash is None:
         logger.warning(f"[AutoSupply] status=error, reason=tx_failed, wallet={wallet}, amount_raw={amount_raw}")
