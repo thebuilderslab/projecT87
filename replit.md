@@ -109,6 +109,7 @@ The CSP behavior was verified with runtime checks:
    - The `connect-src` directive whitelists these specific endpoints:
      - `https://arb1.arbitrum.io` — primary Arbitrum One RPC.
      - `https://arbitrum.publicnode.com` — backup Arbitrum RPC.
+     - `https://virtual.arbitrum.us-east.rpc.tenderly.co` — Tenderly Virtual TestNet fork RPC.
      - `wss://relay.walletconnect.com` — WalletConnect v2 relay (persistent WebSocket).
      - `https://verify.walletconnect.com` — WalletConnect session verification.
      - `https://explorer-api.walletconnect.com` — WalletConnect dapp metadata.

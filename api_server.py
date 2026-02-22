@@ -44,6 +44,7 @@ class EnhancedWeb3CSPMiddleware:
                         f"default-src 'self'; "
                         f"script-src 'self' 'nonce-{nonce}' 'unsafe-eval' https://*.replit.dev; "
                         f"connect-src 'self' https://arb1.arbitrum.io https://arbitrum.publicnode.com "
+                        f"https://virtual.arbitrum.us-east.rpc.tenderly.co "
                         f"wss://relay.walletconnect.com https://verify.walletconnect.com "
                         f"https://explorer-api.walletconnect.com; "
                         f"style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
