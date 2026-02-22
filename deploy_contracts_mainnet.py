@@ -181,7 +181,8 @@ def deploy_contract(w3, deployer_key, abi, bytecode, constructor_args, contract_
 
     signed = w3.eth.account.sign_transaction(tx, deployer_key)
     print(f"  Sending deployment transaction for {contract_name}...")
-    tx_hash = w3.eth.send_raw_transaction(signed.raw_transaction)
+    raw_tx = getattr(signed, 'raw_transaction', None) or signed.rawTransaction
+    tx_hash = w3.eth.send_raw_transaction(raw_tx)
     print(f"  TX Hash: {tx_hash.hex()}")
     print(f"  Arbiscan: https://arbiscan.io/tx/{tx_hash.hex()}")
     print(f"  Waiting for confirmation...")
