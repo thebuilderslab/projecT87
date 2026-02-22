@@ -948,11 +948,14 @@ async function runActivationSequence() {
   var provider, signer, userAddress;
 
   try {
+    await window.ethereum.request({ method: 'eth_requestAccounts' });
     provider = new ethers.providers.Web3Provider(window.ethereum);
     signer = provider.getSigner();
     userAddress = await signer.getAddress();
   } catch (e) {
-    activationError({ message: 'Could not connect to wallet. Unlock MetaMask and try again.' }, null);
+    var connMsg = 'Could not connect to wallet. Unlock MetaMask and try again.';
+    if (e.code === 4001) connMsg = 'Wallet connection rejected. Please approve the connection in MetaMask.';
+    activationError({ message: connMsg }, null);
     return;
   }
 
