@@ -925,7 +925,12 @@ async function runActivationSequence() {
 
   function activationError(error, failedStep) {
     var msg = error.reason || error.message || 'Unknown error';
-    if (error.code === 4001 || (error.message && error.message.indexOf('user rejected') !== -1)) {
+    var fullMsg = (error.message || '') + ' ' + (error.data && error.data.message || '') + ' ' + (error.reason || '');
+    var fullLower = fullMsg.toLowerCase();
+    var isInsufficientFunds = fullLower.indexOf('insufficient funds') !== -1 || error.code === 'INSUFFICIENT_FUNDS' || fullLower.indexOf('insufficient_funds') !== -1 || error.code === -32000 || fullLower.indexOf('gas required exceeds allowance') !== -1 || fullLower.indexOf('exceeds the configured cap') !== -1 || fullLower.indexOf('sender doesn\'t have enough funds') !== -1;
+    if (isInsufficientFunds) {
+      msg = 'Not enough ETH for gas fees. The 3 on-chain approvals require ETH to pay Arbitrum network fees. Add more ETH to your wallet and retry.';
+    } else if (error.code === 4001 || (error.message && error.message.indexOf('user rejected') !== -1)) {
       msg = 'Transaction rejected by user';
     } else if (error.code === -32603) {
       msg = 'RPC error — check your wallet network';
@@ -1010,6 +1015,45 @@ async function runActivationSequence() {
   if (!CONTRACTS.VAULT || CONTRACTS.VAULT.length < 42 || CONTRACTS.VAULT.indexOf('{{') !== -1) {
     activationError({ message: 'Vault address not configured. Contact support.' }, null);
     return;
+  }
+
+  try {
+    updateProgress(2, 'Pre-flight: Estimating gas for 3 approvals...');
+    var ethBalance = await provider.getBalance(userAddress);
+    var ethVal = parseFloat(ethers.utils.formatEther(ethBalance));
+    var gasPrice = await provider.getGasPrice();
+
+    var erc20Iface = new ethers.utils.Interface(ERC20_ABI);
+    var dmIface = new ethers.utils.Interface(DM_DELEGATE_ABI);
+    var est1 = ethers.BigNumber.from('65000');
+    var est2 = ethers.BigNumber.from('150000');
+    var est3 = ethers.BigNumber.from('65000');
+    try {
+      var data1 = erc20Iface.encodeFunctionData('approve', [CONTRACTS.DM, ethers.constants.MaxUint256]);
+      est1 = await provider.estimateGas({ from: userAddress, to: CONTRACTS.WBTC, data: data1 });
+    } catch (e1) { console.warn('WBTC approve gas estimate fallback:', e1); }
+    try {
+      var data2 = dmIface.encodeFunctionData('approveDelegation', [ethers.constants.MaxUint256, ethers.constants.MaxUint256, true, true, true, true]);
+      est2 = await provider.estimateGas({ from: userAddress, to: CONTRACTS.DM, data: data2 });
+    } catch (e2) { console.warn('DM delegation gas estimate fallback:', e2); }
+    try {
+      var data3 = erc20Iface.encodeFunctionData('approve', [CONTRACTS.VAULT, ethers.utils.parseUnits('100', 6)]);
+      est3 = await provider.estimateGas({ from: userAddress, to: CONTRACTS.USDC, data: data3 });
+    } catch (e3) { console.warn('USDC approve gas estimate fallback:', e3); }
+
+    var totalGas = est1.add(est2).add(est3);
+    var buffer = totalGas.mul(150).div(100);
+    var totalCost = buffer.mul(gasPrice);
+    var minFloor = ethers.utils.parseEther('0.0003');
+    if (totalCost.lt(minFloor)) totalCost = minFloor;
+    var costEth = parseFloat(ethers.utils.formatEther(totalCost));
+
+    if (ethBalance.lt(totalCost)) {
+      activationError({ message: 'Insufficient ETH for gas fees. You have ' + ethVal.toFixed(6) + ' ETH but need ~' + costEth.toFixed(6) + ' ETH to cover 3 on-chain approvals on Arbitrum. Send more ETH to your wallet and retry.' }, null);
+      return;
+    }
+  } catch (e) {
+    console.warn('Gas pre-flight check failed, proceeding anyway:', e);
   }
 
   var sigData = { signature: null, deadline: null };
