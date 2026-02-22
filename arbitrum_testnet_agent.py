@@ -236,14 +236,24 @@ class ArbitrumTestnetAgent:
         print("🔍 DEBUG: Starting RPC manager initialization...")
         print(f"🔍 DEBUG: Network mode: {self.network_mode}")
 
-        if self.network_mode == 'mainnet':
-            # Get Alchemy RPC URL from Replit secrets first
+        if self.network_mode == 'fork':
+            tenderly_rpc = os.getenv('TENDERLY_RPC_URL')
+            if not tenderly_rpc:
+                raise Exception("NETWORK_MODE is 'fork' but TENDERLY_RPC_URL secret is not set")
+
+            rpc_status = "loaded" if tenderly_rpc else "not found"
+            print(f"🔍 DEBUG: TENDERLY_RPC_URL status: {rpc_status}")
+
+            self.rpc_endpoints = [tenderly_rpc]
+            tested_rpcs = self._test_and_rank_rpcs(self.rpc_endpoints, 7357)
+            self.chain_id = 7357
+            print("🔀 Operating on Tenderly Fork (Chain ID: 7357)")
+
+        elif self.network_mode == 'mainnet':
             alchemy_rpc_url = os.getenv('ALCHEMY_RPC_URL')
-            # SECURITY: Never print full RPC URLs as they contain API keys
             rpc_status = "loaded" if alchemy_rpc_url else "not found"
             print(f"🔍 DEBUG: ALCHEMY_RPC_URL status: {rpc_status}")
 
-            # Multiple RPC endpoints for reliability - prioritizing Alchemy if available
             self.rpc_endpoints = []
 
             if alchemy_rpc_url:
@@ -252,7 +262,6 @@ class ArbitrumTestnetAgent:
             else:
                 print("⚠️ DEBUG: No ALCHEMY_RPC_URL found in environment variables")
 
-            # High-throughput stable endpoints (removed problematic Infura)
             fallback_endpoints = [
                 "https://arbitrum.llamarpc.com",
                 "https://arb1.arbitrum.io/rpc",
@@ -264,13 +273,11 @@ class ArbitrumTestnetAgent:
             self.rpc_endpoints.extend(fallback_endpoints)
             print(f"🔍 DEBUG: Total RPC endpoints to test: {len(self.rpc_endpoints)}")
 
-            # Test and rank only the working RPCs for performance
             tested_rpcs = self._test_and_rank_rpcs(self.rpc_endpoints, 42161)
             self.chain_id = 42161
             print("🌐 Operating on Arbitrum Mainnet")
 
         else:
-            # Testnet RPCs
             testnet_rpcs = [
                 "https://sepolia-rollup.arbitrum.io/rpc",
                 "https://arbitrum-sepolia.blockpi.network/v1/rpc/public"
@@ -488,7 +495,7 @@ class ArbitrumTestnetAgent:
         print(f"✅ Private key format validated and normalized")
 
         # Contract addresses based on network
-        if self.network_mode == 'mainnet':
+        if self.network_mode in ('mainnet', 'fork'):
             # Token addresses for Arbitrum Mainnet
             self.weth_address = self.w3.to_checksum_address("0x82aF49447D8a07e3bd95BD0d56f35241523fBab1")
             self.wbtc_address = self.w3.to_checksum_address("0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f")

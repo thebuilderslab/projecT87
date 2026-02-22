@@ -32,7 +32,7 @@ class AaveArbitrumIntegration:
             AAVE_POOL, DAI_TOKEN, WBTC_TOKEN, WETH_TOKEN,
             USDT_TOKEN, ARB_TOKEN,
         )
-        if network_mode == 'mainnet':
+        if network_mode in ('mainnet', 'fork'):
             self.dai_address = DAI_TOKEN
             self.wbtc_address = WBTC_TOKEN
             self.weth_address = WETH_TOKEN

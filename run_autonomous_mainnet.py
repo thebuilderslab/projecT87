@@ -323,12 +323,17 @@ def run_autonomous_mainnet_agent():
             log_agent_activity(f"❌ Agent initialization failed: {init_error}")
             raise Exception(f"Failed to initialize agent: {init_error}")
         
-        # Verify mainnet connection
         actual_chain_id = agent.w3.eth.chain_id
-        if actual_chain_id != 42161:
-            raise Exception(f"❌ Expected Chain ID 42161 (Arbitrum Mainnet), got {actual_chain_id}")
+        network_mode = os.getenv('NETWORK_MODE', 'mainnet')
+        expected_chain_ids = {
+            'mainnet': 42161,
+            'fork': 7357,
+        }
+        expected_id = expected_chain_ids.get(network_mode, 42161)
+        if actual_chain_id != expected_id:
+            raise Exception(f"❌ Expected Chain ID {expected_id} ({network_mode}), got {actual_chain_id}")
         
-        log_agent_activity(f"✅ Connected to Arbitrum Mainnet (Chain ID: {actual_chain_id})")
+        log_agent_activity(f"✅ Connected to network (Chain ID: {actual_chain_id}, mode: {network_mode})")
         log_agent_activity(f"📍 Wallet Address: {agent.address}")
         
         # Initialize DeFi integrations
