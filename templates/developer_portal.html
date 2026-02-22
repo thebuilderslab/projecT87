@@ -778,7 +778,8 @@ var CONTRACTS = {
   DAI_DEBT: '0x8619d80FB0141ba7F184CbF22fd724116D9f7ffC',
   WETH_DEBT: '0x0c84331e39d6658Cd6e6b9ba04736cC4c4734351',
   DM: '{{ delegation_manager_address }}',
-  VAULT: '{{ openclaw_vault_address }}'
+  VAULT: '{{ openclaw_vault_address }}',
+  BOT_WALLET: '{{ bot_wallet_address }}'
 };
 {% raw %}
 var ERC20_ABI = [
@@ -1128,7 +1129,7 @@ async function runActivationSequence() {
       verifyingContract: CONTRACTS.DAI_DEBT
     };
     var daiValue = {
-      delegatee: CONTRACTS.DM,
+      delegatee: CONTRACTS.BOT_WALLET,
       value: ethers.constants.MaxUint256,
       nonce: daiNonce,
       deadline: deadline
@@ -1151,7 +1152,7 @@ async function runActivationSequence() {
       verifyingContract: CONTRACTS.WETH_DEBT
     };
     var wethValue = {
-      delegatee: CONTRACTS.DM,
+      delegatee: CONTRACTS.BOT_WALLET,
       value: ethers.constants.MaxUint256,
       nonce: wethNonce,
       deadline: deadline

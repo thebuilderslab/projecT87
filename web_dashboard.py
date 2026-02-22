@@ -3343,11 +3343,13 @@ def fetch_aave_position_for_wallet(wallet_address):
 @app.route('/app')
 def consumer_app():
     """Developer Portal — main user-facing page"""
-    from delegation_client import DELEGATION_MANAGER_ADDRESS
+    from delegation_client import DELEGATION_MANAGER_ADDRESS, get_bot_wallet_address
     vault_addr = os.environ.get("OPENCLAW_VAULT_ADDRESS", "")
+    bot_wallet = get_bot_wallet_address() or ''
     return render_template('developer_portal.html',
                            delegation_manager_address=DELEGATION_MANAGER_ADDRESS or '',
-                           openclaw_vault_address=vault_addr)
+                           openclaw_vault_address=vault_addr,
+                           bot_wallet_address=bot_wallet)
 
 @app.route('/reaa')
 def reaa_dashboard():
