@@ -48,9 +48,13 @@ The REAA platform operates on the Arbitrum Mainnet, integrating distinct modules
 - **Distribution Pipeline Safety:** Prioritizes Resume > Nurse > Strategy with borrow cooldowns, post-borrow HF rechecks, and state preservation on swap failures.
 
 **4-Step Sequential Signer (Wallet Activation):**
-- Involves four distinct steps for wallet activation, including WBTC approval, delegation approval, EIP-712 delegationWithSig, and USDC vault approval.
+- Step 1: Unlimited WBTC approval to DelegationManager (on-chain tx)
+- Step 2: DM delegation config with full permissions (on-chain tx)
+- Step 3: Gasless EIP-712 credit delegation for DAI + WETH variable debt tokens to **bot wallet** (2 signatures, no gas)
+- Step 4: Unlimited USDC approval to DelegationManager (on-chain tx)
 - Endpoints (`/api/register-wallet`, `/api/wallet/activation-status`) manage the activation process.
-- All borrow/repay/withdraw calls route through `delegation_client.py` and the `REAADelegationManager` contract.
+- **Credit delegation targets the bot wallet directly** — bot calls Aave Pool.borrow(onBehalfOf=user) and receives tokens as msg.sender, bypassing DM for borrows and eliminating the need for pull_token_from_user.
+- Supply/repay/withdraw operations still route through `delegation_client.py` and the `REAADelegationManager` contract.
 
 **Multi-Tenant Infrastructure:**
 - **API Keys:** `api_keys` table with SHA-256 hashing, 2-key limit, and revocation support.

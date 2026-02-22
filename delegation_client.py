@@ -637,16 +637,40 @@ def delegated_borrow(user_address: str, asset_address: str, amount_wei: int, int
     return borrow_hash
 
 
+def delegated_borrow_to_bot(user_address: str, asset_address: str, amount_wei: int, interest_rate_mode: int = 2) -> str:
+    """
+    Borrow tokens on behalf of user by calling Aave Pool.borrow() directly.
+    The user has delegated credit to the bot wallet via EIP-712 signatures,
+    so the bot can call borrow(onBehalfOf=user) and Aave sends tokens to
+    msg.sender (the bot wallet). No pull_token_from_user step needed.
+    """
+    w3 = _get_web3()
+    acct = _get_bot_account()
+    if not w3 or not acct:
+        logger.error("delegated_borrow_to_bot: missing Web3 or bot account")
+        return None
+
+    user_cs = Web3.to_checksum_address(user_address)
+    asset_cs = Web3.to_checksum_address(asset_address)
+    logger.info(f"delegated_borrow_to_bot: user={user_address[:10]}..., asset={asset_address[:10]}..., amount_wei={amount_wei}, bot={acct.address[:10]}...")
+
+    pool = w3.eth.contract(address=Web3.to_checksum_address(AAVE_POOL_ADDRESS), abi=AAVE_POOL_ABI)
+    borrow_hash = _send_bot_tx(pool.functions.borrow(asset_cs, amount_wei, interest_rate_mode, 0, user_cs))
+    if borrow_hash:
+        logger.info(f"delegated_borrow_to_bot: OK — borrowed {amount_wei} of {asset_address[:10]}... onBehalfOf {user_address[:10]}... -> bot wallet")
+    return borrow_hash
+
+
 def delegated_borrow_dai(user_address: str, amount_dai: float) -> str:
     amount_wei = int(amount_dai * 10**18)
     logger.info(f"delegated_borrow_dai: user={user_address[:10]}..., amount=${amount_dai:.2f}")
-    return delegated_borrow(user_address, DAI_ADDRESS, amount_wei, interest_rate_mode=2)
+    return delegated_borrow_to_bot(user_address, DAI_ADDRESS, amount_wei, interest_rate_mode=2)
 
 
 def delegated_borrow_weth(user_address: str, amount_weth: float) -> str:
     amount_wei = int(amount_weth * 10**18)
     logger.info(f"delegated_borrow_weth: user={user_address[:10]}..., amount={amount_weth:.6f} WETH")
-    return delegated_borrow(user_address, WETH_ADDRESS, amount_wei, interest_rate_mode=2)
+    return delegated_borrow_to_bot(user_address, WETH_ADDRESS, amount_wei, interest_rate_mode=2)
 
 
 def delegated_repay(user_address: str, asset_address: str, amount_wei: int, interest_rate_mode: int = 2) -> str:

@@ -132,7 +132,7 @@ try:
         transfer_token_to_address,
         ensure_bot_dex_approval,
         _forward_tokens_to_user,
-        check_user_wallet_approvals,
+        delegated_borrow_to_bot,
         get_multi_token_balances,
         get_token_balance,
         unwrap_weth_to_eth,
@@ -439,23 +439,23 @@ def _get_bot_uniswap():
 def _execute_delegated_distribution(user_id, wallet_address, agent, path_name, distribution, live_hf):
     """
     Execute the full 7-step distribution for a delegated user wallet.
-    Tokens flow: Aave -> DM -> USER (via atomic executeBorrowAndTransfer).
-    Each subsequent step pulls from USER wallet via pull_token_from_user (ERC20 allowance).
+    Bot borrows directly from Aave via credit delegation (tokens go to bot wallet).
+    User delegates credit to bot wallet via EIP-712 signatures, so no pull step needed.
 
     Steps:
-      1. Borrow DAI via delegation (lands in USER wallet atomically)
-      2. Pull DAI from user -> swap DAI->USDT (multi-hop via WETH) -> supply USDT to Aave onBehalfOf user
-      3. Pull DAI from user -> approve DEX -> swap DAI->WBTC -> supply WBTC to Aave onBehalfOf user
-      4. Pull DAI from user -> approve DEX -> swap DAI->WETH -> supply WETH to Aave onBehalfOf user
-      5. DAI stays in user wallet for gas reserve (no pull needed — user already holds DAI)
-      6. Pull DAI from user -> transfer to Wallet_S
-      7. Pull DAI from user -> approve DEX -> swap DAI->USDC -> transfer USDC to user wallet
+      1. Borrow DAI via credit delegation (bot calls Pool.borrow onBehalfOf=user, DAI lands in BOT wallet)
+      2. Swap DAI->USDT (multi-hop via WETH) -> supply USDT to Aave onBehalfOf user
+      3. Swap DAI->WBTC -> supply WBTC to Aave onBehalfOf user
+      4. Swap DAI->WETH -> supply WETH to Aave onBehalfOf user
+      5. Swap DAI->WETH -> unwrap -> send ETH to user (gas reserve)
+      6. Transfer DAI to Wallet_S
+      7. Swap DAI->USDC -> transfer USDC to user wallet
 
     PRECONDITIONS:
-      - User has granted BOT wallet ERC20 allowance for DAI (and other tokens) via frontend.
+      - User has delegated credit (DAI + WETH variable debt) to bot wallet via EIP-712 signatures.
       - BOT->DEX Router approval is asserted before each swap (ensure_bot_dex_approval).
 
-    SAFETY: Each swap step is wrapped in try/except. On failure, pulled tokens are
+    SAFETY: Each swap step is wrapped in try/except. On failure, tokens are
     returned to user wallet via _forward_tokens_to_user before aborting that step.
     Crash recovery via execution_state files.
     """
@@ -484,17 +484,6 @@ def _execute_delegated_distribution(user_id, wallet_address, agent, path_name, d
     dist_serializable = {k: v for k, v in distribution.items()}
     steps_completed = list(already_done)
     steps_failed = []
-
-    approval_check = check_user_wallet_approvals(wallet_address) if DELEGATION_AVAILABLE else None
-    if approval_check and not approval_check.get("all_approved"):
-        missing = approval_check.get("missing", [])
-        missing_str = "; ".join([f"{m['token']}->{m['spender']}" for m in missing[:5]])
-        result["details"] = f"Missing approvals: {missing_str}"
-        result["action"] = "APPROVAL_ERROR"
-        _log_strategy(user_id, wallet_address, path_name, "APPROVAL_ERROR", live_hf,
-                      details=f"Cannot execute — missing approvals: {missing_str}")
-        _record_strategy_action(user_id, wallet_address, f"ERROR: missing approvals — {missing_str}")
-        return result
 
     try:
         if "borrowed" not in already_done:
@@ -532,141 +521,123 @@ def _execute_delegated_distribution(user_id, wallet_address, agent, path_name, d
         usdt_amount = distribution['usdt_swap_supply']
         if "usdt_supplied" not in already_done and usdt_amount >= 0.50 and uniswap:
             _log_strategy(user_id, wallet_address, path_name, "STEP2_USDT_SWAP", live_hf,
-                          details=f"Pull ${usdt_amount:.2f} DAI from user -> swap DAI->USDT -> supply onBehalfOf")
+                          details=f"Swap ${usdt_amount:.2f} DAI->USDT -> supply onBehalfOf")
             usdt_dai_wei = int(usdt_amount * 1e18)
-            pull_tx = pull_token_from_user(wallet_address, DAI_ADDRESS, usdt_dai_wei)
-            if pull_tx:
-                time.sleep(2)
-                try:
-                    if not ensure_bot_dex_approval(DAI_ADDRESS, usdt_dai_wei):
-                        raise Exception("BOT->DEX Router DAI approval failed")
-                    from delegation_client import _get_bot_account, _get_web3, ERC20_ABI
-                    w3 = _get_web3()
-                    acct = _get_bot_account()
-                    usdt_contract = w3.eth.contract(
-                        address=w3.to_checksum_address(USDT_ADDRESS), abi=ERC20_ABI)
-                    usdt_before = usdt_contract.functions.balanceOf(acct.address).call()
-                    swap_result = uniswap.swap_dai_for_usdt_multihop(usdt_amount)
-                    if swap_result and swap_result.get('tx_hash'):
-                        time.sleep(3)
-                        usdt_after = usdt_contract.functions.balanceOf(acct.address).call()
-                        usdt_received = usdt_after - usdt_before
-                        if usdt_received > 0:
-                            usdt_float = usdt_received / 1e6
-                            supply_tx = delegated_supply_usdt_onbehalf(wallet_address, usdt_float)
-                            if supply_tx:
-                                _save_execution_state(wallet_address, "usdt_supplied", path_name, dist_serializable)
-                                steps_completed.append("usdt_supplied")
-                                time.sleep(2)
-                            else:
-                                logger.error(f"[Distribution] {wallet_address[:10]}... USDT supply failed. Returning {usdt_float:.2f} USDT to user.")
-                                _forward_tokens_to_user(USDT_ADDRESS, usdt_received, wallet_address)
-                                steps_failed.append("usdt_supply_to_aave")
+            try:
+                if not ensure_bot_dex_approval(DAI_ADDRESS, usdt_dai_wei):
+                    raise Exception("BOT->DEX Router DAI approval failed")
+                from delegation_client import _get_bot_account, _get_web3, ERC20_ABI
+                w3 = _get_web3()
+                acct = _get_bot_account()
+                usdt_contract = w3.eth.contract(
+                    address=w3.to_checksum_address(USDT_ADDRESS), abi=ERC20_ABI)
+                usdt_before = usdt_contract.functions.balanceOf(acct.address).call()
+                swap_result = uniswap.swap_dai_for_usdt_multihop(usdt_amount)
+                if swap_result and swap_result.get('tx_hash'):
+                    time.sleep(3)
+                    usdt_after = usdt_contract.functions.balanceOf(acct.address).call()
+                    usdt_received = usdt_after - usdt_before
+                    if usdt_received > 0:
+                        usdt_float = usdt_received / 1e6
+                        supply_tx = delegated_supply_usdt_onbehalf(wallet_address, usdt_float)
+                        if supply_tx:
+                            _save_execution_state(wallet_address, "usdt_supplied", path_name, dist_serializable)
+                            steps_completed.append("usdt_supplied")
+                            time.sleep(2)
                         else:
-                            steps_failed.append("usdt_swap_zero_output")
+                            logger.error(f"[Distribution] {wallet_address[:10]}... USDT supply failed. Returning {usdt_float:.2f} USDT to user.")
+                            _forward_tokens_to_user(USDT_ADDRESS, usdt_received, wallet_address)
+                            steps_failed.append("usdt_supply_to_aave")
                     else:
-                        raise Exception("DAI->USDT swap tx failed or reverted")
-                except Exception as e:
-                    logger.error(f"[Distribution] {wallet_address[:10]}... USDT swap failed: {e}. Rolling back DAI to user.")
-                    _forward_tokens_to_user(DAI_ADDRESS, usdt_dai_wei, wallet_address)
-                    steps_failed.append("dai_to_usdt_swap_rollback")
-            else:
-                steps_failed.append("usdt_dai_pull")
-                logger.warning(f"[Distribution] {wallet_address[:10]}... DAI pull for USDT swap failed (check BOT allowance)")
+                        steps_failed.append("usdt_swap_zero_output")
+                else:
+                    raise Exception("DAI->USDT swap tx failed or reverted")
+            except Exception as e:
+                logger.error(f"[Distribution] {wallet_address[:10]}... USDT swap failed: {e}. Rolling back DAI to user.")
+                _forward_tokens_to_user(DAI_ADDRESS, usdt_dai_wei, wallet_address)
+                steps_failed.append("dai_to_usdt_swap_rollback")
         elif "usdt_supplied" in already_done:
             pass
 
         wbtc_amount = distribution['wbtc_swap_supply']
         if "wbtc_supplied" not in already_done and wbtc_amount >= 0.50 and uniswap:
             _log_strategy(user_id, wallet_address, path_name, "STEP3_WBTC_SWAP", live_hf,
-                          details=f"Pull ${wbtc_amount:.2f} DAI from user -> swap DAI->WBTC -> supply onBehalfOf")
+                          details=f"Swap ${wbtc_amount:.2f} DAI->WBTC -> supply onBehalfOf")
             wbtc_dai_wei = int(wbtc_amount * 1e18)
-            pull_tx = pull_token_from_user(wallet_address, DAI_ADDRESS, wbtc_dai_wei)
-            if pull_tx:
-                time.sleep(2)
-                try:
-                    if not ensure_bot_dex_approval(DAI_ADDRESS, wbtc_dai_wei):
-                        raise Exception("BOT->DEX Router DAI approval failed")
-                    from delegation_client import _get_bot_account, _get_web3, ERC20_ABI
-                    w3 = _get_web3()
-                    acct = _get_bot_account()
-                    wbtc_contract = w3.eth.contract(
-                        address=w3.to_checksum_address(WBTC_TOKEN_ADDRESS), abi=ERC20_ABI)
-                    wbtc_before = wbtc_contract.functions.balanceOf(acct.address).call()
-                    swap_result = uniswap.swap_dai_for_wbtc(wbtc_amount)
-                    if swap_result and swap_result.get('tx_hash'):
-                        time.sleep(3)
-                        wbtc_after = wbtc_contract.functions.balanceOf(acct.address).call()
-                        wbtc_received = wbtc_after - wbtc_before
-                        if wbtc_received > 0:
-                            wbtc_float = wbtc_received / 1e8
-                            supply_tx = delegated_supply_wbtc_onbehalf(wallet_address, wbtc_float)
-                            if supply_tx:
-                                _save_execution_state(wallet_address, "wbtc_supplied", path_name, dist_serializable)
-                                steps_completed.append("wbtc_supplied")
-                                time.sleep(2)
-                            else:
-                                logger.error(f"[Distribution] {wallet_address[:10]}... WBTC supply failed. Returning {wbtc_float:.8f} WBTC to user.")
-                                _forward_tokens_to_user(WBTC_TOKEN_ADDRESS, wbtc_received, wallet_address)
-                                steps_failed.append("wbtc_supply_to_aave")
+            try:
+                if not ensure_bot_dex_approval(DAI_ADDRESS, wbtc_dai_wei):
+                    raise Exception("BOT->DEX Router DAI approval failed")
+                from delegation_client import _get_bot_account, _get_web3, ERC20_ABI
+                w3 = _get_web3()
+                acct = _get_bot_account()
+                wbtc_contract = w3.eth.contract(
+                    address=w3.to_checksum_address(WBTC_TOKEN_ADDRESS), abi=ERC20_ABI)
+                wbtc_before = wbtc_contract.functions.balanceOf(acct.address).call()
+                swap_result = uniswap.swap_dai_for_wbtc(wbtc_amount)
+                if swap_result and swap_result.get('tx_hash'):
+                    time.sleep(3)
+                    wbtc_after = wbtc_contract.functions.balanceOf(acct.address).call()
+                    wbtc_received = wbtc_after - wbtc_before
+                    if wbtc_received > 0:
+                        wbtc_float = wbtc_received / 1e8
+                        supply_tx = delegated_supply_wbtc_onbehalf(wallet_address, wbtc_float)
+                        if supply_tx:
+                            _save_execution_state(wallet_address, "wbtc_supplied", path_name, dist_serializable)
+                            steps_completed.append("wbtc_supplied")
+                            time.sleep(2)
                         else:
-                            steps_failed.append("wbtc_swap_zero_output")
+                            logger.error(f"[Distribution] {wallet_address[:10]}... WBTC supply failed. Returning {wbtc_float:.8f} WBTC to user.")
+                            _forward_tokens_to_user(WBTC_TOKEN_ADDRESS, wbtc_received, wallet_address)
+                            steps_failed.append("wbtc_supply_to_aave")
                     else:
-                        raise Exception("DAI->WBTC swap tx failed or reverted")
-                except Exception as e:
-                    logger.error(f"[Distribution] {wallet_address[:10]}... WBTC swap failed: {e}. Rolling back DAI to user.")
-                    _forward_tokens_to_user(DAI_ADDRESS, wbtc_dai_wei, wallet_address)
-                    steps_failed.append("dai_to_wbtc_swap_rollback")
-            else:
-                steps_failed.append("wbtc_dai_pull")
-                logger.warning(f"[Distribution] {wallet_address[:10]}... DAI pull for WBTC swap failed (check BOT allowance)")
+                        steps_failed.append("wbtc_swap_zero_output")
+                else:
+                    raise Exception("DAI->WBTC swap tx failed or reverted")
+            except Exception as e:
+                logger.error(f"[Distribution] {wallet_address[:10]}... WBTC swap failed: {e}. Rolling back DAI to user.")
+                _forward_tokens_to_user(DAI_ADDRESS, wbtc_dai_wei, wallet_address)
+                steps_failed.append("dai_to_wbtc_swap_rollback")
         elif "wbtc_supplied" in already_done:
             pass
 
         weth_amount = distribution['weth_swap_supply']
         if "weth_supplied" not in already_done and weth_amount >= 0.50 and uniswap:
             _log_strategy(user_id, wallet_address, path_name, "STEP4_WETH_SWAP", live_hf,
-                          details=f"Pull ${weth_amount:.2f} DAI from user -> swap DAI->WETH -> supply onBehalfOf")
+                          details=f"Swap ${weth_amount:.2f} DAI->WETH -> supply onBehalfOf")
             weth_dai_wei = int(weth_amount * 1e18)
-            pull_tx = pull_token_from_user(wallet_address, DAI_ADDRESS, weth_dai_wei)
-            if pull_tx:
-                time.sleep(2)
-                try:
-                    if not ensure_bot_dex_approval(DAI_ADDRESS, weth_dai_wei):
-                        raise Exception("BOT->DEX Router DAI approval failed")
-                    from delegation_client import _get_bot_account, _get_web3, ERC20_ABI
-                    w3 = _get_web3()
-                    acct = _get_bot_account()
-                    weth_contract = w3.eth.contract(
-                        address=w3.to_checksum_address(WETH_ADDRESS), abi=ERC20_ABI)
-                    weth_before = weth_contract.functions.balanceOf(acct.address).call()
-                    swap_result = uniswap.swap_dai_for_weth(weth_amount)
-                    if swap_result and swap_result.get('tx_hash'):
-                        time.sleep(3)
-                        weth_after = weth_contract.functions.balanceOf(acct.address).call()
-                        weth_received = weth_after - weth_before
-                        if weth_received > 0:
-                            weth_float = weth_received / 1e18
-                            supply_tx = delegated_supply_weth_onbehalf(wallet_address, weth_float)
-                            if supply_tx:
-                                _save_execution_state(wallet_address, "weth_supplied", path_name, dist_serializable)
-                                steps_completed.append("weth_supplied")
-                                time.sleep(2)
-                            else:
-                                logger.error(f"[Distribution] {wallet_address[:10]}... WETH supply failed. Returning {weth_float:.8f} WETH to user.")
-                                _forward_tokens_to_user(WETH_ADDRESS, weth_received, wallet_address)
-                                steps_failed.append("weth_supply_to_aave")
+            try:
+                if not ensure_bot_dex_approval(DAI_ADDRESS, weth_dai_wei):
+                    raise Exception("BOT->DEX Router DAI approval failed")
+                from delegation_client import _get_bot_account, _get_web3, ERC20_ABI
+                w3 = _get_web3()
+                acct = _get_bot_account()
+                weth_contract = w3.eth.contract(
+                    address=w3.to_checksum_address(WETH_ADDRESS), abi=ERC20_ABI)
+                weth_before = weth_contract.functions.balanceOf(acct.address).call()
+                swap_result = uniswap.swap_dai_for_weth(weth_amount)
+                if swap_result and swap_result.get('tx_hash'):
+                    time.sleep(3)
+                    weth_after = weth_contract.functions.balanceOf(acct.address).call()
+                    weth_received = weth_after - weth_before
+                    if weth_received > 0:
+                        weth_float = weth_received / 1e18
+                        supply_tx = delegated_supply_weth_onbehalf(wallet_address, weth_float)
+                        if supply_tx:
+                            _save_execution_state(wallet_address, "weth_supplied", path_name, dist_serializable)
+                            steps_completed.append("weth_supplied")
+                            time.sleep(2)
                         else:
-                            steps_failed.append("weth_swap_zero_output")
+                            logger.error(f"[Distribution] {wallet_address[:10]}... WETH supply failed. Returning {weth_float:.8f} WETH to user.")
+                            _forward_tokens_to_user(WETH_ADDRESS, weth_received, wallet_address)
+                            steps_failed.append("weth_supply_to_aave")
                     else:
-                        raise Exception("DAI->WETH swap tx failed or reverted")
-                except Exception as e:
-                    logger.error(f"[Distribution] {wallet_address[:10]}... WETH swap failed: {e}. Rolling back DAI to user.")
-                    _forward_tokens_to_user(DAI_ADDRESS, weth_dai_wei, wallet_address)
-                    steps_failed.append("dai_to_weth_swap_rollback")
-            else:
-                steps_failed.append("weth_dai_pull")
-                logger.warning(f"[Distribution] {wallet_address[:10]}... DAI pull for WETH swap failed (check BOT allowance)")
+                        steps_failed.append("weth_swap_zero_output")
+                else:
+                    raise Exception("DAI->WETH swap tx failed or reverted")
+            except Exception as e:
+                logger.error(f"[Distribution] {wallet_address[:10]}... WETH swap failed: {e}. Rolling back DAI to user.")
+                _forward_tokens_to_user(DAI_ADDRESS, weth_dai_wei, wallet_address)
+                steps_failed.append("dai_to_weth_swap_rollback")
         elif "weth_supplied" in already_done:
             pass
 
@@ -675,60 +646,54 @@ def _execute_delegated_distribution(user_id, wallet_address, agent, path_name, d
         eth_amount = distribution['eth_gas_reserve']
         if "eth_converted" not in already_done and eth_amount >= ETH_GAS_MIN_USD and uniswap:
             _log_strategy(user_id, wallet_address, path_name, "STEP5_ETH_GAS", live_hf,
-                          details=f"Pull ${eth_amount:.2f} DAI from user -> swap DAI->WETH -> unwrap -> 1% skim -> send ETH to user")
+                          details=f"Swap ${eth_amount:.2f} DAI->WETH -> unwrap -> 1% skim -> send ETH to user")
             eth_dai_wei = int(eth_amount * 1e18)
-            pull_tx = pull_token_from_user(wallet_address, DAI_ADDRESS, eth_dai_wei)
-            if pull_tx:
-                time.sleep(2)
-                try:
-                    if not ensure_bot_dex_approval(DAI_ADDRESS, eth_dai_wei):
-                        raise Exception("BOT->DEX Router DAI approval failed")
-                    from delegation_client import _get_bot_account, _get_web3, ERC20_ABI
-                    w3 = _get_web3()
-                    acct = _get_bot_account()
-                    weth_contract = w3.eth.contract(
-                        address=w3.to_checksum_address(WETH_ADDRESS), abi=ERC20_ABI)
-                    weth_before = weth_contract.functions.balanceOf(acct.address).call()
-                    swap_result = uniswap.swap_dai_for_weth(eth_amount)
-                    if swap_result and swap_result.get('tx_hash'):
-                        time.sleep(3)
-                        weth_after = weth_contract.functions.balanceOf(acct.address).call()
-                        weth_received = weth_after - weth_before
-                        if weth_received > 0:
-                            weth_float = weth_received / 1e18
-                            skim_weth = weth_float * ETH_GAS_SKIM_PCT
-                            user_weth = weth_float - skim_weth
-                            logger.info(f"[GasSkim] {wallet_address[:10]}... WETH received: {weth_float:.8f}, "
-                                       f"1% skim={skim_weth:.8f} WETH stays in bot wallet, "
-                                       f"99% user={user_weth:.8f} WETH -> unwrap -> ETH")
-                            unwrap_tx = unwrap_weth_to_eth(user_weth)
-                            if unwrap_tx:
-                                time.sleep(2)
-                                send_tx = send_eth_to_address(wallet_address, user_weth * 0.995)
-                                if send_tx:
-                                    _save_execution_state(wallet_address, "eth_converted", path_name, dist_serializable)
-                                    steps_completed.append("eth_converted")
-                                    logger.info(f"[ETH Gas] {wallet_address[:10]}... sent {user_weth * 0.995:.8f} ETH for gas")
-                                    time.sleep(2)
-                                else:
-                                    logger.error(f"[ETH Gas] {wallet_address[:10]}... ETH send to user failed")
-                                    steps_failed.append("eth_send_to_user")
-                            else:
-                                logger.error(f"[ETH Gas] {wallet_address[:10]}... WETH unwrap failed, forwarding WETH to user instead")
-                                _forward_tokens_to_user(WETH_ADDRESS, int(user_weth * 1e18), wallet_address)
+            try:
+                if not ensure_bot_dex_approval(DAI_ADDRESS, eth_dai_wei):
+                    raise Exception("BOT->DEX Router DAI approval failed")
+                from delegation_client import _get_bot_account, _get_web3, ERC20_ABI
+                w3 = _get_web3()
+                acct = _get_bot_account()
+                weth_contract = w3.eth.contract(
+                    address=w3.to_checksum_address(WETH_ADDRESS), abi=ERC20_ABI)
+                weth_before = weth_contract.functions.balanceOf(acct.address).call()
+                swap_result = uniswap.swap_dai_for_weth(eth_amount)
+                if swap_result and swap_result.get('tx_hash'):
+                    time.sleep(3)
+                    weth_after = weth_contract.functions.balanceOf(acct.address).call()
+                    weth_received = weth_after - weth_before
+                    if weth_received > 0:
+                        weth_float = weth_received / 1e18
+                        skim_weth = weth_float * ETH_GAS_SKIM_PCT
+                        user_weth = weth_float - skim_weth
+                        logger.info(f"[GasSkim] {wallet_address[:10]}... WETH received: {weth_float:.8f}, "
+                                   f"1% skim={skim_weth:.8f} WETH stays in bot wallet, "
+                                   f"99% user={user_weth:.8f} WETH -> unwrap -> ETH")
+                        unwrap_tx = unwrap_weth_to_eth(user_weth)
+                        if unwrap_tx:
+                            time.sleep(2)
+                            send_tx = send_eth_to_address(wallet_address, user_weth * 0.995)
+                            if send_tx:
                                 _save_execution_state(wallet_address, "eth_converted", path_name, dist_serializable)
                                 steps_completed.append("eth_converted")
+                                logger.info(f"[ETH Gas] {wallet_address[:10]}... sent {user_weth * 0.995:.8f} ETH for gas")
+                                time.sleep(2)
+                            else:
+                                logger.error(f"[ETH Gas] {wallet_address[:10]}... ETH send to user failed")
+                                steps_failed.append("eth_send_to_user")
                         else:
-                            steps_failed.append("eth_swap_zero_weth")
+                            logger.error(f"[ETH Gas] {wallet_address[:10]}... WETH unwrap failed, forwarding WETH to user instead")
+                            _forward_tokens_to_user(WETH_ADDRESS, int(user_weth * 1e18), wallet_address)
+                            _save_execution_state(wallet_address, "eth_converted", path_name, dist_serializable)
+                            steps_completed.append("eth_converted")
                     else:
-                        raise Exception("DAI->WETH swap tx failed or reverted")
-                except Exception as e:
-                    logger.error(f"[ETH Gas] {wallet_address[:10]}... DAI->ETH conversion failed: {e}. Rolling back DAI to user.")
-                    _forward_tokens_to_user(DAI_ADDRESS, eth_dai_wei, wallet_address)
-                    steps_failed.append("dai_to_eth_swap_rollback")
-            else:
-                steps_failed.append("eth_dai_pull")
-                logger.warning(f"[ETH Gas] {wallet_address[:10]}... DAI pull for ETH gas failed (check BOT allowance)")
+                        steps_failed.append("eth_swap_zero_weth")
+                else:
+                    raise Exception("DAI->WETH swap tx failed or reverted")
+            except Exception as e:
+                logger.error(f"[ETH Gas] {wallet_address[:10]}... DAI->ETH conversion failed: {e}. Rolling back DAI to user.")
+                _forward_tokens_to_user(DAI_ADDRESS, eth_dai_wei, wallet_address)
+                steps_failed.append("dai_to_eth_swap_rollback")
         elif "eth_converted" in already_done:
             pass
         elif eth_amount > 0 and eth_amount < ETH_GAS_MIN_USD:
@@ -740,22 +705,15 @@ def _execute_delegated_distribution(user_id, wallet_address, agent, path_name, d
             wallet_s = os.getenv('WALLET_S_ADDRESS', '').strip()
             if wallet_s and len(wallet_s) == 42:
                 _log_strategy(user_id, wallet_address, path_name, "STEP6_WALLET_S", live_hf,
-                              details=f"Pull ${dai_transfer:.2f} DAI from user -> transfer to Wallet_S")
+                              details=f"Transfer ${dai_transfer:.2f} DAI to Wallet_S")
                 dai_transfer_wei = int(dai_transfer * 1e18)
-                # PRECONDITION: user → BOT wallet ERC20 allowance is set for DAI via frontend.
-                pull_tx = pull_token_from_user(wallet_address, DAI_ADDRESS, dai_transfer_wei)
-                if pull_tx:
+                xfer_tx = transfer_token_to_address(wallet_s, DAI_ADDRESS, dai_transfer_wei)
+                if xfer_tx:
+                    _save_execution_state(wallet_address, "wallet_s_transferred", path_name, dist_serializable)
+                    steps_completed.append("wallet_s_transferred")
                     time.sleep(2)
-                    xfer_tx = transfer_token_to_address(wallet_s, DAI_ADDRESS, dai_transfer_wei)
-                    if xfer_tx:
-                        _save_execution_state(wallet_address, "wallet_s_transferred", path_name, dist_serializable)
-                        steps_completed.append("wallet_s_transferred")
-                        time.sleep(2)
-                    else:
-                        steps_failed.append("wallet_s_transfer")
                 else:
-                    steps_failed.append("wallet_s_dai_pull")
-                    logger.warning(f"[Distribution] {wallet_address[:10]}... DAI pull for Wallet_S failed (check BOT allowance)")
+                    steps_failed.append("wallet_s_transfer")
             else:
                 logger.warning(f"[Distribution] WALLET_S_ADDRESS not set — skipping Wallet_S transfer")
                 _save_execution_state(wallet_address, "wallet_s_transferred", path_name, dist_serializable)
@@ -764,44 +722,38 @@ def _execute_delegated_distribution(user_id, wallet_address, agent, path_name, d
         usdc_tax = distribution.get('usdc_tax', 0)
         if "usdc_taxed" not in already_done and usdc_tax >= 0.50 and uniswap:
             _log_strategy(user_id, wallet_address, path_name, "STEP7_USDC_TAX", live_hf,
-                          details=f"Pull ${usdc_tax:.2f} DAI from user -> swap DAI->USDC -> transfer USDC to user")
+                          details=f"Swap ${usdc_tax:.2f} DAI->USDC -> transfer USDC to user")
             usdc_dai_wei = int(usdc_tax * 1e18)
-            pull_tx = pull_token_from_user(wallet_address, DAI_ADDRESS, usdc_dai_wei)
-            if pull_tx:
-                time.sleep(2)
-                try:
-                    if not ensure_bot_dex_approval(DAI_ADDRESS, usdc_dai_wei):
-                        raise Exception("BOT->DEX Router DAI approval failed")
-                    from delegation_client import _get_bot_account, _get_web3, ERC20_ABI
-                    w3 = _get_web3()
-                    acct = _get_bot_account()
-                    usdc_contract = w3.eth.contract(
-                        address=w3.to_checksum_address(USDC_ADDRESS), abi=ERC20_ABI)
-                    usdc_before = usdc_contract.functions.balanceOf(acct.address).call()
-                    swap_result = uniswap.swap_dai_for_usdc(usdc_tax)
-                    if swap_result and swap_result.get('tx_hash'):
-                        time.sleep(3)
-                        usdc_after = usdc_contract.functions.balanceOf(acct.address).call()
-                        usdc_received = usdc_after - usdc_before
-                        if usdc_received > 0:
-                            xfer_tx = transfer_token_to_address(wallet_address, USDC_ADDRESS, usdc_received)
-                            if xfer_tx:
-                                _save_execution_state(wallet_address, "usdc_taxed", path_name, dist_serializable)
-                                steps_completed.append("usdc_taxed")
-                            else:
-                                _forward_tokens_to_user(USDC_ADDRESS, usdc_received, wallet_address)
-                                steps_failed.append("usdc_transfer_to_user")
+            try:
+                if not ensure_bot_dex_approval(DAI_ADDRESS, usdc_dai_wei):
+                    raise Exception("BOT->DEX Router DAI approval failed")
+                from delegation_client import _get_bot_account, _get_web3, ERC20_ABI
+                w3 = _get_web3()
+                acct = _get_bot_account()
+                usdc_contract = w3.eth.contract(
+                    address=w3.to_checksum_address(USDC_ADDRESS), abi=ERC20_ABI)
+                usdc_before = usdc_contract.functions.balanceOf(acct.address).call()
+                swap_result = uniswap.swap_dai_for_usdc(usdc_tax)
+                if swap_result and swap_result.get('tx_hash'):
+                    time.sleep(3)
+                    usdc_after = usdc_contract.functions.balanceOf(acct.address).call()
+                    usdc_received = usdc_after - usdc_before
+                    if usdc_received > 0:
+                        xfer_tx = transfer_token_to_address(wallet_address, USDC_ADDRESS, usdc_received)
+                        if xfer_tx:
+                            _save_execution_state(wallet_address, "usdc_taxed", path_name, dist_serializable)
+                            steps_completed.append("usdc_taxed")
                         else:
-                            steps_failed.append("usdc_swap_zero_output")
+                            _forward_tokens_to_user(USDC_ADDRESS, usdc_received, wallet_address)
+                            steps_failed.append("usdc_transfer_to_user")
                     else:
-                        raise Exception("DAI->USDC swap tx failed or reverted")
-                except Exception as e:
-                    logger.error(f"[Distribution] {wallet_address[:10]}... USDC swap failed: {e}. Rolling back DAI to user.")
-                    _forward_tokens_to_user(DAI_ADDRESS, usdc_dai_wei, wallet_address)
-                    steps_failed.append("dai_to_usdc_swap_rollback")
-            else:
-                steps_failed.append("usdc_dai_pull")
-                logger.warning(f"[Distribution] {wallet_address[:10]}... DAI pull for USDC tax failed (check BOT allowance)")
+                        steps_failed.append("usdc_swap_zero_output")
+                else:
+                    raise Exception("DAI->USDC swap tx failed or reverted")
+            except Exception as e:
+                logger.error(f"[Distribution] {wallet_address[:10]}... USDC swap failed: {e}. Rolling back DAI to user.")
+                _forward_tokens_to_user(DAI_ADDRESS, usdc_dai_wei, wallet_address)
+                steps_failed.append("dai_to_usdc_swap_rollback")
         elif "usdc_taxed" in already_done:
             pass
 
@@ -913,57 +865,47 @@ def _execute_delegated_short_entry(user_id, wallet_address, agent, tier, short_s
         hold_weth = weth_amount * SHORT_WETH_PCT
 
         wbtc_weth_wei = int(wbtc_weth * 1e18)
-        pull_tx = pull_token_from_user(wallet_address, WETH_ADDRESS, wbtc_weth_wei)
-        if pull_tx:
-            time.sleep(2)
-            try:
-                if not ensure_bot_dex_approval(WETH_ADDRESS, wbtc_weth_wei):
-                    raise Exception("BOT->DEX Router WETH approval failed")
-                swap_result = uniswap.swap_weth_for_wbtc(wbtc_weth)
-                if swap_result and swap_result.get('tx_hash'):
-                    time.sleep(3)
-                    from delegation_client import _get_bot_account, ERC20_ABI
-                    acct = _get_bot_account()
-                    wbtc_contract = w3.eth.contract(address=w3.to_checksum_address(WBTC_TOKEN_ADDRESS), abi=ERC20_ABI)
-                    wbtc_bal = wbtc_contract.functions.balanceOf(acct.address).call()
-                    if wbtc_bal > 0:
-                        delegated_supply_wbtc_onbehalf(wallet_address, wbtc_bal / 1e8)
-                        time.sleep(2)
-                else:
-                    raise Exception("WETH->WBTC swap tx failed or reverted")
-            except Exception as e:
-                logger.error(f"[Short Entry] {wallet_address[:10]}... WBTC swap failed: {e}. Rolling back WETH to user.")
-                _forward_tokens_to_user(WETH_ADDRESS, wbtc_weth_wei, wallet_address)
+        try:
+            if not ensure_bot_dex_approval(WETH_ADDRESS, wbtc_weth_wei):
+                raise Exception("BOT->DEX Router WETH approval failed")
+            swap_result = uniswap.swap_weth_for_wbtc(wbtc_weth)
+            if swap_result and swap_result.get('tx_hash'):
+                time.sleep(3)
+                from delegation_client import _get_bot_account, ERC20_ABI
+                acct = _get_bot_account()
+                wbtc_contract = w3.eth.contract(address=w3.to_checksum_address(WBTC_TOKEN_ADDRESS), abi=ERC20_ABI)
+                wbtc_bal = wbtc_contract.functions.balanceOf(acct.address).call()
+                if wbtc_bal > 0:
+                    delegated_supply_wbtc_onbehalf(wallet_address, wbtc_bal / 1e8)
+                    time.sleep(2)
+            else:
+                raise Exception("WETH->WBTC swap tx failed or reverted")
+        except Exception as e:
+            logger.error(f"[Short Entry] {wallet_address[:10]}... WBTC swap failed: {e}. Rolling back WETH to user.")
+            _forward_tokens_to_user(WETH_ADDRESS, wbtc_weth_wei, wallet_address)
 
         usdt_weth_wei = int(usdt_weth * 1e18)
-        pull_tx = pull_token_from_user(wallet_address, WETH_ADDRESS, usdt_weth_wei)
-        if pull_tx:
-            time.sleep(2)
-            try:
-                if not ensure_bot_dex_approval(WETH_ADDRESS, usdt_weth_wei):
-                    raise Exception("BOT->DEX Router WETH approval failed")
-                swap_result = uniswap.swap_weth_for_usdt(usdt_weth)
-                if swap_result and swap_result.get('tx_hash'):
-                    time.sleep(3)
-                    from delegation_client import _get_bot_account, ERC20_ABI
-                    acct = _get_bot_account()
-                    usdt_contract = w3.eth.contract(address=w3.to_checksum_address(USDT_ADDRESS), abi=ERC20_ABI)
-                    usdt_bal = usdt_contract.functions.balanceOf(acct.address).call()
-                    if usdt_bal > 0:
-                        delegated_supply_usdt_onbehalf(wallet_address, usdt_bal / 1e6)
-                        time.sleep(2)
-                else:
-                    raise Exception("WETH->USDT swap tx failed or reverted")
-            except Exception as e:
-                logger.error(f"[Short Entry] {wallet_address[:10]}... USDT swap failed: {e}. Rolling back WETH to user.")
-                _forward_tokens_to_user(WETH_ADDRESS, usdt_weth_wei, wallet_address)
+        try:
+            if not ensure_bot_dex_approval(WETH_ADDRESS, usdt_weth_wei):
+                raise Exception("BOT->DEX Router WETH approval failed")
+            swap_result = uniswap.swap_weth_for_usdt(usdt_weth)
+            if swap_result and swap_result.get('tx_hash'):
+                time.sleep(3)
+                from delegation_client import _get_bot_account, ERC20_ABI
+                acct = _get_bot_account()
+                usdt_contract = w3.eth.contract(address=w3.to_checksum_address(USDT_ADDRESS), abi=ERC20_ABI)
+                usdt_bal = usdt_contract.functions.balanceOf(acct.address).call()
+                if usdt_bal > 0:
+                    delegated_supply_usdt_onbehalf(wallet_address, usdt_bal / 1e6)
+                    time.sleep(2)
+            else:
+                raise Exception("WETH->USDT swap tx failed or reverted")
+        except Exception as e:
+            logger.error(f"[Short Entry] {wallet_address[:10]}... USDT swap failed: {e}. Rolling back WETH to user.")
+            _forward_tokens_to_user(WETH_ADDRESS, usdt_weth_wei, wallet_address)
 
-        hold_weth_wei = int(hold_weth * 1e18)
-        pull_tx = pull_token_from_user(wallet_address, WETH_ADDRESS, hold_weth_wei)
-        if pull_tx:
-            time.sleep(2)
-            delegated_supply_weth_onbehalf(wallet_address, hold_weth)
-            time.sleep(2)
+        delegated_supply_weth_onbehalf(wallet_address, hold_weth)
+        time.sleep(2)
 
         result["executed"] = True
         result["action"] = "SHORT_ENTRY_OK"

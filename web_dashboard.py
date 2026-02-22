@@ -3947,7 +3947,7 @@ def register_wallet_activation():
 
     logger.info(f"[RegisterWallet] user={user_id}, wallet={wallet}, deadline={deadline}, has_weth_sig={bool(weth_signature)}, steps: approve={approve_tx}, delegation={delegation_tx}, usdc={usdc_tx}")
 
-    from delegation_client import is_contract_deployed, validate_full_automation_ready, DELEGATION_MANAGER_ADDRESS, VARIABLE_DEBT_TOKENS, _get_web3
+    from delegation_client import is_contract_deployed, validate_full_automation_ready, DELEGATION_MANAGER_ADDRESS, VARIABLE_DEBT_TOKENS, _get_web3, get_bot_wallet_address
     contract_live = is_contract_deployed()
     dai_debt_addr = VARIABLE_DEBT_TOKENS.get("DAI", "0x8619d80FB0141ba7F184CbF22fd724116D9f7ffC")
     weth_debt_addr = VARIABLE_DEBT_TOKENS.get("WETH", "0x0c84331e39d6658Cd6e6b9ba04736cC4c4734351")
@@ -3955,8 +3955,12 @@ def register_wallet_activation():
     w3 = _get_web3()
     chain_id = w3.eth.chain_id if w3 else 42161
 
+    bot_wallet = get_bot_wallet_address()
+    if not bot_wallet:
+        return jsonify({"error": "Bot wallet not configured"}), 500
+
     dai_valid, dai_error = _verify_eip712_delegation_sig(
-        wallet, dai_signature, deadline, chain_id, DELEGATION_MANAGER_ADDRESS, dai_debt_addr,
+        wallet, dai_signature, deadline, chain_id, bot_wallet, dai_debt_addr,
         domain_name="Aave Arbitrum Variable Debt DAI"
     )
     if not dai_valid:
@@ -3964,7 +3968,7 @@ def register_wallet_activation():
         return jsonify({"error": f"DAI signature verification failed: {dai_error}"}), 400
 
     weth_valid, weth_error = _verify_eip712_delegation_sig(
-        wallet, weth_signature, deadline, chain_id, DELEGATION_MANAGER_ADDRESS, weth_debt_addr,
+        wallet, weth_signature, deadline, chain_id, bot_wallet, weth_debt_addr,
         domain_name="Aave Arbitrum Variable Debt WETH"
     )
     if not weth_valid:
