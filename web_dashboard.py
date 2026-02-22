@@ -3922,6 +3922,32 @@ def _validate_onchain_steps(wallet_address, dm_address):
     return validation
 
 
+@app.route('/api/delegation-status', methods=['GET'])
+def delegation_status():
+    """Check on-chain borrowAllowance for DAI and WETH credit delegation."""
+    if not DB_AVAILABLE:
+        return jsonify({"error": "Database not available"}), 503
+    user_id = get_current_user_id()
+    user = database.get_user_by_id(user_id)
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+
+    wallet = user['wallet_address']
+    try:
+        from delegation_client import check_borrow_allowance
+        dai_allowance = check_borrow_allowance(wallet, "DAI")
+        weth_allowance = check_borrow_allowance(wallet, "WETH")
+        logger.info(f"[DelegationStatus] wallet={wallet[:10]}... DAI borrowAllowance={dai_allowance}, WETH borrowAllowance={weth_allowance}")
+        return jsonify({
+            "dai_allowance": dai_allowance,
+            "weth_allowance": weth_allowance,
+            "wallet": wallet
+        })
+    except Exception as e:
+        logger.error(f"[DelegationStatus] Error checking borrowAllowance: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
 @app.route('/api/register-wallet', methods=['POST'])
 def register_wallet_activation():
     """Register a wallet after completing the 4-step Sequential Signer.
@@ -3984,6 +4010,7 @@ def register_wallet_activation():
     database.update_delegation_status(user_id, wallet, 'active')
     database.store_delegation_signature(user_id, wallet, dai_signature, int(deadline), step=4)
     database.store_delegation_signature(user_id, wallet, weth_signature, int(deadline), step=5)
+    database.reset_delegation_submitted_flags(user_id, wallet)
     database.set_bot_enabled(user_id, True)
 
     database.record_wallet_action(user_id, wallet, 'sequential_signer_complete', {
@@ -4046,6 +4073,18 @@ def register_wallet_activation():
 
     logger.info(f"[RegisterWallet] Wallet {wallet} fully registered. EIP-712 sig verified & stored, auto-supply enabled.")
 
+    dai_borrow_allowance = 0
+    weth_borrow_allowance = 0
+    try:
+        from delegation_client import check_borrow_allowance
+        import time as _time
+        _time.sleep(2)
+        dai_borrow_allowance = check_borrow_allowance(wallet, "DAI")
+        weth_borrow_allowance = check_borrow_allowance(wallet, "WETH")
+        logger.info(f"[RegisterWallet] POST-SUBMIT borrowAllowance: DAI={dai_borrow_allowance}, WETH={weth_borrow_allowance} for {wallet[:10]}...")
+    except Exception as e:
+        logger.error(f"[RegisterWallet] borrowAllowance check error: {e}")
+
     supply_triggered = False
     if contract_live:
         try:
@@ -4067,6 +4106,8 @@ def register_wallet_activation():
         "sigVerified": True,
         "daiDelegationSubmitted": dai_submitted,
         "wethDelegationSubmitted": weth_submitted,
+        "dai_borrow_allowance": dai_borrow_allowance,
+        "weth_borrow_allowance": weth_borrow_allowance,
         "sigSubmitErrors": sig_submit_errors if sig_submit_errors else None,
         "autoSupplyTriggered": supply_triggered,
         "strategyEnabled": dai_submitted and weth_submitted,

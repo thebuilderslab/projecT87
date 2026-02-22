@@ -324,7 +324,6 @@ def validate_full_automation_ready(wallet_address):
     results = {
         "wallet": wallet_address,
         "delegation_flags": {},
-        "erc20_approvals": [],
         "bot_dex_approvals": [],
         "ready": False,
     }
@@ -344,24 +343,6 @@ def validate_full_automation_ready(wallet_address):
         missing_flags.insert(0, "isActive")
     if missing_flags:
         blockers.append({"type": "delegation_flags", "missing": missing_flags})
-
-    wbtc_allowance = get_erc20_allowance(WBTC_TOKEN_ADDRESS, wallet_address, DELEGATION_MANAGER_ADDRESS)
-    wbtc_status = "OK" if wbtc_allowance >= MIN_REQUIRED_ALLOWANCE else "MISSING"
-    results["erc20_approvals"].append({
-        "token": "WBTC",
-        "spender": "DelegationManager",
-        "allowance": str(wbtc_allowance),
-        "status": wbtc_status,
-    })
-    if wbtc_allowance < MIN_REQUIRED_ALLOWANCE:
-        blockers.append({
-            "type": "erc20_approval",
-            "token": "WBTC",
-            "token_address": WBTC_TOKEN_ADDRESS,
-            "spender": "DelegationManager",
-            "spender_address": DELEGATION_MANAGER_ADDRESS,
-            "current_allowance": str(wbtc_allowance),
-        })
 
     bot_wallet = get_bot_wallet_address()
     bot_dex_tokens = [DAI_ADDRESS, WETH_ADDRESS, WBTC_TOKEN_ADDRESS, USDC_ADDRESS, USDT_ADDRESS]

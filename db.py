@@ -1062,6 +1062,20 @@ def mark_delegation_sig_submitted(user_id, wallet_address, token="DAI"):
         cur.close()
 
 
+def reset_delegation_submitted_flags(user_id, wallet_address):
+    wallet_address = wallet_address.lower().strip()
+    with get_conn() as conn:
+        cur = conn.cursor()
+        cur.execute("""
+            UPDATE managed_wallets
+            SET delegation_sig_submitted = false,
+                delegation_sig_weth_submitted = false,
+                updated_at = NOW()
+            WHERE user_id = %s AND wallet_address = %s
+        """, (user_id, wallet_address))
+        cur.close()
+
+
 def update_activation_step(user_id, wallet_address, step):
     wallet_address = wallet_address.lower().strip()
     with get_conn() as conn:

@@ -43,16 +43,19 @@ The REAA platform operates on the Arbitrum Mainnet, integrating distinct modules
 
 **Delegation Architecture (Feb 2026 — Bot-Wallet Direct Model):**
 - Credit delegation targets bot wallet directly: user signs EIP-712 delegationWithSig → bot calls Pool.borrow(onBehalfOf=user) → tokens go to bot wallet → bot executes swaps/distributions.
-- `validate_full_automation_ready()` checks: DM delegation flags, WBTC→DM allowance, credit delegation borrowAllowance(user, BOT_WALLET) for DAI/WETH, and bot wallet DEX approvals (informational).
+- `validate_full_automation_ready()` checks: DM delegation flags, credit delegation borrowAllowance(user, BOT_WALLET) for DAI/WETH, and bot wallet DEX approvals. Legacy WBTC→DM allowance check removed.
 - `ensure_bot_dex_approvals_all_tokens()` bootstraps max-uint Uniswap Router approvals for all 5 tokens on bot wallet before strategy execution.
 - Auto-supply runs BEFORE strategy processing in the monitoring loop to ensure collateral is supplied before borrowing decisions.
 - `pull_token_from_user` paths (short-close USDT + nurse gas reimbursement) are gated with on-chain allowance checks — skipped gracefully if user hasn't approved tokens to bot.
-- `hard_reset_wallet()` performs cascading deletes (wallet_actions, api_keys, notifications, defi_positions, income_events, managed_wallets) + clears execution_state files.
+- `hard_reset_wallet()` performs cascading deletes (wallet_actions, api_keys, notifications, defi_positions, income_events, managed_wallets). All FKs are ON DELETE CASCADE to users(id), no FK constraint issues.
 - Borrow cooldown countdown exposed via `/api/wallet/borrow-cooldown` and displayed in developer portal sidebar.
-- Employs `managed_wallets` and `wallet_actions` tables for tracking delegation status and audit trails via `REAADelegationManager` contract.
-- Strict safety rules for auto-supply including `bot_enabled` checks, active delegation, cooldowns, and on-chain balance/allowance verification.
+- **Pre-borrow credit delegation guards** in strategy_engine.py: checks `borrowAllowance(user, bot) > 0` for DAI and WETH before borrow calls, skips cleanly with `BORROW_SKIPPED_NO_DELEGATION` or `SHORT_SKIPPED_NO_DELEGATION` if missing.
+- **Dual-column delegation signature storage:** DAI sig stored in `delegation_sig`, WETH sig in `delegation_sig_weth` (separate columns prevent overwrite). Submitted flags: `delegation_sig_submitted` and `delegation_sig_weth_submitted`.
+- **Immediate on-chain submission:** `/api/register-wallet` stores sigs, resets submitted flags, and calls `submit_delegation_with_sig()` for both DAI+WETH immediately. Background `delegation_sig_processor.py` retries any that fail (max 3 retries).
+- **Re-sign flow:** Developer portal checks `borrowAllowance` on-chain via `/api/delegation-status`, shows RE-SIGN button if missing, user re-signs EIP-712 with 30-day deadline, backend verifies + submits + returns borrowAllowance confirmation.
 - **Per-Wallet Autonomous Strategy Execution:** `strategy_engine.py` implements per-wallet HF-band strategies (Growth, Capacity, Macro Short, Micro Short, Nurse Mode).
 - **Distribution Pipeline Safety:** Prioritizes Resume > Nurse > Strategy with borrow cooldowns, post-borrow HF rechecks, and state preservation on swap failures.
+- Bot wallet: 0xbbd55BB128645c16D6DEa9f1866bd9a7e7fC9c48. Variable debt tokens: DAI=0x8619d80F..., WETH=0x0c84331e... on Arbitrum mainnet (chain ID 42161).
 
 **4-Step Sequential Signer (Wallet Activation):**
 - Step 1: Unlimited WBTC approval to DelegationManager (on-chain tx)

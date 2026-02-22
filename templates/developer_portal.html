@@ -698,7 +698,12 @@ body.ejecting {
         <div id="activatedBanner" style="display:none; text-align:center; padding:30px;">
           <h2 class="glow" style="font-size:24px; margin-bottom:12px;">POSITION ACTIVATED</h2>
           <div style="color:var(--green); font-size:15px; margin-bottom:8px;">All 4 steps completed. Auto-supply and strategy engine enabled.</div>
-          <div style="color:var(--dim); font-size:13px;">Your API keys are now available in the ACCESS KEYS tab.</div>
+          <div style="color:var(--dim); font-size:13px; margin-bottom:16px;">Your API keys are now available in the ACCESS KEYS tab.</div>
+          <div id="delegationStatus" style="margin-bottom:12px;"></div>
+          <button class="gen-key-btn" id="resignDelegationBtn" onclick="resignDelegation()" style="font-size:12px; padding:8px 16px; background:transparent; border:1px solid var(--amber); color:var(--amber); cursor:pointer; display:none;">
+            [ RE-SIGN CREDIT DELEGATION ]
+          </button>
+          <div id="resignStatus" style="color:var(--dim); font-size:12px; margin-top:8px;"></div>
         </div>
       </section>
 
@@ -872,6 +877,131 @@ function showActivatedState() {
   document.getElementById('keysSection').style.display = 'block';
   document.getElementById('terminalSection').style.display = 'block';
   document.getElementById('terminalSection').style.flex = '1';
+  checkDelegationStatus();
+}
+
+async function checkDelegationStatus() {
+  var statusEl = document.getElementById('delegationStatus');
+  var resignBtn = document.getElementById('resignDelegationBtn');
+  try {
+    var resp = await authFetch('/api/delegation-status');
+    if (!resp || !resp.ok) { statusEl.textContent = ''; return; }
+    var data = await resp.json();
+    var daiOk = data.dai_allowance > 0;
+    var wethOk = data.weth_allowance > 0;
+    if (daiOk && wethOk) {
+      statusEl.innerHTML = '<span style="color:var(--green);">CREDIT DELEGATION: DAI + WETH ACTIVE ON-CHAIN</span>';
+      resignBtn.style.display = 'none';
+    } else {
+      var missing = [];
+      if (!daiOk) missing.push('DAI');
+      if (!wethOk) missing.push('WETH');
+      statusEl.innerHTML = '<span style="color:var(--red);">CREDIT DELEGATION MISSING: ' + missing.join(' + ') + ' (borrowAllowance=0)</span>';
+      resignBtn.style.display = 'inline-block';
+    }
+  } catch(e) {
+    console.error('Delegation status check error:', e);
+  }
+}
+
+async function resignDelegation() {
+  var statusEl = document.getElementById('resignStatus');
+  var resignBtn = document.getElementById('resignDelegationBtn');
+  if (!window.ethereum || !currentWallet) {
+    statusEl.textContent = 'CONNECT METAMASK FIRST';
+    statusEl.style.color = 'var(--red)';
+    return;
+  }
+  resignBtn.disabled = true;
+  resignBtn.textContent = '[ SIGNING... ]';
+  statusEl.textContent = 'PREPARING FRESH EIP-712 SIGNATURES...';
+  statusEl.style.color = 'var(--amber)';
+
+  try {
+    var provider = new ethers.providers.Web3Provider(window.ethereum);
+    var signer = provider.getSigner();
+    var userAddress = await signer.getAddress();
+
+    var deadline = Math.floor(Date.now() / 1000) + (30 * 24 * 3600);
+
+    var delegationTypes = {
+      DelegationWithSig: [
+        { name: 'delegatee', type: 'address' },
+        { name: 'value', type: 'uint256' },
+        { name: 'nonce', type: 'uint256' },
+        { name: 'deadline', type: 'uint256' }
+      ]
+    };
+
+    statusEl.textContent = 'SIGN DAI DELEGATION IN WALLET (1 of 2)...';
+    var daiDebtContract = new ethers.Contract(CONTRACTS.DAI_DEBT, DEBT_NONCE_ABI, provider);
+    var daiNonce = await daiDebtContract.nonces(userAddress);
+    var daiDomain = {
+      name: 'Aave Arbitrum Variable Debt DAI',
+      version: '1',
+      chainId: 42161,
+      verifyingContract: CONTRACTS.DAI_DEBT
+    };
+    var daiValue = {
+      delegatee: CONTRACTS.BOT_WALLET,
+      value: ethers.constants.MaxUint256,
+      nonce: daiNonce,
+      deadline: deadline
+    };
+    var daiSig = await signer._signTypedData(daiDomain, delegationTypes, daiValue);
+
+    statusEl.textContent = 'SIGN WETH DELEGATION IN WALLET (2 of 2)...';
+    var wethDebtContract = new ethers.Contract(CONTRACTS.WETH_DEBT, DEBT_NONCE_ABI, provider);
+    var wethNonce = await wethDebtContract.nonces(userAddress);
+    var wethDomain = {
+      name: 'Aave Arbitrum Variable Debt WETH',
+      version: '1',
+      chainId: 42161,
+      verifyingContract: CONTRACTS.WETH_DEBT
+    };
+    var wethValue = {
+      delegatee: CONTRACTS.BOT_WALLET,
+      value: ethers.constants.MaxUint256,
+      nonce: wethNonce,
+      deadline: deadline
+    };
+    var wethSig = await signer._signTypedData(wethDomain, delegationTypes, wethValue);
+
+    statusEl.textContent = 'SUBMITTING TO BACKEND...';
+    var resp = await authFetch('/api/register-wallet', {
+      method: 'POST',
+      body: JSON.stringify({
+        dai_signature: daiSig,
+        weth_signature: wethSig,
+        deadline: deadline
+      })
+    });
+
+    if (resp && resp.ok) {
+      var result = await resp.json();
+      var daiOk = result.dai_borrow_allowance > 0;
+      var wethOk = result.weth_borrow_allowance > 0;
+      if (daiOk && wethOk) {
+        statusEl.textContent = 'CREDIT DELEGATION RE-SIGNED AND ACTIVE ON-CHAIN';
+        statusEl.style.color = 'var(--green)';
+        resignBtn.style.display = 'none';
+        document.getElementById('delegationStatus').innerHTML = '<span style="color:var(--green);">CREDIT DELEGATION: DAI + WETH ACTIVE ON-CHAIN</span>';
+      } else {
+        statusEl.textContent = 'SIGNATURES SUBMITTED — VERIFYING ON-CHAIN... (background processor will retry)';
+        statusEl.style.color = 'var(--amber)';
+      }
+    } else {
+      var errData = resp ? await resp.json().catch(function() { return {}; }) : {};
+      throw new Error(errData.error || 'Backend submission failed');
+    }
+  } catch(e) {
+    statusEl.textContent = 'RE-SIGN FAILED: ' + (e.message || e);
+    statusEl.style.color = 'var(--red)';
+    console.error('Re-sign delegation error:', e);
+  } finally {
+    resignBtn.disabled = false;
+    resignBtn.textContent = '[ RE-SIGN CREDIT DELEGATION ]';
+  }
 }
 
 async function scanWbtcBalance() {
@@ -1113,7 +1243,7 @@ async function runActivationSequence() {
     updateProgress(50, 'Step 3/4: Preparing DAI credit delegation...');
     setStepState(3, 'active', 'PREPARING EIP-712 DATA (DAI)...', null);
 
-    var deadline = Math.floor(Date.now() / 1000) + 3600;
+    var deadline = Math.floor(Date.now() / 1000) + (30 * 24 * 3600);
     sigData.deadline = deadline;
 
     var delegationTypes = {
