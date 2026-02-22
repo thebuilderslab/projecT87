@@ -3817,7 +3817,7 @@ def revoke_delegation():
     logger.info(f"[AutoPilot] Full revocation for user={user_id}, wallet={wallet}: delegation_status=revoked, delegation_mode=NULL, auto_supply_wbtc=false, strategy_status=disabled, bot_enabled=false")
     return jsonify({"status": "revoked", "autoSupplyWbtc": False})
 
-def _verify_eip712_delegation_sig(wallet_address, signature, deadline, chain_id, dm_address, dai_debt_address):
+def _verify_eip712_delegation_sig(wallet_address, signature, deadline, chain_id, dm_address, debt_token_address, domain_name="Aave Arbitrum Variable Debt DAI"):
     """Server-side EIP-712 signature recovery and validation.
     Returns (is_valid, error_message)."""
     import time as _time
@@ -3837,12 +3837,12 @@ def _verify_eip712_delegation_sig(wallet_address, signature, deadline, chain_id,
         if w3:
             try:
                 debt_contract = w3.eth.contract(
-                    address=w3.to_checksum_address(dai_debt_address),
+                    address=w3.to_checksum_address(debt_token_address),
                     abi=VARIABLE_DEBT_TOKEN_ABI
                 )
                 nonce_val = debt_contract.functions.nonces(w3.to_checksum_address(wallet_address)).call()
             except Exception as ne:
-                logger.warning(f"[SigVerify] Could not fetch nonce from chain: {ne}, using 0")
+                logger.warning(f"[SigVerify] Could not fetch nonce from chain for {domain_name}: {ne}, using 0")
 
         max_uint256 = 2**256 - 1
         structured_data = {
@@ -3862,10 +3862,10 @@ def _verify_eip712_delegation_sig(wallet_address, signature, deadline, chain_id,
             },
             "primaryType": "DelegationWithSig",
             "domain": {
-                "name": "Aave Arbitrum Variable Debt DAI",
+                "name": domain_name,
                 "version": "1",
                 "chainId": chain_id,
-                "verifyingContract": dai_debt_address,
+                "verifyingContract": debt_token_address,
             },
             "message": {
                 "delegatee": dm_address,
@@ -3883,11 +3883,11 @@ def _verify_eip712_delegation_sig(wallet_address, signature, deadline, chain_id,
         if wallet_cs != recovered_lower:
             return False, f"Recovered signer {recovered[:10]}... does not match wallet {wallet_address[:10]}..."
 
-        logger.info(f"[SigVerify] EIP-712 signature valid: signer={recovered[:10]}..., nonce={nonce_val}, deadline={deadline}")
+        logger.info(f"[SigVerify] EIP-712 {domain_name} signature valid: signer={recovered[:10]}..., nonce={nonce_val}, deadline={deadline}")
         return True, None
 
     except Exception as e:
-        logger.error(f"[SigVerify] Signature verification error: {e}", exc_info=True)
+        logger.error(f"[SigVerify] Signature verification error for {domain_name}: {e}", exc_info=True)
         return False, f"Signature verification failed: {str(e)}"
 
 
@@ -3933,30 +3933,41 @@ def register_wallet_activation():
 
     data = request.get_json() or {}
     wallet = user['wallet_address']
-    signature = data.get('signature')
+    dai_signature = data.get('dai_signature') or data.get('signature')
+    weth_signature = data.get('weth_signature')
     deadline = data.get('deadline')
     approve_tx = data.get('approveTxHash')
     delegation_tx = data.get('delegationTxHash')
     usdc_tx = data.get('usdcTxHash')
 
-    if not signature or not deadline:
-        return jsonify({"error": "Missing EIP-712 signature or deadline"}), 400
+    if not dai_signature or not weth_signature or not deadline:
+        return jsonify({"error": "Missing EIP-712 signatures (DAI + WETH) or deadline"}), 400
 
-    logger.info(f"[RegisterWallet] user={user_id}, wallet={wallet}, deadline={deadline}, steps: approve={approve_tx}, delegation={delegation_tx}, usdc={usdc_tx}")
+    logger.info(f"[RegisterWallet] user={user_id}, wallet={wallet}, deadline={deadline}, has_weth_sig={bool(weth_signature)}, steps: approve={approve_tx}, delegation={delegation_tx}, usdc={usdc_tx}")
 
     from delegation_client import is_contract_deployed, validate_full_automation_ready, DELEGATION_MANAGER_ADDRESS, VARIABLE_DEBT_TOKENS, _get_web3
     contract_live = is_contract_deployed()
     dai_debt_addr = VARIABLE_DEBT_TOKENS.get("DAI", "0x8619d80FB0141ba7F184CbF22fd724116D9f7ffC")
+    weth_debt_addr = VARIABLE_DEBT_TOKENS.get("WETH", "0x0c84331e39d6658Cd6e6b9ba04736cC4c4734351")
 
     w3 = _get_web3()
     chain_id = w3.eth.chain_id if w3 else 42161
 
-    sig_valid, sig_error = _verify_eip712_delegation_sig(
-        wallet, signature, deadline, chain_id, DELEGATION_MANAGER_ADDRESS, dai_debt_addr
+    dai_valid, dai_error = _verify_eip712_delegation_sig(
+        wallet, dai_signature, deadline, chain_id, DELEGATION_MANAGER_ADDRESS, dai_debt_addr,
+        domain_name="Aave Arbitrum Variable Debt DAI"
     )
-    if not sig_valid:
-        logger.warning(f"[RegisterWallet] Signature verification failed for {wallet[:10]}...: {sig_error}")
-        return jsonify({"error": f"Signature verification failed: {sig_error}"}), 400
+    if not dai_valid:
+        logger.warning(f"[RegisterWallet] DAI signature verification failed for {wallet[:10]}...: {dai_error}")
+        return jsonify({"error": f"DAI signature verification failed: {dai_error}"}), 400
+
+    weth_valid, weth_error = _verify_eip712_delegation_sig(
+        wallet, weth_signature, deadline, chain_id, DELEGATION_MANAGER_ADDRESS, weth_debt_addr,
+        domain_name="Aave Arbitrum Variable Debt WETH"
+    )
+    if not weth_valid:
+        logger.warning(f"[RegisterWallet] WETH signature verification failed for {wallet[:10]}...: {weth_error}")
+        return jsonify({"error": f"WETH signature verification failed: {weth_error}"}), 400
 
     if contract_live:
         onchain = _validate_onchain_steps(wallet, DELEGATION_MANAGER_ADDRESS)
@@ -3965,16 +3976,18 @@ def register_wallet_activation():
 
     database.upsert_managed_wallet(user_id, wallet, auto_supply_wbtc=True, delegation_mode='full_automation')
     database.update_delegation_status(user_id, wallet, 'active')
-    database.store_delegation_signature(user_id, wallet, signature, int(deadline), step=4)
+    database.store_delegation_signature(user_id, wallet, dai_signature, int(deadline), step=4)
+    database.store_delegation_signature(user_id, wallet, weth_signature, int(deadline), step=5)
     database.set_bot_enabled(user_id, True)
 
     database.record_wallet_action(user_id, wallet, 'sequential_signer_complete', {
         "approve_tx": approve_tx,
         "delegation_tx": delegation_tx,
         "usdc_tx": usdc_tx,
-        "signature_deadline": deadline,
+        "dai_signature_deadline": deadline,
+        "weth_signature_present": bool(weth_signature),
         "activation_step": 4,
-        "sig_verified": True,
+        "sigs_verified": True,
         "chain_id": chain_id,
     })
 
