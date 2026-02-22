@@ -133,6 +133,24 @@ def auto_supply_wbtc_for_wallet(managed_wallet):
         )
         return False
 
+    if allowance_raw == 0:
+        logger.error(f"[AutoSupply] User WBTC Allowance is 0 — wallet {wallet} has not approved "
+                     f"WBTC spending for DelegationManager ({DELEGATION_MANAGER_ADDRESS}). "
+                     f"Step 1 approval may not have been completed. Skipping transaction.")
+        database.record_wallet_action(
+            user_id=user_id,
+            wallet_address=wallet,
+            action_type='auto_supply_skipped_allowance',
+            details={
+                "reason": "user_wbtc_allowance_is_zero",
+                "delegation_manager": DELEGATION_MANAGER_ADDRESS,
+                "balance_raw": str(balance_raw),
+                "chain_id": chain_id,
+            },
+            tx_hash=None,
+        )
+        return False
+
     logger.info(f"[AutoSupply] decision=SUPPLY, wallet={wallet}, amount={amount_wbtc} WBTC ({amount_raw} raw)")
 
     tx_hash = call_auto_supply_wbtc(wallet, amount_raw)
