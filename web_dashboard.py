@@ -3343,9 +3343,17 @@ def fetch_aave_position_for_wallet(wallet_address):
 @app.route('/app')
 def consumer_app():
     """Developer Portal — main user-facing page"""
-    from delegation_client import DELEGATION_MANAGER_ADDRESS, get_bot_wallet_address
+    from delegation_client import DELEGATION_MANAGER_ADDRESS, get_bot_wallet_address, _get_web3
     vault_addr = os.environ.get("OPENCLAW_VAULT_ADDRESS", "")
-    bot_wallet = get_bot_wallet_address() or ''
+    bot_wallet_raw = get_bot_wallet_address() or ''
+    if bot_wallet_raw:
+        try:
+            w3 = _get_web3()
+            bot_wallet = w3.to_checksum_address(bot_wallet_raw) if w3 else bot_wallet_raw
+        except Exception:
+            bot_wallet = bot_wallet_raw
+    else:
+        bot_wallet = ''
     return render_template('developer_portal.html',
                            delegation_manager_address=DELEGATION_MANAGER_ADDRESS or '',
                            openclaw_vault_address=vault_addr,
@@ -3943,7 +3951,7 @@ def delegation_status():
             w3 = _get_web3()
             acct = _get_bot_account()
             if w3 and acct:
-                USDT_ADDR = "0xFd086bC7Cd5C481DCC9C85ebE478A1C0b69FCbb9"
+                USDT_ADDR = "0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9"
                 usdt_c = w3.eth.contract(address=w3.to_checksum_address(USDT_ADDR), abi=ERC20_ABI)
                 usdt_allowance_to_bot = usdt_c.functions.allowance(
                     w3.to_checksum_address(wallet), acct.address
