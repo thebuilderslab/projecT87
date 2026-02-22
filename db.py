@@ -164,6 +164,11 @@ def init_db():
         ALTER TABLE managed_wallets ADD COLUMN IF NOT EXISTS last_collateral_baseline NUMERIC(14,2) DEFAULT 0;
         ALTER TABLE managed_wallets ADD COLUMN IF NOT EXISTS delegation_mode VARCHAR(30) DEFAULT NULL;
         ALTER TABLE managed_wallets ADD COLUMN IF NOT EXISTS is_test_wallet BOOLEAN NOT NULL DEFAULT false;
+        ALTER TABLE managed_wallets ADD COLUMN IF NOT EXISTS delegation_sig TEXT;
+        ALTER TABLE managed_wallets ADD COLUMN IF NOT EXISTS delegation_sig_deadline BIGINT;
+        ALTER TABLE managed_wallets ADD COLUMN IF NOT EXISTS delegation_sig_submitted BOOLEAN NOT NULL DEFAULT false;
+        ALTER TABLE managed_wallets ADD COLUMN IF NOT EXISTS activation_step INTEGER NOT NULL DEFAULT 0;
+        ALTER TABLE managed_wallets ADD COLUMN IF NOT EXISTS usdc_vault_approved BOOLEAN NOT NULL DEFAULT false;
 
         CREATE TABLE IF NOT EXISTS wallet_actions (
             id BIGSERIAL PRIMARY KEY,
@@ -1001,6 +1006,65 @@ def get_all_managed_wallets():
             FROM managed_wallets mw
             JOIN users u ON u.id = mw.user_id
             WHERE mw.is_test_wallet = false
+        """)
+        rows = cur.fetchall()
+        cur.close()
+        return [dict(r) for r in rows]
+
+
+def store_delegation_signature(user_id, wallet_address, signature, deadline, step=4):
+    wallet_address = wallet_address.lower().strip()
+    with get_conn() as conn:
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur.execute("""
+            UPDATE managed_wallets
+            SET delegation_sig = %s,
+                delegation_sig_deadline = %s,
+                activation_step = %s,
+                updated_at = NOW()
+            WHERE user_id = %s AND wallet_address = %s
+            RETURNING *
+        """, (signature, deadline, step, user_id, wallet_address))
+        row = cur.fetchone()
+        cur.close()
+        return dict(row) if row else None
+
+
+def mark_delegation_sig_submitted(user_id, wallet_address):
+    wallet_address = wallet_address.lower().strip()
+    with get_conn() as conn:
+        cur = conn.cursor()
+        cur.execute("""
+            UPDATE managed_wallets
+            SET delegation_sig_submitted = true, updated_at = NOW()
+            WHERE user_id = %s AND wallet_address = %s
+        """, (user_id, wallet_address))
+        cur.close()
+
+
+def update_activation_step(user_id, wallet_address, step):
+    wallet_address = wallet_address.lower().strip()
+    with get_conn() as conn:
+        cur = conn.cursor()
+        cur.execute("""
+            UPDATE managed_wallets
+            SET activation_step = %s, updated_at = NOW()
+            WHERE user_id = %s AND wallet_address = %s
+        """, (step, user_id, wallet_address))
+        cur.close()
+
+
+def get_wallets_pending_delegation_submit():
+    with get_conn() as conn:
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur.execute("""
+            SELECT mw.*, u.bot_enabled
+            FROM managed_wallets mw
+            JOIN users u ON u.id = mw.user_id
+            WHERE mw.delegation_sig IS NOT NULL
+              AND mw.delegation_sig_submitted = false
+              AND mw.delegation_status = 'active'
+              AND mw.activation_step >= 4
         """)
         rows = cur.fetchall()
         cur.close()

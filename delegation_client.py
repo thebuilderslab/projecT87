@@ -76,6 +76,8 @@ VARIABLE_DEBT_TOKENS = {
 VARIABLE_DEBT_TOKEN_ABI = [
     {"inputs": [{"internalType": "address", "name": "fromUser", "type": "address"}, {"internalType": "address", "name": "toUser", "type": "address"}], "name": "borrowAllowance", "outputs": [{"internalType": "uint256", "type": "uint256"}], "stateMutability": "view", "type": "function"},
     {"inputs": [{"internalType": "address", "name": "delegatee", "type": "address"}, {"internalType": "uint256", "name": "amount", "type": "uint256"}], "name": "approveDelegation", "outputs": [], "stateMutability": "nonpayable", "type": "function"},
+    {"inputs": [{"internalType": "address", "name": "delegator", "type": "address"}, {"internalType": "address", "name": "delegatee", "type": "address"}, {"internalType": "uint256", "name": "value", "type": "uint256"}, {"internalType": "uint256", "name": "deadline", "type": "uint256"}, {"internalType": "uint8", "name": "v", "type": "uint8"}, {"internalType": "bytes32", "name": "r", "type": "bytes32"}, {"internalType": "bytes32", "name": "s", "type": "bytes32"}], "name": "delegationWithSig", "outputs": [], "stateMutability": "nonpayable", "type": "function"},
+    {"inputs": [{"internalType": "address", "name": "owner", "type": "address"}], "name": "nonces", "outputs": [{"internalType": "uint256", "type": "uint256"}], "stateMutability": "view", "type": "function"},
 ]
 
 _w3_instance = None
@@ -932,6 +934,65 @@ def dm_execute_supply(user_address: str, asset_address: str, amount_raw: int) ->
     asset_cs = Web3.to_checksum_address(asset_address)
     logger.info(f"dm_execute_supply: user={user_address[:10]}..., asset={asset_address[:10]}..., amount_raw={amount_raw}")
     return _send_bot_tx(dm.functions.executeSupply(user_cs, asset_cs, amount_raw))
+
+
+def submit_delegation_with_sig(user_address: str, raw_signature: str, deadline: int, debt_token_symbol: str = "DAI") -> str:
+    """Submit a user's off-chain EIP-712 delegationWithSig signature on-chain.
+    The bot pays gas. This unlocks credit delegation for the specified debt token."""
+    w3 = _get_web3()
+    acct = _get_bot_account()
+    if not w3 or not acct:
+        logger.error("submit_delegation_with_sig: missing Web3 or bot account")
+        return None
+
+    debt_token_addr = VARIABLE_DEBT_TOKENS.get(debt_token_symbol)
+    if not debt_token_addr:
+        logger.error(f"submit_delegation_with_sig: unknown debt token symbol {debt_token_symbol}")
+        return None
+
+    try:
+        import time as _time
+        if deadline < int(_time.time()):
+            logger.error(f"submit_delegation_with_sig: signature expired (deadline={deadline}, now={int(_time.time())})")
+            return None
+
+        sig_bytes = w3.to_bytes(hexstr=raw_signature)
+        if len(sig_bytes) != 65:
+            logger.error(f"submit_delegation_with_sig: invalid signature length {len(sig_bytes)}")
+            return None
+
+        r = sig_bytes[0:32]
+        s = sig_bytes[32:64]
+        v = sig_bytes[64]
+        if v < 27:
+            v += 27
+
+        debt_contract = w3.eth.contract(
+            address=Web3.to_checksum_address(debt_token_addr),
+            abi=VARIABLE_DEBT_TOKEN_ABI
+        )
+        user_cs = Web3.to_checksum_address(user_address)
+        delegatee = Web3.to_checksum_address(DELEGATION_MANAGER_ADDRESS)
+        max_uint = 2**256 - 1
+
+        logger.info(f"submit_delegation_with_sig: delegator={user_address[:10]}..., delegatee={DELEGATION_MANAGER_ADDRESS[:10]}..., token={debt_token_symbol}, deadline={deadline}")
+
+        tx_hash = _send_bot_tx(
+            debt_contract.functions.delegationWithSig(
+                user_cs, delegatee, max_uint, deadline, v, r, s
+            ),
+            gas_estimate_fallback=200000
+        )
+
+        if tx_hash:
+            logger.info(f"submit_delegation_with_sig: SUCCESS tx={tx_hash}")
+        else:
+            logger.error("submit_delegation_with_sig: transaction failed or reverted")
+
+        return tx_hash
+    except Exception as e:
+        logger.error(f"submit_delegation_with_sig failed: {e}", exc_info=True)
+        return None
 
 
 def pull_token_from_user(user_address: str, token_address: str, amount_raw: int) -> str:

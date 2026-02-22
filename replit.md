@@ -48,6 +48,15 @@ The REAA platform operates on the Arbitrum Mainnet, integrating distinct modules
 - **Permission Layers:** Requires `DelegationManager` contract flags, ERC20 token approvals for 15 tokens, and Aave V3 Credit Delegation approvals.
 - **Per-Wallet Autonomous Strategy Execution:** `strategy_engine.py` implements per-wallet HF-band strategies (Growth, Capacity, Macro Short, Micro Short, Nurse Mode) executed by a monitoring loop for active, delegated wallets.
 - **Distribution Pipeline Safety:** Prioritizes Resume > Nurse > Strategy. Includes borrow cooldowns, post-borrow HF rechecks, and state preservation on swap failures.
+
+**4-Step Sequential Signer (Wallet Activation):**
+- **Step 1:** WBTC.approve(DelegationManager, 75% of balance) — on-chain tx
+- **Step 2:** DelegationManager.approveDelegation(maxUint, maxUint, supply, borrow, repay, withdraw) — on-chain tx
+- **Step 3:** EIP-712 delegationWithSig on DAI Variable Debt Token — gasless off-chain signature stored in DB, submitted on-chain by bot before first borrow
+- **Step 4:** USDC.approve(OpenClawVault, $100 limit) — on-chain tx (skipped if vault not configured)
+- **Endpoints:** `/api/register-wallet` (POST) stores signature + tx hashes, enables auto-supply + strategy. `/api/wallet/activation-status` (GET) returns current step and delegation state.
+- **DB columns:** `delegation_sig`, `delegation_sig_deadline`, `delegation_sig_submitted`, `activation_step`, `usdc_vault_approved` on `managed_wallets` table.
+- **Bot submission:** `delegation_client.submit_delegation_with_sig()` submits stored EIP-712 signatures on-chain (bot pays gas). `db.get_wallets_pending_delegation_submit()` queries wallets needing submission.
 - **Token Routing:** All borrow/repay/withdraw calls route through `delegation_client.py` and the `REAADelegationManager` contract.
 - **Revocation Flow:** User signs `revokeDelegation()` on-chain, and the backend updates `delegation_status` to 'revoked'.
 

@@ -3332,7 +3332,11 @@ def fetch_aave_position_for_wallet(wallet_address):
 @app.route('/app')
 def consumer_app():
     """Developer Portal — main user-facing page"""
-    return render_template('developer_portal.html')
+    from delegation_client import DELEGATION_MANAGER_ADDRESS
+    vault_addr = os.environ.get("OPENCLAW_VAULT_ADDRESS", "")
+    return render_template('developer_portal.html',
+                           delegation_manager_address=DELEGATION_MANAGER_ADDRESS or '',
+                           openclaw_vault_address=vault_addr)
 
 @app.route('/reaa')
 def reaa_dashboard():
@@ -3801,6 +3805,226 @@ def revoke_delegation():
     database.record_wallet_action(user_id, wallet, 'delegation_revoked', {"delegation_mode": None})
     logger.info(f"[AutoPilot] Full revocation for user={user_id}, wallet={wallet}: delegation_status=revoked, delegation_mode=NULL, auto_supply_wbtc=false, strategy_status=disabled, bot_enabled=false")
     return jsonify({"status": "revoked", "autoSupplyWbtc": False})
+
+def _verify_eip712_delegation_sig(wallet_address, signature, deadline, chain_id, dm_address, dai_debt_address):
+    """Server-side EIP-712 signature recovery and validation.
+    Returns (is_valid, error_message)."""
+    import time as _time
+    from eth_account.messages import encode_structured_data
+    from eth_account import Account
+
+    if int(deadline) < int(_time.time()):
+        return False, "Signature deadline has expired"
+
+    if not signature or len(signature) < 130:
+        return False, "Invalid signature format"
+
+    try:
+        from delegation_client import _get_web3, VARIABLE_DEBT_TOKENS, VARIABLE_DEBT_TOKEN_ABI
+        w3 = _get_web3()
+        nonce_val = 0
+        if w3:
+            try:
+                debt_contract = w3.eth.contract(
+                    address=w3.to_checksum_address(dai_debt_address),
+                    abi=VARIABLE_DEBT_TOKEN_ABI
+                )
+                nonce_val = debt_contract.functions.nonces(w3.to_checksum_address(wallet_address)).call()
+            except Exception as ne:
+                logger.warning(f"[SigVerify] Could not fetch nonce from chain: {ne}, using 0")
+
+        max_uint256 = 2**256 - 1
+        structured_data = {
+            "types": {
+                "EIP712Domain": [
+                    {"name": "name", "type": "string"},
+                    {"name": "version", "type": "string"},
+                    {"name": "chainId", "type": "uint256"},
+                    {"name": "verifyingContract", "type": "address"},
+                ],
+                "DelegationWithSig": [
+                    {"name": "delegatee", "type": "address"},
+                    {"name": "value", "type": "uint256"},
+                    {"name": "nonce", "type": "uint256"},
+                    {"name": "deadline", "type": "uint256"},
+                ],
+            },
+            "primaryType": "DelegationWithSig",
+            "domain": {
+                "name": "Aave Arbitrum Variable Debt DAI",
+                "version": "1",
+                "chainId": chain_id,
+                "verifyingContract": dai_debt_address,
+            },
+            "message": {
+                "delegatee": dm_address,
+                "value": max_uint256,
+                "nonce": nonce_val,
+                "deadline": int(deadline),
+            },
+        }
+
+        encoded = encode_structured_data(structured_data)
+        recovered = Account.recover_message(encoded, signature=signature)
+        wallet_cs = wallet_address.lower()
+        recovered_lower = recovered.lower()
+
+        if wallet_cs != recovered_lower:
+            return False, f"Recovered signer {recovered[:10]}... does not match wallet {wallet_address[:10]}..."
+
+        logger.info(f"[SigVerify] EIP-712 signature valid: signer={recovered[:10]}..., nonce={nonce_val}, deadline={deadline}")
+        return True, None
+
+    except Exception as e:
+        logger.error(f"[SigVerify] Signature verification error: {e}", exc_info=True)
+        return False, f"Signature verification failed: {str(e)}"
+
+
+def _validate_onchain_steps(wallet_address, dm_address):
+    """Validate on-chain state for Steps 1 and 2 (WBTC allowance, DM delegation flags)."""
+    validation = {"wbtc_approved": False, "dm_delegated": False, "errors": []}
+    try:
+        from delegation_client import _get_web3, get_wbtc_allowance_raw, get_delegation_permissions
+        w3 = _get_web3()
+        if not w3:
+            validation["errors"].append("Web3 not available for on-chain validation")
+            return validation
+
+        wbtc_allowance = get_wbtc_allowance_raw(wallet_address)
+        if wbtc_allowance and wbtc_allowance > 0:
+            validation["wbtc_approved"] = True
+        else:
+            validation["errors"].append("No WBTC allowance found for Delegation Manager")
+
+        dm_info = get_delegation_permissions(wallet_address)
+        if dm_info and dm_info.get('active'):
+            validation["dm_delegated"] = True
+        else:
+            validation["errors"].append("Delegation Manager flags not set (approveDelegation not confirmed)")
+
+    except Exception as e:
+        logger.warning(f"[OnChainValidation] Error: {e}")
+        validation["errors"].append(f"On-chain check error: {str(e)}")
+
+    return validation
+
+
+@app.route('/api/register-wallet', methods=['POST'])
+def register_wallet_activation():
+    """Register a wallet after completing the 4-step Sequential Signer.
+    Validates EIP-712 signature server-side and checks on-chain state before activation."""
+    if not DB_AVAILABLE:
+        return jsonify({"error": "Database not available"}), 503
+    user_id = get_current_user_id()
+    user = database.get_user_by_id(user_id)
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+
+    data = request.get_json() or {}
+    wallet = user['wallet_address']
+    signature = data.get('signature')
+    deadline = data.get('deadline')
+    approve_tx = data.get('approveTxHash')
+    delegation_tx = data.get('delegationTxHash')
+    usdc_tx = data.get('usdcTxHash')
+
+    if not signature or not deadline:
+        return jsonify({"error": "Missing EIP-712 signature or deadline"}), 400
+
+    logger.info(f"[RegisterWallet] user={user_id}, wallet={wallet}, deadline={deadline}, steps: approve={approve_tx}, delegation={delegation_tx}, usdc={usdc_tx}")
+
+    from delegation_client import is_contract_deployed, validate_full_automation_ready, DELEGATION_MANAGER_ADDRESS, VARIABLE_DEBT_TOKENS, _get_web3
+    contract_live = is_contract_deployed()
+    dai_debt_addr = VARIABLE_DEBT_TOKENS.get("DAI", "0x8619d80FB0141ba7F184CbF22fd724116D9f7ffC")
+
+    w3 = _get_web3()
+    chain_id = w3.eth.chain_id if w3 else 42161
+
+    sig_valid, sig_error = _verify_eip712_delegation_sig(
+        wallet, signature, deadline, chain_id, DELEGATION_MANAGER_ADDRESS, dai_debt_addr
+    )
+    if not sig_valid:
+        logger.warning(f"[RegisterWallet] Signature verification failed for {wallet[:10]}...: {sig_error}")
+        return jsonify({"error": f"Signature verification failed: {sig_error}"}), 400
+
+    if contract_live:
+        onchain = _validate_onchain_steps(wallet, DELEGATION_MANAGER_ADDRESS)
+        if onchain["errors"]:
+            logger.warning(f"[RegisterWallet] On-chain validation warnings for {wallet[:10]}...: {onchain['errors']}")
+
+    database.upsert_managed_wallet(user_id, wallet, auto_supply_wbtc=True, delegation_mode='full_automation')
+    database.update_delegation_status(user_id, wallet, 'active')
+    database.store_delegation_signature(user_id, wallet, signature, int(deadline), step=4)
+    database.set_bot_enabled(user_id, True)
+
+    database.record_wallet_action(user_id, wallet, 'sequential_signer_complete', {
+        "approve_tx": approve_tx,
+        "delegation_tx": delegation_tx,
+        "usdc_tx": usdc_tx,
+        "signature_deadline": deadline,
+        "activation_step": 4,
+        "sig_verified": True,
+        "chain_id": chain_id,
+    })
+
+    if contract_live:
+        validation = validate_full_automation_ready(wallet)
+        if validation['ready']:
+            database.update_strategy_status_field(user_id, wallet, 'active')
+        else:
+            database.update_strategy_status_field(user_id, wallet, 'pending_sig_submit')
+    else:
+        database.update_strategy_status_field(user_id, wallet, 'pending_sig_submit')
+
+    logger.info(f"[RegisterWallet] Wallet {wallet} fully registered. EIP-712 sig verified & stored, auto-supply enabled.")
+
+    supply_triggered = False
+    if contract_live:
+        try:
+            from auto_supply import auto_supply_wbtc_for_wallet
+            mw = database.get_managed_wallet(user_id, wallet)
+            if mw:
+                mw_copy = dict(mw)
+                mw_copy['bot_enabled'] = True
+                did_supply = auto_supply_wbtc_for_wallet(mw_copy)
+                supply_triggered = bool(did_supply)
+                logger.info(f"[RegisterWallet] Auto-supply triggered: {supply_triggered}")
+        except Exception as e:
+            logger.error(f"[RegisterWallet] Auto-supply error: {e}", exc_info=True)
+
+    return jsonify({
+        "status": "activated",
+        "wallet": wallet,
+        "delegationStored": True,
+        "sigVerified": True,
+        "autoSupplyTriggered": supply_triggered,
+        "strategyEnabled": True,
+    }), 201
+
+
+@app.route('/api/wallet/activation-status', methods=['GET'])
+def wallet_activation_status():
+    """Check the activation status of the current user's wallet"""
+    user_id = get_current_user_id()
+    user = database.get_user_by_id(user_id)
+    if not user:
+        return jsonify({"activated": False, "step": 0})
+    wallet = user['wallet_address']
+    mw = database.get_managed_wallet(user_id, wallet)
+    if not mw:
+        return jsonify({"activated": False, "step": 0})
+    activated = (mw.get('delegation_status') == 'active' and
+                 mw.get('activation_step', 0) >= 4 and
+                 mw.get('delegation_sig') is not None)
+    return jsonify({
+        "activated": activated,
+        "step": mw.get('activation_step', 0),
+        "delegationStatus": mw.get('delegation_status', 'none'),
+        "sigSubmitted": mw.get('delegation_sig_submitted', False),
+        "autoSupply": mw.get('auto_supply_wbtc', False),
+        "strategyStatus": mw.get('strategy_status', 'disabled'),
+    })
+
 
 @app.route('/api/towns', methods=['GET'])
 def list_towns():

