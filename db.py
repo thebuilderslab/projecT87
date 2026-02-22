@@ -1346,7 +1346,7 @@ def hard_reset_wallet(user_id: int, wallet_address: str) -> dict:
             cur.execute("DELETE FROM defi_positions WHERE user_id = %s AND wallet_address = %s", (user_id, wallet_address))
             results["deleted"]["defi_positions"] = cur.rowcount
 
-            cur.execute("DELETE FROM income_events WHERE user_id = %s AND wallet_address = %s", (user_id, wallet_address))
+            cur.execute("DELETE FROM income_events WHERE user_id = %s", (user_id,))
             results["deleted"]["income_events"] = cur.rowcount
 
             cur.execute("DELETE FROM managed_wallets WHERE user_id = %s AND wallet_address = %s", (user_id, wallet_address))
