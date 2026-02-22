@@ -277,7 +277,8 @@ def reconcile_delegation_state():
     except Exception as e:
         log_agent_activity(f"[Monitor] reconcile_delegation_state error: {e}", "WARNING")
 
-os.environ['NETWORK_MODE'] = 'mainnet'
+if not os.getenv('NETWORK_MODE'):
+    os.environ['NETWORK_MODE'] = 'mainnet'
 
 def log_agent_activity(message, level="INFO"):
     """Log agent activity with timestamp"""
@@ -554,8 +555,8 @@ if __name__ == "__main__":
             except (OSError, ValueError):
                 pass
 
-    # Ensure mainnet mode
-    os.environ['NETWORK_MODE'] = 'mainnet'
+    if not os.getenv('NETWORK_MODE'):
+        os.environ['NETWORK_MODE'] = 'mainnet'
     
     # Check for required secrets
     required_secrets = ['PRIVATE_KEY', 'COINMARKETCAP_API_KEY']
