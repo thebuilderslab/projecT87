@@ -1,0 +1,64 @@
+🤖 SYSTEM LAUNCH: Dual-Process Mode
+🚀 Starting Autonomous Agent...
+ Configuration constants loaded successfullylask Dashboard)...
+2026-02-22 01:07:26,229 - INFO - 🔄 Dashboard: Connecting to running autonomous agent...
+2026-02-22 01:07:26,230 - INFO - 📦 Dashboard: Creating WorkingAgent instance...
+2026-02-22 01:07:26,254 - WARNING - ⚠️ Agent not yet initialized for live data fetch
+2026-02-22 01:07:26,287 - INFO - 🚀 OpenClaw API Server starting on 0.0.0.0:5000
+INFO:     Started server process [1349]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:5000 (Press CTRL+C to quit)
+⚠️ Cannot determine Web3 version
+Configuration constants loaded successfully
+⚠️ Cannot determine Web3 version
+✅ Config module loaded successfully (canonical)
+✅ Configuration constants loaded successfully
+INFO:perplexity_client:Perplexity client module loaded
+INFO:searchiqs_scraper:SearchIQS scraper module loaded (v4 - fixed login & search)
+INFO:google_client:Google client module loaded (service account auth with openssl JWT signing)
+INFO:real_estate_tasks:Real estate tasks module loaded (v3 - multi-town pipeline)
+🚀 ARBITRUM MAINNET AUTONOMOUS AGENT
+============================================================
+🌐 Network: Arbitrum Mainnet (Chain ID: 42161)
+🔑 Operation Mode: SELF-TRADE MODE (private key)
+🤖 Mode: Continuous Autonomous Operation
+🛑 Emergency Stop: Create 'EMERGENCY_STOP_ACTIVE.flag' to halt
+============================================================
+[20:07:27 EST] INFO: Initializing Arbitrum Mainnet Agent...
+🤖 Initializing Arbitrum Testnet Agent...
+DEBUG: Private key loaded from parameter/environment: [REDACTED]
+✅ All critical environment variables validated successfully
+🔍 DEBUG: Starting RPC manager initialization...
+🔍 DEBUG: Network mode: fork
+🔍 Testing RPC: https://sepolia-rollup.arbitrum.io/rpc
+✅ Dashboard WorkingAgent: Connected to https://arbitrum-one.public.blastapi.io
+2026-02-22 01:07:27,409 - INFO - ✅ Dashboard: WorkingAgent instance created successfully
+2026-02-22 01:07:27,418 - INFO - ✅ Dashboard: Connected to running AUTONOMOUS MAINNET agent
+2026-02-22 01:07:27,418 - INFO - ✅ Dashboard: Successfully connected to autonomous agent data
+INFO:     172.31.113.194:40410 - "GET / HTTP/1.1" 302 Found
+INFO:     172.31.113.194:40410 - "GET /app HTTP/1.1" 200 OK
+2026-02-22 01:07:27,601 - INFO - delegation_client: connected via https://arbitrum-one.public.blastapi.io
+2026-02-22 01:07:27,604 - INFO - delegation_client: bot wallet 0xbbd55BB128645c16D6DEa9f1866bd9a7e7fC9c48
+✅ Config module loaded successfully (canonical)
+✅ Configuration constants loaded successfully
+✅ RPC passed tests: https://sepolia-rollup.arbitrum.io/rpc (0.36s)
+🔍 Testing RPC: https://arbitrum-sepolia.blockpi.network/v1/rpc/public
+2026-02-22 01:07:27,816 - INFO - 📊 Using LIVE AAVE CONTRACT data: HF 2.7520
+❌ Not connected: https://arbitrum-sepolia.blockpi.network/v1/rpc/public
+📊 RPC Test Results: 1/2 endpoints working
+🧪 Operating on Arbitrum Sepolia Testnet
+🔍 DEBUG: Final RPC selection results:
+   Primary RPC: https://sepolia-rollup.arbitrum.io/rpc
+   Fallback RPCs: 0 available
+🚨 NETWORK_MODE from environment: 'fork'
+🔗 Primary RPC: https://sepolia-rollup.arbitrum.io/rpc
+🔄 Fallback RPCs: 0 available
+🔍 DEBUG: Attempting to create Web3 connection with primary RPC: https://sepolia-rollup.arbitrum.io/rpc
+✅ Successfully connected to primary RPC: https://sepolia-rollup.arbitrum.io/rpc
+2026-02-22 01:07:28,033 - INFO - 📊 Using LIVE AAVE CONTRACT data: HF 2.7520
+🔍 DEBUG: Web3 connection verified - Chain ID: 421614, Latest Block: 244432427
+🔑 Wallet Address: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+💰 AGENT INITIALIZED WITH WALLET: 0x5B823270e3719CDe8669e5e5326B455EaA8a350b
+✅ Private key format validated and normalized
+🧪 Initializing for Arbitrum Sepolia Testnet
