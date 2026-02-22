@@ -42,7 +42,7 @@ class EnhancedWeb3CSPMiddleware:
                 if "text/html" in ct:
                     csp = (
                         f"default-src 'self'; "
-                        f"script-src 'self' 'nonce-{nonce}' 'unsafe-eval' https://*.replit.dev; "
+                        f"script-src 'self' 'nonce-{nonce}' 'unsafe-eval' https://*.replit.dev https://cdnjs.cloudflare.com; "
                         f"connect-src 'self' https://arb1.arbitrum.io https://arbitrum.publicnode.com "
                         f"https://virtual.arbitrum.us-east.rpc.tenderly.co "
                         f"wss://relay.walletconnect.com https://verify.walletconnect.com "
