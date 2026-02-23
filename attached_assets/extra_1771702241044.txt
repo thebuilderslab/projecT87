@@ -1,7 +1,0 @@
-once u complete the build but you notice the Flask dashboard looks broken (missing CSS or buttons not working), or if the API times out during a Web3 transaction, use this prompt to correct it:
-
-API Server Verification & Tweaks:
-
-Ensure the FastAPI endpoints that call synchronous Web3 functions are defined with def (not async def) so FastAPI routes them to its background threadpool and prevents the event loop from blocking.
-
-Ensure the Flask app is mounted using WSGIMiddleware(app) at the root app.mount("/", wsgi_app) after all /api/v1/ routes are defined, to prevent url_for() pathing issues with Flask's static assets.
