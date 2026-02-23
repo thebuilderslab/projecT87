@@ -1,3 +1,17 @@
+# PROJECT 87 - Project-specific exclusions
+attached_assets/
+archive_duplicates/
+token_cache/
+audit_reports/
+*.bin
+*.mat
+*.gz
+*.lock
+*.pxd
+*.pyx
+*.h
+/tmp/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
