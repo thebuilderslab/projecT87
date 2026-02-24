@@ -58,6 +58,18 @@ pnl_event_queue = queue.Queue()  # Queue for PnL events
 
 class WorkingAgent:
     """Working agent with live mainnet data"""
+    @staticmethod
+    def _resolve_wallet_address():
+        """Resolve target wallet from environment variable. Never hardcoded."""
+        addr = os.getenv('TARGET_WALLET_ADDRESS', '').strip()
+        if addr and len(addr) == 42 and addr.startswith('0x'):
+            try:
+                from web3 import Web3
+                return Web3.to_checksum_address(addr)
+            except Exception:
+                return addr
+        return 'wallet_placeholder'
+
     def _create_working_web3_connection(self):
         """Create working Web3 connection using proven RPC endpoints"""
         from web3 import Web3
@@ -104,7 +116,7 @@ class WorkingAgent:
         return None
     
     def __init__(self):
-        self.address = '0x5B823270e3719CDe8669e5e5326B455EaA8a350b'
+        self.address = self._resolve_wallet_address()
         self.network_mode = os.getenv('NETWORK_MODE', 'mainnet')
         
         # Initialize working Web3 connection using same endpoints as autonomous agent
@@ -117,7 +129,7 @@ class WorkingAgent:
             'total_collateral_usdc': 174.99,
             'total_debt_usdc': 20.04,
             'available_borrows_usdc': 109.68,
-            'wallet_address': '0x5B823270e3719CDe8669e5e5326B455EaA8a350b',
+            'wallet_address': self.address,
             'network_name': 'Arbitrum Mainnet',
             'chain_id': 42161
         }
@@ -169,7 +181,7 @@ def initialize_agent():
                 'total_debt_usdc': 31.61,
                 'available_borrows_usdc': 10.14,
                 'eth_balance': 0.001805,
-                'wallet_address': '0x5B823270e3719CDe8669e5e5326B455EaA8a350b',
+                'wallet_address': agent.address if agent else WorkingAgent._resolve_wallet_address(),
                 'network_name': 'Arbitrum Mainnet',
                 'network_mode': 'mainnet',
                 'baseline_collateral': 47.0,
@@ -670,7 +682,7 @@ def wallet_status():
             logger.warning(f"⚠️ Fresh Aave data fetch failed: {fresh_error}")
 
         data = {
-            'wallet_address': '0x5B823270e3719CDe8669e5e5326B455EaA8a350b',
+            'wallet_address': agent.address if agent else WorkingAgent._resolve_wallet_address(),
             'eth_balance': 0.001805,  # From latest agent logs
             'usdc_balance': 0.0,
             'wbtc_balance': 0.0,
@@ -733,11 +745,11 @@ def wallet_status():
         return jsonify({
             'error': 'Connection successful - showing cached data',
             'success': False,
-            'wallet_address': '0x5B823270e3719CDe8669e5e5326B455EaA8a350b',
-            'eth_balance': 0.001914,
-            'health_factor': 6.9022,
-            'total_collateral_usdc': 175.17,
-            'total_debt_usdc': 20.04,
+            'wallet_address': WorkingAgent._resolve_wallet_address(),
+            'eth_balance': 0.0,
+            'health_factor': 0.0,
+            'total_collateral_usdc': 0.0,
+            'total_debt_usdc': 0.0,
             'network_name': 'Arbitrum Mainnet',
             'network_mode': 'mainnet',
             'timestamp': time.time()
@@ -1820,7 +1832,7 @@ def system_status():
             'dashboard_status': 'operational',
             'autonomous_agent_running': check_autonomous_agent_running(),
             'network_mode': 'mainnet',
-            'wallet_address': '0x5B823270e3719CDe8669e5e5326B455EaA8a350b',
+            'wallet_address': WorkingAgent._resolve_wallet_address(),
             'emergency_stop_active': os.path.exists('EMERGENCY_STOP_ACTIVE.flag'),
             'timestamp': time.time(),
             'agent_initialized': agent is not None,
