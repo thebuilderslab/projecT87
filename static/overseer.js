@@ -16,6 +16,9 @@ const P87 = (() => {
     selectedWallet: null,
     countdownInterval: null,
     nextCheckTs: null,
+    overseerPowered: false,
+    authToken: localStorage.getItem('authToken') || null,
+    currentWallet: localStorage.getItem('walletAddress') || null,
   };
 
   // ── Init ─────────────────────────────────────────────────────────────────
@@ -30,12 +33,92 @@ const P87 = (() => {
     _bindSettings();
     _bindWalletSelector();
 
-    fetchTelemetry();
-    fetchActivity();
+    if (_state.authToken && _state.currentWallet) {
+      // Already authenticated — check if wallet is activated before powering on
+      _checkAuthAndPower();
+    } else {
+      _setPowered(false);
+      _showModal();
+    }
 
     setInterval(fetchTelemetry, POLL_INTERVAL_MS);
     setInterval(fetchActivity, ACTIVITY_POLL_MS);
     setInterval(_updateCountdowns, 1000);
+  }
+
+  // Check activation status then decide whether to power on automatically
+  function _checkAuthAndPower() {
+    fetch('/api/wallet/activation-status', {
+      headers: { 'X-Auth-Token': _state.authToken || '', 'Content-Type': 'application/json' }
+    })
+      .then(function(r) {
+        if (r.status === 401) { _setPowered(false); _showModal(); return null; }
+        return r.json();
+      })
+      .then(function(data) {
+        if (!data) return;
+        if (data.activated) {
+          _setPowered(true);
+          _hideModal();
+          fetchTelemetry();
+          fetchActivity();
+        } else {
+          // Connected but not yet activated — show modal at signer phase
+          _setPowered(false);
+          _showModal();
+          // Tell the modal UI to skip to signer phase
+          if (typeof cmShowPhase === 'function') {
+            cmShowPhase('signer');
+            if (_state.currentWallet && typeof cmScanWbtcBalance === 'function') {
+              cmScanWbtcBalance(_state.currentWallet);
+            }
+          }
+        }
+      })
+      .catch(function() {
+        _setPowered(false);
+        _showModal();
+      });
+  }
+
+  // ── Power state ──────────────────────────────────────────────────────────
+
+  function _setPowered(on) {
+    _state.overseerPowered = on;
+    if (on) {
+      document.body.classList.remove('overseer--awaiting-wallet');
+    } else {
+      document.body.classList.add('overseer--awaiting-wallet');
+      _renderPoweredDownStrip();
+    }
+  }
+
+  function _renderPoweredDownStrip() {
+    _setText('strip-hf', 'HF: —');
+    _setText('strip-eth', 'ETH: —');
+    _setText('strip-countdown', 'T-MINUS: ----');
+    _setText('strip-status', 'AWAITING CONNECT');
+    _updateWalletBadge();
+  }
+
+  function _updateWalletBadge() {
+    const badge = document.getElementById('strip-wallet-badge');
+    if (!badge) return;
+    if (_state.currentWallet) {
+      badge.textContent = _state.currentWallet.slice(0,6) + '…' + _state.currentWallet.slice(-4);
+    } else {
+      badge.textContent = 'NO WALLET';
+    }
+  }
+
+  function _showModal() {
+    const modal = document.getElementById('connect-modal');
+    if (modal) modal.classList.add('visible');
+  }
+
+  function _hideModal() {
+    const modal = document.getElementById('connect-modal');
+    if (modal) modal.classList.remove('visible');
   }
 
   // ── Navigation ───────────────────────────────────────────────────────────
@@ -75,8 +158,6 @@ const P87 = (() => {
   }
 
   function _updateNavActive(index) {
-    const btns = ['nav-home','nav-home','nav-home','nav-home','nav-home'];
-    // mark home btn active when scrolled
     document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
     document.getElementById('nav-home')?.classList.add('active');
   }
@@ -115,8 +196,10 @@ const P87 = (() => {
     sel.addEventListener('change', () => {
       _state.selectedWallet = sel.value || null;
       localStorage.setItem('p87_selected_wallet', _state.selectedWallet || '');
-      fetchTelemetry();
-      fetchActivity();
+      if (_state.overseerPowered) {
+        fetchTelemetry();
+        fetchActivity();
+      }
     });
   }
 
@@ -138,8 +221,12 @@ const P87 = (() => {
   // ── Data fetching ─────────────────────────────────────────────────────────
 
   function fetchTelemetry() {
+    if (!_state.overseerPowered) return;
     const qs = _state.selectedWallet ? `?wallet=${_state.selectedWallet}` : '';
-    fetch(`/api/telemetry${qs}`)
+    const headers = {};
+    if (_state.authToken) headers['X-Auth-Token'] = _state.authToken;
+
+    fetch(`/api/telemetry${qs}`, { headers })
       .then(r => r.json())
       .then(data => {
         _state.telemetry = data;
@@ -160,10 +247,14 @@ const P87 = (() => {
   }
 
   function fetchActivity() {
+    if (!_state.overseerPowered) return;
     const qs = _state.selectedWallet
       ? `?wallet=${_state.selectedWallet}&limit=10`
       : '?limit=10';
-    fetch(`/api/activity${qs}`)
+    const headers = {};
+    if (_state.authToken) headers['X-Auth-Token'] = _state.authToken;
+
+    fetch(`/api/activity${qs}`, { headers })
       .then(r => r.json())
       .then(data => {
         _state.activities = data.activities || [];
@@ -446,6 +537,8 @@ const P87 = (() => {
   // ── Countdowns ────────────────────────────────────────────────────────────
 
   function _updateCountdowns() {
+    if (!_state.overseerPowered) return;
+
     const ageMs = Date.now() - _state.lastFetchTs;
     const isStale = _state.lastFetchTs > 0 && ageMs > STALE_THRESHOLD_MS;
 
@@ -480,6 +573,8 @@ const P87 = (() => {
     if (statusEl) {
       statusEl.style.color = shield === 'ACTIVE' ? '#00ff88' : shield === 'AWARE' ? '#ffb000' : '#ff2020';
     }
+
+    _updateWalletBadge();
   }
 
   // ── Hex overview ──────────────────────────────────────────────────────────
@@ -522,7 +617,9 @@ const P87 = (() => {
 
   function _renderActivityOverlay() {
     const qs = _state.selectedWallet ? `?wallet=${_state.selectedWallet}&limit=50` : '?limit=50';
-    fetch(`/api/activity${qs}`)
+    const headers = {};
+    if (_state.authToken) headers['X-Auth-Token'] = _state.authToken;
+    fetch(`/api/activity${qs}`, { headers })
       .then(r => r.json())
       .then(data => {
         const list = document.getElementById('activity-overlay-list');
@@ -688,7 +785,67 @@ const P87 = (() => {
     return eth >= 1.0 ? 'ok' : eth >= 0.5 ? 'warning' : 'critical';
   }
 
-  return { init };
+  // ── Public API ────────────────────────────────────────────────────────────
+
+  /**
+   * Called by the auth bridge (overseer.html inline script) after a successful
+   * /api/auth/wallet response. Stores credentials in state + localStorage.
+   */
+  function onWalletConnected(token, wallet) {
+    _state.authToken = token;
+    _state.currentWallet = wallet;
+    localStorage.setItem('authToken', token);
+    localStorage.setItem('walletAddress', wallet);
+    _updateWalletBadge();
+  }
+
+  /**
+   * Called once the user clicks "LAUNCH OVERSEER" (after activation confirmed).
+   * Powers on the domes, hides the modal, starts telemetry polling.
+   */
+  function powerOn() {
+    _setPowered(true);
+    _hideModal();
+    fetchTelemetry();
+    fetchActivity();
+  }
+
+  /**
+   * Called by eject / hard-reset to wipe all auth state.
+   */
+  function onWalletEjected() {
+    _state.authToken = null;
+    _state.currentWallet = null;
+    _state.overseerPowered = false;
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('walletAddress');
+    _setPowered(false);
+    _showModal();
+  }
+
+  /**
+   * Expose auth token to the inline auth script via a getter so the bridge
+   * never needs to reach directly into _state.
+   */
+  function _getAuthToken() {
+    return _state.authToken;
+  }
+
+  /**
+   * Opens the connection modal (settings button, wallet badge).
+   */
+  function showModal() {
+    _showModal();
+  }
+
+  return {
+    init,
+    showModal,
+    powerOn,
+    onWalletConnected,
+    onWalletEjected,
+    _getAuthToken,
+  };
 })();
 
 document.addEventListener('DOMContentLoaded', P87.init);

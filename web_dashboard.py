@@ -3354,7 +3354,7 @@ def fetch_aave_position_for_wallet(wallet_address):
 
 @app.route('/app')
 def consumer_app():
-    """Developer Portal — main user-facing page"""
+    """Overseer UI — main user-facing page (wallet modal + 5-dome Overseer)"""
     from delegation_client import DELEGATION_MANAGER_ADDRESS, get_bot_wallet_address, _get_web3
     vault_addr = os.environ.get("OPENCLAW_VAULT_ADDRESS", "")
     bot_wallet_raw = get_bot_wallet_address() or ''
@@ -3366,7 +3366,7 @@ def consumer_app():
             bot_wallet = bot_wallet_raw
     else:
         bot_wallet = ''
-    return render_template('developer_portal.html',
+    return render_template('overseer.html',
                            delegation_manager_address=DELEGATION_MANAGER_ADDRESS or '',
                            openclaw_vault_address=vault_addr,
                            bot_wallet_address=bot_wallet)

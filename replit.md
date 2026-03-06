@@ -6,10 +6,14 @@ PROJECT 87 is a multi-tenant IaaS DeFi platform built on Arbitrum Mainnet. Users
 **Bot wallet:** `0xbbd55BB128645c16D6DEa9f1866bd9a7e7fC9c48`
 **Deployed at:** `bot-thejamalshackle.replit.app`
 
-## Overseer UI (v5.2)
-- **Route:** `/overseer` — mobile-first, scroll-snap, 5 dome sections
+## Overseer UI (v5.2) — PRIMARY /app ENTRY POINT
+- **Route:** `/app` (primary) and `/overseer` (secondary) — both render `templates/overseer.html`
+- **UX Architecture:** Domes are always rendered but dimmed (`body.overseer--awaiting-wallet`) until wallet connects. A full-screen connection modal (`#connect-modal`) overlays the domes on load.
+- **Modal flow:** Connect wallet → check activation status → Sequential Signer (5-step) if new → "LAUNCH OVERSEER" closes modal, powers on domes
+- **Auth bridge:** Inline `<script>` in `overseer.html` handles `connectWallet()`, `runActivationSequence()`, `ejectWallet()`, `hardResetWallet()`, `resignDelegation()`; calls `P87.onWalletConnected()` / `P87.onWalletEjected()` / `P87.powerOn()` to drive overseer state
+- **`overseer.js` public API:** `P87.init`, `P87.showModal`, `P87.powerOn`, `P87.onWalletConnected(token, wallet)`, `P87.onWalletEjected()`, `P87._getAuthToken()`
+- **`/developer`** redirects to `/app`. `developer_portal.html` is preserved but no longer the primary entry point.
 - **Static files:** `static/overseer.css`, `static/overseer.js`
-- **Template:** `templates/overseer.html`
 - **API endpoints:** `/api/telemetry` (60s cache), `/api/activity` (15s cache), `/api/telemetry/history`
 - **Dome 1:** Safety — HF ring, shield indicator (ACTIVE/AWARE/DOWN), strategy badge
 - **Dome 2:** USDC Reactor — fuel tank, AAVE Yield Spread readout (borrow cost / engine yield / NET PROFITABILITY)
