@@ -300,8 +300,10 @@ class NoncePassingWSGIMiddleware:
 app.mount("/", NoncePassingWSGIMiddleware(flask_app))
 
 
-def start_server(host: str = "0.0.0.0", port: int = 5000):
+def start_server(host: str = "0.0.0.0", port: int = None):
     import uvicorn
+    if port is None:
+        port = int(os.environ.get("PORT", 5000))
     logger.info(f"🚀 OpenClaw API Server starting on {host}:{port}")
     uvicorn.run(app, host=host, port=port, log_level="info")
 
