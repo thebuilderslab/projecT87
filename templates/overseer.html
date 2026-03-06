@@ -45,6 +45,12 @@
     <div id="cm-connect-phase">
       <button id="cm-connect-btn" class="cm-btn">[ INITIALIZE CONNECTION ]</button>
       <div id="cm-connect-status" class="cm-status"></div>
+      <!-- Mobile deep-link options — shown only on mobile with no injected wallet -->
+      <div id="cm-mobile-options">
+        <div class="cm-install-heading">NO INJECTED WALLET — OPEN IN A WEB3 BROWSER:</div>
+        <a class="cm-btn cm-install-btn" id="cm-mm-deeplink">[ OPEN IN METAMASK ]</a>
+        <a class="cm-btn cm-install-btn" id="cm-cb-deeplink">[ OPEN IN COINBASE WALLET ]</a>
+      </div>
     </div>
 
     <!-- Phase 2: Sequential Signer (pre-activation) -->
@@ -415,6 +421,36 @@
    Calls P87.onWalletConnected() / P87.onWalletEjected() to drive overseer state.
 ──────────────────────────────────────────────────────────────────────────── */
 
+/* ── EIP-6963 Multi-Wallet Discovery ──────────────────────────────────────
+   Collects provider announcements from any EIP-6963 wallet (MetaMask, Coinbase,
+   Rabby, Brave, etc.) and exposes getProvider() for all connect/activation flows.
+──────────────────────────────────────────────────────────────────────────── */
+window._p87Providers = [];
+window.addEventListener('eip6963:announceProvider', function(evt) {
+  if (evt.detail && evt.detail.provider) {
+    var alreadyKnown = window._p87Providers.some(function(p) {
+      return p.info && evt.detail.info && p.info.uuid === evt.detail.info.uuid;
+    });
+    if (!alreadyKnown) window._p87Providers.push(evt.detail);
+  }
+});
+window.dispatchEvent(new Event('eip6963:requestProvider'));
+
+window.getProvider = function() {
+  return new Promise(function(resolve) {
+    setTimeout(function() {
+      if (window._p87Providers.length > 0) {
+        resolve(window._p87Providers[0].provider);
+      } else if (window.ethereum) {
+        resolve(window.ethereum);
+      } else {
+        resolve(null);
+      }
+    }, 300);
+  });
+};
+/* ──────────────────────────────────────────────────────────────────────── */
+
 var cmActivationRunning = false;
 
 var ERC20_ABI = [
@@ -488,9 +524,11 @@ async function cmCheckActivationStatus(wallet) {
 
 async function cmScanWbtcBalance(wallet) {
   var disp = document.getElementById('cm-wbtc-bal');
-  if (!disp || !window.ethereum || !wallet) return;
+  if (!disp || !wallet) return;
+  var eth = await window.getProvider();
+  if (!eth) return;
   try {
-    var provider = new ethers.providers.Web3Provider(window.ethereum);
+    var provider = new ethers.providers.Web3Provider(eth);
     var contract = new ethers.Contract(CONTRACTS.WBTC, ERC20_ABI, provider);
     var bal = await contract.balanceOf(wallet);
     var wbtcVal = parseFloat(ethers.utils.formatUnits(bal, 8));
@@ -532,17 +570,47 @@ function cmShowActivatedPhase(wallet) {
 
 /* Connect wallet button */
 async function cmConnectWallet() {
-  var btn = document.getElementById('cm-connect-btn');
-  if (typeof window.ethereum === 'undefined') {
-    cmSetStatus('cm-connect-status', 'METAMASK NOT DETECTED. INSTALL A WEB3 WALLET.', 'err');
+  var btn        = document.getElementById('cm-connect-btn');
+  var mobileOpts = document.getElementById('cm-mobile-options');
+  var isMobile   = navigator.maxTouchPoints > 0 || /Android|iPhone|iPad/i.test(navigator.userAgent);
+
+  var eth = await window.getProvider();
+
+  if (!eth) {
+    if (isMobile) {
+      /* Mobile — show deep-link buttons, hide the connect button */
+      if (btn) btn.style.display = 'none';
+      if (mobileOpts) {
+        var base = window.location.href;
+        var mmLink = document.getElementById('cm-mm-deeplink');
+        var cbLink = document.getElementById('cm-cb-deeplink');
+        if (mmLink) mmLink.href = 'https://link.metamask.io/dapp/' + encodeURIComponent(base);
+        if (cbLink) cbLink.href = 'https://go.cb-wallet.io/dapp?url=' + encodeURIComponent(base);
+        mobileOpts.style.display = '';
+      }
+    } else {
+      /* Desktop — render install prompt inline */
+      var statusEl = document.getElementById('cm-connect-status');
+      if (statusEl) {
+        statusEl.className = 'cm-status';
+        statusEl.innerHTML =
+          '<div class="cm-install-prompt">' +
+            '<div class="cm-install-heading">NO WEB3 WALLET DETECTED</div>' +
+            '<a href="https://metamask.io/download" target="_blank" rel="noopener" class="cm-btn cm-install-btn">[ INSTALL METAMASK ]</a>' +
+            '<a href="https://www.coinbase.com/wallet/downloads" target="_blank" rel="noopener" class="cm-btn cm-install-btn">[ INSTALL COINBASE WALLET ]</a>' +
+            '<button class="cm-btn cm-btn--amber cm-install-btn" onclick="window.location.reload()">[ I\'VE INSTALLED IT — RETRY ]</button>' +
+          '</div>';
+      }
+    }
     return;
   }
+
   try {
     btn.textContent = '[ CONNECTING... ]';
     btn.disabled = true;
     cmSetStatus('cm-connect-status', '');
 
-    var accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+    var accounts = await eth.request({ method: 'eth_requestAccounts' });
     var wallet = accounts[0];
 
     cmSetStatus('cm-connect-status', 'AUTHENTICATING...');
@@ -605,7 +673,8 @@ async function cmHardReset() {
 async function cmResignDelegation() {
   var statusEl  = document.getElementById('cm-resign-status');
   var resignBtn = document.getElementById('cm-resign-btn');
-  if (!window.ethereum) {
+  var eth = await window.getProvider();
+  if (!eth) {
     cmSetStatus('cm-resign-status', 'NO WALLET DETECTED', 'err');
     return;
   }
@@ -614,7 +683,7 @@ async function cmResignDelegation() {
   cmSetStatus('cm-resign-status', 'PREPARING EIP-712 DATA...');
 
   try {
-    var provider = new ethers.providers.Web3Provider(window.ethereum);
+    var provider = new ethers.providers.Web3Provider(eth);
     var signer   = provider.getSigner();
     var userAddress = await signer.getAddress();
     var deadline = Math.floor(Date.now() / 1000) + (30 * 24 * 3600);
@@ -673,8 +742,9 @@ async function cmResignDelegation() {
 /* Sequential Signer activation */
 async function cmRunActivationSequence() {
   if (cmActivationRunning) return;
-  if (!window.ethereum) {
-    cmSetStatus('cm-activation-status', 'METAMASK NOT DETECTED.', 'err');
+  var eth = await window.getProvider();
+  if (!eth) {
+    cmSetStatus('cm-activation-status', 'NO WALLET DETECTED. CONNECT A WEB3 WALLET FIRST.', 'err');
     return;
   }
 
@@ -717,8 +787,8 @@ async function cmRunActivationSequence() {
   var provider, signer, userAddress;
 
   try {
-    await window.ethereum.request({ method: 'eth_requestAccounts' });
-    provider = new ethers.providers.Web3Provider(window.ethereum);
+    await eth.request({ method: 'eth_requestAccounts' });
+    provider = new ethers.providers.Web3Provider(eth);
     signer = provider.getSigner();
     userAddress = await signer.getAddress();
   } catch(e) {
@@ -731,16 +801,16 @@ async function cmRunActivationSequence() {
     if (network.chainId !== 42161) {
       cmSetProgress(0, 'WRONG NETWORK — switching to Arbitrum...');
       try {
-        await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0xa4b1' }] });
+        await eth.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0xa4b1' }] });
       } catch(switchErr) {
         if (switchErr.code === 4902) {
-          await window.ethereum.request({ method: 'wallet_addEthereumChain', params: [{ chainId: '0xa4b1', chainName: 'Arbitrum One', nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 }, rpcUrls: ['https://arb1.arbitrum.io/rpc'], blockExplorerUrls: ['https://arbiscan.io'] }] });
+          await eth.request({ method: 'wallet_addEthereumChain', params: [{ chainId: '0xa4b1', chainName: 'Arbitrum One', nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 }, rpcUrls: ['https://arb1.arbitrum.io/rpc'], blockExplorerUrls: ['https://arbiscan.io'] }] });
         } else {
-          activationError({ message: 'Could not switch to Arbitrum. Switch manually in MetaMask.' }, null);
+          activationError({ message: 'Could not switch to Arbitrum. Switch manually in your wallet.' }, null);
           return;
         }
       }
-      provider = new ethers.providers.Web3Provider(window.ethereum);
+      provider = new ethers.providers.Web3Provider(eth);
       signer = provider.getSigner();
     }
   } catch(e) {

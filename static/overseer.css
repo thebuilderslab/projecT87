@@ -830,3 +830,42 @@ body::after {
 .cm-step-row.error .cm-step-num { border-color: rgba(255,32,32,0.4); color: var(--red-critical); }
 .cm-step-row.error .cm-step-status { color: var(--red-critical); }
 .cm-step-row.active .cm-step-num { border-color: var(--amber); color: var(--amber); }
+
+/* ── Cross-browser wallet support ────────────────────────────────────────── */
+
+/* Mobile deep-link options */
+#cm-mobile-options {
+  display: none;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+  margin-top: 10px;
+}
+#cm-mobile-options .cm-install-btn {
+  width: 100%;
+  text-align: center;
+  text-decoration: none;
+  display: block;
+}
+
+/* Desktop no-wallet install prompt */
+.cm-install-prompt {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 8px;
+}
+.cm-install-heading {
+  color: var(--red-critical);
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 2px;
+}
+.cm-install-btn {
+  width: 100%;
+  text-align: center;
+  text-decoration: none;
+  display: block;
+  box-sizing: border-box;
+}
