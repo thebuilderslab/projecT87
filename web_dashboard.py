@@ -4635,6 +4635,504 @@ Guidelines:
         logger.error(f"Chat API error for user {user_id}: {e}", exc_info=True)
         return jsonify({"error": "Something went wrong. Please try again."}), 500
 
+_telemetry_cache = {}
+_TELEMETRY_CACHE_TTL = 60
+
+_activity_cache = {}
+_ACTIVITY_CACHE_TTL = 15
+
+SHIELD_WARNING_BAND = 0.30
+GAS_RESERVE_ETH = 1.0
+MAX_REPAY_PER_DAY_USDC = 3.60
+
+AAVE_POOL_ABI_RESERVE = [{
+    "inputs": [{"name": "asset", "type": "address"}],
+    "name": "getReserveData",
+    "outputs": [
+        {"components": [
+            {"name": "data", "type": "uint256"}
+        ], "name": "configuration", "type": "tuple"},
+        {"name": "liquidityIndex", "type": "uint128"},
+        {"name": "currentLiquidityRate", "type": "uint128"},
+        {"name": "variableBorrowIndex", "type": "uint128"},
+        {"name": "currentVariableBorrowRate", "type": "uint128"},
+        {"name": "currentStableBorrowRate", "type": "uint128"},
+        {"name": "lastUpdateTimestamp", "type": "uint40"},
+        {"name": "id", "type": "uint16"},
+        {"name": "aTokenAddress", "type": "address"},
+        {"name": "stableDebtTokenAddress", "type": "address"},
+        {"name": "variableDebtTokenAddress", "type": "address"},
+        {"name": "interestRateStrategyAddress", "type": "address"},
+        {"name": "accruedToTreasury", "type": "uint128"},
+        {"name": "unbacked", "type": "uint128"},
+        {"name": "isolationModeTotalDebt", "type": "uint128"}
+    ],
+    "stateMutability": "view",
+    "type": "function"
+}]
+
+ERC20_BALANCE_ABI = [{"inputs": [{"name": "account", "type": "address"}],
+                       "name": "balanceOf", "outputs": [{"name": "", "type": "uint256"}],
+                       "stateMutability": "view", "type": "function"}]
+
+SEVERITY_MAP = {
+    "REPAY_EXECUTED": "ok",
+    "SHIELD_AWARE": "warning",
+    "SHIELD_DOWN": "critical",
+    "SKIP_HF_BELOW_MIN": "warning",
+    "SKIP_HF_EMERGENCY": "critical",
+    "REPAY_DAILY_CAP_REACHED": "skip",
+    "REPAY_SCALED_BELOW_MIN": "skip",
+    "REPAY_FAILED": "warning",
+    "BORROW_HF_ABORT": "warning",
+    "MACRO_SHORT_ENTRY": "warning",
+    "MICRO_SHORT_ENTRY": "warning",
+    "DISTRIBUTION_COMPLETE": "ok",
+    "BORROW_FAILED": "warning",
+    "NURSE_SWEEP": "ok",
+    "NURSE_SWEEP_COMPLETE": "ok",
+    "SHORT_CLOSE": "ok",
+}
+
+
+def _get_w3_for_telemetry():
+    rpc_urls = [
+        os.getenv("ALCHEMY_ARB_RPC", ""),
+        os.getenv("ARBITRUM_RPC_URL", "https://arb1.arbitrum.io/rpc"),
+        "https://arbitrum-one.publicnode.com",
+    ]
+    try:
+        from web3 import Web3 as _W3
+        for url in rpc_urls:
+            if not url:
+                continue
+            try:
+                w3 = _W3(_W3.HTTPProvider(url, request_kwargs={'timeout': 8}))
+                if w3.is_connected():
+                    return w3
+            except Exception:
+                continue
+    except ImportError:
+        pass
+    return None
+
+
+def _fetch_borrow_cost_apy():
+    try:
+        w3 = _get_w3_for_telemetry()
+        if not w3:
+            return None
+        from web3 import Web3 as _W3
+        DAI_ADDR = "0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1"
+        POOL_ADDR = "0x794a61358D6845594F94dc1DB02A252b5b4814aD"
+        pool = w3.eth.contract(address=_W3.to_checksum_address(POOL_ADDR), abi=AAVE_POOL_ABI_RESERVE)
+        data = pool.functions.getReserveData(_W3.to_checksum_address(DAI_ADDR)).call()
+        current_variable_borrow_rate = data[4]
+        borrow_apr = current_variable_borrow_rate / 1e27 * 100
+        return round(-borrow_apr, 2)
+    except Exception as e:
+        logger.warning(f"[Telemetry] borrow_cost_apy fetch error: {e}")
+        return None
+
+
+def _compute_engine_yield_apy(wallet_address):
+    try:
+        if not DB_AVAILABLE:
+            return None
+        with database.get_conn() as conn:
+            from psycopg2.extras import RealDictCursor
+            cur = conn.cursor(cursor_factory=RealDictCursor)
+            cur.execute("""
+                SELECT COALESCE(SUM(amount_usd), 0) as yield_7d
+                FROM income_events
+                WHERE event_type = 'usdc_tax'
+                  AND wallet_address = %s
+                  AND created_at >= NOW() - INTERVAL '7 days'
+            """, (wallet_address.lower(),))
+            y_row = cur.fetchone()
+            usdc_yield_7d = float(y_row['yield_7d']) if y_row else 0.0
+
+            cur.execute("""
+                SELECT DATE(recorded_at) as day, AVG(usdc_balance) as avg_bal
+                FROM usdc_balance_ledger
+                WHERE wallet_address = %s
+                  AND wallet_role = 'user'
+                  AND recorded_at >= NOW() - INTERVAL '7 days'
+                GROUP BY DATE(recorded_at)
+                ORDER BY day
+            """, (wallet_address.lower(),))
+            rows = cur.fetchall()
+            cur.close()
+
+        if not rows:
+            return None
+        avg_principal = sum(float(r['avg_bal']) for r in rows) / len(rows)
+        if avg_principal <= 0:
+            return None
+        apy = (usdc_yield_7d / avg_principal) * (365.0 / 7.0) * 100.0
+        return round(apy, 2)
+    except Exception as e:
+        logger.warning(f"[Telemetry] engine_yield_apy error: {e}")
+        return None
+
+
+def _compute_shield_status_live(live_hf, path_min_hf, strategy_status):
+    if live_hf < 3.20 or strategy_status not in ('active', 'enabled'):
+        return "DOWN"
+    if live_hf < (path_min_hf + SHIELD_WARNING_BAND):
+        return "AWARE"
+    return "ACTIVE"
+
+
+def _get_strategy_label_from_hf(live_hf):
+    from strategy_engine import (GROWTH_HF_THRESHOLD, CAPACITY_HF_THRESHOLD,
+                                  MACRO_HF_THRESHOLD, MICRO_HF_THRESHOLD, EMERGENCY_HF_THRESHOLD)
+    if live_hf < EMERGENCY_HF_THRESHOLD:
+        return "EMERGENCY"
+    if live_hf >= GROWTH_HF_THRESHOLD:
+        return "GROWTH"
+    if live_hf >= CAPACITY_HF_THRESHOLD:
+        return "CAPACITY"
+    if live_hf >= MACRO_HF_THRESHOLD:
+        return "MACRO"
+    if live_hf >= MICRO_HF_THRESHOLD:
+        return "MICRO"
+    return "IDLE"
+
+
+def _get_user_usdc_balance_rpc(wallet_address):
+    try:
+        w3 = _get_w3_for_telemetry()
+        if not w3:
+            return 0.0
+        from web3 import Web3 as _W3
+        USDC_ADDR = "0xaf88d065e77c8cC2239327C5EDb3A432268e5831"
+        usdc = w3.eth.contract(address=_W3.to_checksum_address(USDC_ADDR), abi=ERC20_BALANCE_ABI)
+        bal = usdc.functions.balanceOf(_W3.to_checksum_address(wallet_address)).call()
+        return round(float(bal) / 1e6, 6)
+    except Exception:
+        return 0.0
+
+
+def _get_operator_eth_balance():
+    try:
+        w3 = _get_w3_for_telemetry()
+        if not w3:
+            return 0.0
+        from web3 import Web3 as _W3
+        bot_addr = os.getenv("BOT_WALLET_ADDRESS", "0xbbd55BB128645c16D6DEa9f1866bd9a7e7fC9c48")
+        bal = w3.eth.get_balance(_W3.to_checksum_address(bot_addr))
+        return round(float(bal) / 1e18, 6)
+    except Exception:
+        return 0.0
+
+
+def _build_wallet_telemetry(wallet_address, live_data, strategy_status, borrow_cost_apy):
+    from strategy_engine import GROWTH_HF_THRESHOLD, CAPACITY_HF_THRESHOLD, EMERGENCY_HF_THRESHOLD
+    live_hf = float(live_data.get("healthFactor", 0)) if live_data else 0.0
+    collateral_usd = float(live_data.get("totalCollateralUSD", 0)) if live_data else 0.0
+    debt_usd = float(live_data.get("totalDebtUSD", 0)) if live_data else 0.0
+    available_borrows = float(live_data.get("availableBorrowsUSD", 0)) if live_data else 0.0
+
+    path_min_hf = GROWTH_HF_THRESHOLD if live_hf >= GROWTH_HF_THRESHOLD else CAPACITY_HF_THRESHOLD
+    strategy_label = _get_strategy_label_from_hf(live_hf)
+    shield_status = _compute_shield_status_live(live_hf, path_min_hf, strategy_status)
+
+    user_usdc = _get_user_usdc_balance_rpc(wallet_address)
+    engine_yield = _compute_engine_yield_apy(wallet_address)
+    nev = None
+    if engine_yield is not None and borrow_cost_apy is not None:
+        nev = round(engine_yield + borrow_cost_apy, 2)
+
+    usdc_earned_24h = 0.0
+    usdc_repaid_24h = 0.0
+    lifetime_usdc = 0.0
+    total_usdc_repaid = 0.0
+    repaid_last_8h = 0.0
+
+    if DB_AVAILABLE:
+        try:
+            with database.get_conn() as conn:
+                from psycopg2.extras import RealDictCursor
+                cur = conn.cursor(cursor_factory=RealDictCursor)
+                cur.execute("""
+                    SELECT
+                        COALESCE(SUM(CASE WHEN created_at >= NOW() - INTERVAL '24 hours' THEN amount_usd END), 0) as earned_24h,
+                        COALESCE(SUM(amount_usd), 0) as lifetime
+                    FROM income_events
+                    WHERE event_type = 'usdc_tax' AND wallet_address = %s
+                """, (wallet_address.lower(),))
+                r = cur.fetchone()
+                if r:
+                    usdc_earned_24h = float(r['earned_24h'])
+                    lifetime_usdc = float(r['lifetime'])
+
+                cur.execute("""
+                    SELECT
+                        COALESCE(SUM(CASE WHEN executed_at >= NOW() - INTERVAL '24 hours' THEN usdc_used END), 0) as repaid_24h,
+                        COALESCE(SUM(CASE WHEN executed_at >= NOW() - INTERVAL '8 hours' THEN usdc_used END), 0) as repaid_8h,
+                        COALESCE(SUM(usdc_used), 0) as total
+                    FROM repay_events WHERE wallet_address = %s
+                """, (wallet_address.lower(),))
+                r2 = cur.fetchone()
+                if r2:
+                    usdc_repaid_24h = float(r2['repaid_24h'])
+                    repaid_last_8h = float(r2['repaid_8h'])
+                    total_usdc_repaid = float(r2['total'])
+                cur.close()
+        except Exception as e:
+            logger.warning(f"[Telemetry] income query error: {e}")
+
+    repay_daily_cap_remaining = max(0.0, MAX_REPAY_PER_DAY_USDC - (database.get_repaid_last_24h(wallet_address) if DB_AVAILABLE else 0.0))
+
+    hf_improvement = {"running_sum": 0.0, "average": 0.0, "n_repays_used": 0, "time_horizon_hours": 1}
+    if DB_AVAILABLE:
+        try:
+            with database.get_conn() as conn:
+                from psycopg2.extras import RealDictCursor
+                cur = conn.cursor(cursor_factory=RealDictCursor)
+                cur.execute("""
+                    SELECT delta_hf FROM hf_repay_deltas
+                    WHERE wallet_address = %s AND delta_hf IS NOT NULL
+                    ORDER BY computed_at DESC LIMIT 5
+                """, (wallet_address.lower(),))
+                deltas = [float(r['delta_hf']) for r in cur.fetchall()]
+                cur.close()
+                if deltas:
+                    hf_improvement["running_sum"] = round(sum(deltas), 4)
+                    hf_improvement["average"] = round(sum(deltas) / len(deltas), 4)
+                    hf_improvement["n_repays_used"] = len(deltas)
+        except Exception:
+            pass
+
+    growth_likelihood_pct = 50.0
+    if DB_AVAILABLE:
+        try:
+            gl = database.get_latest_growth_likelihood(wallet_address)
+            if gl:
+                growth_likelihood_pct = float(gl['growth_likelihood_pct'])
+        except Exception:
+            pass
+
+    milestones = []
+    if DB_AVAILABLE:
+        try:
+            milestones = database.get_latest_usdc_milestones()
+        except Exception:
+            pass
+
+    return {
+        "wallet_address": wallet_address,
+        "health_factor": round(live_hf, 4),
+        "collateral_usd": round(collateral_usd, 2),
+        "debt_usd": round(debt_usd, 2),
+        "available_borrows_usd": round(available_borrows, 2),
+        "path_min_hf": path_min_hf,
+        "strategy_label": strategy_label,
+        "shield_status": shield_status,
+        "user_usdc_balance": user_usdc,
+        "usdc_earned_last_24h": round(usdc_earned_24h, 4),
+        "usdc_repaid_last_24h": round(usdc_repaid_24h, 4),
+        "lifetime_usdc_generated": round(lifetime_usdc, 4),
+        "total_usdc_repaid": round(total_usdc_repaid, 4),
+        "repaid_last_8h": round(repaid_last_8h, 4),
+        "hf_improvement_from_repays": hf_improvement,
+        "repay_daily_cap_remaining": round(repay_daily_cap_remaining, 4),
+        "borrow_cost_apy_pct": borrow_cost_apy,
+        "engine_yield_apy_pct_7d": engine_yield,
+        "net_economic_velocity_pct": nev,
+        "growth_likelihood_pct": round(growth_likelihood_pct, 2),
+        "milestones": milestones,
+    }
+
+
+@app.route('/api/telemetry')
+def api_telemetry():
+    now_ts = datetime.utcnow().timestamp()
+    wallet_param = request.args.get('wallet', '').lower().strip()
+
+    cache_key = wallet_param or "__default__"
+    cached = _telemetry_cache.get(cache_key)
+    if cached and (now_ts - cached['ts']) < _TELEMETRY_CACHE_TTL:
+        return jsonify(cached['data'])
+
+    if not DB_AVAILABLE:
+        return jsonify({"error": "database_unavailable"}), 503
+
+    wallets = database.get_active_managed_wallets()
+    if not wallets:
+        return jsonify({"error": "no_active_wallets", "wallets": []}), 200
+
+    if wallet_param:
+        wallets = [w for w in wallets if w['wallet_address'].lower() == wallet_param] or wallets[:1]
+    else:
+        wallets = wallets[:1]
+
+    borrow_cost_apy = _fetch_borrow_cost_apy()
+
+    wallet_data = []
+    for mw in wallets:
+        waddr = mw['wallet_address'].lower()
+        strategy_status = mw.get('strategy_status', 'disabled')
+        try:
+            live_data = fetch_aave_position_for_wallet(waddr)
+        except Exception:
+            live_data = None
+
+        wallet_payload = _build_wallet_telemetry(waddr, live_data, strategy_status, borrow_cost_apy)
+        wallet_data.append(wallet_payload)
+
+    operator_eth = _get_operator_eth_balance()
+
+    last_nurse_at = None
+    last_nurse_tokens = []
+    if DB_AVAILABLE:
+        try:
+            with database.get_conn() as conn:
+                from psycopg2.extras import RealDictCursor
+                cur = conn.cursor(cursor_factory=RealDictCursor)
+                cur.execute("""
+                    SELECT created_at, details FROM wallet_actions
+                    WHERE action_type ILIKE '%nurse%'
+                    ORDER BY created_at DESC LIMIT 1
+                """)
+                nurse_row = cur.fetchone()
+                cur.close()
+            if nurse_row:
+                last_nurse_at = nurse_row['created_at'].isoformat() if nurse_row['created_at'] else None
+                details = nurse_row['details'] if isinstance(nurse_row['details'], dict) else {}
+                last_nurse_tokens = details.get('tokens', [])
+        except Exception:
+            pass
+
+    next_core = next_repay = next_nurse = None
+    try:
+        import scheduler_bootstrap as sb
+        core_job = sb.get_job_next_run("core_engine_job")
+        repay_job = sb.get_job_next_run("repay_deleverager_job")
+        nurse_job = sb.get_job_next_run("nurse_sweep_job")
+        if core_job:
+            next_core = core_job.isoformat()
+        if repay_job:
+            next_repay = repay_job.strftime("%H%M")
+        if nurse_job:
+            next_nurse = nurse_job.isoformat()
+    except Exception:
+        pass
+
+    payload = {
+        "last_updated_at": datetime.utcnow().isoformat() + "Z",
+        "next_system_check_timestamp": next_core,
+        "next_repay_military_time": next_repay,
+        "next_nurse_timestamp": next_nurse,
+        "wallets": wallet_data,
+        "operator_wallet": {
+            "eth_balance": operator_eth,
+            "gas_reserve_eth": GAS_RESERVE_ETH,
+            "last_nurse_at": last_nurse_at,
+            "last_nurse_tokens": last_nurse_tokens,
+        },
+    }
+
+    _telemetry_cache[cache_key] = {'ts': now_ts, 'data': payload}
+    return jsonify(payload)
+
+
+@app.route('/api/activity')
+def api_activity():
+    now_ts = datetime.utcnow().timestamp()
+    wallet_param = request.args.get('wallet', '').lower().strip()
+    limit = min(int(request.args.get('limit', 20)), 100)
+
+    cache_key = f"{wallet_param}:{limit}"
+    cached = _activity_cache.get(cache_key)
+    if cached and (now_ts - cached['ts']) < _ACTIVITY_CACHE_TTL:
+        return jsonify(cached['data'])
+
+    if not DB_AVAILABLE:
+        return jsonify({"error": "database_unavailable"}), 503
+
+    try:
+        with database.get_conn() as conn:
+            from psycopg2.extras import RealDictCursor
+            cur = conn.cursor(cursor_factory=RealDictCursor)
+            if wallet_param:
+                cur.execute("""
+                    SELECT id, wallet_address, action_type, details, tx_hash, created_at,
+                           details_summary, severity
+                    FROM wallet_actions
+                    WHERE wallet_address = %s
+                    ORDER BY created_at DESC LIMIT %s
+                """, (wallet_param, limit))
+            else:
+                cur.execute("""
+                    SELECT id, wallet_address, action_type, details, tx_hash, created_at,
+                           details_summary, severity
+                    FROM wallet_actions
+                    ORDER BY created_at DESC LIMIT %s
+                """, (limit,))
+            rows = cur.fetchall()
+            cur.close()
+
+        activities = []
+        for row in rows:
+            action_type = row['action_type'] or ''
+            severity = row.get('severity') or SEVERITY_MAP.get(action_type, 'info')
+            details_summary = row.get('details_summary')
+            if not details_summary:
+                details = row['details'] if isinstance(row['details'], dict) else {}
+                details_summary = details.get('summary') or details.get('message') or action_type
+            activities.append({
+                "id": row['id'],
+                "wallet_address": row['wallet_address'],
+                "action_type": action_type,
+                "details_summary": details_summary,
+                "severity": severity,
+                "tx_hash": row['tx_hash'],
+                "created_at": row['created_at'].isoformat() if row['created_at'] else None,
+                "shield_event": details_summary.startswith("[SHIELD DEPLOYED]") if details_summary else False,
+            })
+
+        payload = {"activities": activities, "count": len(activities)}
+        _activity_cache[cache_key] = {'ts': now_ts, 'data': payload}
+        return jsonify(payload)
+
+    except Exception as e:
+        logger.error(f"[API] /api/activity error: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/telemetry/history')
+def api_telemetry_history():
+    wallet_param = request.args.get('wallet', '').lower().strip()
+    hours = min(int(request.args.get('hours', 8)), 48)
+
+    if not wallet_param:
+        if DB_AVAILABLE:
+            wallets = database.get_active_managed_wallets()
+            wallet_param = wallets[0]['wallet_address'].lower() if wallets else ''
+
+    if not wallet_param:
+        return jsonify({"error": "no_wallet"}), 400
+
+    if not DB_AVAILABLE:
+        return jsonify({"wallet": wallet_param, "hf_series": [], "collateral_series": []}), 200
+
+    try:
+        rows = database.get_hf_history(wallet_param, hours)
+        hf_series = [{"t": r['recorded_at'].isoformat(), "hf": float(r['health_factor'])} for r in rows]
+        collateral_series = [{"t": r['recorded_at'].isoformat(), "collateral_usd": float(r['total_collateral_usd'])} for r in rows]
+        return jsonify({"wallet": wallet_param, "hf_series": hf_series, "collateral_series": collateral_series})
+    except Exception as e:
+        logger.error(f"[API] /api/telemetry/history error: {e}")
+        return jsonify({"wallet": wallet_param, "hf_series": [], "collateral_series": []}), 200
+
+
+@app.route('/overseer')
+def overseer():
+    return render_template('overseer.html')
+
+
 if __name__ == '__main__':
     if not os.environ.get('LAUNCHED_BY_RUN_BOTH'):
         lock_file = '/tmp/run_both.lock'

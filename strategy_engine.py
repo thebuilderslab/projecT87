@@ -47,11 +47,11 @@ from datetime import datetime, timezone
 
 logger = logging.getLogger(__name__)
 
-GROWTH_HF_THRESHOLD = 2.60
-CAPACITY_HF_THRESHOLD = 2.40
-MACRO_HF_THRESHOLD = 3.05
-MICRO_HF_THRESHOLD = 3.00
-EMERGENCY_HF_THRESHOLD = 2.20
+GROWTH_HF_THRESHOLD = 3.60
+CAPACITY_HF_THRESHOLD = 3.40
+MACRO_HF_THRESHOLD = 4.05
+MICRO_HF_THRESHOLD = 4.00
+EMERGENCY_HF_THRESHOLD = 3.20
 
 BORROW_COOLDOWN_SECONDS = 1800
 
@@ -491,7 +491,7 @@ def _get_bot_uniswap():
     return None
 
 
-def _execute_delegated_distribution(user_id, wallet_address, agent, path_name, distribution, live_hf):
+def _execute_delegated_distribution(user_id, wallet_address, agent, path_name, distribution, live_hf, path_min_hf=None):
     """
     Execute the full 7-step distribution for a delegated user wallet.
     Bot borrows directly from Aave via credit delegation (tokens go to bot wallet).
@@ -568,15 +568,36 @@ def _execute_delegated_distribution(user_id, wallet_address, agent, path_name, d
 
                 post_borrow_data = get_user_account_data(wallet_address) if DELEGATION_AVAILABLE else None
                 post_borrow_hf = post_borrow_data.get("healthFactor", 0) if post_borrow_data else 0
+                _effective_path_min = path_min_hf if path_min_hf is not None else CAPACITY_HF_THRESHOLD
                 if post_borrow_hf > 0 and post_borrow_hf < EMERGENCY_HF_THRESHOLD:
                     logger.warning(f"[Distribution] {wallet_address[:10]}... POST-BORROW HF {post_borrow_hf:.4f} < "
                                    f"EMERGENCY {EMERGENCY_HF_THRESHOLD} — ABORTING distribution, preserving state at 'borrowed' for recovery")
                     _save_execution_state(wallet_address, "borrowed", path_name, dist_serializable)
-                    result["details"] = f"Post-borrow HF {post_borrow_hf:.4f} dropped below emergency threshold"
+                    result["details"] = f"Post-borrow HF {post_borrow_hf:.4f} dropped below emergency threshold ({EMERGENCY_HF_THRESHOLD})"
                     result["action"] = "BORROW_HF_ABORT"
                     result["executed"] = True
                     _record_strategy_action(user_id, wallet_address,
-                                            f"ABORT: post-borrow HF {post_borrow_hf:.4f} < {EMERGENCY_HF_THRESHOLD}")
+                                            f"ABORT: post-borrow HF {post_borrow_hf:.4f} < EMERGENCY {EMERGENCY_HF_THRESHOLD}")
+                    if DB_AVAILABLE:
+                        database.record_wallet_action_v2(user_id, wallet_address, "BORROW_HF_ABORT",
+                            {"hf": post_borrow_hf, "threshold": EMERGENCY_HF_THRESHOLD, "level": "emergency"},
+                            details_summary=f"[SHIELD DEPLOYED] Post-borrow HF {post_borrow_hf:.4f} critically low — distribution aborted",
+                            severity="critical")
+                    return result
+                elif post_borrow_hf > 0 and post_borrow_hf < _effective_path_min:
+                    logger.warning(f"[Distribution] {wallet_address[:10]}... POST-BORROW HF {post_borrow_hf:.4f} < "
+                                   f"PATH MIN {_effective_path_min} — ABORTING distribution, preserving state at 'borrowed' for recovery")
+                    _save_execution_state(wallet_address, "borrowed", path_name, dist_serializable)
+                    result["details"] = f"Post-borrow HF {post_borrow_hf:.4f} dropped below path minimum ({_effective_path_min})"
+                    result["action"] = "BORROW_HF_ABORT"
+                    result["executed"] = True
+                    _record_strategy_action(user_id, wallet_address,
+                                            f"ABORT: post-borrow HF {post_borrow_hf:.4f} < path_min {_effective_path_min}")
+                    if DB_AVAILABLE:
+                        database.record_wallet_action_v2(user_id, wallet_address, "BORROW_HF_ABORT",
+                            {"hf": post_borrow_hf, "threshold": _effective_path_min, "level": "path_min"},
+                            details_summary=f"[SHIELD DEPLOYED] Post-borrow HF {post_borrow_hf:.4f} below path minimum {_effective_path_min} — distribution aborted",
+                            severity="warning")
                     return result
 
         usdt_amount = distribution['usdt_swap_supply']
@@ -1789,11 +1810,16 @@ def run_delegated_strategy(user_id, wallet_address, agent, run_id, iteration, co
 
     if live_hf < EMERGENCY_HF_THRESHOLD:
         result["mode"] = "emergency"
-        result["action"] = "ALERT"
+        result["action"] = "SKIP_HF_EMERGENCY"
         result["details"] = f"HF {live_hf:.4f} below emergency threshold {EMERGENCY_HF_THRESHOLD}"
         _log_strategy(user_id, wallet_address, "emergency", "ALERT", live_hf,
                       details=f"HF critically low! Collateral=${collateral_usd:.2f}, Debt=${debt_usd:.2f}")
         _record_strategy_action(user_id, wallet_address, f"ALERT: HF {live_hf:.4f} critically low")
+        if DB_AVAILABLE:
+            database.record_wallet_action_v2(user_id, wallet_address, "SKIP_HF_EMERGENCY",
+                {"hf": live_hf, "threshold": EMERGENCY_HF_THRESHOLD},
+                details_summary=f"All strategies skipped: HF critically low (HF={live_hf:.4f})",
+                severity="critical")
         return result
 
     open_short = _get_open_short(wallet_address)
@@ -1865,6 +1891,13 @@ def run_delegated_strategy(user_id, wallet_address, agent, run_id, iteration, co
         (absolute_growth >= GROWTH_ABSOLUTE_TRIGGER_USD or relative_growth >= GROWTH_RELATIVE_TRIGGER_PCT)
     )
 
+    if live_hf < GROWTH_HF_THRESHOLD and DB_AVAILABLE and (
+            absolute_growth >= GROWTH_ABSOLUTE_TRIGGER_USD or relative_growth >= GROWTH_RELATIVE_TRIGGER_PCT):
+        database.record_wallet_action_v2(user_id, wallet_address, "SKIP_HF_BELOW_MIN",
+            {"hf": live_hf, "path_min_hf": GROWTH_HF_THRESHOLD, "strategy": "growth"},
+            details_summary=f"Skipped GROWTH: HF below path minimum (HF={live_hf:.4f}, min={GROWTH_HF_THRESHOLD:.2f})",
+            severity="warning")
+
     if growth_met:
         cooldown_ok, cooldown_remaining = _check_borrow_cooldown(wallet_address)
         if not cooldown_ok:
@@ -1886,7 +1919,7 @@ def run_delegated_strategy(user_id, wallet_address, agent, run_id, iteration, co
             _record_strategy_action(user_id, wallet_address, f"SKIP: growth borrow too small (${borrow_amount:.2f})")
             return result
 
-        result = _execute_delegated_distribution(user_id, wallet_address, agent, "growth", GROWTH_DISTRIBUTION, live_hf)
+        result = _execute_delegated_distribution(user_id, wallet_address, agent, "growth", GROWTH_DISTRIBUTION, live_hf, path_min_hf=GROWTH_HF_THRESHOLD)
         if result.get("executed"):
             _update_wallet_baseline(user_id, wallet_address, collateral_usd)
         return result
@@ -1917,7 +1950,7 @@ def run_delegated_strategy(user_id, wallet_address, agent, run_id, iteration, co
             _record_strategy_action(user_id, wallet_address, f"SKIP: capacity borrow too small (${borrow_amount:.2f})")
             return result
 
-        result = _execute_delegated_distribution(user_id, wallet_address, agent, "capacity", CAPACITY_DISTRIBUTION, live_hf)
+        result = _execute_delegated_distribution(user_id, wallet_address, agent, "capacity", CAPACITY_DISTRIBUTION, live_hf, path_min_hf=CAPACITY_HF_THRESHOLD)
         return result
 
     macro_drop, macro_latest, macro_count = _compute_velocity_drop(wallet_address, MACRO_VELOCITY_WINDOW_MIN)
@@ -1949,6 +1982,12 @@ def run_delegated_strategy(user_id, wallet_address, agent, run_id, iteration, co
                                  macro_latest + macro_drop,
                                  live_hf, entry_result.get("tx_hash"))
             logger.info(f"✅ [MACRO SHORT OPEN] wallet={wallet_address[:10]}... entry_collateral=${macro_latest + macro_drop:.2f}")
+            if DB_AVAILABLE:
+                database.record_wallet_action_v2(user_id, wallet_address, "MACRO_SHORT_ENTRY",
+                    {"hf": live_hf, "drop_usd": macro_drop, "size_usd": MACRO_SHORT_SIZE_USD},
+                    tx_hash=entry_result.get("tx_hash"),
+                    details_summary="[SHIELD DEPLOYED] Macro hedge opened to defend HF",
+                    severity="warning")
         return entry_result
 
     micro_triggered = (
@@ -1974,6 +2013,12 @@ def run_delegated_strategy(user_id, wallet_address, agent, run_id, iteration, co
                                  micro_latest + micro_drop,
                                  live_hf, entry_result.get("tx_hash"))
             logger.info(f"✅ [MICRO SHORT OPEN] wallet={wallet_address[:10]}... entry_collateral=${micro_latest + micro_drop:.2f}")
+            if DB_AVAILABLE:
+                database.record_wallet_action_v2(user_id, wallet_address, "MICRO_SHORT_ENTRY",
+                    {"hf": live_hf, "drop_usd": micro_drop, "size_usd": MICRO_SHORT_SIZE_USD},
+                    tx_hash=entry_result.get("tx_hash"),
+                    details_summary="[SHIELD DEPLOYED] Micro hedge adjusted to stabilize HF",
+                    severity="warning")
         return entry_result
 
     skip_reasons = []

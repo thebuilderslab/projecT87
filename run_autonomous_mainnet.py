@@ -40,6 +40,12 @@ except ImportError:
     STRATEGY_ENGINE_AVAILABLE = False
 
 try:
+    import scheduler_bootstrap
+    SCHEDULER_AVAILABLE = True
+except ImportError:
+    SCHEDULER_AVAILABLE = False
+
+try:
     from delegation_client import check_user_wallet_approvals, get_delegation_permissions, validate_full_automation_ready
     APPROVAL_CHECK_AVAILABLE = True
 except ImportError:
@@ -381,6 +387,14 @@ def run_autonomous_mainnet_agent():
         
         log_agent_activity("✅ Clean start confirmed — no pending execution state")
 
+        if DB_AVAILABLE:
+            try:
+                migrated = database.migrate_tmp_execution_states()
+                if migrated > 0:
+                    log_agent_activity(f"[Migration] Loaded {migrated} /tmp execution state file(s) into distribution_state table")
+            except Exception as mig_err:
+                log_agent_activity(f"[Migration] Execution state migration error: {mig_err}", "WARNING")
+
         print("\n" + "="*60)
         print("📋 PRE-FLIGHT AUDIT — USDC PAY YOURSELF FIRST MODE")
         print("="*60)
@@ -407,170 +421,72 @@ def run_autonomous_mainnet_agent():
         print(f"   🎯 Polling: Dynamic (90s Sentry / 15s Hunter Mode)")
         print("="*60 + "\n")
 
-        log_agent_activity("🎯 Starting autonomous monitoring loop...")
-        print("\n" + "="*60)
-        print("🔍 MONITORING AAVE POSITIONS FOR TRIGGERS")
-        print("💡 Add funds to your Aave supply to test trigger activation")
-        print("🔔 Watch for 'TRIGGER ACTIVATED' messages below")
-        print("="*60 + "\n")
-        
-        run_id = 1
-        iteration = 0
-        
-        while True:
-            # Emergency stop check
-            if check_emergency_stop():
-                log_agent_activity("🛑 Emergency stop detected! Halting operations...", "EMERGENCY")
-                break
-            
-            try:
-                agent._perform_safety_sweep()
+        if SCHEDULER_AVAILABLE:
+            log_agent_activity("🎯 Starting APScheduler — Project 87 v5.2 autonomous jobs...")
+            scheduler = scheduler_bootstrap.start(agent)
+            log_agent_activity("✅ Scheduler started — core_engine(27min), nurse_sweep(70min), repay_deleverager(4h)")
 
-                log_agent_activity(f"🔄 Monitoring cycle {run_id}-{iteration}")
+            if AUTO_SUPPLY_AVAILABLE:
+                try:
+                    supply_count = run_auto_supply_cycle()
+                    if supply_count > 0:
+                        log_agent_activity(f"💰 Initial auto-supply: {supply_count} wallet(s) supplied WBTC")
+                except Exception as supply_err:
+                    log_agent_activity(f"⚠️ Initial auto-supply error: {supply_err}", "WARNING")
 
-                if DB_AVAILABLE and iteration % 20 == 0:
-                    try:
-                        pruned = database.prune_collateral_snapshots(max_age_minutes=60)
-                        if pruned > 0:
-                            logging.getLogger(__name__).info(f"[Monitor] Pruned {pruned} stale collateral snapshots")
-                    except Exception:
-                        pass
+            if SIG_PROCESSOR_AVAILABLE:
+                try:
+                    sig_count = run_pending_delegation_submissions()
+                    if sig_count > 0:
+                        log_agent_activity(f"🔑 Initial delegation sigs: {sig_count} submitted")
+                except Exception as sig_err:
+                    log_agent_activity(f"⚠️ Initial sig processor error: {sig_err}", "WARNING")
 
-                config = {
-                    'health_factor_target': 3.10,
-                    'max_iterations_per_run': 100
-                }
-
-                if DB_AVAILABLE and APPROVAL_CHECK_AVAILABLE and iteration % 10 == 0:
-                    reconcile_delegation_state()
-
-                if AUTO_SUPPLY_AVAILABLE:
-                    try:
-                        supply_count = run_auto_supply_cycle()
-                        if supply_count > 0:
-                            log_agent_activity(f"💰 Auto-supply: {supply_count} wallet(s) supplied WBTC to Aave")
-                    except Exception as supply_err:
-                        log_agent_activity(f"⚠️ Auto-supply cycle error: {supply_err}", "WARNING")
-
-                if SIG_PROCESSOR_AVAILABLE:
-                    try:
-                        sig_count = run_pending_delegation_submissions()
-                        if sig_count > 0:
-                            log_agent_activity(f"🔑 Credit delegation: {sig_count} signature(s) submitted on-chain")
-                    except Exception as sig_err:
-                        log_agent_activity(f"⚠️ Delegation sig processor error: {sig_err}", "WARNING")
-
-                managed_wallets = []
-                if DB_AVAILABLE:
-                    managed_wallets = database.get_active_managed_wallets()
-                    log_agent_activity(f"[Monitor] Active managed wallets: {len(managed_wallets)}")
-
-                bot_wallet = agent.address
-                bot_user_id = None
-                if DB_AVAILABLE:
-                    bot_user = database.get_user_by_wallet(bot_wallet)
-                    if bot_user:
-                        bot_user_id = bot_user['id']
-
-                processed_user_ids = set()
-                processed_wallet_addrs = set()
-
-                deduped_wallets = []
-                for mw in managed_wallets:
-                    waddr_lower = mw['wallet_address'].lower()
-                    if waddr_lower not in processed_wallet_addrs:
-                        processed_wallet_addrs.add(waddr_lower)
-                        processed_user_ids.add(mw['user_id'])
-                        deduped_wallets.append(mw)
-                    else:
-                        log_agent_activity(f"[Strategy] wallet={mw['wallet_address'][:10]}..., DEDUP_SKIP")
-
-                check_approvals = (iteration % 10 == 0)
-
-                if deduped_wallets:
-                    log_agent_activity(f"[Async] Processing {len(deduped_wallets)} wallet(s) with asyncio.gather (semaphore={MAX_CONCURRENT_WALLETS}, rpc_delay={RPC_DELAY_SECONDS}s)")
-                    loop = asyncio.new_event_loop()
-                    try:
-                        loop.run_until_complete(
-                            asyncio.wait_for(
-                                _process_all_wallets(deduped_wallets, agent, run_id, iteration, config, check_approvals),
-                                timeout=120
-                            )
-                        )
-                    except asyncio.TimeoutError:
-                        log_agent_activity(f"[Async] Wallet processing timed out (120s) for {len(deduped_wallets)} wallet(s)", "WARNING")
-                    except Exception as async_err:
-                        log_agent_activity(f"[Async] Wallet processing error: {async_err}", "ERROR")
-                    finally:
-                        loop.close()
-
-                if bot_user_id is not None and bot_user_id not in processed_user_ids:
-                    if bot_user_id not in processed_user_ids:
-                        refresh_defi_for_user(bot_user_id, bot_wallet)
-                    performance = run_strategies_for_user(bot_user_id, bot_wallet, agent, run_id, iteration, config)
-                elif bot_user_id is not None:
-                    performance = run_strategies_for_user(bot_user_id, bot_wallet, agent, run_id, iteration, config)
-                else:
-                    performance = agent.run_real_defi_task(run_id, iteration, config)
-
-                if performance is None:
-                    performance = 0.0
-
-                if performance > 0.9:
-                    log_agent_activity(f"✅ High performance cycle: {performance:.3f}", "SUCCESS")
-                elif performance > 0.5:
-                    log_agent_activity(f"✔️ Moderate performance cycle: {performance:.3f}", "INFO")
-                else:
-                    log_agent_activity(f"⚠️ Low performance cycle: {performance:.3f}", "WARNING")
-
-                if DB_AVAILABLE:
-                    try:
-                        all_users = database.get_all_bot_enabled_users()
-                        for u in all_users:
-                            if u['id'] not in processed_user_ids and u['id'] != bot_user_id:
-                                refresh_defi_for_user(u['id'], u['wallet_address'])
-                                processed_user_ids.add(u['id'])
-                        if len(all_users) > len(managed_wallets):
-                            log_agent_activity(f"[Monitor] Refreshed {len(all_users) - len(managed_wallets)} additional connected wallet(s)")
-                    except Exception as refresh_err:
-                        log_agent_activity(f"⚠️ Periodic refresh error: {refresh_err}", "WARNING")
-
-                iteration += 1
-
-                if iteration >= 50:
-                    run_id += 1
-                    iteration = 0
-                    log_agent_activity(f"🔄 Starting new run cycle #{run_id}")
-
+            log_agent_activity("🔄 Keep-alive loop active — checking emergency stop every 30s")
+            while True:
+                if check_emergency_stop():
+                    log_agent_activity("🛑 Emergency stop detected! Halting operations...", "EMERGENCY")
+                    scheduler_bootstrap.shutdown()
+                    break
+                try:
+                    agent._perform_safety_sweep()
+                except Exception:
+                    pass
                 try:
                     agent._process_injection_trigger()
-                except Exception as inj_err:
-                    log_agent_activity(f"⚠️ Injection trigger error: {inj_err}", "WARNING")
-
+                except Exception:
+                    pass
                 try:
                     agent._check_profit_bucket()
-                except Exception as bucket_err:
-                    log_agent_activity(f"⚠️ Profit bucket check error: {bucket_err}", "WARNING")
-
-                if RE_TASKS_AVAILABLE:
+                except Exception:
+                    pass
+                if DB_AVAILABLE and APPROVAL_CHECK_AVAILABLE:
                     try:
-                        re_result = check_and_run_scheduled_tasks()
-                        if re_result:
-                            log_agent_activity(f"🏠 RE Task: {re_result.get('task', 'unknown')} → {re_result.get('status', 'unknown')}: {re_result.get('message', '')}")
-                    except Exception as re_err:
-                        log_agent_activity(f"⚠️ Real estate task error: {re_err}", "WARNING")
-
-            except Exception as e:
-                log_agent_activity(f"❌ Error in monitoring cycle: {e}", "ERROR")
-                log_agent_activity("⏸️ Continuing monitoring after error...")
-            
-            poll_interval = 45
-            try:
-                if hasattr(agent, 'liability_short_strategy') and agent.liability_short_strategy:
-                    poll_interval = agent.liability_short_strategy.get_polling_interval()
-            except Exception:
-                pass
-            time.sleep(poll_interval)
+                        reconcile_delegation_state()
+                    except Exception:
+                        pass
+                time.sleep(30)
+        else:
+            log_agent_activity("⚠️ APScheduler not available — falling back to legacy loop")
+            run_id = 1
+            iteration = 0
+            while True:
+                if check_emergency_stop():
+                    log_agent_activity("🛑 Emergency stop detected!", "EMERGENCY")
+                    break
+                try:
+                    agent._perform_safety_sweep()
+                    if SIG_PROCESSOR_AVAILABLE:
+                        run_pending_delegation_submissions()
+                    if AUTO_SUPPLY_AVAILABLE:
+                        run_auto_supply_cycle()
+                    iteration += 1
+                    if iteration >= 50:
+                        run_id += 1
+                        iteration = 0
+                except Exception as e:
+                    log_agent_activity(f"❌ Fallback loop error: {e}", "ERROR")
+                time.sleep(45)
             
     except KeyboardInterrupt:
         log_agent_activity("👋 Autonomous agent stopped by user (Ctrl+C)", "INFO")

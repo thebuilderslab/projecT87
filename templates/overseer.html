@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>PROJECT 87 — OVERSEER</title>
+  <link rel="stylesheet" href="/static/overseer.css">
+</head>
+<body>
+
+<!-- Top status strip -->
+<div id="top-strip">
+  <span id="strip-hf">HF: --</span>
+  <span id="strip-eth">ETH: --</span>
+  <span id="strip-countdown">T---:--</span>
+  <select id="wallet-selector" title="Select wallet"></select>
+  <span id="strip-status">SHIELD: --</span>
+</div>
+
+<!-- Stale data banner -->
+<div id="stale-banner">AWAITING DATA — LAST UPDATE EXCEEDED 120s</div>
+
+<!-- 5-dome scroll container -->
+<div id="dome-scroll">
+
+  <!-- ── Dome 1: Safety ────────────────────────────────────────────────── -->
+  <section class="dome-section" id="dome-1">
+    <div class="dome-shell" id="d1-shell">
+
+      <!-- Rib rings -->
+      <div class="rib-ring" style="inset:12%;"></div>
+      <div class="rib-ring" style="inset:22%;border-color:rgba(0,229,255,0.04);"></div>
+      <div class="rib-ring" style="inset:34%;border-color:rgba(0,229,255,0.04);"></div>
+      <div class="rib-ring" style="inset:46%;border-color:rgba(0,229,255,0.03);"></div>
+
+      <!-- Base collar -->
+      <div class="dome-collar"></div>
+
+      <!-- SVG status ring -->
+      <svg class="hf-ring" viewBox="0 0 200 200" aria-hidden="true">
+        <circle class="hf-ring-track" cx="100" cy="100" r="90"/>
+        <circle id="d1-ring-fill" class="hf-ring-fill"
+          cx="100" cy="100" r="90"
+          stroke-dasharray="565.5"
+          stroke-dashoffset="565.5"
+          transform="rotate(-90 100 100)"/>
+      </svg>
+
+      <span class="dome-label">SAFETY DOME</span>
+      <span id="d1-strategy-badge" class="strategy-badge">IDLE</span>
+
+      <div id="d1-hf" class="dome-primary">--</div>
+      <div id="d1-collateral" class="dome-secondary">$-- / $--</div>
+
+      <!-- Shield indicator (v5.2) -->
+      <div id="d1-shield" class="shield-indicator down">
+        <svg viewBox="0 0 16 20" aria-hidden="true">
+          <path d="M8 0L0 4v6c0 5.5 3.4 10.6 8 12 4.6-1.4 8-6.5 8-12V4L8 0z"/>
+        </svg>
+        <span class="shield-text">SHIELD: DOWN</span>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ── Dome 2: USDC Reactor ───────────────────────────────────────────── -->
+  <section class="dome-section" id="dome-2">
+    <div class="dome-shell">
+
+      <div class="rib-ring" style="inset:10%;"></div>
+      <div class="rib-ring" style="inset:22%;border-color:rgba(0,229,255,0.04);"></div>
+      <div class="dome-collar"></div>
+
+      <span class="dome-label">USDC REACTOR</span>
+
+      <div class="fuel-tank-wrap">
+        <!-- Vertical fuel tank SVG -->
+        <svg class="fuel-tank-svg" width="32" height="96" viewBox="0 0 32 96" aria-hidden="true">
+          <rect x="6" y="8" width="20" height="80" rx="4" fill="none" stroke="rgba(0,229,255,0.2)" stroke-width="1.5"/>
+          <rect id="d2-tank-fill" x="7" y="88" width="18" rx="3" height="0" fill="#00e5ff"/>
+        </svg>
+
+        <div class="fuel-info">
+          <div id="d2-usdc" class="dome-primary" style="font-size:clamp(1.4rem,7vw,2.2rem)">$--</div>
+          <div id="d2-earned" class="dome-secondary"></div>
+          <div id="d2-repaid" class="dome-secondary" style="color:rgba(255,176,0,0.7)"></div>
+
+          <div class="micro-bar-row">
+            <span class="micro-bar-label">24h earned</span>
+            <div class="micro-bar-track"><div id="d2-earned-bar" class="micro-bar-fill cyan" style="width:0%"></div></div>
+          </div>
+          <div class="micro-bar-row">
+            <span class="micro-bar-label">24h repaid</span>
+            <div class="micro-bar-track"><div id="d2-repaid-bar" class="micro-bar-fill amber" style="width:0%"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- AAVE Yield Spread readout (v5.2) -->
+      <div id="d2-yield-spread" class="yield-spread-line">
+        Borrow Cost: N/A <span class="yield-spread-sep"> | </span>
+        Engine Yield: N/A <span class="yield-spread-sep"> | </span>
+        <span class="nev-null">NET PROFITABILITY: N/A</span>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ── Dome 3: Mission Time ────────────────────────────────────────────── -->
+  <section class="dome-section" id="dome-3">
+    <div class="dome-shell">
+
+      <div class="rib-ring" style="inset:10%;"></div>
+      <div class="rib-ring" style="inset:24%;border-color:rgba(0,229,255,0.04);"></div>
+      <div class="dome-collar"></div>
+
+      <span class="dome-label">MISSION TIME</span>
+
+      <!-- Concentric arc rings -->
+      <svg style="position:absolute;inset:6px;width:calc(100% - 12px);height:calc(100% - 12px);" viewBox="0 0 200 200" aria-hidden="true">
+        <!-- Core Engine arc (27min) — r=85 -->
+        <circle cx="100" cy="100" r="85" fill="none" stroke="rgba(0,229,255,0.06)" stroke-width="5"/>
+        <circle id="d3-arc-core" cx="100" cy="100" r="85" fill="none"
+          stroke="#00e5ff" stroke-width="5" stroke-linecap="round"
+          stroke-dasharray="534" stroke-dashoffset="534"
+          transform="rotate(-90 100 100)" data-r="85"
+          style="transition:stroke-dashoffset 1s linear, stroke 1s;"/>
+        <!-- Repay arc (240min) — r="72" -->
+        <circle cx="100" cy="100" r="72" fill="none" stroke="rgba(255,176,0,0.06)" stroke-width="4"/>
+        <circle id="d3-arc-repay" cx="100" cy="100" r="72" fill="none"
+          stroke="#ffb000" stroke-width="4" stroke-linecap="round"
+          stroke-dasharray="452" stroke-dashoffset="452"
+          transform="rotate(-90 100 100)" data-r="72"
+          style="transition:stroke-dashoffset 1s linear;"/>
+        <!-- Nurse arc (70min) — r="60" -->
+        <circle cx="100" cy="100" r="60" fill="none" stroke="rgba(0,255,136,0.06)" stroke-width="3"/>
+        <circle id="d3-arc-nurse" cx="100" cy="100" r="60" fill="none"
+          stroke="#00ff88" stroke-width="3" stroke-linecap="round"
+          stroke-dasharray="377" stroke-dashoffset="377"
+          transform="rotate(-90 100 100)" data-r="60"
+          style="transition:stroke-dashoffset 1s linear;"/>
+      </svg>
+
+      <div id="d3-countdown" class="countdown-primary">T-MINUS --:--</div>
+
+      <div class="arc-labels">
+        <span id="d3-next-repay" style="color:rgba(255,176,0,0.7)">REPAY: --</span>
+        <span id="d3-next-nurse" style="color:rgba(0,255,136,0.7)">NURSE: --</span>
+      </div>
+
+      <div id="d3-milestone-0" class="milestone-row">$100 — <span class="milestone-pct">--</span>%</div>
+      <div id="d3-milestone-1" class="milestone-row">$1K — <span class="milestone-pct">--</span>%</div>
+      <div id="d3-milestone-2" class="milestone-row">$10K — <span class="milestone-pct">--</span>%</div>
+
+    </div>
+  </section>
+
+  <!-- ── Dome 4: Strategy Sentiment ─────────────────────────────────────── -->
+  <section class="dome-section" id="dome-4">
+    <div class="dome-shell">
+
+      <div class="rib-ring" style="inset:10%;"></div>
+      <div class="rib-ring" style="inset:24%;border-color:rgba(0,229,255,0.04);"></div>
+      <div class="dome-collar"></div>
+
+      <span class="dome-label">STRATEGY SENTIMENT</span>
+
+      <div id="d4-likelihood-pct" class="dome-primary" style="font-size:clamp(1.8rem,8vw,2.6rem)">--%</div>
+      <div id="d4-sentiment-label" class="dome-secondary">NEUTRAL</div>
+
+      <div class="likelihood-bar-wrap">
+        <div class="likelihood-label">
+          <span>BEARISH</span><span>BULLISH</span>
+        </div>
+        <div class="likelihood-track">
+          <div id="d4-likelihood-fill" class="likelihood-fill neutral" style="width:50%"></div>
+        </div>
+      </div>
+
+      <div id="d4-activity-feed" class="activity-feed"></div>
+
+    </div>
+  </section>
+
+  <!-- ── Dome 5: Operator Bay ────────────────────────────────────────────── -->
+  <section class="dome-section" id="dome-5">
+    <div class="dome-shell">
+
+      <div class="rib-ring" style="inset:10%;"></div>
+      <div class="rib-ring" style="inset:24%;border-color:rgba(0,229,255,0.04);"></div>
+      <div class="dome-collar"></div>
+
+      <span class="dome-label">OPERATOR BAY</span>
+
+      <!-- Semi-circle fuel gauge -->
+      <div class="fuel-gauge-wrap">
+        <svg width="140" height="80" viewBox="0 0 140 80" aria-hidden="true">
+          <!-- Track (semi-circle) -->
+          <path d="M10,70 A60,60 0 0,1 130,70" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="8" stroke-linecap="round"/>
+          <!-- Fill arc -->
+          <path id="d5-gauge-arc" d="M10,70 A60,60 0 0,1 130,70" fill="none"
+            stroke="#00ff88" stroke-width="8" stroke-linecap="round"
+            stroke-dasharray="188" stroke-dashoffset="188"
+            style="transition:stroke-dashoffset 0.4s ease-in-out, stroke 0.4s;"/>
+          <!-- Pointer -->
+          <g id="d5-gauge-pointer" transform="rotate(0 70 70)" style="transform-origin:70px 70px;transition:transform 0.4s ease-in-out;">
+            <line x1="70" y1="70" x2="70" y2="22" stroke="rgba(255,255,255,0.6)" stroke-width="2" stroke-linecap="round"/>
+            <circle cx="70" cy="70" r="4" fill="rgba(255,255,255,0.3)"/>
+          </g>
+          <!-- Labels -->
+          <text x="6" y="78" fill="rgba(255,255,255,0.3)" font-size="8" font-family="monospace">0</text>
+          <text x="67" y="18" fill="rgba(255,255,255,0.3)" font-size="8" font-family="monospace" text-anchor="middle">1×</text>
+          <text x="126" y="78" fill="rgba(255,255,255,0.3)" font-size="8" font-family="monospace">2×</text>
+        </svg>
+      </div>
+
+      <div id="d5-eth-balance" class="dome-primary" style="font-size:clamp(1.4rem,6vw,2rem)">-- ETH</div>
+      <div id="d5-gauge-status" class="gauge-status ok">FUEL: --</div>
+      <div id="d5-nurse-row" class="nurse-row">Last sweep: --</div>
+      <div class="nurse-row" style="color:rgba(224,240,255,0.2);font-size:0.55rem;margin-top:8px;">
+        Operator holds own Aave position — separate from user strategies
+      </div>
+
+    </div>
+  </section>
+
+</div><!-- end dome-scroll -->
+
+<!-- Bottom navigation -->
+<nav id="bottom-nav">
+  <button class="nav-btn active" id="nav-home">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+      <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+      <polyline points="9,22 9,12 15,12 15,22"/>
+    </svg>
+    HOME
+  </button>
+  <button class="nav-btn" id="nav-domes">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+      <polygon points="12,2 22,8.5 22,15.5 12,22 2,15.5 2,8.5"/>
+    </svg>
+    DOMES
+  </button>
+  <button class="nav-btn" id="nav-activity">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+      <polyline points="22,12 18,12 15,21 9,3 6,12 2,12"/>
+    </svg>
+    ACTIVITY
+  </button>
+  <button class="nav-btn" id="nav-settings">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+      <circle cx="12" cy="12" r="3"/>
+      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+    </svg>
+    SETTINGS
+  </button>
+</nav>
+
+<!-- ── Overlays ─────────────────────────────────────────────────────────── -->
+
+<!-- Activity overlay -->
+<div class="overlay" id="activity-overlay">
+  <div class="overlay-title">ACTIVITY LOG</div>
+  <div id="activity-overlay-list" class="activity-list">
+    <div style="color:rgba(255,255,255,0.3);font-size:0.7rem;">Loading…</div>
+  </div>
+</div>
+
+<!-- Hex overview overlay -->
+<div class="overlay" id="hex-overlay">
+  <div class="overlay-title">DOME OVERVIEW</div>
+  <div class="hex-grid">
+    <div class="hex-row" id="hex-row-1"></div>
+    <div class="hex-row" id="hex-row-2"></div>
+    <div class="hex-row" id="hex-row-3"></div>
+  </div>
+</div>
+
+<!-- Settings overlay -->
+<div class="overlay" id="settings-overlay">
+  <div class="overlay-title">SETTINGS</div>
+
+  <div class="settings-row">
+    <span>Reduce Motion</span>
+    <button class="toggle-btn" id="reduce-motion-toggle"></button>
+  </div>
+
+  <div class="settings-row" style="font-size:0.65rem;color:rgba(224,240,255,0.35);">
+    <span>Stale data threshold: 120s</span>
+  </div>
+  <div class="settings-row" style="font-size:0.65rem;color:rgba(224,240,255,0.35);">
+    <span>Telemetry refresh: 30s</span>
+  </div>
+  <div class="settings-row" style="font-size:0.65rem;color:rgba(224,240,255,0.35);">
+    <span>Version: v5.2</span>
+  </div>
+</div>
+
+<script src="/static/overseer.js"></script>
+</body>
+</html>

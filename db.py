@@ -237,6 +237,107 @@ def init_db():
         );
         CREATE INDEX IF NOT EXISTS idx_short_positions_open
             ON short_positions(wallet_address, status) WHERE status = 'open';
+
+        -- v5.2 new tables
+        CREATE TABLE IF NOT EXISTS hf_ledger (
+            id BIGSERIAL PRIMARY KEY,
+            wallet_address TEXT NOT NULL,
+            health_factor NUMERIC(20,4) NOT NULL,
+            total_collateral_usd NUMERIC(14,2) NOT NULL DEFAULT 0,
+            total_debt_usd NUMERIC(14,2) NOT NULL DEFAULT 0,
+            recorded_at TIMESTAMPTZ DEFAULT NOW()
+        );
+        CREATE INDEX IF NOT EXISTS idx_hf_ledger_wallet_time
+            ON hf_ledger(wallet_address, recorded_at DESC);
+
+        CREATE TABLE IF NOT EXISTS usdc_balance_ledger (
+            id BIGSERIAL PRIMARY KEY,
+            wallet_address TEXT NOT NULL,
+            wallet_role TEXT NOT NULL DEFAULT 'user',
+            usdc_balance NUMERIC(14,6) NOT NULL DEFAULT 0,
+            recorded_at TIMESTAMPTZ DEFAULT NOW()
+        );
+        CREATE INDEX IF NOT EXISTS idx_usdc_balance_ledger_wallet_time
+            ON usdc_balance_ledger(wallet_address, recorded_at DESC);
+
+        CREATE TABLE IF NOT EXISTS withdrawal_events (
+            id BIGSERIAL PRIMARY KEY,
+            user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+            wallet_address TEXT NOT NULL,
+            amount_usdc NUMERIC(14,6) NOT NULL DEFAULT 0,
+            tx_hash TEXT,
+            event_at TIMESTAMPTZ DEFAULT NOW()
+        );
+
+        CREATE TABLE IF NOT EXISTS repay_events (
+            id BIGSERIAL PRIMARY KEY,
+            wallet_address TEXT NOT NULL,
+            executed_by TEXT NOT NULL,
+            usdc_used NUMERIC(14,6) NOT NULL DEFAULT 0,
+            dai_received NUMERIC(14,6) NOT NULL DEFAULT 0,
+            tx_hash_swap TEXT,
+            tx_hash_repay TEXT,
+            daily_cap_remaining_before NUMERIC(14,6) NOT NULL DEFAULT 0,
+            executed_at TIMESTAMPTZ DEFAULT NOW()
+        );
+        CREATE INDEX IF NOT EXISTS idx_repay_events_wallet_time
+            ON repay_events(wallet_address, executed_at DESC);
+
+        CREATE TABLE IF NOT EXISTS usdc_milestones (
+            id BIGSERIAL PRIMARY KEY,
+            target_usdc NUMERIC(14,2) NOT NULL,
+            current_usdc NUMERIC(14,6) NOT NULL DEFAULT 0,
+            required_executions INTEGER NOT NULL DEFAULT 0,
+            target_timestamp TIMESTAMPTZ,
+            percentage_complete NUMERIC(5,2) NOT NULL DEFAULT 0,
+            computed_at TIMESTAMPTZ DEFAULT NOW()
+        );
+        CREATE INDEX IF NOT EXISTS idx_usdc_milestones_target
+            ON usdc_milestones(target_usdc, computed_at DESC);
+
+        CREATE TABLE IF NOT EXISTS growth_likelihood (
+            id BIGSERIAL PRIMARY KEY,
+            wallet_address TEXT NOT NULL,
+            growth_likelihood_pct NUMERIC(5,2) NOT NULL DEFAULT 0,
+            computed_at TIMESTAMPTZ DEFAULT NOW()
+        );
+        CREATE INDEX IF NOT EXISTS idx_growth_likelihood_wallet_time
+            ON growth_likelihood(wallet_address, computed_at DESC);
+
+        CREATE TABLE IF NOT EXISTS distribution_state (
+            wallet_address TEXT PRIMARY KEY,
+            status TEXT NOT NULL DEFAULT 'idle',
+            path_name TEXT,
+            step_reached TEXT,
+            distribution_json JSONB DEFAULT '{}',
+            updated_at TIMESTAMPTZ DEFAULT NOW()
+        );
+
+        CREATE TABLE IF NOT EXISTS wallet_cooldowns (
+            wallet_address TEXT PRIMARY KEY,
+            next_allowed_growth_at TIMESTAMPTZ,
+            next_allowed_capacity_at TIMESTAMPTZ,
+            next_allowed_macro_short_at TIMESTAMPTZ,
+            next_allowed_micro_short_at TIMESTAMPTZ,
+            updated_at TIMESTAMPTZ DEFAULT NOW()
+        );
+
+        CREATE TABLE IF NOT EXISTS hf_repay_deltas (
+            id BIGSERIAL PRIMARY KEY,
+            wallet_address TEXT NOT NULL,
+            repay_event_id BIGINT REFERENCES repay_events(id),
+            hf_1h_before NUMERIC(20,4),
+            hf_1h_after NUMERIC(20,4),
+            delta_hf NUMERIC(20,4),
+            computed_at TIMESTAMPTZ DEFAULT NOW()
+        );
+        CREATE INDEX IF NOT EXISTS idx_hf_repay_deltas_wallet
+            ON hf_repay_deltas(wallet_address, computed_at DESC);
+
+        -- v5.2 column additions
+        ALTER TABLE managed_wallets ADD COLUMN IF NOT EXISTS shield_status_last VARCHAR(8) DEFAULT 'ACTIVE';
+        ALTER TABLE wallet_actions ADD COLUMN IF NOT EXISTS details_summary TEXT;
+        ALTER TABLE wallet_actions ADD COLUMN IF NOT EXISTS severity TEXT DEFAULT 'info';
         """)
         cur.close()
 
@@ -1527,6 +1628,266 @@ def get_last_closed_short(wallet_address: str) -> dict:
         row = cur.fetchone()
         cur.close()
         return dict(row) if row else None
+
+
+def insert_hf_ledger(wallet_address, health_factor, total_collateral_usd=0, total_debt_usd=0):
+    wallet_address = wallet_address.lower().strip()
+    with get_conn() as conn:
+        cur = conn.cursor()
+        cur.execute("""
+            INSERT INTO hf_ledger (wallet_address, health_factor, total_collateral_usd, total_debt_usd)
+            VALUES (%s, %s, %s, %s)
+        """, (wallet_address, health_factor, total_collateral_usd, total_debt_usd))
+        cur.close()
+
+
+def insert_usdc_balance_snapshot(wallet_address, usdc_balance, wallet_role='user'):
+    wallet_address = wallet_address.lower().strip()
+    with get_conn() as conn:
+        cur = conn.cursor()
+        cur.execute("""
+            INSERT INTO usdc_balance_ledger (wallet_address, wallet_role, usdc_balance)
+            VALUES (%s, %s, %s)
+        """, (wallet_address, wallet_role, usdc_balance))
+        cur.close()
+
+
+def upsert_distribution_state(wallet_address, status, path_name=None, step_reached=None, distribution_json=None):
+    wallet_address = wallet_address.lower().strip()
+    with get_conn() as conn:
+        cur = conn.cursor()
+        cur.execute("""
+            INSERT INTO distribution_state (wallet_address, status, path_name, step_reached, distribution_json, updated_at)
+            VALUES (%s, %s, %s, %s, %s, NOW())
+            ON CONFLICT (wallet_address) DO UPDATE SET
+                status = EXCLUDED.status,
+                path_name = EXCLUDED.path_name,
+                step_reached = EXCLUDED.step_reached,
+                distribution_json = EXCLUDED.distribution_json,
+                updated_at = NOW()
+        """, (wallet_address, status, path_name, step_reached, json.dumps(distribution_json or {})))
+        cur.close()
+
+
+def get_distribution_state(wallet_address):
+    wallet_address = wallet_address.lower().strip()
+    with get_conn() as conn:
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur.execute("SELECT * FROM distribution_state WHERE wallet_address = %s", (wallet_address,))
+        row = cur.fetchone()
+        cur.close()
+        return dict(row) if row else None
+
+
+def upsert_wallet_cooldowns(wallet_address, **kwargs):
+    wallet_address = wallet_address.lower().strip()
+    allowed = {'next_allowed_growth_at', 'next_allowed_capacity_at',
+               'next_allowed_macro_short_at', 'next_allowed_micro_short_at'}
+    updates = {k: v for k, v in kwargs.items() if k in allowed}
+    if not updates:
+        return
+    col_names = list(updates.keys())
+    col_values = list(updates.values())
+    set_clauses = ', '.join(f"{k} = %s" for k in col_names)
+    with get_conn() as conn:
+        cur = conn.cursor()
+        cur.execute(f"""
+            INSERT INTO wallet_cooldowns (wallet_address, {', '.join(col_names)}, updated_at)
+            VALUES (%s, {', '.join(['%s'] * len(col_names))}, NOW())
+            ON CONFLICT (wallet_address) DO UPDATE SET
+                {set_clauses},
+                updated_at = NOW()
+        """, [wallet_address] + col_values + col_values)
+        cur.close()
+
+
+def get_wallet_cooldowns(wallet_address):
+    wallet_address = wallet_address.lower().strip()
+    with get_conn() as conn:
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur.execute("SELECT * FROM wallet_cooldowns WHERE wallet_address = %s", (wallet_address,))
+        row = cur.fetchone()
+        cur.close()
+        return dict(row) if row else None
+
+
+def insert_repay_event(wallet_address, executed_by, usdc_used, dai_received=0,
+                       tx_hash_swap=None, tx_hash_repay=None, daily_cap_remaining_before=0):
+    wallet_address = wallet_address.lower().strip()
+    with get_conn() as conn:
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur.execute("""
+            INSERT INTO repay_events
+                (wallet_address, executed_by, usdc_used, dai_received, tx_hash_swap, tx_hash_repay, daily_cap_remaining_before)
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
+            RETURNING id
+        """, (wallet_address, executed_by, usdc_used, dai_received, tx_hash_swap, tx_hash_repay, daily_cap_remaining_before))
+        row = cur.fetchone()
+        cur.close()
+        return dict(row)['id'] if row else None
+
+
+def insert_hf_repay_delta(wallet_address, repay_event_id, hf_1h_before=None, hf_1h_after=None):
+    wallet_address = wallet_address.lower().strip()
+    delta_hf = None
+    if hf_1h_before is not None and hf_1h_after is not None:
+        delta_hf = float(hf_1h_after) - float(hf_1h_before)
+    with get_conn() as conn:
+        cur = conn.cursor()
+        cur.execute("""
+            INSERT INTO hf_repay_deltas (wallet_address, repay_event_id, hf_1h_before, hf_1h_after, delta_hf)
+            VALUES (%s, %s, %s, %s, %s)
+        """, (wallet_address, repay_event_id, hf_1h_before, hf_1h_after, delta_hf))
+        cur.close()
+
+
+def get_repaid_last_24h(wallet_address):
+    wallet_address = wallet_address.lower().strip()
+    with get_conn() as conn:
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT COALESCE(SUM(usdc_used), 0)
+            FROM repay_events
+            WHERE wallet_address = %s
+              AND executed_at >= NOW() - INTERVAL '24 hours'
+        """, (wallet_address,))
+        row = cur.fetchone()
+        cur.close()
+        return float(row[0]) if row else 0.0
+
+
+def upsert_usdc_milestone(target_usdc, current_usdc, required_executions, target_timestamp=None, percentage_complete=0):
+    with get_conn() as conn:
+        cur = conn.cursor()
+        cur.execute("""
+            INSERT INTO usdc_milestones
+                (target_usdc, current_usdc, required_executions, target_timestamp, percentage_complete)
+            VALUES (%s, %s, %s, %s, %s)
+        """, (target_usdc, current_usdc, required_executions, target_timestamp, percentage_complete))
+        cur.close()
+
+
+def get_latest_usdc_milestones():
+    with get_conn() as conn:
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur.execute("""
+            SELECT DISTINCT ON (target_usdc) *
+            FROM usdc_milestones
+            ORDER BY target_usdc, computed_at DESC
+        """)
+        rows = cur.fetchall()
+        cur.close()
+        return [dict(r) for r in rows]
+
+
+def insert_growth_likelihood(wallet_address, growth_likelihood_pct):
+    wallet_address = wallet_address.lower().strip()
+    with get_conn() as conn:
+        cur = conn.cursor()
+        cur.execute("""
+            INSERT INTO growth_likelihood (wallet_address, growth_likelihood_pct)
+            VALUES (%s, %s)
+        """, (wallet_address, growth_likelihood_pct))
+        cur.close()
+
+
+def get_latest_growth_likelihood(wallet_address):
+    wallet_address = wallet_address.lower().strip()
+    with get_conn() as conn:
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur.execute("""
+            SELECT growth_likelihood_pct, computed_at
+            FROM growth_likelihood
+            WHERE wallet_address = %s
+            ORDER BY computed_at DESC LIMIT 1
+        """, (wallet_address,))
+        row = cur.fetchone()
+        cur.close()
+        return dict(row) if row else None
+
+
+def get_hf_history(wallet_address, hours=8):
+    wallet_address = wallet_address.lower().strip()
+    hours = min(int(hours), 48)
+    with get_conn() as conn:
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur.execute("""
+            SELECT health_factor, total_collateral_usd, recorded_at
+            FROM hf_ledger
+            WHERE wallet_address = %s
+              AND recorded_at >= NOW() - INTERVAL '%s hours'
+            ORDER BY recorded_at ASC
+        """, (wallet_address, hours))
+        rows = cur.fetchall()
+        cur.close()
+        return [dict(r) for r in rows]
+
+
+def get_hf_at_time(wallet_address, target_time):
+    wallet_address = wallet_address.lower().strip()
+    with get_conn() as conn:
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur.execute("""
+            SELECT health_factor, recorded_at
+            FROM hf_ledger
+            WHERE wallet_address = %s
+              AND recorded_at <= %s
+            ORDER BY recorded_at DESC LIMIT 1
+        """, (wallet_address, target_time))
+        row = cur.fetchone()
+        cur.close()
+        return dict(row) if row else None
+
+
+def update_shield_status_last(wallet_address, shield_status):
+    wallet_address = wallet_address.lower().strip()
+    with get_conn() as conn:
+        cur = conn.cursor()
+        cur.execute("""
+            UPDATE managed_wallets
+            SET shield_status_last = %s, updated_at = NOW()
+            WHERE wallet_address = %s
+        """, (shield_status, wallet_address))
+        cur.close()
+
+
+def record_wallet_action_v2(user_id, wallet_address, action_type, details, tx_hash=None,
+                             details_summary=None, severity='info'):
+    wallet_address = wallet_address.lower().strip()
+    with get_conn() as conn:
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur.execute("""
+            INSERT INTO wallet_actions (user_id, wallet_address, action_type, details, tx_hash, details_summary, severity)
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
+            RETURNING *
+        """, (user_id, wallet_address, action_type, json.dumps(details), tx_hash, details_summary, severity))
+        row = cur.fetchone()
+        cur.close()
+        return dict(row) if row else None
+
+
+def migrate_tmp_execution_states():
+    import glob as _glob
+    state_files = _glob.glob('/tmp/*_execution_state.json')
+    migrated = 0
+    for fpath in state_files:
+        try:
+            with open(fpath, 'r') as f:
+                data = json.load(f)
+            wallet_address = data.get('wallet_address', '')
+            if not wallet_address:
+                fname = fpath.replace('/tmp/', '').replace('_execution_state.json', '')
+                wallet_address = fname
+            status = data.get('status', 'in_progress')
+            path_name = data.get('path_name')
+            step_reached = data.get('step_reached') or data.get('status')
+            upsert_distribution_state(wallet_address, status, path_name, step_reached, data)
+            import os as _os
+            _os.remove(fpath)
+            migrated += 1
+        except Exception:
+            pass
+    return migrated
 
 
 if __name__ == "__main__":

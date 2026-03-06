@@ -1,6 +1,51 @@
-# REAA Platform
+# PROJECT 87 — v5.2
 
 ## Overview
+PROJECT 87 is a multi-tenant IaaS DeFi platform built on Arbitrum Mainnet. Users connect wallets via EIP-4361, complete the 5-step Sequential Signer activation, and receive API keys for autonomous DeFi strategy execution. The platform features a 5-dome Mars Overseer UI.
+
+**Bot wallet:** `0xbbd55BB128645c16D6DEa9f1866bd9a7e7fC9c48`
+**Deployed at:** `bot-thejamalshackle.replit.app`
+
+## Overseer UI (v5.2)
+- **Route:** `/overseer` — mobile-first, scroll-snap, 5 dome sections
+- **Static files:** `static/overseer.css`, `static/overseer.js`
+- **Template:** `templates/overseer.html`
+- **API endpoints:** `/api/telemetry` (60s cache), `/api/activity` (15s cache), `/api/telemetry/history`
+- **Dome 1:** Safety — HF ring, shield indicator (ACTIVE/AWARE/DOWN), strategy badge
+- **Dome 2:** USDC Reactor — fuel tank, AAVE Yield Spread readout (borrow cost / engine yield / NET PROFITABILITY)
+- **Dome 3:** Mission Time — T-MINUS countdown, 3 concentric APScheduler arcs, milestones
+- **Dome 4:** Strategy Sentiment — likelihood bar, live activity feed with [SHIELD DEPLOYED] tag styling
+- **Dome 5:** Operator Bay — ETH fuel gauge, last nurse sweep info
+- **T016:** Cross-dome SVG Bezier beams fire on REPAY_EXECUTED, NURSE_SWEEP, milestone crossings, likelihood > 70%
+
+## HF Thresholds (v5.2)
+- Emergency: 3.20 | Capacity: 3.40 | Growth: 3.60 | Micro: 4.00 | Macro: 4.05
+- SHIELD_WARNING_BAND: 0.30
+- Shield status: ACTIVE (HF >= path_min + 0.30), AWARE (HF < path_min + 0.30), DOWN (HF < 3.20)
+
+## APScheduler Jobs
+- `core_engine_job`: every 27 min — strategy evaluation, HF logging, shield transitions
+- `nurse_sweep_job`: every 70 min — operator token sweep → user Aave supply
+- `repay_deleverager_job`: every 4h — USDC→DAI→Aave repay; cap $3.60/day
+
+## Repay Constants
+- MAX_REPAY_PER_DAY_USDC=3.60, REPAY_PCT=0.10, REPAY_MIN_AMOUNT=1.10, REPAY_MIN_USDC_BALANCE=12.00
+
+## DB Schema (v5.2 additions)
+New tables: `hf_ledger`, `usdc_balance_ledger`, `repay_events`, `distribution_state`,
+`wallet_cooldowns`, `hf_repay_deltas`, `usdc_milestones`, `growth_likelihood`
+New column: `managed_wallets.shield_status_last`
+
+## Key Files
+- `strategy_engine.py` — core strategy logic
+- `web_dashboard.py` — Flask app, all routes including /overseer + telemetry APIs
+- `db.py` — PostgreSQL helpers
+- `scheduler_bootstrap.py` — APScheduler setup with pg advisory locks
+- `job_core_engine.py`, `job_nurse_sweep.py`, `job_repay_deleverager.py` — scheduled jobs
+- `run_autonomous_mainnet.py` — main bot process (APScheduler keep-alive loop)
+- `run_both.py` — production launcher (dashboard + agent)
+
+## REAA Platform (legacy context)
 The REAA (Real Estate Agent Assistant) platform is a comprehensive solution designed to empower real estate agents by integrating autonomous DeFi debt management on Aave V3 (Arbitrum Mainnet) with a real estate lead generation system. Its primary purpose is to automate DeFi borrowing strategies and streamline lead generation. Key capabilities include a consumer-facing Command Center dashboard, an AI chat, and advanced debt management strategies like "USDC Tax Mode" and a "Liability Short Strategy." The platform emphasizes robust and secure operations through features such as crash recovery, global execution locks, and a "Nurse Mode" for maintaining health factors.
 
 ## User Preferences
