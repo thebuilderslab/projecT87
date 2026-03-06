@@ -16,8 +16,6 @@ requiredFiles = [".replit", "replit.nix"]
 run = ["sh", "-c", "python run_both.py"]
 deploymentTarget = "vm"
 
-# ... workflows unchanged ...
-
 [[ports]]
 localPort = 5000
 externalPort = 80
@@ -25,3 +23,27 @@ externalPort = 80
 [agent]
 expertMode = true
 integrations = ["perplexity_v0:1.0.0"]
+
+[workflows]
+runButton = "Project"
+
+[[workflows.workflow]]
+name = "Project"
+mode = "parallel"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Start application"
+
+[[workflows.workflow]]
+name = "Start application"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python run_both.py"
+waitForPort = 5000
+
+[workflows.workflow.metadata]
+outputType = "webview"
