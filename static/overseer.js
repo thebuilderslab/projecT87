@@ -32,7 +32,7 @@ const P87 = (() => {
     _bindNav();
     _bindSettings();
     _bindWalletSelector();
-    _bindDomeTiles();
+    _initDomeScrollObserver();
 
     if (_state.authToken && _state.currentWallet) {
       // Already authenticated — check if wallet is activated before powering on
@@ -86,10 +86,13 @@ const P87 = (() => {
 
   function _setPowered(on) {
     _state.overseerPowered = on;
+    const scroll = document.getElementById('dome-scroll');
     if (on) {
       document.body.classList.remove('overseer--awaiting-wallet');
+      scroll?.classList.remove('dome-scroll--hidden');
     } else {
       document.body.classList.add('overseer--awaiting-wallet');
+      scroll?.classList.add('dome-scroll--hidden');
       _renderPoweredDownStrip();
     }
   }
@@ -125,13 +128,11 @@ const P87 = (() => {
   // ── Navigation ───────────────────────────────────────────────────────────
 
   function _bindNav() {
-    document.getElementById('nav-home')?.addEventListener('click', () => {
-      _closeAllOverlays();
-      _scrollToDome(0);
-    });
-    document.getElementById('nav-domes')?.addEventListener('click', () => {
-      _closeAllOverlays();
-      _toggleOverlay('hex-overlay');
+    document.querySelectorAll('.dome-nav-tile').forEach(tile => {
+      tile.addEventListener('click', () => {
+        _closeAllOverlays();
+        _scrollToDome(tile.dataset.dome);
+      });
     });
     document.getElementById('nav-activity')?.addEventListener('click', () => {
       _closeAllOverlays();
@@ -142,25 +143,27 @@ const P87 = (() => {
       _closeAllOverlays();
       _toggleOverlay('settings-overlay');
     });
+  }
 
-    document.querySelectorAll('.dome-section').forEach((sec, i) => {
-      sec.addEventListener('click', e => {
-        if (e.target.closest('.dome-shell')) return;
-      });
+  function _scrollToDome(domeId) {
+    const el = document.getElementById(domeId);
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'start' });
+    _updateNavActive(domeId);
+  }
+
+  function _updateNavActive(domeId) {
+    document.querySelectorAll('.dome-nav-tile').forEach(t => {
+      t.classList.toggle('active', t.dataset.dome === domeId);
     });
   }
 
-  function _scrollToDome(index) {
-    const sections = document.querySelectorAll('.dome-section');
-    if (sections[index]) {
-      sections[index].scrollIntoView({ behavior: 'smooth' });
-    }
-    _updateNavActive(index);
-  }
-
-  function _updateNavActive(index) {
-    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-    document.getElementById('nav-home')?.classList.add('active');
+  function _initDomeScrollObserver() {
+    const scroll = document.getElementById('dome-scroll');
+    if (!scroll) return;
+    const obs = new IntersectionObserver((entries) => {
+      entries.forEach(e => { if (e.isIntersecting) _updateNavActive(e.target.id); });
+    }, { root: scroll, threshold: 0.55 });
+    document.querySelectorAll('.dome-section').forEach(s => obs.observe(s));
   }
 
   function _toggleOverlay(id) {
@@ -285,8 +288,6 @@ const P87 = (() => {
       if (!res.ok) return;
       const d = await res.json();
 
-      document.getElementById('cycle-intel-panel').style.display = '';
-
       const eq  = d.equilibrium  || {};
       const pnl = d.cycle_pnl   || {};
 
@@ -368,97 +369,57 @@ const P87 = (() => {
     _setText('d3-countdown', 'T-MINUS --:--');
   }
 
-  // ── Dome overview tiles ───────────────────────────────────────────────────
+  // ── Bottom dock nav tiles ─────────────────────────────────────────────────
 
-  function _renderOverviewTiles(wallet, fullData) {
+  function _renderNavTiles(wallet, fullData) {
     const hfNull = wallet.health_factor == null;
     const hf = hfNull ? null : wallet.health_factor;
     const pathMin = wallet.path_min_hf || 3.40;
 
-    // Tile 1: Safety
-    const t1m = document.getElementById('tile-1-metric');
-    const t1d = document.getElementById('tile-1-dot');
-    if (t1m) t1m.textContent = hfNull ? 'HF --' : `HF ${hf.toFixed(2)}`;
-    if (t1d) t1d.className = 'tile-dot ' + (hfNull ? 'critical' : hf >= pathMin + 0.5 ? 'ok' : hf >= pathMin ? 'warning' : 'critical');
+    // OPS tile: HF
+    const opsM = document.getElementById('tile-ops-metric');
+    const opsD = document.getElementById('tile-ops-dot');
+    if (opsM) opsM.textContent = hfNull ? 'HF --' : `HF ${hf.toFixed(2)}`;
+    if (opsD) opsD.className = 'dome-nav-tile-dot ' + (hfNull ? 'critical' : hf >= pathMin + 0.5 ? 'ok' : hf >= pathMin ? 'warning' : 'critical');
 
-    // Tile 2: Reactor
-    const t2m = document.getElementById('tile-2-metric');
-    const t2d = document.getElementById('tile-2-dot');
+    // INFRA tile: ETH balance
+    const infraM = document.getElementById('tile-infra-metric');
+    const infraD = document.getElementById('tile-infra-dot');
+    const eth = (fullData.operator_wallet || {}).eth_balance || 0;
+    if (infraM) infraM.textContent = `${eth.toFixed(3)} ETH`;
+    if (infraD) { const gr = (fullData.operator_wallet || {}).gas_reserve_eth || 1.0; infraD.className = 'dome-nav-tile-dot ' + (eth >= gr ? 'ok' : eth >= gr * 0.5 ? 'warning' : 'critical'); }
+
+    // ECON tile: USDC
+    const econM = document.getElementById('tile-econ-metric');
+    const econD = document.getElementById('tile-econ-dot');
     const usdc = wallet.user_usdc_balance || 0;
-    if (t2m) t2m.textContent = `$${usdc.toFixed(2)}`;
-    if (t2d) t2d.className = 'tile-dot ' + (usdc > 50 ? 'ok' : usdc > 10 ? 'warning' : 'critical');
+    if (econM) econM.textContent = `$${usdc.toFixed(2)}`;
+    if (econD) econD.className = 'dome-nav-tile-dot ' + (usdc > 50 ? 'ok' : usdc > 10 ? 'warning' : 'critical');
 
-    // Tile 3: Mission
-    const t3m = document.getElementById('tile-3-metric');
-    const t3d = document.getElementById('tile-3-dot');
-    if (t3m) {
+    // SENTINEL tile: growth likelihood
+    const sentM = document.getElementById('tile-sentinel-metric');
+    const sentD = document.getElementById('tile-sentinel-dot');
+    const pct = wallet.growth_likelihood_pct || 50;
+    if (sentM) sentM.textContent = `${pct.toFixed(0)}%`;
+    if (sentD) sentD.className = 'dome-nav-tile-dot ' + (pct >= 70 ? 'ok' : pct >= 30 ? 'warning' : 'critical');
+
+    // INTEL tile: T-MINUS countdown
+    const intelM = document.getElementById('tile-intel-metric');
+    const intelD = document.getElementById('tile-intel-dot');
+    if (intelM) {
       const remaining = _state.nextCheckTs ? Math.max(0, Math.floor((_state.nextCheckTs - Date.now()) / 1000)) : null;
       if (remaining !== null) {
         const mm = String(Math.floor(remaining / 60)).padStart(2, '0');
         const ss = String(remaining % 60).padStart(2, '0');
-        t3m.textContent = `T-${mm}:${ss}`;
+        intelM.textContent = `T-${mm}:${ss}`;
       } else {
-        t3m.textContent = 'T---:--';
+        intelM.textContent = 'T---:--';
       }
     }
-    if (t3d) t3d.className = 'tile-dot ok';
-
-    // Tile 4: Sentiment
-    const t4m = document.getElementById('tile-4-metric');
-    const t4d = document.getElementById('tile-4-dot');
-    const pct = wallet.growth_likelihood_pct || 50;
-    if (t4m) t4m.textContent = `${pct.toFixed(0)}%`;
-    if (t4d) t4d.className = 'tile-dot ' + (pct >= 70 ? 'ok' : pct >= 30 ? 'warning' : 'critical');
-
-    // Tile 5: Operator
-    const t5m = document.getElementById('tile-5-metric');
-    const t5d = document.getElementById('tile-5-dot');
-    const eth = (fullData.operator_wallet || {}).eth_balance || 0;
-    if (t5m) t5m.textContent = `${eth.toFixed(3)} ETH`;
-    if (t5d) { const gr = (fullData.operator_wallet || {}).gas_reserve_eth || 1.0; t5d.className = 'tile-dot ' + (eth >= gr ? 'ok' : eth >= gr * 0.5 ? 'warning' : 'critical'); }
+    if (intelD) intelD.className = 'dome-nav-tile-dot ok';
   }
 
-  // ── Dome expand/collapse overlay ─────────────────────────────────────────
 
-  let _expandedDome = null;
-
-  function _openDomeExpand(domeId) {
-    const scroll  = document.getElementById('dome-scroll');
-    const section = document.getElementById(domeId);
-    if (!scroll || !section) return;
-
-    // Reveal the real dome-scroll — all render functions keep their live IDs intact
-    scroll.classList.remove('dome-scroll--hidden');
-    _expandedDome = domeId;
-
-    // Scroll to the target dome section with no jump visible
-    section.scrollIntoView({ behavior: 'instant', block: 'start' });
-
-    // Mark active tile
-    document.querySelectorAll('.dome-tile').forEach(t => {
-      t.classList.toggle('active', t.dataset.dome === domeId);
-    });
-  }
-
-  function _closeDomeExpand() {
-    const scroll = document.getElementById('dome-scroll');
-    if (scroll) scroll.classList.add('dome-scroll--hidden');
-    document.querySelectorAll('.dome-tile').forEach(t => t.classList.remove('active'));
-    _expandedDome = null;
-  }
-
-  function _bindDomeTiles() {
-    document.querySelectorAll('.dome-tile').forEach(tile => {
-      tile.addEventListener('click', () => {
-        const domeId = tile.dataset.dome;
-        if (_expandedDome === domeId) {
-          _closeDomeExpand();
-        } else {
-          _openDomeExpand(domeId);
-        }
-      });
-    });
-  }
 
   // ── Main render ───────────────────────────────────────────────────────────
 
@@ -469,7 +430,7 @@ const P87 = (() => {
     _renderDome4(wallet);
     _renderDome5(fullData);
     _renderStripHeader(wallet, fullData);
-    _renderOverviewTiles(wallet, fullData);
+    _renderNavTiles(wallet, fullData);
     _renderHexOverlay(wallet, fullData);
     _checkBeamTriggers(wallet, fullData, _state.activities);
   }
@@ -783,8 +744,8 @@ const P87 = (() => {
     const countStr = `T-MINUS ${mm}:${ss}`;
     _setText('d3-countdown', countStr);
     _setText('strip-countdown', `T-${mm}:${ss}`);
-    const t3m = document.getElementById('tile-3-metric');
-    if (t3m) t3m.textContent = `T-${mm}:${ss}`;
+    const intelM = document.getElementById('tile-intel-metric');
+    if (intelM) intelM.textContent = `T-${mm}:${ss}`;
   }
 
   // ── Top strip ─────────────────────────────────────────────────────────────
@@ -1049,6 +1010,7 @@ const P87 = (() => {
   function powerOn() {
     _setPowered(true);
     _hideModal();
+    _scrollToDome('dome-ops');
     fetchTelemetry();
     fetchActivity();
   }
@@ -1066,8 +1028,6 @@ const P87 = (() => {
     localStorage.removeItem('p87_selected_wallet');
     _setPowered(false);
     _showModal();
-    const ciPanel = document.getElementById('cycle-intel-panel');
-    if (ciPanel) ciPanel.style.display = 'none';
   }
 
   /**

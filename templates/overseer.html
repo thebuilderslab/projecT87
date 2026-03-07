@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>PROJECT 87 — OVERSEER</title>
-  <link rel="stylesheet" href="/static/overseer.css?v=4">
+  <link rel="stylesheet" href="/static/overseer.css?v=5">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js" type="application/javascript"></script>
   <script nonce="{{ csp_nonce }}">
   var CONTRACTS = {
@@ -45,7 +45,6 @@
     <div id="cm-connect-phase">
       <button id="cm-connect-btn" class="cm-btn">[ INITIALIZE CONNECTION ]</button>
       <div id="cm-connect-status" class="cm-status"></div>
-      <!-- Mobile deep-link options — shown only on mobile with no injected wallet -->
       <div id="cm-mobile-options">
         <div class="cm-install-heading">NO INJECTED WALLET — OPEN IN A WEB3 BROWSER:</div>
         <a class="cm-btn cm-install-btn" id="cm-mm-deeplink">[ OPEN IN METAMASK ]</a>
@@ -132,47 +131,46 @@
   </div>
 </div>
 
-<!-- ── Dormant Overview Row (compact dome tiles) ──────────────────────── -->
-<div id="dome-overview-row">
-  <div class="dome-tile" id="tile-1" data-dome="dome-1" title="Safety Dome">
-    <span class="tile-label">SAFETY</span>
-    <span class="tile-metric" id="tile-1-metric">HF --</span>
-    <span class="tile-dot" id="tile-1-dot"></span>
-  </div>
-  <div class="dome-tile" id="tile-2" data-dome="dome-2" title="USDC Reactor">
-    <span class="tile-label">REACTOR</span>
-    <span class="tile-metric" id="tile-2-metric">$--</span>
-    <span class="tile-dot" id="tile-2-dot"></span>
-  </div>
-  <div class="dome-tile" id="tile-3" data-dome="dome-3" title="Mission Time">
-    <span class="tile-label">MISSION</span>
-    <span class="tile-metric" id="tile-3-metric">T---:--</span>
-    <span class="tile-dot" id="tile-3-dot"></span>
-  </div>
-  <div class="dome-tile" id="tile-4" data-dome="dome-4" title="Strategy Sentiment">
-    <span class="tile-label">SENTIMENT</span>
-    <span class="tile-metric" id="tile-4-metric">--%</span>
-    <span class="tile-dot" id="tile-4-dot"></span>
-  </div>
-  <div class="dome-tile" id="tile-5" data-dome="dome-5" title="Operator Bay">
-    <span class="tile-label">OPERATOR</span>
-    <span class="tile-metric" id="tile-5-metric">-- ETH</span>
-    <span class="tile-dot" id="tile-5-dot"></span>
-  </div>
-</div>
-
-<!-- 5-dome scroll container (detail view, hidden initially) -->
+<!-- ── 5-dome horizontal scroll ──────────────────────────────────────────── -->
 <div id="dome-scroll" class="dome-scroll--hidden">
 
-  <!-- ── Dome 1: Safety ────────────────────────────────────────────────── -->
-  <section class="dome-section" id="dome-1">
+  <!-- ══ OPS: Safety Dome ════════════════════════════════════════════════════ -->
+  <section class="dome-section ops" id="dome-ops">
     <div class="dome-shell" id="d1-shell">
+
+      <!-- City illustration -->
+      <div class="dome-city">
+        <svg viewBox="0 0 200 120" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <ellipse cx="100" cy="110" rx="90" ry="16" fill="rgba(80,120,60,0.30)"/>
+          <line x1="100" y1="94" x2="100" y2="115" stroke="rgba(200,180,120,0.18)" stroke-width="4"/>
+          <line x1="25" y1="105" x2="175" y2="105" stroke="rgba(200,180,120,0.18)" stroke-width="4"/>
+          <rect x="88" y="30" width="24" height="75" fill="rgba(200,140,70,0.70)" rx="2"/>
+          <rect x="82" y="25" width="36" height="10" fill="rgba(220,160,80,0.75)" rx="2"/>
+          <rect x="95" y="18" width="10" height="12" fill="rgba(200,140,70,0.70)" rx="1"/>
+          <circle cx="100" cy="16" r="4" fill="rgba(255,220,80,0.92)"/>
+          <circle cx="100" cy="16" r="7" fill="rgba(255,220,80,0.20)"/>
+          <rect x="30" y="70" width="6" height="36" fill="rgba(180,120,60,0.65)" rx="1"/>
+          <path d="M18,68 Q33,55 48,68" fill="rgba(160,110,55,0.60)" stroke="rgba(200,140,70,0.50)" stroke-width="1"/>
+          <rect x="40" y="80" width="22" height="26" fill="rgba(180,120,60,0.60)" rx="2"/>
+          <rect x="42" y="76" width="18" height="6" fill="rgba(200,140,70,0.55)" rx="1"/>
+          <rect x="138" y="72" width="30" height="34" fill="rgba(180,120,60,0.60)" rx="2"/>
+          <rect x="140" y="67" width="26" height="8" fill="rgba(200,140,70,0.55)" rx="1"/>
+          <rect x="152" y="50" width="3" height="18" fill="rgba(200,160,90,0.65)"/>
+          <line x1="148" y1="52" x2="158" y2="52" stroke="rgba(200,160,90,0.50)" stroke-width="1"/>
+          <rect x="92" y="40" width="5" height="4" fill="rgba(255,230,120,0.50)" rx="0.5"/>
+          <rect x="102" y="40" width="5" height="4" fill="rgba(255,230,120,0.50)" rx="0.5"/>
+          <rect x="92" y="52" width="5" height="4" fill="rgba(255,230,120,0.40)" rx="0.5"/>
+          <rect x="102" y="52" width="5" height="4" fill="rgba(255,230,120,0.40)" rx="0.5"/>
+          <line x1="62" y1="105" x2="88" y2="105" stroke="rgba(180,130,60,0.30)" stroke-width="3"/>
+          <line x1="112" y1="105" x2="138" y2="105" stroke="rgba(180,130,60,0.30)" stroke-width="3"/>
+        </svg>
+      </div>
 
       <!-- Rib rings -->
       <div class="rib-ring" style="inset:12%;"></div>
-      <div class="rib-ring" style="inset:22%;border-color:rgba(0,229,255,0.04);"></div>
-      <div class="rib-ring" style="inset:34%;border-color:rgba(0,229,255,0.04);"></div>
-      <div class="rib-ring" style="inset:46%;border-color:rgba(0,229,255,0.03);"></div>
+      <div class="rib-ring" style="inset:22%;"></div>
+      <div class="rib-ring" style="inset:34%;"></div>
+      <div class="rib-ring" style="inset:46%;"></div>
 
       <!-- Base collar -->
       <div class="dome-collar"></div>
@@ -187,13 +185,12 @@
           transform="rotate(-90 100 100)"/>
       </svg>
 
-      <span class="dome-label">SAFETY DOME</span>
+      <span class="dome-label">OPS · SAFETY</span>
       <span id="d1-strategy-badge" class="strategy-badge">IDLE</span>
 
       <div id="d1-hf" class="dome-primary">--</div>
       <div id="d1-collateral" class="dome-secondary">$-- / $--</div>
 
-      <!-- Shield indicator (v5.2) -->
       <div id="d1-shield" class="shield-indicator down">
         <svg viewBox="0 0 16 20" aria-hidden="true">
           <path d="M8 0L0 4v6c0 5.5 3.4 10.6 8 12 4.6-1.4 8-6.5 8-12V4L8 0z"/>
@@ -204,18 +201,113 @@
     </div>
   </section>
 
-  <!-- ── Dome 2: USDC Reactor ───────────────────────────────────────────── -->
-  <section class="dome-section" id="dome-2">
+  <!-- ══ INFRA: Operator Bay ═════════════════════════════════════════════════ -->
+  <section class="dome-section infra" id="dome-infra">
     <div class="dome-shell">
 
-      <div class="rib-ring" style="inset:10%;"></div>
-      <div class="rib-ring" style="inset:22%;border-color:rgba(0,229,255,0.04);"></div>
+      <!-- City illustration -->
+      <div class="dome-city">
+        <svg viewBox="0 0 200 120" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <ellipse cx="100" cy="110" rx="90" ry="16" fill="rgba(40,70,100,0.30)"/>
+          <line x1="10" y1="100" x2="190" y2="100" stroke="rgba(80,140,200,0.22)" stroke-width="5"/>
+          <line x1="100" y1="80" x2="100" y2="115" stroke="rgba(80,140,200,0.22)" stroke-width="5"/>
+          <rect x="82" y="42" width="36" height="64" fill="rgba(70,110,160,0.70)" rx="3"/>
+          <ellipse cx="100" cy="42" rx="18" ry="6" fill="rgba(90,140,200,0.75)"/>
+          <rect x="86" y="26" width="28" height="18" fill="rgba(80,120,180,0.70)" rx="2"/>
+          <rect x="34" y="60" width="20" height="46" fill="rgba(60,90,140,0.65)" rx="2"/>
+          <ellipse cx="44" cy="60" rx="10" ry="4" fill="rgba(80,120,180,0.70)"/>
+          <path d="M38,58 Q44,50 50,58" fill="rgba(200,220,255,0.10)"/>
+          <rect x="48" y="66" width="16" height="40" fill="rgba(60,90,140,0.55)" rx="2"/>
+          <ellipse cx="56" cy="66" rx="8" ry="3" fill="rgba(80,120,180,0.60)"/>
+          <rect x="136" y="58" width="32" height="48" fill="rgba(200,100,40,0.55)" rx="3"/>
+          <ellipse cx="152" cy="58" rx="16" ry="6" fill="rgba(220,120,50,0.65)"/>
+          <rect x="156" y="74" width="28" height="32" fill="rgba(60,90,140,0.55)" rx="2"/>
+          <circle cx="100" cy="100" r="5" fill="rgba(80,140,200,0.45)"/>
+          <circle cx="44" cy="100" r="4" fill="rgba(80,140,200,0.35)"/>
+          <circle cx="152" cy="100" r="4" fill="rgba(80,140,200,0.35)"/>
+          <circle cx="100" cy="22" r="4" fill="rgba(255,140,40,0.90)"/>
+          <circle cx="100" cy="22" r="8" fill="rgba(255,140,40,0.20)"/>
+          <circle cx="44" cy="56" r="3" fill="rgba(255,80,0,0.80)"/>
+        </svg>
+      </div>
+
+      <div class="rib-ring" style="inset:12%;"></div>
+      <div class="rib-ring" style="inset:24%;"></div>
       <div class="dome-collar"></div>
 
-      <span class="dome-label">USDC REACTOR</span>
+      <span class="dome-label">INFRA · OPERATOR</span>
+
+      <div class="fuel-gauge-wrap">
+        <svg width="140" height="80" viewBox="0 0 140 80" aria-hidden="true">
+          <path d="M10,70 A60,60 0 0,1 130,70" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="8" stroke-linecap="round"/>
+          <path id="d5-gauge-arc" d="M10,70 A60,60 0 0,1 130,70" fill="none"
+            stroke="#00ff88" stroke-width="8" stroke-linecap="round"
+            stroke-dasharray="188" stroke-dashoffset="188"
+            style="transition:stroke-dashoffset 0.4s ease-in-out, stroke 0.4s;"/>
+          <g id="d5-gauge-pointer" transform="rotate(0 70 70)" style="transform-origin:70px 70px;transition:transform 0.4s ease-in-out;">
+            <line x1="70" y1="70" x2="70" y2="22" stroke="rgba(255,255,255,0.6)" stroke-width="2" stroke-linecap="round"/>
+            <circle cx="70" cy="70" r="4" fill="rgba(255,255,255,0.3)"/>
+          </g>
+          <text x="6" y="78" fill="rgba(255,255,255,0.3)" font-size="8" font-family="monospace">0</text>
+          <text x="67" y="18" fill="rgba(255,255,255,0.3)" font-size="8" font-family="monospace" text-anchor="middle">1×</text>
+          <text x="126" y="78" fill="rgba(255,255,255,0.3)" font-size="8" font-family="monospace">2×</text>
+        </svg>
+      </div>
+
+      <div id="d5-eth-balance" class="dome-primary" style="font-size:clamp(1.4rem,6vw,2rem)">-- ETH</div>
+      <div id="d5-gauge-status" class="gauge-status ok">FUEL: --</div>
+      <div id="d5-nurse-row" class="nurse-row">Last sweep: --</div>
+      <div class="nurse-row" style="color:rgba(224,240,255,0.2);font-size:0.55rem;margin-top:8px;">
+        Operator holds own Aave position — separate from user strategies
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ══ ECON: USDC Reactor ══════════════════════════════════════════════════ -->
+  <section class="dome-section econ" id="dome-econ">
+    <div class="dome-shell">
+
+      <!-- City illustration -->
+      <div class="dome-city">
+        <svg viewBox="0 0 200 120" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <ellipse cx="100" cy="110" rx="90" ry="16" fill="rgba(0,100,140,0.25)"/>
+          <line x1="20" y1="108" x2="180" y2="108" stroke="rgba(0,229,255,0.12)" stroke-width="2"/>
+          <line x1="60" y1="95" x2="60" y2="115" stroke="rgba(0,229,255,0.10)" stroke-width="2"/>
+          <line x1="100" y1="90" x2="100" y2="115" stroke="rgba(0,229,255,0.10)" stroke-width="2"/>
+          <line x1="140" y1="95" x2="140" y2="115" stroke="rgba(0,229,255,0.10)" stroke-width="2"/>
+          <rect x="80" y="20" width="40" height="90" fill="rgba(0,140,180,0.65)" rx="3"/>
+          <rect x="84" y="26" width="6" height="4" fill="rgba(0,229,255,0.45)" rx="0.5"/>
+          <rect x="93" y="26" width="6" height="4" fill="rgba(0,229,255,0.45)" rx="0.5"/>
+          <rect x="102" y="26" width="6" height="4" fill="rgba(200,0,255,0.35)" rx="0.5"/>
+          <rect x="111" y="26" width="6" height="4" fill="rgba(0,229,255,0.40)" rx="0.5"/>
+          <rect x="84" y="34" width="6" height="4" fill="rgba(0,229,255,0.35)" rx="0.5"/>
+          <rect x="93" y="34" width="6" height="4" fill="rgba(200,0,255,0.30)" rx="0.5"/>
+          <rect x="102" y="34" width="6" height="4" fill="rgba(0,229,255,0.40)" rx="0.5"/>
+          <rect x="111" y="34" width="6" height="4" fill="rgba(0,229,255,0.35)" rx="0.5"/>
+          <rect x="44" y="48" width="22" height="62" fill="rgba(0,100,160,0.60)" rx="2"/>
+          <rect x="46" y="42" width="18" height="8" fill="rgba(0,120,180,0.65)" rx="1"/>
+          <rect x="50" y="33" width="10" height="10" fill="rgba(0,100,160,0.60)" rx="1"/>
+          <rect x="54" y="24" width="2" height="10" fill="rgba(0,229,255,0.70)"/>
+          <rect x="134" y="52" width="22" height="58" fill="rgba(0,100,160,0.60)" rx="2"/>
+          <rect x="136" y="45" width="18" height="9" fill="rgba(0,120,180,0.65)" rx="1"/>
+          <rect x="139" y="36" width="12" height="10" fill="rgba(0,100,160,0.60)" rx="1"/>
+          <rect x="144" y="27" width="2" height="10" fill="rgba(200,0,255,0.60)"/>
+          <rect x="99" y="8" width="2" height="14" fill="rgba(0,229,255,0.80)"/>
+          <circle cx="100" cy="7" r="3" fill="rgba(0,229,255,0.90)"/>
+          <circle cx="100" cy="7" r="7" fill="rgba(0,229,255,0.20)"/>
+          <circle cx="55" cy="22" r="2" fill="rgba(200,0,255,0.80)"/>
+          <circle cx="145" cy="25" r="2" fill="rgba(200,0,255,0.80)"/>
+        </svg>
+      </div>
+
+      <div class="rib-ring" style="inset:10%;"></div>
+      <div class="rib-ring" style="inset:22%;"></div>
+      <div class="dome-collar"></div>
+
+      <span class="dome-label">ECON · REACTOR</span>
 
       <div class="fuel-tank-wrap">
-        <!-- Vertical fuel tank SVG -->
         <svg class="fuel-tank-svg" width="32" height="96" viewBox="0 0 32 96" aria-hidden="true">
           <rect x="6" y="8" width="20" height="80" rx="4" fill="none" stroke="rgba(0,229,255,0.2)" stroke-width="1.5"/>
           <rect id="d2-tank-fill" x="7" y="88" width="18" rx="3" height="0" fill="#00e5ff"/>
@@ -237,7 +329,6 @@
         </div>
       </div>
 
-      <!-- AAVE Yield Spread readout (v5.2) -->
       <div id="d2-yield-spread" class="yield-spread-line">
         Borrow Cost: N/A <span class="yield-spread-sep"> | </span>
         Engine Yield: N/A <span class="yield-spread-sep"> | </span>
@@ -247,107 +338,60 @@
     </div>
   </section>
 
-  <!-- ── Dome 3: Mission Time ────────────────────────────────────────────── -->
-  <section class="dome-section" id="dome-3">
+  <!-- ══ SENTINEL: Strategy Sentinel ════════════════════════════════════════ -->
+  <section class="dome-section sentinel" id="dome-sentinel">
     <div class="dome-shell">
 
-      <div class="rib-ring" style="inset:10%;"></div>
-      <div class="rib-ring" style="inset:24%;border-color:rgba(0,229,255,0.04);"></div>
-      <div class="dome-collar"></div>
-
-      <span class="dome-label">MISSION TIME</span>
-
-      <!-- Concentric arc rings -->
-      <svg style="position:absolute;inset:6px;width:calc(100% - 12px);height:calc(100% - 12px);" viewBox="0 0 200 200" aria-hidden="true">
-        <!-- Core Engine arc (27min) — r=85 -->
-        <circle cx="100" cy="100" r="85" fill="none" stroke="rgba(0,229,255,0.06)" stroke-width="5"/>
-        <circle id="d3-arc-core" cx="100" cy="100" r="85" fill="none"
-          stroke="#00e5ff" stroke-width="5" stroke-linecap="round"
-          stroke-dasharray="534" stroke-dashoffset="534"
-          transform="rotate(-90 100 100)" data-r="85"
-          style="transition:stroke-dashoffset 1s linear, stroke 1s;"/>
-        <!-- Repay arc (240min) — r="72" -->
-        <circle cx="100" cy="100" r="72" fill="none" stroke="rgba(255,176,0,0.06)" stroke-width="4"/>
-        <circle id="d3-arc-repay" cx="100" cy="100" r="72" fill="none"
-          stroke="#ffb000" stroke-width="4" stroke-linecap="round"
-          stroke-dasharray="452" stroke-dashoffset="452"
-          transform="rotate(-90 100 100)" data-r="72"
-          style="transition:stroke-dashoffset 1s linear;"/>
-        <!-- Nurse arc (70min) — r="60" -->
-        <circle cx="100" cy="100" r="60" fill="none" stroke="rgba(0,255,136,0.06)" stroke-width="3"/>
-        <circle id="d3-arc-nurse" cx="100" cy="100" r="60" fill="none"
-          stroke="#00ff88" stroke-width="3" stroke-linecap="round"
-          stroke-dasharray="377" stroke-dashoffset="377"
-          transform="rotate(-90 100 100)" data-r="60"
-          style="transition:stroke-dashoffset 1s linear;"/>
-      </svg>
-
-      <div id="d3-countdown" class="countdown-primary">T-MINUS --:--</div>
-
-      <div class="arc-labels">
-        <span id="d3-next-repay" style="color:rgba(255,176,0,0.7)">REPAY: --</span>
-        <span id="d3-next-nurse" style="color:rgba(0,255,136,0.7)">NURSE: --</span>
+      <!-- City illustration -->
+      <div class="dome-city">
+        <svg viewBox="0 0 200 120" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <ellipse cx="100" cy="110" rx="90" ry="16" fill="rgba(100,80,20,0.25)"/>
+          <line x1="20" y1="108" x2="180" y2="108" stroke="rgba(200,160,0,0.14)" stroke-width="3"/>
+          <line x1="100" y1="80" x2="100" y2="115" stroke="rgba(200,160,0,0.14)" stroke-width="3"/>
+          <rect x="93" y="56" width="14" height="54" fill="rgba(180,130,20,0.65)" rx="2"/>
+          <rect x="80" y="50" width="40" height="10" fill="rgba(200,150,30,0.70)" rx="5"/>
+          <rect x="94" y="30" width="12" height="22" fill="rgba(160,120,20,0.65)" rx="2"/>
+          <rect x="99" y="20" width="2" height="12" fill="rgba(200,160,40,0.80)"/>
+          <path d="M92,20 Q100,12 108,20" fill="rgba(180,140,30,0.65)" stroke="rgba(220,170,50,0.50)" stroke-width="1"/>
+          <rect x="28" y="82" width="36" height="24" fill="rgba(140,100,15,0.55)" rx="2"/>
+          <line x1="28" y1="76" x2="64" y2="76" stroke="rgba(200,160,40,0.40)" stroke-width="2"/>
+          <line x1="28" y1="71" x2="64" y2="71" stroke="rgba(200,160,40,0.30)" stroke-width="2"/>
+          <line x1="28" y1="66" x2="64" y2="66" stroke="rgba(200,160,40,0.20)" stroke-width="2"/>
+          <rect x="136" y="75" width="40" height="31" fill="rgba(140,100,15,0.55)" rx="2"/>
+          <rect x="148" y="60" width="16" height="17" fill="rgba(160,120,20,0.60)" rx="2"/>
+          <circle cx="100" cy="50" r="3" fill="rgba(255,200,0,0.85)"/>
+          <circle cx="100" cy="50" r="8" fill="rgba(255,200,0,0.15)"/>
+          <circle cx="36" cy="80" r="2" fill="rgba(255,160,0,0.75)"/>
+          <circle cx="56" cy="80" r="2" fill="rgba(255,160,0,0.55)"/>
+          <circle cx="152" cy="72" r="2" fill="rgba(255,160,0,0.70)"/>
+        </svg>
       </div>
 
-      <div id="d3-milestone-0" class="milestone-row">$100 — <span class="milestone-pct">--</span>%</div>
-      <div id="d3-milestone-1" class="milestone-row">$1K — <span class="milestone-pct">--</span>%</div>
-      <div id="d3-milestone-2" class="milestone-row">$10K — <span class="milestone-pct">--</span>%</div>
-
-    </div>
-  </section>
-
-  <!-- ── Dome 4: Strategy Sentiment ─────────────────────────────────────── -->
-  <section class="dome-section" id="dome-4">
-    <div class="dome-shell">
-
       <div class="rib-ring" style="inset:10%;"></div>
-      <div class="rib-ring" style="inset:24%;border-color:rgba(0,229,255,0.04);"></div>
+      <div class="rib-ring" style="inset:24%;"></div>
       <div class="dome-collar"></div>
 
-      <span class="dome-label">STRATEGY SENTIMENT</span>
+      <span class="dome-label">SENTINEL · STRATEGY</span>
 
-      <!-- Sentiment wheel — live from /api/telemetry → growth_likelihood_pct -->
       <div class="sw-wrap">
         <svg class="sentiment-wheel" viewBox="0 0 200 200" aria-hidden="true">
-          <!-- Background track -->
-          <circle cx="100" cy="100" r="72" fill="none"
-            stroke="rgba(255,255,255,0.04)" stroke-width="12"/>
-
-          <!-- Bearish zone arc: 0–30% of circle (108° = 30%×360°)
-               circ=2π×72≈452.39  bearish_len=0.30×452.39=135.72 -->
+          <circle cx="100" cy="100" r="72" fill="none" stroke="rgba(255,255,255,0.04)" stroke-width="12"/>
           <circle cx="100" cy="100" r="72" fill="none"
             stroke="rgba(255,32,32,0.28)" stroke-width="12" stroke-linecap="butt"
-            stroke-dasharray="135.72 452.39"
-            transform="rotate(-90 100 100)"/>
-
-          <!-- Neutral zone arc: 30–70% (144° = 40%×360°)
-               neutral_len=0.40×452.39=180.96  dashoffset=−135.72 -->
+            stroke-dasharray="135.72 452.39" transform="rotate(-90 100 100)"/>
           <circle cx="100" cy="100" r="72" fill="none"
             stroke="rgba(255,176,0,0.28)" stroke-width="12" stroke-linecap="butt"
             stroke-dasharray="180.96 452.39" stroke-dashoffset="-135.72"
             transform="rotate(-90 100 100)"/>
-
-          <!-- Bullish zone arc: 70–100% (108°)
-               bullish_len=135.72  dashoffset=−(135.72+180.96)=−316.68 -->
           <circle cx="100" cy="100" r="72" fill="none"
             stroke="rgba(0,229,255,0.28)" stroke-width="12" stroke-linecap="butt"
             stroke-dasharray="135.72 452.39" stroke-dashoffset="-316.68"
             transform="rotate(-90 100 100)"/>
-
-          <!-- Active sweep arc — live, colored by zone
-               Formula: arc_len = (pct/100) × 452.39
-               JS sets stroke-dasharray and stroke color -->
           <circle id="d4-arc-active" cx="100" cy="100" r="72" fill="none"
             stroke="#ffb000" stroke-width="4" stroke-linecap="round"
-            stroke-dasharray="0 452.39"
-            transform="rotate(-90 100 100)"
+            stroke-dasharray="0 452.39" transform="rotate(-90 100 100)"
             style="transition:stroke-dasharray 0.5s ease,stroke 0.4s;"/>
-
-          <!-- Needle — JS sets transform="rotate(DEG 100 100)"
-               Formula: needle_deg = (pct / 100) × 360
-               0%→top  50%→right  100%→top (full circle) -->
-          <g id="d4-needle"
-             transform="rotate(180 100 100)"
+          <g id="d4-needle" transform="rotate(180 100 100)"
              style="transform-origin:100px 100px;transition:transform 0.55s cubic-bezier(.4,0,.2,1);">
             <line x1="100" y1="34" x2="100" y2="97"
               stroke="rgba(255,255,255,0.9)" stroke-width="2.5" stroke-linecap="round"/>
@@ -355,45 +399,30 @@
             <circle cx="100" cy="100" r="6" fill="rgba(255,255,255,0.08)"
               stroke="rgba(255,255,255,0.2)" stroke-width="1.5"/>
           </g>
-
-          <!-- Zone boundary tick marks (12 o'clock, 108°, 252°) -->
-          <line x1="100" y1="14" x2="100" y2="22"
-            stroke="rgba(255,255,255,0.15)" stroke-width="1.5"
-            transform="rotate(0 100 100)"/>
-          <line x1="100" y1="14" x2="100" y2="22"
-            stroke="rgba(255,255,255,0.15)" stroke-width="1.5"
-            transform="rotate(108 100 100)"/>
-          <line x1="100" y1="14" x2="100" y2="22"
-            stroke="rgba(255,255,255,0.15)" stroke-width="1.5"
-            transform="rotate(252 100 100)"/>
+          <line x1="100" y1="14" x2="100" y2="22" stroke="rgba(255,255,255,0.15)" stroke-width="1.5" transform="rotate(0 100 100)"/>
+          <line x1="100" y1="14" x2="100" y2="22" stroke="rgba(255,255,255,0.15)" stroke-width="1.5" transform="rotate(108 100 100)"/>
+          <line x1="100" y1="14" x2="100" y2="22" stroke="rgba(255,255,255,0.15)" stroke-width="1.5" transform="rotate(252 100 100)"/>
         </svg>
-
-        <!-- Center readout -->
         <div class="sw-center">
           <div id="d4-likelihood-pct" class="sw-pct">--%</div>
           <div id="d4-sentiment-label" class="sw-label neutral">NEUTRAL</div>
         </div>
       </div>
 
-      <!-- Sub-indicators derived from growth_likelihood_pct (live) -->
       <div class="sw-indicators">
         <div class="sw-indicator">
           <div class="sw-ind-header">
             <span class="sw-ind-name">GROWTH ENGINE</span>
             <span class="sw-ind-formula">g&nbsp;=&nbsp;x&nbsp;÷&nbsp;100</span>
           </div>
-          <div class="sw-ind-track">
-            <div id="d4-growth-bar" class="sw-ind-fill sw-growth" style="width:50%"></div>
-          </div>
+          <div class="sw-ind-track"><div id="d4-growth-bar" class="sw-ind-fill sw-growth" style="width:50%"></div></div>
         </div>
         <div class="sw-indicator">
           <div class="sw-ind-header">
             <span class="sw-ind-name">DEFENSIVE POSTURE</span>
             <span class="sw-ind-formula">d&nbsp;=&nbsp;(100&nbsp;−&nbsp;x)&nbsp;÷&nbsp;100</span>
           </div>
-          <div class="sw-ind-track">
-            <div id="d4-defensive-bar" class="sw-ind-fill sw-defensive" style="width:50%"></div>
-          </div>
+          <div class="sw-ind-track"><div id="d4-defensive-bar" class="sw-ind-fill sw-defensive" style="width:50%"></div></div>
         </div>
       </div>
 
@@ -402,43 +431,107 @@
     </div>
   </section>
 
-  <!-- ── Dome 5: Operator Bay ────────────────────────────────────────────── -->
-  <section class="dome-section" id="dome-5">
-    <div class="dome-shell">
+  <!-- ══ INTEL: Mission Arc + Cycle Intelligence ════════════════════════════ -->
+  <section class="dome-section intel" id="dome-intel">
 
-      <div class="rib-ring" style="inset:10%;"></div>
-      <div class="rib-ring" style="inset:24%;border-color:rgba(0,229,255,0.04);"></div>
-      <div class="dome-collar"></div>
+    <div class="intel-header">CYCLE INTELLIGENCE · MISSION CONTROL</div>
 
-      <span class="dome-label">OPERATOR BAY</span>
+    <div class="intel-body">
 
-      <!-- Semi-circle fuel gauge -->
-      <div class="fuel-gauge-wrap">
-        <svg width="140" height="80" viewBox="0 0 140 80" aria-hidden="true">
-          <!-- Track (semi-circle) -->
-          <path d="M10,70 A60,60 0 0,1 130,70" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="8" stroke-linecap="round"/>
-          <!-- Fill arc -->
-          <path id="d5-gauge-arc" d="M10,70 A60,60 0 0,1 130,70" fill="none"
-            stroke="#00ff88" stroke-width="8" stroke-linecap="round"
-            stroke-dasharray="188" stroke-dashoffset="188"
-            style="transition:stroke-dashoffset 0.4s ease-in-out, stroke 0.4s;"/>
-          <!-- Pointer -->
-          <g id="d5-gauge-pointer" transform="rotate(0 70 70)" style="transform-origin:70px 70px;transition:transform 0.4s ease-in-out;">
-            <line x1="70" y1="70" x2="70" y2="22" stroke="rgba(255,255,255,0.6)" stroke-width="2" stroke-linecap="round"/>
-            <circle cx="70" cy="70" r="4" fill="rgba(255,255,255,0.3)"/>
-          </g>
-          <!-- Labels -->
-          <text x="6" y="78" fill="rgba(255,255,255,0.3)" font-size="8" font-family="monospace">0</text>
-          <text x="67" y="18" fill="rgba(255,255,255,0.3)" font-size="8" font-family="monospace" text-anchor="middle">1×</text>
-          <text x="126" y="78" fill="rgba(255,255,255,0.3)" font-size="8" font-family="monospace">2×</text>
+      <!-- Mission arc row -->
+      <div class="intel-mission-row">
+        <svg class="intel-mission-arc" viewBox="0 0 200 200" aria-hidden="true">
+          <!-- Core Engine arc — r=85 -->
+          <circle cx="100" cy="100" r="85" fill="none" stroke="rgba(0,229,255,0.06)" stroke-width="5"/>
+          <circle id="d3-arc-core" cx="100" cy="100" r="85" fill="none"
+            stroke="#00e5ff" stroke-width="5" stroke-linecap="round"
+            stroke-dasharray="534" stroke-dashoffset="534"
+            transform="rotate(-90 100 100)" data-r="85"
+            style="transition:stroke-dashoffset 1s linear, stroke 1s;"/>
+          <!-- Repay arc — r=72 -->
+          <circle cx="100" cy="100" r="72" fill="none" stroke="rgba(255,176,0,0.06)" stroke-width="4"/>
+          <circle id="d3-arc-repay" cx="100" cy="100" r="72" fill="none"
+            stroke="#ffb000" stroke-width="4" stroke-linecap="round"
+            stroke-dasharray="452" stroke-dashoffset="452"
+            transform="rotate(-90 100 100)" data-r="72"
+            style="transition:stroke-dashoffset 1s linear;"/>
+          <!-- Nurse arc — r=60 -->
+          <circle cx="100" cy="100" r="60" fill="none" stroke="rgba(0,255,136,0.06)" stroke-width="3"/>
+          <circle id="d3-arc-nurse" cx="100" cy="100" r="60" fill="none"
+            stroke="#00ff88" stroke-width="3" stroke-linecap="round"
+            stroke-dasharray="377" stroke-dashoffset="377"
+            transform="rotate(-90 100 100)" data-r="60"
+            style="transition:stroke-dashoffset 1s linear;"/>
         </svg>
+
+        <div class="intel-mission-info">
+          <div id="d3-countdown" class="countdown-primary">T-MINUS --:--</div>
+          <div class="arc-labels">
+            <span id="d3-next-repay" style="color:rgba(255,176,0,0.7)">REPAY: --</span>
+            <span id="d3-next-nurse" style="color:rgba(0,255,136,0.7)">NURSE: --</span>
+          </div>
+        </div>
       </div>
 
-      <div id="d5-eth-balance" class="dome-primary" style="font-size:clamp(1.4rem,6vw,2rem)">-- ETH</div>
-      <div id="d5-gauge-status" class="gauge-status ok">FUEL: --</div>
-      <div id="d5-nurse-row" class="nurse-row">Last sweep: --</div>
-      <div class="nurse-row" style="color:rgba(224,240,255,0.2);font-size:0.55rem;margin-top:8px;">
-        Operator holds own Aave position — separate from user strategies
+      <!-- CI Cards -->
+      <div class="ci-grid">
+
+        <!-- Card 1: Equilibrium Status -->
+        <div class="ci-card">
+          <div class="ci-card-label">EQUILIBRIUM STATUS</div>
+          <div id="ci-eq-status" class="ci-status-badge ci-active">ACTIVE</div>
+          <div id="ci-eq-countdown" class="ci-countdown">T-MINUS --:--</div>
+          <div id="ci-eq-sub" class="ci-sub-line">-- cycles remaining at current pace</div>
+        </div>
+
+        <!-- Card 2: Breakout Calculator -->
+        <div class="ci-card">
+          <div class="ci-card-label">BREAKOUT CALCULATOR</div>
+          <div id="ci-breakout-amount" class="ci-breakout-primary">$--</div>
+          <div class="ci-sub-line">collateral needed to restart Capacity</div>
+          <div id="ci-breakout-pct" class="ci-breakout-pct">-- % market appreciation</div>
+        </div>
+
+        <!-- Card 3: Cycle PnL + Forecast -->
+        <div class="ci-card">
+          <div class="ci-card-label">CYCLE PnL · 24H</div>
+          <div class="ci-pnl-row">
+            <span class="ci-pnl-key">Gross generated</span>
+            <span id="ci-pnl-gross"  class="ci-pnl-val">$--</span>
+          </div>
+          <div class="ci-pnl-row">
+            <span class="ci-pnl-key">Repaid to debt</span>
+            <span id="ci-pnl-repaid" class="ci-pnl-val ci-repaid">$--</span>
+          </div>
+          <div class="ci-pnl-row">
+            <span class="ci-pnl-key">Net USDC kept</span>
+            <span id="ci-pnl-net"    class="ci-pnl-val ci-net">$--</span>
+          </div>
+          <div id="ci-last-cycle-line" class="ci-last-cycle-line"></div>
+          <hr class="ci-divider">
+          <div class="ci-forecast-label">NEXT 10 EVENTS FORECAST</div>
+          <div class="ci-pnl-row">
+            <span class="ci-pnl-key">Forecast gross</span>
+            <span id="ci-fc-gross"  class="ci-pnl-val">$--</span>
+          </div>
+          <div class="ci-pnl-row">
+            <span class="ci-pnl-key">Forecast repaid</span>
+            <span id="ci-fc-repaid" class="ci-pnl-val ci-repaid">$--</span>
+          </div>
+          <div class="ci-pnl-row">
+            <span class="ci-pnl-key">Forecast net</span>
+            <span id="ci-fc-net"    class="ci-pnl-val ci-net">$--</span>
+          </div>
+          <div id="ci-fc-time" class="ci-sub-line" style="text-align:right;margin-top:0.3rem"></div>
+        </div>
+
+      </div>
+
+      <!-- Milestones -->
+      <div class="intel-milestones">
+        <div id="d3-milestone-0" class="milestone-row">$100 — <span class="milestone-pct">--</span>%</div>
+        <div id="d3-milestone-1" class="milestone-row">$1K — <span class="milestone-pct">--</span>%</div>
+        <div id="d3-milestone-2" class="milestone-row">$10K — <span class="milestone-pct">--</span>%</div>
       </div>
 
     </div>
@@ -446,91 +539,48 @@
 
 </div><!-- end dome-scroll -->
 
-<!-- ── Cycle Intelligence Panel ────────────────────────────────────── -->
-<section id="cycle-intel-panel" class="ci-panel" style="display:none">
-  <div class="ci-header">CYCLE INTELLIGENCE</div>
-  <div class="ci-grid">
-
-    <!-- Card 1: Equilibrium Status -->
-    <div class="ci-card">
-      <div class="ci-card-label">EQUILIBRIUM STATUS</div>
-      <div id="ci-eq-status" class="ci-status-badge ci-active">ACTIVE</div>
-      <div id="ci-eq-countdown" class="ci-countdown">T-MINUS --:--</div>
-      <div id="ci-eq-sub" class="ci-sub-line">-- cycles remaining at current pace</div>
-    </div>
-
-    <!-- Card 2: Breakout Calculator -->
-    <div class="ci-card">
-      <div class="ci-card-label">BREAKOUT CALCULATOR</div>
-      <div id="ci-breakout-amount" class="ci-breakout-primary">$--</div>
-      <div class="ci-sub-line">collateral needed to restart Capacity</div>
-      <div id="ci-breakout-pct" class="ci-breakout-pct">-- % market appreciation</div>
-    </div>
-
-    <!-- Card 3: Cycle PnL + Forecast -->
-    <div class="ci-card">
-      <div class="ci-card-label">CYCLE PnL · 24H</div>
-      <div class="ci-pnl-row">
-        <span class="ci-pnl-key">Gross generated</span>
-        <span id="ci-pnl-gross"  class="ci-pnl-val">$--</span>
-      </div>
-      <div class="ci-pnl-row">
-        <span class="ci-pnl-key">Repaid to debt</span>
-        <span id="ci-pnl-repaid" class="ci-pnl-val ci-repaid">$--</span>
-      </div>
-      <div class="ci-pnl-row">
-        <span class="ci-pnl-key">Net USDC kept</span>
-        <span id="ci-pnl-net"    class="ci-pnl-val ci-net">$--</span>
-      </div>
-      <div id="ci-last-cycle-line" class="ci-last-cycle-line"></div>
-      <hr class="ci-divider">
-      <div class="ci-forecast-label">NEXT 10 EVENTS FORECAST</div>
-      <div class="ci-pnl-row">
-        <span class="ci-pnl-key">Forecast gross</span>
-        <span id="ci-fc-gross"  class="ci-pnl-val">$--</span>
-      </div>
-      <div class="ci-pnl-row">
-        <span class="ci-pnl-key">Forecast repaid</span>
-        <span id="ci-fc-repaid" class="ci-pnl-val ci-repaid">$--</span>
-      </div>
-      <div class="ci-pnl-row">
-        <span class="ci-pnl-key">Forecast net</span>
-        <span id="ci-fc-net"    class="ci-pnl-val ci-net">$--</span>
-      </div>
-      <div id="ci-fc-time" class="ci-sub-line" style="text-align:right;margin-top:0.3rem"></div>
-    </div>
-
-  </div>
-</section>
-
-<!-- Bottom navigation -->
+<!-- Bottom navigation dock -->
 <nav id="bottom-nav">
-  <button class="nav-btn active" id="nav-home">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-      <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
-      <polyline points="9,22 9,12 15,12 15,22"/>
-    </svg>
-    HOME
+  <button class="dome-nav-tile active" id="nav-ops" data-dome="dome-ops">
+    <span class="dome-nav-tile-metric" id="tile-ops-metric">HF --</span>
+    <span class="dome-nav-tile-label">OPS</span>
+    <span class="dome-nav-tile-dot" id="tile-ops-dot"></span>
   </button>
-  <button class="nav-btn" id="nav-domes">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-      <polygon points="12,2 22,8.5 22,15.5 12,22 2,15.5 2,8.5"/>
-    </svg>
-    DOMES
+  <button class="dome-nav-tile" id="nav-infra" data-dome="dome-infra">
+    <span class="dome-nav-tile-metric" id="tile-infra-metric">-- ETH</span>
+    <span class="dome-nav-tile-label">INFRA</span>
+    <span class="dome-nav-tile-dot" id="tile-infra-dot"></span>
   </button>
-  <button class="nav-btn" id="nav-activity">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-      <polyline points="22,12 18,12 15,21 9,3 6,12 2,12"/>
-    </svg>
-    ACTIVITY
+  <button class="dome-nav-tile" id="nav-econ" data-dome="dome-econ">
+    <span class="dome-nav-tile-metric" id="tile-econ-metric">$--</span>
+    <span class="dome-nav-tile-label">ECON</span>
+    <span class="dome-nav-tile-dot" id="tile-econ-dot"></span>
   </button>
-  <button class="nav-btn" id="nav-settings">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-      <circle cx="12" cy="12" r="3"/>
-      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-    </svg>
-    SETTINGS
+  <button class="dome-nav-tile" id="nav-sentinel" data-dome="dome-sentinel">
+    <span class="dome-nav-tile-metric" id="tile-sentinel-metric">--%</span>
+    <span class="dome-nav-tile-label">SENTINEL</span>
+    <span class="dome-nav-tile-dot" id="tile-sentinel-dot"></span>
   </button>
+  <button class="dome-nav-tile" id="nav-intel" data-dome="dome-intel">
+    <span class="dome-nav-tile-metric" id="tile-intel-metric">T---:--</span>
+    <span class="dome-nav-tile-label">INTEL</span>
+    <span class="dome-nav-tile-dot" id="tile-intel-dot"></span>
+  </button>
+  <div class="nav-util-group">
+    <button class="nav-util-btn" id="nav-activity">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <polyline points="22,12 18,12 15,21 9,3 6,12 2,12"/>
+      </svg>
+      LOG
+    </button>
+    <button class="nav-util-btn" id="nav-settings">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <circle cx="12" cy="12" r="3"/>
+        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+      </svg>
+      CFG
+    </button>
+  </div>
 </nav>
 
 <!-- ── Overlays ─────────────────────────────────────────────────────────── -->
@@ -574,11 +624,11 @@
     <span>Telemetry refresh: 30s</span>
   </div>
   <div class="settings-row" style="font-size:0.65rem;color:rgba(224,240,255,0.35);">
-    <span>Version: v5.2</span>
+    <span>Version: v6.0</span>
   </div>
 </div>
 
-<script src="/static/overseer.js?v=4"></script>
+<script src="/static/overseer.js?v=5"></script>
 <script nonce="{{ csp_nonce }}">
 {% raw %}
 /* ── Overseer Auth Bridge ────────────────────────────────────────────────
@@ -772,7 +822,6 @@ async function cmConnectWallet() {
 
   if (!eth) {
     if (isMobile) {
-      /* Mobile — show deep-link buttons, hide the connect button */
       if (btn) btn.style.display = 'none';
       if (mobileOpts) {
         var base = window.location.href;
@@ -783,7 +832,6 @@ async function cmConnectWallet() {
         mobileOpts.style.display = '';
       }
     } else {
-      /* Desktop — MetaMask not found */
       var statusEl = document.getElementById('cm-connect-status');
       if (statusEl) {
         statusEl.className = 'cm-status';
