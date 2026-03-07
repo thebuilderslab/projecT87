@@ -43,13 +43,18 @@ class EnhancedWeb3CSPMiddleware:
                     csp = (
                         f"default-src 'self'; "
                         f"script-src 'self' 'nonce-{nonce}' 'unsafe-eval' https://*.replit.dev https://cdnjs.cloudflare.com; "
-                        f"connect-src 'self' https://arb1.arbitrum.io https://arbitrum.publicnode.com "
+                        f"connect-src 'self' blob: "
+                        f"https://arb1.arbitrum.io https://arbitrum.publicnode.com "
                         f"https://virtual.arbitrum.us-east.rpc.tenderly.co "
                         f"https://arb-mainnet.g.alchemy.com https://*.g.alchemy.com "
+                        f"https://*.infura.io wss://*.infura.io "
+                        f"https://gas.api.metamask.io https://token.api.metamask.io "
+                        f"https://api.coinbase.com "
                         f"wss://relay.walletconnect.com https://verify.walletconnect.com "
                         f"https://explorer-api.walletconnect.com; "
                         f"style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
                         f"font-src 'self' https://fonts.gstatic.com; "
+                        f"img-src 'self' data: blob: https:; "
                         f"object-src 'none';"
                     )
                     new_headers = [h for h in message.get("headers", [])

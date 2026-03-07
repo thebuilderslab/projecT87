@@ -446,7 +446,7 @@ window.getProvider = function() {
       } else {
         resolve(null);
       }
-    }, 300);
+    }, 600);
   });
 };
 /* ──────────────────────────────────────────────────────────────────────── */
@@ -568,6 +568,21 @@ function cmShowActivatedPhase(wallet) {
   cmCheckDelegationStatus();
 }
 
+/* Request accounts with one automatic retry for MetaMask "Unexpected error" on Chromebook */
+async function requestAccounts(eth) {
+  try {
+    return await eth.request({ method: 'eth_requestAccounts' });
+  } catch(e1) {
+    var isRetryable = (e1.message && e1.message.toLowerCase().includes('unexpected')) || e1.code === -32603;
+    if (isRetryable) {
+      cmSetStatus('cm-connect-status', 'RETRYING CONNECTION...');
+      await new Promise(function(r) { setTimeout(r, 1000); });
+      return await eth.request({ method: 'eth_requestAccounts' });
+    }
+    throw e1;
+  }
+}
+
 /* Connect wallet button */
 async function cmConnectWallet() {
   var btn        = document.getElementById('cm-connect-btn');
@@ -610,7 +625,7 @@ async function cmConnectWallet() {
     btn.disabled = true;
     cmSetStatus('cm-connect-status', '');
 
-    var accounts = await eth.request({ method: 'eth_requestAccounts' });
+    var accounts = await requestAccounts(eth);
     var wallet = accounts[0];
 
     cmSetStatus('cm-connect-status', 'AUTHENTICATING...');
@@ -634,8 +649,9 @@ async function cmConnectWallet() {
     btn.textContent = '[ INITIALIZE CONNECTION ]';
     btn.disabled = false;
     var msg = e.message || 'Unknown error';
-    if (e.code === 4001) msg = 'Connection rejected.';
-    cmSetStatus('cm-connect-status', 'CONNECTION FAILED: ' + msg, 'err');
+    var code = (e.code !== undefined && e.code !== null) ? ' [code:' + e.code + ']' : '';
+    if (e.code === 4001) { msg = 'Connection rejected.'; code = ''; }
+    cmSetStatus('cm-connect-status', 'CONNECTION FAILED: ' + msg + code, 'err');
   }
 }
 
