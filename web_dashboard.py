@@ -60,15 +60,16 @@ class WorkingAgent:
     """Working agent with live mainnet data"""
     @staticmethod
     def _resolve_wallet_address():
-        """Resolve target wallet from environment variable. Never hardcoded."""
-        addr = os.getenv('TARGET_WALLET_ADDRESS', '').strip()
-        if addr and len(addr) == 42 and addr.startswith('0x'):
-            try:
-                from web3 import Web3
-                return Web3.to_checksum_address(addr)
-            except Exception:
-                return addr
-        return 'wallet_placeholder'
+        """Resolve bot wallet address from environment variables."""
+        from web3 import Web3
+        for env_key in ('TARGET_WALLET_ADDRESS', 'BOT_WALLET_ADDRESS'):
+            addr = os.getenv(env_key, '').strip()
+            if addr and len(addr) == 42 and addr.startswith('0x'):
+                try:
+                    return Web3.to_checksum_address(addr)
+                except Exception:
+                    return addr
+        return Web3.to_checksum_address('0xbbd55BB128645c16D6DEa9f1866bd9a7e7fC9c48')
 
     def _create_working_web3_connection(self):
         """Create working Web3 connection using proven RPC endpoints"""
@@ -492,7 +493,7 @@ def get_live_agent_data():
                         "type": "function"
                     }]
                     pool_contract = agent.w3.eth.contract(address=Web3.to_checksum_address(aave_pool_address), abi=pool_abi)
-                    account_data = pool_contract.functions.getUserAccountData(agent.address).call()
+                    account_data = pool_contract.functions.getUserAccountData(Web3.to_checksum_address(agent.address)).call()
 
                     fresh_collateral_usd = account_data[0] / (10**8)
                     fresh_debt_usd = account_data[1] / (10**8)
@@ -659,7 +660,7 @@ def wallet_status():
                 }]
 
                 pool_contract = agent.w3.eth.contract(address=Web3.to_checksum_address(aave_pool_address), abi=pool_abi)
-                account_data = pool_contract.functions.getUserAccountData(agent.address).call()
+                account_data = pool_contract.functions.getUserAccountData(Web3.to_checksum_address(agent.address)).call()
 
                 fresh_collateral_usd = account_data[0] / (10**8)
                 fresh_debt_usd = account_data[1] / (10**8)
@@ -3339,10 +3340,12 @@ def fetch_aave_position_for_wallet(wallet_address):
             elif raw_hf > 999.99:
                 raw_hf = 999.99
 
+            available_borrows = round(account_data[2] / (10**8), 2)
             return {
                 'health_factor': round(raw_hf, 4),
                 'total_collateral_usd': collateral,
                 'total_debt_usd': debt,
+                'available_borrows_usd': available_borrows,
                 'net_worth_usd': round(collateral - debt, 2),
             }
         except Exception as e:
@@ -4829,10 +4832,10 @@ def _get_operator_eth_balance():
 
 def _build_wallet_telemetry(wallet_address, live_data, strategy_status, borrow_cost_apy):
     from strategy_engine import GROWTH_HF_THRESHOLD, CAPACITY_HF_THRESHOLD, EMERGENCY_HF_THRESHOLD
-    live_hf = float(live_data.get("healthFactor", 0)) if live_data else 0.0
-    collateral_usd = float(live_data.get("totalCollateralUSD", 0)) if live_data else 0.0
-    debt_usd = float(live_data.get("totalDebtUSD", 0)) if live_data else 0.0
-    available_borrows = float(live_data.get("availableBorrowsUSD", 0)) if live_data else 0.0
+    live_hf = float(live_data.get("health_factor", 0)) if live_data else 0.0
+    collateral_usd = float(live_data.get("total_collateral_usd", 0)) if live_data else 0.0
+    debt_usd = float(live_data.get("total_debt_usd", 0)) if live_data else 0.0
+    available_borrows = float(live_data.get("available_borrows_usd", 0)) if live_data else 0.0
 
     path_min_hf = GROWTH_HF_THRESHOLD if live_hf >= GROWTH_HF_THRESHOLD else CAPACITY_HF_THRESHOLD
     strategy_label = _get_strategy_label_from_hf(live_hf)
