@@ -424,7 +424,7 @@ def run_autonomous_mainnet_agent():
         if SCHEDULER_AVAILABLE:
             log_agent_activity("🎯 Starting APScheduler — Project 87 v5.2 autonomous jobs...")
             scheduler = scheduler_bootstrap.start(agent)
-            log_agent_activity("✅ Scheduler started — core_engine(27min), nurse_sweep(70min), repay_deleverager(4h)")
+            log_agent_activity("✅ Scheduler started — core_engine(2min), nurse_sweep(5min), repay_deleverager(18min)")
 
             if AUTO_SUPPLY_AVAILABLE:
                 try:
