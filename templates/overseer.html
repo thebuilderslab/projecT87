@@ -6,7 +6,7 @@
   <title>PROJECT 87 — OVERSEER</title>
   <link rel="stylesheet" href="/static/overseer.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js" type="application/javascript"></script>
-  <script>
+  <script nonce="{{ csp_nonce }}">
   var CONTRACTS = {
     WBTC: '0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f',
     USDC: '0xaf88d065e77c8cC2239327C5EDb3A432268e5831',
@@ -414,8 +414,8 @@
 </div>
 
 <script src="/static/overseer.js"></script>
+<script nonce="{{ csp_nonce }}">
 {% raw %}
-<script>
 /* ── Overseer Auth Bridge ────────────────────────────────────────────────
    Wallet connect / Sequential Signer / eject logic for the connection modal.
    Calls P87.onWalletConnected() / P87.onWalletEjected() to drive overseer state.
@@ -971,7 +971,7 @@ document.addEventListener('DOMContentLoaded', function() {
   if (resignBtn)    resignBtn.addEventListener('click', cmResignDelegation);
   if (walletBadge)  walletBadge.addEventListener('click', function() { P87.showModal(); });
 });
-</script>
 {% endraw %}
+</script>
 </body>
 </html>
