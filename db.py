@@ -1853,6 +1853,190 @@ def get_hf_at_time(wallet_address, target_time):
         return dict(row) if row else None
 
 
+def get_equilibrium_metrics(wallet_address: str) -> dict:
+    CAPACITY_HF_FLOOR = 3.40
+    LT = 0.75
+    try:
+        wallet_address = wallet_address.lower().strip()
+        with get_conn() as conn:
+            cur = conn.cursor(cursor_factory=RealDictCursor)
+            cur.execute("""
+                SELECT health_factor, total_collateral_usd, total_debt_usd, recorded_at
+                FROM hf_ledger
+                WHERE wallet_address = %s
+                ORDER BY recorded_at DESC
+                LIMIT 30
+            """, (wallet_address,))
+            rows = [dict(r) for r in cur.fetchall()]
+            cur.close()
+
+        if not rows:
+            return {}
+
+        current_hf   = float(rows[0]['health_factor'])
+        current_col  = float(rows[0]['total_collateral_usd'])
+        current_debt = float(rows[0]['total_debt_usd'])
+
+        ordered = list(reversed(rows))
+        drops = []
+        for i in range(1, len(ordered)):
+            delta = float(ordered[i-1]['health_factor']) - float(ordered[i]['health_factor'])
+            if delta > 0:
+                drops.append(delta)
+
+        avg_drop = sum(drops) / len(drops) if drops else 0.012
+
+        status = "IN_EQUILIBRIUM" if current_hf <= CAPACITY_HF_FLOOR else "ACTIVE"
+
+        cycles_to_floor = None
+        time_to_floor_min = None
+        if avg_drop > 0 and status == "ACTIVE":
+            raw = (current_hf - CAPACITY_HF_FLOOR) / avg_drop
+            cycles_to_floor   = round(max(0.0, raw), 1)
+            time_to_floor_min = round(cycles_to_floor * 2)
+
+        col_gap_usd = round(max(0.0, current_debt * (CAPACITY_HF_FLOOR / LT) - current_col), 2)
+        pct_needed  = round(col_gap_usd / current_col * 100, 2) if current_col > 0 else None
+
+        return {
+            "status":                  status,
+            "current_hf":              round(current_hf, 4),
+            "current_col_usd":         round(current_col, 2),
+            "current_debt_usd":        round(current_debt, 2),
+            "avg_hf_drop_per_tick":    round(avg_drop, 6),
+            "cycles_to_floor":         cycles_to_floor,
+            "time_to_floor_min":       time_to_floor_min,
+            "col_gap_usd":             col_gap_usd,
+            "pct_appreciation_needed": pct_needed,
+            "data_points_used":        len(rows),
+        }
+    except Exception:
+        return {}
+
+
+def get_cycle_pnl_history(wallet_address: str) -> dict:
+    try:
+        wallet_address = wallet_address.lower().strip()
+        with get_conn() as conn:
+            cur = conn.cursor(cursor_factory=RealDictCursor)
+
+            cur.execute("""
+                SELECT COALESCE(SUM(amount_usd), 0) AS gross,
+                       COUNT(*)                      AS event_count
+                FROM income_events
+                WHERE wallet_address = %s
+                  AND event_type     = 'usdc_tax'
+                  AND created_at    >= NOW() - INTERVAL '24 hours'
+            """, (wallet_address,))
+            r24 = dict(cur.fetchone())
+
+            cur.execute("""
+                SELECT COALESCE(SUM(usdc_used), 0) AS repaid,
+                       COUNT(*)                    AS repay_count
+                FROM repay_events
+                WHERE wallet_address = %s
+                  AND executed_at   >= NOW() - INTERVAL '24 hours'
+            """, (wallet_address,))
+            p24 = dict(cur.fetchone())
+
+            gross_24h  = float(r24['gross'])
+            repaid_24h = float(p24['repaid'])
+            events_24h = int(r24['event_count'])
+            repays_24h = int(p24['repay_count'])
+
+            cur.execute("""
+                SELECT created_at
+                FROM income_events
+                WHERE wallet_address = %s AND event_type = 'usdc_tax'
+                ORDER BY created_at DESC
+                LIMIT 20
+            """, (wallet_address,))
+            recent_events = [dict(r) for r in cur.fetchall()]
+            cur.close()
+
+        avg_usdc_per_event = 1.20
+        avg_repay_fraction = 0.91
+        avg_min_per_event  = 6.0
+        last_cycle = None
+
+        if recent_events:
+            cycle_from = recent_events[-1]['created_at']
+            cycle_to   = recent_events[0]['created_at']
+            elapsed_sec = (cycle_to - cycle_from).total_seconds()
+            elapsed_min = round(elapsed_sec / 60, 1)
+            n_events    = len(recent_events)
+
+            with get_conn() as conn:
+                cur = conn.cursor(cursor_factory=RealDictCursor)
+                cur.execute("""
+                    SELECT COALESCE(SUM(amount_usd), 0) AS gross, COUNT(*) AS cnt
+                    FROM income_events
+                    WHERE wallet_address = %s
+                      AND event_type     = 'usdc_tax'
+                      AND created_at    >= %s AND created_at <= %s
+                """, (wallet_address, cycle_from, cycle_to))
+                ci = dict(cur.fetchone())
+
+                cur.execute("""
+                    SELECT COALESCE(SUM(usdc_used), 0) AS repaid, COUNT(*) AS cnt
+                    FROM repay_events
+                    WHERE wallet_address = %s
+                      AND executed_at   >= %s AND executed_at <= %s
+                """, (wallet_address, cycle_from, cycle_to))
+                cr = dict(cur.fetchone())
+                cur.close()
+
+            cyc_gross  = float(ci['gross'])
+            cyc_repaid = float(cr['repaid'])
+            cyc_events = int(ci['cnt'])
+            cyc_repays = int(cr['cnt'])
+
+            last_cycle = {
+                "from":        cycle_from.isoformat(),
+                "to":          cycle_to.isoformat(),
+                "gross_usdc":  round(cyc_gross, 4),
+                "repaid_usdc": round(cyc_repaid, 4),
+                "net_usdc":    round(cyc_gross - cyc_repaid, 4),
+                "events":      cyc_events,
+                "repays":      cyc_repays,
+                "elapsed_min": elapsed_min,
+            }
+
+            if cyc_gross > 0 and cyc_events > 0:
+                avg_usdc_per_event = cyc_gross / cyc_events
+                avg_repay_fraction = cyc_repaid / cyc_gross
+            elif gross_24h > 0 and events_24h > 0:
+                avg_usdc_per_event = gross_24h / events_24h
+                avg_repay_fraction = repaid_24h / gross_24h if gross_24h > 0 else 0.91
+
+            if n_events >= 2 and elapsed_min > 0:
+                avg_min_per_event = round(elapsed_min / (n_events - 1), 2)
+            elif events_24h >= 2:
+                avg_min_per_event = round(24 * 60 / events_24h, 2)
+
+        fc_gross  = round(10 * avg_usdc_per_event, 2)
+        fc_repaid = round(fc_gross * avg_repay_fraction, 2)
+        fc_net    = round(fc_gross - fc_repaid, 2)
+        fc_time   = round(10 * avg_min_per_event, 1)
+
+        return {
+            "gross_usdc_24h":    round(gross_24h, 4),
+            "repaid_usdc_24h":   round(repaid_24h, 4),
+            "net_usdc_24h":      round(gross_24h - repaid_24h, 4),
+            "events_24h":        events_24h,
+            "repays_24h":        repays_24h,
+            "last_cycle":        last_cycle,
+            "forecast_10_events": {
+                "gross":    fc_gross,
+                "repaid":   fc_repaid,
+                "net":      fc_net,
+                "time_min": fc_time,
+            },
+        }
+    except Exception:
+        return {}
+
+
 def update_shield_status_last(wallet_address, shield_status):
     wallet_address = wallet_address.lower().strip()
     with get_conn() as conn:

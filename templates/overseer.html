@@ -446,6 +446,63 @@
 
 </div><!-- end dome-scroll -->
 
+<!-- ── Cycle Intelligence Panel ────────────────────────────────────── -->
+<section id="cycle-intel-panel" class="ci-panel" style="display:none">
+  <div class="ci-header">CYCLE INTELLIGENCE</div>
+  <div class="ci-grid">
+
+    <!-- Card 1: Equilibrium Status -->
+    <div class="ci-card">
+      <div class="ci-card-label">EQUILIBRIUM STATUS</div>
+      <div id="ci-eq-status" class="ci-status-badge ci-active">ACTIVE</div>
+      <div id="ci-eq-countdown" class="ci-countdown">T-MINUS --:--</div>
+      <div id="ci-eq-sub" class="ci-sub-line">-- cycles remaining at current pace</div>
+    </div>
+
+    <!-- Card 2: Breakout Calculator -->
+    <div class="ci-card">
+      <div class="ci-card-label">BREAKOUT CALCULATOR</div>
+      <div id="ci-breakout-amount" class="ci-breakout-primary">$--</div>
+      <div class="ci-sub-line">collateral needed to restart Capacity</div>
+      <div id="ci-breakout-pct" class="ci-breakout-pct">-- % market appreciation</div>
+    </div>
+
+    <!-- Card 3: Cycle PnL + Forecast -->
+    <div class="ci-card">
+      <div class="ci-card-label">CYCLE PnL · 24H</div>
+      <div class="ci-pnl-row">
+        <span class="ci-pnl-key">Gross generated</span>
+        <span id="ci-pnl-gross"  class="ci-pnl-val">$--</span>
+      </div>
+      <div class="ci-pnl-row">
+        <span class="ci-pnl-key">Repaid to debt</span>
+        <span id="ci-pnl-repaid" class="ci-pnl-val ci-repaid">$--</span>
+      </div>
+      <div class="ci-pnl-row">
+        <span class="ci-pnl-key">Net USDC kept</span>
+        <span id="ci-pnl-net"    class="ci-pnl-val ci-net">$--</span>
+      </div>
+      <div id="ci-last-cycle-line" class="ci-last-cycle-line"></div>
+      <hr class="ci-divider">
+      <div class="ci-forecast-label">NEXT 10 EVENTS FORECAST</div>
+      <div class="ci-pnl-row">
+        <span class="ci-pnl-key">Forecast gross</span>
+        <span id="ci-fc-gross"  class="ci-pnl-val">$--</span>
+      </div>
+      <div class="ci-pnl-row">
+        <span class="ci-pnl-key">Forecast repaid</span>
+        <span id="ci-fc-repaid" class="ci-pnl-val ci-repaid">$--</span>
+      </div>
+      <div class="ci-pnl-row">
+        <span class="ci-pnl-key">Forecast net</span>
+        <span id="ci-fc-net"    class="ci-pnl-val ci-net">$--</span>
+      </div>
+      <div id="ci-fc-time" class="ci-sub-line" style="text-align:right;margin-top:0.3rem"></div>
+    </div>
+
+  </div>
+</section>
+
 <!-- Bottom navigation -->
 <nav id="bottom-nav">
   <button class="nav-btn active" id="nav-home">

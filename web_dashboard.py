@@ -4648,7 +4648,6 @@ _ACTIVITY_CACHE_TTL = 15
 
 SHIELD_WARNING_BAND = 0.30
 GAS_RESERVE_ETH = 1.0
-MAX_REPAY_PER_DAY_USDC = 3.60
 
 AAVE_POOL_ABI_RESERVE = [{
     "inputs": [{"name": "asset", "type": "address"}],
@@ -4889,7 +4888,7 @@ def _build_wallet_telemetry(wallet_address, live_data, strategy_status, borrow_c
         except Exception as e:
             logger.warning(f"[Telemetry] income query error: {e}")
 
-    repay_daily_cap_remaining = max(0.0, MAX_REPAY_PER_DAY_USDC - (database.get_repaid_last_24h(wallet_address) if DB_AVAILABLE else 0.0))
+    repay_daily_cap_remaining = None
 
     hf_improvement = {"running_sum": 0.0, "average": 0.0, "n_repays_used": 0, "time_horizon_hours": 1}
     if DB_AVAILABLE:
@@ -4943,7 +4942,7 @@ def _build_wallet_telemetry(wallet_address, live_data, strategy_status, borrow_c
         "total_usdc_repaid": round(total_usdc_repaid, 4),
         "repaid_last_8h": round(repaid_last_8h, 4),
         "hf_improvement_from_repays": hf_improvement,
-        "repay_daily_cap_remaining": round(repay_daily_cap_remaining, 4),
+        "repay_daily_cap_remaining": None,
         "borrow_cost_apy_pct": borrow_cost_apy,
         "engine_yield_apy_pct_7d": engine_yield,
         "net_economic_velocity_pct": nev,
@@ -5146,6 +5145,19 @@ def api_telemetry_history():
     except Exception as e:
         logger.error(f"[API] /api/telemetry/history error: {e}")
         return jsonify({"wallet": wallet_param, "hf_series": [], "collateral_series": []}), 200
+
+
+@app.route('/api/telemetry/cycle-pnl')
+def api_telemetry_cycle_pnl():
+    wallet_param = request.args.get('wallet', '').lower().strip()
+    if not wallet_param and DB_AVAILABLE:
+        wallets = database.get_active_managed_wallets()
+        wallet_param = wallets[0]['wallet_address'].lower() if wallets else ''
+    if not wallet_param:
+        return jsonify({"error": "no wallet"}), 400
+    eq  = database.get_equilibrium_metrics(wallet_param)  if DB_AVAILABLE else {}
+    pnl = database.get_cycle_pnl_history(wallet_param)   if DB_AVAILABLE else {}
+    return jsonify({"equilibrium": eq, "cycle_pnl": pnl})
 
 
 @app.route('/overseer')

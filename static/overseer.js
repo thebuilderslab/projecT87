@@ -219,6 +219,15 @@ const P87 = (() => {
     }
   }
 
+  // ── HF color helper ───────────────────────────────────────────────────────
+
+  function _hfClass(hf) {
+    if (hf == null || hf === 0) return '';
+    if (hf >= 3.40) return 'hf-safe';
+    if (hf >= 2.40) return 'hf-warning';
+    return 'hf-critical';
+  }
+
   // ── Data fetching ─────────────────────────────────────────────────────────
 
   function fetchTelemetry() {
@@ -240,6 +249,7 @@ const P87 = (() => {
           : null;
         _render(wallet, data);
         _checkStale(data.last_updated_at);
+        loadCyclePnl();
       })
       .catch(() => {
         _state.consecutiveFails++;
@@ -262,6 +272,79 @@ const P87 = (() => {
         _renderActivityFeed();
       })
       .catch(() => {});
+  }
+
+  // ── Cycle Intelligence ───────────────────────────────────────────────────
+
+  async function loadCyclePnl() {
+    if (!_state.overseerPowered) return;
+    const wallet = _state.selectedWallet;
+    if (!wallet) return;
+    try {
+      const res = await fetch(`/api/telemetry/cycle-pnl?wallet=${wallet}`);
+      if (!res.ok) return;
+      const d = await res.json();
+
+      document.getElementById('cycle-intel-panel').style.display = '';
+
+      const eq  = d.equilibrium  || {};
+      const pnl = d.cycle_pnl   || {};
+
+      // Equilibrium card
+      const isEq = eq.status === 'IN_EQUILIBRIUM';
+      const badge = document.getElementById('ci-eq-status');
+      if (badge) {
+        badge.textContent = isEq ? 'IN EQUILIBRIUM' : 'ACTIVE';
+        badge.className = 'ci-status-badge ' + (isEq ? 'ci-equilibrium' : 'ci-active');
+      }
+      if (!isEq && eq.time_to_floor_min != null) {
+        const h = Math.floor(eq.time_to_floor_min / 60);
+        const m = eq.time_to_floor_min % 60;
+        _setText('ci-eq-countdown', `T-MINUS ${h}:${String(m).padStart(2, '0')}`);
+        _setText('ci-eq-sub', `~${eq.cycles_to_floor} strategy cycles remaining`);
+      } else if (isEq) {
+        _setText('ci-eq-countdown', 'AT FLOOR');
+        _setText('ci-eq-sub', `Awaiting +${eq.pct_appreciation_needed != null ? eq.pct_appreciation_needed : '--'}% market appreciation`);
+      } else {
+        _setText('ci-eq-countdown', 'T-MINUS --:--');
+        _setText('ci-eq-sub', 'Calculating...');
+      }
+
+      // Breakout card
+      const gap = eq.col_gap_usd != null ? eq.col_gap_usd : 0;
+      if (gap > 0) {
+        _setText('ci-breakout-amount', `$${gap.toFixed(2)}`);
+        _setText('ci-breakout-pct', `${eq.pct_appreciation_needed != null ? eq.pct_appreciation_needed : '--'}% market appreciation equivalent`);
+      } else {
+        _setText('ci-breakout-amount', 'Not needed');
+        _setText('ci-breakout-pct', 'HF above Capacity floor');
+      }
+
+      // PnL 24h
+      _setText('ci-pnl-gross',  `$${(pnl.gross_usdc_24h  != null ? pnl.gross_usdc_24h  : 0).toFixed(2)}`);
+      _setText('ci-pnl-repaid', `$${(pnl.repaid_usdc_24h != null ? pnl.repaid_usdc_24h : 0).toFixed(2)}`);
+      _setText('ci-pnl-net',    `$${(pnl.net_usdc_24h    != null ? pnl.net_usdc_24h    : 0).toFixed(2)}`);
+
+      // Last cycle summary line
+      const lc = pnl.last_cycle;
+      if (lc) {
+        const netSign = lc.net_usdc >= 0 ? '+' : '';
+        _setText('ci-last-cycle-line',
+          `Last cycle: ${netSign}$${lc.net_usdc.toFixed(2)} USDC over ${lc.elapsed_min} min`);
+      } else {
+        _setText('ci-last-cycle-line', '');
+      }
+
+      // 10-event forecast
+      const fc = pnl.forecast_10_events || {};
+      _setText('ci-fc-gross',  `$${(fc.gross  != null ? fc.gross  : 0).toFixed(2)}`);
+      _setText('ci-fc-repaid', `$${(fc.repaid != null ? fc.repaid : 0).toFixed(2)}`);
+      _setText('ci-fc-net',    `$${(fc.net    != null ? fc.net    : 0).toFixed(2)}`);
+      _setText('ci-fc-time',    fc.time_min != null ? `~${fc.time_min} min at current pace` : '');
+
+    } catch (e) {
+      console.warn('[CycleIntel] fetch error', e);
+    }
   }
 
   // ── Stale data ────────────────────────────────────────────────────────────
@@ -413,17 +496,18 @@ const P87 = (() => {
       ring.style.strokeDasharray = circ;
       ring.style.strokeDashoffset = circ * (1 - pct);
 
-      const green_thresh = pathMin + 0.5;
-      if (hf >= green_thresh) {
-        ring.classList.remove('amber', 'red');
-      } else if (hf >= pathMin) {
-        ring.classList.remove('red');
-        ring.classList.add('amber');
-      } else {
-        ring.classList.remove('amber');
+      ring.classList.remove('amber', 'red', 'pulse-red');
+      if (hf < 2.40) {
         ring.classList.add('red');
         if (!_state.reduceMotion) ring.classList.add('pulse-red');
+      } else if (hf < 3.40) {
+        ring.classList.add('amber');
       }
+    }
+
+    const hfEl = document.getElementById('d1-hf');
+    if (hfEl) {
+      hfEl.className = _hfClass(hf);
     }
 
     const shell = document.getElementById('d1-shell');
@@ -974,6 +1058,8 @@ const P87 = (() => {
     localStorage.removeItem('p87_selected_wallet');
     _setPowered(false);
     _showModal();
+    const ciPanel = document.getElementById('cycle-intel-panel');
+    if (ciPanel) ciPanel.style.display = 'none';
   }
 
   /**

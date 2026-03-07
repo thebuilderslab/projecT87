@@ -1059,3 +1059,97 @@ body::after {
   display: block;
   box-sizing: border-box;
 }
+
+/* ── HF color bands ─────────────────────────────────────────────────────── */
+.hf-safe     { color: #00e5c8; }
+.hf-warning  { color: #ffb000; }
+.hf-critical { color: #ff2020; }
+
+/* ── Cycle Intelligence Panel ───────────────────────────────────────────── */
+.ci-panel {
+  max-width: 960px;
+  margin: 1.5rem auto 1rem;
+  padding: 1.25rem 1.5rem;
+  background: rgba(10, 20, 30, 0.72);
+  border: 1px solid rgba(0, 229, 255, 0.12);
+  border-radius: 12px;
+}
+.ci-header {
+  font-size: 0.72rem;
+  letter-spacing: 0.18em;
+  color: rgba(0, 229, 255, 0.6);
+  text-transform: uppercase;
+  margin-bottom: 0.85rem;
+}
+.ci-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1rem;
+}
+.ci-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 8px;
+  padding: 1rem;
+}
+.ci-card-label {
+  font-size: 0.62rem;
+  letter-spacing: 0.12em;
+  color: rgba(255, 255, 255, 0.35);
+  text-transform: uppercase;
+  margin-bottom: 0.6rem;
+}
+.ci-status-badge {
+  font-size: 0.9rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  margin-bottom: 0.4rem;
+}
+.ci-status-badge.ci-active      { color: #00e5c8; }
+.ci-status-badge.ci-equilibrium { color: #ffb000; animation: pulse-amber 1.8s infinite; }
+@keyframes pulse-amber {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.45; }
+}
+.ci-countdown {
+  font-size: 1.7rem;
+  font-weight: 600;
+  color: #fff;
+  margin: 0.3rem 0;
+}
+.ci-sub-line   { font-size: 0.72rem; color: rgba(255, 255, 255, 0.4); }
+.ci-breakout-primary { font-size: 1.5rem; font-weight: 600; color: #ffb000; margin: 0.3rem 0; }
+.ci-breakout-pct     { font-size: 0.8rem; color: rgba(255, 176, 0, 0.65); }
+.ci-pnl-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.25rem 0;
+  font-size: 0.82rem;
+}
+.ci-pnl-key { color: rgba(255, 255, 255, 0.45); }
+.ci-pnl-val { color: rgba(255, 255, 255, 0.9); font-variant-numeric: tabular-nums; }
+.ci-pnl-val.ci-repaid { color: #ffb000; }
+.ci-pnl-val.ci-net    { color: #00e5c8; font-weight: 600; }
+.ci-divider {
+  border: none;
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+  margin: 0.65rem 0;
+}
+.ci-forecast-label {
+  font-size: 0.60rem;
+  letter-spacing: 0.10em;
+  color: rgba(0, 229, 255, 0.4);
+  text-transform: uppercase;
+  margin-bottom: 0.4rem;
+}
+.ci-last-cycle-line {
+  font-size: 0.78rem;
+  color: rgba(0, 229, 255, 0.7);
+  margin: 0.4rem 0 0.2rem;
+  font-style: italic;
+}
+@media (max-width: 600px) {
+  .ci-panel { padding: 1rem; }
+  .ci-grid  { grid-template-columns: 1fr; }
+}
