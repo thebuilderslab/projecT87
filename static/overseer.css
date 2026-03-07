@@ -79,6 +79,17 @@ body::after {
 }
 
 #strip-hf { color: var(--neon-cyan); font-weight: bold; }
+.strip-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  margin-right: 4px;
+  vertical-align: middle;
+}
+.strip-dot.ok       { background: #00ff88; }
+.strip-dot.warning  { background: #ffb000; }
+.strip-dot.critical { background: #ff2020; }
 #strip-eth { color: var(--neon-green); }
 #strip-countdown { color: var(--amber); }
 #strip-status { color: var(--text-dim); margin-left: auto; }

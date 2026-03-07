@@ -4832,10 +4832,10 @@ def _get_operator_eth_balance():
 
 def _build_wallet_telemetry(wallet_address, live_data, strategy_status, borrow_cost_apy):
     from strategy_engine import GROWTH_HF_THRESHOLD, CAPACITY_HF_THRESHOLD, EMERGENCY_HF_THRESHOLD
-    live_hf        = float(live_data.get("health_factor", 0))       if live_data else None
-    collateral_usd = float(live_data.get("total_collateral_usd", 0)) if live_data else None
-    debt_usd       = float(live_data.get("total_debt_usd", 0))        if live_data else None
-    available_borrows = float(live_data.get("available_borrows_usd", 0)) if live_data else None
+    live_hf            = float(live_data.get("health_factor", 0))       if live_data else None
+    total_collateral_usd = float(live_data.get("total_collateral_usd", 0)) if live_data else None
+    total_debt_usd       = float(live_data.get("total_debt_usd", 0))        if live_data else None
+    available_borrows    = float(live_data.get("available_borrows_usd", 0)) if live_data else None
 
     hf_for_logic = live_hf if live_hf is not None else 0.0
     path_min_hf = GROWTH_HF_THRESHOLD if hf_for_logic >= GROWTH_HF_THRESHOLD else CAPACITY_HF_THRESHOLD
@@ -4928,8 +4928,8 @@ def _build_wallet_telemetry(wallet_address, live_data, strategy_status, borrow_c
     return {
         "wallet_address": wallet_address,
         "health_factor": round(live_hf, 4) if live_hf is not None else None,
-        "collateral_usd": round(collateral_usd, 2) if collateral_usd is not None else None,
-        "debt_usd": round(debt_usd, 2) if debt_usd is not None else None,
+        "total_collateral_usd": round(total_collateral_usd, 2) if total_collateral_usd is not None else None,
+        "total_debt_usd": round(total_debt_usd, 2) if total_debt_usd is not None else None,
         "available_borrows_usd": round(available_borrows, 2) if available_borrows is not None else None,
         "path_min_hf": path_min_hf,
         "strategy_label": strategy_label,

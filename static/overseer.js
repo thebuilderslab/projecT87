@@ -307,8 +307,8 @@ const P87 = (() => {
     const pathMin = w.path_min_hf || 3.40;
 
     _setText('d1-hf', hfNull ? '--' : hf.toFixed(2));
-    const collNull = w.collateral_usd == null || w.debt_usd == null;
-    _setText('d1-collateral', collNull ? '$-- / $--' : `$${_fmt(w.collateral_usd)} / $${_fmt(w.debt_usd)}`);
+    const collNull = w.total_collateral_usd == null || w.total_debt_usd == null;
+    _setText('d1-collateral', collNull ? '$-- / $--' : `$${_fmt(w.total_collateral_usd)} / $${_fmt(w.total_debt_usd)}`);
     _setStrategyBadge('d1-strategy-badge', w.strategy_label || 'IDLE');
     _setShieldIndicator('d1-shield', shield);
 
@@ -566,6 +566,11 @@ const P87 = (() => {
     const hfNull = wallet.health_factor == null;
     const hf = hfNull ? 0 : wallet.health_factor;
     _setText('strip-hf', hfNull ? 'HF: --' : `HF: ${hf.toFixed(2)}`);
+    const dotEl = document.getElementById('strip-hf-dot');
+    if (dotEl) {
+      const dotCls = hfNull ? 'critical' : hf >= 3.60 ? 'ok' : hf >= 3.20 ? 'warning' : 'critical';
+      dotEl.className = `strip-dot ${dotCls}`;
+    }
     const ethBal = data.operator_wallet ? data.operator_wallet.eth_balance || 0 : 0;
     const ethStatus = ethBal >= 1.0 ? 'ETH: OK' : ethBal >= 0.5 ? 'ETH: LOW' : 'ETH: CRIT';
     _setText('strip-eth', ethStatus);
@@ -584,7 +589,7 @@ const P87 = (() => {
 
   function _renderHexOverlay(wallet, data) {
     const domes = [
-      { name: 'SAFETY', metric: `HF ${(wallet.health_factor || 0).toFixed(2)}`, status: _hfStatus(wallet.health_factor || 0, wallet.path_min_hf || 3.40), dome: 0 },
+      { name: 'SAFETY', metric: wallet.health_factor != null ? `HF ${wallet.health_factor.toFixed(2)}` : 'HF --', status: _hfStatus(wallet.health_factor || 0, wallet.path_min_hf || 3.40), dome: 0 },
       { name: 'REACTOR', metric: `$${(wallet.user_usdc_balance || 0).toFixed(2)}`, status: 'ok', dome: 1 },
       { name: 'MISSION', metric: 'T-TIME', status: 'ok', dome: 2 },
       { name: 'SENTIMENT', metric: `${(wallet.growth_likelihood_pct || 50).toFixed(0)}%`, status: _sentimentStatus(wallet.growth_likelihood_pct || 50), dome: 3 },
