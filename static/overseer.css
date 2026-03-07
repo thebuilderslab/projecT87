@@ -194,58 +194,106 @@ body::after {
 /* Powered-down tiles */
 .overseer--awaiting-wallet #dome-overview-row { opacity: 0.25; pointer-events: none; }
 
-/* ── Dome expansion overlay ── */
-.dome-expand-overlay {
-  display: none;
-  position: fixed;
-  top: calc(var(--strip-height) + var(--overview-height));
-  bottom: var(--nav-height);
-  left: 0;
-  right: 0;
-  z-index: 50;
-  background: rgba(5,4,10,0.96);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
-  flex-direction: column;
-  align-items: center;
-  overflow-y: auto;
-  animation: slideUp 0.25s ease;
+/* dome-scroll reveal animation when expanded */
+#dome-scroll:not(.dome-scroll--hidden) {
+  animation: slideUp 0.22s ease;
 }
 
-.dome-expand-overlay.open { display: flex; }
-
 @keyframes slideUp {
-  from { opacity: 0; transform: translateY(24px); }
+  from { opacity: 0; transform: translateY(20px); }
   to   { opacity: 1; transform: translateY(0); }
 }
 
-.dome-expand-close {
-  align-self: flex-end;
-  margin: 12px 16px 0;
-  background: none;
-  border: 1px solid var(--glass-border);
-  color: var(--text-dim);
-  font-family: var(--font-mono);
-  font-size: 0.65rem;
-  letter-spacing: 0.1em;
-  padding: 5px 12px;
-  cursor: pointer;
-  border-radius: 3px;
-  transition: color 0.2s, border-color 0.2s;
+/* ── Sentiment Wheel (Dome 4) ── */
+.sw-wrap {
+  position: relative;
+  width: min(155px, 52vw);
+  height: min(155px, 52vw);
+  margin: 2px auto 0;
+  flex-shrink: 0;
 }
-.dome-expand-close:hover { color: var(--neon-cyan); border-color: var(--neon-cyan); }
 
-.dome-expand-content {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.sentiment-wheel {
   width: 100%;
-  padding: 16px;
+  height: 100%;
 }
 
-/* When expand overlay is open, the scroll container is hidden */
-#dome-expand-overlay.open ~ #dome-scroll { display: none; }
+.sw-center {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  pointer-events: none;
+}
+
+.sw-pct {
+  font-size: clamp(1.4rem, 6vw, 2rem);
+  font-weight: bold;
+  color: var(--neon-cyan);
+  text-shadow: 0 0 10px rgba(0,229,255,0.4);
+  line-height: 1;
+}
+
+.sw-label {
+  font-size: 0.58rem;
+  letter-spacing: 0.13em;
+  color: var(--text-dim);
+  margin-top: 4px;
+  text-transform: uppercase;
+}
+.sw-label.bullish { color: var(--neon-cyan); text-shadow: 0 0 6px rgba(0,229,255,0.5); }
+.sw-label.neutral { color: var(--amber); }
+.sw-label.bearish { color: var(--red-critical); }
+.sw-calibrating  { color: rgba(224,240,255,0.3); font-style: italic; letter-spacing:0; }
+
+/* Sub-indicators */
+.sw-indicators {
+  width: 100%;
+  padding: 0 12px;
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.sw-indicator { display: flex; flex-direction: column; gap: 3px; }
+
+.sw-ind-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.sw-ind-name {
+  font-size: 0.54rem;
+  letter-spacing: 0.1em;
+  color: var(--text-dim);
+  text-transform: uppercase;
+}
+
+.sw-ind-formula {
+  font-size: 0.50rem;
+  color: rgba(224,240,255,0.28);
+  font-style: italic;
+}
+
+.sw-ind-track {
+  width: 100%;
+  height: 4px;
+  background: rgba(255,255,255,0.06);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.sw-ind-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.5s ease, opacity 0.4s;
+}
+
+.sw-growth    { background: var(--neon-cyan); }
+.sw-defensive { background: var(--red-critical); }
 
 /* ── Scroll container ── */
 #dome-scroll {

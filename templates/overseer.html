@@ -161,12 +161,6 @@
   </div>
 </div>
 
-<!-- ── Dome expansion overlay ────────────────────────────────────────── -->
-<div id="dome-expand-overlay" class="dome-expand-overlay">
-  <button id="dome-expand-close" class="dome-expand-close" aria-label="Close">&#x2715; COLLAPSE</button>
-  <div id="dome-expand-content" class="dome-expand-content"></div>
-</div>
-
 <!-- 5-dome scroll container (detail view, hidden initially) -->
 <div id="dome-scroll" class="dome-scroll--hidden">
 
@@ -312,15 +306,94 @@
 
       <span class="dome-label">STRATEGY SENTIMENT</span>
 
-      <div id="d4-likelihood-pct" class="dome-primary" style="font-size:clamp(1.8rem,8vw,2.6rem)">--%</div>
-      <div id="d4-sentiment-label" class="dome-secondary">NEUTRAL</div>
+      <!-- Sentiment wheel — live from /api/telemetry → growth_likelihood_pct -->
+      <div class="sw-wrap">
+        <svg class="sentiment-wheel" viewBox="0 0 200 200" aria-hidden="true">
+          <!-- Background track -->
+          <circle cx="100" cy="100" r="72" fill="none"
+            stroke="rgba(255,255,255,0.04)" stroke-width="12"/>
 
-      <div class="likelihood-bar-wrap">
-        <div class="likelihood-label">
-          <span>BEARISH</span><span>BULLISH</span>
+          <!-- Bearish zone arc: 0–30% of circle (108° = 30%×360°)
+               circ=2π×72≈452.39  bearish_len=0.30×452.39=135.72 -->
+          <circle cx="100" cy="100" r="72" fill="none"
+            stroke="rgba(255,32,32,0.28)" stroke-width="12" stroke-linecap="butt"
+            stroke-dasharray="135.72 452.39"
+            transform="rotate(-90 100 100)"/>
+
+          <!-- Neutral zone arc: 30–70% (144° = 40%×360°)
+               neutral_len=0.40×452.39=180.96  dashoffset=−135.72 -->
+          <circle cx="100" cy="100" r="72" fill="none"
+            stroke="rgba(255,176,0,0.28)" stroke-width="12" stroke-linecap="butt"
+            stroke-dasharray="180.96 452.39" stroke-dashoffset="-135.72"
+            transform="rotate(-90 100 100)"/>
+
+          <!-- Bullish zone arc: 70–100% (108°)
+               bullish_len=135.72  dashoffset=−(135.72+180.96)=−316.68 -->
+          <circle cx="100" cy="100" r="72" fill="none"
+            stroke="rgba(0,229,255,0.28)" stroke-width="12" stroke-linecap="butt"
+            stroke-dasharray="135.72 452.39" stroke-dashoffset="-316.68"
+            transform="rotate(-90 100 100)"/>
+
+          <!-- Active sweep arc — live, colored by zone
+               Formula: arc_len = (pct/100) × 452.39
+               JS sets stroke-dasharray and stroke color -->
+          <circle id="d4-arc-active" cx="100" cy="100" r="72" fill="none"
+            stroke="#ffb000" stroke-width="4" stroke-linecap="round"
+            stroke-dasharray="0 452.39"
+            transform="rotate(-90 100 100)"
+            style="transition:stroke-dasharray 0.5s ease,stroke 0.4s;"/>
+
+          <!-- Needle — JS sets transform="rotate(DEG 100 100)"
+               Formula: needle_deg = (pct / 100) × 360
+               0%→top  50%→right  100%→top (full circle) -->
+          <g id="d4-needle"
+             transform="rotate(180 100 100)"
+             style="transform-origin:100px 100px;transition:transform 0.55s cubic-bezier(.4,0,.2,1);">
+            <line x1="100" y1="34" x2="100" y2="97"
+              stroke="rgba(255,255,255,0.9)" stroke-width="2.5" stroke-linecap="round"/>
+            <circle cx="100" cy="34" r="5" fill="white" opacity="0.92"/>
+            <circle cx="100" cy="100" r="6" fill="rgba(255,255,255,0.08)"
+              stroke="rgba(255,255,255,0.2)" stroke-width="1.5"/>
+          </g>
+
+          <!-- Zone boundary tick marks (12 o'clock, 108°, 252°) -->
+          <line x1="100" y1="14" x2="100" y2="22"
+            stroke="rgba(255,255,255,0.15)" stroke-width="1.5"
+            transform="rotate(0 100 100)"/>
+          <line x1="100" y1="14" x2="100" y2="22"
+            stroke="rgba(255,255,255,0.15)" stroke-width="1.5"
+            transform="rotate(108 100 100)"/>
+          <line x1="100" y1="14" x2="100" y2="22"
+            stroke="rgba(255,255,255,0.15)" stroke-width="1.5"
+            transform="rotate(252 100 100)"/>
+        </svg>
+
+        <!-- Center readout -->
+        <div class="sw-center">
+          <div id="d4-likelihood-pct" class="sw-pct">--%</div>
+          <div id="d4-sentiment-label" class="sw-label neutral">NEUTRAL</div>
         </div>
-        <div class="likelihood-track">
-          <div id="d4-likelihood-fill" class="likelihood-fill neutral" style="width:50%"></div>
+      </div>
+
+      <!-- Sub-indicators derived from growth_likelihood_pct (live) -->
+      <div class="sw-indicators">
+        <div class="sw-indicator">
+          <div class="sw-ind-header">
+            <span class="sw-ind-name">GROWTH ENGINE</span>
+            <span class="sw-ind-formula">g&nbsp;=&nbsp;x&nbsp;÷&nbsp;100</span>
+          </div>
+          <div class="sw-ind-track">
+            <div id="d4-growth-bar" class="sw-ind-fill sw-growth" style="width:50%"></div>
+          </div>
+        </div>
+        <div class="sw-indicator">
+          <div class="sw-ind-header">
+            <span class="sw-ind-name">DEFENSIVE POSTURE</span>
+            <span class="sw-ind-formula">d&nbsp;=&nbsp;(100&nbsp;−&nbsp;x)&nbsp;÷&nbsp;100</span>
+          </div>
+          <div class="sw-ind-track">
+            <div id="d4-defensive-bar" class="sw-ind-fill sw-defensive" style="width:50%"></div>
+          </div>
         </div>
       </div>
 

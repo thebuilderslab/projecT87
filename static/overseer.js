@@ -340,22 +340,16 @@ const P87 = (() => {
   let _expandedDome = null;
 
   function _openDomeExpand(domeId) {
-    const overlay  = document.getElementById('dome-expand-overlay');
-    const content  = document.getElementById('dome-expand-content');
-    const scroll   = document.getElementById('dome-scroll');
-    const section  = document.getElementById(domeId);
-    if (!overlay || !content || !section) return;
+    const scroll  = document.getElementById('dome-scroll');
+    const section = document.getElementById(domeId);
+    if (!scroll || !section) return;
 
-    // Clone the dome section's inner shell into the overlay
-    const shell = section.querySelector('.dome-shell');
-    if (!shell) return;
-    content.innerHTML = '';
-    content.appendChild(shell.cloneNode(true));
-
-    // Show overlay, hide scroll
-    overlay.classList.add('open');
-    if (scroll) scroll.classList.add('dome-scroll--hidden');
+    // Reveal the real dome-scroll — all render functions keep their live IDs intact
+    scroll.classList.remove('dome-scroll--hidden');
     _expandedDome = domeId;
+
+    // Scroll to the target dome section with no jump visible
+    section.scrollIntoView({ behavior: 'instant', block: 'start' });
 
     // Mark active tile
     document.querySelectorAll('.dome-tile').forEach(t => {
@@ -364,10 +358,8 @@ const P87 = (() => {
   }
 
   function _closeDomeExpand() {
-    const overlay = document.getElementById('dome-expand-overlay');
-    const scroll  = document.getElementById('dome-scroll');
-    if (overlay) overlay.classList.remove('open');
-    if (scroll) scroll.classList.remove('dome-scroll--hidden');
+    const scroll = document.getElementById('dome-scroll');
+    if (scroll) scroll.classList.add('dome-scroll--hidden');
     document.querySelectorAll('.dome-tile').forEach(t => t.classList.remove('active'));
     _expandedDome = null;
   }
@@ -380,17 +372,9 @@ const P87 = (() => {
           _closeDomeExpand();
         } else {
           _openDomeExpand(domeId);
-          // After open, re-run the render so the cloned nodes get live data
-          if (_state.telemetry) {
-            const wallet = _state.telemetry.wallets ? _state.telemetry.wallets[0] : {};
-            _render(wallet, _state.telemetry);
-          }
         }
       });
     });
-
-    const closeBtn = document.getElementById('dome-expand-close');
-    if (closeBtn) closeBtn.addEventListener('click', _closeDomeExpand);
   }
 
   // ── Main render ───────────────────────────────────────────────────────────
@@ -576,19 +560,64 @@ const P87 = (() => {
   }
 
   // ── Dome 4: Strategy Sentiment ────────────────────────────────────────────
+  // All values derived live from /api/telemetry → growth_likelihood_pct
 
   function _renderDome4(w) {
-    const pct = w.growth_likelihood_pct || 50;
-    const label = pct >= 70 ? 'BULLISH' : pct >= 30 ? 'NEUTRAL' : 'BEARISH';
-    const cls = pct >= 70 ? 'bullish' : pct >= 30 ? 'neutral' : 'bearish';
+    const rawPct = w.growth_likelihood_pct;
+    const isCalibrating = (rawPct == null);
+    const pct = isCalibrating ? 50 : Number(rawPct);
 
-    _setText('d4-likelihood-pct', `${pct.toFixed(0)}%`);
-    _setText('d4-sentiment-label', label);
+    // ── Zone classification ──────────────────────────────────────────────────
+    const label     = pct >= 70 ? 'BULLISH' : pct >= 30 ? 'NEUTRAL' : 'BEARISH';
+    const zoneCls   = pct >= 70 ? 'bullish' : pct >= 30 ? 'neutral'  : 'bearish';
+    const zoneColor = pct >= 70 ? '#00e5ff' : pct >= 30 ? '#ffb000'  : '#ff2020';
 
-    const fill = document.getElementById('d4-likelihood-fill');
-    if (fill) {
-      fill.style.width = `${pct}%`;
-      fill.className = `likelihood-fill ${cls}`;
+    // ── Center readout ───────────────────────────────────────────────────────
+    _setText('d4-likelihood-pct', isCalibrating ? '--' : `${pct.toFixed(0)}%`);
+    const labelEl = document.getElementById('d4-sentiment-label');
+    if (labelEl) {
+      labelEl.textContent = isCalibrating ? 'CALIBRATING...' : label;
+      labelEl.className   = isCalibrating ? 'sw-label sw-calibrating' : `sw-label ${zoneCls}`;
+    }
+
+    // ── Needle rotation ──────────────────────────────────────────────────────
+    // Formula: needle_deg = (pct / 100) × 360
+    //   0% → 0° (12 o'clock / start of BEARISH zone)
+    //  30% → 108° (boundary BEARISH→NEUTRAL)
+    //  70% → 252° (boundary NEUTRAL→BULLISH)
+    // 100% → 360° (back to 12 o'clock, full sweep)
+    const needle_deg = (pct / 100) * 360;
+    const needle = document.getElementById('d4-needle');
+    if (needle) needle.style.transform = `rotate(${needle_deg}deg)`;
+
+    // ── Active sweep arc (shows filled portion from 0% to current pct) ───────
+    // Formula: arc_len = (pct / 100) × circumference
+    //   circumference = 2π × r = 2π × 72 ≈ 452.39
+    const CIRC    = 452.39;
+    const arc_len = (pct / 100) * CIRC;
+    const arcActive = document.getElementById('d4-arc-active');
+    if (arcActive) {
+      arcActive.setAttribute('stroke-dasharray', `${arc_len.toFixed(2)} ${CIRC}`);
+      arcActive.style.stroke = zoneColor;
+    }
+
+    // ── Growth / Defensive sub-indicators ───────────────────────────────────
+    // Growth engine intensity:   g = x / 100   (increases toward BULLISH)
+    // Defensive posture:         d = (100 − x) / 100   (increases toward BEARISH)
+    // Both displayed with formula labels in the DOM (see sw-ind-formula elements)
+    const growth_intensity    = pct / 100;           // 0.0 → 1.0
+    const defensive_intensity = (100 - pct) / 100;   // 1.0 → 0.0
+
+    const gBar = document.getElementById('d4-growth-bar');
+    if (gBar) {
+      gBar.style.width   = `${pct}%`;
+      gBar.style.opacity = (0.30 + growth_intensity * 0.70).toFixed(2);
+    }
+
+    const dBar = document.getElementById('d4-defensive-bar');
+    if (dBar) {
+      dBar.style.width   = `${(100 - pct)}%`;
+      dBar.style.opacity = (0.30 + defensive_intensity * 0.70).toFixed(2);
     }
 
     _renderActivityFeed();
