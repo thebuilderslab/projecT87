@@ -99,9 +99,12 @@ class AaveHealthMonitor:
                 health_factor = live_data.get('health_factor')
                 collateral = live_data.get('total_collateral_usdc')
                 
-                if health_factor is None or health_factor <= 0 or health_factor > 1000:
+                if health_factor is None or health_factor <= 0:
                     print(f"⚠️ Invalid health factor: {health_factor}")
                     raise Exception(f"Invalid health factor: {health_factor}")
+                if health_factor > 1e30:
+                    health_factor = float('inf')
+                    live_data['health_factor'] = health_factor
 
                 if collateral is None or collateral < 0:
                     print(f"⚠️ Invalid collateral amount: {collateral}")
@@ -378,8 +381,9 @@ class AaveHealthMonitor:
             print(f"   ❌ One or more values are None: HF={health_factor}, Col={collateral}, Debt={debt}, Avail={available}")
             return False
 
-        # Health factor should be reasonable
-        if health_factor < 0.1 or health_factor > 100:
+        # Health factor should be reasonable (inf is valid — means no active debt)
+        import math
+        if health_factor < 0.1 or (not math.isinf(health_factor) and health_factor > 100):
             print(f"   ❌ Unrealistic health factor: {health_factor}")
             return False
 
