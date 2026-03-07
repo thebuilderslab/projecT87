@@ -300,13 +300,15 @@ const P87 = (() => {
   // ── Dome 1: Safety ────────────────────────────────────────────────────────
 
   function _renderDome1(w) {
-    const hf = w.health_factor || 0;
+    const hfNull = w.health_factor == null;
+    const hf = hfNull ? 0 : w.health_factor;
     const shield = w.shield_status || 'DOWN';
     const strategy = (w.strategy_label || 'IDLE').toLowerCase();
     const pathMin = w.path_min_hf || 3.40;
 
-    _setText('d1-hf', hf.toFixed(2));
-    _setText('d1-collateral', `$${_fmt(w.collateral_usd)} / $${_fmt(w.debt_usd)}`);
+    _setText('d1-hf', hfNull ? '--' : hf.toFixed(2));
+    const collNull = w.collateral_usd == null || w.debt_usd == null;
+    _setText('d1-collateral', collNull ? '$-- / $--' : `$${_fmt(w.collateral_usd)} / $${_fmt(w.debt_usd)}`);
     _setStrategyBadge('d1-strategy-badge', w.strategy_label || 'IDLE');
     _setShieldIndicator('d1-shield', shield);
 
@@ -561,8 +563,9 @@ const P87 = (() => {
   // ── Top strip ─────────────────────────────────────────────────────────────
 
   function _renderStripHeader(wallet, data) {
-    const hf = wallet.health_factor || 0;
-    _setText('strip-hf', `HF: ${hf.toFixed(2)}`);
+    const hfNull = wallet.health_factor == null;
+    const hf = hfNull ? 0 : wallet.health_factor;
+    _setText('strip-hf', hfNull ? 'HF: --' : `HF: ${hf.toFixed(2)}`);
     const ethBal = data.operator_wallet ? data.operator_wallet.eth_balance || 0 : 0;
     const ethStatus = ethBal >= 1.0 ? 'ETH: OK' : ethBal >= 0.5 ? 'ETH: LOW' : 'ETH: CRIT';
     _setText('strip-eth', ethStatus);

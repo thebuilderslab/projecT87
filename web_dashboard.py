@@ -4832,14 +4832,15 @@ def _get_operator_eth_balance():
 
 def _build_wallet_telemetry(wallet_address, live_data, strategy_status, borrow_cost_apy):
     from strategy_engine import GROWTH_HF_THRESHOLD, CAPACITY_HF_THRESHOLD, EMERGENCY_HF_THRESHOLD
-    live_hf = float(live_data.get("health_factor", 0)) if live_data else 0.0
-    collateral_usd = float(live_data.get("total_collateral_usd", 0)) if live_data else 0.0
-    debt_usd = float(live_data.get("total_debt_usd", 0)) if live_data else 0.0
-    available_borrows = float(live_data.get("available_borrows_usd", 0)) if live_data else 0.0
+    live_hf        = float(live_data.get("health_factor", 0))       if live_data else None
+    collateral_usd = float(live_data.get("total_collateral_usd", 0)) if live_data else None
+    debt_usd       = float(live_data.get("total_debt_usd", 0))        if live_data else None
+    available_borrows = float(live_data.get("available_borrows_usd", 0)) if live_data else None
 
-    path_min_hf = GROWTH_HF_THRESHOLD if live_hf >= GROWTH_HF_THRESHOLD else CAPACITY_HF_THRESHOLD
-    strategy_label = _get_strategy_label_from_hf(live_hf)
-    shield_status = _compute_shield_status_live(live_hf, path_min_hf, strategy_status)
+    hf_for_logic = live_hf if live_hf is not None else 0.0
+    path_min_hf = GROWTH_HF_THRESHOLD if hf_for_logic >= GROWTH_HF_THRESHOLD else CAPACITY_HF_THRESHOLD
+    strategy_label = _get_strategy_label_from_hf(hf_for_logic)
+    shield_status = _compute_shield_status_live(hf_for_logic, path_min_hf, strategy_status)
 
     user_usdc = _get_user_usdc_balance_rpc(wallet_address)
     engine_yield = _compute_engine_yield_apy(wallet_address)
@@ -4926,10 +4927,10 @@ def _build_wallet_telemetry(wallet_address, live_data, strategy_status, borrow_c
 
     return {
         "wallet_address": wallet_address,
-        "health_factor": round(live_hf, 4),
-        "collateral_usd": round(collateral_usd, 2),
-        "debt_usd": round(debt_usd, 2),
-        "available_borrows_usd": round(available_borrows, 2),
+        "health_factor": round(live_hf, 4) if live_hf is not None else None,
+        "collateral_usd": round(collateral_usd, 2) if collateral_usd is not None else None,
+        "debt_usd": round(debt_usd, 2) if debt_usd is not None else None,
+        "available_borrows_usd": round(available_borrows, 2) if available_borrows is not None else None,
         "path_min_hf": path_min_hf,
         "strategy_label": strategy_label,
         "shield_status": shield_status,
@@ -4983,7 +4984,8 @@ def api_telemetry():
         strategy_status = mw.get('strategy_status', 'disabled')
         try:
             live_data = fetch_aave_position_for_wallet(waddr)
-        except Exception:
+        except Exception as e:
+            logger.warning(f"[Telemetry] Aave fetch failed for {waddr[:10]}: {e}")
             live_data = None
 
         wallet_payload = _build_wallet_telemetry(waddr, live_data, strategy_status, borrow_cost_apy)
