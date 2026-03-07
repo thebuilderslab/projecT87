@@ -132,8 +132,43 @@
   </div>
 </div>
 
-<!-- 5-dome scroll container -->
-<div id="dome-scroll">
+<!-- ── Dormant Overview Row (compact dome tiles) ──────────────────────── -->
+<div id="dome-overview-row">
+  <div class="dome-tile" id="tile-1" data-dome="dome-1" title="Safety Dome">
+    <span class="tile-label">SAFETY</span>
+    <span class="tile-metric" id="tile-1-metric">HF --</span>
+    <span class="tile-dot" id="tile-1-dot"></span>
+  </div>
+  <div class="dome-tile" id="tile-2" data-dome="dome-2" title="USDC Reactor">
+    <span class="tile-label">REACTOR</span>
+    <span class="tile-metric" id="tile-2-metric">$--</span>
+    <span class="tile-dot" id="tile-2-dot"></span>
+  </div>
+  <div class="dome-tile" id="tile-3" data-dome="dome-3" title="Mission Time">
+    <span class="tile-label">MISSION</span>
+    <span class="tile-metric" id="tile-3-metric">T---:--</span>
+    <span class="tile-dot" id="tile-3-dot"></span>
+  </div>
+  <div class="dome-tile" id="tile-4" data-dome="dome-4" title="Strategy Sentiment">
+    <span class="tile-label">SENTIMENT</span>
+    <span class="tile-metric" id="tile-4-metric">--%</span>
+    <span class="tile-dot" id="tile-4-dot"></span>
+  </div>
+  <div class="dome-tile" id="tile-5" data-dome="dome-5" title="Operator Bay">
+    <span class="tile-label">OPERATOR</span>
+    <span class="tile-metric" id="tile-5-metric">-- ETH</span>
+    <span class="tile-dot" id="tile-5-dot"></span>
+  </div>
+</div>
+
+<!-- ── Dome expansion overlay ────────────────────────────────────────── -->
+<div id="dome-expand-overlay" class="dome-expand-overlay">
+  <button id="dome-expand-close" class="dome-expand-close" aria-label="Close">&#x2715; COLLAPSE</button>
+  <div id="dome-expand-content" class="dome-expand-content"></div>
+</div>
+
+<!-- 5-dome scroll container (detail view, hidden initially) -->
+<div id="dome-scroll" class="dome-scroll--hidden">
 
   <!-- ── Dome 1: Safety ────────────────────────────────────────────────── -->
   <section class="dome-section" id="dome-1">

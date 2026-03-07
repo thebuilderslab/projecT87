@@ -32,6 +32,7 @@ const P87 = (() => {
     _bindNav();
     _bindSettings();
     _bindWalletSelector();
+    _bindDomeTiles();
 
     if (_state.authToken && _state.currentWallet) {
       // Already authenticated — check if wallet is activated before powering on
@@ -284,6 +285,114 @@ const P87 = (() => {
     _setText('d3-countdown', 'T-MINUS --:--');
   }
 
+  // ── Dome overview tiles ───────────────────────────────────────────────────
+
+  function _renderOverviewTiles(wallet, fullData) {
+    const hfNull = wallet.health_factor == null;
+    const hf = hfNull ? null : wallet.health_factor;
+    const pathMin = wallet.path_min_hf || 3.40;
+
+    // Tile 1: Safety
+    const t1m = document.getElementById('tile-1-metric');
+    const t1d = document.getElementById('tile-1-dot');
+    if (t1m) t1m.textContent = hfNull ? 'HF --' : `HF ${hf.toFixed(2)}`;
+    if (t1d) t1d.className = 'tile-dot ' + (hfNull ? 'critical' : hf >= pathMin + 0.5 ? 'ok' : hf >= pathMin ? 'warning' : 'critical');
+
+    // Tile 2: Reactor
+    const t2m = document.getElementById('tile-2-metric');
+    const t2d = document.getElementById('tile-2-dot');
+    const usdc = wallet.user_usdc_balance || 0;
+    if (t2m) t2m.textContent = `$${usdc.toFixed(2)}`;
+    if (t2d) t2d.className = 'tile-dot ' + (usdc > 50 ? 'ok' : usdc > 10 ? 'warning' : 'critical');
+
+    // Tile 3: Mission
+    const t3m = document.getElementById('tile-3-metric');
+    const t3d = document.getElementById('tile-3-dot');
+    if (t3m) {
+      const remaining = _state.nextCheckTs ? Math.max(0, Math.floor((_state.nextCheckTs - Date.now()) / 1000)) : null;
+      if (remaining !== null) {
+        const mm = String(Math.floor(remaining / 60)).padStart(2, '0');
+        const ss = String(remaining % 60).padStart(2, '0');
+        t3m.textContent = `T-${mm}:${ss}`;
+      } else {
+        t3m.textContent = 'T---:--';
+      }
+    }
+    if (t3d) t3d.className = 'tile-dot ok';
+
+    // Tile 4: Sentiment
+    const t4m = document.getElementById('tile-4-metric');
+    const t4d = document.getElementById('tile-4-dot');
+    const pct = wallet.growth_likelihood_pct || 50;
+    if (t4m) t4m.textContent = `${pct.toFixed(0)}%`;
+    if (t4d) t4d.className = 'tile-dot ' + (pct >= 70 ? 'ok' : pct >= 30 ? 'warning' : 'critical');
+
+    // Tile 5: Operator
+    const t5m = document.getElementById('tile-5-metric');
+    const t5d = document.getElementById('tile-5-dot');
+    const eth = (fullData.operator_wallet || {}).eth_balance || 0;
+    if (t5m) t5m.textContent = `${eth.toFixed(3)} ETH`;
+    if (t5d) { const gr = (fullData.operator_wallet || {}).gas_reserve_eth || 1.0; t5d.className = 'tile-dot ' + (eth >= gr ? 'ok' : eth >= gr * 0.5 ? 'warning' : 'critical'); }
+  }
+
+  // ── Dome expand/collapse overlay ─────────────────────────────────────────
+
+  let _expandedDome = null;
+
+  function _openDomeExpand(domeId) {
+    const overlay  = document.getElementById('dome-expand-overlay');
+    const content  = document.getElementById('dome-expand-content');
+    const scroll   = document.getElementById('dome-scroll');
+    const section  = document.getElementById(domeId);
+    if (!overlay || !content || !section) return;
+
+    // Clone the dome section's inner shell into the overlay
+    const shell = section.querySelector('.dome-shell');
+    if (!shell) return;
+    content.innerHTML = '';
+    content.appendChild(shell.cloneNode(true));
+
+    // Show overlay, hide scroll
+    overlay.classList.add('open');
+    if (scroll) scroll.classList.add('dome-scroll--hidden');
+    _expandedDome = domeId;
+
+    // Mark active tile
+    document.querySelectorAll('.dome-tile').forEach(t => {
+      t.classList.toggle('active', t.dataset.dome === domeId);
+    });
+  }
+
+  function _closeDomeExpand() {
+    const overlay = document.getElementById('dome-expand-overlay');
+    const scroll  = document.getElementById('dome-scroll');
+    if (overlay) overlay.classList.remove('open');
+    if (scroll) scroll.classList.remove('dome-scroll--hidden');
+    document.querySelectorAll('.dome-tile').forEach(t => t.classList.remove('active'));
+    _expandedDome = null;
+  }
+
+  function _bindDomeTiles() {
+    document.querySelectorAll('.dome-tile').forEach(tile => {
+      tile.addEventListener('click', () => {
+        const domeId = tile.dataset.dome;
+        if (_expandedDome === domeId) {
+          _closeDomeExpand();
+        } else {
+          _openDomeExpand(domeId);
+          // After open, re-run the render so the cloned nodes get live data
+          if (_state.telemetry) {
+            const wallet = _state.telemetry.wallets ? _state.telemetry.wallets[0] : {};
+            _render(wallet, _state.telemetry);
+          }
+        }
+      });
+    });
+
+    const closeBtn = document.getElementById('dome-expand-close');
+    if (closeBtn) closeBtn.addEventListener('click', _closeDomeExpand);
+  }
+
   // ── Main render ───────────────────────────────────────────────────────────
 
   function _render(wallet, fullData) {
@@ -293,6 +402,7 @@ const P87 = (() => {
     _renderDome4(wallet);
     _renderDome5(fullData);
     _renderStripHeader(wallet, fullData);
+    _renderOverviewTiles(wallet, fullData);
     _renderHexOverlay(wallet, fullData);
     _checkBeamTriggers(wallet, fullData, _state.activities);
   }
@@ -558,6 +668,8 @@ const P87 = (() => {
     const countStr = `T-MINUS ${mm}:${ss}`;
     _setText('d3-countdown', countStr);
     _setText('strip-countdown', `T-${mm}:${ss}`);
+    const t3m = document.getElementById('tile-3-metric');
+    if (t3m) t3m.textContent = `T-${mm}:${ss}`;
   }
 
   // ── Top strip ─────────────────────────────────────────────────────────────

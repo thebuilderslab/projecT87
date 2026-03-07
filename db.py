@@ -139,7 +139,9 @@ def init_db():
         CREATE INDEX IF NOT EXISTS idx_filings_status ON filings(status);
         CREATE INDEX IF NOT EXISTS idx_user_towns_user ON user_towns(user_id);
         CREATE INDEX IF NOT EXISTS idx_lead_notes_filing ON lead_notes(filing_id);
+        ALTER TABLE income_events ADD COLUMN IF NOT EXISTS wallet_address VARCHAR(42);
         CREATE INDEX IF NOT EXISTS idx_income_events_user ON income_events(user_id);
+        CREATE INDEX IF NOT EXISTS idx_income_events_wallet ON income_events(wallet_address);
         CREATE INDEX IF NOT EXISTS idx_defi_positions_user ON defi_positions(user_id);
 
         CREATE TABLE IF NOT EXISTS managed_wallets (

@@ -4991,6 +4991,15 @@ def api_telemetry():
             live_data = None
 
         wallet_payload = _build_wallet_telemetry(waddr, live_data, strategy_status, borrow_cost_apy)
+        logger.info(
+            f"[Telemetry] {waddr[:10]} HF={wallet_payload.get('health_factor')} "
+            f"collateral=${wallet_payload.get('total_collateral_usd')} "
+            f"debt=${wallet_payload.get('total_debt_usd')} "
+            f"shield={wallet_payload.get('shield_status')} "
+            f"strategy={wallet_payload.get('strategy_label')} "
+            f"usdc=${wallet_payload.get('user_usdc_balance')} "
+            f"sentiment={wallet_payload.get('growth_likelihood_pct')}%"
+        )
         wallet_data.append(wallet_payload)
 
     operator_eth = _get_operator_eth_balance()
