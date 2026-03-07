@@ -507,7 +507,9 @@ const P87 = (() => {
 
     const hfEl = document.getElementById('d1-hf');
     if (hfEl) {
-      hfEl.className = _hfClass(hf);
+      hfEl.classList.remove('hf-safe', 'hf-warning', 'hf-critical');
+      const hfCls = _hfClass(hf);
+      if (hfCls) hfEl.classList.add(hfCls);
     }
 
     const shell = document.getElementById('d1-shell');
@@ -791,6 +793,12 @@ const P87 = (() => {
     const hfNull = wallet.health_factor == null;
     const hf = hfNull ? 0 : wallet.health_factor;
     _setText('strip-hf', hfNull ? 'HF: --' : `HF: ${hf.toFixed(2)}`);
+    const stripHfEl = document.getElementById('strip-hf');
+    if (stripHfEl) {
+      stripHfEl.classList.remove('hf-safe', 'hf-warning', 'hf-critical');
+      const shfCls = _hfClass(hf);
+      if (shfCls && !hfNull) stripHfEl.classList.add(shfCls);
+    }
     const dotEl = document.getElementById('strip-hf-dot');
     if (dotEl) {
       const dotCls = hfNull ? 'critical' : hf >= 3.60 ? 'ok' : hf >= 3.20 ? 'warning' : 'critical';

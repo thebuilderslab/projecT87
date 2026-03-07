@@ -1061,9 +1061,9 @@ body::after {
 }
 
 /* ── HF color bands ─────────────────────────────────────────────────────── */
-.hf-safe     { color: #00e5c8; }
-.hf-warning  { color: #ffb000; }
-.hf-critical { color: #ff2020; }
+.hf-safe, #strip-hf.hf-safe, #d1-hf.hf-safe         { color: #00e5c8 !important; }
+.hf-warning, #strip-hf.hf-warning, #d1-hf.hf-warning { color: #ffb000 !important; }
+.hf-critical, #strip-hf.hf-critical, #d1-hf.hf-critical { color: #ff2020 !important; }
 
 /* ── Cycle Intelligence Panel ───────────────────────────────────────────── */
 .ci-panel {
