@@ -826,9 +826,11 @@ const P87 = (() => {
   function onWalletEjected() {
     _state.authToken = null;
     _state.currentWallet = null;
+    _state.selectedWallet = null;
     _state.overseerPowered = false;
     localStorage.removeItem('authToken');
     localStorage.removeItem('walletAddress');
+    localStorage.removeItem('p87_selected_wallet');
     _setPowered(false);
     _showModal();
   }

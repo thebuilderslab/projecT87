@@ -4398,6 +4398,8 @@ def hard_reset_wallet_endpoint():
     import glob as _glob
     import shutil
     result = database.hard_reset_wallet(user_id, wallet)
+    database.set_bot_enabled(user_id, False)
+    result.setdefault("reset", {})["bot_enabled"] = False
 
     cooldown_dir = os.path.join(os.path.dirname(__file__), "execution_state")
     if os.path.isdir(cooldown_dir):

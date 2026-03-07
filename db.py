@@ -1524,6 +1524,18 @@ def hard_reset_wallet(user_id: int, wallet_address: str) -> dict:
             cur.execute("DELETE FROM managed_wallets WHERE user_id = %s AND wallet_address = %s", (user_id, wallet_address))
             results["deleted"]["managed_wallets"] = cur.rowcount
 
+            cur.execute("DELETE FROM repay_events WHERE wallet_address = %s", (wallet_address,))
+            results["deleted"]["repay_events"] = cur.rowcount
+
+            cur.execute("DELETE FROM growth_likelihood WHERE wallet_address = %s", (wallet_address,))
+            results["deleted"]["growth_likelihood"] = cur.rowcount
+
+            cur.execute("DELETE FROM distribution_state WHERE wallet_address = %s", (wallet_address,))
+            results["deleted"]["distribution_state"] = cur.rowcount
+
+            cur.execute("DELETE FROM usdc_milestones")
+            results["deleted"]["usdc_milestones"] = cur.rowcount
+
             cur.close()
             results["success"] = True
         except Exception as e:
