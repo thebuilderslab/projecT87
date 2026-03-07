@@ -421,9 +421,10 @@
    Calls P87.onWalletConnected() / P87.onWalletEjected() to drive overseer state.
 ──────────────────────────────────────────────────────────────────────────── */
 
-/* ── EIP-6963 Multi-Wallet Discovery ──────────────────────────────────────
-   Collects provider announcements from any EIP-6963 wallet (MetaMask, Coinbase,
-   Rabby, Brave, etc.) and exposes getProvider() for all connect/activation flows.
+/* ── MetaMask-Only Provider ────────────────────────────────────────────────
+   PROJECT 87 exclusively supports MetaMask on desktop.
+   EIP-6963 announcements are collected, but only io.metamask is accepted.
+   All other wallets (Keplr, Coinbase, Rabby, Brave, etc.) are ignored.
 ──────────────────────────────────────────────────────────────────────────── */
 window._p87Providers = [];
 window.addEventListener('eip6963:announceProvider', function(evt) {
@@ -439,13 +440,20 @@ window.dispatchEvent(new Event('eip6963:requestProvider'));
 window.getProvider = function() {
   return new Promise(function(resolve) {
     setTimeout(function() {
-      if (window._p87Providers.length > 0) {
-        resolve(window._p87Providers[0].provider);
-      } else if (window.ethereum) {
+      /* 1. Prefer EIP-6963 MetaMask announcement (rdns = io.metamask) */
+      var mmEntry = window._p87Providers.find(function(p) {
+        return p.info && p.info.rdns === 'io.metamask';
+      });
+      if (mmEntry) { resolve(mmEntry.provider); return; }
+
+      /* 2. Fall back to window.ethereum only if it is MetaMask */
+      if (window.ethereum && window.ethereum.isMetaMask) {
         resolve(window.ethereum);
-      } else {
-        resolve(null);
+        return;
       }
+
+      /* 3. No MetaMask found — return null (other wallets are not supported) */
+      resolve(null);
     }, 600);
   });
 };
@@ -573,10 +581,16 @@ async function requestAccounts(eth) {
   try {
     return await eth.request({ method: 'eth_requestAccounts' });
   } catch(e1) {
-    var isRetryable = (e1.message && e1.message.toLowerCase().includes('unexpected')) || e1.code === -32603;
+    var isPending  = e1.code === -32002;
+    var isRetryable = isPending ||
+                      e1.code === -32603 ||
+                      (e1.message && e1.message.toLowerCase().includes('unexpected'));
     if (isRetryable) {
-      cmSetStatus('cm-connect-status', 'RETRYING CONNECTION...');
-      await new Promise(function(r) { setTimeout(r, 1000); });
+      var hint = isPending
+        ? 'CHECK METAMASK FOR A PENDING POPUP, THEN RETRYING...'
+        : 'RETRYING CONNECTION...';
+      cmSetStatus('cm-connect-status', hint);
+      await new Promise(function(r) { setTimeout(r, isPending ? 3000 : 1000); });
       return await eth.request({ method: 'eth_requestAccounts' });
     }
     throw e1;
@@ -604,15 +618,15 @@ async function cmConnectWallet() {
         mobileOpts.style.display = '';
       }
     } else {
-      /* Desktop — render install prompt inline */
+      /* Desktop — MetaMask not found */
       var statusEl = document.getElementById('cm-connect-status');
       if (statusEl) {
         statusEl.className = 'cm-status';
         statusEl.innerHTML =
           '<div class="cm-install-prompt">' +
-            '<div class="cm-install-heading">NO WEB3 WALLET DETECTED</div>' +
+            '<div class="cm-install-heading">METAMASK NOT DETECTED</div>' +
+            '<div style="font-size:0.78rem;color:#7ecfff;margin-bottom:10px">PROJECT 87 requires MetaMask. Other wallets are not supported.</div>' +
             '<a href="https://metamask.io/download" target="_blank" rel="noopener" class="cm-btn cm-install-btn">[ INSTALL METAMASK ]</a>' +
-            '<a href="https://www.coinbase.com/wallet/downloads" target="_blank" rel="noopener" class="cm-btn cm-install-btn">[ INSTALL COINBASE WALLET ]</a>' +
             '<button class="cm-btn cm-btn--amber cm-install-btn" onclick="window.location.reload()">[ I\'VE INSTALLED IT — RETRY ]</button>' +
           '</div>';
       }
@@ -691,7 +705,7 @@ async function cmResignDelegation() {
   var resignBtn = document.getElementById('cm-resign-btn');
   var eth = await window.getProvider();
   if (!eth) {
-    cmSetStatus('cm-resign-status', 'NO WALLET DETECTED', 'err');
+    cmSetStatus('cm-resign-status', 'METAMASK NOT DETECTED. Please install MetaMask in this browser.', 'err');
     return;
   }
   resignBtn.disabled = true;
@@ -760,7 +774,7 @@ async function cmRunActivationSequence() {
   if (cmActivationRunning) return;
   var eth = await window.getProvider();
   if (!eth) {
-    cmSetStatus('cm-activation-status', 'NO WALLET DETECTED. CONNECT A WEB3 WALLET FIRST.', 'err');
+    cmSetStatus('cm-activation-status', 'METAMASK NOT DETECTED. Please install MetaMask in this browser.', 'err');
     return;
   }
 
