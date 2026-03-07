@@ -844,6 +844,97 @@ class UniswapIntegration:
             traceback.print_exc()
             return False
 
+    def swap_usdc_for_dai(self, usdc_amount):
+        """Swap USDC for DAI via FORCED multi-hop: USDC → WETH → DAI.
+        Direct USDC→DAI pools have no liquidity on Arbitrum (bridged DAI vs native USDC).
+        Both legs use fee tier 500 (0.05%) where deep liquidity exists.
+        USDC has 6 decimals; DAI has 18 decimals.
+        Slippage: 5% for multi-hop safety (two hops + small amounts).
+        """
+        try:
+            usdc_address = self.w3.to_checksum_address("0xaf88d065e77c8cC2239327C5EDb3A432268e5831")
+
+            if usdc_amount <= 0:
+                logger.error("[swap_usdc_for_dai] Invalid USDC amount")
+                return False
+
+            amount_in_wei = int(usdc_amount * 10**6)
+
+            logger.info(f"[swap_usdc_for_dai] MULTI-HOP: {usdc_amount:.6f} USDC → WETH → DAI")
+
+            if not self._ensure_token_approval_for_router(usdc_address, amount_in_wei):
+                logger.error("[swap_usdc_for_dai] USDC approval for Router failed")
+                return False
+
+            tokens = [
+                usdc_address,
+                self.w3.to_checksum_address(self.weth_address),
+                self.w3.to_checksum_address(self.dai_address),
+            ]
+            fees = [500, 500]
+
+            path_bytes = self._encode_path(tokens, fees)
+            self._audit_path(path_bytes, ["USDC", "WETH", "DAI"], fees)
+
+            expected_dai_out = usdc_amount * 10**18
+            min_output = max(1, int(expected_dai_out * 0.95))
+
+            chain_id = self.w3.eth.chain_id
+            base_gas_price = self.w3.eth.gas_price
+            swap_gas_price = int(base_gas_price * 2.5) if chain_id == 42161 else int(base_gas_price * 1.5)
+
+            swap_params = {
+                'path': path_bytes,
+                'recipient': self.w3.to_checksum_address(self.address),
+                'deadline': int(time.time()) + 600,
+                'amountIn': amount_in_wei,
+                'amountOutMinimum': min_output,
+            }
+
+            swap_tx = self.router_contract.functions.exactInput(
+                swap_params
+            ).build_transaction({
+                'from': self.address,
+                'chainId': chain_id,
+                'gas': 600000,
+                'gasPrice': swap_gas_price,
+                'nonce': 0,
+                'value': 0,
+            })
+
+            try:
+                estimated_gas = self.w3.eth.estimate_gas(swap_tx)
+                swap_tx['gas'] = min(int(estimated_gas * 1.8), 800000)
+                logger.info(f"[swap_usdc_for_dai] Gas estimate: {estimated_gas} → using {swap_tx['gas']}")
+            except Exception as gas_err:
+                err_str = str(gas_err)
+                if 'STF' in err_str or 'execution reverted' in err_str.lower():
+                    logger.error(f"[swap_usdc_for_dai] Multi-hop route unavailable: {err_str}")
+                    return False
+                logger.warning(f"[swap_usdc_for_dai] Gas estimation failed: {gas_err}, using fallback 600000")
+
+            tx_hash = self._sign_and_send(swap_tx)
+            tx_hash_hex = tx_hash.hex()
+            logger.info(f"[swap_usdc_for_dai] USDC→WETH→DAI swap sent: {tx_hash_hex}")
+
+            receipt = self.w3.eth.wait_for_transaction_receipt(tx_hash, timeout=120)
+            if receipt.status == 1:
+                logger.info("[swap_usdc_for_dai] USDC→WETH→DAI swap confirmed on-chain")
+                return {
+                    'success': True,
+                    'tx_hash': tx_hash_hex,
+                    'amount_in': usdc_amount,
+                    'token_in': 'USDC',
+                    'token_out': 'DAI',
+                }
+            else:
+                logger.error(f"[swap_usdc_for_dai] USDC→WETH→DAI swap reverted on-chain")
+                return False
+
+        except Exception as e:
+            logger.error(f"[swap_usdc_for_dai] Swap failed: {e}", exc_info=True)
+            return False
+
     def swap_dai_for_weth(self, dai_amount):
         """Swap DAI for WETH on Uniswap V3 — prefers 500 fee tier (most liquid on Arbitrum)"""
         try:

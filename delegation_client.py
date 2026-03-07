@@ -729,6 +729,21 @@ def delegated_repay_dai(user_address: str, amount_dai: float) -> str:
     return delegated_repay(user_address, DAI_ADDRESS, amount_wei, interest_rate_mode=2)
 
 
+def delegated_repay_dai_onbehalf(user_address: str, amount_dai: float) -> str:
+    """Repay DAI debt on behalf of user via DelegationManager.
+    Ensures DM contract is approved to pull DAI from the bot wallet before repaying.
+    """
+    amount_wei = int(amount_dai * 10**18)
+    logger.info(f"delegated_repay_dai_onbehalf: user={user_address[:10]}..., amount=${amount_dai:.4f}")
+    dm_addr = DELEGATION_MANAGER_ADDRESS
+    if dm_addr:
+        approved = _ensure_bot_approval(DAI_ADDRESS, dm_addr, amount_wei)
+        if not approved:
+            logger.error(f"delegated_repay_dai_onbehalf: DAI→DM approval failed for {user_address[:10]}")
+            return None
+    return delegated_repay_dai(user_address, amount_dai)
+
+
 def delegated_withdraw(user_address: str, asset_address: str, amount_wei: int) -> str:
     w3 = _get_web3()
     if not w3 or not is_contract_deployed():
