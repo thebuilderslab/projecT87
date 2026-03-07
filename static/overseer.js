@@ -794,8 +794,10 @@ const P87 = (() => {
   function onWalletConnected(token, wallet) {
     _state.authToken = token;
     _state.currentWallet = wallet;
+    _state.selectedWallet = wallet;
     localStorage.setItem('authToken', token);
     localStorage.setItem('walletAddress', wallet);
+    localStorage.setItem('p87_selected_wallet', wallet);
     _updateWalletBadge();
   }
 

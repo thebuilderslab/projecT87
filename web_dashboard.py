@@ -4960,12 +4960,16 @@ def api_telemetry():
         return jsonify({"error": "database_unavailable"}), 503
 
     wallets = database.get_active_managed_wallets()
-    if not wallets:
-        return jsonify({"error": "no_active_wallets", "wallets": []}), 200
 
     if wallet_param:
-        wallets = [w for w in wallets if w['wallet_address'].lower() == wallet_param] or wallets[:1]
+        filtered = [w for w in wallets if w['wallet_address'].lower() == wallet_param]
+        if filtered:
+            wallets = filtered
+        else:
+            wallets = [{'wallet_address': wallet_param, 'strategy_status': 'read_only'}]
     else:
+        if not wallets:
+            return jsonify({"error": "no_active_wallets", "wallets": []}), 200
         wallets = wallets[:1]
 
     borrow_cost_apy = _fetch_borrow_cost_apy()
