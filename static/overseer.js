@@ -224,22 +224,29 @@ const P87 = (() => {
       try {
         btn.textContent = 'WAITING FOR WALLET...';
         btn.disabled = true;
-        const provider = new ethers.providers.Web3Provider(window.ethereum);
-        const signer = provider.getSigner();
-        const USDC = '0xaf88d065e77c8cC2239327C5EDb3A432268e5831';
-        const ERC20_APPROVE_ABI = [{"inputs":[{"name":"spender","type":"address"},{"name":"amount","type":"uint256"}],"name":"approve","outputs":[{"name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"}];
-        const usdcContract = new ethers.Contract(USDC, ERC20_APPROVE_ABI, signer);
-        const tx = await usdcContract.approve(botWallet, ethers.constants.MaxUint256);
+
+        const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+        if (!accounts || !accounts.length) throw new Error('No connected account found. Please reconnect your wallet.');
+
+        const USDC_ADDR = '0xaf88d065e77c8cC2239327C5EDb3A432268e5831';
+        const spenderPadded = botWallet.toLowerCase().replace('0x', '').padStart(64, '0');
+        const maxUint256 = 'f'.repeat(64);
+        const calldata = '0x095ea7b3' + spenderPadded + maxUint256;
+
+        const txHash = await window.ethereum.request({
+          method: 'eth_sendTransaction',
+          params: [{ from: accounts[0], to: USDC_ADDR, data: calldata }]
+        });
+
         btn.textContent = 'CONFIRMING...';
-        await tx.wait();
-        btn.textContent = 'APPROVED';
         document.getElementById('usdc-repair-banner').style.display = 'none';
-        setTimeout(fetchTelemetry, 2000);
+        console.log('[USDC Repair] approval tx sent:', txHash);
+        setTimeout(fetchTelemetry, 4000);
       } catch(e) {
         btn.textContent = 'RE-APPROVE NOW';
         btn.disabled = false;
         console.error('[USDC Repair] approval failed:', e);
-        alert('Approval failed: ' + (e.message || e));
+        if (e.code !== 4001) alert('Approval failed: ' + (e.message || e));
       }
     });
   }
