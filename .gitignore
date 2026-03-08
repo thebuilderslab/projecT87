@@ -76,3 +76,14 @@ __pycache__/
 .env
 .venv
 *.egg-info/
+
+# Runtime & state
+state_*.json
+*.lock
+
+# Large media / uploaded assets
+attached_assets/
+.pythonlibs/
+.upm/
+.cache/
+.local/
