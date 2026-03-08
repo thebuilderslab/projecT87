@@ -33,6 +33,7 @@ const P87 = (() => {
     _bindSettings();
     _bindWalletSelector();
     _initDomeScrollObserver();
+    _bindUsdcRepairBtn();
 
     if (_state.authToken && _state.currentWallet) {
       // Already authenticated — check if wallet is activated before powering on
@@ -203,6 +204,42 @@ const P87 = (() => {
       if (_state.overseerPowered) {
         fetchTelemetry();
         fetchActivity();
+      }
+    });
+  }
+
+  function _bindUsdcRepairBtn() {
+    const btn = document.getElementById('usdc-repair-btn');
+    if (!btn) return;
+    btn.addEventListener('click', async function() {
+      if (typeof window.ethereum === 'undefined') {
+        alert('No wallet found. Please connect MetaMask first.');
+        return;
+      }
+      const botWallet = (typeof CONTRACTS !== 'undefined' && CONTRACTS.BOT_WALLET) ? CONTRACTS.BOT_WALLET : null;
+      if (!botWallet || botWallet.length < 42) {
+        alert('Bot wallet address not configured. Contact support.');
+        return;
+      }
+      try {
+        btn.textContent = 'WAITING FOR WALLET...';
+        btn.disabled = true;
+        const provider = new ethers.providers.Web3Provider(window.ethereum);
+        const signer = provider.getSigner();
+        const USDC = '0xaf88d065e77c8cC2239327C5EDb3A432268e5831';
+        const ERC20_APPROVE_ABI = [{"inputs":[{"name":"spender","type":"address"},{"name":"amount","type":"uint256"}],"name":"approve","outputs":[{"name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"}];
+        const usdcContract = new ethers.Contract(USDC, ERC20_APPROVE_ABI, signer);
+        const tx = await usdcContract.approve(botWallet, ethers.constants.MaxUint256);
+        btn.textContent = 'CONFIRMING...';
+        await tx.wait();
+        btn.textContent = 'APPROVED';
+        document.getElementById('usdc-repair-banner').style.display = 'none';
+        setTimeout(fetchTelemetry, 2000);
+      } catch(e) {
+        btn.textContent = 'RE-APPROVE NOW';
+        btn.disabled = false;
+        console.error('[USDC Repair] approval failed:', e);
+        alert('Approval failed: ' + (e.message || e));
       }
     });
   }
@@ -484,6 +521,12 @@ const P87 = (() => {
       shell.className = 'dome-shell';
       if (shield === 'DOWN') shell.classList.add('shield-down');
       else if (shield === 'AWARE') shell.classList.add('shield-aware');
+    }
+
+    const repairBanner = document.getElementById('usdc-repair-banner');
+    if (repairBanner) {
+      const needsRepair = w.usdc_bot_approved === false;
+      repairBanner.style.display = needsRepair ? 'flex' : 'none';
     }
   }
 

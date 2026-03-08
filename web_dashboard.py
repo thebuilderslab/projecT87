@@ -4818,6 +4818,29 @@ def _get_user_usdc_balance_rpc(wallet_address):
         return 0.0
 
 
+def _get_usdc_bot_allowance_rpc(wallet_address):
+    """Return True if user has approved the bot wallet for at least $1 USDC."""
+    try:
+        w3 = _get_w3_for_telemetry()
+        if not w3:
+            return True
+        from web3 import Web3 as _W3
+        from delegation_client import get_bot_wallet_address
+        bot = get_bot_wallet_address()
+        if not bot:
+            return True
+        USDC_ADDR = "0xaf88d065e77c8cC2239327C5EDb3A432268e5831"
+        ALLOWANCE_ABI = [{"inputs":[{"name":"owner","type":"address"},{"name":"spender","type":"address"}],"name":"allowance","outputs":[{"name":"","type":"uint256"}],"stateMutability":"view","type":"function"}]
+        usdc = w3.eth.contract(address=_W3.to_checksum_address(USDC_ADDR), abi=ALLOWANCE_ABI)
+        allowance = usdc.functions.allowance(
+            _W3.to_checksum_address(wallet_address),
+            _W3.to_checksum_address(bot)
+        ).call()
+        return allowance >= int(1e6)
+    except Exception:
+        return True
+
+
 def _get_operator_eth_balance():
     try:
         w3 = _get_w3_for_telemetry()
@@ -4844,6 +4867,7 @@ def _build_wallet_telemetry(wallet_address, live_data, strategy_status, borrow_c
     shield_status = _compute_shield_status_live(hf_for_logic, path_min_hf, strategy_status)
 
     user_usdc = _get_user_usdc_balance_rpc(wallet_address)
+    usdc_bot_approved = _get_usdc_bot_allowance_rpc(wallet_address)
     engine_yield = _compute_engine_yield_apy(wallet_address)
     nev = None
     if engine_yield is not None and borrow_cost_apy is not None:
@@ -4935,6 +4959,7 @@ def _build_wallet_telemetry(wallet_address, live_data, strategy_status, borrow_c
         "path_min_hf": path_min_hf,
         "strategy_label": strategy_label,
         "shield_status": shield_status,
+        "usdc_bot_approved": usdc_bot_approved,
         "user_usdc_balance": user_usdc,
         "usdc_earned_last_24h": round(usdc_earned_24h, 4),
         "usdc_repaid_last_24h": round(usdc_repaid_24h, 4),

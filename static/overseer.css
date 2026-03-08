@@ -1321,3 +1321,47 @@ body::before {
   .intel-mission-row { flex-direction: column; gap: 0.75rem; }
   .dome-nav-tile-metric { font-size: 0.60rem; }
 }
+
+/* ── USDC Repair Banner ── */
+.usdc-repair-banner {
+  display: none;
+  align-items: center;
+  gap: 0.75rem;
+  background: rgba(255, 176, 0, 0.12);
+  border: 1px solid rgba(255, 176, 0, 0.45);
+  border-radius: 6px;
+  padding: 0.55rem 0.9rem;
+  margin: 0.5rem 0.5rem 0;
+  font-size: 0.72rem;
+  letter-spacing: 0.05em;
+  color: var(--amber);
+  flex-wrap: wrap;
+}
+.usdc-repair-icon {
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+.usdc-repair-msg {
+  flex: 1;
+  min-width: 0;
+}
+.usdc-repair-btn {
+  background: rgba(255, 176, 0, 0.18);
+  border: 1px solid rgba(255, 176, 0, 0.6);
+  border-radius: 4px;
+  color: var(--amber);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  padding: 0.28rem 0.7rem;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.2s;
+}
+.usdc-repair-btn:hover {
+  background: rgba(255, 176, 0, 0.32);
+}
+.usdc-repair-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
