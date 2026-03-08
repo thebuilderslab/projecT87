@@ -824,6 +824,8 @@
     var rBtn         = $('btn-hard-reset');
 
     if (connectBtn)  connectBtn.addEventListener('click',  cmConnectWallet);
+    var connectBtn2  = $('cm-connect-btn-2');
+    if (connectBtn2) connectBtn2.addEventListener('click', cmConnectWallet);
     if (activateBtn) activateBtn.addEventListener('click', cmRunActivationSequence);
     if (closeBtn)    closeBtn.addEventListener('click',    cmLaunchFieldOps);
     if (ejectBtn)    ejectBtn.addEventListener('click',    cmEjectWallet);

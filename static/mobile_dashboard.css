@@ -485,3 +485,212 @@ html, body {
 }
 
 #app-wrapper.emergency-shake { animation: screen-shake 0.5s cubic-bezier(0.36,0.07,0.19,0.97) both; }
+
+/* ── Landing Page (pre-connect) ─────────────────────────────────── */
+
+#cm-connect-phase { max-width: 600px; }
+
+.lp-divider {
+  width: 100%;
+  height: 1px;
+  background: rgba(0,229,255,0.10);
+  margin: 28px 0 24px;
+}
+
+.lp-desc {
+  font-size: 10px;
+  line-height: 1.8;
+  color: #4a6a8a;
+  letter-spacing: 0.5px;
+  margin-bottom: 28px;
+}
+
+.lp-section-label {
+  font-size: 9px;
+  letter-spacing: 3px;
+  color: #00e5ff;
+  text-transform: uppercase;
+  margin-bottom: 14px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid rgba(0,229,255,0.12);
+}
+
+.lp-cards-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 36px;
+}
+
+@media (max-width: 380px) {
+  .lp-cards-grid { grid-template-columns: 1fr; }
+}
+
+.lp-card {
+  background: rgba(0,229,255,0.02);
+  border: 1px solid rgba(0,229,255,0.10);
+  border-top: 2px solid rgba(0,229,255,0.30);
+  padding: 14px 12px;
+  border-radius: 2px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.lp-card:hover {
+  background: rgba(0,229,255,0.04);
+  border-color: rgba(0,229,255,0.20);
+  border-top-color: rgba(0,229,255,0.55);
+}
+
+.lp-card-icon {
+  font-size: 14px;
+  color: rgba(0,229,255,0.45);
+  line-height: 1;
+  margin-bottom: 2px;
+}
+
+.lp-card-title {
+  font-size: 9px;
+  color: #00e5ff;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  font-weight: bold;
+}
+
+.lp-card-body {
+  font-size: 9px;
+  color: #3a5a7a;
+  line-height: 1.7;
+}
+
+/* Roadmap */
+
+.lp-roadmap {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 40px;
+}
+
+.lp-phase {
+  display: flex;
+  gap: 14px;
+  padding: 14px 0;
+  border-bottom: 1px solid rgba(0,229,255,0.06);
+  align-items: flex-start;
+}
+
+.lp-phase:last-child { border-bottom: none; }
+
+.lp-phase-marker {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9px;
+  letter-spacing: 1px;
+  flex-shrink: 0;
+  margin-top: 2px;
+  font-weight: bold;
+}
+
+.lp-marker-done {
+  border: 1px solid rgba(0,255,136,0.40);
+  color: #00ff88;
+  background: rgba(0,255,136,0.05);
+}
+
+.lp-marker-active {
+  border: 1px solid rgba(0,229,255,0.70);
+  color: #00e5ff;
+  background: rgba(0,229,255,0.08);
+  box-shadow: 0 0 8px rgba(0,229,255,0.15);
+}
+
+.lp-marker-next {
+  border: 1px solid rgba(0,229,255,0.25);
+  color: rgba(0,229,255,0.45);
+  background: transparent;
+}
+
+.lp-marker-future {
+  border: 1px solid rgba(90,110,130,0.35);
+  color: #3a5060;
+  background: transparent;
+}
+
+.lp-phase-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.lp-phase-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.lp-phase-name {
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: #a0b4c8;
+}
+
+.lp-phase-active .lp-phase-name { color: #00e5ff; }
+
+.lp-badge {
+  font-size: 7px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  padding: 2px 6px;
+  border-radius: 2px;
+  font-weight: bold;
+}
+
+.lp-badge-complete {
+  background: rgba(0,255,136,0.08);
+  border: 1px solid rgba(0,255,136,0.30);
+  color: #00ff88;
+}
+
+.lp-badge-live {
+  background: rgba(255,184,77,0.10);
+  border: 1px solid rgba(255,184,77,0.40);
+  color: #ffb84d;
+  animation: lp-pulse 2s ease-in-out infinite;
+}
+
+.lp-badge-next {
+  background: rgba(0,229,255,0.05);
+  border: 1px solid rgba(0,229,255,0.20);
+  color: rgba(0,229,255,0.55);
+}
+
+.lp-badge-future {
+  background: transparent;
+  border: 1px solid rgba(90,110,130,0.30);
+  color: #3a5060;
+}
+
+.lp-phase-body {
+  font-size: 9px;
+  color: #2a3e52;
+  line-height: 1.7;
+}
+
+.lp-phase-active .lp-phase-body { color: #3a5a7a; }
+
+@keyframes lp-pulse {
+  0%,100% { opacity: 1; }
+  50%      { opacity: 0.55; }
+}
+
+.lp-cta-bottom {
+  margin-bottom: 60px;
+}
