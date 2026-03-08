@@ -46,6 +46,33 @@ html, body {
 
 .cm-logo--green { color: #00ff88; }
 
+.cm-wordmark {
+  font-size: 22px;
+  letter-spacing: 8px;
+  color: #00e5ff;
+  text-transform: uppercase;
+  text-align: center;
+  font-weight: 400;
+  margin-bottom: 6px;
+}
+
+.cm-hero-sub {
+  font-size: 8px;
+  letter-spacing: 4px;
+  color: #2a4a6a;
+  text-transform: uppercase;
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.lp-desc--hero {
+  text-align: center;
+  color: #6a8aaa;
+  font-size: 10.5px;
+  line-height: 1.85;
+  margin-bottom: 22px;
+}
+
 .cm-phase-title {
   font-size: 10px;
   letter-spacing: 3px;
@@ -361,10 +388,10 @@ html, body {
 }
 
 .cm-logo-gif {
-  height: 56px;
+  height: 72px;
   width: auto;
   display: block;
-  margin: 0 auto;
+  margin: 0 auto 6px;
 }
 
 .card-back {
