@@ -5203,6 +5203,7 @@ def api_telemetry():
 
     next_core = next_repay = next_nurse = None
     next_repay_iso = None
+    next_nurse_countdown = None
     try:
         import scheduler_bootstrap as sb
         core_job = sb.get_job_next_run("core_engine_job")
@@ -5215,8 +5216,13 @@ def api_telemetry():
             next_repay_iso = repay_job.isoformat()
         if nurse_job:
             next_nurse = nurse_job.isoformat()
+        if nurse_job:
+            from datetime import timezone as _tz
+            _now = datetime.now(_tz.utc)
+            _nurse_aware = nurse_job if nurse_job.tzinfo else nurse_job.replace(tzinfo=_tz.utc)
+            next_nurse_countdown = max(0, int((_nurse_aware - _now).total_seconds() / 60))
     except Exception:
-        pass
+        next_nurse_countdown = None
 
     primary_wallet = wallet_data[0]['wallet_address'] if wallet_data else None
     primary_engine_yield = wallet_data[0].get('engine_yield_apy_pct_7d') if wallet_data else None
@@ -5246,6 +5252,7 @@ def api_telemetry():
         "milestone_1000_hhmm": mobile_extras.get('milestone_1000_hhmm'),
         "last_repay_elapsed_min": mobile_extras.get('last_repay_elapsed_min'),
         "next_repay_countdown_min": mobile_extras.get('next_repay_countdown_min'),
+        "next_nurse_countdown_min": next_nurse_countdown,
     }
 
     _telemetry_cache[cache_key] = {'ts': now_ts, 'data': payload}

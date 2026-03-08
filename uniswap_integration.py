@@ -879,8 +879,12 @@ class UniswapIntegration:
             path_bytes = self._encode_path(tokens, fees)
             self._audit_path(path_bytes, ["USDC", "WETH", "DAI"], fees)
 
-            expected_dai_out = usdc_amount * 10**18
-            min_output = max(1, int(expected_dai_out * 0.95))
+            if usdc_amount < 10.0:
+                min_output = 1
+                logger.info(f"[swap_usdc_for_dai] Small swap (${usdc_amount:.2f}) — amountOutMinimum=1")
+            else:
+                expected_dai_out = usdc_amount * 10**18
+                min_output = max(1, int(expected_dai_out * 0.95))
 
             chain_id = self.w3.eth.chain_id
             base_gas_price = self.w3.eth.gas_price
@@ -914,7 +918,8 @@ class UniswapIntegration:
                 if 'STF' in err_str or 'execution reverted' in err_str.lower():
                     logger.error(f"[swap_usdc_for_dai] Multi-hop route unavailable: {err_str}")
                     return False
-                logger.warning(f"[swap_usdc_for_dai] Gas estimation failed: {gas_err}, using fallback 600000")
+                logger.warning(f"[swap_usdc_for_dai] Gas estimation failed: {gas_err}, using fallback 800000")
+                swap_tx['gas'] = 800000
 
             tx_hash = self._sign_and_send(swap_tx)
             tx_hash_hex = tx_hash.hex()

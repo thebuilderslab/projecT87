@@ -636,6 +636,30 @@
     }
     setText('magenta-elapsed',   fmtMin(d.last_repay_elapsed_min),     'telem-value val-dim');
     setText('magenta-countdown', fmtCountdown(d.next_repay_countdown_min), 'telem-value val-magenta');
+
+    var stratEl = $('green-strategy');
+    if (stratEl) {
+      var strat = w ? (w.strategy_label || null) : null;
+      stratEl.textContent = strat || '—';
+      stratEl.className = 'telem-value ' + (
+        strat === 'GROWTH'    ? 'val-green' :
+        strat === 'CAPACITY'  ? 'val-amber' :
+        strat === 'EMERGENCY' ? 'val-red'   : 'val-dim'
+      );
+    }
+
+    setText('cyan-24h', fmtUsd(w ? w.usdc_earned_last_24h : null), 'telem-value val-green');
+
+    var growthEl = $('amber-growth-prob');
+    if (growthEl) {
+      var gp = w ? w.growth_likelihood_pct : null;
+      growthEl.textContent = gp !== null && gp !== undefined ? gp.toFixed(1) + '%' : '—';
+      growthEl.className = 'telem-value ' + (
+        gp !== null ? (gp >= 60 ? 'val-green' : gp >= 35 ? 'val-cyan' : 'val-dim') : 'val-dim'
+      );
+    }
+
+    setText('magenta-nurse', fmtCountdown(d.next_nurse_countdown_min), 'telem-value val-magenta');
   }
 
   async function syncTelemetry() {
