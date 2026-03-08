@@ -3357,16 +3357,33 @@ def fetch_aave_position_for_wallet(wallet_address):
 
 @app.route('/app')
 def consumer_app():
-    """Mobile dashboard — main user-facing page (4-dome tap-to-flip interface)"""
+    """Mobile dashboard — main user-facing page (4-dome tap-to-flip + Sequential Signer)"""
     import secrets
+    from delegation_client import DELEGATION_MANAGER_ADDRESS, get_bot_wallet_address, _get_web3
+    vault_addr = os.environ.get("OPENCLAW_VAULT_ADDRESS", "")
+    bot_wallet_raw = get_bot_wallet_address() or ''
+    if bot_wallet_raw:
+        try:
+            w3 = _get_web3()
+            bot_wallet = w3.to_checksum_address(bot_wallet_raw) if w3 else bot_wallet_raw
+        except Exception:
+            bot_wallet = bot_wallet_raw
+    else:
+        bot_wallet = ''
     nonce = secrets.token_hex(16)
-    resp = make_response(render_template('mobile_dashboard.html', nonce=nonce))
+    resp = make_response(render_template(
+        'mobile_dashboard.html',
+        nonce=nonce,
+        delegation_manager_address=DELEGATION_MANAGER_ADDRESS or '',
+        openclaw_vault_address=vault_addr,
+        bot_wallet_address=bot_wallet,
+    ))
     resp.headers['Content-Security-Policy'] = (
         f"default-src 'self'; "
-        f"script-src 'self' 'nonce-{nonce}'; "
+        f"script-src 'self' 'nonce-{nonce}' https://cdn.ethers.io; "
         f"style-src 'self' 'nonce-{nonce}'; "
         f"img-src 'self' data:; "
-        f"connect-src 'self';"
+        f"connect-src 'self' https://arb1.arbitrum.io wss://arb1.arbitrum.io;"
     )
     return resp
 

