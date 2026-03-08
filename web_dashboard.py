@@ -5025,6 +5025,7 @@ def api_telemetry():
             pass
 
     next_core = next_repay = next_nurse = None
+    next_repay_iso = None
     try:
         import scheduler_bootstrap as sb
         core_job = sb.get_job_next_run("core_engine_job")
@@ -5034,6 +5035,7 @@ def api_telemetry():
             next_core = core_job.isoformat()
         if repay_job:
             next_repay = repay_job.strftime("%H%M")
+            next_repay_iso = repay_job.isoformat()
         if nurse_job:
             next_nurse = nurse_job.isoformat()
     except Exception:
@@ -5043,6 +5045,7 @@ def api_telemetry():
         "last_updated_at": datetime.utcnow().isoformat() + "Z",
         "next_system_check_timestamp": next_core,
         "next_repay_military_time": next_repay,
+        "next_repay_iso": next_repay_iso,
         "next_nurse_timestamp": next_nurse,
         "wallets": wallet_data,
         "operator_wallet": {

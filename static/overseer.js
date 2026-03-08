@@ -250,6 +250,12 @@ const P87 = (() => {
         _state.nextCheckTs = data.next_system_check_timestamp
           ? new Date(data.next_system_check_timestamp).getTime()
           : null;
+        _state.nextRepayTs = data.next_repay_iso
+          ? new Date(data.next_repay_iso).getTime()
+          : null;
+        _state.nextNurseTs = data.next_nurse_timestamp
+          ? new Date(data.next_nurse_timestamp).getTime()
+          : null;
         _render(wallet, data);
         _checkStale(data.last_updated_at);
         loadCyclePnl();
@@ -556,24 +562,18 @@ const P87 = (() => {
     if (!_state.nextCheckTs) {
       _setText('d3-countdown', 'T-MINUS --:--');
     }
-
-    const nextRepay = data.next_repay_military_time;
-    const nextNurse = data.next_nurse_timestamp;
-    _setText('d3-next-repay', nextRepay ? `REPAY: ${nextRepay}` : 'REPAY: --');
-    _setText('d3-next-nurse', nextNurse ? `NURSE: ${new Date(nextNurse).toLocaleTimeString('en-US', {hour:'2-digit', minute:'2-digit'})}` : 'NURSE: --');
-
     _renderMilestones(data.wallets && data.wallets[0] ? data.wallets[0].milestones : []);
     _renderArcs(data);
   }
 
   function _renderArcs(data) {
     const now = Date.now();
-    const intervals = { core: 27 * 60000, repay: 240 * 60000, nurse: 70 * 60000 };
+    const intervals = { core: 2 * 60000, repay: 18 * 60000, nurse: 5 * 60000 };
     const arcIds = { core: 'd3-arc-core', repay: 'd3-arc-repay', nurse: 'd3-arc-nurse' };
     const nextTimes = {
-      core: data.next_system_check_timestamp ? new Date(data.next_system_check_timestamp).getTime() : null,
-      repay: null,
-      nurse: data.next_nurse_timestamp ? new Date(data.next_nurse_timestamp).getTime() : null,
+      core: _state.nextCheckTs || null,
+      repay: _state.nextRepayTs || null,
+      nurse: _state.nextNurseTs || null,
     };
 
     Object.entries(arcIds).forEach(([key, arcId]) => {
@@ -724,6 +724,22 @@ const P87 = (() => {
 
   // ── Countdowns ────────────────────────────────────────────────────────────
 
+  function _fmtCountdown(tsMs) {
+    if (!tsMs) return '--:--';
+    const remaining = Math.max(0, Math.floor((tsMs - Date.now()) / 1000));
+    const mm = String(Math.floor(remaining / 60)).padStart(2, '0');
+    const ss = String(remaining % 60).padStart(2, '0');
+    return `${mm}:${ss}`;
+  }
+
+  function _countdownColor(tsMs) {
+    if (!tsMs) return '';
+    const sec = Math.max(0, Math.floor((tsMs - Date.now()) / 1000));
+    if (sec <= 10) return '#ff2020';
+    if (sec <= 60) return '#ffb000';
+    return '#00e5ff';
+  }
+
   function _updateCountdowns() {
     if (!_state.overseerPowered) return;
 
@@ -733,19 +749,43 @@ const P87 = (() => {
     if (isStale) {
       _setText('d3-countdown', 'T-MINUS --:--');
       _setText('strip-countdown', 'T---:--');
+      ['sched-core-timer', 'sched-nurse-timer', 'sched-repay-timer'].forEach(id => _setText(id, '--:--'));
       return;
     }
 
-    if (!_state.nextCheckTs) return;
+    const now = Date.now();
 
-    const remaining = Math.max(0, Math.floor((_state.nextCheckTs - Date.now()) / 1000));
-    const mm = String(Math.floor(remaining / 60)).padStart(2, '0');
-    const ss = String(remaining % 60).padStart(2, '0');
-    const countStr = `T-MINUS ${mm}:${ss}`;
-    _setText('d3-countdown', countStr);
-    _setText('strip-countdown', `T-${mm}:${ss}`);
-    const intelM = document.getElementById('tile-intel-metric');
-    if (intelM) intelM.textContent = `T-${mm}:${ss}`;
+    if (_state.nextCheckTs) {
+      const remaining = Math.max(0, Math.floor((_state.nextCheckTs - now) / 1000));
+      const mm = String(Math.floor(remaining / 60)).padStart(2, '0');
+      const ss = String(remaining % 60).padStart(2, '0');
+      const countStr = `T-MINUS ${mm}:${ss}`;
+      _setText('d3-countdown', countStr);
+      _setText('strip-countdown', `T-${mm}:${ss}`);
+      const intelM = document.getElementById('tile-intel-metric');
+      if (intelM) intelM.textContent = `T-${mm}:${ss}`;
+      const coreEl = document.getElementById('sched-core-timer');
+      if (coreEl) {
+        coreEl.textContent = `${mm}:${ss}`;
+        coreEl.style.color = _countdownColor(_state.nextCheckTs);
+      }
+    }
+
+    if (_state.nextNurseTs) {
+      const nurseEl = document.getElementById('sched-nurse-timer');
+      if (nurseEl) {
+        nurseEl.textContent = _fmtCountdown(_state.nextNurseTs);
+        nurseEl.style.color = _countdownColor(_state.nextNurseTs);
+      }
+    }
+
+    if (_state.nextRepayTs) {
+      const repayEl = document.getElementById('sched-repay-timer');
+      if (repayEl) {
+        repayEl.textContent = _fmtCountdown(_state.nextRepayTs);
+        repayEl.style.color = _countdownColor(_state.nextRepayTs);
+      }
+    }
   }
 
   // ── Top strip ─────────────────────────────────────────────────────────────

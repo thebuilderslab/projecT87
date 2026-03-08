@@ -1266,6 +1266,55 @@ body::before {
 .ci-forecast-label { font-size: 0.60rem; letter-spacing: 0.10em; color: rgba(0,229,255,0.4); text-transform: uppercase; margin-bottom: 0.4rem; }
 .ci-last-cycle-line { font-size: 0.78rem; color: rgba(0,229,255,0.7); margin: 0.4rem 0 0.2rem; font-style: italic; }
 
+/* ── Scheduler Next-Trigger Grid ── */
+.sched-grid {
+  background: rgba(0,0,0,0.25);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  margin: 0.75rem 0;
+}
+.sched-grid-header {
+  font-size: 0.58rem;
+  letter-spacing: 0.14em;
+  color: rgba(255,255,255,0.30);
+  text-transform: uppercase;
+  margin-bottom: 0.6rem;
+}
+.sched-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.35rem 0;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+.sched-row:last-child { border-bottom: none; }
+.sched-row-labels {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.sched-fn-name {
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+.sched-fn-interval {
+  font-size: 0.60rem;
+  color: rgba(255,255,255,0.28);
+  letter-spacing: 0.06em;
+}
+.sched-timer {
+  font-size: 1.3rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.06em;
+  color: #00e5ff;
+  min-width: 4.5rem;
+  text-align: right;
+  transition: color 0.5s;
+}
+
 /* ── Responsive ── */
 @media (max-width: 700px) {
   .ci-grid { grid-template-columns: 1fr; }

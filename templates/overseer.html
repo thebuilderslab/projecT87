@@ -466,10 +466,32 @@
 
         <div class="intel-mission-info">
           <div id="d3-countdown" class="countdown-primary">T-MINUS --:--</div>
-          <div class="arc-labels">
-            <span id="d3-next-repay" style="color:rgba(255,176,0,0.7)">REPAY: --</span>
-            <span id="d3-next-nurse" style="color:rgba(0,255,136,0.7)">NURSE: --</span>
+        </div>
+      </div>
+
+      <!-- Next Trigger Scheduler Grid -->
+      <div class="sched-grid">
+        <div class="sched-grid-header">NEXT TRIGGER · ALL FUNCTIONS</div>
+        <div class="sched-row">
+          <div class="sched-row-labels">
+            <span class="sched-fn-name" style="color:#00e5ff">Growth · Capacity · Macro · Micro</span>
+            <span class="sched-fn-interval">every 2 min</span>
           </div>
+          <div id="sched-core-timer" class="sched-timer">--:--</div>
+        </div>
+        <div class="sched-row">
+          <div class="sched-row-labels">
+            <span class="sched-fn-name" style="color:#00ff88">Nurse Sweep</span>
+            <span class="sched-fn-interval">every 5 min</span>
+          </div>
+          <div id="sched-nurse-timer" class="sched-timer">--:--</div>
+        </div>
+        <div class="sched-row">
+          <div class="sched-row-labels">
+            <span class="sched-fn-name" style="color:#ffb000">Repay Deleverager</span>
+            <span class="sched-fn-interval">every 18 min</span>
+          </div>
+          <div id="sched-repay-timer" class="sched-timer">--:--</div>
         </div>
       </div>
 
