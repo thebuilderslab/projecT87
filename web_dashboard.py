@@ -5221,6 +5221,7 @@ def api_telemetry():
             next_repay_iso = repay_job.isoformat()
         if nurse_job:
             next_nurse = nurse_job.isoformat()
+        next_nurse_iso = next_nurse
         if nurse_job:
             from datetime import timezone as _tz
             _now = datetime.now(_tz.utc)
@@ -5258,6 +5259,7 @@ def api_telemetry():
         "last_repay_elapsed_min": mobile_extras.get('last_repay_elapsed_min'),
         "next_repay_countdown_min": mobile_extras.get('next_repay_countdown_min'),
         "next_nurse_countdown_min": next_nurse_countdown,
+        "next_nurse_iso": next_nurse_iso,
     }
 
     _telemetry_cache[cache_key] = {'ts': now_ts, 'data': payload}

@@ -3,6 +3,11 @@
 
   /* ── Constants ──────────────────────────────────────────────────── */
   var POLL_INTERVAL_MS = 30000;
+
+  /* ── Countdown ticker state ─────────────────────────────────────── */
+  var _repayTargetTime  = null;
+  var _nurseTargetTime  = null;
+  var _countdownTicker  = null;
   var ERC20_ABI = [
     'function balanceOf(address) view returns (uint256)',
     'function approve(address,uint256) returns (bool)',
@@ -588,6 +593,35 @@
     return Math.floor(m / 60) + 'h ' + (m % 60) + 'm';
   }
 
+  function fmtCountdownLive(target) {
+    if (!target) return null;
+    var secs = Math.max(0, Math.round((target - Date.now()) / 1000));
+    if (secs === 0) return '00:00';
+    var h = Math.floor(secs / 3600);
+    var m = Math.floor((secs % 3600) / 60);
+    var s = secs % 60;
+    if (h > 0) return h + ':' + String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+    return String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+  }
+
+  function _tickCountdowns() {
+    var repayEl = document.getElementById('magenta-countdown');
+    var nurseEl = document.getElementById('magenta-nurse');
+    if (repayEl) {
+      var rv = fmtCountdownLive(_repayTargetTime);
+      repayEl.textContent = rv || '—';
+    }
+    if (nurseEl) {
+      var nv = fmtCountdownLive(_nurseTargetTime);
+      nurseEl.textContent = nv || '—';
+    }
+  }
+
+  function _ensureCountdownTicker() {
+    if (_countdownTicker) return;
+    _countdownTicker = setInterval(_tickCountdowns, 1000);
+  }
+
   function populateTelemetry(d) {
     if (!d) return;
     var w = (d.wallets && d.wallets.length > 0) ? d.wallets[0] : null;
@@ -634,8 +668,10 @@
       magShieldEl.textContent = shield || 'DOWN';
       magShieldEl.className   = 'telem-value ' + (shield ? 'shield-' + shield : 'shield-DOWN');
     }
-    setText('magenta-elapsed',   fmtMin(d.last_repay_elapsed_min),     'telem-value val-dim');
-    setText('magenta-countdown', fmtCountdown(d.next_repay_countdown_min), 'telem-value val-magenta');
+    setText('magenta-elapsed', fmtMin(d.last_repay_elapsed_min), 'telem-value val-dim');
+    _repayTargetTime = d.next_repay_iso ? new Date(d.next_repay_iso) : null;
+    _ensureCountdownTicker();
+    _tickCountdowns();
 
     var stratEl = $('green-strategy');
     if (stratEl) {
@@ -659,7 +695,8 @@
       );
     }
 
-    setText('magenta-nurse', fmtCountdown(d.next_nurse_countdown_min), 'telem-value val-magenta');
+    _nurseTargetTime = d.next_nurse_iso ? new Date(d.next_nurse_iso) : null;
+    _tickCountdowns();
   }
 
   async function syncTelemetry() {
