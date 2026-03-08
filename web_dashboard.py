@@ -4946,11 +4946,16 @@ def _build_mobile_top_level_extras(wallet_address, engine_yield_apy, borrow_cost
         with database.get_conn() as conn:
             from psycopg2.extras import RealDictCursor
             cur = conn.cursor(cursor_factory=RealDictCursor)
-            cur.execute("SELECT id, target_timestamp FROM usdc_milestones WHERE id IN (1,2) ORDER BY id")
-            rows = {r['id']: r for r in cur.fetchall()}
+            cur.execute("""
+                SELECT DISTINCT ON (target_usdc) target_usdc, target_timestamp
+                FROM usdc_milestones
+                WHERE target_usdc IN (100, 1000)
+                ORDER BY target_usdc, computed_at DESC
+            """)
+            rows = {int(r['target_usdc']): r for r in cur.fetchall()}
             cur.close()
-        result['milestone_100_hhmm'] = _get_mobile_countdown_hhmm(rows[1]['target_timestamp']) if 1 in rows else None
-        result['milestone_1000_hhmm'] = _get_mobile_countdown_hhmm(rows[2]['target_timestamp']) if 2 in rows else None
+        result['milestone_100_hhmm'] = _get_mobile_countdown_hhmm(rows[100]['target_timestamp']) if 100 in rows else None
+        result['milestone_1000_hhmm'] = _get_mobile_countdown_hhmm(rows[1000]['target_timestamp']) if 1000 in rows else None
     except Exception as e:
         logger.debug(f"[Telemetry] milestone countdown error: {e}")
         result['milestone_100_hhmm'] = None
