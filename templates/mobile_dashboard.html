@@ -13,7 +13,7 @@
 <div id="cm-modal">
 
   <div id="cm-connect-phase" class="cm-phase">
-    <div class="cm-logo">⬡ PROJECT 87</div>
+    <div class="cm-logo"><img src="/static/logo_p87.gif" alt="PROJECT 87" class="cm-logo-gif"></div>
     <div class="cm-phase-title">FIELD OPERATIONS TERMINAL</div>
     <div class="cm-phase-sub">Arbitrum Mainnet · IaaS DeFi Platform</div>
     <div class="cm-wbtc-display hidden" id="cm-wbtc-section">
@@ -46,7 +46,7 @@
       <div class="lp-card">
         <div class="lp-card-icon">◈</div>
         <div class="lp-card-title">Autonomous Yield Engine</div>
-        <div class="lp-card-body">Connects to Aave V3 and Uniswap V3 to run continuous borrow-swap-accumulate cycles. Your collateral works around the clock — no manual trades, no gas calculations.</div>
+        <div class="lp-card-body">Connects to a leading lending protocol and DEX to run continuous borrow-swap-accumulate cycles. Your collateral works around the clock — no manual trades, no gas calculations.</div>
       </div>
       <div class="lp-card">
         <div class="lp-card-icon">⬡</div>
@@ -56,7 +56,7 @@
       <div class="lp-card">
         <div class="lp-card-icon">⟐</div>
         <div class="lp-card-title">Nurse Mode Safety</div>
-        <div class="lp-card-body">Continuously monitors collateral velocity. If markets drop sharply, non-profit assets are swept into Aave as additional collateral before liquidation thresholds are reached.</div>
+        <div class="lp-card-body">Continuously monitors collateral velocity. If markets drop sharply, non-profit assets are swept into the lending pool as additional collateral before liquidation thresholds are reached.</div>
       </div>
       <div class="lp-card">
         <div class="lp-card-icon">◇</div>
@@ -103,6 +103,59 @@
       </div>
     </div>
 
+    <div class="lp-section-label">// WHO IT'S FOR</div>
+    <div class="lp-usecase-list">
+
+      <div class="lp-usecase">
+        <div class="lp-usecase-num">01</div>
+        <div class="lp-usecase-content">
+          <div class="lp-usecase-title">Long-term holders who need liquidity without selling</div>
+          <div class="lp-usecase-body">You believe in ETH long-term but need dollars today. Selling means a taxable event and losing your position. Project 87 generates USDC income against your ETH without selling it — you keep the upside, you get the cash flow.</div>
+        </div>
+      </div>
+
+      <div class="lp-usecase">
+        <div class="lp-usecase-num">02</div>
+        <div class="lp-usecase-content">
+          <div class="lp-usecase-title">Crypto-native retirement / passive income</div>
+          <div class="lp-usecase-body">For someone replacing a traditional savings account or bond ladder with crypto. Project 87 runs continuously whether you check it or not, generating a predictable stream of USDC that can be withdrawn on demand via the API — essentially a programmable yield account.</div>
+        </div>
+      </div>
+
+      <div class="lp-usecase">
+        <div class="lp-usecase-num">03</div>
+        <div class="lp-usecase-content">
+          <div class="lp-usecase-title">DAO operating expense management</div>
+          <div class="lp-usecase-body">DAOs typically hold large ETH/stablecoin treasuries that sit idle. Project 87 generates a USDC stream from the ETH portion of the treasury to fund ongoing operational costs, without the DAO having to vote on asset sales every time it needs to pay contributors.</div>
+        </div>
+      </div>
+
+      <div class="lp-usecase">
+        <div class="lp-usecase-num">04</div>
+        <div class="lp-usecase-content">
+          <div class="lp-usecase-title">Pre-liquidity founders and vested token holders</div>
+          <div class="lp-usecase-body">Founders or early employees with vested crypto they can't or don't want to sell yet. Project 87 generates cash flow against locked or illiquid positions without triggering a sale. The milestone countdowns give them a forward-looking view of treasury growth.</div>
+        </div>
+      </div>
+
+      <div class="lp-usecase">
+        <div class="lp-usecase-num">05</div>
+        <div class="lp-usecase-content">
+          <div class="lp-usecase-title">Real estate investors bridging between deals</div>
+          <div class="lp-usecase-body">Someone with capital parked between property closings. Instead of sitting in a savings account at 4%, the idle capital is put to work generating USDC, with the full principal accessible whenever the next deal closes.</div>
+        </div>
+      </div>
+
+      <div class="lp-usecase">
+        <div class="lp-usecase-num">06</div>
+        <div class="lp-usecase-content">
+          <div class="lp-usecase-title">Crypto allocators who want yield with a defined risk ceiling</div>
+          <div class="lp-usecase-body">Unlike leveraged yield strategies where risk grows with the position, Project 87's Health Factor floor means the maximum risk is bounded by design. The Deleverage Shield is a built-in stop-loss that reduces debt instead of closing the position — suitable for allocators who need to comply with risk mandates.</div>
+        </div>
+      </div>
+
+    </div>
+
     <div class="lp-section-label">// DEPLOYMENT ROADMAP</div>
     <div class="lp-roadmap">
 
@@ -113,7 +166,7 @@
             <span class="lp-phase-name">Foundation</span>
             <span class="lp-badge lp-badge-complete">COMPLETE</span>
           </div>
-          <div class="lp-phase-body">Arbitrum Mainnet deployment · Aave V3 integration · DelegationManager contract · bot wallet architecture · multi-tenant PostgreSQL database · EIP-4361 authentication</div>
+          <div class="lp-phase-body">Arbitrum Mainnet deployment · lending protocol integration · DelegationManager contract · bot wallet architecture · multi-tenant PostgreSQL database · EIP-4361 authentication</div>
         </div>
       </div>
 
@@ -124,7 +177,7 @@
             <span class="lp-phase-name">Automation</span>
             <span class="lp-badge lp-badge-complete">COMPLETE</span>
           </div>
-          <div class="lp-phase-body">Sequential Signer 5-step activation · Uniswap V3 multi-hop routing · 5-dome telemetry dashboard · Nurse Mode safety system · Growth / Capacity / Emergency strategy engine · Liability Short System</div>
+          <div class="lp-phase-body">Sequential Signer 5-step activation · multi-hop DEX routing · 5-dome telemetry dashboard · Nurse Mode safety system · Growth / Capacity / Emergency strategy engine · Liability Short System</div>
         </div>
       </div>
 
@@ -183,59 +236,6 @@
               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="margin-right:4px;vertical-align:middle"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="rgba(40,160,240,0.7)" stroke-width="2" fill="none"/></svg>Arbitrum
             </span>
           </div>
-        </div>
-      </div>
-
-    </div>
-
-    <div class="lp-section-label">// WHO IT'S FOR</div>
-    <div class="lp-usecase-list">
-
-      <div class="lp-usecase">
-        <div class="lp-usecase-num">01</div>
-        <div class="lp-usecase-content">
-          <div class="lp-usecase-title">Long-term holders who need liquidity without selling</div>
-          <div class="lp-usecase-body">You believe in ETH long-term but need dollars today. Selling means a taxable event and losing your position. Project 87 generates USDC income against your ETH without selling it — you keep the upside, you get the cash flow.</div>
-        </div>
-      </div>
-
-      <div class="lp-usecase">
-        <div class="lp-usecase-num">02</div>
-        <div class="lp-usecase-content">
-          <div class="lp-usecase-title">Crypto-native retirement / passive income</div>
-          <div class="lp-usecase-body">For someone replacing a traditional savings account or bond ladder with crypto. Project 87 runs continuously whether you check it or not, generating a predictable stream of USDC that can be withdrawn on demand via the API — essentially a programmable yield account.</div>
-        </div>
-      </div>
-
-      <div class="lp-usecase">
-        <div class="lp-usecase-num">03</div>
-        <div class="lp-usecase-content">
-          <div class="lp-usecase-title">DAO operating expense management</div>
-          <div class="lp-usecase-body">DAOs typically hold large ETH/stablecoin treasuries that sit idle. Project 87 generates a USDC stream from the ETH portion of the treasury to fund ongoing operational costs, without the DAO having to vote on asset sales every time it needs to pay contributors.</div>
-        </div>
-      </div>
-
-      <div class="lp-usecase">
-        <div class="lp-usecase-num">04</div>
-        <div class="lp-usecase-content">
-          <div class="lp-usecase-title">Pre-liquidity founders and vested token holders</div>
-          <div class="lp-usecase-body">Founders or early employees with vested crypto they can't or don't want to sell yet. Project 87 generates cash flow against locked or illiquid positions without triggering a sale. The milestone countdowns give them a forward-looking view of treasury growth.</div>
-        </div>
-      </div>
-
-      <div class="lp-usecase">
-        <div class="lp-usecase-num">05</div>
-        <div class="lp-usecase-content">
-          <div class="lp-usecase-title">Real estate investors bridging between deals</div>
-          <div class="lp-usecase-body">Someone with capital parked between property closings. Instead of sitting in a savings account at 4%, the idle capital is put to work generating USDC, with the full principal accessible whenever the next deal closes.</div>
-        </div>
-      </div>
-
-      <div class="lp-usecase">
-        <div class="lp-usecase-num">06</div>
-        <div class="lp-usecase-content">
-          <div class="lp-usecase-title">Crypto allocators who want yield with a defined risk ceiling</div>
-          <div class="lp-usecase-body">Unlike leveraged yield strategies where risk grows with the position, Project 87's Health Factor floor means the maximum risk is bounded by design. The Deleverage Shield is a built-in stop-loss that reduces debt instead of closing the position — suitable for allocators who need to comply with risk mandates.</div>
         </div>
       </div>
 
@@ -336,6 +336,10 @@
       <div class="card-inner">
         <div class="card-front">
           <img src="/static/image_green.png" alt="Colony Dome">
+          <div class="card-front-label">
+            <span class="cfl-name">Colony Health</span>
+            <span class="cfl-summary">Health factor, net collateral, DAI debt &amp; strategy path</span>
+          </div>
         </div>
         <div class="card-back">
           <div class="card-title">Colony Health</div>
@@ -363,6 +367,10 @@
       <div class="card-inner">
         <div class="card-front">
           <img src="/static/image_cyan.png" alt="USDC Reactor">
+          <div class="card-front-label">
+            <span class="cfl-name">USDC Reactor</span>
+            <span class="cfl-summary">USDC balance, lifetime income &amp; 24h income rate</span>
+          </div>
         </div>
         <div class="card-back">
           <div class="card-title">USDC Reactor</div>
@@ -398,6 +406,10 @@
       <div class="card-inner">
         <div class="card-front">
           <img src="/static/image_amber.png" alt="Horizon Observatory">
+          <div class="card-front-label">
+            <span class="cfl-name">Forecasting</span>
+            <span class="cfl-summary">APY spread &amp; projected time to your next USDC milestones</span>
+          </div>
         </div>
         <div class="card-back">
           <div class="card-title">Forecasting</div>
@@ -425,6 +437,10 @@
       <div class="card-inner">
         <div class="card-front">
           <img src="/static/image_magenta.png" alt="Deleveraging Complex">
+          <div class="card-front-label">
+            <span class="cfl-name">Deleverage Shield</span>
+            <span class="cfl-summary">Shield status &amp; countdowns to next repay &amp; sweep</span>
+          </div>
         </div>
         <div class="card-back">
           <div class="card-title">Deleverage Shield</div>
