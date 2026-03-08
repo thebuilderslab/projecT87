@@ -46,17 +46,17 @@
       <div class="lp-card">
         <div class="lp-card-icon">◈</div>
         <div class="lp-card-title">Autonomous Yield Engine</div>
-        <div class="lp-card-body">Connects to Aave V3 and Uniswap V3 to run borrow-swap-accumulate cycles every 2 minutes. Your collateral works around the clock — no manual trades, no gas calculations.</div>
+        <div class="lp-card-body">Connects to Aave V3 and Uniswap V3 to run continuous borrow-swap-accumulate cycles. Your collateral works around the clock — no manual trades, no gas calculations.</div>
       </div>
       <div class="lp-card">
         <div class="lp-card-icon">⬡</div>
         <div class="lp-card-title">Deleverage Shield</div>
-        <div class="lp-card-body">Every 18 minutes, the engine pulls USDC from your treasury and repays open debt. Position risk compresses over time rather than accumulating — a built-in risk floor.</div>
+        <div class="lp-card-body">On a recurring schedule, the engine pulls USDC from your treasury and repays open debt. Position risk compresses over time rather than accumulating — a built-in risk floor.</div>
       </div>
       <div class="lp-card">
         <div class="lp-card-icon">⟐</div>
         <div class="lp-card-title">Nurse Mode Safety</div>
-        <div class="lp-card-body">Monitors collateral velocity every 5 minutes. If markets drop sharply, non-profit assets are swept into Aave as additional collateral before liquidation thresholds are reached.</div>
+        <div class="lp-card-body">Continuously monitors collateral velocity. If markets drop sharply, non-profit assets are swept into Aave as additional collateral before liquidation thresholds are reached.</div>
       </div>
       <div class="lp-card">
         <div class="lp-card-icon">◇</div>
@@ -72,6 +72,34 @@
         <div class="lp-card-icon">◉</div>
         <div class="lp-card-title">USDC Treasury</div>
         <div class="lp-card-body">Profit accumulates in pure USDC — stable, claimable on demand, and permanently protected from safety sweep mechanisms. Track milestones live on your field operations dashboard.</div>
+      </div>
+    </div>
+
+    <div class="lp-section-label">// WHAT YOU SEE INSIDE</div>
+    <div class="lp-tile-list">
+      <div class="lp-tile-row">
+        <span class="lp-tile-dot lp-dot-green"></span>
+        <span class="lp-tile-name">Colony Health</span>
+        <span class="lp-tile-sep">—</span>
+        <span class="lp-tile-summary">Live health factor, net collateral balance, active DAI debt, and current strategy path</span>
+      </div>
+      <div class="lp-tile-row">
+        <span class="lp-tile-dot lp-dot-cyan"></span>
+        <span class="lp-tile-name">USDC Reactor</span>
+        <span class="lp-tile-sep">—</span>
+        <span class="lp-tile-summary">Your USDC balance, total lifetime income generated, and your 24-hour income rate</span>
+      </div>
+      <div class="lp-tile-row">
+        <span class="lp-tile-dot lp-dot-amber"></span>
+        <span class="lp-tile-name">Forecasting</span>
+        <span class="lp-tile-sep">—</span>
+        <span class="lp-tile-summary">Net APY spread between borrow and supply rates, and projected time to your next USDC milestones</span>
+      </div>
+      <div class="lp-tile-row">
+        <span class="lp-tile-dot lp-dot-magenta"></span>
+        <span class="lp-tile-name">Deleverage Shield</span>
+        <span class="lp-tile-sep">—</span>
+        <span class="lp-tile-summary">Shield status, time elapsed since last repay cycle, and countdowns to the next repay and safety sweep</span>
       </div>
     </div>
 
@@ -155,6 +183,59 @@
               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="margin-right:4px;vertical-align:middle"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="rgba(40,160,240,0.7)" stroke-width="2" fill="none"/></svg>Arbitrum
             </span>
           </div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="lp-section-label">// WHO IT'S FOR</div>
+    <div class="lp-usecase-list">
+
+      <div class="lp-usecase">
+        <div class="lp-usecase-num">01</div>
+        <div class="lp-usecase-content">
+          <div class="lp-usecase-title">Long-term holders who need liquidity without selling</div>
+          <div class="lp-usecase-body">You believe in ETH long-term but need dollars today. Selling means a taxable event and losing your position. Project 87 generates USDC income against your ETH without selling it — you keep the upside, you get the cash flow.</div>
+        </div>
+      </div>
+
+      <div class="lp-usecase">
+        <div class="lp-usecase-num">02</div>
+        <div class="lp-usecase-content">
+          <div class="lp-usecase-title">Crypto-native retirement / passive income</div>
+          <div class="lp-usecase-body">For someone replacing a traditional savings account or bond ladder with crypto. Project 87 runs continuously whether you check it or not, generating a predictable stream of USDC that can be withdrawn on demand via the API — essentially a programmable yield account.</div>
+        </div>
+      </div>
+
+      <div class="lp-usecase">
+        <div class="lp-usecase-num">03</div>
+        <div class="lp-usecase-content">
+          <div class="lp-usecase-title">DAO operating expense management</div>
+          <div class="lp-usecase-body">DAOs typically hold large ETH/stablecoin treasuries that sit idle. Project 87 generates a USDC stream from the ETH portion of the treasury to fund ongoing operational costs, without the DAO having to vote on asset sales every time it needs to pay contributors.</div>
+        </div>
+      </div>
+
+      <div class="lp-usecase">
+        <div class="lp-usecase-num">04</div>
+        <div class="lp-usecase-content">
+          <div class="lp-usecase-title">Pre-liquidity founders and vested token holders</div>
+          <div class="lp-usecase-body">Founders or early employees with vested crypto they can't or don't want to sell yet. Project 87 generates cash flow against locked or illiquid positions without triggering a sale. The milestone countdowns give them a forward-looking view of treasury growth.</div>
+        </div>
+      </div>
+
+      <div class="lp-usecase">
+        <div class="lp-usecase-num">05</div>
+        <div class="lp-usecase-content">
+          <div class="lp-usecase-title">Real estate investors bridging between deals</div>
+          <div class="lp-usecase-body">Someone with capital parked between property closings. Instead of sitting in a savings account at 4%, the idle capital is put to work generating USDC, with the full principal accessible whenever the next deal closes.</div>
+        </div>
+      </div>
+
+      <div class="lp-usecase">
+        <div class="lp-usecase-num">06</div>
+        <div class="lp-usecase-content">
+          <div class="lp-usecase-title">Crypto allocators who want yield with a defined risk ceiling</div>
+          <div class="lp-usecase-body">Unlike leveraged yield strategies where risk grows with the position, Project 87's Health Factor floor means the maximum risk is bounded by design. The Deleverage Shield is a built-in stop-loss that reduces debt instead of closing the position — suitable for allocators who need to comply with risk mandates.</div>
         </div>
       </div>
 
@@ -263,7 +344,7 @@
             <span class="telem-value val-green" id="green-hf">—</span>
           </div>
           <div class="telem-row">
-            <span class="telem-label">WBTC COLLATERAL</span>
+            <span class="telem-label">NET COLLATERAL</span>
             <span class="telem-value" id="green-wbtc">—</span>
           </div>
           <div class="telem-row">
@@ -296,6 +377,15 @@
           <div class="telem-row">
             <span class="telem-label">24H INCOME</span>
             <span class="telem-value val-green" id="cyan-24h">—</span>
+          </div>
+          <div class="apikey-panel">
+            <div class="apikey-panel-label">// API ACCESS</div>
+            <div class="apikey-input-row">
+              <input type="text" id="apikey-label-input" class="apikey-label-input" placeholder="KEY LABEL" maxlength="32">
+              <button class="apikey-gen-btn" id="btn-gen-key">[ + ]</button>
+            </div>
+            <div id="apikey-msg" class="apikey-msg"></div>
+            <div id="apikey-list" class="apikey-list"></div>
           </div>
           <div class="card-back-footer">
             <button class="btn-withdraw" id="btn-withdraw">[ WITHDRAW USDC ]</button>

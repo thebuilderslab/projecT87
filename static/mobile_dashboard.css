@@ -733,3 +733,192 @@ html, body {
 .lp-partner-contango{ color: rgba(0,212,255,0.75);  border-color: rgba(0,212,255,0.22);  background: rgba(0,212,255,0.04); }
 .lp-partner-rh      { color: rgba(0,200,5,0.80);    border-color: rgba(0,200,5,0.22);    background: rgba(0,200,5,0.04); }
 .lp-partner-arb     { color: rgba(40,160,240,0.80); border-color: rgba(40,160,240,0.22); background: rgba(40,160,240,0.04); }
+
+/* ── TILE LIST (// WHAT YOU SEE INSIDE) ── */
+.lp-tile-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin-bottom: 28px;
+  border: 1px solid rgba(0,229,255,0.08);
+}
+.lp-tile-row {
+  display: flex;
+  align-items: baseline;
+  gap: 9px;
+  padding: 10px 12px;
+  border-bottom: 1px solid rgba(0,229,255,0.06);
+  flex-wrap: wrap;
+}
+.lp-tile-row:last-child { border-bottom: none; }
+.lp-tile-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.lp-dot-green   { background: rgba(0,230,118,0.70); }
+.lp-dot-cyan    { background: rgba(0,229,255,0.70); }
+.lp-dot-amber   { background: rgba(255,180,0,0.70); }
+.lp-dot-magenta { background: rgba(220,0,220,0.70); }
+.lp-tile-name {
+  font-size: 9px;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: #c0d8e8;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.lp-tile-sep {
+  font-size: 9px;
+  color: rgba(255,255,255,0.18);
+  flex-shrink: 0;
+}
+.lp-tile-summary {
+  font-size: 9px;
+  color: #4a6a8a;
+  letter-spacing: 0.3px;
+  line-height: 1.5;
+}
+
+/* ── USE CASE LIST (// WHO IT'S FOR) ── */
+.lp-usecase-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 28px;
+}
+.lp-usecase {
+  display: flex;
+  gap: 14px;
+  padding: 13px 12px;
+  background: rgba(255,180,0,0.025);
+  border: 1px solid rgba(255,180,0,0.08);
+  border-left: 2px solid rgba(255,180,0,0.30);
+}
+.lp-usecase-num {
+  font-size: 11px;
+  font-weight: 700;
+  color: rgba(255,180,0,0.55);
+  letter-spacing: 1px;
+  flex-shrink: 0;
+  min-width: 18px;
+  padding-top: 1px;
+}
+.lp-usecase-content {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.lp-usecase-title {
+  font-size: 9px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: #c0d8e8;
+  font-weight: 600;
+}
+.lp-usecase-body {
+  font-size: 9px;
+  color: #4a6a8a;
+  line-height: 1.80;
+  letter-spacing: 0.3px;
+}
+
+/* ── API KEY PANEL (USDC Reactor card) ── */
+.apikey-panel {
+  margin: 10px 0 6px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(0,229,255,0.12);
+}
+.apikey-panel-label {
+  font-size: 8px;
+  letter-spacing: 1.5px;
+  color: rgba(0,229,255,0.45);
+  margin-bottom: 7px;
+}
+.apikey-input-row {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 5px;
+}
+.apikey-label-input {
+  flex: 1;
+  background: rgba(0,229,255,0.04);
+  border: 1px solid rgba(0,229,255,0.18);
+  color: #c0d8e8;
+  font-family: inherit;
+  font-size: 8px;
+  letter-spacing: 1px;
+  padding: 4px 7px;
+  text-transform: uppercase;
+  outline: none;
+}
+.apikey-label-input::placeholder { color: rgba(0,229,255,0.25); }
+.apikey-gen-btn {
+  background: transparent;
+  border: 1px solid rgba(0,229,255,0.30);
+  color: rgba(0,229,255,0.75);
+  font-family: inherit;
+  font-size: 9px;
+  letter-spacing: 1px;
+  padding: 4px 9px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.apikey-gen-btn:hover { background: rgba(0,229,255,0.07); }
+.apikey-gen-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+.apikey-msg {
+  font-size: 8px;
+  color: rgba(255,80,80,0.80);
+  letter-spacing: 0.5px;
+  min-height: 12px;
+  margin-bottom: 4px;
+}
+.apikey-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.apikey-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 7px;
+  background: rgba(0,229,255,0.03);
+  border: 1px solid rgba(0,229,255,0.10);
+  flex-wrap: wrap;
+}
+.apikey-val {
+  font-size: 8px;
+  letter-spacing: 0.8px;
+  color: rgba(0,229,255,0.80);
+  font-family: monospace;
+  flex: 1;
+  min-width: 90px;
+}
+.apikey-row-label {
+  font-size: 7px;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.30);
+}
+.apikey-status {
+  font-size: 7px;
+  letter-spacing: 1px;
+  padding: 1px 5px;
+  border-radius: 2px;
+}
+.apikey-status-active  { color: rgba(0,230,118,0.85); border: 1px solid rgba(0,230,118,0.25); }
+.apikey-status-revoked { color: rgba(255,255,255,0.25); border: 1px solid rgba(255,255,255,0.10); }
+.apikey-revoke-btn {
+  background: transparent;
+  border: 1px solid rgba(255,80,80,0.20);
+  color: rgba(255,80,80,0.50);
+  font-family: inherit;
+  font-size: 7px;
+  letter-spacing: 0.8px;
+  padding: 2px 6px;
+  cursor: pointer;
+}
+.apikey-revoke-btn:hover { color: rgba(255,80,80,0.85); border-color: rgba(255,80,80,0.45); }

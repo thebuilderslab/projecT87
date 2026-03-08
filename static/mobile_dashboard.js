@@ -273,6 +273,7 @@
     var modal = $('cm-modal');
     if (modal) modal.classList.add('hidden');
     syncTelemetry();
+    cmLoadApiKeys();
     if (!pollTimer) pollTimer = setInterval(syncTelemetry, POLL_INTERVAL_MS);
   }
 
@@ -649,7 +650,7 @@
       hfClass = hf >= 3.60 ? 'telem-value val-green' : hf >= 3.20 ? 'telem-value val-amber' : 'telem-value val-red';
     }
     setText('green-hf',   fmtHf(hf), hfClass);
-    setText('green-wbtc', fmtUsd(w ? w.wbtc_collateral_usd : null));
+    setText('green-wbtc', fmtUsd(w ? w.total_collateral_usdc : null));
     setText('green-dai',  fmtUsd(w ? w.total_debt_usd : null), 'telem-value val-amber');
 
     setText('cyan-balance',  fmtUsd(usdc), 'telem-value val-cyan');
@@ -762,6 +763,102 @@
     });
   }
 
+  /* ── API Keys ───────────────────────────────────────────────────── */
+  function authHeaders() {
+    var tok = localStorage.getItem('authToken');
+    return tok ? { 'Content-Type': 'application/json', 'X-Auth-Token': tok } : { 'Content-Type': 'application/json' };
+  }
+
+  async function cmLoadApiKeys() {
+    var list = $('apikey-list');
+    if (!list) return;
+    try {
+      var res  = await fetch('/api/keys/list', { headers: authHeaders() });
+      var data = await res.json();
+      var keys = (data.keys || []);
+      list.innerHTML = '';
+      var active = keys.filter(function(k){ return k.status === 'active'; });
+      var genBtn = $('btn-gen-key');
+      if (genBtn) genBtn.disabled = active.length >= 2;
+      if (keys.length === 0) {
+        list.innerHTML = '<div style="font-size:8px;color:rgba(255,255,255,0.25);padding:4px 2px;letter-spacing:0.5px;">No keys generated</div>';
+        return;
+      }
+      keys.forEach(function(k) {
+        var row     = document.createElement('div');
+        row.className = 'apikey-row';
+        var isActive = k.status === 'active';
+        var keyShort = k.key_prefix ? (k.key_prefix + '...') : ('p87_' + String(k.id) + '_...');
+        row.innerHTML =
+          '<span class="apikey-val">' + keyShort + '</span>' +
+          (k.label ? '<span class="apikey-row-label">' + k.label + '</span>' : '') +
+          '<span class="apikey-status ' + (isActive ? 'apikey-status-active' : 'apikey-status-revoked') + '">' +
+            (isActive ? 'ACTIVE' : 'REVOKED') +
+          '</span>' +
+          (isActive ? '<button class="apikey-revoke-btn" data-id="' + k.id + '">[ REVOKE ]</button>' : '');
+        list.appendChild(row);
+        if (isActive) {
+          var rBtn = row.querySelector('.apikey-revoke-btn');
+          if (rBtn) rBtn.addEventListener('click', function() { cmRevokeApiKey(k.id); });
+        }
+      });
+    } catch(e) {
+      var list2 = $('apikey-list');
+      if (list2) list2.innerHTML = '<div style="font-size:8px;color:rgba(255,80,80,0.6);">Error loading keys</div>';
+    }
+  }
+
+  async function cmGenerateApiKey() {
+    var genBtn  = $('btn-gen-key');
+    var msgEl   = $('apikey-msg');
+    var labelEl = $('apikey-label-input');
+    if (!genBtn || genBtn.disabled) return;
+    if (msgEl) msgEl.textContent = '';
+    var label = labelEl ? labelEl.value.trim() : '';
+    genBtn.disabled = true;
+    genBtn.textContent = '...';
+    try {
+      var res  = await fetch('/api/keys/generate', {
+        method: 'POST',
+        headers: authHeaders(),
+        body: JSON.stringify({ label: label })
+      });
+      var data = await res.json();
+      if (res.status === 409) {
+        if (msgEl) msgEl.textContent = 'Max 2 keys reached';
+        genBtn.disabled = false;
+      } else if (res.status === 201) {
+        if (labelEl) labelEl.value = '';
+        await cmLoadApiKeys();
+      } else {
+        if (msgEl) msgEl.textContent = data.error || 'Error generating key';
+        genBtn.disabled = false;
+      }
+    } catch(e) {
+      if (msgEl) msgEl.textContent = 'Network error';
+      genBtn.disabled = false;
+    }
+    genBtn.textContent = '[ + ]';
+  }
+
+  async function cmRevokeApiKey(keyId) {
+    var msgEl = $('apikey-msg');
+    if (msgEl) msgEl.textContent = '';
+    try {
+      var res = await fetch('/api/keys/' + keyId + '/revoke', {
+        method: 'POST',
+        headers: authHeaders()
+      });
+      if (res.ok) {
+        await cmLoadApiKeys();
+      } else {
+        if (msgEl) msgEl.textContent = 'Revoke failed';
+      }
+    } catch(e) {
+      if (msgEl) msgEl.textContent = 'Network error';
+    }
+  }
+
   /* ── Withdraw ────────────────────────────────────────────────────── */
   async function handleWithdraw() {
     var btn = $('btn-withdraw');
@@ -833,6 +930,8 @@
     if (wBtn)        wBtn.addEventListener('click',        handleWithdraw);
     if (eBtn)        eBtn.addEventListener('click',        function () { handleEmergency('/api/emergency/eject',      'btn-eject',      'EJECT'); });
     if (rBtn)        rBtn.addEventListener('click',        function () { handleEmergency('/api/emergency/hard_reset', 'btn-hard-reset', 'HARD RESET'); });
+    var genKeyBtn = $('btn-gen-key');
+    if (genKeyBtn)   genKeyBtn.addEventListener('click', cmGenerateApiKey);
   }
 
   function init() {
