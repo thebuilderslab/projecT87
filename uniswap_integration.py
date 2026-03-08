@@ -4,9 +4,12 @@ DAI-based swaps: DAI → WBTC, DAI → WETH, DAI → USDC (direct stablecoin swa
 
 import os
 import time
+import logging
 from web3 import Web3
 from eth_account import Account
 from delegation_client import get_tx_broadcast_lock, acquire_nonce, confirm_nonce, reset_nonce
+
+logger = logging.getLogger(__name__)
 
 class UniswapIntegration:
     def __init__(self, w3, account):

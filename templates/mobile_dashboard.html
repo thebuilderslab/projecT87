@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>PROJECT 87 — FIELD OPS</title>
+  <link rel="stylesheet" href="/static/mobile_dashboard.css" nonce="{{ nonce }}">
+</head>
+<body>
+<div id="app-wrapper">
+
+  <div id="briefing-header">
+    <div class="metric-pill">
+      <span class="metric-label">NET YIELD APY</span>
+      <span class="metric-value val-green" id="bh-apy-value">SYNCING…</span>
+    </div>
+    <div class="metric-pill">
+      <span class="metric-label">SHIELD</span>
+      <span class="metric-value val-dim" id="bh-shield-value">SYNCING…</span>
+    </div>
+    <div class="metric-pill">
+      <span class="metric-label">USDC</span>
+      <span class="metric-value val-cyan" id="bh-usdc-value">SYNCING…</span>
+    </div>
+  </div>
+
+  <div id="dome-grid">
+
+    <div class="dome-card" data-card="green">
+      <div class="card-inner">
+        <div class="card-front">
+          <img src="/static/image_green.png" alt="Colony Dome">
+        </div>
+        <div class="card-back">
+          <div class="card-title">Colony Health</div>
+          <div class="telem-row">
+            <span class="telem-label">HEALTH FACTOR</span>
+            <span class="telem-value val-green" id="green-hf">—</span>
+          </div>
+          <div class="telem-row">
+            <span class="telem-label">WBTC COLLATERAL</span>
+            <span class="telem-value" id="green-wbtc">—</span>
+          </div>
+          <div class="telem-row">
+            <span class="telem-label">DAI DEBT</span>
+            <span class="telem-value val-amber" id="green-dai">—</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="dome-card" data-card="cyan">
+      <div class="card-inner">
+        <div class="card-front">
+          <img src="/static/image_cyan.png" alt="USDC Reactor">
+        </div>
+        <div class="card-back">
+          <div class="card-title">USDC Reactor</div>
+          <div class="telem-row">
+            <span class="telem-label">USDC BALANCE</span>
+            <span class="telem-value val-cyan" id="cyan-balance">—</span>
+          </div>
+          <div class="telem-row">
+            <span class="telem-label">TOTAL GENERATED</span>
+            <span class="telem-value val-green" id="cyan-lifetime">—</span>
+          </div>
+          <div class="card-back-footer">
+            <button class="btn-withdraw" id="btn-withdraw">[ WITHDRAW USDC ]</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="dome-card" data-card="amber">
+      <div class="card-inner">
+        <div class="card-front">
+          <img src="/static/image_amber.png" alt="Horizon Observatory">
+        </div>
+        <div class="card-back">
+          <div class="card-title">Forecasting</div>
+          <div class="telem-row">
+            <span class="telem-label">NET APY SPREAD</span>
+            <span class="telem-value" id="amber-spread">—</span>
+          </div>
+          <div class="telem-row">
+            <span class="telem-label">$100 MILESTONE IN</span>
+            <span class="telem-value val-amber" id="amber-m100">—</span>
+          </div>
+          <div class="telem-row">
+            <span class="telem-label">$1K MILESTONE IN</span>
+            <span class="telem-value val-amber" id="amber-m1k">—</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="dome-card" data-card="magenta">
+      <div class="card-inner">
+        <div class="card-front">
+          <img src="/static/image_magenta.png" alt="Deleveraging Complex">
+        </div>
+        <div class="card-back">
+          <div class="card-title">Deleverage Shield</div>
+          <div class="telem-row">
+            <span class="telem-label">SHIELD STATUS</span>
+            <span class="telem-value" id="magenta-shield">—</span>
+          </div>
+          <div class="telem-row">
+            <span class="telem-label">LAST SWEEP</span>
+            <span class="telem-value val-dim" id="magenta-elapsed">—</span>
+          </div>
+          <div class="telem-row">
+            <span class="telem-label">NEXT REPAY IN</span>
+            <span class="telem-value val-magenta" id="magenta-countdown">—</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div id="emergency-panel">
+    <button class="btn-emergency" id="btn-eject">[ EJECT ]</button>
+    <button class="btn-emergency" id="btn-hard-reset">[ HARD RESET ]</button>
+  </div>
+
+  <div id="toast"></div>
+
+  <div id="connect-overlay" class="hidden">
+    <div class="overlay-label">⬡ CONNECT WALLET<br>TO SYNC TELEMETRY</div>
+    <div class="overlay-sub">VISIT MAIN DASHBOARD TO AUTHENTICATE</div>
+  </div>
+
+</div>
+<script src="/static/mobile_dashboard.js" nonce="{{ nonce }}"></script>
+</body>
+</html>

@@ -4854,6 +4854,143 @@ def _get_operator_eth_balance():
         return 0.0
 
 
+_WBTC_ADDRESS = "0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f"
+_USDC_ADDRESS_ARB = "0xaf88d065e77c8cC2239327C5EDb3A432268e5831"
+_withdraw_locks = {}
+_withdraw_locks_mutex = __import__('threading').Lock()
+
+
+def _shield_enum_from_hf(live_hf, strategy_status):
+    """Map live health factor to a 4-value enum for the mobile dashboard."""
+    if live_hf is None or strategy_status not in ('active', 'enabled'):
+        return "DOWN"
+    if live_hf >= 3.60:
+        return "GREEN"
+    if live_hf >= 3.20:
+        return "AMBER"
+    return "RED"
+
+
+def _get_wbtc_collateral_usd(wallet_address):
+    """Return the WBTC aToken balance in USD from the latest defi_positions snapshot."""
+    try:
+        with database.get_conn() as conn:
+            from psycopg2.extras import RealDictCursor
+            cur = conn.cursor(cursor_factory=RealDictCursor)
+            cur.execute("""
+                SELECT positions FROM defi_positions
+                WHERE wallet_address = %s
+                ORDER BY updated_at DESC LIMIT 1
+            """, (wallet_address.lower(),))
+            row = cur.fetchone()
+            cur.close()
+        if not row or not row['positions']:
+            return 0.0
+        positions = row['positions']
+        if isinstance(positions, str):
+            import json as _json
+            positions = _json.loads(positions)
+        wbtc_lower = _WBTC_ADDRESS.lower()
+        for entry in (positions if isinstance(positions, list) else positions.values()):
+            addr = (entry.get('reserve_address') or entry.get('address') or '').lower()
+            if addr == wbtc_lower or 'wbtc' in (entry.get('symbol') or '').lower():
+                return float(entry.get('current_atoken_balance_usd') or 0.0)
+    except Exception as e:
+        logger.debug(f"[Telemetry] wbtc_collateral_usd error for {wallet_address[:10]}: {e}")
+    return 0.0
+
+
+def _get_mobile_countdown_hhmm(target_ts):
+    """Convert a future UTC timestamp to HH:MM countdown string."""
+    try:
+        now_utc = datetime.utcnow().replace(tzinfo=__import__('datetime').timezone.utc)
+        if hasattr(target_ts, 'tzinfo') and target_ts.tzinfo is None:
+            import datetime as _dt
+            target_ts = target_ts.replace(tzinfo=_dt.timezone.utc)
+        delta = target_ts - now_utc
+        total_secs = delta.total_seconds()
+        if total_secs <= 0:
+            return "00:00"
+        if total_secs > 99 * 3600 + 59 * 60:
+            return "99:59+"
+        hours = int(total_secs // 3600)
+        minutes = int((total_secs % 3600) // 60)
+        return f"{hours:02d}:{minutes:02d}"
+    except Exception:
+        return None
+
+
+def _build_mobile_top_level_extras(wallet_address, engine_yield_apy, borrow_cost_apy):
+    """Compute top-level fields for the mobile dashboard telemetry."""
+    result = {}
+
+    if engine_yield_apy is not None and borrow_cost_apy is not None:
+        result['net_apy_spread'] = round(engine_yield_apy - borrow_cost_apy, 2)
+    else:
+        result['net_apy_spread'] = None
+
+    try:
+        with database.get_conn() as conn:
+            from psycopg2.extras import RealDictCursor
+            cur = conn.cursor(cursor_factory=RealDictCursor)
+            cur.execute("SELECT id, target_timestamp FROM usdc_milestones WHERE id IN (1,2) ORDER BY id")
+            rows = {r['id']: r for r in cur.fetchall()}
+            cur.close()
+        result['milestone_100_hhmm'] = _get_mobile_countdown_hhmm(rows[1]['target_timestamp']) if 1 in rows else None
+        result['milestone_1000_hhmm'] = _get_mobile_countdown_hhmm(rows[2]['target_timestamp']) if 2 in rows else None
+    except Exception as e:
+        logger.debug(f"[Telemetry] milestone countdown error: {e}")
+        result['milestone_100_hhmm'] = None
+        result['milestone_1000_hhmm'] = None
+
+    try:
+        with database.get_conn() as conn:
+            from psycopg2.extras import RealDictCursor
+            cur = conn.cursor(cursor_factory=RealDictCursor)
+            cur.execute("""
+                SELECT created_at FROM wallet_actions
+                WHERE wallet_address = %s AND action_type = 'REPAY_EXECUTED'
+                ORDER BY created_at DESC LIMIT 1
+            """, (wallet_address.lower(),))
+            row = cur.fetchone()
+            if not row:
+                cur.execute("""
+                    SELECT created_at FROM wallet_actions
+                    WHERE wallet_address = %s AND action_type = 'REPAY_FAILED'
+                    ORDER BY created_at DESC LIMIT 1
+                """, (wallet_address.lower(),))
+                row = cur.fetchone()
+            cur.close()
+        if row:
+            import datetime as _dt
+            ts = row['created_at']
+            if ts.tzinfo is None:
+                ts = ts.replace(tzinfo=_dt.timezone.utc)
+            now_utc = datetime.utcnow().replace(tzinfo=_dt.timezone.utc)
+            result['last_repay_elapsed_min'] = max(0, int((now_utc - ts).total_seconds() / 60))
+        else:
+            result['last_repay_elapsed_min'] = None
+    except Exception as e:
+        logger.debug(f"[Telemetry] last_repay_elapsed error: {e}")
+        result['last_repay_elapsed_min'] = None
+
+    try:
+        import json as _json, datetime as _dt
+        with open('/tmp/p87_scheduler_state.json') as f:
+            state = _json.load(f)
+        ts_str = state.get('repay_deleverager_job')
+        if ts_str:
+            target = datetime.fromisoformat(ts_str.replace('Z', '+00:00'))
+            now_utc = datetime.utcnow().replace(tzinfo=_dt.timezone.utc)
+            result['next_repay_countdown_min'] = max(0, int((target - now_utc).total_seconds() / 60))
+        else:
+            result['next_repay_countdown_min'] = None
+    except Exception:
+        result['next_repay_countdown_min'] = None
+
+    return result
+
+
 def _build_wallet_telemetry(wallet_address, live_data, strategy_status, borrow_cost_apy):
     from strategy_engine import GROWTH_HF_THRESHOLD, CAPACITY_HF_THRESHOLD, EMERGENCY_HF_THRESHOLD
     live_hf            = float(live_data.get("health_factor", 0))       if live_data else None
@@ -4973,6 +5110,8 @@ def _build_wallet_telemetry(wallet_address, live_data, strategy_status, borrow_c
         "net_economic_velocity_pct": nev,
         "growth_likelihood_pct": round(growth_likelihood_pct, 2),
         "milestones": milestones,
+        "wbtc_collateral_usd": _get_wbtc_collateral_usd(wallet_address),
+        "shield_status_enum": _shield_enum_from_hf(hf_for_logic if live_hf else None, strategy_status),
     }
 
 
@@ -5066,6 +5205,16 @@ def api_telemetry():
     except Exception:
         pass
 
+    primary_wallet = wallet_data[0]['wallet_address'] if wallet_data else None
+    primary_engine_yield = wallet_data[0].get('engine_yield_apy_pct_7d') if wallet_data else None
+    mobile_extras = _build_mobile_top_level_extras(
+        primary_wallet or '', primary_engine_yield, borrow_cost_apy
+    ) if primary_wallet else {
+        'net_apy_spread': None, 'milestone_100_hhmm': None,
+        'milestone_1000_hhmm': None, 'last_repay_elapsed_min': None,
+        'next_repay_countdown_min': None,
+    }
+
     payload = {
         "last_updated_at": datetime.utcnow().isoformat() + "Z",
         "next_system_check_timestamp": next_core,
@@ -5079,6 +5228,11 @@ def api_telemetry():
             "last_nurse_at": last_nurse_at,
             "last_nurse_tokens": last_nurse_tokens,
         },
+        "net_apy_spread": mobile_extras.get('net_apy_spread'),
+        "milestone_100_hhmm": mobile_extras.get('milestone_100_hhmm'),
+        "milestone_1000_hhmm": mobile_extras.get('milestone_1000_hhmm'),
+        "last_repay_elapsed_min": mobile_extras.get('last_repay_elapsed_min'),
+        "next_repay_countdown_min": mobile_extras.get('next_repay_countdown_min'),
     }
 
     _telemetry_cache[cache_key] = {'ts': now_ts, 'data': payload}
@@ -5191,6 +5345,155 @@ def api_telemetry_cycle_pnl():
 @app.route('/overseer')
 def overseer():
     return render_template('overseer.html')
+
+
+@app.route('/api/usdc/withdraw', methods=['POST'])
+def api_usdc_withdraw():
+    import threading
+    user_id = get_current_user_id()
+    if not user_id:
+        return jsonify({"success": False, "code": "UNAUTHENTICATED",
+                        "message": "Valid session required"}), 401
+    if not DB_AVAILABLE:
+        return jsonify({"success": False, "code": "DB_UNAVAILABLE",
+                        "message": "Database unavailable"}), 503
+    user = database.get_user_by_id(user_id)
+    if not user:
+        return jsonify({"success": False, "code": "USER_NOT_FOUND",
+                        "message": "User record not found"}), 404
+    wallet_address = (user.get('wallet_address') or '').lower().strip()
+    if not wallet_address:
+        return jsonify({"success": False, "code": "NO_WALLET",
+                        "message": "No wallet linked to this account"}), 400
+
+    with _withdraw_locks_mutex:
+        if user_id not in _withdraw_locks:
+            _withdraw_locks[user_id] = threading.Lock()
+        lock = _withdraw_locks[user_id]
+
+    if not lock.acquire(blocking=False):
+        return jsonify({"success": False, "code": "WITHDRAW_IN_PROGRESS",
+                        "message": "A withdrawal is already in progress for this account."}), 400
+
+    try:
+        balance = _get_user_usdc_balance_rpc(wallet_address)
+        if balance < 0.01:
+            return jsonify({"success": False, "code": "INSUFFICIENT_BALANCE",
+                            "message": f"Balance ${balance:.4f} is below the minimum $0.01"}), 400
+
+        from delegation_client import transfer_token_to_address
+        amount_raw = int(balance * 1e6)
+        tx_hash = transfer_token_to_address(wallet_address, _USDC_ADDRESS_ARB, amount_raw)
+        if not tx_hash:
+            return jsonify({"success": False, "code": "TRANSFER_FAILED",
+                            "message": "On-chain transfer did not confirm. Bot may lack gas or approval."}), 500
+
+        try:
+            database.record_wallet_action(
+                user_id, wallet_address, "USDC_WITHDRAWN",
+                {"amount_usd": round(balance, 4), "tx_hash": tx_hash},
+                tx_hash=tx_hash
+            )
+        except Exception as db_err:
+            logger.warning(f"[Withdraw] USDC_WITHDRAWN action log failed: {db_err}")
+
+        logger.info(f"[Withdraw] user_id={user_id} wallet={wallet_address[:10]}... "
+                    f"withdrew ${balance:.4f} USDC | tx={tx_hash}")
+        return jsonify({"success": True, "tx_hash": tx_hash, "amount_usd": round(balance, 4)})
+    finally:
+        lock.release()
+
+
+@app.route('/api/emergency/eject', methods=['POST'])
+def api_emergency_eject():
+    user_id = get_current_user_id()
+    if not user_id:
+        return jsonify({"success": False, "code": "UNAUTHENTICATED",
+                        "message": "Valid session required"}), 401
+    try:
+        reason = f"EJECT triggered by user_id={user_id} via mobile dashboard"
+        emergency_file = 'EMERGENCY_STOP_ACTIVE.flag'
+        with open(emergency_file, 'w') as f:
+            f.write(f"EMERGENCY STOP ACTIVE\nReason: {reason}\n"
+                    f"Timestamp: {time.time()}\n"
+                    f"DateTime: {datetime.now().strftime('%Y-%m-%d %H:%M:%S UTC')}\n")
+            f.flush()
+            os.fsync(f.fileno())
+        logger.warning(f"🛑 EJECT activated: {reason}")
+        try:
+            database.record_wallet_action(
+                user_id, 'system', "EMERGENCY_EJECT",
+                {"reason": reason, "triggered_by": user_id}
+            )
+        except Exception:
+            pass
+        ts = datetime.utcnow().isoformat() + "Z"
+        return jsonify({"success": True, "action": "eject", "timestamp": ts})
+    except Exception as e:
+        logger.error(f"[Emergency] EJECT error: {e}")
+        return jsonify({"success": False, "code": "EJECT_FAILED",
+                        "message": str(e)}), 500
+
+
+@app.route('/api/emergency/hard_reset', methods=['POST'])
+def api_emergency_hard_reset():
+    user_id = get_current_user_id()
+    if not user_id:
+        return jsonify({"success": False, "code": "UNAUTHENTICATED",
+                        "message": "Valid session required"}), 401
+    if not DB_AVAILABLE:
+        return jsonify({"success": False, "code": "DB_UNAVAILABLE",
+                        "message": "Database unavailable"}), 503
+    user = database.get_user_by_id(user_id)
+    if not user:
+        return jsonify({"success": False, "code": "USER_NOT_FOUND",
+                        "message": "User record not found"}), 404
+    wallet = (user.get('wallet_address') or '').lower().strip()
+    if not wallet:
+        return jsonify({"success": False, "code": "NO_WALLET",
+                        "message": "No wallet linked to this account"}), 400
+    try:
+        import glob as _glob
+        result = database.hard_reset_wallet(user_id, wallet)
+        database.set_bot_enabled(user_id, False)
+        cooldown_dir = os.path.join(os.path.dirname(__file__), "execution_state")
+        if os.path.isdir(cooldown_dir):
+            safe_addr = wallet.replace("0x", "")[:40]
+            for f in _glob.glob(os.path.join(cooldown_dir, f"*{safe_addr}*")):
+                try:
+                    os.remove(f)
+                except Exception:
+                    pass
+        logger.warning(f"[Emergency] HARD_RESET user_id={user_id} wallet={wallet[:10]}...")
+        try:
+            database.record_wallet_action(
+                user_id, wallet, "EMERGENCY_HARD_RESET",
+                {"result": str(result), "triggered_by": user_id}
+            )
+        except Exception:
+            pass
+        ts = datetime.utcnow().isoformat() + "Z"
+        return jsonify({"success": True, "action": "hard_reset", "timestamp": ts})
+    except Exception as e:
+        logger.error(f"[Emergency] HARD_RESET error: {e}")
+        return jsonify({"success": False, "code": "RESET_FAILED",
+                        "message": str(e)}), 500
+
+
+@app.route('/mobile')
+def mobile_dashboard():
+    from flask import make_response
+    import secrets
+    nonce = secrets.token_hex(16)
+    resp = make_response(render_template('mobile_dashboard.html', nonce=nonce))
+    resp.headers['Content-Security-Policy'] = (
+        f"default-src 'self'; "
+        f"script-src 'self' 'nonce-{nonce}'; "
+        f"style-src 'self' 'nonce-{nonce}'; "
+        f"img-src 'self' data:; "
+        f"connect-src 'self';"
+    )
+    return resp
 
 
 if __name__ == '__main__':
