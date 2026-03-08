@@ -313,6 +313,34 @@ html, body {
 
 /* ── Dome Cards ──────────────────────────────────────────────────── */
 
+#ops-brand-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 16px 0 10px;
+  border-bottom: 1px solid rgba(0,229,255,0.08);
+}
+.ops-brand-gif {
+  height: 48px;
+  width: auto;
+  display: block;
+  margin-bottom: 4px;
+}
+.ops-brand-wordmark {
+  font-size: 16px;
+  letter-spacing: 7px;
+  color: #00e5ff;
+  text-transform: uppercase;
+  font-weight: 400;
+}
+.ops-brand-sub {
+  font-size: 7px;
+  letter-spacing: 3.5px;
+  color: #2a4a6a;
+  text-transform: uppercase;
+  margin-top: 3px;
+}
+
 #dome-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
