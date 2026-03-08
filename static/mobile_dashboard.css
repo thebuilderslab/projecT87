@@ -694,3 +694,42 @@ html, body {
 .lp-cta-bottom {
   margin-bottom: 60px;
 }
+
+.lp-quote {
+  border-left: 2px solid rgba(0,229,255,0.30);
+  padding: 12px 14px;
+  margin-bottom: 28px;
+  background: rgba(0,229,255,0.02);
+  font-size: 9px;
+  line-height: 1.85;
+  color: #4a6a8a;
+  letter-spacing: 0.3px;
+  font-style: italic;
+}
+
+.lp-partner-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.lp-partner {
+  display: inline-flex;
+  align-items: center;
+  font-size: 8px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  padding: 3px 7px;
+  border-radius: 2px;
+  border: 1px solid;
+  line-height: 1;
+}
+
+.lp-partner-dune    { color: rgba(255,123,36,0.80); border-color: rgba(255,123,36,0.25); background: rgba(255,123,36,0.05); }
+.lp-partner-alchemy { color: rgba(99,102,241,0.85); border-color: rgba(99,102,241,0.25); background: rgba(99,102,241,0.05); }
+.lp-partner-fluid   { color: rgba(38,98,217,0.85);  border-color: rgba(38,98,217,0.25);  background: rgba(38,98,217,0.05); }
+.lp-partner-jup     { color: rgba(196,163,44,0.85); border-color: rgba(196,163,44,0.25); background: rgba(196,163,44,0.05); }
+.lp-partner-contango{ color: rgba(0,212,255,0.75);  border-color: rgba(0,212,255,0.22);  background: rgba(0,212,255,0.04); }
+.lp-partner-rh      { color: rgba(0,200,5,0.80);    border-color: rgba(0,200,5,0.22);    background: rgba(0,200,5,0.04); }
+.lp-partner-arb     { color: rgba(40,160,240,0.80); border-color: rgba(40,160,240,0.22); background: rgba(40,160,240,0.04); }
